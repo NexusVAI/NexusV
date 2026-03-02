@@ -1,0 +1,612 @@
+:root {
+    --bg-color: #000000;
+    --text-color: #ffffff;
+    --secondary-text: #888888;
+    --nav-height: 54px;
+    --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    --font-main: 'Inter', -apple-system, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+/* 导航系统 - OpenAI 同款紧凑风格 */
+.navbar {
+    height: 50px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0; width: 100%; z-index: 1000;
+    background: #000;
+    font-family: var(--font-main);
+}
+
+.navbar-inner {
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.logo {
+    font-weight: 600; 
+    font-size: 15px;
+    text-decoration: none; 
+    color: white;
+    white-space: nowrap;
+    letter-spacing: -0.03em;
+}
+
+.nav-links { display: flex; gap: 20px; align-items: center; }
+
+.nav-item { 
+    font-size: 12px; 
+    font-weight: 400; 
+    color: #ffffff; 
+    cursor: pointer; 
+    transition: opacity 0.15s ease, color 0.15s ease; 
+    opacity: 1;
+}
+
+.nav-links:hover .nav-item,
+.nav-links.has-active .nav-item {
+    opacity: 0.35;
+    color: #a3a3a3;
+    transition: all 0.2s ease;
+}
+
+.nav-links .nav-item:hover,
+.nav-links .nav-item.active { 
+    opacity: 1 !important; 
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.search-icon {
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.login-btn {
+    font-size: 11px;
+    font-weight: 400;
+    color: #fff;
+    cursor: pointer;
+}
+
+.btn-pill {
+    background: white; color: black; padding: 4px 12px;
+    border-radius: 20px; text-decoration: none; font-size: 11px; font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+    top: -1px;
+}
+
+.btn-pill:hover, .btn-pill.active {
+    background: black;
+    color: white;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.3);
+}
+
+/* 下拉菜单 - 统一面板 */
+.mega-menu-container {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    background-color: #000;
+    z-index: 999;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 0.2s ease-out, 
+                visibility 0.2s;
+    visibility: hidden;
+    box-sizing: border-box;
+}
+
+.mega-menu-inner {
+    min-height: 0;
+    padding: 0 40px;
+    opacity: 0;
+    transition: opacity 0.15s ease-out;
+}
+
+.mega-menu-container.active {
+    grid-template-rows: 1fr;
+    visibility: visible;
+}
+
+.mega-menu-container.active .mega-menu-inner {
+    opacity: 1;
+    padding-top: 30px;
+    padding-bottom: 40px;
+}
+
+/* 全屏遮罩层 - 下拉菜单出现时模糊背景 */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+                visibility 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    z-index: 998;
+    pointer-events: none;
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.menu-content-wrapper {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    gap: 80px;
+    transition: opacity 80ms ease-in-out;
+    opacity: 1;
+}
+
+.menu-column a {
+    color: #cfcfcf;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-weight: 400;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.menu-column a:hover {
+    opacity: 1;
+    color: #ffffff;
+}
+
+.menu-column.main-links a {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+    color: #ffffff;
+    line-height: 1.3;
+}
+
+.menu-column .label {
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 12px;
+}
+
+/* --- 主容器与网格 - OpenAI 同款布局 --- */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 62px 24px 32px 24px;
+    box-sizing: border-box;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 2.8fr 1.2fr;
+    gap: 32px;
+    align-items: start;
+}
+
+/* --- 左侧粘性滚动 --- */
+.left-column.sticky-container {
+    position: sticky;
+    top: 62px;
+}
+
+/* --- 右侧卡片列表 --- */
+.right-column.scrollable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 100%;
+    justify-self: end;
+}
+
+/* --- 卡片链接 --- */
+.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    cursor: pointer;
+}
+
+/* --- 图片容器与形状 --- */
+.image-wrapper {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    background-color: #111;
+    margin-bottom: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.image-wrapper:hover img,
+.image-wrapper.hero-image:hover img {
+    transform: scale(1.03);
+}
+
+.hero-image {
+    aspect-ratio: 16 / 10;
+    max-height: 800px;
+}
+
+.square-image {
+    aspect-ratio: 1 / 1;
+}
+
+/* --- 字体排版 --- */
+.card-text {
+    padding-right: 20px;
+}
+
+.card-title {
+    font-size: 19px;
+    font-weight: 400;
+    line-height: 1.3;
+    margin: 0 0 8px 0;
+    color: #fff;
+    letter-spacing: -0.01em;
+}
+
+.hero-card .card-title {
+    font-size: 30px;
+    font-weight: 500;
+}
+
+.card-meta {
+    font-size: 11px;
+    font-weight: 400;
+    color: #7b7b7b;
+    margin: 0;
+}
+
+.card-meta span {
+    color: #d6d6d6;
+}
+
+.card-meta span:first-child {
+    font-weight: 500;
+}
+
+.card-meta .meta-time {
+    color: #7b7b7b;
+    font-weight: 400;
+}
+
+/* --- 图片覆盖文字 --- */
+.hero-overlay-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 30px;
+    font-weight: 500;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    width: 90%;
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+
+.centered-overlay-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+/* --- Nexus 专属渐变 --- */
+.gradient-bg-nexus {
+    background: radial-gradient(circle at top right, #3a0078, #000000);
+}
+
+/* --- CTA 区域 --- */
+.cta-section {
+    background: #1a1a1a;
+    margin: 72px 32px;
+    padding: 96px 0;
+    text-align: center;
+}
+
+.cta-section h2 {
+    font-size: 40px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+}
+
+.cta-btn {
+    background: #fff;
+    color: #000;
+    padding: 12px 24px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.cta-btn:hover {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.3);
+}
+
+/* --- 页脚 --- */
+.openai-footer {
+    background: #000;
+    padding: 80px 40px 40px 40px;
+    border-top: 1px solid #1a1a1a;
+}
+
+.footer-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 80px;
+}
+
+.footer-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-label {
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.footer-column a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+    display: inline-block;
+    margin-bottom: 12px;
+    width: fit-content;
+    max-width: max-content;
+}
+
+.footer-column a:hover {
+    color: #999;
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 30px;
+    border-top: 1px solid #1a1a1a;
+    color: #666;
+    font-size: 12px;
+}
+
+.bottom-left {
+    display: flex;
+    gap: 24px;
+}
+
+.bottom-left a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.bottom-left a:hover {
+    color: #999;
+}
+
+.bottom-left a svg {
+    fill: currentColor;
+    transition: fill 0.2s;
+}
+
+.bottom-center {
+    color: #666;
+}
+
+.lang-selector {
+    color: #999;
+    cursor: pointer;
+}
+
+.bottom-bar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 100; }
+
+/* ========================================
+   LIQUID GLASS EFFECT - True Refraction
+   ======================================== */
+
+.search-pill {
+    position: relative;
+    padding: 14px 28px 14px 32px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    transition: transform 0.2s ease-out;
+    overflow: visible;
+    background: transparent;
+}
+
+/* Glass layer - the actual refraction effect */
+.search-pill .glass-layer {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(3px) saturate(120%);
+    -webkit-backdrop-filter: blur(3px) saturate(120%);
+    filter: url(#liquid-glass-filter);
+    transition: background 0.2s ease-out;
+    z-index: -1;
+}
+
+.search-pill:hover .glass-layer {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Glass border shimmer */
+.search-pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.1) 25%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0.1) 75%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: all 0.2s ease-out;
+    z-index: 1;
+}
+
+.search-pill {
+    box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.15),
+        0 4px 24px -4px rgba(0, 0, 0, 0.5),
+        0 12px 40px -8px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.search-pill:hover {
+    transform: translateY(-2px);
+}
+
+.search-pill:hover::before {
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.15) 30%,
+        rgba(255, 255, 255, 0.6) 50%,
+        rgba(255, 255, 255, 0.15) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.search-pill:active {
+    transform: translateY(0);
+}
+
+.search-pill .arrow-up {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 2;
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.search-pill:hover .arrow-up {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.search-pill span {
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.search-pill .edge-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 999px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow:
+        inset 3px 0 4px -2px rgba(255, 80, 80, 0.5),
+        inset -3px 0 4px -2px rgba(80, 140, 255, 0.5),
+        inset 0 3px 4px -2px rgba(255, 255, 255, 0.3),
+        inset 0 -3px 4px -2px rgba(200, 150, 255, 0.3);
+}
+
+.search-pill:hover .edge-glow {
+    opacity: 1;
+}
