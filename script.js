@@ -257,4 +257,93 @@ document.addEventListener('DOMContentLoaded', () => {
     navbar.addEventListener('mouseleave', hideMenu);
     megaMenu.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
     megaMenu.addEventListener('mouseleave', hideMenu);
+
+    // ========================================
+    // MOBILE MENU
+    // ========================================
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    if (mobileMenuBtn) {
+        // Create mobile drawer
+        const drawer = document.createElement('div');
+        drawer.className = 'mobile-drawer';
+
+        const navItemsData = [
+            { text: '研究', submenu: menuData['research'] ? ['意识架构索引', '自主 NPC 概述', '行为树演化项目', '开放认知研究'] : null },
+            { text: '安全', submenu: menuData['safety'] ? ['数字伦理框架', 'AI 安全协议', '意识权利研究', '透明度报告'] : null },
+            { text: '协议' },
+            { text: '开发者文档' },
+            { text: 'Nexus Agent' },
+            { text: '意识' }
+        ];
+
+        let drawerHTML = '';
+        let itemIndex = 0;
+        navItemsData.forEach(item => {
+            drawerHTML += `<div class="mobile-nav-item" style="transition-delay: ${itemIndex * 40}ms" ${item.submenu ? 'data-expandable' : ''}>${item.text}</div>`;
+            if (item.submenu) {
+                drawerHTML += '<div class="mobile-submenu">';
+                item.submenu.forEach((link, linkIdx) => {
+                    drawerHTML += `<a href="#" style="transition-delay: ${linkIdx * 50}ms">${link}</a>`;
+                });
+                drawerHTML += '</div>';
+            }
+            itemIndex++;
+        });
+
+        drawerHTML += `
+            <div class="mobile-actions" style="transition-delay: ${itemIndex * 40 + 60}ms">
+                <a href="#" class="mobile-login">登录</a>
+                <a href="#" class="mobile-cta">进入 Nexus ↗</a>
+            </div>
+        `;
+
+        drawer.innerHTML = drawerHTML;
+        document.body.appendChild(drawer);
+
+        // Expandable submenus with animated toggle
+        drawer.querySelectorAll('[data-expandable]').forEach(el => {
+            el.addEventListener('click', () => {
+                const sub = el.nextElementSibling;
+                if (sub && sub.classList.contains('mobile-submenu')) {
+                    const isOpen = sub.classList.contains('open');
+                    // Close other open submenus first
+                    drawer.querySelectorAll('.mobile-submenu.open').forEach(openSub => {
+                        if (openSub !== sub) {
+                            openSub.classList.remove('open');
+                            openSub.previousElementSibling.classList.remove('expanded');
+                        }
+                    });
+                    sub.classList.toggle('open', !isOpen);
+                    el.classList.toggle('expanded', !isOpen);
+                }
+            });
+        });
+
+        // Toggle drawer
+        let drawerOpen = false;
+        mobileMenuBtn.addEventListener('click', () => {
+            drawerOpen = !drawerOpen;
+            mobileMenuBtn.classList.toggle('active', drawerOpen);
+            drawer.classList.toggle('active', drawerOpen);
+            document.body.style.overflow = drawerOpen ? 'hidden' : '';
+
+            // Reset submenus when closing
+            if (!drawerOpen) {
+                drawer.querySelectorAll('.mobile-submenu.open').forEach(sub => {
+                    sub.classList.remove('open');
+                    sub.previousElementSibling.classList.remove('expanded');
+                });
+            }
+        });
+
+        // Close drawer on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768 && drawerOpen) {
+                drawerOpen = false;
+                mobileMenuBtn.classList.remove('active');
+                drawer.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    }
 });

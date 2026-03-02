@@ -610,3 +610,387 @@ body {
 .search-pill:hover .edge-glow {
     opacity: 1;
 }
+
+/* ========================================
+   MOBILE HAMBURGER MENU BUTTON
+   ======================================== */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 1002;
+}
+
+.mobile-menu-btn span {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: #fff;
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.mobile-menu-btn.active span:nth-child(1) {
+    transform: rotate(45deg) translate(4.5px, 4.5px);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(4.5px, -4.5px);
+}
+
+/* ========================================
+   MOBILE DRAWER OVERLAY
+   ======================================== */
+.mobile-drawer {
+    display: none;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 50px);
+    background: #000;
+    z-index: 997;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 24px 20px 100px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-drawer.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.mobile-drawer .mobile-nav-item {
+    display: block;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 500;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    text-decoration: none;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, color 0.2s;
+}
+
+.mobile-drawer.active .mobile-nav-item {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Expandable arrow indicator */
+.mobile-drawer .mobile-nav-item[data-expandable]::after {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid rgba(255,255,255,0.4);
+    border-bottom: 1.5px solid rgba(255,255,255,0.4);
+    transform: rotate(45deg) translateY(-2px);
+    margin-left: 10px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-drawer .mobile-nav-item[data-expandable].expanded::after {
+    transform: rotate(-135deg) translateY(-2px);
+}
+
+.mobile-drawer .mobile-nav-item:last-child {
+    border-bottom: none;
+}
+
+/* Submenu - animated expand/collapse */
+.mobile-drawer .mobile-submenu {
+    max-height: 0;
+    overflow: hidden;
+    padding: 0;
+    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                padding 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-drawer .mobile-submenu.open {
+    max-height: 400px;
+    padding: 8px 0 16px 0;
+}
+
+.mobile-drawer .mobile-submenu a {
+    display: block;
+    color: #999;
+    font-size: 15px;
+    font-weight: 400;
+    padding: 8px 0;
+    text-decoration: none;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: color 0.2s, opacity 0.25s ease, transform 0.25s ease;
+}
+
+.mobile-drawer .mobile-submenu.open a {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.mobile-drawer .mobile-submenu a:hover {
+    color: #fff;
+}
+
+.mobile-drawer .mobile-actions {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mobile-drawer.active .mobile-actions {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mobile-drawer .mobile-actions a {
+    display: block;
+    text-align: center;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.mobile-drawer .mobile-actions .mobile-login {
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.mobile-drawer .mobile-actions .mobile-cta {
+    background: #fff;
+    color: #000;
+}
+
+/* ========================================
+   RESPONSIVE - TABLET (max-width: 1024px)
+   ======================================== */
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1.8fr 1.2fr;
+        gap: 24px;
+    }
+
+    .hero-card .card-title {
+        font-size: 24px;
+    }
+
+    .cta-section {
+        margin: 48px 20px;
+        padding: 64px 20px;
+    }
+
+    .cta-section h2 {
+        font-size: 32px;
+    }
+
+    .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 40px 20px;
+    }
+}
+
+/* ========================================
+   RESPONSIVE - MOBILE (max-width: 768px)
+   ======================================== */
+@media (max-width: 768px) {
+    /* Nav: hide desktop links, show hamburger */
+    .nav-links {
+        display: none;
+    }
+
+    .nav-right .search-icon,
+    .nav-right .login-btn,
+    .nav-right .btn-pill {
+        display: none;
+    }
+
+    .mobile-menu-btn {
+        display: flex;
+    }
+
+    .mobile-drawer {
+        display: block;
+    }
+
+    /* Mega menu hidden on mobile (handled via drawer) */
+    .mega-menu-container {
+        display: none !important;
+    }
+
+    /* Main content: single column */
+    .main-container {
+        padding: 58px 16px 24px;
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .left-column.sticky-container {
+        position: static;
+    }
+
+    .hero-image {
+        aspect-ratio: 16 / 9;
+    }
+
+    .hero-card .card-title {
+        font-size: 22px;
+    }
+
+    .card-title {
+        font-size: 17px;
+    }
+
+    .hero-overlay-text {
+        font-size: 20px;
+    }
+
+    .card-text {
+        padding-right: 0;
+    }
+
+    /* Right column: horizontal scroll on mobile */
+    .right-column.scrollable-list {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 16px;
+        padding-bottom: 8px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .right-column.scrollable-list .card-link {
+        min-width: 260px;
+        flex-shrink: 0;
+        scroll-snap-align: start;
+    }
+
+    /* CTA section */
+    .cta-section {
+        margin: 40px 16px;
+        padding: 48px 20px;
+        border-radius: 12px;
+    }
+
+    .cta-section h2 {
+        font-size: 26px;
+        margin-bottom: 20px;
+    }
+
+    .cta-btn {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
+
+    /* Footer */
+    .openai-footer {
+        padding: 48px 20px 32px;
+    }
+
+    .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px 16px;
+        margin-bottom: 48px;
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+
+    .bottom-left {
+        justify-content: center;
+    }
+
+    /* Bottom bar adjustments */
+    .bottom-bar {
+        bottom: 24px;
+    }
+
+    .search-pill {
+        padding: 12px 20px 12px 24px;
+        font-size: 13px;
+        gap: 10px;
+    }
+}
+
+/* ========================================
+   RESPONSIVE - SMALL MOBILE (max-width: 480px)
+   ======================================== */
+@media (max-width: 480px) {
+    .main-container {
+        padding: 56px 12px 20px;
+    }
+
+    .hero-card .card-title {
+        font-size: 20px;
+    }
+
+    .card-title {
+        font-size: 16px;
+    }
+
+    .hero-overlay-text {
+        font-size: 18px;
+    }
+
+    .right-column.scrollable-list .card-link {
+        min-width: 220px;
+    }
+
+    .cta-section {
+        margin: 32px 12px;
+        padding: 40px 16px;
+    }
+
+    .cta-section h2 {
+        font-size: 22px;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    .footer-column a {
+        font-size: 13px;
+    }
+
+    .footer-label {
+        font-size: 12px;
+    }
+
+    .search-pill {
+        padding: 10px 16px 10px 20px;
+        font-size: 12px;
+    }
+}
