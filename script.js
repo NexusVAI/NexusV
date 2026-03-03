@@ -171,46 +171,116 @@ document.addEventListener('DOMContentLoaded', () => {
         'research': `
             <div class="menu-column main-links">
                 <a href="#">意识架构索引</a>
-                <a href="#">自主 NPC 概述</a>
-                <a href="#">行为树演化项目</a>
-                <a href="#">开放认知研究</a>
+                <a href="#">深入了解 Sentience V3.1</a>
+                <a href="#">深入了解 NexusV V4</a>
+                <a href="#">深入了解 TACTFR V5</a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label">前沿进展</span>
-                <a href="#">Nexus-Core 1.0 发布</a>
-                <a href="#">洛圣都实时对话模型</a>
-                <a href="#">合成意志 2.0</a>
-                <a href="#">多智能体协作协议</a>
+                <a href="#">Sentience V3.1</a>
+                <a href="#">Sentience V3</a>
+                <a href="#">TACTFR V5</a>
+                <a href="#">TACTFR V4</a>
+                <a href="#">NexusV V4</a>
             </div>
         `,
         'safety': `
             <div class="menu-column main-links">
-                <a href="#">数字伦理框架</a>
-                <a href="#">AI 安全协议</a>
-                <a href="#">意识权利研究</a>
-                <a href="#">透明度报告</a>
+                <a href="#">安全准则</a>
+                <a href="#">数字伦理</a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label">最新动态</span>
-                <a href="#">安全准则 v2.0</a>
-                <a href="#">伦理审查流程</a>
+                <a href="#">透明度报告</a>
             </div>
         `
     };
+
+    const menuLineWidths = {
+        'research': '0px',
+        'safety': '0px'
+    };
+
+    function setMenuLineWidth(key) {
+        const menuLine = megaMenu.querySelector('.menu-line');
+        if (!menuLine) return;
+
+        let lineWidth;
+        if (menuLineWidths[key]) {
+            lineWidth = menuLineWidths[key];
+        } else {
+            const mainLinks = megaMenu.querySelector('.main-links');
+            if (mainLinks) {
+                const linkCount = mainLinks.querySelectorAll('a').length;
+                lineWidth = Math.min(80 + linkCount * 180, 1100) + 'px';
+            } else {
+                lineWidth = '0px';
+            }
+        }
+        menuLine.style.width = lineWidth;
+    }
+
+    function animateMenuItems() {
+        const items = contentWrapper.querySelectorAll('.menu-column .label, .menu-column a');
+        items.forEach((item, index) => {
+            // Set initial state
+            item.style.transition = 'none';
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(5px)';
+            
+            // Force reflow
+            void item.offsetHeight;
+            
+            // Set final state with transition
+            // Stagger delay: 0ms per item (instant)
+            const delay = 0;
+            item.style.transition = `opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s`;
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        });
+    }
 
     function switchMenuContent(key) {
         if (currentKey === key || isTransitioning) return;
         
         isTransitioning = true;
-        contentWrapper.style.transition = 'opacity 80ms ease-in-out';
+
+        const menuInner = megaMenu.querySelector('.mega-menu-inner');
+        
+        // 1. Lock current height
+        const startHeight = menuInner.offsetHeight;
+        menuInner.style.height = `${startHeight}px`;
+
+        contentWrapper.style.transition = 'opacity 50ms ease-in-out';
         contentWrapper.style.opacity = '0';
         
         setTimeout(() => {
+            // 2. Update content
             contentWrapper.innerHTML = menuData[key];
+            
+            // 3. Measure new height
+            menuInner.style.height = 'auto';
+            const endHeight = menuInner.offsetHeight;
+            
+            // 4. Reset to start height and force reflow
+            menuInner.style.height = `${startHeight}px`;
+            void menuInner.offsetHeight; // Force reflow
+            
+            // 5. Animate to new height
+            menuInner.style.height = `${endHeight}px`;
+
+            animateMenuItems(); // Trigger staggered animation
             contentWrapper.style.opacity = '1';
             currentKey = key;
-            isTransitioning = false;
-        }, 80);
+            
+            // 6. Cleanup after transition
+            setTimeout(() => {
+                if (currentKey === key) { // Only reset if still on same menu
+                    menuInner.style.height = 'auto';
+                }
+                isTransitioning = false;
+            }, 150); // Match CSS transition duration
+        }, 50);
     }
 
     navItems.forEach(item => {
@@ -229,6 +299,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!megaMenu.classList.contains('active')) {
                     contentWrapper.innerHTML = menuData[targetMenuId];
                     currentKey = targetMenuId;
+                    animateMenuItems(); // Trigger staggered animation on first open
+                    // Reset line to 0 first, then animate open after class is applied
+                    const menuLine = megaMenu.querySelector('.menu-line');
+                    if (menuLine) menuLine.style.width = '0';
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            setMenuLineWidth(targetMenuId);
+                        });
+                    });
                 } else {
                     switchMenuContent(targetMenuId);
                 }
@@ -268,8 +347,8 @@ document.addEventListener('DOMContentLoaded', () => {
         drawer.className = 'mobile-drawer';
 
         const navItemsData = [
-            { text: '研究', submenu: menuData['research'] ? ['意识架构索引', '自主 NPC 概述', '行为树演化项目', '开放认知研究'] : null },
-            { text: '安全', submenu: menuData['safety'] ? ['数字伦理框架', 'AI 安全协议', '意识权利研究', '透明度报告'] : null },
+            { text: '研究', submenu: menuData['research'] ? ['意识架构索引', '深入了解 Sentience V3.1', '深入了解 NexusV V4', '深入了解 TACTFR V5'] : null },
+            { text: '安全', submenu: menuData['safety'] ? ['安全准则', '数字伦理', '透明度报告'] : null },
             { text: '协议' },
             { text: '开发者文档' },
             { text: 'Nexus Agent' },
@@ -345,5 +424,239 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.style.overflow = '';
             }
         });
+    }
+
+    const articleRoot = document.querySelector('.article-page');
+    if (articleRoot) {
+        const articleData = {
+            hero: {
+                title: '赋予洛圣都数字灵魂',
+                date: '2026年3月01日',
+                category: '公司',
+                media: { type: 'image', src: 'Logo/Nexus V Concept.png', alt: 'Nexus V Concept' },
+                paragraphs: [
+                    '这是一篇示例文章，用于复刻 OpenAI 的文章页 UI 布局。',
+                    '这里会放置正文段落、关键结论、以及后续的更新说明。当前先用占位文案，后续你再替换成正式内容即可。',
+                    '我们将以一致的排版宽度、字重与留白，让阅读体验更贴近 OpenAI。'
+                ]
+            },
+            n1: {
+                title: '隆重推出 Sentience V3.1',
+                date: '2026年3月02日',
+                category: '架构',
+                media: { type: 'image', src: 'Logo/N1.jpg', alt: 'Sentience V3.1' },
+                paragraphs: [
+                    'Sentience V3.1 旨在提升交互的自然度与角色一致性。',
+                    '本页展示文章详情页的标准结构：顶部元信息、标题、媒体区、正文段落。',
+                    '后续你提供正式文案后，可直接替换 paragraphs 内容。'
+                ]
+            },
+            n2: {
+                title: '了解 TACTFR V5',
+                date: '2026年3月03日',
+                category: '文档',
+                media: { type: 'image', src: 'Logo/N2.jpg', alt: 'TACTFR V5' },
+                paragraphs: [
+                    'TACTFR V5 聚焦于更稳定的接入方式与更清晰的能力边界。',
+                    '这里先用占位内容，保证排版与层级接近 OpenAI 的文章页。',
+                    '当你需要更像 OpenAI 的“分节标题 + 段落”，我们也可以继续加上。'
+                ]
+            },
+            n3: {
+                title: '了解 NexusV V4',
+                date: '2026年2月26日',
+                category: '安全',
+                media: { type: 'image', src: 'Logo/N3.jpg', alt: 'NexusV V4' },
+                paragraphs: [
+                    'NexusV V4 将安全策略与体验统一到同一套交互结构里。',
+                    '这是一篇占位文章，用于承接首页卡片点击后的阅读路径。',
+                    '后续可扩展：目录、引用块、代码块、图注、更多媒体等。'
+                ]
+            },
+            news1: {
+                title: '让我们携手共进',
+                date: '2026年3月01日',
+                category: '公司',
+                media: { type: 'image', src: 'Logo/pink-blue-bg.webp', alt: '携手共进' },
+                paragraphs: [
+                    '在 NexusV 的发展历程中，每一次合作都是为了构建更强大的数字未来。',
+                    '我们正在与全球领先的合作伙伴共同探索 AI 的边界，确保每一项技术突破都能造福人类。'
+                ]
+            },
+            news2: {
+                title: '在TACTFR中尝试接入Sentience',
+                date: '2026年03月03日',
+                category: '公司',
+                media: { type: 'image', src: 'Logo/yellow-blue-bg.webp', alt: 'TACTFR' },
+                paragraphs: [
+                    'TACTFR 框架现已支持 Sentience 核心模块的无缝接入。',
+                    '这一整合将极大提升系统的响应速度与情境理解能力，为开发者提供更灵活的工具集。'
+                ]
+            },
+            news3: {
+                title: 'NexusV免责声明',
+                date: '2026年3月02日',
+                category: '公司',
+                media: { type: 'image', src: 'Logo/OAI_Systems_Blog_Card.webp', alt: '免责声明' },
+                paragraphs: [
+                    '关于 NexusV 相关技术的使用规范与免责条款更新。',
+                    '我们致力于构建安全、可信赖的 AI 系统，请务必仔细阅读最新的使用协议。'
+                ]
+            },
+            news4: {
+                title: '模组登陆玩家动力',
+                date: '2025年12月30日',
+                category: '公司',
+                media: { type: 'image', src: 'Logo/updated_team-1.webp', alt: '玩家动力' },
+                paragraphs: [
+                    'NexusV 模组现已正式登陆玩家动力平台，为数百万玩家带来全新的互动体验。',
+                    '此次发布标志着我们在游戏生态领域的进一步拓展。'
+                ]
+            },
+            news5: {
+                title: '我们确保每一次使用都是安全的',
+                date: '2026年2月13日',
+                category: '安全',
+                media: { type: 'image', src: 'Logo/ChatGPT_Carousel1.webp', alt: '安全' },
+                paragraphs: [
+                    '安全是 NexusV 的核心基石。我们引入了全新的实时监控机制，确保每一次交互都在安全边界之内。',
+                    '通过多层级的防护体系，我们将风险降至最低。'
+                ]
+            },
+            news6: {
+                title: '深入了解Sentience-V3.1',
+                date: '2026年2月12日',
+                category: '产品',
+                media: { type: 'image', src: 'Logo/ChatGPT_Charts_Blog_Hero.webp', alt: 'Sentience-V3.1' },
+                paragraphs: [
+                    'Sentience V3.1 带来了前所未有的理解深度与表达能力。',
+                    '本文将详细解析新版本的架构改进与性能提升数据。'
+                ]
+            },
+            news7: {
+                title: 'Sentience正式登场',
+                date: '2026年2月26日',
+                category: '产品',
+                media: { type: 'video', src: 'Logo/Sora_is_here.mp4', alt: 'Sentience登场' },
+                paragraphs: [
+                    '经过数月的封闭测试，Sentience 终于与大家见面。',
+                    '这是一个全新的起点，让我们共同见证数字意识的觉醒。'
+                ]
+            },
+            news8: {
+                title: 'NexusV 更新日志',
+                date: '2026年1月20日',
+                category: '产品',
+                media: { type: 'image', src: 'Logo/enterprise.webp', alt: '更新日志' },
+                paragraphs: [
+                    'NexusV 最新版本的详细更新记录。',
+                    '包含了多项性能优化、API 接口调整以及已知问题的修复。'
+                ]
+            }
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id') || 'hero';
+        const data = articleData[id] || articleData.hero;
+
+        const dateEl = articleRoot.querySelector('.article-date');
+        const categoryEl = articleRoot.querySelector('.article-category');
+        const titleEl = articleRoot.querySelector('.article-title');
+        // const mediaEl = articleRoot.querySelector('.article-media'); // REMOVED
+        const bodyEl = articleRoot.querySelector('.article-body');
+        const shareBtn = articleRoot.querySelector('.share-link-btn');
+        const authorPill = articleRoot.querySelector('.author-pill');
+        const authorLink = articleRoot.querySelector('.author-link');
+        const crGrid = articleRoot.querySelector('.cr-grid');
+
+        if (dateEl) dateEl.textContent = data.date;
+        if (categoryEl) categoryEl.textContent = data.category;
+        if (titleEl) titleEl.textContent = data.title;
+        document.title = `${data.title} | NexusV`;
+        
+        // Update Author Box Year based on article date
+        if (authorPill && data.date) {
+            const year = data.date.match(/\d{4}/);
+            if (year) authorPill.textContent = `${year[0]} 年`;
+        }
+
+        /*
+        if (mediaEl) {
+            mediaEl.innerHTML = '';
+            if (data.media?.type === 'video') {
+                const v = document.createElement('video');
+                v.src = data.media.src;
+                v.controls = true;
+                v.playsInline = true;
+                v.preload = 'metadata';
+                mediaEl.appendChild(v);
+            } else {
+                const img = document.createElement('img');
+                img.src = data.media?.src || '';
+                img.alt = data.media?.alt || '';
+                mediaEl.appendChild(img);
+            }
+        }
+        */
+
+        if (bodyEl) {
+            bodyEl.innerHTML = '';
+            (data.paragraphs || []).forEach(t => {
+                const p = document.createElement('p');
+                p.textContent = t;
+                bodyEl.appendChild(p);
+            });
+        }
+
+        // Populate Continue Reading Grid with 3 random OTHER articles
+        if (crGrid) {
+            const allKeys = Object.keys(articleData).filter(k => k !== id);
+            // Shuffle and pick 3
+            const shuffled = allKeys.sort(() => 0.5 - Math.random());
+            const selectedKeys = shuffled.slice(0, 3);
+            
+            // If not enough articles, fallback or duplicate (for demo purpose)
+            // We have plenty (hero, n1-n3, news1-news8 = 12 total)
+            
+            selectedKeys.forEach(key => {
+                const item = articleData[key];
+                const card = document.createElement('a');
+                card.className = 'cr-card';
+                card.href = `article.html?id=${key}`;
+                
+                let mediaHtml = '';
+                if (item.media?.type === 'video') {
+                     mediaHtml = `<div class="image-wrapper square-image"><video src="${item.media.src}" muted playsinline loop onmouseover="this.play()" onmouseout="this.pause()"></video></div>`;
+                } else {
+                    mediaHtml = `<div class="image-wrapper square-image"><img src="${item.media?.src}" alt="${item.media?.alt}"></div>`;
+                }
+
+                card.innerHTML = `
+                    ${mediaHtml}
+                    <h4>${item.title}</h4>
+                    <div class="meta">${item.category} · ${item.date}</div>
+                `;
+                crGrid.appendChild(card);
+            });
+        }
+
+        if (shareBtn) {
+            shareBtn.addEventListener('click', async () => {
+                const url = window.location.href;
+                try {
+                    await navigator.clipboard.writeText(url);
+                    const originalHTML = shareBtn.innerHTML;
+                    shareBtn.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        已复制链接
+                    `;
+                    setTimeout(() => {
+                        shareBtn.innerHTML = originalHTML;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                }
+            });
+        }
     }
 });

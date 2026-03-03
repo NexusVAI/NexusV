@@ -19,7 +19,7 @@ body {
 
 /* 导航系统 - OpenAI 同款紧凑风格 */
 .navbar {
-    height: 50px;
+    height: 54px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -32,7 +32,7 @@ body {
 
 .navbar-inner {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1440px;
     padding: 0 24px;
     display: flex;
     align-items: center;
@@ -42,23 +42,23 @@ body {
 .nav-left {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 32px;
 }
 
 .logo {
-    font-weight: 600; 
-    font-size: 15px;
+    font-weight: 700; 
+    font-size: 16px;
     text-decoration: none; 
     color: white;
     white-space: nowrap;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.01em;
 }
 
-.nav-links { display: flex; gap: 20px; align-items: center; }
+.nav-links { display: flex; gap: 24px; align-items: center; }
 
 .nav-item { 
-    font-size: 12px; 
-    font-weight: 400; 
+    font-size: 13px; 
+    font-weight: 500; 
     color: #ffffff; 
     cursor: pointer; 
     transition: opacity 0.15s ease, color 0.15s ease; 
@@ -67,7 +67,7 @@ body {
 
 .nav-links:hover .nav-item,
 .nav-links.has-active .nav-item {
-    opacity: 0.35;
+    opacity: 0.5;
     color: #a3a3a3;
     transition: all 0.2s ease;
 }
@@ -76,13 +76,42 @@ body {
 .nav-links .nav-item.active { 
     opacity: 1 !important; 
     color: #ffffff !important;
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .nav-right {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 20px;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.search-input {
+    width: 0;
+    opacity: 0;
+    border: none;
+    background: transparent;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    padding: 0;
+    pointer-events: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0);
+}
+
+.search-container.active .search-input {
+    width: 200px;
+    opacity: 1;
+    padding: 4px 8px;
+    pointer-events: auto;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    margin-left: 10px;
 }
 
 .search-icon {
@@ -90,27 +119,41 @@ body {
     cursor: pointer;
     display: flex;
     align-items: center;
+    transition: opacity 0.2s;
+}
+
+.search-icon:hover {
+    opacity: 0.7;
 }
 
 .login-btn {
-    font-size: 11px;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: 500;
     color: #fff;
     cursor: pointer;
 }
 
 .btn-pill {
-    background: white; color: black; padding: 4px 12px;
-    border-radius: 20px; text-decoration: none; font-size: 11px; font-weight: 500;
+    background: transparent;
+    color: white; 
+    padding: 6px 12px;
+    border-radius: 999px; 
+    text-decoration: none; 
+    font-size: 13px; 
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
     transition: all 0.2s ease;
+}
+
+.btn-pill span {
     position: relative;
-    top: -1px;
+    top: 0;
 }
 
 .btn-pill:hover, .btn-pill.active {
-    background: black;
-    color: white;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.3);
+    background: white;
+    color: black;
+    border-color: white;
 }
 
 /* 下拉菜单 - 统一面板 */
@@ -121,21 +164,38 @@ body {
     width: 100%;
     background-color: #000;
     z-index: 999;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
     display: grid;
     grid-template-rows: 0fr;
     overflow: hidden;
-    transition: grid-template-rows 0.2s ease-out, 
+    transition: grid-template-rows 0.2s ease-out,
                 visibility 0.2s;
     visibility: hidden;
     box-sizing: border-box;
+}
+
+/* ✅ ADD — real element with directly-animatable width */
+.menu-line {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 0 auto;
+    width: 0;
+    opacity: 0;
+    transition: width 0.4s cubic-bezier(0.19, 1, 0.22, 1),
+                opacity 0.25s ease-out;
+}
+
+.mega-menu-container.active .menu-line {
+    opacity: 1;
 }
 
 .mega-menu-inner {
     min-height: 0;
     padding: 0 40px;
     opacity: 0;
-    transition: opacity 0.15s ease-out;
+    transition: opacity 0.15s ease-out,
+                height 0.3s cubic-bezier(0.19, 1, 0.22, 1),
+                padding 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    overflow: hidden;
 }
 
 .mega-menu-container.active {
@@ -182,32 +242,39 @@ body {
 }
 
 .menu-column a {
-    color: #cfcfcf;
+    color: #e5e5e5;
     text-decoration: none;
     display: block;
     margin-bottom: 16px;
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 14px;
+    font-weight: 500;
     transition: opacity 0.2s, color 0.2s;
 }
 
-.menu-column a:hover {
+/* 悬停时整个区域变淡 */
+.menu-content-wrapper:hover .menu-column a {
+    opacity: 0.4;
+    color: #888;
+}
+
+/* 当前悬停项高亮 */
+.menu-content-wrapper .menu-column a:hover {
     opacity: 1;
     color: #ffffff;
 }
 
 .menu-column.main-links a {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.01em;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     color: #ffffff;
     line-height: 1.3;
 }
 
 .menu-column .label {
     font-size: 10px;
-    color: #666;
+    color: #888;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     display: block;
@@ -216,7 +283,7 @@ body {
 
 /* --- 主容器与网格 - OpenAI 同款布局 --- */
 .main-container {
-    max-width: 1200px;
+    max-width: 1440px;
     margin: 0 auto;
     padding: 62px 24px 32px 24px;
     box-sizing: border-box;
@@ -224,8 +291,8 @@ body {
 
 .content-grid {
     display: grid;
-    grid-template-columns: 2.8fr 1.2fr;
-    gap: 32px;
+    grid-template-columns: 3.5fr 1.2fr;
+    gap: 48px;
     align-items: start;
 }
 
@@ -262,6 +329,31 @@ body {
     margin-bottom: 16px;
     border-radius: 6px;
     cursor: pointer;
+    /* Fix for border-radius clipping during transforms */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    mask-image: radial-gradient(white, black);
+    transform: translateZ(0);
+}
+
+.card-overlay-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    pointer-events: none;
+    letter-spacing: -0.01em;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.image-wrapper:hover .card-overlay-text {
+    transform: translate(-50%, -50%) scale(1.03);
 }
 
 .image-wrapper img {
@@ -270,6 +362,10 @@ body {
     object-fit: cover;
     display: block;
     transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: scale(1);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .image-wrapper:hover img,
@@ -292,8 +388,8 @@ body {
 }
 
 .card-title {
-    font-size: 19px;
-    font-weight: 400;
+    font-size: 20px;
+    font-weight: 600;
     line-height: 1.3;
     margin: 0 0 8px 0;
     color: #fff;
@@ -301,12 +397,12 @@ body {
 }
 
 .hero-card .card-title {
-    font-size: 30px;
+    font-size: 40px;
     font-weight: 500;
 }
 
 .card-meta {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 400;
     color: #7b7b7b;
     margin: 0;
@@ -318,6 +414,7 @@ body {
 
 .card-meta span:first-child {
     font-weight: 500;
+    margin-right: 8px;
 }
 
 .card-meta .meta-time {
@@ -332,12 +429,16 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     color: #fff;
-    font-size: 30px;
+    font-size: 56px;
     font-weight: 500;
-    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
     width: 90%;
     text-align: center;
     letter-spacing: -0.02em;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-card:hover .hero-overlay-text {
+    transform: translate(-50%, -50%) scale(1.05);
 }
 
 .centered-overlay-text {
@@ -611,6 +712,495 @@ body {
     opacity: 1;
 }
 
+/* --- Responsive Design (Mobile) --- */
+@media (max-width: 768px) {
+    .content-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+    }
+    
+    .right-column.scrollable-list {
+        display: flex;
+        flex-direction: column;
+        width: 100% !important;
+        overflow-x: hidden;
+    }
+    
+    .card-link.side-card {
+        width: 100% !important;
+        display: block;
+    }
+
+    .image-wrapper.square-image {
+        aspect-ratio: 16 / 10; /* More rectangular on mobile like OpenAI */
+    }
+    
+    .left-column.sticky-container {
+        position: relative;
+        top: 0;
+        width: 100%;
+    }
+    
+    .nav-links, .login-btn, .btn-pill {
+        display: none;
+    }
+    
+    .mobile-menu-btn {
+        display: flex;
+    }
+    
+    .hero-overlay-text {
+        font-size: 32px;
+    }
+    
+    .hero-card .card-title {
+        font-size: 24px;
+    }
+    
+    .main-container {
+        padding: 60px 20px;
+    }
+}
+
+/* --- Latest News Grid --- */
+.latest-news-section {
+    margin-top: 64px;
+    padding-bottom: 40px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+.view-all-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: #7b7b7b;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.view-all-link:hover {
+    color: #fff;
+}
+
+.news-grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px 48px;
+}
+
+.news-item-row {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    text-decoration: none;
+    color: white;
+}
+
+.news-thumb {
+    width: 180px;
+    height: 180px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    background-color: #111;
+}
+
+.news-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.news-item-row:hover .news-thumb img {
+    transform: scale(1.05);
+}
+
+.news-info {
+    flex: 1;
+}
+
+.news-info h3 {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: #fff;
+    letter-spacing: -0.01em;
+}
+
+.news-info p {
+    font-size: 14px;
+    color: #7b7b7b;
+    margin: 0;
+    font-weight: 400;
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        margin-bottom: 24px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+    }
+    
+    .view-all-link {
+        font-size: 13px;
+    }
+    
+    .news-grid-2-col {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    
+    .news-item-row {
+        align-items: flex-start;
+    }
+    
+    .news-thumb {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .news-info h3 {
+        font-size: 17px;
+    }
+}
+
+.article-main {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 110px 24px 72px 24px;
+    box-sizing: border-box;
+}
+
+.article-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.article-top-meta {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 13px;
+    color: #fff;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+.article-top-meta span {
+    color: #fff;
+}
+
+.article-category::before {
+    content: '';
+    margin: 0 4px 0 4px;
+    color: #7b7b7b;
+}
+
+.article-title {
+    margin: 20px 0 24px 0;
+    text-align: center;
+    font-size: 56px;
+    line-height: 1.05;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #fff;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Article Meta Row (Listen & Share) --- */
+.article-meta-row {
+    max-width: 700px;
+    margin: 32px auto 32px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.meta-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.play-circle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.play-circle-btn:hover {
+    background: #fff;
+    color: #000;
+}
+
+.listen-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+}
+
+.listen-duration {
+    font-size: 14px;
+    color: #888;
+}
+
+.meta-right {
+    display: flex;
+    align-items: center;
+}
+
+.share-link-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.share-link-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.article-rule {
+    margin: 0 auto;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    width: 100%;
+    max-width: 100%;
+}
+
+.article-media {
+    margin-top: 40px;
+    width: 100%;
+    border-radius: 0; /* OpenAI uses sharp edges or minimal radius for large media */
+    overflow: hidden;
+    background: #000;
+}
+
+.article-media img,
+.article-media video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.article-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.article-share {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.article-share:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.article-body {
+    margin: 48px auto 0 auto;
+    max-width: 660px; /* Optimal reading width - narrower */
+    font-size: 18px; /* Slightly larger for better readability */
+    line-height: 1.6;
+    color: #fff;
+    font-weight: 400;
+}
+
+.article-body p {
+    margin: 0 0 28px 0;
+}
+
+@media (max-width: 768px) {
+    .article-main {
+        padding: 92px 16px 56px 16px;
+    }
+
+    .article-title {
+        font-size: 38px;
+        line-height: 1.12;
+    }
+
+    .article-top-meta {
+        gap: 12px;
+        font-size: 12px;
+    }
+
+    .article-body {
+        font-size: 15px;
+        line-height: 1.85;
+    }
+}
+
+/* --- Article Author Box --- */
+.article-author-box {
+    margin: 80px auto 100px auto;
+    max-width: 900px;
+    background: #111;
+    border-radius: 6px;
+    padding: 120px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+}
+
+.author-pill {
+    background: #333;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 999px;
+}
+
+.author-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.author-info .label {
+    font-size: 13px;
+    color: #888;
+}
+
+.author-link {
+    font-size: 16px;
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+}
+
+.author-link:hover {
+    color: #ccc;
+}
+
+/* --- Continue Reading Section --- */
+.continue-reading-section {
+    max-width: 1440px;
+    margin: 0 auto 120px auto;
+    padding: 0 24px;
+}
+
+.cr-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 40px;
+}
+
+.cr-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.cr-header a {
+    font-size: 14px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.cr-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.cr-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.cr-card .image-wrapper {
+    aspect-ratio: 1 / 1;
+    margin-bottom: 16px;
+    background: #111;
+}
+
+.cr-card h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+
+.cr-card .meta {
+    font-size: 13px;
+    color: #888;
+}
+
+@media (max-width: 768px) {
+    .article-author-box {
+        padding: 80px 0;
+        margin: 60px auto;
+    }
+
+    .cr-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+}
+
 /* ========================================
    MOBILE HAMBURGER MENU BUTTON
    ======================================== */
@@ -630,12 +1220,16 @@ body {
     width: 20px;
     height: 1.5px;
     background: #fff;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
     transform-origin: center;
+    /* Fix for sub-pixel rendering thickness change */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 .mobile-menu-btn.active span:nth-child(1) {
-    transform: rotate(45deg) translate(4.5px, 4.5px);
+    transform: translateY(6.5px) rotate(45deg);
 }
 
 .mobile-menu-btn.active span:nth-child(2) {
@@ -643,7 +1237,7 @@ body {
 }
 
 .mobile-menu-btn.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(4.5px, -4.5px);
+    transform: translateY(-6.5px) rotate(-45deg);
 }
 
 /* ========================================
@@ -850,7 +1444,16 @@ body {
 
     .content-grid {
         grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
         gap: 32px;
+    }
+
+    .right-column.scrollable-list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        overflow-x: visible; /* Ensure no horizontal scrolling */
     }
 
     .left-column.sticky-container {
