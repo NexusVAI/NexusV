@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusV</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='black'/%3E%3Cpath d='M8 8v16l16-16v16' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/mobile-menu.css">
+    <link rel="stylesheet" href="css/hero.css">
+    <link rel="stylesheet" href="css/news.css">
+    <link rel="stylesheet" href="css/cta.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/article.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -14,12 +22,12 @@
             <div class="nav-left">
                 <a href="index.html" class="logo">𝗡𝗲𝘅𝘂𝘀𝗩</a>
                 <div class="nav-links">
-                    <div class="nav-item has-dropdown" data-menu="research">研究</div>
-                    <div class="nav-item has-dropdown" data-menu="safety">安全</div>
-                    <div class="nav-item">开发者专区</div>
-                    <div class="nav-item">公司</div>
-                    <div class="nav-item">新闻</div>
-                    <div class="nav-item">联系我们</div>
+                    <div class="nav-item has-dropdown" data-menu="research" data-i18n="nav.research">研究</div>
+                    <div class="nav-item has-dropdown" data-menu="safety" data-i18n="nav.safety">安全</div>
+                    <div class="nav-item" data-i18n="nav.developer">开发者专区</div>
+                    <div class="nav-item" data-i18n="nav.company">公司</div>
+                    <div class="nav-item" data-i18n="nav.news">新闻</div>
+                    <div class="nav-item" data-i18n="nav.contact">联系我们</div>
                 </div>
             </div>
             <div class="nav-right">
@@ -29,9 +37,8 @@
                     </div>
                     <input type="text" class="search-input" placeholder="搜索 NexusV...">
                 </div>
-                <div class="login-btn">登录 <span class="chevron"></span></div>
-                <a href="#" class="btn-pill"><span>试用 NexusV ↗</span></a>
-                <button class="mobile-menu-btn" aria-label="菜单">
+                  <a href="https://www.wanjiadongli.com/user/1753255?tab=2" class="btn-pill"><span data-i18n="nav.try">试用 NexusV ↗</span></a>
+                  <button class="mobile-menu-btn" aria-label="菜单">
                     <span></span><span></span><span></span>
                 </button>
             </div>
@@ -42,6 +49,13 @@
         <div class="mega-menu-inner">
             <div class="menu-content-wrapper" id="menu-content-wrapper"></div>
             <div class="menu-line"></div>
+        </div>
+    </div>
+
+    <!-- 移动端搜索抽屉 -->
+    <div class="mobile-search-drawer" id="mobile-search-drawer">
+        <div class="mobile-search-inner">
+            <input type="text" class="mobile-search-input" placeholder="搜索 NexusV...">
         </div>
     </div>
 
@@ -58,13 +72,13 @@
                     <button class="play-circle-btn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                     </button>
-                    <span class="listen-text">聆听文章</span>
+                    <span class="listen-text" data-i18n="article.listen">聆听文章</span>
                     <span class="listen-duration">3:23</span>
                 </div>
                 <div class="meta-right">
                     <button class="share-link-btn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                        分享
+                        <span data-i18n="article.share">分享</span>
                     </button>
                 </div>
             </div>
@@ -74,7 +88,7 @@
             <div class="article-author-box">
                 <div class="author-pill">2026 年</div>
                 <div class="author-info">
-                    <span class="label">作者</span>
+                    <span class="label" data-i18n="article.author">作者</span>
                     <a href="#" class="author-link">NexusV</a>
                 </div>
             </div>
@@ -82,8 +96,8 @@
 
         <div class="continue-reading-section">
             <div class="cr-header">
-                <h3>继续阅读</h3>
-                <a href="#">查看全部</a>
+                <h3 data-i18n="article.continue_reading">继续阅读</h3>
+                <a href="#" data-i18n="article.view_all">查看全部</a>
             </div>
             <div class="cr-grid">
                 <!-- Populated by JS -->
@@ -95,32 +109,31 @@
         <div class="footer-inner">
             <div class="footer-grid">
                 <div class="footer-column">
-                    <div class="footer-label">神经网络研究</div>
-                    <a href="#">研究索引</a>
-                    <a href="#">研究概述</a>
-                    <a href="#">最新进展</a>
-                    <a href="#">开放认知</a>
+                    <div class="footer-label" data-i18n="footer.research">研究</div>
+                    <a href="#" data-i18n="footer.research_index">研究索引</a>
+                    <a href="#" data-i18n="footer.research_overview">研究概述</a>
+                    <a href="#" data-i18n="footer.latest_progress">最新进展</a>
+                    <a href="#" data-i18n="footer.open_cognition">开放认知</a>
                 </div>
                 <div class="footer-column">
-                    <div class="footer-label">Nexus Agent</div>
-                    <a href="#">个人版</a>
-                    <a href="#">企业版</a>
-                    <a href="#">API 文档</a>
-                    <a href="#">定价</a>
+                    <div class="footer-label" data-i18n="footer.nexus_agent">Nexus Agent</div>
+                    <a href="#" data-i18n="footer.personal">个人版</a>
+                    <a href="#" data-i18n="footer.enterprise">企业版</a>
+                    <a href="#" data-i18n="footer.api_docs">API 文档</a>
+                    <a href="#" data-i18n="footer.pricing">定价</a>
                 </div>
                 <div class="footer-column">
-                    <div class="footer-label">洛圣都协议</div>
-                    <a href="#">数字伦理</a>
-                    <a href="#">安全准则</a>
-                    <a href="#">透明度报告</a>
-                    <a href="#">意识权利</a>
+                    <div class="footer-label" data-i18n="footer.protocol">安全</div>
+                    <a href="#" data-i18n="footer.digital_ethics">数字伦理</a>
+                    <a href="#" data-i18n="footer.safety_guidelines">安全准则</a>
+                    <a href="#" data-i18n="footer.transparency">透明度报告</a>
                 </div>
                 <div class="footer-column">
-                    <div class="footer-label">公司</div>
-                    <a href="#">关于我们</a>
-                    <a href="#">加入团队</a>
-                    <a href="#">新闻中心</a>
-                    <a href="#">联系我们</a>
+                    <div class="footer-label" data-i18n="footer.company">公司</div>
+                    <a href="#" data-i18n="footer.about_us">关于我们</a>
+                    <a href="#" data-i18n="footer.join_us">加入团队</a>
+                    <a href="#" data-i18n="footer.news_center">新闻中心</a>
+                    <a href="#" data-i18n="footer.contact_us">联系我们</a>
                 </div>
             </div>
             
@@ -137,33 +150,32 @@
                         </svg>
                     </a>
                     <a href="https://space.bilibili.com/3691002594331274?spm_id_from=333.40164.0.0" target="_blank" aria-label="Bilibili">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773-1.004.996-2.264 1.52-3.773 1.574H5.333c-1.51-.054-2.77-.578-3.773-1.574-1.005-.995-1.524-2.249-1.56-3.76v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.264-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.653h4.694l3.84-3.84c.267-.249.573-.373.92-.373.347 0 .653.124.92.373l.027.027c.249.249.373.551.373.907 0 .355-.124.657-.373.906L17.813 4.653zM15.653 13.52c0-.551-.191-1.023-.573-1.414-.383-.39-.854-.586-1.414-.586s-1.031.195-1.413.586c-.383.391-.574.863-.574 1.414s.191 1.023.574 1.414c.382.39.853.586 1.413.586s1.031-.195 1.414-.586c.382-.391.573-.863.573-1.414zm-5.333 0c0-.551-.191-1.023-.573-1.414-.383-.39-.854-.586-1.414-.586s-1.031.195-1.413.586c-.383.391-.574.863-.574 1.414s.191 1.023.574 1.414c.382.39.853.586 1.413.586s1.031-.195 1.414-.586c.382-.391.573-.863.573-1.414z"/>
-                        </svg>
+                        <i class="fa-brands fa-bilibili" style="font-size: 18px;"></i>
                     </a>
                 </div>
                 <div class="bottom-center">
                     Nexus V © 2025-2026
                 </div>
                 <div class="bottom-right">
-                    <span class="lang-selector">中文 中国</span>
+                    <span class="lang-selector" id="lang-toggle" data-i18n="footer.lang">中文 (中国)</span>
+                    <button class="theme-toggle" id="theme-toggle" aria-label="切换主题">
+                        <!-- Sun Icon (for Dark Mode) -->
+                        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                        <!-- Moon Icon (for Light Mode) -->
+                        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
                 </div>
             </div>
         </div>
     </footer>
 
-    <div class="bottom-bar">
-        <div class="search-pill">
-            <div class="glass-layer"></div>
-            <div class="edge-glow"></div>
-            <span>与虚拟意识对话</span>
-            <div class="arrow-up">
-                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-            </div>
-        </div>
-    </div>
 
-    <script src="script.js"></script>
-    <script src="search.js"></script>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/article.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/search.js"></script>
 </body>
 </html>

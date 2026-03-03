@@ -1,0 +1,166 @@
+/* Footer */
+.openai-footer {
+    background: var(--bg-footer);
+    padding: 80px 40px 40px 40px;
+    border-top: 1px solid var(--border-color);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.footer-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 80px;
+}
+
+.footer-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-label {
+    color: var(--secondary-text);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.footer-column a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s;
+    display: inline-block;
+    margin-bottom: 12px;
+    width: fit-content;
+    max-width: max-content;
+}
+
+.footer-column a:hover {
+    color: var(--secondary-text);
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 30px;
+    border-top: 1px solid var(--border-color);
+    color: var(--secondary-text);
+    font-size: 12px;
+}
+
+.bottom-left {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+}
+
+.bottom-left a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.bottom-left a:hover {
+    color: var(--secondary-text);
+}
+
+.bottom-left a svg {
+    fill: currentColor;
+    transition: fill 0.2s;
+}
+
+/* Fix Bilibili icon vertical alignment */
+.bottom-left a .fa-bilibili {
+    position: relative;
+    top: 2px;
+}
+
+.bottom-center {
+    color: var(--secondary-text);
+}
+
+.bottom-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.lang-selector {
+    color: var(--secondary-text);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.lang-selector:hover {
+    color: var(--text-color);
+}
+
+.theme-toggle {
+    background: none;
+    border: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.theme-toggle:hover {
+    color: var(--text-color);
+}
+
+.bottom-bar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 100; }
+
+@media (max-width: 768px) {
+    .openai-footer {
+        padding: 48px 20px 32px;
+    }
+
+    .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px 16px;
+        margin-bottom: 48px;
+    }
+    
+    /* Increase footer text size for mobile */
+    .footer-label {
+        font-size: 16px; /* Larger than desktop */
+        margin-bottom: 20px;
+    }
+    
+    .footer-column a {
+        font-size: 16px; /* Larger than desktop */
+        padding: 6px 0;
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+
+    .bottom-left {
+        justify-content: center;
+    }
+    
+    /* Increase bottom bar text size */
+    .bottom-center, .lang-selector {
+        font-size: 14px;
+    }
+
+    .bottom-bar {
+        bottom: 24px;
+    }
+}

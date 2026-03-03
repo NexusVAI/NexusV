@@ -1,0 +1,365 @@
+/* 导航系统 */
+.navbar {
+    height: 54px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0; width: 100%; z-index: 1000;
+    background: var(--nav-bg);
+    font-family: var(--font-main);
+    transition: background 0.3s;
+}
+
+.navbar-inner {
+    width: 100%;
+    max-width: 1440px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.logo {
+    font-weight: 700; 
+    font-size: 16px;
+    text-decoration: none; 
+    color: var(--text-color);
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+}
+
+.nav-links { display: flex; gap: 24px; align-items: center; }
+
+.nav-item { 
+    font-size: 13px; 
+    font-weight: 500; 
+    color: var(--text-color); 
+    cursor: pointer; 
+    transition: opacity 0.15s ease, color 0.15s ease; 
+    opacity: 1;
+}
+
+.nav-links:hover .nav-item,
+.nav-links.has-active .nav-item {
+    opacity: 0.5;
+    color: var(--secondary-text);
+    transition: all 0.2s ease;
+}
+
+.nav-links .nav-item:hover,
+.nav-links .nav-item.active { 
+    opacity: 1 !important; 
+    color: var(--text-color) !important;
+    font-weight: 500;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.search-input {
+    width: 0;
+    opacity: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 14px;
+    outline: none;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    padding: 0;
+    pointer-events: none;
+    border-bottom: 1px solid rgba(128, 128, 128, 0);
+}
+
+.search-container.active .search-input {
+    width: 200px;
+    opacity: 1;
+    padding: 4px 8px;
+    pointer-events: auto;
+    border-bottom: 1px solid var(--secondary-text);
+    margin-left: 10px;
+}
+
+.search-icon {
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.2s;
+}
+
+.search-icon:hover {
+    opacity: 0.7;
+}
+
+.login-btn {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.btn-pill {
+    background: transparent;
+    color: var(--text-color); 
+    padding: 6px 12px;
+    border-radius: 999px; 
+    text-decoration: none; 
+    font-size: 13px; 
+    font-weight: 500;
+    border: 1px solid var(--border-light);
+    transition: all 0.2s ease;
+}
+
+.btn-pill span {
+    position: relative;
+    top: 0;
+}
+
+.btn-pill:hover, .btn-pill.active {
+    background: var(--text-color);
+    color: var(--bg-color);
+    border-color: var(--text-color);
+}
+
+/* Mega Menu */
+.mega-menu-container {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    background-color: var(--nav-bg);
+    z-index: 999;
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 0.2s ease-out,
+                visibility 0.2s, background-color 0.3s;
+    visibility: hidden;
+    box-sizing: border-box;
+}
+
+.menu-line {
+    height: 1px;
+    background: var(--border-light);
+    margin: 0 auto;
+    width: 0;
+    opacity: 0;
+    transition: width 0.4s cubic-bezier(0.19, 1, 0.22, 1),
+                opacity 0.25s ease-out;
+}
+
+.mega-menu-container.active .menu-line {
+    opacity: 1;
+}
+
+.mega-menu-inner {
+    min-height: 0;
+    padding: 0 40px;
+    opacity: 0;
+    transition: opacity 0.15s ease-out,
+                height 0.3s cubic-bezier(0.19, 1, 0.22, 1),
+                padding 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    overflow: hidden;
+}
+
+.mega-menu-container.active {
+    grid-template-rows: 1fr;
+    visibility: visible;
+}
+
+.mega-menu-container.active .mega-menu-inner {
+    opacity: 1;
+    padding-top: 30px;
+    padding-bottom: 40px;
+}
+
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+                visibility 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    z-index: 998;
+    pointer-events: none;
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.menu-content-wrapper {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+    padding: 24px 24px 48px 24px;
+    transition: opacity 80ms ease-in-out;
+    opacity: 1;
+    width: 100%;
+}
+
+.menu-column a {
+    color: var(--text-color);
+    text-decoration: none;
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    transition: color 0.2s, opacity 0.2s;
+    line-height: 1.5;
+}
+
+/* Secondary links hover effect */
+.menu-column.latest-updates a:hover {
+    opacity: 0.7;
+    text-decoration: underline;
+}
+
+/* Main links (Left Column) */
+.menu-column.main-links {
+    grid-column: 1 / span 6; /* Align to far left (col 1) */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.menu-column.main-links a {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+    line-height: 1.1;
+    margin-bottom: 0;
+    width: fit-content;
+}
+
+.menu-column.main-links a:hover {
+    opacity: 0.7;
+}
+
+/* Secondary links container (Right Column) */
+.menu-column.latest-updates {
+    grid-column: 7 / span 5; /* Shift left slightly to balance */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 6px; /* Visual alignment with main links */
+}
+
+.menu-column .label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    display: block;
+    margin-bottom: 16px;
+}
+
+/* Remove the old hover opacity effect for the whole wrapper */
+.menu-content-wrapper:hover .menu-column a {
+    opacity: 1;
+}
+
+/* Responsive adjustments for Tablet/Smaller Desktop */
+@media (max-width: 1024px) {
+    .menu-column.main-links a {
+        font-size: 28px;
+    }
+}
+
+/* Mobile Search Drawer */
+.mobile-search-drawer {
+    position: fixed;
+    top: 54px;
+    left: 0;
+    width: 100%;
+    background-color: var(--nav-bg);
+    z-index: 999;
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    /* Closing: Delay visibility hidden until grid anim is done (0.2s) */
+    transition: grid-template-rows 0.2s ease-out, 
+                background-color 0.3s, 
+                border-color 0.2s ease-out, 
+                visibility 0s 0.2s;
+    visibility: hidden;
+    border-bottom: 1px solid transparent;
+}
+
+.mobile-search-drawer.active {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    border-bottom-color: var(--border-light);
+    /* Opening: Show visibility immediately */
+    transition: grid-template-rows 0.2s ease-out, 
+                background-color 0.3s, 
+                border-color 0.2s ease-out, 
+                visibility 0s;
+}
+
+.mobile-search-inner {
+    min-height: 0;
+    padding: 0 20px;
+    opacity: 0;
+    /* Inner content fades in/out slightly faster than drawer */
+    transition: opacity 0.15s ease-out;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    overflow: hidden; /* Ensure content doesn't overflow during anim */
+}
+
+.mobile-search-drawer.active .mobile-search-inner {
+    opacity: 1;
+}
+
+.mobile-search-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 16px;
+    outline: none;
+    padding: 8px 0;
+}
+
+.mobile-search-drawer.active .mobile-search-input {
+    /* No extra animation for input to match simple fade of mega menu */
+}
+
+@media (max-width: 910px), (max-height: 860px) {
+    .nav-links { display: none; }
+    .nav-right .login-btn, .nav-right .btn-pill { display: none; }
+    /* Hide search icon on narrow screens */
+    .nav-right .search-icon { display: none; }
+    .mega-menu-container { display: none !important; }
+    
+    /* Hide desktop search input on narrow screens */
+    .search-container .search-input { display: none; }
+    .search-container.active .search-input { display: none; }
+}

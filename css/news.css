@@ -1,0 +1,145 @@
+/* Latest News Grid */
+.latest-news-section {
+    margin-top: 80px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.section-title {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text-color);
+    letter-spacing: -0.01em;
+}
+
+.view-all-link {
+    font-size: 15px;
+    color: var(--text-color);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 2px;
+    transition: all 0.2s;
+}
+
+.view-all-link:hover {
+    border-color: var(--text-color);
+}
+
+.news-grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 48px;
+}
+
+.news-item-row {
+    display: flex;
+    align-items: flex-start; /* Changed from center to accommodate longer titles */
+    gap: 24px;
+    text-decoration: none;
+    padding: 16px 0;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.news-item-row:hover {
+    background-color: transparent; /* OpenAI doesn't usually have hover bg on these lists, but keeping text hover effect is better */
+}
+
+/* Hover effect on title */
+.news-item-row:hover .news-info h3 {
+    text-decoration: none; /* Removed underline */
+}
+
+.news-thumb {
+    width: 140px;
+    height: 140px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-card);
+}
+
+.news-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.news-item-row:hover .news-thumb img {
+    transform: scale(1.05);
+}
+
+.news-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 140px; /* Match thumbnail height to allow vertical centering of content block */
+}
+
+.news-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 12px;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    /* Allow multi-line */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-info p {
+    font-size: 14px;
+    color: var(--secondary-text);
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* Highlighted category text */
+.news-category {
+    color: var(--text-color);
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+    .latest-news-section {
+        margin-top: 60px;
+    }
+
+    .section-title {
+        font-size: 24px;
+    }
+
+    .news-grid-2-col {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .news-thumb {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .news-info {
+        height: auto; /* Allow auto height on mobile */
+        min-height: 100px; /* Ensure at least as tall as image */
+    }
+
+    .news-info h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+}

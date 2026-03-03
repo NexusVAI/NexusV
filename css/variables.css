@@ -1,0 +1,43 @@
+:root {
+    --bg-color: #000000;
+    --bg-card: #111111;
+    --bg-section: #1a1a1a;
+    --bg-footer: #000000;
+    --text-color: #ffffff;
+    --secondary-text: #888888;
+    --border-color: #1a1a1a;
+    --border-light: rgba(255, 255, 255, 0.15);
+    --nav-bg: #000000;
+    --overlay-bg: rgba(0, 0, 0, 0.3);
+    --pill-bg: rgba(255, 255, 255, 0.1);
+    --pill-hover: rgba(255, 255, 255, 0.2);
+    --nav-height: 54px;
+    --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    --font-main: 'Inter', -apple-system, sans-serif;
+}
+
+body.light-theme {
+    --bg-color: #ffffff;
+    --bg-card: #f7f7f8;
+    --bg-section: #f0f0f0;
+    --bg-footer: #ffffff;
+    --text-color: #000000;
+    --secondary-text: #666666;
+    --border-color: #e5e5e5;
+    --border-light: rgba(0, 0, 0, 0.1);
+    --nav-bg: #ffffff;
+    --overlay-bg: rgba(255, 255, 255, 0.3);
+    --pill-bg: rgba(0, 0, 0, 0.05);
+    --pill-hover: rgba(0, 0, 0, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background-color 0.3s, color 0.3s;
+}

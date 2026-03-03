@@ -1,0 +1,224 @@
+/* Hero & Main Layout */
+.main-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 62px 24px 32px 24px;
+    box-sizing: border-box;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 3.5fr 1.2fr;
+    gap: 48px;
+    align-items: start;
+}
+
+.left-column.sticky-container {
+    position: sticky;
+    top: 62px;
+}
+
+.right-column.scrollable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 100%;
+    justify-self: end;
+}
+
+.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    cursor: pointer;
+}
+
+.image-wrapper {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--bg-card);
+    margin-bottom: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    mask-image: radial-gradient(white, black);
+    transform: translateZ(0);
+}
+
+.card-overlay-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    pointer-events: none;
+    letter-spacing: -0.01em;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.image-wrapper:hover .card-overlay-text {
+    transform: translate(-50%, -50%) scale(1.03);
+}
+
+.image-wrapper img,
+.image-wrapper video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: scale(1);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.image-wrapper:hover img,
+.image-wrapper:hover video,
+.image-wrapper.hero-image:hover img,
+.image-wrapper.hero-image:hover video {
+    transform: scale(1.03);
+}
+
+.hero-image {
+    aspect-ratio: 16 / 10;
+    max-height: 800px;
+}
+
+.square-image {
+    aspect-ratio: 1 / 1;
+}
+
+.card-text {
+    padding-right: 20px;
+}
+
+.card-title {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 8px 0;
+    color: var(--text-color);
+    letter-spacing: -0.01em;
+}
+
+.hero-card .card-title {
+    font-size: 40px;
+    font-weight: 500;
+}
+
+.card-meta {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--secondary-text);
+    margin: 0;
+}
+
+.card-meta span {
+    color: var(--secondary-text);
+}
+
+.card-meta span:first-child {
+    font-weight: 500;
+    margin-right: 8px;
+    color: var(--text-color);
+}
+
+.card-meta .meta-time {
+    color: var(--secondary-text);
+    font-weight: 400;
+}
+
+.hero-overlay-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 56px;
+    font-weight: 500;
+    width: 90%;
+    text-align: center;
+    letter-spacing: -0.02em;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-card:hover .hero-overlay-text {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.centered-overlay-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+    /* Tablet / Small Desktop: Horizontal 3 columns */
+    .content-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+    }
+
+    .left-column.sticky-container {
+        position: static;
+        width: 100%;
+    }
+
+    .right-column.scrollable-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding-bottom: 0;
+        overflow-x: visible;
+        scroll-snap-type: none;
+        height: auto;
+    }
+
+    .right-column.scrollable-list .card-link {
+        min-width: 0;
+        flex-shrink: 1;
+        scroll-snap-align: none;
+    }
+
+    /* Keep square aspect ratio for the 3 columns */
+    .square-image {
+        aspect-ratio: 1 / 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container { padding: 58px 16px 24px; }
+    
+    /* Mobile: Vertical stack */
+    .right-column.scrollable-list {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+    }
+    
+    /* Mobile: All images 1:1 Square */
+    .hero-image, .square-image { 
+        aspect-ratio: 1 / 1; 
+        width: 100%;
+        height: auto;
+    }
+    
+    .hero-card .card-title { font-size: 22px; }
+    .card-title { font-size: 22px; }
+    .hero-overlay-text { font-size: 20px; }
+    .card-text { padding-right: 0; }
+}
