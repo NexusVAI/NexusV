@@ -352,7 +352,8 @@
     /* No extra animation for input to match simple fade of mega menu */
 }
 
-@media (max-width: 910px), (max-height: 860px) {
+/* 响应式断点 */
+@media (max-width: 910px) {
     .nav-links { display: none; }
     .nav-right .login-btn, .nav-right .btn-pill { display: none; }
     /* Hide search icon on narrow screens */
