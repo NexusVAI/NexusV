@@ -40,7 +40,7 @@
 
 .nav-item { 
     font-size: 13px; 
-    font-weight: 500; 
+    font-weight: 400; 
     color: var(--text-color); 
     cursor: pointer; 
     transition: opacity 0.15s ease, color 0.15s ease; 
@@ -58,7 +58,7 @@
 .nav-links .nav-item.active { 
     opacity: 1 !important; 
     color: var(--text-color) !important;
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .nav-right {
@@ -237,7 +237,7 @@
 /* Secondary links hover effect */
 .menu-column.latest-updates a:hover {
     opacity: 0.7;
-    text-decoration: underline;
+    text-decoration: none;
 }
 
 /* Main links (Left Column) */
@@ -278,10 +278,17 @@
     display: block;
     margin-bottom: 16px;
 }
+/* When hovering the wrapper, dim ALL links */
+.menu-content-wrapper:hover a {
+    opacity: 0.4;
+    color: var(--secondary-text);
+}
 
-/* Remove the old hover opacity effect for the whole wrapper */
-.menu-content-wrapper:hover .menu-column a {
-    opacity: 1;
+/* But keep the hovered link bright */
+.menu-content-wrapper a:hover {
+    opacity: 1 !important;
+    color: var(--text-color) !important;
+    text-decoration: none; /* Remove underline */
 }
 
 /* Responsive adjustments for Tablet/Smaller Desktop */

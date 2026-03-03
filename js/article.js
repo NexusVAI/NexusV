@@ -190,7 +190,7 @@ function initArticlePage() {
             title: 'NexusV 更新日志',
             date: '2026年1月20日',
             category: '产品',
-            media: { type: 'image', src: 'Logo/enterprise.webp', alt: '更新日志' },
+            media: { type: 'image', src: 'Logo/introducing_the_gpt_store.webp', alt: '更新日志' },
             paragraphs: [
                 'NexusV 最新版本的详细更新记录。',
                 '包含了多项性能优化、API 接口调整以及已知问题的修复。'
