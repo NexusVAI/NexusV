@@ -162,7 +162,7 @@ function initArticlePage() {
             title: 'Sentience 正式登场',
             date: '2026 年 2 月 26 日',
             category: '产品',
-            media: { type: 'video', src: 'Logo/Sora_is_here.mp4', alt: 'Sentience 登场' },
+            media: { type: 'image', src: 'Logo/22.webp', alt: 'Sentience 登场' },
             paragraphs: [
                 '开放世界游戏的交互方式，正在发生变化。',
                 '过去，NPC 依赖脚本与触发器运行。今天，随着本地推理能力的提升，我们开始探索另一种可能：让行为由模型驱动，而不是完全由预设逻辑决定。',
