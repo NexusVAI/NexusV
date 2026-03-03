@@ -69,7 +69,8 @@
 }
 
 .image-wrapper img,
-.image-wrapper video {
+.image-wrapper video,
+.video-poster {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -83,6 +84,7 @@
 
 .image-wrapper:hover img,
 .image-wrapper:hover video,
+.image-wrapper:hover .video-poster,
 .image-wrapper.hero-image:hover img,
 .image-wrapper.hero-image:hover video {
     transform: scale(1.03);

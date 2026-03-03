@@ -61,7 +61,7 @@ function initArticlePage() {
             title: '让我们携手共进',
             date: '2026年3月01日',
             category: '公司',
-            media: { type: 'image', src: 'Logo/pink-blue-bg.webp', alt: '携手共进' },
+            media: { type: 'image', src: 'Logo/H2.webp', alt: '携手共进' },
             paragraphs: [
                 '在 NexusV 的发展历程中，每一次合作都是为了构建更强大的数字未来。',
                 '我们正在与全球领先的合作伙伴共同探索 AI 的边界，确保每一项技术突破都能造福人类。'
@@ -248,10 +248,16 @@ function initArticlePage() {
             card.href = `article.html?id=${key}`;
             
             let mediaHtml = '';
+            let fallback = '';
+            // Specific fallback for news1 (Let's work together)
+            if (key === 'news1') {
+                fallback = `onerror="this.onerror=null;this.src='Logo/I2.webp'"`;
+            }
+
             if (item.media?.type === 'video') {
                     mediaHtml = `<div class="image-wrapper square-image"><video src="${item.media.src}" muted playsinline loop onmouseover="this.play()" onmouseout="this.pause()"></video></div>`;
             } else {
-                mediaHtml = `<div class="image-wrapper square-image"><img src="${item.media?.src}" alt="${item.media?.alt}"></div>`;
+                mediaHtml = `<div class="image-wrapper square-image"><img src="${item.media?.src}" alt="${item.media?.alt}" ${fallback}></div>`;
             }
 
             card.innerHTML = `
