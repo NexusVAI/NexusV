@@ -22,18 +22,18 @@ function initMegaMenu() {
     const menuData = {
         'research': `
             <div class="menu-column main-links">
-                <a href="#" data-i18n="menu.research.index"></a>
-                <a href="#" data-i18n="menu.research.deep_sentience31"></a>
-                <a href="#" data-i18n="menu.research.deep_nexusv4"></a>
-                <a href="#" data-i18n="menu.research.deep_tactfr5"></a>
+                <a href="article.html?id=hero" data-i18n="menu.research.index"></a>
+                <a href="article.html?id=news6" data-i18n="menu.research.deep_sentience31"></a>
+                <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
+                <a href="article.html?id=n2" data-i18n="menu.research.deep_tactfr5"></a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label" data-i18n="menu.research.label"></span>
-                <a href="#" data-i18n="menu.research.sentience31"></a>
-                <a href="#" data-i18n="menu.research.sentience3"></a>
-                <a href="#" data-i18n="menu.research.tactfr5"></a>
-                <a href="#" data-i18n="menu.research.tactfr4"></a>
-                <a href="#" data-i18n="menu.research.nexusv4"></a>
+                <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
+                <a href="article.html?id=hero" data-i18n="menu.research.sentience3"></a>
+                <a href="article.html?id=n2" data-i18n="menu.research.tactfr5"></a>
+                <a href="article.html?id=n2" data-i18n="menu.research.tactfr4"></a>
+                <a href="article.html?id=n3" data-i18n="menu.research.nexusv4"></a>
             </div>
         `,
         'safety': `
@@ -179,15 +179,15 @@ function initMobileMenu() {
                 text: '研究', 
                 i18n: 'nav.research',
                 submenu: [
-                    { text: '意识架构索引', i18n: 'menu.research.index' },
-                    { text: '深入了解 Sentience V3.1', i18n: 'menu.research.deep_sentience31' },
-                    { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4' },
-                    { text: '深入了解 TACTFR V5', i18n: 'menu.research.deep_tactfr5' },
-                    { text: 'Sentience V3.1', i18n: 'menu.research.sentience31' },
-                    { text: 'Sentience V3', i18n: 'menu.research.sentience3' },
-                    { text: 'TACTFR V5', i18n: 'menu.research.tactfr5' },
-                    { text: 'TACTFR V4', i18n: 'menu.research.tactfr4' },
-                    { text: 'NexusV V4', i18n: 'menu.research.nexusv4' }
+                    { text: '意识架构索引', i18n: 'menu.research.index', href: 'article.html?id=hero' },
+                    { text: '深入了解 Sentience V3.1', i18n: 'menu.research.deep_sentience31', href: 'article.html?id=news6' },
+                    { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4', href: 'article.html?id=n3' },
+                    { text: '深入了解 TACTFR V5', i18n: 'menu.research.deep_tactfr5', href: 'article.html?id=n2' },
+                    { text: 'Sentience V3.1', i18n: 'menu.research.sentience31', href: 'article.html?id=news6' },
+                    { text: 'Sentience V3', i18n: 'menu.research.sentience3', href: 'article.html?id=hero' },
+                    { text: 'TACTFR V5', i18n: 'menu.research.tactfr5', href: 'article.html?id=n2' },
+                    { text: 'TACTFR V4', i18n: 'menu.research.tactfr4', href: 'article.html?id=n2' },
+                    { text: 'NexusV V4', i18n: 'menu.research.nexusv4', href: 'article.html?id=n3' }
                 ]
             },
             { 
@@ -212,7 +212,8 @@ function initMobileMenu() {
             if (item.submenu) {
                 drawerHTML += '<div class="mobile-submenu">';
                 item.submenu.forEach((link, linkIdx) => {
-                    drawerHTML += `<a href="#" style="transition-delay: ${linkIdx * 50}ms" data-i18n="${link.i18n}">${link.text}</a>`;
+                    const href = link.href || '#';
+                    drawerHTML += `<a href="${href}" style="transition-delay: ${linkIdx * 50}ms" data-i18n="${link.i18n}">${link.text}</a>`;
                 });
                 drawerHTML += '</div>';
             }
