@@ -1,19 +1,19 @@
 # NexusV
 
-> 一个复刻 OpenAI 风格的前端演示项目，基于纯静态 HTML/CSS/JavaScript 构建。
+> 一个复刻 OpenAI 官网风格的前端演示项目，基于纯静态 HTML/CSS/JavaScript 构建。
 
 ![GitHub language stats](https://img.shields.io/github/languages/top/yourusername/NexusV)  ![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-deployed-brightgreen)
 
-NexusV 是一个轻量级的静态网页项目，旨在模拟 OpenAI 聊天界面的外观和基础交互。所有页面均为纯前端实现，可通过 GitHub Pages 快速部署和访问，适合作为学习、演示或 API 集成的起点。
+NexusV 是一个轻量级的静态网页项目，旨在模拟 OpenAI 官网界面的外观和基础交互。所有页面均为纯前端实现，可通过 GitHub Pages 快速部署和访问，适合作为学习、演示或 API 集成的起点。
 
 ---
 
 ## 功能特性
 
-- 💬 **类 ChatGPT 聊天界面** – 简洁的对话式布局，支持用户输入和消息展示
+
 - 🎨 **自定义样式** – 完全使用 CSS 手写样式，无第三方 UI 库依赖
 - 🔍 **搜索功能示例** – `search.js` 提供前端搜索过滤的参考实现
-- 📄 **多页面支持** – 包含 `index.html`（主聊天页）和 `article.html`（文章展示页）
+- 📄 **多页面支持** – 包含 `index.html`（主页）和 `article.html`（文章展示页）
 - ⚙️ **GitHub Actions 自动部署** – 通过 `static.yml` 工作流自动构建并发布到 GitHub Pages
 
 ---
