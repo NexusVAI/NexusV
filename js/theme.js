@@ -14,4 +14,12 @@ function setTheme(theme) {
     localStorage.setItem('theme', theme);
 }
 
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    // Default to light if no saved theme
+    const theme = savedTheme || 'light';
+    setTheme(theme);
+}
+
 window.setTheme = setTheme;
+window.initTheme = initTheme;

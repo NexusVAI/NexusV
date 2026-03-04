@@ -22,28 +22,28 @@ function initMegaMenu() {
     const menuData = {
         'research': `
             <div class="menu-column main-links">
-                <a href="#" data-i18n="menu.research.index">意识架构索引</a>
-                <a href="#" data-i18n="menu.research.deep_sentience31">深入了解 Sentience V3.1</a>
-                <a href="#" data-i18n="menu.research.deep_nexusv4">深入了解 NexusV V4</a>
-                <a href="#" data-i18n="menu.research.deep_tactfr5">深入了解 TACTFR V5</a>
+                <a href="#" data-i18n="menu.research.index"></a>
+                <a href="#" data-i18n="menu.research.deep_sentience31"></a>
+                <a href="#" data-i18n="menu.research.deep_nexusv4"></a>
+                <a href="#" data-i18n="menu.research.deep_tactfr5"></a>
             </div>
             <div class="menu-column latest-updates">
-                <span class="label" data-i18n="menu.research.label">前沿进展</span>
-                <a href="#" data-i18n="menu.research.sentience31">Sentience V3.1</a>
-                <a href="#" data-i18n="menu.research.sentience3">Sentience V3</a>
-                <a href="#" data-i18n="menu.research.tactfr5">TACTFR V5</a>
-                <a href="#" data-i18n="menu.research.tactfr4">TACTFR V4</a>
-                <a href="#" data-i18n="menu.research.nexusv4">NexusV V4</a>
+                <span class="label" data-i18n="menu.research.label"></span>
+                <a href="#" data-i18n="menu.research.sentience31"></a>
+                <a href="#" data-i18n="menu.research.sentience3"></a>
+                <a href="#" data-i18n="menu.research.tactfr5"></a>
+                <a href="#" data-i18n="menu.research.tactfr4"></a>
+                <a href="#" data-i18n="menu.research.nexusv4"></a>
             </div>
         `,
         'safety': `
             <div class="menu-column main-links">
-                <a href="#" data-i18n="menu.safety.guidelines">安全准则</a>
-                <a href="#" data-i18n="menu.safety.ethics">数字伦理</a>
+                <a href="#" data-i18n="menu.safety.guidelines"></a>
+                <a href="#" data-i18n="menu.safety.ethics"></a>
             </div>
             <div class="menu-column latest-updates">
-                <span class="label" data-i18n="menu.safety.label">最新动态</span>
-                <a href="#" data-i18n="menu.safety.transparency">透明度报告</a>
+                <span class="label" data-i18n="menu.safety.label"></span>
+                <a href="#" data-i18n="menu.safety.transparency"></a>
             </div>
         `
     };
@@ -98,6 +98,8 @@ function initMegaMenu() {
         
         setTimeout(() => {
             contentWrapper.innerHTML = menuData[key];
+            if (window.translate) window.translate(contentWrapper);
+            
             menuInner.style.height = 'auto';
             const endHeight = menuInner.offsetHeight;
             menuInner.style.height = `${startHeight}px`;
@@ -129,6 +131,7 @@ function initMegaMenu() {
             if (targetMenuId && menuData[targetMenuId]) {
                 if (!megaMenu.classList.contains('active')) {
                     contentWrapper.innerHTML = menuData[targetMenuId];
+                    if (window.translate) window.translate(contentWrapper); // Translate immediately
                     currentKey = targetMenuId;
                     animateMenuItems();
                     const menuLine = megaMenu.querySelector('.menu-line');
@@ -225,6 +228,7 @@ function initMobileMenu() {
 
         drawer.innerHTML = drawerHTML;
         document.body.appendChild(drawer);
+        if (window.translate) window.translate(drawer);
 
         drawer.querySelectorAll('[data-expandable]').forEach(el => {
             el.addEventListener('click', () => {

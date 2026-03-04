@@ -1,11 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Init Theme
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    if (window.setTheme) window.setTheme(savedTheme);
+    if (window.initTheme) window.initTheme();
 
     // Init Lang
-    const savedLang = localStorage.getItem('lang') || 'zh';
-    if (window.setLanguage) window.setLanguage(savedLang);
+    if (window.initLanguage) window.initLanguage();
 
     // Events for toggles
     const themeToggle = document.getElementById('theme-toggle');
@@ -30,6 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Init Article
     if (window.initArticlePage) window.initArticlePage();
+    
+    // Init Index Page
+    if (window.initIndexPage) window.initIndexPage();
 
     // Init Lazy Video
     initLazyVideo();

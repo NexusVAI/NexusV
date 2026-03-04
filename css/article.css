@@ -77,19 +77,6 @@ body.light-theme ::-moz-selection {
     gap: 12px;
 }
 
-.play-circle-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--text-color);
-    color: var(--bg-color);
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
 .share-link-btn {
     background: transparent;
     border: none;

@@ -58,8 +58,11 @@ const translations = {
         'mobile.login': '登录',
         'mobile.enter': '进入 Nexus ↗',
 
+        // News Section
+        'news.latest': '最新动态',
+        'news.view_more': '查看更多',
+
         // Article Page
-        'article.listen': '聆听文章',
         'article.share': '分享',
         'article.author': '作者',
         'article.continue_reading': '继续阅读',
@@ -124,8 +127,11 @@ const translations = {
         'mobile.login': 'Log in',
         'mobile.enter': 'Enter Nexus ↗',
 
+        // News Section
+        'news.latest': 'Latest Updates',
+        'news.view_more': 'View more',
+
         // Article Page
-        'article.listen': 'Listen to article',
         'article.share': 'Share',
         'article.author': 'Author',
         'article.continue_reading': 'Continue reading',
@@ -133,11 +139,9 @@ const translations = {
     }
 };
 
-function setLanguage(lang) {
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
-    localStorage.setItem('lang', lang);
-    
-    const elements = document.querySelectorAll('[data-i18n]');
+function translate(root = document) {
+    const lang = localStorage.getItem('lang') || 'zh';
+    const elements = root.querySelectorAll('[data-i18n]');
     elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) {
@@ -146,6 +150,45 @@ function setLanguage(lang) {
     });
 }
 
+function setLanguage(lang) {
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+    localStorage.setItem('lang', lang);
+    
+    // Update active state of language selector if it exists
+    const langToggle = document.getElementById('lang-toggle');
+    if (langToggle) {
+        langToggle.textContent = translations[lang]['footer.lang'];
+    }
+
+    translate();
+
+    // Trigger custom event for other scripts to react (e.g., article re-rendering)
+    window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang } }));
+}
+
+async function initLanguage() {
+    const savedLang = localStorage.getItem('lang');
+    if (savedLang) {
+        setLanguage(savedLang);
+        return;
+    }
+
+    // Default based on IP
+    try {
+        const response = await fetch('https://api.country.is/');
+        const data = await response.json();
+        const lang = data.country === 'CN' ? 'zh' : 'en';
+        setLanguage(lang);
+    } catch (e) {
+        console.warn('IP location failed, falling back to navigator', e);
+        const navLang = navigator.language || navigator.userLanguage;
+        const lang = navLang.toLowerCase().includes('zh') ? 'zh' : 'en';
+        setLanguage(lang);
+    }
+}
+
 // Expose to window
 window.translations = translations;
 window.setLanguage = setLanguage;
+window.initLanguage = initLanguage;
+window.translate = translate;
