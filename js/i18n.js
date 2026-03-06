@@ -8,7 +8,7 @@ const translations = {
         'nav.contact': '联系我们',
         'nav.login': '登录',
         'nav.try': '使用 NexusV ↗',
-        'search.placeholder': '与虚拟意识对话',
+        'search.placeholder': '关于 NexusV',
         'hero.overlay': 'Infusing Life into San Andreas',
         'hero.title': '赋予洛圣都数字灵魂',
         'hero.author': 'Nexus 实验室',
@@ -19,16 +19,17 @@ const translations = {
         'footer.research_index': '研究索引',
         'footer.research_overview': '研究概述',
         'footer.latest_progress': '最新进展',
-        'footer.open_cognition': '开放认知',
-        'footer.nexus_agent': 'Nexus Agent',
-        'footer.personal': '个人版',
-        'footer.enterprise': '企业版',
-        'footer.api_docs': 'API 文档',
-        'footer.pricing': '定价',
-        'footer.protocol': '安全',
-        'footer.digital_ethics': '数字伦理',
+        'footer.open_cognition': '',
+        'footer.nexus_agent': '',
+        'footer.personal': '',
+        'footer.enterprise': '',
+        'footer.api_docs': '',
+        'footer.pricing': '',
+        'footer.protocol': '',
+        'footer.use_protocol': '使用协议',
+        'footer.safety': '安全',
+        'footer.digital_ethics': '使用协议',
         'footer.safety_guidelines': '安全准则',
-        'footer.transparency': '透明度报告',
         'footer.consciousness_rights': '',
         'footer.company': '公司',
         'footer.about_us': '关于我们',
@@ -39,7 +40,9 @@ const translations = {
         
         // Menu Items
         'menu.research.index': '意识架构索引',
-        'menu.research.deep_sentience31': '深入了解 Sentience V3.1',
+        'menu.research.deep_sentience31': '了解 Sentience V3.1',
+        'menu.research.deep_sentienceV4C': '深入了解 Sentience V4C',
+        'menu.research.sentienceV4C': 'Sentience V4C',
         'menu.research.deep_nexusv4': '深入了解 NexusV V4',
         'menu.research.deep_tactfr5': '深入了解 TACTFR V5',
         'menu.research.label': '前沿进展',
@@ -49,10 +52,10 @@ const translations = {
         'menu.research.tactfr4': 'TACTFR V4',
         'menu.research.nexusv4': 'NexusV V4',
         
+        'menu.safety.protocol': '使用协议',
         'menu.safety.guidelines': '安全准则',
-        'menu.safety.ethics': '数字伦理',
-        'menu.safety.label': '最新动态',
-        'menu.safety.transparency': '透明度报告',
+        'menu.safety.label': '',
+        'menu.safety.transparency': '',
 
         // Mobile Actions
         'mobile.login': '登录',
@@ -66,7 +69,16 @@ const translations = {
         'article.share': '分享',
         'article.author': '作者',
         'article.continue_reading': '继续阅读',
-        'article.view_all': '查看全部'
+        'article.view_all': '查看全部',
+        
+        // About Page
+        'about.category': '公司',
+        'about.title': '简介',
+        'about.subtitle': 'NexusV 是一家前沿游戏模组制作工作室。我们的使命是为全球玩家打造最具沉浸感的开放世界交互体验。',
+        'about.vision_title': '打造我们未来的愿景',
+        'about.vision_text': '最具沉浸感的开放世界交互体验。',
+        'about.btn1': '加入我们',
+        'about.btn2': '协议'
     },
     'en': {
         'nav.research': 'Research',
@@ -77,7 +89,7 @@ const translations = {
         'nav.contact': 'Contact',
         'nav.login': 'Log in',
         'nav.try': 'Try NexusV ↗',
-        'search.placeholder': 'Talk to Virtual Consciousness',
+        'search.placeholder': 'About NexusV',
         'hero.overlay': 'Infusing Life into San Andreas',
         'hero.title': 'Infusing Life into San Andreas',
         'hero.author': 'Nexus Lab',
@@ -89,15 +101,16 @@ const translations = {
         'footer.research_overview': 'Overview',
         'footer.latest_progress': 'Latest',
         'footer.open_cognition': 'Open Cognition',
-        'footer.nexus_agent': 'Nexus Agent',
-        'footer.personal': 'Personal',
-        'footer.enterprise': 'Enterprise',
-        'footer.api_docs': 'API Docs',
-        'footer.pricing': 'Pricing',
-        'footer.protocol': 'Safety',
-        'footer.digital_ethics': 'Digital Ethics',
+        'footer.nexus_agent': '',
+        'footer.personal': '',
+        'footer.enterprise': '',
+        'footer.api_docs': '',
+        'footer.pricing': '',
+        'footer.protocol': '',
+        'footer.use_protocol': 'Terms of Use',
+        'footer.safety': 'Safety',
+        'footer.digital_ethics': 'Terms of Use',
         'footer.safety_guidelines': 'Safety Guidelines',
-        'footer.transparency': 'Transparency Report',
         'footer.consciousness_rights': '',
         'footer.company': 'Company',
         'footer.about_us': 'About Us',
@@ -108,7 +121,9 @@ const translations = {
 
         // Menu Items
         'menu.research.index': 'Architecture Index',
-        'menu.research.deep_sentience31': 'Deep Dive: Sentience V3.1',
+        'menu.research.deep_sentience31': 'Learn About Sentience V3.1',
+        'menu.research.deep_sentienceV4C': 'Deep Dive: Sentience V4C',
+        'menu.research.sentienceV4C': 'Sentience V4C',
         'menu.research.deep_nexusv4': 'Deep Dive: NexusV V4',
         'menu.research.deep_tactfr5': 'Deep Dive: TACTFR V5',
         'menu.research.label': 'Frontier Progress',
@@ -118,10 +133,10 @@ const translations = {
         'menu.research.tactfr4': 'TACTFR V4',
         'menu.research.nexusv4': 'NexusV V4',
         
+        'menu.safety.protocol': 'Terms of Use',
         'menu.safety.guidelines': 'Safety Guidelines',
-        'menu.safety.ethics': 'Digital Ethics',
-        'menu.safety.label': 'Latest Updates',
-        'menu.safety.transparency': 'Transparency Report',
+        'menu.safety.label': '',
+        'menu.safety.transparency': '',
 
         // Mobile Actions
         'mobile.login': 'Log in',
@@ -135,7 +150,16 @@ const translations = {
         'article.share': 'Share',
         'article.author': 'Author',
         'article.continue_reading': 'Continue reading',
-        'article.view_all': 'View all'
+        'article.view_all': 'View all',
+        
+        // About Page
+        'about.category': 'Company',
+        'about.title': 'About Us',
+        'about.subtitle': 'NexusV is a cutting-edge game modding studio. Our mission is to deliver the most immersive open-world interactive experience for players worldwide.',
+        'about.vision_title': 'Crafting Our Vision for Tomorrow',
+        'about.vision_text': 'The most immersive open-world interactive experience.',
+        'about.btn1': 'Join Us',
+        'about.btn2': 'Terms'
     }
 };
 
@@ -146,6 +170,15 @@ function translate(root = document) {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) {
             el.textContent = translations[lang][key];
+        }
+    });
+    
+    // Translate placeholders
+    const placeholderElements = root.querySelectorAll('[data-i18n-placeholder]');
+    placeholderElements.forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (translations[lang] && translations[lang][key]) {
+            el.placeholder = translations[lang][key];
         }
     });
 }
@@ -173,18 +206,10 @@ async function initLanguage() {
         return;
     }
 
-    // Default based on IP
-    try {
-        const response = await fetch('https://api.country.is/');
-        const data = await response.json();
-        const lang = data.country === 'CN' ? 'zh' : 'en';
-        setLanguage(lang);
-    } catch (e) {
-        console.warn('IP location failed, falling back to navigator', e);
-        const navLang = navigator.language || navigator.userLanguage;
-        const lang = navLang.toLowerCase().includes('zh') ? 'zh' : 'en';
-        setLanguage(lang);
-    }
+    // Default from browser locale only; avoid third-party IP lookup.
+    const navLang = navigator.language || navigator.userLanguage || 'en';
+    const lang = navLang.toLowerCase().includes('zh') ? 'zh' : 'en';
+    setLanguage(lang);
 }
 
 // Expose to window

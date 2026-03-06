@@ -23,27 +23,24 @@ function initMegaMenu() {
         'research': `
             <div class="menu-column main-links">
                 <a href="article.html?id=hero" data-i18n="menu.research.index"></a>
-                <a href="article.html?id=news6" data-i18n="menu.research.deep_sentience31"></a>
+                <a href="article.html?id=sentienceV4C" data-i18n="menu.research.deep_sentienceV4C"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
                 <a href="article.html?id=n2" data-i18n="menu.research.deep_tactfr5"></a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label" data-i18n="menu.research.label"></span>
+                <a href="article.html?id=sentienceV4C" data-i18n="menu.research.sentienceV4C"></a>
                 <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
-                <a href="article.html?id=hero" data-i18n="menu.research.sentience3"></a>
+                <a href="article.html?id=news7" data-i18n="menu.research.sentience3"></a>
                 <a href="article.html?id=n2" data-i18n="menu.research.tactfr5"></a>
-                <a href="article.html?id=n2" data-i18n="menu.research.tactfr4"></a>
+                <a href="article.html?id=n4" data-i18n="menu.research.tactfr4"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.nexusv4"></a>
             </div>
         `,
         'safety': `
             <div class="menu-column main-links">
-                <a href="#" data-i18n="menu.safety.guidelines"></a>
-                <a href="#" data-i18n="menu.safety.ethics"></a>
-            </div>
-            <div class="menu-column latest-updates">
-                <span class="label" data-i18n="menu.safety.label"></span>
-                <a href="#" data-i18n="menu.safety.transparency"></a>
+                <a href="article.html?id=news3" data-i18n="menu.safety.protocol"></a>
+                <a href="article.html?id=news5" data-i18n="menu.safety.guidelines"></a>
             </div>
         `
     };
@@ -119,53 +116,129 @@ function initMegaMenu() {
         }, 50);
     }
 
-    navItems.forEach(item => {
-        item.addEventListener('mouseenter', () => {
-            clearTimeout(hideTimeout);
-            const targetMenuId = item.getAttribute('data-menu');
-            
-            navItems.forEach(nav => nav.classList.remove('active'));
-            item.classList.add('active');
-            if (navLinks) navLinks.classList.add('has-active');
-            
-            if (targetMenuId && menuData[targetMenuId]) {
-                if (!megaMenu.classList.contains('active')) {
-                    contentWrapper.innerHTML = menuData[targetMenuId];
-                    if (window.translate) window.translate(contentWrapper); // Translate immediately
-                    currentKey = targetMenuId;
-                    animateMenuItems();
-                    const menuLine = megaMenu.querySelector('.menu-line');
-                    if (menuLine) menuLine.style.width = '0';
+    const dropdownNavItems = Array.from(navItems).filter(item => {
+        const targetMenuId = item.getAttribute('data-menu');
+        return !!(targetMenuId && menuData[targetMenuId]);
+    });
+
+    const resetActiveState = () => {
+        megaMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        navItems.forEach(nav => {
+            nav.classList.remove('active');
+            if (nav.hasAttribute('aria-expanded')) {
+                nav.setAttribute('aria-expanded', 'false');
+            }
+        });
+        if (navLinks) navLinks.classList.remove('has-active');
+        currentKey = null;
+    };
+
+    const hideMenu = (immediate = false) => {
+        clearTimeout(hideTimeout);
+        if (immediate) {
+            resetActiveState();
+            return;
+        }
+
+        hideTimeout = setTimeout(() => {
+            resetActiveState();
+        }, 150);
+    };
+
+    const showMenuForItem = (item) => {
+        clearTimeout(hideTimeout);
+        const targetMenuId = item.getAttribute('data-menu');
+        
+        navItems.forEach(nav => {
+            nav.classList.remove('active');
+            if (nav.hasAttribute('aria-expanded')) {
+                nav.setAttribute('aria-expanded', 'false');
+            }
+        });
+        item.classList.add('active');
+        if (item.hasAttribute('aria-expanded')) {
+            item.setAttribute('aria-expanded', 'true');
+        }
+        if (navLinks) navLinks.classList.add('has-active');
+        
+        if (targetMenuId && menuData[targetMenuId]) {
+            if (!megaMenu.classList.contains('active')) {
+                contentWrapper.innerHTML = menuData[targetMenuId];
+                if (window.translate) window.translate(contentWrapper); // Translate immediately
+                currentKey = targetMenuId;
+                animateMenuItems();
+                const menuLine = megaMenu.querySelector('.menu-line');
+                if (menuLine) menuLine.style.width = '0';
+                requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            setMenuLineWidth(targetMenuId);
-                        });
+                        setMenuLineWidth(targetMenuId);
                     });
-                } else {
-                    switchMenuContent(targetMenuId);
-                }
-                megaMenu.classList.add('active');
-                menuOverlay.classList.add('active');
+                });
             } else {
-                megaMenu.classList.remove('active');
-                menuOverlay.classList.remove('active');
+                switchMenuContent(targetMenuId);
+            }
+            megaMenu.classList.add('active');
+            menuOverlay.classList.add('active');
+        } else {
+            hideMenu(true);
+        }
+    };
+
+    navItems.forEach(item => {
+        item.addEventListener('mouseenter', () => showMenuForItem(item));
+    });
+
+    // Keyboard/focus support for dropdown triggers without changing visual style.
+    dropdownNavItems.forEach(item => {
+        if (!item.hasAttribute('tabindex')) item.setAttribute('tabindex', '0');
+        item.setAttribute('role', 'button');
+        item.setAttribute('aria-haspopup', 'true');
+        item.setAttribute('aria-expanded', 'false');
+
+        item.addEventListener('focusin', () => showMenuForItem(item));
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                showMenuForItem(item);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                showMenuForItem(item);
+                const firstMenuLink = megaMenu.querySelector('a');
+                if (firstMenuLink) firstMenuLink.focus();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                hideMenu(true);
             }
         });
     });
 
-    const hideMenu = () => {
-        hideTimeout = setTimeout(() => {
-            megaMenu.classList.remove('active');
-            menuOverlay.classList.remove('active');
-            navItems.forEach(nav => nav.classList.remove('active'));
-            if (navLinks) navLinks.classList.remove('has-active');
-            currentKey = null;
-        }, 150);
-    };
+    if (navbar) {
+        navbar.addEventListener('mouseleave', () => hideMenu());
+        navbar.addEventListener('focusout', (e) => {
+            const next = e.relatedTarget;
+            if (!next || (!navbar.contains(next) && !megaMenu.contains(next))) {
+                hideMenu();
+            }
+        });
+    }
 
-    if (navbar) navbar.addEventListener('mouseleave', hideMenu);
     megaMenu.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
-    megaMenu.addEventListener('mouseleave', hideMenu);
+    megaMenu.addEventListener('mouseleave', () => hideMenu());
+    megaMenu.addEventListener('focusout', (e) => {
+        const next = e.relatedTarget;
+        if (!next || (!navbar?.contains(next) && !megaMenu.contains(next))) {
+            hideMenu();
+        }
+    });
+    megaMenu.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            const activeTrigger = navbar?.querySelector('.nav-item.active');
+            hideMenu(true);
+            if (activeTrigger) activeTrigger.focus();
+        }
+    });
 }
 
 function initMobileMenu() {
@@ -180,13 +253,14 @@ function initMobileMenu() {
                 i18n: 'nav.research',
                 submenu: [
                     { text: '意识架构索引', i18n: 'menu.research.index', href: 'article.html?id=hero' },
-                    { text: '深入了解 Sentience V3.1', i18n: 'menu.research.deep_sentience31', href: 'article.html?id=news6' },
+                    { text: '深入了解 Sentience V4C', i18n: 'menu.research.deep_sentienceV4C', href: 'article.html?id=sentienceV4C' },
                     { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4', href: 'article.html?id=n3' },
                     { text: '深入了解 TACTFR V5', i18n: 'menu.research.deep_tactfr5', href: 'article.html?id=n2' },
+                    { text: 'Sentience V4C', i18n: 'menu.research.sentienceV4C', href: 'article.html?id=sentienceV4C' },
                     { text: 'Sentience V3.1', i18n: 'menu.research.sentience31', href: 'article.html?id=news6' },
-                    { text: 'Sentience V3', i18n: 'menu.research.sentience3', href: 'article.html?id=hero' },
+                    { text: 'Sentience V3', i18n: 'menu.research.sentience3', href: 'article.html?id=news7' },
                     { text: 'TACTFR V5', i18n: 'menu.research.tactfr5', href: 'article.html?id=n2' },
-                    { text: 'TACTFR V4', i18n: 'menu.research.tactfr4', href: 'article.html?id=n2' },
+                    { text: 'TACTFR V4', i18n: 'menu.research.tactfr4', href: 'article.html?id=n4' },
                     { text: 'NexusV V4', i18n: 'menu.research.nexusv4', href: 'article.html?id=n3' }
                 ]
             },
@@ -194,21 +268,24 @@ function initMobileMenu() {
                 text: '安全', 
                 i18n: 'nav.safety',
                 submenu: [
-                    { text: '安全准则', i18n: 'menu.safety.guidelines' },
-                    { text: '数字伦理', i18n: 'menu.safety.ethics' },
-                    { text: '透明度报告', i18n: 'menu.safety.transparency' }
+                    { text: '使用协议', i18n: 'menu.safety.protocol', href: 'article.html?id=news3' },
+                    { text: '安全准则', i18n: 'menu.safety.guidelines', href: 'article.html?id=news5' }
                 ]
             },
             { text: '开发者专区', i18n: 'nav.developer' },
-            { text: '公司', i18n: 'nav.company' },
-            { text: '新闻', i18n: 'nav.news' },
-            { text: '联系我们', i18n: 'nav.contact' }
+            { text: '公司', i18n: 'nav.company', href: 'about.html' },
+            { text: '新闻', i18n: 'nav.news', href: 'index.html#latest-news' },
+            { text: '联系我们', i18n: 'nav.contact', href: 'about.html' }
         ];
 
         let drawerHTML = '';
         let itemIndex = 0;
         navItemsData.forEach(item => {
-            drawerHTML += `<div class="mobile-nav-item" style="transition-delay: ${itemIndex * 40}ms" ${item.submenu ? 'data-expandable' : ''} data-i18n="${item.i18n}">${item.text}</div>`;
+            if (item.href && !item.submenu) {
+                drawerHTML += `<a href="${item.href}" class="mobile-nav-item" style="transition-delay: ${itemIndex * 40}ms" data-i18n="${item.i18n}">${item.text}</a>`;
+            } else {
+                drawerHTML += `<div class="mobile-nav-item" style="transition-delay: ${itemIndex * 40}ms" ${item.submenu ? 'data-expandable' : ''} data-i18n="${item.i18n}">${item.text}</div>`;
+            }
             if (item.submenu) {
                 drawerHTML += '<div class="mobile-submenu">';
                 item.submenu.forEach((link, linkIdx) => {
@@ -222,8 +299,8 @@ function initMobileMenu() {
 
         drawerHTML += `
             <div class="mobile-actions" style="transition-delay: ${itemIndex * 40 + 60}ms">
-                <a href="#" class="mobile-login" data-i18n="mobile.login">登录</a>
-                <a href="#" class="mobile-cta" data-i18n="mobile.enter">进入 Nexus ↗</a>
+                <a href="about.html" class="mobile-login" data-i18n="mobile.login">登录</a>
+                <a href="https://www.wanjiadongli.com/user/1753255?tab=2" class="mobile-cta" data-i18n="mobile.enter">进入 Nexus ↗</a>
             </div>
         `;
 
@@ -274,5 +351,26 @@ function initMobileMenu() {
     }
 }
 
+function initActiveNavItem() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const currentPath = window.location.pathname;
+    const currentHref = window.location.href;
+    
+    navItems.forEach(item => {
+        const href = item.getAttribute('href');
+        if (href) {
+            const isCurrentPage = 
+                currentHref.endsWith(href) || 
+                currentHref.includes(href) ||
+                (href === 'about.html' && (currentHref.includes('about.html')));
+            
+            if (isCurrentPage) {
+                item.classList.add('current-page');
+            }
+        }
+    });
+}
+
 window.initMegaMenu = initMegaMenu;
 window.initMobileMenu = initMobileMenu;
+window.initActiveNavItem = initActiveNavItem;

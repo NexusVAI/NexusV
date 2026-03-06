@@ -87,6 +87,16 @@
     transform: translateY(0);
 }
 
+.mobile-drawer.active:hover .mobile-nav-item {
+    opacity: 0.5;
+    color: var(--secondary-text);
+}
+
+.mobile-drawer.active .mobile-nav-item:hover {
+    opacity: 1;
+    color: var(--text-color);
+}
+
 .mobile-drawer .mobile-nav-item[data-expandable]::after {
     content: '';
     display: inline-block;

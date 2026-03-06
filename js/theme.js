@@ -1,7 +1,7 @@
 function setTheme(theme) {
     const sunIcon = document.querySelector('.sun-icon');
     const moonIcon = document.querySelector('.moon-icon');
-    
+
     if (theme === 'light') {
         document.body.classList.add('light-theme');
         if (sunIcon) sunIcon.style.display = 'none';
@@ -12,6 +12,11 @@ function setTheme(theme) {
         if (moonIcon) moonIcon.style.display = 'none';
     }
     localStorage.setItem('theme', theme);
+
+    // Sync Cusdis theme if available
+    if (typeof window.updateCusdisTheme === 'function') {
+        window.updateCusdisTheme();
+    }
 }
 
 function initTheme() {

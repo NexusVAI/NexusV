@@ -1,0 +1,208 @@
+/* Comments Section - NexusV Feedback */
+
+/* Fixed bottom capsule button */
+.comments-fab {
+    position: static;
+}
+
+.comments-toggle-btn-core {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: transparent;
+    border: 0;
+    color: inherit; /* Inherit from parent (text-white) */
+    font-size: 15px;
+    font-weight: 500;
+    font-family: var(--font-main);
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+}
+
+.comments-toggle-btn-core svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.comments-toggle-btn-core:focus {
+    outline: none;
+}
+
+/* Comments Modal Overlay */
+.comments-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.comments-overlay.show {
+    display: flex;
+    opacity: 1;
+}
+
+body.light-theme .comments-overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* Comments Modal Container */
+.comments-modal {
+    width: 100%;
+    max-width: 700px;
+    max-height: 80vh;
+    background: var(--bg-card);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.comments-overlay.show .comments-modal {
+    transform: scale(1) translateY(0);
+}
+
+/* Modal Header */
+.comments-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.comments-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.comments-modal-title svg {
+    width: 20px;
+    height: 20px;
+}
+
+.comments-modal-close {
+    background: none;
+    border: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.comments-modal-close:hover {
+    background: var(--pill-bg);
+    color: var(--text-color);
+}
+
+.comments-modal-close svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Modal Body */
+.comments-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+/* Cusdis Thread Container */
+#cusdis_thread {
+    min-height: 300px;
+}
+
+#cusdis_thread iframe {
+    border-radius: 8px;
+    background: var(--bg-card);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .comments-toggle-btn {
+        font-size: 14px;
+        padding: 10px 18px;
+    }
+
+    .comments-modal {
+        max-height: 85vh;
+        border-radius: 12px;
+    }
+
+    .comments-modal-header {
+        padding: 16px 20px;
+    }
+
+    .comments-modal-body {
+        padding: 16px;
+    }
+}
+
+/* 
+   Tailwind Utilities Mimic for liquid-glass-react 
+   The library expects these classes to exist.
+*/
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.z-10 { z-index: 10; }
+.cursor-pointer { cursor: pointer; }
+.pointer-events-none { pointer-events: none; }
+.overflow-hidden { overflow: hidden; }
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.gap-6 { gap: 1.5rem; }
+
+/* Colors */
+.bg-black { background-color: #000; }
+.text-white { color: #fff; }
+
+/* Opacity */
+.opacity-0 { opacity: 0; }
+.opacity-20 { opacity: 0.2; }
+.opacity-50 { opacity: 0.5; }
+.opacity-100 { opacity: 1; }
+
+/* Blending */
+.mix-blend-overlay { mix-blend-mode: overlay; }
+.mix-blend-screen { mix-blend-mode: screen; }
+
+/* Transitions */
+.transition-all { transition-property: all; }
+.duration-150 { transition-duration: 150ms; }
+.ease-in-out { transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.ease-out { transition-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+
+/* Ensure the button is visible against the glass */
+.comments-toggle-btn-core {
+    color: white !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}

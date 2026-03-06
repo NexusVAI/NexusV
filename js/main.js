@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Init Menus
     if (window.initMegaMenu) window.initMegaMenu();
     if (window.initMobileMenu) window.initMobileMenu();
+    if (window.initActiveNavItem) window.initActiveNavItem();
 
     // Init Article
     if (window.initArticlePage) window.initArticlePage();
