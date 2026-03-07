@@ -1,13 +1,17 @@
 function setTheme(theme) {
     const sunIcon = document.querySelector('.sun-icon');
     const moonIcon = document.querySelector('.moon-icon');
+    const root = document.documentElement;
+    const body = document.body;
 
     if (theme === 'light') {
-        document.body.classList.add('light-theme');
+        root.classList.add('light-theme');
+        if (body) body.classList.add('light-theme');
         if (sunIcon) sunIcon.style.display = 'none';
         if (moonIcon) moonIcon.style.display = 'block';
     } else {
-        document.body.classList.remove('light-theme');
+        root.classList.remove('light-theme');
+        if (body) body.classList.remove('light-theme');
         if (sunIcon) sunIcon.style.display = 'block';
         if (moonIcon) moonIcon.style.display = 'none';
     }

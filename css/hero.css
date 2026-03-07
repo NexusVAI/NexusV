@@ -89,6 +89,32 @@
     transform: scale(1.03);
 }
 
+.lazy-video-wrapper .video-poster,
+.lazy-video-wrapper video {
+    position: absolute;
+    inset: 0;
+}
+
+.scrollable-list:hover .side-card .image-wrapper img,
+.scrollable-list:hover .side-card .image-wrapper video,
+.scrollable-list:hover .side-card .image-wrapper .video-poster {
+    transform: scale(1);
+}
+
+.scrollable-list:hover .side-card:hover .image-wrapper img,
+.scrollable-list:hover .side-card:hover .image-wrapper video,
+.scrollable-list:hover .side-card:hover .image-wrapper .video-poster {
+    transform: scale(1.03);
+}
+
+.scrollable-list:hover .side-card .image-wrapper .card-overlay-text {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.scrollable-list:hover .side-card:hover .image-wrapper .card-overlay-text {
+    transform: translate(-50%, -50%) scale(1.03);
+}
+
 .hero-image {
     aspect-ratio: 16 / 10;
     max-height: 800px;

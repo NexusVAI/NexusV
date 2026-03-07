@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>关于我们 | NexusV</title>
+    <script>
+        (() => {
+            let theme = 'light';
+            try {
+                theme = localStorage.getItem('theme') || 'light';
+            } catch (e) {}
+            if (theme === 'light') document.documentElement.classList.add('light-theme');
+        })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='black'/%3E%3Cpath d='M8 8v16l16-16v16' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/navbar.css">
@@ -220,13 +229,6 @@
                 <!-- 内容通过 JS 动态切换 -->
             </div>
             <div class="menu-line"></div>
-        </div>
-    </div>
-
-    <!-- 移动端搜索抽屉 -->
-    <div class="mobile-search-drawer" id="mobile-search-drawer">
-        <div class="mobile-search-inner">
-            <input type="text" class="mobile-search-input" placeholder="搜索 NexusV...">
         </div>
     </div>
 

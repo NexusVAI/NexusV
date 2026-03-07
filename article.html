@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusV</title>
+    <script>
+        (() => {
+            let theme = 'light';
+            try {
+                theme = localStorage.getItem('theme') || 'light';
+            } catch (e) {}
+            if (theme === 'light') document.documentElement.classList.add('light-theme');
+        })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='black'/%3E%3Cpath d='M8 8v16l16-16v16' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/navbar.css">
@@ -53,13 +62,6 @@
         </div>
     </div>
 
-    <!-- 移动端搜索抽屉 -->
-    <div class="mobile-search-drawer" id="mobile-search-drawer">
-        <div class="mobile-search-inner">
-            <input type="text" class="mobile-search-input" placeholder="搜索 NexusV...">
-        </div>
-    </div>
-
     <!-- 全屏搜索覆盖层 (OpenAI风格) -->
     <div class="search-overlay" id="search-overlay">
         <div class="search-overlay-content">
@@ -102,6 +104,14 @@
                 </div>
             </div>
         </div>
+
+        <section class="article-quote-switcher" data-quote-switcher hidden>
+            <div class="quote-switcher-tabs" role="tablist" aria-label="玩家体验切换">
+                <button class="quote-switcher-tab active" type="button" role="tab" aria-selected="true" data-quote-tab="0"></button>
+                <button class="quote-switcher-tab" type="button" role="tab" aria-selected="false" data-quote-tab="1"></button>
+            </div>
+            <blockquote class="quote-switcher-text"></blockquote>
+        </section>
 
         <div class="continue-reading-section">
             <div class="cr-header">

@@ -236,6 +236,61 @@ body.light-theme .share-link-btn:hover {
     color: var(--secondary-text);
 }
 
+.article-quote-switcher {
+    max-width: 1040px;
+    margin: 64px auto 0;
+    padding: 0 24px 12px;
+    text-align: center;
+}
+
+.quote-switcher-tabs {
+    display: inline-flex;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    gap: 4px;
+    margin-bottom: 28px;
+}
+
+body.light-theme .quote-switcher-tabs {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.quote-switcher-tab {
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border-radius: 999px;
+    padding: 9px 24px;
+    cursor: pointer;
+    opacity: 0.72;
+    transition: opacity 0.25s ease, background 0.25s ease;
+}
+
+.quote-switcher-tab.active {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.light-theme .quote-switcher-tab.active {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.quote-switcher-text {
+    margin: 0 auto;
+    max-width: 920px;
+    color: var(--text-color);
+    font-size: clamp(17px, 2.2vw, 27px);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    white-space: pre-line;
+}
+
 @media (max-width: 768px) {
     .article-title {
         font-size: 32px;
@@ -243,5 +298,20 @@ body.light-theme .share-link-btn:hover {
     
     .cr-grid {
         grid-template-columns: 1fr;
+    }
+
+    .article-quote-switcher {
+        margin-top: 40px;
+        padding: 0 16px 10px;
+    }
+
+    .quote-switcher-tab {
+        font-size: 13px;
+        padding: 8px 14px;
+    }
+
+    .quote-switcher-text {
+        font-size: clamp(15px, 4.9vw, 21px);
+        line-height: 1.35;
     }
 }

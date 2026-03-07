@@ -16,6 +16,7 @@
     --font-main: 'Inter', -apple-system, sans-serif;
 }
 
+:root.light-theme,
 body.light-theme {
     --bg-color: #ffffff;
     --bg-card: #f7f7f8;

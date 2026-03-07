@@ -72,7 +72,7 @@ const articleData = {
     },
     n2: {
         overlay: 'TACTFR',
-        media: { type: 'image', src: 'Logo/N2.jpg', alt: 'TACTFR V5' },
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/N2.jpg', fit: 'cover', alt: 'TACTFR V5' },
         zh: {
             title: '了解 TACTFR V5',
             date: '2026年3月03日',
@@ -428,7 +428,7 @@ const articleData = {
     },
     n3: {
         overlay: 'NexusV',
-        media: { type: 'image', src: 'Logo/N3.jpg', alt: 'NexusV V4' },
+        media: { type: 'image', src: 'Logo/YE1.webp', alt: 'NexusV V4' },
         zh: {
             title: '了解 NexusV V4',
             date: '2026年2月26日',
@@ -480,14 +480,15 @@ const articleData = {
     },
     sentienceV4C: {
         overlay: 'Sentience V4C',
-        media: { type: 'image', src: 'Logo/N1.jpg', alt: 'Sentience V4C' },
+        media: { type: 'video', src: 'Logo/V4C.mp4', poster: 'Logo/N1.jpg', fit: 'cover', alt: 'Sentience V4C' },
         zh: {
             title: '隆重推出 Sentience V4C',
-            date: '2026年3月05日',
+            date: '2026年3月07日',
             category: '产品',
             readTime: '10 分钟阅读',
             paragraphs: [
                 '在最新的系统中，我们致力于解决虚拟世界中非玩家角色（NPC）的"瞬时性（Transience）"痛点。通过引入基于环境触发的感知引擎、持久化社会记忆账本以及本体特征对齐技术，我们成功构建了一套具备自恰逻辑的社会动力学模型。NPC 不再是静态的脚本响应者，而是拥有独立身份认知、长期社会记忆并能进行信息交换的具身智能体（Embodied Agents）。',
+                '从 V3 到 V4 加入自我认同的飞跃意义重大——知道自己是什么的 NPC，其行为方式与仅对刺激做出反应的 NPC 有着根本的不同。',
                 '1. 响应式感知与自主行为环路 (Reactive Perception & Autonomous Behavioral Loops)',
                 '我们重构了代理的底层检测逻辑，将其从被动的事件接收器升级为具备环境觉察能力的实体。',
                 '环境事件侦测（Environment Detection）： 代理现在能实时处理包括高分贝声源（声谱检测）与异常物理运动（视觉碰撞检测）在内的多维信号。',
@@ -514,7 +515,7 @@ const articleData = {
         },
         en: {
             title: 'Introducing Sentience V4C',
-            date: 'March 05, 2026',
+            date: 'March 07, 2026',
             category: 'Product',
             readTime: '10 min read',
             paragraphs: [
@@ -1086,6 +1087,66 @@ function initArticlePage() {
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id') || 'hero';
+    const quoteSwitcherEl = document.querySelector('[data-quote-switcher]');
+    const quoteTabs = quoteSwitcherEl ? Array.from(quoteSwitcherEl.querySelectorAll('[data-quote-tab]')) : [];
+    const quoteTextEl = quoteSwitcherEl ? quoteSwitcherEl.querySelector('.quote-switcher-text') : null;
+    const quoteSlides = {
+        zh: [
+            {
+                tab: 'Ethan',
+                text: '有位玩家和一个警察 NPC 对喷了很久，照理说好感度应该一路往下掉，掉到谷底后要么对方离开、要么敌对、要么继续互怼。结果反而出现了反向增长。更离谱的是，玩家嘴完离开后直接吃到两星通缉，刚才那个警察还说“我受够你了”然后开火。虽然没录到，但这段体验非常能说明这个模组的真实反馈强度。'
+            },
+            {
+                tab: 'Mia',
+                text: '这段“警察反转时刻”确实很难忘。不管是系统机制刚好命中，还是复杂行为偶然涌现，整体表现都足够惊艳，完全可以放进宣传片。对我们来说，这就是最有代表性的成功案例之一。'
+            }
+        ],
+        en: [
+            {
+                tab: 'Ethan',
+                text: 'Yo, so one player was chattin\' with this cop NPC, kept throwin\' insults left and right. But get this — his好感度 (like, his rep for that player) was actually goin\' UP, not down. Shoulda been droppin\' \'til it hit rock bottom, then either he books it, walks off, turns hostile, or they just go back and forth roastin\' each other. Then the plot twist hits — after that player finished clownin\' him and dipped, they caught a 2-star wanted level! That same cop they were just dissin\' deadass says, "I\'ve had enough of you!" and starts blastin\' them. They didn\'t even hit record — super frustrating. But honestly, this just proves how fire this mod really is.'
+            },
+            {
+                tab: 'Mia',
+                text: 'Man, I feel you — that cop moment is straight-up unforgettable. I don\'t know if it was the mod doing its thing or just some wild magic, but holy smokes, that was insane. That alone belongs in the promo trailer. This is our success story right here, bro — legendary.'
+            }
+        ]
+    };
+
+    function renderQuoteSwitcher(lang) {
+        if (!quoteSwitcherEl || !quoteTextEl || quoteTabs.length < 2) return;
+        if (id !== 'sentienceV4C') {
+            quoteSwitcherEl.hidden = true;
+            return;
+        }
+        quoteSwitcherEl.hidden = false;
+        const slides = quoteSlides[lang] || quoteSlides.zh;
+        const maxIndex = slides.length - 1;
+        let currentIndex = Number(quoteSwitcherEl.dataset.currentIndex || 0);
+        if (!Number.isFinite(currentIndex) || currentIndex < 0) currentIndex = 0;
+        if (currentIndex > maxIndex) currentIndex = maxIndex;
+        quoteSwitcherEl.dataset.currentIndex = String(currentIndex);
+
+        quoteTabs.forEach((tab, index) => {
+            const active = index === currentIndex;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            tab.textContent = slides[index]?.tab || '';
+        });
+
+        quoteTextEl.textContent = `“${slides[currentIndex].text}”`;
+    }
+
+    if (quoteTabs.length) {
+        quoteTabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                if (!quoteSwitcherEl) return;
+                quoteSwitcherEl.dataset.currentIndex = tab.getAttribute('data-quote-tab') || '0';
+                const currentLang = localStorage.getItem('lang') || 'zh';
+                renderQuoteSwitcher(currentLang);
+            });
+        });
+    }
     
     // Render function to be called on init and lang change
     function renderArticle(lang) {
@@ -1119,6 +1180,8 @@ function initArticlePage() {
             });
         }
 
+        renderQuoteSwitcher(lang);
+
         if (crGrid) {
             crGrid.innerHTML = ''; // Clear existing
             // Randomly display 3 different articles
@@ -1143,16 +1206,22 @@ function initArticlePage() {
                 
                 // Use shared media object
                 const mediaObj = crItem.media;
-                const fallbackImg = "Logo/I2.webp";
-                const onError = `this.onerror=null;this.src='${fallbackImg}'`;
+                const fallbackImg = mediaObj?.poster || "Logo/I2.webp";
+                const posterOnError = `this.onerror=null;this.src='Logo/I2.webp'`;
+                const imageOnError = `this.onerror=null;this.src='${fallbackImg}'`;
 
                 let mediaHtml = '';
                 if (mediaObj?.type === 'video') {
-                        mediaHtml = `<div class="image-wrapper square-image"><video src="${mediaObj.src}" muted playsinline loop onmouseover="this.play()" onmouseout="this.pause()"></video></div>`;
+                        mediaHtml = `
+                            <div class="image-wrapper square-image lazy-video-wrapper">
+                                <img src="${fallbackImg}" alt="${mediaObj?.alt || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
+                                <video loop muted playsinline class="hero-video" data-src="${mediaObj.src}" data-fallback="${fallbackImg}" data-fit="${mediaObj.fit || 'cover'}" data-bg="${mediaObj.bg || ''}" preload="none" style="position: absolute; inset: 0; z-index: 1; opacity: 0;"></video>
+                            </div>
+                        `;
                 } else {
                     let src = mediaObj?.src || fallbackImg;
                     if (key === 'news1') src += '?t=1'; // Cache buster for news1
-                    mediaHtml = `<div class="image-wrapper square-image"><img src="${src}" alt="${mediaObj?.alt || ''}" onerror="${onError}"></div>`;
+                    mediaHtml = `<div class="image-wrapper square-image"><img src="${src}" alt="${mediaObj?.alt || ''}" onerror="${imageOnError}"></div>`;
                 }
 
                 card.innerHTML = `
@@ -1163,6 +1232,7 @@ function initArticlePage() {
                 crGrid.appendChild(card);
             });
         }
+        if (window.initLazyVideo) window.initLazyVideo();
     }
 
     // Initial render
@@ -1238,15 +1308,31 @@ function initIndexPage() {
                  card.className = 'card-link side-card';
                  card.href = `article.html?id=${linkTargets[index]}`;
                  
-                 const fallbackImg = "Logo/I2.webp";
-                 const onError = `this.onerror=null;this.src='${fallbackImg}'`;
-                 const imgSrc = item.media?.src || fallbackImg;
+                 const fallbackImg = item.media?.poster || "Logo/I2.webp";
+                 const posterOnError = `this.onerror=null;this.src='Logo/I2.webp'`;
+                 const imageOnError = `this.onerror=null;this.src='${fallbackImg}'`;
+
+                 let mediaHtml = '';
+                 if (item.media?.type === 'video' && item.media?.src) {
+                    mediaHtml = `
+                        <div class="image-wrapper square-image lazy-video-wrapper">
+                            <img src="${fallbackImg}" alt="${item.media?.alt || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
+                            <video loop muted playsinline class="hero-video" data-src="${item.media.src}" data-fallback="${fallbackImg}" data-fit="${item.media.fit || 'cover'}" data-bg="${item.media.bg || ''}" preload="none" style="position: absolute; inset: 0; z-index: 1; opacity: 0;"></video>
+                            <span class="card-overlay-text">${item.overlay || ''}</span>
+                        </div>
+                    `;
+                 } else {
+                    const imgSrc = item.media?.src || fallbackImg;
+                    mediaHtml = `
+                        <div class="image-wrapper square-image">
+                            <img src="${imgSrc}" alt="${item.media?.alt || ''}" onerror="${imageOnError}">
+                            <span class="card-overlay-text">${item.overlay || ''}</span>
+                        </div>
+                    `;
+                 }
 
                  card.innerHTML = `
-                    <div class="image-wrapper square-image">
-                        <img src="${imgSrc}" alt="${item.media?.alt || ''}" onerror="${onError}">
-                        <span class="card-overlay-text">${item.overlay || ''}</span>
-                    </div>
+                    ${mediaHtml}
                     <div class="card-text">
                         <h3 class="card-title">${data.title}</h3>
                         <p class="card-meta"><span>${data.category}</span> <span class="meta-time">${data.readTime}</span></p>
@@ -1285,6 +1371,7 @@ function initIndexPage() {
                 newsGrid.appendChild(card);
             });
         }
+        if (window.initLazyVideo) window.initLazyVideo();
     }
 
     const currentLang = localStorage.getItem('lang') || 'zh';

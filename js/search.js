@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const BREAKPOINT = 910;
     const MAX_RESULTS = 24;
     const FALLBACK_COVER = 'Logo/I2.webp';
     const copy = {
@@ -19,34 +18,18 @@ document.addEventListener('DOMContentLoaded', () => {
         searchIcon: document.querySelector('.search-icon'),
         searchOverlay: document.getElementById('search-overlay'),
         desktopInput: document.querySelector('.search-overlay-input'),
-        desktopSubmit: document.querySelector('.search-overlay-submit'),
-        mobileDrawer: document.getElementById('mobile-search-drawer'),
-        mobileInput: document.querySelector('.mobile-search-input'),
-        menuOverlay: document.querySelector('.menu-overlay')
+        desktopSubmit: document.querySelector('.search-overlay-submit')
     };
 
-    if (!nodes.searchIcon || (!nodes.searchOverlay && !nodes.mobileDrawer)) return;
-
-    if (!nodes.menuOverlay) {
-        nodes.menuOverlay = document.createElement('div');
-        nodes.menuOverlay.className = 'menu-overlay';
-        document.body.appendChild(nodes.menuOverlay);
-    }
-
-    ensureMobileSubmitButton();
+    if (!nodes.searchIcon || !nodes.searchOverlay) return;
 
     nodes.desktopResults = ensureResultsContainer(
         nodes.searchOverlay?.querySelector('.search-overlay-content'),
         'search-results search-results-desktop'
     );
-    nodes.mobileResults = ensureResultsContainer(
-        nodes.mobileDrawer?.querySelector('.mobile-search-inner'),
-        'search-results search-results-mobile'
-    );
 
     const state = {
         desktopOpen: false,
-        mobileOpen: false,
         searchSeq: 0,
         lastResults: [],
         lastSubmittedQuery: ''
@@ -223,11 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     nodes.searchIcon.addEventListener('click', (event) => {
         event.stopPropagation();
-        if (isMobileViewport()) {
-            toggleMobileSearch();
-        } else {
-            toggleDesktopSearch();
-        }
+        toggleDesktopSearch();
     });
 
     nodes.desktopInput?.addEventListener('input', (event) => {
@@ -236,86 +215,22 @@ document.addEventListener('DOMContentLoaded', () => {
         clearResultContainers();
     });
 
-    nodes.mobileInput?.addEventListener('input', (event) => {
-        syncInputs(event.target.value, 'mobile');
-        resetSubmittedState();
-        clearResultContainers();
-    });
-
     nodes.desktopSubmit?.addEventListener('click', () => {
         submitSearch(nodes.desktopInput?.value || '');
-    });
-
-    nodes.mobileSubmit?.addEventListener('click', () => {
-        submitSearch(nodes.mobileInput?.value || '');
     });
 
     nodes.searchOverlay?.addEventListener('click', (event) => {
         if (event.target === nodes.searchOverlay) closeDesktopSearch();
     });
 
-    nodes.menuOverlay.addEventListener('click', () => {
-        closeMobileSearch();
-    });
-
-    document.addEventListener('click', (event) => {
-        if (!state.mobileOpen || !nodes.mobileDrawer) return;
-        const insideDrawer = nodes.mobileDrawer.contains(event.target);
-        const insideTrigger = nodes.searchIcon.contains(event.target);
-        if (!insideDrawer && !insideTrigger) closeMobileSearch();
-    });
-
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         if (state.desktopOpen) closeDesktopSearch();
-        if (state.mobileOpen) closeMobileSearch();
-    });
-
-    window.addEventListener('resize', () => {
-        if (isMobileViewport()) {
-            closeDesktopSearch({ restoreBody: true });
-        } else {
-            closeMobileSearch();
-        }
     });
 
     window.addEventListener('languageChanged', () => {
         if (state.lastSubmittedQuery) runSearch(state.lastSubmittedQuery);
     });
-
-    function ensureMobileSubmitButton() {
-        if (!nodes.mobileInput) return;
-        const mobileInner = nodes.mobileInput.closest('.mobile-search-inner');
-        if (!mobileInner) return;
-
-        let row = mobileInner.querySelector('.mobile-search-row');
-        if (!row) {
-            row = document.createElement('div');
-            row.className = 'mobile-search-row';
-            nodes.mobileInput.parentNode.insertBefore(row, nodes.mobileInput);
-            row.appendChild(nodes.mobileInput);
-        }
-
-        let button = row.querySelector('.mobile-search-submit');
-        if (!button) {
-            button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'mobile-search-submit';
-            button.setAttribute('aria-label', '搜索');
-            button.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <line x1="12" y1="19" x2="12" y2="5"></line>
-                    <polyline points="5 12 12 5 19 12"></polyline>
-                </svg>
-            `;
-            row.appendChild(button);
-        }
-        nodes.mobileSubmit = button;
-    }
-
-    function isMobileViewport() {
-        return window.innerWidth <= BREAKPOINT;
-    }
 
     function getCurrentLang() {
         const lang = localStorage.getItem('lang') || 'zh';
@@ -341,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function syncInputs(value, source) {
         if (source !== 'desktop' && nodes.desktopInput) nodes.desktopInput.value = value;
-        if (source !== 'mobile' && nodes.mobileInput) nodes.mobileInput.value = value;
     }
 
     function resetSubmittedState() {
@@ -350,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateIconState() {
-        nodes.searchIcon.classList.toggle('active', state.desktopOpen || state.mobileOpen);
+        nodes.searchIcon.classList.toggle('active', state.desktopOpen);
     }
 
     function toggleDesktopSearch() {
@@ -361,17 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function toggleMobileSearch() {
-        if (state.mobileOpen) {
-            closeMobileSearch();
-        } else {
-            openMobileSearch();
-        }
-    }
-
     function openDesktopSearch() {
         if (!nodes.searchOverlay) return;
-        closeMobileSearch();
         state.desktopOpen = true;
         nodes.searchOverlay.classList.add('active');
         lockBodyScroll();
@@ -389,29 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
         state.desktopOpen = false;
         nodes.searchOverlay?.classList.remove('active');
         if (options.restoreBody !== false) unlockBodyScroll();
-        updateIconState();
-    }
-
-    function openMobileSearch() {
-        if (!nodes.mobileDrawer) return;
-        closeDesktopSearch({ restoreBody: true });
-        state.mobileOpen = true;
-        nodes.mobileDrawer.classList.add('active');
-        nodes.menuOverlay?.classList.add('active');
-        updateIconState();
-        SearchService.getIndex().catch(() => null);
-        resetSubmittedState();
-        clearResultContainers();
-        setTimeout(() => {
-            nodes.mobileInput?.focus();
-        }, 40);
-    }
-
-    function closeMobileSearch() {
-        if (!state.mobileOpen) return;
-        state.mobileOpen = false;
-        nodes.mobileDrawer?.classList.remove('active');
-        nodes.menuOverlay?.classList.remove('active');
         updateIconState();
     }
 
@@ -462,20 +344,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function clearResultContainers() {
-        [nodes.desktopResults, nodes.mobileResults].forEach((container) => {
-            if (!container) return;
-            container.textContent = '';
-        });
+        if (!nodes.desktopResults) return;
+        nodes.desktopResults.textContent = '';
     }
 
     function appendState(textContent, className) {
-        [nodes.desktopResults, nodes.mobileResults].forEach((container) => {
-            if (!container) return;
-            const stateNode = document.createElement('div');
-            stateNode.className = `search-state ${className}`;
-            stateNode.textContent = textContent;
-            container.appendChild(stateNode);
-        });
+        if (!nodes.desktopResults) return;
+        const stateNode = document.createElement('div');
+        stateNode.className = `search-state ${className}`;
+        stateNode.textContent = textContent;
+        nodes.desktopResults.appendChild(stateNode);
     }
 
     function renderLoading() {
@@ -496,14 +374,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        [nodes.desktopResults, nodes.mobileResults].forEach((container) => {
-            if (!container) return;
-            const fragment = document.createDocumentFragment();
-            results.forEach((item) => {
-                fragment.appendChild(createResultItem(item));
-            });
-            container.appendChild(fragment);
+        if (!nodes.desktopResults) return;
+        const fragment = document.createDocumentFragment();
+        results.forEach((item) => {
+            fragment.appendChild(createResultItem(item));
         });
+        nodes.desktopResults.appendChild(fragment);
     }
 
     function createResultItem(result) {
