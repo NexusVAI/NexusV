@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a84ff" />
+  <title>研究｜GTA5 模组技术生态与 GTA6 影响预测</title>
+  <meta name="description" content="GTA5 模组技术生态与 GTA6 影响预测研究（发布时间：2025-02-06）。" />
+  <link rel="stylesheet" href="styles.css?v=20260206" />
+  <style>
+    /* research.html 独立页面的少量补充样式（不依赖外部资源） */
+    .paper-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .paper-meta {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    pre.paper {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-main);
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="main-content">
+    <section class="page active-page" id="research">
+      <header class="hero">
+        <div class="hero-content">
+          <div class="hero-kicker">研究</div>
+          <h1 class="hero-headline">GTA5 模组技术生态与 GTA6 影响预测研究</h1>
+          <p class="subtitle">发布时间：<strong>2025-02-06</strong> ｜ 本页面将自动加载并完整展示项目内的 Markdown 原文</p>
+
+          <div class="hero-buttons">
+            <a class="btn primary btn-liquid" href="index.html#home">
+              <span class="liquid-refraction"></span>
+              返回首页
+            </a>
+            <a class="btn ghost btn-liquid" href="index.html#news">
+              <span class="liquid-refraction"></span>
+              返回新闻
+            </a>
+          </div>
+
+          <div class="paper-toolbar" aria-label="研究工具栏">
+            <button class="btn ghost btn-liquid" type="button" id="paper-reload">
+              <span class="liquid-refraction"></span>
+              重新加载
+            </button>
+            <button class="btn ghost btn-liquid" type="button" id="paper-copy">
+              <span class="liquid-refraction"></span>
+              复制全文
+            </button>
+          </div>
+        </div>
+        <div class="hero-fade" aria-hidden="true"></div>
+      </header>
+
+      <section class="section" id="research-note">
+        <h2>说明</h2>
+        <div class="download-card paper-meta">
+          <p>
+            本研究以现有公开资料与可复核的技术事实为基础进行归纳与预测；由于 <strong>GTA6 尚未发布</strong>，文中涉及“发布后”的表述均属于情景化推断，用于讨论可能性与影响路径，而非对现实已发生事件的描述。
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="research-full">
+        <h2>正文（Markdown 原文）</h2>
+        <div class="download-card">
+          <pre class="paper" id="paper-content" aria-live="polite">GTA5 模组技术生态与 GTA6 影响预测研究（精简版）
+
+发布时间：2025-02-06
+说明：本文为原研究的精简展示稿，用于网页端快速加载与阅读。
+
+【摘要】
+本文梳理 GTA5（PC）模组生态的核心技术链路（注入/脚本运行时/分发平台）与社区结构（开发者—平台—玩家的协作网络），并在“兼容性差异、技术门槛、社区惯性”三变量框架下，对 GTA6 发布后可能产生的分流、迁移与再繁荣路径进行情景化预测。结论认为：短期内 GTA6 会带来注意力与时间的再分配，但 GTA5 由于内容存量、工具链成熟与创作惯性，仍可能在未来 3–5 年保持稳定活跃。
+
+【1. 研究问题与方法】
+RQ1：GTA5 模组如何在技术上实现对游戏的扩展？
+RQ2：模组生态为何能长期维持（甚至持续创新）？
+RQ3：GTA6 上线将如何改变 GTA5 既有生态？
+
+方法：
+1) 技术机理归纳（ScriptHook/托管脚本/原生函数调用）
+2) 平台生态分析（分发、更新、兼容性协作）
+3) 情景预测（乐观/中性/谨慎）
+
+【2. GTA5 模组技术栈（概览）】
+2.1 注入与钩子（Hook）
+GTA5 大多数“脚本/功能类”模组依赖 DLL/ASI 注入到游戏进程，并通过钩子进入游戏主循环，在每帧（tick）执行自定义逻辑。
+
+2.2 ScriptHookV 与托管脚本（C#）
+- ScriptHookV：为调用游戏原生函数提供入口。
+- ScriptHookVDotNet（C#）：提供更友好的 API 与开发体验，降低入门门槛，使中小规模功能模组供给更充足。
+
+2.3 版本兼容性：Enhanced vs Legacy
+版本更新与“增强/传承”分支会导致函数签名、内存模式或加载链变化，进而引发模组失效；常见缓解方式包括框架适配、脚本层规避与用户侧版本管理。
+
+【3. 生态结构与内容分工】
+- 内容层：载具/武器/画质/玩法/角色扮演等多类型并存。
+- 工具层：注入器、脚本运行时、编辑器、模型/纹理管线等决定生产效率。
+- 分发层：以第三方平台为主（分类、评价、版本说明、依赖提示），并逐步出现更“官方/半官方化”的商业分发尝试。
+
+生态的关键不在单个模组，而在“工具链 + 依赖链 + 版本协作机制”。
+
+【4. GTA6 的影响预测（情景化）】
+4.1 核心变量
+1) 兼容性差异：GTA6 与 GTA5 不存在直接二进制兼容，旧模组不会自然迁移。
+2) 技术门槛：若 GTA6 管线更复杂，初期供给偏慢；反之更快形成新生态。
+3) 社区惯性：老工具、教程与资产库会延长 GTA5 的活跃窗口。
+
+4.2 结论（摘要式）
+- 短期（0–12 个月）：热度分流明显，GTA6 话题占优；GTA5 生态偏“维护型更新”。
+- 中期（1–3 年）：两套生态并行，GTA5 依赖存量与成熟工具链保持稳定活跃。
+- 长期（3–5 年）：若 GTA6 PC 与可扩展性更强，创作重心逐步迁移；GTA5 以“经典平台”形态保留。
+
+【5. 实践建议】
+- 对开发者：模块化、降低对脆弱内存模式依赖；建立版本检测与降级策略。
+- 对平台：版本标签、依赖提示、兼容性评分、自动化测试/回报机制。
+- 对玩家：区分增强/传承与脚本运行时版本，按模组需求管理环境。
+
+【参考资料（节选）】
+ScriptHookVDotNet 文档与社区资料；Nexus Mods、GTA5-Mods.com 等平台公开信息；游戏模组生态与平台补充者相关学术研究。
+
+</pre>
+        </  <script>
+    (function () {
+      const el = document.getElementById("paper-content");
+      const btnReload = document.getElementById("paper-reload");
+      const btnCopy = document.getElementById("paper-copy");
+
+      // 已直接内嵌正文，不再从外部文件 fetch，避免部署路径导致的加载失败。
+      if (btnReload) btnReload.style.display = "none";
+
+      btnCopy.addEventListener("click", async function () {
+        try {
+          await navigator.clipboard.writeText(el.textContent || "");
+          btnCopy.textContent = "已复制";
+          setTimeout(() => (btnCopy.textContent = "复制全文"), 1200);
+        } catch (e) {
+          btnCopy.textContent = "复制失败";
+          setTimeout(() => (btnCopy.textContent = "复制全文"), 1200);
+        }
+      });
+    })();
+  </script>    });
+
+      loadPaper();
+    })();
+  </script>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

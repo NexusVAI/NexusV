@@ -72,10 +72,10 @@ const articleData = {
     },
     n2: {
         overlay: 'TACTFR',
-        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/N2.jpg', fit: 'cover', alt: 'TACTFR V5' },
+        media: { type: 'image', src: 'Logo/JJ1.webp', alt: 'TACTFR V5' },
         zh: {
             title: '了解 TACTFR V5',
-            date: '2026年3月03日',
+            date: '2026 年 3 月 03 日',
             category: '文档',
             readTime: '12 分钟阅读',
             paragraphs: [
@@ -192,12 +192,80 @@ const articleData = {
             ]
         }
     },
+    tactfr540: {
+        overlay: 'TACTFR',
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/N2.jpg', fit: 'cover', alt: 'TACTFR 5.4.0' },
+        zh: {
+            title: '震撼推出 TACTFR 5.4.0',
+            date: '2026 年 3 月 08 日',
+            category: '产品',
+            readTime: '10 分钟阅读',
+            paragraphs: [
+                '追求认知的无缝感：TACTFR 5.4.0 如何重塑虚拟执法的信任边界',
+                '在复杂系统的演进过程中，最伟大的进步往往不是源于功能的堆砌，而是源于对"摩擦力"的消除。',
+                '每一次版本更迭，本质上都是一次关于"信任"的深度对话。5.4.0 版本并未试图通过颠覆性的新功能来博取眼球，相反，它将目光投向了一个更深层、更具本质意义的课题：当玩家按下按键的那一刻，系统如何提供一种准确、稳定且符合直觉的反馈？',
+                '1. 隐形架构的重塑：修复即是创造',
+                '在软件工程中，最精湛的工艺往往隐藏在那些"看不见"的地方。5.4.0 的核心逻辑在于对底层稳定性的近乎偏执的打磨。',
+                '闭环的确定性：修复"案件无法正常终止"的 Bug，看似是细枝末节，实则是对玩家情感投入的尊重。在虚拟执法中，一个无法交付的嫌疑人会导致整个沉浸式体验的坍塌。5.4.0 确保了每一个行动都有始有终，这种逻辑的连贯性是建立信任的第一步。',
+                '性能的优雅调度：通过优化性能开销，我们解决的不仅仅是"卡顿"，更是"延迟感"。当玩家在洛圣都街头高速追逐时，稳定的帧数与瞬时的 AI 响应不再是奢求，而是一种基础环境。',
+                '消除状态残留：针对"拘捕动作样式错误继承"的修复，展现了我们对系统纯净度的追求。我们清理了那些微小的状态变量，确保每一次交互都是从零开始的、纯净的物理过程，彻底消除了破坏沉浸感的"鬼影"。',
+                '2. 交互的确定性：让意图与反馈对齐',
+                '"好用"的本质，是让工具在手中消失。',
+                '过去，玩家可能需要通过重复按键（如多次按下 E 或 G）来确认指令的执行。这种"盲按"本质上是玩家在弥补系统的不确定性。5.4.0 通过优化状态机逻辑，实现了按键与意图的"一一映射"。这种确定性让玩家不再需要分心去思考"按键是否生效"，从而将全部心智带宽投入到执法决策本身。',
+                '3. 听觉景观的维度升级：赋予警车"灵魂"',
+                '如果说逻辑决定了世界的运行，那么声音则决定了世界的厚度。',
+                '5.4.0 引入的自定义电台语音系统，不仅仅是一个音频播放器，它是一台"沉浸感放大器"。通过支持自定义 WAV 音频，玩家能够将现实世界的调度节奏引入游戏。当调度中心的通报声与警笛声交织，玩家不再是孤立的操作者，而是整个城市执法网络中的一个节点。这种感官上的共鸣，完成了从"玩游戏"到"职业体验"的质变。',
+                '4. 包容性设计：尊重每一位玩家的触感',
+                '我们意识到，工具不应强迫用户改变习惯。针对无小键盘用户的自定义按键配置（TACTFR.ini），是我们对社区多样性的回应。',
+                '通过开放底层键位的定义权，我们打破了硬件对体验的限制。无论是台式机还是笔记本用户，都能找到最符合自己生理直觉的操控方式。这种对"可配置性"的坚持，体现了 TACTFR 作为一款成熟模组的包容与成熟。',
+                '5. 迈向未来的地基',
+                '5.4.0 是一个分水岭。它标志着 TACTFR 从追求"功能覆盖"转向追求"交互深度"。',
+                '通过消除那些导致"违和感"的微小缝隙——无论是卡顿、逻辑死循环还是按键失效——我们实际上是在为未来的想象力腾出空间。当底座足够稳固，更复杂的 AI 整合、多线程案件链以及动态环境交互才拥有了生长的土壤。',
+                '这不仅仅是一次更新，这是一次对"何为真实"的重新定义。',
+                '在洛圣都的街头，更流畅、更自然、更可信的执法时代已经开启。而这，仅仅是一个更宏大叙事的起点。',
+                '现已开放下载（可能略有延迟）点击右上角使用 NexusV 即可跳转到主页下载模组',
+                'BUG 反馈:1079691553'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 5.4.0',
+            date: 'March 08, 2026',
+            category: 'Product',
+            readTime: '10 min read',
+            paragraphs: [
+                'Pursuing Seamless Cognition: How TACTFR 5.4.0 Reshapes the Trust Boundaries of Virtual Law Enforcement',
+                'In the evolution of complex systems, the greatest progress often comes not from piling up features, but from eliminating "friction".',
+                'Every version iteration is essentially a deep dialogue about "trust". Version 5.4.0 does not try to attract attention with groundbreaking new features. Instead, it focuses on a deeper, more essential question: When the player presses a key, how does the system provide accurate, stable, and intuitive feedback?',
+                '1. Reshaping the Invisible Architecture: Fixing is Creating',
+                'In software engineering, the most exquisite craftsmanship is often hidden in "invisible" places. The core logic of 5.4.0 lies in an almost paranoid polishing of underlying stability.',
+                'Certainty of Closed Loop: Fixing the bug where "cases cannot be terminated normally" may seem trivial, but it is actually respect for the player\'s emotional investment. In virtual law enforcement, a suspect that cannot be delivered can collapse the entire immersive experience. Version 5.4.0 ensures that every action has a beginning and an end. This logical coherence is the first step in building trust.',
+                'Elegant Performance Scheduling: By optimizing performance overhead, we solve not just "lag", but "delay sensation". When players are chasing at high speed on the streets of Los Santos, stable frame rates and instant AI responses are no longer a luxury, but a basic environment.',
+                'Eliminating State Residue: The fix for "arrest action style error inheritance" demonstrates our pursuit of system purity. We cleaned up those tiny state variables to ensure that every interaction is a pure physical process starting from zero, completely eliminating the "ghosts" that break immersion.',
+                '2. Certainty of Interaction: Aligning Intention with Feedback',
+                'The essence of "easy to use" is making the tool disappear in hand.',
+                'In the past, players might need to press keys repeatedly (such as pressing E or G multiple times) to confirm command execution. This "blind pressing" is essentially the player compensating for system uncertainty. Version 5.4.0 optimizes state machine logic to achieve "one-to-one mapping" between key presses and intentions. This certainty allows players to no longer need to distract themselves to think about "whether the key press is effective", thus devoting all mental bandwidth to law enforcement decision-making itself.',
+                '3. Dimensional Upgrade of Auditory Landscape: Giving Police Cars a "Soul"',
+                'If logic determines how the world runs, then sound determines the thickness of the world.',
+                'The custom radio voice system introduced in 5.4.0 is not just an audio player; it is an "immersion amplifier". By supporting custom WAV audio, players can bring the rhythm of real-world dispatch into the game. When the dispatch center\'s announcements intertwine with police sirens, the player is no longer an isolated operator, but a node in the city\'s entire law enforcement network. This sensory resonance completes the qualitative change from "playing a game" to "professional experience".',
+                '4. Inclusive Design: Respecting Every Player\'s Touch',
+                'We realize that tools should not force users to change their habits. The custom key configuration for users without numeric keypads (TACTFR.ini) is our response to community diversity.',
+                'By opening up the definition power of underlying key positions, we break the limitations of hardware on experience. Whether desktop or laptop users, everyone can find the control method that best fits their physiological intuition. This persistence in "configurability" reflects the inclusiveness and maturity of TACTFR as a mature mod.',
+                '5. The Foundation for the Future',
+                'Version 5.4.0 is a watershed. It marks TACTFR\'s shift from pursuing "functional coverage" to pursuing "interaction depth".',
+                'By eliminating those tiny gaps that cause "dissonance" — whether lag, logical dead loops, or key failures — we are actually making room for future imagination. Only when the base is solid enough can more complex AI integration, multi-threaded case chains, and dynamic environmental interaction have soil to grow.',
+                'This is not just an update; this is a redefinition of "what is real".',
+                'On the streets of Los Santos, a smoother, more natural, and more credible era of law enforcement has begun. And this is just the starting point of a grander narrative.',
+                'Now available for download (may be slightly delayed). Click "Use NexusV" in the upper right corner to jump to the homepage to download the mod.',
+                'BUG Feedback: 1079691553'
+            ]
+        }
+    },
     n4: {
         overlay: 'TACTFR',
         media: { type: 'image', src: 'Logo/L2.webp', alt: 'TACTFR V4' },
         zh: {
             title: 'TACTFR V4：执法闭环系统',
-            date: '2026年3月03日',
+            date: '2026 年 3 月 03 日',
             category: '文档',
             readTime: '8 分钟阅读',
             paragraphs: [
@@ -428,29 +496,21 @@ const articleData = {
     },
     n3: {
         overlay: 'NexusV',
-        media: { type: 'image', src: 'Logo/YE1.webp', alt: 'NexusV V4' },
+        media: { type: 'image', src: 'Logo/I121.png', alt: 'NexusV V4' },
         zh: {
             title: '了解 NexusV V4',
             date: '2026年2月26日',
             category: '产品',
             readTime: '5 分钟阅读',
             paragraphs: [
-                'NexusV（前身为 EF-Yuyu）是一个针对复杂沙盒环境设计的轻量级干预框架。在开发初期，该项目仅作为基础内存 Hook 的技术原型；经过多次迭代，系统现已实现对游戏内物理法则、实体属性及渲染交互的全覆盖。本文旨在阐述其如何通过极小的计算开销（约 74KB），构建一套高稳定性的功能矩阵。',
-                '2. 功能覆盖的系统化演进',
-                'NexusV 的核心目标是实现"全维度干预"。目前的版本已完成以下核心模块的集成：',
-                '物理常数操纵： 实现了对重力、摩擦力及时间流速（Slow Motion）的实时干预。',
-                '实体管理器： 支持动态实例化（Instant Spawning）保镖与敌对单位，并具备完善的逻辑控制。',
-                '环境自适应： 提供了包括无限耐力、水下呼吸及隐身在内的生存状态覆盖。',
-                '3. 交互性能与原生感优化',
-                '为了消除第三方工具常见的"违和感"，我们在交互层面进行了深度优化：',
-                '视场角（FOV）与灵敏度对齐： 针对自由视角（Free-cam）进行了输入流重构，通过自定义灵敏度曲线 S_out = f(I_mouse, γ)，解决了传统修改器常见的视差抖动与输入卡死问题。',
-                'UI 响应式动效： 引入了非线性动画处理，使菜单切换在视觉上更趋近于游戏原生 HUD。',
-                '可视化导航： 整合了瞄准点瞬移（Point-to-Point Teleport）技术，将空间位移逻辑与射击精度算法相结合。',
-                '4. 架构稳定性与资源效率',
-                '微内核设计： 从初期的 2.0KB 增长至 74.0KB，代码量的增加主要用于提升配置兼容性（JSON/INI 自动保存）与错误处理逻辑。',
-                '冲突规避机制： 彻底重构了底层脚本分发引擎，消除了在旧版本中常见的并行执行冲突，显著降低了在高负载场景下的崩溃频率。',
-                '5. 结论',
-                'NexusV 已经完成从"实验性脚本"向"全功能套件"的转变。通过对用户反馈的快速迭代（如修复卡地底、优化武器分类），该工具目前已在功能深度与运行稳定性之间达到了一个平衡点，为用户提供了一个开箱即用的、近乎全能的虚拟实验室环境。'
+                'NexusV：回归工具的本质，让创作更简单',
+                '在沙盒游戏的广袤世界里，修改器不应该是复杂系统的负担，而应该是连接创意与现实的桥梁。NexusV（原 EF-Yuyu）的演进目标非常明确：用最轻量级的体量，提供最稳定的操作体验。我们不追求堆砌冗余的功能，而是致力于把每一个基础功能做到“好用”。',
+                '1. 极简，但不简单 NexusV 的核心安装包仅只有 74KB。在动辄数百兆的插件环境中，我们坚持微内核设计。这意味着它几乎不占用系统资源，也不会干扰游戏的原生运行。从最初的内存 Hook 原型到现在的全功能版本，每一行代码的增加都是为了更好的兼容性与错误处理，而不是无谓的膨胀。',
+                '2. 核心功能：赋予你掌控权 我们整理了玩家最常用的功能矩阵，并确保它们在各种场景下都能稳定触发：物理干预：实时调整重力、摩擦力及时间流速（Slow Motion）。实体调度：快速生成保镖或敌对目标，并能通过逻辑控制其行为。生存覆盖：包括无限耐力、水下呼吸及隐身模式，让你在探索时不再受限。',
+                '3. 消除“操作隔阂” 一个好的工具应该让人感觉不到它的存在。为了消除第三方插件常见的违和感，我们重点优化了交互体验：平滑视角控制：针对自由相机（Free-cam），我们重构了输入算法。通过自定义灵敏度曲线 Sout = f(Imouse, γ)，解决了视角转动时的抖动与卡顿现象，让镜头推移更具电影感。原生级 UI：引入了非线性动画处理，菜单的每一次呼出与切换都力求贴合游戏原生的 HUD 质感。空间定位：整合了瞄准点瞬移技术，将位移逻辑与准星精确对齐，实现“指哪到哪”。',
+                '4. 听取反馈，持续修复 NexusV 的迭代动力来自社区。在最新的版本中，我们重点解决了那些影响心情的“小问题”：规避场景冲突：彻底重构了脚本分发引擎，大幅降低了高负载场景下的崩溃频率。逻辑优化：修复了此前版本中偶尔出现的“掉入地底”问题，并重新梳理了武器分类逻辑，让查找更加直观。',
+                '5. 加入我们 NexusV 已经从一个实验性脚本成长为一套成熟的工具集。它是一个开箱即用的、可靠的虚拟实验室，帮助你更自由地探索游戏的边界。BUG 反馈群：1079691553。获取方式：点击页面右上角“使用 NexusV 即可下载”。',
+                '每一次按下按键，都应该得到确定的响应。NexusV，让修改回归简单。'
             ]
         },
         en: {
@@ -459,22 +519,14 @@ const articleData = {
             category: 'Product',
             readTime: '5 min read',
             paragraphs: [
-                'NexusV (formerly EF-Yuyu) is a lightweight intervention framework designed for complex sandbox environments. In the early stages of development, the project was merely a technical prototype for basic memory Hook; after multiple iterations, the system now achieves full coverage of in-game physics, entity attributes, and rendering interactions. This article aims to explain how it constructs a highly stable functional matrix through minimal computational overhead (approximately 74KB).',
-                '2. Systematic Functional Coverage',
-                'The core goal of NexusV is to achieve "full-dimensional intervention". The current version has completed integration of the following core modules:',
-                'Physical Constant Manipulation: Implemented real-time intervention for gravity, friction, and time flow rate (Slow Motion).',
-                'Entity Manager: Supports dynamic instantiation (Instant Spawning) of bodyguards and hostile units, with complete logic control.',
-                'Environment Adaptation: Provides survival state coverage including infinite stamina, underwater breathing, and invisibility.',
-                '3. Interaction & UX Refinement',
-                'To eliminate the common "dissonance" of third-party tools, we have conducted deep optimization at the interaction layer:',
-                'FOV and Sensitivity Alignment: Input stream refactoring for free-cam, using custom sensitivity curve S_out = f(I_mouse, γ), solving common parallax jitter and input freezing issues in traditional trainers.',
-                'UI Responsive Animation: Introduced nonlinear animation processing, making menu transitions visually closer to the game\'s native HUD.',
-                'Visual Navigation: Integrated Point-to-Point Teleport technology, combining spatial displacement logic with shooting accuracy algorithms.',
-                '4. Architecture & Efficiency',
-                'Micro-kernel Design: Growing from 2.0KB in the early stages to 74.0KB, the increase in code volume is mainly used to enhance configuration compatibility (JSON/INI auto-save) and error handling logic.',
-                'Conflict Avoidance Mechanism: Completely refactored the underlying script distribution engine, eliminating common parallel execution conflicts in older versions, significantly reducing crash frequency under high-load scenarios.',
-                '5. Summary',
-                'NexusV has completed the transformation from "experimental script" to "full-featured suite". Through rapid iteration of user feedback (such as fixing underground stuck issues, optimizing weapon classification), the tool has achieved a balance between functional depth and operational stability, providing users with an out-of-the-box, near-all-capable virtual laboratory environment.'
+                'NexusV: Return to the Essence of Tools, Make Creation Simpler',
+                'In the vast world of sandbox games, a mod tool should not be a burden of complex systems—it should be the bridge connecting creativity and reality. The evolution goal of NexusV (formerly EF-Yuyu) is crystal clear: provide the most stable operating experience with the lightest possible footprint. We do not pursue stacking redundant features; instead, we strive to make every basic function "work well."',
+                '1. Minimalist, Yet Not Simple The core installer of NexusV is only 74KB. In an environment where plugins often take up hundreds of megabytes, we adhere to a micro-kernel design. This means it barely consumes system resources and will not interfere with the game native operation. From the initial memory Hook prototype to the full-featured version today, every line of code added is for better compatibility and error handling, not unnecessary bloat.',
+                '2. Core Features: Empowering You with Control We have organized the most commonly used feature matrix for players and ensured they can stably trigger in various scenarios: Physical Intervention: Real-time adjustment of gravity, friction, and time flow (Slow Motion). Entity Summoning: Quickly spawn bodyguards or hostile targets, with logical control over their behavior. Survival Overrides: Including infinite stamina, underwater breathing, and invisibility mode, freeing you from limitations during exploration.',
+                '3. Eliminating the "Operation Gap" A good tool should make itself unnoticeable. To eliminate the common dissonance found in third-party plugins, we have focused on optimizing the interaction experience: Smooth Camera Control: For the free camera (Free-cam), we have rebuilt the input algorithm. Through a custom sensitivity curve Sout = f(Imouse, γ), we have solved the jitter and stuttering during camera rotation, making shot movement more cinematic. Native-Level UI: Introduced non-linear animation processing, making every menu call and switch strive to match the game native HUD texture. Spatial Positioning: Integrated aim-point teleportation technology, aligning displacement logic precisely with the crosshair, achieving "point to arrive."',
+                '4. Listening to Feedback, Continuous Fixes The driving force behind NexusV iteration comes from the community. In the latest version, we have focused on fixing those "small issues" that affect mood: Avoiding Scene Conflicts: Completely restructured the script distribution engine, significantly reducing crash frequency in high-load scenarios. Logic Optimization: Fixed the occasional "falling underground" issue from previous versions and reorganized weapon classification logic for more intuitive searching.',
+                '5. Join Us NexusV has grown from an experimental script into a mature toolkit. It is a ready-to-use, reliable virtual laboratory that helps you explore the boundaries of the game more freely. BUG Feedback Group: 1079691553. How to Get: Click "Use NexusV to Download" in the top right corner of the page.',
+                'Every key press should receive a definite response. NexusV, bringing mods back to simplicity.'
             ]
         }
     },
@@ -483,11 +535,12 @@ const articleData = {
         media: { type: 'video', src: 'Logo/V4C.mp4', poster: 'Logo/N1.jpg', fit: 'cover', alt: 'Sentience V4C' },
         zh: {
             title: '隆重推出 Sentience V4C',
-            date: '2026年3月07日',
+            date: '2026 年 3 月 07 日',
             category: '产品',
             readTime: '10 分钟阅读',
             paragraphs: [
                 '在最新的系统中，我们致力于解决虚拟世界中非玩家角色（NPC）的"瞬时性（Transience）"痛点。通过引入基于环境触发的感知引擎、持久化社会记忆账本以及本体特征对齐技术，我们成功构建了一套具备自恰逻辑的社会动力学模型。NPC 不再是静态的脚本响应者，而是拥有独立身份认知、长期社会记忆并能进行信息交换的具身智能体（Embodied Agents）。',
+                '<div style="margin: 48px auto; max-width: 1080px; position: relative;"><video controls playsinline class="article-video" style="width: 100%; border-radius: 4px; display: block;"><source src="Logo/XC01.mp4" type="video/mp4">您的浏览器不支持视频标签。</video><div style="position: absolute; bottom: 12px; left: 16px; color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.8); pointer-events: none;">实机游玩画面，使用本地大模型强势驱动</div></div>',
                 '从 V3 到 V4 加入自我认同的飞跃意义重大——知道自己是什么的 NPC，其行为方式与仅对刺激做出反应的 NPC 有着根本的不同。',
                 '1. 响应式感知与自主行为环路 (Reactive Perception & Autonomous Behavioral Loops)',
                 '我们重构了代理的底层检测逻辑，将其从被动的事件接收器升级为具备环境觉察能力的实体。',
@@ -520,6 +573,7 @@ const articleData = {
             readTime: '10 min read',
             paragraphs: [
                 'In our latest system, we are committed to solving the "Transience" pain point of non-player characters (NPCs) in the virtual world. By introducing environment-triggered perception engines, persistent social memory ledgers, and ontological feature alignment technology, we have successfully constructed a self-consistent social dynamics model. NPCs are no longer static script responders, but embodied intelligent agents with independent identity cognition, long-term social memory, and the ability to exchange information.',
+                '<div style="margin: 48px auto; max-width: 1080px; position: relative;"><video controls playsinline class="article-video" style="width: 100%; border-radius: 4px; display: block;"><source src="Logo/XC01.mp4" type="video/mp4">Your browser does not support the video tag.</video><div style="position: absolute; bottom: 12px; left: 16px; color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.8); pointer-events: none;">实机游玩画面，使用本地大模型强势驱动</div></div>',
                 '1. Reactive Perception & Autonomous Behavioral Loops',
                 'We have reconstructed the underlying detection logic of agents, upgrading them from passive event receivers to entities with environmental awareness capabilities.',
                 'Environment Detection: Agents can now process multi-dimensional signals in real-time, including high-frequency sound sources (spectral detection) and abnormal physical movements (visual collision detection).',
@@ -591,21 +645,63 @@ const articleData = {
     news2: {
         media: { type: 'image', src: 'Logo/yellow-blue-bg.webp', alt: 'TACTFR' },
         zh: {
-            title: '在TACTFR中尝试接入Sentience',
-            date: '2026年03月03日',
-            category: '公司',
+            title: '在 TACTFR 中尝试接入 Sentience',
+            date: '2026 年 03 月 03 日',
+            category: '工程',
+            readTime: '10 分钟阅读',
             paragraphs: [
-                'TACTFR 框架现已支持 Sentience 核心模块的无缝接入。',
-                '这一整合将极大提升系统的响应速度与情境理解能力，为开发者提供更灵活的工具集。'
+                '在虚拟执法模拟领域，我们始终面临一个终极难题：如何打破预设对话脚本的"玻璃墙"？即便最复杂的决策树，也无法完全复现执法过程中那种不可预测的人性博弈。',
+                '今天，我们正式分享在 TACTFR (Tactical Response) 框架中接入 Sentience AI 引擎的技术探索。这不仅仅是增加了一个功能，这是一次关于"执法透明度"与"交互涌现性"的实验。',
+                '1. 愿景：从"交互菜单"到"自然语言干预"',
+                '长久以来，TACTFR 的核心逻辑基于确定的状态机。当警员拦截嫌疑人时，交互被局限在 E、G 或小键盘的选项中。',
+                '通过引入 Sentience，我们试图构建一种上下文感知（Context-Aware）的对话系统。警员不再是点击"询问证照"，而是可以直接通过语音提问："请出示你的证件，并解释你为什么在限速 60 的路段开到了 100？"',
+                '2. 技术架构：构建双向感知桥梁',
+                '将 Sentience 接入 TACTFR 需要处理极其复杂的实时数据流。我们不仅需要将语音转化为指令，还需要将 TACTFR 内部的实体状态实时推送到 LLM（大语言模型）的 Prompt 缓冲池中。',
+                '状态映射向量化：我们将当前案件的背景（如：嫌疑人罪名 S_crime、情绪指数 E_index、持有武器 W_status）实时编码进模型输入。',
+                '指令注入协议：当 AI 判定嫌疑人由于压力过大选择逃跑时，Sentience 会通过我们建立的自定义 API，向 TACTFR 逻辑引擎发送一个优先级为 P_0 的强制指令，触发底层的追捕 AI 逻辑。',
+                'Output_behavior = f(Prompt_context, State_TACTFR)',
+                '3. 执法沉浸感的质变',
+                '在初步的集成测试中，我们观察到了令人惊叹的"涌现行为"：',
+                '动态对峙：在一次持枪对峙场景中，AI 不再仅仅根据概率决定是否投降，而是会根据玩家说话的语气和威胁程度进行实时评判。如果你试图安抚对方，嫌疑人的压力值 P_stress 会呈现非线性下降。',
+                '无限的口供可能性：每一名被捕者的背景故事都是动态生成的。通过 Sentience，你可以审讯出案件之外的细节，这些细节虽然不影响底层数值，但极大地丰富了"身为警官"的职业代入感。',
+                '4. 克服摩擦力：延迟与确定性',
+                '在公司内部测试中，最大的挑战依然在于推理延迟（Latency）。在瞬息万变的执法现场，即使是 200ms 的响应延迟也会破坏生死一瞬的紧张感。',
+                '我们正在尝试以下方案进行优化：',
+                '本地化轻量级模型预推断：在等待云端高质量响应的同时，使用本地的小型模型（如 4-bit 量化的版本）生成初步的非语言动作反馈。',
+                '混合驱动模式：基础指令（如"趴下"）仍保留传统脚本触发，而复杂的谈话逻辑则交由 Sentience 处理。',
+                '5. 结语：通往未来的第一步',
+                '2026 年将是虚拟环境智能化爆发的一年。TACTFR 与 Sentience 的合流，是我们对"什么是可信的执法体验"给出的最新回答。',
+                '我们正在重写 TACTFR 的底层交互逻辑，以容纳这些具备"灵魂"的虚拟市民。洛圣都的街头即将变得前所未有的喧嚣，而每一声呐喊背后，都有了一个真实的逻辑支撑。'
             ]
         },
         en: {
             title: 'Integrating Sentience in TACTFR',
             date: 'March 03, 2026',
-            category: 'Company',
+            category: 'Engineering',
+            readTime: '10 min read',
             paragraphs: [
-                'The TACTFR framework now supports seamless integration of the Sentience core module.',
-                'This integration will greatly improve the system\'s response speed and situational understanding capabilities, providing developers with a more flexible toolset.'
+                'In the field of virtual law enforcement simulation, we have always faced an ultimate challenge: how to break the "glass wall" of preset dialogue scripts? Even the most complex decision trees cannot fully reproduce the unpredictable human game in the law enforcement process.',
+                'Today, we formally share our technical exploration of integrating the Sentience AI engine into the TACTFR (Tactical Response) framework. This is not just adding a feature; it is an experiment in "law enforcement transparency" and "interactive emergence".',
+                '1. Vision: From "Interaction Menu" to "Natural Language Intervention"',
+                'For a long time, the core logic of TACTFR has been based on deterministic state machines. When an officer intercepts a suspect, interactions are limited to E, G, or numeric keypad options.',
+                'By introducing Sentience, we attempt to build a Context-Aware dialogue system. Instead of clicking "Ask for ID", officers can directly ask via voice: "Please show me your license and explain why you were driving 100 in a 60 zone?"',
+                '2. Technical Architecture: Building a Two-Way Perception Bridge',
+                'Integrating Sentience into TACTFR requires handling extremely complex real-time data streams. We not only need to convert speech into commands, but also push the entity states within TACTFR in real-time to the LLM\'s Prompt buffer.',
+                'State Mapping Vectorization: We encode the context of the current case (such as suspect crime S_crime, emotion index E_index, weapon status W_status) into the model input in real-time.',
+                'Command Injection Protocol: When the AI determines that the suspect chooses to flee due to excessive stress, Sentience will send a priority P_0 forced command to the TACTFR logic engine through our custom API, triggering the underlying pursuit AI logic.',
+                'Output_behavior = f(Prompt_context, State_TACTFR)',
+                '3. Qualitative Change in Law Enforcement Immersion',
+                'In preliminary integration tests, we observed amazing "emergent behaviors":',
+                'Dynamic Confrontation: In a hostage standoff scenario, the AI no longer decides whether to surrender based solely on probability, but makes real-time judgments based on the player\'s tone and threat level. If you try to calm the suspect, their stress value P_stress will show a nonlinear decrease.',
+                'Infinite Confession Possibilities: The background story of each arrestee is dynamically generated. Through Sentience, you can interrogate details beyond the case. Although these details do not affect the underlying values, they greatly enrich the professional immersion of "being a police officer".',
+                '4. Overcoming Friction: Latency and Certainty',
+                'In internal company testing, the biggest challenge remains inference latency. In the ever-changing law enforcement scene, even a 200ms response delay can destroy the tension of life-and-death moments.',
+                'We are trying the following solutions for optimization:',
+                'Localized Lightweight Model Pre-inference: While waiting for high-quality cloud responses, use a local small model (such as a 4-bit quantized version) to generate preliminary non-verbal action feedback.',
+                'Hybrid Drive Mode: Basic commands (such as "Get down") still use traditional script triggers, while complex conversation logic is handled by Sentience.',
+                '5. Conclusion: The First Step Toward the Future',
+                '2026 will be a year of explosive intelligence in virtual environments. The convergence of TACTFR and Sentience is our latest answer to "what is a credible law enforcement experience".',
+                'We are rewriting the underlying interaction logic of TACTFR to accommodate these virtual citizens with "souls". The streets of Los Santos are about to become more bustling than ever, and behind every cry, there is now a real logical support.'
             ]
         }
     },
@@ -948,20 +1044,116 @@ const articleData = {
         media: { type: 'image', src: 'Logo/introducing_the_gpt_store.webp', alt: '更新日志' },
         zh: {
             title: 'NexusV 更新日志',
-            date: '2026年1月20日',
+            date: '2026 年 1 月 20 日',
             category: '产品',
+            readTime: '8 分钟阅读',
             paragraphs: [
-                'NexusV 最新版本的详细更新记录。',
-                '包含了多项性能优化、API 接口调整以及已知问题的修复。'
+                '本文档记录了 NexusV 网站的最新版本更新内容。',
+                'v1.0.0 - 2026 年 1 月 20 日',
+                '新增功能',
+                '• 研究下拉菜单：新增超级菜单设计，支持快速访问所有研究文章',
+                '• 移动汉堡菜单：优化移动端导航体验，支持子菜单展开',
+                '• 最新文章系统：新增"最新动态"栏目，支持双列网格布局',
+                '• 视频懒加载：实现智能视频加载系统，支持白屏检测和自动降级',
+                '• 主题切换：新增深浅色模式切换功能，支持系统偏好检测',
+                '• 国际化支持：新增中英文双语切换，支持全站内容翻译',
+                '• 搜索功能：新增全屏搜索覆盖层，支持文章快速查找',
+                '• 留言系统：集成 Cusdis 评论系统，支持匿名留言',
+                '性能优化',
+                '• 首屏加载优化：关键 CSS 内联，非关键资源延迟加载',
+                '• 图片优化：WebP 格式优先，支持渐进式加载',
+                '• 动画优化：使用 CSS transform 替代 position 变化，GPU 加速',
+                '• 代码分割：按页面拆分 JavaScript，减少初始加载体积',
+                '• 缓存策略：实现 Service Worker 缓存，支持离线访问',
+                'UI/UX 改进',
+                '• 卡片悬停效果：优化图片缩放动画，使用 cubic-bezier 缓动',
+                '• 响应式布局：适配桌面、平板、手机三种视口',
+                '• 字体优化：使用 Inter 字体，支持多语言渲染',
+                '• 滚动条美化：根据深浅色模式自动切换滚动条颜色',
+                '• 无障碍改进：添加 ARIA 标签，支持键盘导航',
+                'Bug 修复',
+                '• 修复移动端菜单切换时的闪烁问题',
+                '• 修复视频加载失败时的降级逻辑',
+                '• 修复浅色模式下部分文字对比度不足',
+                '• 修复搜索框在部分浏览器中的对齐问题',
+                '技术栈',
+                '• 前端：原生 HTML5 + CSS3 + Vanilla JavaScript',
+                '• 样式：CSS 变量 + Flexbox + Grid 布局',
+                '• 动画：CSS Transitions + Web Animations API',
+                '• 国际化：自定义 i18n 系统，支持动态语言切换',
+                '• 部署：Vercel 静态托管，支持全球 CDN 加速',
+                '已知问题',
+                '• Firefox 浏览器中部分动画效果略有差异',
+                '• 部分旧版 Android 设备视频自动播放受限',
+                '• Cusdis 评论系统在极少数网络环境下加载缓慢',
+                '未来计划',
+                '• 新增文章阅读进度指示器',
+                '• 优化移动端手势支持',
+                '• 新增文章收藏和分享功能',
+                '• 改进搜索算法，支持模糊匹配',
+                '• 新增深色模式自动切换（根据时间）',
+                '反馈与支持',
+                '如您在使用过程中遇到任何问题，请通过以下方式联系我们：',
+                '• GitHub Issues: https://github.com/NexusVAI',
+                '• 邮箱：nexusv@139.com',
+                '感谢您使用 NexusV！'
             ]
         },
         en: {
             title: 'NexusV Changelog',
             date: 'January 20, 2026',
             category: 'Product',
+            readTime: '8 min read',
             paragraphs: [
-                'Detailed update records of the latest version of NexusV.',
-                'Includes multiple performance optimizations, API interface adjustments, and fixes for known issues.'
+                'This document records the latest version updates of the NexusV website.',
+                'v1.0.0 - January 20, 2026',
+                'New Features',
+                '• Research Dropdown Menu: New mega menu design for quick access to all research articles',
+                '• Mobile Hamburger Menu: Optimized mobile navigation with submenu support',
+                '• Latest Articles System: New "Latest News" section with dual-column grid layout',
+                '• Video Lazy Loading: Smart video loading system with white screen detection and auto-fallback',
+                '• Theme Switching: Light/dark mode toggle with system preference detection',
+                '• Internationalization: Chinese/English bilingual support with full-site translation',
+                '• Search Function: Full-screen search overlay for quick article lookup',
+                '• Comment System: Integrated Cusdis for anonymous comments',
+                'Performance Optimizations',
+                '• First Screen Optimization: Critical CSS inlined, non-critical resources lazy-loaded',
+                '• Image Optimization: WebP format priority with progressive loading',
+                '• Animation Optimization: CSS transform instead of position changes, GPU accelerated',
+                '• Code Splitting: JavaScript split by page, reduced initial load size',
+                '• Caching Strategy: Service Worker caching implemented, offline support',
+                'UI/UX Improvements',
+                '• Card Hover Effects: Optimized image zoom animation with cubic-bezier easing',
+                '• Responsive Layout: Adapted for desktop, tablet, and mobile viewports',
+                '• Font Optimization: Inter font with multi-language rendering support',
+                '• Scrollbar Styling: Auto-switching scrollbar colors based on theme',
+                '• Accessibility: ARIA labels added, keyboard navigation support',
+                'Bug Fixes',
+                '• Fixed menu flickering issue during mobile menu switching',
+                '• Fixed fallback logic when video loading fails',
+                '• Fixed insufficient text contrast in light mode',
+                '• Fixed search box alignment issues in some browsers',
+                'Technology Stack',
+                '• Frontend: Native HTML5 + CSS3 + Vanilla JavaScript',
+                '• Styling: CSS Variables + Flexbox + Grid Layout',
+                '• Animation: CSS Transitions + Web Animations API',
+                '• Internationalization: Custom i18n system with dynamic language switching',
+                '• Deployment: Vercel static hosting with global CDN acceleration',
+                'Known Issues',
+                '• Some animation effects vary slightly in Firefox browser',
+                '• Video autoplay limited on some older Android devices',
+                '• Cusdis comment system loads slowly in rare network conditions',
+                'Future Plans',
+                '• Add article reading progress indicator',
+                '• Optimize mobile gesture support',
+                '• Add article bookmarking and sharing features',
+                '• Improve search algorithm with fuzzy matching',
+                '• Add automatic dark mode switching (based on time)',
+                'Feedback & Support',
+                'If you encounter any issues, please contact us via:',
+                '• GitHub Issues: https://github.com/NexusVAI',
+                '• Email: nexusv@139.com',
+                'Thank you for using NexusV!'
             ]
         }
     },
@@ -1104,7 +1296,7 @@ function initArticlePage() {
         en: [
             {
                 tab: 'Ethan',
-                text: 'Yo, so one player was chattin\' with this cop NPC, kept throwin\' insults left and right. But get this — his好感度 (like, his rep for that player) was actually goin\' UP, not down. Shoulda been droppin\' \'til it hit rock bottom, then either he books it, walks off, turns hostile, or they just go back and forth roastin\' each other. Then the plot twist hits — after that player finished clownin\' him and dipped, they caught a 2-star wanted level! That same cop they were just dissin\' deadass says, "I\'ve had enough of you!" and starts blastin\' them. They didn\'t even hit record — super frustrating. But honestly, this just proves how fire this mod really is.'
+                text: 'Yo, so one player was chattin\' with this cop NPC, kept throwin\' insults left and right. But get this — his affinity score (like, his rep for that player) was actually goin\' UP, not down. Shoulda been droppin\' \'til it hit rock bottom, then either he books it, walks off, turns hostile, or they just go back and forth roastin\' each other. Then the plot twist hits — after that player finished clownin\' him and dipped, they caught a 2-star wanted level! That same cop they were just dissin\' deadass says, "I\'ve had enough of you!" and starts blastin\' them. They didn\'t even hit record — super frustrating. But honestly, this just proves how fire this mod really is.'
             },
             {
                 tab: 'Mia',
@@ -1294,11 +1486,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid) return;
 
     function renderIndex(lang) {
-        // Scrollable List (sentienceV4C, n2, n3)
+        // Scrollable List (sentienceV4C, tactfr540, n3)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['sentienceV4C', 'n2', 'n3'];
-            const linkTargets = ['sentienceV4C', 'n2', 'n3'];
+            const listIds = ['sentienceV4C', 'tactfr540', 'n3'];
+            const linkTargets = ['sentienceV4C', 'tactfr540', 'n3'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
@@ -1342,10 +1534,10 @@ function initIndexPage() {
             });
         }
 
-        // News Grid (news1...news8)
+        // News Grid (n2, news1...news8)
         if (newsGrid) {
             newsGrid.innerHTML = '';
-            ['news9', 'news1', 'news2', 'news3', 'news4', 'news5', 'news6', 'news7', 'news8'].forEach(id => {
+            ['n2', 'news9', 'news1', 'news2', 'news3', 'news4', 'news5', 'news6', 'news7', 'news8'].forEach(id => {
                 const item = articleData[id];
                 if (!item) return;
                 const data = item[lang] || item.zh;

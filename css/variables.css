@@ -14,6 +14,9 @@
     --nav-height: 54px;
     --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     --font-main: 'Inter', -apple-system, sans-serif;
+    --scrollbar-thumb: #444444;
+    --scrollbar-track: #1a1a1a;
+    --scrollbar-thumb-hover: #555555;
 }
 
 :root.light-theme,
@@ -30,9 +33,41 @@ body.light-theme {
     --overlay-bg: rgba(255, 255, 255, 0.3);
     --pill-bg: rgba(0, 0, 0, 0.05);
     --pill-hover: rgba(0, 0, 0, 0.1);
+    --scrollbar-thumb: #c1c1c1;
+    --scrollbar-track: #f0f0f0;
+    --scrollbar-thumb-hover: #a8a8a8;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 5px;
+    border: 2px solid var(--scrollbar-track);
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    border: 2px solid var(--scrollbar-track);
+    background-clip: padding-box;
+}
+
+/* Firefox Scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
 
 body {
     background-color: var(--bg-color);

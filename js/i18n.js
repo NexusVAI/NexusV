@@ -7,7 +7,7 @@ const translations = {
         'nav.news': '新闻',
         'nav.contact': '联系我们',
         'nav.login': '登录',
-        'nav.try': '使用 NexusV ↗',
+        'nav.try': '使用 NexusV <span class="arrow-icon">↗</span>',
         'search.placeholder': '关于 NexusV',
         'hero.overlay': 'Infusing Life into San Andreas',
         'hero.title': '赋予洛圣都数字灵魂',
@@ -44,7 +44,7 @@ const translations = {
         'menu.research.deep_sentienceV4C': '深入了解 Sentience V4C',
         'menu.research.sentienceV4C': 'Sentience V4C',
         'menu.research.deep_nexusv4': '深入了解 NexusV V4',
-        'menu.research.deep_tactfr5': '深入了解 TACTFR V5',
+        'menu.research.deep_tactfr5': '深入了解 TACTFR 5.4.0',
         'menu.research.label': '前沿进展',
         'menu.research.sentience31': 'Sentience V3.1',
         'menu.research.sentience3': 'Sentience V3',
@@ -88,7 +88,7 @@ const translations = {
         'nav.news': 'News',
         'nav.contact': 'Contact',
         'nav.login': 'Log in',
-        'nav.try': 'Try NexusV ↗',
+        'nav.try': 'Try NexusV <span class="arrow-icon">↗</span>',
         'search.placeholder': 'About NexusV',
         'hero.overlay': 'Infusing Life into San Andreas',
         'hero.title': 'Infusing Life into San Andreas',
@@ -125,7 +125,7 @@ const translations = {
         'menu.research.deep_sentienceV4C': 'Deep Dive: Sentience V4C',
         'menu.research.sentienceV4C': 'Sentience V4C',
         'menu.research.deep_nexusv4': 'Deep Dive: NexusV V4',
-        'menu.research.deep_tactfr5': 'Deep Dive: TACTFR V5',
+        'menu.research.deep_tactfr5': 'Deep Dive: TACTFR 5.4.0',
         'menu.research.label': 'Frontier Progress',
         'menu.research.sentience31': 'Sentience V3.1',
         'menu.research.sentience3': 'Sentience V3',
@@ -169,7 +169,12 @@ function translate(root = document) {
     elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) {
-            el.textContent = translations[lang][key];
+            const value = translations[lang][key];
+            if (value.includes('<')) {
+                el.innerHTML = value;
+            } else {
+                el.textContent = value;
+            }
         }
     });
     
