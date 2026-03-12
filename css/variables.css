@@ -38,6 +38,25 @@ body.light-theme {
     --scrollbar-thumb-hover: #a8a8a8;
 }
 
+:root.warm-theme,
+body.warm-theme {
+    --bg-color: #1a1814;
+    --bg-card: #25231e;
+    --bg-section: #2d2a24;
+    --bg-footer: #1a1814;
+    --text-color: #f5f0e6;
+    --secondary-text: #a89b85;
+    --border-color: #3d382f;
+    --border-light: rgba(245, 240, 230, 0.15);
+    --nav-bg: #1a1814;
+    --overlay-bg: rgba(26, 24, 20, 0.3);
+    --pill-bg: rgba(245, 240, 230, 0.08);
+    --pill-hover: rgba(245, 240, 230, 0.15);
+    --scrollbar-thumb: #5a5449;
+    --scrollbar-track: #2d2a24;
+    --scrollbar-thumb-hover: #6b6560;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* Scrollbar Styles */

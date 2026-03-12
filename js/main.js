@@ -9,8 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
-            const isLight = document.body.classList.contains('light-theme');
-            window.setTheme(isLight ? 'dark' : 'light');
+            if (window.toggleTheme) window.toggleTheme();
         });
     }
 

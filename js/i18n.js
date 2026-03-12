@@ -40,15 +40,19 @@ const translations = {
         
         // Menu Items
         'menu.research.index': '意识架构索引',
+        'menu.research.deep_sentienceLS': '深入了解 Sentience-LS',
         'menu.research.deep_sentience31': '了解 Sentience V3.1',
         'menu.research.deep_sentienceV4C': '深入了解 Sentience V4C',
+        'menu.research.sentienceLS': 'Sentience-LS',
         'menu.research.sentienceV4C': 'Sentience V4C',
         'menu.research.deep_nexusv4': '深入了解 NexusV V4',
         'menu.research.deep_tactfr5': '深入了解 TACTFR 5.4.0',
+        'menu.research.deep_tactfr55': '深入了解 TACTFR 5.5.0',
         'menu.research.label': '前沿进展',
         'menu.research.sentience31': 'Sentience V3.1',
         'menu.research.sentience3': 'Sentience V3',
         'menu.research.tactfr5': 'TACTFR V5',
+        'menu.research.tactfr55': 'TACTFR 5.5.0',
         'menu.research.tactfr4': 'TACTFR V4',
         'menu.research.nexusv4': 'NexusV V4',
         
@@ -121,15 +125,19 @@ const translations = {
 
         // Menu Items
         'menu.research.index': 'Architecture Index',
+        'menu.research.deep_sentienceLS': 'Deep Dive: Sentience-LS',
         'menu.research.deep_sentience31': 'Learn About Sentience V3.1',
         'menu.research.deep_sentienceV4C': 'Deep Dive: Sentience V4C',
+        'menu.research.sentienceLS': 'Sentience-LS',
         'menu.research.sentienceV4C': 'Sentience V4C',
         'menu.research.deep_nexusv4': 'Deep Dive: NexusV V4',
         'menu.research.deep_tactfr5': 'Deep Dive: TACTFR 5.4.0',
+        'menu.research.deep_tactfr55': 'Deep Dive: TACTFR 5.5.0',
         'menu.research.label': 'Frontier Progress',
         'menu.research.sentience31': 'Sentience V3.1',
         'menu.research.sentience3': 'Sentience V3',
         'menu.research.tactfr5': 'TACTFR V5',
+        'menu.research.tactfr55': 'TACTFR 5.5.0',
         'menu.research.tactfr4': 'TACTFR V4',
         'menu.research.nexusv4': 'NexusV V4',
         

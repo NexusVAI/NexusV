@@ -23,16 +23,18 @@ function initMegaMenu() {
         'research': `
             <div class="menu-column main-links">
                 <a href="article.html?id=hero" data-i18n="menu.research.index"></a>
+                <a href="article.html?id=sentienceLS" data-i18n="menu.research.deep_sentienceLS"></a>
                 <a href="article.html?id=sentienceV4C" data-i18n="menu.research.deep_sentienceV4C"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
-                <a href="article.html?id=tactfr540" data-i18n="menu.research.deep_tactfr5"></a>
+                <a href="article.html?id=tactfr540" data-i18n="menu.research.deep_tactfr55"></a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label" data-i18n="menu.research.label"></span>
+                <a href="article.html?id=sentienceLS" data-i18n="menu.research.sentienceLS"></a>
                 <a href="article.html?id=sentienceV4C" data-i18n="menu.research.sentienceV4C"></a>
                 <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
                 <a href="article.html?id=news7" data-i18n="menu.research.sentience3"></a>
-                <a href="article.html?id=tactfr540" data-i18n="menu.research.tactfr5"></a>
+                <a href="article.html?id=tactfr540" data-i18n="menu.research.tactfr55"></a>
                 <a href="article.html?id=n4" data-i18n="menu.research.tactfr4"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.nexusv4"></a>
             </div>
