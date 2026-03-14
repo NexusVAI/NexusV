@@ -415,8 +415,8 @@
     display: grid;
     grid-template-rows: 0fr;
     overflow: hidden;
-    transition: grid-template-rows 0.2s ease-out,
-                visibility 0.2s, background-color 0.3s;
+    transition: grid-template-rows 0.12s ease-out,
+                visibility 0.12s, background-color 0.2s;
     visibility: hidden;
     box-sizing: border-box;
 }
@@ -427,8 +427,8 @@
     margin: 0 auto;
     width: 0;
     opacity: 0;
-    transition: width 0.4s cubic-bezier(0.19, 1, 0.22, 1),
-                opacity 0.25s ease-out;
+    transition: width 0.25s cubic-bezier(0.19, 1, 0.22, 1),
+                opacity 0.15s ease-out;
 }
 
 .mega-menu-container.active .menu-line {
@@ -439,9 +439,9 @@
     min-height: 0;
     padding: 0 40px;
     opacity: 0;
-    transition: opacity 0.15s ease-out,
-                height 0.3s cubic-bezier(0.19, 1, 0.22, 1),
-                padding 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: opacity 0.1s ease-out,
+                height 0.18s cubic-bezier(0.19, 1, 0.22, 1),
+                padding 0.18s cubic-bezier(0.19, 1, 0.22, 1);
     overflow: hidden;
 }
 
