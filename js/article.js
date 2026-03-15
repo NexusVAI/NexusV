@@ -1,5 +1,92 @@
 const articleData = {
     hero: {
+        overlay: 'Relay-Expert',
+        media: { type: 'image', src: 'Logo/H1.webp', alt: 'Training Metrics' },
+        zh: {
+            title: 'Relay-Expert 蒸馏技术：训练更新与早期结果',
+            date: '2026年3月15日',
+            category: '研究',
+            readTime: '8 分钟深度阅读',
+            paragraphs: [
+                '我们在此分享 Relay-Expert Distillation 的早期训练更新，这是一个基于路由的专家框架，旨在提升能力迁移效果同时保持优化稳定性。从原始日志文件 training_metrics.csv 出发，我们清理了异常记录并重建了可靠的指标流 training_metrics_clean.csv。在步骤 5710 至 13400 期间，损失从 6.2683 下降至 4.5531，困惑度从 527.60 下降至 94.93，最佳检查点出现在步骤 13160（损失=3.8976，困惑度=49.29）。整个训练过程保持稳定，在接近尾声时仍在改善，表明仍有继续训练的空间。',
+                '本报告总结了训练期间发生的情况、最重要的信号以及我们下一步的计划。结果是令人鼓舞的：收敛一致、优化表现良好，后期指标表明训练尚未完全饱和。',
+                '关键要点：',
+                '• 收敛强劲：损失和困惑度在整个训练过程中都有显著改善。',
+                '• 优化保持稳定：学习率衰减与指标趋势一致，没有明显的分歧期。',
+                '• 最佳质量出现在后期：最佳损失出现在步骤 13160，接近最终步骤 13400。',
+                '• 效率变化可预测：吞吐量逐渐从 261 tok/s 下降至 235 tok/s。',
+                '数据与方法：',
+                '我们使用字段 step、loss、ppl、lr、tok_s。清理后的数据集包含 770 条有效记录，步骤范围为 [5710, 13400]，步长间隔为 10。原始 CSV 包含重复的标题和末尾附近一个异常的拼接行。我们应用三个确定性规则：移除重复的标题行；仅保留符合五列数字模式的行；在最终验证之前截断异常的拼接行。',
+                '我们跟踪三个维度：',
+                '• 收敛性：损失和困惑度；',
+                '• 优化状态：学习率；',
+                '• 系统效率：token 吞吐量（tok/s）。',
+                '<img src="Logo/TTTT2.png" alt="预训练损失曲线" style="width: 100%; max-width: 800px; margin: 20px auto; display: block; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">',
+                '训练结果：',
+                '核心指标统计（步骤 5710 至 13400）：',
+                '损失：起始 6.2683 → 结束 4.5531，最佳值 3.8976（步骤 13160）',
+                '困惑度：起始 527.60 → 结束 94.93，最佳值 49.29（步骤 13160）',
+                '学习率：从 2.96×10⁻⁴ 衰减至 2.61×10⁻⁴',
+                '吞吐量：从 261 tok/s 下降至 235 tok/s',
+                '在最后 100 步中，平均指标为：损失=4.4312，困惑度=87.4712，tok/s=235.18。',
+                '<img src="Logo/TTTT1.png" alt="训练指标总览" style="width: 100%; max-width: 900px; margin: 20px auto; display: block; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">',
+                '损失趋势显示稳定下降，伴有适度的局部方差。困惑度遵循相同的下降轨迹。学习率衰减在整个训练过程中平滑进行。吞吐量随着训练进展逐渐下降。',
+                '解读：',
+                '有三个信号最为重要。首先，收敛是广泛的：损失和困惑度从开始到结束都有实质性改善。其次，优化保持稳定：我们没有观察到持续的分歧阶段。第三，最佳检查点出现在训练接近尾声时（步骤 13160 对比最终步骤 13400），这表明仍有额外的训练空间。',
+                '基于这些信号，最实际的下一步是进行短期的延续训练，并进行更严格的验证监控。我们建议结合移动平均趋势跟踪和基于耐心的早停机制，以在控制过拟合风险的同时捕获剩余收益。',
+                '后续计划：',
+                '我们计划在四个方向上扩展本报告：',
+                '• 添加置信区间和平滑诊断，以区分趋势与噪声；',
+                '• 按任务桶（数学、语言、逻辑）进行评估，以定位专家瓶颈；',
+                '• 联合监控验证端指标与训练指标，以更早检测转折点；',
+                '• 对路由策略和专家分配比例进行控制消融实验，以分离架构效应。',
+                '目标不仅是更好的最终指标，还要更清楚地解释 Relay-Expert Distillation 在何处以及如何产生收益。'
+            ]
+        },
+        en: {
+            title: 'Introducing Relay-Expert Distillation: Training Update and Early Results',
+            date: 'March 15, 2026',
+            category: 'Research',
+            readTime: '8 min read',
+            paragraphs: [
+                'We are sharing an early training update for Relay-Expert Distillation, a routing-based specialist framework designed to improve capability transfer while preserving optimization stability. Starting from the raw log file training_metrics.csv, we cleaned malformed records and rebuilt a reliable metrics stream in training_metrics_clean.csv. Across steps 5710 to 13400, loss decreases from 6.2683 to 4.5531, perplexity decreases from 527.60 to 94.93, and the best checkpoint appears at step 13160 (loss=3.8976, ppl=49.29). The full run remains stable and still improves near the end, suggesting additional headroom for short continuation training.',
+                'This release summarizes what happened during training, what signals matter most, and what we plan to do next. The outcome is encouraging: convergence is consistent, optimization is well-behaved, and late-stage metrics indicate the run is not yet fully saturated.',
+                'Key Takeaways:',
+                '• Convergence is strong: both loss and perplexity improve substantially across the full run.',
+                '• Optimization remains stable: learning-rate decay aligns with metric trends and shows no obvious divergence period.',
+                '• Best quality appears late: the best loss occurs at step 13160, close to the final step 13400.',
+                '• Efficiency changes are predictable: throughput gradually decreases from 261 to 235 tok/s.',
+                'Data and Method:',
+                'We use the fields step, loss, ppl, lr, tok_s. The cleaned dataset contains 770 valid records, spanning step range [5710, 13400] with step interval 10. The raw CSV contains repeated headers and one malformed concatenated row near the end. We apply three deterministic rules: remove repeated header rows; keep only rows matching a five-column numeric schema; truncate malformed concatenated rows before final validation.',
+                'We track three dimensions:',
+                '• Convergence: loss and perplexity;',
+                '• Optimization state: learning rate;',
+                '• System efficiency: token throughput (tok/s).',
+                '<img src="Logo/TTTT2.png" alt="Pretraining Loss Curve" style="width: 100%; max-width: 800px; margin: 20px auto; display: block; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">',
+                'Training Results:',
+                'Core metrics from step 5710 to step 13400:',
+                'Loss: Start 6.2683 → End 4.5531, Best 3.8976 (step 13160)',
+                'PPL: Start 527.60 → End 94.93, Best 49.29 (step 13160)',
+                'LR: 2.96×10⁻⁴ → 2.61×10⁻⁴',
+                'tok/s: 261 → 235',
+                'Over the final 100 steps, average metrics are loss=4.4312, ppl=87.4712, and tok/s=235.18.',
+                '<img src="Logo/TTTT1.png" alt="Training Metrics Overview" style="width: 100%; max-width: 900px; margin: 20px auto; display: block; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">',
+                'Loss declines steadily with moderate local variance. Perplexity tracks the same downward trajectory. Learning-rate decay is smooth across the run. Throughput gradually decreases as training progresses.',
+                'Interpretation:',
+                'Three signals are most important. First, convergence is broad-based: both loss and perplexity improve materially from start to finish. Second, optimization remains stable: we do not observe a sustained divergence regime. Third, the best checkpoint appears near the end of training (step 13160 compared with final step 13400), which indicates additional training headroom.',
+                'Based on these signals, the most practical next move is a short continuation phase with stricter validation monitoring. We recommend combining moving-average trend tracking with patience-based early stopping to capture remaining gains while controlling overfitting risk.',
+                'What Comes Next:',
+                'We plan to extend this release in four directions:',
+                '• Add confidence intervals and smoothing diagnostics to separate trend from noise;',
+                '• Evaluate by task buckets (math, language, logic) to localize specialist bottlenecks;',
+                '• Monitor validation-side indicators jointly with training metrics to detect turning points earlier;',
+                '• Run controlled ablations on routing policy and specialist allocation ratio to isolate architecture effects.',
+                'The objective is not only better end metrics, but also a clearer causal account of where Relay-Expert Distillation delivers its gains.'
+            ]
+        }
+    },
+    sentienceOriginal: {
+        overlay: 'Infusing Life into San Andreas',
         media: { type: 'image', src: 'Logo/L1.webp', alt: 'Sentience Demo' },
         zh: {
             title: '赋予洛圣都数字灵魂',
@@ -1629,7 +1716,7 @@ function initIndexPage() {
         // News Grid (n2, news1...news8)
         if (newsGrid) {
             newsGrid.innerHTML = '';
-            ['n2', 'news9', 'news1', 'news2', 'news3', 'news4', 'news5', 'news6', 'news7', 'news8'].forEach(id => {
+            ['n2', 'news9', 'news1', 'news2', 'sentienceOriginal', 'news3', 'news4', 'news5', 'news6', 'news7', 'news8'].forEach(id => {
                 const item = articleData[id];
                 if (!item) return;
                 const data = item[lang] || item.zh;
