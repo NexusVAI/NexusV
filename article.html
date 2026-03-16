@@ -26,6 +26,118 @@
     <link rel="stylesheet" href="css/comments.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha384-/o6I2CkkWC//PSjvWC/eYN7l3xM3tJm8ZzVkCOfp//W05QcE3mlGskpoHB6XqI+B" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="css/inter-fonts.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        .chart-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 20px auto;
+            background: var(--chart-bg, #f8f9fa);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: zoom-in;
+            transition: transform 0.2s;
+        }
+        .chart-container:hover {
+            transform: scale(1.02);
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            max-width: 900px;
+            margin: 20px auto;
+        }
+        .chart-item {
+            background: var(--chart-bg, #f8f9fa);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: zoom-in;
+            transition: transform 0.2s;
+        }
+        .chart-item:hover {
+            transform: scale(1.02);
+        }
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        /* 深色主题（深色图表） */
+        .dark-theme .chart-container,
+        .dark-theme .chart-item {
+            --chart-bg: #2a2a2a;
+        }
+        /* 浅色主题（浅色图表） */
+        .light-theme .chart-container,
+        .light-theme .chart-item {
+            --chart-bg: #ffffff;
+        }
+        /* 暖色主题（深色图表） */
+        .warm-theme .chart-container,
+        .warm-theme .chart-item {
+            --chart-bg: #2a2a2a;
+        }
+        /* 模态框 */
+        .chart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+        .chart-modal.active {
+            display: flex;
+        }
+        .chart-modal-content {
+            width: 90%;
+            max-width: 1200px;
+            height: 80%;
+            background: var(--chart-bg, #f8f9fa);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+        }
+        /* 深色主题模态框 */
+        .dark-theme .chart-modal-content {
+            background: #2a2a2a;
+        }
+        /* 暖色主题模态框 */
+        .warm-theme .chart-modal-content {
+            background: #2a2a2a;
+        }
+        .chart-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color, #333);
+        }
+        .chart-modal-close:hover {
+            background: rgba(0,0,0,0.2);
+        }
+        .chart-modal canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -75,6 +187,14 @@
                     </svg>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 图表放大模态框 -->
+    <div class="chart-modal" id="chartModal">
+        <div class="chart-modal-content">
+            <button class="chart-modal-close" onclick="closeChartModal()">&times;</button>
+            <canvas id="modalChart"></canvas>
         </div>
     </div>
 
@@ -260,6 +380,344 @@
                 });
             }
         })();
+    </script>
+    <script>
+    // 全局变量存储图表数据和实例
+    let trainingData = null;
+    let chartInstances = {};
+    let modalChartInstance = null;
+    
+    // 获取当前语言
+    function getCurrentLang() {
+        return localStorage.getItem('lang') || 'zh';
+    }
+    
+    // 获取主题颜色
+    // 深色和暖色主题都用深色图表，浅色主题用浅色图表
+    function getThemeColors() {
+        const isDark = document.documentElement.classList.contains('dark-theme');
+        const isWarm = document.documentElement.classList.contains('warm-theme');
+        const isLight = document.documentElement.classList.contains('light-theme');
+        
+        if (isLight) {
+            // 浅色主题 - 浅色图表
+            return { textColor: '#333', gridColor: '#eee', bgColor: '#ffffff' };
+        } else {
+            // 深色和暖色主题 - 深色图表
+            return { textColor: '#e0e0e0', gridColor: '#444', bgColor: '#2a2a2a' };
+        }
+    }
+    
+    // 获取图表标题
+    function getChartTitles() {
+        const lang = getCurrentLang();
+        if (lang === 'zh') {
+            return {
+                lossCurve: 'Loss 曲线',
+                loss: '损失',
+                ppl: '困惑度',
+                lr: '学习率',
+                tokS: '吞吐量',
+                step: '步骤'
+            };
+        } else {
+            return {
+                lossCurve: 'Loss Curve',
+                loss: 'Loss',
+                ppl: 'Perplexity',
+                lr: 'Learning Rate',
+                tokS: 'Throughput',
+                step: 'Step'
+            };
+        }
+    }
+    
+    // 打开图表模态框
+    function openChartModal(chartType, canvasId) {
+        const modal = document.getElementById('chartModal');
+        const modalCanvas = document.getElementById('modalChart');
+        
+        if (!trainingData || !modal) return;
+        
+        // 销毁之前的模态框图表
+        if (modalChartInstance) {
+            modalChartInstance.destroy();
+        }
+        
+        const { textColor, gridColor } = getThemeColors();
+        const titles = getChartTitles();
+        
+        let config = {
+            type: 'line',
+            data: { labels: trainingData.steps, datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { 
+                    legend: { display: false }, 
+                    title: { display: true, text: '', color: textColor, font: { size: 18 } } 
+                },
+                scales: {
+                    x: { 
+                        title: { display: true, text: titles.step, color: textColor }, 
+                        ticks: { color: textColor, maxTicksLimit: 15 }, 
+                        grid: { color: gridColor } 
+                    },
+                    y: { 
+                        title: { display: true, text: '', color: textColor }, 
+                        ticks: { color: textColor }, 
+                        grid: { color: gridColor } 
+                    }
+                }
+            }
+        };
+        
+        // 根据图表类型配置数据
+        switch(chartType) {
+            case 'loss':
+            case 'lossDetail':
+                config.data.datasets = [{
+                    label: titles.loss,
+                    data: trainingData.losses,
+                    borderColor: '#0066cc',
+                    backgroundColor: 'rgba(0,102,204,0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }];
+                config.options.plugins.title.text = titles.loss;
+                config.options.scales.y.title.text = titles.loss;
+                break;
+            case 'ppl':
+                config.data.datasets = [{
+                    label: titles.ppl,
+                    data: trainingData.ppls,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231,76,60,0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }];
+                config.options.plugins.title.text = titles.ppl;
+                config.options.scales.y.title.text = titles.ppl;
+                break;
+            case 'lr':
+                config.data.datasets = [{
+                    label: titles.lr,
+                    data: trainingData.lrs,
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39,174,96,0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }];
+                config.options.plugins.title.text = titles.lr;
+                config.options.scales.y.title.text = titles.lr;
+                break;
+            case 'toks':
+                config.data.datasets = [{
+                    label: titles.tokS,
+                    data: trainingData.tokss,
+                    borderColor: '#f39c12',
+                    backgroundColor: 'rgba(243,156,18,0.1)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }];
+                config.options.plugins.title.text = titles.tokS;
+                config.options.scales.y.title.text = 'tok/s';
+                break;
+        }
+        
+        modalChartInstance = new Chart(modalCanvas, config);
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // 关闭图表模态框
+    function closeChartModal() {
+        const modal = document.getElementById('chartModal');
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        if (modalChartInstance) {
+            modalChartInstance.destroy();
+            modalChartInstance = null;
+        }
+    }
+    
+    // 点击模态框背景关闭
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('chartModal');
+        if (e.target === modal) {
+            closeChartModal();
+        }
+    });
+    
+    // ESC键关闭模态框
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeChartModal();
+        }
+    });
+    
+    async function initTrainingCharts() {
+        if (typeof Chart === 'undefined') return;
+        
+        // 销毁已有图表
+        Object.values(chartInstances).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+        chartInstances = {};
+        
+        if (document.getElementById('lossChart')) {
+            try {
+                // 如果数据还没加载，先加载
+                if (!trainingData) {
+                    const response = await fetch('training_metrics_clean.csv');
+                    const text = await response.text();
+                    const lines = text.trim().split('\n');
+                    const headers = lines[0].split(',');
+                    const stepIdx = headers.indexOf('step');
+                    const lossIdx = headers.indexOf('loss');
+                    const pplIdx = headers.indexOf('ppl');
+                    const lrIdx = headers.indexOf('lr');
+                    const toksIdx = headers.indexOf('tok_s');
+                    
+                    const steps = [], losses = [], ppls = [], lrs = [], tokss = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const cols = lines[i].split(',');
+                        if (cols.length >= 5) {
+                            steps.push(cols[stepIdx]);
+                            losses.push(parseFloat(cols[lossIdx]));
+                            ppls.push(parseFloat(cols[pplIdx]));
+                            lrs.push(parseFloat(cols[lrIdx]));
+                            tokss.push(parseFloat(cols[toksIdx]));
+                        }
+                    }
+                    
+                    trainingData = { steps, losses, ppls, lrs, tokss };
+                }
+                
+                const { textColor, gridColor } = getThemeColors();
+                const titles = getChartTitles();
+                
+                // 通用图表配置
+                const createChartConfig = (label, data, color, titleText, yAxisText) => ({
+                    type: 'line',
+                    data: {
+                        labels: trainingData.steps,
+                        datasets: [{
+                            label,
+                            data,
+                            borderColor: color,
+                            backgroundColor: color.replace(')', ',0.1)').replace('rgb', 'rgba'),
+                            fill: true,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: { 
+                            legend: { display: false }, 
+                            title: { display: true, text: titleText, color: textColor } 
+                        },
+                        scales: {
+                            x: { 
+                                title: { display: true, text: titles.step, color: textColor }, 
+                                ticks: { color: textColor, maxTicksLimit: 10 }, 
+                                grid: { color: gridColor } 
+                            },
+                            y: { 
+                                title: { display: true, text: yAxisText, color: textColor }, 
+                                ticks: { color: textColor }, 
+                                grid: { color: gridColor } 
+                            }
+                        }
+                    }
+                });
+                
+                // Loss Chart (主图)
+                const lossCtx = document.getElementById('lossChart');
+                if (lossCtx) {
+                    chartInstances.loss = new Chart(lossCtx, createChartConfig(
+                        titles.loss, trainingData.losses, '#0066cc', titles.lossCurve, titles.loss
+                    ));
+                    lossCtx.closest('.chart-container').onclick = () => openChartModal('loss', 'lossChart');
+                }
+                
+                // Loss Detail Chart
+                const lossDetailCtx = document.getElementById('lossDetailChart');
+                if (lossDetailCtx) {
+                    const config = createChartConfig(titles.loss, trainingData.losses, '#0066cc', titles.loss, titles.loss);
+                    config.options.scales.x.ticks.maxTicksLimit = 6;
+                    chartInstances.lossDetail = new Chart(lossDetailCtx, config);
+                    lossDetailCtx.closest('.chart-item').onclick = () => openChartModal('lossDetail', 'lossDetailChart');
+                }
+                
+                // PPL Chart
+                const pplCtx = document.getElementById('pplChart');
+                if (pplCtx) {
+                    const config = createChartConfig(titles.ppl, trainingData.ppls, '#e74c3c', titles.ppl, titles.ppl);
+                    config.options.scales.x.ticks.maxTicksLimit = 6;
+                    chartInstances.ppl = new Chart(pplCtx, config);
+                    pplCtx.closest('.chart-item').onclick = () => openChartModal('ppl', 'pplChart');
+                }
+                
+                // LR Chart
+                const lrCtx = document.getElementById('lrChart');
+                if (lrCtx) {
+                    const config = createChartConfig(titles.lr, trainingData.lrs, '#27ae60', titles.lr, titles.lr);
+                    config.options.scales.x.ticks.maxTicksLimit = 6;
+                    chartInstances.lr = new Chart(lrCtx, config);
+                    lrCtx.closest('.chart-item').onclick = () => openChartModal('lr', 'lrChart');
+                }
+                
+                // TOK/s Chart
+                const toksCtx = document.getElementById('toksChart');
+                if (toksCtx) {
+                    const config = createChartConfig('tok/s', trainingData.tokss, '#f39c12', titles.tokS, 'tok/s');
+                    config.options.scales.x.ticks.maxTicksLimit = 6;
+                    chartInstances.toks = new Chart(toksCtx, config);
+                    toksCtx.closest('.chart-item').onclick = () => openChartModal('toks', 'toksChart');
+                }
+                
+            } catch (e) {
+                console.error('Failed to load training metrics:', e);
+            }
+        }
+    }
+    
+    // Initialize charts after page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTrainingCharts);
+    } else {
+        initTrainingCharts();
+    }
+    
+    // Re-init charts on language change
+    window.addEventListener('languageChanged', function() {
+        setTimeout(initTrainingCharts, 100);
+    });
+    
+    // Re-init charts on theme change
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                setTimeout(initTrainingCharts, 100);
+            }
+        });
+    });
+    observer.observe(document.documentElement, { attributes: true });
     </script>
 </body>
 </html>

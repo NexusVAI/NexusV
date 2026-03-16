@@ -1,0 +1,164 @@
+% !TeX program = xelatex
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\setlength{\emergencystretch}{3em}
+
+\title{Introducing Relay-Expert Distillation: Training Update and Early Results}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We are sharing an early training update for Relay-Expert Distillation, a routing-based specialist framework designed to improve capability transfer while preserving optimization stability. Starting from the raw log file \url{figures/training_metrics.csv}, we cleaned malformed records and rebuilt a reliable metrics stream in \url{figures/training_metrics_clean.csv}. Across steps 5710 to 13400, loss decreases from 6.2683 to 4.5531, perplexity decreases from 527.60 to 94.93, and the best checkpoint appears at step 13160 (loss=3.8976, ppl=49.29). The full run remains stable and still improves near the end, suggesting additional headroom for short continuation training.
+\end{abstract}
+
+\section{Overview}
+This release summarizes what happened during training, what signals matter most, and what we plan to do next. The outcome is encouraging: convergence is consistent, optimization is well-behaved, and late-stage metrics indicate the run is not yet fully saturated.
+
+\section{Key Takeaways}
+\begin{itemize}
+  \item \textbf{Convergence is strong:} both loss and perplexity improve substantially across the full run.
+  \item \textbf{Optimization remains stable:} learning-rate decay aligns with metric trends and shows no obvious divergence period.
+  \item \textbf{Best quality appears late:} the best loss occurs at step 13160, close to the final step 13400.
+  \item \textbf{Efficiency changes are predictable:} throughput gradually decreases from 261 to 235 tok/s.
+\end{itemize}
+
+\section{Data and Method}
+\subsection{Data Source}
+We use the fields \texttt{step, loss, ppl, lr, tok\_s}. The cleaned dataset contains 770 valid records, spanning step range [5710, 13400] with step interval 10.
+
+\subsection{Cleaning Strategy}
+The raw CSV contains repeated headers and one malformed concatenated row near the end. We apply three deterministic rules:
+\begin{itemize}
+  \item remove repeated header rows;
+  \item keep only rows matching a five-column numeric schema;
+  \item truncate malformed concatenated rows before final validation.
+\end{itemize}
+
+\subsection{Metrics}
+We track three dimensions:
+\begin{itemize}
+  \item \textbf{Convergence:} loss and perplexity;
+  \item \textbf{Optimization state:} learning rate;
+  \item \textbf{System efficiency:} token throughput (tok/s).
+\end{itemize}
+
+\section{Training Results}
+\subsection{Summary Statistics}
+\begin{table}[H]
+\centering
+\caption{Core metrics from step 5710 to step 13400}
+\begin{tabular}{lcccc}
+\toprule
+Metric & Start (step 5710) & End (step 13400) & Best Value & Best Step \\
+\midrule
+Loss & 6.2683 & 4.5531 & 3.8976 & 13160 \\
+PPL & 527.60 & 94.93 & 49.29 & 13160 \\
+LR & $2.96\times10^{-4}$ & $2.61\times10^{-4}$ & N/A & N/A \\
+tok/s & 261 & 235 & N/A & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Over the final 100 steps, average metrics are loss=4.4312, ppl=87.4712, and tok/s=235.18.
+
+\subsection{Loss Trend}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\linewidth,
+    height=6cm,
+    xlabel={Step},
+    ylabel={Loss},
+    grid=major,
+    line width=0.8pt,
+]
+\addplot[blue] table[x=step,y=loss,col sep=comma] {figures/training_metrics_clean.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Loss declines steadily with moderate local variance}
+\end{figure}
+
+\subsection{Perplexity Trend}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\linewidth,
+    height=6cm,
+    xlabel={Step},
+    ylabel={Perplexity},
+    grid=major,
+    line width=0.8pt,
+]
+\addplot[red!70!black] table[x=step,y=ppl,col sep=comma] {figures/training_metrics_clean.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Perplexity tracks the same downward trajectory}
+\end{figure}
+
+\subsection{Learning Rate and Throughput}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\linewidth,
+    height=6cm,
+    xlabel={Step},
+    ylabel={Learning Rate},
+    grid=major,
+    line width=0.8pt,
+]
+\addplot[teal!70!black] table[x=step,y=lr,col sep=comma] {figures/training_metrics_clean.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Learning-rate decay is smooth across the run}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.9\linewidth,
+    height=6cm,
+    xlabel={Step},
+    ylabel={tok/s},
+    grid=major,
+    line width=0.8pt,
+]
+\addplot[orange!85!black] table[x=step,y=tok_s,col sep=comma] {figures/training_metrics_clean.csv};
+\end{axis}
+\end{tikzpicture}
+\caption{Throughput gradually decreases as training progresses}
+\end{figure}
+
+\section{Interpretation}
+Three signals are most important. First, convergence is broad-based: both loss and perplexity improve materially from start to finish. Second, optimization remains stable: we do not observe a sustained divergence regime. Third, the best checkpoint appears near the end of training (step 13160 compared with final step 13400), which indicates additional training headroom.
+
+Based on these signals, the most practical next move is a short continuation phase with stricter validation monitoring. We recommend combining moving-average trend tracking with patience-based early stopping to capture remaining gains while controlling overfitting risk.
+
+\section{What Comes Next}
+We plan to extend this release in four directions:
+\begin{itemize}
+  \item add confidence intervals and smoothing diagnostics to separate trend from noise;
+  \item evaluate by task buckets (math, language, logic) to localize specialist bottlenecks;
+  \item monitor validation-side indicators jointly with training metrics to detect turning points earlier;
+  \item run controlled ablations on routing policy and specialist allocation ratio to isolate architecture effects.
+\end{itemize}
+
+The objective is not only better end metrics, but also a clearer causal account of where Relay-Expert Distillation delivers its gains.
+
+\end{document}
