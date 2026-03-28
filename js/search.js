@@ -23,6 +23,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!nodes.searchIcon || !nodes.searchOverlay) return;
 
+    // Typewriter placeholder animation
+    const typewriterTexts = {
+        zh: ['关于 NexusV', '搜索文章', '搜索 Sentience', '搜索 TACTFR'],
+        en: ['About NexusV', 'Search articles', 'Search Sentience', 'Search TACTFR']
+    };
+    let typewriterIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let typewriterInterval = null;
+
+    function getTypewriterText() {
+        const lang = localStorage.getItem('lang') || 'zh';
+        return typewriterTexts[lang] || typewriterTexts.zh;
+    }
+
+    function typewriterEffect() {
+        if (!nodes.desktopInput) return;
+        
+        const texts = getTypewriterText();
+        const currentText = texts[typewriterIndex];
+        
+        if (isDeleting) {
+            charIndex--;
+            nodes.desktopInput.placeholder = currentText.substring(0, charIndex);
+        } else {
+            charIndex++;
+            nodes.desktopInput.placeholder = currentText.substring(0, charIndex);
+        }
+
+        let typeSpeed = isDeleting ? 50 : 100;
+
+        if (!isDeleting && charIndex === currentText.length) {
+            typeSpeed = 2000; // Pause at end
+            isDeleting = true;
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            typewriterIndex = (typewriterIndex + 1) % texts.length;
+            typeSpeed = 500; // Pause before typing next
+        }
+
+        typewriterInterval = setTimeout(typewriterEffect, typeSpeed);
+    }
+
+    function startTypewriter() {
+        if (typewriterInterval) clearTimeout(typewriterInterval);
+        typewriterIndex = 0;
+        charIndex = 0;
+        isDeleting = false;
+        typewriterEffect();
+    }
+
+    function stopTypewriter() {
+        if (typewriterInterval) {
+            clearTimeout(typewriterInterval);
+            typewriterInterval = null;
+        }
+    }
+
     nodes.desktopResults = ensureResultsContainer(
         nodes.searchOverlay?.querySelector('.search-overlay-content'),
         'search-results search-results-desktop'
@@ -284,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         SearchService.getIndex().catch(() => null);
         resetSubmittedState();
         clearResultContainers();
+        startTypewriter();
         setTimeout(() => {
             nodes.desktopInput?.focus();
         }, 60);
@@ -295,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nodes.searchOverlay?.classList.remove('active');
         if (options.restoreBody !== false) unlockBodyScroll();
         updateIconState();
+        stopTypewriter();
     }
 
     function lockBodyScroll() {

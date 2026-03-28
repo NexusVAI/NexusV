@@ -26,7 +26,7 @@ function initMegaMenu() {
                 <a href="article.html?id=sentienceLS" data-i18n="menu.research.deep_sentienceLS"></a>
                 <a href="article.html?id=sentienceV4C" data-i18n="menu.research.deep_sentienceV4C"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
-                <a href="article.html?id=tactfr540" data-i18n="menu.research.deep_tactfr55"></a>
+                <a href="article.html?id=tactfr540" data-i18n="menu.research.deep_tactfr56"></a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label" data-i18n="menu.research.label"></span>
@@ -34,7 +34,7 @@ function initMegaMenu() {
                 <a href="article.html?id=sentienceV4C" data-i18n="menu.research.sentienceV4C"></a>
                 <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
                 <a href="article.html?id=news7" data-i18n="menu.research.sentience3"></a>
-                <a href="article.html?id=tactfr540" data-i18n="menu.research.tactfr55"></a>
+                <a href="article.html?id=tactfr540" data-i18n="menu.research.tactfr56"></a>
                 <a href="article.html?id=n4" data-i18n="menu.research.tactfr4"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.nexusv4"></a>
             </div>
@@ -257,7 +257,7 @@ function initMobileMenu() {
                     { text: '意识架构索引', i18n: 'menu.research.index', href: 'article.html?id=hero' },
                     { text: '深入了解 Sentience V4C', i18n: 'menu.research.deep_sentienceV4C', href: 'article.html?id=sentienceV4C' },
                     { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4', href: 'article.html?id=n3' },
-                    { text: '深入了解 TACTFR 5.4.0', i18n: 'menu.research.deep_tactfr5', href: 'article.html?id=tactfr540' },
+                    { text: '深入了解 TACTFR 5.6.0', i18n: 'menu.research.deep_tactfr56', href: 'article.html?id=tactfr540' },
                     { text: 'Sentience V4C', i18n: 'menu.research.sentienceV4C', href: 'article.html?id=sentienceV4C' },
                     { text: 'Sentience V3.1', i18n: 'menu.research.sentience31', href: 'article.html?id=news6' },
                     { text: 'Sentience V3', i18n: 'menu.research.sentience3', href: 'article.html?id=news7' },
