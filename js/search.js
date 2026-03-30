@@ -15,13 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const nodes = {
-        searchIcon: document.querySelector('.search-icon'),
+        searchIcons: Array.from(document.querySelectorAll('.search-icon')),
         searchOverlay: document.getElementById('search-overlay'),
         desktopInput: document.querySelector('.search-overlay-input'),
         desktopSubmit: document.querySelector('.search-overlay-submit')
     };
 
-    if (!nodes.searchIcon || !nodes.searchOverlay) return;
+    if (!nodes.searchIcons.length || !nodes.searchOverlay) return;
 
     // Typewriter placeholder animation
     const typewriterTexts = {
@@ -262,9 +262,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     })();
 
-    nodes.searchIcon.addEventListener('click', (event) => {
-        event.stopPropagation();
-        toggleDesktopSearch();
+    nodes.searchIcons.forEach((icon) => {
+        icon.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleDesktopSearch();
+        });
     });
 
     nodes.desktopInput?.addEventListener('input', (event) => {
@@ -322,7 +324,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateIconState() {
-        nodes.searchIcon.classList.toggle('active', state.desktopOpen);
+        nodes.searchIcons.forEach((icon) => {
+            icon.classList.toggle('active', state.desktopOpen);
+        });
     }
 
     function toggleDesktopSearch() {

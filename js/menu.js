@@ -23,6 +23,7 @@ function initMegaMenu() {
         'research': `
             <div class="menu-column main-links">
                 <a href="article.html?id=hero" data-i18n="menu.research.index"></a>
+                <a href="article.html?id=hero" data-i18n="menu.research.deep_nexusv5"></a>
                 <a href="article.html?id=sentienceLS" data-i18n="menu.research.deep_sentienceLS"></a>
                 <a href="article.html?id=sentienceV4C" data-i18n="menu.research.deep_sentienceV4C"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
@@ -30,6 +31,7 @@ function initMegaMenu() {
             </div>
             <div class="menu-column latest-updates">
                 <span class="label" data-i18n="menu.research.label"></span>
+                <a href="article.html?id=hero" data-i18n="menu.research.nexusv5"></a>
                 <a href="article.html?id=sentienceLS" data-i18n="menu.research.sentienceLS"></a>
                 <a href="article.html?id=sentienceV4C" data-i18n="menu.research.sentienceV4C"></a>
                 <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
@@ -255,6 +257,7 @@ function initMobileMenu() {
                 i18n: 'nav.research',
                 submenu: [
                     { text: '意识架构索引', i18n: 'menu.research.index', href: 'article.html?id=hero' },
+                    { text: '深入了解 NexusV V5', i18n: 'menu.research.deep_nexusv5', href: 'article.html?id=hero' },
                     { text: '深入了解 Sentience V4C', i18n: 'menu.research.deep_sentienceV4C', href: 'article.html?id=sentienceV4C' },
                     { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4', href: 'article.html?id=n3' },
                     { text: '深入了解 TACTFR 5.6.0', i18n: 'menu.research.deep_tactfr56', href: 'article.html?id=tactfr540' },

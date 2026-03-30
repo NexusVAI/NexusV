@@ -1,87 +1,57 @@
 const articleData = {
     hero: {
-        overlay: 'Relay-Expert',
-        media: { type: 'image', src: 'Logo/H1.webp', alt: 'Training Metrics' },
+        overlay: 'NexusV',
+        media: { type: 'video', src: 'Logo/Nexusai.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'NexusV V5' },
         zh: {
-            title: 'Relay-Expert 蒸馏技术：训练更新与早期结果',
-            date: '2026年3月15日',
-            category: '研究',
+            title: '介绍 NexusV V5',
+            date: '2026年3月30日',
+            category: '产品',
             readTime: '8 分钟深度阅读',
             paragraphs: [
-                '我们在此分享 Relay-Expert Distillation 的早期训练更新，这是一个基于路由的专家框架，旨在提升能力迁移效果同时保持优化稳定性。从原始日志文件 training_metrics.csv 出发，我们清理了异常记录并重建了可靠的指标流 training_metrics_clean.csv。在步骤 5710 至 13400 期间，损失从 6.2683 下降至 4.5531，困惑度从 527.60 下降至 94.93，最佳检查点出现在步骤 13160（损失=3.8976，困惑度=49.29）。整个训练过程保持稳定，在接近尾声时仍在改善，表明仍有继续训练的空间。',
-                '本报告总结了训练期间发生的情况、最重要的信号以及我们下一步的计划。结果是令人鼓舞的：收敛一致、优化表现良好，后期指标表明训练尚未完全饱和。',
-                '关键要点：',
-                '• 收敛强劲：损失和困惑度在整个训练过程中都有显著改善。',
-                '• 优化保持稳定：学习率衰减与指标趋势一致，没有明显的分歧期。',
-                '• 最佳质量出现在后期：最佳损失出现在步骤 13160，接近最终步骤 13400。',
-                '• 效率变化可预测：吞吐量逐渐从 261 tok/s 下降至 235 tok/s。',
-                '数据与方法：',
-                '我们使用字段 step、loss、ppl、lr、tok_s。清理后的数据集包含 770 条有效记录，步骤范围为 [5710, 13400]，步长间隔为 10。原始 CSV 包含重复的标题和末尾附近一个异常的拼接行。我们应用三个确定性规则：移除重复的标题行；仅保留符合五列数字模式的行；在最终验证之前截断异常的拼接行。',
-                '我们跟踪三个维度：',
-                '• 收敛性：损失和困惑度；',
-                '• 优化状态：学习率；',
-                '• 系统效率：token 吞吐量（tok/s）。',
-                '<div class="chart-container"><canvas id="lossChart"></canvas></div>',
-                '训练结果：',
-                '核心指标统计（步骤 5710 至 13400）：',
-                '损失：起始 6.2683 → 结束 4.5531，最佳值 3.8976（步骤 13160）',
-                '困惑度：起始 527.60 → 结束 94.93，最佳值 49.29（步骤 13160）',
-                '学习率：从 2.96×10⁻⁴ 衰减至 2.61×10⁻⁴',
-                '吞吐量：从 261 tok/s 下降至 235 tok/s',
-                '在最后 100 步中，平均指标为：损失=4.4312，困惑度=87.4712，tok/s=235.18。',
-                '<div class="chart-grid"><div class="chart-item"><canvas id="lossDetailChart"></canvas></div><div class="chart-item"><canvas id="pplChart"></canvas></div><div class="chart-item"><canvas id="lrChart"></canvas></div><div class="chart-item"><canvas id="toksChart"></canvas></div></div>',
-                '损失趋势显示稳定下降，伴有适度的局部方差。困惑度遵循相同的下降轨迹。学习率衰减在整个训练过程中平滑进行。吞吐量随着训练进展逐渐下降。',
-                '解读：',
-                '有三个信号最为重要。首先，收敛是广泛的：损失和困惑度从开始到结束都有实质性改善。其次，优化保持稳定：我们没有观察到持续的分歧阶段。第三，最佳检查点出现在训练接近尾声时（步骤 13160 对比最终步骤 13400），这表明仍有额外的训练空间。',
-                '基于这些信号，最实际的下一步是进行短期的延续训练，并进行更严格的验证监控。我们建议结合移动平均趋势跟踪和基于耐心的早停机制，以在控制过拟合风险的同时捕获剩余收益。',
-                '后续计划：',
-                '我们计划在四个方向上扩展本报告：',
-                '• 添加置信区间和平滑诊断，以区分趋势与噪声；',
-                '• 按任务桶（数学、语言、逻辑）进行评估，以定位专家瓶颈；',
-                '• 联合监控验证端指标与训练指标，以更早检测转折点；',
-                '• 对路由策略和专家分配比例进行控制消融实验，以分离架构效应。',
-                '目标不仅是更好的最终指标，还要更清楚地解释 Relay-Expert Distillation 在何处以及如何产生收益。'
+                'NexusV 修改器在过去数月完成了从功能堆砌到体验重构的转变。5.0 系列的核心目标只有一个：让修改器本身不再是阻碍游玩的工具，而是与游戏融为一体的操控层。',
+                '这是 NexusV 有史以来改动幅度最大的一次迭代。全新 UI 框架、热咖啡彩蛋、内置 R星编辑器模块，以及覆盖 200+ 条目的信息菜单系统——我们正在重新定义 GTA5 修改器的体验边界。',
+                '5.0.0 — 重构一切',
+                '从 4.x 进入 5.0，变化的不只是版本号。UI 经历了一次彻底的视觉重建，交互逻辑随之同步调整。与此同时，小键盘 9 现在可以呼出详细信息面板，让每项功能都有了说明入口——这对新用户的上手体验有显著改善。',
+                '新增热咖啡。不解释，自行体验。',
+                '本次发布的主要模块：',
+                '• R星编辑器：内置 Rockstar Editor 模块，录制与剪辑工作流不再需要离开修改器界面。',
+                '• 创意模块：新增独立创意模块，提供更多沙盒式场景工具，适合自由度爱好者探索。',
+                '• 火焰翅膀 & 火焰环：视觉特效增强，两项功能均在 5.0 版本中得到强化，表现更稳定。',
+                '• 实验性功能：多项实验性功能随版本同步上线，部分功能将在后续版本中转正。',
+                '版本信息：v5.0.0 | 2026-03-30 | 156 KB',
+                '5.0.1 — 补全信息层',
+                '5.0.0 发布当天，我们随即跟进了 5.0.1。这个版本专注于一件事：把信息菜单中所有缺少描述的条目补全。',
+                '200+ 条菜单项覆盖玩家、载具、武器、世界、传送、保镖、工具、服装、设置九大模块，以及杂项分类。对于深度用户而言，这意味着不必再靠猜测来理解每个选项的行为边界。',
+                '版本信息：v5.0.1 | 2026-03-30 | 164 KB',
+                '接下来',
+                '5.0 系列奠定了新的交互基础。后续更新将在这套框架上继续推进——多种娱乐实用玩法已在规划中，实验性功能的逐步转正也会持续推进。',
+                '感谢在玩家动力平台上陪伴 NexusV 走到今天的 10,000+ 用户和社区的 300 位成员。你们的反馈直接塑造了每一个版本。'
             ]
         },
         en: {
-            title: 'Introducing Relay-Expert Distillation: Training Update and Early Results',
-            date: 'March 15, 2026',
-            category: 'Research',
+            title: 'Introducing NexusV V5',
+            date: 'March 30, 2026',
+            category: 'Product',
             readTime: '8 min read',
             paragraphs: [
-                'We are sharing an early training update for Relay-Expert Distillation, a routing-based specialist framework designed to improve capability transfer while preserving optimization stability. Starting from the raw log file training_metrics.csv, we cleaned malformed records and rebuilt a reliable metrics stream in training_metrics_clean.csv. Across steps 5710 to 13400, loss decreases from 6.2683 to 4.5531, perplexity decreases from 527.60 to 94.93, and the best checkpoint appears at step 13160 (loss=3.8976, ppl=49.29). The full run remains stable and still improves near the end, suggesting additional headroom for short continuation training.',
-                'This release summarizes what happened during training, what signals matter most, and what we plan to do next. The outcome is encouraging: convergence is consistent, optimization is well-behaved, and late-stage metrics indicate the run is not yet fully saturated.',
-                'Key Takeaways:',
-                '• Convergence is strong: both loss and perplexity improve substantially across the full run.',
-                '• Optimization remains stable: learning-rate decay aligns with metric trends and shows no obvious divergence period.',
-                '• Best quality appears late: the best loss occurs at step 13160, close to the final step 13400.',
-                '• Efficiency changes are predictable: throughput gradually decreases from 261 to 235 tok/s.',
-                'Data and Method:',
-                'We use the fields step, loss, ppl, lr, tok_s. The cleaned dataset contains 770 valid records, spanning step range [5710, 13400] with step interval 10. The raw CSV contains repeated headers and one malformed concatenated row near the end. We apply three deterministic rules: remove repeated header rows; keep only rows matching a five-column numeric schema; truncate malformed concatenated rows before final validation.',
-                'We track three dimensions:',
-                '• Convergence: loss and perplexity;',
-                '• Optimization state: learning rate;',
-                '• System efficiency: token throughput (tok/s).',
-                '<div class="chart-container"><canvas id="lossChart"></canvas></div>',
-                'Training Results:',
-                'Core metrics from step 5710 to step 13400:',
-                'Loss: Start 6.2683 → End 4.5531, Best 3.8976 (step 13160)',
-                'PPL: Start 527.60 → End 94.93, Best 49.29 (step 13160)',
-                'LR: 2.96×10⁻⁴ → 2.61×10⁻⁴',
-                'tok/s: 261 → 235',
-                'Over the final 100 steps, average metrics are loss=4.4312, ppl=87.4712, and tok/s=235.18.',
-                '<div class="chart-grid"><div class="chart-item"><canvas id="lossDetailChart"></canvas></div><div class="chart-item"><canvas id="pplChart"></canvas></div><div class="chart-item"><canvas id="lrChart"></canvas></div><div class="chart-item"><canvas id="toksChart"></canvas></div></div>',
-                'Loss declines steadily with moderate local variance. Perplexity tracks the same downward trajectory. Learning-rate decay is smooth across the run. Throughput gradually decreases as training progresses.',
-                'Interpretation:',
-                'Three signals are most important. First, convergence is broad-based: both loss and perplexity improve materially from start to finish. Second, optimization remains stable: we do not observe a sustained divergence regime. Third, the best checkpoint appears near the end of training (step 13160 compared with final step 13400), which indicates additional training headroom.',
-                'Based on these signals, the most practical next move is a short continuation phase with stricter validation monitoring. We recommend combining moving-average trend tracking with patience-based early stopping to capture remaining gains while controlling overfitting risk.',
-                'What Comes Next:',
-                'We plan to extend this release in four directions:',
-                '• Add confidence intervals and smoothing diagnostics to separate trend from noise;',
-                '• Evaluate by task buckets (math, language, logic) to localize specialist bottlenecks;',
-                '• Monitor validation-side indicators jointly with training metrics to detect turning points earlier;',
-                '• Run controlled ablations on routing policy and specialist allocation ratio to isolate architecture effects.',
-                'The objective is not only better end metrics, but also a clearer causal account of where Relay-Expert Distillation delivers its gains.'
+                'NexusV Modifier has undergone a transformation from feature accumulation to experience reconstruction over the past few months. The core goal of the 5.0 series is singular: to make the modifier no longer a tool that hinders gameplay, but a control layer integrated seamlessly with the game.',
+                'This is the most significant iteration in NexusV history. A brand new UI framework, Hot Coffee easter egg, built-in Rockstar Editor module, and an information menu system covering 200+ entries—we are redefining the experience boundaries of GTA5 modifiers.',
+                '5.0.0 — Refactoring Everything',
+                'Moving from 4.x to 5.0, the changes go beyond version numbers. The UI has undergone a complete visual reconstruction, with interaction logic adjusted accordingly. Meanwhile, numpad 9 now brings up the detailed information panel, giving every feature a descriptive entry point—significantly improving the onboarding experience for new users.',
+                'Hot Coffee added. No explanation needed, experience it yourself.',
+                'Main modules in this release:',
+                '• Rockstar Editor: Built-in Rockstar Editor module, recording and editing workflows no longer require leaving the modifier interface.',
+                '• Creative Module: New standalone creative module providing more sandbox-style scene tools for freedom enthusiasts to explore.',
+                '• Fire Wings & Fire Ring: Visual effects enhanced, both features strengthened in version 5.0 with more stable performance.',
+                '• Experimental Features: Multiple experimental features launched simultaneously, some will be promoted to stable in subsequent versions.',
+                'Version Info: v5.0.0 | 2026-03-30 | 156 KB',
+                '5.0.1 — Completing the Information Layer',
+                'On the same day as 5.0.0 release, we followed up with 5.0.1. This version focuses on one thing: completing all missing descriptions in the information menu.',
+                '200+ menu entries covering Player, Vehicle, Weapon, World, Teleport, Bodyguard, Tools, Clothing, Settings modules, plus miscellaneous categories. For power users, this means no more guessing to understand each option behavior boundaries.',
+                'Version Info: v5.0.1 | 2026-03-30 | 164 KB',
+                'What Comes Next',
+                'The 5.0 series has established a new interaction foundation. Future updates will continue building on this framework—a variety of entertainment and practical gameplay features are already in planning, and experimental features will gradually be promoted to stable.',
+                'Thanks to the 10,000+ users on the Player Power platform and 300 community members who have accompanied NexusV to this day. Your feedback directly shapes every version.'
             ]
         }
     },
@@ -159,7 +129,7 @@ const articleData = {
     },
     n2: {
         overlay: 'TACTFR',
-        media: { type: 'image', src: 'Logo/JJ1.webp', alt: 'TACTFR V5' },
+        media: { type: 'image', src: 'Logo/UD3.jpg', alt: 'TACTFR V5' },
         zh: {
             title: '了解 TACTFR V5',
             date: '2026年3月03日',
@@ -281,7 +251,7 @@ const articleData = {
     },
     tactfr540: {
         overlay: '',
-        media: { type: 'image', src: 'Logo/H11.webp', alt: 'TACTFR 5.6.0' },
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'TACTFR 5.6.0' },
         zh: {
             title: '介绍 TACTFR 5.6.0',
             date: '2026年3月26日',
@@ -611,7 +581,7 @@ const articleData = {
     },
     sentienceLS: {
         overlay: 'Sentience-LS',
-        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'Sentience-LS' },
+        media: { type: 'video', src: 'Logo/HORE1.mp4', poster: 'Logo/PO1.jpg', fit: 'cover', alt: 'Sentience-LS' },
         zh: {
             title: '了解 Sentience-LS',
             date: '2026年3月12日',
@@ -1323,7 +1293,7 @@ const articleData = {
         }
     },
     news10: {
-        media: { type: 'image', src: 'Logo/N5.webp', alt: 'NexusV 4.5.0' },
+        media: { type: 'image', src: 'Logo/NexusSA.webp', alt: 'NexusV 4.5.0' },
         zh: {
             title: '正式推出NexusV 4.5.0',
             date: '2026年3月26日',
@@ -1720,11 +1690,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid) return;
 
     function renderIndex(lang) {
-        // Scrollable List (sentienceLS, sentienceV4C, tactfr540)
+        // Scrollable List (tactfr540, sentienceV4C, sentienceLS)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['sentienceLS', 'sentienceV4C', 'tactfr540'];
-            const linkTargets = ['sentienceLS', 'sentienceV4C', 'tactfr540'];
+            const listIds = ['tactfr540', 'sentienceV4C', 'sentienceLS'];
+            const linkTargets = ['tactfr540', 'sentienceV4C', 'sentienceLS'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];

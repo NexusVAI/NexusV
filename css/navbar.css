@@ -14,7 +14,7 @@
 
 .navbar-inner {
     width: 100%;
-    max-width: 1440px;
+    max-width: 1120px;
     padding: 0 24px;
     display: flex;
     align-items: center;
@@ -126,6 +126,10 @@
 .search-icon.active .icon-close {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+}
+
+.search-container--mobile {
+    display: none;
 }
 
 /* Full Screen Search Overlay - OpenAI Style */
@@ -313,6 +317,7 @@
     margin: 0;
     color: var(--text-color);
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -332,6 +337,7 @@
     color: var(--secondary-text);
     line-height: 1.3;
     display: -webkit-box;
+    line-clamp: 3;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -370,6 +376,7 @@
     .search-result-excerpt {
         font-size: 13px;
         line-height: 1.35;
+        line-clamp: 2;
         -webkit-line-clamp: 2;
     }
 }
@@ -570,6 +577,8 @@
     .nav-links { display: none; }
     .nav-right .login-btn, .nav-right .btn-pill { display: none; }
     .nav-right { gap: 10px; }
+    .search-container--nav { display: none; }
+    .search-container--mobile { display: flex; }
     .nav-right .search-container {
         width: auto;
         height: auto;
