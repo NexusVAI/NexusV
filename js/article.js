@@ -1,7 +1,7 @@
 const articleData = {
     hero: {
         overlay: 'NexusV',
-        media: { type: 'video', src: 'Logo/Nexusai.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'NexusV V5' },
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'NexusV V5' },
         zh: {
             title: '介绍 NexusV V5',
             date: '2026年3月30日',
@@ -306,6 +306,66 @@ const articleData = {
                 'We believe future gaming experiences should not mechanically trigger scripts, but rather represent advanced interactions between players and a system with self-logic. We will continue exploring this path, bringing more stable performance and deeper mechanics to TACTFR.',
                 'TACTFR 5.6.0 is now available for download in the Enhanced Edition area (15.95MB).',
                 'Thanks to the community\'s feedback and support along the way. If you encounter unexpected issues, please continue submitting reports through our logging system.'
+            ]
+        }
+    },
+    tactfr570: {
+        overlay: 'TACTFR 5.7.0',
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'TACTFR 5.7.0' },
+        zh: {
+            title: '隆重推出 TACTFR 5.7.0',
+            date: '2026年4月13日',
+            category: '产品',
+            readTime: '6 分钟阅读',
+            paragraphs: [
+                '今天，我们非常激动地向大家宣布：TACTFR 战术第一响应（增强版） 5.7.0 版本 现已在 玩家动力平台 正式发布。',
+                '自 TACTFR 项目诞生以来，我们的目标始终如一：为《GTA 5》带来最真实、最硬核的警察角色扮演体验。在 5.7.0 版本中，我们不仅对底层代码（如 DutyLifecycleController 和 PoliceUniformSystem）进行了大量优化，更在"沉浸感"与"电影化叙事"上迈出了突破性的一步。这不仅是一次功能更新，更是我们迈向下一代智能执法生态的重要基石。',
+                '核心亮点：电影级警员注册系统',
+                '在过去的版本中，玩家入职往往只是一次简单的 UI 点击。而在 5.7.0 中，我们重新构思了这一流程，引入了全新的沉浸式注册生命周期（Duty Lifecycle）。',
+                '电影化运镜与无缝过渡：当新玩家点击"注册警员"时，系统将通过平滑的屏幕渐黑过渡，将玩家无缝带入精心挑选的室内警局场景。我们通过调用原生的场景哈希（Hash）与自定义摄像机轨道，让镜头缓慢对准主角，宛如好莱坞警匪片的开场。',
+                '专属更衣室交互：玩家将在高度定制的更衣室场景中进行外观选择。不再是冷冰冰的菜单叠加，而是角色与环境的真实互动。',
+                '状态与数据持久化：确认入职后，伴随着清脆的 LSPD 提示音和系统短信（"您已注册为警员，您的警车在警局外车库可以选择..."），您的所有外观数据将通过底层写入 INI 文件。无论何时重返洛圣都，您的警员身份与样貌都将无缝衔接。',
+                '专属巡逻车与次世代车库体验',
+                '一名优秀的警员需要一台完美的座驾。在 5.7.0 版本中，我们对载具分发与定制系统进行了彻底重构：',
+                '电影感车库提车：告别凭空刷车的突兀感。现在提取警车时，玩家将进入专属的地下/局外车库场景。在精心设计的灯光和运镜下，迎接您的专属战车。',
+                '深度自定义与永久保存：我们为警车加入了涂装、颜色、轮毂等深度自定义选项。所有改装数据将自动同步保存至 INI 存档。您的爱车将在每次进入游戏时精准还原——它真正属于你。',
+                '智能载具损毁兜底机制：载具一旦领取便与玩家绑定。如果不幸在激烈的追逐中损毁或丢失，系统允许您返回警局重新申请调用，确保执勤流程永不中断。',
+                '展望未来：AI 驱动的智能洛圣都',
+                '5.7.0 版本的底层状态机和生命周期控制更新（如无感存档、场景切换控制），为我们接下来的重磅计划铺平了道路。',
+                '我们在此非常兴奋地向大家透露：未来的 TACTFR 更新将正式引入 AI 驱动系统。',
+                '我们正在探索如何让嫌疑人拥有不可预测的逃跑逻辑、让调度员（Dispatcher）能够根据实时战况给出动态的语音反馈、甚至让您的 AI 搭档具备真实的战术意识。5.7.0 构建了完美的物理与交互框架，而接下来的 AI 引擎，将赋予这个框架真正的灵魂。',
+                '立即体验',
+                '感谢所有陪伴 TACTFR 社区成长的警员们，是你们的反馈促成了这次演进。TACTFR 5.7.0 现已在玩家动力平台独家开放下载。',
+                '穿上制服，调整好您的警灯。洛圣都的街道，正等待着您的巡逻。',
+                '—— TACTFR 开发团队 敬上'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 5.7.0',
+            date: 'April 13, 2026',
+            category: 'Product',
+            readTime: '6 min read',
+            paragraphs: [
+                'Today, we are thrilled to announce: TACTFR Tactical First Response (Enhanced Edition) version 5.7.0 is now officially released on the Player Power platform.',
+                'Since the birth of the TACTFR project, our goal has remained consistent: to bring the most realistic and hardcore police role-playing experience to GTA 5. In version 5.7.0, we have not only performed extensive optimizations on underlying code (such as DutyLifecycleController and PoliceUniformSystem), but also taken a breakthrough step in "immersion" and "cinematic storytelling." This is not just a feature update—it is an important cornerstone for us to move toward the next generation of intelligent law enforcement ecosystem.',
+                'Core Highlights: Cinema-Quality Officer Registration System',
+                'In past versions, player onboarding was often just a simple UI click. In 5.7.0, we reimagined this process, introducing a brand new immersive registration lifecycle (Duty Lifecycle).',
+                'Cinematic Camera Work and Seamless Transitions: When a new player clicks "Register Officer," the system will smoothly transition through a fade-to-black screen, seamlessly bringing the player into a carefully selected indoor police station scene. Through native scene hash calls and custom camera tracks, the lens slowly focuses on the protagonist, just like a Hollywood crime drama opening.',
+                'Exclusive Locker Room Interaction: Players will choose their appearance in a highly customized locker room scene. No more cold menu stacking—it is real interaction between character and environment.',
+                'State and Data Persistence: After confirming onboarding, accompanied by the crisp LSPD notification sound and system SMS ("You are now registered as an officer, your patrol car can be selected at the garage outside the station..."), all your appearance data will be written to INI files through the underlying layer. Whenever you return to Los Santos, your officer identity and appearance will seamlessly connect.',
+                'Exclusive Patrol Vehicle and Next-Gen Garage Experience',
+                'An excellent officer needs a perfect ride. In version 5.7.0, we completely restructured the vehicle distribution and customization system:',
+                'Cinematic Garage Vehicle Pickup: Farewell to the abrupt feeling of spawning vehicles out of thin air. Now when extracting a patrol car, players will enter an exclusive underground/outside station garage scene. Under carefully designed lighting and camera work, your exclusive combat vehicle awaits.',
+                'Deep Customization and Permanent Saving: We added deep customization options such as paint, color, and wheels for patrol cars. All modification data will automatically sync and save to INI archives. Your beloved car will be precisely restored every time you enter the game—it truly belongs to you.',
+                'Intelligent Vehicle Damage Fallback Mechanism: Once a vehicle is claimed, it is bound to the player. If it is unfortunately damaged or lost during an intense chase, the system allows you to return to the station to reapply for dispatch, ensuring the duty process never interrupts.',
+                'Looking Ahead: AI-Driven Intelligent Los Santos',
+                'The underlying state machine and lifecycle control updates in version 5.7.0 (such as seamless saving, scene switching control) have paved the way for our upcoming major plans.',
+                'We are thrilled to share with you: future TACTFR updates will officially introduce AI-driven systems.',
+                'We are exploring how to give suspects unpredictable escape logic, enable dispatchers to provide dynamic voice feedback based on real-time combat situations, and even give your AI partner genuine tactical awareness. Version 5.7.0 has built a perfect physics and interaction framework, and the upcoming AI engine will give this framework a true soul.',
+                'Experience Now',
+                'Thanks to all the officers who have grown with the TACTFR community—your feedback has driven this evolution. TACTFR 5.7.0 is now exclusively available for download on the Player Power platform.',
+                'Put on your uniform, adjust your siren lights. The streets of Los Santos await your patrol.',
+                '— TACTFR Development Team'
             ]
         }
     },
@@ -844,10 +904,10 @@ const articleData = {
         media: { type: 'image', src: 'Logo/OAI_Systems_Blog_Card.webp', alt: '使用协议' },
         zh: {
             title: '使用协议与免责声明',
-            date: '2026年3月04日',
+            date: '2026年4月13日',
             category: '公司',
             paragraphs: [
-                '更新日期：2026 年 3 月 4 日',
+                '更新日期：2026 年 4 月 13 日',
                 '生效日期：2026 年 1 月 1 日',
                 '本使用协议（以下简称"本协议"）适用于由 某宇（以下简称"开发者"）开发并发布的 NexusV 模组（以下简称"本模组"）。在下载、安装或以任何方式使用本模组前，请您务必仔细阅读并理解本协议的全部内容。凡以任何方式使用本模组，均视为您已充分阅读、理解并同意接受本协议的全部条款；若您不同意本协议任何条款，请立即停止使用并删除本模组及其所有相关文件。',
                 '1. 定义与说明',
@@ -864,6 +924,7 @@ const articleData = {
                 'NAudio；',
                 'Newtonsoft.Json。',
                 '对于上述及其他第三方组件，请务必遵守其原始许可声明、分发要求及使用限制。若您以二进制形式分发本模组，请确保您有权分发所包含的第三方组件。',
+                'AI 模型权重许可：若本模组支持并内置/引导下载了特定的本地开源 AI 模型（如 Llama, Qwen 等），该模型权重的分发与使用受其对应模型发行方的开源协议与"可接受使用政策（AUP）"约束，用户在使用生成的文本时亦需遵守相关规定。',
                 '4. 隐私与数据处理（重要）',
                 '本模组包含基于大语言模型（LLM）的实时生成模块（例如用于 NPC 对话）。在默认配置下，为生成 AI 输出，本模组可能会将 NPC 对话上下文、玩家输入的文字、以及有限的游戏状态信息发送至用于推理的模型或服务提供方（云端/本地模型视配置而定）。',
                 '数据使用与脱敏：开发者将在发送前尽最大合理努力对数据进行必要脱敏与匿名化，但无法保证数据在任何情况下均完全不可识别。用户不得向模组提供其真实的高度敏感个人信息（如身份证号、银行卡信息等）。',
@@ -876,7 +937,7 @@ const articleData = {
                 '内容过滤与上报机制：开发者应提供并推荐启用内容过滤/安全模式（例如屏蔽涉黄、仇恨、暴力、政治敏感词等），并在模组内或发布页设立明确的"内容问题报告"通道与处理流程。用户若发现违法或严重冒犯内容，应在发现后 72 小时内将相关信息提交至开发者指定邮箱或 issue，开发者将在收到后合理时间内进行调查与处理。',
                 '禁止用途：严禁利用本模组生成、储存、传播或诱导任何违反当地法律法规之内容，包括但不限于色情、暴力恐怖、仇恨言论、侵害隐私或诽谤等内容。开发者保留对于恶意滥用行为采取技术手段限制或追究法律责任的权利。',
                 '6. 使用限制与禁止行为',
-                '年龄限制：本模组建议仅供 13 岁及以上用户使用；若您未满当地法定年龄，请在监护人同意下使用。',
+                '年龄限制：本模组基于限制级（18+）游戏运行，且涉及数据联网处理。您必须是年满 18 周岁（或达到您所在司法管辖区的法定成年年龄）的完全民事行为能力人方可使用本模组。若您未满法定年龄，请立即停止使用。',
                 '禁止将本模组用于任何违法用途或以任何方式进行商业变现（如未经授权的付费分发、代售等），除非事先获得开发者书面授权。',
                 '除非第三方组件原始许可允许，您不得对开发者的专有部分实施逆向工程、反编译或反汇编。对以开源许可分发的组件，请按其原始许可执行。',
                 '推荐在单人/离线模式下使用本模组以降低因修改游戏文件而被官方封禁的风险；开发者不保证在线多人模式使用的安全性或不会触发游戏服务方的处罚。',
@@ -884,7 +945,8 @@ const articleData = {
                 '按原样提供：本模组按"原样"（AS IS）提供，开发者对本模组不作任何明示或默示的保证，包括但不限于对适销性、对特定用途适用性、免侵权或无缺陷的保证。',
                 '不担保可用性：开发者不保证本模组将持续不间断、安全、无错误或完全符合用户期望；也不保证任何第三方服务或模型的可用性与稳定性。',
                 '风险自负：用户明确知悉并同意，因下载、安装或使用本模组所可能导致的游戏账号风险（包括但不限于被官方封禁）、数据丢失、系统损坏或其他任何损失，均由用户自行承担。开发者不对上述损失承担责任。',
-                '责任限额：在适用法律允许的最大范围内，开发者对因本模组引起或与之相关的任何直接损害、间接损害、特殊损害、惩罚性损害或后果性损害不承担责任。若在某一司法管辖区法律不允许完全排除责任，则开发者对可归责责任的总体赔偿金额以用户在发生损害前 12 个月内因本模组直接向开发者实际支付的金额为上限；若用户未向开发者支付任何费用，则以 50 欧元（或等值货币）为上限（具体金额可按需调整并建议先征询法律意见）。',
+                '责任限额：在适用法律允许的最大范围内，开发者对因本模组引起或与之相关的任何直接损害、间接损害、特殊损害、惩罚性损害或后果性损害不承担责任。若在某一司法管辖区法律不允许完全排除责任，则开发者对可归责责任的总体赔偿金额以用户在发生损害前 12 个月内因本模组直接向开发者实际支付的金额为上限；若用户未向开发者支付任何费用，则最高赔偿责任上限为 100 元人民币。',
+                'API 密钥安全与计费：若本模组允许或要求用户输入第三方服务商的 API 密钥（API Key）以启用云端推理，用户应自行妥善保管其密钥（例如不要将包含密钥的配置文件分享给他人）。因用户泄露配置文件、第三方服务商计费规则变更或遭遇恶意刷量而产生的任何 API 扣费或经济损失，均由用户自行承担，开发者对此不负任何连带责任。',
                 '本条款中责任限制及免责并不旨在规避对因故意或重大过失所导致的法定不可免除责任。',
                 '8. 维护、更新与协议变更',
                 '开发者可不定期对本模组进行更新、维护或功能变更。对于本协议的修改，开发者将在模组发布页/仓库主页发布变更说明并标注生效日期。对于重大变更（影响用户权利义务的实质性修改），开发者将尽合理努力在公告中说明变更要点及生效日。继续使用模组即视为接受更新后的协议。',
@@ -899,6 +961,7 @@ const articleData = {
                 '开发者将在合理时间内确认收悉并在可行范围内处理或给出处理计划。若涉及法律问题，开发者保留将相关信息移交执法或权利人处理的权利。',
                 '11. 终止',
                 '若用户违反本协议之任一条款，开发者有权立即终止向该用户提供服务并要求其删除模组全部副本；同时开发者可采取进一步的技术或法律措施维护合法权益。',
+                '因版权方要求的终止：鉴于本模组依附于《Grand Theft Auto V》，若收到原版权方（Take-Two Interactive 或 Rockstar Games）的停止通知（Cease & Desist）或相关维权要求，开发者有权随时、无条件且不经提前通知地永久停止本模组的维护、下架相关文件并终止云端推理服务（若有），且无需向用户承担任何违约或赔偿责任。',
                 '本协议的终止不影响在终止前已产生之责任与义务。',
                 '12. 适用法律与争议解决',
                 '本协议的订立、执行与解释适用中华人民共和国法律；但若用户所在司法区的强制性法律与本协议冲突，则以用户所在地的强制性法律为准。',
@@ -910,10 +973,10 @@ const articleData = {
         },
         en: {
             title: 'Terms of Use & Disclaimer',
-            date: 'March 4, 2026',
+            date: 'April 13, 2026',
             category: 'Company',
             paragraphs: [
-                'Last Updated: March 4, 2026',
+                'Last Updated: April 13, 2026',
                 'Effective Date: January 1, 2026',
                 'This Terms of Use Agreement ("Agreement") applies to the NexusV mod (the "Mod") developed and published by 某宇 ("Developer"). Before downloading, installing, or using the Mod in any manner, please read and understand this Agreement carefully. By using the Mod, you agree to be bound by all terms herein. If you do not agree, please stop using and delete all copies of the Mod immediately.',
                 '1. Definitions',
@@ -930,6 +993,7 @@ const articleData = {
                 'NAudio;',
                 'Newtonsoft.Json.',
                 'For the above and other third-party components, please be sure to comply with their original license statements, distribution requirements, and usage restrictions. If you distribute the Mod in binary form, please ensure you have the right to distribute the included third-party components.',
+                'AI Model Weight License: If this Mod supports and includes/guides download of specific local open-source AI models (such as Llama, Qwen, etc.), the distribution and use of such model weights are subject to the open-source license agreements and "Acceptable Use Policy (AUP)" of the respective model publishers. Users must also comply with relevant regulations when using generated text.',
                 '4. Privacy & Data Processing',
                 'The Mod includes a real-time generation module based on Large Language Models (LLM) (e.g., for NPC dialogue). In default configuration, to generate AI outputs, the Mod may send NPC dialogue context, player text input, and limited game state information to the model or service provider used for inference (cloud/local model depending on configuration).',
                 'Data Use & De-identification: The Developer will make reasonable efforts to de-identify and anonymize data before transmission, but cannot guarantee that data will be completely unidentifiable under all circumstances. Users shall not provide highly sensitive personal information (such as ID numbers, bank card information, etc.) to the Mod.',
@@ -942,7 +1006,7 @@ const articleData = {
                 'Content Filtering & Reporting Mechanism: The Developer should provide and recommend enabling content filtering/safety modes (e.g., blocking pornography, hate, violence, politically sensitive words, etc.) and establish clear "content issue reporting" channels and processing procedures within the Mod or on the release page. If users discover illegal or seriously offensive content, they should submit relevant information to the Developer\'s designated email or issue within 72 hours of discovery, and the Developer will investigate and handle it within a reasonable time after receipt.',
                 'Prohibited Uses: It is strictly forbidden to use the Mod to generate, store, disseminate, or induce any content that violates local laws and regulations, including but not limited to pornography, violent terrorism, hate speech, privacy infringement, or defamation. The Developer reserves the right to take technical measures or pursue legal liability for malicious abuse.',
                 '6. Usage Restrictions',
-                'Age Limit: The Mod is recommended for users aged 13 and above; if you are under the legal age in your jurisdiction, please use it with guardian consent.',
+                'Age Restriction: This Mod is built upon a mature-rated (18+) game and involves online data processing. You must be at least 18 years old (or the legal age of majority in your jurisdiction) and have full civil capacity to use this Mod. If you are under the legal age, please stop using it immediately.',
                 'The Mod shall not be used for any illegal purpose or for commercial monetization in any form (such as unauthorized paid distribution, resale, etc.) unless prior written authorization is obtained from the Developer.',
                 'Unless permitted by the original licenses of third-party components, you shall not reverse engineer, decompile, or disassemble the proprietary parts of the Developer. For components distributed under open-source licenses, please execute according to their original licenses.',
                 'It is recommended to use the Mod in single-player/offline mode to reduce the risk of being banned by officials due to modifying game files; the Developer does not guarantee the safety of use in online multiplayer mode or that it will not trigger penalties from game service providers.',
@@ -950,7 +1014,8 @@ const articleData = {
                 'Provided "As Is": The Mod is provided "AS IS", and the Developer makes no express or implied warranties regarding the Mod, including but not limited to warranties of merchantability, fitness for a particular purpose, non-infringement, or defect-free.',
                 'No Guarantee of Availability: The Developer does not guarantee that the Mod will continue uninterrupted, be secure, error-free, or fully meet user expectations; nor does it guarantee the availability or stability of any third-party services or models.',
                 'Use at Your Own Risk: Users explicitly acknowledge and agree that game account risks (including but not limited to being banned by officials), data loss, system damage, or any other losses that may result from downloading, installing, or using the Mod are borne by users themselves. The Developer assumes no responsibility for the above losses.',
-                'Limitation of Liability: To the maximum extent permitted by applicable law, the Developer shall not be liable for any direct, indirect, special, punitive, or consequential damages arising from or related to the Mod. If the law in a certain jurisdiction does not allow complete exclusion of liability, the Developer\'s total liability amount for attributable liability shall be limited to the amount actually paid by the user to the Developer directly for the Mod within 12 months before the damage occurred; if the user has not paid any fees to the Developer, the limit shall be 50 Euros (or equivalent currency) (specific amount can be adjusted as needed and legal advice is recommended before adjustment).',
+                'Limitation of Liability: To the maximum extent permitted by applicable law, the Developer shall not be liable for any direct, indirect, special, punitive, or consequential damages arising from or related to the Mod. If the law in a certain jurisdiction does not allow complete exclusion of liability, the Developer\'s total liability amount for attributable liability shall be limited to the amount actually paid by the user to the Developer directly for the Mod within 12 months before the damage occurred; if the user has not paid any fees to the Developer, the maximum liability limit shall be 100 RMB.',
+                'API Key Security & Billing: If the Mod allows or requires users to enter third-party service provider API Keys to enable cloud inference, users shall properly keep their keys secure (e.g., do not share configuration files containing keys with others). Any API charges or economic losses arising from user key leakage, third-party service billing rule changes, or malicious usage will be borne by the user, and the Developer assumes no joint liability for these.',
                 'The limitation of liability and disclaimer in this clause are not intended to circumvent statutory non-excludable liability caused by intentional or gross negligence.',
                 '8. Maintenance, Updates & Agreement Changes',
                 'The Developer may update, maintain, or change the Mod\'s functions from time to time. For modifications to this Agreement, the Developer will publish change descriptions on the Mod release page/repository homepage and mark the effective date. For material changes (substantive modifications affecting user rights and obligations), the Developer will make reasonable efforts to explain the key points of changes and effective date in the announcement. Continued use of the Mod constitutes acceptance of the updated Agreement.',
@@ -965,6 +1030,7 @@ const articleData = {
                 'The Developer will confirm receipt within a reasonable time and handle or provide a processing plan within the feasible scope. If legal issues are involved, the Developer reserves the right to transfer relevant information to law enforcement or rights holders for processing.',
                 '11. Termination',
                 'If a user violates any terms of this Agreement, the Developer has the right to immediately terminate the provision of services to that user and request deletion of all copies of the Mod; at the same time, the Developer may take further technical or legal measures to protect legitimate rights and interests.',
+                'Termination Due to Copyright Holder Requests: Given that this Mod depends on Grand Theft Auto V, if the Developer receives a Cease & Desist notice or related enforcement requests from the original copyright holders (Take-Two Interactive or Rockstar Games), the Developer has the right to permanently cease maintenance, remove related files, and terminate cloud inference services (if any) at any time, unconditionally, and without prior notice, without any liability to the user for breach of contract or compensation.',
                 'The termination of this Agreement does not affect liabilities and obligations that have arisen before termination.',
                 '12. Governing Law & Dispute Resolution',
                 'The establishment, execution, and interpretation of this Agreement shall be governed by the laws of the People\'s Republic of China; however, if the mandatory laws of the user\'s judicial district conflict with this Agreement, the mandatory laws of the user\'s location shall prevail.',
@@ -1693,8 +1759,8 @@ function initIndexPage() {
         // Scrollable List (tactfr540, sentienceV4C, sentienceLS)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['tactfr540', 'sentienceV4C', 'sentienceLS'];
-            const linkTargets = ['tactfr540', 'sentienceV4C', 'sentienceLS'];
+            const listIds = ['hero', 'sentienceV4C', 'sentienceLS'];
+            const linkTargets = ['hero', 'sentienceV4C', 'sentienceLS'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
