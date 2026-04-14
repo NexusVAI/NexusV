@@ -36,6 +36,219 @@ document.addEventListener('DOMContentLoaded', () => {
     initLazyVideo();
 });
 
+class WhiteFrameDetector {
+    constructor(config = {}) {
+        this.sampleSize = config.sampleSize || 24;
+        this.meanThreshold = config.meanThreshold || 242;
+        this.varianceThreshold = config.varianceThreshold || 90;
+        this.whiteRatioThreshold = config.whiteRatioThreshold || 0.88;
+        this.whitePixelThreshold = config.whitePixelThreshold || 245;
+        this._canvas = document.createElement('canvas');
+        this._ctx = this._canvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    isWhiteFrame(video) {
+        if (!this._ctx || !video.videoWidth || !video.videoHeight) return false;
+        this._canvas.width = this.sampleSize;
+        this._canvas.height = this.sampleSize;
+        try {
+            this._ctx.drawImage(video, 0, 0, this.sampleSize, this.sampleSize);
+            const imageData = this._ctx.getImageData(0, 0, this.sampleSize, this.sampleSize).data;
+            return this._analyzePixels(imageData);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    _analyzePixels(imageData) {
+        const pixels = this.sampleSize * this.sampleSize;
+        let sum = 0;
+        let sumSq = 0;
+        let whiteCount = 0;
+        for (let i = 0; i < imageData.length; i += 4) {
+            const luma = 0.2126 * imageData[i] + 0.7152 * imageData[i + 1] + 0.0722 * imageData[i + 2];
+            sum += luma;
+            sumSq += luma * luma;
+            if (luma > this.whitePixelThreshold) whiteCount++;
+        }
+        const mean = sum / pixels;
+        const variance = (sumSq / pixels) - mean * mean;
+        const whiteRatio = whiteCount / pixels;
+        return mean > this.meanThreshold && variance < this.varianceThreshold && whiteRatio > this.whiteRatioThreshold;
+    }
+}
+
+class LazyLoadTrigger {
+    constructor(options = {}) {
+        this.rootMargin = options.rootMargin || '50px';
+    }
+
+    observe(element, callback) {
+        if (!('IntersectionObserver' in window)) {
+            callback();
+            return () => {};
+        }
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    callback();
+                    observer.unobserve(element);
+                }
+            });
+        }, { rootMargin: this.rootMargin });
+        observer.observe(element);
+        return () => observer.unobserve(element);
+    }
+}
+
+class VideoLoader {
+    constructor(video, poster, config = {}) {
+        this.video = video;
+        this.poster = poster;
+        this.config = {
+            timeout: config.timeout || 4500,
+            fallbackImage: config.fallbackImage || 'Logo/I2.webp',
+            whiteWatchInterval: config.whiteWatchInterval || 280,
+            whiteWatchMaxChecks: config.whiteWatchMaxChecks || 6,
+            fallbackDelay: config.fallbackDelay || 220,
+            posterFadeDelay: config.posterFadeDelay || 800,
+            timeUpdateThreshold: config.timeUpdateThreshold || 0.08
+        };
+        this.state = {
+            isLoaded: false,
+            hasPlayableFrame: false,
+            isVideoVisible: false,
+            isRejected: false
+        };
+        this._loadTimeoutId = null;
+        this._whiteWatchId = null;
+        this.detector = new WhiteFrameDetector();
+    }
+
+    load(sourceUrl) {
+        if (this.state.isLoaded) return;
+        this.state.isLoaded = true;
+        this._showPoster();
+        this.video.src = sourceUrl;
+        this.video.load();
+        this._startLoadTimeout();
+        this._attemptPlay();
+    }
+
+    reveal() {
+        if (this.state.isVideoVisible || this.state.isRejected) return;
+        if (this.detector.isWhiteFrame(this.video)) {
+            this.reject();
+            return;
+        }
+        this.state.isVideoVisible = true;
+        this.state.hasPlayableFrame = true;
+        this._clearLoadTimeout();
+        this.video.style.opacity = '1';
+        this._hidePoster();
+        this._startWhiteWatch();
+    }
+
+    reject() {
+        if (this.state.isRejected) return;
+        this.state.isRejected = true;
+        this.state.isVideoVisible = false;
+        this._clearAllTimers();
+        this.video.pause();
+        this.video.removeAttribute('src');
+        this.video.load();
+        this._showPoster();
+    }
+
+    handleError() {
+        this._clearAllTimers();
+        this._showPoster();
+    }
+
+    _showPoster() {
+        if (!this.poster) return;
+        if (!this.poster.getAttribute('src')) this.poster.setAttribute('src', this.config.fallbackImage);
+        this.poster.style.opacity = '1';
+        this.poster.style.visibility = 'visible';
+        this.video.style.opacity = '0';
+    }
+
+    _hidePoster() {
+        if (!this.poster) return;
+        this.poster.style.opacity = '0';
+        setTimeout(() => {
+            if (this.state.isVideoVisible && !this.state.isRejected) {
+                this.poster.style.visibility = 'hidden';
+            }
+        }, this.config.posterFadeDelay);
+    }
+
+    _startLoadTimeout() {
+        this._loadTimeoutId = setTimeout(() => {
+            if (!this.state.hasPlayableFrame) this._showPoster();
+        }, this.config.timeout);
+    }
+
+    _startWhiteWatch() {
+        let checks = 0;
+        this._whiteWatchId = setInterval(() => {
+            checks += 1;
+            if (!this.state.isVideoVisible || this.state.isRejected) {
+                this._clearWhiteWatch();
+                return;
+            }
+            if (this.detector.isWhiteFrame(this.video)) {
+                this.reject();
+                return;
+            }
+            if (checks >= this.config.whiteWatchMaxChecks) this._clearWhiteWatch();
+        }, this.config.whiteWatchInterval);
+    }
+
+    _attemptPlay() {
+        const playPromise = this.video.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+            playPromise.then(() => this._onPlaySuccess()).catch(() => this._showPoster());
+        }
+    }
+
+    _onPlaySuccess() {
+        if (typeof this.video.requestVideoFrameCallback === 'function') {
+            this.video.requestVideoFrameCallback(() => {
+                if (this.detector.isWhiteFrame(this.video)) this.reject();
+                else this.reveal();
+            });
+        } else {
+            setTimeout(() => {
+                if (this.detector.isWhiteFrame(this.video)) this.reject();
+            }, this.config.fallbackDelay);
+        }
+    }
+
+    _clearAllTimers() {
+        this._clearLoadTimeout();
+        this._clearWhiteWatch();
+    }
+
+    _clearLoadTimeout() {
+        if (this._loadTimeoutId) {
+            clearTimeout(this._loadTimeoutId);
+            this._loadTimeoutId = null;
+        }
+    }
+
+    _clearWhiteWatch() {
+        if (this._whiteWatchId) {
+            clearInterval(this._whiteWatchId);
+            this._whiteWatchId = null;
+        }
+    }
+
+    destroy() {
+        this._clearAllTimers();
+    }
+}
+
 function initLazyVideo() {
     const wrappers = document.querySelectorAll('.lazy-video-wrapper');
     if (!wrappers.length) return;
@@ -50,172 +263,43 @@ function initLazyVideo() {
         const sourceUrl = video.getAttribute('data-src');
         if (!sourceUrl) return;
 
-        const fallbackImg = video.getAttribute('data-fallback') || poster?.getAttribute('src') || 'Logo/I2.webp';
-        const fitMode = video.getAttribute('data-fit');
-        const posMode = video.getAttribute('data-pos') || 'center center';
-        const frameBg = video.getAttribute('data-bg');
-        if (fitMode) video.style.objectFit = fitMode;
-        video.style.objectPosition = posMode;
-        if (frameBg) wrapper.style.backgroundColor = frameBg;
-        let isLoaded = false;
-        let hasPlayableFrame = false;
-        let isVideoVisible = false;
-        let isRejected = false;
-        let loadTimeoutId = null;
-        let whiteWatchId = null;
-        const frameCanvas = document.createElement('canvas');
-        const frameCtx = frameCanvas.getContext('2d', { willReadFrequently: true });
+        _configureVideoStyles(video, wrapper);
 
-        const showPoster = () => {
-            if (!poster) return;
-            if (!poster.getAttribute('src')) poster.setAttribute('src', fallbackImg);
-            poster.style.opacity = '1';
-            poster.style.visibility = 'visible';
-            video.style.opacity = '0';
-        };
-
-        const clearTimer = () => {
-            if (loadTimeoutId) {
-                clearTimeout(loadTimeoutId);
-                loadTimeoutId = null;
-            }
-        };
-
-        const clearWhiteWatch = () => {
-            if (whiteWatchId) {
-                clearInterval(whiteWatchId);
-                whiteWatchId = null;
-            }
-        };
-
-        const rejectVideo = () => {
-            if (isRejected) return;
-            isRejected = true;
-            isVideoVisible = false;
-            clearTimer();
-            clearWhiteWatch();
-            video.pause();
-            video.removeAttribute('src');
-            video.load();
-            showPoster();
-        };
-
-        const isLikelyWhiteFrame = () => {
-            if (!frameCtx || !video.videoWidth || !video.videoHeight) return false;
-            const sampleSize = 24;
-            frameCanvas.width = sampleSize;
-            frameCanvas.height = sampleSize;
-            try {
-                frameCtx.drawImage(video, 0, 0, sampleSize, sampleSize);
-                const imageData = frameCtx.getImageData(0, 0, sampleSize, sampleSize).data;
-                const pixels = sampleSize * sampleSize;
-                let sum = 0;
-                let sumSq = 0;
-                let whiteCount = 0;
-                for (let i = 0; i < imageData.length; i += 4) {
-                    const luma = 0.2126 * imageData[i] + 0.7152 * imageData[i + 1] + 0.0722 * imageData[i + 2];
-                    sum += luma;
-                    sumSq += luma * luma;
-                    if (luma > 245) whiteCount++;
-                }
-                const mean = sum / pixels;
-                const variance = (sumSq / pixels) - mean * mean;
-                const whiteRatio = whiteCount / pixels;
-                return mean > 242 && variance < 90 && whiteRatio > 0.88;
-            } catch (e) {
-                return false;
-            }
-        };
-
-        const revealVideo = () => {
-            if (isVideoVisible || isRejected) return;
-            if (isLikelyWhiteFrame()) {
-                rejectVideo();
-                return;
-            }
-            isVideoVisible = true;
-            hasPlayableFrame = true;
-            clearTimer();
-            video.style.opacity = '1';
-            if (poster) {
-                poster.style.opacity = '0';
-                setTimeout(() => {
-                    if (isVideoVisible && !isRejected) poster.style.visibility = 'hidden';
-                }, 800);
-            }
-            let checks = 0;
-            whiteWatchId = setInterval(() => {
-                checks += 1;
-                if (!isVideoVisible || isRejected) {
-                    clearWhiteWatch();
-                    return;
-                }
-                if (isLikelyWhiteFrame()) {
-                    rejectVideo();
-                    return;
-                }
-                if (checks >= 6) clearWhiteWatch();
-            }, 280);
-        };
-
-        const loadVideo = () => {
-            if (isLoaded) return;
-            isLoaded = true;
-            showPoster();
-            video.src = sourceUrl;
-            video.load();
-            loadTimeoutId = setTimeout(() => {
-                if (!hasPlayableFrame) showPoster();
-            }, 4500);
-
-            const playPromise = video.play();
-            if (playPromise && typeof playPromise.then === 'function') {
-                playPromise.then(() => {
-                    if (typeof video.requestVideoFrameCallback === 'function') {
-                        video.requestVideoFrameCallback(() => {
-                            if (isLikelyWhiteFrame()) rejectVideo();
-                            else revealVideo();
-                        });
-                    } else {
-                        setTimeout(() => {
-                            if (isLikelyWhiteFrame()) rejectVideo();
-                        }, 220);
-                    }
-                }).catch(() => showPoster());
-            }
-        };
-
-        video.addEventListener('playing', revealVideo);
-        video.addEventListener('timeupdate', () => {
-            if (!isVideoVisible && video.currentTime > 0.08) revealVideo();
+        const loader = new VideoLoader(video, poster, {
+            fallbackImage: video.getAttribute('data-fallback') || poster?.getAttribute('src') || 'Logo/I2.webp'
         });
 
-        video.addEventListener('error', () => {
-            clearTimer();
-            clearWhiteWatch();
-            showPoster();
-        });
+        _setupVideoEventListeners(video, loader);
+        _setupPosterErrorHandling(poster);
 
-        if (poster) {
-            poster.addEventListener('error', () => {
-                poster.src = 'Logo/I2.webp';
-            });
+        const trigger = new LazyLoadTrigger({ rootMargin: '50px' });
+        trigger.observe(wrapper, () => loader.load(sourceUrl));
+    });
+}
+
+function _configureVideoStyles(video, wrapper) {
+    const fitMode = video.getAttribute('data-fit');
+    const posMode = video.getAttribute('data-pos') || 'center center';
+    const frameBg = video.getAttribute('data-bg');
+    if (fitMode) video.style.objectFit = fitMode;
+    video.style.objectPosition = posMode;
+    if (frameBg) wrapper.style.backgroundColor = frameBg;
+}
+
+function _setupVideoEventListeners(video, loader) {
+    video.addEventListener('playing', () => loader.reveal());
+    video.addEventListener('timeupdate', () => {
+        if (!loader.state.isVideoVisible && video.currentTime > loader.config.timeUpdateThreshold) {
+            loader.reveal();
         }
+    });
+    video.addEventListener('error', () => loader.handleError());
+}
 
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        loadVideo();
-                        observer.unobserve(wrapper);
-                    }
-                });
-            }, { rootMargin: '50px' });
-
-            observer.observe(wrapper);
-        } else {
-            loadVideo();
-        }
+function _setupPosterErrorHandling(poster) {
+    if (!poster) return;
+    poster.addEventListener('error', () => {
+        poster.src = 'Logo/I2.webp';
     });
 }
 
