@@ -25,15 +25,15 @@ function initMegaMenu() {
                 <a href="article.html?id=hero" data-i18n="menu.research.index"></a>
                 <a href="article.html?id=hero" data-i18n="menu.research.deep_nexusv5"></a>
                 <a href="article.html?id=sentienceLS" data-i18n="menu.research.deep_sentienceLS"></a>
-                <a href="article.html?id=sentienceV4C" data-i18n="menu.research.deep_sentienceV4C"></a>
+                <a href="article.html?id=sentienceV4ob" data-i18n="menu.research.deep_sentienceV4C"></a>
                 <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
                 <a href="article.html?id=tactfr570" data-i18n="menu.research.deep_tactfr56"></a>
             </div>
             <div class="menu-column latest-updates">
                 <span class="label" data-i18n="menu.research.label"></span>
-                <a href="article.html?id=hero" data-i18n="menu.research.nexusv5"></a>
+                <a href="article.html?id=tactfr570" data-i18n="menu.research.nexusv5"></a>
                 <a href="article.html?id=sentienceLS" data-i18n="menu.research.sentienceLS"></a>
-                <a href="article.html?id=sentienceV4C" data-i18n="menu.research.sentienceV4C"></a>
+                <a href="article.html?id=sentienceV4ob" data-i18n="menu.research.sentienceV4C"></a>
                 <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
                 <a href="article.html?id=news7" data-i18n="menu.research.sentience3"></a>
                 <a href="article.html?id=tactfr570" data-i18n="menu.research.tactfr56"></a>
@@ -258,10 +258,10 @@ function initMobileMenu() {
                 submenu: [
                     { text: '意识架构索引', i18n: 'menu.research.index', href: 'article.html?id=hero' },
                     { text: '深入了解 NexusV V5', i18n: 'menu.research.deep_nexusv5', href: 'article.html?id=hero' },
-                    { text: '深入了解 Sentience V4C', i18n: 'menu.research.deep_sentienceV4C', href: 'article.html?id=sentienceV4C' },
+                    { text: '深入了解 Sentience V4 Omni Beta', i18n: 'menu.research.deep_sentienceV4C', href: 'article.html?id=sentienceV4ob' },
                     { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4', href: 'article.html?id=n3' },
-                    { text: '深入了解 TACTFR 5.6.0', i18n: 'menu.research.deep_tactfr56', href: 'article.html?id=tactfr570' },
-                    { text: 'Sentience V4C', i18n: 'menu.research.sentienceV4C', href: 'article.html?id=sentienceV4C' },
+                    { text: '深入了解 TACTFR 5.7.0', i18n: 'menu.research.deep_tactfr56', href: 'article.html?id=tactfr570' },
+                    { text: 'Sentience V4 Omni Beta', i18n: 'menu.research.sentienceV4C', href: 'article.html?id=sentienceV4ob' },
                     { text: 'Sentience V3.1', i18n: 'menu.research.sentience31', href: 'article.html?id=news6' },
                     { text: 'Sentience V3', i18n: 'menu.research.sentience3', href: 'article.html?id=news7' },
                     { text: 'TACTFR V5', i18n: 'menu.research.tactfr5', href: 'article.html?id=tactfr540' },
