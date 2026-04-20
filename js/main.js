@@ -1,40 +1,128 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Init Theme
-    if (window.initTheme) window.initTheme();
+const NEXUS_RUNTIME = {
+    bootstrapped: false,
+    loadedScripts: new Map(),
+    videoObserver: null,
+    videoLoaders: new WeakMap()
+};
 
-    // Init Lang
-    if (window.initLanguage) window.initLanguage();
+function whenDocumentReady(callback) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', callback, { once: true });
+        return;
+    }
+    callback();
+}
 
-    // Events for toggles
+function loadScriptOnce(src) {
+    const normalizedSrc = String(src || '');
+    if (!normalizedSrc) return Promise.reject(new Error('Missing script source'));
+    if (NEXUS_RUNTIME.loadedScripts.has(normalizedSrc)) {
+        return NEXUS_RUNTIME.loadedScripts.get(normalizedSrc);
+    }
+
+    const existingScript = Array.from(document.scripts).find((script) => {
+        const currentSrc = script.getAttribute('src') || '';
+        return currentSrc === normalizedSrc || currentSrc.endsWith(`/${normalizedSrc}`);
+    });
+
+    const promise = new Promise((resolve, reject) => {
+        if (existingScript) {
+            if (existingScript.dataset.loaded === '1') {
+                resolve();
+                return;
+            }
+
+            existingScript.addEventListener('load', () => {
+                existingScript.dataset.loaded = '1';
+                resolve();
+            }, { once: true });
+            existingScript.addEventListener('error', () => reject(new Error(`Failed to load ${normalizedSrc}`)), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = normalizedSrc;
+        script.async = true;
+        script.addEventListener('load', () => {
+            script.dataset.loaded = '1';
+            resolve();
+        }, { once: true });
+        script.addEventListener('error', () => reject(new Error(`Failed to load ${normalizedSrc}`)), { once: true });
+        document.head.appendChild(script);
+    });
+
+    NEXUS_RUNTIME.loadedScripts.set(normalizedSrc, promise);
+    return promise;
+}
+
+function isArticlePage() {
+    return Boolean(document.querySelector('.article-page'));
+}
+
+function isIndexPage() {
+    return Boolean(document.querySelector('.hero-card, .scrollable-list, .news-grid-2-col'));
+}
+
+function bindGlobalToggles() {
     const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
+    if (themeToggle && themeToggle.dataset.bound !== '1') {
+        themeToggle.dataset.bound = '1';
         themeToggle.addEventListener('click', () => {
             if (window.toggleTheme) window.toggleTheme();
         });
     }
 
     const langToggle = document.getElementById('lang-toggle');
-    if (langToggle) {
+    if (langToggle && langToggle.dataset.bound !== '1') {
+        langToggle.dataset.bound = '1';
         langToggle.addEventListener('click', () => {
             const current = localStorage.getItem('lang') || 'zh';
-            window.setLanguage(current === 'zh' ? 'en' : 'zh');
+            if (window.setLanguage) window.setLanguage(current === 'zh' ? 'en' : 'zh');
         });
     }
+}
 
-    // Init Menus
+async function initPageContent() {
+    if (isArticlePage()) {
+        if (!window.initArticlePage) await loadScriptOnce('js/article.js');
+        if (window.initArticlePage) window.initArticlePage();
+        return;
+    }
+
+    if (isIndexPage()) {
+        if (!window.initIndexPage) await loadScriptOnce('js/article.js');
+        if (window.initIndexPage) window.initIndexPage();
+    }
+}
+
+function bootstrapApp() {
+    if (NEXUS_RUNTIME.bootstrapped) return;
+    NEXUS_RUNTIME.bootstrapped = true;
+
+    if (window.initTheme) window.initTheme();
+    if (window.initLanguage) window.initLanguage();
+
+    bindGlobalToggles();
+
     if (window.initMegaMenu) window.initMegaMenu();
     if (window.initMobileMenu) window.initMobileMenu();
     if (window.initActiveNavItem) window.initActiveNavItem();
 
-    // Init Article
-    if (window.initArticlePage) window.initArticlePage();
-    
-    // Init Index Page
-    if (window.initIndexPage) window.initIndexPage();
-
-    // Init Lazy Video
     initLazyVideo();
-});
+    initPageContent().then(() => {
+        initLazyVideo();
+    }).catch((error) => {
+        console.error('Failed to initialize page content:', error);
+    });
+}
+
+function refreshInjectedUi() {
+    bindGlobalToggles();
+
+    if (window.initMegaMenu) window.initMegaMenu();
+    if (window.initMobileMenu) window.initMobileMenu();
+    if (window.initActiveNavItem) window.initActiveNavItem();
+}
 
 class WhiteFrameDetector {
     constructor(config = {}) {
@@ -55,7 +143,7 @@ class WhiteFrameDetector {
             this._ctx.drawImage(video, 0, 0, this.sampleSize, this.sampleSize);
             const imageData = this._ctx.getImageData(0, 0, this.sampleSize, this.sampleSize).data;
             return this._analyzePixels(imageData);
-        } catch (e) {
+        } catch (error) {
             return false;
         }
     }
@@ -65,39 +153,18 @@ class WhiteFrameDetector {
         let sum = 0;
         let sumSq = 0;
         let whiteCount = 0;
+
         for (let i = 0; i < imageData.length; i += 4) {
             const luma = 0.2126 * imageData[i] + 0.7152 * imageData[i + 1] + 0.0722 * imageData[i + 2];
             sum += luma;
             sumSq += luma * luma;
-            if (luma > this.whitePixelThreshold) whiteCount++;
+            if (luma > this.whitePixelThreshold) whiteCount += 1;
         }
+
         const mean = sum / pixels;
         const variance = (sumSq / pixels) - mean * mean;
         const whiteRatio = whiteCount / pixels;
         return mean > this.meanThreshold && variance < this.varianceThreshold && whiteRatio > this.whiteRatioThreshold;
-    }
-}
-
-class LazyLoadTrigger {
-    constructor(options = {}) {
-        this.rootMargin = options.rootMargin || '50px';
-    }
-
-    observe(element, callback) {
-        if (!('IntersectionObserver' in window)) {
-            callback();
-            return () => {};
-        }
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    callback();
-                    observer.unobserve(element);
-                }
-            });
-        }, { rootMargin: this.rootMargin });
-        observer.observe(element);
-        return () => observer.unobserve(element);
     }
 }
 
@@ -118,16 +185,35 @@ class VideoLoader {
             isLoaded: false,
             hasPlayableFrame: false,
             isVideoVisible: false,
-            isRejected: false
+            isRejected: false,
+            isActive: false
         };
+        this.sourceUrl = '';
         this._loadTimeoutId = null;
         this._whiteWatchId = null;
         this.detector = new WhiteFrameDetector();
     }
 
+    activate(sourceUrl) {
+        if (this.state.isRejected) return;
+        this.state.isActive = true;
+        if (!this.state.isLoaded) {
+            this.load(sourceUrl);
+            return;
+        }
+        this._attemptPlay();
+    }
+
+    deactivate() {
+        this.state.isActive = false;
+        this._clearWhiteWatch();
+        if (!this.video.paused) this.video.pause();
+    }
+
     load(sourceUrl) {
         if (this.state.isLoaded) return;
         this.state.isLoaded = true;
+        this.sourceUrl = sourceUrl;
         this._showPoster();
         this.video.src = sourceUrl;
         this.video.load();
@@ -136,7 +222,7 @@ class VideoLoader {
     }
 
     reveal() {
-        if (this.state.isVideoVisible || this.state.isRejected) return;
+        if (!this.state.isActive || this.state.isVideoVisible || this.state.isRejected) return;
         if (this.detector.isWhiteFrame(this.video)) {
             this.reject();
             return;
@@ -152,6 +238,7 @@ class VideoLoader {
     reject() {
         if (this.state.isRejected) return;
         this.state.isRejected = true;
+        this.state.isLoaded = false;
         this.state.isVideoVisible = false;
         this._clearAllTimers();
         this.video.pause();
@@ -161,6 +248,7 @@ class VideoLoader {
     }
 
     handleError() {
+        this.state.isLoaded = false;
         this._clearAllTimers();
         this._showPoster();
     }
@@ -193,7 +281,7 @@ class VideoLoader {
         let checks = 0;
         this._whiteWatchId = setInterval(() => {
             checks += 1;
-            if (!this.state.isVideoVisible || this.state.isRejected) {
+            if (!this.state.isVideoVisible || this.state.isRejected || !this.state.isActive) {
                 this._clearWhiteWatch();
                 return;
             }
@@ -206,6 +294,7 @@ class VideoLoader {
     }
 
     _attemptPlay() {
+        if (!this.state.isActive) return;
         const playPromise = this.video.play();
         if (playPromise && typeof playPromise.then === 'function') {
             playPromise.then(() => this._onPlaySuccess()).catch(() => this._showPoster());
@@ -213,16 +302,21 @@ class VideoLoader {
     }
 
     _onPlaySuccess() {
+        if (!this.state.isActive) return;
         if (typeof this.video.requestVideoFrameCallback === 'function') {
             this.video.requestVideoFrameCallback(() => {
+                if (!this.state.isActive) return;
                 if (this.detector.isWhiteFrame(this.video)) this.reject();
                 else this.reveal();
             });
-        } else {
-            setTimeout(() => {
-                if (this.detector.isWhiteFrame(this.video)) this.reject();
-            }, this.config.fallbackDelay);
+            return;
         }
+
+        setTimeout(() => {
+            if (!this.state.isActive) return;
+            if (this.detector.isWhiteFrame(this.video)) this.reject();
+            else this.reveal();
+        }, this.config.fallbackDelay);
     }
 
     _clearAllTimers() {
@@ -243,19 +337,41 @@ class VideoLoader {
             this._whiteWatchId = null;
         }
     }
+}
 
-    destroy() {
-        this._clearAllTimers();
+function ensureVideoObserver() {
+    if (NEXUS_RUNTIME.videoObserver || !('IntersectionObserver' in window)) {
+        return NEXUS_RUNTIME.videoObserver;
     }
+
+    NEXUS_RUNTIME.videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            const loader = NEXUS_RUNTIME.videoLoaders.get(entry.target);
+            if (!loader) return;
+            if (entry.isIntersecting) {
+                loader.activate(entry.target.dataset.videoSrc || '');
+                return;
+            }
+            loader.deactivate();
+        });
+    }, {
+        rootMargin: '180px 0px',
+        threshold: 0.01
+    });
+
+    return NEXUS_RUNTIME.videoObserver;
 }
 
 function initLazyVideo() {
     const wrappers = document.querySelectorAll('.lazy-video-wrapper');
     if (!wrappers.length) return;
 
+    const observer = ensureVideoObserver();
+
     wrappers.forEach((wrapper) => {
         if (wrapper.dataset.videoInit === '1') return;
         wrapper.dataset.videoInit = '1';
+
         const video = wrapper.querySelector('video');
         const poster = wrapper.querySelector('.video-poster');
         if (!video) return;
@@ -263,21 +379,27 @@ function initLazyVideo() {
         const sourceUrl = video.getAttribute('data-src');
         if (!sourceUrl) return;
 
-        _configureVideoStyles(video, wrapper);
+        wrapper.dataset.videoSrc = sourceUrl;
+        configureVideoStyles(video, wrapper);
+        setupPosterErrorHandling(poster);
 
         const loader = new VideoLoader(video, poster, {
             fallbackImage: video.getAttribute('data-fallback') || poster?.getAttribute('src') || 'Logo/I2.webp'
         });
 
-        _setupVideoEventListeners(video, loader);
-        _setupPosterErrorHandling(poster);
+        setupVideoEventListeners(video, loader);
+        NEXUS_RUNTIME.videoLoaders.set(wrapper, loader);
 
-        const trigger = new LazyLoadTrigger({ rootMargin: '50px' });
-        trigger.observe(wrapper, () => loader.load(sourceUrl));
+        if (observer) {
+            observer.observe(wrapper);
+            return;
+        }
+
+        loader.activate(sourceUrl);
     });
 }
 
-function _configureVideoStyles(video, wrapper) {
+function configureVideoStyles(video, wrapper) {
     const fitMode = video.getAttribute('data-fit');
     const posMode = video.getAttribute('data-pos') || 'center center';
     const frameBg = video.getAttribute('data-bg');
@@ -286,7 +408,10 @@ function _configureVideoStyles(video, wrapper) {
     if (frameBg) wrapper.style.backgroundColor = frameBg;
 }
 
-function _setupVideoEventListeners(video, loader) {
+function setupVideoEventListeners(video, loader) {
+    if (video.dataset.runtimeBound === '1') return;
+    video.dataset.runtimeBound = '1';
+
     video.addEventListener('playing', () => loader.reveal());
     video.addEventListener('timeupdate', () => {
         if (!loader.state.isVideoVisible && video.currentTime > loader.config.timeUpdateThreshold) {
@@ -296,11 +421,16 @@ function _setupVideoEventListeners(video, loader) {
     video.addEventListener('error', () => loader.handleError());
 }
 
-function _setupPosterErrorHandling(poster) {
-    if (!poster) return;
+function setupPosterErrorHandling(poster) {
+    if (!poster || poster.dataset.runtimeBound === '1') return;
+    poster.dataset.runtimeBound = '1';
     poster.addEventListener('error', () => {
         poster.src = 'Logo/I2.webp';
     });
 }
 
 window.initLazyVideo = initLazyVideo;
+
+window.addEventListener('nexus:components-injected', refreshInjectedUi);
+
+whenDocumentReady(bootstrapApp);

@@ -6,6 +6,8 @@ function initMegaMenu() {
     const navbar = document.querySelector('.navbar');
     
     if (!megaMenu || !contentWrapper) return;
+    if (megaMenu.dataset.initialized === '1') return;
+    megaMenu.dataset.initialized = '1';
 
     let hideTimeout;
     let currentKey = null;
@@ -248,6 +250,9 @@ function initMegaMenu() {
 function initMobileMenu() {
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     if (mobileMenuBtn) {
+        if (mobileMenuBtn.dataset.initialized === '1') return;
+        mobileMenuBtn.dataset.initialized = '1';
+
         const drawer = document.createElement('div');
         drawer.className = 'mobile-drawer';
 
@@ -362,6 +367,7 @@ function initActiveNavItem() {
     const currentHref = window.location.href;
     
     navItems.forEach(item => {
+        item.classList.remove('current-page');
         const href = item.getAttribute('href');
         if (href) {
             const isCurrentPage = 

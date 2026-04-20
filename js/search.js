@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+(function() {
+    'use strict';
+
     const MAX_RESULTS = 24;
     const FALLBACK_COVER = 'Logo/I2.webp';
     const copy = {
@@ -13,84 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
             error: 'Search is temporarily unavailable'
         }
     };
-
-    const nodes = {
-        searchIcons: Array.from(document.querySelectorAll('.search-icon')),
-        searchOverlay: document.getElementById('search-overlay'),
-        desktopInput: document.querySelector('.search-overlay-input'),
-        desktopSubmit: document.querySelector('.search-overlay-submit')
-    };
-
-    if (!nodes.searchIcons.length || !nodes.searchOverlay) return;
-
-    // Typewriter placeholder animation
     const typewriterTexts = {
         zh: ['关于 NexusV', '搜索文章', '搜索 Sentience', '搜索 TACTFR'],
         en: ['About NexusV', 'Search articles', 'Search Sentience', 'Search TACTFR']
     };
-    let typewriterIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let typewriterInterval = null;
-
-    function getTypewriterText() {
-        const lang = localStorage.getItem('lang') || 'zh';
-        return typewriterTexts[lang] || typewriterTexts.zh;
-    }
-
-    function typewriterEffect() {
-        if (!nodes.desktopInput) return;
-        
-        const texts = getTypewriterText();
-        const currentText = texts[typewriterIndex];
-        
-        if (isDeleting) {
-            charIndex--;
-            nodes.desktopInput.placeholder = currentText.substring(0, charIndex);
-        } else {
-            charIndex++;
-            nodes.desktopInput.placeholder = currentText.substring(0, charIndex);
-        }
-
-        let typeSpeed = isDeleting ? 50 : 100;
-
-        if (!isDeleting && charIndex === currentText.length) {
-            typeSpeed = 2000; // Pause at end
-            isDeleting = true;
-        } else if (isDeleting && charIndex === 0) {
-            isDeleting = false;
-            typewriterIndex = (typewriterIndex + 1) % texts.length;
-            typeSpeed = 500; // Pause before typing next
-        }
-
-        typewriterInterval = setTimeout(typewriterEffect, typeSpeed);
-    }
-
-    function startTypewriter() {
-        if (typewriterInterval) clearTimeout(typewriterInterval);
-        typewriterIndex = 0;
-        charIndex = 0;
-        isDeleting = false;
-        typewriterEffect();
-    }
-
-    function stopTypewriter() {
-        if (typewriterInterval) {
-            clearTimeout(typewriterInterval);
-            typewriterInterval = null;
-        }
-    }
-
-    nodes.desktopResults = ensureResultsContainer(
-        nodes.searchOverlay?.querySelector('.search-overlay-content'),
-        'search-results search-results-desktop'
-    );
 
     const state = {
         desktopOpen: false,
         searchSeq: 0,
         lastResults: [],
-        lastSubmittedQuery: ''
+        lastSubmittedQuery: '',
+        typewriterIndex: 0,
+        charIndex: 0,
+        isDeleting: false,
+        typewriterTimer: null,
+        nodes: null
     };
 
     const SearchService = (() => {
@@ -106,10 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 .trim();
         }
 
+        function stripHtml(input) {
+            return String(input || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
         function getFirstParagraph(paragraphs) {
             if (!Array.isArray(paragraphs)) return '';
             const paragraph = paragraphs.find((item) => typeof item === 'string' && item.trim());
-            return paragraph ? paragraph.trim() : '';
+            return paragraph ? stripHtml(paragraph) : '';
         }
 
         function getLangPayload(item, lang, fallback) {
@@ -118,8 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: String(data.title || ''),
                 category: String(data.category || ''),
                 date: String(data.date || ''),
-                excerpt: getFirstParagraph(data.paragraphs),
-                paragraphs: Array.isArray(data.paragraphs) ? data.paragraphs : []
+                excerpt: getFirstParagraph(data.paragraphs)
             };
         }
 
@@ -137,8 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const aggregate = normalizeText([
                         id,
                         item?.overlay || '',
-                        zh.title, zh.category, zh.date, ...zh.paragraphs,
-                        en.title, en.category, en.date, ...en.paragraphs
+                        zh.title, zh.category, zh.date, zh.excerpt,
+                        en.title, en.category, en.date, en.excerpt
                     ].join(' '));
 
                     return {
@@ -256,41 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return scored.slice(0, MAX_RESULTS).map((item) => item.candidate);
         }
 
-        return {
-            getIndex,
-            search
-        };
+        return { getIndex, search };
     })();
-
-    nodes.searchIcons.forEach((icon) => {
-        icon.addEventListener('click', (event) => {
-            event.stopPropagation();
-            toggleDesktopSearch();
-        });
-    });
-
-    nodes.desktopInput?.addEventListener('input', (event) => {
-        syncInputs(event.target.value, 'desktop');
-        resetSubmittedState();
-        clearResultContainers();
-    });
-
-    nodes.desktopSubmit?.addEventListener('click', () => {
-        submitSearch(nodes.desktopInput?.value || '');
-    });
-
-    nodes.searchOverlay?.addEventListener('click', (event) => {
-        if (event.target === nodes.searchOverlay) closeDesktopSearch();
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return;
-        if (state.desktopOpen) closeDesktopSearch();
-    });
-
-    window.addEventListener('languageChanged', () => {
-        if (state.lastSubmittedQuery) runSearch(state.lastSubmittedQuery);
-    });
 
     function getCurrentLang() {
         const lang = localStorage.getItem('lang') || 'zh';
@@ -314,8 +223,69 @@ document.addEventListener('DOMContentLoaded', () => {
         return container;
     }
 
+    function getNodes() {
+        const searchOverlay = document.getElementById('search-overlay');
+        return {
+            searchIcons: Array.from(document.querySelectorAll('.search-icon')),
+            searchOverlay,
+            desktopInput: document.querySelector('.search-overlay-input'),
+            desktopSubmit: document.querySelector('.search-overlay-submit'),
+            desktopResults: ensureResultsContainer(
+                searchOverlay?.querySelector('.search-overlay-content'),
+                'search-results search-results-desktop'
+            )
+        };
+    }
+
+    function stopTypewriter() {
+        if (state.typewriterTimer) {
+            clearTimeout(state.typewriterTimer);
+            state.typewriterTimer = null;
+        }
+    }
+
+    function getTypewriterText() {
+        const lang = localStorage.getItem('lang') || 'zh';
+        return typewriterTexts[lang] || typewriterTexts.zh;
+    }
+
+    function typewriterEffect() {
+        if (!state.nodes?.desktopInput) return;
+
+        const texts = getTypewriterText();
+        const currentText = texts[state.typewriterIndex];
+
+        if (state.isDeleting) {
+            state.charIndex -= 1;
+            state.nodes.desktopInput.placeholder = currentText.substring(0, state.charIndex);
+        } else {
+            state.charIndex += 1;
+            state.nodes.desktopInput.placeholder = currentText.substring(0, state.charIndex);
+        }
+
+        let typeSpeed = state.isDeleting ? 50 : 100;
+        if (!state.isDeleting && state.charIndex === currentText.length) {
+            typeSpeed = 2000;
+            state.isDeleting = true;
+        } else if (state.isDeleting && state.charIndex === 0) {
+            state.isDeleting = false;
+            state.typewriterIndex = (state.typewriterIndex + 1) % texts.length;
+            typeSpeed = 500;
+        }
+
+        state.typewriterTimer = setTimeout(typewriterEffect, typeSpeed);
+    }
+
+    function startTypewriter() {
+        stopTypewriter();
+        state.typewriterIndex = 0;
+        state.charIndex = 0;
+        state.isDeleting = false;
+        typewriterEffect();
+    }
+
     function syncInputs(value, source) {
-        if (source !== 'desktop' && nodes.desktopInput) nodes.desktopInput.value = value;
+        if (source !== 'desktop' && state.nodes?.desktopInput) state.nodes.desktopInput.value = value;
     }
 
     function resetSubmittedState() {
@@ -323,101 +293,17 @@ document.addEventListener('DOMContentLoaded', () => {
         state.lastResults = [];
     }
 
-    function updateIconState() {
-        nodes.searchIcons.forEach((icon) => {
-            icon.classList.toggle('active', state.desktopOpen);
-        });
-    }
-
-    function toggleDesktopSearch() {
-        if (state.desktopOpen) {
-            closeDesktopSearch();
-        } else {
-            openDesktopSearch();
-        }
-    }
-
-    function openDesktopSearch() {
-        if (!nodes.searchOverlay) return;
-        state.desktopOpen = true;
-        nodes.searchOverlay.classList.add('active');
-        lockBodyScroll();
-        updateIconState();
-        SearchService.getIndex().catch(() => null);
-        resetSubmittedState();
-        clearResultContainers();
-        startTypewriter();
-        setTimeout(() => {
-            nodes.desktopInput?.focus();
-        }, 60);
-    }
-
-    function closeDesktopSearch(options = {}) {
-        if (!state.desktopOpen) return;
-        state.desktopOpen = false;
-        nodes.searchOverlay?.classList.remove('active');
-        if (options.restoreBody !== false) unlockBodyScroll();
-        updateIconState();
-        stopTypewriter();
-    }
-
-    function lockBodyScroll() {
-        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-        document.body.style.paddingRight = `${Math.max(0, scrollbarWidth)}px`;
-        document.body.style.overflow = 'hidden';
-    }
-
-    function unlockBodyScroll() {
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-    }
-
-    function submitSearch(rawQuery) {
-        const query = String(rawQuery || '').trim();
-        state.lastSubmittedQuery = query;
-        if (!query) {
-            clearResultContainers();
-            return;
-        }
-        runSearch(query);
-    }
-
-    async function runSearch(rawQuery) {
-        const query = String(rawQuery || '').trim();
-        const seq = ++state.searchSeq;
-
-        if (!query) {
-            state.lastResults = [];
-            clearResultContainers();
-            return;
-        }
-
-        renderLoading();
-
-        try {
-            const results = await SearchService.search(query, getCurrentLang());
-            if (seq !== state.searchSeq) return;
-            state.lastResults = results;
-            renderResults(results);
-        } catch (error) {
-            if (seq !== state.searchSeq) return;
-            state.lastResults = [];
-            renderError();
-            console.error('Search failed:', error);
-        }
-    }
-
     function clearResultContainers() {
-        if (!nodes.desktopResults) return;
-        nodes.desktopResults.textContent = '';
+        if (!state.nodes?.desktopResults) return;
+        state.nodes.desktopResults.textContent = '';
     }
 
     function appendState(textContent, className) {
-        if (!nodes.desktopResults) return;
+        if (!state.nodes?.desktopResults) return;
         const stateNode = document.createElement('div');
         stateNode.className = `search-state ${className}`;
         stateNode.textContent = textContent;
-        nodes.desktopResults.appendChild(stateNode);
+        state.nodes.desktopResults.appendChild(stateNode);
     }
 
     function renderLoading() {
@@ -428,22 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderError() {
         clearResultContainers();
         appendState(text('error'), 'search-error');
-    }
-
-    function renderResults(results) {
-        clearResultContainers();
-
-        if (!results.length) {
-            appendState(text('empty'), 'search-empty');
-            return;
-        }
-
-        if (!nodes.desktopResults) return;
-        const fragment = document.createDocumentFragment();
-        results.forEach((item) => {
-            fragment.appendChild(createResultItem(item));
-        });
-        nodes.desktopResults.appendChild(fragment);
     }
 
     function createResultItem(result) {
@@ -492,4 +362,154 @@ document.addEventListener('DOMContentLoaded', () => {
         item.appendChild(thumb);
         return item;
     }
-});
+
+    function renderResults(results) {
+        clearResultContainers();
+        if (!results.length) {
+            appendState(text('empty'), 'search-empty');
+            return;
+        }
+        if (!state.nodes?.desktopResults) return;
+
+        const fragment = document.createDocumentFragment();
+        results.forEach((item) => {
+            fragment.appendChild(createResultItem(item));
+        });
+        state.nodes.desktopResults.appendChild(fragment);
+    }
+
+    function updateIconState() {
+        state.nodes?.searchIcons.forEach((icon) => {
+            icon.classList.toggle('active', state.desktopOpen);
+        });
+    }
+
+    function lockBodyScroll() {
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        document.body.style.paddingRight = `${Math.max(0, scrollbarWidth)}px`;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function unlockBodyScroll() {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+
+    function openDesktopSearch() {
+        if (!state.nodes?.searchOverlay) return;
+        state.desktopOpen = true;
+        state.nodes.searchOverlay.classList.add('active');
+        lockBodyScroll();
+        updateIconState();
+        SearchService.getIndex().catch(() => null);
+        resetSubmittedState();
+        clearResultContainers();
+        startTypewriter();
+        setTimeout(() => {
+            state.nodes?.desktopInput?.focus();
+        }, 60);
+    }
+
+    function closeDesktopSearch(options = {}) {
+        if (!state.desktopOpen) return;
+        state.desktopOpen = false;
+        state.nodes?.searchOverlay?.classList.remove('active');
+        if (options.restoreBody !== false) unlockBodyScroll();
+        updateIconState();
+        stopTypewriter();
+    }
+
+    function toggleDesktopSearch() {
+        if (state.desktopOpen) closeDesktopSearch();
+        else openDesktopSearch();
+    }
+
+    function submitSearch(rawQuery) {
+        const query = String(rawQuery || '').trim();
+        state.lastSubmittedQuery = query;
+        if (!query) {
+            clearResultContainers();
+            return;
+        }
+        runSearch(query);
+    }
+
+    async function runSearch(rawQuery) {
+        const query = String(rawQuery || '').trim();
+        const seq = ++state.searchSeq;
+
+        if (!query) {
+            state.lastResults = [];
+            clearResultContainers();
+            return;
+        }
+
+        renderLoading();
+
+        try {
+            const results = await SearchService.search(query, getCurrentLang());
+            if (seq !== state.searchSeq) return;
+            state.lastResults = results;
+            renderResults(results);
+        } catch (error) {
+            if (seq !== state.searchSeq) return;
+            state.lastResults = [];
+            renderError();
+            console.error('Search failed:', error);
+        }
+    }
+
+    function bindSearchUi() {
+        if (!state.nodes) return;
+
+        state.nodes.searchIcons.forEach((icon) => {
+            if (icon.dataset.searchBound === '1') return;
+            icon.dataset.searchBound = '1';
+            icon.addEventListener('click', (event) => {
+                event.stopPropagation();
+                toggleDesktopSearch();
+            });
+        });
+
+        if (state.nodes.desktopInput && state.nodes.desktopInput.dataset.searchBound !== '1') {
+            state.nodes.desktopInput.dataset.searchBound = '1';
+            state.nodes.desktopInput.addEventListener('input', (event) => {
+                syncInputs(event.target.value, 'desktop');
+                resetSubmittedState();
+                clearResultContainers();
+            });
+        }
+
+        if (state.nodes.desktopSubmit && state.nodes.desktopSubmit.dataset.searchBound !== '1') {
+            state.nodes.desktopSubmit.dataset.searchBound = '1';
+            state.nodes.desktopSubmit.addEventListener('click', () => {
+                submitSearch(state.nodes?.desktopInput?.value || '');
+            });
+        }
+
+        if (state.nodes.searchOverlay && state.nodes.searchOverlay.dataset.searchBound !== '1') {
+            state.nodes.searchOverlay.dataset.searchBound = '1';
+            state.nodes.searchOverlay.addEventListener('click', (event) => {
+                if (event.target === state.nodes.searchOverlay) closeDesktopSearch();
+            });
+        }
+    }
+
+    function initSearch() {
+        state.nodes = getNodes();
+        if (!state.nodes.searchIcons.length || !state.nodes.searchOverlay) return;
+        bindSearchUi();
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        if (state.desktopOpen) closeDesktopSearch();
+    });
+
+    window.addEventListener('languageChanged', () => {
+        if (state.lastSubmittedQuery) runSearch(state.lastSubmittedQuery);
+    });
+
+    document.addEventListener('DOMContentLoaded', initSearch);
+    window.addEventListener('nexus:components-injected', initSearch);
+})();

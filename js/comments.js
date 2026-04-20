@@ -2,15 +2,17 @@
 (function() {
     'use strict';
 
-    // Initialize comments functionality when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
+    function initCommentsUi() {
         ensureFallbackToggleButton();
         initCommentsToggle();
         initCusdisThemeSync();
         initModalClose();
         // initRefractionFilter(); // Disabled: Using LiquidGlass React component
         // initGlassMotion();      // Disabled: Using LiquidGlass React component
-    });
+    }
+
+    document.addEventListener('DOMContentLoaded', initCommentsUi);
+    window.addEventListener('nexus:components-injected', initCommentsUi);
 
     /**
      * Initialize the comments toggle button functionality
@@ -20,6 +22,8 @@
         const commentsOverlay = document.getElementById('comments-overlay');
 
         if (!toggleBtn || !commentsOverlay) return;
+        if (toggleBtn.dataset.commentsToggleBound === '1') return;
+        toggleBtn.dataset.commentsToggleBound = '1';
 
         toggleBtn.addEventListener('click', function() {
             const isShowing = commentsOverlay.classList.contains('show');
@@ -342,24 +346,33 @@
 
         // Close on backdrop click
         if (commentsOverlay) {
-            commentsOverlay.addEventListener('click', function(e) {
-                if (e.target === commentsOverlay) {
-                    closeCommentsModal();
-                }
-            });
+            if (commentsOverlay.dataset.commentsOverlayBound !== '1') {
+                commentsOverlay.dataset.commentsOverlayBound = '1';
+                commentsOverlay.addEventListener('click', function(e) {
+                    if (e.target === commentsOverlay) {
+                        closeCommentsModal();
+                    }
+                });
+            }
         }
 
         // Close on close button click
         if (closeBtn) {
-            closeBtn.addEventListener('click', closeCommentsModal);
+            if (closeBtn.dataset.commentsCloseBound !== '1') {
+                closeBtn.dataset.commentsCloseBound = '1';
+                closeBtn.addEventListener('click', closeCommentsModal);
+            }
         }
 
         // Close on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeCommentsModal();
-            }
-        });
+        if (document.body.dataset.commentsEscapeBound !== '1') {
+            document.body.dataset.commentsEscapeBound = '1';
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeCommentsModal();
+                }
+            });
+        }
     }
 
     /**
@@ -385,10 +398,13 @@
         // Listen for theme changes
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
-            themeToggle.addEventListener('click', function() {
-                // Small delay to allow theme class to be applied
-                setTimeout(updateCusdisTheme, 100);
-            });
+            if (themeToggle.dataset.commentsThemeBound !== '1') {
+                themeToggle.dataset.commentsThemeBound = '1';
+                themeToggle.addEventListener('click', function() {
+                    // Small delay to allow theme class to be applied
+                    setTimeout(updateCusdisTheme, 100);
+                });
+            }
         }
 
         // Initial theme sync

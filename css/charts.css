@@ -1,0 +1,103 @@
+.chart-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+    background: var(--chart-bg, #f8f9fa);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: zoom-in;
+    transition: transform 0.2s;
+}
+.chart-container:hover {
+    transform: scale(1.02);
+}
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    max-width: 900px;
+    margin: 20px auto;
+}
+.chart-item {
+    background: var(--chart-bg, #f8f9fa);
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: zoom-in;
+    transition: transform 0.2s;
+}
+.chart-item:hover {
+    transform: scale(1.02);
+}
+@media (max-width: 768px) {
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.dark-theme .chart-container,
+.dark-theme .chart-item {
+    --chart-bg: #2a2a2a;
+}
+.light-theme .chart-container,
+.light-theme .chart-item {
+    --chart-bg: #ffffff;
+}
+.warm-theme .chart-container,
+.warm-theme .chart-item {
+    --chart-bg: #2a2a2a;
+}
+.chart-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    cursor: zoom-out;
+}
+.chart-modal.active {
+    display: flex;
+}
+.chart-modal-content {
+    width: 90%;
+    max-width: 1200px;
+    height: 80%;
+    background: var(--chart-bg, #f8f9fa);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+}
+.dark-theme .chart-modal-content {
+    background: #2a2a2a;
+}
+.warm-theme .chart-modal-content {
+    background: #2a2a2a;
+}
+.chart-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.1);
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color, #333);
+}
+.chart-modal-close:hover {
+    background: rgba(0,0,0,0.2);
+}
+.chart-modal canvas {
+    width: 100% !important;
+    height: 100% !important;
+}

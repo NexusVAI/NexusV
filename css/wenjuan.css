@@ -1,0 +1,23 @@
+.wenjuan-float {
+    position: fixed;
+    display: flex;
+    left: 0;
+    bottom: 10%;
+    width: 36px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    height: 100px;
+    background: #26B941;
+    line-height: 24px;
+    writing-mode: vertical-rl;
+    align-items: center;
+    justify-content: center;
+    font-family: PingFangSC-Regular, sans-serif;
+    font-size: 14px;
+    z-index: 9999;
+    cursor: pointer;
+}
+.wenjuan-float a {
+    color: #FFFFFF;
+    text-decoration: none;
+}
