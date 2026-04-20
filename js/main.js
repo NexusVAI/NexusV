@@ -384,7 +384,7 @@ function initLazyVideo() {
         setupPosterErrorHandling(poster);
 
         const loader = new VideoLoader(video, poster, {
-            fallbackImage: video.getAttribute('data-fallback') || poster?.getAttribute('src') || 'Logo/I2.webp'
+            fallbackImage: video.getAttribute('data-fallback') || (poster ? poster.getAttribute('src') : '') || 'Logo/I2.webp'
         });
 
         setupVideoEventListeners(video, loader);

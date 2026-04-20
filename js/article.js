@@ -1797,7 +1797,7 @@ function initArticlePage() {
             const active = index === currentIndex;
             tab.classList.toggle('active', active);
             tab.setAttribute('aria-selected', active ? 'true' : 'false');
-            tab.textContent = slides[index]?.tab || '';
+            tab.textContent = (slides[index] && slides[index].tab) || '';
         });
 
         quoteTextEl.textContent = `“${slides[currentIndex].text}”`;
@@ -1872,22 +1872,22 @@ function initArticlePage() {
                 
                 // Use shared media object
                 const mediaObj = crItem.media;
-                const fallbackImg = mediaObj?.poster || "Logo/I2.webp";
+                const fallbackImg = (mediaObj && mediaObj.poster) || "Logo/I2.webp";
                 const posterOnError = `this.onerror=null;this.src='Logo/I2.webp'`;
                 const imageOnError = `this.onerror=null;this.src='${fallbackImg}'`;
 
                 let mediaHtml = '';
-                if (mediaObj?.type === 'video') {
+                if (mediaObj && mediaObj.type === 'video') {
                         mediaHtml = `
                             <div class="image-wrapper square-image lazy-video-wrapper">
-                                <img src="${fallbackImg}" alt="${mediaObj?.alt || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
+                                <img src="${fallbackImg}" alt="${(mediaObj && mediaObj.alt) || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
                                 <video loop muted playsinline class="hero-video" data-src="${mediaObj.src}" data-fallback="${fallbackImg}" data-fit="${mediaObj.fit || 'cover'}" data-bg="${mediaObj.bg || ''}" preload="none" style="position: absolute; inset: 0; z-index: 1; opacity: 0;"></video>
                             </div>
                         `;
                 } else {
-                    let src = mediaObj?.src || fallbackImg;
+                    let src = (mediaObj && mediaObj.src) || fallbackImg;
                     if (key === 'news1') src += '?t=1'; // Cache buster for news1
-                    mediaHtml = `<div class="image-wrapper square-image"><img src="${src}" alt="${mediaObj?.alt || ''}" onerror="${imageOnError}"></div>`;
+                    mediaHtml = `<div class="image-wrapper square-image"><img src="${src}" alt="${(mediaObj && mediaObj.alt) || ''}" onerror="${imageOnError}"></div>`;
                 }
 
                 card.innerHTML = `
@@ -1974,24 +1974,24 @@ function initIndexPage() {
                  card.className = 'card-link side-card';
                  card.href = `article.html?id=${linkTargets[index]}`;
                  
-                 const fallbackImg = item.media?.poster || "Logo/I2.webp";
+                 const fallbackImg = (item.media && item.media.poster) || "Logo/I2.webp";
                  const posterOnError = `this.onerror=null;this.src='Logo/I2.webp'`;
                  const imageOnError = `this.onerror=null;this.src='${fallbackImg}'`;
 
                  let mediaHtml = '';
-                 if (item.media?.type === 'video' && item.media?.src) {
+                 if (item.media && item.media.type === 'video' && item.media.src) {
                     mediaHtml = `
                         <div class="image-wrapper square-image lazy-video-wrapper">
-                            <img src="${fallbackImg}" alt="${item.media?.alt || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
+                            <img src="${fallbackImg}" alt="${(item.media && item.media.alt) || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
                             <video loop muted playsinline class="hero-video" data-src="${item.media.src}" data-fallback="${fallbackImg}" data-fit="${item.media.fit || 'cover'}" data-bg="${item.media.bg || ''}" preload="none" style="position: absolute; inset: 0; z-index: 1; opacity: 0;"></video>
                             <span class="card-overlay-text">${item.overlay || ''}</span>
                         </div>
                     `;
                  } else {
-                    const imgSrc = item.media?.src || fallbackImg;
+                    const imgSrc = (item.media && item.media.src) || fallbackImg;
                     mediaHtml = `
                         <div class="image-wrapper square-image">
-                            <img src="${imgSrc}" alt="${item.media?.alt || ''}" onerror="${imageOnError}">
+                            <img src="${imgSrc}" alt="${(item.media && item.media.alt) || ''}" onerror="${imageOnError}">
                             <span class="card-overlay-text">${item.overlay || ''}</span>
                         </div>
                     `;
@@ -2020,14 +2020,14 @@ function initIndexPage() {
                 card.href = `article.html?id=${id}`;
                 
                 const fallbackImg = "Logo/I2.webp";
-                let src = item.media?.src || fallbackImg;
+                let src = (item.media && item.media.src) || fallbackImg;
                 if (id === 'news1') src += '?t=1';
                 
                 const onError = `this.onerror=null;this.src='${fallbackImg}'`;
                 
                 card.innerHTML = `
                     <div class="news-thumb">
-                        <img src="${src}" alt="${item.media?.alt || ''}" onerror="${onError}">
+                        <img src="${src}" alt="${(item.media && item.media.alt) || ''}" onerror="${onError}">
                     </div>
                     <div class="news-info">
                         <h3>${data.title}</h3>

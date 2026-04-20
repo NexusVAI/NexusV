@@ -233,14 +233,14 @@ function initMegaMenu() {
     megaMenu.addEventListener('mouseleave', () => hideMenu());
     megaMenu.addEventListener('focusout', (e) => {
         const next = e.relatedTarget;
-        if (!next || (!navbar?.contains(next) && !megaMenu.contains(next))) {
+        if (!next || (!(navbar && navbar.contains(next)) && !megaMenu.contains(next))) {
             hideMenu();
         }
     });
     megaMenu.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             e.preventDefault();
-            const activeTrigger = navbar?.querySelector('.nav-item.active');
+            const activeTrigger = navbar ? navbar.querySelector('.nav-item.active') : null;
             hideMenu(true);
             if (activeTrigger) activeTrigger.focus();
         }

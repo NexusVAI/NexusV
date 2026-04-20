@@ -56,7 +56,7 @@
         }
 
         function getLangPayload(item, lang, fallback) {
-            const data = item?.[lang] || fallback || {};
+            const data = (item && item[lang]) || fallback || {};
             return {
                 title: String(data.title || ''),
                 category: String(data.category || ''),
@@ -66,8 +66,8 @@
         }
 
         function resolveCover(item) {
-            if (item?.media?.type === 'image' && item.media.src) return item.media.src;
-            if (item?.media?.type === 'video') return 'Logo/H1.webp';
+            if (item && item.media && item.media.type === 'image' && item.media.src) return item.media.src;
+            if (item && item.media && item.media.type === 'video') return 'Logo/H1.webp';
             return FALLBACK_COVER;
         }
 
@@ -78,7 +78,7 @@
                     const en = getLangPayload(item, 'en', zh);
                     const aggregate = normalizeText([
                         id,
-                        item?.overlay || '',
+                        (item && item.overlay) || '',
                         zh.title, zh.category, zh.date, zh.excerpt,
                         en.title, en.category, en.date, en.excerpt
                     ].join(' '));
@@ -87,7 +87,7 @@
                         id,
                         href: `article.html?id=${encodeURIComponent(id)}`,
                         cover: resolveCover(item),
-                        alt: String(item?.media?.alt || zh.title || en.title || 'Article cover'),
+                        alt: String((item && item.media && item.media.alt) || zh.title || en.title || 'Article cover'),
                         zh,
                         en,
                         aggregate
@@ -100,8 +100,9 @@
             const normalizedQuery = normalizeText(query);
             if (!normalizedQuery) return 0;
 
-            const localized = (lang === 'en' ? candidate.en : candidate.zh)?.title
-                ? (lang === 'en' ? candidate.en : candidate.zh)
+            const primaryCandidate = lang === 'en' ? candidate.en : candidate.zh;
+            const localized = (primaryCandidate && primaryCandidate.title)
+                ? primaryCandidate
                 : (candidate.zh.title ? candidate.zh : candidate.en);
 
             const title = normalizeText(localized.title);
@@ -231,7 +232,7 @@
             desktopInput: document.querySelector('.search-overlay-input'),
             desktopSubmit: document.querySelector('.search-overlay-submit'),
             desktopResults: ensureResultsContainer(
-                searchOverlay?.querySelector('.search-overlay-content'),
+                searchOverlay ? searchOverlay.querySelector('.search-overlay-content') : null,
                 'search-results search-results-desktop'
             )
         };
@@ -250,7 +251,7 @@
     }
 
     function typewriterEffect() {
-        if (!state.nodes?.desktopInput) return;
+        if (!state.nodes || !state.nodes.desktopInput) return;
 
         const texts = getTypewriterText();
         const currentText = texts[state.typewriterIndex];
@@ -285,7 +286,7 @@
     }
 
     function syncInputs(value, source) {
-        if (source !== 'desktop' && state.nodes?.desktopInput) state.nodes.desktopInput.value = value;
+        if (source !== 'desktop' && state.nodes && state.nodes.desktopInput) state.nodes.desktopInput.value = value;
     }
 
     function resetSubmittedState() {
@@ -294,12 +295,12 @@
     }
 
     function clearResultContainers() {
-        if (!state.nodes?.desktopResults) return;
+        if (!state.nodes || !state.nodes.desktopResults) return;
         state.nodes.desktopResults.textContent = '';
     }
 
     function appendState(textContent, className) {
-        if (!state.nodes?.desktopResults) return;
+        if (!state.nodes || !state.nodes.desktopResults) return;
         const stateNode = document.createElement('div');
         stateNode.className = `search-state ${className}`;
         stateNode.textContent = textContent;
@@ -318,8 +319,9 @@
 
     function createResultItem(result) {
         const lang = getCurrentLang();
-        const localized = (lang === 'en' ? result.en : result.zh)?.title
-            ? (lang === 'en' ? result.en : result.zh)
+        const primaryResult = lang === 'en' ? result.en : result.zh;
+        const localized = (primaryResult && primaryResult.title)
+            ? primaryResult
             : (result.zh.title ? result.zh : result.en);
 
         const item = document.createElement('a');
@@ -369,7 +371,7 @@
             appendState(text('empty'), 'search-empty');
             return;
         }
-        if (!state.nodes?.desktopResults) return;
+        if (!state.nodes || !state.nodes.desktopResults) return;
 
         const fragment = document.createDocumentFragment();
         results.forEach((item) => {
@@ -379,7 +381,7 @@
     }
 
     function updateIconState() {
-        state.nodes?.searchIcons.forEach((icon) => {
+        (state.nodes ? state.nodes.searchIcons : []).forEach((icon) => {
             icon.classList.toggle('active', state.desktopOpen);
         });
     }
@@ -396,7 +398,7 @@
     }
 
     function openDesktopSearch() {
-        if (!state.nodes?.searchOverlay) return;
+        if (!state.nodes || !state.nodes.searchOverlay) return;
         state.desktopOpen = true;
         state.nodes.searchOverlay.classList.add('active');
         lockBodyScroll();
@@ -406,14 +408,14 @@
         clearResultContainers();
         startTypewriter();
         setTimeout(() => {
-            state.nodes?.desktopInput?.focus();
+            if (state.nodes && state.nodes.desktopInput) state.nodes.desktopInput.focus();
         }, 60);
     }
 
     function closeDesktopSearch(options = {}) {
         if (!state.desktopOpen) return;
         state.desktopOpen = false;
-        state.nodes?.searchOverlay?.classList.remove('active');
+        if (state.nodes && state.nodes.searchOverlay) state.nodes.searchOverlay.classList.remove('active');
         if (options.restoreBody !== false) unlockBodyScroll();
         updateIconState();
         stopTypewriter();
@@ -483,7 +485,7 @@
         if (state.nodes.desktopSubmit && state.nodes.desktopSubmit.dataset.searchBound !== '1') {
             state.nodes.desktopSubmit.dataset.searchBound = '1';
             state.nodes.desktopSubmit.addEventListener('click', () => {
-                submitSearch(state.nodes?.desktopInput?.value || '');
+                submitSearch(state.nodes && state.nodes.desktopInput ? state.nodes.desktopInput.value : '');
             });
         }
 
