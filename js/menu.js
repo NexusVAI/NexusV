@@ -1,72 +1,130 @@
+var menuConfig = {
+    research: {
+        label: 'menu.research.label',
+        items: [
+            { href: 'article.html?id=hero', i18n: 'menu.research.index' },
+            { href: 'article.html?id=hero', i18n: 'menu.research.deep_nexusv5' },
+            { href: 'article.html?id=sentienceLS', i18n: 'menu.research.deep_sentienceLS' },
+            { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.deep_sentienceV4C' },
+            { href: 'article.html?id=n3', i18n: 'menu.research.deep_nexusv4' },
+            { href: 'article.html?id=tactfr600', i18n: 'menu.research.deep_tactfr60' }
+        ],
+        latest: [
+            { href: 'article.html?id=tactfr600', i18n: 'menu.research.tactfr60' },
+            { href: 'article.html?id=sentienceLS', i18n: 'menu.research.sentienceLS' },
+            { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.sentienceV4C' },
+            { href: 'article.html?id=news6', i18n: 'menu.research.sentience31' },
+            { href: 'article.html?id=news7', i18n: 'menu.research.sentience3' },
+            { href: 'article.html?id=n4', i18n: 'menu.research.tactfr4' },
+            { href: 'article.html?id=n3', i18n: 'menu.research.nexusv4' }
+        ]
+    },
+    safety: {
+        label: 'menu.safety.label',
+        items: [
+            { href: 'article.html?id=news3', i18n: 'menu.safety.protocol' },
+            { href: 'article.html?id=news5', i18n: 'menu.safety.guidelines' }
+        ]
+    }
+};
+
+var navMenuConfig = [
+    { key: 'research', i18n: 'nav.research', submenu: true },
+    { key: 'safety', i18n: 'nav.safety', submenu: true },
+    { i18n: 'nav.developer' },
+    { href: 'about.html', i18n: 'nav.company' },
+    { href: 'index.html#latest-news', i18n: 'nav.news' },
+    { href: 'about.html', i18n: 'nav.contact' }
+];
+
+function generateDesktopMenuHTML(key) {
+    var config = menuConfig[key];
+    if (!config) return '';
+
+    var html = '<div class="menu-column main-links">';
+    if (config.items) {
+        config.items.forEach(function(item) {
+            html += '<a href="' + item.href + '" data-i18n="' + item.i18n + '"></a>';
+        });
+    }
+    html += '</div>';
+
+    if (config.latest && config.latest.length) {
+        html += '<div class="menu-column latest-updates">';
+        html += '<span class="label" data-i18n="menu.research.label"></span>';
+        config.latest.forEach(function(item) {
+            html += '<a href="' + item.href + '" data-i18n="' + item.i18n + '"></a>';
+        });
+        html += '</div>';
+    }
+
+    return html;
+}
+
+function generateMobileMenuHTML() {
+    var html = '';
+
+    navMenuConfig.forEach(function(navItem, navIndex) {
+        if (navItem.submenu && menuConfig[navItem.key]) {
+            html += '<div class="mobile-nav-item" style="transition-delay: ' + (navIndex * 40) + 'ms" data-expandable data-i18n="' + navItem.i18n + '"></div>';
+            html += '<div class="mobile-submenu">';
+
+            var config = menuConfig[navItem.key];
+            var allItems = (config.items || []).concat(config.latest || []);
+
+            allItems.forEach(function(link, linkIdx) {
+                html += '<a href="' + link.href + '" style="transition-delay: ' + (linkIdx * 50) + 'ms" data-i18n="' + link.i18n + '"></a>';
+            });
+
+            html += '</div>';
+        } else if (navItem.href) {
+            html += '<a href="' + navItem.href + '" class="mobile-nav-item" style="transition-delay: ' + (navIndex * 40) + 'ms" data-i18n="' + navItem.i18n + '"></a>';
+        } else {
+            html += '<div class="mobile-nav-item" style="transition-delay: ' + (navIndex * 40) + 'ms" data-i18n="' + navItem.i18n + '"></div>';
+        }
+    });
+
+    return html;
+}
+
 function initMegaMenu() {
-    const navItems = document.querySelectorAll('.nav-item');
-    const navLinks = document.querySelector('.nav-links');
-    const megaMenu = document.getElementById('mega-menu');
-    const contentWrapper = document.getElementById('menu-content-wrapper');
-    const navbar = document.querySelector('.navbar');
-    
+    var navItems = document.querySelectorAll('.nav-item');
+    var navLinks = document.querySelector('.nav-links');
+    var megaMenu = document.getElementById('mega-menu');
+    var contentWrapper = document.getElementById('menu-content-wrapper');
+    var navbar = document.querySelector('.navbar');
+
     if (!megaMenu || !contentWrapper) return;
     if (megaMenu.dataset.initialized === '1') return;
     megaMenu.dataset.initialized = '1';
 
-    let hideTimeout;
-    let currentKey = null;
-    let isTransitioning = false;
+    var hideTimeout;
+    var currentKey = null;
+    var isTransitioning = false;
 
-    // Create overlay if not exists
-    let menuOverlay = document.querySelector('.menu-overlay');
+    var menuOverlay = document.querySelector('.menu-overlay');
     if (!menuOverlay) {
         menuOverlay = document.createElement('div');
         menuOverlay.className = 'menu-overlay';
         document.body.appendChild(menuOverlay);
     }
 
-    const menuData = {
-        'research': `
-            <div class="menu-column main-links">
-                <a href="article.html?id=hero" data-i18n="menu.research.index"></a>
-                <a href="article.html?id=hero" data-i18n="menu.research.deep_nexusv5"></a>
-                <a href="article.html?id=sentienceLS" data-i18n="menu.research.deep_sentienceLS"></a>
-                <a href="article.html?id=sentienceV4ob" data-i18n="menu.research.deep_sentienceV4C"></a>
-                <a href="article.html?id=n3" data-i18n="menu.research.deep_nexusv4"></a>
-                <a href="article.html?id=tactfr570" data-i18n="menu.research.deep_tactfr56"></a>
-            </div>
-            <div class="menu-column latest-updates">
-                <span class="label" data-i18n="menu.research.label"></span>
-                <a href="article.html?id=tactfr570" data-i18n="menu.research.nexusv5"></a>
-                <a href="article.html?id=sentienceLS" data-i18n="menu.research.sentienceLS"></a>
-                <a href="article.html?id=sentienceV4ob" data-i18n="menu.research.sentienceV4C"></a>
-                <a href="article.html?id=news6" data-i18n="menu.research.sentience31"></a>
-                <a href="article.html?id=news7" data-i18n="menu.research.sentience3"></a>
-                <a href="article.html?id=tactfr570" data-i18n="menu.research.tactfr56"></a>
-                <a href="article.html?id=n4" data-i18n="menu.research.tactfr4"></a>
-                <a href="article.html?id=n3" data-i18n="menu.research.nexusv4"></a>
-            </div>
-        `,
-        'safety': `
-            <div class="menu-column main-links">
-                <a href="article.html?id=news3" data-i18n="menu.safety.protocol"></a>
-                <a href="article.html?id=news5" data-i18n="menu.safety.guidelines"></a>
-            </div>
-        `
-    };
-
-    const menuLineWidths = {
-        'research': '0px',
-        'safety': '0px'
+    var menuLineWidths = {
+        research: '0px',
+        safety: '0px'
     };
 
     function setMenuLineWidth(key) {
-        const menuLine = megaMenu.querySelector('.menu-line');
+        var menuLine = megaMenu.querySelector('.menu-line');
         if (!menuLine) return;
 
-        let lineWidth;
+        var lineWidth;
         if (menuLineWidths[key]) {
             lineWidth = menuLineWidths[key];
         } else {
-            const mainLinks = megaMenu.querySelector('.main-links');
+            var mainLinks = megaMenu.querySelector('.main-links');
             if (mainLinks) {
-                const linkCount = mainLinks.querySelectorAll('a').length;
+                var linkCount = mainLinks.querySelectorAll('a').length;
                 lineWidth = Math.min(80 + linkCount * 180, 1100) + 'px';
             } else {
                 lineWidth = '0px';
@@ -76,13 +134,13 @@ function initMegaMenu() {
     }
 
     function animateMenuItems() {
-        const items = contentWrapper.querySelectorAll('.menu-column .label, .menu-column a');
-        items.forEach((item, index) => {
+        var items = contentWrapper.querySelectorAll('.menu-column .label, .menu-column a');
+        items.forEach(function(item) {
             item.style.transition = 'none';
             item.style.opacity = '0';
             item.style.transform = 'translateY(5px)';
             void item.offsetHeight;
-            item.style.transition = `opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s`;
+            item.style.transition = 'opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s';
             item.style.opacity = '1';
             item.style.transform = 'translateY(0)';
         });
@@ -92,28 +150,28 @@ function initMegaMenu() {
         if (currentKey === key || isTransitioning) return;
         isTransitioning = true;
 
-        const menuInner = megaMenu.querySelector('.mega-menu-inner');
-        const startHeight = menuInner.offsetHeight;
-        menuInner.style.height = `${startHeight}px`;
+        var menuInner = megaMenu.querySelector('.mega-menu-inner');
+        var startHeight = menuInner.offsetHeight;
+        menuInner.style.height = startHeight + 'px';
 
         contentWrapper.style.transition = 'opacity 50ms ease-in-out';
         contentWrapper.style.opacity = '0';
-        
-        setTimeout(() => {
-            contentWrapper.innerHTML = menuData[key];
+
+        setTimeout(function() {
+            contentWrapper.innerHTML = generateDesktopMenuHTML(key);
             if (window.translate) window.translate(contentWrapper);
-            
+
             menuInner.style.height = 'auto';
-            const endHeight = menuInner.offsetHeight;
-            menuInner.style.height = `${startHeight}px`;
+            var endHeight = menuInner.offsetHeight;
+            menuInner.style.height = startHeight + 'px';
             void menuInner.offsetHeight;
-            menuInner.style.height = `${endHeight}px`;
+            menuInner.style.height = endHeight + 'px';
 
             animateMenuItems();
             contentWrapper.style.opacity = '1';
             currentKey = key;
-            
-            setTimeout(() => {
+
+            setTimeout(function() {
                 if (currentKey === key) {
                     menuInner.style.height = 'auto';
                 }
@@ -122,15 +180,15 @@ function initMegaMenu() {
         }, 50);
     }
 
-    const dropdownNavItems = Array.from(navItems).filter(item => {
-        const targetMenuId = item.getAttribute('data-menu');
-        return !!(targetMenuId && menuData[targetMenuId]);
+    var dropdownNavItems = Array.from(navItems).filter(function(item) {
+        var targetMenuId = item.getAttribute('data-menu');
+        return !!(targetMenuId && menuConfig[targetMenuId]);
     });
 
-    const resetActiveState = () => {
+    var resetActiveState = function() {
         megaMenu.classList.remove('active');
         menuOverlay.classList.remove('active');
-        navItems.forEach(nav => {
+        navItems.forEach(function(nav) {
             nav.classList.remove('active');
             if (nav.hasAttribute('aria-expanded')) {
                 nav.setAttribute('aria-expanded', 'false');
@@ -140,23 +198,23 @@ function initMegaMenu() {
         currentKey = null;
     };
 
-    const hideMenu = (immediate = false) => {
+    var hideMenu = function(immediate) {
         clearTimeout(hideTimeout);
         if (immediate) {
             resetActiveState();
             return;
         }
 
-        hideTimeout = setTimeout(() => {
+        hideTimeout = setTimeout(function() {
             resetActiveState();
         }, 150);
     };
 
-    const showMenuForItem = (item) => {
+    var showMenuForItem = function(item) {
         clearTimeout(hideTimeout);
-        const targetMenuId = item.getAttribute('data-menu');
-        
-        navItems.forEach(nav => {
+        var targetMenuId = item.getAttribute('data-menu');
+
+        navItems.forEach(function(nav) {
             nav.classList.remove('active');
             if (nav.hasAttribute('aria-expanded')) {
                 nav.setAttribute('aria-expanded', 'false');
@@ -167,17 +225,17 @@ function initMegaMenu() {
             item.setAttribute('aria-expanded', 'true');
         }
         if (navLinks) navLinks.classList.add('has-active');
-        
-        if (targetMenuId && menuData[targetMenuId]) {
+
+        if (targetMenuId && menuConfig[targetMenuId]) {
             if (!megaMenu.classList.contains('active')) {
-                contentWrapper.innerHTML = menuData[targetMenuId];
-                if (window.translate) window.translate(contentWrapper); // Translate immediately
+                contentWrapper.innerHTML = generateDesktopMenuHTML(targetMenuId);
+                if (window.translate) window.translate(contentWrapper);
                 currentKey = targetMenuId;
                 animateMenuItems();
-                const menuLine = megaMenu.querySelector('.menu-line');
+                var menuLine = megaMenu.querySelector('.menu-line');
                 if (menuLine) menuLine.style.width = '0';
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
                         setMenuLineWidth(targetMenuId);
                     });
                 });
@@ -191,26 +249,25 @@ function initMegaMenu() {
         }
     };
 
-    navItems.forEach(item => {
-        item.addEventListener('mouseenter', () => showMenuForItem(item));
+    navItems.forEach(function(item) {
+        item.addEventListener('mouseenter', function() { showMenuForItem(item); });
     });
 
-    // Keyboard/focus support for dropdown triggers without changing visual style.
-    dropdownNavItems.forEach(item => {
+    dropdownNavItems.forEach(function(item) {
         if (!item.hasAttribute('tabindex')) item.setAttribute('tabindex', '0');
         item.setAttribute('role', 'button');
         item.setAttribute('aria-haspopup', 'true');
         item.setAttribute('aria-expanded', 'false');
 
-        item.addEventListener('focusin', () => showMenuForItem(item));
-        item.addEventListener('keydown', (e) => {
+        item.addEventListener('focusin', function() { showMenuForItem(item); });
+        item.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 showMenuForItem(item);
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 showMenuForItem(item);
-                const firstMenuLink = megaMenu.querySelector('a');
+                var firstMenuLink = megaMenu.querySelector('a');
                 if (firstMenuLink) firstMenuLink.focus();
             } else if (e.key === 'Escape') {
                 e.preventDefault();
@@ -220,27 +277,27 @@ function initMegaMenu() {
     });
 
     if (navbar) {
-        navbar.addEventListener('mouseleave', () => hideMenu());
-        navbar.addEventListener('focusout', (e) => {
-            const next = e.relatedTarget;
+        navbar.addEventListener('mouseleave', function() { hideMenu(); });
+        navbar.addEventListener('focusout', function(e) {
+            var next = e.relatedTarget;
             if (!next || (!navbar.contains(next) && !megaMenu.contains(next))) {
                 hideMenu();
             }
         });
     }
 
-    megaMenu.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
-    megaMenu.addEventListener('mouseleave', () => hideMenu());
-    megaMenu.addEventListener('focusout', (e) => {
-        const next = e.relatedTarget;
+    megaMenu.addEventListener('mouseenter', function() { clearTimeout(hideTimeout); });
+    megaMenu.addEventListener('mouseleave', function() { hideMenu(); });
+    megaMenu.addEventListener('focusout', function(e) {
+        var next = e.relatedTarget;
         if (!next || (!(navbar && navbar.contains(next)) && !megaMenu.contains(next))) {
             hideMenu();
         }
     });
-    megaMenu.addEventListener('keydown', (e) => {
+    megaMenu.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             e.preventDefault();
-            const activeTrigger = navbar ? navbar.querySelector('.nav-item.active') : null;
+            var activeTrigger = navbar ? navbar.querySelector('.nav-item.active') : null;
             hideMenu(true);
             if (activeTrigger) activeTrigger.focus();
         }
@@ -248,82 +305,31 @@ function initMegaMenu() {
 }
 
 function initMobileMenu() {
-    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    var mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     if (mobileMenuBtn) {
         if (mobileMenuBtn.dataset.initialized === '1') return;
         mobileMenuBtn.dataset.initialized = '1';
 
-        const drawer = document.createElement('div');
+        var drawer = document.createElement('div');
         drawer.className = 'mobile-drawer';
 
-        const navItemsData = [
-            { 
-                text: '研究', 
-                i18n: 'nav.research',
-                submenu: [
-                    { text: '意识架构索引', i18n: 'menu.research.index', href: 'article.html?id=hero' },
-                    { text: '深入了解 NexusV V5', i18n: 'menu.research.deep_nexusv5', href: 'article.html?id=hero' },
-                    { text: '深入了解 Sentience V4 Omni Beta', i18n: 'menu.research.deep_sentienceV4C', href: 'article.html?id=sentienceV4ob' },
-                    { text: '深入了解 NexusV V4', i18n: 'menu.research.deep_nexusv4', href: 'article.html?id=n3' },
-                    { text: '深入了解 TACTFR 5.7.0', i18n: 'menu.research.deep_tactfr56', href: 'article.html?id=tactfr570' },
-                    { text: 'Sentience V4 Omni Beta', i18n: 'menu.research.sentienceV4C', href: 'article.html?id=sentienceV4ob' },
-                    { text: 'Sentience V3.1', i18n: 'menu.research.sentience31', href: 'article.html?id=news6' },
-                    { text: 'Sentience V3', i18n: 'menu.research.sentience3', href: 'article.html?id=news7' },
-                    { text: 'TACTFR V5', i18n: 'menu.research.tactfr5', href: 'article.html?id=tactfr540' },
-                    { text: 'TACTFR V4', i18n: 'menu.research.tactfr4', href: 'article.html?id=n4' },
-                    { text: 'NexusV V4', i18n: 'menu.research.nexusv4', href: 'article.html?id=n3' }
-                ]
-            },
-            { 
-                text: '安全', 
-                i18n: 'nav.safety',
-                submenu: [
-                    { text: '使用协议', i18n: 'menu.safety.protocol', href: 'article.html?id=news3' },
-                    { text: '安全准则', i18n: 'menu.safety.guidelines', href: 'article.html?id=news5' }
-                ]
-            },
-            { text: '开发者专区', i18n: 'nav.developer' },
-            { text: '公司', i18n: 'nav.company', href: 'about.html' },
-            { text: '新闻', i18n: 'nav.news', href: 'index.html#latest-news' },
-            { text: '联系我们', i18n: 'nav.contact', href: 'about.html' }
-        ];
+        var drawerHTML = generateMobileMenuHTML();
 
-        let drawerHTML = '';
-        let itemIndex = 0;
-        navItemsData.forEach(item => {
-            if (item.href && !item.submenu) {
-                drawerHTML += `<a href="${item.href}" class="mobile-nav-item" style="transition-delay: ${itemIndex * 40}ms" data-i18n="${item.i18n}">${item.text}</a>`;
-            } else {
-                drawerHTML += `<div class="mobile-nav-item" style="transition-delay: ${itemIndex * 40}ms" ${item.submenu ? 'data-expandable' : ''} data-i18n="${item.i18n}">${item.text}</div>`;
-            }
-            if (item.submenu) {
-                drawerHTML += '<div class="mobile-submenu">';
-                item.submenu.forEach((link, linkIdx) => {
-                    const href = link.href || '#';
-                    drawerHTML += `<a href="${href}" style="transition-delay: ${linkIdx * 50}ms" data-i18n="${link.i18n}">${link.text}</a>`;
-                });
-                drawerHTML += '</div>';
-            }
-            itemIndex++;
-        });
-
-        drawerHTML += `
-            <div class="mobile-actions" style="transition-delay: ${itemIndex * 40 + 60}ms">
-                <a href="about.html" class="mobile-login" data-i18n="mobile.login">登录</a>
-                <a href="https://www.wanjiadongli.com/user/1753255?tab=2" class="mobile-cta" data-i18n="mobile.enter">进入 Nexus ↗</a>
-            </div>
-        `;
+        drawerHTML += '<div class="mobile-actions">';
+        drawerHTML += '<a href="about.html" class="mobile-login" data-i18n="mobile.login">登录</a>';
+        drawerHTML += '<a href="https://www.wanjiadongli.com/user/1753255?tab=2" class="mobile-cta" data-i18n="mobile.enter">进入 Nexus ↗</a>';
+        drawerHTML += '</div>';
 
         drawer.innerHTML = drawerHTML;
         document.body.appendChild(drawer);
         if (window.translate) window.translate(drawer);
 
-        drawer.querySelectorAll('[data-expandable]').forEach(el => {
-            el.addEventListener('click', () => {
-                const sub = el.nextElementSibling;
+        drawer.querySelectorAll('[data-expandable]').forEach(function(el) {
+            el.addEventListener('click', function() {
+                var sub = el.nextElementSibling;
                 if (sub && sub.classList.contains('mobile-submenu')) {
-                    const isOpen = sub.classList.contains('open');
-                    drawer.querySelectorAll('.mobile-submenu.open').forEach(openSub => {
+                    var isOpen = sub.classList.contains('open');
+                    drawer.querySelectorAll('.mobile-submenu.open').forEach(function(openSub) {
                         if (openSub !== sub) {
                             openSub.classList.remove('open');
                             openSub.previousElementSibling.classList.remove('expanded');
@@ -335,22 +341,22 @@ function initMobileMenu() {
             });
         });
 
-        let drawerOpen = false;
-        mobileMenuBtn.addEventListener('click', () => {
+        var drawerOpen = false;
+        mobileMenuBtn.addEventListener('click', function() {
             drawerOpen = !drawerOpen;
             mobileMenuBtn.classList.toggle('active', drawerOpen);
             drawer.classList.toggle('active', drawerOpen);
             document.body.style.overflow = drawerOpen ? 'hidden' : '';
 
             if (!drawerOpen) {
-                drawer.querySelectorAll('.mobile-submenu.open').forEach(sub => {
+                drawer.querySelectorAll('.mobile-submenu.open').forEach(function(sub) {
                     sub.classList.remove('open');
                     sub.previousElementSibling.classList.remove('expanded');
                 });
             }
         });
 
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', function() {
             if (window.innerWidth > 768 && drawerOpen) {
                 drawerOpen = false;
                 mobileMenuBtn.classList.remove('active');
@@ -362,19 +368,18 @@ function initMobileMenu() {
 }
 
 function initActiveNavItem() {
-    const navItems = document.querySelectorAll('.nav-item');
-    const currentPath = window.location.pathname;
-    const currentHref = window.location.href;
-    
-    navItems.forEach(item => {
+    var navItems = document.querySelectorAll('.nav-item');
+    var currentHref = window.location.href;
+
+    navItems.forEach(function(item) {
         item.classList.remove('current-page');
-        const href = item.getAttribute('href');
+        var href = item.getAttribute('href');
         if (href) {
-            const isCurrentPage = 
-                currentHref.endsWith(href) || 
+            var isCurrentPage =
+                currentHref.endsWith(href) ||
                 currentHref.includes(href) ||
                 (href === 'about.html' && (currentHref.includes('about.html')));
-            
+
             if (isCurrentPage) {
                 item.classList.add('current-page');
             }

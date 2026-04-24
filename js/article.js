@@ -309,63 +309,58 @@ const articleData = {
             ]
         }
     },
-    tactfr570: {
-        overlay: 'TACTFR 5.7.0',
-        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'TACTFR 5.7.0' },
+    tactfr600: {
+        overlay: 'TACTFR 6.0.0',
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'TACTFR 6.0.0' },
         zh: {
-            title: '隆重推出 TACTFR 5.7.0',
-            date: '2026年4月13日',
+            title: '隆重推出 TACTFR 6.0.0 预览版',
+            date: '2026年4月24日',
             category: '产品',
-            readTime: '6 分钟阅读',
+            readTime: '8 分钟阅读',
             paragraphs: [
-                '今天，我们非常激动地向大家宣布：TACTFR 战术第一响应（增强版） 5.7.0 版本 现已在 玩家动力平台 正式发布。',
-                '自 TACTFR 项目诞生以来，我们的目标始终如一：为《GTA 5》带来最真实、最硬核的警察角色扮演体验。在 5.7.0 版本中，我们不仅对底层代码（如 DutyLifecycleController 和 PoliceUniformSystem）进行了大量优化，更在"沉浸感"与"电影化叙事"上迈出了突破性的一步。这不仅是一次功能更新，更是我们迈向下一代智能执法生态的重要基石。',
-                '核心亮点：电影级警员注册系统',
-                '在过去的版本中，玩家入职往往只是一次简单的 UI 点击。而在 5.7.0 中，我们重新构思了这一流程，引入了全新的沉浸式注册生命周期（Duty Lifecycle）。',
-                '电影化运镜与无缝过渡：当新玩家点击"注册警员"时，系统将通过平滑的屏幕渐黑过渡，将玩家无缝带入精心挑选的室内警局场景。我们通过调用原生的场景哈希（Hash）与自定义摄像机轨道，让镜头缓慢对准主角，宛如好莱坞警匪片的开场。',
-                '专属更衣室交互：玩家将在高度定制的更衣室场景中进行外观选择。不再是冷冰冰的菜单叠加，而是角色与环境的真实互动。',
-                '状态与数据持久化：确认入职后，伴随着清脆的 LSPD 提示音和系统短信（"您已注册为警员，您的警车在警局外车库可以选择..."），您的所有外观数据将通过底层写入 INI 文件。无论何时重返洛圣都，您的警员身份与样貌都将无缝衔接。',
-                '专属巡逻车与次世代车库体验',
-                '一名优秀的警员需要一台完美的座驾。在 5.7.0 版本中，我们对载具分发与定制系统进行了彻底重构：',
-                '电影感车库提车：告别凭空刷车的突兀感。现在提取警车时，玩家将进入专属的地下/局外车库场景。在精心设计的灯光和运镜下，迎接您的专属战车。',
-                '深度自定义与永久保存：我们为警车加入了涂装、颜色、轮毂等深度自定义选项。所有改装数据将自动同步保存至 INI 存档。您的爱车将在每次进入游戏时精准还原——它真正属于你。',
-                '智能载具损毁兜底机制：载具一旦领取便与玩家绑定。如果不幸在激烈的追逐中损毁或丢失，系统允许您返回警局重新申请调用，确保执勤流程永不中断。',
-                '展望未来：AI 驱动的智能洛圣都',
-                '5.7.0 版本的底层状态机和生命周期控制更新（如无感存档、场景切换控制），为我们接下来的重磅计划铺平了道路。',
-                '我们在此非常兴奋地向大家透露：未来的 TACTFR 更新将正式引入 AI 驱动系统。',
-                '我们正在探索如何让嫌疑人拥有不可预测的逃跑逻辑、让调度员（Dispatcher）能够根据实时战况给出动态的语音反馈、甚至让您的 AI 搭档具备真实的战术意识。5.7.0 构建了完美的物理与交互框架，而接下来的 AI 引擎，将赋予这个框架真正的灵魂。',
-                '立即体验',
-                '感谢所有陪伴 TACTFR 社区成长的警员们，是你们的反馈促成了这次演进。TACTFR 5.7.0 现已在玩家动力平台独家开放下载。',
-                '穿上制服，调整好您的警灯。洛圣都的街道，正等待着您的巡逻。',
-                '—— TACTFR 开发团队 敬上'
+                '今天，我们正式发布 TACTFR 6.0.0 Beta 1 —— 这是自项目诞生以来最具里程碑意义的一次架构级更新。',
+                '我们对核心架构进行了完全重构，建立了完全独立于旧 EF 的 V6 全新运行时。这不是修修补补的版本迭代，而是一次从地基开始的彻底重铸，为未来所有功能打下了坚实、高可扩展的基础。',
+                '架构：V6 独立运行时',
+                '6.0 版本最根本的变化在于底层。我们完全重写了核心逻辑，将 TACTFR 从旧有的 EF 框架中剥离，建立了独立的 V6 运行时环境。这意味着更清晰的模块边界、更高效的资源调度，以及不再受旧框架约束的扩展能力。AI 系统的基础框架也已同步完成搭建，为后续智能执法功能预留了完整的接口。',
+                'UI 与用户体验：全面焕新',
+                '从你进入游戏的那一刻起，一切都不一样了。',
+                '全新终端界面、警员 UI 等页面全面升级，信息密度与可读性同步提升。首次进入游戏时，系统将自动触发开场引导与新手教学流程，让每位新警员都能快速上手。H 键交互逻辑彻底优化：短按直接拘捕，长按显示完整拘捕菜单 —— 更少的迟疑，更符合执法直觉。',
+                'AI 与角色行为：世界开始呼吸',
+                '6.0 版本的 AI 系统得到了前所未有的加强。嫌疑人行为逻辑大幅提升，逃跑路线更不可预测，反应更接近真实人类。警员 AI 逻辑全面优化，寻路系统显著改进 —— 你的同僚不再卡墙角，不再原地转圈。终端的案件数据与实际案件保持完全一致，彻底解决了驾车/步行案件错配的历史遗留问题。',
+                '新功能与系统改进',
+                '警员装备系统大幅扩充，更多战术装备等待解锁。新增自动推送案件机制 —— 即使你只是在巡逻，城市也会主动向你发出召唤。INI 自定义配置选项大幅增加，让每一位警员都能按自己的节奏执法。',
+                '修复与稳定性',
+                '嫌疑人死亡后的尸体不再卡死，场景清理更加可靠。多次修复死亡/重生卡死问题，执勤流程更加流畅。整体性能与稳定性显著优化。',
+                '暂时缺席，但已在路上',
+                '本次 Beta 1 测试暂未实装剧情系统（如银行抢劫等）与 Sentience AI 高级情感智能模块。这两个子系统的集成复杂度极高，我们选择优先交付一个极度稳定的核心框架，而非匆忙上线未经验证的功能。请放心，它们已在后续 Beta 版本的计划中全速推进。',
+                '了解更多',
+                'TACTFR 6.0.0 Beta 1 现已开放测试。这只是一个开始 —— 当 V6 运行时的地基完全夯实，我们将以更快的节奏推出剧情系统、Sentience AI 集成，以及更多令人兴奋的执法体验。穿上制服，发动引擎。洛圣都的街道，从未如此真实。',
+                '不诱于誉，不恐于诽，率道而行，端然正己。'
             ]
         },
         en: {
-            title: 'Introducing TACTFR 5.7.0',
-            date: 'April 13, 2026',
+            title: 'Introducing TACTFR 6.0.0 Preview',
+            date: 'April 24, 2026',
             category: 'Product',
-            readTime: '6 min read',
+            readTime: '8 min read',
             paragraphs: [
-                'Today, we are thrilled to announce: TACTFR Tactical First Response (Enhanced Edition) version 5.7.0 is now officially released on the Player Power platform.',
-                'Since the birth of the TACTFR project, our goal has remained consistent: to bring the most realistic and hardcore police role-playing experience to GTA 5. In version 5.7.0, we have not only performed extensive optimizations on underlying code (such as DutyLifecycleController and PoliceUniformSystem), but also taken a breakthrough step in "immersion" and "cinematic storytelling." This is not just a feature update—it is an important cornerstone for us to move toward the next generation of intelligent law enforcement ecosystem.',
-                'Core Highlights: Cinema-Quality Officer Registration System',
-                'In past versions, player onboarding was often just a simple UI click. In 5.7.0, we reimagined this process, introducing a brand new immersive registration lifecycle (Duty Lifecycle).',
-                'Cinematic Camera Work and Seamless Transitions: When a new player clicks "Register Officer," the system will smoothly transition through a fade-to-black screen, seamlessly bringing the player into a carefully selected indoor police station scene. Through native scene hash calls and custom camera tracks, the lens slowly focuses on the protagonist, just like a Hollywood crime drama opening.',
-                'Exclusive Locker Room Interaction: Players will choose their appearance in a highly customized locker room scene. No more cold menu stacking—it is real interaction between character and environment.',
-                'State and Data Persistence: After confirming onboarding, accompanied by the crisp LSPD notification sound and system SMS ("You are now registered as an officer, your patrol car can be selected at the garage outside the station..."), all your appearance data will be written to INI files through the underlying layer. Whenever you return to Los Santos, your officer identity and appearance will seamlessly connect.',
-                'Exclusive Patrol Vehicle and Next-Gen Garage Experience',
-                'An excellent officer needs a perfect ride. In version 5.7.0, we completely restructured the vehicle distribution and customization system:',
-                'Cinematic Garage Vehicle Pickup: Farewell to the abrupt feeling of spawning vehicles out of thin air. Now when extracting a patrol car, players will enter an exclusive underground/outside station garage scene. Under carefully designed lighting and camera work, your exclusive combat vehicle awaits.',
-                'Deep Customization and Permanent Saving: We added deep customization options such as paint, color, and wheels for patrol cars. All modification data will automatically sync and save to INI archives. Your beloved car will be precisely restored every time you enter the game—it truly belongs to you.',
-                'Intelligent Vehicle Damage Fallback Mechanism: Once a vehicle is claimed, it is bound to the player. If it is unfortunately damaged or lost during an intense chase, the system allows you to return to the station to reapply for dispatch, ensuring the duty process never interrupts.',
-                'Looking Ahead: AI-Driven Intelligent Los Santos',
-                'The underlying state machine and lifecycle control updates in version 5.7.0 (such as seamless saving, scene switching control) have paved the way for our upcoming major plans.',
-                'We are thrilled to share with you: future TACTFR updates will officially introduce AI-driven systems.',
-                'We are exploring how to give suspects unpredictable escape logic, enable dispatchers to provide dynamic voice feedback based on real-time combat situations, and even give your AI partner genuine tactical awareness. Version 5.7.0 has built a perfect physics and interaction framework, and the upcoming AI engine will give this framework a true soul.',
-                'Experience Now',
-                'Thanks to all the officers who have grown with the TACTFR community—your feedback has driven this evolution. TACTFR 5.7.0 is now exclusively available for download on the Player Power platform.',
-                'Put on your uniform, adjust your siren lights. The streets of Los Santos await your patrol.',
-                '— TACTFR Development Team'
+                'Today, we are releasing TACTFR 6.0.0 Beta 1 — the most significant architectural update since the project was born.',
+                'We have completely rebuilt the core architecture, establishing a brand-new V6 runtime that is fully independent of the old EF framework. This is not an incremental version bump — it is a complete reconstruction from the ground up, laying a solid, highly scalable foundation for every feature to come.',
+                'Architecture: V6 Standalone Runtime',
+                'The most fundamental change in version 6.0 lies at the bottom layer. We rewrote the core logic from scratch, decoupling TACTFR from the legacy EF framework and establishing an independent V6 runtime environment. This means cleaner module boundaries, more efficient resource scheduling, and extensibility no longer constrained by the old framework. The AI system foundation has also been completed in parallel, reserving full interfaces for future intelligent law enforcement capabilities.',
+                'UI & UX: A Complete Refresh',
+                'From the moment you enter the game, everything feels different. The new terminal interface, officer UI, and all pages have been fully upgraded — information density and readability improved simultaneously. When entering the game for the first time, the system automatically triggers an onboarding guide and tutorial flow, so every new officer gets up to speed quickly. The H-key interaction has been thoroughly optimized: short press for direct arrest, long press for the full arrest menu — less hesitation, more in line with law enforcement intuition.',
+                'AI & Character Behavior: The World Begins to Breathe',
+                'The AI system in version 6.0 has received unprecedented reinforcement. Suspect behavior logic has been dramatically improved — escape routes are more unpredictable, reactions closer to real human beings. Officer AI logic has been comprehensively optimized, with significant navigation system improvements — your colleagues no longer get stuck on corners or spin in place. Terminal case data now stays perfectly consistent with actual cases, completely resolving the historical issue of vehicle/pedestrian case mismatches.',
+                'New Features & System Improvements',
+                'The officer equipment system has been greatly expanded, with more tactical gear waiting to be unlocked. A new auto-dispatch case mechanism has been added — even if you are just patrolling, the city will actively call out to you. INI customization options have been significantly increased, allowing every officer to enforce the law at their own pace.',
+                'Fixes & Stability',
+                'Suspect corpses no longer get stuck after death — scene cleanup is more reliable. Multiple death/respawn freeze issues have been resolved, making duty flows smoother. Overall performance and stability have been significantly optimized.',
+                'Temporarily Absent, But Already On the Way',
+                'This Beta 1 test does not yet include the storyline system (such as bank heists) and the Sentience AI advanced emotional intelligence module. The integration complexity of these two subsystems is extremely high, and we chose to prioritize delivering an exceptionally stable core framework over rushing unverified features to launch. Rest assured, they are advancing at full speed in the plan for subsequent Beta versions.',
+                'Learn More',
+                'TACTFR 6.0.0 Beta 1 is now open for testing. This is just the beginning — once the V6 runtime foundation is fully solidified, we will push out the storyline system, Sentience AI integration, and more exciting law enforcement experiences at an accelerated pace. Put on your uniform, start your engine. The streets of Los Santos have never felt more real.',
+                'Do not be lured by praise, nor deterred by slander; follow the path with integrity, and stand upright in righteousness.'
             ]
         }
     },
@@ -1960,11 +1955,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid) return;
 
     function renderIndex(lang) {
-        // Scrollable List (tactfr570, hero, sentienceLS)
+        // Scrollable List (sentienceV4ob, hero, sentienceLS)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['tactfr570', 'hero', 'sentienceLS'];
-            const linkTargets = ['tactfr570', 'hero', 'sentienceLS'];
+            const listIds = ['sentienceV4ob', 'hero', 'sentienceLS'];
+            const linkTargets = ['sentienceV4ob', 'hero', 'sentienceLS'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
