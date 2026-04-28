@@ -102,34 +102,88 @@ const articleData = {
         }
     },
     n1: {
-        overlay: 'Sentience',
-        media: { type: 'image', src: 'Logo/I1.webp', alt: 'Sentience V3.1' },
+        overlay: 'Cancri',
+        media: { type: 'image', src: 'Logo/Cancri.png', alt: 'Cancri Research' },
         zh: {
-            title: '了解 Sentience V3.1',
-            date: '2026年3月02日',
-            category: '架构',
-            readTime: '7 分钟阅读',
+            title: 'Cancri：跨检查点的隐状态接力机制',
+            date: '2026年4月28日',
+            category: '研究',
+            readTime: '12 分钟阅读',
             paragraphs: [
-                'Sentience V3.1 旨在提升交互的自然度与角色一致性。',
-                '本页展示文章详情页的标准结构：顶部元信息、标题、媒体区、正文段落。',
-                '后续你提供正式文案后，可直接替换 paragraphs 内容。'
+                '我们提出隐状态接力（latent relay）机制——通过在微调检查点边界之间直接传递隐藏状态来链式调用语言模型专家，完全绕过词元空间的通信瓶颈。与传统多智能体工作流（将连续表征压缩为离散词元）不同，隐状态接力每个序列仅传输约 30KB 的张量，完整保留了中间表征的全部维度信息。',
+                '研究背景与动机',
+                '当前多模型协作的主流范式是"词元中介的多智能体协作"：模型 A 生成自然语言输出，模型 B 将其作为提示接收。这种方法实现简单，但造成了严重的信息瓶颈。一个 2B 参数模型的前向传播在每层都通过高维连续流形传播信息；强制这些信息通过词汇量大小的 softmax，再重新嵌入生成的词元——几乎丢弃了所有无法通过离散化幸存的信息。',
+                '混合专家（MoE）架构虽然避免了这一瓶颈，但要求所有专家子网络同时驻留内存，峰值显存随专家数量线性增长。我们提出第三条路径：隐状态接力。专家 A 在输入序列上执行前 K 层变换器层，然后将隐藏状态张量写入缓冲区；专家 B 被加载入内存（同时 A 被逐出），读取该张量并从第 K 层继续推理。接力负载仅为一个形状为 ℝ^(1×L×d_model) 的浮点张量，当 L=20、d_model=2048 时仅约 30KB——在任何存储介质上都是可忽略的 I/O 开销。',
+                '核心创新：RoPE 微调不变性',
+                '我们证明了旋转位置编码（RoPE）在微调下具有不变性：如果两个模型共享相同的架构规范，则它们的 RoPE 参数（head_dim、base）完全相同，因此接收方可以独立从位置索引重新计算位置编码。这意味着最小接力负载仅为隐藏状态张量本身，无需额外元数据。',
+                '在 Qwen3.5-2B Base 与 Instruct 检查点上的实验验证了该命题——所有 24 个分割点上 ρ_A 与 ρ_B 的最大差异为 0.00e+00，实现了数学意义上的精确一致。',
+                '实验结果与性能分析',
+                '我们在 Qwen3.5-2B 模型族上进行了系统性实验（Base → Instruct 跨检查点接力），主要发现如下：',
+                '单步预测困惑度：在三个评估文本上，接力机制的平均困惑度比最优基线仅高 0.7%，在英语文本上甚至优于两个基线（PPL 9.09 vs A=10.10/B=9.61）。',
+                '自回归生成（20 词元）：平均困惑度比 Instruct 基线低 5.1%（ratio=0.949），在机器学英语文本上达到 PPL 2.11（vs A=2.34, B=2.14）。',
+                '词元一致性：100 个生成词元中 47% 实现三重一致（relay=A=B），62% 与 Instruct 基线对齐，33% 为"独立生成"——但这不代表质量下降，而是隐状态空间插值产生的创造性融合。',
+                '语义连贯性：所有五个提示（涵盖量子计算、生命意义、AI 发展、斐波那契代码、科幻创作）均生成语义连贯的文本，无灾难性退化。',
+                '分割点选择的三段式结构',
+                '通过逐层分析隐藏状态发散度 δ_i = ‖h^(i)_A - h^(i)_B‖_∞，我们发现了 Base→Instruct 的三段式结构：',
+                '稳定区（层 0-1）：δ_i < 0.20，cos > 0.98。微调对低级特征提取影响最小。',
+                '过渡区（层 2-15）：δ_i ∈ [0.53, 1.06]，cos ∈ [0.96, 0.99]。逐渐发散。',
+                '发散区（层 16-23）：δ_i ∈ [2.0, 4.5]，cos ≈ 0.96。SFT/RLHF 对这些后期层影响最大。',
+                '基于这一结构，我们建议在稳定区（K ≤ 6）内分割以最大化与接收方输出分布的对齐，或在过渡区内分割以实现受控混合。所有主要实验采用 K=6。',
+                '内存优势与工程实现',
+                '隐状态接力的最大工程价值在于内存效率：无论链中有多少个专家，峰值内存始终等于一个模型加负载张量（约 30KB）。这与 MoE 架构形成鲜明对比——后者需要同时加载所有专家。',
+                '具体执行流程：加载模型 A；执行层 0:K；写入负载；逐出模型 A；加载模型 B；读取负载；执行层 K:N；逐出模型 B。在 2B 参数模型上，这意味着可以用单模型内存运行任意长度的专家链，代价是顺序加载的延迟开销。',
+                '可复现性保证',
+                '本研究提供完整的 NeurIPS 2026 Phase 4 可复现包（链接<a href="https://huggingface.co/datasets/xingy555888/cancri-latent-relay" target="_blank" rel="noopener noreferrer">https://huggingface.co/datasets/xingy555888/cancri-latent-relay</a>），包含：实验脚本（run_phase4_extended_safe.py）、精确提示与 PPL 评估文本（phase4_prompts.json）、验证过的结果表格（table3_phase4_ppl.csv）。实验在 Intel Core i5-10400 CPU（float32）上完成，通过子进程隔离保证模型间内存完全回收。',
+                '研究局限与未来方向',
+                '当前工作存在以下局限：仅验证同架构检查点（Qwen3.5-2B）间的兼容性，跨架构接力需要训练投影层；实验规模为 2B 参数模型，结果可能在更大规模（7B+）或不同精度（bfloat16）下有所不同；自回归实验仅覆盖 20 词元，更长序列可能出现误差累积；未在 MMLU、GSM8K、HumanEval 等基准上评估下游任务性能。',
+                '未来方向包括：带学习投影层的跨架构接力；三专家黑板调度（A→B→C）；基于输入内容的动态分割点选择；GPU 量化推理验证；以及大规模基准评估。',
+                '结论',
+                '隐状态接力为内存受限硬件上的多专家协作开辟了一条实用路径。我们的结果表明，同架构检查点共享结构上兼容的隐空间，可以被利用来实现低开销的专家组合。这项工作建立了可验证的工程基础，为无需词元空间通信的专家链式调用提供了理论与实践支撑。',
+                '— NexusV 研究团队'
             ]
         },
         en: {
-            title: 'Learn About Sentience V3.1',
-            date: 'March 02, 2026',
-            category: 'Architecture',
-            readTime: '7 min read',
+            title: 'Cancri: Cross-Checkpoint Latent Relay for Zero-Overhead Expert Chaining',
+            date: 'April 28, 2026',
+            category: 'Research',
+            readTime: '12 min read',
             paragraphs: [
-                'Sentience V3.1 aims to improve the naturalness of interaction and character consistency.',
-                'This page displays the standard structure of the article details page: top meta information, title, media area, and body paragraphs.',
-                'After you provide the official copy later, you can directly replace the paragraphs content.'
+                'We propose latent relay, a mechanism for chaining language model experts by passing hidden states directly across fine-tuning checkpoint boundaries, bypassing token-space communication entirely. Unlike multi-agent workflows—which compress continuous representations into discrete tokens—latent relay transfers a ~30KB tensor per sequence, preserving the full dimensionality of the intermediate representation.',
+                'Background and Motivation',
+                'The dominant paradigm for combining multiple language models is text-mediated multi-agent collaboration: model A produces natural language output, which model B receives as its prompt. This approach is straightforward to implement but imposes a severe information bottleneck. A forward pass through a 2B-parameter model propagates information through a d_model-dimensional continuous manifold at every layer; forcing that information through a vocabulary-size softmax—and then re-embedding the resulting token—discards almost everything that does not survive discretization.',
+                'Mixture-of-experts (MoE) architectures avoid this bottleneck but require all expert sub-networks to reside simultaneously in memory, scaling peak VRAM linearly with the number of experts. We propose a third path: latent relay. Expert A executes the first K transformer layers on an input sequence, then writes its hidden state tensor to a buffer. Expert B is loaded into memory (while A is evicted), reads the tensor, and continues inference from layer K. The relay payload is a single floating-point tensor of shape ℝ^(1×L×d_model); for L=20, d_model=2048, this amounts to roughly 30KB—a negligible I/O cost on any storage medium.',
+                'Core Innovation: RoPE Invariance Under Fine-Tuning',
+                'We prove that rotary positional embeddings (RoPE) are invariant to fine-tuning: if two models share the same architecture specification, their RoPE parameters (head_dim, base) are identical, enabling the receiver to recompute positional embeddings independently from position indices. This reduces the minimum relay payload to the hidden state tensor alone, with no additional metadata.',
+                'Experiments on Qwen3.5-2B Base and Instruct checkpoints verify this proposition—observing max_diff = 0.00e+00 between ρ_A and ρ_B across all 24 split points, achieving mathematical exactness.',
+                'Experimental Results and Performance Analysis',
+                'We conducted systematic experiments on the Qwen3.5-2B model family (Base → Instruct cross-checkpoint relay), with the following key findings:',
+                'Single-step prediction perplexity: Across three evaluation texts, the relay mechanism achieves perplexity within 0.7% of the best baseline, even outperforming both baselines on English text (PPL 9.09 vs A=10.10/B=9.61).',
+                'Autoregressive generation (20 tokens): Average perplexity is 5.1% lower than the Instruct baseline (ratio=0.949), reaching PPL 2.11 on the Machine Learning English text (vs A=2.34, B=2.14).',
+                'Token consistency: Of 100 generated tokens, 47% achieve tri-consistency (relay=A=B), 62% align with the Instruct baseline, and 33% are "independent"—but this does not indicate quality degradation; rather, it represents creative synthesis from latent space interpolation.',
+                'Semantic coherence: All five prompts (covering quantum computing, meaning of life, AI development, Fibonacci code, and sci-fi creativity) produced semantically coherent text with no catastrophic degeneration.',
+                'Three-Segment Split-Point Selection Structure',
+                'Through layer-by-layer analysis of hidden state divergence δ_i = ‖h^(i)_A - h^(i)_B‖_∞, we discovered a three-segment structure for Base→Instruct:',
+                'Stable zone (layers 0-1): δ_i < 0.20, cos > 0.98. Fine-tuning has minimal effect on low-level feature extraction.',
+                'Transition zone (layers 2-15): δ_i ∈ [0.53, 1.06], cos ∈ [0.96, 0.99]. Gradual divergence.',
+                'Divergence zone (layers 16-23): δ_i ∈ [2.0, 4.5], cos ≈ 0.96. SFT/RLHF most strongly reshape these late layers.',
+                'Based on this structure, we recommend splitting within the stable zone (K ≤ 6) to maximize alignment with the receiver\'s output distribution, or within the transition zone for controlled blending. All primary experiments use K=6.',
+                'Memory Advantages and Engineering Implementation',
+                'The greatest engineering value of latent relay lies in memory efficiency: regardless of how many experts are in the chain, peak memory remains equal to one model plus the payload tensor (~30KB). This contrasts sharply with MoE architectures, which require loading all experts simultaneously.',
+                'Concrete execution flow: Load model A; execute layers 0:K; write payload; evict model A; load model B; read payload; execute layers K:N; evict model B. On 2B-parameter models, this means running arbitrarily long expert chains with single-model memory, at the cost of sequential loading latency.',
+                'Reproducibility Guarantee',
+                'This research provides a complete NeurIPS 2026 Phase 4 reproducibility package (link <a href="https://huggingface.co/datasets/xingy555888/cancri-latent-relay" target="_blank" rel="noopener noreferrer">https://huggingface.co/datasets/xingy555888/cancri-latent-relay</a>), including: experimental scripts (run_phase4_extended_safe.py), exact prompts and PPL evaluation texts (phase4_prompts.json), and verified result tables (table3_phase4_ppl.csv). Experiments were conducted on Intel Core i5-10400 CPU (float32), with subprocess isolation ensuring complete memory recovery between models.',
+                'Limitations and Future Directions',
+                'Current work has the following limitations: compatibility is only verified between same-architecture checkpoints (Qwen3.5-2B); cross-architecture relay would require trained projection layers; experiments were conducted at 2B-parameter scale, and results may differ at larger scales (7B+) or different precision (bfloat16); autoregressive experiments only cover 20 tokens, and longer sequences may exhibit error accumulation; downstream task performance on benchmarks like MMLU, GSM8K, and HumanEval has not been evaluated.',
+                'Future directions include: cross-architecture relay with learned projection layers; three-expert blackboard scheduling (A→B→C); dynamic split-point selection conditioned on input content; GPU quantized inference validation; and large-scale benchmark evaluation.',
+                'Conclusion',
+                'Latent relay opens a practical path for multi-expert collaboration on memory-constrained hardware. Our results suggest that same-architecture checkpoints share a structurally compatible latent space that can be exploited for low-overhead expert composition. This work establishes a verifiable engineering foundation, providing both theoretical and practical support for expert chaining without token-space communication.',
+                '— NexusV Research Team'
             ]
         }
     },
     n2: {
         overlay: 'TACTFR',
-        media: { type: 'image', src: 'Logo/UD3.jpg', alt: 'TACTFR V5' },
+        media: { type: 'image', src: 'Logo/download.jfif', alt: 'TACTFR V5' },
         zh: {
             title: '了解 TACTFR V5',
             date: '2026年3月03日',
@@ -310,8 +364,8 @@ const articleData = {
         }
     },
     tactfr600: {
-        overlay: 'TACTFR 6.0.0',
-        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/H1.webp', fit: 'cover', alt: 'TACTFR 6.0.0' },
+        overlay: '',
+        media: { type: 'video', src: 'Logo/TA1.mp4', poster: 'Logo/TACTFR6.0.0.png', fit: 'cover', alt: 'TACTFR 6.0.0' },
         zh: {
             title: '隆重推出 TACTFR 6.0.0 Beta.2 测试版',
             date: '2026年4月25日',
@@ -364,164 +418,118 @@ const articleData = {
         }
     },
     sentienceV4ob: {
-        overlay: 'Sentience V4 Omni',
-        media: { type: 'video', src: 'Logo/意识V4o.webm', poster: 'Logo/NNNEE.png', fit: 'cover', alt: 'Sentience V4 Omni' },
+        overlay: 'Sentience V4.1 Omni',
+        media: { type: 'video', src: 'Logo/意识V4o.webm', poster: 'Logo/4.1Omni.png', fit: 'cover', alt: 'Sentience V4 Omni' },
         zh: {
-            title: 'SentienceV4 Omni Beta震撼登场',
-            date: '2026年4月17日',
+            title: '隆重介绍 SentienceV4.1 Omni 正式版',
+            date: '2026年4月28日',
             category: '产品',
             readTime: '12 分钟阅读',
             paragraphs: [
-                '今天，我们发布 Nexus V: Sentience 的最新版本。',
-                '这是一个面向 GTA V 的开放式 NPC 对话与行为增强模组，致力于让游戏中的角色不再只是响应按钮和预设台词，而是能够根据世界状态、人物身份、上下文记忆与交互历史，做出更自然、更一致、更有"存在感"的反应。',
-                '项目现已开源：',
+                '今天，我们隆重推出 **SentienceV4.1 Omni 正式版**——GTA V 沉浸式 AI NPC 交互体验的全新里程碑。',
+                '从 Beta 到正式版，我们不仅仅是在修复 bug，而是在重新定义玩家与虚拟世界的互动方式。SentienceV4.1 Omni 代表着更稳定的性能、更丰富的自定义选项，以及更开放的生态。',
+                '核心亮点',
+                '🚀 全新 NexusVLauncher',
+                '我们对启动器 UI 进行了全面升级，带来更直观、更流畅的配置体验：',
+                '全新界面设计 — 更清晰的导航，更简洁的操作流程',
+                '多服务商 API 支持 — 原生支持 DeepSeek、OpenAI 等主流 API，已更新至最新 model 接口',
+                '深度自定义配置 — 自定义端口、线程数、上下文长度，满足各种性能需求',
+                '一键部署 — 解压 → 启动 → 游戏，三步搞定',
+                '⚡ 性能全面优化',
+                '基于最新脚本钩子构建，适配 GTA V 最新版本：',
+                '游戏内性能提升 — 更低的延迟，更流畅的对话体验',
+                '内存占用优化 — 更高效的资源管理',
+                '推理加速 — 本地模型推理速度提升 20%',
+                '🔧 开放与兼容',
+                'SentienceV4.1 继续保持开放生态：',
+                '✅ GTA V Legacy 版与 Enhanced 版双支持',
+                '✅ 本地推理（llama.cpp）与云端 API 无缝切换',
+                '✅ OpenAI 兼容接口',
+                '✅ 多种 TTS / STT 方案支持',
+                '下载与体验',
+                '🌟 NexusV 官网: https://nexusvai.github.io/NexusV/',
+                '🎮 玩家动力传承版: https://www.wanjiadongli.com/mods/296810',
+                '🚀 玩家动力增强版: https://www.wanjiadongli.com/mods/295861',
+                '🎲 3DM: https://mod.3dmgame.com/mod/253070',
+                '📦 百度网盘: https://pan.baidu.com/s/1MW6xYIueFIG7s3bjhSKLKg?pwd=Nexu',
+                '注意：部分平台可能存在同步延迟，请耐心等待最新版本上架。',
+                '五一特别活动 🎉',
+                '玩家动力社区五一全新活动火热进行中！',
+                '白嫖 Steam 游戏',
+                'VIP 会员免费送',
+                '绝对真实！加群 1075957856 了解详情。',
+                '技术规格',
+                '最低配置: GT730 + i5-10400',
+                '推荐配置: GTX 1060 6GB + i5-10400 及以上',
+                '本地模型: Qwen3.5 2B 专属微调版',
+                'API 支持: DeepSeek、OpenAI、自定义兼容接口',
+                '游戏版本: GTA V Legacy / Enhanced',
+                '开发者信息',
+                'Sentience 源代码遵循 MIT 许可证开源：',
                 'GitHub: https://github.com/NexusVAI/SENTIENCE',
-                '更像一个世界，而不是一串脚本',
-                '传统的游戏 NPC 往往依赖固定规则：你靠近，它说一句；你开枪，它逃跑；你再回来，它像什么都没发生过。',
-                'Sentience 想解决的，不是"让 NPC 多说几句"，而是让他们：',
-                '记住你是谁',
-                '记住你们之间发生过什么',
-                '知道自己处在什么环境里',
-                '根据时间、天气、威胁等级和自身身份改变反应',
-                '在连续对话中保持一致，不再频繁"失忆"',
-                '这意味着，NPC 不再只是系统的输出端，而更像是洛圣都世界的一部分。',
-                '新一代对话引擎：更懂 GTA 世界观',
-                '本次版本引入了专属微调的对话模型，针对 GTA V 的语境、角色关系、街头文化和世界观进行了适配。',
-                '它不只是"能聊天"，而是尽可能理解：',
-                '洛圣都里的身份语境',
-                '不同 NPC 的外貌与职业特征',
-                '玩家当前的行为是否构成威胁',
-                '在不同场景下应该使用怎样的语气和情绪',
-                '无论是西装商人、流浪汉，还是警察、帮派成员，NPC 的回应都将更贴近其角色设定，而不是统一的模板式回答。',
-                '一键启动，告别繁琐配置',
-                '为了让更多玩家和开发者能够直接体验 Sentience，我们发布了全新的启动器：',
-                'Sentience Launcher（AI_NPCS.exe）',
-                '内置本地推理引擎',
-                '支持一键启动服务器',
-                '支持一键安装 Mod',
-                '自动生成配置文件',
-                '支持自定义端口、线程数与上下文长度',
-                '这意味着，用户不再需要手动折腾复杂的本地部署流程。你可以直接：解压 → 启动 → 进入游戏',
-                '当然，我们也保留了对 LM Studio、KoboldCpp 以及各种 OpenAI 兼容 API 的支持，方便已有用户平滑迁移或混合部署。',
-                '记忆系统：NPC 不再"刚认识你"',
-                '这一版本最重要的改进之一，是更完整的身份与记忆系统。',
-                'StableId 身份系统：NPC 不再仅仅依赖临时句柄识别。系统会基于模型、外貌、位置等信息生成稳定身份标识，让 NPC 在你离开后再次出现时，仍然能被识别为"同一个人"。',
-                '跨会话记忆：NPC 现在可以保存并恢复会话记忆。这意味着：你上次和他聊过什么、你是否冒犯过他、他对你的态度发生了什么变化，都会在后续互动中产生影响。',
-                '对话历史滑动窗口：NPC 会保留最近几轮对话内容，避免在同一次交流中出现前后矛盾或"完全失忆"的情况。',
-                '更可靠的好感度与情绪系统',
-                '过去，NPC 的好感度可能会出现一些不符合直觉的变化。在新版本中，我们重构了这一部分逻辑，使反馈更清晰、更符合玩家预期。',
-                '例如：侮辱 NPC → 好感度下降、夸奖 NPC → 好感度上升、普通对话 → 轻微提升好感',
-                '同时，当模型输出纯文本而不是结构化结果时，系统还会自动推断情绪，确保 NPC 的声音、语气和行为依然能跟上上下文。',
-                '更快的响应，更少的等待',
-                '为了改善游戏内实时交互体验，Sentience 引入了即时响应模式：',
-                '简单问候可以秒回',
-                '直接辱骂可快速反馈',
-                '复杂对话才进入完整模型推理',
-                '系统还会在等待 AI 响应时显示"NPC 思考中..."，让玩家知道对方不是卡住了，而是在处理当前交互。',
-                '这让 NPC 的表现更像"实时对话对象"，而不是延迟很高的远程接口。',
-                '输出更干净，行为更自然',
-                '为了避免模型输出影响游戏沉浸感，新版本增加了更强的后处理管线：',
-                '自动剥离动作描述',
-                '自动去除括号内的心理活动',
-                '过滤常见前缀化表达',
-                '统一解析对话与情绪格式',
-                '这使得模型即便偶尔输出不够规范，也能被系统稳定整理成适合游戏呈现的内容。',
-                '威胁感知：NPC 会根据局势判断你有多危险',
-                'Sentience 现在不只在"听你说什么"，也会判断"你有多危险"。',
-                '系统会综合评估：玩家行为、所持武器、周围环境、当前交互类型，并据此计算威胁等级，影响 NPC 的决策、态度和记忆记录。',
-                '这让很多场景不再是简单的"对话触发"，而是更接近真实世界里的反应逻辑。',
-                '为未来开放：兼容性与可扩展性',
-                'Sentience 设计为可插拔、可扩展、可替换：',
-                '支持 GTA V Legacy 版与 Enhanced 版',
-                '支持本地推理与云端 API',
-                '支持 OpenAI 兼容接口',
-                '支持多种 TTS / STT 方案',
-                '支持不同部署环境与性能配置',
-                '我们希望它不仅仅是一个"可玩的模组"，也能成为一个可继续开发、可实验、可研究的开放项目。',
-                '结语',
-                '我们相信，游戏中的 NPC 不应该只是"可交互的背景板"。',
-                '他们应该能记住、能判断、能变化，甚至能在你的每一次接近、每一句话、每一次冲突中，逐渐形成属于自己的角色连续性。',
-                'Nexus V: Sentience 想做的，就是把这种感觉带进 GTA V。',
-                '让洛圣都，真正开始"回应"你。'
+                '加入我们的开发社区，共同打造更智能的游戏 NPC 生态。',
+                '支持与反馈',
+                '模组反馈2群: 1061632354',
+                '玩家动力活动群: 1075957856',
+                '详细教程请下载模组后查看文档与视频。',
+                'SentienceV4.1 Omni — 让洛圣都的每一个 NPC，都拥有真正的数字灵魂。',
+                '让游戏世界，真正开始"回应"你。'
             ]
         },
         en: {
-            title: 'SentienceV4 Omni Beta is Here',
-            date: 'April 17, 2026',
+            title: 'Introducing SentienceV4.1 Omni Official Release',
+            date: 'April 28, 2026',
             category: 'Product',
             readTime: '12 min read',
             paragraphs: [
-                'Today, we are releasing the latest version of Nexus V: Sentience.',
-                'This is an open NPC dialogue and behavior enhancement mod for GTA V, dedicated to making in-game characters not just respond to buttons and preset lines, but can make more natural, consistent, and "present" reactions based on world state, character identity, contextual memory, and interaction history.',
-                'The project is now open source:',
+                'Today, we proudly present **SentienceV4.1 Omni Official Release**—a new milestone in immersive AI NPC interaction for GTA V.',
+                'From Beta to Official Release, we are not just fixing bugs, but redefining how players interact with the virtual world. SentienceV4.1 Omni represents more stable performance, richer customization options, and a more open ecosystem.',
+                'Key Highlights',
+                '🚀 All-New NexusVLauncher',
+                'We have completely upgraded the launcher UI for a more intuitive and smoother configuration experience:',
+                'New Interface Design — Clearer navigation, simpler workflow',
+                'Multi-Provider API Support — Native support for DeepSeek, OpenAI and other mainstream APIs, updated to the latest model interface',
+                'Deep Customization — Customize ports, thread counts, context length to meet various performance needs',
+                'One-Click Deployment — Extract → Launch → Game, done in three steps',
+                '⚡ Comprehensive Performance Optimization',
+                'Built on the latest script hooks, adapted for the latest GTA V version:',
+                'In-Game Performance Boost — Lower latency, smoother dialogue experience',
+                'Memory Usage Optimization — More efficient resource management',
+                'Inference Acceleration — Local model inference speed increased by 20%',
+                '🔧 Open and Compatible',
+                'SentienceV4.1 continues to maintain an open ecosystem:',
+                '✅ Dual support for GTA V Legacy and Enhanced versions',
+                '✅ Seamless switching between local inference (llama.cpp) and cloud APIs',
+                '✅ OpenAI compatible interface',
+                '✅ Support for multiple TTS / STT solutions',
+                'Download and Experience',
+                '🌟 NexusV Official Site: https://nexusvai.github.io/NexusV/',
+                '🎮 Player Power Legacy: https://www.wanjiadongli.com/mods/296810',
+                '🚀 Player Power Enhanced: https://www.wanjiadongli.com/mods/295861',
+                '🎲 3DM: https://mod.3dmgame.com/mod/253070',
+                '📦 Baidu Cloud: https://pan.baidu.com/s/1MW6xYIueFIG7s3bjhSKLKg?pwd=Nexu',
+                'Note: Some platforms may have sync delays, please wait patiently for the latest version to be listed.',
+                'May Day Special Event 🎉',
+                'Player Power Community May Day New Event is now live!',
+                'Free Steam Games',
+                'Free VIP Memberships',
+                'Absolutely real! Join group 1075957856 for details.',
+                'Technical Specifications',
+                'Minimum Config: GT730 + i5-10400',
+                'Recommended Config: GTX 1060 6GB + i5-10400 and above',
+                'Local Model: Qwen3.5 2B Exclusive Fine-tuned Version',
+                'API Support: DeepSeek, OpenAI, Custom Compatible Interfaces',
+                'Game Version: GTA V Legacy / Enhanced',
+                'Developer Information',
+                'Sentience source code is open source under MIT license:',
                 'GitHub: https://github.com/NexusVAI/SENTIENCE',
-                'More like a world, not a script',
-                'Traditional game NPCs often rely on fixed rules: you approach, they say something; you shoot, they flee; you come back, and it is like nothing happened.',
-                'What Sentience aims to solve is not "making NPCs say more things," but making them:',
-                'Remember who you are',
-                'Remember what happened between you',
-                'Know what environment they are in',
-                'Change reactions based on time, weather, threat level, and their own identity',
-                'Maintain consistency in continuous conversations, no longer frequently "forgetting"',
-                'This means NPCs are no longer just the output end of a system, but more like part of the Los Santos world.',
-                'Next-generation dialogue engine: Better understanding of GTA worldview',
-                'This version introduces an exclusive fine-tuned dialogue model, adapted for GTA V context, character relationships, street culture, and worldview.',
-                'It is not just "able to chat," but tries its best to understand:',
-                'Los Santos identity context',
-                'Different NPC appearance and profession characteristics',
-                'Whether the player current behavior constitutes a threat',
-                'What tone and emotion should be used in different scenarios',
-                'Whether it is a suit-wearing businessman, homeless person, police officer, or gang member, NPC responses will be closer to their character settings, rather than unified template-style answers.',
-                'One-click startup, goodbye to tedious configuration',
-                'To allow more players and developers to directly experience Sentience, we released a new launcher:',
-                'Sentience Launcher (AI_NPCS.exe)',
-                'Built-in local inference engine',
-                'Support one-click server startup',
-                'Support one-click Mod installation',
-                'Auto-generate configuration files',
-                'Support custom ports, thread counts, and context length',
-                'This means users no longer need to manually deal with complex local deployment processes. You can directly: Extract → Launch → Enter Game',
-                'Of course, we also retain support for LM Studio, KoboldCpp, and various OpenAI-compatible APIs to facilitate smooth migration or hybrid deployment for existing users.',
-                'Memory system: NPCs no longer "just met you"',
-                'One of the most important improvements in this version is a more complete identity and memory system.',
-                'StableId Identity System: NPCs no longer rely solely on temporary handles for identification. The system generates stable identity identifiers based on model, appearance, location, etc., allowing NPCs to still be recognized as "the same person" when you leave and return.',
-                'Cross-session memory: NPCs can now save and restore conversation memories. This means: what you talked about last time, whether you offended them, how their attitude toward you changed, will all affect subsequent interactions.',
-                'Dialogue history sliding window: NPCs retain the last few rounds of conversation content, avoiding contradictions or "complete forgetting" during the same interaction.',
-                'More reliable affection and emotion system',
-                'In the past, NPC affection might have some counter-intuitive changes. In the new version, we restructured this part of the logic to make feedback clearer and more aligned with player expectations.',
-                'For example: Insult NPC → affection decreases, Compliment NPC → affection increases, Normal conversation → slight affection increase',
-                'At the same time, when the model outputs plain text instead of structured results, the system also automatically infers emotions to ensure NPC voice, tone, and behavior can still keep up with the context.',
-                'Faster response, less waiting',
-                'To improve in-game real-time interaction experience, Sentience introduces instant response mode:',
-                'Simple greetings can get instant replies',
-                'Direct insults can get quick feedback',
-                'Only complex conversations enter full model inference',
-                'The system will also display "NPC is thinking..." while waiting for AI response, letting players know the other party is not stuck but processing the current interaction.',
-                'This makes NPC performance more like a "real-time conversation partner" rather than a high-latency remote interface.',
-                'Cleaner output, more natural behavior',
-                'To avoid model output affecting game immersion, the new version adds a stronger post-processing pipeline:',
-                'Auto-strip action descriptions',
-                'Auto-remove psychological activities in parentheses',
-                'Filter common prefix expressions',
-                'Unified parsing of dialogue and emotion formats',
-                'This allows the system to stably organize content suitable for game presentation even when the model occasionally outputs non-standard content.',
-                'Threat perception: NPCs judge how dangerous you are based on the situation',
-                'Sentience now not only "listens to what you say" but also judges "how dangerous you are."',
-                'The system comprehensively evaluates: player behavior, weapons carried, surrounding environment, current interaction type, and calculates threat level accordingly, affecting NPC decisions, attitudes, and memory records.',
-                'This makes many scenarios no longer simple "dialogue triggers" but closer to real-world reaction logic.',
-                'Open for the future: Compatibility and extensibility',
-                'Sentience is designed to be pluggable, extensible, and replaceable:',
-                'Support GTA V Legacy and Enhanced versions',
-                'Support local inference and cloud API',
-                'Support OpenAI-compatible interfaces',
-                'Support multiple TTS/STT solutions',
-                'Support different deployment environments and performance configurations',
-                'We hope it is not just a "playable mod" but also an open project that can be further developed, experimented with, and researched.',
-                'Conclusion',
-                'We believe game NPCs should not just be "interactive background boards."',
-                'They should be able to remember, judge, change, and even gradually form their own character continuity in every approach, every sentence, and every conflict of yours.',
-                'What Nexus V: Sentience wants to do is bring this feeling into GTA V.',
-                'Let Los Santos truly start to "respond" to you.'
+                'Join our development community to build a smarter game NPC ecosystem together.',
+                'Support and Feedback',
+                'Mod Feedback Group 2: 1061632354',
+                'Player Power Event Group: 1075957856',
+                'For detailed tutorials, please check the documentation and videos after downloading the mod.',
+                'SentienceV4.1 Omni brings a new level of immersion to GTA V by giving every NPC a true digital soul.',
+                'Experience a game world that truly responds to your actions.'
             ]
         }
     },
@@ -795,92 +803,6 @@ const articleData = {
             ]
         }
     },
-    sentienceLS: {
-        overlay: 'Sentience-LS',
-        media: { type: 'video', src: 'Logo/HORE1.mp4', poster: 'Logo/PO1.jpg', fit: 'cover', alt: 'Sentience-LS' },
-        zh: {
-            title: '了解 Sentience-LS',
-            date: '2026年3月12日',
-            category: '产品',
-            readTime: '12 分钟阅读',
-            paragraphs: [
-                'Sentience-LS 是一个面向游戏开发者的本地可运行 AI NPC 框架，目标是把"有性格、有记忆、会即兴反应"的人物带进你的世界 —— 首发用于《洛圣都》风格的交互式 NPC，支持本地 LoRA 微调、快速部署与低延迟推理。',
-                '为什么要有 Sentience-LS',
-                '现在的大多数游戏 NPC 依旧靠脚本或有限状态机驱动，难以支持自然、连贯、可扩展的对话与即时行为。我们受 OpenAI 等前沿工作的启发，设计了一个可本地训练、可迭代开发的方案，让个人和小团队也能在本机上快速构建可信的 AI 人物。',
-                '核心能力（面向开发者）',
-                '本地微调（LoRA）+ 快速验证 ：支持在低配机器上用小批量数据做 Smoke-test，验证角色语气与行为。',
-                '消息格式训练（messages） ：标准化输入输出（system/user/assistant），便于把脚本化对话转为训练样本。',
-                '情绪/动作结构化输出 ：建议输出 JSON： {"dialogue":"…","emotion":"…","action":"…"} ，方便在游戏引擎中直接解析并触发动画/任务。',
-                '合并与导出流程 ：一键合并 LoRA → HF 权重 → 转 GGUF → 量化（Q4_K_M），适用于本地高效推理引擎（如 llama.cpp  等）。',
-                '可插拔接口 ：简单的本地 REST / stdin-stdout 接口，能轻松接入 ScriptHookVDotNet3  类脚本或任何网络服务。',
-                '技术亮点（为什么可行）',
-                'PEFT（LoRA）优雅微调 ：只训练少量参数，显著降低资源门槛，同时保留基础模型能力。',
-                '数据优先的策略 ：专门为游戏场景设计的 messages 模板（系统角色 + 场景 + 情绪），能在 100–1000 条高质量数据上实现明显风格迁移。',
-                '从 Smoke-test 到生产流水线 ：预置 smoke-test 配置（短序列、少步数），确保每次改动都可被快速验证再放大。',
-                '面向部署的导出链路 ：支持把训练结果合并并导出为 GGUF，便于在 CPU 环境下低延迟运行。',
-                '典型使用场景',
-                '开放世界 NPC ：让街头帮派、商店老板或警察拥有即时反应与记忆（例如记住玩家过去行为并据此改变对话）。',
-                '任务生成器 ：基于 NPC 的性格生成支线任务或求助事件（更自然的 emergent gameplay）。',
-                '沉浸式对话体验 ：NPC 不再只回答固定台词，而是能结合情绪与动作作出现场化反应。',
-                '快速原型与 mod ：个人 mod 制作者可在本地微调并立刻试验新角色行为。',
-                '体验示例（快速上手提示词）',
-                '把这个 system + user 丢给模型做测试：',
-                'System: 你是洛圣都的街头商贩，看到常客很开心。只返回 JSON 字符串：{"dialogue":"","emotion":"","action":""}',
-                'User: 常来买的，给点折扣吧。',
-                '期望输出（示例）：',
-                '{"dialogue":"好久不见，给你点小折扣，但别太频繁哈。","emotion":"友好","action":"笑着递过货物并眨眼"}',
-                '安全与责任',
-                '我们鼓励 本地运行与数据自控 ：默认流程不上传训练数据到云，所有模型权重和数据都保存在用户机器上。对于可能含有仇恨、暴力或敏感内容的对话样本，我们建议在数据采集阶段加入审查与过滤策略，训练后在推理层加入行为约束（system prompt +生成后处理）。',
-                '我们需要的支持（给早期合作者）',
-                '优质数据 ：真实、有角色感的对话样本（越多越好，建议每类角色 300+ 条）。',
-                '场景测试 ：真实游戏内测试（mod/插件接入反馈）。',
-                '性能优化贡献 ：在低端 CPU 上的量化与加速技巧。',
-                '结语 & 行动呼吁',
-                'Sentience-LS 的目标不是替代大型云服务，而是把"可感知、可训练、可部署"的 AI NPC 能力放到更多人的桌面上。'
-            ]
-        },
-        en: {
-            title: 'Learn About Sentience-LS',
-            date: 'March 12, 2026',
-            category: 'Product',
-            readTime: '12 min read',
-            paragraphs: [
-                'Sentience-LS is a locally runnable AI NPC framework for game developers, aiming to bring characters with "personality, memory, and improvisational reactions" into your world —— debuting for Los Santos-style interactive NPCs, supporting local LoRA fine-tuning, rapid deployment, and low-latency inference.',
-                'Why Sentience-LS?',
-                'Most game NPCs today still rely on scripts or finite state machines, making it difficult to support natural, coherent, scalable dialogue and immediate behavior. Inspired by cutting-edge work from OpenAI and others, we designed a locally trainable, iteratively developable solution that allows individuals and small teams to quickly build believable AI characters on their local machines.',
-                'Core Capabilities (For Developers)',
-                'Local Fine-tuning (LoRA) + Rapid Validation: Supports smoke-testing on low-end machines with small batches of data to verify character tone and behavior.',
-                'Message Format Training: Standardized input/output (system/user/assistant), making it easy to convert scripted dialogue into training samples.',
-                'Structured Emotion/Action Output: Recommended JSON output: {"dialogue":"...","emotion":"...","action":"..."}, easily parsed in game engines to trigger animations/tasks.',
-                'Merge and Export Pipeline: One-click merge LoRA → HF weights → convert to GGUF → quantize (Q4_K_M), suitable for local efficient inference engines (like llama.cpp).',
-                'Pluggable Interface: Simple local REST / stdin-stdout interface, easily integrated into ScriptHookVDotNet3-like scripts or any web service.',
-                'Technical Highlights (Why It Works)',
-                'PEFT (LoRA) Elegant Fine-tuning: Only trains a small number of parameters, significantly lowering resource barriers while preserving base model capabilities.',
-                'Data-First Strategy: Messages templates specifically designed for game scenarios (system role + scene + emotion), enabling obvious style transfer on just 100–1000 high-quality data points.',
-                'From Smoke-test to Production Pipeline: Pre-configured smoke-test settings (short sequences, few steps), ensuring every change can be quickly validated before scaling up.',
-                'Deployment-Oriented Export Chain: Supports merging training results and exporting as GGUF, enabling low-latency operation in CPU environments.',
-                'Typical Use Cases',
-                'Open World NPCs: Give street gangs, shop owners, or police immediate reactions and memory (e.g., remembering player past behavior and changing dialogue accordingly).',
-                'Mission Generators: Generate side quests or help requests based on NPC personality (more natural emergent gameplay).',
-                'Immersive Dialogue Experience: NPCs no longer just answer with fixed lines, but can give contextual reactions combining emotion and action.',
-                'Rapid Prototyping and Mods: Individual mod creators can fine-tune locally and immediately test new character behaviors.',
-                'Experience Example (Quick Start Prompt)',
-                'Throw this system + user at the model for testing:',
-                'System: You are a street vendor in Los Santos, happy to see regular customers. Only return JSON string: {"dialogue":"","emotion":"","action":""}',
-                'User: I come here often, give me a discount.',
-                'Expected Output (Example):',
-                '{"dialogue":"Long time no see, here\'s a small discount, but don\'t make it too frequent.","emotion":"friendly","action":"smiling while handing over goods and winking"}',
-                'Safety and Responsibility',
-                'We encourage local operation and data self-control: default workflow does not upload training data to cloud; all model weights and data remain on user machines. For dialogue samples that may contain hate, violence, or sensitive content, we recommend adding review and filtering strategies during data collection, and adding behavioral constraints at the inference layer after training (system prompt + post-generation processing).',
-                'What We Need (For Early Collaborators)',
-                'Quality Data: Real, character-rich dialogue samples (the more the better, 300+ per character type recommended).',
-                'Scenario Testing: Real in-game testing (mod/plugin integration feedback).',
-                'Performance Optimization Contributions: Quantization and acceleration techniques on low-end CPUs.',
-                'Conclusion & Call to Action',
-                'Sentience-LS\'s goal is not to replace large cloud services, but to put "perceivable, trainable, deployable" AI NPC capabilities on more people\'s desktops.'
-            ]
-        }
-    },
     sentienceV4C: {
         overlay: 'Sentience V4C',
         media: { type: 'video', src: 'Logo/V4C.mp4', poster: 'Logo/N1.jpg', fit: 'cover', alt: 'Sentience V4C' },
@@ -994,7 +916,7 @@ const articleData = {
         }
     },
     news2: {
-        media: { type: 'image', src: 'Logo/yellow-blue-bg.webp', alt: 'TACTFR' },
+        media: { type: 'image', src: 'Logo/L2.webp', alt: 'TACTFR' },
         zh: {
             title: '在 TACTFR 中尝试接入 Sentience',
             date: '2026 年 03 月 03 日',
@@ -1556,75 +1478,6 @@ const articleData = {
             ]
         }
     },
-    news10: {
-        media: { type: 'image', src: 'Logo/NexusSA.webp', alt: 'NexusV 4.5.0' },
-        zh: {
-            title: '正式推出NexusV 4.5.0',
-            date: '2026年3月26日',
-            category: '产品',
-            paragraphs: [
-                'NexusV 修改器 4.5.0 现已发布。',
-                '本次更新主要围绕工具整合、交互优化与常用功能补全展开，进一步提升了修改器在日常使用中的便捷性与完整性。',
-                '更新内容',
-                '新增工具箱功能：',
-                '内置行人绘制框架',
-                '内置重力枪',
-                '新增多种状态绘制功能',
-                '传送功能扩展：',
-                '保存当前位置',
-                '返回上一位置',
-                '传送到已保存位置',
-                '玩家功能新增：',
-                '清洁玩家状态',
-                '风火轮速度调节',
-                '慢动作速度调节',
-                '载具功能新增：',
-                '引擎开关',
-                '翻正当前载具',
-                '保存当前载具为快捷生成',
-                '删除当前载具',
-                '武器功能新增：',
-                '补满当前武器弹药',
-                '本次更新内容较多，以上仅列出部分重点功能。',
-                '更多功能可下载后自行体验。',
-                '如在使用过程中遇到问题，欢迎及时反馈。',
-                '感谢大家的支持。'
-            ]
-        },
-        en: {
-            title: 'Official Release of NexusV 4.5.0',
-            date: 'March 26, 2026',
-            category: 'Product',
-            paragraphs: [
-                'NexusV Modifier 4.5.0 is now released.',
-                'This update focuses on tool integration, interaction optimization, and common feature additions, further enhancing the modifier\'s convenience and completeness in daily use.',
-                'Update Contents',
-                'New Toolbox Features:',
-                'Built-in Pedestrian Rendering Framework',
-                'Built-in Gravity Gun',
-                'Multiple New State Drawing Functions',
-                'Teleport Function Expansion:',
-                'Save Current Position',
-                'Return to Previous Position',
-                'Teleport to Saved Position',
-                'New Player Features:',
-                'Clean Player State',
-                'Whiplash Speed Adjustment',
-                'Slow Motion Speed Adjustment',
-                'New Vehicle Features:',
-                'Engine Toggle',
-                'Flip Current Vehicle',
-                'Save Current Vehicle as Quick Spawn',
-                'Delete Current Vehicle',
-                'New Weapon Features:',
-                'Refill Current Weapon Ammo',
-                'This update contains many changes; only some key features are listed above.',
-                'More features can be experienced after downloading.',
-                'If you encounter any issues during use, feel free to provide feedback.',
-                'Thanks for your support.'
-            ]
-        }
-    },
     news9: {
         media: { type: 'image', src: 'Logo/DALL.webp', alt: 'Sentience V4C' },
         zh: {
@@ -1740,6 +1593,15 @@ const articleData = {
         }
     }
 };
+
+function swapArticleEntries(keyA, keyB) {
+    if (!articleData[keyA] || !articleData[keyB]) return;
+    const temp = articleData[keyA];
+    articleData[keyA] = articleData[keyB];
+    articleData[keyB] = temp;
+}
+
+swapArticleEntries('n2', 'news2');
 
 function initArticlePage() {
     const articleRoot = document.querySelector('.article-page');
@@ -1871,17 +1733,13 @@ function initArticlePage() {
                 const imageOnError = `this.onerror=null;this.src='${fallbackImg}'`;
 
                 let mediaHtml = '';
+                // 在继续阅读区域，视频类型只显示海报图，不加载视频以避免闪烁问题
                 if (mediaObj && mediaObj.type === 'video') {
-                        mediaHtml = `
-                            <div class="image-wrapper square-image lazy-video-wrapper">
-                                <img src="${fallbackImg}" alt="${(mediaObj && mediaObj.alt) || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
-                                <video loop muted playsinline class="hero-video" data-src="${mediaObj.src}" data-fallback="${fallbackImg}" data-fit="${mediaObj.fit || 'cover'}" data-bg="${mediaObj.bg || ''}" preload="none" style="position: absolute; inset: 0; z-index: 1; opacity: 0;"></video>
-                            </div>
-                        `;
+                    mediaHtml = `<div class="image-wrapper square-image"><img src="${fallbackImg}" alt="${(mediaObj && mediaObj.alt) || ''}" loading="lazy" decoding="async" onerror="${posterOnError}"></div>`;
                 } else {
                     let src = (mediaObj && mediaObj.src) || fallbackImg;
                     if (key === 'news1') src += '?t=1'; // Cache buster for news1
-                    mediaHtml = `<div class="image-wrapper square-image"><img src="${src}" alt="${(mediaObj && mediaObj.alt) || ''}" onerror="${imageOnError}"></div>`;
+                    mediaHtml = `<div class="image-wrapper square-image"><img src="${src}" alt="${(mediaObj && mediaObj.alt) || ''}" loading="lazy" decoding="async" onerror="${imageOnError}"></div>`;
                 }
 
                 card.innerHTML = `
@@ -1949,16 +1807,17 @@ function initIndexPage() {
     const heroCard = document.querySelector('.hero-card');
     const scrollableList = document.querySelector('.scrollable-list');
     const newsGrid = document.querySelector('.news-grid-2-col');
+    const featureStrip = document.querySelector('.latest-news-feature-strip');
     
     // Only proceed if at least one of these exists (indicating we are on index-like page)
-    if (!heroCard && !scrollableList && !newsGrid) return;
+    if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (sentienceV4ob, hero, sentienceLS)
+        // Scrollable List (sentienceV4ob, hero, legal article)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['sentienceV4ob', 'hero', 'sentienceLS'];
-            const linkTargets = ['sentienceV4ob', 'hero', 'sentienceLS'];
+            const listIds = ['sentienceV4ob', 'hero', 'news3'];
+            const linkTargets = ['sentienceV4ob', 'hero', 'news3'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
@@ -1976,7 +1835,7 @@ function initIndexPage() {
                  if (item.media && item.media.type === 'video' && item.media.src) {
                     mediaHtml = `
                         <div class="image-wrapper square-image lazy-video-wrapper">
-                            <img src="${fallbackImg}" alt="${(item.media && item.media.alt) || ''}" class="video-poster" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
+                            <img src="${fallbackImg}" alt="${(item.media && item.media.alt) || ''}" class="video-poster" loading="lazy" decoding="async" onerror="${posterOnError}" style="position: absolute; inset: 0; z-index: 2;">
                             <video loop muted playsinline class="hero-video" data-src="${item.media.src}" data-fallback="${fallbackImg}" data-fit="${item.media.fit || 'cover'}" data-bg="${item.media.bg || ''}" preload="none" style="position: absolute; inset: 0; z-index: 1; opacity: 0;"></video>
                             <span class="card-overlay-text">${item.overlay || ''}</span>
                         </div>
@@ -1985,7 +1844,7 @@ function initIndexPage() {
                     const imgSrc = (item.media && item.media.src) || fallbackImg;
                     mediaHtml = `
                         <div class="image-wrapper square-image">
-                            <img src="${imgSrc}" alt="${(item.media && item.media.alt) || ''}" onerror="${imageOnError}">
+                            <img src="${imgSrc}" alt="${(item.media && item.media.alt) || ''}" loading="lazy" decoding="async" onerror="${imageOnError}">
                             <span class="card-overlay-text">${item.overlay || ''}</span>
                         </div>
                     `;
@@ -2005,7 +1864,7 @@ function initIndexPage() {
         // News Grid (n2, news1...news8)
         if (newsGrid) {
             newsGrid.innerHTML = '';
-            ['news10', 'n2', 'news9', 'news1', 'news2', 'sentienceOriginal', 'news3', 'news4', 'news5', 'news6', 'news7', 'news8'].forEach(id => {
+            ['news10', 'n2', 'news9', 'news1', 'news2', 'sentienceOriginal', 'news4', 'news5', 'n1', 'news7', 'news8'].forEach(id => {
                 const item = articleData[id];
                 if (!item) return;
                 const data = item[lang] || item.zh;
@@ -2021,7 +1880,7 @@ function initIndexPage() {
                 
                 card.innerHTML = `
                     <div class="news-thumb">
-                        <img src="${src}" alt="${(item.media && item.media.alt) || ''}" onerror="${onError}">
+                        <img src="${src}" alt="${(item.media && item.media.alt) || ''}" loading="lazy" decoding="async" onerror="${onError}">
                     </div>
                     <div class="news-info">
                         <h3>${data.title}</h3>
@@ -2029,6 +1888,32 @@ function initIndexPage() {
                     </div>
                 `;
                 newsGrid.appendChild(card);
+            });
+        }
+
+        if (featureStrip) {
+            featureStrip.innerHTML = '';
+            ['news9', 'n2', 'n1', 'sentienceOriginal'].forEach(id => {
+                const item = articleData[id];
+                if (!item) return;
+                const data = item[lang] || item.zh;
+                const card = document.createElement('a');
+                card.className = 'latest-news-feature-card';
+                card.href = `article.html?id=${id}`;
+
+                const fallbackImg = (item.media && item.media.src) || 'Logo/I2.webp';
+                const onError = `this.onerror=null;this.src='Logo/I2.webp'`;
+
+                card.innerHTML = `
+                    <div class="latest-news-feature-thumb">
+                        <img src="${fallbackImg}" alt="${(item.media && item.media.alt) || ''}" loading="lazy" decoding="async" onerror="${onError}">
+                    </div>
+                    <div class="latest-news-feature-info">
+                        <h3>${data.title}</h3>
+                        <p><span class="news-category">${data.category}</span> ${data.date}</p>
+                    </div>
+                `;
+                featureStrip.appendChild(card);
             });
         }
         if (window.initLazyVideo) window.initLazyVideo();

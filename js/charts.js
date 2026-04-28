@@ -11,7 +11,11 @@
     }
 
     function getThemeColors() {
+        var isBlue = document.documentElement.classList.contains('blue-theme');
         var isLight = document.documentElement.classList.contains('light-theme');
+        if (isBlue) {
+            return { textColor: '#dce8ff', gridColor: '#29405f', bgColor: '#121c2f' };
+        }
         if (isLight) {
             return { textColor: '#333', gridColor: '#eee', bgColor: '#ffffff' };
         }

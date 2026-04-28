@@ -236,6 +236,22 @@ body.light-theme .share-link-btn:hover {
     color: var(--secondary-text);
 }
 
+.cr-card .image-wrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: var(--bg-card);
+    margin-bottom: 12px;
+}
+
+.cr-card .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 .article-quote-switcher {
     max-width: 1040px;
     margin: 64px auto 0;

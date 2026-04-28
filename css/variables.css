@@ -57,6 +57,25 @@ body.warm-theme {
     --scrollbar-thumb-hover: #6b6560;
 }
 
+:root.blue-theme,
+body.blue-theme {
+    --bg-color: #0b1220;
+    --bg-card: #121c2f;
+    --bg-section: #18253d;
+    --bg-footer: #0b1220;
+    --text-color: #eaf2ff;
+    --secondary-text: #8ca7d6;
+    --border-color: #233554;
+    --border-light: rgba(140, 167, 214, 0.18);
+    --nav-bg: #0b1220;
+    --overlay-bg: rgba(11, 18, 32, 0.35);
+    --pill-bg: rgba(140, 167, 214, 0.09);
+    --pill-hover: rgba(140, 167, 214, 0.16);
+    --scrollbar-thumb: #35507d;
+    --scrollbar-track: #18253d;
+    --scrollbar-thumb-hover: #4b6aa4;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* Scrollbar Styles */

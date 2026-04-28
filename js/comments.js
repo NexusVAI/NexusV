@@ -3,12 +3,9 @@
     'use strict';
 
     function initCommentsUi() {
-        ensureFallbackToggleButton();
         initCommentsToggle();
         initCusdisThemeSync();
         initModalClose();
-        // initRefractionFilter(); // Disabled: Using LiquidGlass React component
-        // initGlassMotion();      // Disabled: Using LiquidGlass React component
     }
 
     document.addEventListener('DOMContentLoaded', initCommentsUi);
@@ -38,40 +35,6 @@
         });
     }
 
-    function ensureFallbackToggleButton() {
-        const existingBtn = document.getElementById('comments-toggle-btn');
-        if (existingBtn) return;
-
-        const mount = document.getElementById('comments-liquid-glass-root');
-        if (!mount) return;
-
-        const wrapper = document.createElement('div');
-        wrapper.style.position = 'fixed';
-        wrapper.style.top = 'calc(100% - 58px)';
-        wrapper.style.left = '50%';
-        wrapper.style.transform = 'translate(-50%, -50%)';
-        wrapper.style.zIndex = '9999';
-        wrapper.style.padding = '12px 20px';
-        wrapper.style.borderRadius = '999px';
-        wrapper.style.background = 'rgba(18,18,18,0.45)';
-        wrapper.style.boxShadow = '0 12px 40px rgba(0,0,0,.25)';
-        wrapper.style.backdropFilter = 'blur(14px) saturate(140%)';
-        wrapper.style.webkitBackdropFilter = 'blur(14px) saturate(140%)';
-
-        const button = document.createElement('button');
-        button.id = 'comments-toggle-btn';
-        button.type = 'button';
-        button.className = 'comments-toggle-btn-core';
-        button.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            <span class="toggle-text">留言 NexusV</span>
-        `;
-
-        wrapper.appendChild(button);
-        mount.appendChild(wrapper);
-    }
 
     function initRefractionFilter() {
         const toggleBtn = document.getElementById('comments-toggle-btn');

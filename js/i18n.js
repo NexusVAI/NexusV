@@ -2,7 +2,7 @@ const translations = {
     'zh': {
         'nav.research': '研究',
         'nav.safety': '安全',
-        'nav.developer': '开发者专区',
+        'nav.developer': 'NexusV开放平台',
         'nav.company': '公司',
         'nav.news': '新闻',
         'nav.contact': '联系我们',
@@ -36,32 +36,30 @@ const translations = {
         'footer.join_us': '加入团队',
         'footer.news_center': '新闻中心',
         'footer.contact_us': '联系我们',
-        'footer.lang': '中文 (中国)',
-        
+        'footer.lang': '中文 中国',
+
         // Menu Items
         'menu.research.index': '意识架构索引',
         'menu.research.deep_nexusv5': '深入了解 NexusV V5',
-        'menu.research.deep_sentienceLS': '深入了解 Sentience-LS',
-        'menu.research.deep_sentience31': '了解 Sentience V3.1',
-        'menu.research.deep_sentienceV4C': '深入了解 Sentience V4 Omni Beta',
+        'menu.research.deep_sentience31': '了解 Cancri 研究报告',
+        'menu.research.deep_sentienceV4C': '深入了解 SentienceV4.1 Omni',
+        'menu.research.deep_sentienceV4C_v4': '深入了解 Sentience V4 Cogito',
         'menu.research.nexusv5': 'TACTFR 5.7.0',
-        'menu.research.sentienceLS': 'Sentience-LS',
-        'menu.research.sentienceV4C': 'Sentience V4 Omni Beta',
-        'menu.research.deep_nexusv4': '深入了解 NexusV V4',
+        'menu.research.sentienceV4C': 'SentienceV4.1 Omni',
+        'menu.research.sentienceV4C_v4': 'Sentience V4 Cogito',
         'menu.research.deep_tactfr5': '深入了解 TACTFR 5.4.0',
         'menu.research.deep_tactfr55': '深入了解 TACTFR 5.5.0',
         'menu.research.deep_tactfr56': '深入了解 TACTFR 5.7.0',
         'menu.research.deep_tactfr60': '深入了解 TACTFR 6.0.0',
         'menu.research.tactfr60': 'TACTFR 6.0.0',
         'menu.research.label': '前沿进展',
-        'menu.research.sentience31': 'Sentience V3.1',
+        'menu.research.sentience31': 'Cancri 研究报告',
         'menu.research.sentience3': 'Sentience V3',
         'menu.research.tactfr5': 'TACTFR V5',
         'menu.research.tactfr55': 'TACTFR 5.5.0',
         'menu.research.tactfr56': 'TACTFR 5.7.0',
         'menu.research.tactfr4': 'TACTFR V4',
-        'menu.research.nexusv4': 'NexusV V4',
-        
+
         'menu.safety.protocol': '使用协议',
         'menu.safety.guidelines': '安全准则',
         'menu.safety.label': '安全与规范',
@@ -73,6 +71,7 @@ const translations = {
 
         // News Section
         'news.latest': '最新动态',
+        'news.latest_research': '最新研究',
         'news.view_more': '查看更多',
 
         // Article Page
@@ -80,7 +79,7 @@ const translations = {
         'article.author': '作者',
         'article.continue_reading': '继续阅读',
         'article.view_all': '查看全部',
-        
+
         // About Page
         'about.category': '公司',
         'about.title': '简介',
@@ -93,7 +92,7 @@ const translations = {
     'en': {
         'nav.research': 'Research',
         'nav.safety': 'Safety',
-        'nav.developer': 'Developers',
+        'nav.developer': 'NexusV Open Platform',
         'nav.company': 'Company',
         'nav.news': 'News',
         'nav.contact': 'Contact',
@@ -127,18 +126,17 @@ const translations = {
         'footer.join_us': 'Careers',
         'footer.news_center': 'Newsroom',
         'footer.contact_us': 'Contact Us',
-        'footer.lang': 'English (US)',
+        'footer.lang': 'English US',
 
         // Menu Items
         'menu.research.index': 'Architecture Index',
         'menu.research.deep_nexusv5': 'Deep Dive: NexusV V5',
-        'menu.research.deep_sentienceLS': 'Deep Dive: Sentience-LS',
-        'menu.research.deep_sentience31': 'Learn About Sentience V3.1',
-        'menu.research.deep_sentienceV4C': 'Deep Dive: Sentience V4 Omni Beta',
+        'menu.research.deep_sentience31': 'Read the Cancri Research Report',
+        'menu.research.deep_sentienceV4C': 'Deep Dive: SentienceV4.1 Omni',
+        'menu.research.deep_sentienceV4C_v4': 'Deep Dive: Sentience V4 Cogito',
         'menu.research.nexusv5': 'TACTFR 5.7.0',
-        'menu.research.sentienceLS': 'Sentience-LS',
-        'menu.research.sentienceV4C': 'Sentience V4 Omni Beta',
-        'menu.research.deep_nexusv4': 'Deep Dive: NexusV V4',
+        'menu.research.sentienceV4C': 'SentienceV4.1 Omni',
+        'menu.research.sentienceV4C_v4': 'Sentience V4 Cogito',
         'menu.research.deep_tactfr5': 'Deep Dive: TACTFR 5.4.0',
         'menu.research.deep_tactfr55': 'Deep Dive: TACTFR 5.5.0',
         'menu.research.deep_tactfr56': 'Deep Dive: TACTFR 5.7.0',
@@ -146,15 +144,14 @@ const translations = {
         'menu.research.deep_tactfr60': 'Deep Dive: TACTFR 6.0.0',
         'menu.research.tactfr60': 'TACTFR 6.0.0',
         'menu.research.label': 'Frontier Progress',
-        'menu.research.sentience31': 'Sentience V3.1',
+        'menu.research.sentience31': 'Cancri Research',
         'menu.research.sentience3': 'Sentience V3',
         'menu.research.tactfr5': 'TACTFR V5',
         'menu.research.tactfr55': 'TACTFR 5.5.0',
         'menu.research.tactfr56': 'TACTFR 5.7.0',
         'menu.research.tactfr57': 'TACTFR 5.7.0',
         'menu.research.tactfr4': 'TACTFR V4',
-        'menu.research.nexusv4': 'NexusV V4',
-        
+
         'menu.safety.protocol': 'Terms of Use',
         'menu.safety.guidelines': 'Safety Guidelines',
         'menu.safety.label': 'Safety & Standards',
@@ -166,6 +163,7 @@ const translations = {
 
         // News Section
         'news.latest': 'Latest Updates',
+        'news.latest_research': 'Latest research',
         'news.view_more': 'View more',
 
         // Article Page
@@ -173,7 +171,7 @@ const translations = {
         'article.author': 'Author',
         'article.continue_reading': 'Continue reading',
         'article.view_all': 'View all',
-        
+
         // About Page
         'about.category': 'Company',
         'about.title': 'About Us',
@@ -199,7 +197,7 @@ function translate(root = document) {
             }
         }
     });
-    
+
     // Translate placeholders
     const placeholderElements = root.querySelectorAll('[data-i18n-placeholder]');
     placeholderElements.forEach(el => {
@@ -217,7 +215,10 @@ function setLanguage(lang) {
     // Update active state of language selector if it exists
     const langToggle = document.getElementById('lang-toggle');
     if (langToggle) {
-        langToggle.textContent = translations[lang]['footer.lang'];
+        const langLabel = langToggle.querySelector('.lang-label');
+        if (langLabel) {
+            langLabel.textContent = translations[lang]['footer.lang'];
+        }
     }
 
     translate();

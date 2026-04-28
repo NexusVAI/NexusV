@@ -75,14 +75,45 @@
 }
 
 .bottom-left a svg {
-    fill: currentColor;
     transition: fill 0.2s;
+    display: block;
+}
+
+.bottom-left a img {
+    display: block;
 }
 
 /* Fix Bilibili icon vertical alignment */
-.bottom-left a .fa-bilibili {
+.bottom-left a .social-icon--bilibili,
+.bottom-left a .social-icon--huggingface {
     position: relative;
-    top: 2px;
+    top: 1px;
+}
+
+.bottom-left a .social-icon--huggingface {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+/* Email copy button styles */
+.bottom-left .email-copy-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--text-color);
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.bottom-left .email-copy-btn:hover {
+    color: var(--secondary-text);
+}
+
+.bottom-left .email-copy-btn svg {
+    display: block;
 }
 
 .bottom-center {
@@ -92,17 +123,42 @@
 .bottom-right {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
 }
 
 .lang-selector {
-    color: var(--secondary-text);
+    appearance: none;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: var(--text-color);
     cursor: pointer;
-    transition: color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 16px 0 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .lang-selector:hover {
     color: var(--text-color);
+    border-color: var(--secondary-text);
+    background: var(--pill-bg);
+}
+
+.lang-icon {
+    display: block;
+    flex-shrink: 0;
+}
+
+.lang-label {
+    display: block;
 }
 
 .theme-toggle {
@@ -119,6 +175,11 @@
 
 .theme-toggle:hover {
     color: var(--text-color);
+}
+
+.theme-toggle svg {
+    display: block;
+    flex-shrink: 0;
 }
 
 .bottom-bar { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 100; }
@@ -154,10 +215,22 @@
     .bottom-left {
         justify-content: center;
     }
+
+    .bottom-right {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
     
     /* Increase bottom bar text size */
-    .bottom-center, .lang-selector {
+    .bottom-center {
         font-size: 14px;
+    }
+
+    .lang-selector {
+        height: 38px;
+        padding: 0 14px 0 12px;
+        font-size: 13px;
     }
 
     .bottom-bar {

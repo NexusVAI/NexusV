@@ -80,6 +80,25 @@ function bindGlobalToggles() {
             if (window.setLanguage) window.setLanguage(current === 'zh' ? 'en' : 'zh');
         });
     }
+
+    const emailCopyBtn = document.getElementById('email-copy-btn');
+    if (emailCopyBtn && emailCopyBtn.dataset.bound !== '1') {
+        emailCopyBtn.dataset.bound = '1';
+        emailCopyBtn.addEventListener('click', async () => {
+            const emails = 'nexusvai@139.com, nexusvai@foxmail.com';
+            try {
+                await navigator.clipboard.writeText(emails);
+                const originalTitle = emailCopyBtn.getAttribute('title') || '复制邮箱';
+                const isZh = localStorage.getItem('lang') !== 'en';
+                emailCopyBtn.setAttribute('title', isZh ? '已复制！' : 'Copied!');
+                setTimeout(() => {
+                    emailCopyBtn.setAttribute('title', originalTitle);
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+            }
+        });
+    }
 }
 
 async function initPageContent() {
@@ -390,6 +409,20 @@ function initLazyVideo() {
         setupVideoEventListeners(video, loader);
         NEXUS_RUNTIME.videoLoaders.set(wrapper, loader);
 
+        if (wrapper.dataset.loadOnPoster === '1' && poster) {
+            const startOnPosterReady = () => {
+                if (wrapper.dataset.posterAutoLoaded === '1') return;
+                wrapper.dataset.posterAutoLoaded = '1';
+                loader.activate(sourceUrl);
+            };
+
+            if (poster.complete && poster.naturalWidth > 0) {
+                requestAnimationFrame(startOnPosterReady);
+            } else {
+                poster.addEventListener('load', startOnPosterReady, { once: true });
+            }
+        }
+
         if (observer) {
             observer.observe(wrapper);
             return;
@@ -431,6 +464,108 @@ function setupPosterErrorHandling(poster) {
 
 window.initLazyVideo = initLazyVideo;
 
+// AI Hero 功能
+const AI_HERO = {
+    placeholders: [
+        "TACTFR 6.0 有哪些新功能？",
+        "Sentience V4.1 什么时候发布？",
+        "如何安装 NexusV 模组？",
+        "NexusV 支持哪些游戏？",
+        "解释 TACTFR 的 AI 驱动 NPC 系统",
+        "Sentience 的实时对话能力如何使用？",
+        "TACTFR 模组的最佳配置是什么？",
+        "如何在游戏中启用 Sentience 功能？"
+    ],
+    currentIndex: 0,
+    intervalId: null,
+
+    init() {
+        const input = document.getElementById('aiInput');
+        const sendBtn = document.getElementById('aiSendBtn');
+        const chips = document.querySelectorAll('.ai-chip');
+
+        if (!input) return;
+
+        // 开始占位文案轮换
+        this.startRotation(input);
+
+        // 发送按钮点击
+        if (sendBtn) {
+            sendBtn.addEventListener('click', () => this.handleSend(input));
+        }
+
+        // 回车发送
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleSend(input);
+            }
+        });
+
+        // 快捷标签点击
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const question = chip.dataset.question;
+                if (question) {
+                    this.jumpToChat(question);
+                }
+            });
+        });
+
+        // 输入时停止轮换
+        input.addEventListener('input', () => {
+            if (input.value) {
+                this.stopRotation();
+                input.placeholder = '';
+            } else {
+                this.startRotation(input);
+            }
+        });
+
+        // 聚焦时停止轮换
+        input.addEventListener('focus', () => this.stopRotation());
+        input.addEventListener('blur', () => {
+            if (!input.value) {
+                this.startRotation(input);
+            }
+        });
+    },
+
+    startRotation(input) {
+        if (this.intervalId) return;
+
+        // 立即设置第一个
+        input.placeholder = this.placeholders[this.currentIndex];
+
+        this.intervalId = setInterval(() => {
+            this.currentIndex = (this.currentIndex + 1) % this.placeholders.length;
+            input.placeholder = this.placeholders[this.currentIndex];
+        }, 3000);
+    },
+
+    stopRotation() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    },
+
+    handleSend(input) {
+        const question = input.value.trim() || input.placeholder;
+        if (question) {
+            this.jumpToChat(question);
+        }
+    },
+
+    jumpToChat(question) {
+        // 编码问题，跳转到 chat AI 页面
+        const encoded = encodeURIComponent(question);
+        window.location.href = `chat%20AI/cancri_chat_ui_v_3.html?q=${encoded}`;
+    }
+};
+
 window.addEventListener('nexus:components-injected', refreshInjectedUi);
 
-whenDocumentReady(bootstrapApp);
+whenDocumentReady(() => {
+    bootstrapApp();
+    AI_HERO.init();
+});

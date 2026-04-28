@@ -1,8 +1,105 @@
 /* Comments Section - NexusV Feedback */
 
+:root {
+    --comments-glass-bg: linear-gradient(135deg, rgba(16, 16, 20, 0.52), rgba(111, 99, 255, 0.18) 52%, rgba(255, 255, 255, 0.08));
+    --comments-glass-border: rgba(255, 255, 255, 0.18);
+    --comments-glass-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+    --comments-glass-backdrop: blur(18px) saturate(170%);
+    --comments-glass-text: #ffffff;
+    --comments-glass-text-shadow: 0 1px 10px rgba(0, 0, 0, 0.34);
+}
+
+body.light-theme {
+    --comments-glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(244, 247, 255, 0.34) 52%, rgba(255, 255, 255, 0.18));
+    --comments-glass-border: rgba(0, 0, 0, 0.08);
+    --comments-glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.62), inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+    --comments-glass-backdrop: blur(18px) saturate(185%);
+    --comments-glass-text: #111318;
+    --comments-glass-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body.warm-theme {
+    --comments-glass-bg: linear-gradient(135deg, rgba(42, 34, 25, 0.58), rgba(116, 88, 54, 0.24) 52%, rgba(245, 240, 230, 0.08));
+    --comments-glass-border: rgba(245, 240, 230, 0.16);
+    --comments-glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+    --comments-glass-backdrop: blur(18px) saturate(165%);
+    --comments-glass-text: #f5f0e6;
+    --comments-glass-text-shadow: 0 1px 10px rgba(0, 0, 0, 0.34);
+}
+
 /* Fixed bottom capsule button */
 .comments-fab {
     position: static;
+}
+
+.comments-glass-shell,
+.comments-glass-fallback {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    z-index: 9999;
+    pointer-events: auto;
+}
+
+.comments-glass-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid var(--comments-glass-border);
+    background: var(--comments-glass-bg);
+    box-shadow: var(--comments-glass-shadow);
+    backdrop-filter: var(--comments-glass-backdrop);
+    -webkit-backdrop-filter: var(--comments-glass-backdrop);
+    overflow: hidden;
+}
+
+.comments-glass-shell .glass {
+    position: relative;
+    border-radius: 999px;
+    border: 1px solid var(--comments-glass-border);
+    background: var(--comments-glass-bg);
+    box-shadow: var(--comments-glass-shadow);
+    backdrop-filter: var(--comments-glass-backdrop);
+    -webkit-backdrop-filter: var(--comments-glass-backdrop);
+    overflow: hidden;
+    isolation: isolate;
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.comments-glass-shell .glass::before,
+.comments-glass-fallback::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.10) 38%, rgba(255, 255, 255, 0) 68%),
+        radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.28), transparent 42%);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.9;
+}
+
+.comments-glass-shell .glass::after,
+.comments-glass-fallback::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02) 38%, rgba(0, 0, 0, 0.06));
+    pointer-events: none;
+}
+
+.comments-glass-shell:hover .glass,
+.comments-glass-fallback:hover {
+    transform: translateY(-1px) scale(1.01);
+}
+
+.comments-glass-shell:active .glass,
+.comments-glass-fallback:active {
+    transform: scale(0.985);
 }
 
 .comments-toggle-btn-core {
@@ -12,9 +109,9 @@
     gap: 10px;
     background: transparent;
     border: 0;
-    color: inherit; /* Inherit from parent (text-white) */
+    color: var(--comments-glass-text) !important;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 650;
     font-family: var(--font-main);
     cursor: pointer;
     padding: 0;
@@ -22,12 +119,15 @@
     z-index: 10;
     width: 100%;
     height: 100%;
+    text-shadow: var(--comments-glass-text-shadow);
+    letter-spacing: -0.01em;
 }
 
 .comments-toggle-btn-core svg {
     width: 18px;
     height: 18px;
     stroke: currentColor;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
 }
 
 .comments-toggle-btn-core:focus {
@@ -203,6 +303,6 @@ body.light-theme .comments-overlay {
 
 /* Ensure the button is visible against the glass */
 .comments-toggle-btn-core {
-    color: white !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    color: var(--comments-glass-text) !important;
+    text-shadow: var(--comments-glass-text-shadow);
 }

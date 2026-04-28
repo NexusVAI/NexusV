@@ -47,6 +47,10 @@
 .warm-theme .chart-item {
     --chart-bg: #2a2a2a;
 }
+.blue-theme .chart-container,
+.blue-theme .chart-item {
+    --chart-bg: #121c2f;
+}
 .chart-modal {
     display: none;
     position: fixed;
@@ -77,6 +81,9 @@
 }
 .warm-theme .chart-modal-content {
     background: #2a2a2a;
+}
+.blue-theme .chart-modal-content {
+    background: #121c2f;
 }
 .chart-modal-close {
     position: absolute;

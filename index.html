@@ -18,6 +18,7 @@
             try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
             if (theme === 'light') document.documentElement.classList.add('light-theme');
             if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+            if (theme === 'blue') document.documentElement.classList.add('blue-theme');
         })();
     </script>
     <link rel="icon" type="image/png" href="Logo/Cancri.png">
@@ -31,23 +32,46 @@
     <link rel="stylesheet" href="css/article.css">
     <link rel="stylesheet" href="css/comments.css">
     <link rel="stylesheet" href="css/wenjuan.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha384-/o6I2CkkWC//PSjvWC/eYN7l3xM3tJm8ZzVkCOfp//W05QcE3mlGskpoHB6XqI+B" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="css/inter-fonts.css">
 </head>
 <body>
     <!-- Shared components injected by components.js -->
 
     <main class="main-container">
+        <!-- AI 对话 Hero 区域 -->
+        <section class="ai-hero" id="hero">
+            <div class="ai-hero-content">
+                <h1 class="ai-hero-title">有什么可以帮你的？</h1>
+                
+                <div class="ai-composer-wrap">
+                    <div class="ai-composer">
+                        <input type="text" class="ai-composer-input" id="aiInput" placeholder="">
+                        <button class="ai-send-btn" id="aiSendBtn" aria-label="发送">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ai-chips">
+                    <button class="ai-chip" data-question="TACTFR 6.0 有哪些新功能？">了解 TACTFR 6.0</button>
+                    <button class="ai-chip" data-question="Sentience V4.1 什么时候发布？">探索 Sentience</button>
+                    <button class="ai-chip" data-question="如何安装 NexusV 模组？">安装指南</button>
+                    <button class="ai-chip" data-question="NexusV 支持哪些游戏？">查看支持</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 原有内容网格（粘性菜单） -->
         <div class="content-grid">
-            
             <!-- 左侧大卡片 (Sticky) -->
             <div class="left-column sticky-container">
-                <a href="article.html?id=tactfr600" class="card-link hero-card" id="hero">
-                    <div class="image-wrapper hero-image lazy-video-wrapper">
-                        <img src="Logo/H1.webp" alt="Video Preview" class="video-poster" onerror="this.onerror=null;this.src='Logo/I2.webp'" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 2;">
-                        <video loop muted playsinline class="hero-video" data-src="Logo/TA1.mp4" data-fallback="Logo/H1.webp" preload="none" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; opacity: 0;">
+                <a href="article.html?id=tactfr600" class="card-link hero-card">
+                    <div class="image-wrapper hero-image lazy-video-wrapper" data-load-on-poster="1">
+                        <img src="Logo/TACTFR6.0.0.png" alt="Video Preview" class="video-poster" onerror="this.onerror=null;this.src='Logo/I2.webp'" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 2;">
+                        <video loop muted playsinline class="hero-video" data-src="Logo/TA1.mp4" data-fallback="Logo/TACTFR6.0.0.png" preload="none" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; opacity: 0;">
                         </video>
-                        <h2 class="hero-overlay-text" data-i18n="hero.overlay" style="z-index: 3;">TACTFR 6.0.0</h2>
                     </div>
                     <div class="card-text">
                         <h3 class="card-title" data-i18n="hero.title">隆重推出 TACTFR 6.0.0 Beta.2 测试版</h3>
@@ -72,6 +96,16 @@
                 <!-- Populated by JS -->
             </div>
         </div>
+
+        <section class="latest-research-section" id="latest-research">
+            <div class="section-header">
+                <h2 class="section-title" data-i18n="news.latest_research">最新研究</h2>
+                <a href="#latest-research" class="view-all-link" data-i18n="news.view_more">查看更多</a>
+            </div>
+            <div class="latest-news-feature-strip" aria-label="最新研究">
+                <!-- Populated by JS -->
+            </div>
+        </section>
     </main>
 
     <!-- CTA 区域 -->

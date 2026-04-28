@@ -4,19 +4,16 @@ var menuConfig = {
         items: [
             { href: 'article.html?id=hero', i18n: 'menu.research.index' },
             { href: 'article.html?id=hero', i18n: 'menu.research.deep_nexusv5' },
-            { href: 'article.html?id=sentienceLS', i18n: 'menu.research.deep_sentienceLS' },
             { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.deep_sentienceV4C' },
-            { href: 'article.html?id=n3', i18n: 'menu.research.deep_nexusv4' },
             { href: 'article.html?id=tactfr600', i18n: 'menu.research.deep_tactfr60' }
         ],
         latest: [
             { href: 'article.html?id=tactfr600', i18n: 'menu.research.tactfr60' },
-            { href: 'article.html?id=sentienceLS', i18n: 'menu.research.sentienceLS' },
             { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.sentienceV4C' },
-            { href: 'article.html?id=news6', i18n: 'menu.research.sentience31' },
+            { href: 'article.html?id=sentienceV4C', i18n: 'menu.research.sentienceV4C_v4' },
+            { href: 'article.html?id=n1', i18n: 'menu.research.sentience31' },
             { href: 'article.html?id=news7', i18n: 'menu.research.sentience3' },
-            { href: 'article.html?id=n4', i18n: 'menu.research.tactfr4' },
-            { href: 'article.html?id=n3', i18n: 'menu.research.nexusv4' }
+            { href: 'article.html?id=n4', i18n: 'menu.research.tactfr4' }
         ]
     },
     safety: {
@@ -31,7 +28,7 @@ var menuConfig = {
 var navMenuConfig = [
     { key: 'research', i18n: 'nav.research', submenu: true },
     { key: 'safety', i18n: 'nav.safety', submenu: true },
-    { i18n: 'nav.developer' },
+    { i18n: 'nav.developer', href: 'API文档网站/index.html' },
     { href: 'about.html', i18n: 'nav.company' },
     { href: 'index.html#latest-news', i18n: 'nav.news' },
     { href: 'about.html', i18n: 'nav.contact' }
@@ -70,11 +67,28 @@ function generateMobileMenuHTML() {
             html += '<div class="mobile-submenu">';
 
             var config = menuConfig[navItem.key];
-            var allItems = (config.items || []).concat(config.latest || []);
+            var mainItems = config.items || [];
+            var mainHrefs = {};
 
-            allItems.forEach(function(link, linkIdx) {
+            mainItems.forEach(function(link) {
+                mainHrefs[link.href] = true;
+            });
+
+            mainItems.forEach(function(link, linkIdx) {
                 html += '<a href="' + link.href + '" style="transition-delay: ' + (linkIdx * 50) + 'ms" data-i18n="' + link.i18n + '"></a>';
             });
+
+            var latestItems = (config.latest || []).filter(function(link) {
+                return !mainHrefs[link.href];
+            });
+
+            if (latestItems.length) {
+                html += '<div class="mobile-section-label" data-i18n="' + config.label + '"></div>';
+
+                latestItems.forEach(function(link, linkIdx) {
+                    html += '<a href="' + link.href + '" style="transition-delay: ' + ((mainItems.length + linkIdx) * 50) + 'ms" data-i18n="' + link.i18n + '"></a>';
+                });
+            }
 
             html += '</div>';
         } else if (navItem.href) {

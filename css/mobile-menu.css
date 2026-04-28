@@ -126,8 +126,19 @@
 }
 
 .mobile-drawer .mobile-submenu.open {
-    max-height: 400px;
+    max-height: 600px;
     padding: 8px 0 16px 0;
+}
+
+.mobile-drawer .mobile-section-label {
+    color: var(--secondary-text);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 6px 0 2px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
 }
 
 .mobile-drawer .mobile-submenu a {

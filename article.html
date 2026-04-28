@@ -18,6 +18,7 @@
             try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
             if (theme === 'light') document.documentElement.classList.add('light-theme');
             if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+            if (theme === 'blue') document.documentElement.classList.add('blue-theme');
         })();
     </script>
     <link rel="icon" type="image/png" href="Logo/Cancri.png">
@@ -31,7 +32,6 @@
     <link rel="stylesheet" href="css/article.css">
     <link rel="stylesheet" href="css/charts.css">
     <link rel="stylesheet" href="css/comments.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha384-/o6I2CkkWC//PSjvWC/eYN7l3xM3tJm8ZzVkCOfp//W05QcE3mlGskpoHB6XqI+B" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="css/inter-fonts.css">
 </head>
 <body>

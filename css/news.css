@@ -9,18 +9,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 40px;
+    margin-bottom: 24px;
 }
 
 .section-title {
-    font-size: 28px;
-    font-weight: 500;
+    font-size: 17px;
+    font-weight: 600;
     color: var(--text-color);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
 }
 
 .view-all-link {
-    font-size: 15px;
+    font-size: 12px;
+    font-weight: 500;
     color: var(--text-color);
     text-decoration: none;
     border-bottom: 1px solid var(--border-light);
@@ -32,24 +33,31 @@
     border-color: var(--text-color);
 }
 
+.latest-research-section {
+    margin-top: 80px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border-color);
+}
+
 .news-grid-2-col {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 32px 48px;
 }
 
 .news-item-row {
     display: flex;
-    align-items: flex-start; /* Changed from center to accommodate longer titles */
+    align-items: flex-start;
     gap: 24px;
     text-decoration: none;
     padding: 16px 0;
     border-radius: 8px;
-    transition: background-color 0.2s ease;
+    transition: opacity 0.2s ease;
 }
 
 .news-item-row:hover {
-    background-color: transparent; /* OpenAI doesn't usually have hover bg on these lists, but keeping text hover effect is better */
+    background-color: transparent; /* OpenAI-style rows stay clean without a hover block */
+    opacity: 0.92;
 }
 
 /* Hover effect on title */
@@ -83,7 +91,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    height: 140px; /* Match thumbnail height to allow vertical centering of content block */
+    height: 140px;
 }
 
 .news-info h3 {
@@ -91,11 +99,10 @@
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: 12px;
-    line-height: 1.4;
+    line-height: 1.35;
     letter-spacing: -0.01em;
-    /* Allow multi-line */
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -114,13 +121,80 @@
     margin-right: 8px;
 }
 
+.latest-news-feature-strip {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.latest-news-feature-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.latest-news-feature-thumb {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+.latest-news-feature-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.latest-news-feature-card:hover .latest-news-feature-thumb img {
+    transform: scale(1.04);
+}
+
+.latest-news-feature-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.latest-news-feature-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.latest-news-feature-info p {
+    font-size: 12px;
+    color: var(--secondary-text);
+    font-weight: 400;
+    line-height: 1.3;
+    margin: 0;
+}
+
 @media (max-width: 768px) {
     .latest-news-section {
         margin-top: 60px;
     }
 
+    .latest-research-section {
+        margin-top: 60px;
+        padding-top: 32px;
+    }
+
     .section-title {
-        font-size: 24px;
+        font-size: 16px;
     }
 
     .news-grid-2-col {
@@ -134,12 +208,33 @@
     }
     
     .news-info {
-        height: auto; /* Allow auto height on mobile */
-        min-height: 100px; /* Ensure at least as tall as image */
+        height: 100px;
     }
 
     .news-info h3 {
         font-size: 16px;
         margin-bottom: 8px;
+    }
+
+    .news-info p {
+        font-size: 13px;
+    }
+
+    .latest-news-feature-strip {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        margin-top: 32px;
+    }
+
+    .latest-news-feature-thumb {
+        aspect-ratio: 16 / 10;
+    }
+
+    .latest-news-feature-info h3 {
+        font-size: 15px;
+    }
+
+    .latest-news-feature-info p {
+        font-size: 11px;
     }
 }
