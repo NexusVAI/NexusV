@@ -1,0 +1,3836 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cancri UI V3</title>
+  <style>
+    :root {
+      --radius-xl: 22px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.26);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.16);
+      --transition: 180ms ease;
+      --sidebar-w: 238px;
+      --rail-w: 48px;
+      --header-h: 54px;
+      --accent: #10a37f;
+      --accent-soft: rgba(16, 163, 127, 0.12);
+      --danger: #ff4d4f;
+    }
+
+    html[data-theme="dark"] {
+      --bg: #000000;
+      --bg-2: #050505;
+      --bg-3: #0b0b0b;
+      --panel: #111111;
+      --panel-2: #151515;
+      --panel-3: #1b1b1b;
+      --panel-4: #0d0d0d;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-2: rgba(255, 255, 255, 0.12);
+      --hover: rgba(255, 255, 255, 0.05);
+      --hover-strong: rgba(255, 255, 255, 0.09);
+      --text: rgba(255, 255, 255, 0.96);
+      --text-soft: rgba(255, 255, 255, 0.74);
+      --text-dim: rgba(255, 255, 255, 0.5);
+      --chip: rgba(255, 255, 255, 0.02);
+      --input: #101010;
+      --voice: #f3f3f3;
+      --voice-text: #111111;
+      --scrim: rgba(0, 0, 0, 0.72);
+      --sidebar-bg: linear-gradient(180deg, #000000 0%, #050505 100%);
+      --main-bg: linear-gradient(180deg, #050505 0%, #000000 100%);
+      --main-glow: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 42%);
+      --input-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    html[data-theme="light"] {
+      --bg: #ffffff;
+      --bg-2: #fbfbfb;
+      --bg-3: #f4f4f4;
+      --panel: #ffffff;
+      --panel-2: #f8f8f8;
+      --panel-3: #f1f1f1;
+      --panel-4: #ffffff;
+      --line: rgba(0, 0, 0, 0.08);
+      --line-2: rgba(0, 0, 0, 0.12);
+      --hover: rgba(0, 0, 0, 0.04);
+      --hover-strong: rgba(0, 0, 0, 0.08);
+      --text: rgba(0, 0, 0, 0.92);
+      --text-soft: rgba(0, 0, 0, 0.62);
+      --text-dim: rgba(0, 0, 0, 0.42);
+      --chip: rgba(0, 0, 0, 0.02);
+      --input: #ffffff;
+      --voice: #000000;
+      --voice-text: #ffffff;
+      --scrim: rgba(0, 0, 0, 0.28);
+      --sidebar-bg: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+      --main-bg: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+      --main-glow: radial-gradient(circle at 50% 42%, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0) 42%);
+      --input-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    svg { display: block; }
+
+    .hidden { display: none !important; }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      background: var(--main-glow), var(--main-bg);
+    }
+
+    .sidebar {
+      display: none;
+    }
+
+    .sidebar.collapsed { width: var(--rail-w); }
+
+    .sidebar-topbar {
+      height: var(--header-h);
+      padding: 8px 8px 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsed .sidebar-topbar {
+      padding-left: 12px;
+      padding-right: 6px;
+    }
+
+    .brand-mark, .sidebar-toggle, .icon-btn, .input-icon, .plus-btn, .circle-btn, .ghost-chip, .nav-row, .account-strip, .popover-item, .settings-nav-item, .grid-card {
+      transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition), transform var(--transition);
+    }
+
+    .brand-mark, .sidebar-toggle, .icon-btn, .plus-btn, .input-icon, .circle-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+    }
+
+    .brand-mark {
+      width: 20px;
+      height: 20px;
+      opacity: .98;
+    }
+
+    .sidebar-toggle {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+    }
+
+    .sidebar-toggle:hover,
+    .icon-btn:hover,
+    .nav-row:hover,
+    .ghost-chip:hover,
+    .popover-item:hover,
+    .account-strip:hover,
+    .settings-nav-item:hover,
+    .plus-btn:hover,
+    .input-icon:hover,
+    .circle-btn:hover,
+    .list-row:hover,
+    .preview-card:hover,
+    .grid-card:hover {
+      background: var(--hover);
+    }
+
+    .sidebar-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 2px 8px 8px;
+    }
+
+    .nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-row {
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      white-space: nowrap;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 650;
+      user-select: none;
+      color: var(--text);
+    }
+
+    .nav-row.active { background: var(--hover-strong); }
+    .nav-row svg { flex-shrink: 0; }
+
+    .sidebar.collapsed .nav-row {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .sidebar.collapsed .sidebar-label,
+    .sidebar.collapsed .section-title,
+    .sidebar.collapsed .recent-wrap,
+    .sidebar.collapsed .account-meta,
+    .sidebar.collapsed .upgrade-btn,
+    .sidebar.collapsed .account-arrow {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .section-title {
+      margin: 18px 8px 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .recent-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .recent-wrap::-webkit-scrollbar,
+    .settings-scroll::-webkit-scrollbar,
+    .images-scroll::-webkit-scrollbar { width: 8px; }
+    .recent-wrap::-webkit-scrollbar-thumb,
+    .settings-scroll::-webkit-scrollbar-thumb,
+    .images-scroll::-webkit-scrollbar-thumb {
+      background: var(--line-2);
+      border-radius: 999px;
+    }
+
+    .recent-item {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+
+    .sidebar-footer {
+      padding: 8px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.04) 100%);
+      flex-shrink: 0;
+    }
+
+    .account-strip {
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px;
+      cursor: pointer;
+    }
+
+    .avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      color: white;
+      background: linear-gradient(135deg, #10a37f, #0d8a6a);
+      flex-shrink: 0;
+    }
+
+    .account-meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .account-name {
+      font-size: 14px;
+      line-height: 1.1;
+      font-weight: 650;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-plan {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .upgrade-btn {
+      height: 32px;
+      min-width: 54px;
+      border-radius: 999px;
+      border: 1px solid var(--line-2);
+      background: var(--panel-4);
+      padding: 0 14px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--text);
+    }
+
+    .account-arrow { color: var(--text-soft); }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      width: 100%;
+    }
+
+    .main-header {
+      height: var(--header-h);
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      padding: 14px 24px 0 24px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand-title {
+      justify-self: start;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      user-select: none;
+    }
+
+    .top-pill {
+      display: none;
+    }
+
+    .top-pill:hover {
+      background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+    }
+
+    .header-actions {
+      display: none;
+    }
+
+    .icon-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      padding: 0;
+    }
+
+    .view {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .view.active { display: flex; }
+
+    .home-center {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 24px 48px;
+      width: 100%;
+      transform: none;
+    }
+
+    .hero {
+      margin: 0 0 32px;
+      font-size: clamp(42px, 5vw, 58px);
+      line-height: 1.12;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      text-align: center;
+      max-width: 920px;
+    }
+
+    .composer-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .composer-halo {
+      position: absolute;
+      inset: -18px -38px -30px;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.14), rgba(0,0,0,0));
+      filter: blur(8px);
+      pointer-events: none;
+    }
+
+    .composer {
+      width: min(920px, calc(100vw - 48px));
+      max-width: 920px;
+      height: 72px;
+      border-radius: 36px;
+      background: var(--input);
+      border: 1.5px solid var(--line-2);
+      box-shadow: var(--input-shadow);
+      display: flex;
+      align-items: center;
+      padding: 0 16px 0 22px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .composer:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 62%, var(--line-2));
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .plus-btn, .input-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .voice-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: none;
+      background: var(--voice);
+      color: var(--voice-text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      margin-left: 10px;
+      flex-shrink: 0;
+      box-shadow: 0 12px 30px rgba(16, 163, 127, 0.30);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .composer-input {
+      flex: 1;
+      height: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      padding: 0 14px 0 14px;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .composer-input::placeholder { color: var(--text-dim); }
+
+    .composer-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .composer-right .input-icon,
+    .composer-right .voice-btn {
+      display: none;
+    }
+
+    .plus-btn {
+      display: none;
+    }
+
+    .chip-row {
+      display: none;
+    }
+
+    .ghost-chip {
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid var(--line-2);
+      background: var(--chip);
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: var(--text-soft);
+      font-size: 14px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .footer-note {
+      display: none;
+    }
+
+    .chat-messages {
+      flex: 0 0 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 0 40px;
+      display: none;
+      scroll-behavior: smooth;
+    }
+
+    .chat-messages.active {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 28px 24px 16px;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: var(--line-2);
+      border-radius: 999px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #homeView.chatting .home-center {
+      flex: 0 0 auto;
+      height: auto;
+      transform: none;
+      padding: 0 24px 22px;
+      justify-content: flex-start;
+    }
+
+    #homeView.chatting .hero,
+    #homeView.chatting .chip-row {
+      display: none;
+    }
+
+    #homeView.chatting .footer-note {
+      display: none;
+    }
+
+    #homeView.chatting .composer-wrap {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    #homeView.chatting .composer {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .message {
+      width: min(100%, 920px);
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+      justify-content: flex-start;
+    }
+
+    .message.assistant {
+      flex-direction: row;
+      justify-content: flex-start;
+    }
+
+    .message-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .message.user .message-avatar {
+      background: var(--accent);
+      color: white;
+    }
+
+    .message.assistant .message-avatar {
+      background: var(--panel-2);
+      color: var(--text);
+    }
+
+    .message-content {
+      max-width: min(860px, 85%);
+      min-width: 0;
+      max-height: min(72vh, 760px);
+      padding: 20px 24px;
+      border-radius: 24px;
+      border: 1.5px solid var(--line-2);
+      background: var(--panel);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: auto;
+      word-break: break-word;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .message.user .message-content {
+      background: var(--accent);
+      color: white;
+      border-color: transparent;
+      border-bottom-right-radius: 10px;
+    }
+
+    .message.assistant .message-content {
+      background: var(--panel);
+      color: var(--text);
+      border-bottom-left-radius: 10px;
+    }
+
+    .think-block {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+    }
+
+    .think-block[hidden] {
+      display: none;
+    }
+
+    .think-block > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--text-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      user-select: none;
+    }
+
+    .think-block > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .think-block[open] > summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .think-body,
+    .answer-body {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .think-body {
+      max-height: 220px;
+      padding: 0 12px 12px;
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .answer-body {
+      color: var(--text);
+    }
+
+    .typing-indicator {
+      color: var(--text-dim);
+    }
+
+    .tool-calls-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tool-calls-container:empty {
+      display: none;
+    }
+
+    .tool-call-block {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    .tool-call-header {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text-soft);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .tool-call-header:hover {
+      background: var(--hover);
+    }
+
+    .tool-call-header svg {
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    .tool-call-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tool-call-status {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .tool-call-status.done {
+      color: var(--accent);
+    }
+
+    .tool-call-result {
+      display: none;
+      border-top: 1px solid var(--line);
+      padding: 8px 12px;
+      max-height: 180px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-soft);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .tool-call-block.expanded .tool-call-result {
+      display: block;
+    }
+
+    @keyframes tool-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .tool-call-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--line-2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: tool-spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .md-content {
+      line-height: 1.7;
+      word-break: break-word;
+    }
+
+    .md-content p {
+      margin: 0 0 0.85em;
+    }
+
+    .md-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .md-content h1,
+    .md-content h2,
+    .md-content h3,
+    .md-content h4,
+    .md-content h5,
+    .md-content h6 {
+      margin: 0 0 0.65em;
+      line-height: 1.35;
+      font-weight: 750;
+    }
+
+    .md-content ul,
+    .md-content ol {
+      margin: 0.55em 0 0.75em 1.2em;
+      padding: 0;
+    }
+
+    .md-content li + li {
+      margin-top: 0.35em;
+    }
+
+    .md-content blockquote {
+      margin: 0.65em 0;
+      padding: 0.15em 0 0.15em 12px;
+      border-left: 3px solid var(--line-2);
+      color: var(--text-soft);
+    }
+
+    .md-content pre {
+      margin: 0.75em 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--panel-2);
+      overflow: auto;
+      border: 1px solid var(--line);
+    }
+
+    .md-content code {
+      padding: 0.16em 0.36em;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--panel-3) 78%, transparent);
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    .md-content pre code {
+      color: var(--text);
+      background: transparent;
+    }
+
+    .md-content pre code {
+      padding: 0;
+      background: transparent;
+      display: block;
+    }
+
+    .md-content a {
+      color: color-mix(in srgb, var(--accent) 78%, white);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .home-center {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transform: translateY(-36px);
+    }
+
+    .home-center.hidden {
+      display: none;
+    }
+
+    .images-page {
+      display: none;
+    }
+
+    .images-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .images-inner {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding-top: 10px;
+    }
+
+    .section-head {
+      font-size: 18px;
+      font-weight: 650;
+      color: var(--text);
+      margin: 26px 0 14px;
+    }
+
+    .images-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 6px 0 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .image-search {
+      width: 100%;
+      height: 54px;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: var(--input);
+      box-shadow: var(--input-shadow);
+      display: flex;
+      align-items: center;
+      padding: 0 12px 0 14px;
+    }
+
+    .image-search input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 15px;
+      padding: 0 12px;
+    }
+
+    .image-search input::placeholder { color: var(--text-dim); }
+
+    .images-status {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .generated-gallery {
+      margin-top: 10px;
+    }
+
+    .circle-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      padding: 0;
+    }
+
+    .style-carousel {
+      display: flex;
+      gap: 12px;
+      overflow: hidden;
+      align-items: flex-start;
+    }
+
+    .preview-card {
+      width: 132px;
+      height: 164px;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.24));
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .preview-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--card-bg, linear-gradient(140deg, #505050, #2b2b2b));
+    }
+
+    .preview-card span {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 1;
+      font-size: 13px;
+      font-weight: 650;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0,0,0,.32);
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 2px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .grid-card {
+      aspect-ratio: 1 / 1;
+      background: var(--panel-3);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .grid-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .grid-card .placeholder-box {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(0,0,0,.06));
+    }
+
+    .scrim {
+      display: none;
+    }
+
+    .scrim.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .popover {
+      display: none !important;
+    }
+
+    .popover.open { display: block; }
+
+    .popover-inner { padding: 10px 8px; }
+    .popover-sep {
+      height: 1px;
+      margin: 8px 6px;
+      background: var(--line-2);
+    }
+
+    .popover-item {
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--text);
+      user-select: none;
+    }
+
+    .grow { flex: 1; }
+
+    .plus-popover { left: 0; top: 58px; }
+    .more-popover { left: calc(var(--sidebar-w) - 20px); top: 182px; }
+    .sidebar.collapsed .more-popover { left: 54px; }
+    .account-popover { left: 8px; bottom: 64px; width: 226px; }
+
+    .modal {
+      display: none !important;
+    }
+
+    .modal.open {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .modal.small { width: min(526px, calc(100vw - 48px)); }
+    .modal.medium { width: min(468px, calc(100vw - 48px)); }
+    .modal.large { width: min(820px, calc(100vw - 48px)); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid transparent;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-close, .plain-icon {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+    }
+
+    .modal-close:hover, .plain-icon:hover { background: var(--hover); }
+
+    .modal-body { padding: 0 16px 16px; }
+
+    .temp-card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 4px 0 6px;
+    }
+
+    .temp-item {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .temp-item h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 760;
+      color: var(--text);
+    }
+
+    .temp-item p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 14px;
+    }
+
+    .primary-btn, .secondary-btn, .muted-btn {
+      height: 34px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line-2);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .primary-btn {
+      background: var(--text);
+      color: var(--bg);
+      border-color: transparent;
+    }
+
+    .secondary-btn {
+      background: transparent;
+      color: var(--text);
+    }
+
+    .muted-btn {
+      background: var(--panel-3);
+      color: var(--text-dim);
+    }
+
+    .form-group {
+      margin-top: 10px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--text);
+    }
+
+    .form-input {
+      width: 100%;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--line-2);
+      background: transparent;
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--line-2));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .hint-box {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 10px;
+      padding: 10px 12px;
+      background: color-mix(in srgb, var(--panel-3) 88%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-top: 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 154px 1fr;
+      min-height: 540px;
+    }
+
+    .settings-nav {
+      border-right: 1px solid var(--line);
+      padding: 8px 10px 12px 0;
+    }
+
+    .settings-nav-item {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 0 10px;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      color: var(--text);
+      margin: 2px 6px;
+    }
+
+    .settings-nav-item.active { background: var(--hover-strong); }
+
+    .settings-content {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .settings-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 6px 2px 16px 18px;
+    }
+
+    .settings-panel { display: none; }
+    .settings-panel.active { display: block; }
+
+    .settings-heading {
+      font-size: 16px;
+      font-weight: 760;
+      margin: 0 0 14px;
+      color: var(--text);
+    }
+
+    .mfa-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel-4) 65%, transparent);
+      padding: 14px;
+      margin-bottom: 8px;
+    }
+
+    .mfa-title {
+      font-size: 15px;
+      font-weight: 760;
+      margin: 0 0 4px;
+    }
+
+    .mfa-text {
+      margin: 0 0 12px;
+      color: var(--text-soft);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .list-row {
+      height: 56px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .list-row.with-note {
+      height: auto;
+      padding: 14px 0;
+      align-items: start;
+    }
+
+    .list-label {
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--text);
+    }
+
+    .list-sub {
+      margin-top: 6px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text-soft);
+      max-width: 520px;
+    }
+
+    .list-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--text-dim);
+      display: inline-block;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: var(--hover);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .center-overlay-note {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .token-expiry-note {
+      width: 100%;
+      max-width: 920px;
+      margin: 14px auto 0;
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: normal;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      opacity: 0.85;
+      text-align: center;
+      line-height: 1.35;
+      padding: 0 12px;
+    }
+
+    .token-expiry-note .token-warning {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .token-expiry-note[data-expired="true"] .token-warning {
+      color: var(--danger);
+    }
+
+    .token-expiry-note .token-dates {
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    .overlay-page {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.02);
+      z-index: 8;
+    }
+
+    .overlay-page.active { display: flex; }
+
+    .floating-title {
+      position: absolute;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .muted-center {
+      position: absolute;
+      top: 41%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 14px;
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 14px;
+      box-shadow: var(--shadow-md);
+      font-size: 14px;
+      font-weight: 650;
+      z-index: 90;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity var(--transition), transform var(--transition);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .devtools-shield {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--text);
+    }
+
+    .devtools-shield.show {
+      display: flex;
+    }
+
+    .devtools-card {
+      width: min(560px, calc(100vw - 48px));
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(247,247,247,.98));
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+      padding: 28px;
+    }
+
+    .devtools-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.06);
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .devtools-title {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .devtools-text {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text-soft);
+    }
+
+    .devtools-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    @media (max-width: 1200px) {
+      .composer { max-width: calc(100vw - 32px); }
+      .image-grid { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+    }
+
+    @media (max-width: 900px) {
+      .settings-layout { grid-template-columns: 1fr; }
+      .settings-nav { border-right: none; border-bottom: 1px solid var(--line); display: flex; overflow: auto; padding-right: 8px; }
+      .settings-nav-item { white-space: nowrap; }
+      .image-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .main-header { grid-template-columns: 1fr; gap: 10px; }
+    }
+
+    .sidebar,
+    .chip-row,
+    .footer-note,
+    .header-actions,
+    .top-pill,
+    .popover,
+    .modal,
+    .scrim,
+    #imagesView {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-topbar">
+        <button class="brand-mark" id="brandHomeBtn" aria-label="回到首页">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3.8a4.2 4.2 0 0 1 4.1 5.1 4 4 0 0 1 4.7 5.1 4.2 4.2 0 0 1-1.5 8H9.2a4.2 4.2 0 0 1-3.6-6.3 4.1 4.1 0 0 1 2.1-7.8A4.2 4.2 0 0 1 12 3.8Z"/>
+            <path d="M8.9 8.1 15.3 19M7.5 13H20M15.1 8 8.7 19"/>
+          </svg>
+        </button>
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="切换侧边栏">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="4.5" width="16" height="15" rx="3"></rect>
+            <path d="M10 4.5v15"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-body">
+        <div class="nav-group">
+          <div class="nav-row active" data-view-target="home">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
+            <span class="sidebar-label">新聊天</span>
+          </div>
+          <div class="nav-row" id="searchChatsBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-3.6-3.6"></path></svg>
+            <span class="sidebar-label">搜索聊天</span>
+          </div>
+          <div class="nav-row" id="projectBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z"></path></svg>
+            <span class="sidebar-label">项目</span>
+          </div>
+          <div class="nav-row" id="codexBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9a8.97 8.97 0 0 1-7.44-3.95L3 21l1.14-3.3A8.96 8.96 0 0 1 3 12c0-4.97 4.03-9 9-9Z"></path><path d="M8.5 12h7"></path></svg>
+            <span class="sidebar-label">Codex</span>
+          </div>
+          <div class="nav-row" id="moreEntry">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg>
+            <span class="sidebar-label">更多</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="account-strip" id="accountTrigger">
+          <div class="avatar">MR</div>
+          <div class="account-meta">
+            <div class="account-name">Mr.Jony</div>
+            <div class="account-plan">免费版</div>
+          </div>
+          <button class="upgrade-btn">升级</button>
+          <svg class="account-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+
+      <div class="popover more-popover" id="morePopover">
+        <div class="popover-inner">
+          <div class="popover-item" id="openImagesFromMore">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+            <span>图片</span>
+          </div>
+          <div class="popover-item" id="openResearchToast">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.1 4.6 5 .6-3.7 3.5 1 5-4.4-2.5-4.4 2.5 1-5L4.9 8.2l5-.6L12 3Z"></path></svg>
+            <span>深度研究</span>
+          </div>
+          <div class="popover-item" id="openAppsToast">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1.4"></rect><rect x="14" y="4" width="6" height="6" rx="1.4"></rect><rect x="4" y="14" width="6" height="6" rx="1.4"></rect><rect x="14" y="14" width="6" height="6" rx="1.4"></rect></svg>
+            <span>应用</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="popover account-popover" id="accountPopover">
+        <div class="popover-inner">
+          <div class="popover-item">
+            <div class="avatar" style="width:28px;height:28px;">MR</div>
+            <div style="display:flex;flex-direction:column;line-height:1.15;">
+              <span style="font-size:14px;font-weight:700;">Mr.Jony</span>
+              <span style="font-size:12px;color:var(--text-soft);margin-top:3px;">免费版</span>
+            </div>
+            <span class="grow"></span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+          </div>
+          <div class="popover-sep"></div>
+          <div class="popover-item" id="themeShortcutBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="M2 12h4"></path><path d="m6.3 17.7 2.8-2.8"></path><path d="M12 18v4"></path><path d="m17.7 17.7-2.8-2.8"></path><path d="M18 12h4"></path><path d="m17.7 6.3-2.8 2.8"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
+            <span>个性化</span>
+          </div>
+          <div class="popover-item" id="profileToastBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path><path d="M19 21a7 7 0 0 0-14 0"></path></svg>
+            <span>个人资料</span>
+          </div>
+          <div class="popover-item" id="settingsBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"></path></svg>
+            <span>设置</span>
+          </div>
+          <div class="popover-sep"></div>
+          <div class="popover-item" id="helpToastBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M9.1 9a3 3 0 1 1 5.7 1.3c-.5 1.1-1.8 1.5-2.3 2.7"></path><path d="M12 17h.01"></path></svg>
+            <span>帮助</span>
+            <span class="grow"></span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+          </div>
+          <div class="popover-item" id="logoutToastBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="m10 17 5-5-5-5"></path><path d="M15 12H3"></path></svg>
+            <span>退出登录</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="main-header">
+        <div class="brand-title">
+          <span>Cancri</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+        </div>
+        <button class="top-pill" id="upgradeBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.1 8l5.9.5-4.5 3.7 1.4 5.8L12 15.1 7.1 18l1.4-5.8L4 8.5 9.9 8 12 2.5Z"></path></svg>
+          <span>获取 Plus</span>
+        </button>
+        <div class="header-actions">
+          <button class="icon-btn" id="teamToastBtn" aria-label="添加成员">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="3"></circle><path d="M19 8v6"></path><path d="M16 11h6"></path></svg>
+          </button>
+          <button class="icon-btn" id="tempChatBtn" aria-label="临时聊天">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.6" stroke-dasharray="2 2"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <section class="view active" id="homeView">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="home-center" id="homeCenter">
+          <h1 class="hero" id="heroTitle">有什么可以帮忙的？</h1>
+            <div class="composer-wrap">
+              <div class="composer-halo"></div>
+              <div class="composer">
+                <button class="plus-btn" id="plusTrigger" aria-label="更多操作">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
+              </button>
+              <input class="composer-input" id="homeInput" placeholder="有问题，尽管问" />
+              <div class="composer-right">
+                <button class="input-icon" id="micToastBtn" aria-label="语音输入">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="9" y="3.2" width="6" height="10.8" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v2.6"></path></svg>
+                </button>
+                <button class="voice-btn" id="voiceToastBtn" aria-label="语音模式">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 12h1"></path><path d="M8 9v6"></path><path d="M12 7v10"></path><path d="M16 9v6"></path><path d="M19.5 12h1"></path></svg>
+                </button>
+                <button class="send-btn" id="sendChatBtn" aria-label="发送消息" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </button>
+              </div>
+            </div>
+            <div class="token-expiry-note" id="tokenExpiryNote" aria-live="polite">
+              <div>
+                <span class="token-warning">令牌一个月后自动过期</span>
+                <span id="tokenRemainingText">· 剩余时间计算中</span>
+              </div>
+              <div class="token-dates">起始日 2026-04-28 22:52:10 · 结束日 2026-05-28 22:52:10</div>
+            </div>
+            <div class="chip-row">
+              <button class="ghost-chip" id="imageChipBtn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+                <span>生成图片</span>
+              </button>
+              <button class="ghost-chip" id="writeChipBtn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path></svg>
+                <span>撰写或编辑</span>
+              </button>
+              <button class="ghost-chip" id="searchChipBtn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3a15.3 15.3 0 0 1 0 18"></path><path d="M12 3a15.3 15.3 0 0 0 0 18"></path></svg>
+                <span>查找资料</span>
+              </button>
+            </div>
+
+            <div class="popover plus-popover" id="plusPopover">
+              <div class="popover-inner">
+                <div class="popover-item" id="uploadToastBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"></path></svg>
+                  <span>添加照片和文件</span>
+                </div>
+                <div class="popover-item" id="openImagesFromPlus">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+                  <span>创建图片</span>
+                </div>
+                <div class="popover-item" id="thinkingToastBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.5 14 8l5.7.5-4.3 3.5 1.3 5.6L12 14.9 7.3 17.6l1.3-5.6L4.3 8.5 10 8 12 2.5Z"></path></svg>
+                  <span>思考一下</span>
+                </div>
+                <div class="popover-item" id="researchToastBtn2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.1 4.6 5 .6-3.7 3.5 1 5-4.4-2.5-4.4 2.5 1-5L4.9 8.2l5-.6L12 3Z"></path></svg>
+                  <span>深度研究</span>
+                </div>
+                <div class="popover-item" id="plusMoreBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg>
+                  <span>更多</span>
+                  <span class="grow"></span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+                </div>
+                <div class="popover-sep"></div>
+                <div class="popover-item" id="createProjectFromPlus">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z"></path></svg>
+                  <span>项目</span>
+                  <span class="grow"></span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-note">Cancri是会犯错的。Cancri并不会泄露你的隐私。</div>
+      </section>
+
+      <section class="view" id="imagesView">
+        <div class="images-page">
+          <div class="images-scroll">
+            <div class="images-inner">
+              <div class="images-title">图片</div>
+              <div class="image-search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+                <input id="imagePromptInput" placeholder="描述新图片" />
+                <button class="input-icon" id="imageMicToastBtn" aria-label="图片语音输入">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="9" y="3.2" width="6" height="10.8" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v2.6"></path></svg>
+                </button>
+                <button class="circle-btn" id="sendImagePromptBtn" aria-label="提交图片提示词">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 5 0 14"></path><path d="m5 12 7-7 7 7"></path></svg>
+                </button>
+              </div>
+
+              <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:24px;">
+                <span>AI 生成结果</span>
+                <span class="images-status" id="imageGenerationStatus">等待输入提示词</span>
+              </div>
+              <div class="image-grid generated-gallery" id="generatedImageGrid">
+                <div class="grid-card" id="generatedImageEmpty">
+                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;color:var(--text-dim);font-size:13px;line-height:1.5;">
+                    生成后的图片会显示在这里
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span>在图像上试用风格效果</span>
+                <div style="display:flex;gap:8px;">
+                  <button class="plain-icon" id="stylePrevBtn" aria-label="上一组风格"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"></path></svg></button>
+                  <button class="plain-icon" id="styleNextBtn" aria-label="下一组风格"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg></button>
+                </div>
+              </div>
+
+              <div class="style-carousel" id="styleCarousel">
+                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#4f4f4f,#252525);"><span>图形绘意照</span></div>
+                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#f59e0b,#7c2d12);"><span>暖调海报</span></div>
+                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#5b5b5b,#2e2e2e);"><span>夜拍闪光</span></div>
+                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#10a37f,#083344);"><span>动漫风</span></div>
+                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#ef4444,#7f1d1d);"><span>漫画</span></div>
+              </div>
+
+              <div class="section-head" style="margin-top:40px;">我的图片</div>
+              <div class="image-grid">
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+                <div class="grid-card"><img alt="sample" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23040714'/%3E%3Cstop offset='1' stop-color='%23121f40'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='800' fill='url(%23g)'/%3E%3Ccircle cx='140' cy='220' r='70' fill='%230a1837'/%3E%3Ccircle cx='675' cy='190' r='36' fill='%23f5c56d' opacity='.5'/%3E%3Crect x='362' y='110' width='78' height='300' rx='16' fill='%23101620'/%3E%3Crect x='320' y='210' width='160' height='360' rx='28' fill='%230c111a'/%3E%3Crect x='348' y='530' width='44' height='190' rx='14' fill='%230d1119'/%3E%3Crect x='408' y='530' width='44' height='190' rx='14' fill='%230d1119'/%3E%3Crect x='280' y='252' width='70' height='34' rx='10' fill='%230e1420'/%3E%3Crect x='452' y='252' width='70' height='34' rx='10' fill='%230e1420'/%3E%3Crect x='338' y='95' width='122' height='84' rx='26' fill='%23141d29'/%3E%3Crect x='360' y='117' width='78' height='40' rx='10' fill='%23242d3d'/%3E%3Cpath d='M90 540 C180 420, 260 610, 320 470' stroke='%23ff4c5d' stroke-width='18' opacity='.65'/%3E%3Cpath d='M500 610 C600 420, 700 610, 760 470' stroke='%2342a5ff' stroke-width='18' opacity='.65'/%3E%3Crect x='0' y='650' width='800' height='150' fill='%23050a12' opacity='.65'/%3E%3C/svg%3E" /></div>
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+                <div class="grid-card"><div class="placeholder-box"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+
+  <div class="modal large" id="settingsModal" aria-hidden="true">
+    <div class="modal-header">
+      <button class="modal-close" data-close-modal="settingsModal" aria-label="关闭设置">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+      <div class="modal-title" style="margin-right:auto;padding-left:10px;">设置</div>
+    </div>
+    <div class="settings-layout">
+      <div class="settings-nav">
+        <div class="settings-nav-item active" data-settings-panel="generalPanel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"></path></svg>
+          <span>常规</span>
+        </div>
+        <div class="settings-nav-item" data-settings-panel="notifyPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V10a6 6 0 1 0-12 0v4.2a2 2 0 0 1-.6 1.4L4 17h5"></path><path d="M9.5 17a2.5 2.5 0 0 0 5 0"></path></svg><span>通知</span></div>
+        <div class="settings-nav-item" data-settings-panel="personalPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="M2 12h4"></path><path d="m6.3 17.7 2.8-2.8"></path><path d="M12 18v4"></path><path d="m17.7 17.7-2.8-2.8"></path><path d="M18 12h4"></path><path d="m17.7 6.3-2.8 2.8"></path><circle cx="12" cy="12" r="3.2"></circle></svg><span>个性化</span></div>
+        <div class="settings-nav-item" data-settings-panel="appsPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1.3"></rect><rect x="14" y="4" width="6" height="6" rx="1.3"></rect><rect x="4" y="14" width="6" height="6" rx="1.3"></rect><rect x="14" y="14" width="6" height="6" rx="1.3"></rect></svg><span>应用</span></div>
+        <div class="settings-nav-item" data-settings-panel="ordersPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"></path><path d="M14 2v6h6"></path></svg><span>订单</span></div>
+        <div class="settings-nav-item" data-settings-panel="safetyPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.6 2.6 8.7 7 10 4.4-1.3 7-5.4 7-10V6l-7-3Z"></path></svg><span>安全</span></div>
+        <div class="settings-nav-item" data-settings-panel="accountPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"></circle><path d="M4 20a8 8 0 1 1 16 0"></path></svg><span>账户</span></div>
+      </div>
+
+      <div class="settings-content">
+        <div class="settings-scroll">
+          <div class="settings-panel active" id="generalPanel">
+            <h3 class="settings-heading">常规</h3>
+            <div class="mfa-box">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div>
+                  <div class="mfa-title">保护你的账户</div>
+                  <p class="mfa-text">添加多重身份验证（MFA），如短信或身份验证器应用，帮助在登录时保护您的账户。</p>
+                </div>
+                <button class="plain-icon" id="dismissMfaBtn" aria-label="关闭MFA推荐">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <button class="secondary-btn" id="mfaToastBtn">设置 MFA</button>
+            </div>
+            <div class="list-row" id="appearanceRow">
+              <div class="list-label">外观</div>
+              <div class="list-value"><span id="appearanceValue">深色</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+            </div>
+            <div class="list-row" id="contrastRow">
+              <div class="list-label">对比度</div>
+              <div class="list-value"><span id="contrastValue">系统</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+            </div>
+            <div class="list-row" id="accentRow">
+              <div class="list-label">重点色</div>
+              <div class="list-value"><span class="dot" id="accentDot"></span><span id="accentValue">默认</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+            </div>
+            <div class="list-row" id="languageRow">
+              <div class="list-label">语言</div>
+              <div class="list-value"><span id="languageValue">自动检测</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+            </div>
+            <div class="list-row with-note" id="speechRow">
+              <div>
+                <div class="list-label">口语</div>
+                <div class="list-sub">为获得最佳结果，请选择你使用的主要语言。即使未列出的语言也可能通过自动检测功能进行识别。</div>
+              </div>
+              <div class="list-value"><span id="speechValue">自动检测</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+            </div>
+          </div>
+
+          <div class="settings-panel" id="notifyPanel">
+            <h3 class="settings-heading">通知</h3>
+            <div class="list-row"><div class="list-label">桌面通知</div><div class="badge">已关闭</div></div>
+            <div class="list-row"><div class="list-label">产品更新</div><div class="badge">订阅</div></div>
+          </div>
+
+          <div class="settings-panel" id="personalPanel">
+            <h3 class="settings-heading">个性化</h3>
+            <div class="list-row"><div class="list-label">称呼偏好</div><div class="list-value">Mr.Jony</div></div>
+            <div class="list-row"><div class="list-label">默认首页</div><div class="list-value">聊天</div></div>
+          </div>
+
+          <div class="settings-panel" id="appsPanel">
+            <h3 class="settings-heading">应用</h3>
+            <div class="list-row"><div class="list-label">已连接应用</div><div class="badge">0</div></div>
+            <div class="list-row"><div class="list-label">文件访问权限</div><div class="badge">默认</div></div>
+          </div>
+
+          <div class="settings-panel" id="ordersPanel">
+            <h3 class="settings-heading">订单</h3>
+            <div class="list-row"><div class="list-label">当前计划</div><div class="list-value">免费版</div></div>
+            <div class="list-row"><div class="list-label">升级方案</div><div class="badge">Plus</div></div>
+          </div>
+
+          <div class="settings-panel" id="safetyPanel">
+            <h3 class="settings-heading">安全</h3>
+            <div class="list-row"><div class="list-label">登录设备</div><div class="badge">1 台</div></div>
+            <div class="list-row"><div class="list-label">双重验证</div><div class="badge">未开启</div></div>
+          </div>
+
+          <div class="settings-panel" id="accountPanel">
+            <h3 class="settings-heading">账户</h3>
+            <div class="list-row"><div class="list-label">邮箱</div><div class="list-value">mrjony@example.com</div></div>
+            <div class="list-row"><div class="list-label">昵称</div><div class="list-value">Mr.Jony</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal small" id="tempChatModal" aria-hidden="true">
+    <div class="modal-header">
+      <div class="modal-title">临时聊天</div>
+      <button class="modal-close" data-close-modal="tempChatModal" aria-label="关闭临时聊天">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="temp-card">
+        <div class="temp-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 2"></circle></svg>
+          <div>
+            <h4>不包含在历史记录中</h4>
+            <p>临时聊天不会出现在你的历史记录中。为了安全考虑，我们可能会保留对话记录最多30天。</p>
+          </div>
+        </div>
+        <div class="temp-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h4l2-6 4 12 2-6h4"></path></svg>
+          <div>
+            <h4>不会用于模型训练</h4>
+            <p>临时聊天不会被用来改进我们的模型。</p>
+          </div>
+        </div>
+        <div class="temp-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"></rect></svg>
+          <div>
+            <h4>记忆关闭</h4>
+            <p>使用临时聊天时，Cancri 不会使用或更新记忆。系统仍然会遵循你的自定义指令。</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-btn" id="continueTempChatBtn">继续</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal medium" id="projectModal" aria-hidden="true">
+    <div class="modal-header" style="padding-bottom:0;">
+      <div class="modal-title">创建项目</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="plain-icon" id="projectSettingToastBtn" aria-label="项目设置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"></path></svg>
+        </button>
+        <button class="modal-close" data-close-modal="projectModal" aria-label="关闭创建项目">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="projectNameInput">项目名称</label>
+        <input class="form-input" id="projectNameInput" placeholder="哥本哈根之旅" />
+      </div>
+      <div class="hint-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+        <div>项目功能可将聊天、文件和自定义指令集中保存，以便用于持续进行的工作，或者单纯用于整理内容，让一切更井然有序。</div>
+      </div>
+      <div class="modal-actions">
+        <button class="muted-btn" id="createProjectConfirmBtn">创建项目</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="devtools-shield" id="devtoolsShield" aria-hidden="true">
+    <div class="devtools-card">
+      <div class="devtools-kicker">开发者工具已打开</div>
+      <h2 class="devtools-title">别他妈看控制台，API Key 也不是给你扒的。</h2>
+      <p class="devtools-text">这个页面只做了前端层的轻度保护。想看正常内容就关掉 F12，再回来好好用。</p>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      theme: 'light',
+      contrast: '系统',
+      accentName: '绿色',
+      accentValue: '#10a37f',
+      language: '自动检测',
+      speech: '自动检测',
+      currentView: 'home',
+      modal: null,
+      popover: null,
+      mfaVisible: true,
+      isStreaming: false,
+      isImageGenerating: false,
+      activeRequestController: null,
+      recentProjectName: '',
+    };
+
+    const root = document.documentElement;
+    const sidebar = document.getElementById('sidebar');
+    const scrim = document.getElementById('scrim');
+    const toast = document.getElementById('toast');
+    const devtoolsShield = document.getElementById('devtoolsShield');
+    const homeView = document.getElementById('homeView');
+    const imagesView = document.getElementById('imagesView');
+    const heroTitle = document.getElementById('heroTitle');
+    const homeInput = document.getElementById('homeInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    const chatMessages = document.getElementById('chatMessages');
+    const homeCenter = document.getElementById('homeCenter');
+    const imagePromptInput = document.getElementById('imagePromptInput');
+    const sendImagePromptBtn = document.getElementById('sendImagePromptBtn');
+    const generatedImageGrid = document.getElementById('generatedImageGrid');
+    const imageGenerationStatus = document.getElementById('imageGenerationStatus');
+    const projectNameInput = document.getElementById('projectNameInput');
+    const plusPopover = document.getElementById('plusPopover');
+    const morePopover = document.getElementById('morePopover');
+    const accountPopover = document.getElementById('accountPopover');
+    const settingsModal = document.getElementById('settingsModal');
+    const tempChatModal = document.getElementById('tempChatModal');
+    const projectModal = document.getElementById('projectModal');
+    const appearanceValue = document.getElementById('appearanceValue');
+    const contrastValue = document.getElementById('contrastValue');
+    const accentValueEl = document.getElementById('accentValue');
+    const accentDot = document.getElementById('accentDot');
+    const languageValue = document.getElementById('languageValue');
+    const speechValue = document.getElementById('speechValue');
+    const dismissMfaBtn = document.getElementById('dismissMfaBtn');
+    const tokenExpiryNote = document.getElementById('tokenExpiryNote');
+    const tokenRemainingText = document.getElementById('tokenRemainingText');
+
+    const navRows = Array.from(document.querySelectorAll('.nav-row[data-view-target]'));
+    const settingTabs = Array.from(document.querySelectorAll('.settings-nav-item'));
+    const settingPanels = Array.from(document.querySelectorAll('.settings-panel'));
+
+    const conversationHistory = [];
+    const MAX_HISTORY_MESSAGES = 8;
+
+    const themeCycle = [
+      { value: 'light', label: '浅色' },
+      { value: 'dark', label: '深色' },
+      { value: 'light', label: '系统' },
+    ];
+    let themeIndex = 0;
+
+    const contrastCycle = ['系统', '标准', '高对比'];
+    let contrastIndex = 0;
+
+    const accentCycle = [
+      { name: '绿色', value: '#10a37f' },
+      { name: '琥珀', value: '#f59e0b' },
+      { name: '珊瑚', value: '#ef4444' },
+      { name: '石墨', value: '#6b7280' }
+    ];
+    let accentIndex = 0;
+
+    const RATE_LIMIT_MESSAGE = '模型服务暂时繁忙，请稍后再试。';
+
+    function decodeBase64Secret(encoded) {
+      try {
+        return atob(encoded);
+      } catch (error) {
+        return '';
+      }
+    }
+
+    const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1';
+    const MODELSCOPE_IMAGE_MODEL = 'Tongyi-MAI/Z-Image-Turbo';
+    const MODELSCOPE_CHAT_MODEL = 'deepseek-ai/DeepSeek-V4-Flash';
+    const MODELSCOPE_API_KEY = 'ms-e5cc3b83-f654-433f-befb-d5d96e8df57e';
+    const MAX_TOOL_ROUNDS = 4;
+    const ARTICLE_TOOL_DEFINITIONS = [
+      {
+        type: 'function',
+        function: {
+          name: 'list_articles',
+          description: '获取站内文章目录。当用户询问有哪些文章、文章列表、目录或清单时使用。',
+          parameters: {
+            type: 'object',
+            properties: {
+              lang: {
+                type: 'string',
+                enum: ['zh', 'en'],
+                description: '返回内容语言，默认跟随用户问题。',
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'search_articles',
+          description: '按关键词搜索站内相关文章。当用户在找某个主题、文章或相关内容时使用。',
+          parameters: {
+            type: 'object',
+            properties: {
+              query: {
+                type: 'string',
+                description: '用于搜索文章的关键词或问题。',
+              },
+              lang: {
+                type: 'string',
+                enum: ['zh', 'en'],
+                description: '返回内容语言，默认跟随用户问题。',
+              },
+            },
+            required: ['query'],
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'read_article',
+          description: '读取指定文章的全文。当已知文章 ID，或搜索后需要查看具体内容时使用。',
+          parameters: {
+            type: 'object',
+            properties: {
+              articleId: {
+                type: 'string',
+                description: '文章 ID。',
+              },
+              lang: {
+                type: 'string',
+                enum: ['zh', 'en'],
+                description: '返回内容语言，默认跟随用户问题。',
+              },
+            },
+            required: ['articleId'],
+            additionalProperties: false,
+          },
+        },
+      },
+    ];
+
+    // Token expiration settings
+    const TOKEN_START_DATE = new Date('2026-04-28T22:52:10+08:00');
+    const TOKEN_END_DATE = new Date('2026-05-28T22:52:10+08:00');
+
+    const ARTICLE_SCRIPT_SRC = '../js/article.js';
+    const ARTICLE_INDEX_LIMIT = 24;
+    const ARTICLE_DETAIL_LIMIT = 5000;
+    let articleDataPromise = null;
+    let articleIndexPromise = null;
+    let articleIndexCache = null;
+
+    function normalizeArticleText(input) {
+      return String(input || '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function stripArticleHtml(input) {
+      return String(input || '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function detectArticleLang(query) {
+      const value = String(query || '');
+      if (!value) return 'zh';
+      return /[\u4e00-\u9fff]/.test(value) ? 'zh' : 'en';
+    }
+
+    function getPreferredArticleLang(query) {
+      if (state.language === 'English') return 'en';
+      if (state.language === '简体中文') return 'zh';
+      return detectArticleLang(query);
+    }
+
+    function getArticleFirstParagraph(paragraphs) {
+      if (!Array.isArray(paragraphs)) return '';
+      const paragraph = paragraphs.find(item => typeof item === 'string' && item.trim());
+      return paragraph ? stripArticleHtml(paragraph) : '';
+    }
+
+    function isSiteArticleQuery(query) {
+      const normalized = normalizeArticleText(query);
+      if (!normalized) return false;
+      return /tactfr|sentience|nexusv|cancri|文章|站内|知识源|目录|列表|article|site/.test(normalized)
+        || /有哪些文章|文章列表|文章目录|站内文章|文章清单|全部文章|都有什么文章|列出.*文章|list.*article|read.*article/.test(normalized);
+    }
+
+    function getArticlePayload(item, lang, fallback) {
+      const data = (item && item[lang]) || fallback || {};
+      const paragraphs = Array.isArray(data.paragraphs) ? data.paragraphs.map(stripArticleHtml).filter(Boolean) : [];
+      const excerpt = getArticleFirstParagraph(data.paragraphs) || paragraphs[0] || '';
+      return {
+        title: String(data.title || ''),
+        category: String(data.category || ''),
+        date: String(data.date || ''),
+        readTime: String(data.readTime || ''),
+        excerpt,
+        paragraphs,
+      };
+    }
+
+    function buildArticleIndex(articleData) {
+      return Object.entries(articleData || {})
+        .map(([id, item]) => {
+          const zh = getArticlePayload(item, 'zh');
+          const en = getArticlePayload(item, 'en', zh);
+          const aggregate = normalizeArticleText([
+            id,
+            item && item.overlay ? item.overlay : '',
+            zh.title, zh.category, zh.date, zh.readTime, zh.excerpt,
+            en.title, en.category, en.date, en.readTime, en.excerpt,
+            zh.paragraphs.join(' '),
+            en.paragraphs.join(' ')
+          ].join(' '));
+
+          return {
+            id,
+            overlay: String(item && item.overlay ? item.overlay : ''),
+            zh,
+            en,
+            aggregate,
+          };
+        })
+        .filter(item => item.zh.title || item.en.title);
+    }
+
+    function resolveArticleView(candidate, lang, { includeFullText = false, maxChars = ARTICLE_DETAIL_LIMIT } = {}) {
+      if (!candidate) return null;
+      const primary = lang === 'en' ? candidate.en : candidate.zh;
+      const fallback = candidate.zh.title ? candidate.zh : candidate.en;
+      const localized = primary && primary.title ? primary : fallback;
+      const paragraphs = Array.isArray(localized.paragraphs) ? localized.paragraphs : [];
+      const fullText = includeFullText
+        ? truncateArticleText(paragraphs.join('\n\n'), maxChars)
+        : '';
+
+      return {
+        id: candidate.id,
+        overlay: String(candidate.overlay || ''),
+        title: String(localized.title || candidate.id),
+        category: String(localized.category || ''),
+        date: String(localized.date || ''),
+        readTime: String(localized.readTime || ''),
+        excerpt: String(localized.excerpt || ''),
+        paragraphs,
+        fullText,
+      };
+    }
+
+    function truncateArticleText(text, maxChars = ARTICLE_DETAIL_LIMIT) {
+      const value = String(text || '').trim();
+      if (!value || value.length <= maxChars) return value;
+      return `${value.slice(0, maxChars)}\n\n[内容已截断，若需要更细节可继续按文章 ID 读取。]`;
+    }
+
+    function loadArticleData() {
+      if (window.articleData && typeof window.articleData === 'object') {
+        return Promise.resolve(window.articleData);
+      }
+      if (articleDataPromise) return articleDataPromise;
+
+      articleDataPromise = new Promise((resolve, reject) => {
+        const existingScript = Array.from(document.scripts).find(script => {
+          const src = (script.getAttribute('src') || '').split('?')[0];
+          return src.endsWith('article.js');
+        });
+
+        const finish = () => {
+          if (window.articleData && typeof window.articleData === 'object') {
+            resolve(window.articleData);
+          } else {
+            reject(new Error('articleData unavailable'));
+          }
+        };
+
+        if (existingScript) {
+          if (window.articleData) {
+            finish();
+          } else {
+            existingScript.addEventListener('load', finish, { once: true });
+            existingScript.addEventListener('error', () => reject(new Error('Failed to load article.js')), { once: true });
+          }
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = ARTICLE_SCRIPT_SRC;
+        script.async = true;
+        script.onload = finish;
+        script.onerror = () => reject(new Error('Failed to load article.js'));
+        document.head.appendChild(script);
+      });
+
+      return articleDataPromise;
+    }
+
+    function getArticleIndex() {
+      if (articleIndexCache) return Promise.resolve(articleIndexCache);
+      if (articleIndexPromise) return articleIndexPromise;
+
+      articleIndexPromise = loadArticleData()
+        .then(articleData => {
+          articleIndexCache = buildArticleIndex(articleData);
+          return articleIndexCache;
+        })
+        .catch(() => {
+          articleIndexCache = [];
+          return articleIndexCache;
+        });
+
+      return articleIndexPromise;
+    }
+
+    function scoreArticleCandidate(candidate, query, lang) {
+      const normalizedQuery = normalizeArticleText(query);
+      if (!normalizedQuery) return 0;
+
+      const primaryCandidate = lang === 'en' ? candidate.en : candidate.zh;
+      const localized = (primaryCandidate && primaryCandidate.title)
+        ? primaryCandidate
+        : (candidate.zh.title ? candidate.zh : candidate.en);
+
+      const title = normalizeArticleText(localized.title);
+      const category = normalizeArticleText(localized.category);
+      const excerpt = normalizeArticleText(localized.excerpt);
+      const aggregate = candidate.aggregate;
+      const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+      let score = 0;
+      let matched = 0;
+
+      for (const token of tokens) {
+        let tokenScore = 0;
+        if (title.startsWith(token)) tokenScore = Math.max(tokenScore, 120);
+        if (title.includes(token)) tokenScore = Math.max(tokenScore, 95);
+        if (category.includes(token)) tokenScore = Math.max(tokenScore, 55);
+        if (excerpt.includes(token)) tokenScore = Math.max(tokenScore, 35);
+        if (aggregate.includes(token)) tokenScore = Math.max(tokenScore, 20);
+        if (tokenScore > 0) {
+          score += tokenScore;
+          matched += 1;
+        }
+      }
+
+      if (tokens.length > 1 && matched === tokens.length) score += 30;
+      return score;
+    }
+
+    async function listArticles(lang = getPreferredArticleLang('')) {
+      const index = await getArticleIndex();
+      return index.slice(0, ARTICLE_INDEX_LIMIT).map(candidate => resolveArticleView(candidate, lang));
+    }
+
+    async function searchArticles(query, lang = getPreferredArticleLang(query)) {
+      const index = await getArticleIndex();
+      const trimmed = String(query || '').trim();
+      if (!trimmed) return [];
+
+      const scored = [];
+      for (const candidate of index) {
+        const score = scoreArticleCandidate(candidate, trimmed, lang);
+        if (score > 0) scored.push({ score, candidate });
+      }
+
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, ARTICLE_INDEX_LIMIT).map(item => ({
+        ...resolveArticleView(item.candidate, lang),
+        score: item.score,
+      }));
+    }
+
+    async function readArticle(articleId, lang = getPreferredArticleLang(articleId)) {
+      const index = await getArticleIndex();
+      const needle = normalizeArticleText(articleId);
+      const candidate = index.find(item => {
+        const values = [item.id, item.zh.title, item.en.title, item.overlay];
+        return values.some(value => normalizeArticleText(value) === needle)
+          || values.some(value => normalizeArticleText(value).includes(needle));
+      });
+
+      return candidate ? resolveArticleView(candidate, lang, { includeFullText: true }) : null;
+    }
+
+    async function buildArticleToolContext(query) {
+      const lang = getPreferredArticleLang(query);
+      try {
+        if (!isSiteArticleQuery(query)) {
+          return {
+            lang,
+            catalogText: '（本次问题与站内文章无关，未附加文章目录）',
+            searchText: '（未检索）',
+            detailText: '（未读取）',
+          };
+        }
+
+        const index = await getArticleIndex();
+        const normalizedQuery = normalizeArticleText(query);
+        const catalogText = index.slice(0, ARTICLE_INDEX_LIMIT).map(candidate => {
+          const view = resolveArticleView(candidate, lang);
+          const compactExcerpt = view.excerpt
+            ? (view.excerpt.length > 140 ? `${view.excerpt.slice(0, 140)}…` : view.excerpt)
+            : '';
+          const parts = [
+            `[${view.id}] ${view.title}`,
+            view.overlay,
+            view.category,
+            view.date,
+            view.readTime,
+            compactExcerpt,
+          ].filter(Boolean);
+          return `- ${parts.join(' ｜ ')}`;
+        }).join('\n') || '（暂无文章）';
+
+        const searchResults = await searchArticles(query, lang);
+        const searchText = searchResults.length
+          ? searchResults.map((view, idx) => {
+              const parts = [
+                `${idx + 1}. [${view.id}] ${view.title}`,
+                view.category,
+                view.date,
+              ].filter(Boolean);
+              return `- ${parts.join(' ｜ ')}`;
+            }).join('\n')
+          : '（未命中）';
+
+        const isCatalogRequest = /有哪些文章|文章列表|文章目录|站内文章|文章清单|全部文章|都有什么文章|列出.*文章|list.*article/i.test(normalizeArticleText(query));
+        const isDetailRequest = !isCatalogRequest && /了解|阅读|全文|详细|内容|讲什么|介绍|说明|怎么/.test(normalizedQuery);
+        const detailViews = isDetailRequest
+          ? await Promise.all(searchResults.slice(0, 2).map(item => readArticle(item.id, lang)))
+          : [];
+
+        const detailText = detailViews
+          .filter(Boolean)
+          .map((view, idx) => {
+            const meta = [
+              `【${idx + 1}｜${view.id}】${view.title}`,
+              view.overlay ? `系列：${view.overlay}` : '',
+              view.category ? `分类：${view.category}` : '',
+              view.date ? `日期：${view.date}` : '',
+              view.readTime ? `阅读时长：${view.readTime}` : '',
+            ].filter(Boolean).join('\n');
+            return `${meta}\n\n${view.fullText || '（无正文）'}`;
+          })
+          .join('\n\n---\n\n') || '（未读取）';
+
+        return { lang, catalogText, searchText, detailText };
+      } catch (error) {
+        const fallbackCatalogText = [
+          '- TACTFR V5：核心是更真实的执法闭环、嫌疑人概率行为、搜索范围圈、直升机勘探和评分系统。',
+          '- TACTFR 6.0.0 Beta.2：新增故事任务框架、七阶段逮捕序列、双嫌疑人执法链路和终端 UI 自定义。',
+          '- TACTFR × Sentience：把 Sentience 语音与自然语言能力接入 TACTFR，让对话驱动案件逻辑和追捕 AI。',
+          '- SentienceV4.1 Omni：多服务商 API、本地与云端切换、DeepSeek/OpenAI 兼容接口、TTS/STT 和启动器体验。',
+          '- Sentience V4C：具身 NPC、长期社会记忆、邻域 gossip 传播与情绪压力下的行为切换。',
+          '- NexusV V5：UI 重构、内置 Rockstar Editor、200+ 信息菜单、创意模块。',
+          '- Cancri：跨检查点隐状态接力机制，降低多专家协作的内存开销。',
+        ].join('\n');
+
+        return {
+          lang,
+          catalogText: fallbackCatalogText,
+          searchText: '（文章搜索暂不可用）',
+          detailText: '',
+        };
+      }
+    }
+
+    window.CancriArticleTool = {
+      load: loadArticleData,
+      listArticles,
+      searchArticles,
+      readArticle,
+      buildContext: buildArticleToolContext,
+    };
+
+    loadArticleData().catch(() => null);
+
+    const langCycle = ['自动检测', '简体中文', 'English', '日本語'];
+    let langIndex = 0;
+
+    const speechCycle = ['自动检测', '普通话', 'English', '粤语'];
+    let speechIndex = 0;
+
+    function applyTheme() {
+      root.setAttribute('data-theme', state.theme);
+      root.style.setProperty('--accent', state.accentValue);
+      appearanceValue.textContent = themeCycle[themeIndex].label;
+      contrastValue.textContent = state.contrast;
+      accentValueEl.textContent = state.accentName;
+      accentDot.style.background = state.accentValue;
+      languageValue.textContent = state.language;
+      speechValue.textContent = state.speech;
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    let devtoolsLastVisible = false;
+
+    function showDevtoolsShield() {
+      if (!devtoolsShield) return;
+      devtoolsLastVisible = true;
+      devtoolsShield.classList.add('show');
+    }
+
+    function hideDevtoolsShield() {
+      if (!devtoolsShield) return;
+      devtoolsLastVisible = false;
+      devtoolsShield.classList.remove('show');
+    }
+
+    function detectDevtools() {
+      const widthGap = Math.abs(window.outerWidth - window.innerWidth);
+      const heightGap = Math.abs(window.outerHeight - window.innerHeight);
+      const isOpen = widthGap > 160 || heightGap > 160;
+      if (isOpen) {
+        showDevtoolsShield();
+      } else if (devtoolsLastVisible) {
+        hideDevtoolsShield();
+      }
+    }
+
+    function setActiveView(view) {
+      state.currentView = view;
+      homeView.classList.toggle('active', view === 'home');
+      imagesView.classList.toggle('active', view === 'images');
+      navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
+      closePopover();
+      closeModal();
+      if (view === 'home') {
+        heroTitle.textContent = state.recentProjectName ? `继续处理「${state.recentProjectName}」？` : '有什么可以帮忙的？';
+      }
+    }
+
+    function getTodayText() {
+      const now = new Date();
+      return `${now.getMonth() + 1}月${now.getDate()}日`;
+    }
+
+    function formatCountdownDuration(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return `${days}天${String(hours).padStart(2, '0')}时${String(minutes).padStart(2, '0')}分${String(seconds).padStart(2, '0')}秒`;
+    }
+
+    function updateTokenExpiryNote() {
+      if (!tokenExpiryNote || !tokenRemainingText) return;
+      const remainingMs = TOKEN_END_DATE.getTime() - Date.now();
+      if (remainingMs <= 0) {
+        tokenExpiryNote.dataset.expired = 'true';
+        tokenRemainingText.textContent = '· 已过期';
+        return;
+      }
+
+      tokenExpiryNote.removeAttribute('data-expired');
+      tokenRemainingText.textContent = `· 剩余 ${formatCountdownDuration(remainingMs)}`;
+    }
+
+    function isDateQuestion(text) {
+      const value = (text || '').replace(/\s+/g, '');
+      return /几号|几月几日|今天几号|今天是几号|日期|星期几|今天星期几/.test(value);
+    }
+
+    function isModelQuestion(text) {
+      const value = (text || '').replace(/\s+/g, '');
+      return /什么模型|哪个模型|你是什么模型|模型是什么|谁支持|由谁支持/.test(value);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeUrl(url) {
+      const trimmed = String(url || '').trim();
+      if (/^(https?:|\/)/i.test(trimmed)) return trimmed;
+      return '#';
+    }
+
+    function renderInlineMarkdown(text) {
+      let output = escapeHtml(text)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\[(.+?)\]\((.+?)\)/g, (match, label, url) => {
+          const href = safeUrl(url);
+          if (href === '#') return label;
+          return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+        });
+      return output;
+    }
+
+    function renderMarkdown(markdown) {
+      const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+      const blocks = [];
+      let paragraph = [];
+      let listType = '';
+      let listItems = [];
+      let codeLines = [];
+      let inCode = false;
+
+      function flushParagraph() {
+        if (!paragraph.length) return;
+        blocks.push(`<p>${paragraph.map(renderInlineMarkdown).join('<br>')}</p>`);
+        paragraph = [];
+      }
+
+      function flushList() {
+        if (!listItems.length) return;
+        const items = listItems.map(item => `<li>${renderInlineMarkdown(item)}</li>`).join('');
+        blocks.push(`<${listType}>${items}</${listType}>`);
+        listType = '';
+        listItems = [];
+      }
+
+      function flushCode() {
+        if (!codeLines.length) return;
+        blocks.push(`<pre><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`);
+        codeLines = [];
+      }
+
+      for (const rawLine of lines) {
+        const line = rawLine;
+
+        if (line.trim().startsWith('```')) {
+          if (inCode) {
+            flushCode();
+            inCode = false;
+          } else {
+            flushParagraph();
+            flushList();
+            inCode = true;
+          }
+          continue;
+        }
+
+        if (inCode) {
+          codeLines.push(line);
+          continue;
+        }
+
+        if (!line.trim()) {
+          flushParagraph();
+          flushList();
+          continue;
+        }
+
+        const heading = line.match(/^(#{1,6})\s+(.*)$/);
+        if (heading) {
+          flushParagraph();
+          flushList();
+          blocks.push(`<h${heading[1].length}>${renderInlineMarkdown(heading[2])}</h${heading[1].length}>`);
+          continue;
+        }
+
+        const quote = line.match(/^>\s?(.*)$/);
+        if (quote) {
+          flushParagraph();
+          flushList();
+          blocks.push(`<blockquote>${renderInlineMarkdown(quote[1])}</blockquote>`);
+          continue;
+        }
+
+        const ordered = line.match(/^\d+\.\s+(.*)$/);
+        const unordered = line.match(/^[-*+]\s+(.*)$/);
+        if (ordered || unordered) {
+          flushParagraph();
+          const nextType = ordered ? 'ol' : 'ul';
+          if (!listType) listType = nextType;
+          if (listType !== nextType) flushList();
+          listType = nextType;
+          listItems.push((ordered || unordered)[1]);
+          continue;
+        }
+
+        flushList();
+        paragraph.push(line);
+      }
+
+      flushParagraph();
+      flushList();
+      flushCode();
+
+      return blocks.join('');
+    }
+
+    async function buildSystemPrompt(query) {
+      const today = getTodayText();
+      const promptParts = [
+        '你是 GTA5 模组安装助手，乐于助人、耐心、准确。',
+        '你的任务是帮助用户查找、安装、配置和排查 GTA5 模组；回答要清晰、可执行，优先给出步骤。',
+        '如果用户问你是谁或你能做什么，回答：我是 GTA5 模组安装助手。',
+        '说话尽量简短，不要废话；不确定就直接说明，不要编造。',
+        `当前日期是${today}。如果用户问今天几号、日期或星期，请直接按这个日期回答。`,
+        '回答时尽量使用简洁 Markdown，必要时再用列表、加粗、代码块。',
+        '你可以使用页面提供的工具，但只在确实需要查找模组安装资料、教程或文档时才调用它们：list_articles、search_articles、read_article。',
+        '使用规则：',
+        '- 用户问有哪些模组/教程/文档、目录或清单时，调用 list_articles。',
+        '- 用户问某个 GTA5 模组、安装步骤、报错处理、兼容性或配置时，先调用 search_articles。',
+        '- 用户需要某篇教程或文档的细节或全文时，先用 search_articles 找到文章 ID，再调用 read_article。',
+        '- 工具结果返回后，只根据工具结果回答，不要编造不存在的模组、教程或细节。',
+        '- 信息不足时，先追问版本、平台、模组名、报错内容或安装路径。',
+        '- 普通聊天不要调用工具。',
+      ];
+
+      return promptParts.join('\n');
+    }
+
+    function scrollChatToBottom(smooth = true) {
+      if (!chatMessages) return;
+      if (smooth) {
+        chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+      } else {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+    }
+
+    function setComposerBusy(isBusy) {
+      state.isStreaming = isBusy;
+      sendChatBtn.disabled = isBusy || !homeInput.value.trim();
+      homeInput.disabled = isBusy;
+      sendChatBtn.setAttribute('aria-disabled', String(sendChatBtn.disabled));
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function setImageGenerationBusy(isBusy, statusText) {
+      state.isImageGenerating = isBusy;
+      imagePromptInput.disabled = isBusy;
+      sendImagePromptBtn.disabled = isBusy || !imagePromptInput.value.trim();
+      sendImagePromptBtn.setAttribute('aria-disabled', String(sendImagePromptBtn.disabled));
+      if (typeof statusText === 'string') {
+        imageGenerationStatus.textContent = statusText;
+      }
+    }
+
+    function appendGeneratedImageCard(imageUrl, prompt) {
+      if (!generatedImageGrid) return;
+      const emptyCard = document.getElementById('generatedImageEmpty');
+      if (emptyCard) emptyCard.remove();
+
+      const card = document.createElement('div');
+      card.className = 'grid-card';
+      card.title = prompt;
+
+      const image = document.createElement('img');
+      image.alt = prompt;
+      image.src = imageUrl;
+
+      const caption = document.createElement('div');
+      caption.style.position = 'absolute';
+      caption.style.left = '12px';
+      caption.style.right = '12px';
+      caption.style.bottom = '12px';
+      caption.style.zIndex = '1';
+      caption.style.color = '#fff';
+      caption.style.fontSize = '12px';
+      caption.style.fontWeight = '650';
+      caption.style.textShadow = '0 2px 10px rgba(0,0,0,.32)';
+      caption.style.whiteSpace = 'nowrap';
+      caption.style.overflow = 'hidden';
+      caption.style.textOverflow = 'ellipsis';
+      caption.textContent = prompt;
+
+      card.appendChild(image);
+      card.appendChild(caption);
+      card.addEventListener('click', () => window.open(imageUrl, '_blank', 'noopener,noreferrer'));
+      generatedImageGrid.prepend(card);
+    }
+
+    async function generateImageFromPrompt(prompt) {
+      const value = String(prompt || '').trim();
+      if (!value || state.isImageGenerating) return;
+
+      setImageGenerationBusy(true, '正在提交图片生成任务...');
+      showToast('图片生成已开始，请稍等。');
+
+      let finalStatusText = '等待输入提示词';
+
+      try {
+        const response = await fetch(`${MODELSCOPE_API_BASE}/images/generations`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${MODELSCOPE_API_KEY}`,
+            'Content-Type': 'application/json',
+            'X-ModelScope-Async-Mode': 'true'
+          },
+          body: JSON.stringify({
+            model: MODELSCOPE_IMAGE_MODEL,
+            prompt: value
+          })
+        });
+
+        if (response.status === 429) {
+          throw new Error(RATE_LIMIT_MESSAGE);
+        }
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '');
+          let detail = errorText.trim();
+          if (detail) {
+            try {
+              const parsed = JSON.parse(detail);
+              detail = parsed?.error?.message || parsed?.message || parsed?.detail || detail;
+            } catch (parseError) {
+              // keep raw text
+            }
+          }
+          throw new Error(detail ? `HTTP error! status: ${response.status} · ${detail}` : `HTTP error! status: ${response.status}`);
+        }
+
+        const taskData = await response.json();
+        const taskId = taskData.task_id;
+        if (!taskId) {
+          throw new Error('未返回 task_id。');
+        }
+
+        setImageGenerationBusy(true, '任务已提交，正在生成图片...');
+
+        while (true) {
+          const resultResponse = await fetch(`${MODELSCOPE_API_BASE}/tasks/${taskId}`, {
+            headers: {
+              'Authorization': `Bearer ${MODELSCOPE_API_KEY}`,
+              'Content-Type': 'application/json',
+              'X-ModelScope-Task-Type': 'image_generation'
+            }
+          });
+
+          if (resultResponse.status === 429) {
+            setImageGenerationBusy(true, RATE_LIMIT_MESSAGE);
+            await sleep(5000);
+            continue;
+          }
+
+          if (!resultResponse.ok) {
+            throw new Error(`HTTP error! status: ${resultResponse.status}`);
+          }
+
+          const data = await resultResponse.json();
+
+          if (data.task_status === 'SUCCEED') {
+            const imageUrl = data.output_images && data.output_images[0];
+            if (!imageUrl) {
+              throw new Error('生成成功，但没有返回图片地址。');
+            }
+
+            appendGeneratedImageCard(imageUrl, value);
+            imagePromptInput.value = '';
+            imageGenerationStatus.textContent = '图片已生成。';
+            finalStatusText = '图片已生成。';
+            showToast('图片已生成。');
+            break;
+          }
+
+          if (data.task_status === 'FAILED') {
+            throw new Error('Image Generation Failed.');
+          }
+
+          setImageGenerationBusy(true, `正在生成中... ${data.task_status || 'PENDING'}`);
+          await sleep(5000);
+        }
+      } catch (error) {
+        if (error.message === RATE_LIMIT_MESSAGE) {
+          imageGenerationStatus.textContent = RATE_LIMIT_MESSAGE;
+          finalStatusText = RATE_LIMIT_MESSAGE;
+          showToast(RATE_LIMIT_MESSAGE);
+        } else if (error.name !== 'AbortError') {
+          imageGenerationStatus.textContent = `生成失败：${error.message}`;
+          finalStatusText = `生成失败：${error.message}`;
+          showToast(`图片生成失败：${error.message}`);
+        }
+      } finally {
+        setImageGenerationBusy(false, finalStatusText);
+      }
+    }
+
+    function createUserMessage(content) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message user';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'U';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-content md-content';
+      bubble.textContent = content;
+
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(bubble);
+      chatMessages.appendChild(messageDiv);
+      scrollChatToBottom(false);
+    }
+
+    function createAssistantMessage() {
+      const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message assistant';
+      messageDiv.id = messageId;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'A';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-content md-content';
+
+      const thinkBlock = document.createElement('details');
+      thinkBlock.className = 'think-block';
+      thinkBlock.hidden = true;
+      thinkBlock.open = true;
+
+      const thinkSummary = document.createElement('summary');
+      thinkSummary.textContent = '思考过程';
+
+      const thinkBody = document.createElement('div');
+      thinkBody.className = 'think-body md-content';
+
+      const answerBody = document.createElement('div');
+      answerBody.className = 'answer-body md-content';
+      answerBody.innerHTML = '<span class="typing-indicator">正在思考中…</span>';
+
+      const toolCallsContainer = document.createElement('div');
+      toolCallsContainer.className = 'tool-calls-container';
+
+      thinkBlock.appendChild(thinkSummary);
+      thinkBlock.appendChild(thinkBody);
+      bubble.appendChild(thinkBlock);
+      bubble.appendChild(toolCallsContainer);
+      bubble.appendChild(answerBody);
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(bubble);
+
+      messageDiv._parts = { thinkBlock, thinkBody, answerBody, toolCallsContainer };
+      chatMessages.appendChild(messageDiv);
+      scrollChatToBottom(false);
+
+      return messageId;
+    }
+
+    function updateAssistantMessage(messageId, { reasoning = '', answer = '', thinking = false } = {}) {
+      const messageDiv = document.getElementById(messageId);
+      if (!messageDiv || !messageDiv._parts) return;
+
+      const { thinkBlock, thinkBody, answerBody, toolCallsContainer } = messageDiv._parts;
+      const reasoningText = String(reasoning ?? '');
+      const answerText = String(answer ?? '');
+      const hasReasoning = Boolean(reasoningText.trim());
+      const hasAnswer = Boolean(answerText.trim());
+
+      thinkBlock.hidden = !hasReasoning;
+      if (hasReasoning) {
+        thinkBody.innerHTML = renderMarkdown(reasoningText);
+        thinkBlock.open = true;
+      }
+
+      if (hasAnswer) {
+        answerBody.innerHTML = renderMarkdown(answerText);
+      } else if (thinking) {
+        answerBody.innerHTML = '<span class="typing-indicator">正在思考中…</span>';
+      } else {
+        answerBody.innerHTML = '';
+      }
+
+      scrollChatToBottom();
+    }
+
+    function clearConversation() {
+      if (state.activeRequestController) {
+        state.activeRequestController.abort();
+        state.activeRequestController = null;
+      }
+      conversationHistory.length = 0;
+      chatMessages.innerHTML = '';
+      chatMessages.classList.remove('active');
+      homeView.classList.remove('chatting');
+      homeInput.value = '';
+      heroTitle.textContent = state.recentProjectName ? `继续处理「${state.recentProjectName}」？` : '有什么可以帮忙的？';
+      setComposerBusy(false);
+      homeInput.focus();
+    }
+
+    function pushHistory(roleOrMessage, content, extra = {}) {
+      const message = typeof roleOrMessage === 'object' && roleOrMessage !== null
+        ? { ...roleOrMessage }
+        : { role: roleOrMessage, content, ...extra };
+
+      conversationHistory.push(message);
+      if (conversationHistory.length > MAX_HISTORY_MESSAGES) {
+        conversationHistory.splice(0, conversationHistory.length - MAX_HISTORY_MESSAGES);
+      }
+    }
+
+    async function buildApiMessages(query, extraSystemContent = '') {
+      const systemPrompt = await buildSystemPrompt(query);
+      const messages = [{ role: 'system', content: extraSystemContent ? `${systemPrompt}\n\n${extraSystemContent}` : systemPrompt }];
+      messages.push(...conversationHistory);
+      messages.push({ role: 'user', content: query });
+      return messages;
+    }
+
+    function parseToolArguments(rawArguments) {
+      const value = String(rawArguments || '').trim();
+      if (!value) return {};
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function mergeToolCallDeltas(target, deltaToolCalls) {
+      if (!Array.isArray(deltaToolCalls)) return;
+
+      for (const item of deltaToolCalls) {
+        const index = Number.isInteger(item.index) ? item.index : target.length;
+        if (!target[index]) {
+          target[index] = { id: '', name: '', arguments: '' };
+        }
+
+        const slot = target[index];
+        if (item.id) slot.id = item.id;
+        if (item.type) slot.type = item.type;
+        if (item.function && typeof item.function === 'object') {
+          if (item.function.name) slot.name = item.function.name;
+          if (typeof item.function.arguments === 'string') slot.arguments += item.function.arguments;
+        }
+      }
+    }
+
+    async function executeArticleToolCall(toolCall) {
+      const name = String(toolCall?.name || '').trim();
+      const args = parseToolArguments(toolCall?.arguments);
+      const lang = args.lang === 'en' || args.lang === 'zh' ? args.lang : undefined;
+
+      switch (name) {
+        case 'list_articles': {
+          const articles = await listArticles(lang || getPreferredArticleLang(''));
+          return JSON.stringify({ articles }, null, 2);
+        }
+        case 'search_articles': {
+          const query = String(args.query || args.keyword || '').trim();
+          if (!query) {
+            return JSON.stringify({ error: 'search_articles 需要 query 参数。' }, null, 2);
+          }
+          const articles = await searchArticles(query, lang || getPreferredArticleLang(query));
+          return JSON.stringify({ query, articles }, null, 2);
+        }
+        case 'read_article': {
+          const articleId = String(args.articleId || args.id || '').trim();
+          if (!articleId) {
+            return JSON.stringify({ error: 'read_article 需要 articleId 参数。' }, null, 2);
+          }
+          const article = await readArticle(articleId, lang || getPreferredArticleLang(articleId));
+          return JSON.stringify({ article }, null, 2);
+        }
+        default:
+          return JSON.stringify({ error: `不支持的工具：${name}` }, null, 2);
+      }
+    }
+
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true } = {}) {
+      let finalAnswer = '';
+      let reasoningText = '';
+      let streamBuffer = '';
+      let doneReasoning = false;
+      const toolCalls = [];
+
+      let response = null;
+      const requestBody = {
+        model: MODELSCOPE_CHAT_MODEL,
+        messages,
+        stream: true,
+      };
+
+      if (enableTools) {
+        requestBody.tools = ARTICLE_TOOL_DEFINITIONS;
+        requestBody.tool_choice = 'auto';
+      }
+
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        response = await fetch(`${MODELSCOPE_API_BASE}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${MODELSCOPE_API_KEY}`
+          },
+          signal: controller.signal,
+          body: JSON.stringify(requestBody)
+        });
+
+        if (response.status !== 429 || attempt === 2) {
+          break;
+        }
+
+        await sleep(900 * attempt);
+      }
+
+      if (response.status === 429) {
+        throw new Error(RATE_LIMIT_MESSAGE);
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        let detail = errorText.trim();
+        if (detail) {
+          try {
+            const parsed = JSON.parse(detail);
+            detail = parsed?.error?.message || parsed?.message || parsed?.detail || detail;
+          } catch (parseError) {
+            // keep raw text
+          }
+        }
+        throw new Error(detail ? `HTTP error! status: ${response.status} · ${detail}` : `HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      function applyDelta(parsed) {
+        const delta = parsed?.choices?.[0]?.delta || {};
+        const reasoning = delta.reasoning_content || '';
+        const answer = delta.content || '';
+
+        if (reasoning) {
+          reasoningText += reasoning;
+          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: finalAnswer || '', thinking: true });
+        }
+
+        if (answer) {
+          if (!doneReasoning) {
+            doneReasoning = true;
+          }
+          finalAnswer += answer;
+          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: finalAnswer, thinking: true });
+        }
+
+        if (Array.isArray(delta.tool_calls) && delta.tool_calls.length) {
+          mergeToolCallDeltas(toolCalls, delta.tool_calls);
+          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: '', thinking: true });
+        }
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split(/\r?\n/);
+        streamBuffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === '[DONE]') continue;
+
+          try {
+            applyDelta(JSON.parse(payload));
+          } catch (parseError) {
+            // ignore malformed stream chunks
+          }
+        }
+      }
+
+      if (streamBuffer.trim().startsWith('data: ')) {
+        const payload = streamBuffer.trim().slice(6).trim();
+        if (payload && payload !== '[DONE]') {
+          try {
+            applyDelta(JSON.parse(payload));
+          } catch (parseError) {
+            // ignore malformed tail chunk
+          }
+        }
+      }
+
+      if (!finalAnswer && !reasoningText && toolCalls.length) {
+        finalAnswer = '';
+      }
+
+      return {
+        reasoningText,
+        finalAnswer,
+        toolCalls: toolCalls
+          .filter(item => item && item.name)
+          .map((item, index) => ({
+            id: item.id || `tool_${Date.now()}_${index}`,
+            name: item.name,
+            arguments: item.arguments || '',
+          })),
+      };
+    }
+
+    function buildLocalAnswer(query) {
+      if (isModelQuestion(query)) {
+        return 'DeepSeek-V4-Flash 模型';
+      }
+      if (isDateQuestion(query)) {
+        return `今天是${getTodayText()}`;
+      }
+      return '';
+    }
+
+    async function buildLocalArticleAnswer(query) {
+      const normalized = normalizeArticleText(query);
+      const isSiteQuery = isSiteArticleQuery(normalized);
+      const isCatalogRequest = /有哪些文章|文章列表|文章目录|站内文章|文章清单|全部文章|都有什么文章|列出.*文章|list.*article/.test(normalized);
+      const isDetailRequest = /了解|阅读|全文|详细|内容|讲什么|介绍|说明|怎么/.test(normalized);
+
+      if (!isSiteQuery && !isCatalogRequest && !isDetailRequest) {
+        return '';
+      }
+
+      const lang = getPreferredArticleLang(query);
+      if (isCatalogRequest) {
+        const articles = await listArticles(lang);
+        if (!articles.length) return '';
+
+        const lines = articles.slice(0, 8).map(item => {
+          const meta = [item.overlay, item.category, item.date, item.readTime].filter(Boolean).join(' ｜ ');
+          return `- [${item.id}] ${item.title}${meta ? ` ｜ ${meta}` : ''}`;
+        });
+
+        return [`## 站内文章列表`, '', ...lines].join('\n');
+      }
+
+      const matches = await searchArticles(query, lang);
+      if (!matches.length || (matches[0].score || 0) < 45) return '';
+
+      const article = await readArticle(matches[0].id, lang);
+      if (!article) return '';
+
+      const meta = [
+        `- ID：${article.id}`,
+        article.overlay ? `- 系列：${article.overlay}` : '',
+        article.category ? `- 分类：${article.category}` : '',
+        article.date ? `- 日期：${article.date}` : '',
+        article.readTime ? `- 阅读时长：${article.readTime}` : '',
+      ].filter(Boolean).join('\n');
+
+      const body = article.fullText || article.excerpt || '';
+      return [`## ${article.title}`, meta, '', body].filter(Boolean).join('\n');
+    }
+
+    function buildArticlePromptContext(query, articleContext) {
+      const normalized = normalizeArticleText(query);
+      const isCatalogRequest = /有哪些文章|文章列表|文章目录|站内文章|文章清单|全部文章|都有什么文章|列出.*文章|list.*article/.test(normalized);
+      const isDetailRequest = /了解|阅读|全文|详细|内容|讲什么|介绍|说明|怎么/.test(normalized);
+      const blocks = [];
+
+      if (isCatalogRequest) {
+        blocks.push(`## 站内文章目录\n${articleContext.catalogText || '（暂无文章目录）'}`);
+      }
+
+      if (isDetailRequest) {
+        blocks.push(`## 搜索结果\n${articleContext.searchText || '（未命中）'}`);
+        blocks.push(`## 文章正文\n${articleContext.detailText || '（未读取到正文）'}`);
+      }
+
+      if (!blocks.length) {
+        blocks.push(`## 站内文章目录\n${articleContext.catalogText || '（暂无文章目录）'}`);
+        blocks.push(`## 搜索结果\n${articleContext.searchText || '（未命中）'}`);
+        blocks.push(`## 文章正文\n${articleContext.detailText || '（未读取到正文）'}`);
+      }
+
+      return [
+        '以下是本轮由本地文章工具预先检索到的站内内容。',
+        '这一轮**不要再次调用工具**，只能根据下面内容回答。',
+        ...blocks,
+      ].join('\n\n');
+    }
+
+    const TOOL_DISPLAY_NAMES = {
+      list_articles: '获取文章列表',
+      search_articles: '搜索文章',
+      read_article: '读取文章',
+    };
+
+    function addToolCallUI(messageId, toolCall) {
+      const messageDiv = document.getElementById(messageId);
+      if (!messageDiv || !messageDiv._parts) return null;
+      const container = messageDiv._parts.toolCallsContainer;
+
+      const block = document.createElement('div');
+      block.className = 'tool-call-block';
+      block.dataset.toolCallId = toolCall.id || '';
+
+      const header = document.createElement('div');
+      header.className = 'tool-call-header';
+
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('width', '14');
+      icon.setAttribute('height', '14');
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('fill', 'none');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('stroke-width', '2');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z');
+      icon.appendChild(path);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'tool-call-name';
+      const displayName = TOOL_DISPLAY_NAMES[toolCall.name] || toolCall.name;
+      const args = parseToolArguments(toolCall.arguments);
+      const argHint = args.query || args.articleId || args.id || '';
+      nameSpan.textContent = argHint ? `${displayName}：${argHint}` : displayName;
+
+      const spinner = document.createElement('div');
+      spinner.className = 'tool-call-spinner';
+
+      const status = document.createElement('span');
+      status.className = 'tool-call-status';
+      status.textContent = '调用中…';
+      status.style.display = 'none';
+
+      const resultDiv = document.createElement('div');
+      resultDiv.className = 'tool-call-result';
+
+      header.appendChild(icon);
+      header.appendChild(nameSpan);
+      header.appendChild(spinner);
+      header.appendChild(status);
+
+      header.addEventListener('click', () => {
+        block.classList.toggle('expanded');
+      });
+
+      block.appendChild(header);
+      block.appendChild(resultDiv);
+      container.appendChild(block);
+      scrollChatToBottom();
+
+      return block;
+    }
+
+    function completeToolCallUI(block, resultText) {
+      if (!block) return;
+      const spinner = block.querySelector('.tool-call-spinner');
+      const status = block.querySelector('.tool-call-status');
+      const resultDiv = block.querySelector('.tool-call-result');
+
+      if (spinner) spinner.remove();
+      if (status) {
+        status.textContent = '已完成';
+        status.classList.add('done');
+        status.style.display = '';
+      }
+      if (resultDiv) {
+        let preview = String(resultText || '').trim();
+        if (preview.length > 800) preview = preview.slice(0, 800) + '\n…（结果已截断）';
+        resultDiv.textContent = preview;
+      }
+      scrollChatToBottom();
+    }
+
+    async function sendMessage(content) {
+      const query = String(content || '').trim();
+      if (!query || state.isStreaming) return;
+
+      homeView.classList.add('chatting');
+      chatMessages.classList.add('active');
+      createUserMessage(query);
+      homeInput.value = '';
+      setComposerBusy(true);
+
+      const normalizedQuery = normalizeArticleText(query);
+      const articleQuery = isSiteArticleQuery(normalizedQuery);
+      const articleContext = articleQuery
+        ? await buildArticleToolContext(query).catch(() => null)
+        : null;
+
+      if (articleContext) {
+        const assistantMessageId = createAssistantMessage();
+        const controller = new AbortController();
+        state.activeRequestController = controller;
+
+        try {
+          const articleSystemContext = buildArticlePromptContext(query, articleContext);
+          const baseMessages = await buildApiMessages(query, articleSystemContext);
+          const roundResult = await streamChatCompletionRound(baseMessages, assistantMessageId, controller, { enableTools: false });
+          const localFallback = await buildLocalArticleAnswer(query).catch(() => '');
+          const resolvedAnswer = roundResult.finalAnswer || roundResult.reasoningText || localFallback || '我刚刚没有拿到有效回复。你可以再试一次。';
+
+          updateAssistantMessage(assistantMessageId, {
+            reasoning: roundResult.reasoningText,
+            answer: resolvedAnswer,
+            thinking: false,
+          });
+
+          pushHistory('user', query);
+          pushHistory('assistant', resolvedAnswer);
+          return;
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            const articleFallback = await buildLocalArticleAnswer(query).catch(() => '');
+            if (articleFallback) {
+              updateAssistantMessage(assistantMessageId, { answer: articleFallback, thinking: false });
+              pushHistory('user', query);
+              pushHistory('assistant', articleFallback);
+            } else if (String(error.message || '').includes('429')) {
+              updateAssistantMessage(assistantMessageId, { answer: RATE_LIMIT_MESSAGE, thinking: false });
+            } else {
+              updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${error.message}`, thinking: false });
+            }
+          }
+        } finally {
+          if (state.activeRequestController === controller) {
+            state.activeRequestController = null;
+          }
+          setComposerBusy(false);
+        }
+
+        return;
+      }
+
+      const localAnswer = buildLocalAnswer(query);
+      if (localAnswer) {
+        const assistantMessageId = createAssistantMessage();
+        updateAssistantMessage(assistantMessageId, { answer: localAnswer });
+        pushHistory('user', query);
+        pushHistory('assistant', localAnswer);
+        setComposerBusy(false);
+        return;
+      }
+
+      const assistantMessageId = createAssistantMessage();
+      const baseMessages = await buildApiMessages(query);
+      const requestMessages = baseMessages.map(message => ({ ...message }));
+      const turnMessages = [];
+      const controller = new AbortController();
+      state.activeRequestController = controller;
+
+      try {
+        let round = 0;
+        while (round < MAX_TOOL_ROUNDS) {
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller);
+
+          if (roundResult.toolCalls.length) {
+            const assistantToolMessage = {
+              role: 'assistant',
+              content: roundResult.finalAnswer || '',
+              tool_calls: roundResult.toolCalls.map((call, index) => ({
+                id: call.id || `call_${Date.now()}_${round}_${index}`,
+                type: 'function',
+                function: {
+                  name: call.name,
+                  arguments: call.arguments || '',
+                },
+              })),
+            };
+
+            requestMessages.push(assistantToolMessage);
+            turnMessages.push(assistantToolMessage);
+
+            updateAssistantMessage(assistantMessageId, {
+              reasoning: roundResult.reasoningText,
+              answer: '',
+              thinking: true,
+            });
+
+            for (let index = 0; index < roundResult.toolCalls.length; index += 1) {
+              const toolCall = roundResult.toolCalls[index];
+              const uiBlock = addToolCallUI(assistantMessageId, toolCall);
+              const toolOutput = await executeArticleToolCall(toolCall);
+              completeToolCallUI(uiBlock, toolOutput);
+              const toolMessage = {
+                role: 'tool',
+                tool_call_id: toolCall.id || `tool_${Date.now()}_${round}_${index}`,
+                name: toolCall.name,
+                content: toolOutput,
+              };
+
+              requestMessages.push(toolMessage);
+              turnMessages.push(toolMessage);
+            }
+
+            round += 1;
+            continue;
+          }
+
+          const resolvedAnswer = roundResult.finalAnswer || roundResult.reasoningText || '我刚刚没有拿到有效回复。你可以再试一次。';
+          updateAssistantMessage(assistantMessageId, {
+            reasoning: roundResult.reasoningText,
+            answer: resolvedAnswer,
+            thinking: false,
+          });
+
+          pushHistory('user', query);
+          turnMessages.forEach(message => pushHistory(message));
+          pushHistory('assistant', resolvedAnswer);
+          return;
+        }
+
+        const fallbackAnswer = '工具调用轮次过多，已停止。你可以换个说法再试。';
+        updateAssistantMessage(assistantMessageId, { answer: fallbackAnswer, thinking: false });
+        pushHistory('user', query);
+        turnMessages.forEach(message => pushHistory(message));
+        pushHistory('assistant', fallbackAnswer);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          const articleFallback = await buildLocalArticleAnswer(query).catch(() => '');
+          if (articleFallback) {
+            updateAssistantMessage(assistantMessageId, { answer: articleFallback });
+            pushHistory('user', query);
+            pushHistory('assistant', articleFallback);
+          } else if (String(error.message || '').includes('429')) {
+            updateAssistantMessage(assistantMessageId, { answer: RATE_LIMIT_MESSAGE });
+          } else {
+            updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${error.message}` });
+          }
+        }
+      } finally {
+        if (state.activeRequestController === controller) {
+          state.activeRequestController = null;
+        }
+        setComposerBusy(false);
+      }
+    }
+
+    function openPopover(el) {
+      if (!el) return;
+      if (state.modal) return;
+      if (state.popover && state.popover !== el) state.popover.classList.remove('open');
+      const willOpen = !el.classList.contains('open');
+      closePopover();
+      if (willOpen) {
+        el.classList.add('open');
+        state.popover = el;
+      }
+    }
+
+    function closePopover() {
+      [plusPopover, morePopover, accountPopover].forEach(p => p.classList.remove('open'));
+      state.popover = null;
+    }
+
+    function openModal(id) {
+      closePopover();
+      closeModal();
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      state.modal = modal;
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      scrim.classList.add('show');
+    }
+
+    function closeModal() {
+      [settingsModal, tempChatModal, projectModal].forEach(m => {
+        m.classList.remove('open');
+        m.setAttribute('aria-hidden', 'true');
+      });
+      state.modal = null;
+      if (!state.popover) scrim.classList.remove('show');
+    }
+
+    function cycleAppearance() {
+      themeIndex = (themeIndex + 1) % themeCycle.length;
+      state.theme = themeCycle[themeIndex].value;
+      applyTheme();
+    }
+
+    function cycleContrast() {
+      contrastIndex = (contrastIndex + 1) % contrastCycle.length;
+      state.contrast = contrastCycle[contrastIndex];
+      applyTheme();
+    }
+
+    function cycleAccent() {
+      accentIndex = (accentIndex + 1) % accentCycle.length;
+      state.accentName = accentCycle[accentIndex].name;
+      state.accentValue = accentCycle[accentIndex].value;
+      applyTheme();
+    }
+
+    function cycleLanguage() {
+      langIndex = (langIndex + 1) % langCycle.length;
+      state.language = langCycle[langIndex];
+      applyTheme();
+    }
+
+    function cycleSpeech() {
+      speechIndex = (speechIndex + 1) % speechCycle.length;
+      state.speech = speechCycle[speechIndex];
+      applyTheme();
+    }
+
+    function activateSettingsPanel(panelId) {
+      settingTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.settingsPanel === panelId));
+      settingPanels.forEach(panel => panel.classList.toggle('active', panel.id === panelId));
+    }
+
+    document.getElementById('sidebarToggle').addEventListener('click', e => {
+      e.stopPropagation();
+      sidebar.classList.toggle('collapsed');
+      closePopover();
+    });
+
+    document.getElementById('brandHomeBtn').addEventListener('click', () => {
+      setActiveView('home');
+      clearConversation();
+    });
+    document.getElementById('plusTrigger').addEventListener('click', e => { e.stopPropagation(); openPopover(plusPopover); });
+    document.getElementById('moreEntry').addEventListener('click', e => { e.stopPropagation(); openPopover(morePopover); });
+    document.getElementById('accountTrigger').addEventListener('click', e => { e.stopPropagation(); openPopover(accountPopover); });
+
+    document.getElementById('settingsBtn').addEventListener('click', () => openModal('settingsModal'));
+    document.getElementById('themeShortcutBtn').addEventListener('click', () => openModal('settingsModal'));
+    document.getElementById('tempChatBtn').addEventListener('click', () => openModal('tempChatModal'));
+    document.getElementById('projectBtn').addEventListener('click', () => openModal('projectModal'));
+    document.getElementById('createProjectFromPlus').addEventListener('click', () => openModal('projectModal'));
+
+    navRows.forEach(row => {
+      row.addEventListener('click', () => {
+        const target = row.dataset.viewTarget;
+        setActiveView(target);
+        if (target === 'home') {
+          clearConversation();
+        }
+      });
+    });
+
+    document.getElementById('openImagesFromPlus').addEventListener('click', () => setActiveView('images'));
+    document.getElementById('openImagesFromMore').addEventListener('click', () => setActiveView('images'));
+    document.getElementById('imageChipBtn').addEventListener('click', () => setActiveView('images'));
+
+    document.getElementById('writeChipBtn').addEventListener('click', () => showToast('撰写面板可继续扩展，当前已保留入口。'));
+    document.getElementById('searchChipBtn').addEventListener('click', () => showToast('资料检索入口已响应，可继续接搜索结果页。'));
+    document.getElementById('searchChatsBtn').addEventListener('click', () => showToast('聊天搜索已响应。'));
+    document.getElementById('codexBtn').addEventListener('click', () => showToast('Codex 面板已响应。'));
+    document.getElementById('teamToastBtn').addEventListener('click', () => showToast('团队邀请入口已响应。'));
+    document.getElementById('upgradeBtn').addEventListener('click', () => showToast('升级方案入口已响应。'));
+    document.getElementById('voiceToastBtn').addEventListener('click', () => showToast('语音模式入口已响应。'));
+    document.getElementById('micToastBtn').addEventListener('click', () => showToast('语音输入入口已响应。'));
+    document.getElementById('imageMicToastBtn').addEventListener('click', () => showToast('图片语音输入入口已响应。'));
+    document.getElementById('uploadToastBtn').addEventListener('click', () => showToast('文件上传入口已响应。'));
+    document.getElementById('thinkingToastBtn').addEventListener('click', () => showToast('思考模式入口已响应。'));
+    document.getElementById('researchToastBtn2').addEventListener('click', () => showToast('深度研究入口已响应。'));
+    document.getElementById('openResearchToast').addEventListener('click', () => showToast('深度研究入口已响应。'));
+    document.getElementById('openAppsToast').addEventListener('click', () => showToast('应用中心入口已响应。'));
+    document.getElementById('profileToastBtn').addEventListener('click', () => showToast('个人资料入口已响应。'));
+    document.getElementById('helpToastBtn').addEventListener('click', () => showToast('帮助中心入口已响应。'));
+    document.getElementById('logoutToastBtn').addEventListener('click', () => showToast('退出登录入口已响应。'));
+    document.getElementById('mfaToastBtn').addEventListener('click', () => showToast('MFA 设置入口已响应。'));
+    document.getElementById('projectSettingToastBtn').addEventListener('click', () => showToast('项目高级设置入口已响应。'));
+    document.getElementById('plusMoreBtn').addEventListener('click', () => showToast('更多二级菜单可继续扩展。'));
+
+    document.getElementById('continueTempChatBtn').addEventListener('click', () => {
+      closeModal();
+      homeInput.focus();
+      showToast('已进入临时聊天。');
+    });
+
+    document.getElementById('createProjectConfirmBtn').addEventListener('click', () => {
+      const value = projectNameInput.value.trim();
+      if (!value) {
+        showToast('请先输入项目名称。');
+        projectNameInput.focus();
+        return;
+      }
+      state.recentProjectName = value;
+      closeModal();
+      setActiveView('home');
+      showToast(`项目“${value}”已创建。`);
+    });
+
+    document.getElementById('sendImagePromptBtn').addEventListener('click', () => {
+      const value = imagePromptInput.value.trim();
+      if (!value) {
+        showToast('请输入图片描述。');
+        imagePromptInput.focus();
+        return;
+      }
+      generateImageFromPrompt(value);
+    });
+
+    homeInput.addEventListener('input', () => {
+      setComposerBusy(state.isStreaming);
+    });
+
+    imagePromptInput.addEventListener('input', () => {
+      setImageGenerationBusy(state.isImageGenerating, imagePromptInput.value.trim() ? imageGenerationStatus.textContent : '等待输入提示词');
+    });
+
+    homeInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && homeInput.value.trim()) {
+        sendMessage(homeInput.value.trim());
+      }
+    });
+
+    sendChatBtn.addEventListener('click', () => {
+      if (homeInput.value.trim()) sendMessage(homeInput.value.trim());
+    });
+
+    sendImagePromptBtn.disabled = true;
+    sendImagePromptBtn.setAttribute('aria-disabled', 'true');
+
+    imagePromptInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendImagePromptBtn.click();
+    });
+
+    projectNameInput.addEventListener('input', () => {
+      const hasValue = projectNameInput.value.trim().length > 0;
+      const btn = document.getElementById('createProjectConfirmBtn');
+      btn.className = hasValue ? 'primary-btn' : 'muted-btn';
+    });
+
+    document.getElementById('appearanceRow').addEventListener('click', cycleAppearance);
+    document.getElementById('contrastRow').addEventListener('click', cycleContrast);
+    document.getElementById('accentRow').addEventListener('click', cycleAccent);
+    document.getElementById('languageRow').addEventListener('click', cycleLanguage);
+    document.getElementById('speechRow').addEventListener('click', cycleSpeech);
+
+    dismissMfaBtn.addEventListener('click', () => {
+      dismissMfaBtn.closest('.mfa-box').style.display = 'none';
+      showToast('已隐藏 MFA 推荐。');
+    });
+
+    settingTabs.forEach(tab => {
+      tab.addEventListener('click', () => activateSettingsPanel(tab.dataset.settingsPanel));
+    });
+
+    document.querySelectorAll('[data-close-modal]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal());
+    });
+
+    document.querySelectorAll('.popover').forEach(pop => pop.addEventListener('click', e => e.stopPropagation()));
+    document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', e => e.stopPropagation()));
+
+    scrim.addEventListener('click', () => {
+      closePopover();
+      closeModal();
+      scrim.classList.remove('show');
+    });
+
+    document.addEventListener('click', () => {
+      closePopover();
+      if (!state.modal) scrim.classList.remove('show');
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closePopover();
+        closeModal();
+        scrim.classList.remove('show');
+      }
+    });
+
+    document.querySelectorAll('.preview-card').forEach(card => {
+      card.addEventListener('click', () => showToast(`已选中风格：${card.textContent.trim()}`));
+    });
+
+    document.querySelectorAll('.grid-card').forEach((card, index) => {
+      card.addEventListener('click', () => showToast(`已打开图片 ${index + 1}`));
+    });
+
+    document.getElementById('stylePrevBtn').addEventListener('click', () => showToast('已切换到上一组风格。'));
+    document.getElementById('styleNextBtn').addEventListener('click', () => showToast('已切换到下一组风格。'));
+
+    // 接收从首页传来的问题参数
+    function initQueryFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const question = params.get('q');
+      if (question) {
+        const decoded = decodeURIComponent(question);
+        homeInput.value = decoded;
+        // 可选：自动发送或仅填入等待用户确认
+        // 这里仅填入并聚焦，让用户按回车或等待
+        homeInput.focus();
+        // 更新标题显示
+        heroTitle.textContent = '有什么可以帮忙的？';
+        setComposerBusy(false);
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      const key = String(e.key || '').toLowerCase();
+      if (key === 'f12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(key)) || (e.ctrlKey && key === 'u')) {
+        e.preventDefault();
+        showDevtoolsShield();
+      }
+    });
+    document.addEventListener('contextmenu', e => {
+      if (devtoolsShield && devtoolsShield.classList.contains('show')) {
+        e.preventDefault();
+      }
+    });
+
+    applyTheme();
+    setActiveView('home');
+    setComposerBusy(false);
+    updateTokenExpiryNote();
+    setInterval(updateTokenExpiryNote, 1000);
+    initQueryFromUrl();
+  </script>
+</body>
+</html>
