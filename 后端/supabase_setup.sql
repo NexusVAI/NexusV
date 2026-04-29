@@ -15,9 +15,9 @@ DROP POLICY IF EXISTS "No direct access" ON api_config;
 CREATE POLICY "No direct access" ON api_config FOR ALL
   USING (false);
 
--- 插入ModelScope API Key
+-- 插入ModelScope API Key（请替换为实际密钥）
 INSERT INTO api_config (service_name, api_key)
-VALUES ('modelscope', 'ms-e5cc3b83-f654-433f-befb-d5d96e8df57e')
+VALUES ('modelscope', 'YOUR_MODELSCOPE_API_KEY')
 ON CONFLICT (service_name) DO UPDATE SET
   api_key = EXCLUDED.api_key,
   updated_at = NOW();
