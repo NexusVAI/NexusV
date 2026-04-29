@@ -22,8 +22,3 @@ ON CONFLICT (service_name) DO UPDATE SET
   api_key = EXCLUDED.api_key,
   updated_at = NOW();
 
--- 创建获取API Key的函数（仅限服务端调用）
-CREATE OR REPLACE FUNCTION get_api_key(p_service_name TEXT)
-RETURNS TEXT AS $$
-  SELECT api_key FROM api_config WHERE service_name = p_service_name LIMIT 1;
-$$ LANGUAGE sql SECURITY DEFINER;

@@ -6,7 +6,7 @@
 - 创建 `api_config` 表存储API key
 - 启用行级安全保护
 - 插入ModelScope API key
-- 创建服务端函数 `get_api_key`
+- API key 通过 Edge Function 环境变量直接配置，不再通过数据库函数暴露
 
 ## 2. 部署Edge Function
 
@@ -30,7 +30,8 @@ supabase functions deploy modelscope-proxy
 
 在Supabase Dashboard中设置Edge Function的环境变量：
 - `SUPABASE_URL`: https://diusqgphvybnzazgopor.supabase.co
-- `SUPABASE_ANON_KEY`: 你的Supabase匿名密钥
+- `SUPABASE_SERVICE_ROLE_KEY`: 你的Supabase service_role key
+- `MODELSCOPE_API_KEY`: 你的ModelScope API key（直接从环境变量读取，不再通过数据库函数暴露）
 
 ## 4. 测试Edge Function
 

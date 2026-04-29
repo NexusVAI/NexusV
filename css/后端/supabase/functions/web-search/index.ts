@@ -4,7 +4,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, accept, origin',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 const HTML_SEARCH_URL = 'https://html.duckduckgo.com/html/';
@@ -146,30 +148,44 @@ async function fetchInstantResults(query: string, lang: string, limit: number): 
 }
 
 async function searchDuckDuckGo(query: string, lang: string, limit: number): Promise<SearchResult[]> {
-  const searchUrl = new URL(HTML_SEARCH_URL);
-  searchUrl.searchParams.set('q', query);
-  searchUrl.searchParams.set('kl', lang === 'en' ? 'us-en' : 'cn-zh');
-  searchUrl.searchParams.set('kp', '-1');
+  let htmlResults: SearchResult[] = [];
 
-  const response = await fetch(searchUrl.toString(), {
-    headers: {
-      'Accept-Language': lang === 'en' ? 'en-US,en;q=0.9' : 'zh-CN,zh;q=0.9,en;q=0.6',
-      'User-Agent': USER_AGENT,
-    },
-  });
+  try {
+    const searchUrl = new URL(HTML_SEARCH_URL);
+    searchUrl.searchParams.set('q', query);
+    searchUrl.searchParams.set('kl', lang === 'en' ? 'us-en' : 'cn-zh');
+    searchUrl.searchParams.set('kp', '-1');
 
-  if (!response.ok) {
-    throw new Error(`DuckDuckGo HTML search failed: ${response.status}`);
+    const response = await fetch(searchUrl.toString(), {
+      headers: {
+        'Accept-Language': lang === 'en' ? 'en-US,en;q=0.9' : 'zh-CN,zh;q=0.9,en;q=0.6',
+        'User-Agent': USER_AGENT,
+      },
+    });
+
+    if (response.ok) {
+      const html = await response.text();
+      htmlResults = parseHtmlSearchResults(html, limit);
+    }
+  } catch (error) {
+    console.error('DuckDuckGo HTML search failed:', error);
   }
 
-  const html = await response.text();
-  const htmlResults = parseHtmlSearchResults(html, limit);
   if (htmlResults.length >= limit) {
     return uniqueResults(htmlResults, limit);
   }
 
-  const instantResults = await fetchInstantResults(query, lang, limit);
-  return uniqueResults([...htmlResults, ...instantResults], limit);
+  const instantResults = await fetchInstantResults(query, lang, limit).catch(error => {
+    console.error('DuckDuckGo instant search failed:', error);
+    return [] as SearchResult[];
+  });
+  const mergedResults = uniqueResults([...htmlResults, ...instantResults], limit);
+
+  if (!mergedResults.length) {
+    throw new Error('未获取到联网搜索结果');
+  }
+
+  return mergedResults;
 }
 
 serve(async (req: Request) => {
@@ -186,7 +202,7 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
-    const query = cleanText(body.query);
+    const query = cleanText(body.query || body.search_query);
     if (!query) {
       return new Response(JSON.stringify({ error: 'Missing query' }), {
         status: 400,

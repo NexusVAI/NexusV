@@ -386,6 +386,9 @@ port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
 
+[functions.modelscope-proxy]
+verify_jwt = false
+
 [functions.chat-history]
 verify_jwt = false
 
