@@ -657,7 +657,7 @@
   .message-content {
     max-height: none;
     display: flex; flex-direction: column; gap: 10px;
-    overflow: visible; word-break: break-word;
+    overflow: visible; word-break: break-word; overflow-wrap: anywhere;
   }
 
   /* ── THINK BLOCK ─────────────────────────────────────────── */
@@ -820,11 +820,17 @@
 
   .tool-call-status { font-size: 11px; color: var(--text-dim); margin-left: auto; }
   .tool-call-status.done { color: var(--accent); }
+  .tool-call-status.failed { color: var(--danger); }
+
+  .tool-call-block.failed {
+    border-color: rgba(240,64,64,.28);
+    background: color-mix(in srgb, var(--panel-2) 88%, rgba(240,64,64,.12));
+  }
 
   .tool-call-result {
     padding: 0 12px; max-height: 0; overflow: hidden;
     font-size: 12px; font-family: var(--font-mono);
-    color: var(--text-soft); white-space: pre-wrap;
+    color: var(--text-soft); white-space: pre-wrap; overflow-wrap: anywhere;
     transition: max-height .3s ease, padding .3s ease;
   }
 
@@ -1402,6 +1408,34 @@
       --header-h: 50px;
     }
 
+    .app {
+      overflow: hidden;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: min(82vw, 280px);
+      height: 100dvh;
+      z-index: 140;
+      box-shadow: var(--shadow-xl);
+      transform: translateX(0);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .sidebar.collapsed {
+      width: min(82vw, 280px);
+      transform: translateX(calc(-100% + var(--rail-w)));
+      box-shadow: none;
+    }
+
+    .main {
+      width: calc(100vw - var(--rail-w));
+      margin-left: var(--rail-w);
+    }
+
     .main-header {
       padding: 0 10px;
       gap: 6px;
@@ -1483,6 +1517,14 @@
 
     .message.assistant .message-content {
       font-size: 14.5px;
+    }
+
+    .message.user .message-content,
+    .message.assistant .message-content,
+    .answer-body,
+    .think-body {
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
 
     .modal.large.open,

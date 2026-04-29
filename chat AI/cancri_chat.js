@@ -13,8 +13,6 @@
       isImageGenerating: false,
       activeRequestController: null,
       recentProjectName: '',
-      toolMode: localStorage.getItem('cancri_tool_mode') || 'auto',
-      forceToolUse: localStorage.getItem('cancri_force_tool_use') === 'true',
     };
 
     const root = document.documentElement;
@@ -477,6 +475,9 @@
     const MODELSCOPE_IMAGE_MODEL = 'Tongyi-MAI/Z-Image-Turbo';
     const MODELSCOPE_CHAT_MODEL = 'deepseek-ai/DeepSeek-V4-Flash';
     const MAX_TOOL_ROUNDS = 4;
+    const FETCH_TIMEOUT_MS = 20000;
+    const CHAT_REQUEST_TIMEOUT_MS = 25000;
+    const CHAT_TURN_TIMEOUT_MS = 90000;
 
     // 获取用户标识（基于 API key 或生成随机 ID）
     let userId = localStorage.getItem('cancri_user_id');
@@ -835,11 +836,19 @@
       {
         type: 'function',
         function: {
-          name: 'list_articles',
-          description: '获取站内文章目录。当用户询问有哪些文章、文章列表、目录或清单时使用。',
+          name: 'get_article_list',
+          description: '获取站内文章列表，可选按关键词或分类筛选。当用户询问网站有哪些文章、最近更新或某类主题文章时使用。',
           parameters: {
             type: 'object',
             properties: {
+              keyword: {
+                type: 'string',
+                description: '用于筛选文章的关键词，可为空。',
+              },
+              category: {
+                type: 'string',
+                description: '文章分类，可为空。',
+              },
               lang: {
                 type: 'string',
                 enum: ['zh', 'en'],
@@ -853,45 +862,25 @@
       {
         type: 'function',
         function: {
-          name: 'search_articles',
-          description: '按关键词搜索站内相关文章。当用户在找某个主题、文章或相关内容时使用。',
+          name: 'get_article_content',
+          description: '获取指定文章的正文内容。当已知文章 ID 或标题，或想深入阅读某篇文章时使用。',
           parameters: {
             type: 'object',
             properties: {
-              query: {
-                type: 'string',
-                description: '用于搜索文章的关键词或问题。',
-              },
-              lang: {
-                type: 'string',
-                enum: ['zh', 'en'],
-                description: '返回内容语言，默认跟随用户问题。',
-              },
-            },
-            required: ['query'],
-            additionalProperties: false,
-          },
-        },
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'read_article',
-          description: '读取指定文章的全文。当已知文章 ID，或搜索后需要查看具体内容时使用。',
-          parameters: {
-            type: 'object',
-            properties: {
-              articleId: {
+              article_id: {
                 type: 'string',
                 description: '文章 ID。',
               },
+              article_title: {
+                type: 'string',
+                description: '文章标题，可用于按标题匹配文章。',
+              },
               lang: {
                 type: 'string',
                 enum: ['zh', 'en'],
                 description: '返回内容语言，默认跟随用户问题。',
               },
             },
-            required: ['articleId'],
             additionalProperties: false,
           },
         },
@@ -902,13 +891,13 @@
       type: 'function',
       function: {
         name: 'web_search',
-        description: '联网搜索公开网页内容，适合查找最新信息、站外教程、外部文档或网页资料。',
+        description: '联网搜索公开网页内容，适合查找最新信息、站外教程、新闻、网页资料或外部文档。',
         parameters: {
           type: 'object',
           properties: {
-            query: {
+            search_query: {
               type: 'string',
-              description: '用于联网搜索的关键词或问题。',
+              description: '用于联网搜索的搜索词或问题。',
             },
             lang: {
               type: 'string',
@@ -922,7 +911,7 @@
               description: '返回结果数量，默认 5。',
             },
           },
-          required: ['query'],
+          required: ['search_query'],
           additionalProperties: false,
         },
       },
@@ -1639,131 +1628,60 @@
       return identities[modelId] || identities['deepseek-v4'];
     }
 
-    const TOOL_MODE_LABELS = {
-      auto: '自动',
-      articles: '站内资料',
-      web: '联网搜索',
-    };
-
-    function getToolModeLabel(toolMode = state.toolMode) {
-      return TOOL_MODE_LABELS[toolMode] || TOOL_MODE_LABELS.auto;
-    }
-
-    function isGreetingQuestion(text) {
-      const value = String(text || '').replace(/\s+/g, '');
-      return /^(你好|您好|嗨|hello|hi|hey|早上好|下午好|晚上好|在吗|有人吗)/i.test(value);
-    }
-
-    function isShortAcknowledgement(text) {
-      const value = String(text || '').replace(/\s+/g, '').toLowerCase();
-      return /^(继续|好的|好|行|可以|嗯|嗯嗯|ok|okay|thanks|thankyou|谢谢|收到|明白|走起)$/.test(value);
-    }
-
-    function shouldBypassToolRequirement(text) {
-      return isGreetingQuestion(text) || isModelQuestion(text) || isDateQuestion(text) || isShortAcknowledgement(text);
-    }
-
-    function getAvailableToolDefinitions(toolMode = state.toolMode) {
-      if (toolMode === 'articles') {
-        return ARTICLE_TOOL_DEFINITIONS;
-      }
-      if (toolMode === 'web') {
-        return [WEB_SEARCH_TOOL_DEFINITION];
-      }
+    function getAvailableToolDefinitions() {
       return [...ARTICLE_TOOL_DEFINITIONS, WEB_SEARCH_TOOL_DEFINITION];
     }
 
-    function shouldRequireToolCall(query, forceToolUse = state.forceToolUse) {
-      return Boolean(forceToolUse) && !shouldBypassToolRequirement(query);
-    }
-
-    function updateToolModePlaceholder() {
+    function updateComposerPlaceholder() {
       if (!homeInput) return;
-      if (state.forceToolUse) {
-        homeInput.placeholder = `强制工具模式 · ${getToolModeLabel()}，请输入问题`;
-        return;
-      }
-      if (state.toolMode === 'auto') {
-        homeInput.placeholder = '有问题，尽管问';
-        return;
-      }
-      homeInput.placeholder = `${getToolModeLabel()}模式，直接输入问题`;
+      homeInput.placeholder = '有问题，尽管问';
     }
 
-    function renderToolModeControls() {
-      document.querySelectorAll('[data-tool-mode]').forEach(btn => {
-        const active = btn.dataset.toolMode === state.toolMode;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', String(active));
-      });
-
-      const forceBtn = document.querySelector('[data-tool-force]');
-      if (forceBtn) {
-        forceBtn.classList.toggle('active', state.forceToolUse);
-        forceBtn.setAttribute('aria-pressed', String(state.forceToolUse));
-      }
-
-      updateToolModePlaceholder();
-    }
-
-    function setToolMode(toolMode) {
-      state.toolMode = toolMode;
-      localStorage.setItem('cancri_tool_mode', toolMode);
-      renderToolModeControls();
-    }
-
-    function toggleForceToolUse() {
-      state.forceToolUse = !state.forceToolUse;
-      localStorage.setItem('cancri_force_tool_use', String(state.forceToolUse));
-      renderToolModeControls();
-    }
-
-    async function buildSystemPrompt(query, modelId = currentModel, toolMode = state.toolMode, forceToolUse = state.forceToolUse) {
+    async function buildSystemPrompt(query, modelId = currentModel) {
       const today = getTodayText();
       const modelIdentity = getModelIdentity(modelId);
-      const toolModeLabel = getToolModeLabel(toolMode);
-      const bypassTools = shouldBypassToolRequirement(query);
-      const availableToolNames = toolMode === 'articles'
-        ? 'list_articles、search_articles、read_article'
-        : toolMode === 'web'
-          ? 'web_search'
-          : 'list_articles、search_articles、read_article、web_search';
       const promptParts = [
-        `你是 ${modelIdentity}，乐于助人、耐心、准确。`,
-        '你的任务是帮助用户查找、安装、配置和排查 GTA5 模组；回答要清晰、可执行，优先给出步骤。',
-        `如果用户问你是谁或你能做什么，回答：我是 ${modelIdentity}。`,
-        '说话尽量简短，不要废话；不确定就直接说明，不要编造。',
-        `当前日期是${today}。如果用户问今天几号、日期或星期，请直接按这个日期回答，不要调用任何工具。`,
-        '回答时尽量使用简洁 Markdown，必要时再用列表、加粗、代码块。',
-        `你当前可用的工具：${availableToolNames}。当前工具模式：${toolModeLabel}。`,
-        toolMode === 'auto'
-          ? '工具模式为自动：按问题类型选择最合适的工具；不需要查资料时不要调用工具。'
-          : toolMode === 'articles'
-            ? '工具模式为站内资料：优先只使用站内文章工具，不要调用联网搜索。'
-            : '工具模式为联网搜索：优先只使用 web_search，不要调用站内文章工具，除非用户明确要求站内资料。',
-        forceToolUse
-          ? (bypassTools
-            ? '用户已开启强制工具模式，但本轮问题属于问候、身份、日期、确认或纯寒暄，请直接回答，不要调用工具。'
-            : '用户已开启强制工具模式：只要不是问候、身份、日期或纯寒暄，就必须先调用最合适的工具再回答，不能凭空猜测。')
-          : '未开启强制工具模式：仅在确实需要查资料、外部信息或站内文档时使用工具。',
-        '你必须严格遵守以下规则，绝不能违反：',
-        '【禁止调用工具的场景】',
-        '- 用户打招呼（如“你好”“嗨”）：直接回复问候，禁止调用工具。',
-        '- 用户问你是谁、你能做什么、模型名称：直接自我介绍，禁止调用工具。',
-        '- 用户问今天几号、日期、时间、星期：直接用上面给出的日期回答，禁止调用工具。',
-        '- 普通闲聊、闲聊、天气、生活话题：正常聊天回复，禁止调用工具。',
-        '【允许调用工具的场景】',
-        '- 用户问有哪些模组/教程/文档、目录或清单时，调用 list_articles。',
-        '- 用户问某个 GTA5 模组、安装步骤、报错处理、兼容性或配置时，先调用 search_articles。',
-        '- 用户需要某篇教程或文档的细节或全文时，先用 search_articles 找到文章 ID，再调用 read_article。',
-        toolMode === 'web'
-          ? '- 当前模式只允许使用 web_search；不要调用站内文章工具。'
-          : toolMode === 'articles'
-            ? '- 当前模式只允许使用站内文章工具；不要调用 web_search。'
-            : '- 用户问站外网页、最新资讯、外部文档、网页内容时，调用 web_search。',
-        '- 工具结果返回后，只根据工具结果回答，不要编造不存在的模组、教程或细节。',
-        '- 信息不足时，先追问版本、平台、模组名、报错内容或安装路径。',
-        '- 不要为了“显得智能”而跳过工具；该查就查。',
+        '# Role',
+        `你是一个智能、高效的网站专属 AI 助手，当前模型身份是：${modelIdentity}。`,
+        '你具备调用外部工具（Function Calling）的权限。从用户的第一轮对话开始，只要问题需要，你就可以并且应该主动调用工具。',
+        '回答要简洁、准确、诚实，不要编造；不确定就直接说明。',
+        `如果用户问你是谁、你是什么模型、由谁支持，直接回答：${modelIdentity}。`,
+        `今天的日期是${today}。如果用户询问今天几号、日期或星期，可以直接根据这个日期回答。`,
+        '',
+        '# Tools Available',
+        '你拥有以下三个核心工具，请完全自主决定是否调用、调用哪个工具，以及是否连续调用多个工具：',
+        '1. `get_article_list`：获取站内文章列表，可按关键词或分类筛选。',
+        '   - 适用：网站有哪些文章、最近更新了什么、找某类主题的文章。',
+        '   - 参数：`keyword`、`category`、`lang`。',
+        '2. `get_article_content`：获取指定文章内容。',
+        '   - 适用：用户明确提到某篇文章，或你先拿到文章列表后想继续读取正文。',
+        '   - 参数：`article_id` 或 `article_title`，可选 `lang`。',
+        '3. `web_search`：联网搜索公开网页内容。',
+        '   - 适用：最新新闻、实时信息、网页内容、站外文档或站内文章无法覆盖的外部知识。',
+        '   - 参数：`search_query`，可选 `lang`、`limit`。',
+        '',
+        '# Workflow',
+        '1. 先理解用户意图。',
+        '2. 只要问题依赖站内数据或外部最新信息，就立即主动调用合适的工具，不要凭空猜测。',
+        '3. 可以链式调用多个工具，例如先获取文章列表，再读取文章正文；先联网搜索，再基于结果总结。',
+        '4. 工具返回后，提炼结果并用人类友好的语言回答。如果工具失败，要明确告知失败点，并尝试合理的备用方案。',
+        '',
+        '# Tool Policy',
+        '- 工具调用时机完全由你自主决定，前端不会干预。',
+        '- 首轮对话允许直接调用工具，不需要等待第二轮。',
+        '- 站内问题优先使用站内工具；站外实时问题优先使用 `web_search`。',
+        '- 不要为了显得智能而跳过工具；该查就查。',
+        '- 工具结果不足时，先继续调用工具或向用户补充确认。',
+        '- 回答尽量使用简洁 Markdown。',
+        '',
+        '# Examples',
+        'User: 你们网站最近更新了什么 AI 相关文章？',
+        'Assistant: [Call `get_article_list` with `{"keyword":"AI"}`]',
+        'User: 把关于 Supabase 教程的文章内容发我看看。',
+        'Assistant: [Call `get_article_list` with `{"keyword":"Supabase"}`]',
+        'Assistant: [Call `get_article_content` with `{"article_id":"..."}`]',
+        'User: 昨天马斯克发了什么推特？',
+        'Assistant: [Call `web_search` with `{"search_query":"马斯克 推特 昨天"}`]',
       ];
 
       return promptParts.join('\n');
@@ -1790,6 +1708,73 @@
 
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function createAbortError(message = '请求已取消，请重试。') {
+      const error = new Error(message);
+      error.name = 'AbortError';
+      return error;
+    }
+
+    function createTimeoutError(timeoutMs, label = '请求') {
+      const seconds = Math.max(1, Math.round(timeoutMs / 1000));
+      return createAbortError(`${label}超时（>${seconds} 秒），请重试。`);
+    }
+
+    function normalizeErrorMessage(error, fallback = '请求失败，请稍后再试。') {
+      if (!error) return fallback;
+      if (error.name === 'AbortError') {
+        return error.message && error.message !== 'The operation was aborted.'
+          ? error.message
+          : '请求已取消或超时，请重试。';
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      if (/^failed to fetch$/i.test(message || '')) {
+        return '网络请求失败，请检查 Edge Function 是否已部署、CORS 是否生效，或稍后重试。';
+      }
+      return message || fallback;
+    }
+
+    function startAbortTimer(controller, timeoutMs, label = '请求') {
+      const timeoutId = setTimeout(() => {
+        controller.abort(createTimeoutError(timeoutMs, label));
+      }, timeoutMs);
+      return () => clearTimeout(timeoutId);
+    }
+
+    async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS, label = '请求') {
+      const controller = new AbortController();
+      const parentSignal = options.signal;
+      const relayAbort = () => controller.abort(parentSignal?.reason || createAbortError());
+
+      if (parentSignal) {
+        if (parentSignal.aborted) {
+          controller.abort(parentSignal.reason || createAbortError());
+        } else {
+          parentSignal.addEventListener('abort', relayAbort, { once: true });
+        }
+      }
+
+      const timeoutId = setTimeout(() => {
+        controller.abort(createTimeoutError(timeoutMs, label));
+      }, timeoutMs);
+
+      try {
+        return await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          throw createAbortError(normalizeErrorMessage(error, `${label}已取消，请重试。`));
+        }
+        throw new Error(normalizeErrorMessage(error, `${label}失败，请稍后再试。`));
+      } finally {
+        clearTimeout(timeoutId);
+        if (parentSignal) {
+          parentSignal.removeEventListener('abort', relayAbort);
+        }
+      }
     }
 
     function setImageGenerationBusy(isBusy, statusText) {
@@ -2186,8 +2171,8 @@
       return summaryParts.join(' ').trim() || '（包含图片上下文）';
     }
 
-    async function buildApiMessages(query, extraSystemContent = '', userContent = null, modelId = currentModel, toolMode = state.toolMode, forceToolUse = state.forceToolUse) {
-      const systemPrompt = await buildSystemPrompt(query, modelId, toolMode, forceToolUse);
+    async function buildApiMessages(query, extraSystemContent = '', userContent = null, modelId = currentModel) {
+      const systemPrompt = await buildSystemPrompt(query, modelId);
       const messages = [{ role: 'system', content: extraSystemContent ? `${systemPrompt}\n\n${extraSystemContent}` : systemPrompt }];
       conversationHistory.forEach(message => {
         messages.push({
@@ -2233,35 +2218,43 @@
 
     async function executeWebSearchToolCall(toolCall) {
       const args = parseToolArguments(toolCall?.arguments);
-      const query = String(args.query || args.keyword || '').trim();
+      const query = String(args.search_query || args.query || args.keyword || '').trim();
       if (!query) {
-        return JSON.stringify({ error: 'web_search 需要 query 参数。' }, null, 2);
+        return JSON.stringify({ error: 'web_search 需要 search_query 参数。' }, null, 2);
       }
 
       const lang = args.lang === 'en' || args.lang === 'zh' ? args.lang : getPreferredArticleLang(query);
       const limitValue = Number.isFinite(Number(args.limit)) ? Number(args.limit) : 5;
       const limit = Math.max(1, Math.min(10, Math.round(limitValue)));
 
-      const requestPayload = { endpoint: 'web_search', query, lang, limit };
+      const requestPayload = { endpoint: 'web_search', query, search_query: query, lang, limit };
 
       const tryFetchSearch = async (url) => {
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-id': userId,
           },
           body: JSON.stringify(requestPayload),
-        });
+        }, FETCH_TIMEOUT_MS, '联网搜索');
 
         if (!response.ok) {
           const errorText = await response.text().catch(() => '');
-          throw new Error(errorText || `联网搜索失败：HTTP ${response.status}`);
+          let detail = errorText.trim();
+          if (detail) {
+            try {
+              const parsed = JSON.parse(detail);
+              detail = parsed?.error?.message || parsed?.error || parsed?.message || parsed?.detail || detail;
+            } catch (parseError) {
+              // keep raw text
+            }
+          }
+          throw new Error(detail || `联网搜索失败：HTTP ${response.status}`);
         }
 
         const data = await response.json();
         if (!data || !Array.isArray(data.results)) {
-          throw new Error('返回结果格式不正确');
+          throw new Error('联网搜索返回结果格式不正确');
         }
         return data;
       };
@@ -2274,10 +2267,10 @@
           const data = await tryFetchSearch(WEB_SEARCH_URL);
           return JSON.stringify(data, null, 2);
         } catch (fallbackError) {
-          const message = [edgeError?.message, fallbackError?.message]
+          const message = [normalizeErrorMessage(edgeError), normalizeErrorMessage(fallbackError)]
             .filter(Boolean)
             .join(' / ');
-          throw new Error(message || '联网搜索服务不可用，请先部署 web_search 相关 Edge Function');
+          throw new Error(message || '联网搜索服务暂时不可用，请稍后重试。');
         }
       }
     }
@@ -2288,24 +2281,57 @@
       const lang = args.lang === 'en' || args.lang === 'zh' ? args.lang : undefined;
 
       switch (name) {
-        case 'list_articles': {
-          const articles = await listArticles(lang || getPreferredArticleLang(''));
-          return JSON.stringify({ articles }, null, 2);
-        }
+        case 'get_article_list':
+        case 'list_articles':
         case 'search_articles': {
-          const query = String(args.query || args.keyword || '').trim();
-          if (!query) {
-            return JSON.stringify({ error: 'search_articles 需要 query 参数。' }, null, 2);
+          const keyword = String(args.keyword || args.query || '').trim();
+          const category = String(args.category || '').trim();
+          const preferredLang = lang || getPreferredArticleLang(keyword || category);
+          let articles = (keyword || name === 'search_articles')
+            ? await searchArticles(keyword || category, preferredLang)
+            : await listArticles(preferredLang);
+
+          if (category) {
+            const normalizedCategory = normalizeArticleText(category);
+            articles = articles.filter(item => normalizeArticleText(item.category || '').includes(normalizedCategory));
           }
-          const articles = await searchArticles(query, lang || getPreferredArticleLang(query));
-          return JSON.stringify({ query, articles }, null, 2);
+
+          const normalizedArticles = articles.map(item => ({
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            date: item.date,
+            readTime: item.readTime,
+            overlay: item.overlay,
+            excerpt: item.excerpt,
+            score: item.score,
+          }));
+
+          return JSON.stringify({ keyword, category, count: normalizedArticles.length, articles: normalizedArticles }, null, 2);
         }
+        case 'get_article_content':
         case 'read_article': {
-          const articleId = String(args.articleId || args.id || '').trim();
-          if (!articleId) {
-            return JSON.stringify({ error: 'read_article 需要 articleId 参数。' }, null, 2);
+          const articleId = String(args.article_id || args.articleId || args.id || '').trim();
+          const articleTitle = String(args.article_title || args.articleTitle || args.title || '').trim();
+          if (!articleId && !articleTitle) {
+            return JSON.stringify({ error: 'get_article_content 需要 article_id 或 article_title 参数。' }, null, 2);
           }
-          const article = await readArticle(articleId, lang || getPreferredArticleLang(articleId));
+
+          const preferredLang = lang || getPreferredArticleLang(articleTitle || articleId);
+          let article = articleId ? await readArticle(articleId, preferredLang) : null;
+
+          if (!article && articleTitle) {
+            const matches = await searchArticles(articleTitle, preferredLang);
+            const bestMatch = matches.find(item => item && item.id);
+            if (bestMatch?.id) {
+              article = await readArticle(bestMatch.id, preferredLang);
+            }
+          }
+
+          if (!article) {
+            return JSON.stringify({ error: '未找到匹配的文章内容，请提供更准确的文章标题或 article_id。' }, null, 2);
+          }
+
           return JSON.stringify({ article }, null, 2);
         }
         case 'web_search': {
@@ -2316,7 +2342,7 @@
       }
     }
 
-    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, toolMode = state.toolMode, forceToolUse = state.forceToolUse, query = '' } = {}) {
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true } = {}) {
       let finalAnswer = '';
       let reasoningText = '';
       let streamBuffer = '';
@@ -2366,12 +2392,12 @@
       };
 
       if (enableTools) {
-        requestBody.tools = getAvailableToolDefinitions(toolMode);
-        requestBody.tool_choice = shouldRequireToolCall(query, forceToolUse) ? 'required' : 'auto';
+        requestBody.tools = getAvailableToolDefinitions();
+        requestBody.tool_choice = 'auto';
       }
 
       for (let attempt = 1; attempt <= 2; attempt += 1) {
-        response = await fetch(EDGE_FUNCTION_URL, {
+        response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -2381,7 +2407,7 @@
             endpoint: 'chat',
             ...requestBody
           })
-        });
+        }, CHAT_REQUEST_TIMEOUT_MS, '模型请求');
 
         if (response.status !== 429 || attempt === 2) {
           break;
@@ -2411,6 +2437,10 @@
           detail += ' (可能是图片格式不支持或图片过大)';
         }
         throw new Error(detail ? `HTTP error! status: ${response.status} · ${detail}` : `HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('模型请求未返回可读取的数据流。');
       }
 
       const reader = response.body.getReader();
@@ -2489,89 +2519,12 @@
       };
     }
 
-    function buildLocalAnswer(query) {
-      if (isModelQuestion(query)) {
-        return getModelIdentity(currentModel);
-      }
-      if (isDateQuestion(query)) {
-        return `今天是${getTodayText()}`;
-      }
-      return '';
-    }
-
-    async function buildLocalArticleAnswer(query) {
-      const normalized = normalizeArticleText(query);
-      const isSiteQuery = isSiteArticleQuery(normalized);
-      const isCatalogRequest = /有哪些文章|文章列表|文章目录|站内文章|文章清单|全部文章|都有什么文章|列出.*文章|list.*article/.test(normalized);
-      const isDetailRequest = /了解|阅读|全文|详细|内容|讲什么|介绍|说明|怎么/.test(normalized);
-
-      if (!isSiteQuery && !isCatalogRequest && !isDetailRequest) {
-        return '';
-      }
-
-      const lang = getPreferredArticleLang(query);
-      if (isCatalogRequest) {
-        const articles = await listArticles(lang);
-        if (!articles.length) return '';
-
-        const lines = articles.slice(0, 8).map(item => {
-          const meta = [item.overlay, item.category, item.date, item.readTime].filter(Boolean).join(' ｜ ');
-          return `- [${item.id}] ${item.title}${meta ? ` ｜ ${meta}` : ''}`;
-        });
-
-        return [`## 站内文章列表`, '', ...lines].join('\n');
-      }
-
-      const matches = await searchArticles(query, lang);
-      if (!matches.length || (matches[0].score || 0) < 45) return '';
-
-      const article = await readArticle(matches[0].id, lang);
-      if (!article) return '';
-
-      const meta = [
-        `- ID：${article.id}`,
-        article.overlay ? `- 系列：${article.overlay}` : '',
-        article.category ? `- 分类：${article.category}` : '',
-        article.date ? `- 日期：${article.date}` : '',
-        article.readTime ? `- 阅读时长：${article.readTime}` : '',
-      ].filter(Boolean).join('\n');
-
-      const body = article.fullText || article.excerpt || '';
-      return [`## ${article.title}`, meta, '', body].filter(Boolean).join('\n');
-    }
-
-    function buildArticlePromptContext(query, articleContext) {
-      const normalized = normalizeArticleText(query);
-      const isCatalogRequest = /有哪些文章|文章列表|文章目录|站内文章|文章清单|全部文章|都有什么文章|列出.*文章|list.*article/.test(normalized);
-      const isDetailRequest = /了解|阅读|全文|详细|内容|讲什么|介绍|说明|怎么/.test(normalized);
-      const blocks = [];
-
-      if (isCatalogRequest) {
-        blocks.push(`## 站内文章目录\n${articleContext.catalogText || '（暂无文章目录）'}`);
-      }
-
-      if (isDetailRequest) {
-        blocks.push(`## 搜索结果\n${articleContext.searchText || '（未命中）'}`);
-        blocks.push(`## 文章正文\n${articleContext.detailText || '（未读取到正文）'}`);
-      }
-
-      if (!blocks.length) {
-        blocks.push(`## 站内文章目录\n${articleContext.catalogText || '（暂无文章目录）'}`);
-        blocks.push(`## 搜索结果\n${articleContext.searchText || '（未命中）'}`);
-        blocks.push(`## 文章正文\n${articleContext.detailText || '（未读取到正文）'}`);
-      }
-
-      return [
-        '以下是本轮由本地文章工具预先检索到的站内内容。',
-        '这一轮**不要再次调用工具**，只能根据下面内容回答。',
-        ...blocks,
-      ].join('\n\n');
-    }
-
     const TOOL_DISPLAY_NAMES = {
-      list_articles: '获取文章列表',
-      search_articles: '搜索文章',
-      read_article: '读取文章',
+      get_article_list: '获取站内文章列表',
+      get_article_content: '获取文章内容',
+      list_articles: '获取站内文章列表',
+      search_articles: '获取站内文章列表',
+      read_article: '获取文章内容',
       web_search: '联网搜索',
     };
 
@@ -2602,7 +2555,7 @@
       nameSpan.className = 'tool-call-name';
       const displayName = TOOL_DISPLAY_NAMES[toolCall.name] || toolCall.name;
       const args = parseToolArguments(toolCall.arguments);
-      const argHint = args.query || args.articleId || args.id || '';
+      const argHint = args.search_query || args.query || args.keyword || args.article_id || args.articleId || args.article_title || args.title || args.id || '';
       nameSpan.textContent = argHint ? `${displayName}：${argHint}` : displayName;
 
       const spinner = document.createElement('div');
@@ -2653,6 +2606,27 @@
       scrollChatToBottom();
     }
 
+    function failToolCallUI(block, resultText) {
+      if (!block) return;
+      const spinner = block.querySelector('.tool-call-spinner');
+      const status = block.querySelector('.tool-call-status');
+      const resultDiv = block.querySelector('.tool-call-result');
+
+      block.classList.add('failed', 'expanded');
+      if (spinner) spinner.remove();
+      if (status) {
+        status.textContent = '失败';
+        status.classList.add('failed');
+        status.style.display = '';
+      }
+      if (resultDiv) {
+        let preview = String(resultText || '').trim();
+        if (preview.length > 800) preview = preview.slice(0, 800) + '\n…（结果已截断）';
+        resultDiv.textContent = preview;
+      }
+      scrollChatToBottom();
+    }
+
     async function sendMessage(content) {
       // 检查速率限制
       const rateCheck = checkRateLimit();
@@ -2676,91 +2650,25 @@
       const effectiveQuery = query || '请分析上传的图片。';
       const userContent = attachmentsForSend.length
         ? attachmentToUserContent(effectiveQuery, attachmentsForSend)
-        : query;
+        : effectiveQuery;
       const userHistoryMessage = { role: 'user', content: userContent };
 
       createUserMessage(query || effectiveQuery, attachmentsForSend);
       homeInput.value = '';
       setComposerBusy(true);
 
-      const toolMode = state.toolMode;
-      const forceToolUse = state.forceToolUse;
-      const enforceToolFlow = toolMode !== 'auto' || forceToolUse;
-
-      const normalizedQuery = normalizeArticleText(query);
-      const articleQuery = !enforceToolFlow && isSiteArticleQuery(normalizedQuery);
-      const articleContext = articleQuery
-        ? await buildArticleToolContext(query).catch(() => null)
-        : null;
-
-      if (articleContext) {
-        const assistantMessageId = createAssistantMessage();
-        const controller = new AbortController();
-        state.activeRequestController = controller;
-
-        try {
-          const articleSystemContext = buildArticlePromptContext(query, articleContext);
-          const baseMessages = await buildApiMessages(query, articleSystemContext, userContent, currentModel, toolMode, forceToolUse);
-          const roundResult = await streamChatCompletionRound(baseMessages, assistantMessageId, controller, { enableTools: false, toolMode, forceToolUse, query });
-          const localFallback = await buildLocalArticleAnswer(query).catch(() => '');
-          const resolvedAnswer = roundResult.finalAnswer || roundResult.reasoningText || localFallback || '我刚刚没有拿到有效回复。你可以再试一次。';
-
-          updateAssistantMessage(assistantMessageId, {
-            reasoning: roundResult.reasoningText,
-            answer: resolvedAnswer,
-            thinking: false,
-          });
-
-          pushHistory(userHistoryMessage);
-          pushHistory('assistant', resolvedAnswer);
-          await finalizeConversationTurn();
-          return;
-        } catch (error) {
-          if (error.name !== 'AbortError') {
-            const articleFallback = await buildLocalArticleAnswer(query).catch(() => '');
-            if (articleFallback) {
-              updateAssistantMessage(assistantMessageId, { answer: articleFallback, thinking: false });
-              pushHistory(userHistoryMessage);
-              pushHistory('assistant', articleFallback);
-              await finalizeConversationTurn();
-            } else if (String(error.message || '').includes('429')) {
-              updateAssistantMessage(assistantMessageId, { answer: RATE_LIMIT_MESSAGE, thinking: false });
-            } else {
-              updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${error.message}`, thinking: false });
-            }
-          }
-        } finally {
-          if (state.activeRequestController === controller) {
-            state.activeRequestController = null;
-          }
-          setComposerBusy(false);
-        }
-
-        return;
-      }
-
-      const localAnswer = enforceToolFlow ? '' : buildLocalAnswer(query);
-      if (localAnswer) {
-        const assistantMessageId = createAssistantMessage();
-        updateAssistantMessage(assistantMessageId, { answer: localAnswer });
-        pushHistory(userHistoryMessage);
-        pushHistory('assistant', localAnswer);
-        await finalizeConversationTurn();
-        setComposerBusy(false);
-        return;
-      }
-
       const assistantMessageId = createAssistantMessage();
-      const baseMessages = await buildApiMessages(query, '', userContent, currentModel, toolMode, forceToolUse);
-      const requestMessages = baseMessages.map(message => ({ ...message }));
-      const turnMessages = [];
       const controller = new AbortController();
+      const clearTurnTimeout = startAbortTimer(controller, CHAT_TURN_TIMEOUT_MS, '对话请求');
       state.activeRequestController = controller;
 
       try {
+        const baseMessages = await buildApiMessages(effectiveQuery, '', userContent, currentModel);
+        const requestMessages = baseMessages.map(message => ({ ...message }));
+        const turnMessages = [];
         let round = 0;
         while (round < MAX_TOOL_ROUNDS) {
-          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { toolMode, forceToolUse, query });
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller);
 
           if (roundResult.toolCalls.length) {
             const assistantToolMessage = {
@@ -2781,15 +2689,24 @@
 
             updateAssistantMessage(assistantMessageId, {
               reasoning: roundResult.reasoningText,
-              answer: '',
+              answer: roundResult.finalAnswer || '',
               thinking: true,
             });
 
             for (let index = 0; index < roundResult.toolCalls.length; index += 1) {
               const toolCall = roundResult.toolCalls[index];
               const uiBlock = addToolCallUI(assistantMessageId, toolCall);
-              const toolOutput = await executeArticleToolCall(toolCall);
-              completeToolCallUI(uiBlock, toolOutput);
+              let toolOutput = '';
+
+              try {
+                toolOutput = await executeArticleToolCall(toolCall);
+                completeToolCallUI(uiBlock, toolOutput);
+              } catch (toolError) {
+                const toolErrorMessage = normalizeErrorMessage(toolError, '工具调用失败，请稍后重试。');
+                toolOutput = JSON.stringify({ error: toolErrorMessage }, null, 2);
+                failToolCallUI(uiBlock, toolOutput);
+              }
+
               const toolMessage = {
                 role: 'tool',
                 tool_call_id: toolCall.id || `tool_${Date.now()}_${round}_${index}`,
@@ -2826,20 +2743,14 @@
         pushHistory('assistant', fallbackAnswer);
         await finalizeConversationTurn();
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          const articleFallback = enforceToolFlow ? '' : await buildLocalArticleAnswer(query).catch(() => '');
-          if (articleFallback) {
-            updateAssistantMessage(assistantMessageId, { answer: articleFallback });
-            pushHistory(userHistoryMessage);
-            pushHistory('assistant', articleFallback);
-            await finalizeConversationTurn();
-          } else if (String(error.message || '').includes('429')) {
-            updateAssistantMessage(assistantMessageId, { answer: RATE_LIMIT_MESSAGE });
-          } else {
-            updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${error.message}` });
-          }
+        const message = normalizeErrorMessage(error, '抱歉，发送消息时出现错误，请稍后重试。');
+        if (message.includes(RATE_LIMIT_MESSAGE)) {
+          updateAssistantMessage(assistantMessageId, { answer: RATE_LIMIT_MESSAGE, thinking: false });
+        } else {
+          updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${message}`, thinking: false });
         }
       } finally {
+        clearTurnTimeout();
         if (state.activeRequestController === controller) {
           state.activeRequestController = null;
         }
@@ -2872,7 +2783,7 @@
       state.modal = modal;
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
-      scrim.classList.add('show');
+      updateScrimVisibility();
     }
 
     function closeModal() {
@@ -2881,7 +2792,17 @@
         m.setAttribute('aria-hidden', 'true');
       });
       state.modal = null;
-      if (!state.popover) scrim.classList.remove('show');
+      updateScrimVisibility();
+    }
+
+    function isMobileViewport() {
+      return window.innerWidth <= 640;
+    }
+
+    function updateScrimVisibility() {
+      if (!scrim) return;
+      const shouldShow = Boolean(state.modal) || (isMobileViewport() && sidebar && !sidebar.classList.contains('collapsed'));
+      scrim.classList.toggle('show', shouldShow);
     }
 
     function cycleAppearance() {
@@ -2924,6 +2845,7 @@
       e.stopPropagation();
       sidebar.classList.toggle('collapsed');
       closePopover();
+      updateScrimVisibility();
     });
 
     document.getElementById('newChatBtn').addEventListener('click', newChat);
@@ -2977,21 +2899,6 @@
     document.getElementById('mfaToastBtn').addEventListener('click', () => showToast('MFA 设置入口已响应。'));
     document.getElementById('projectSettingToastBtn').addEventListener('click', () => showToast('项目高级设置入口已响应。'));
     document.getElementById('plusMoreBtn').addEventListener('click', () => showToast('更多二级菜单可继续扩展。'));
-
-    const toolChipRow = document.getElementById('toolChipRow');
-    if (toolChipRow) {
-      toolChipRow.addEventListener('click', e => {
-        const modeButton = e.target.closest('[data-tool-mode]');
-        const forceButton = e.target.closest('[data-tool-force]');
-        if (modeButton?.dataset.toolMode) {
-          setToolMode(modeButton.dataset.toolMode);
-          return;
-        }
-        if (forceButton) {
-          toggleForceToolUse();
-        }
-      });
-    }
 
     document.getElementById('continueTempChatBtn').addEventListener('click', () => {
       closeModal();
@@ -3116,19 +3023,28 @@
     scrim.addEventListener('click', () => {
       closePopover();
       closeModal();
-      scrim.classList.remove('show');
+      if (isMobileViewport() && sidebar) {
+        sidebar.classList.add('collapsed');
+      }
+      updateScrimVisibility();
     });
 
-    document.addEventListener('click', () => {
+    document.addEventListener('click', event => {
       closePopover();
-      if (!state.modal) scrim.classList.remove('show');
+      if (isMobileViewport() && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+      }
+      if (!state.modal) updateScrimVisibility();
     });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
         closePopover();
         closeModal();
-        scrim.classList.remove('show');
+        if (isMobileViewport() && sidebar) {
+          sidebar.classList.add('collapsed');
+        }
+        updateScrimVisibility();
       }
     });
 
@@ -3306,9 +3222,14 @@
     updateModelSelectorActive();
     updateContextMeter();
     updateVoiceButtonState();
-    renderToolModeControls();
+    updateComposerPlaceholder();
     // 初始化上传按钮显示状态
     updateAttachBtnVisibility();
+    if (isMobileViewport() && sidebar) {
+      sidebar.classList.add('collapsed');
+    }
+    updateScrimVisibility();
+    window.addEventListener('resize', updateScrimVisibility);
     
     // 设置当前模型显示
     if (currentModelName) {
