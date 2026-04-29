@@ -12,18 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      'https://diusqgphvybnzazgopor.supabase.co',
-      'sb_secret_pp22ORhCOGN6Mpaac0SkRQ_ZF00QFAM',
-      {
-        global: {
-          headers: {
-            'apikey': 'sb_secret_pp22ORhCOGN6Mpaac0SkRQ_ZF00QFAM',
-            'Authorization': 'Bearer sb_secret_pp22ORhCOGN6Mpaac0SkRQ_ZF00QFAM'
-          }
-        }
-      }
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://diusqgphvybnzazgopor.supabase.co'
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     const { data: apiKeyData, error: apiKeyError } = await supabaseClient
       .rpc('get_api_key', { p_service_name: 'modelscope' })
