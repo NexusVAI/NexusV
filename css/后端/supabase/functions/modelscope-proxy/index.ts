@@ -1,16 +1,61 @@
 /// <reference lib="dom" />
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, accept, origin',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
+  'Access-Control-Expose-Headers': 'modelscope-ratelimit-requests-limit, modelscope-ratelimit-requests-remaining, modelscope-ratelimit-model-requests-limit, modelscope-ratelimit-model-requests-remaining',
 }
 
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1'
-const MODELSCOPE_API_KEY = Deno.env.get('MODELSCOPE_API_KEY') || ''
+const MODELSCOPE_API_KEY = (Deno.env.get('MODELSCOPE_API_KEY') || '').trim()
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://diusqgphvybnzazgopor.supabase.co'
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+
+const OPENAI_COMPATIBLE_BASE_URL = (Deno.env.get('OPENAI_COMPATIBLE_BASE_URL') || '').replace(/\/$/, '')
+const OPENAI_COMPATIBLE_API_KEY = Deno.env.get('OPENAI_COMPATIBLE_API_KEY') || ''
+const DASHSCOPE_COMPATIBLE_BASE_URL = (Deno.env.get('DASHSCOPE_COMPATIBLE_BASE_URL') || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '')
+const DASHSCOPE_API_KEY = Deno.env.get('DASHSCOPE_API_KEY') || ''
+
+const SILICONFLOW_BASE_URL = (Deno.env.get('SILICONFLOW_BASE_URL') || 'https://api.siliconflow.cn/v1').replace(/\/$/, '')
+const SILICONFLOW_API_KEY = Deno.env.get('SILICONFLOW_API_KEY') || ''
+
+const OPENROUTER_BASE_URL = (Deno.env.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').replace(/\/$/, '')
+const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY') || ''
+
+type ProviderKind = 'modelscope' | 'openai_compatible' | 'dashscope' | 'siliconflow' | 'openrouter'
+
+function isOpenAICompatibleModel(model: string): boolean {
+  return model === 'dall-e-3'
+}
+
+function isDashScopeCompatibleModel(model: string): boolean {
+  return model === 'kimi-k2.6' || model === 'glm-5' || model === 'qwen3.6-plus' || model === 'qwen3.6-max-preview' || model === 'deepseek-v4-pro'
+}
+
+function isSiliconFlowModel(model: string): boolean {
+  return model === 'stepfun-ai/Step-3.5-Flash'
+}
+
+function isOpenRouterModel(model: string): boolean {
+  return model === 'tencent/hy3-preview:free'
+}
+
+function getProviderKind(model: string): ProviderKind {
+  if (isOpenAICompatibleModel(model)) return 'openai_compatible'
+  if (isDashScopeCompatibleModel(model)) return 'dashscope'
+  if (isSiliconFlowModel(model)) return 'siliconflow'
+  if (isOpenRouterModel(model)) return 'openrouter'
+  return 'modelscope'
+}
+
+function isLocalOnlyBaseUrl(url: string): boolean {
+  return /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/i.test(url)
+}
 
 const HTML_SEARCH_URL = 'https://html.duckduckgo.com/html/'
 const INSTANT_SEARCH_URL = 'https://api.duckduckgo.com/'
@@ -25,6 +70,53 @@ interface SearchResult {
 
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim()
+}
+
+function isPlaceholderModelScopeKey(value: string): boolean {
+  const normalized = value.trim().toUpperCase()
+  return !normalized || normalized === 'YOUR_MODELSCOPE_API_KEY' || normalized === 'REPLACE_WITH_YOUR_MODELSCOPE_API_KEY'
+}
+
+let cachedModelScopeApiKey = ''
+let modelScopeApiKeyLoaded = false
+
+async function resolveModelScopeApiKey(): Promise<string> {
+  if (!isPlaceholderModelScopeKey(MODELSCOPE_API_KEY)) {
+    return MODELSCOPE_API_KEY
+  }
+
+  if (modelScopeApiKeyLoaded) {
+    return cachedModelScopeApiKey
+  }
+
+  modelScopeApiKeyLoaded = true
+
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    return ''
+  }
+
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const { data, error } = await supabase
+      .from('api_config')
+      .select('api_key')
+      .eq('service_name', 'modelscope')
+      .maybeSingle()
+
+    if (error) {
+      console.error('读取 ModelScope API key 失败:', error)
+      return ''
+    }
+
+    const apiKey = String(data?.api_key || '').trim()
+    if (!isPlaceholderModelScopeKey(apiKey)) {
+      cachedModelScopeApiKey = apiKey
+    }
+  } catch (error) {
+    console.error('读取 ModelScope API key 时发生异常:', error)
+  }
+
+  return cachedModelScopeApiKey
 }
 
 function resolveDuckDuckGoUrl(rawHref: string): string {
@@ -231,23 +323,121 @@ serve(async (req: Request) => {
       return await handleWebSearchRequest(requestData)
     }
 
+    const model = String(requestData.model || '')
+    const provider = getProviderKind(model)
+    const modelScopeApiKey = provider === 'modelscope' ? await resolveModelScopeApiKey() : ''
+
+    if (provider === 'openai_compatible' && (!OPENAI_COMPATIBLE_BASE_URL || !OPENAI_COMPATIBLE_API_KEY)) {
+      return new Response(JSON.stringify({ error: 'Missing OPENAI_COMPATIBLE_BASE_URL or OPENAI_COMPATIBLE_API_KEY' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'openai_compatible' && isLocalOnlyBaseUrl(OPENAI_COMPATIBLE_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'OPENAI_COMPATIBLE_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'dashscope' && !DASHSCOPE_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Missing DASHSCOPE_API_KEY for DashScope-compatible models' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'siliconflow' && !SILICONFLOW_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Missing SILICONFLOW_API_KEY for SiliconFlow models' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'openrouter' && !OPENROUTER_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Missing OPENROUTER_API_KEY for OpenRouter models' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'DASHSCOPE_COMPATIBLE_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'siliconflow' && isLocalOnlyBaseUrl(SILICONFLOW_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'SILICONFLOW_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'openrouter' && isLocalOnlyBaseUrl(OPENROUTER_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'OPENROUTER_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'modelscope' && !modelScopeApiKey) {
+      return new Response(JSON.stringify({ error: 'Missing MODELSCOPE_API_KEY or api_config.modelscope entry' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     let url = ''
     let headers: Record<string, string> = {
-      'Authorization': `Bearer ${MODELSCOPE_API_KEY}`,
       'Content-Type': 'application/json',
     }
 
-    // Configure based on endpoint type
+    // Configure based on endpoint type and model
     if (endpoint === 'image') {
-      url = `${MODELSCOPE_API_BASE}/images/generations`
-      headers['X-ModelScope-Async-Mode'] = 'true'
+      if (provider === 'openai_compatible') {
+        url = `${OPENAI_COMPATIBLE_BASE_URL}/images/generations`
+        headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
+      } else if (provider === 'dashscope') {
+        return new Response(JSON.stringify({ error: 'DashScope-compatible chat models do not support the image endpoint' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      } else {
+        url = `${MODELSCOPE_API_BASE}/images/generations`
+        headers['Authorization'] = `Bearer ${modelScopeApiKey}`
+        headers['X-ModelScope-Async-Mode'] = 'true'
+      }
     } else if (endpoint === 'task') {
+      if (provider !== 'modelscope') {
+        return new Response(JSON.stringify({ error: 'Task polling is only supported for ModelScope async image generation' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
       const { taskId } = requestData
       url = `${MODELSCOPE_API_BASE}/tasks/${taskId}`
+      headers['Authorization'] = `Bearer ${modelScopeApiKey}`
       headers['X-ModelScope-Task-Type'] = 'image_generation'
     } else {
-      // Default to chat endpoint
-      url = `${MODELSCOPE_API_BASE}/chat/completions`
+      if (provider === 'openai_compatible') {
+        url = `${OPENAI_COMPATIBLE_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
+      } else if (provider === 'dashscope') {
+        url = `${DASHSCOPE_COMPATIBLE_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${DASHSCOPE_API_KEY}`
+      } else if (provider === 'siliconflow') {
+        url = `${SILICONFLOW_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${SILICONFLOW_API_KEY}`
+      } else if (provider === 'openrouter') {
+        url = `${OPENROUTER_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${OPENROUTER_API_KEY}`
+      } else {
+        url = `${MODELSCOPE_API_BASE}/chat/completions`
+        headers['Authorization'] = `Bearer ${modelScopeApiKey}`
+      }
     }
 
     // Forward request to ModelScope
@@ -282,8 +472,16 @@ serve(async (req: Request) => {
         }
       })
 
+      // Forward rate limit headers
+      const rateLimitHeaders: Record<string, string> = {}
+      response.headers.forEach((value, key) => {
+        if (key.toLowerCase().startsWith('modelscope-ratelimit')) {
+          rateLimitHeaders[key] = value
+        }
+      })
+
       return new Response(stream, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', ...rateLimitHeaders },
         status: response.status,
       })
     }
@@ -291,8 +489,16 @@ serve(async (req: Request) => {
     // Handle JSON response
     const data = await response.json()
 
+    // Forward rate limit headers
+    const rateLimitHeaders: Record<string, string> = {}
+    response.headers.forEach((value, key) => {
+      if (key.toLowerCase().startsWith('modelscope-ratelimit')) {
+        rateLimitHeaders[key] = value
+      }
+    })
+
     return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', ...rateLimitHeaders },
       status: response.status,
     })
   } catch (error) {
