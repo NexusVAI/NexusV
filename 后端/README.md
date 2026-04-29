@@ -2,11 +2,7 @@
 
 ## 1. 在Supabase中执行SQL脚本
 
-在Supabase Dashboard的SQL Editor中执行 `supabase_setup.sql`，这将：
-- 创建 `api_config` 表存储API key
-- 启用行级安全保护
-- 插入ModelScope API key
-- 创建服务端函数 `get_api_key`
+在Supabase Dashboard的SQL Editor中执行 `supabase_setup.sql`（当前为空，API keys 通过环境变量配置）
 
 ## 2. 部署Edge Function
 
@@ -31,6 +27,7 @@ supabase functions deploy modelscope-proxy
 在Supabase Dashboard中设置Edge Function的环境变量：
 - `SUPABASE_URL`: https://diusqgphvybnzazgopor.supabase.co
 - `SUPABASE_ANON_KEY`: 你的Supabase匿名密钥
+- `MODELSCOPE_API_KEY`: 你的ModelScope API密钥
 
 ## 4. 测试Edge Function
 
