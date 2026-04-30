@@ -25,16 +25,21 @@ const SILICONFLOW_BASE_URL = (Deno.env.get('SILICONFLOW_BASE_URL') || 'https://a
 const SILICONFLOW_API_KEY = Deno.env.get('SILICONFLOW_API_KEY') || ''
 
 const OPENROUTER_BASE_URL = (Deno.env.get('OPENROUTER_BASE_URL') || 'https://openrouter.ai/api/v1').replace(/\/$/, '')
-const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY') || ''
+const OPENROUTER_API_KEY_1 = Deno.env.get('OPENROUTER_API_KEY_1') || ''
+const OPENROUTER_API_KEY_2 = Deno.env.get('OPENROUTER_API_KEY_2') || ''
+const OPENROUTER_API_KEY_3 = Deno.env.get('OPENROUTER_API_KEY_3') || ''
 
-type ProviderKind = 'modelscope' | 'openai_compatible' | 'dashscope' | 'siliconflow' | 'openrouter'
+const SPARK_BASE_URL = (Deno.env.get('SPARK_BASE_URL') || 'https://spark-api-open.xf-yun.com/x2').replace(/\/$$/, '')
+const SPARK_API_KEY = Deno.env.get('SPARK_API_KEY') || ''
+
+type ProviderKind = 'modelscope' | 'openai_compatible' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark'
 
 function isOpenAICompatibleModel(model: string): boolean {
   return model === 'dall-e-3'
 }
 
 function isDashScopeCompatibleModel(model: string): boolean {
-  return model === 'kimi-k2.6' || model === 'glm-5' || model === 'qwen3.6-plus' || model === 'qwen3.6-max-preview' || model === 'deepseek-v4-pro'
+  return model === 'kimi-k2.6' || model === 'glm-5' || model === 'glm-5.1' || model === 'qwen3.6-plus' || model === 'qwen3.6-max-preview' || model === 'deepseek-v4-flash'
 }
 
 function isSiliconFlowModel(model: string): boolean {
@@ -42,7 +47,11 @@ function isSiliconFlowModel(model: string): boolean {
 }
 
 function isOpenRouterModel(model: string): boolean {
-  return model === 'tencent/hy3-preview:free'
+  return model === 'tencent/hy3-preview:free' || model === 'openai/gpt-oss-120b:free' || model === 'nvidia/nemotron-3-super-120b-a12b:free' || model === 'inclusionai/ling-2.6-1t:free'
+}
+
+function isSparkModel(model: string): boolean {
+  return model === 'spark-x'
 }
 
 function getProviderKind(model: string): ProviderKind {
@@ -50,6 +59,7 @@ function getProviderKind(model: string): ProviderKind {
   if (isDashScopeCompatibleModel(model)) return 'dashscope'
   if (isSiliconFlowModel(model)) return 'siliconflow'
   if (isOpenRouterModel(model)) return 'openrouter'
+  if (isSparkModel(model)) return 'spark'
   return 'modelscope'
 }
 
@@ -355,8 +365,15 @@ serve(async (req: Request) => {
       })
     }
 
-    if (provider === 'openrouter' && !OPENROUTER_API_KEY) {
+    if (provider === 'openrouter' && !OPENROUTER_API_KEY_1 && !OPENROUTER_API_KEY_2 && !OPENROUTER_API_KEY_3) {
       return new Response(JSON.stringify({ error: 'Missing OPENROUTER_API_KEY for OpenRouter models' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'spark' && !SPARK_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Missing SPARK_API_KEY for Spark models' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -433,7 +450,13 @@ serve(async (req: Request) => {
         headers['Authorization'] = `Bearer ${SILICONFLOW_API_KEY}`
       } else if (provider === 'openrouter') {
         url = `${OPENROUTER_BASE_URL}/chat/completions`
-        headers['Authorization'] = `Bearer ${OPENROUTER_API_KEY}`
+        // Rotate between 3 API keys randomly
+        const openRouterKeys = [OPENROUTER_API_KEY_1, OPENROUTER_API_KEY_2, OPENROUTER_API_KEY_3].filter(k => k)
+        const randomKey = openRouterKeys[Math.floor(Math.random() * openRouterKeys.length)]
+        headers['Authorization'] = `Bearer ${randomKey}`
+      } else if (provider === 'spark') {
+        url = `${SPARK_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${SPARK_API_KEY}`
       } else {
         url = `${MODELSCOPE_API_BASE}/chat/completions`
         headers['Authorization'] = `Bearer ${modelScopeApiKey}`
