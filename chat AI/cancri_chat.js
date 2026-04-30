@@ -137,6 +137,21 @@
       return modelStatus.get(modelId) || { quotaRemaining: null, quotaLimit: null, speedMs: null, speedLevel: 'unknown', lastChecked: 0, error: null, lockedUntil: null, lockReason: null };
     }
 
+    function formatModelUnavailableDebug(modelId, status = getModelStatus(modelId)) {
+      const lockedUntilText = Number.isFinite(status.lockedUntil)
+        ? new Date(status.lockedUntil).toLocaleString()
+        : 'none';
+      const lastCheckedText = Number.isFinite(status.lastChecked) && status.lastChecked > 0
+        ? new Date(status.lastChecked).toLocaleString()
+        : 'never';
+      return `\n\n诊断: model=${modelId}; lockReason=${status.lockReason || 'none'}; lockedUntil=${lockedUntilText}; quotaRemaining=${status.quotaRemaining ?? 'unknown'}; userRemaining=${rateLimitInfo.userRemaining ?? 'unknown'}; lastChecked=${lastCheckedText}; error=${status.error || 'none'}`;
+    }
+
+    function formatBackendErrorDebug(status, detail) {
+      const text = String(detail || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+      return `后端返回 HTTP ${status}${text ? `：${text}` : ''}`;
+    }
+
     function parseHeaderInteger(value) {
       if (value === null || value === undefined || value === '') return null;
       const parsed = Number.parseInt(String(value), 10);
@@ -3774,7 +3789,7 @@
           detail += ' (可能是图片格式不支持或图片过大)';
         }
         const friendly = getFriendlyHttpStatusMessage(response.status);
-        throw new Error(detail && response.status === 400 ? `${friendly}（${detail}）` : friendly);
+        throw new Error(`${friendly}\n\n诊断: ${formatBackendErrorDebug(response.status, detail || errorText)}`);
       }
 
       if (!response.body) {
@@ -4042,9 +4057,10 @@
           ? '当前模型额度已用完，请切换其他模型再试。'
           : '当前模型暂时不可用，请切换其他模型再试。');
         const assistantMessageId = createAssistantMessage();
-        updateAssistantMessage(assistantMessageId, { answer: unavailableMessage, thinking: false });
+        const detailedUnavailableMessage = `${unavailableMessage}${formatModelUnavailableDebug(currentModel, currentStatus)}`;
+        updateAssistantMessage(assistantMessageId, { answer: detailedUnavailableMessage, thinking: false });
         pushHistory(userHistoryMessage);
-        pushHistory('assistant', unavailableMessage);
+        pushHistory('assistant', detailedUnavailableMessage);
         await finalizeConversationTurn();
         return;
       }
