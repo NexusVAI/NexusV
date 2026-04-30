@@ -1,0 +1,94 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'css/后端/supabase/functions/**'
+      - 'css/后端/supabase/config.toml'
+      - '.github/workflows/deploy-supabase-functions.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_ID: diusqgphvybnzazgopor
+    defaults:
+      run:
+        working-directory: css/后端
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy secrets
+        env:
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          PROXY_AUTH_TOKEN: ${{ secrets.PROXY_AUTH_TOKEN }}
+          CHAT_AUTH_SECRET: ${{ secrets.CHAT_AUTH_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MODELSCOPE_API_KEY: ${{ secrets.MODELSCOPE_API_KEY }}
+          OPENAI_COMPATIBLE_BASE_URL: ${{ secrets.OPENAI_COMPATIBLE_BASE_URL }}
+          OPENAI_COMPATIBLE_API_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          OPENROUTER_API_KEY_1: ${{ secrets.OPENROUTER_API_KEY_1 }}
+          OPENROUTER_API_KEY_2: ${{ secrets.OPENROUTER_API_KEY_2 }}
+          OPENROUTER_API_KEY_3: ${{ secrets.OPENROUTER_API_KEY_3 }}
+          SPARK_API_KEY: ${{ secrets.SPARK_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          require_secret() {
+            local name="$1"
+            local value="${!name:-}"
+            if [ -z "$value" ]; then
+              echo "::error::GitHub Secret $name is missing"
+              exit 1
+            fi
+          }
+
+          set_secret_if_present() {
+            local name="$1"
+            local value="${!name:-}"
+            if [ -n "$value" ]; then
+              supabase secrets set --project-ref "$PROJECT_ID" "$name=$value"
+            fi
+          }
+
+          require_secret ALLOWED_ORIGINS
+          require_secret PROXY_AUTH_TOKEN
+          require_secret CHAT_AUTH_SECRET
+          require_secret SUPABASE_URL
+          require_secret SUPABASE_SERVICE_ROLE_KEY
+
+          supabase secrets set --project-ref "$PROJECT_ID" \
+            "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" \
+            "PROXY_AUTH_TOKEN=$PROXY_AUTH_TOKEN" \
+            "CHAT_AUTH_SECRET=$CHAT_AUTH_SECRET" \
+            "SUPABASE_URL=$SUPABASE_URL" \
+            "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY"
+
+          set_secret_if_present MODELSCOPE_API_KEY
+          set_secret_if_present OPENAI_COMPATIBLE_BASE_URL
+          set_secret_if_present OPENAI_COMPATIBLE_API_KEY
+          set_secret_if_present DASHSCOPE_API_KEY
+          set_secret_if_present SILICONFLOW_API_KEY
+          set_secret_if_present OPENROUTER_API_KEY_1
+          set_secret_if_present OPENROUTER_API_KEY_2
+          set_secret_if_present OPENROUTER_API_KEY_3
+          set_secret_if_present SPARK_API_KEY
+
+      - name: Deploy edge functions
+        run: |
+          supabase functions deploy modelscope-proxy --project-ref $PROJECT_ID --no-verify-jwt
+          supabase functions deploy chat-history --project-ref $PROJECT_ID --no-verify-jwt
+          supabase functions deploy web-search --project-ref $PROJECT_ID --no-verify-jwt
