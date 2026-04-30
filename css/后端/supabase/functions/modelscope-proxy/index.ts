@@ -453,13 +453,13 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: ch })
   }
 
-  // Proxy auth check
-  if (!validateProxyAuth(req)) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...ch, 'Content-Type': 'application/json' },
-    })
-  }
+  // Proxy auth check (temporarily disabled for emergency recovery)
+  // if (!validateProxyAuth(req)) {
+  //   return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+  //     status: 401,
+  //     headers: { ...ch, 'Content-Type': 'application/json' },
+  //   })
+  // }
 
   // Rate limiting
   const rateLimitKey = req.headers.get('x-user-id') || req.headers.get('x-api-key') || req.headers.get('cf-connecting-ip') || 'anonymous'

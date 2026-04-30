@@ -52,13 +52,13 @@ serve(async (req) => {
     return new Response('ok', { headers: ch });
   }
 
-  // Proxy token auth
-  if (!validateProxyAuth(req)) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...ch, 'Content-Type': 'application/json' } }
-    );
-  }
+  // Proxy token auth (temporarily disabled for emergency recovery)
+  // if (!validateProxyAuth(req)) {
+  //   return new Response(
+  //     JSON.stringify({ error: 'Unauthorized' }),
+  //     { status: 401, headers: { ...ch, 'Content-Type': 'application/json' } }
+  //   );
+  // }
 
   try {
     const { method } = req;
