@@ -81,7 +81,7 @@
     const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
     const UI_PREFS_STORAGE_KEY = 'cancri_ui_prefs';
     const MODEL_TELEMETRY_STORAGE_KEY = 'cancri_model_telemetry';
-    const MODEL_TELEMETRY_CACHE_VERSION = 3;
+    const MODEL_TELEMETRY_CACHE_VERSION = 4;
 
     // ModelScope API 额度信息
     let rateLimitInfo = {
@@ -626,8 +626,14 @@
       el.addEventListener(event, handler);
     }
 
-    // 模型变量必须在函数使用前定义
-    let currentModel = localStorage.getItem('cancri_current_model') || 'deepseek-v4-flash';
+    const MODEL_SELECTION_MIGRATIONS = {
+      'deepseek-v4-flash-dashscope': 'deepseek-v4-flash',
+    };
+    const savedModelSelection = localStorage.getItem('cancri_current_model') || 'deepseek-v4-flash';
+    let currentModel = MODEL_SELECTION_MIGRATIONS[savedModelSelection] || savedModelSelection;
+    if (currentModel !== savedModelSelection) {
+      localStorage.setItem('cancri_current_model', currentModel);
+    }
     const MULTIMODAL_MODEL_IDS = new Set(['qwen3.5', 'kimi-k2.5', 'qwen3.6-plus', 'qwen3-coder', 'kimi-k2.6']);
 
     function isMultimodalModel(modelId) {
@@ -2743,6 +2749,9 @@
           : '请求已取消或超时，请重试。';
       }
       const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('诊断:') || message.includes('后端返回 HTTP')) {
+        return message;
+      }
       const httpMatch = message.match(/\b(?:HTTP(?: error! status)?|status)\s*:?\s*(\d{3})/i);
       if (httpMatch) {
         return getFriendlyHttpStatusMessage(httpMatch[1]);
@@ -3779,7 +3788,12 @@
         if (detail) {
           try {
             const parsed = JSON.parse(detail);
-            detail = parsed?.error?.message || parsed?.message || parsed?.detail || detail;
+            const parsedError = parsed?.error;
+            detail = typeof parsedError === 'string'
+              ? parsedError
+              : parsedError?.message || parsed?.message || parsed?.detail || detail;
+            if (parsed?.provider) detail += `; provider=${parsed.provider}`;
+            if (Array.isArray(parsed?.missing) && parsed.missing.length) detail += `; missing=${parsed.missing.join(',')}`;
           } catch (parseError) {
             // keep raw text
           }

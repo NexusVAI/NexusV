@@ -99,6 +99,13 @@ function getProviderKind(model: string): ProviderKind {
   return 'modelscope'
 }
 
+function providerConfigError(provider: ProviderKind, missing: string[], ch: Record<string, string>): Response {
+  return new Response(JSON.stringify({ error: 'Provider not configured', provider, missing }), {
+    status: 500,
+    headers: { ...ch, 'Content-Type': 'application/json' },
+  })
+}
+
 function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
   if (probeEndpoint === 'image') {
     if (provider === 'openai_compatible') {
@@ -480,10 +487,10 @@ serve(async (req: Request) => {
     const modelScopeApiKey = provider === 'modelscope' ? await resolveModelScopeApiKey() : ''
 
     if (provider === 'openai_compatible' && (!OPENAI_COMPATIBLE_BASE_URL || !OPENAI_COMPATIBLE_API_KEY)) {
-      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
-        status: 500,
-        headers: { ...ch, 'Content-Type': 'application/json' },
-      })
+      return providerConfigError(provider, [
+        ...(!OPENAI_COMPATIBLE_BASE_URL ? ['OPENAI_COMPATIBLE_BASE_URL'] : []),
+        ...(!OPENAI_COMPATIBLE_API_KEY ? ['OPENAI_COMPATIBLE_API_KEY'] : []),
+      ], ch)
     }
 
     if (provider === 'openai_compatible' && isLocalOnlyBaseUrl(OPENAI_COMPATIBLE_BASE_URL)) {
@@ -494,31 +501,19 @@ serve(async (req: Request) => {
     }
 
     if (provider === 'dashscope' && !DASHSCOPE_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
-        status: 500,
-        headers: { ...ch, 'Content-Type': 'application/json' },
-      })
+      return providerConfigError(provider, ['DASHSCOPE_API_KEY'], ch)
     }
 
     if (provider === 'siliconflow' && !SILICONFLOW_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
-        status: 500,
-        headers: { ...ch, 'Content-Type': 'application/json' },
-      })
+      return providerConfigError(provider, ['SILICONFLOW_API_KEY'], ch)
     }
 
     if (provider === 'openrouter' && !OPENROUTER_API_KEY_1 && !OPENROUTER_API_KEY_2 && !OPENROUTER_API_KEY_3) {
-      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
-        status: 500,
-        headers: { ...ch, 'Content-Type': 'application/json' },
-      })
+      return providerConfigError(provider, ['OPENROUTER_API_KEY_1 or OPENROUTER_API_KEY_2 or OPENROUTER_API_KEY_3'], ch)
     }
 
     if (provider === 'spark' && !SPARK_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
-        status: 500,
-        headers: { ...ch, 'Content-Type': 'application/json' },
-      })
+      return providerConfigError(provider, ['SPARK_API_KEY'], ch)
     }
 
     if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
@@ -543,10 +538,7 @@ serve(async (req: Request) => {
     }
 
     if (provider === 'modelscope' && !modelScopeApiKey) {
-      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
-        status: 500,
-        headers: { ...ch, 'Content-Type': 'application/json' },
-      })
+      return providerConfigError(provider, ['MODELSCOPE_API_KEY or api_config.service_name=modelscope'], ch)
     }
 
     let url = ''
