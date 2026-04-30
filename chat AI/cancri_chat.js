@@ -81,6 +81,7 @@
     const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
     const UI_PREFS_STORAGE_KEY = 'cancri_ui_prefs';
     const MODEL_TELEMETRY_STORAGE_KEY = 'cancri_model_telemetry';
+    const MODEL_TELEMETRY_CACHE_VERSION = 3;
 
     // ModelScope API 额度信息
     let rateLimitInfo = {
@@ -319,6 +320,10 @@
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return null;
+        if (parsed.version !== MODEL_TELEMETRY_CACHE_VERSION) {
+          localStorage.removeItem(MODEL_TELEMETRY_STORAGE_KEY);
+          return null;
+        }
         return parsed;
       } catch (error) {
         return null;
@@ -328,7 +333,7 @@
     function persistModelTelemetryCache() {
       try {
         const snapshot = {
-          version: 2,
+          version: MODEL_TELEMETRY_CACHE_VERSION,
           refreshedAt: modelTelemetryLastRefreshedAt || 0,
           persistedAt: Date.now(),
           rateLimitInfo: { ...rateLimitInfo },
@@ -344,7 +349,7 @@
 
     function applyModelTelemetryCache(cache) {
       if (!cache || typeof cache !== 'object') return false;
-      if (cache.version !== 2) return false;
+      if (cache.version !== MODEL_TELEMETRY_CACHE_VERSION) return false;
 
       const nextRateLimitInfo = cache.rateLimitInfo && typeof cache.rateLimitInfo === 'object' ? cache.rateLimitInfo : {};
       rateLimitInfo.userLimit = Number.isFinite(nextRateLimitInfo.userLimit) ? nextRateLimitInfo.userLimit : null;
@@ -3745,7 +3750,7 @@
         await sleep(900 * attempt);
       }
 
-      const showModelQuota = isModelScopeModel(activeModelId) && activeModelId === currentModel;
+      const showModelQuota = isModelScopeModel(currentModel);
       const errorText = response.ok ? '' : await response.text().catch(() => '');
       updateRateLimitFromHeaders(response.headers, showModelQuota, response.status, errorText);
 
@@ -4025,6 +4030,10 @@
 
       createUserMessage(query || effectiveQuery, attachmentsForSend);
       homeInput.value = '';
+
+      if (!isModelAvailable(currentModel)) {
+        await refreshModelscopeQuota().catch(() => {});
+      }
 
       const currentStatus = getModelStatus(currentModel);
       if (!isModelAvailable(currentModel)) {
