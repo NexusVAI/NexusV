@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Cancri</title>
+  <script>
+    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || '';
+    window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
+  </script>
   <link rel="stylesheet" href="./cancri_chat.css" />
 </head>
 <body>
@@ -426,7 +430,13 @@
             </div>
           </div>
         </div>
-        <div class="footer-note">Cancri是会犯错的。Cancri并不会泄露你的隐私。</div>
+        <div class="footer-note">
+          <span>请勿在对话中输入身份证号、银行卡号、验证码等敏感信息，详情见隐私协议。</span>
+          <button class="footer-legal-link" id="privacyPolicyBtn" type="button">隐私协议</button>
+        </div>
+        <div class="nexusv-footer" role="img" aria-label="NEXUSV 品牌区">
+          <span class="nexusv-footer-brand">NEXUSV</span>
+        </div>
       </section>
 
       <section class="view" id="imagesView">
@@ -659,6 +669,64 @@
     </div>
   </div>
 
+  <div class="modal large" id="privacyPolicyModal" aria-hidden="true">
+    <div class="modal-header">
+      <div class="modal-title">隐私协议</div>
+      <button class="modal-close" data-close-modal="privacyPolicyModal" aria-label="关闭隐私协议">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="privacy-policy-content">
+        <div class="privacy-policy-note">更新日期：2026年4月30日。本协议适用于 Cancri 在中国大陆地区提供的聊天、图片生成、文件处理、搜索与历史记录相关功能。</div>
+
+        <section class="privacy-policy-section">
+          <h4>一、我们收集的信息</h4>
+          <p>为提供基础功能、改进体验和保障安全，我们可能收集你主动输入的聊天内容、上传的图片或文件、搜索关键词、反馈内容，以及与服务相关的设备信息、浏览器信息、IP 地址、访问时间、错误日志、Cookie 和本地存储中的偏好设置。</p>
+        </section>
+
+        <section class="privacy-policy-section">
+          <h4>二、我们如何使用信息</h4>
+          <ul class="privacy-policy-list">
+            <li>向你提供聊天、图片生成、文件分析、联网搜索和历史记录等功能。</li>
+            <li>保存你的主题、语言、模型选择与会话状态等本地偏好。</li>
+            <li>进行故障排查、性能优化、风控检测与滥用防护。</li>
+            <li>在你发起请求时，将必要内容发送给对应的模型服务、搜索服务或存储服务完成处理。</li>
+          </ul>
+        </section>
+
+        <section class="privacy-policy-section">
+          <h4>三、信息共享与委托处理</h4>
+          <p>为了实现具体功能，你的请求内容可能会被发送至第三方模型服务商、搜索服务商、云基础设施或托管服务商进行处理。我们仅在实现服务所必需的范围内共享必要信息，不会向无关第三方出售个人信息。</p>
+        </section>
+
+        <section class="privacy-policy-section">
+          <h4>四、信息存储与保护</h4>
+          <p>我们会采取合理的技术与管理措施保护信息安全，并尽量减少数据收集范围。你的本地偏好通常保存在浏览器本地存储中；聊天历史可能会按账号或会话进行保存。若你清空对话或要求删除，我们会在可行范围内处理相关记录。</p>
+        </section>
+
+        <section class="privacy-policy-section">
+          <h4>五、你的权利</h4>
+          <ul class="privacy-policy-list">
+            <li>你可以查看、复制、清空或删除本地会话内容。</li>
+            <li>你可以撤回已授予的部分授权，并关闭不必要的权限。</li>
+            <li>如需查阅、更正、删除个人信息，或对本协议有疑问，可通过站内反馈或社区渠道联系我们。</li>
+          </ul>
+        </section>
+
+        <section class="privacy-policy-section">
+          <h4>六、未成年人保护</h4>
+          <p>如你是未成年人，请在监护人的陪同或授权下使用本服务，并避免提交身份证号、银行卡号、验证码、密钥等敏感信息。</p>
+        </section>
+
+        <section class="privacy-policy-section">
+          <h4>七、协议更新</h4>
+          <p>我们可能会根据产品变化、法律法规或监管要求更新本协议。更新后会在此页面公布，继续使用即表示你接受更新后的内容。</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <div class="page-watermark" id="pageWatermark" aria-hidden="true">
@@ -673,8 +741,8 @@
   <div class="devtools-shield" id="devtoolsShield" aria-hidden="true">
     <div class="devtools-card">
       <div class="devtools-kicker">开发者工具已打开</div>
-      <h2 class="devtools-title">别他妈看控制台，API Key 也不是给你扒的。</h2>
-      <p class="devtools-text">这个页面只做了前端层的轻度保护。想看正常内容就关掉 F12，再回来好好用。</p>
+      <h2 class="devtools-title">请关闭开发者工具后继续使用</h2>
+      <p class="devtools-text">为保护服务安全，部分功能在开发者工具打开时受限。关闭 F12 即可恢复正常体验。</p>
     </div>
   </div>
 

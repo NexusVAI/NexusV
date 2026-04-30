@@ -1,18 +1,63 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://diusqgphvybnzazgopor.supabase.co';
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-};
+function getAllowedOrigin(req: Request): string | null {
+  const origin = req.headers.get('origin') || ''
+  if (!origin) return null
+  if (ALLOWED_ORIGINS.length === 0) return origin
+  if (ALLOWED_ORIGINS.some((allowed: string) => origin === allowed || origin.endsWith('.' + allowed.replace(/^https?:\/\//, '')))) return origin
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
+  return null
+}
+
+function corsHeadersFor(req: Request): Record<string, string> {
+  const origin = getAllowedOrigin(req)
+  return {
+    'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, x-proxy-token, accept, origin',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  }
+}
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 60
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  entry.count++
+  return entry.count <= RATE_LIMIT_MAX
+}
+
+function validateProxyAuth(req: Request): boolean {
+  if (!PROXY_AUTH_TOKEN) return true
+  const token = req.headers.get('x-proxy-token') || ''
+  return token === PROXY_AUTH_TOKEN
+}
 
 serve(async (req) => {
+  const ch = corsHeadersFor(req)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: ch });
+  }
+
+  // Proxy token auth
+  if (!validateProxyAuth(req)) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...ch, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
@@ -24,21 +69,33 @@ serve(async (req) => {
     if (!userId && !apiKey) {
       return new Response(
         JSON.stringify({ error: 'Missing user identification' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...ch, 'Content-Type': 'application/json' } }
       );
     }
 
     const effectiveUserId = userId || apiKey;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Rate limiting
+    if (!checkRateLimit(effectiveUserId)) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded' }),
+        { status: 429, headers: { ...ch, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // 使用 service role key 访问数据库，并通过显式 user_id 过滤隔离每个用户的记录
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ error: 'Service not configured' }),
+        { status: 500, headers: { ...ch, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (method === 'GET') {
       const id = url.searchParams.get('id');
-      
+
       if (id) {
-        // 获取单条聊天记录详情
         const { data, error } = await supabase
           .from('chat_history')
           .select('*')
@@ -50,10 +107,9 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ data }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...ch, 'Content-Type': 'application/json' } }
         );
       } else {
-        // 获取聊天记录列表
         const { data, error } = await supabase
           .from('chat_history')
           .select('id, title, model, created_at, updated_at')
@@ -64,13 +120,12 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({ data }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...ch, 'Content-Type': 'application/json' } }
         );
       }
     }
 
     if (method === 'POST') {
-      // 创建新聊天记录
       const body = await req.json();
       const { title, messages, model } = body;
 
@@ -89,12 +144,11 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ data }),
-        { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 201, headers: { ...ch, 'Content-Type': 'application/json' } }
       );
     }
 
     if (method === 'PUT') {
-      // 更新聊天记录
       const body = await req.json();
       const { id, messages, title } = body;
 
@@ -113,18 +167,17 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ data }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...ch, 'Content-Type': 'application/json' } }
       );
     }
 
     if (method === 'DELETE') {
-      // 删除聊天记录
       const id = url.searchParams.get('id');
 
       if (!id) {
         return new Response(
           JSON.stringify({ error: 'Missing chat history id' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...ch, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -139,27 +192,27 @@ serve(async (req) => {
 
       if (!deletedRows || deletedRows.length === 0) {
         return new Response(
-          JSON.stringify({ error: 'Chat history not found or not owned by current user' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Not found' }),
+          { status: 404, headers: { ...ch, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
         JSON.stringify({ success: true, deletedCount: deletedRows.length }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...ch, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
       JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 405, headers: { ...ch, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal error' }),
+      { status: 500, headers: { ...corsHeadersFor(req), 'Content-Type': 'application/json' } }
     );
   }
 });

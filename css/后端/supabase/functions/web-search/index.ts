@@ -2,12 +2,59 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, accept, origin',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
+
+function getAllowedOrigin(req: Request): string | null {
+  const origin = req.headers.get('origin') || ''
+  if (!origin) return null
+  if (ALLOWED_ORIGINS.length === 0) return origin
+  if (ALLOWED_ORIGINS.some((allowed: string) => origin === allowed || origin.endsWith('.' + allowed.replace(/^https?:\/\//, '')))) return origin
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
+  return null
+}
+
+function corsHeadersFor(req: Request): Record<string, string> {
+  const origin = getAllowedOrigin(req)
+  return {
+    'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, x-proxy-token, accept, origin',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
+function validateProxyAuth(req: Request): boolean {
+  if (!PROXY_AUTH_TOKEN) return true
+  const token = req.headers.get('x-proxy-token') || ''
+  return token === PROXY_AUTH_TOKEN
+}
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 20
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  entry.count++
+  return entry.count <= RATE_LIMIT_MAX
+}
+
+function isPrivateUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname
+    if (/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|localhost|::1|fc|fd|fe80)/i.test(host)) return true
+    return false
+  } catch {
+    return true
+  }
+}
 
 const BAIDU_SEARCH_URL = 'https://www.baidu.com/s';
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -260,15 +307,34 @@ async function fetchWebPage(url: string): Promise<{ title: string; content: stri
 }
 
 serve(async (req: Request) => {
+  const ch = corsHeadersFor(req)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: ch });
+  }
+
+  // Proxy auth check
+  if (!validateProxyAuth(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Rate limiting
+  const rateLimitKey = req.headers.get('x-user-id') || req.headers.get('x-api-key') || req.headers.get('cf-connecting-ip') || 'anonymous'
+  if (!checkRateLimit(rateLimitKey)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       });
     }
 
@@ -280,7 +346,15 @@ serve(async (req: Request) => {
       if (!url) {
         return new Response(JSON.stringify({ error: 'Missing url parameter' }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...ch, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // SSRF protection: block private/internal URLs
+      if (isPrivateUrl(url)) {
+        return new Response(JSON.stringify({ error: 'URL not allowed' }), {
+          status: 400,
+          headers: { ...ch, 'Content-Type': 'application/json' },
         });
       }
 
@@ -291,7 +365,7 @@ serve(async (req: Request) => {
         content: pageData.content,
       }), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       });
     }
 
@@ -300,7 +374,7 @@ serve(async (req: Request) => {
     if (!query) {
       return new Response(JSON.stringify({ error: 'Missing query' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       });
     }
 
@@ -317,13 +391,12 @@ serve(async (req: Request) => {
       results,
     }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...ch, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...ch, 'Content-Type': 'application/json' },
     });
   }
 });

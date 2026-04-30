@@ -18,7 +18,7 @@ npm install -g supabase
 ### 登录并链接项目
 ```bash
 supabase login
-supabase link --project-ref diusqgphvybnzazgopor
+supabase link --project-ref YOUR_PROJECT_REF
 ```
 
 ### 部署Edge Function
@@ -29,14 +29,14 @@ supabase functions deploy modelscope-proxy
 ## 3. 设置环境变量
 
 在Supabase Dashboard中设置Edge Function的环境变量：
-- `SUPABASE_URL`: https://diusqgphvybnzazgopor.supabase.co
+- `SUPABASE_URL`: https://YOUR_PROJECT_REF.supabase.co
 - `SUPABASE_SERVICE_ROLE_KEY`: 你的Supabase service_role key
 - `MODELSCOPE_API_KEY`: 你的ModelScope API key（直接从环境变量读取，不再通过数据库函数暴露）
 
 ## 4. 测试Edge Function
 
 ```bash
-curl -X POST https://diusqgphvybnzazgopor.supabase.co/functions/v1/modelscope-proxy \
+curl -X POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/modelscope-proxy \
   -H "Authorization: Bearer YOUR_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{

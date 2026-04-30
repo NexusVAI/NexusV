@@ -3,17 +3,53 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, accept, origin',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-  'Access-Control-Expose-Headers': 'modelscope-ratelimit-requests-limit, modelscope-ratelimit-requests-remaining, modelscope-ratelimit-model-requests-limit, modelscope-ratelimit-model-requests-remaining',
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map(s => s.trim()).filter(Boolean)
+const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
+
+function getAllowedOrigin(req: Request): string | null {
+  const origin = req.headers.get('origin') || ''
+  if (!origin) return null
+  if (ALLOWED_ORIGINS.length === 0) return origin
+  if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.endsWith('.' + allowed.replace(/^https?:\/\//, '')))) return origin
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
+  return null
+}
+
+function corsHeadersFor(req: Request): Record<string, string> {
+  const origin = getAllowedOrigin(req)
+  return {
+    'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, x-proxy-token, accept, origin',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+    'Access-Control-Expose-Headers': 'modelscope-ratelimit-requests-limit, modelscope-ratelimit-requests-remaining, modelscope-ratelimit-model-requests-limit, modelscope-ratelimit-model-requests-remaining',
+  }
+}
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 30
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  entry.count++
+  return entry.count <= RATE_LIMIT_MAX
+}
+
+function validateProxyAuth(req: Request): boolean {
+  if (!PROXY_AUTH_TOKEN) return true
+  const token = req.headers.get('x-proxy-token') || ''
+  return token === PROXY_AUTH_TOKEN
 }
 
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1'
 const MODELSCOPE_API_KEY = (Deno.env.get('MODELSCOPE_API_KEY') || '').trim()
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://diusqgphvybnzazgopor.supabase.co'
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
 const OPENAI_COMPATIBLE_BASE_URL = (Deno.env.get('OPENAI_COMPATIBLE_BASE_URL') || '').replace(/\/$/, '')
@@ -61,6 +97,88 @@ function getProviderKind(model: string): ProviderKind {
   if (isOpenRouterModel(model)) return 'openrouter'
   if (isSparkModel(model)) return 'spark'
   return 'modelscope'
+}
+
+function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
+  if (probeEndpoint === 'image') {
+    if (provider === 'openai_compatible') {
+      return `${OPENAI_COMPATIBLE_BASE_URL}/images/generations`
+    }
+    if (provider === 'modelscope') {
+      return `${MODELSCOPE_API_BASE}/images/generations`
+    }
+  }
+
+  if (provider === 'openai_compatible') {
+    return `${OPENAI_COMPATIBLE_BASE_URL}/chat/completions`
+  }
+  if (provider === 'dashscope') {
+    return `${DASHSCOPE_COMPATIBLE_BASE_URL}/chat/completions`
+  }
+  if (provider === 'siliconflow') {
+    return `${SILICONFLOW_BASE_URL}/chat/completions`
+  }
+  if (provider === 'openrouter') {
+    return `${OPENROUTER_BASE_URL}/chat/completions`
+  }
+  if (provider === 'spark') {
+    return `${SPARK_BASE_URL}/chat/completions`
+  }
+  return `${MODELSCOPE_API_BASE}/chat/completions`
+}
+
+async function handlePingRequest(requestData: Record<string, unknown>, req: Request): Promise<Response> {
+  const ch = corsHeadersFor(req)
+  const model = String(requestData.model || '').trim()
+  if (!model) {
+    return new Response(JSON.stringify({ error: 'Missing model' }), {
+      status: 400,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    })
+  }
+
+  const provider = getProviderKind(model)
+  const probeEndpoint = String(requestData.probe_endpoint || requestData.target_endpoint || 'chat').trim() || 'chat'
+  const pingUrl = getPingUrl(provider, probeEndpoint)
+  const start = performance.now()
+
+  try {
+    const response = await fetch(pingUrl, {
+      method: 'HEAD',
+      headers: {
+        'Accept': '*/*',
+        'User-Agent': USER_AGENT,
+      },
+    })
+
+    const latencyMs = Math.max(0, Math.round(performance.now() - start))
+    return new Response(JSON.stringify({
+      ok: true,
+      model,
+      provider,
+      probe_endpoint: probeEndpoint,
+      url: pingUrl,
+      status: response.status,
+      latencyMs,
+    }), {
+      status: 200,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    const latencyMs = Math.max(0, Math.round(performance.now() - start))
+    return new Response(JSON.stringify({
+      ok: false,
+      model,
+      provider,
+      probe_endpoint: probeEndpoint,
+      url: pingUrl,
+      latencyMs,
+      error: 'Ping failed',
+    }), {
+      status: 200,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    })
+  }
 }
 
 function isLocalOnlyBaseUrl(url: string): boolean {
@@ -293,12 +411,13 @@ async function searchDuckDuckGo(query: string, lang: string, limit: number): Pro
   return mergedResults
 }
 
-async function handleWebSearchRequest(requestData: Record<string, unknown>): Promise<Response> {
+async function handleWebSearchRequest(requestData: Record<string, unknown>, req: Request): Promise<Response> {
+  const ch = corsHeadersFor(req)
   const query = cleanText(requestData.query || requestData.search_query)
   if (!query) {
     return new Response(JSON.stringify({ error: 'Missing query' }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...ch, 'Content-Type': 'application/json' },
     })
   }
 
@@ -315,14 +434,33 @@ async function handleWebSearchRequest(requestData: Record<string, unknown>): Pro
     results,
   }), {
     status: 200,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...ch, 'Content-Type': 'application/json' },
   })
 }
 
 serve(async (req: Request) => {
+  const ch = corsHeadersFor(req)
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: ch })
+  }
+
+  // Proxy auth check
+  if (!validateProxyAuth(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Rate limiting
+  const rateLimitKey = req.headers.get('x-user-id') || req.headers.get('x-api-key') || req.headers.get('cf-connecting-ip') || 'anonymous'
+  if (!checkRateLimit(rateLimitKey)) {
+    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+      status: 429,
+      headers: { ...ch, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -330,7 +468,11 @@ serve(async (req: Request) => {
     const { endpoint = 'chat', ...requestData } = body
 
     if (endpoint === 'web_search') {
-      return await handleWebSearchRequest(requestData)
+      return await handleWebSearchRequest(requestData, req)
+    }
+
+    if (endpoint === 'ping') {
+      return await handlePingRequest(requestData, req)
     }
 
     const model = String(requestData.model || '')
@@ -338,72 +480,72 @@ serve(async (req: Request) => {
     const modelScopeApiKey = provider === 'modelscope' ? await resolveModelScopeApiKey() : ''
 
     if (provider === 'openai_compatible' && (!OPENAI_COMPATIBLE_BASE_URL || !OPENAI_COMPATIBLE_API_KEY)) {
-      return new Response(JSON.stringify({ error: 'Missing OPENAI_COMPATIBLE_BASE_URL or OPENAI_COMPATIBLE_API_KEY' }), {
+      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'openai_compatible' && isLocalOnlyBaseUrl(OPENAI_COMPATIBLE_BASE_URL)) {
-      return new Response(JSON.stringify({ error: 'OPENAI_COMPATIBLE_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'dashscope' && !DASHSCOPE_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Missing DASHSCOPE_API_KEY for DashScope-compatible models' }), {
+      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'siliconflow' && !SILICONFLOW_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Missing SILICONFLOW_API_KEY for SiliconFlow models' }), {
+      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'openrouter' && !OPENROUTER_API_KEY_1 && !OPENROUTER_API_KEY_2 && !OPENROUTER_API_KEY_3) {
-      return new Response(JSON.stringify({ error: 'Missing OPENROUTER_API_KEY for OpenRouter models' }), {
+      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'spark' && !SPARK_API_KEY) {
-      return new Response(JSON.stringify({ error: 'Missing SPARK_API_KEY for Spark models' }), {
+      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
-      return new Response(JSON.stringify({ error: 'DASHSCOPE_COMPATIBLE_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'siliconflow' && isLocalOnlyBaseUrl(SILICONFLOW_BASE_URL)) {
-      return new Response(JSON.stringify({ error: 'SILICONFLOW_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'openrouter' && isLocalOnlyBaseUrl(OPENROUTER_BASE_URL)) {
-      return new Response(JSON.stringify({ error: 'OPENROUTER_BASE_URL cannot use localhost or 127.0.0.1 in deployed Supabase Edge Functions' }), {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
     if (provider === 'modelscope' && !modelScopeApiKey) {
-      return new Response(JSON.stringify({ error: 'Missing MODELSCOPE_API_KEY or api_config.modelscope entry' }), {
+      return new Response(JSON.stringify({ error: 'Provider not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...ch, 'Content-Type': 'application/json' },
       })
     }
 
@@ -418,9 +560,9 @@ serve(async (req: Request) => {
         url = `${OPENAI_COMPATIBLE_BASE_URL}/images/generations`
         headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
       } else if (provider === 'dashscope') {
-        return new Response(JSON.stringify({ error: 'DashScope-compatible chat models do not support the image endpoint' }), {
+        return new Response(JSON.stringify({ error: 'Image generation not supported for this provider' }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...ch, 'Content-Type': 'application/json' },
         })
       } else {
         url = `${MODELSCOPE_API_BASE}/images/generations`
@@ -429,9 +571,9 @@ serve(async (req: Request) => {
       }
     } else if (endpoint === 'task') {
       if (provider !== 'modelscope') {
-        return new Response(JSON.stringify({ error: 'Task polling is only supported for ModelScope async image generation' }), {
+        return new Response(JSON.stringify({ error: 'Task polling not supported for this provider' }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...ch, 'Content-Type': 'application/json' },
         })
       }
       const { taskId } = requestData
@@ -463,7 +605,7 @@ serve(async (req: Request) => {
       }
     }
 
-    // Forward request to ModelScope
+    // Forward request to provider
     const response = await fetch(url, {
       method: req.method,
       headers,
@@ -504,7 +646,7 @@ serve(async (req: Request) => {
       })
 
       return new Response(stream, {
-        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', ...rateLimitHeaders },
+        headers: { ...ch, 'Content-Type': 'text/event-stream', ...rateLimitHeaders },
         status: response.status,
       })
     }
@@ -521,13 +663,12 @@ serve(async (req: Request) => {
     })
 
     return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json', ...rateLimitHeaders },
+      headers: { ...ch, 'Content-Type': 'application/json', ...rateLimitHeaders },
       status: response.status,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
+      headers: { ...ch, 'Content-Type': 'application/json' },
       status: 500,
     })
   }

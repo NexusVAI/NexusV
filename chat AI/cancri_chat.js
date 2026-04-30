@@ -54,6 +54,7 @@
     const settingsModal = document.getElementById('settingsModal');
     const tempChatModal = document.getElementById('tempChatModal');
     const projectModal = document.getElementById('projectModal');
+    const privacyPolicyModal = document.getElementById('privacyPolicyModal');
     const appearanceValue = document.getElementById('appearanceValue');
     const contrastValue = document.getElementById('contrastValue');
     const accentValueEl = document.getElementById('accentValue');
@@ -67,6 +68,7 @@
     const rateLimitUpdateTime = document.getElementById('rateLimitUpdateTime');
     const userRateLimit = document.getElementById('userRateLimit');
     const modelRateLimit = document.getElementById('modelRateLimit');
+    const nexusvFooter = document.querySelector('.nexusv-footer');
 
     const navRows = Array.from(document.querySelectorAll('.nav-row[data-view-target]'));
     const settingTabs = Array.from(document.querySelectorAll('.settings-nav-item'));
@@ -78,24 +80,35 @@
     const MAX_ATTACHMENT_COUNT = 4;
     const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
     const UI_PREFS_STORAGE_KEY = 'cancri_ui_prefs';
+    const MODEL_TELEMETRY_STORAGE_KEY = 'cancri_model_telemetry';
 
     // ModelScope API 额度信息
     let rateLimitInfo = {
       userLimit: null,
       userRemaining: null,
+      userLockedUntil: null,
+      userLockReason: null,
       modelLimit: null,
       modelRemaining: null,
+      modelId: null,
       lastUpdateTime: null
     };
-    const RATE_LIMIT_UPDATE_INTERVAL_MS = 30 * 60 * 1000; // 30分钟
+    const MODEL_LOCK_DURATION_MS = 60 * 60 * 1000;
+    const MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS = 30 * 1000; // 魔塔额度30秒刷新一次
+    const NON_MODELSCOPE_PING_INTERVAL_MS = 60 * 60 * 1000; // 非魔塔模型1小时ping一次
+    const MODEL_STATUS_REFRESH_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
+    const RATE_LIMIT_UPDATE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
     const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
     const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'glm-5', 'glm-5.1-dashscope', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2']);
     let rateLimitRefreshToken = 0;
+    let modelscopeQuotaTimer = null;
+    let nonModelscopePingTimer = null;
+    let modelTelemetryLastRefreshedAt = 0;
 
     // 模型状态：额度和速度
     const modelStatus = new Map(); // modelId -> { quotaRemaining, quotaLimit, speedMs, speedLevel, lastChecked, error }
-    const SPEED_TEST_INTERVAL_MS = 5 * 60 * 1000; // 5分钟测一次速
-    const QUOTA_PROBE_INTERVAL_MS = 2 * 60 * 1000; // 2分钟查一次额度
+    const SPEED_TEST_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
+    const QUOTA_PROBE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
 
     function getModelSpeedLevel(speedMs) {
       if (speedMs === null || speedMs === undefined) return 'unknown';
@@ -104,15 +117,369 @@
       return 'slow';
     }
 
+    function getFriendlyHttpStatusMessage(status) {
+      switch (Number(status)) {
+        case 400:
+          return '这次请求模型没接住，请换个模型再试。';
+        case 401:
+          return '当前模型暂时无法访问，请切换其他模型再试。';
+        case 409:
+          return '当前模型有点忙，请切换其他模型再试。';
+        case 429:
+          return '当前模型额度已用完，请切换其他模型再试。';
+        default:
+          return '当前模型暂时不可用，请切换其他模型再试。';
+      }
+    }
+
     function getModelStatus(modelId) {
-      return modelStatus.get(modelId) || { quotaRemaining: null, quotaLimit: null, speedMs: null, speedLevel: 'unknown', lastChecked: 0, error: null };
+      return modelStatus.get(modelId) || { quotaRemaining: null, quotaLimit: null, speedMs: null, speedLevel: 'unknown', lastChecked: 0, error: null, lockedUntil: null, lockReason: null };
+    }
+
+    function parseHeaderInteger(value) {
+      if (value === null || value === undefined || value === '') return null;
+      const parsed = Number.parseInt(String(value), 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function getNextLocalMidnightTimestamp(referenceTime = Date.now()) {
+      const nextMidnight = new Date(referenceTime);
+      nextMidnight.setHours(24, 0, 0, 0);
+      return nextMidnight.getTime();
+    }
+
+    function clearExpiredQuotaLocks(now = Date.now()) {
+      if (Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil <= now) {
+        rateLimitInfo.userLockedUntil = null;
+        rateLimitInfo.userLockReason = null;
+      }
+
+      for (const [modelId, status] of modelStatus.entries()) {
+        if (Number.isFinite(status.lockedUntil) && status.lockedUntil <= now) {
+          status.lockedUntil = null;
+          status.lockReason = null;
+          status.error = null;
+          modelStatus.set(modelId, status);
+        }
+      }
+    }
+
+    function setUserQuotaLock(untilTs, reason = 'quota') {
+      rateLimitInfo.userLockedUntil = Number.isFinite(untilTs) ? untilTs : null;
+      rateLimitInfo.userLockReason = reason || null;
+    }
+
+    function setModelQuotaLock(modelId, untilTs, reason = 'quota') {
+      if (!modelId) return;
+      const status = getModelStatus(modelId);
+      status.lockedUntil = Number.isFinite(untilTs) ? untilTs : null;
+      status.lockReason = reason || null;
+      status.error = reason === 'quota' ? '额度已用完' : (reason || null);
+      status.lastChecked = Date.now();
+      modelStatus.set(modelId, normalizeModelStatusSnapshot(status));
+    }
+
+    function getQuotaLockMessage(modelId = currentModel) {
+      const now = Date.now();
+      if (isModelScopeModel(modelId) && Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil > now) {
+        return '今日魔塔用户额度已用完，请明天 0 点后再试，或先切换非魔塔模型。';
+      }
+
+      const status = getModelStatus(modelId);
+      if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) {
+        if (status.lockReason === 'quota') {
+          return '模型额度已超，请切换模型重试。';
+        }
+        return '当前模型暂时不可用，请切换其他模型重试。';
+      }
+
+      return '';
+    }
+
+    function applyQuotaSnapshotFromHeaders(modelId, headers, { responseStatus = 200, errorText = '', updateCurrentRateLimitInfo = false } = {}) {
+      if (!headers) return;
+
+      clearExpiredQuotaLocks();
+      const now = Date.now();
+      const targetModelId = modelId || currentModel;
+      const targetStatus = getModelStatus(targetModelId);
+      const isScopeModel = isModelScopeModel(targetModelId);
+
+      const userLimit = parseHeaderInteger(headers.get('modelscope-ratelimit-requests-limit') || headers.get('ModelScope-Ratelimit-Requests-Limit'));
+      const userRemaining = parseHeaderInteger(headers.get('modelscope-ratelimit-requests-remaining') || headers.get('ModelScope-Ratelimit-Requests-Remaining'));
+      const modelLimit = parseHeaderInteger(headers.get('modelscope-ratelimit-model-requests-limit') || headers.get('ModelScope-Ratelimit-Model-Requests-Limit'));
+      const modelRemaining = parseHeaderInteger(headers.get('modelscope-ratelimit-model-requests-remaining') || headers.get('ModelScope-Ratelimit-Model-Requests-Remaining'));
+
+      if (Number.isFinite(userLimit)) {
+        rateLimitInfo.userLimit = userLimit;
+      }
+      if (Number.isFinite(userRemaining)) {
+        rateLimitInfo.userRemaining = userRemaining;
+      }
+
+      if (updateCurrentRateLimitInfo && targetModelId === currentModel) {
+        rateLimitInfo.modelId = targetModelId;
+        if (Number.isFinite(modelLimit)) {
+          rateLimitInfo.modelLimit = modelLimit;
+        }
+        if (Number.isFinite(modelRemaining)) {
+          rateLimitInfo.modelRemaining = modelRemaining;
+        }
+      }
+
+      if (isScopeModel) {
+        if (Number.isFinite(userRemaining)) {
+          if (userRemaining <= 0) {
+            const until = getNextLocalMidnightTimestamp(now);
+            setUserQuotaLock(until, 'quota');
+            for (const scopeModelId of Object.keys(MODEL_IDS).filter(isModelScopeModel)) {
+              const scopeStatus = getModelStatus(scopeModelId);
+              scopeStatus.lockedUntil = until;
+              scopeStatus.lockReason = 'quota';
+              scopeStatus.error = '额度已用完';
+              scopeStatus.lastChecked = now;
+              modelStatus.set(scopeModelId, normalizeModelStatusSnapshot(scopeStatus));
+            }
+          } else if (Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil > now) {
+            rateLimitInfo.userLockedUntil = null;
+            rateLimitInfo.userLockReason = null;
+          }
+        }
+
+        if (Number.isFinite(modelRemaining)) {
+          if (modelRemaining <= 0) {
+            const until = getNextLocalMidnightTimestamp(now);
+            targetStatus.lockedUntil = until;
+            targetStatus.lockReason = 'quota';
+            targetStatus.error = '额度已用完';
+          } else if (Number.isFinite(targetStatus.lockedUntil) && targetStatus.lockedUntil > now && targetStatus.lockReason === 'quota') {
+            targetStatus.lockedUntil = null;
+            targetStatus.lockReason = null;
+            targetStatus.error = null;
+          }
+          targetStatus.quotaLimit = Number.isFinite(modelLimit) ? modelLimit : targetStatus.quotaLimit;
+          targetStatus.quotaRemaining = modelRemaining;
+        } else if (responseStatus === 429 || /额度|quota|limit/i.test(errorText)) {
+          const until = getNextLocalMidnightTimestamp(now);
+          targetStatus.lockedUntil = until;
+          targetStatus.lockReason = 'quota';
+          targetStatus.error = '额度已用完';
+        } else if (responseStatus === 401 || responseStatus === 409) {
+          targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
+        } else if (responseStatus >= 200 && responseStatus < 300 && !targetStatus.lockReason) {
+          targetStatus.error = null;
+        }
+      } else {
+        if (targetModelId === currentModel) {
+          rateLimitInfo.modelLimit = null;
+          rateLimitInfo.modelRemaining = null;
+          rateLimitInfo.modelId = null;
+        }
+
+        if (responseStatus === 429 || /额度|quota|limit/i.test(errorText)) {
+          const until = Date.now() + MODEL_LOCK_DURATION_MS;
+          targetStatus.lockedUntil = until;
+          targetStatus.lockReason = 'quota';
+          targetStatus.error = '额度已用完';
+        } else if (responseStatus === 401 || responseStatus === 409) {
+          targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
+        } else if (responseStatus >= 200 && responseStatus < 300 && !targetStatus.lockReason) {
+          targetStatus.error = null;
+        }
+      }
+
+      targetStatus.lastChecked = now;
+      modelStatus.set(targetModelId, normalizeModelStatusSnapshot(targetStatus));
+      rateLimitInfo.lastUpdateTime = now;
+
+      if (targetModelId === currentModel) {
+        updateRateLimitNote();
+      }
+    }
+
+    function isTelemetryFresh(lastChecked) {
+      return Number.isFinite(lastChecked) && (Date.now() - lastChecked) < MODEL_STATUS_REFRESH_INTERVAL_MS;
+    }
+
+    function normalizeModelStatusSnapshot(status = {}) {
+      const quotaRemaining = Number.isFinite(status.quotaRemaining) ? status.quotaRemaining : null;
+      const quotaLimit = Number.isFinite(status.quotaLimit) ? status.quotaLimit : null;
+      const speedMs = Number.isFinite(status.speedMs) ? status.speedMs : null;
+      const speedLevel = typeof status.speedLevel === 'string' && status.speedLevel ? status.speedLevel : getModelSpeedLevel(speedMs);
+      const lastChecked = Number.isFinite(status.lastChecked) ? status.lastChecked : 0;
+      const error = status.error ? String(status.error) : null;
+      const lockedUntil = Number.isFinite(status.lockedUntil) ? status.lockedUntil : null;
+      const lockReason = typeof status.lockReason === 'string' && status.lockReason ? status.lockReason : null;
+      return { quotaRemaining, quotaLimit, speedMs, speedLevel, lastChecked, error, lockedUntil, lockReason };
+    }
+
+    function readModelTelemetryCache() {
+      try {
+        const raw = localStorage.getItem(MODEL_TELEMETRY_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return parsed;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function persistModelTelemetryCache() {
+      try {
+        const snapshot = {
+          version: 2,
+          refreshedAt: modelTelemetryLastRefreshedAt || 0,
+          persistedAt: Date.now(),
+          rateLimitInfo: { ...rateLimitInfo },
+          modelStatus: Array.from(modelStatus.entries())
+            .filter(([modelId]) => Boolean(MODEL_IDS[modelId]))
+            .map(([modelId, status]) => [modelId, normalizeModelStatusSnapshot(status)]),
+        };
+        localStorage.setItem(MODEL_TELEMETRY_STORAGE_KEY, JSON.stringify(snapshot));
+      } catch (error) {
+        // 本地缓存失败不影响主流程
+      }
+    }
+
+    function applyModelTelemetryCache(cache) {
+      if (!cache || typeof cache !== 'object') return false;
+      if (cache.version !== 2) return false;
+
+      const nextRateLimitInfo = cache.rateLimitInfo && typeof cache.rateLimitInfo === 'object' ? cache.rateLimitInfo : {};
+      rateLimitInfo.userLimit = Number.isFinite(nextRateLimitInfo.userLimit) ? nextRateLimitInfo.userLimit : null;
+      rateLimitInfo.userRemaining = Number.isFinite(nextRateLimitInfo.userRemaining) ? nextRateLimitInfo.userRemaining : null;
+      rateLimitInfo.userLockedUntil = Number.isFinite(nextRateLimitInfo.userLockedUntil) ? nextRateLimitInfo.userLockedUntil : null;
+      rateLimitInfo.userLockReason = typeof nextRateLimitInfo.userLockReason === 'string' ? nextRateLimitInfo.userLockReason : null;
+      rateLimitInfo.modelLimit = Number.isFinite(nextRateLimitInfo.modelLimit) ? nextRateLimitInfo.modelLimit : null;
+      rateLimitInfo.modelRemaining = Number.isFinite(nextRateLimitInfo.modelRemaining) ? nextRateLimitInfo.modelRemaining : null;
+      rateLimitInfo.modelId = typeof nextRateLimitInfo.modelId === 'string' ? nextRateLimitInfo.modelId : null;
+      rateLimitInfo.lastUpdateTime = Number.isFinite(nextRateLimitInfo.lastUpdateTime) ? nextRateLimitInfo.lastUpdateTime : null;
+
+      modelStatus.clear();
+      if (Array.isArray(cache.modelStatus)) {
+        for (const entry of cache.modelStatus) {
+          const [modelId, status] = Array.isArray(entry) ? entry : [];
+          if (!modelId || !MODEL_IDS[modelId]) continue;
+          const snapshot = normalizeModelStatusSnapshot(status);
+          if (!isModelScopeModel(modelId)) {
+            snapshot.error = null;
+            snapshot.lockedUntil = null;
+            snapshot.lockReason = null;
+          }
+          modelStatus.set(modelId, snapshot);
+        }
+      }
+
+      updateRateLimitNote();
+      updateModelDropdownIndicators();
+      return true;
+    }
+
+    function scheduleModelscopeQuotaRefresh(delayMs) {
+      if (modelscopeQuotaTimer) {
+        clearTimeout(modelscopeQuotaTimer);
+        modelscopeQuotaTimer = null;
+      }
+
+      modelscopeQuotaTimer = setTimeout(() => {
+        refreshModelscopeQuota()
+          .catch(() => {})
+          .finally(() => {
+            scheduleModelscopeQuotaRefresh(MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS);
+          });
+      }, Math.max(0, delayMs));
+    }
+
+    function scheduleNonModelscopePingRefresh(delayMs) {
+      if (nonModelscopePingTimer) {
+        clearTimeout(nonModelscopePingTimer);
+        nonModelscopePingTimer = null;
+      }
+
+      nonModelscopePingTimer = setTimeout(() => {
+        refreshNonModelscopePing()
+          .catch(() => {})
+          .finally(() => {
+            scheduleNonModelscopePingRefresh(NON_MODELSCOPE_PING_INTERVAL_MS);
+          });
+      }, Math.max(0, delayMs));
+    }
+
+    async function refreshModelscopeQuota() {
+      await refreshRateLimitForCurrentModel(true);
+      modelTelemetryLastRefreshedAt = Date.now();
+      persistModelTelemetryCache();
+    }
+
+    async function refreshNonModelscopePing() {
+      const nonModelscopeIds = Object.keys(MODEL_IDS).filter(id => !isModelScopeModel(id));
+      const promises = nonModelscopeIds.map(async (modelId) => {
+        const result = await pingModel(modelId);
+        const status = getModelStatus(modelId);
+        status.speedMs = result.speedMs;
+        status.speedLevel = result.ok ? getModelSpeedLevel(result.speedMs) : 'error';
+        if (!result.ok) {
+          status.error = result.error;
+          if (result.shouldLock) {
+            status.lockedUntil = Date.now() + MODEL_LOCK_DURATION_MS;
+            status.lockReason = 'unavailable';
+          } else {
+            status.lockedUntil = null;
+            status.lockReason = null;
+          }
+        } else {
+          status.error = null;
+          status.lockedUntil = null;
+          status.lockReason = null;
+        }
+        status.lastChecked = Date.now();
+        modelStatus.set(modelId, normalizeModelStatusSnapshot(status));
+      });
+      await Promise.allSettled(promises);
+      updateModelDropdownIndicators();
+      updateRateLimitNote();
+      persistModelTelemetryCache();
+    }
+
+    async function bootstrapModelTelemetry() {
+      const cache = readModelTelemetryCache();
+      if (cache) {
+        modelTelemetryLastRefreshedAt = Number.isFinite(cache.refreshedAt) ? cache.refreshedAt : 0;
+        applyModelTelemetryCache(cache);
+      } else {
+        updateRateLimitNote();
+        updateModelDropdownIndicators();
+      }
+
+      // 立即刷新一次，然后启动两个独立循环
+      await Promise.allSettled([
+        refreshModelscopeQuota(),
+        refreshNonModelscopePing(),
+      ]);
+      autoSwitchIfCurrentModelUnavailable();
+      scheduleModelscopeQuotaRefresh(MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS);
+      scheduleNonModelscopePingRefresh(NON_MODELSCOPE_PING_INTERVAL_MS);
     }
 
     function isModelAvailable(modelId) {
-      if (!isModelScopeModel(modelId)) return true; // 非魔塔模型始终可用（额度不由魔塔管）
+      clearExpiredQuotaLocks();
+      const now = Date.now();
+
+      if (isModelScopeModel(modelId)) {
+        if (Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil > now) {
+          return false;
+        }
+        const status = getModelStatus(modelId);
+        if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) return false;
+        if (!isTelemetryFresh(status.lastChecked)) return true;
+        if (status.quotaRemaining !== null && status.quotaRemaining <= 0) return false;
+        return true;
+      }
+
+      // 非魔塔模型：看锁定状态，未锁定则可用
       const status = getModelStatus(modelId);
-      if (status.error) return false;
-      if (status.quotaRemaining !== null && status.quotaRemaining <= 0) return false;
+      if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) return false;
       return true;
     }
 
@@ -120,86 +487,42 @@
       const start = performance.now();
       try {
         const probeModel = MODEL_IDS[modelId] || modelId;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const probeEndpoint = getModelProbeEndpoint(modelId);
 
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: proxyHeaders(),
           body: JSON.stringify({
+            endpoint: 'ping',
             model: probeModel,
-            messages: [{ role: 'user', content: 'Hi' }],
-            max_tokens: 1,
-            temperature: 0.1
-          }),
-          signal: controller.signal
+            probe_endpoint: probeEndpoint,
+          })
         });
-        clearTimeout(timeout);
 
-        const ttfb = performance.now() - start;
+        const payload = await response.json().catch(() => null);
+        const latencyMs = Number.isFinite(payload?.latencyMs)
+          ? Number(payload.latencyMs)
+          : performance.now() - start;
+
         if (!response.ok) {
-          const errText = await response.text().catch(() => '');
-          return { ok: false, speedMs: ttfb, error: `HTTP ${response.status}: ${errText.slice(0, 80)}` };
+          const errText = String(payload?.error || payload?.message || '').trim();
+          const friendly = getFriendlyHttpStatusMessage(payload?.status || response.status);
+          return { ok: false, speedMs: latencyMs, error: errText ? `${friendly}（${errText.slice(0, 80)}）` : friendly, shouldLock: false };
         }
-        return { ok: true, speedMs: ttfb };
+
+        if (payload?.ok === false) {
+          const errText = String(payload?.error || payload?.message || '').trim();
+          const friendly = getFriendlyHttpStatusMessage(payload?.status || response.status);
+          return { ok: false, speedMs: latencyMs, error: errText ? `${friendly}（${errText.slice(0, 80)}）` : friendly, shouldLock: true };
+        }
+
+        return { ok: true, speedMs: latencyMs, shouldLock: false };
       } catch (error) {
-        return { ok: false, speedMs: performance.now() - start, error: error.name === 'AbortError' ? '超时' : String(error.message || error).slice(0, 80) };
+        return { ok: false, speedMs: performance.now() - start, error: error.name === 'AbortError' ? '超时' : String(error.message || error).slice(0, 80), shouldLock: false };
       }
     }
 
-    async function testAllModelSpeeds() {
-      const modelIds = Object.keys(MODEL_IDS);
-      const promises = modelIds.map(async (modelId) => {
-        const result = await pingModel(modelId);
-        const status = getModelStatus(modelId);
-        status.speedMs = result.speedMs;
-        status.speedLevel = result.ok ? getModelSpeedLevel(result.speedMs) : 'error';
-        if (!result.ok) status.error = result.error;
-        else status.error = null;
-        status.lastChecked = Date.now();
-        modelStatus.set(modelId, status);
-      });
-      await Promise.all(promises);
-      updateModelDropdownIndicators();
-    }
 
-    async function probeAllModelQuotas() {
-      const modelIds = Object.keys(MODEL_IDS).filter(isModelScopeModel);
-      const promises = modelIds.map(async (modelId) => {
-        try {
-          const probeModel = getRateLimitRequestModelId(modelId);
-          const response = await fetch(EDGE_FUNCTION_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: probeModel,
-              messages: [{ role: 'user', content: 'test' }],
-              max_tokens: 1
-            })
-          });
-          const status = getModelStatus(modelId);
-          if (response.ok) {
-            const modelLimit = response.headers.get('modelscope-ratelimit-model-requests-limit') || response.headers.get('ModelScope-Ratelimit-Model-Requests-Limit');
-            const modelRemaining = response.headers.get('modelscope-ratelimit-model-requests-remaining') || response.headers.get('ModelScope-Ratelimit-Model-Requests-Remaining');
-            if (modelLimit) status.quotaLimit = parseInt(modelLimit, 10);
-            if (modelRemaining !== null) status.quotaRemaining = parseInt(modelRemaining, 10);
-            status.error = null;
-          } else {
-            const errText = await response.text().catch(() => '');
-            if (errText.includes('额度') || errText.includes('quota') || errText.includes('limit') || response.status === 429) {
-              status.quotaRemaining = 0;
-              status.error = '额度已用完';
-            }
-          }
-          status.lastChecked = Date.now();
-          modelStatus.set(modelId, status);
-        } catch (e) {
-          // 静默失败，不影响页面使用
-        }
-      });
-      await Promise.all(promises);
-      updateModelDropdownIndicators();
-    }
 
     function autoSwitchIfCurrentModelUnavailable() {
       if (isModelAvailable(currentModel)) return;
@@ -221,6 +544,7 @@
 
     function updateModelDropdownIndicators() {
       if (!modelDropdown) return;
+      clearExpiredQuotaLocks();
       modelDropdown.querySelectorAll('.model-option').forEach(opt => {
         const modelId = opt.dataset.model;
         const status = getModelStatus(modelId);
@@ -241,10 +565,10 @@
         // 禁用状态
         if (!isModelAvailable(modelId)) {
           opt.classList.add('disabled');
-          opt.title = status.error || '该模型当前不可用（额度已用完或请求失败）';
+          opt.title = getQuotaLockMessage(modelId) || status.error || '该模型当前不可用（额度已用完或请求失败）';
         } else {
           opt.classList.remove('disabled');
-          opt.title = '';
+          opt.title = status.error && status.error !== '额度已用完' ? status.error : '';
         }
       });
     }
@@ -258,6 +582,10 @@
         return MODEL_IDS[modelId] || modelId;
       }
       return MODEL_IDS[RATE_LIMIT_PROBE_MODEL_ID] || RATE_LIMIT_PROBE_MODEL_ID;
+    }
+
+    function getModelProbeEndpoint(modelId = currentModel) {
+      return modelId === 'dall-e-3' ? 'image' : 'chat';
     }
 
     // 全局错误捕获
@@ -835,7 +1163,8 @@
       return content;
     }
 
-    const SUPABASE_URL = 'https://diusqgphvybnzazgopor.supabase.co';
+    const SUPABASE_URL = (window.__SUPABASE_URL__ || '').trim() || `${window.location.origin}/api/supabase`;
+    const PROXY_TOKEN = (window.__PROXY_TOKEN__ || '').trim();
     const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/modelscope-proxy`;
     const CHAT_HISTORY_URL = `${SUPABASE_URL}/functions/v1/chat-history`;
     const WEB_SEARCH_URL = `${SUPABASE_URL}/functions/v1/web-search`;
@@ -846,6 +1175,12 @@
     const FETCH_TIMEOUT_MS = 20000;
     const CHAT_REQUEST_TIMEOUT_MS = 25000;
     const CHAT_TURN_TIMEOUT_MS = 90000;
+
+    function proxyHeaders(extra = {}) {
+      const h = { 'Content-Type': 'application/json', ...extra };
+      if (PROXY_TOKEN) h['x-proxy-token'] = PROXY_TOKEN;
+      return h;
+    }
 
     // 获取用户标识（基于 API key 或生成随机 ID）
     let userId = localStorage.getItem('cancri_user_id');
@@ -950,7 +1285,7 @@
         if (!chat) return;
         const response = await fetch(CHAT_HISTORY_URL, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+          headers: proxyHeaders({ 'x-user-id': userId }),
           body: JSON.stringify({ id: chatId, messages: chat.messages || [], title: newTitle })
         });
         if (!response.ok) throw new Error('重命名失败');
@@ -1072,10 +1407,7 @@
       try {
         const response = await fetch(CHAT_HISTORY_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': userId
-          },
+          headers: proxyHeaders({ 'x-user-id': userId }),
           body: JSON.stringify({
             title: generateChatTitle(messages),
             messages: messages,
@@ -1097,10 +1429,7 @@
       try {
         const response = await fetch(CHAT_HISTORY_URL, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': userId
-          },
+          headers: proxyHeaders({ 'x-user-id': userId }),
           body: JSON.stringify({
             id: chatId,
             messages: messages,
@@ -1121,9 +1450,7 @@
       try {
         const response = await fetch(CHAT_HISTORY_URL, {
           method: 'GET',
-          headers: {
-            'x-user-id': userId
-          }
+          headers: proxyHeaders({ 'x-user-id': userId })
         });
 
         if (!response.ok) throw new Error('加载聊天记录列表失败');
@@ -1141,9 +1468,7 @@
       try {
         const response = await fetch(`${CHAT_HISTORY_URL}?id=${chatId}`, {
           method: 'GET',
-          headers: {
-            'x-user-id': userId
-          }
+          headers: proxyHeaders({ 'x-user-id': userId })
         });
 
         if (!response.ok) throw new Error('加载聊天记录失败');
@@ -1160,9 +1485,7 @@
       try {
         const response = await fetch(`${CHAT_HISTORY_URL}?id=${chatId}`, {
           method: 'DELETE',
-          headers: {
-            'x-user-id': userId
-          }
+          headers: proxyHeaders({ 'x-user-id': userId })
         });
 
         const rawText = await response.text().catch(() => '');
@@ -1879,6 +2202,7 @@
 
     function updateRateLimitNote() {
       if (!rateLimitNote || !rateLimitUpdateTime || !userRateLimit || !modelRateLimit) return;
+      clearExpiredQuotaLocks();
 
       const showModelQuota = isModelScopeModel(currentModel);
       const modelRateLimitItem = modelRateLimit.closest('.rate-limit-item');
@@ -1894,14 +2218,18 @@
       }
 
       if (showModelQuota) {
-        if (rateLimitInfo.modelLimit === null || rateLimitInfo.modelRemaining === null) {
+        const currentModelStatus = getModelStatus(currentModel);
+        const modelLimit = currentModelStatus.quotaLimit ?? (rateLimitInfo.modelId === currentModel ? rateLimitInfo.modelLimit : null);
+        const modelRemaining = currentModelStatus.quotaRemaining ?? (rateLimitInfo.modelId === currentModel ? rateLimitInfo.modelRemaining : null);
+        if (modelLimit === null || modelRemaining === null) {
           modelRateLimit.textContent = '暂无数据';
         } else {
-          modelRateLimit.textContent = `${rateLimitInfo.modelRemaining}/${rateLimitInfo.modelLimit}`;
+          modelRateLimit.textContent = `${modelRemaining}/${modelLimit}`;
         }
       } else {
         rateLimitInfo.modelLimit = null;
         rateLimitInfo.modelRemaining = null;
+        rateLimitInfo.modelId = null;
       }
 
       if (rateLimitInfo.lastUpdateTime) {
@@ -1913,30 +2241,13 @@
       }
     }
 
-    function updateRateLimitFromHeaders(headers, showModelQuota = isModelScopeModel(currentModel)) {
-      const userLimit = headers.get('modelscope-ratelimit-requests-limit')
-        || headers.get('ModelScope-Ratelimit-Requests-Limit');
-      const userRemaining = headers.get('modelscope-ratelimit-requests-remaining')
-        || headers.get('ModelScope-Ratelimit-Requests-Remaining');
-      const modelLimit = headers.get('modelscope-ratelimit-model-requests-limit')
-        || headers.get('ModelScope-Ratelimit-Model-Requests-Limit');
-      const modelRemaining = headers.get('modelscope-ratelimit-model-requests-remaining')
-        || headers.get('ModelScope-Ratelimit-Model-Requests-Remaining');
-
-      if (userLimit) rateLimitInfo.userLimit = parseInt(userLimit, 10);
-      if (userRemaining) rateLimitInfo.userRemaining = parseInt(userRemaining, 10);
-
-      if (showModelQuota) {
-        if (modelLimit) rateLimitInfo.modelLimit = parseInt(modelLimit, 10);
-        if (modelRemaining) rateLimitInfo.modelRemaining = parseInt(modelRemaining, 10);
-      } else {
-        rateLimitInfo.modelLimit = null;
-        rateLimitInfo.modelRemaining = null;
-      }
-
-      rateLimitInfo.lastUpdateTime = Date.now();
-
-      updateRateLimitNote();
+    function updateRateLimitFromHeaders(headers, showModelQuota = isModelScopeModel(currentModel), responseStatus = 200, errorText = '') {
+      applyQuotaSnapshotFromHeaders(currentModel, headers, {
+        responseStatus,
+        errorText,
+        updateCurrentRateLimitInfo: showModelQuota,
+      });
+      persistModelTelemetryCache();
     }
 
     async function refreshRateLimitForCurrentModel(resetModelQuota = false) {
@@ -1944,24 +2255,23 @@
       const targetModelId = currentModel;
       const showModelQuota = isModelScopeModel(targetModelId);
 
-      if (!showModelQuota || resetModelQuota) {
+      if (!showModelQuota) {
         rateLimitInfo.modelLimit = null;
         rateLimitInfo.modelRemaining = null;
+        rateLimitInfo.modelId = null;
         updateRateLimitNote();
       }
 
       try {
         const probeModel = getRateLimitRequestModelId(targetModelId);
+        const probeEndpoint = getModelProbeEndpoint(targetModelId);
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: proxyHeaders(),
           body: JSON.stringify({
-            endpoint: 'chat',
+            endpoint: 'ping',
             model: probeModel,
-            messages: [{ role: 'user', content: 'hi' }],
-            max_tokens: 1
+            probe_endpoint: probeEndpoint,
           })
         });
 
@@ -1969,9 +2279,23 @@
           return;
         }
 
-        if (response.ok) {
-          updateRateLimitFromHeaders(response.headers, showModelQuota);
+        const payload = await response.json().catch(() => null);
+        const latencyMs = Number.isFinite(payload?.latencyMs) ? Number(payload.latencyMs) : null;
+        if (latencyMs !== null) {
+          const status = getModelStatus(targetModelId);
+          status.speedMs = latencyMs;
+          status.speedLevel = getModelSpeedLevel(latencyMs);
+          status.lastChecked = Date.now();
+          if (payload?.ok === false) {
+            status.error = String(payload?.error || '').slice(0, 80);
+          } else {
+            status.error = null;
+          }
+          modelStatus.set(targetModelId, normalizeModelStatusSnapshot(status));
         }
+        updateRateLimitNote();
+        updateModelDropdownIndicators();
+        persistModelTelemetryCache();
       } catch (error) {
         // 静默失败，不影响页面使用
       }
@@ -2109,10 +2433,51 @@
       return blocks.join('');
     }
 
+    function renderAnimatedMarkdown(markdown) {
+      return renderMarkdown(markdown);
+    }
+
+    function renderStreamingFragment(text) {
+      return renderInlineMarkdown(String(text || '')).replace(/\r?\n/g, '<br>');
+    }
+
+    function syncStreamingMarkdownBlock(blockElement, streamState, text, { thinking = false, placeholder = '正在思考中…' } = {}) {
+      const nextText = String(text || '');
+
+      if (!thinking) {
+        blockElement.innerHTML = nextText ? renderMarkdown(nextText) : '';
+        streamState.text = nextText;
+        streamState.ready = Boolean(nextText);
+        return;
+      }
+
+      if (!nextText.trim()) {
+        blockElement.innerHTML = placeholder ? `<span class="typing-indicator">${escapeHtml(placeholder)}</span>` : '';
+        streamState.text = '';
+        streamState.ready = false;
+        return;
+      }
+
+      if (!streamState.ready || !nextText.startsWith(streamState.text)) {
+        blockElement.innerHTML = '';
+        streamState.text = '';
+        streamState.ready = true;
+      }
+
+      const delta = nextText.slice(streamState.text.length);
+      if (!delta) return;
+
+      const fragment = document.createElement('span');
+      fragment.className = 'stream-fragment';
+      fragment.innerHTML = renderStreamingFragment(delta);
+      blockElement.appendChild(fragment);
+      streamState.text = nextText;
+    }
+
     function getModelIdentity(modelId) {
       const identities = {
-        'deepseek-v4-flash': '由NexusV支持的DeepSeekV4-Flash模型',
-        'deepseek-v4-flash-dashscope': '由NexusV支持的DeepSeekV4-Flash模型',
+        'deepseek-v4-flash': '由NexusV支持的DeepSeekV4模型',
+        'deepseek-v4-flash-dashscope': '由NexusV支持的DeepSeekV4模型',
         'deepseek-v4-pro': '由NexusV支持的DeepSeekV4-Pro模型',
         'step-3.5-flash': '由NexusV支持的Step-3.5模型',
         'hy3-preview': '由NexusV支持的混元3模型',
@@ -2358,6 +2723,13 @@
           : '请求已取消或超时，请重试。';
       }
       const message = error instanceof Error ? error.message : String(error);
+      const httpMatch = message.match(/\b(?:HTTP(?: error! status)?|status)\s*:?\s*(\d{3})/i);
+      if (httpMatch) {
+        return getFriendlyHttpStatusMessage(httpMatch[1]);
+      }
+      if (/额度已用完|quota|limit/i.test(message)) {
+        return '当前模型额度已用完，请切换其他模型再试。';
+      }
       if (/^failed to fetch$/i.test(message || '')) {
         return '网络请求失败，请检查 Edge Function 是否已部署、CORS 是否生效，或稍后重试。';
       }
@@ -2464,9 +2836,7 @@
       try {
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: proxyHeaders(),
           body: JSON.stringify({
             endpoint: 'image',
             model: imageModel,
@@ -2522,9 +2892,7 @@
         while (true) {
           const resultResponse = await fetch(EDGE_FUNCTION_URL, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: proxyHeaders(),
             body: JSON.stringify({
               endpoint: 'task',
               taskId: taskId
@@ -2726,7 +3094,15 @@
         showToast('已引用到输入框');
       });
 
-      messageDiv._parts = { thinkBlock, thinkBody, answerBody, toolCallsContainer, messageActions };
+      messageDiv._parts = {
+        thinkBlock,
+        thinkBody,
+        answerBody,
+        toolCallsContainer,
+        messageActions,
+        thinkStreamState: { text: '', ready: false },
+        answerStreamState: { text: '', ready: false },
+      };
       chatMessages.appendChild(messageDiv);
       scrollChatToBottom(false);
 
@@ -2737,7 +3113,14 @@
       const messageDiv = document.getElementById(messageId);
       if (!messageDiv || !messageDiv._parts) return;
 
-      const { thinkBlock, thinkBody, answerBody, toolCallsContainer } = messageDiv._parts;
+      const {
+        thinkBlock,
+        thinkBody,
+        answerBody,
+        toolCallsContainer,
+        thinkStreamState,
+        answerStreamState,
+      } = messageDiv._parts;
       const reasoningText = String(reasoning ?? '');
       const answerText = String(answer ?? '');
       const hasReasoning = Boolean(reasoningText.trim());
@@ -2745,8 +3128,12 @@
 
       thinkBlock.hidden = !hasReasoning;
       if (hasReasoning) {
-        thinkBody.innerHTML = renderMarkdown(reasoningText);
+        syncStreamingMarkdownBlock(thinkBody, thinkStreamState, reasoningText, { thinking });
         thinkBlock.open = true;
+      } else {
+        thinkBody.innerHTML = '';
+        thinkStreamState.text = '';
+        thinkStreamState.ready = false;
       }
 
       const thinkSpinner = thinkBlock.querySelector('.think-spinner');
@@ -2755,11 +3142,15 @@
       }
 
       if (hasAnswer) {
-        answerBody.innerHTML = renderMarkdown(answerText);
+        syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, { thinking, placeholder: '正在思考中…' });
       } else if (thinking) {
         answerBody.innerHTML = '<span class="typing-indicator">正在思考中…</span>';
+        answerStreamState.text = '';
+        answerStreamState.ready = false;
       } else {
         answerBody.innerHTML = '';
+        answerStreamState.text = '';
+        answerStreamState.ready = false;
       }
 
       scrollChatToBottom();
@@ -2921,9 +3312,7 @@
 
       const response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: proxyHeaders(),
         body: JSON.stringify({
           endpoint: 'chat',
           model: MODEL_IDS[modelId] || MODEL_IDS['deepseek-v4-flash'],
@@ -3129,9 +3518,7 @@
       const tryFetchSearch = async (url) => {
         const response = await fetchWithTimeout(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: proxyHeaders(),
           body: JSON.stringify(requestPayload),
         }, FETCH_TIMEOUT_MS, '联网搜索');
 
@@ -3184,9 +3571,7 @@
       const tryFetchPage = async (fetchUrl) => {
         const response = await fetchWithTimeout(fetchUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: proxyHeaders(),
           body: JSON.stringify(requestPayload),
         }, FETCH_TIMEOUT_MS, '获取网页内容');
 
@@ -3345,9 +3730,7 @@
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: proxyHeaders(),
           signal: controller.signal,
           body: JSON.stringify({
             endpoint: 'chat',
@@ -3362,17 +3745,15 @@
         await sleep(900 * attempt);
       }
 
-      if (response.status === 429) {
-        throw new Error(RATE_LIMIT_MESSAGE);
-      }
+      const showModelQuota = isModelScopeModel(activeModelId) && activeModelId === currentModel;
+      const errorText = response.ok ? '' : await response.text().catch(() => '');
+      updateRateLimitFromHeaders(response.headers, showModelQuota, response.status, errorText);
 
-      // 从响应头读取额度信息
-      if (response.ok && isModelScopeModel(activeModelId) && activeModelId === currentModel) {
-        updateRateLimitFromHeaders(response.headers, true);
+      if (response.status === 429) {
+        throw new Error(getQuotaLockMessage(activeModelId) || '模型额度已超，请切换模型重试。');
       }
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
         let detail = errorText.trim();
         console.error('API 错误响应:', errorText);
         if (detail) {
@@ -3387,7 +3768,8 @@
         if (response.status === 400 && processedMessages.some(m => Array.isArray(m.content))) {
           detail += ' (可能是图片格式不支持或图片过大)';
         }
-        throw new Error(detail ? `HTTP error! status: ${response.status} · ${detail}` : `HTTP error! status: ${response.status}`);
+        const friendly = getFriendlyHttpStatusMessage(response.status);
+        throw new Error(detail && response.status === 400 ? `${friendly}（${detail}）` : friendly);
       }
 
       if (!response.body) {
@@ -3616,9 +3998,6 @@
     }
 
     async function sendMessage(content) {
-      // 检查当前模型是否可用，不可用则自动切换
-      autoSwitchIfCurrentModelUnavailable();
-
       // 检查速率限制
       const rateCheck = checkRateLimit();
       if (!rateCheck.allowed) {
@@ -3644,16 +4023,31 @@
         : effectiveQuery;
       const userHistoryMessage = { role: 'user', content: userContent };
 
+      createUserMessage(query || effectiveQuery, attachmentsForSend);
+      homeInput.value = '';
+
+      const currentStatus = getModelStatus(currentModel);
+      if (!isModelAvailable(currentModel)) {
+        const unavailableMessage = getQuotaLockMessage(currentModel)
+          || (currentStatus.quotaRemaining !== null && currentStatus.quotaRemaining <= 0
+          ? '当前模型额度已用完，请切换其他模型再试。'
+          : '当前模型暂时不可用，请切换其他模型再试。');
+        const assistantMessageId = createAssistantMessage();
+        updateAssistantMessage(assistantMessageId, { answer: unavailableMessage, thinking: false });
+        pushHistory(userHistoryMessage);
+        pushHistory('assistant', unavailableMessage);
+        await finalizeConversationTurn();
+        return;
+      }
+
+      setComposerBusy(true);
+
       try {
         await ensureContextBudget(userContent, currentModel);
       } catch (error) {
         showToast(normalizeErrorMessage(error, '上下文压缩失败，请稍后再试。'));
         return;
       }
-
-      createUserMessage(query || effectiveQuery, attachmentsForSend);
-      homeInput.value = '';
-      setComposerBusy(true);
 
       const assistantMessageId = createAssistantMessage();
       const controller = new AbortController();
@@ -3742,8 +4136,17 @@
         await finalizeConversationTurn();
       } catch (error) {
         const message = normalizeErrorMessage(error, '抱歉，发送消息时出现错误，请稍后重试。');
-        if (message.includes(RATE_LIMIT_MESSAGE)) {
-          updateAssistantMessage(assistantMessageId, { answer: RATE_LIMIT_MESSAGE, thinking: false });
+        if (message.includes('额度已用完')
+          || message.includes('切换其他模型再试')
+          || message.includes('切换模型重试')
+          || message.includes('模型额度已超')
+          || message.includes('暂时无法访问')
+          || message.includes('有点忙')
+          || message.startsWith('当前模型')
+          || message.includes('请换个模型再试')
+          || message.includes('请求已取消')
+          || message.includes('超时')) {
+          updateAssistantMessage(assistantMessageId, { answer: message, thinking: false });
         } else {
           updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${message}`, thinking: false });
         }
@@ -3817,7 +4220,7 @@
     }
 
     function closeModal() {
-      [settingsModal, tempChatModal, projectModal].forEach(m => {
+      [settingsModal, tempChatModal, projectModal, privacyPolicyModal].forEach(m => {
         m.classList.remove('open');
         m.setAttribute('aria-hidden', 'true');
       });
@@ -3833,6 +4236,12 @@
       if (!scrim) return;
       const shouldShow = Boolean(state.modal) || (isMobileViewport() && sidebar && !sidebar.classList.contains('collapsed'));
       scrim.classList.toggle('show', shouldShow);
+    }
+
+    function updateNexusvFooterVisibility() {
+      if (!nexusvFooter) return;
+      const visible = !homeView?.classList.contains('chatting') && nexusvFooter.classList.contains('is-visible');
+      nexusvFooter.style.visibility = visible ? 'visible' : 'hidden';
     }
 
     function cycleAppearance() {
@@ -3907,27 +4316,55 @@
         e.stopPropagation();
         const qrModal = document.createElement('div');
         qrModal.style.cssText = 'position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);padding:20px;opacity:0;transition:opacity 0.3s ease;';
-        qrModal.innerHTML = `
-          <div style="background:var(--panel);border-radius:20px;padding:24px;max-width:90%;max-height:90%;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 64px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.3s ease;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text);margin:0;">扫码资助</h3>
-            <img src="../0429/Logo/1107.jpg" alt="收款码" style="max-width:300px;max-height:400px;border-radius:12px;object-fit:contain;">
-            <button id="closeQrModal" style="padding:8px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">关闭</button>
-          </div>
+        const qrCard = document.createElement('div');
+        qrCard.style.cssText = 'background:var(--panel);border-radius:20px;padding:24px;max-width:90%;max-height:90%;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 64px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.3s ease;';
+        qrCard.innerHTML = `
+          <h3 style="font-size:18px;font-weight:700;color:var(--text);margin:0;">扫码资助</h3>
         `;
+
+        const qrImage = document.createElement('img');
+        qrImage.alt = '收款码';
+        qrImage.style.cssText = 'max-width:300px;max-height:400px;border-radius:12px;object-fit:contain;background:#fff;';
+        const qrImageCandidates = [
+          '../Logo/1107.jpg',
+          '../0429/Logo/1107.jpg',
+        ];
+        let qrImageIndex = 0;
+        const loadNextQrImage = () => {
+          if (qrImageIndex >= qrImageCandidates.length) {
+            qrImage.alt = '收款码加载失败';
+            qrImage.removeAttribute('src');
+            return;
+          }
+          qrImage.src = qrImageCandidates[qrImageIndex];
+          qrImageIndex += 1;
+        };
+        qrImage.addEventListener('error', loadNextQrImage);
+        loadNextQrImage();
+
+        const closeQrButton = document.createElement('button');
+        closeQrButton.id = 'closeQrModal';
+        closeQrButton.type = 'button';
+        closeQrButton.textContent = '关闭';
+        closeQrButton.style.cssText = 'padding:8px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;';
+
+        qrCard.appendChild(qrImage);
+        qrCard.appendChild(closeQrButton);
+        qrModal.appendChild(qrCard);
         document.body.appendChild(qrModal);
         requestAnimationFrame(() => {
           qrModal.style.opacity = '1';
-          qrModal.querySelector('div').style.transform = 'scale(1)';
+          qrCard.style.transform = 'scale(1)';
         });
         const closeModal = () => {
           qrModal.style.opacity = '0';
-          qrModal.querySelector('div').style.transform = 'scale(0.95)';
+          qrCard.style.transform = 'scale(0.95)';
           setTimeout(() => qrModal.remove(), 300);
         };
         qrModal.addEventListener('click', e => {
           if (e.target === qrModal) closeModal();
         });
-        document.getElementById('closeQrModal').addEventListener('click', closeModal);
+        closeQrButton.addEventListener('click', closeModal);
       });
     }
 
@@ -3936,6 +4373,7 @@
     document.getElementById('tempChatBtn').addEventListener('click', () => openModal('tempChatModal'));
     on('projectBtn', 'click', () => openModal('projectModal'));
     document.getElementById('createProjectFromPlus').addEventListener('click', () => openModal('projectModal'));
+    document.getElementById('privacyPolicyBtn').addEventListener('click', () => openModal('privacyPolicyModal'));
 
     navRows.forEach(row => {
       row.addEventListener('click', () => {
@@ -4241,8 +4679,9 @@
 
       // 根据模型是否多模态显示/隐藏上传图片按钮
       updateAttachBtnVisibility();
-      refreshRateLimitForCurrentModel(true);
+      updateRateLimitNote();
     }
+
 
     function updateAttachBtnVisibility() {
       if (attachBtn) {
@@ -4336,15 +4775,18 @@
     setComposerBusy(false);
     updateTokenExpiryNote();
     setInterval(updateTokenExpiryNote, 1000);
-    updateRateLimitNote();
-    refreshRateLimitForCurrentModel(true);
-    setInterval(() => refreshRateLimitForCurrentModel(), RATE_LIMIT_UPDATE_INTERVAL_MS);
+    bootstrapModelTelemetry();
 
-    // 启动模型速度测试和额度探测
-    testAllModelSpeeds();
-    probeAllModelQuotas();
-    setInterval(() => testAllModelSpeeds(), SPEED_TEST_INTERVAL_MS);
-    setInterval(() => probeAllModelQuotas(), QUOTA_PROBE_INTERVAL_MS);
+    if (nexusvFooter && typeof IntersectionObserver !== 'undefined') {
+      const nexusvFooterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          nexusvFooter.classList.toggle('is-visible', entry.isIntersecting);
+          updateNexusvFooterVisibility();
+        });
+      }, { threshold: 0.1 });
+      nexusvFooterObserver.observe(nexusvFooter);
+      updateNexusvFooterVisibility();
+    }
 
     initQueryFromUrl();
 
