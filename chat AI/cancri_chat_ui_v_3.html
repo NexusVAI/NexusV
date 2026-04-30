@@ -8,9 +8,15 @@
     window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || '';
     window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
   </script>
-  <link rel="stylesheet" href="./cancri_chat.css" />
+  <link rel="stylesheet" href="./cancri_chat.css?v=maintenance-0501" />
 </head>
 <body>
+  <div class="emergency-ticker" role="status" aria-live="polite">
+    <div class="emergency-ticker-track">
+      <span class="emergency-ticker-message">由于 [维护]，平台出现故障，服务全面中断　状态：正在全力抢修　预计恢复时间：[2026-05-01-00:00]　我们会每隔一段时间更新进展，敬请关注群内通知。</span>
+      <span class="emergency-ticker-message" aria-hidden="true">由于 [维护]，平台出现故障，服务全面中断　状态：正在全力抢修　预计恢复时间：[2026-05-01-00:00]　我们会每隔一段时间更新进展，敬请关注群内通知。</span>
+    </div>
+  </div>
   <div class="app" id="appRoot">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-topbar">
@@ -767,6 +773,6 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=telemetry-cache-v3"></script>
+  <script src="./cancri_chat.js?v=maintenance-0501"></script>
 </body>
 </html>

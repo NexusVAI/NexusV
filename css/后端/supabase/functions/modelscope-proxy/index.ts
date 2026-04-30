@@ -667,7 +667,9 @@ serve(async (req: Request) => {
       status: response.status,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Internal error' }), {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('modelscope-proxy internal error:', message)
+    return new Response(JSON.stringify({ error: 'Internal error', detail: message.slice(0, 300) }), {
       headers: { ...ch, 'Content-Type': 'application/json' },
       status: 500,
     })
