@@ -71,7 +71,10 @@ const OPENROUTER_API_KEY_3 = Deno.env.get('OPENROUTER_API_KEY_3') || ''
 const SPARK_BASE_URL = (Deno.env.get('SPARK_BASE_URL') || 'https://spark-api-open.xf-yun.com/x2').replace(/\/$$/, '')
 const SPARK_API_KEY = Deno.env.get('SPARK_API_KEY') || ''
 
-type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark'
+const MIMO_BASE_URL = (Deno.env.get('MIMO_BASE_URL') || 'https://api.xiaomimimo.com/v1').replace(/\/$/, '')
+const MIMO_API_KEY = Deno.env.get('MIMO_API_KEY') || ''
+
+type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo'
 
 function isOpenAICompatibleModel(model: string): boolean {
   return model === 'dall-e-3'
@@ -133,6 +136,10 @@ function isSparkModel(model: string): boolean {
   return model === 'spark-x'
 }
 
+function isMimoModel(model: string): boolean {
+  return model === 'mimo-v2.5-pro' || model === 'mimo-v2.5-tts' || model === 'mimo-v2.5-tts-voicedesign'
+}
+
 function getProviderKind(model: string): ProviderKind {
   if (isOpenAICompatibleModel(model)) return 'openai_compatible'
   if (isMoonshotModel(model)) return 'moonshot'
@@ -140,6 +147,7 @@ function getProviderKind(model: string): ProviderKind {
   if (isSiliconFlowModel(model)) return 'siliconflow'
   if (isOpenRouterModel(model)) return 'openrouter'
   if (isSparkModel(model)) return 'spark'
+  if (isMimoModel(model)) return 'mimo'
   return 'modelscope'
 }
 
@@ -177,6 +185,9 @@ function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
   }
   if (provider === 'spark') {
     return `${SPARK_BASE_URL}/chat/completions`
+  }
+  if (provider === 'mimo') {
+    return `${MIMO_BASE_URL}/chat/completions`
   }
   return `${MODELSCOPE_API_BASE}/chat/completions`
 }
@@ -581,6 +592,10 @@ serve(async (req: Request) => {
       return providerConfigError(provider, ['SPARK_API_KEY'], ch)
     }
 
+    if (provider === 'mimo' && !MIMO_API_KEY) {
+      return providerConfigError(provider, ['MIMO_API_KEY'], ch)
+    }
+
     if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
       return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
@@ -596,6 +611,13 @@ serve(async (req: Request) => {
     }
 
     if (provider === 'openrouter' && isLocalOnlyBaseUrl(OPENROUTER_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
+        status: 500,
+        headers: { ...ch, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'mimo' && isLocalOnlyBaseUrl(MIMO_BASE_URL)) {
       return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
         headers: { ...ch, 'Content-Type': 'application/json' },
@@ -669,6 +691,9 @@ serve(async (req: Request) => {
       } else if (provider === 'spark') {
         url = `${SPARK_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${SPARK_API_KEY}`
+      } else if (provider === 'mimo') {
+        url = `${MIMO_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${MIMO_API_KEY}`
       } else {
         url = `${MODELSCOPE_API_BASE}/chat/completions`
         headers['Authorization'] = `Bearer ${modelScopeApiKey}`

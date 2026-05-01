@@ -100,7 +100,10 @@
     const MODEL_STATUS_REFRESH_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
     const RATE_LIMIT_UPDATE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
     const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
-    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2', 'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp', 'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528']);
+    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2', 'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp', 'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528',
+      // MiMo 模型
+      'mimo-v2.5-pro', 'mimo-v2.5-tts', 'mimo-v2.5-tts-voicedesign'
+    ]);
     let rateLimitRefreshToken = 0;
     let modelscopeQuotaTimer = null;
     let nonModelscopePingTimer = null;
@@ -683,7 +686,11 @@
       'qwen3-max': 'qwen3-max',
       'kimi-k2-instruct': 'kimi-k2-instruct',
       'qwen3.6-plus-20260402': 'qwen3.6-plus-20260402',
-      'deepseek-r1-0528': 'deepseek-r1-0528'
+      'deepseek-r1-0528': 'deepseek-r1-0528',
+      // MiMo 模型
+      'mimo-v2.5-pro': 'mimo-v2.5-pro',
+      'mimo-v2.5-tts': 'mimo-v2.5-tts',
+      'mimo-v2.5-tts-voicedesign': 'mimo-v2.5-tts-voicedesign'
     };
 
     function getModelDisplayName(modelId) {
@@ -725,7 +732,11 @@
         'qwen3-max': 'Qwen3-Max',
         'kimi-k2-instruct': 'Kimi-K2-Instruct',
         'qwen3.6-plus-20260402': 'Qwen3.6-Plus · 线路三',
-        'deepseek-r1-0528': 'DeepSeek-R1-0528 · 线路三'
+        'deepseek-r1-0528': 'DeepSeek-R1-0528 · 线路三',
+        // MiMo 模型
+        'mimo-v2.5-pro': 'MiMo-V2.5-Pro',
+        'mimo-v2.5-tts': 'MiMo-TTS',
+        'mimo-v2.5-tts-voicedesign': 'MiMo-TTS- VoiceDesign'
       };
       return modelLabels[modelId] || modelId;
     }
@@ -2132,6 +2143,86 @@
       }
     }
 
+    // MiMo TTS 朗读功能
+    async function speakTextWithMimo(text) {
+      if (!text || text.trim().length === 0) {
+        showToast('没有可朗读的内容');
+        return;
+      }
+
+      showToast('正在生成语音...');
+
+      try {
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: proxyHeaders(),
+          body: JSON.stringify({
+            model: 'mimo-v2.5-tts',
+            messages: [
+              {
+                role: 'user',
+                content: '用自然的声音朗读以下内容'
+              },
+              {
+                role: 'assistant',
+                content: text.slice(0, 2000) // 限制长度
+              }
+            ],
+            audio: {
+              format: 'wav',
+              voice: 'Chloe'
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.audio) {
+          const audioBase64 = data.choices[0].message.audio.data;
+          if (audioBase64) {
+            const audioBlob = base64ToBlob(audioBase64, 'audio/wav');
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+            showToast('开始朗读');
+            audio.onended = () => {
+              URL.revokeObjectURL(audioUrl);
+            };
+          } else {
+            throw new Error('无法获取音频数据');
+          }
+        } else {
+          throw new Error('响应格式不正确');
+        }
+      } catch (error) {
+        console.error('TTS 错误:', error);
+        showToast('朗读失败: ' + (error.message || '未知错误'));
+        // 降级到浏览器原生语音合成
+        if ('speechSynthesis' in window) {
+          showToast('使用系统语音...');
+          const utterance = new SpeechSynthesisUtterance(text.slice(0, 200));
+          utterance.lang = 'zh-CN';
+          speechSynthesis.speak(utterance);
+        }
+      }
+    }
+
+    // Base64 转 Blob
+    function base64ToBlob(base64, mimeType) {
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      return new Blob([byteArray], { type: mimeType });
+    }
+
     function insertTextIntoEditable(target, text) {
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
         const start = typeof target.selectionStart === 'number' ? target.selectionStart : target.value.length;
@@ -3135,6 +3226,14 @@
           </svg>
           <span>复制</span>
         </button>
+        <button class="message-action-btn" data-action="speak" title="朗读">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <span>朗读</span>
+        </button>
         <button class="message-action-btn" data-action="quote" title="引用">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
@@ -3175,6 +3274,15 @@
         homeInput.value = quotedContent + homeInput.value;
         homeInput.focus();
         showToast('已引用到输入框');
+      });
+
+      messageActions.querySelector('[data-action="speak"]').addEventListener('click', async () => {
+        const text = answerBody.textContent || '';
+        if (!text || text === '正在思考中…') {
+          showToast('没有可朗读的内容');
+          return;
+        }
+        await speakTextWithMimo(text);
       });
 
       messageDiv._parts = {
