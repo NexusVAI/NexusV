@@ -100,7 +100,7 @@
     const MODEL_STATUS_REFRESH_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
     const RATE_LIMIT_UPDATE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
     const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
-    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'glm-5', 'glm-5.1-dashscope', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2']);
+    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2']);
     let rateLimitRefreshToken = 0;
     let modelscopeQuotaTimer = null;
     let nonModelscopePingTimer = null;
@@ -598,6 +598,9 @@
     }
 
     function getRateLimitRequestModelId(modelId = currentModel) {
+      if (modelId === 'kimi-k2.6-moonshot') {
+        return MODEL_IDS[modelId] || modelId;
+      }
       if (isModelScopeModel(modelId)) {
         return MODEL_IDS[modelId] || modelId;
       }
@@ -634,7 +637,7 @@
     if (currentModel !== savedModelSelection) {
       localStorage.setItem('cancri_current_model', currentModel);
     }
-    const MULTIMODAL_MODEL_IDS = new Set(['qwen3.5', 'kimi-k2.5', 'qwen3.6-plus', 'qwen3-coder', 'kimi-k2.6']);
+    const MULTIMODAL_MODEL_IDS = new Set(['qwen3.5', 'kimi-k2.5', 'qwen3.6-plus', 'qwen3-coder', 'kimi-k2.6', 'kimi-k2.6-moonshot']);
 
     function isMultimodalModel(modelId) {
       return MULTIMODAL_MODEL_IDS.has(modelId);
@@ -645,6 +648,7 @@
     const MODEL_IDS = {
       'deepseek-v4-flash': 'deepseek-ai/DeepSeek-V4-Flash',
       'deepseek-v4-flash-dashscope': 'deepseek-v4-flash',
+      'deepseek-v4-flash-siliconflow': 'deepseek-ai/DeepSeek-V4-Flash',
       'deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
       'step-3.5-flash': 'stepfun-ai/Step-3.5-Flash',
       'hy3-preview': 'tencent/hy3-preview:free',
@@ -656,9 +660,12 @@
       'qwen3-coder': 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
       'kimi-k2.5': 'moonshotai/Kimi-K2.5',
       'kimi-k2.6': 'kimi-k2.6',
+      'kimi-k2.6-moonshot': 'kimi-k2.6',
       'glm-5': 'glm-5',
       'glm-5.1': 'ZhipuAI/GLM-5.1',
       'glm-5.1-dashscope': 'glm-5.1',
+      'glm-5.1-siliconflow': 'zai-org/GLM-5.1',
+      'glm-4.7': 'glm-4.7',
       'deepseek-r1': 'deepseek-ai/DeepSeek-R1-0528',
       'minimax-m2.5': 'MiniMax/MiniMax-M2.5',
       'qwen3.6-max-preview': 'qwen3.6-max-preview',
@@ -669,6 +676,7 @@
       const modelLabels = {
         'deepseek-v4-flash': 'DeepSeek-V4-Flash',
         'deepseek-v4-flash-dashscope': 'DeepSeek-V4-Flash',
+        'deepseek-v4-flash-siliconflow': 'DeepSeek-V4-Flash · 线路三',
         'deepseek-v4-pro': 'DeepSeek-V4-Pro',
         'step-3.5-flash': 'Step-3.5',
         'hy3-preview': '混元3',
@@ -680,9 +688,12 @@
         'qwen3-coder': 'Qwen3-Coder',
         'kimi-k2.5': 'Kimi K2.5',
         'kimi-k2.6': 'Kimi K2.6',
+        'kimi-k2.6-moonshot': 'Kimi K2.6 · 线路二',
         'glm-5': 'GLM-5',
         'glm-5.1': 'GLM-5.1',
         'glm-5.1-dashscope': 'GLM-5.1',
+        'glm-5.1-siliconflow': 'GLM-5.1 Pro · 线路三',
+        'glm-4.7': 'GLM-4.7',
         'deepseek-r1': 'DeepSeek-R1',
         'minimax-m2.5': 'MiniMax-M2.5',
         'qwen3.6-max-preview': 'qwen3.6-max-preview',
@@ -692,7 +703,7 @@
     }
 
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1-dashscope' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-dashscope') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1-dashscope' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-moonshot' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-dashscope') {
         return { enable_thinking: true };
       }
       return {};
@@ -2514,10 +2525,12 @@
         'qwen3.5': '由NexusV支持的Qwen3.5模型',
         'qwen3-coder': '由NexusV支持的Qwen3-Coder模型',
         'kimi-k2.5': '由NexusV支持的Kimi-K2.5模型',
-        'kimi-k2.6': '由NexusV支持的Kimi-K2.6模型',
+        'kimi-k2.6': '由NexusV支持的Kimi-K2.6模型（线路一）',
+        'kimi-k2.6-moonshot': '由NexusV支持的Kimi-K2.6模型（线路二）',
         'glm-5': '由NexusV支持的GLM-5模型',
         'glm-5.1': '由NexusV支持的GLM-5.1模型',
         'glm-5.1-dashscope': '由NexusV支持的GLM-5.1模型',
+        'glm-4.7': '由NexusV支持的GLM-4.7模型',
         'deepseek-r1': '由NexusV支持的DeepSeek-R1模型',
         'minimax-m2.5': '由NexusV支持的MiniMax-M2.5模型',
         'qwen3.6-max-preview': '由NexusV支持的qwen3.6-max-preview模型',

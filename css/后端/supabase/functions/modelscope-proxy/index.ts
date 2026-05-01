@@ -1,4 +1,5 @@
 /// <reference lib="dom" />
+/// <reference lib="deno.ns" />
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -54,6 +55,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '
 
 const OPENAI_COMPATIBLE_BASE_URL = (Deno.env.get('OPENAI_COMPATIBLE_BASE_URL') || '').replace(/\/$/, '')
 const OPENAI_COMPATIBLE_API_KEY = Deno.env.get('OPENAI_COMPATIBLE_API_KEY') || ''
+const MOONSHOT_BASE_URL = (Deno.env.get('MOONSHOT_BASE_URL') || 'https://api.moonshot.cn/v1').replace(/\/$/, '')
+const MOONSHOT_API_KEY = Deno.env.get('MOONSHOT_API_KEY') || ''
 const DASHSCOPE_COMPATIBLE_BASE_URL = (Deno.env.get('DASHSCOPE_COMPATIBLE_BASE_URL') || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '')
 const DASHSCOPE_API_KEY = Deno.env.get('DASHSCOPE_API_KEY') || ''
 
@@ -68,18 +71,22 @@ const OPENROUTER_API_KEY_3 = Deno.env.get('OPENROUTER_API_KEY_3') || ''
 const SPARK_BASE_URL = (Deno.env.get('SPARK_BASE_URL') || 'https://spark-api-open.xf-yun.com/x2').replace(/\/$$/, '')
 const SPARK_API_KEY = Deno.env.get('SPARK_API_KEY') || ''
 
-type ProviderKind = 'modelscope' | 'openai_compatible' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark'
+type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark'
 
 function isOpenAICompatibleModel(model: string): boolean {
   return model === 'dall-e-3'
 }
 
+function isMoonshotModel(model: string): boolean {
+  return model === 'kimi-k2.6-moonshot'
+}
+
 function isDashScopeCompatibleModel(model: string): boolean {
-  return model === 'kimi-k2.6' || model === 'glm-5' || model === 'glm-5.1' || model === 'qwen3.6-plus' || model === 'qwen3.6-max-preview' || model === 'deepseek-v4-flash'
+  return model === 'kimi-k2.6' || model === 'glm-5' || model === 'glm-5.1' || model === 'glm-4.7' || model === 'qwen3.6-plus' || model === 'qwen3.6-max-preview' || model === 'deepseek-v4-flash'
 }
 
 function isSiliconFlowModel(model: string): boolean {
-  return model === 'stepfun-ai/Step-3.5-Flash'
+  return model === 'stepfun-ai/Step-3.5-Flash' || model === 'deepseek-ai/DeepSeek-V4-Flash' || model === 'zai-org/GLM-5.1'
 }
 
 function isOpenRouterModel(model: string): boolean {
@@ -92,6 +99,7 @@ function isSparkModel(model: string): boolean {
 
 function getProviderKind(model: string): ProviderKind {
   if (isOpenAICompatibleModel(model)) return 'openai_compatible'
+  if (isMoonshotModel(model)) return 'moonshot'
   if (isDashScopeCompatibleModel(model)) return 'dashscope'
   if (isSiliconFlowModel(model)) return 'siliconflow'
   if (isOpenRouterModel(model)) return 'openrouter'
@@ -118,6 +126,9 @@ function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
 
   if (provider === 'openai_compatible') {
     return `${OPENAI_COMPATIBLE_BASE_URL}/chat/completions`
+  }
+  if (provider === 'moonshot') {
+    return `${MOONSHOT_BASE_URL}/chat/completions`
   }
   if (provider === 'dashscope') {
     return `${DASHSCOPE_COMPATIBLE_BASE_URL}/chat/completions`
@@ -493,11 +504,29 @@ serve(async (req: Request) => {
       ], ch)
     }
 
+    if (provider === 'moonshot' && (!MOONSHOT_BASE_URL || !MOONSHOT_API_KEY)) {
+      return providerConfigError(provider, [
+        ...(!MOONSHOT_BASE_URL ? ['MOONSHOT_BASE_URL'] : []),
+        ...(!MOONSHOT_API_KEY ? ['MOONSHOT_API_KEY'] : []),
+      ], ch)
+    }
+
     if (provider === 'openai_compatible' && isLocalOnlyBaseUrl(OPENAI_COMPATIBLE_BASE_URL)) {
       return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
         headers: { ...ch, 'Content-Type': 'application/json' },
       })
+    }
+
+    if (provider === 'moonshot' && isLocalOnlyBaseUrl(MOONSHOT_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
+        status: 500,
+        headers: { ...ch, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'moonshot' && !MOONSHOT_API_KEY) {
+      return providerConfigError(provider, ['MOONSHOT_API_KEY'], ch)
     }
 
     if (provider === 'dashscope' && !DASHSCOPE_API_KEY) {
@@ -542,6 +571,7 @@ serve(async (req: Request) => {
     }
 
     let url = ''
+    let forwardedRequestData = requestData
     let headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -573,9 +603,16 @@ serve(async (req: Request) => {
       headers['Authorization'] = `Bearer ${modelScopeApiKey}`
       headers['X-ModelScope-Task-Type'] = 'image_generation'
     } else {
+      forwardedRequestData = provider === 'moonshot'
+        ? { ...requestData, model: 'kimi-k2.6' }
+        : requestData
+
       if (provider === 'openai_compatible') {
         url = `${OPENAI_COMPATIBLE_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
+      } else if (provider === 'moonshot') {
+        url = `${MOONSHOT_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${MOONSHOT_API_KEY}`
       } else if (provider === 'dashscope') {
         url = `${DASHSCOPE_COMPATIBLE_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${DASHSCOPE_API_KEY}`
@@ -601,7 +638,7 @@ serve(async (req: Request) => {
     const response = await fetch(url, {
       method: req.method,
       headers,
-      body: JSON.stringify(requestData),
+      body: JSON.stringify(forwardedRequestData),
     })
 
     // Handle streaming response

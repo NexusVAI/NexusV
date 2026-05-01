@@ -50,12 +50,30 @@ supabase functions deploy modelscope-proxy --project-ref diusqgphvybnzazgopor
 ### Edge Function 文件位置：
 `c:/Users/HP/Desktop/GitHub/css/后端/supabase/functions/chat-history/index.ts`
 
-## 3. 环境变量设置
+## 3. 环境变量设置（Secrets）
 
-确保 Supabase Edge Function 中设置了以下环境变量：
+在 Supabase Dashboard → Edge Functions → Secrets 中设置以下环境变量：
 
-- `SUPABASE_URL` = `https://diusqgphvybnzazgopor.supabase.co`
-- `SUPABASE_SERVICE_ROLE_KEY` = （从 Dashboard → Settings → API 获取 service_role key）
+| Name | Value | 说明 |
+|------|-------|------|
+| `ALLOWED_ORIGINS` | `https://nexusvai.github.io,http://localhost:3000,http://localhost:8080` | CORS 白名单 |
+| `PROXY_AUTH_TOKEN` | `nexusv-proxy-secret-2024` | Edge Function 代理认证令牌 |
+| `CHAT_AUTH_SECRET` | `nexusv-chat-hmac-key-2024` | 聊天记录 HMAC 签名密钥 |
+| `SUPABASE_URL` | `https://diusqgphvybnzazgopor.supabase.co` | 已存在 |
+| `SUPABASE_SERVICE_ROLE_KEY` | （从 Dashboard → Settings → API 获取）| 已存在 |
+
+> ⚠️ 安全提醒：此文件包含敏感配置，请勿提交到公开仓库。仅用于本地备份参考。
+
+## 4. 前端配置
+
+在 `chat AI/cancri_chat_ui_v_3.html` 的 `<head>` 中添加：
+
+```html
+<script>
+window.__SUPABASE_URL__ = 'https://diusqgphvybnzazgopor.supabase.co';
+window.__PROXY_TOKEN__ = 'nexusv-proxy-secret-2024';
+</script>
+```
 
 ## 4. 测试
 
