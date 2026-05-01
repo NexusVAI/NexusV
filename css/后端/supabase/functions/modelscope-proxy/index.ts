@@ -82,7 +82,14 @@ function isMoonshotModel(model: string): boolean {
 }
 
 function isDashScopeCompatibleModel(model: string): boolean {
-  return model === 'kimi-k2.6' || model === 'glm-5' || model === 'glm-5.1' || model === 'glm-4.7' || model === 'qwen3.6-plus' || model === 'qwen3.6-max-preview' || model === 'deepseek-v4-flash'
+  const dashScopeModels = [
+    'kimi-k2.6', 'glm-5', 'glm-5.1', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'deepseek-v4-flash',
+    // 百炼新增模型
+    'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp',
+    'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max',
+    'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528'
+  ]
+  return dashScopeModels.includes(model)
 }
 
 function isSiliconFlowModel(model: string): boolean {

@@ -133,6 +133,7 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
             <div class="model-dropdown" id="modelDropdown">
+            <div class="model-dropdown-content" id="modelDropdownContent">
               <div class="model-option" data-model="deepseek-v4-flash" data-multimodal="false">
                 <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V4-Flash</span>
                 <span class="model-tag">闪电</span>
@@ -234,6 +235,91 @@
                 <span class="model-tag">新</span>
                 <span class="model-tag">性价比之选 快速</span>
               </div>
+              <!-- 百炼新增模型 -->
+              <div class="model-option" data-model="deepseek-r1" data-multimodal="false">
+                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-R1</span>
+                <span class="model-tag">强推理</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="qwen3.6-flash" data-multimodal="true">
+                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3.6-Flash</span>
+                <span class="model-tag multimodal">多模态</span>
+                <span class="model-tag">快速</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="kimi-k2.5-dashscope" data-multimodal="true">
+                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi K2.5</span>
+                <span class="model-tag multimodal">多模态</span>
+                <span class="model-tag">线路二</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="deepseek-v3.2" data-multimodal="false">
+                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V3.2</span>
+                <span class="model-tag">百炼</span>
+                <span class="model-tag">稳定</span>
+              </div>
+              <div class="model-option" data-model="deepseek-v3.2-exp" data-multimodal="false">
+                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V3.2-Exp</span>
+                <span class="model-tag">实验版</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="glm-4.5-air" data-multimodal="false">
+                <span class="model-label"><img src="./zhipu-color.svg" alt="" class="model-option-icon">GLM-4.5-Air</span>
+                <span class="model-tag">轻量</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="minimax-m2.5-dashscope" data-multimodal="false">
+                <span class="model-label"><img src="./minimax-color.svg" alt="" class="model-option-icon">MiniMax-M2.5</span>
+                <span class="model-tag">线路二</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="deepseek-v3.1" data-multimodal="false">
+                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V3.1</span>
+                <span class="model-tag">百炼</span>
+                <span class="model-tag">均衡</span>
+              </div>
+              <div class="model-option" data-model="qwen3-coder-plus" data-multimodal="true">
+                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3-Coder-Plus</span>
+                <span class="model-tag multimodal">多模态</span>
+                <span class="model-tag">专业编码</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="qwen3-max" data-multimodal="true">
+                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3-Max</span>
+                <span class="model-tag multimodal">多模态</span>
+                <span class="model-tag">旗舰</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="kimi-k2-instruct" data-multimodal="true">
+                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi-K2-Instruct</span>
+                <span class="model-tag multimodal">多模态</span>
+                <span class="model-tag">指令优化</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="qwen3.6-plus-20260402" data-multimodal="true">
+                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3.6-Plus</span>
+                <span class="model-tag multimodal">多模态</span>
+                <span class="model-tag">2026-04-02</span>
+                <span class="model-tag">线路三</span>
+                <span class="model-tag">百炼</span>
+              </div>
+              <div class="model-option" data-model="deepseek-r1-0528" data-multimodal="false">
+                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-R1-0528</span>
+                <span class="model-tag">强推理</span>
+                <span class="model-tag">线路三</span>
+                <span class="model-tag">百炼</span>
+              </div>
+            </div>
+            <!-- 分页控件 -->
+            <div class="model-dropdown-footer">
+              <button class="model-page-btn" id="modelPagePrev" aria-label="上一页">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"></path></svg>
+              </button>
+              <span class="model-page-info" id="modelPageInfo">1 / 3</span>
+              <button class="model-page-btn" id="modelPageNext" aria-label="下一页">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"></path></svg>
+              </button>
+            </div>
             </div>
           </div>
           <div class="context-meter" id="contextMeter" tabindex="0" aria-label="上下文额度">

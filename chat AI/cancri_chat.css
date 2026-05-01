@@ -504,15 +504,87 @@
 
   .model-dropdown {
     position: absolute; top: calc(100% + 6px); left: 0;
-    min-width: 380px; padding: 6px;
+    min-width: 380px; max-width: 420px;
+    max-height: 70vh;
     border-radius: var(--radius-lg); border: 1px solid var(--line-2);
     background: var(--panel);
     box-shadow: var(--shadow-xl);
-    display: none; flex-direction: column; gap: 1px;
+    display: none; flex-direction: column;
     opacity: 0;
     transform: translateY(-4px) scale(.98);
     transition: opacity var(--transition), transform var(--transition);
     z-index: 50;
+    overflow: hidden;
+  }
+
+  .model-dropdown-content {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(70vh - 50px);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  /* 分页控件 */
+  .model-dropdown-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  .model-page-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--hover);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+  }
+
+  .model-page-btn:hover:not(:disabled) {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .model-page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: var(--text-dim);
+  }
+
+  .model-page-info {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-soft);
+    min-width: 50px;
+    text-align: center;
+  }
+
+  /* 移动端适配 */
+  @media (max-width: 768px) {
+    .model-dropdown {
+      min-width: 280px;
+      max-width: calc(100vw - 32px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-4px) scale(.98);
+    }
+    .model-selector.open .model-dropdown {
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+    .model-dropdown-content {
+      max-height: calc(60vh - 50px);
+    }
   }
 
   .model-selector.open .model-dropdown {

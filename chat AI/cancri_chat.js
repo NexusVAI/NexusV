@@ -100,7 +100,7 @@
     const MODEL_STATUS_REFRESH_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
     const RATE_LIMIT_UPDATE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
     const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
-    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2']);
+    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2', 'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp', 'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528']);
     let rateLimitRefreshToken = 0;
     let modelscopeQuotaTimer = null;
     let nonModelscopePingTimer = null;
@@ -637,7 +637,7 @@
     if (currentModel !== savedModelSelection) {
       localStorage.setItem('cancri_current_model', currentModel);
     }
-    const MULTIMODAL_MODEL_IDS = new Set(['qwen3.5', 'kimi-k2.5', 'qwen3.6-plus', 'qwen3-coder', 'kimi-k2.6', 'kimi-k2.6-moonshot']);
+    const MULTIMODAL_MODEL_IDS = new Set(['qwen3.5', 'kimi-k2.5', 'qwen3.6-plus', 'qwen3-coder', 'kimi-k2.6', 'kimi-k2.6-moonshot', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402']);
 
     function isMultimodalModel(modelId) {
       return MULTIMODAL_MODEL_IDS.has(modelId);
@@ -665,11 +665,25 @@
       'glm-5.1': 'ZhipuAI/GLM-5.1',
       'glm-5.1-dashscope': 'glm-5.1',
       'glm-5.1-siliconflow': 'zai-org/GLM-5.1',
-      'glm-4.7': 'glm-4.7',
+      'glm-4.7': 'ZhipuAI/glm-4.7',
       'deepseek-r1': 'deepseek-ai/DeepSeek-R1-0528',
       'minimax-m2.5': 'MiniMax/MiniMax-M2.5',
       'qwen3.6-max-preview': 'qwen3.6-max-preview',
-      'qwen3.6-plus': 'qwen3.6-plus'
+      'qwen3.6-plus': 'qwen3.6-plus',
+      // 百炼新增模型
+      'deepseek-r1': 'deepseek-r1',
+      'qwen3.6-flash': 'qwen3.6-flash',
+      'kimi-k2.5-dashscope': 'kimi-k2.5',
+      'deepseek-v3.2': 'deepseek-v3.2',
+      'deepseek-v3.2-exp': 'deepseek-v3.2-exp',
+      'glm-4.5-air': 'glm-4.5-air',
+      'minimax-m2.5-dashscope': 'minimax-m2.5',
+      'deepseek-v3.1': 'deepseek-v3.1',
+      'qwen3-coder-plus': 'qwen3-coder-plus',
+      'qwen3-max': 'qwen3-max',
+      'kimi-k2-instruct': 'kimi-k2-instruct',
+      'qwen3.6-plus-20260402': 'qwen3.6-plus-20260402',
+      'deepseek-r1-0528': 'deepseek-r1-0528'
     };
 
     function getModelDisplayName(modelId) {
@@ -697,13 +711,27 @@
         'deepseek-r1': 'DeepSeek-R1',
         'minimax-m2.5': 'MiniMax-M2.5',
         'qwen3.6-max-preview': 'qwen3.6-max-preview',
-        'qwen3.6-plus': 'qwen3.6-plus'
+        'qwen3.6-plus': 'qwen3.6-plus',
+        // 百炼新增模型
+        'deepseek-r1': 'DeepSeek-R1',
+        'qwen3.6-flash': 'Qwen3.6-Flash',
+        'kimi-k2.5-dashscope': 'Kimi K2.5 · 线路二',
+        'deepseek-v3.2': 'DeepSeek-V3.2',
+        'deepseek-v3.2-exp': 'DeepSeek-V3.2-Exp',
+        'glm-4.5-air': 'GLM-4.5-Air',
+        'minimax-m2.5-dashscope': 'MiniMax-M2.5 · 线路二',
+        'deepseek-v3.1': 'DeepSeek-V3.1',
+        'qwen3-coder-plus': 'Qwen3-Coder-Plus',
+        'qwen3-max': 'Qwen3-Max',
+        'kimi-k2-instruct': 'Kimi-K2-Instruct',
+        'qwen3.6-plus-20260402': 'Qwen3.6-Plus · 线路三',
+        'deepseek-r1-0528': 'DeepSeek-R1-0528 · 线路三'
       };
       return modelLabels[modelId] || modelId;
     }
 
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1-dashscope' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-moonshot' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-dashscope') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1-dashscope' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-moonshot' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-dashscope' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
         return { enable_thinking: true };
       }
       return {};
@@ -2534,7 +2562,20 @@
         'deepseek-r1': '由NexusV支持的DeepSeek-R1模型',
         'minimax-m2.5': '由NexusV支持的MiniMax-M2.5模型',
         'qwen3.6-max-preview': '由NexusV支持的qwen3.6-max-preview模型',
-        'qwen3.6-plus': '由NexusV支持的qwen3.6-plus模型'
+        'qwen3.6-plus': '由NexusV支持的qwen3.6-plus模型',
+        // 百炼新增模型
+        'qwen3.6-flash': '由NexusV支持的Qwen3.6-Flash模型（百炼）',
+        'kimi-k2.5-dashscope': '由NexusV支持的Kimi-K2.5模型（百炼线路二）',
+        'deepseek-v3.2': '由NexusV支持的DeepSeek-V3.2模型（百炼）',
+        'deepseek-v3.2-exp': '由NexusV支持的DeepSeek-V3.2-Exp模型（百炼）',
+        'glm-4.5-air': '由NexusV支持的GLM-4.5-Air模型（百炼）',
+        'minimax-m2.5-dashscope': '由NexusV支持的MiniMax-M2.5模型（百炼线路二）',
+        'deepseek-v3.1': '由NexusV支持的DeepSeek-V3.1模型（百炼）',
+        'qwen3-coder-plus': '由NexusV支持的Qwen3-Coder-Plus模型（百炼）',
+        'qwen3-max': '由NexusV支持的Qwen3-Max模型（百炼）',
+        'kimi-k2-instruct': '由NexusV支持的Kimi-K2-Instruct模型（百炼）',
+        'qwen3.6-plus-20260402': '由NexusV支持的Qwen3.6-Plus模型（百炼线路三）',
+        'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（百炼线路三）'
       };
       return identities[modelId] || identities['deepseek-v4-flash'];
     }
@@ -4691,8 +4732,58 @@
     document.addEventListener('scroll', closeCustomContextMenu, true);
     window.addEventListener('blur', closeCustomContextMenu);
 
+    // 模型下拉菜单分页
+    const MODELS_PER_PAGE = 10;
+    let currentModelPage = 1;
+    let totalModelPages = 1;
+
+    function initModelPagination() {
+      const modelOptions = modelDropdown?.querySelectorAll('.model-option');
+      if (!modelOptions) return;
+
+      totalModelPages = Math.ceil(modelOptions.length / MODELS_PER_PAGE);
+      updateModelPageDisplay();
+    }
+
+    function updateModelPageDisplay() {
+      const modelOptions = modelDropdown?.querySelectorAll('.model-option');
+      const startIndex = (currentModelPage - 1) * MODELS_PER_PAGE;
+      const endIndex = startIndex + MODELS_PER_PAGE;
+
+      modelOptions?.forEach((opt, index) => {
+        if (index >= startIndex && index < endIndex) {
+          opt.style.display = 'flex';
+        } else {
+          opt.style.display = 'none';
+        }
+      });
+
+      // 更新分页控件
+      const pageInfo = document.getElementById('modelPageInfo');
+      const prevBtn = document.getElementById('modelPagePrev');
+      const nextBtn = document.getElementById('modelPageNext');
+
+      if (pageInfo) pageInfo.textContent = `${currentModelPage} / ${totalModelPages}`;
+      if (prevBtn) prevBtn.disabled = currentModelPage <= 1;
+      if (nextBtn) nextBtn.disabled = currentModelPage >= totalModelPages;
+    }
+
+    function goToModelPage(page) {
+      if (page < 1 || page > totalModelPages) return;
+      currentModelPage = page;
+      updateModelPageDisplay();
+    }
+
     function openModelDropdown() {
       modelSelector?.classList.add('open');
+      initModelPagination();
+      // 确保当前选中的模型所在页可见
+      const modelOptions = Array.from(modelDropdown?.querySelectorAll('.model-option') || []);
+      const activeIndex = modelOptions.findIndex(opt => opt.dataset.model === currentModel);
+      if (activeIndex >= 0) {
+        currentModelPage = Math.floor(activeIndex / MODELS_PER_PAGE) + 1;
+        updateModelPageDisplay();
+      }
       if (modelDropdown) {
         modelDropdown.classList.add('animating');
         modelDropdown.querySelectorAll('.model-option').forEach((opt, i) => {
@@ -4774,6 +4865,22 @@
           setModel(modelId);
         });
       });
+
+      // 分页按钮事件
+      const prevBtn = document.getElementById('modelPagePrev');
+      const nextBtn = document.getElementById('modelPageNext');
+      if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          goToModelPage(currentModelPage - 1);
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          goToModelPage(currentModelPage + 1);
+        });
+      }
     }
 
     // 主题切换按钮
