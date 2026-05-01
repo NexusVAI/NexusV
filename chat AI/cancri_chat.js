@@ -4857,10 +4857,6 @@
 
     document.querySelectorAll('[data-close-modal]').forEach(btn => {
       btn.addEventListener('click', () => {
-        // 如果关闭的是公告模态框，标记为已看过
-        if (btn.dataset.closeModal === 'announcementModal') {
-          localStorage.setItem('cancri_announcement_seen', 'true');
-        }
         closeModal();
       });
     });
@@ -5185,24 +5181,23 @@
     // 公告卡片逻辑
     const announcementModal = document.getElementById('announcementModal');
     const closeAnnouncementBtn = document.getElementById('closeAnnouncementBtn');
-    const ANNOUNCEMENT_STORAGE_KEY = 'cancri_announcement_seen';
+    const dismissNoticeCheckbox = document.getElementById('dismissNoticeCheckbox');
+    const NOTICE_DISMISS_KEY = 'cancri_notice_dismiss_0501_2';
 
-    // 检查是否已看过公告
-    if (!localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)) {
-      // 显示公告
-      if (announcementModal) {
-        announcementModal.setAttribute('aria-hidden', 'false');
-        announcementModal.classList.add('open');
-        if (scrim) scrim.classList.add('show');
-      }
+    // 每次进入都显示（除非用户已勾选「下次不再提示」并确认过）
+    const alreadyDismissed = localStorage.getItem(NOTICE_DISMISS_KEY) === 'true';
+    if (!alreadyDismissed && announcementModal) {
+      announcementModal.setAttribute('aria-hidden', 'false');
+      announcementModal.classList.add('open');
+      if (scrim) scrim.classList.add('show');
     }
 
     // 关闭公告按钮事件
     if (closeAnnouncementBtn) {
       closeAnnouncementBtn.addEventListener('click', () => {
-        // 标记为已看过
-        localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, 'true');
-        // 关闭模态框
+        if (dismissNoticeCheckbox && dismissNoticeCheckbox.checked) {
+          localStorage.setItem(NOTICE_DISMISS_KEY, 'true');
+        }
         if (announcementModal) {
           announcementModal.setAttribute('aria-hidden', 'true');
           announcementModal.classList.remove('open');
