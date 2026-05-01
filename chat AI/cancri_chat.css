@@ -652,6 +652,7 @@
   }
 
   .model-tag.multimodal { background: rgba(251,191,36,0.14); color: #a16207; }
+  .model-tag.warning { background: rgba(239,68,68,0.12); color: #dc2626; }
 
   /* ── CONTEXT METER ──────────────────────────────────────── */
   .context-meter {

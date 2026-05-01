@@ -259,6 +259,8 @@ const OPENAI_COMPATIBLE_BASE_URL = (Deno.env.get('OPENAI_COMPATIBLE_BASE_URL') |
 const OPENAI_COMPATIBLE_API_KEY = Deno.env.get('OPENAI_COMPATIBLE_API_KEY') || ''
 const MOONSHOT_BASE_URL = (Deno.env.get('MOONSHOT_BASE_URL') || 'https://api.moonshot.cn/v1').replace(/\/$/, '')
 const MOONSHOT_API_KEY = Deno.env.get('MOONSHOT_API_KEY') || ''
+const MOONSHOT_API_KEY_LINE3 = Deno.env.get('MOONSHOT_API_KEY_LINE3') || ''
+let moonshotKeyCursor = 0
 const DASHSCOPE_COMPATIBLE_BASE_URL = (Deno.env.get('DASHSCOPE_COMPATIBLE_BASE_URL') || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '')
 const DASHSCOPE_API_KEY = (Deno.env.get('DASHSCOPE_API_KEY') || '').trim()
 const DASHSCOPE_API_KEY_1 = (Deno.env.get('DASHSCOPE_API_KEY_1') || '').trim()
@@ -279,14 +281,17 @@ const SPARK_API_KEY = Deno.env.get('SPARK_API_KEY') || ''
 const MIMO_BASE_URL = (Deno.env.get('MIMO_BASE_URL') || 'https://api.xiaomimimo.com/v1').replace(/\/$/, '')
 const MIMO_API_KEY = Deno.env.get('MIMO_API_KEY') || ''
 
-type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo'
+const NEWAPI_BASE_URL = (Deno.env.get('NEWAPI_BASE_URL') || '').replace(/\/+$/, '')
+const NEWAPI_API_KEY = Deno.env.get('NEWAPI_API_KEY') || ''
+
+type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo' | 'newapi'
 
 function isOpenAICompatibleModel(model: string): boolean {
   return model === 'dall-e-3'
 }
 
 function isMoonshotModel(model: string): boolean {
-  return model === 'kimi-k2.6-moonshot'
+  return model === 'kimi-k2.6-moonshot' || model === 'kimi-k2.6-line3'
 }
 
 function isDashScopeCompatibleModel(model: string): boolean {
@@ -363,6 +368,29 @@ function getDashScopeMissingKeys(model: string): string[] {
   return ['DASHSCOPE_API_KEY or DASHSCOPE_API_KEY_1 or DASHSCOPE_API_KEY_2']
 }
 
+// Moonshot key 池：根据模型选择不同的 key
+function getMoonshotKeyPool(model: string): string[] {
+  if (model === 'kimi-k2.6-line3') {
+    return uniqueProviderKeys([MOONSHOT_API_KEY_LINE3])
+  }
+  return uniqueProviderKeys([MOONSHOT_API_KEY])
+}
+
+function pickMoonshotApiKey(model: string): string {
+  const keys = getMoonshotKeyPool(model)
+  if (!keys.length) return ''
+  const key = keys[moonshotKeyCursor % keys.length] || ''
+  moonshotKeyCursor = (moonshotKeyCursor + 1) % Math.max(keys.length, 1)
+  return key
+}
+
+function getMoonshotMissingKeys(model: string): string[] {
+  if (model === 'kimi-k2.6-line3') {
+    return ['MOONSHOT_API_KEY_LINE3']
+  }
+  return ['MOONSHOT_API_KEY']
+}
+
 function isSiliconFlowModel(model: string): boolean {
   return model === 'stepfun-ai/Step-3.5-Flash' || model === 'deepseek-ai/DeepSeek-V4-Flash' || model === 'zai-org/GLM-5.1'
 }
@@ -379,6 +407,10 @@ function isMimoModel(model: string): boolean {
   return model === 'mimo-v2.5-pro' || model === 'mimo-v2.5-tts' || model === 'mimo-v2.5-tts-voicedesign'
 }
 
+function isNewApiModel(model: string): boolean {
+  return model === 'gpt-5.4'
+}
+
 function getProviderKind(model: string): ProviderKind {
   if (isOpenAICompatibleModel(model)) return 'openai_compatible'
   if (isMoonshotModel(model)) return 'moonshot'
@@ -387,6 +419,7 @@ function getProviderKind(model: string): ProviderKind {
   if (isOpenRouterModel(model)) return 'openrouter'
   if (isSparkModel(model)) return 'spark'
   if (isMimoModel(model)) return 'mimo'
+  if (isNewApiModel(model)) return 'newapi'
   return 'modelscope'
 }
 
@@ -427,6 +460,9 @@ function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
   }
   if (provider === 'mimo') {
     return `${MIMO_BASE_URL}/chat/completions`
+  }
+  if (provider === 'newapi') {
+    return `${NEWAPI_BASE_URL}/chat/completions`
   }
   return `${MODELSCOPE_API_BASE}/chat/completions`
 }
@@ -856,8 +892,17 @@ async function handleWebSearchRequest(requestData: Record<string, unknown>, req:
   })
 }
 
+const BLOCKED_IPS = new Set(['185.212.58.222'])
+
 serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
+
+  const clientIp = getClientIp(req)
+  if (BLOCKED_IPS.has(clientIp)) {
+    console.log(JSON.stringify({ event: 'ip_blocked', ip: clientIp }))
+    return new Response(JSON.stringify({ error: 'blocked', code: 'ip_blocked', message: '该 IP 已被永久封禁' }), { status: 403, headers: { ...ch, 'Content-Type': 'application/json' } })
+  }
+
   const startedAt = performance.now()
   const originResponse = rejectDisallowedOrigin(req, ch)
   if (originResponse) return originResponse
@@ -904,6 +949,7 @@ serve(async (req: Request) => {
     const modelScopeSelection = provider === 'modelscope' ? pickModelScopeApiKey(modelScopeApiKeys, modelScopeTurnId) : { key: '', slot: -1 }
     const modelScopeApiKey = modelScopeSelection.key
     const dashScopeApiKey = provider === 'dashscope' ? pickDashScopeApiKey(model) : ''
+    const moonshotApiKey = provider === 'moonshot' ? pickMoonshotApiKey(model) : ''
 
     if (provider === 'openai_compatible' && (!OPENAI_COMPATIBLE_BASE_URL || !OPENAI_COMPATIBLE_API_KEY)) {
       return providerConfigError(provider, [
@@ -912,10 +958,10 @@ serve(async (req: Request) => {
       ], ch)
     }
 
-    if (provider === 'moonshot' && (!MOONSHOT_BASE_URL || !MOONSHOT_API_KEY)) {
+    if (provider === 'moonshot' && (!MOONSHOT_BASE_URL || !moonshotApiKey)) {
       return providerConfigError(provider, [
         ...(!MOONSHOT_BASE_URL ? ['MOONSHOT_BASE_URL'] : []),
-        ...(!MOONSHOT_API_KEY ? ['MOONSHOT_API_KEY'] : []),
+        ...(!moonshotApiKey ? getMoonshotMissingKeys(model) : []),
       ], ch)
     }
 
@@ -933,8 +979,8 @@ serve(async (req: Request) => {
       })
     }
 
-    if (provider === 'moonshot' && !MOONSHOT_API_KEY) {
-      return providerConfigError(provider, ['MOONSHOT_API_KEY'], ch)
+    if (provider === 'moonshot' && !moonshotApiKey) {
+      return providerConfigError(provider, getMoonshotMissingKeys(model), ch)
     }
 
     if (provider === 'dashscope' && !dashScopeApiKey) {
@@ -955,6 +1001,13 @@ serve(async (req: Request) => {
 
     if (provider === 'mimo' && !MIMO_API_KEY) {
       return providerConfigError(provider, ['MIMO_API_KEY'], ch)
+    }
+
+    if (provider === 'newapi' && (!NEWAPI_BASE_URL || !NEWAPI_API_KEY)) {
+      return providerConfigError(provider, [
+        ...(!NEWAPI_BASE_URL ? ['NEWAPI_BASE_URL'] : []),
+        ...(!NEWAPI_API_KEY ? ['NEWAPI_API_KEY'] : []),
+      ], ch)
     }
 
     if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
@@ -979,6 +1032,13 @@ serve(async (req: Request) => {
     }
 
     if (provider === 'mimo' && isLocalOnlyBaseUrl(MIMO_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
+        status: 500,
+        headers: { ...ch, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (provider === 'newapi' && isLocalOnlyBaseUrl(NEWAPI_BASE_URL)) {
       return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
         headers: { ...ch, 'Content-Type': 'application/json' },
@@ -1036,7 +1096,7 @@ serve(async (req: Request) => {
         headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
       } else if (provider === 'moonshot') {
         url = `${MOONSHOT_BASE_URL}/chat/completions`
-        headers['Authorization'] = `Bearer ${MOONSHOT_API_KEY}`
+        headers['Authorization'] = `Bearer ${moonshotApiKey}`
       } else if (provider === 'dashscope') {
         url = `${DASHSCOPE_COMPATIBLE_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${dashScopeApiKey}`
@@ -1055,6 +1115,9 @@ serve(async (req: Request) => {
       } else if (provider === 'mimo') {
         url = `${MIMO_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${MIMO_API_KEY}`
+      } else if (provider === 'newapi') {
+        url = `${NEWAPI_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${NEWAPI_API_KEY}`
       } else {
         url = `${MODELSCOPE_API_BASE}/chat/completions`
         headers['Authorization'] = `Bearer ${modelScopeApiKey}`

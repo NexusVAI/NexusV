@@ -34,14 +34,9 @@ jobs:
           PROXY_AUTH_TOKEN: ${{ secrets.PROXY_AUTH_TOKEN }}
           CHAT_AUTH_SECRET: ${{ secrets.CHAT_AUTH_SECRET }}
           MODELSCOPE_API_KEY: ${{ secrets.MODELSCOPE_API_KEY }}
-          MODELSCOPE_API_KEY_1: ${{ secrets.MODELSCOPE_API_KEY_1 }}
-          MODELSCOPE_API_KEY_2: ${{ secrets.MODELSCOPE_API_KEY_2 }}
           OPENAI_COMPATIBLE_BASE_URL: ${{ secrets.OPENAI_COMPATIBLE_BASE_URL }}
           OPENAI_COMPATIBLE_API_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-          DASHSCOPE_API_KEY_1: ${{ secrets.DASHSCOPE_API_KEY_1 }}
-          DASHSCOPE_API_KEY_2: ${{ secrets.DASHSCOPE_API_KEY_2 }}
-          DASHSCOPE_API_KEY_NEW: ${{ secrets.DASHSCOPE_API_KEY_NEW }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           OPENROUTER_API_KEY_1: ${{ secrets.OPENROUTER_API_KEY_1 }}
           OPENROUTER_API_KEY_2: ${{ secrets.OPENROUTER_API_KEY_2 }}
@@ -80,14 +75,9 @@ jobs:
           set_secret_if_present CHAT_AUTH_SECRET
 
           set_secret_if_present MODELSCOPE_API_KEY
-          set_secret_if_present MODELSCOPE_API_KEY_1
-          set_secret_if_present MODELSCOPE_API_KEY_2
           set_secret_if_present OPENAI_COMPATIBLE_BASE_URL
           set_secret_if_present OPENAI_COMPATIBLE_API_KEY
           set_secret_if_present DASHSCOPE_API_KEY
-          set_secret_if_present DASHSCOPE_API_KEY_1
-          set_secret_if_present DASHSCOPE_API_KEY_2
-          set_secret_if_present DASHSCOPE_API_KEY_NEW
           set_secret_if_present SILICONFLOW_API_KEY
           set_secret_if_present OPENROUTER_API_KEY_1
           set_secret_if_present OPENROUTER_API_KEY_2
