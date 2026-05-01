@@ -959,6 +959,15 @@
     pointer-events: auto;
   }
 
+  #homeView:not(.chatting) .nexusv-footer {
+    flex: 0 0 auto;
+    margin-top: 0;
+    opacity: 1;
+    visibility: visible !important;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
   .nexusv-footer::before {
     content: '';
     position: absolute;
@@ -1002,6 +1011,7 @@
   .nexusv-footer-brand {
     position: relative;
     z-index: 1;
+    display: inline-block;
     font-family: var(--font-brand);
     font-size: clamp(72px, 12vw, 168px);
     line-height: .82;
@@ -1012,9 +1022,63 @@
     transition: transform .35s cubic-bezier(.2,.8,.2,1), text-shadow .35s ease;
   }
 
+  .nexusv-footer-brand::before,
+  .nexusv-footer-brand::after {
+    content: 'NEXUSV';
+    position: absolute;
+    inset: 0;
+    color: #fff;
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .nexusv-footer-brand::before {
+    clip-path: inset(0 0 48% 0);
+    transform: translate3d(-10px, -2px, 0);
+  }
+
+  .nexusv-footer-brand::after {
+    clip-path: inset(52% 0 0 0);
+    transform: translate3d(10px, 2px, 0);
+  }
+
   .nexusv-footer:hover .nexusv-footer-brand {
     transform: translateY(-1px) skewX(-4deg);
     text-shadow: 0 10px 28px rgba(0,0,0,0.12);
+    animation: nexusvGlitchJitter .42s steps(2, end) both;
+  }
+
+  .nexusv-footer:hover .nexusv-footer-brand::before,
+  .nexusv-footer:hover .nexusv-footer-brand::after {
+    opacity: .92;
+    animation: nexusvGlitchSlice .42s steps(2, end) both;
+  }
+
+  .nexusv-footer:hover .nexusv-footer-brand::after {
+    animation-name: nexusvGlitchSliceReverse;
+  }
+
+  @keyframes nexusvGlitchJitter {
+    0% { transform: translateY(-1px) skewX(-4deg); }
+    18% { transform: translate3d(4px, -2px, 0) skewX(-8deg); }
+    34% { transform: translate3d(-5px, 2px, 0) skewX(5deg); }
+    52% { transform: translate3d(3px, 1px, 0) skewX(-6deg); }
+    100% { transform: translateY(-1px) skewX(-4deg); }
+  }
+
+  @keyframes nexusvGlitchSlice {
+    0% { clip-path: inset(0 0 54% 0); transform: translate3d(-12px, -3px, 0); }
+    28% { clip-path: inset(10% 0 42% 0); transform: translate3d(18px, 1px, 0); }
+    58% { clip-path: inset(0 0 68% 0); transform: translate3d(-8px, 4px, 0); }
+    100% { clip-path: inset(0 0 48% 0); transform: translate3d(0, 0, 0); opacity: 0; }
+  }
+
+  @keyframes nexusvGlitchSliceReverse {
+    0% { clip-path: inset(52% 0 0 0); transform: translate3d(12px, 3px, 0); }
+    32% { clip-path: inset(46% 0 12% 0); transform: translate3d(-18px, -1px, 0); }
+    62% { clip-path: inset(64% 0 0 0); transform: translate3d(8px, -4px, 0); }
+    100% { clip-path: inset(52% 0 0 0); transform: translate3d(0, 0, 0); opacity: 0; }
   }
 
   #homeView.chatting .nexusv-footer {
@@ -1908,12 +1972,21 @@
     overflow: hidden;
   }
 
+  #homeView:not(.chatting) {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .home-center {
     min-height: 0;
   }
 
   /* 初始态输入框不要被压到屏幕外 */
   #homeView:not(.chatting) .home-center {
+    flex: 0 0 auto;
+    min-height: calc(100dvh - var(--header-h));
     justify-content: center;
     padding: clamp(16px, 4vh, 32px) 20px clamp(20px, 8vh, 56px);
   }

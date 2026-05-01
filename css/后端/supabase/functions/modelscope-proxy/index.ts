@@ -520,6 +520,7 @@ function isPlaceholderModelScopeKey(value: string): boolean {
 
 let cachedModelScopeApiKeys: string[] = []
 let modelScopeApiKeyLoaded = false
+const modelScopeTurnKeySlots = new Map<string, number>()
 
 function expandModelScopeKeys(keys: string[]): string[] {
   return keys.flatMap(key => key.split(/[\s,;]+/).map(item => item.trim()).filter(Boolean))
@@ -527,11 +528,6 @@ function expandModelScopeKeys(keys: string[]): string[] {
 
 function uniqueModelScopeKeys(keys: string[]): string[] {
   return Array.from(new Set(expandModelScopeKeys(keys).filter(key => !isPlaceholderModelScopeKey(key))))
-}
-
-function pickRandomModelScopeKey(keys: string[]): string {
-  if (!keys.length) return ''
-  return keys[Math.floor(Math.random() * keys.length)] || ''
 }
 
 async function resolveModelScopeApiKeys(): Promise<string[]> {
@@ -574,8 +570,39 @@ async function resolveModelScopeApiKeys(): Promise<string[]> {
   return cachedModelScopeApiKeys
 }
 
-async function resolveModelScopeApiKey(): Promise<string> {
-  return pickRandomModelScopeKey(await resolveModelScopeApiKeys())
+function hashStableText(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return Math.abs(hash >>> 0)
+}
+
+function getModelScopeTurnId(requestData: Record<string, unknown>, req: Request): string {
+  return cleanHeader(String(requestData.client_turn_id || requestData.turn_id || req.headers.get('x-chat-turn-id') || '')).slice(0, 96)
+}
+
+function pickModelScopeKeySlot(keys: string[], turnId = '', offset = 0): number {
+  if (!keys.length) return -1
+  const remembered = turnId ? modelScopeTurnKeySlots.get(turnId) : undefined
+  const base = Number.isInteger(remembered) ? Number(remembered) : (turnId ? hashStableText(turnId) : Math.floor(Math.random() * keys.length))
+  return (base + offset) % keys.length
+}
+
+function rememberModelScopeKeySlot(turnId: string, slot: number): void {
+  if (!turnId || !Number.isInteger(slot)) return
+  if (modelScopeTurnKeySlots.size > 1000) {
+    const firstKey = modelScopeTurnKeySlots.keys().next().value
+    if (firstKey) modelScopeTurnKeySlots.delete(firstKey)
+  }
+  modelScopeTurnKeySlots.set(turnId, slot)
+}
+
+function pickModelScopeApiKey(keys: string[], turnId = '', offset = 0): { key: string; slot: number } {
+  const slot = pickModelScopeKeySlot(keys, turnId, offset)
+  if (slot < 0) return { key: '', slot }
+  return { key: keys[slot] || '', slot }
 }
 
 function parseProviderHeaderInteger(value: string | null): number | null {
@@ -601,6 +628,41 @@ function collectModelScopeRateLimitHeaders(headersList: Headers[]): Record<strin
     }
   }
   return output
+}
+
+async function fetchProviderRequest(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: string,
+  provider: ProviderKind,
+  modelScopeApiKeys: string[],
+  modelScopeTurnId: string,
+  initialModelScopeSlot: number
+): Promise<{ response: Response; rateLimitHeaderSources: Headers[] }> {
+  const response = await fetch(url, { method, headers, body })
+  const rateLimitHeaderSources = [response.headers]
+  if (provider !== 'modelscope' || response.status !== 429 || modelScopeApiKeys.length <= 1) {
+    if (provider === 'modelscope' && response.status !== 429) {
+      rememberModelScopeKeySlot(modelScopeTurnId, initialModelScopeSlot)
+    }
+    return { response, rateLimitHeaderSources }
+  }
+  for (let offset = 1; offset < modelScopeApiKeys.length; offset += 1) {
+    const retrySelection = pickModelScopeApiKey(modelScopeApiKeys, modelScopeTurnId, offset)
+    if (!retrySelection.key || retrySelection.slot === initialModelScopeSlot) continue
+    const retryResponse = await fetch(url, {
+      method,
+      headers: { ...headers, 'Authorization': `Bearer ${retrySelection.key}` },
+      body,
+    })
+    rateLimitHeaderSources.push(retryResponse.headers)
+    if (retryResponse.status !== 429) {
+      rememberModelScopeKeySlot(modelScopeTurnId, retrySelection.slot)
+      return { response: retryResponse, rateLimitHeaderSources }
+    }
+  }
+  return { response, rateLimitHeaderSources }
 }
 
 function resolveDuckDuckGoUrl(rawHref: string): string {
@@ -810,7 +872,7 @@ serve(async (req: Request) => {
     if (oversized) return oversized
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
-    const { endpoint = 'chat', ...requestData } = body
+    const { endpoint = 'chat', client_turn_id: clientTurnId, turn_id: legacyTurnId, ...requestData } = body
     const endpointName = cleanHeader(String(endpoint || 'chat'))
     const model = String(requestData.model || '')
     const ctx = getRequestContext(req, 'modelscope-proxy', endpointName, model)
@@ -837,7 +899,10 @@ serve(async (req: Request) => {
     }
 
     const provider = getProviderKind(model)
-    const modelScopeApiKey = provider === 'modelscope' ? await resolveModelScopeApiKey() : ''
+    const modelScopeApiKeys = provider === 'modelscope' ? await resolveModelScopeApiKeys() : []
+    const modelScopeTurnId = provider === 'modelscope' ? getModelScopeTurnId({ client_turn_id: clientTurnId, turn_id: legacyTurnId }, req) : ''
+    const modelScopeSelection = provider === 'modelscope' ? pickModelScopeApiKey(modelScopeApiKeys, modelScopeTurnId) : { key: '', slot: -1 }
+    const modelScopeApiKey = modelScopeSelection.key
     const dashScopeApiKey = provider === 'dashscope' ? pickDashScopeApiKey(model) : ''
 
     if (provider === 'openai_compatible' && (!OPENAI_COMPATIBLE_BASE_URL || !OPENAI_COMPATIBLE_API_KEY)) {
@@ -997,11 +1062,17 @@ serve(async (req: Request) => {
     }
 
     // Forward request to provider
-    const response = await fetch(url, {
-      method: req.method,
+    const providerRequestBody = JSON.stringify(forwardedRequestData)
+    const { response, rateLimitHeaderSources } = await fetchProviderRequest(
+      url,
+      req.method,
       headers,
-      body: JSON.stringify(forwardedRequestData),
-    })
+      providerRequestBody,
+      provider,
+      modelScopeApiKeys,
+      modelScopeTurnId,
+      modelScopeSelection.slot
+    )
     recordModelAvailability(model, response.status, ctx)
 
     // Handle streaming response
@@ -1030,12 +1101,15 @@ serve(async (req: Request) => {
       })
 
       // Forward rate limit headers
-      const rateLimitHeaders: Record<string, string> = {}
-      response.headers.forEach((value, key) => {
-        if (key.toLowerCase().startsWith('modelscope-ratelimit')) {
-          rateLimitHeaders[key] = value
-        }
-      })
+      const rateLimitHeaders = provider === 'modelscope'
+        ? collectModelScopeRateLimitHeaders(rateLimitHeaderSources)
+        : (() => {
+          const output: Record<string, string> = {}
+          response.headers.forEach((value, key) => {
+            if (key.toLowerCase().startsWith('modelscope-ratelimit')) output[key] = value
+          })
+          return output
+        })()
 
       logSecurityEvent('request_finished', ctx, { status: response.status, provider, streamed: true, durationMs: Math.round(performance.now() - startedAt) })
 
@@ -1049,12 +1123,15 @@ serve(async (req: Request) => {
     const data = await response.json()
 
     // Forward rate limit headers
-    const rateLimitHeaders: Record<string, string> = {}
-    response.headers.forEach((value, key) => {
-      if (key.toLowerCase().startsWith('modelscope-ratelimit')) {
-        rateLimitHeaders[key] = value
-      }
-    })
+    const rateLimitHeaders = provider === 'modelscope'
+      ? collectModelScopeRateLimitHeaders(rateLimitHeaderSources)
+      : (() => {
+        const output: Record<string, string> = {}
+        response.headers.forEach((value, key) => {
+          if (key.toLowerCase().startsWith('modelscope-ratelimit')) output[key] = value
+        })
+        return output
+      })()
 
     logSecurityEvent('request_finished', ctx, { status: response.status, provider, durationMs: Math.round(performance.now() - startedAt) })
 

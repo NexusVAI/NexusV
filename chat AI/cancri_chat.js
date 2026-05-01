@@ -81,7 +81,7 @@
     const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
     const UI_PREFS_STORAGE_KEY = 'cancri_ui_prefs';
     const MODEL_TELEMETRY_STORAGE_KEY = 'cancri_model_telemetry';
-    const MODEL_TELEMETRY_CACHE_VERSION = 5;
+    const MODEL_TELEMETRY_CACHE_VERSION = 6;
 
     // ModelScope API 额度信息
     let rateLimitInfo = {
@@ -689,6 +689,7 @@
       'gpt-oss-120b': 'openai/gpt-oss-120b:free',
       'nemotron-3-super': 'nvidia/nemotron-3-super-120b-a12b:free',
       'ling-2.6-1t': 'inclusionai/ling-2.6-1t:free',
+      'ling-2.6-1t-modelscope': 'inclusionAI/Ling-2.6-1T',
       'spark-x2': 'spark-x',
       'qwen3.5': 'Qwen/Qwen3.5-397B-A17B',
       'qwen3-coder': 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
@@ -736,6 +737,7 @@
         'gpt-oss-120b': 'chatGPT-OSS',
         'nemotron-3-super': 'Nemotron-3-super',
         'ling-2.6-1t': 'ling-2.6',
+        'ling-2.6-1t-modelscope': 'ling-2.6 · 线路二',
         'spark-x2': 'spark-x2',
         'qwen3.5': 'Qwen 3.5',
         'qwen3-coder': 'Qwen3-Coder',
@@ -1279,7 +1281,7 @@
     const MODELSCOPE_IMAGE_MODEL = 'Tongyi-MAI/Z-Image-Turbo';
     const OPENAI_IMAGE_MODEL = 'dall-e-3';
     const MODELSCOPE_CHAT_MODEL = 'deepseek-ai/DeepSeek-V4-Flash';
-    const MAX_TOOL_ROUNDS = 4;
+    const MAX_REPEATED_TOOL_CALLS = 3;
     const FETCH_TIMEOUT_MS = 20000;
     const CHAT_REQUEST_TIMEOUT_MS = 25000;
     const CHAT_TURN_TIMEOUT_MS = 90000;
@@ -1288,6 +1290,10 @@
       const h = { 'Content-Type': 'application/json', ...extra };
       if (PROXY_TOKEN) h['x-proxy-token'] = PROXY_TOKEN;
       return h;
+    }
+
+    function createChatTurnId() {
+      return `turn_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     }
 
     // 获取用户标识（基于 API key 或生成随机 ID）
@@ -2423,10 +2429,15 @@
       if (rateLimitInfo.lastUpdateTime) {
         const updateTime = new Date(rateLimitInfo.lastUpdateTime);
         const timeStr = updateTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-        rateLimitUpdateTime.textContent = `更新于 ${timeStr}`;
+        rateLimitUpdateTime.textContent = `更新于 ${timeStr} · 部分火热模型共享池，部分模型不受此约束`;
       } else {
         rateLimitUpdateTime.textContent = '等待数据...';
       }
+    }
+
+    function getToolCallSignature(toolCall) {
+      const args = parseToolArguments(toolCall?.arguments);
+      return `${String(toolCall?.name || '').trim()}::${JSON.stringify(args)}`;
     }
 
     function updateRateLimitFromHeaders(headers, showModelQuota = isModelScopeModel(currentModel), responseStatus = 200, errorText = '') {
@@ -2771,6 +2782,7 @@
         'gpt-oss-120b': '由NexusV支持的chatGPT-OSS模型',
         'nemotron-3-super': '由NexusV支持的Nemotron-3-super模型',
         'ling-2.6-1t': '由NexusV支持的ling-2.6模型',
+        'ling-2.6-1t-modelscope': '由NexusV支持的ling-2.6模型（魔塔线路二）',
         'spark-x2': '由NexusV支持的spark-x2模型',
         'qwen3.5': '由NexusV支持的Qwen3.5模型',
         'qwen3-coder': '由NexusV支持的Qwen3-Coder模型',
@@ -4000,7 +4012,7 @@
       }
     }
 
-    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true } = {}) {
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '' } = {}) {
       let finalAnswer = '';
       let reasoningText = '';
       let streamBuffer = '';
@@ -4052,6 +4064,7 @@
           signal: controller.signal,
           body: JSON.stringify({
             endpoint: 'chat',
+            client_turn_id: turnId,
             ...requestBody
           })
         }, CHAT_REQUEST_TIMEOUT_MS, '模型请求');
@@ -4375,15 +4388,17 @@
       const assistantMessageId = createAssistantMessage();
       const controller = new AbortController();
       const clearTurnTimeout = startAbortTimer(controller, CHAT_TURN_TIMEOUT_MS, '对话请求');
+      const turnId = createChatTurnId();
       state.activeRequestController = controller;
 
       try {
         const baseMessages = await buildApiMessages(effectiveQuery, '', userContent, currentModel);
         const requestMessages = baseMessages.map(message => ({ ...message }));
         const turnMessages = [];
+        const repeatedToolCalls = new Map();
         let round = 0;
-        while (round < MAX_TOOL_ROUNDS) {
-          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller);
+        while (!controller.signal.aborted) {
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId });
 
           if (roundResult.toolCalls.length) {
             const assistantToolMessage = {
@@ -4410,6 +4425,18 @@
 
             for (let index = 0; index < roundResult.toolCalls.length; index += 1) {
               const toolCall = roundResult.toolCalls[index];
+              const signature = getToolCallSignature(toolCall);
+              const repeatedCount = (repeatedToolCalls.get(signature) || 0) + 1;
+              repeatedToolCalls.set(signature, repeatedCount);
+              if (repeatedCount > MAX_REPEATED_TOOL_CALLS) {
+                const repeatedAnswer = '检测到模型反复调用同一个工具，已自动停止工具链。请换个问法或缩小查询范围。';
+                updateAssistantMessage(assistantMessageId, { answer: repeatedAnswer, thinking: false });
+                pushHistory(userHistoryMessage);
+                turnMessages.forEach(message => pushHistory(message));
+                pushHistory('assistant', repeatedAnswer);
+                await finalizeConversationTurn();
+                return;
+              }
               const uiBlock = addToolCallUI(assistantMessageId, toolCall);
               let toolOutput = '';
 
@@ -4451,7 +4478,7 @@
           return;
         }
 
-        const fallbackAnswer = '工具调用轮次过多，已停止。你可以换个说法再试。';
+        const fallbackAnswer = '请求已取消。';
         updateAssistantMessage(assistantMessageId, { answer: fallbackAnswer, thinking: false });
         pushHistory(userHistoryMessage);
         turnMessages.forEach(message => pushHistory(message));
