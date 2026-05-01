@@ -92,6 +92,35 @@ function isDashScopeCompatibleModel(model: string): boolean {
   return dashScopeModels.includes(model)
 }
 
+// 百炼模型ID映射：将前端简写ID映射到百炼真实模型ID
+function toDashScopeModelId(model: string): string {
+  const modelMap: Record<string, string> = {
+    // 已有模型
+    'kimi-k2.6': 'kimi-k2.6',
+    'glm-5': 'glm-5',
+    'glm-5.1': 'glm-5.1',
+    'glm-4.7': 'glm-4.7',
+    'qwen3.6-plus': 'qwen3.6-plus',
+    'qwen3.6-max-preview': 'qwen3.6-max-preview',
+    'deepseek-v4-flash': 'deepseek-v4-flash',
+    // 百炼新增模型 - 使用真实模型ID
+    'deepseek-r1': 'deepseek-r1',
+    'qwen3.6-flash': 'qwen3.6-flash',
+    'kimi-k2.5-dashscope': 'kimi-k2.5',
+    'deepseek-v3.2': 'deepseek-v3.2',
+    'deepseek-v3.2-exp': 'deepseek-v3.2-exp',
+    'glm-4.5-air': 'glm-4.5-air',
+    'minimax-m2.5-dashscope': 'minimax-m2.5',
+    'deepseek-v3.1': 'deepseek-v3.1',
+    'qwen3-coder-plus': 'qwen3-coder-plus',
+    'qwen3-max': 'qwen3-max',
+    'kimi-k2-instruct': 'kimi-k2-instruct',
+    'qwen3.6-plus-20260402': 'qwen3.6-plus-2026-04-02',
+    'deepseek-r1-0528': 'deepseek-r1-0528'
+  }
+  return modelMap[model] || model
+}
+
 function isSiliconFlowModel(model: string): boolean {
   return model === 'stepfun-ai/Step-3.5-Flash' || model === 'deepseek-ai/DeepSeek-V4-Flash' || model === 'zai-org/GLM-5.1'
 }
@@ -610,9 +639,14 @@ serve(async (req: Request) => {
       headers['Authorization'] = `Bearer ${modelScopeApiKey}`
       headers['X-ModelScope-Task-Type'] = 'image_generation'
     } else {
-      forwardedRequestData = provider === 'moonshot'
-        ? { ...requestData, model: 'kimi-k2.6' }
-        : requestData
+      // 根据provider进行模型ID映射
+      if (provider === 'moonshot') {
+        forwardedRequestData = { ...requestData, model: 'kimi-k2.6' }
+      } else if (provider === 'dashscope') {
+        forwardedRequestData = { ...requestData, model: toDashScopeModelId(model) }
+      } else {
+        forwardedRequestData = requestData
+      }
 
       if (provider === 'openai_compatible') {
         url = `${OPENAI_COMPATIBLE_BASE_URL}/chat/completions`
