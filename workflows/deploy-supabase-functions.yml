@@ -63,17 +63,16 @@ jobs:
           }
 
           require_secret ALLOWED_ORIGINS
-          require_secret PROXY_AUTH_TOKEN
-          require_secret CHAT_AUTH_SECRET
 
           # NOTE: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected by
           # the Supabase platform. The CLI rejects secrets with the SUPABASE_ prefix,
           # and including them here causes the ENTIRE command to fail, which also
           # prevents PROXY_AUTH_TOKEN etc. from being set.
           supabase secrets set --project-ref "$PROJECT_ID" \
-            "ALLOWED_ORIGINS=$ALLOWED_ORIGINS" \
-            "PROXY_AUTH_TOKEN=$PROXY_AUTH_TOKEN" \
-            "CHAT_AUTH_SECRET=$CHAT_AUTH_SECRET"
+            "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
+
+          set_secret_if_present PROXY_AUTH_TOKEN
+          set_secret_if_present CHAT_AUTH_SECRET
 
           set_secret_if_present MODELSCOPE_API_KEY
           set_secret_if_present OPENAI_COMPATIBLE_BASE_URL

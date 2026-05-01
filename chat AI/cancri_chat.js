@@ -81,7 +81,7 @@
     const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
     const UI_PREFS_STORAGE_KEY = 'cancri_ui_prefs';
     const MODEL_TELEMETRY_STORAGE_KEY = 'cancri_model_telemetry';
-    const MODEL_TELEMETRY_CACHE_VERSION = 4;
+    const MODEL_TELEMETRY_CACHE_VERSION = 5;
 
     // ModelScope API 额度信息
     let rateLimitInfo = {
@@ -95,17 +95,16 @@
       lastUpdateTime: null
     };
     const MODEL_LOCK_DURATION_MS = 60 * 60 * 1000;
-    const MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS = 30 * 1000; // 魔塔额度30秒刷新一次
+    const MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 魔塔额度页面打开探测一次，后续主要跟随真实请求头更新
     const NON_MODELSCOPE_PING_INTERVAL_MS = 60 * 60 * 1000; // 非魔塔模型1小时ping一次
     const MODEL_STATUS_REFRESH_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
     const RATE_LIMIT_UPDATE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
     const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
-    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2', 'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp', 'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528',
+    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-pro-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2', 'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp', 'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528',
       // MiMo 模型
       'mimo-v2.5-pro', 'mimo-v2.5-tts', 'mimo-v2.5-tts-voicedesign'
     ]);
     let rateLimitRefreshToken = 0;
-    let modelscopeQuotaTimer = null;
     let nonModelscopePingTimer = null;
     let modelTelemetryLastRefreshedAt = 0;
 
@@ -127,6 +126,8 @@
           return '这次请求模型没接住，请换个模型再试。';
         case 401:
           return '当前模型暂时无法访问，请切换其他模型再试。';
+        case 403:
+          return '请求触发安全风控，请放慢速度后重试。';
         case 409:
           return '当前模型有点忙，请切换其他模型再试。';
         case 429:
@@ -134,6 +135,51 @@
         default:
           return '当前模型暂时不可用，请切换其他模型再试。';
       }
+    }
+
+    function parseBackendErrorPayload(errorText) {
+      const raw = String(errorText || '').trim();
+      if (!raw) return { message: '', code: '' };
+      try {
+        const parsed = JSON.parse(raw);
+        const parsedError = parsed?.error;
+        const message = typeof parsedError === 'string'
+          ? parsedError
+          : parsedError?.message || parsed?.message || parsed?.detail || raw;
+        return {
+          message,
+          code: String(parsed?.code || parsedError?.code || parsed?.error || '').trim(),
+          retryAfter: parsed?.retry_after_seconds,
+          provider: parsed?.provider,
+          missing: parsed?.missing,
+        };
+      } catch {
+        return { message: raw, code: '' };
+      }
+    }
+
+    function formatSecurityGuardMessage(payload, fallback = '请求触发安全风控，请放慢速度后重试。') {
+      const code = String(payload?.code || '').trim();
+      const message = String(payload?.message || '').trim();
+      const retryAfter = Number(payload?.retryAfter);
+      if (code === 'access_blocked') {
+        return message || '检测到异常高频请求，已暂时停止为此 IP 提供服务。';
+      }
+      if (code === 'challenge_required') {
+        const suffix = Number.isFinite(retryAfter) && retryAfter > 0 ? `（建议 ${retryAfter} 秒后重试）` : '';
+        return `${message || fallback}${suffix}`;
+      }
+      return message || fallback;
+    }
+
+    function applyBackendModelBlock(payload, modelId = currentModel) {
+      if (!payload || payload.code !== 'model_temporarily_unavailable') return false;
+      const retryAfter = Number(payload.retryAfter);
+      const until = Date.now() + (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : MODEL_LOCK_DURATION_MS);
+      setModelQuotaLock(modelId, until, 'unavailable');
+      updateModelDropdownIndicators();
+      persistModelTelemetryCache();
+      return true;
     }
 
     function getModelStatus(modelId) {
@@ -399,21 +445,6 @@
       return true;
     }
 
-    function scheduleModelscopeQuotaRefresh(delayMs) {
-      if (modelscopeQuotaTimer) {
-        clearTimeout(modelscopeQuotaTimer);
-        modelscopeQuotaTimer = null;
-      }
-
-      modelscopeQuotaTimer = setTimeout(() => {
-        refreshModelscopeQuota()
-          .catch(() => {})
-          .finally(() => {
-            scheduleModelscopeQuotaRefresh(MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS);
-          });
-      }, Math.max(0, delayMs));
-    }
-
     function scheduleNonModelscopePingRefresh(delayMs) {
       if (nonModelscopePingTimer) {
         clearTimeout(nonModelscopePingTimer);
@@ -475,13 +506,12 @@
         updateModelDropdownIndicators();
       }
 
-      // 立即刷新一次，然后启动两个独立循环
+      // 页面打开时刷新一次，后续主要跟随真实请求头更新
       await Promise.allSettled([
         refreshModelscopeQuota(),
         refreshNonModelscopePing(),
       ]);
       autoSwitchIfCurrentModelUnavailable();
-      scheduleModelscopeQuotaRefresh(MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS);
       scheduleNonModelscopePingRefresh(NON_MODELSCOPE_PING_INTERVAL_MS);
     }
 
@@ -653,6 +683,7 @@
       'deepseek-v4-flash-dashscope': 'deepseek-v4-flash',
       'deepseek-v4-flash-siliconflow': 'deepseek-ai/DeepSeek-V4-Flash',
       'deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
+      'deepseek-v4-pro-dashscope': 'deepseek-v4-pro-dashscope',
       'step-3.5-flash': 'stepfun-ai/Step-3.5-Flash',
       'hy3-preview': 'tencent/hy3-preview:free',
       'gpt-oss-120b': 'openai/gpt-oss-120b:free',
@@ -699,6 +730,7 @@
         'deepseek-v4-flash-dashscope': 'DeepSeek-V4-Flash',
         'deepseek-v4-flash-siliconflow': 'DeepSeek-V4-Flash · 线路三',
         'deepseek-v4-pro': 'DeepSeek-V4-Pro',
+        'deepseek-v4-pro-dashscope': 'DeepSeek-V4-Pro · 线路二',
         'step-3.5-flash': 'Step-3.5',
         'hy3-preview': '混元3',
         'gpt-oss-120b': 'chatGPT-OSS',
@@ -2436,6 +2468,11 @@
         }
 
         const payload = await response.json().catch(() => null);
+        applyQuotaSnapshotFromHeaders(targetModelId, response.headers, {
+          responseStatus: payload?.status || response.status,
+          errorText: String(payload?.error || ''),
+          updateCurrentRateLimitInfo: showModelQuota,
+        });
         const latencyMs = Number.isFinite(payload?.latencyMs) ? Number(payload.latencyMs) : null;
         if (latencyMs !== null) {
           const status = getModelStatus(targetModelId);
@@ -2483,16 +2520,78 @@
     }
 
     function renderInlineMarkdown(text) {
+      const placeholders = [];
+      const keep = html => {
+        const token = `\u0000md${placeholders.length}\u0000`;
+        placeholders.push([token, html]);
+        return token;
+      };
       let output = escapeHtml(text)
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-        .replace(/\[(.+?)\]\((.+?)\)/g, (match, label, url) => {
+        .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${code}</code>`))
+        .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
           const href = safeUrl(url);
           if (href === '#') return label;
           return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-        });
+        })
+        .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_\n]+)__/g, '<strong>$1</strong>')
+        .replace(/~~([^~\n]+)~~/g, '<del>$1</del>')
+        .replace(/(^|[^\*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+      placeholders.forEach(([token, html]) => {
+        output = output.replaceAll(token, html);
+      });
       return output;
+    }
+
+    function parseMarkdownTableRow(line) {
+      const trimmed = String(line || '').trim().replace(/^\|/, '').replace(/\|$/, '');
+      const cells = [];
+      let cell = '';
+      for (let i = 0; i < trimmed.length; i += 1) {
+        const char = trimmed[i];
+        const next = trimmed[i + 1];
+        if (char === '\\' && next === '|') {
+          cell += '|';
+          i += 1;
+          continue;
+        }
+        if (char === '|') {
+          cells.push(cell.trim());
+          cell = '';
+          continue;
+        }
+        cell += char;
+      }
+      cells.push(cell.trim());
+      return cells;
+    }
+
+    function isMarkdownTableSeparator(line) {
+      const cells = parseMarkdownTableRow(line);
+      return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell.replace(/\s+/g, '')));
+    }
+
+    function getMarkdownTableAlign(cell) {
+      const value = cell.replace(/\s+/g, '');
+      if (/^:-+:$/.test(value)) return 'center';
+      if (/^-+:$/.test(value)) return 'right';
+      if (/^:-+$/.test(value)) return 'left';
+      return '';
+    }
+
+    function renderMarkdownTable(headers, separator, rows) {
+      const aligns = separator.map(getMarkdownTableAlign);
+      const renderCell = (tag, value, index) => {
+        const align = aligns[index] ? ` style="text-align:${aligns[index]}"` : '';
+        return `<${tag}${align}>${renderInlineMarkdown(value || '')}</${tag}>`;
+      };
+      const head = headers.map((cell, index) => renderCell('th', cell, index)).join('');
+      const body = rows.map(row => {
+        const cells = headers.map((header, index) => renderCell('td', row[index] || '', index)).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+      return `<div class="md-table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
     }
 
     function renderMarkdown(markdown) {
@@ -2512,8 +2611,14 @@
 
       function flushList() {
         if (!listItems.length) return;
-        const items = listItems.map(item => `<li>${renderInlineMarkdown(item)}</li>`).join('');
-        blocks.push(`<${listType}>${items}</${listType}>`);
+        const hasTasks = listItems.some(item => item.task);
+        const items = listItems.map(item => {
+          if (!item.task) return `<li>${renderInlineMarkdown(item.content)}</li>`;
+          const checked = item.checked ? ' checked' : '';
+          return `<li class="task-list-item"><input type="checkbox" disabled${checked}>${renderInlineMarkdown(item.content)}</li>`;
+        }).join('');
+        const className = hasTasks ? ' class="contains-task-list"' : '';
+        blocks.push(`<${listType}${className}>${items}</${listType}>`);
         listType = '';
         listItems = [];
       }
@@ -2524,8 +2629,8 @@
         codeLines = [];
       }
 
-      for (const rawLine of lines) {
-        const line = rawLine;
+      for (let i = 0; i < lines.length; i += 1) {
+        const line = lines[i];
 
         if (line.trim().startsWith('```')) {
           if (inCode) {
@@ -2547,6 +2652,31 @@
         if (!line.trim()) {
           flushParagraph();
           flushList();
+          continue;
+        }
+
+        if (i + 1 < lines.length && line.includes('|') && isMarkdownTableSeparator(lines[i + 1])) {
+          flushParagraph();
+          flushList();
+          const headers = parseMarkdownTableRow(line);
+          const separator = parseMarkdownTableRow(lines[i + 1]);
+          const rows = [];
+          i += 2;
+          while (i < lines.length && lines[i].trim() && lines[i].includes('|')) {
+            if (!isMarkdownTableSeparator(lines[i])) {
+              rows.push(parseMarkdownTableRow(lines[i]));
+            }
+            i += 1;
+          }
+          i -= 1;
+          blocks.push(renderMarkdownTable(headers, separator, rows));
+          continue;
+        }
+
+        if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
+          flushParagraph();
+          flushList();
+          blocks.push('<hr>');
           continue;
         }
 
@@ -2574,7 +2704,17 @@
           if (!listType) listType = nextType;
           if (listType !== nextType) flushList();
           listType = nextType;
-          listItems.push((ordered || unordered)[1]);
+          const rawItem = (ordered || unordered)[1];
+          const task = rawItem.match(/^\[([ xX])\]\s+(.*)$/);
+          listItems.push(task ? {
+            content: task[2],
+            task: true,
+            checked: task[1].toLowerCase() === 'x',
+          } : {
+            content: rawItem,
+            task: false,
+            checked: false,
+          });
           continue;
         }
 
@@ -2600,34 +2740,24 @@
     function syncStreamingMarkdownBlock(blockElement, streamState, text, { thinking = false, placeholder = '正在思考中…' } = {}) {
       const nextText = String(text || '');
 
-      if (!thinking) {
-        blockElement.innerHTML = nextText ? renderMarkdown(nextText) : '';
-        streamState.text = nextText;
-        streamState.ready = Boolean(nextText);
-        return;
-      }
-
       if (!nextText.trim()) {
+        blockElement.classList.remove('is-streaming');
         blockElement.innerHTML = placeholder ? `<span class="typing-indicator">${escapeHtml(placeholder)}</span>` : '';
         streamState.text = '';
         streamState.ready = false;
+        streamState.thinking = thinking;
         return;
       }
 
-      if (!streamState.ready || !nextText.startsWith(streamState.text)) {
-        blockElement.innerHTML = '';
-        streamState.text = '';
-        streamState.ready = true;
+      if (streamState.ready && streamState.text === nextText && streamState.thinking === thinking) {
+        return;
       }
 
-      const delta = nextText.slice(streamState.text.length);
-      if (!delta) return;
-
-      const fragment = document.createElement('span');
-      fragment.className = 'stream-fragment';
-      fragment.innerHTML = renderStreamingFragment(delta);
-      blockElement.appendChild(fragment);
+      blockElement.classList.toggle('is-streaming', Boolean(thinking));
+      blockElement.innerHTML = renderMarkdown(nextText);
       streamState.text = nextText;
+      streamState.ready = true;
+      streamState.thinking = thinking;
     }
 
     function getModelIdentity(modelId) {
@@ -2635,6 +2765,7 @@
         'deepseek-v4-flash': '由NexusV支持的DeepSeekV4模型',
         'deepseek-v4-flash-dashscope': '由NexusV支持的DeepSeekV4模型',
         'deepseek-v4-pro': '由NexusV支持的DeepSeekV4-Pro模型',
+        'deepseek-v4-pro-dashscope': '由NexusV支持的DeepSeekV4-Pro模型（线路二）',
         'step-3.5-flash': '由NexusV支持的Step-3.5模型',
         'hy3-preview': '由NexusV支持的混元3模型',
         'gpt-oss-120b': '由NexusV支持的chatGPT-OSS模型',
@@ -2896,6 +3027,9 @@
           : '请求已取消或超时，请重试。';
       }
       const message = error instanceof Error ? error.message : String(error);
+      if (/challenge_required|access_blocked|异常高频|安全验证|停止为此 IP 提供服务/.test(message)) {
+        return message.replace(/^Error:\s*/i, '');
+      }
       if (message.includes('诊断:') || message.includes('后端返回 HTTP')) {
         return message;
       }
@@ -3031,14 +3165,12 @@
           const errorText = await response.text().catch(() => '');
           let detail = errorText.trim();
           if (detail) {
-            try {
-              const parsed = JSON.parse(detail);
-              detail = parsed?.error?.message || parsed?.message || parsed?.detail || detail;
-            } catch (parseError) {
-              // keep raw text
-            }
+            const parsed = parseBackendErrorPayload(detail);
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+              ? formatSecurityGuardMessage(parsed)
+              : parsed.message || detail;
           }
-          throw new Error(detail ? `HTTP error! status: ${response.status} · ${detail}` : `HTTP error! status: ${response.status}`);
+          throw new Error(detail || `HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
@@ -3082,7 +3214,12 @@
           }
 
           if (!resultResponse.ok) {
-            throw new Error(`HTTP error! status: ${resultResponse.status}`);
+            const errorText = await resultResponse.text().catch(() => '');
+            const parsed = parseBackendErrorPayload(errorText);
+            const detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+              ? formatSecurityGuardMessage(parsed)
+              : parsed.message;
+            throw new Error(detail || `HTTP error! status: ${resultResponse.status}`);
           }
 
           const taskData = await resultResponse.json();
@@ -3529,8 +3666,10 @@
         let detail = errorText.trim();
         if (detail) {
           try {
-            const parsed = JSON.parse(detail);
-            detail = parsed?.error?.message || parsed?.error || parsed?.message || parsed?.detail || detail;
+            const parsed = parseBackendErrorPayload(detail);
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+              ? formatSecurityGuardMessage(parsed)
+              : parsed.message || detail;
           } catch (parseError) {
             // keep raw text
           }
@@ -3719,12 +3858,10 @@
           const errorText = await response.text().catch(() => '');
           let detail = errorText.trim();
           if (detail) {
-            try {
-              const parsed = JSON.parse(detail);
-              detail = parsed?.error?.message || parsed?.error || parsed?.message || parsed?.detail || detail;
-            } catch (parseError) {
-              // keep raw text
-            }
+            const parsed = parseBackendErrorPayload(detail);
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+              ? formatSecurityGuardMessage(parsed)
+              : parsed.message || detail;
           }
           throw new Error(detail || `联网搜索失败：HTTP ${response.status}`);
         }
@@ -3772,12 +3909,10 @@
           const errorText = await response.text().catch(() => '');
           let detail = errorText.trim();
           if (detail) {
-            try {
-              const parsed = JSON.parse(detail);
-              detail = parsed?.error?.message || parsed?.error || parsed?.message || parsed?.detail || detail;
-            } catch (parseError) {
-              // keep raw text
-            }
+            const parsed = parseBackendErrorPayload(detail);
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+              ? formatSecurityGuardMessage(parsed)
+              : parsed.message || detail;
           }
           throw new Error(detail || `获取网页内容失败：HTTP ${response.status}`);
         }
@@ -3897,16 +4032,6 @@
         return msg;
       });
 
-      // 调试日志：打印请求体中的多模态内容
-      console.log('发送消息到模型:', activeModelId);
-      processedMessages.forEach((msg, idx) => {
-        if (Array.isArray(msg.content)) {
-          console.log(`消息[${idx}] 是多模态内容:`, msg.content.map(p =>
-            p.type === 'image_url' ? `图片(url长度:${p.image_url?.url?.length || 0})` : `文本:${p.text?.slice(0, 50)}...`
-          ));
-        }
-      });
-
       const requestBody = {
         model: activeModelId,
         messages: processedMessages,
@@ -3948,19 +4073,14 @@
 
       if (!response.ok) {
         let detail = errorText.trim();
-        console.error('API 错误响应:', errorText);
         if (detail) {
-          try {
-            const parsed = JSON.parse(detail);
-            const parsedError = parsed?.error;
-            detail = typeof parsedError === 'string'
-              ? parsedError
-              : parsedError?.message || parsed?.message || parsed?.detail || detail;
-            if (parsed?.provider) detail += `; provider=${parsed.provider}`;
-            if (Array.isArray(parsed?.missing) && parsed.missing.length) detail += `; missing=${parsed.missing.join(',')}`;
-          } catch (parseError) {
-            // keep raw text
-          }
+          const parsed = parseBackendErrorPayload(detail);
+          applyBackendModelBlock(parsed, currentModel);
+          detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+            ? formatSecurityGuardMessage(parsed)
+            : parsed.message || detail;
+          if (parsed?.provider) detail += `; provider=${parsed.provider}`;
+          if (Array.isArray(parsed?.missing) && parsed.missing.length) detail += `; missing=${parsed.missing.join(',')}`;
         }
         // 多模态特定错误提示
         if (response.status === 400 && processedMessages.some(m => Array.isArray(m.content))) {

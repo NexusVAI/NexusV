@@ -2,14 +2,23 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+function normalizeAllowedOrigin(value: string): string {
+  const clean = value.trim().replace(/\/+$/, '')
+  if (!clean) return ''
+  try {
+    return new URL(clean).origin
+  } catch {
+    return clean
+  }
+}
+
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
 const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
 
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
   if (!origin) return null
-  if (ALLOWED_ORIGINS.length === 0) return origin
-  if (ALLOWED_ORIGINS.some((allowed: string) => origin === allowed || origin.endsWith('.' + allowed.replace(/^https?:\/\//, '')))) return origin
+  if (ALLOWED_ORIGINS.some((allowed: string) => origin === allowed)) return origin
   if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
   return null
 }
@@ -30,29 +39,184 @@ function validateProxyAuth(req: Request): boolean {
   return token === PROXY_AUTH_TOKEN
 }
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
 const RATE_LIMIT_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 20
+const CHALLENGE_DURATION_MS = 10 * 60_000
+const BLOCK_DURATION_MS = 60 * 60_000
+const RAPID_REQUEST_MS = 700
+const MAX_REQUEST_BYTES = 1024 * 1024
+const SEARCH_FETCH_TIMEOUT_MS = 12_000
+const PAGE_FETCH_TIMEOUT_MS = 18_000
 
-function checkRateLimit(key: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return true
+interface RequestContext {
+  service: string
+  endpoint: string
+  ip: string
+  device: string
+  user: string
+  origin: string
+}
+
+function cleanHeader(value: string | null): string {
+  return String(value || '').replace(/[\r\n\t]/g, '').trim()
+}
+
+function getClientIp(req: Request): string {
+  const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
+  if (cfIp) return cfIp
+  const forwardedFor = cleanHeader(req.headers.get('x-forwarded-for'))
+  if (forwardedFor) {
+    const first = forwardedFor.split(',').map(item => item.trim()).find(Boolean)
+    if (first) return first
   }
-  entry.count++
-  return entry.count <= RATE_LIMIT_MAX
+  return cleanHeader(req.headers.get('x-real-ip')) || 'unknown'
+}
+
+function maskIdentifier(value: string): string {
+  const clean = cleanHeader(value)
+  if (!clean) return 'anonymous'
+  if (clean.length <= 10) return clean
+  return `${clean.slice(0, 6)}…${clean.slice(-4)}`
+}
+
+function getRequestContext(req: Request, service: string, endpoint = 'unknown'): RequestContext {
+  const ip = getClientIp(req)
+  const user = cleanHeader(req.headers.get('x-user-id')) || cleanHeader(req.headers.get('x-api-key'))
+  const ua = cleanHeader(req.headers.get('user-agent')).slice(0, 96) || 'unknown'
+  return {
+    service,
+    endpoint: cleanHeader(endpoint) || 'unknown',
+    ip,
+    device: `${ip}|ua:${maskIdentifier(ua)}|user:${maskIdentifier(user)}`,
+    user: maskIdentifier(user),
+    origin: cleanHeader(req.headers.get('origin')) || 'none',
+  }
+}
+
+function logSecurityEvent(event: string, ctx: RequestContext, extra: Record<string, unknown> = {}): void {
+  console.info(`[security] ${JSON.stringify({ event, time: new Date().toISOString(), ...ctx, ...extra })}`)
+}
+
+function jsonResponse(payload: Record<string, unknown>, status: number, ch: Record<string, string>, extraHeaders: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...ch, ...extraHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
+function rejectDisallowedOrigin(req: Request, ch: Record<string, string>): Response | null {
+  if (getAllowedOrigin(req)) return null
+  return jsonResponse({ error: 'Origin not allowed', code: 'origin_not_allowed' }, 403, ch)
+}
+
+function getEndpointLimit(endpoint: string): number {
+  if (endpoint === 'fetch_web_page') return 12
+  return RATE_LIMIT_MAX
+}
+
+function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false; action: 'challenge' | 'block'; reason: string; retryAfter: number } {
+  const now = Date.now()
+  const entry = abuseMap.get(key) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS, lastAt: 0, rapidHits: 0, challengeUntil: 0, blockedUntil: 0 }
+  if (entry.blockedUntil > now) {
+    return { ok: false, action: 'block', reason: 'blocked', retryAfter: Math.ceil((entry.blockedUntil - now) / 1000) }
+  }
+
+  if (!entry || now > entry.resetAt) {
+    entry.count = 0
+    entry.resetAt = now + RATE_LIMIT_WINDOW_MS
+    entry.rapidHits = Math.max(0, entry.rapidHits - 1)
+  }
+
+  const interval = entry.lastAt ? now - entry.lastAt : Number.POSITIVE_INFINITY
+  if (interval < RAPID_REQUEST_MS) {
+    entry.rapidHits += 1
+  } else {
+    entry.rapidHits = Math.max(0, entry.rapidHits - 1)
+  }
+  entry.count += 1
+  entry.lastAt = now
+  abuseMap.set(key, entry)
+
+  const limitHit = entry.count > max
+  const speedHit = entry.rapidHits >= 4
+  if (entry.challengeUntil > now) {
+    if (limitHit || speedHit || interval < RAPID_REQUEST_MS) {
+      entry.blockedUntil = now + BLOCK_DURATION_MS
+      abuseMap.set(key, entry)
+      return { ok: false, action: 'block', reason: limitHit ? 'challenge_limit_repeat' : 'challenge_speed_repeat', retryAfter: Math.ceil(BLOCK_DURATION_MS / 1000) }
+    }
+    return { ok: false, action: 'challenge', reason: 'challenge_required', retryAfter: Math.ceil((entry.challengeUntil - now) / 1000) }
+  }
+
+  if (limitHit || speedHit) {
+    entry.challengeUntil = now + CHALLENGE_DURATION_MS
+    abuseMap.set(key, entry)
+    return { ok: false, action: 'challenge', reason: limitHit ? 'rate_limit' : 'rapid_requests', retryAfter: Math.ceil(CHALLENGE_DURATION_MS / 1000) }
+  }
+
+  return { ok: true }
+}
+
+function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>): Response | null {
+  const max = getEndpointLimit(ctx.endpoint)
+  const scopes = [
+    `ip:${ctx.endpoint}:${ctx.ip}`,
+    `device:${ctx.endpoint}:${ctx.device}`,
+  ]
+
+  for (const scope of scopes) {
+    const result = inspectAbuseScope(scope, max)
+    if (result.ok) continue
+    logSecurityEvent(result.action, ctx, { reason: result.reason, retryAfter: result.retryAfter })
+    if (result.action === 'block') {
+      return jsonResponse({
+        error: 'access_blocked',
+        code: 'access_blocked',
+        message: '检测到异常高频搜索请求，已暂时停止为此 IP 提供服务。',
+        retry_after_seconds: result.retryAfter,
+      }, 403, ch, { 'Retry-After': String(result.retryAfter) })
+    }
+    return jsonResponse({
+      error: 'challenge_required',
+      code: 'challenge_required',
+      message: '检测到异常搜索速度。出于公平使用，本次请求需要安全验证或稍后重试。',
+      retry_after_seconds: result.retryAfter,
+    }, 403, ch, { 'Retry-After': String(result.retryAfter) })
+  }
+
+  return null
+}
+
+function rejectOversizedRequest(req: Request, ch: Record<string, string>, ctx: RequestContext): Response | null {
+  const contentLength = Number(req.headers.get('content-length') || 0)
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
+    logSecurityEvent('request_rejected', ctx, { reason: 'payload_too_large', contentLength })
+    return jsonResponse({ error: 'Payload too large' }, 413, ch)
+  }
+  return null
 }
 
 function isPrivateUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return true
     const host = parsed.hostname
-    if (/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|localhost|::1|fc|fd|fe80)/i.test(host)) return true
+    if (/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.|localhost|::1|fc|fd|fe80)/i.test(host)) return true
+    if (/(\.local|metadata\.google\.internal)$/i.test(host)) return true
     return false
   } catch {
     return true
+  }
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = SEARCH_FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
@@ -80,6 +244,25 @@ function normalizeBaiduResultUrl(url: string): string {
   if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) return cleaned;
   if (cleaned.startsWith('/')) return `https://www.baidu.com${cleaned}`;
   return cleaned;
+}
+
+async function resolveBaiduRedirectUrl(url: string): Promise<string> {
+  if (!/^https?:\/\/(?:www\.)?baidu\.com\/link\?/i.test(url)) return url;
+  try {
+    const response = await fetchWithTimeout(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      headers: {
+        'Accept': '*/*',
+        'Referer': 'https://www.baidu.com/',
+        'User-Agent': USER_AGENT,
+      },
+    }, 6000);
+    const finalUrl = response.url || url;
+    return isPrivateUrl(finalUrl) ? url : finalUrl;
+  } catch {
+    return url;
+  }
 }
 
 function isLikelySearchResultTitle(title: string): boolean {
@@ -150,14 +333,14 @@ function extractBaiduResultsFromHtml(html: string, limit: number): SearchResult[
 }
 
 async function fetchSearchPage(searchUrl: URL, lang: string): Promise<string> {
-  const response = await fetch(searchUrl.toString(), {
+  const response = await fetchWithTimeout(searchUrl.toString(), {
     headers: {
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': lang === 'en' ? 'en-US,en;q=0.9' : 'zh-CN,zh;q=0.9,en;q=0.6',
       'Referer': 'https://www.baidu.com/',
       'User-Agent': USER_AGENT,
     },
-  });
+  }, SEARCH_FETCH_TIMEOUT_MS);
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
@@ -198,7 +381,10 @@ async function searchBaidu(query: string, lang: string, limit: number): Promise<
   for (const url of attempts) {
     try {
       const html = await fetchSearchPage(url, lang);
-      const results = extractBaiduResultsFromHtml(html, limit);
+      const results = await Promise.all(extractBaiduResultsFromHtml(html, limit).map(async result => ({
+        ...result,
+        url: await resolveBaiduRedirectUrl(result.url),
+      })));
       if (results.length) return results;
     } catch (error) {
       errors.push(error instanceof Error ? error.message : String(error));
@@ -210,19 +396,24 @@ async function searchBaidu(query: string, lang: string, limit: number): Promise<
 
 async function fetchWebPage(url: string): Promise<{ title: string; content: string }> {
   const maxLength = 10000;
+  const targetUrl = await resolveBaiduRedirectUrl(url);
 
   const fetchDirectPage = async (): Promise<{ title: string; content: string }> => {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(targetUrl, {
+      redirect: 'follow',
       headers: {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.6',
-        'Referer': url,
+        'Referer': targetUrl,
         'User-Agent': USER_AGENT,
       },
-    });
+    }, PAGE_FETCH_TIMEOUT_MS);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
+    }
+    if (response.url && isPrivateUrl(response.url)) {
+      throw new Error('Redirect target not allowed');
     }
 
     const html = await response.text();
@@ -252,6 +443,10 @@ async function fetchWebPage(url: string): Promise<{ title: string; content: stri
     // 清理多余空白
     content = content.replace(/\n{3,}/g, '\n\n').trim();
 
+    if (content.length < 120 || /百度安全验证|访问过于频繁|请输入验证码|Access Denied|Just a moment/i.test(content)) {
+      throw new Error('Readable content too short or blocked');
+    }
+
     // 限制内容长度
     if (content.length > maxLength) {
       content = content.substring(0, maxLength) + '...（内容已截断）';
@@ -261,15 +456,15 @@ async function fetchWebPage(url: string): Promise<{ title: string; content: stri
   };
 
   const fetchReadableMirror = async (): Promise<{ title: string; content: string }> => {
-    const readableUrl = `https://r.jina.ai/http://${url.replace(/^https?:\/\//i, '')}`;
-    const response = await fetch(readableUrl, {
+    const readableUrl = `https://r.jina.ai/${targetUrl}`;
+    const response = await fetchWithTimeout(readableUrl, {
       headers: {
         'Accept': 'text/plain,text/markdown,text/*;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.6',
-        'Referer': url,
+        'Referer': targetUrl,
         'User-Agent': USER_AGENT,
       },
-    });
+    }, PAGE_FETCH_TIMEOUT_MS);
 
     if (!response.ok) {
       throw new Error(`Readable mirror HTTP ${response.status}`);
@@ -294,7 +489,7 @@ async function fetchWebPage(url: string): Promise<{ title: string; content: stri
     return await fetchDirectPage();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (/HTTP\s+(412|403|406|429|451|500|502|503|504)/i.test(message)) {
+    if (/HTTP\s+(412|403|406|429|451|500|502|503|504)|Readable content too short|Redirect target not allowed|aborted|timeout/i.test(message)) {
       try {
         return await fetchReadableMirror();
       } catch (mirrorError) {
@@ -308,29 +503,19 @@ async function fetchWebPage(url: string): Promise<{ title: string; content: stri
 
 serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
+  const startedAt = performance.now()
+  const originResponse = rejectDisallowedOrigin(req, ch)
+  if (originResponse) return originResponse
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: ch });
   }
 
-  // Proxy auth check (temporarily disabled for emergency recovery)
-  // if (!validateProxyAuth(req)) {
-  //   return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-  //     status: 401,
-  //     headers: { ...ch, 'Content-Type': 'application/json' },
-  //   });
-  // }
-
-  // Rate limiting
-  const rateLimitKey = req.headers.get('x-user-id') || req.headers.get('x-api-key') || req.headers.get('cf-connecting-ip') || 'anonymous'
-  if (!checkRateLimit(rateLimitKey)) {
-    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-      status: 429,
-      headers: { ...ch, 'Content-Type': 'application/json' },
-    });
-  }
-
   try {
+    const baseCtx = getRequestContext(req, 'web-search')
+    const oversized = rejectOversizedRequest(req, ch, baseCtx)
+    if (oversized) return oversized
+
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
@@ -340,6 +525,10 @@ serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const endpoint = cleanText(body.endpoint || 'web_search');
+    const ctx = getRequestContext(req, 'web-search', endpoint)
+    const abuseResponse = enforceAbuseGuard(ctx, ch)
+    if (abuseResponse) return abuseResponse
+    logSecurityEvent('request_started', ctx, { method: req.method })
 
     if (endpoint === 'fetch_web_page') {
       const url = cleanText(body.url);
@@ -359,6 +548,7 @@ serve(async (req: Request) => {
       }
 
       const pageData = await fetchWebPage(url);
+      logSecurityEvent('request_finished', ctx, { status: 200, durationMs: Math.round(performance.now() - startedAt) })
       return new Response(JSON.stringify({
         url,
         title: pageData.title,
@@ -382,6 +572,7 @@ serve(async (req: Request) => {
     const limitValue = Number(body.limit);
     const limit = Math.max(1, Math.min(10, Number.isFinite(limitValue) ? Math.round(limitValue) : 5));
     const results = await searchBaidu(query, lang, limit);
+    logSecurityEvent('request_finished', ctx, { status: 200, resultCount: results.length, durationMs: Math.round(performance.now() - startedAt) })
 
     return new Response(JSON.stringify({
       query,
@@ -394,6 +585,9 @@ serve(async (req: Request) => {
       headers: { ...ch, 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    const ctx = getRequestContext(req, 'web-search')
+    const message = error instanceof Error ? error.message : String(error)
+    logSecurityEvent('request_failed', ctx, { durationMs: Math.round(performance.now() - startedAt), error: message.slice(0, 160) })
     return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
       headers: { ...ch, 'Content-Type': 'application/json' },

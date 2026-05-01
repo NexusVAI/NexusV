@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Inject runtime config
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://diusqgphvybnzazgopor.supabase.co' }}
           PROXY_AUTH_TOKEN: ${{ secrets.PROXY_AUTH_TOKEN }}
         run: |
           python - <<'PY'
@@ -42,19 +42,20 @@ jobs:
           import sys
           from pathlib import Path
 
-          supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+          supabase_url = os.environ.get("SUPABASE_URL", "").strip() or "https://diusqgphvybnzazgopor.supabase.co"
           proxy_token = os.environ.get("PROXY_AUTH_TOKEN", "").strip()
           if not supabase_url:
               print("::error::GitHub Secret SUPABASE_URL is missing")
-              sys.exit(1)
-          if not proxy_token:
-              print("::error::GitHub Secret PROXY_AUTH_TOKEN is missing")
               sys.exit(1)
 
           target = Path("chat AI/cancri_chat_ui_v_3.html")
           html = target.read_text(encoding="utf-8")
           html = html.replace(
               "window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || '';",
+              f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
+          )
+          html = html.replace(
+              "window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';",
               f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
           )
           html = html.replace(

@@ -1204,37 +1204,28 @@
 
   .think-body .stream-fragment,
   .answer-body .stream-fragment {
-    display: inline-block;
-    transform-origin: left center;
-    will-change: opacity, transform, filter;
-    animation: streamBloom .44s cubic-bezier(.2,.8,.2,1) both;
+    display: inline;
+    animation: streamBloom .22s ease-out both;
   }
 
   @keyframes streamBloom {
     from {
       opacity: 0;
-      transform: translateY(.32em) scale(.986);
-      filter: blur(9px) saturate(1.25);
-      text-shadow: 0 0 16px rgba(255,255,255,.12);
-    }
-    60% {
-      opacity: .88;
-      filter: blur(2.4px) saturate(1.08);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
-      filter: blur(0) saturate(1);
-      text-shadow: none;
     }
+  }
+
+  .think-body.is-streaming,
+  .answer-body.is-streaming {
+    transition: opacity .12s ease-out;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .think-body .stream-fragment,
     .answer-body .stream-fragment {
       animation: none;
-      filter: none;
-      transform: none;
     }
   }
 
@@ -1317,13 +1308,14 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── MARKDOWN CONTENT ────────────────────────────────────── */
-  .md-content h1, .md-content h2, .md-content h3, .md-content h4 {
+  .md-content h1, .md-content h2, .md-content h3, .md-content h4, .md-content h5, .md-content h6 {
     font-weight: 600; letter-spacing: -0.02em; color: var(--text); margin: 1em 0 .4em;
   }
 
   .md-content h1 { font-size: 1.4em; }
   .md-content h2 { font-size: 1.2em; }
   .md-content h3 { font-size: 1.05em; }
+  .md-content h4, .md-content h5, .md-content h6 { font-size: 1em; }
 
   .md-content p { margin: 0 0 .7em; }
   .md-content p:last-child { margin-bottom: 0; }
@@ -1361,6 +1353,48 @@
 
   .md-content strong { font-weight: 600; }
   .md-content em { font-style: italic; }
+  .md-content del { color: var(--text-dim); }
+
+  .md-content hr {
+    border: none; border-top: 1px solid var(--line);
+    margin: 1em 0;
+  }
+
+  .md-content .contains-task-list {
+    list-style: none; padding-left: .2em;
+  }
+
+  .md-content .task-list-item {
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+
+  .md-content .task-list-item input {
+    margin-top: .32em; accent-color: var(--accent);
+  }
+
+  .md-table-wrap {
+    width: 100%; overflow-x: auto;
+    margin: .7em 0; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--panel-2);
+  }
+
+  .md-content table {
+    width: 100%; border-collapse: collapse;
+    min-width: 420px; font-size: .92em;
+  }
+
+  .md-content th,
+  .md-content td {
+    padding: 9px 11px; border-bottom: 1px solid var(--line);
+    text-align: left; vertical-align: top;
+  }
+
+  .md-content th {
+    color: var(--text); font-weight: 600;
+    background: color-mix(in srgb, var(--panel-2) 78%, var(--hover));
+  }
+
+  .md-content tr:last-child td { border-bottom: none; }
 
   /* ── TOOL CALL BLOCKS ────────────────────────────────────── */
   .tool-calls-container { display: flex; flex-direction: column; gap: 4px; }
@@ -1803,7 +1837,6 @@
 
   /* ── HIDDEN ELEMENTS (ALWAYS HIDDEN IN THIS BUILD) ────────── */
   .chip-row,
-  .footer-note,
   .header-actions,
   .top-pill,
   #imagesView {

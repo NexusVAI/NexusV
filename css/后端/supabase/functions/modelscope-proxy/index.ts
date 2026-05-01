@@ -4,14 +4,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map(s => s.trim()).filter(Boolean)
+function normalizeAllowedOrigin(value: string): string {
+  const clean = value.trim().replace(/\/+$/, '')
+  if (!clean) return ''
+  try {
+    return new URL(clean).origin
+  } catch {
+    return clean
+  }
+}
+
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
 const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
 
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
   if (!origin) return null
-  if (ALLOWED_ORIGINS.length === 0) return origin
-  if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.endsWith('.' + allowed.replace(/^https?:\/\//, '')))) return origin
+  if (ALLOWED_ORIGINS.some(allowed => origin === allowed)) return origin
   if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
   return null
 }
@@ -27,19 +36,210 @@ function corsHeadersFor(req: Request): Record<string, string> {
   }
 }
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
 const RATE_LIMIT_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 30
+const CHALLENGE_DURATION_MS = 10 * 60_000
+const BLOCK_DURATION_MS = 60 * 60_000
+const RAPID_REQUEST_MS = 650
+const MAX_REQUEST_BYTES = 8 * 1024 * 1024
+const MODEL_UNAVAILABLE_WINDOW_MS = 10 * 60_000
+const MODEL_UNAVAILABLE_BLOCK_MS = 60 * 60_000
+const MODEL_UNAVAILABLE_FAILURE_LIMIT = 3
+const modelAvailabilityMap = new Map<string, { failures: number; resetAt: number; blockedUntil: number }>()
 
-function checkRateLimit(key: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return true
+interface RequestContext {
+  service: string
+  endpoint: string
+  ip: string
+  device: string
+  user: string
+  origin: string
+  model: string
+}
+
+function cleanHeader(value: string | null): string {
+  return String(value || '').replace(/[\r\n\t]/g, '').trim()
+}
+
+function getClientIp(req: Request): string {
+  const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
+  if (cfIp) return cfIp
+  const forwardedFor = cleanHeader(req.headers.get('x-forwarded-for'))
+  if (forwardedFor) {
+    const first = forwardedFor.split(',').map(item => item.trim()).find(Boolean)
+    if (first) return first
   }
-  entry.count++
-  return entry.count <= RATE_LIMIT_MAX
+  return cleanHeader(req.headers.get('x-real-ip')) || 'unknown'
+}
+
+function maskIdentifier(value: string): string {
+  const clean = cleanHeader(value)
+  if (!clean) return 'anonymous'
+  if (clean.length <= 10) return clean
+  return `${clean.slice(0, 6)}…${clean.slice(-4)}`
+}
+
+function getRequestContext(req: Request, service: string, endpoint = 'unknown', model = ''): RequestContext {
+  const ip = getClientIp(req)
+  const user = cleanHeader(req.headers.get('x-user-id')) || cleanHeader(req.headers.get('x-api-key'))
+  const ua = cleanHeader(req.headers.get('user-agent')).slice(0, 96) || 'unknown'
+  return {
+    service,
+    endpoint: cleanHeader(endpoint) || 'unknown',
+    model: cleanHeader(model) || 'unknown',
+    ip,
+    device: `${ip}|ua:${maskIdentifier(ua)}|user:${maskIdentifier(user)}`,
+    user: maskIdentifier(user),
+    origin: cleanHeader(req.headers.get('origin')) || 'none',
+  }
+}
+
+function logSecurityEvent(event: string, ctx: RequestContext, extra: Record<string, unknown> = {}): void {
+  console.info(`[security] ${JSON.stringify({ event, time: new Date().toISOString(), ...ctx, ...extra })}`)
+}
+
+function jsonResponse(payload: Record<string, unknown>, status: number, ch: Record<string, string>, extraHeaders: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...ch, ...extraHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
+function rejectDisallowedOrigin(req: Request, ch: Record<string, string>): Response | null {
+  if (getAllowedOrigin(req)) return null
+  return jsonResponse({ error: 'Origin not allowed', code: 'origin_not_allowed' }, 403, ch)
+}
+
+function getEndpointLimit(endpoint: string): number {
+  if (endpoint === 'ping') return 120
+  if (endpoint === 'web_search') return 12
+  if (endpoint === 'image' || endpoint === 'task') return 24
+  return RATE_LIMIT_MAX
+}
+
+function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false; action: 'challenge' | 'block'; reason: string; retryAfter: number } {
+  const now = Date.now()
+  const entry = abuseMap.get(key) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS, lastAt: 0, rapidHits: 0, challengeUntil: 0, blockedUntil: 0 }
+  if (entry.blockedUntil > now) {
+    return { ok: false, action: 'block', reason: 'blocked', retryAfter: Math.ceil((entry.blockedUntil - now) / 1000) }
+  }
+
+  if (!entry || now > entry.resetAt) {
+    entry.count = 0
+    entry.resetAt = now + RATE_LIMIT_WINDOW_MS
+    entry.rapidHits = Math.max(0, entry.rapidHits - 1)
+  }
+
+  const interval = entry.lastAt ? now - entry.lastAt : Number.POSITIVE_INFINITY
+  if (interval < RAPID_REQUEST_MS) {
+    entry.rapidHits += 1
+  } else {
+    entry.rapidHits = Math.max(0, entry.rapidHits - 1)
+  }
+  entry.count += 1
+  entry.lastAt = now
+  abuseMap.set(key, entry)
+
+  const limitHit = entry.count > max
+  const speedHit = entry.rapidHits >= 4
+  if (entry.challengeUntil > now) {
+    if (limitHit || speedHit || interval < RAPID_REQUEST_MS) {
+      entry.blockedUntil = now + BLOCK_DURATION_MS
+      abuseMap.set(key, entry)
+      return { ok: false, action: 'block', reason: limitHit ? 'challenge_limit_repeat' : 'challenge_speed_repeat', retryAfter: Math.ceil(BLOCK_DURATION_MS / 1000) }
+    }
+    return { ok: false, action: 'challenge', reason: 'challenge_required', retryAfter: Math.ceil((entry.challengeUntil - now) / 1000) }
+  }
+
+  if (limitHit || speedHit) {
+    entry.challengeUntil = now + CHALLENGE_DURATION_MS
+    abuseMap.set(key, entry)
+    return { ok: false, action: 'challenge', reason: limitHit ? 'rate_limit' : 'rapid_requests', retryAfter: Math.ceil(CHALLENGE_DURATION_MS / 1000) }
+  }
+
+  return { ok: true }
+}
+
+function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>): Response | null {
+  const max = getEndpointLimit(ctx.endpoint)
+  const scopes = [
+    `ip:${ctx.endpoint}:${ctx.ip}`,
+    `device:${ctx.endpoint}:${ctx.device}`,
+  ]
+
+  for (const scope of scopes) {
+    const result = inspectAbuseScope(scope, max)
+    if (result.ok) continue
+    logSecurityEvent(result.action, ctx, { reason: result.reason, retryAfter: result.retryAfter })
+    if (result.action === 'block') {
+      return jsonResponse({
+        error: 'access_blocked',
+        code: 'access_blocked',
+        message: '检测到异常高频请求，已暂时停止为此 IP 提供服务。',
+        retry_after_seconds: result.retryAfter,
+      }, 403, ch, { 'Retry-After': String(result.retryAfter) })
+    }
+    return jsonResponse({
+      error: 'challenge_required',
+      code: 'challenge_required',
+      message: '检测到异常发送速度。出于公平使用，本次请求需要安全验证或稍后重试。',
+      retry_after_seconds: result.retryAfter,
+    }, 403, ch, { 'Retry-After': String(result.retryAfter) })
+  }
+
+  return null
+}
+
+function rejectOversizedRequest(req: Request, ch: Record<string, string>, ctx: RequestContext): Response | null {
+  const contentLength = Number(req.headers.get('content-length') || 0)
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
+    logSecurityEvent('request_rejected', ctx, { reason: 'payload_too_large', contentLength })
+    return jsonResponse({ error: 'Payload too large' }, 413, ch)
+  }
+  return null
+}
+
+function getModelBlock(model: string): { retryAfter: number } | null {
+  const entry = modelAvailabilityMap.get(model)
+  const now = Date.now()
+  if (!entry || entry.blockedUntil <= now) return null
+  return { retryAfter: Math.ceil((entry.blockedUntil - now) / 1000) }
+}
+
+function isModelUnavailableStatus(status: number): boolean {
+  return status === 404 || status === 409 || status === 410 || status === 424 || status === 500 || status === 502 || status === 503 || status === 504
+}
+
+function recordModelAvailability(model: string, status: number, ctx: RequestContext): void {
+  if (!model) return
+  const now = Date.now()
+  if (status >= 200 && status < 300) {
+    modelAvailabilityMap.delete(model)
+    return
+  }
+  if (!isModelUnavailableStatus(status)) return
+  const entry = modelAvailabilityMap.get(model) || { failures: 0, resetAt: now + MODEL_UNAVAILABLE_WINDOW_MS, blockedUntil: 0 }
+  if (now > entry.resetAt) {
+    entry.failures = 0
+    entry.resetAt = now + MODEL_UNAVAILABLE_WINDOW_MS
+  }
+  entry.failures += 1
+  if (entry.failures >= MODEL_UNAVAILABLE_FAILURE_LIMIT) {
+    entry.blockedUntil = now + MODEL_UNAVAILABLE_BLOCK_MS
+    logSecurityEvent('model_blocked', ctx, { model, status, retryAfter: Math.ceil(MODEL_UNAVAILABLE_BLOCK_MS / 1000) })
+  }
+  modelAvailabilityMap.set(model, entry)
+}
+
+function modelBlockedResponse(model: string, retryAfter: number, ch: Record<string, string>): Response {
+  return jsonResponse({
+    error: 'model_temporarily_unavailable',
+    code: 'model_temporarily_unavailable',
+    model,
+    message: '该模型近期连续不可用，已临时关闭一小时。',
+    retry_after_seconds: retryAfter,
+  }, 503, ch, { 'Retry-After': String(retryAfter) })
 }
 
 function validateProxyAuth(req: Request): boolean {
@@ -50,6 +250,8 @@ function validateProxyAuth(req: Request): boolean {
 
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1'
 const MODELSCOPE_API_KEY = (Deno.env.get('MODELSCOPE_API_KEY') || '').trim()
+const MODELSCOPE_API_KEY_1 = (Deno.env.get('MODELSCOPE_API_KEY_1') || '').trim()
+const MODELSCOPE_API_KEY_2 = (Deno.env.get('MODELSCOPE_API_KEY_2') || '').trim()
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
@@ -58,7 +260,10 @@ const OPENAI_COMPATIBLE_API_KEY = Deno.env.get('OPENAI_COMPATIBLE_API_KEY') || '
 const MOONSHOT_BASE_URL = (Deno.env.get('MOONSHOT_BASE_URL') || 'https://api.moonshot.cn/v1').replace(/\/$/, '')
 const MOONSHOT_API_KEY = Deno.env.get('MOONSHOT_API_KEY') || ''
 const DASHSCOPE_COMPATIBLE_BASE_URL = (Deno.env.get('DASHSCOPE_COMPATIBLE_BASE_URL') || 'https://dashscope.aliyuncs.com/compatible-mode/v1').replace(/\/$/, '')
-const DASHSCOPE_API_KEY = Deno.env.get('DASHSCOPE_API_KEY') || ''
+const DASHSCOPE_API_KEY = (Deno.env.get('DASHSCOPE_API_KEY') || '').trim()
+const DASHSCOPE_API_KEY_1 = (Deno.env.get('DASHSCOPE_API_KEY_1') || '').trim()
+const DASHSCOPE_API_KEY_2 = (Deno.env.get('DASHSCOPE_API_KEY_2') || Deno.env.get('DASHSCOPE_API_KEY_NEW') || '').trim()
+let dashScopeKeyCursor = 0
 
 const SILICONFLOW_BASE_URL = (Deno.env.get('SILICONFLOW_BASE_URL') || 'https://api.siliconflow.cn/v1').replace(/\/$/, '')
 const SILICONFLOW_API_KEY = Deno.env.get('SILICONFLOW_API_KEY') || ''
@@ -68,7 +273,7 @@ const OPENROUTER_API_KEY_1 = Deno.env.get('OPENROUTER_API_KEY_1') || ''
 const OPENROUTER_API_KEY_2 = Deno.env.get('OPENROUTER_API_KEY_2') || ''
 const OPENROUTER_API_KEY_3 = Deno.env.get('OPENROUTER_API_KEY_3') || ''
 
-const SPARK_BASE_URL = (Deno.env.get('SPARK_BASE_URL') || 'https://spark-api-open.xf-yun.com/x2').replace(/\/$$/, '')
+const SPARK_BASE_URL = (Deno.env.get('SPARK_BASE_URL') || 'https://spark-api-open.xf-yun.com/x2').replace(/\/+$/, '')
 const SPARK_API_KEY = Deno.env.get('SPARK_API_KEY') || ''
 
 const MIMO_BASE_URL = (Deno.env.get('MIMO_BASE_URL') || 'https://api.xiaomimimo.com/v1').replace(/\/$/, '')
@@ -86,7 +291,7 @@ function isMoonshotModel(model: string): boolean {
 
 function isDashScopeCompatibleModel(model: string): boolean {
   const dashScopeModels = [
-    'kimi-k2.6', 'glm-5', 'glm-5.1', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'deepseek-v4-flash',
+    'kimi-k2.6', 'glm-5', 'glm-5.1', 'glm-5.1-dashscope', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'deepseek-v4-flash', 'deepseek-v4-pro-dashscope',
     // 百炼新增模型
     'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp',
     'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max',
@@ -102,10 +307,12 @@ function toDashScopeModelId(model: string): string {
     'kimi-k2.6': 'kimi-k2.6',
     'glm-5': 'glm-5',
     'glm-5.1': 'glm-5.1',
+    'glm-5.1-dashscope': 'glm-5.1',
     'glm-4.7': 'glm-4.7',
     'qwen3.6-plus': 'qwen3.6-plus',
     'qwen3.6-max-preview': 'qwen3.6-max-preview',
     'deepseek-v4-flash': 'deepseek-v4-flash',
+    'deepseek-v4-pro-dashscope': 'deepseek-v4-pro',
     // 百炼新增模型 - 使用真实模型ID
     'deepseek-r1': 'deepseek-r1',
     'qwen3.6-flash': 'qwen3.6-flash',
@@ -122,6 +329,38 @@ function toDashScopeModelId(model: string): string {
     'deepseek-r1-0528': 'deepseek-r1-0528'
   }
   return modelMap[model] || model
+}
+
+function expandProviderKeys(keys: string[]): string[] {
+  return keys.flatMap(key => key.split(/[\s,;]+/).map(item => item.trim()).filter(Boolean))
+}
+
+function uniqueProviderKeys(keys: string[]): string[] {
+  return Array.from(new Set(expandProviderKeys(keys)))
+}
+
+function getDashScopeKeyPool(model: string): string[] {
+  const oldKeys = uniqueProviderKeys([DASHSCOPE_API_KEY, DASHSCOPE_API_KEY_1])
+  const newKeys = uniqueProviderKeys([DASHSCOPE_API_KEY_2])
+  if (model === 'deepseek-v4-pro-dashscope' || model === 'glm-5.1' || model === 'glm-5.1-dashscope') {
+    return newKeys
+  }
+  return uniqueProviderKeys([...oldKeys, ...newKeys])
+}
+
+function pickDashScopeApiKey(model: string): string {
+  const keys = getDashScopeKeyPool(model)
+  if (!keys.length) return ''
+  const key = keys[dashScopeKeyCursor % keys.length] || ''
+  dashScopeKeyCursor = (dashScopeKeyCursor + 1) % Math.max(keys.length, 1)
+  return key
+}
+
+function getDashScopeMissingKeys(model: string): string[] {
+  if (model === 'deepseek-v4-pro-dashscope' || model === 'glm-5.1' || model === 'glm-5.1-dashscope') {
+    return ['DASHSCOPE_API_KEY_2 or DASHSCOPE_API_KEY_NEW']
+  }
+  return ['DASHSCOPE_API_KEY or DASHSCOPE_API_KEY_1 or DASHSCOPE_API_KEY_2']
 }
 
 function isSiliconFlowModel(model: string): boolean {
@@ -208,15 +447,24 @@ async function handlePingRequest(requestData: Record<string, unknown>, req: Requ
   const start = performance.now()
 
   try {
-    const response = await fetch(pingUrl, {
-      method: 'HEAD',
-      headers: {
-        'Accept': '*/*',
-        'User-Agent': USER_AGENT,
-      },
-    })
+    const modelScopeKeys = provider === 'modelscope' ? await resolveModelScopeApiKeys() : []
+    const basePingHeaders: Record<string, string> = {
+      'Accept': '*/*',
+      'User-Agent': USER_AGENT,
+    }
+    const responses = provider === 'modelscope' && modelScopeKeys.length
+      ? await Promise.all(modelScopeKeys.map(apiKey => fetch(pingUrl, {
+        method: 'HEAD',
+        headers: { ...basePingHeaders, 'Authorization': `Bearer ${apiKey}` },
+      })))
+      : [await fetch(pingUrl, {
+        method: 'HEAD',
+        headers: basePingHeaders,
+      })]
+    const response = responses[0]
 
     const latencyMs = Math.max(0, Math.round(performance.now() - start))
+    const rateLimitHeaders = provider === 'modelscope' ? collectModelScopeRateLimitHeaders(responses.map(item => item.headers)) : {}
     return new Response(JSON.stringify({
       ok: true,
       model,
@@ -227,7 +475,7 @@ async function handlePingRequest(requestData: Record<string, unknown>, req: Requ
       latencyMs,
     }), {
       status: 200,
-      headers: { ...ch, 'Content-Type': 'application/json' },
+      headers: { ...ch, 'Content-Type': 'application/json', ...rateLimitHeaders },
     })
   } catch (error) {
     const latencyMs = Math.max(0, Math.round(performance.now() - start))
@@ -270,22 +518,36 @@ function isPlaceholderModelScopeKey(value: string): boolean {
   return !normalized || normalized === 'YOUR_MODELSCOPE_API_KEY' || normalized === 'REPLACE_WITH_YOUR_MODELSCOPE_API_KEY'
 }
 
-let cachedModelScopeApiKey = ''
+let cachedModelScopeApiKeys: string[] = []
 let modelScopeApiKeyLoaded = false
 
-async function resolveModelScopeApiKey(): Promise<string> {
-  if (!isPlaceholderModelScopeKey(MODELSCOPE_API_KEY)) {
-    return MODELSCOPE_API_KEY
+function expandModelScopeKeys(keys: string[]): string[] {
+  return keys.flatMap(key => key.split(/[\s,;]+/).map(item => item.trim()).filter(Boolean))
+}
+
+function uniqueModelScopeKeys(keys: string[]): string[] {
+  return Array.from(new Set(expandModelScopeKeys(keys).filter(key => !isPlaceholderModelScopeKey(key))))
+}
+
+function pickRandomModelScopeKey(keys: string[]): string {
+  if (!keys.length) return ''
+  return keys[Math.floor(Math.random() * keys.length)] || ''
+}
+
+async function resolveModelScopeApiKeys(): Promise<string[]> {
+  const envKeys = uniqueModelScopeKeys([MODELSCOPE_API_KEY, MODELSCOPE_API_KEY_1, MODELSCOPE_API_KEY_2])
+  if (envKeys.length) {
+    return envKeys
   }
 
   if (modelScopeApiKeyLoaded) {
-    return cachedModelScopeApiKey
+    return cachedModelScopeApiKeys
   }
 
   modelScopeApiKeyLoaded = true
 
   if (!SUPABASE_SERVICE_ROLE_KEY) {
-    return ''
+    return []
   }
 
   try {
@@ -298,18 +560,47 @@ async function resolveModelScopeApiKey(): Promise<string> {
 
     if (error) {
       console.error('读取 ModelScope API key 失败:', error)
-      return ''
+      return []
     }
 
     const apiKey = String(data?.api_key || '').trim()
     if (!isPlaceholderModelScopeKey(apiKey)) {
-      cachedModelScopeApiKey = apiKey
+      cachedModelScopeApiKeys = uniqueModelScopeKeys([apiKey])
     }
   } catch (error) {
     console.error('读取 ModelScope API key 时发生异常:', error)
   }
 
-  return cachedModelScopeApiKey
+  return cachedModelScopeApiKeys
+}
+
+async function resolveModelScopeApiKey(): Promise<string> {
+  return pickRandomModelScopeKey(await resolveModelScopeApiKeys())
+}
+
+function parseProviderHeaderInteger(value: string | null): number | null {
+  if (!value) return null
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function collectModelScopeRateLimitHeaders(headersList: Headers[]): Record<string, string> {
+  const headerPairs = [
+    ['modelscope-ratelimit-requests-limit', 'modelscope-ratelimit-requests-limit'],
+    ['modelscope-ratelimit-requests-remaining', 'modelscope-ratelimit-requests-remaining'],
+    ['modelscope-ratelimit-model-requests-limit', 'modelscope-ratelimit-model-requests-limit'],
+    ['modelscope-ratelimit-model-requests-remaining', 'modelscope-ratelimit-model-requests-remaining'],
+  ] as const
+  const output: Record<string, string> = {}
+  for (const [sourceKey, outputKey] of headerPairs) {
+    const values = headersList
+      .map(headers => parseProviderHeaderInteger(headers.get(sourceKey) || headers.get(sourceKey.replace(/(^|-)([a-z])/g, item => item.toUpperCase()))))
+      .filter((value): value is number => Number.isFinite(value))
+    if (values.length) {
+      output[outputKey] = String(values.reduce((sum, value) => sum + value, 0))
+    }
+  }
+  return output
 }
 
 function resolveDuckDuckGoUrl(rawHref: string): string {
@@ -505,44 +796,49 @@ async function handleWebSearchRequest(requestData: Record<string, unknown>, req:
 
 serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
+  const startedAt = performance.now()
+  const originResponse = rejectDisallowedOrigin(req, ch)
+  if (originResponse) return originResponse
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: ch })
   }
 
-  // Proxy auth check (temporarily disabled for emergency recovery)
-  // if (!validateProxyAuth(req)) {
-  //   return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-  //     status: 401,
-  //     headers: { ...ch, 'Content-Type': 'application/json' },
-  //   })
-  // }
-
-  // Rate limiting
-  const rateLimitKey = req.headers.get('x-user-id') || req.headers.get('x-api-key') || req.headers.get('cf-connecting-ip') || 'anonymous'
-  if (!checkRateLimit(rateLimitKey)) {
-    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-      status: 429,
-      headers: { ...ch, 'Content-Type': 'application/json' },
-    })
-  }
-
   try {
+    const baseCtx = getRequestContext(req, 'modelscope-proxy')
+    const oversized = rejectOversizedRequest(req, ch, baseCtx)
+    if (oversized) return oversized
+
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
     const { endpoint = 'chat', ...requestData } = body
-
-    if (endpoint === 'web_search') {
-      return await handleWebSearchRequest(requestData, req)
-    }
-
-    if (endpoint === 'ping') {
-      return await handlePingRequest(requestData, req)
-    }
-
+    const endpointName = cleanHeader(String(endpoint || 'chat'))
     const model = String(requestData.model || '')
+    const ctx = getRequestContext(req, 'modelscope-proxy', endpointName, model)
+    const abuseResponse = enforceAbuseGuard(ctx, ch)
+    if (abuseResponse) return abuseResponse
+    logSecurityEvent('request_started', ctx, { method: req.method })
+
+    if (endpointName === 'web_search') {
+      const response = await handleWebSearchRequest(requestData, req)
+      logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt) })
+      return response
+    }
+
+    if (endpointName === 'ping') {
+      const response = await handlePingRequest(requestData, req)
+      logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt) })
+      return response
+    }
+
+    const block = getModelBlock(model)
+    if (block) {
+      logSecurityEvent('model_block_active', ctx, { model, retryAfter: block.retryAfter })
+      return modelBlockedResponse(model, block.retryAfter, ch)
+    }
+
     const provider = getProviderKind(model)
     const modelScopeApiKey = provider === 'modelscope' ? await resolveModelScopeApiKey() : ''
+    const dashScopeApiKey = provider === 'dashscope' ? pickDashScopeApiKey(model) : ''
 
     if (provider === 'openai_compatible' && (!OPENAI_COMPATIBLE_BASE_URL || !OPENAI_COMPATIBLE_API_KEY)) {
       return providerConfigError(provider, [
@@ -576,8 +872,8 @@ serve(async (req: Request) => {
       return providerConfigError(provider, ['MOONSHOT_API_KEY'], ch)
     }
 
-    if (provider === 'dashscope' && !DASHSCOPE_API_KEY) {
-      return providerConfigError(provider, ['DASHSCOPE_API_KEY'], ch)
+    if (provider === 'dashscope' && !dashScopeApiKey) {
+      return providerConfigError(provider, getDashScopeMissingKeys(model), ch)
     }
 
     if (provider === 'siliconflow' && !SILICONFLOW_API_KEY) {
@@ -635,7 +931,7 @@ serve(async (req: Request) => {
     }
 
     // Configure based on endpoint type and model
-    if (endpoint === 'image') {
+    if (endpointName === 'image') {
       if (provider === 'openai_compatible') {
         url = `${OPENAI_COMPATIBLE_BASE_URL}/images/generations`
         headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
@@ -649,7 +945,7 @@ serve(async (req: Request) => {
         headers['Authorization'] = `Bearer ${modelScopeApiKey}`
         headers['X-ModelScope-Async-Mode'] = 'true'
       }
-    } else if (endpoint === 'task') {
+    } else if (endpointName === 'task') {
       if (provider !== 'modelscope') {
         return new Response(JSON.stringify({ error: 'Task polling not supported for this provider' }), {
           status: 400,
@@ -678,7 +974,7 @@ serve(async (req: Request) => {
         headers['Authorization'] = `Bearer ${MOONSHOT_API_KEY}`
       } else if (provider === 'dashscope') {
         url = `${DASHSCOPE_COMPATIBLE_BASE_URL}/chat/completions`
-        headers['Authorization'] = `Bearer ${DASHSCOPE_API_KEY}`
+        headers['Authorization'] = `Bearer ${dashScopeApiKey}`
       } else if (provider === 'siliconflow') {
         url = `${SILICONFLOW_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${SILICONFLOW_API_KEY}`
@@ -706,6 +1002,7 @@ serve(async (req: Request) => {
       headers,
       body: JSON.stringify(forwardedRequestData),
     })
+    recordModelAvailability(model, response.status, ctx)
 
     // Handle streaming response
     if (response.headers.get('content-type')?.includes('text/event-stream')) {
@@ -740,6 +1037,8 @@ serve(async (req: Request) => {
         }
       })
 
+      logSecurityEvent('request_finished', ctx, { status: response.status, provider, streamed: true, durationMs: Math.round(performance.now() - startedAt) })
+
       return new Response(stream, {
         headers: { ...ch, 'Content-Type': 'text/event-stream', ...rateLimitHeaders },
         status: response.status,
@@ -757,14 +1056,17 @@ serve(async (req: Request) => {
       }
     })
 
+    logSecurityEvent('request_finished', ctx, { status: response.status, provider, durationMs: Math.round(performance.now() - startedAt) })
+
     return new Response(JSON.stringify(data), {
       headers: { ...ch, 'Content-Type': 'application/json', ...rateLimitHeaders },
       status: response.status,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error('modelscope-proxy internal error:', message)
-    return new Response(JSON.stringify({ error: 'Internal error', detail: message.slice(0, 300) }), {
+    const ctx = getRequestContext(req, 'modelscope-proxy')
+    logSecurityEvent('request_failed', ctx, { durationMs: Math.round(performance.now() - startedAt), error: message.slice(0, 160) })
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
       headers: { ...ch, 'Content-Type': 'application/json' },
       status: 500,
     })
