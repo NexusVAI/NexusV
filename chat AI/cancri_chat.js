@@ -2666,7 +2666,9 @@
         'qwen3-max': '由NexusV支持的Qwen3-Max模型（百炼）',
         'kimi-k2-instruct': '由NexusV支持的Kimi-K2-Instruct模型（百炼）',
         'qwen3.6-plus-20260402': '由NexusV支持的Qwen3.6-Plus模型（百炼线路三）',
-        'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（百炼线路三）'
+        'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（百炼线路三）',
+        // MiMo 模型
+        'mimo-v2.5-pro': '由NexusV支持的MiMo-V2.5-Pro模型（小米）'
       };
       return identities[modelId] || identities['deepseek-v4-flash'];
     }
