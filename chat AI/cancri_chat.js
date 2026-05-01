@@ -4860,3 +4860,62 @@
         }
       });
     }
+
+    // 轮播公告逻辑
+    function initAnnouncementCarousel() {
+      const carousel = document.getElementById('announcementCarousel');
+      if (!carousel) return;
+
+      const items = carousel.querySelectorAll('.announcement-item');
+      const indicators = carousel.querySelectorAll('.indicator');
+      const total = items.length;
+      if (total === 0) return;
+
+      let currentIndex = 0;
+      let intervalId = null;
+      const INTERVAL_DURATION = 4000; // 4秒切换
+
+      function showItem(index) {
+        items.forEach((item, i) => {
+          item.classList.toggle('active', i === index);
+        });
+        indicators.forEach((ind, i) => {
+          ind.classList.toggle('active', i === index);
+        });
+        currentIndex = index;
+      }
+
+      function nextItem() {
+        const next = (currentIndex + 1) % total;
+        showItem(next);
+      }
+
+      function startAutoPlay() {
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(nextItem, INTERVAL_DURATION);
+      }
+
+      function stopAutoPlay() {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }
+
+      // 指示器点击事件
+      indicators.forEach((ind, i) => {
+        ind.addEventListener('click', () => {
+          showItem(i);
+          startAutoPlay(); // 重置计时
+        });
+      });
+
+      // 鼠标悬停暂停
+      carousel.addEventListener('mouseenter', stopAutoPlay);
+      carousel.addEventListener('mouseleave', startAutoPlay);
+
+      // 开始自动轮播
+      startAutoPlay();
+    }
+
+    initAnnouncementCarousel();
