@@ -8,18 +8,33 @@
     window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';
     window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
   </script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=mathfix-0502" />
+  <link rel="stylesheet" href="./cancri_chat.css?v=mathfix2-0502" />
   <!-- KaTeX for math rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous"
-    onerror="this.onerror=null;this.href='https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.css';">
   <script>
-    // 加载 KaTeX，支持多 CDN 回退
+    // 加载 KaTeX CSS + JS，国内 CDN 优先
     (function() {
       var cdns = [
+        'https://cdn.staticfile.org/katex@0.16.9/dist/',
+        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/',
+        'https://lib.baomitu.com/KaTeX/0.16.9/',
         'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/',
-        'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/',
         'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/'
       ];
+
+      // 动态加载 CSS
+      function loadCSS(href) {
+        return new Promise(function(resolve, reject) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href;
+          link.crossOrigin = 'anonymous';
+          link.onload = resolve;
+          link.onerror = reject;
+          document.head.appendChild(link);
+        });
+      }
+
+      // 动态加载 JS
       function loadScript(src) {
         return new Promise(function(resolve, reject) {
           var s = document.createElement('script');
@@ -30,15 +45,19 @@
           document.head.appendChild(s);
         });
       }
+
       function tryLoadCDN(index) {
         if (index >= cdns.length) {
           console.warn('All KaTeX CDNs failed');
           window.__KATEX_FAILED__ = true;
+          // 最终降级：尝试内联样式让公式至少不显示为原始文本
           return;
         }
-        loadScript(cdns[index] + 'katex.min.js')
-          .then(function() { return loadScript(cdns[index] + 'contrib/auto-render.min.js'); })
-          .then(function() { console.log('KaTeX loaded from:', cdns[index]); })
+        var url = cdns[index];
+        loadCSS(url + 'katex.min.css')
+          .then(function() { return loadScript(url + 'katex.min.js'); })
+          .then(function() { return loadScript(url + 'contrib/auto-render.min.js'); })
+          .then(function() { console.log('KaTeX loaded from:', url); })
           .catch(function() { tryLoadCDN(index + 1); });
       }
       tryLoadCDN(0);
@@ -980,6 +999,6 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=mathfix-0502"></script>
+  <script src="./cancri_chat.js?v=mathfix2-0502"></script>
 </body>
 </html>
