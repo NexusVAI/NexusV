@@ -2554,6 +2554,8 @@
       // 先保护数学公式，避免被 escapeHtml 转义
       let output = text
         .replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => keep(`$$${formula}$$`))
+        .replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => keep(`\\[${formula}\\]`))
+        .replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) => keep(`\\(${formula}\\)`))
         .replace(/\$([^\$\s][^\$]*?)\$/g, (match, formula) => keep(`$${formula}$`))
         .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${escapeHtml(code)}</code>`))
         .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
@@ -2632,6 +2634,8 @@
       let listItems = [];
       let codeLines = [];
       let inCode = false;
+      let mathLines = [];
+      let inMath = false;
 
       function flushParagraph() {
         if (!paragraph.length) return;
@@ -2659,6 +2663,12 @@
         codeLines = [];
       }
 
+      function flushMath() {
+        if (!mathLines.length) return;
+        blocks.push(`<p>\\[${mathLines.join('\n')}\\]</p>`);
+        mathLines = [];
+      }
+
       for (let i = 0; i < lines.length; i += 1) {
         const line = lines[i];
 
@@ -2669,6 +2679,7 @@
           } else {
             flushParagraph();
             flushList();
+            flushMath();
             inCode = true;
           }
           continue;
@@ -2676,6 +2687,23 @@
 
         if (inCode) {
           codeLines.push(line);
+          continue;
+        }
+
+        // 处理 \[...\] 数学公式块
+        if (line.trim() === '\\[' && !inMath) {
+          flushParagraph();
+          flushList();
+          inMath = true;
+          continue;
+        }
+        if (line.trim() === '\\]' && inMath) {
+          flushMath();
+          inMath = false;
+          continue;
+        }
+        if (inMath) {
+          mathLines.push(line);
           continue;
         }
 
@@ -2755,6 +2783,7 @@
       flushParagraph();
       flushList();
       flushCode();
+      flushMath();
 
       return blocks.join('');
     }
@@ -2772,13 +2801,14 @@
             window.renderMathInElement(element, {
               delimiters: [
                 { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '\\(', right: '\\)', display: false },
                 { left: '$', right: '$', display: false }
               ],
               throwOnError: false,
               trust: false,
               strict: false
             });
-            console.log('KaTeX rendered successfully');
           } catch (e) {
             // 渲染失败不影响主流程
             console.warn('KaTeX render error:', e);

@@ -9,10 +9,22 @@
     window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
   </script>
   <link rel="stylesheet" href="./cancri_chat.css?v=maintenance-0501" />
-  <!-- KaTeX for math rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <!-- KaTeX for math rendering (with fallback CDNs) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous"
+    onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css';">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script>
+    // KaTeX fallback: if jsdelivr fails, try cdnjs
+    if (typeof katex === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"><\/script>');
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <script>
+    if (typeof renderMathInElement === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"><\/script>');
+    }
+  </script>
 </head>
 <body>
   <div class="app" id="appRoot">
