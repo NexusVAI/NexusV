@@ -18,6 +18,7 @@ function normalizeAllowedOrigin(value: string): string {
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
 const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') || '').replace(/\/+$/, '')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
@@ -31,7 +32,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
   return {
     'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type, accept, origin, x-chat-turn-id',
+    'Access-Control-Allow-Headers': 'authorization, apikey, x-client-info, content-type, accept, origin, x-chat-turn-id',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'x-cancri-user-limit, x-cancri-user-remaining, x-cancri-model-limit, x-cancri-model-remaining, retry-after',
@@ -166,7 +167,8 @@ async function forwardToModelProxy(req: Request, ch: Record<string, string>, bod
     method: 'POST',
     headers: appendForwardHeaders(req, {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': SUPABASE_SERVICE_ROLE_KEY,
+      'X-Internal-Secret': SUPABASE_SERVICE_ROLE_KEY,
       'X-Forwarded-User-Id': userId,
     }),
     body: JSON.stringify({ ...body, endpoint }),
@@ -186,6 +188,7 @@ async function forwardToWebSearch(req: Request, ch: Record<string, string>, body
     method: 'POST',
     headers: appendForwardHeaders(req, {
       'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
       'Authorization': `Bearer ${jwt}`,
     }),
     body: JSON.stringify({ ...body, endpoint }),
@@ -247,6 +250,7 @@ async function forwardToChatHistory(req: Request, ch: Record<string, string>, bo
     method: forward.method,
     headers: appendForwardHeaders(req, {
       'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
       'Authorization': `Bearer ${jwt}`,
     }),
     body: forward.payload ? JSON.stringify(forward.payload) : undefined,

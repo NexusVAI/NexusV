@@ -81,7 +81,8 @@ function decodeJwtSubject(token: string): string {
 }
 
 function getForwardedUserId(req: Request): string {
-  if (!SUPABASE_SERVICE_ROLE_KEY || getBearerToken(req) !== SUPABASE_SERVICE_ROLE_KEY) return ''
+  const internalSecret = cleanHeader(req.headers.get('x-internal-secret'))
+  if (!SUPABASE_SERVICE_ROLE_KEY || internalSecret !== SUPABASE_SERVICE_ROLE_KEY) return ''
   return cleanHeader(req.headers.get('x-forwarded-user-id'))
 }
 

@@ -387,7 +387,7 @@ port = 54327
 backend = "postgres"
 
 [functions.modelscope-proxy]
-verify_jwt = true
+verify_jwt = false
 
 [functions.chat-gateway]
 verify_jwt = true
