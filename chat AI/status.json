@@ -1,42 +1,42 @@
 {
-  "lastUpdated": "2026-05-02T09:53:00+08:00",
-  "overallStatus": "degraded",
-  "incident": "部分模型服务异常或中断",
+  "lastUpdated": "2026-05-02T21:09:00+08:00",
+  "overallStatus": "down",
+  "incident": "NexusV AI服务异常 - 我们发现平台存在服务异常，正在积极排查。影响范围：[所有AI服务] 预计恢复时间：[~30分钟]",
   "services": [
     {
       "name": "DeepSeek-V4-Flash",
       "description": "闪电 · 快速 · 线路一",
-      "status": "degraded"
+      "status": "down"
     },
     {
       "name": "DeepSeek-V4-Pro",
       "description": "Pro研究级模型 · 线路一",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-V4-Pro",
       "description": "Pro研究级模型 · 线路二",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Step-3.5",
       "description": "阶跃星辰 · 快准狠",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "混元3",
       "description": "国产腾讯旗下最新AI · 低限额",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "GPT-5.4",
       "description": "OpenAI · 每日限流",
-      "status": "degraded"
+      "status": "down"
     },
     {
       "name": "chatGPT-OSS",
       "description": "OpenAI · 慢",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Nemotron-3-super",
@@ -56,52 +56,52 @@
     {
       "name": "spark-x2",
       "description": "星火推理模型",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-R1",
       "description": "强推理",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Qwen 3.5",
       "description": "多模态 · 全能型AI",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Qwen3-Coder",
       "description": "多模态 · 编码专项",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Kimi K2.5",
       "description": "多模态 · 复杂任务处理",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Kimi K2.6",
       "description": "多模态 · 超复杂编程 · 线路一",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Kimi K2.6",
       "description": "多模态 · 线路二 · 官方API",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Kimi K2.6",
       "description": "多模态 · 线路三",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "GLM-5",
       "description": "深度编程",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "GLM-5.1",
       "description": "复杂编码处理 · 线路一",
-      "status": "degraded"
+      "status": "down"
     },
     {
       "name": "GLM-5.1",
@@ -116,37 +116,37 @@
     {
       "name": "qwen3.6-max-preview",
       "description": "预览",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "qwen3.6-plus",
       "description": "多模态 · 均衡之选",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "MiniMax-M2.5",
       "description": "新 · 性价比之选 快速",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-R1",
       "description": "强推理 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Qwen3.6-Flash",
       "description": "多模态 · 快速 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Kimi K2.5",
       "description": "多模态 · 线路二 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-V3.2",
       "description": "百炼 · 稳定",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-V3.2-Exp",
@@ -156,27 +156,27 @@
     {
       "name": "GLM-4.5-Air",
       "description": "轻量 · 百炼",
-      "status": "degraded"
+      "status": "down"
     },
     {
       "name": "MiniMax-M2.5",
       "description": "线路二 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-V3.1",
       "description": "百炼 · 均衡",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Qwen3-Coder-Plus",
       "description": "多模态 · 专业编码 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Qwen3-Max",
       "description": "多模态 · 旗舰 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "Kimi-K2-Instruct",
@@ -186,27 +186,42 @@
     {
       "name": "Qwen3.6-Plus",
       "description": "多模态 · 2026-04-02 · 线路三 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "DeepSeek-R1-0528",
       "description": "强推理 · 线路三 · 百炼",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "MiMo-2.5-Pro",
       "description": "小米 · 长程任务第一",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "MiMo-2.5-TTS",
       "description": "小米 · 语音合成",
-      "status": "operational"
+      "status": "down"
     },
     {
       "name": "MiMo-2.5-TTS-VoiceDesign",
       "description": "小米 · 语音定制",
-      "status": "operational"
+      "status": "down"
+    },
+    {
+      "name": "Claude-Opus-4.6",
+      "description": "Anthropic · 旗舰推理",
+      "status": "down"
+    },
+    {
+      "name": "Claude-Sonnet-4.6",
+      "description": "Anthropic · 均衡全能",
+      "status": "down"
+    },
+    {
+      "name": "Gemini-2.5-Pro",
+      "description": "Google · 多模态旗舰",
+      "status": "down"
     }
   ]
 }
