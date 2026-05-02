@@ -2551,16 +2551,18 @@
         placeholders.push([token, html]);
         return token;
       };
-      let output = escapeHtml(text)
-        // 保护数学公式不被 Markdown 处理
+      // 先保护数学公式，避免被 escapeHtml 转义
+      let output = text
         .replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => keep(`$$${formula}$$`))
         .replace(/\$([^\$\s][^\$]*?)\$/g, (match, formula) => keep(`$${formula}$`))
-        .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${code}</code>`))
+        .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${escapeHtml(code)}</code>`))
         .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
           const href = safeUrl(url);
           if (href === '#') return label;
-          return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-        })
+          return keep(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
+        });
+      // 转义剩余的 HTML
+      output = escapeHtml(output)
         .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
         .replace(/__([^_\n]+)__/g, '<strong>$1</strong>')
         .replace(/~~([^~\n]+)~~/g, '<del>$1</del>')
@@ -2758,20 +2760,43 @@
     }
 
     function renderMathInElement(element) {
-      if (typeof window === 'undefined' || !window.renderMathInElement) return;
-      try {
-        window.renderMathInElement(element, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false }
-          ],
-          throwOnError: false,
-          trust: false,
-          strict: false
-        });
-      } catch (e) {
-        // 渲染失败不影响主流程
-      }
+      if (typeof window === 'undefined' || !element) return;
+
+      // 如果 KaTeX 未加载，等待加载完成
+      let retryCount = 0;
+      const maxRetries = 50; // 最多重试 50 次 (5秒)
+
+      const tryRender = () => {
+        if (window.renderMathInElement) {
+          try {
+            window.renderMathInElement(element, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false }
+              ],
+              throwOnError: false,
+              trust: false,
+              strict: false
+            });
+            console.log('KaTeX rendered successfully');
+          } catch (e) {
+            // 渲染失败不影响主流程
+            console.warn('KaTeX render error:', e);
+          }
+        } else if (retryCount < maxRetries) {
+          // KaTeX 未加载，延迟 100ms 后重试
+          retryCount++;
+          if (retryCount === 1) {
+            console.log('KaTeX not loaded yet, waiting...');
+          }
+          setTimeout(tryRender, 100);
+        } else {
+          console.warn('KaTeX failed to load after', maxRetries, 'retries');
+          console.log('window.renderMathInElement exists:', !!window.renderMathInElement);
+        }
+      };
+
+      tryRender();
     }
 
     function renderAnimatedMarkdown(markdown) {
@@ -2788,7 +2813,7 @@
     function renderMathInMessage(messageId) {
       const messageDiv = document.getElementById(messageId);
       if (!messageDiv) return;
-      const answerBody = messageDiv.querySelector('.message-answer-body');
+      const answerBody = messageDiv.querySelector('.answer-body');
       if (answerBody) renderMathInElement(answerBody);
     }
 
@@ -2814,6 +2839,8 @@
 
       blockElement.classList.toggle('is-streaming', Boolean(thinking));
       blockElement.innerHTML = renderMarkdown(nextText);
+      // 渲染数学公式
+      renderMathInElement(blockElement);
       streamState.text = nextText;
       streamState.ready = true;
       streamState.thinking = thinking;
