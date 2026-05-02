@@ -2553,10 +2553,10 @@
       };
       // 先保护数学公式，避免被 escapeHtml 转义
       let output = text
-        .replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => keep(`$$${formula}$$`))
+        .replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => keep(`$$${formula.trim()}$$`))
         .replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => keep(`\\[${formula}\\]`))
         .replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) => keep(`\\(${formula}\\)`))
-        .replace(/\$([^\$\s][^\$]*?)\$/g, (match, formula) => keep(`$${formula}$`))
+        .replace(/\$\s*([^\$]+?)\s*\$/g, (match, formula) => keep(`$${formula.trim()}$`))
         .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${escapeHtml(code)}</code>`))
         .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
           const href = safeUrl(url);
@@ -3095,7 +3095,7 @@
         '- 不要为了显得智能而跳过工具；该查就查。',
         '- 工具结果不足时，先继续调用工具或向用户补充确认。',
         '- 回答尽量使用简洁 Markdown。',
-        '- 输出数学公式时，使用 LaTeX 格式：行内公式用 $...$（如 $E=mc^2$），独立公式用 $$...$$（如 $$\\sum_{i=1}^n x_i$$）。',
+        '- 输出数学公式时，必须使用 LaTeX 格式：行内公式用 $...$（如 $E=mc^2$），独立公式用 $$...$$（如 $$\\sum_{i=1}^n x_i$$）。**严格要求：$符号与公式内容之间不能有空格，正确写法是 $E=mc^2$，错误写法是 $ E=mc^2 $。**',
         '',
         '# Examples',
         'User: 你们网站最近更新了什么 AI 相关文章？',
