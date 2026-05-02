@@ -9,55 +9,50 @@
     window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
   </script>
   <link rel="stylesheet" href="./cancri_chat.css?v=mathfix2-0502" />
-  <!-- KaTeX for math rendering: 本地优先，CDN 兜底 -->
+  <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
+  <link rel="stylesheet" href="./katex/katex.min.css" />
+  <script src="./katex/katex.min.js"></script>
+  <script src="./katex/contrib/auto-render.min.js"></script>
   <script>
+    // 检测本地 KaTeX 是否加载成功，失败则从 CDN 补加载
     (function() {
-      // 本地路径 + CDN 回退列表
-      var sources = [
-        './katex/',                                      // 本地（推荐，离线可用）
-        'https://cdn.staticfile.org/katex@0.16.9/dist/', // 七牛云
-        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/', // BootCDN
-        'https://lib.baomitu.com/KaTeX/0.16.9/',        // 腾讯
-        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/' // jsdelivr
+      if (typeof katex !== 'undefined' && typeof renderMathInElement === 'function') {
+        console.log('KaTeX loaded locally');
+        return;
+      }
+      console.warn('Local KaTeX not found, trying CDNs...');
+      var cdns = [
+        'https://cdn.staticfile.org/katex@0.16.9/dist/',
+        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/',
+        'https://lib.baomitu.com/KaTeX/0.16.9/',
+        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/'
       ];
-
-      function loadCSS(href) {
-        return new Promise(function(resolve, reject) {
-          var link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = href;
-          link.crossOrigin = 'anonymous';
-          link.onload = resolve;
-          link.onerror = reject;
-          document.head.appendChild(link);
-        });
-      }
-
-      function loadScript(src) {
-        return new Promise(function(resolve, reject) {
-          var s = document.createElement('script');
-          s.src = src;
-          s.crossOrigin = 'anonymous';
-          s.onload = resolve;
-          s.onerror = reject;
-          document.head.appendChild(s);
-        });
-      }
-
-      function tryLoad(index) {
-        if (index >= sources.length) {
-          console.warn('All KaTeX sources failed');
+      var i = 0;
+      function tryNext() {
+        if (i >= cdns.length) {
+          console.warn('All KaTeX CDNs failed, using fallback renderer');
           window.__KATEX_FAILED__ = true;
           return;
         }
-        var url = sources[index];
-        loadCSS(url + 'katex.min.css')
-          .then(function() { return loadScript(url + 'katex.min.js'); })
-          .then(function() { return loadScript(url + 'contrib/auto-render.min.js'); })
-          .then(function() { console.log('KaTeX loaded from:', url); })
-          .catch(function() { tryLoad(index + 1); });
+        var url = cdns[i++];
+        var css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = url + 'katex.min.css';
+        css.onerror = tryNext;
+        document.head.appendChild(css);
+        var s1 = document.createElement('script');
+        s1.src = url + 'katex.min.js';
+        s1.onerror = tryNext;
+        s1.onload = function() {
+          var s2 = document.createElement('script');
+          s2.src = url + 'contrib/auto-render.min.js';
+          s2.onerror = tryNext;
+          s2.onload = function() { console.log('KaTeX loaded from CDN:', url); };
+          document.head.appendChild(s2);
+        };
+        document.head.appendChild(s1);
       }
-      tryLoad(0);
+      tryNext();
     })();
   </script>
 </head>
