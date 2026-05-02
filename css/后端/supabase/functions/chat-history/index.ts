@@ -18,6 +18,7 @@ function firstKey(dict: Record<string, string>): string {
 }
 
 const supabaseAnonKey = firstKey(readSupabaseKeyDict('SUPABASE_PUBLISHABLE_KEYS'))
+const supabaseSecretKey = firstKey(readSupabaseKeyDict('SUPABASE_SECRET_KEYS'))
 
 function normalizeAllowedOrigin(value: string): string {
   const clean = value.trim().replace(/\/+$/, "");
@@ -50,7 +51,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req);
   return {
     "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept, origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept, origin, x-supabase-auth",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Max-Age": "86400",
   };
@@ -63,12 +64,24 @@ function jsonResponse(payload: Record<string, unknown>, status: number, ch: Reco
   });
 }
 
+function isInternalGatewayRequest(req: Request): boolean {
+  const internalSecret = cleanHeader(req.headers.get("x-internal-secret"));
+  return Boolean(supabaseSecretKey && internalSecret === supabaseSecretKey);
+}
+
+function getTrustedGatewayHeader(req: Request, name: string): string {
+  if (!isInternalGatewayRequest(req)) return "";
+  return cleanHeader(req.headers.get(name));
+}
+
 function rejectDisallowedOrigin(req: Request, ch: Record<string, string>): Response | null {
-  if (getAllowedOrigin(req)) return null;
+  if (getAllowedOrigin(req) || isInternalGatewayRequest(req)) return null;
   return jsonResponse({ error: "Origin not allowed", code: "origin_not_allowed" }, 403, ch);
 }
 
 function getClientIp(req: Request): string {
+  const gatewayIp = getTrustedGatewayHeader(req, "x-cancri-client-ip");
+  if (gatewayIp) return gatewayIp;
   const cfIp = cleanHeader(req.headers.get("cf-connecting-ip"));
   if (cfIp) return cfIp;
   const forwardedFor = cleanHeader(req.headers.get("x-forwarded-for"));
@@ -87,6 +100,9 @@ function maskIdentifier(value: string): string {
 }
 
 function getBearerToken(req: Request): string {
+  const custom = cleanHeader(req.headers.get("x-supabase-auth"));
+  const customMatch = custom.match(/^Bearer\s+(.+)$/i);
+  if (customMatch?.[1]?.trim()) return customMatch[1].trim();
   const authorization = cleanHeader(req.headers.get("authorization"));
   const match = authorization.match(/^Bearer\s+(.+)$/i);
   return match?.[1]?.trim() || "";
@@ -117,14 +133,15 @@ interface RequestContext {
 function getRequestContext(req: Request, service: string, endpoint = "unknown", userId = ""): RequestContext {
   const ip = getClientIp(req);
   const jwtUser = userId || decodeJwtSubject(getBearerToken(req));
-  const ua = cleanHeader(req.headers.get("user-agent")).slice(0, 96) || "unknown";
+  const ua = (getTrustedGatewayHeader(req, "x-cancri-client-ua") || cleanHeader(req.headers.get("user-agent"))).slice(0, 96) || "unknown";
+  const origin = getTrustedGatewayHeader(req, "x-cancri-client-origin") || cleanHeader(req.headers.get("origin")) || "none";
   return {
     service,
     endpoint: cleanHeader(endpoint) || "unknown",
     ip,
     device: `${ip}|ua:${maskIdentifier(ua)}|user:${maskIdentifier(jwtUser)}`,
     user: maskIdentifier(jwtUser),
-    origin: cleanHeader(req.headers.get("origin")) || "none",
+    origin,
   };
 }
 
@@ -225,6 +242,11 @@ async function createUserScopedClient(req: Request, ch: Record<string, string>, 
   const { data, error } = await supabase.auth.getUser(jwt);
   if (error || !data?.user?.id) {
     logSecurityEvent("request_rejected", ctx, { reason: "invalid_jwt", detail: error?.message || "no_user" });
+    return { ok: false, response: jsonResponse({ error: "Invalid session", code: "invalid_session" }, 401, ch) };
+  }
+  const forwardedUserId = getTrustedGatewayHeader(req, "x-forwarded-user-id");
+  if (forwardedUserId && forwardedUserId !== data.user.id) {
+    logSecurityEvent("request_rejected", ctx, { reason: "user_mismatch" });
     return { ok: false, response: jsonResponse({ error: "Invalid session", code: "invalid_session" }, 401, ch) };
   }
   return { ok: true, supabase, userId: data.user.id };

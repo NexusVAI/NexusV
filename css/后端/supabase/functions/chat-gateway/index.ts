@@ -51,12 +51,23 @@ function corsHeadersFor(req: Request): Record<string, string> {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'x-gateway-build, x-cancri-user-limit, x-cancri-user-remaining, x-cancri-model-limit, x-cancri-model-remaining, retry-after',
-    'X-Gateway-Build': 'no-auth-to-proxy-0502',
+    'X-Gateway-Build': 'internal-headers-auth-0503',
   }
 }
 
 function cleanHeader(value: string | null): string {
   return String(value || '').replace(/[\r\n\t]/g, '').trim()
+}
+
+function getClientIp(req: Request): string {
+  const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
+  if (cfIp) return cfIp
+  const forwardedFor = cleanHeader(req.headers.get('x-forwarded-for'))
+  if (forwardedFor) {
+    const first = forwardedFor.split(',').map(item => item.trim()).find(Boolean)
+    if (first) return first
+  }
+  return cleanHeader(req.headers.get('x-real-ip')) || 'unknown'
 }
 
 function getBearerToken(req: Request): string {
@@ -99,17 +110,13 @@ function functionUrl(name: string): string {
   return `${SUPABASE_URL}/functions/v1/${name}`
 }
 
-function appendForwardHeaders(req: Request, headers: Record<string, string>): Record<string, string> {
+function appendInternalForwardHeaders(req: Request, headers: Record<string, string>): Record<string, string> {
   const origin = cleanHeader(req.headers.get('origin'))
   const userAgent = cleanHeader(req.headers.get('user-agent'))
-  const forwardedFor = cleanHeader(req.headers.get('x-forwarded-for'))
-  const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
-  const realIp = cleanHeader(req.headers.get('x-real-ip'))
-  if (origin) headers.Origin = origin
-  if (userAgent) headers['User-Agent'] = userAgent
-  if (forwardedFor) headers['X-Forwarded-For'] = forwardedFor
-  if (cfIp) headers['CF-Connecting-IP'] = cfIp
-  if (realIp) headers['X-Real-IP'] = realIp
+  const clientIp = getClientIp(req)
+  if (clientIp && clientIp !== 'unknown') headers['X-Cancri-Client-IP'] = clientIp
+  if (userAgent) headers['X-Cancri-Client-UA'] = userAgent.slice(0, 160)
+  if (origin) headers['X-Cancri-Client-Origin'] = origin
   return headers
 }
 
@@ -185,7 +192,7 @@ async function forwardToModelProxy(req: Request, ch: Record<string, string>, bod
 
   const response = await fetch(proxyUrl, {
     method: 'POST',
-    headers: appendForwardHeaders(req, {
+    headers: appendInternalForwardHeaders(req, {
       'Content-Type': 'application/json',
       'X-Internal-Secret': SUPABASE_SECRET_KEY,
       'X-Forwarded-User-Id': userId,
@@ -196,19 +203,20 @@ async function forwardToModelProxy(req: Request, ch: Record<string, string>, bod
   return forwardJsonResponse(response, ch, true)
 }
 
-async function forwardToWebSearch(req: Request, ch: Record<string, string>, body: JsonObject, endpoint: string): Promise<Response> {
+async function forwardToWebSearch(req: Request, ch: Record<string, string>, body: JsonObject, endpoint: string, jwt: string, userId: string): Promise<Response> {
   const targetUrl = functionUrl('web-search')
-  const jwt = getBearerToken(req)
   if (!targetUrl || !jwt) {
     return jsonResponse({ error: 'Invalid session', code: 'invalid_session' }, 401, ch)
   }
 
   const response = await fetch(targetUrl, {
     method: 'POST',
-    headers: appendForwardHeaders(req, {
+    headers: appendInternalForwardHeaders(req, {
       'Content-Type': 'application/json',
       'apikey': SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': `Bearer ${jwt}`,
+      'X-Internal-Secret': SUPABASE_SECRET_KEY,
+      'X-Forwarded-User-Id': userId,
+      'X-Supabase-Auth': `Bearer ${jwt}`,
     }),
     body: JSON.stringify({ ...body, endpoint }),
   })
@@ -254,9 +262,8 @@ function chatHistoryForwardRequest(body: JsonObject): { method: string; path: st
   return null
 }
 
-async function forwardToChatHistory(req: Request, ch: Record<string, string>, body: JsonObject): Promise<Response> {
+async function forwardToChatHistory(req: Request, ch: Record<string, string>, body: JsonObject, jwt: string): Promise<Response> {
   const targetBaseUrl = functionUrl('chat-history')
-  const jwt = getBearerToken(req)
   const forward = chatHistoryForwardRequest(body)
   if (!targetBaseUrl || !jwt) {
     return jsonResponse({ error: 'Invalid session', code: 'invalid_session' }, 401, ch)
@@ -267,10 +274,12 @@ async function forwardToChatHistory(req: Request, ch: Record<string, string>, bo
 
   const response = await fetch(`${targetBaseUrl}${forward.path}`, {
     method: forward.method,
-    headers: appendForwardHeaders(req, {
+    headers: appendInternalForwardHeaders(req, {
       'Content-Type': 'application/json',
       'apikey': SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': `Bearer ${jwt}`,
+      'X-Internal-Secret': SUPABASE_SECRET_KEY,
+      'X-Forwarded-User-Id': decodeJwtSubject(jwt),
+      'X-Supabase-Auth': `Bearer ${jwt}`,
     }),
     body: forward.payload ? JSON.stringify(forward.payload) : undefined,
   })
@@ -291,21 +300,27 @@ serve(async (req: Request) => {
     return jsonResponse({ error: 'Method not allowed', code: 'method_not_allowed' }, 405, ch)
   }
 
-  const userId = decodeJwtSubject(getBearerToken(req))
-  if (!userId) {
-    return jsonResponse({ error: 'Invalid session', code: 'invalid_session' }, 401, ch)
-  }
-
   try {
     const body = await req.json().catch(() => ({} as JsonObject))
+
+    // JWT 优先从 body.__auth_token 读取（绕过 Cloudflare 对长 header 的拦截），其次从 header 读取
+    const bodyToken = typeof body.__auth_token === 'string' ? body.__auth_token.trim() : ''
+    delete body.__auth_token
+    const jwt = bodyToken || getBearerToken(req)
+
+    const userId = decodeJwtSubject(jwt)
+    if (!userId) {
+      return jsonResponse({ error: 'Invalid session', code: 'invalid_session' }, 401, ch)
+    }
+
     const endpoint = cleanHeader(String(body.endpoint || 'chat')) || 'chat'
 
     if (endpoint === 'chat_history') {
-      return await forwardToChatHistory(req, ch, body)
+      return await forwardToChatHistory(req, ch, body, jwt)
     }
 
     if (endpoint === 'web_search' || endpoint === 'fetch_web_page') {
-      return await forwardToWebSearch(req, ch, body, endpoint)
+      return await forwardToWebSearch(req, ch, body, endpoint, jwt, userId)
     }
 
     if (endpoint === 'chat' || endpoint === 'ping' || endpoint === 'image' || endpoint === 'task') {

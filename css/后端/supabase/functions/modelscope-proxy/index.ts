@@ -102,7 +102,14 @@ function getForwardedUserId(req: Request): string {
   return cleanHeader(req.headers.get('x-forwarded-user-id'))
 }
 
+function getTrustedGatewayHeader(req: Request, name: string): string {
+  if (!getForwardedUserId(req)) return ''
+  return cleanHeader(req.headers.get(name))
+}
+
 function getClientIp(req: Request): string {
+  const gatewayIp = getTrustedGatewayHeader(req, 'x-cancri-client-ip')
+  if (gatewayIp) return gatewayIp
   const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
   if (cfIp) return cfIp
   const forwardedFor = cleanHeader(req.headers.get('x-forwarded-for'))
@@ -123,7 +130,8 @@ function maskIdentifier(value: string): string {
 function getRequestContext(req: Request, service: string, endpoint = 'unknown', model = '', userId = ''): RequestContext {
   const ip = getClientIp(req)
   const user = userId || decodeJwtSubject(getBearerToken(req))
-  const ua = cleanHeader(req.headers.get('user-agent')).slice(0, 96) || 'unknown'
+  const ua = (getTrustedGatewayHeader(req, 'x-cancri-client-ua') || cleanHeader(req.headers.get('user-agent'))).slice(0, 96) || 'unknown'
+  const origin = getTrustedGatewayHeader(req, 'x-cancri-client-origin') || cleanHeader(req.headers.get('origin')) || 'none'
   return {
     service,
     endpoint: cleanHeader(endpoint) || 'unknown',
@@ -131,7 +139,7 @@ function getRequestContext(req: Request, service: string, endpoint = 'unknown', 
     ip,
     device: `${ip}|ua:${maskIdentifier(ua)}|user:${maskIdentifier(user)}`,
     user: maskIdentifier(user),
-    origin: cleanHeader(req.headers.get('origin')) || 'none',
+    origin,
   }
 }
 
@@ -768,6 +776,18 @@ function collectModelScopeRateLimitHeaders(headersList: Headers[]): Record<strin
   return output
 }
 
+function collectProviderRateLimitHeaders(provider: ProviderKind, headersList: Headers[], response: Response): Record<string, string> {
+  if (provider === 'modelscope') {
+    return collectModelScopeRateLimitHeaders(headersList)
+  }
+
+  const output: Record<string, string> = {}
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase().startsWith('modelscope-ratelimit')) output[key] = value
+  })
+  return output
+}
+
 async function fetchProviderRequest(
   url: string,
   method: string,
@@ -1371,9 +1391,11 @@ serve(async (req: Request) => {
       modelScopeSelection.slot
     )
     recordModelAvailability(model, response.status, ctx)
+    const contentType = response.headers.get('content-type') || ''
+    const rateLimitHeaders = collectProviderRateLimitHeaders(provider, rateLimitHeaderSources, response)
 
     // Handle streaming response
-    if (response.headers.get('content-type')?.includes('text/event-stream')) {
+    if (contentType.includes('text/event-stream')) {
       const reader = response.body?.getReader()
       if (!reader) {
         throw new Error('No response body')
@@ -1397,17 +1419,6 @@ serve(async (req: Request) => {
         }
       })
 
-      // Forward rate limit headers
-      const rateLimitHeaders = provider === 'modelscope'
-        ? collectModelScopeRateLimitHeaders(rateLimitHeaderSources)
-        : (() => {
-          const output: Record<string, string> = {}
-          response.headers.forEach((value, key) => {
-            if (key.toLowerCase().startsWith('modelscope-ratelimit')) output[key] = value
-          })
-          return output
-        })()
-
       logSecurityEvent('request_finished', ctx, { status: response.status, provider, streamed: true, durationMs: Math.round(performance.now() - startedAt) })
 
       return new Response(stream, {
@@ -1416,19 +1427,35 @@ serve(async (req: Request) => {
       })
     }
 
+    if (!contentType.includes('json')) {
+      const upstreamText = await response.text().catch(() => '')
+      const exposedStatus = response.status === 403 ? 502 : response.status
+      const code = response.status === 403 ? 'upstream_forbidden' : 'upstream_non_json'
+      logSecurityEvent('request_finished', ctx, {
+        status: response.status,
+        exposedStatus,
+        provider,
+        nonJson: true,
+        upstreamContentType: contentType || 'none',
+        upstreamPreview: upstreamText.slice(0, 120),
+        durationMs: Math.round(performance.now() - startedAt),
+      })
+
+      return new Response(JSON.stringify({
+        error: code,
+        code,
+        message: response.status === 403
+          ? '上游模型服务拒绝了请求，请稍后重试或切换模型。'
+          : '上游模型服务返回了非 JSON 响应，请稍后重试。',
+        upstream_status: response.status,
+      }), {
+        headers: { ...ch, 'Content-Type': 'application/json', ...rateLimitHeaders },
+        status: exposedStatus,
+      })
+    }
+
     // Handle JSON response
     const data = await response.json()
-
-    // Forward rate limit headers
-    const rateLimitHeaders = provider === 'modelscope'
-      ? collectModelScopeRateLimitHeaders(rateLimitHeaderSources)
-      : (() => {
-        const output: Record<string, string> = {}
-        response.headers.forEach((value, key) => {
-          if (key.toLowerCase().startsWith('modelscope-ratelimit')) output[key] = value
-        })
-        return output
-      })()
 
     logSecurityEvent('request_finished', ctx, { status: response.status, provider, durationMs: Math.round(performance.now() - startedAt) })
 

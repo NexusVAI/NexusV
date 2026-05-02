@@ -393,10 +393,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.chat-history]
-verify_jwt = true
+verify_jwt = false
 
 [functions.web-search]
-verify_jwt = true
+verify_jwt = false
 
 # Experimental features may be deprecated any time
 [experimental]
