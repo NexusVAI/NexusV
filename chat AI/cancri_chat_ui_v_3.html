@@ -9,19 +9,18 @@
     window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
   </script>
   <link rel="stylesheet" href="./cancri_chat.css?v=mathfix2-0502" />
-  <!-- KaTeX for math rendering -->
+  <!-- KaTeX for math rendering: 本地优先，CDN 兜底 -->
   <script>
-    // 加载 KaTeX CSS + JS，国内 CDN 优先
     (function() {
-      var cdns = [
-        'https://cdn.staticfile.org/katex@0.16.9/dist/',
-        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/',
-        'https://lib.baomitu.com/KaTeX/0.16.9/',
-        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/',
-        'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/'
+      // 本地路径 + CDN 回退列表
+      var sources = [
+        './katex/',                                      // 本地（推荐，离线可用）
+        'https://cdn.staticfile.org/katex@0.16.9/dist/', // 七牛云
+        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/', // BootCDN
+        'https://lib.baomitu.com/KaTeX/0.16.9/',        // 腾讯
+        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/' // jsdelivr
       ];
 
-      // 动态加载 CSS
       function loadCSS(href) {
         return new Promise(function(resolve, reject) {
           var link = document.createElement('link');
@@ -34,7 +33,6 @@
         });
       }
 
-      // 动态加载 JS
       function loadScript(src) {
         return new Promise(function(resolve, reject) {
           var s = document.createElement('script');
@@ -46,21 +44,20 @@
         });
       }
 
-      function tryLoadCDN(index) {
-        if (index >= cdns.length) {
-          console.warn('All KaTeX CDNs failed');
+      function tryLoad(index) {
+        if (index >= sources.length) {
+          console.warn('All KaTeX sources failed');
           window.__KATEX_FAILED__ = true;
-          // 最终降级：尝试内联样式让公式至少不显示为原始文本
           return;
         }
-        var url = cdns[index];
+        var url = sources[index];
         loadCSS(url + 'katex.min.css')
           .then(function() { return loadScript(url + 'katex.min.js'); })
           .then(function() { return loadScript(url + 'contrib/auto-render.min.js'); })
           .then(function() { console.log('KaTeX loaded from:', url); })
-          .catch(function() { tryLoadCDN(index + 1); });
+          .catch(function() { tryLoad(index + 1); });
       }
-      tryLoadCDN(0);
+      tryLoad(0);
     })();
   </script>
 </head>
