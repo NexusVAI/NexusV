@@ -1296,7 +1296,8 @@
         'apikey': SUPABASE_ANON_KEY,
         ...extra
       };
-      h.Authorization = `Bearer ${session.access_token}`;
+      // 使用自定义 header 传递 JWT，避免同时带 Origin + Authorization 触发 Cloudflare Error 1000
+      h['X-Supabase-Auth'] = `Bearer ${session.access_token}`;
       return h;
     }
 
