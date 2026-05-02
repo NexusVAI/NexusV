@@ -517,7 +517,7 @@
         const probeModel = MODEL_IDS[modelId] || modelId;
         const probeEndpoint = getModelProbeEndpoint(modelId);
 
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
@@ -1290,15 +1290,34 @@
     }
 
     async function proxyHeaders(extra = {}) {
-      const session = await ensureAuthSession();
-      const h = {
+      return {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
         ...extra
       };
-      // 使用自定义 header 传递 JWT，避免同时带 Origin + Authorization 触发 Cloudflare Error 1000
-      h['X-Supabase-Auth'] = `Bearer ${session.access_token}`;
-      return h;
+    }
+
+    async function authBody(body) {
+      const session = await ensureAuthSession();
+      return { ...body, __auth_token: session.access_token };
+    }
+
+    async function proxyFetch(url, options = {}) {
+      const session = await ensureAuthSession();
+      const body = typeof options.body === 'string'
+        ? JSON.parse(options.body || '{}')
+        : (options.body && typeof options.body === 'object' ? { ...options.body } : {});
+      body.__auth_token = session.access_token;
+      return fetch(url, { ...options, body: JSON.stringify(body) });
+    }
+
+    async function proxyFetchWithTimeout(url, options = {}, timeoutMs, label) {
+      const session = await ensureAuthSession();
+      const body = typeof options.body === 'string'
+        ? JSON.parse(options.body || '{}')
+        : (options.body && typeof options.body === 'object' ? { ...options.body } : {});
+      body.__auth_token = session.access_token;
+      return fetchWithTimeout(url, { ...options, body: JSON.stringify(body) }, timeoutMs, label);
     }
 
     function createChatTurnId() {
@@ -1308,6 +1327,45 @@
     // 聊天记录管理
     let currentChatId = null;
     let chatHistoryList = [];
+    const CHAT_HISTORY_LIST_CACHE_KEY = 'cancri_chat_history_list_cache_v1';
+
+    function readCachedChatHistoryList() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(CHAT_HISTORY_LIST_CACHE_KEY) || '[]');
+        return Array.isArray(cached) ? cached : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeCachedChatHistoryList(chats) {
+      if (!Array.isArray(chats)) return;
+      try {
+        localStorage.setItem(CHAT_HISTORY_LIST_CACHE_KEY, JSON.stringify(chats.slice(0, 100)));
+      } catch {
+        // localStorage may be full or disabled; server state remains authoritative.
+      }
+    }
+
+    function upsertCachedChatSummary(chat) {
+      if (!chat?.id) return;
+      const summary = {
+        id: chat.id,
+        title: chat.title || '新对话',
+        model: chat.model || currentModel,
+        created_at: chat.created_at || new Date().toISOString(),
+        updated_at: chat.updated_at || new Date().toISOString()
+      };
+      const next = [summary, ...readCachedChatHistoryList().filter(item => item?.id !== summary.id)];
+      chatHistoryList = next;
+      writeCachedChatHistoryList(next);
+    }
+
+    function removeCachedChatSummary(chatId) {
+      const next = readCachedChatHistoryList().filter(item => item?.id !== chatId);
+      chatHistoryList = next;
+      writeCachedChatHistoryList(next);
+    }
 
     function getPinnedChats() {
       try { return JSON.parse(localStorage.getItem('cancri_pinned_chats') || '[]'); }
@@ -1399,12 +1457,16 @@
       try {
         const chat = await loadChatHistory(chatId);
         if (!chat) return;
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({ endpoint: 'chat_history', action: 'update', id: chatId, messages: chat.messages || [], title: newTitle })
         });
         if (!response.ok) throw new Error('重命名失败');
+        const { data } = await response.json().catch(() => ({}));
+        if (data) {
+          upsertCachedChatSummary(data);
+        }
         if (currentChatId === chatId) {
           const msg = chat.messages?.[0];
           if (msg) msg.content = newTitle;
@@ -1521,7 +1583,7 @@
 
     async function saveChatHistory(messages) {
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
@@ -1537,6 +1599,7 @@
 
         const { data } = await response.json();
         currentChatId = data.id;
+        upsertCachedChatSummary(data);
         return data;
       } catch (error) {
         console.error('保存聊天记录失败:', error);
@@ -1545,7 +1608,7 @@
 
     async function updateChatHistory(chatId, messages) {
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
@@ -1560,6 +1623,7 @@
         if (!response.ok) throw new Error('更新聊天记录失败');
 
         const { data } = await response.json();
+        upsertCachedChatSummary(data);
         return data;
       } catch (error) {
         console.error('更新聊天记录失败:', error);
@@ -1568,7 +1632,7 @@
 
     async function loadChatHistoryList() {
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({ endpoint: 'chat_history', action: 'list' })
@@ -1578,16 +1642,22 @@
 
         const { data } = await response.json();
         chatHistoryList = data || [];
+        writeCachedChatHistoryList(chatHistoryList);
         return chatHistoryList;
       } catch (error) {
         console.error('加载聊天记录列表失败:', error);
-        return [];
+        const cached = readCachedChatHistoryList();
+        if (cached.length) {
+          chatHistoryList = cached;
+          return cached;
+        }
+        return chatHistoryList;
       }
     }
 
     async function loadChatHistory(chatId) {
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({ endpoint: 'chat_history', action: 'get', id: chatId })
@@ -1605,7 +1675,7 @@
 
     async function deleteChatHistory(chatId) {
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({ endpoint: 'chat_history', action: 'delete', id: chatId })
@@ -1626,6 +1696,7 @@
           return { success: false, message: detail || '删除聊天记录失败' };
         }
 
+        removeCachedChatSummary(chatId);
         return { success: true, message: detail || '已删除' };
       } catch (error) {
         console.error('删除聊天记录失败:', error);
@@ -2200,7 +2271,7 @@
       showToast('正在生成语音...');
 
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
@@ -2473,7 +2544,7 @@
       try {
         const probeModel = getRateLimitRequestModelId(targetModelId);
         const probeEndpoint = getModelProbeEndpoint(targetModelId);
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
@@ -3306,7 +3377,7 @@
       let finalStatusText = '等待输入提示词';
 
       try {
-        const response = await fetch(EDGE_FUNCTION_URL, {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
@@ -3360,7 +3431,7 @@
         setImageGenerationBusy(true, '任务已提交，正在生成图片...');
 
         while (true) {
-          const resultResponse = await fetch(EDGE_FUNCTION_URL, {
+          const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
             method: 'POST',
             headers: await proxyHeaders(),
             body: JSON.stringify({
@@ -3738,13 +3809,16 @@
 
     async function saveOrUpdateChatHistory() {
       try {
+        let saved = false;
         if (currentChatId) {
-          await updateChatHistory(currentChatId, conversationHistory);
+          saved = Boolean(await updateChatHistory(currentChatId, conversationHistory));
         } else if (conversationHistory.length > 0) {
-          await saveChatHistory(conversationHistory);
+          saved = Boolean(await saveChatHistory(conversationHistory));
         }
-        // 刷新聊天记录列表
-        renderChatHistoryList();
+        if (saved) {
+          // 刷新聊天记录列表
+          renderChatHistoryList();
+        }
       } catch (error) {
         console.error('自动保存聊天记录失败:', error);
       }
@@ -3871,7 +3945,7 @@
       const transcript = buildConversationCompressionTranscript(modelId);
       if (!transcript.trim()) return false;
 
-      const response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
+      const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
         method: 'POST',
         headers: await proxyHeaders(),
         body: JSON.stringify({
@@ -4086,7 +4160,7 @@
       };
 
       const tryFetchSearch = async (url) => {
-        const response = await fetchWithTimeout(url, {
+        const response = await proxyFetchWithTimeout(url, {
           method: 'POST',
           headers: await proxyHeaders(activeTurnId ? { 'X-Chat-Turn-Id': activeTurnId } : {}),
           body: JSON.stringify(requestPayload),
@@ -4131,7 +4205,7 @@
       };
 
       const tryFetchPage = async (fetchUrl) => {
-        const response = await fetchWithTimeout(fetchUrl, {
+        const response = await proxyFetchWithTimeout(fetchUrl, {
           method: 'POST',
           headers: await proxyHeaders(activeTurnId ? { 'X-Chat-Turn-Id': activeTurnId } : {}),
           body: JSON.stringify(requestPayload),
@@ -4278,7 +4352,7 @@
       }
 
       for (let attempt = 1; attempt <= 2; attempt += 1) {
-        response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
+        response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
           signal: controller.signal,
@@ -4599,6 +4673,8 @@
         await ensureContextBudget(userContent, turnModelId);
       } catch (error) {
         showToast(normalizeErrorMessage(error, '上下文压缩失败，请稍后再试。'));
+        state.sendLocked = false;
+        setComposerBusy(false);
         return;
       }
 
@@ -4607,11 +4683,11 @@
       const clearTurnTimeout = startAbortTimer(controller, CHAT_TURN_TIMEOUT_MS, '对话请求');
       const turnId = createChatTurnId();
       state.activeRequestController = controller;
+      const turnMessages = [];
 
       try {
         const baseMessages = await buildApiMessages(effectiveQuery, '', userContent, turnModelId);
         const requestMessages = baseMessages.map(message => ({ ...message }));
-        const turnMessages = [];
         const repeatedToolCalls = new Map();
         let round = 0;
         while (!controller.signal.aborted) {
@@ -4703,6 +4779,7 @@
         await finalizeConversationTurn();
       } catch (error) {
         const message = normalizeErrorMessage(error, '抱歉，发送消息时出现错误，请稍后重试。');
+        let failureAnswer = '';
         if (message.includes('额度已用完')
           || message.includes('切换其他模型再试')
           || message.includes('切换模型重试')
@@ -4713,9 +4790,18 @@
           || message.includes('请换个模型再试')
           || message.includes('请求已取消')
           || message.includes('超时')) {
-          updateAssistantMessage(assistantMessageId, { answer: message, thinking: false });
+          failureAnswer = message;
         } else {
-          updateAssistantMessage(assistantMessageId, { answer: `抱歉，发送消息时出现错误：${message}`, thinking: false });
+          failureAnswer = `抱歉，发送消息时出现错误：${message}`;
+        }
+        updateAssistantMessage(assistantMessageId, { answer: failureAnswer, thinking: false });
+        try {
+          pushHistory(userHistoryMessage);
+          turnMessages.forEach(historyMessage => pushHistory(historyMessage));
+          pushHistory(assistantHistoryMessage(failureAnswer, turnModelMetadata));
+          await finalizeConversationTurn();
+        } catch (saveError) {
+          console.error('保存失败回合失败:', saveError);
         }
       } finally {
         clearTurnTimeout();
