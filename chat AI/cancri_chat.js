@@ -2797,13 +2797,15 @@
         return;
       }
 
+      // 使用 __katexRender 保存的 KaTeX 原版函数，避免和自身同名递归
+      const katexRender = window.__katexRender;
       let retryCount = 0;
       const maxRetries = 30;
 
       const tryRender = () => {
-        if (window.renderMathInElement) {
+        if (katexRender) {
           try {
-            window.renderMathInElement(element, {
+            katexRender(element, {
               delimiters: [
                 { left: '$$', right: '$$', display: true },
                 { left: '\\[', right: '\\]', display: true },
@@ -2817,6 +2819,19 @@
           } catch (e) {
             console.warn('KaTeX render error:', e);
           }
+        } else if (window.__katexRender) {
+          // 重试期间检测是否已加载
+          window.__katexRender(element, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '\\[', right: '\\]', display: true },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false,
+            trust: false,
+            strict: false
+          });
         } else if (retryCount < maxRetries) {
           retryCount++;
           setTimeout(tryRender, 100);
