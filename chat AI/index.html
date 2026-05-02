@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务状态 | AI Services</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0f;
+            --bg-card: #111118;
+            --bg-card-hover: #16161f;
+            --bg-elevated: #1a1a26;
+            --border: rgba(255,255,255,0.06);
+            --border-strong: rgba(255,255,255,0.12);
+
+            --text-primary: #f0f0f8;
+            --text-secondary: #8888aa;
+            --text-muted: #4a4a6a;
+
+            --green: #22c55e;
+            --green-dim: rgba(34,197,94,0.1);
+            --green-glow: rgba(34,197,94,0.25);
+
+            --amber: #f59e0b;
+            --amber-dim: rgba(245,158,11,0.1);
+
+            --red: #ef4444;
+            --red-dim: rgba(239,68,68,0.08);
+            --red-glow: rgba(239,68,68,0.2);
+
+            --blue: #6366f1;
+            --blue-dim: rgba(99,102,241,0.1);
+
+            --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* ── 背景装饰 ── */
+        .bg-mesh {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-mesh::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -20%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 65%);
+            animation: drift 20s ease-in-out infinite alternate;
+        }
+
+        .bg-mesh::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -15%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(239,68,68,0.05) 0%, transparent 65%);
+            animation: drift 25s ease-in-out infinite alternate-reverse;
+        }
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
+        }
+
+        @keyframes drift {
+            from { transform: translate(0, 0) scale(1); }
+            to   { transform: translate(40px, -30px) scale(1.05); }
+        }
+
+        /* ── 布局 ── */
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 64px 24px 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Header ── */
+        .header {
+            margin-bottom: 40px;
+            animation: slideUp 0.7s var(--ease-expo) both;
+        }
+
+        .header-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-eyebrow::before {
+            content: '';
+            display: block;
+            width: 16px;
+            height: 1px;
+            background: var(--text-muted);
+        }
+
+        h1 {
+            font-size: clamp(28px, 5vw, 40px);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            color: var(--text-primary);
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* ── 事故横幅 ── */
+        .incident-banner {
+            position: relative;
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            overflow: hidden;
+            border: 1px solid rgba(239,68,68,0.2);
+            background: var(--red-dim);
+            animation: slideUp 0.6s var(--ease-spring) 0.1s both;
+        }
+
+        .incident-banner.hidden { display: none; }
+
+        .incident-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .incident-glow {
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .incident-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .incident-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 100px;
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.3);
+            font-size: 11px;
+            font-weight: 600;
+            color: #fca5a5;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulseDot 1.5s ease infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .incident-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fca5a5;
+        }
+
+        .incident-desc {
+            font-size: 13px;
+            color: rgba(252,165,165,0.7);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .incident-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: rgba(239,68,68,0.5);
+        }
+
+        /* ── 统计卡片 ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+            animation: slideUp 0.6s var(--ease-expo) 0.15s both;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-strong);
+            background: var(--bg-card-hover);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            border-radius: 0 0 12px 12px;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card.green::before { background: var(--green); opacity: 0.5; }
+        .stat-card.red::before   { background: var(--red);   opacity: 0.5; }
+        .stat-card.blue::before  { background: var(--blue);  opacity: 0.5; }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-value.green { color: var(--green); }
+        .stat-value.red   { color: var(--red);   }
+        .stat-value.blue  { color: var(--text-secondary); }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ── 状态总览条 ── */
+        .status-bar-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            animation: slideUp 0.6s var(--ease-expo) 0.2s both;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-ring {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .status-ring.operational { background: var(--green-dim); }
+        .status-ring.incident    { background: var(--red-dim); }
+        .status-ring.degraded    { background: var(--amber-dim); }
+
+        .status-ring svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .status-ring::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px solid currentColor;
+            opacity: 0;
+            animation: ringPulse 2.5s ease-out infinite;
+        }
+
+        .status-ring.incident { color: var(--red); }
+        .status-ring.operational { color: var(--green); }
+
+        @keyframes ringPulse {
+            0%  { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        .status-text-wrap h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .status-text-wrap p {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ── 筛选标签 ── */
+        .filter-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            animation: slideUp 0.6s var(--ease-expo) 0.25s both;
+        }
+
+        .filter-tab {
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s var(--ease-expo);
+            outline: none;
+        }
+
+        .filter-tab:hover {
+            border-color: var(--border-strong);
+            color: var(--text-secondary);
+        }
+
+        .filter-tab.active {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.15);
+            color: var(--text-primary);
+        }
+
+        .filter-tab .count {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 1px 6px;
+            border-radius: 100px;
+            font-size: 10px;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .filter-tab.active .count.red-count {
+            background: rgba(239,68,68,0.2);
+            color: #fca5a5;
+        }
+
+        .filter-tab.active .count.green-count {
+            background: rgba(34,197,94,0.15);
+            color: #86efac;
+        }
+
+        /* ── 服务列表 ── */
+        .services-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            animation: slideUp 0.6s var(--ease-expo) 0.3s both;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s var(--ease-smooth);
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-item:last-child { border-bottom: none; }
+
+        .service-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .service-item.down::before    { background: var(--red);   }
+        .service-item.degraded::before { background: var(--amber); }
+        .service-item.operational::before { background: var(--green); }
+
+        .service-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .service-item:hover::before {
+            opacity: 1;
+        }
+
+        .service-item.hidden-item {
+            display: none;
+        }
+
+        /* 序号 */
+        .service-index {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            width: 24px;
+            text-align: right;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        /* 状态灯 */
+        .service-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        .service-led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .service-led.operational {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green-glow);
+        }
+
+        .service-led.degraded {
+            background: var(--amber);
+        }
+
+        .service-led.down {
+            background: var(--red);
+            box-shadow: 0 0 6px var(--red-glow);
+        }
+
+        .service-led.down::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 1px solid var(--red);
+            opacity: 0;
+            animation: ledPulse 2s ease-out infinite;
+        }
+
+        @keyframes ledPulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        /* 服务信息 */
+        .service-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .service-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.01em;
+        }
+
+        .service-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 状态标签 */
+        .service-badge {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: transform 0.2s var(--ease-spring);
+        }
+
+        .service-item:hover .service-badge {
+            transform: scale(1.05);
+        }
+
+        .service-badge.operational {
+            background: rgba(34,197,94,0.1);
+            color: #86efac;
+            border: 1px solid rgba(34,197,94,0.15);
+        }
+
+        .service-badge.degraded {
+            background: rgba(245,158,11,0.1);
+            color: #fcd34d;
+            border: 1px solid rgba(245,158,11,0.15);
+        }
+
+        .service-badge.down {
+            background: rgba(239,68,68,0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239,68,68,0.15);
+        }
+
+        .service-badge svg {
+            width: 10px;
+            height: 10px;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            display: none;
+        }
+
+        .empty-state.show { display: block; }
+
+        /* ── Footer ── */
+        footer {
+            margin-top: 48px;
+            text-align: center;
+            animation: fadeIn 1s ease 0.8s both;
+        }
+
+        .footer-inner {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .footer-dot {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .footer-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+        }
+
+        /* ── 动画 ── */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .service-item {
+            opacity: 0;
+            transform: translateY(8px);
+            animation: slideUp 0.4s var(--ease-expo) both;
+        }
+
+        /* ── 响应式 ── */
+        @media (max-width: 560px) {
+            .container { padding: 40px 16px 60px; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .stat-card { padding: 12px 14px; }
+            .stat-value { font-size: 22px; }
+            .filter-tabs { flex-wrap: wrap; }
+            .service-index { display: none; }
+        }
+
+        /* ── 滚动条 ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+
+        /* ── 公告栏 ── */
+        .announcement-bar {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            animation: slideUp 0.6s var(--ease-expo) 0.05s both;
+        }
+
+        .announcement-text {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            animation: scrollText 20s linear infinite;
+        }
+
+        .announcement-item {
+            font-size: 12px;
+            color: var(--text-primary);
+            font-weight: 500;
+            padding-right: 24px;
+        }
+
+        .announcement-separator {
+            color: var(--text-muted);
+            font-size: 12px;
+            padding-right: 24px;
+        }
+
+        @keyframes scrollText {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-mesh"></div>
+
+<div class="container">
+
+    <!-- 公告栏 -->
+    <div class="announcement-bar">
+        <div class="announcement-text">
+            <span class="announcement-item">05-01.2 维护已圆满完成，模型额度池全面翻倍，核心模型已「满血回归」！</span>
+            <span class="announcement-separator">•</span>
+            <span class="announcement-item">值此五一佳节，团队将每日为你接入更多优质模型，请持续关注～</span>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-eyebrow">AI Services</div>
+        <h1>服务<span>状态</span></h1>
+        <p class="header-subtitle">实时监控各项 AI 服务运行情况</p>
+    </header>
+
+    <!-- 事故横幅 -->
+    <div class="incident-banner hidden" id="incident-banner">
+        <div class="incident-glow"></div>
+        <div class="incident-header">
+            <div class="incident-badge">
+                <div class="pulse-dot"></div>
+                正在处理
+            </div>
+            <span class="incident-title" id="incident-title"></span>
+        </div>
+        <p class="incident-desc" id="incident-desc"></p>
+        <p class="incident-time" id="incident-time"></p>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-grid" id="stats-grid">
+        <div class="stat-card green">
+            <div class="stat-label">正常运行</div>
+            <div class="stat-value green" id="stat-operational">—</div>
+            <div class="stat-sub">services</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-label">服务中断</div>
+            <div class="stat-value red" id="stat-down">—</div>
+            <div class="stat-sub">services</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-label">服务总计</div>
+            <div class="stat-value blue" id="stat-total">—</div>
+            <div class="stat-sub">services</div>
+        </div>
+    </div>
+
+    <!-- 总览状态条 -->
+    <div class="status-bar-wrap">
+        <div class="status-indicator">
+            <div class="status-ring" id="status-ring">
+                <svg viewBox="0 0 16 16" fill="none" id="status-icon">
+                    <!-- 动态填充 -->
+                </svg>
+            </div>
+            <div class="status-text-wrap">
+                <h2 id="overall-status-text">加载中...</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选标签 -->
+    <div class="filter-tabs" id="filter-tabs">
+        <button class="filter-tab active" data-filter="all">
+            全部 <span class="count" id="tab-all-count">0</span>
+        </button>
+        <button class="filter-tab" data-filter="down">
+            中断 <span class="count red-count" id="tab-down-count">0</span>
+        </button>
+        <button class="filter-tab" data-filter="operational">
+            正常 <span class="count green-count" id="tab-ok-count">0</span>
+        </button>
+    </div>
+
+    <!-- 服务列表 -->
+    <div class="services-container">
+        <div id="services-list"></div>
+        <div class="empty-state" id="empty-state">该分类暂无服务</div>
+    </div>
+
+</div>
+
+<script>
+/* ─── 数据 ─── */
+const STATUS_DATA = {
+    "overallStatus": "degraded",
+    "incident": "部分模型服务异常或中断",
+    "services": [
+        { "name": "DeepSeek-V4-Flash", "description": "闪电 · 快速 · 线路一", "status": "degraded", "icon": "deepseek-color (1).svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "DeepSeek-V4-Pro",   "description": "Pro研究级模型 · 线路一","status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "DeepSeek-V4-Pro",   "description": "Pro研究级模型 · 线路二","status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Step-3.5",          "description": "阶跃星辰 · 快准狠",    "status": "operational", "icon": "stepfun-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "混元3",             "description": "国产腾讯旗下最新AI · 低限额", "status": "operational", "icon": "yuanbao-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "GPT-5.4",           "description": "OpenAI · 每日限流",    "status": "degraded", "icon": "openai.svg", "pingUrl": "https://openrouter.ai/api/v1/chat/completions" },
+        { "name": "chatGPT-OSS",       "description": "OpenAI · 慢",          "status": "operational", "icon": "openai.svg", "pingUrl": "https://openrouter.ai/api/v1/chat/completions" },
+        { "name": "Nemotron-3-super",  "description": "英伟达",               "status": "down", "icon": "nvidia-color.svg", "pingUrl": "https://openrouter.ai/api/v1/chat/completions" },
+        { "name": "ling-2.6",          "description": "蚂蚁集团百灵 · 大参数","status": "down", "icon": "antgroup-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "ling-2.6",          "description": "蚂蚁集团百灵 · 魔塔线路二","status": "down", "icon": "antgroup-color.svg", "pingUrl": "https://api.modelscope.cn/v1/chat/completions" },
+        { "name": "spark-x2",          "description": "星火推理模型",          "status": "operational", "icon": "spark-color.svg", "pingUrl": "https://spark-api.xf-yun.com/v1/chat/completions" },
+        { "name": "DeepSeek-R1",       "description": "强推理",               "status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "Qwen 3.5",          "description": "多模态 · 全能型AI",   "status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "Qwen3-Coder",       "description": "多模态 · 编码专项",    "status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "Kimi K2.5",         "description": "多模态 · 复杂任务处理","status": "operational", "icon": "moonshot.svg", "pingUrl": "https://api.moonshot.cn/v1/chat/completions" },
+        { "name": "Kimi K2.6",         "description": "多模态 · 超复杂编程 · 线路一", "status": "operational", "icon": "moonshot.svg", "pingUrl": "https://api.moonshot.cn/v1/chat/completions" },
+        { "name": "Kimi K2.6",         "description": "多模态 · 线路二 · 官方API", "status": "operational", "icon": "moonshot.svg", "pingUrl": "https://api.moonshot.cn/v1/chat/completions" },
+        { "name": "Kimi K2.6",         "description": "多模态 · 线路三",       "status": "operational", "icon": "moonshot.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "GLM-5",             "description": "深度编程",             "status": "operational", "icon": "zhipu-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "GLM-5.1",           "description": "复杂编码处理 · 线路一","status": "degraded", "icon": "zhipu-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "GLM-5.1",           "description": "复杂编码处理 · 线路二","status": "down", "icon": "zhipu-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "GLM-4.7",           "description": "Max · 约等于Gemini3","status": "down", "icon": "zhipu-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "qwen3.6-max-preview","description": "预览",               "status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "qwen3.6-plus",      "description": "多模态 · 均衡之选",    "status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "MiniMax-M2.5",      "description": "新 · 性价比之选 快速", "status": "operational", "icon": "minimax-color.svg", "pingUrl": "https://api.siliconflow.cn/v1/chat/completions" },
+        { "name": "DeepSeek-R1",       "description": "强推理 · 百炼",       "status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Qwen3.6-Flash",     "description": "多模态 · 快速 · 百炼","status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Kimi K2.5",         "description": "多模态 · 线路二 · 百炼","status": "operational", "icon": "moonshot.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "DeepSeek-V3.2",     "description": "百炼 · 稳定",         "status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "DeepSeek-V3.2-Exp", "description": "实验版 · 百炼",       "status": "down", "icon": "deepseek-color (1).svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "GLM-4.5-Air",       "description": "轻量 · 百炼",         "status": "degraded", "icon": "zhipu-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "MiniMax-M2.5",      "description": "线路二 · 百炼",       "status": "operational", "icon": "minimax-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "DeepSeek-V3.1",     "description": "百炼 · 均衡",         "status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Qwen3-Coder-Plus",  "description": "多模态 · 专业编码 · 百炼","status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Qwen3-Max",         "description": "多模态 · 旗舰 · 百炼","status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Kimi-K2-Instruct",  "description": "多模态 · 指令优化 · 百炼","status": "down", "icon": "moonshot.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "Qwen3.6-Plus",      "description": "多模态 · 2026-04-02 · 线路三 · 百炼","status": "operational", "icon": "qwen-color.svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "DeepSeek-R1-0528",  "description": "强推理 · 线路三 · 百炼","status": "operational", "icon": "deepseek-color (1).svg", "pingUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" },
+        { "name": "MiMo-2.5-Pro",       "description": "小米 · 长程任务第一",    "status": "operational", "icon": "xiaomimimo-color.svg", "pingUrl": "https://api.xiaomimimo.com/v1/chat/completions" },
+        { "name": "MiMo-2.5-TTS",      "description": "小米 · 语音合成",      "status": "operational", "icon": "xiaomimimo-color.svg", "pingUrl": "https://api.xiaomimimo.com/v1/audio/speech" },
+        { "name": "MiMo-2.5-TTS-VoiceDesign", "description": "小米 · 语音定制", "status": "operational", "icon": "xiaomimimo-color.svg", "pingUrl": "https://api.xiaomimimo.com/v1/audio/voice-design" }
+    ]
+};
+
+/* ─── 工具 ─── */
+const statusMeta = {
+    operational: {
+        label: '正常运行',
+        iconSvg: `<path d="M3 8l3.5 3.5L13 4.5" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+        ringClass: 'operational'
+    },
+    degraded: {
+        label: '性能降级',
+        iconSvg: `<path d="M8 4v5M8 11v1.5" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>`,
+        ringClass: 'degraded'
+    },
+    incident: {
+        label: '服务中断',
+        iconSvg: `<path d="M8 4v5M8 11v1.5" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round"/>`,
+        ringClass: 'incident'
+    }
+};
+
+const badgeIcon = {
+    operational: `<svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    degraded:    `<svg viewBox="0 0 10 10" fill="none"><path d="M5 2.5v3.5M5 7.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+    down:        `<svg viewBox="0 0 10 10" fill="none"><path d="M3 3l4 4M7 3l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`
+};
+
+const badgeLabel = {
+    operational: '正常运行',
+    degraded:    '性能降级',
+    down:        '服务中断'
+};
+
+function formatTime(iso) {
+    return new Date(iso).toLocaleString('zh-CN', {
+        month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
+
+function timeSince(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
+    if (diff < 1)  return '刚刚';
+    if (diff < 60) return `${diff} 分钟前`;
+    const h = Math.floor(diff / 60), m = diff % 60;
+    return m > 0 ? `${h} 小时 ${m} 分钟前` : `${h} 小时前`;
+}
+
+/* ─── 渲染 ─── */
+let currentFilter = 'all';
+
+function renderPage() {
+    const data = STATUS_DATA;
+    const services = data.services;
+    const cntDown = services.filter(s => s.status === 'down').length;
+    const cntOk   = services.filter(s => s.status === 'operational').length;
+    const cntTotal = services.length;
+
+    /* 统计卡片 */
+    document.getElementById('stat-operational').textContent = cntOk;
+    document.getElementById('stat-down').textContent        = cntDown;
+    document.getElementById('stat-total').textContent       = cntTotal;
+
+    /* Tab 计数 */
+    document.getElementById('tab-all-count').textContent  = cntTotal;
+    document.getElementById('tab-down-count').textContent = cntDown;
+    document.getElementById('tab-ok-count').textContent   = cntOk;
+
+    /* 总状态 */
+    const overallKey = data.overallStatus === 'incident' ? 'incident'
+                     : services.some(s => s.status === 'degraded') ? 'degraded'
+                     : 'operational';
+    const meta = statusMeta[overallKey];
+    const ring = document.getElementById('status-ring');
+    ring.className = `status-ring ${meta.ringClass}`;
+    document.getElementById('status-icon').innerHTML = meta.iconSvg;
+    document.getElementById('overall-status-text').textContent = meta.label;
+
+    /* 事故横幅 */
+    const banner = document.getElementById('incident-banner');
+    if (data.incident && data.overallStatus === 'incident') {
+        banner.classList.remove('hidden');
+        document.getElementById('incident-title').textContent = data.incident.title;
+        document.getElementById('incident-desc').textContent  = data.incident.description;
+        const start = data.incident.startedAt;
+        document.getElementById('incident-time').textContent =
+            `${formatTime(start)} 开始 · 已持续 ${timeSince(start)}`;
+    } else {
+        banner.classList.add('hidden');
+    }
+
+    /* 服务列表 */
+    renderList(services);
+}
+
+function renderList(services) {
+    const list = document.getElementById('services-list');
+    const empty = document.getElementById('empty-state');
+    list.innerHTML = '';
+
+    const filtered = currentFilter === 'all'
+        ? services
+        : services.filter(s =>
+            currentFilter === 'down' ? s.status !== 'operational'
+            : s.status === 'operational'
+        );
+
+    if (filtered.length === 0) {
+        empty.classList.add('show');
+    } else {
+        empty.classList.remove('show');
+        filtered.forEach((svc, i) => {
+            const el = document.createElement('div');
+            el.className = `service-item ${svc.status}`;
+            el.style.animationDelay = `${0.3 + i * 0.035}s`;
+            const globalIdx = services.indexOf(svc) + 1;
+            el.innerHTML = `
+                <span class="service-index">${String(globalIdx).padStart(2,'0')}</span>
+                ${svc.icon ? `<img class="service-icon" src="${svc.icon}" alt="" onerror="this.style.display='none'">` : ''}
+                <div class="service-led ${svc.status}"></div>
+                <div class="service-info">
+                    <div class="service-name">${svc.name}</div>
+                    ${svc.description ? `<div class="service-desc">${svc.description}${svc.latency != null ? ` · <span class="latency-tag" style="color:${svc.latency < 300 ? '#86efac' : svc.latency < 800 ? '#fcd34d' : '#fca5a5'}">${svc.latency}ms</span>` : ''}</div>` : ''}
+                </div>
+                <div class="service-badge ${svc.status}">
+                    ${badgeIcon[svc.status]}
+                    ${badgeLabel[svc.status]}
+                </div>
+            `;
+            list.appendChild(el);
+        });
+    }
+}
+
+/* ─── 筛选交互 ─── */
+document.getElementById('filter-tabs').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-tab');
+    if (!btn) return;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderList(STATUS_DATA.services);
+});
+
+/* ─── Ping 延迟检测 ─── */
+const pingLatencies = {};
+const PING_INTERVAL = 60000; // 1分钟
+
+async function pingProvider(url) {
+    try {
+        const start = performance.now();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const resp = await fetch(url, {
+            method: 'HEAD',
+            mode: 'no-cors',
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+        const latency = Math.round(performance.now() - start);
+        return latency;
+    } catch {
+        return -1;
+    }
+}
+
+async function runPingCycle() {
+    const uniqueUrls = new Map();
+    STATUS_DATA.services.forEach(svc => {
+        if (svc.pingUrl && !uniqueUrls.has(svc.pingUrl)) {
+            uniqueUrls.set(svc.pingUrl, []);
+        }
+        if (svc.pingUrl) uniqueUrls.get(svc.pingUrl).push(svc.name);
+    });
+
+    const results = await Promise.all(
+        [...uniqueUrls.entries()].map(async ([url, names]) => {
+            const lat = await pingProvider(url);
+            names.forEach(n => { pingLatencies[n] = lat; });
+            return lat;
+        })
+    );
+
+    // 更新服务延迟数据并重新渲染
+    STATUS_DATA.services.forEach(svc => {
+        if (pingLatencies[svc.name] !== undefined) {
+            svc.latency = pingLatencies[svc.name];
+        }
+    });
+    renderList(STATUS_DATA.services);
+}
+
+/* ─── 启动 ─── */
+renderPage();
+runPingCycle();
+setInterval(runPingCycle, PING_INTERVAL);
+</script>
+</body>
+</html>

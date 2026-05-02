@@ -1294,6 +1294,12 @@
     const CHAT_REQUEST_TIMEOUT_MS = 25000;
     const CHAT_TURN_TIMEOUT_MS = 90000;
 
+    // 为特定模型设置更长的超时（如 Claude Opus 响应较慢）
+    function getChatRequestTimeoutMs(modelId) {
+      if (modelId === 'claude-opus-4.6') return 60000; // Claude Opus 60秒
+      return CHAT_REQUEST_TIMEOUT_MS;
+    }
+
     function proxyHeaders(extra = {}) {
       const h = { 'Content-Type': 'application/json', ...extra };
       if (PROXY_TOKEN) h['x-proxy-token'] = PROXY_TOKEN;
@@ -2546,6 +2552,9 @@
         return token;
       };
       let output = escapeHtml(text)
+        // 保护数学公式不被 Markdown 处理
+        .replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => keep(`$$${formula}$$`))
+        .replace(/\$([^\$\s][^\$]*?)\$/g, (match, formula) => keep(`$${formula}$`))
         .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${code}</code>`))
         .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
           const href = safeUrl(url);
@@ -2748,8 +2757,39 @@
       return blocks.join('');
     }
 
+    function renderMathInElement(element) {
+      if (typeof window === 'undefined' || !window.renderMathInElement) return;
+      try {
+        window.renderMathInElement(element, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false }
+          ],
+          throwOnError: false,
+          trust: false,
+          strict: false
+        });
+      } catch (e) {
+        // 渲染失败不影响主流程
+      }
+    }
+
     function renderAnimatedMarkdown(markdown) {
-      return renderMarkdown(markdown);
+      const html = renderMarkdown(markdown);
+      // 使用 setTimeout 确保 KaTeX 已加载
+      setTimeout(() => {
+        const container = document.querySelector('.message-content');
+        if (container) renderMathInElement(container);
+      }, 0);
+      return html;
+    }
+
+    // 在消息更新后调用 KaTeX 渲染
+    function renderMathInMessage(messageId) {
+      const messageDiv = document.getElementById(messageId);
+      if (!messageDiv) return;
+      const answerBody = messageDiv.querySelector('.message-answer-body');
+      if (answerBody) renderMathInElement(answerBody);
     }
 
     function renderStreamingFragment(text) {
@@ -2998,6 +3038,7 @@
         '- 不要为了显得智能而跳过工具；该查就查。',
         '- 工具结果不足时，先继续调用工具或向用户补充确认。',
         '- 回答尽量使用简洁 Markdown。',
+        '- 输出数学公式时，使用 LaTeX 格式：行内公式用 $...$（如 $E=mc^2$），独立公式用 $$...$$（如 $$\\sum_{i=1}^n x_i$$）。',
         '',
         '# Examples',
         'User: 你们网站最近更新了什么 AI 相关文章？',
@@ -3054,6 +3095,10 @@
           : '请求已取消或超时，请重试。';
       }
       const message = error instanceof Error ? error.message : String(error);
+      // 处理浏览器原生 "The user aborted a request" 错误
+      if (/The user aborted a request|aborted a request/i.test(message)) {
+        return '请求超时或被取消。Claude Opus 响应较慢，请稍后重试或切换到其他模型。';
+      }
       if (/challenge_required|access_blocked|异常高频|安全验证|停止为此 IP 提供服务/.test(message)) {
         return message.replace(/^Error:\s*/i, '');
       }
@@ -3508,6 +3553,11 @@
         answerBody.innerHTML = '';
         answerStreamState.text = '';
         answerStreamState.ready = false;
+      }
+
+      // 渲染数学公式
+      if (hasAnswer || hasReasoning) {
+        renderMathInMessage(messageId);
       }
 
       scrollChatToBottom();
@@ -4082,7 +4132,7 @@
             client_turn_id: turnId,
             ...requestBody
           })
-        }, CHAT_REQUEST_TIMEOUT_MS, '模型请求');
+        }, getChatRequestTimeoutMs(currentModel), '模型请求');
 
         if (response.status !== 429 || attempt === 2) {
           break;
