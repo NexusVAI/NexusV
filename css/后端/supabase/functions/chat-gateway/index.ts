@@ -47,7 +47,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
   return {
     'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
-    'Access-Control-Allow-Headers': 'authorization, apikey, x-client-info, content-type, accept, origin, x-chat-turn-id',
+    'Access-Control-Allow-Headers': 'authorization, apikey, x-client-info, content-type, accept, origin, x-chat-turn-id, x-supabase-auth',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'x-gateway-build, x-cancri-user-limit, x-cancri-user-remaining, x-cancri-model-limit, x-cancri-model-remaining, retry-after',
@@ -60,6 +60,10 @@ function cleanHeader(value: string | null): string {
 }
 
 function getBearerToken(req: Request): string {
+  // 优先从自定义 header 读取，避免 Origin + Authorization 同时存在触发 Cloudflare Error 1000
+  const custom = cleanHeader(req.headers.get('x-supabase-auth'))
+  const customMatch = custom.match(/^Bearer\s+(.+)$/i)
+  if (customMatch?.[1]?.trim()) return customMatch[1].trim()
   const authorization = cleanHeader(req.headers.get('authorization'))
   const match = authorization.match(/^Bearer\s+(.+)$/i)
   return match?.[1]?.trim() || ''

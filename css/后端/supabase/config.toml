@@ -390,7 +390,7 @@ backend = "postgres"
 verify_jwt = false
 
 [functions.chat-gateway]
-verify_jwt = true
+verify_jwt = false
 
 [functions.chat-history]
 verify_jwt = true

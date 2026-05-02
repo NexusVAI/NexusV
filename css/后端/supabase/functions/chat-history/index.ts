@@ -2,7 +2,22 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+function readSupabaseKeyDict(name: string): Record<string, string> {
+  const raw = Deno.env.get(name) || '{}'
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function firstKey(dict: Record<string, string>): string {
+  return dict.default || Object.values(dict)[0] || ''
+}
+
+const supabaseAnonKey = firstKey(readSupabaseKeyDict('SUPABASE_PUBLISHABLE_KEYS'))
 
 function normalizeAllowedOrigin(value: string): string {
   const clean = value.trim().replace(/\/+$/, "");
