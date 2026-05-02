@@ -5,6 +5,7 @@ on:
     branches: [main, master]
     paths:
       - 'css/后端/supabase/functions/**'
+      - 'css/后端/supabase/migrations/**'
       - 'css/后端/supabase/config.toml'
       - '.github/workflows/deploy-supabase-functions.yml'
   workflow_dispatch:
@@ -31,7 +32,6 @@ jobs:
       - name: Deploy secrets
         env:
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
-          PROXY_AUTH_TOKEN: ${{ secrets.PROXY_AUTH_TOKEN }}
           CHAT_AUTH_SECRET: ${{ secrets.CHAT_AUTH_SECRET }}
           MODELSCOPE_API_KEY: ${{ secrets.MODELSCOPE_API_KEY }}
           MODELSCOPE_API_KEY_1: ${{ secrets.MODELSCOPE_API_KEY_1 }}
@@ -43,10 +43,16 @@ jobs:
           DASHSCOPE_API_KEY_2: ${{ secrets.DASHSCOPE_API_KEY_2 }}
           DASHSCOPE_API_KEY_NEW: ${{ secrets.DASHSCOPE_API_KEY_NEW }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+          MOONSHOT_API_KEY_LINE3: ${{ secrets.MOONSHOT_API_KEY_LINE3 }}
           OPENROUTER_API_KEY_1: ${{ secrets.OPENROUTER_API_KEY_1 }}
           OPENROUTER_API_KEY_2: ${{ secrets.OPENROUTER_API_KEY_2 }}
           OPENROUTER_API_KEY_3: ${{ secrets.OPENROUTER_API_KEY_3 }}
           SPARK_API_KEY: ${{ secrets.SPARK_API_KEY }}
+          MIMO_API_KEY: ${{ secrets.MIMO_API_KEY }}
+          NEWAPI_BASE_URL: ${{ secrets.NEWAPI_BASE_URL }}
+          NEWAPI_API_KEY: ${{ secrets.NEWAPI_API_KEY }}
+          NEWAPI_API_KEY_2: ${{ secrets.NEWAPI_API_KEY_2 }}
         run: |
           set -euo pipefail
 
@@ -69,14 +75,13 @@ jobs:
 
           require_secret ALLOWED_ORIGINS
 
-          # NOTE: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected by
-          # the Supabase platform. The CLI rejects secrets with the SUPABASE_ prefix,
-          # and including them here causes the ENTIRE command to fail, which also
-          # prevents PROXY_AUTH_TOKEN etc. from being set.
+          # NOTE: SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY
+          # are auto-injected by the Supabase platform. The CLI rejects secrets
+          # with the SUPABASE_ prefix, and including them here causes the entire
+          # command to fail.
           supabase secrets set --project-ref "$PROJECT_ID" \
             "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
 
-          set_secret_if_present PROXY_AUTH_TOKEN
           set_secret_if_present CHAT_AUTH_SECRET
 
           set_secret_if_present MODELSCOPE_API_KEY
@@ -89,13 +94,31 @@ jobs:
           set_secret_if_present DASHSCOPE_API_KEY_2
           set_secret_if_present DASHSCOPE_API_KEY_NEW
           set_secret_if_present SILICONFLOW_API_KEY
+          set_secret_if_present MOONSHOT_API_KEY
+          set_secret_if_present MOONSHOT_API_KEY_LINE3
           set_secret_if_present OPENROUTER_API_KEY_1
           set_secret_if_present OPENROUTER_API_KEY_2
           set_secret_if_present OPENROUTER_API_KEY_3
           set_secret_if_present SPARK_API_KEY
+          set_secret_if_present MIMO_API_KEY
+          set_secret_if_present NEWAPI_BASE_URL
+          set_secret_if_present NEWAPI_API_KEY
+          set_secret_if_present NEWAPI_API_KEY_2
+
+      - name: Push database migrations
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_PASSWORD:-}" ]; then
+            echo "::error::GitHub Secret SUPABASE_DB_PASSWORD is missing"
+            exit 1
+          fi
+          supabase db push --project-ref "$PROJECT_ID"
 
       - name: Deploy edge functions
         run: |
-          supabase functions deploy modelscope-proxy --project-ref $PROJECT_ID --no-verify-jwt
-          supabase functions deploy chat-history --project-ref $PROJECT_ID --no-verify-jwt
-          supabase functions deploy web-search --project-ref $PROJECT_ID --no-verify-jwt
+          supabase functions deploy modelscope-proxy --project-ref $PROJECT_ID
+          supabase functions deploy chat-history --project-ref $PROJECT_ID
+          supabase functions deploy web-search --project-ref $PROJECT_ID
+          supabase functions deploy chat-gateway --project-ref $PROJECT_ID

@@ -15,7 +15,6 @@ function normalizeAllowedOrigin(value: string): string {
 }
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
-const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
 
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
@@ -29,7 +28,7 @@ function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
   return {
     'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, x-proxy-token, accept, origin',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept, origin, x-chat-turn-id',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'modelscope-ratelimit-requests-limit, modelscope-ratelimit-requests-remaining, modelscope-ratelimit-model-requests-limit, modelscope-ratelimit-model-requests-remaining',
@@ -62,6 +61,30 @@ function cleanHeader(value: string | null): string {
   return String(value || '').replace(/[\r\n\t]/g, '').trim()
 }
 
+function getBearerToken(req: Request): string {
+  const authorization = cleanHeader(req.headers.get('authorization'))
+  const match = authorization.match(/^Bearer\s+(.+)$/i)
+  return match?.[1]?.trim() || ''
+}
+
+function decodeJwtSubject(token: string): string {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return ''
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const parsed = JSON.parse(atob(padded))
+    return cleanHeader(typeof parsed?.sub === 'string' ? parsed.sub : '')
+  } catch {
+    return ''
+  }
+}
+
+function getForwardedUserId(req: Request): string {
+  if (!SUPABASE_SERVICE_ROLE_KEY || getBearerToken(req) !== SUPABASE_SERVICE_ROLE_KEY) return ''
+  return cleanHeader(req.headers.get('x-forwarded-user-id'))
+}
+
 function getClientIp(req: Request): string {
   const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
   if (cfIp) return cfIp
@@ -80,9 +103,9 @@ function maskIdentifier(value: string): string {
   return `${clean.slice(0, 6)}…${clean.slice(-4)}`
 }
 
-function getRequestContext(req: Request, service: string, endpoint = 'unknown', model = ''): RequestContext {
+function getRequestContext(req: Request, service: string, endpoint = 'unknown', model = '', userId = ''): RequestContext {
   const ip = getClientIp(req)
-  const user = cleanHeader(req.headers.get('x-user-id')) || cleanHeader(req.headers.get('x-api-key'))
+  const user = userId || decodeJwtSubject(getBearerToken(req))
   const ua = cleanHeader(req.headers.get('user-agent')).slice(0, 96) || 'unknown'
   return {
     service,
@@ -118,7 +141,11 @@ function getEndpointLimit(endpoint: string): number {
   return RATE_LIMIT_MAX
 }
 
-function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false; action: 'challenge' | 'block'; reason: string; retryAfter: number } {
+function inspectAbuseScope(
+  key: string,
+  max: number,
+  options: { ignoreSpeed?: boolean } = {}
+): { ok: true } | { ok: false; action: 'challenge' | 'block'; reason: string; retryAfter: number } {
   const now = Date.now()
   const entry = abuseMap.get(key) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS, lastAt: 0, rapidHits: 0, challengeUntil: 0, blockedUntil: 0 }
   if (entry.blockedUntil > now) {
@@ -142,9 +169,9 @@ function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false
   abuseMap.set(key, entry)
 
   const limitHit = entry.count > max
-  const speedHit = entry.rapidHits >= 4
+  const speedHit = !options.ignoreSpeed && entry.rapidHits >= 4
   if (entry.challengeUntil > now) {
-    if (limitHit || speedHit || interval < RAPID_REQUEST_MS) {
+    if (limitHit || speedHit || (!options.ignoreSpeed && interval < RAPID_REQUEST_MS)) {
       entry.blockedUntil = now + BLOCK_DURATION_MS
       abuseMap.set(key, entry)
       return { ok: false, action: 'block', reason: limitHit ? 'challenge_limit_repeat' : 'challenge_speed_repeat', retryAfter: Math.ceil(BLOCK_DURATION_MS / 1000) }
@@ -161,15 +188,20 @@ function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false
   return { ok: true }
 }
 
-function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>): Response | null {
+function enforceAbuseGuard(
+  ctx: RequestContext,
+  ch: Record<string, string>,
+  options: { ignoreSpeed?: boolean } = {}
+): Response | null {
   const max = getEndpointLimit(ctx.endpoint)
   const scopes = [
     `ip:${ctx.endpoint}:${ctx.ip}`,
     `device:${ctx.endpoint}:${ctx.device}`,
+    `user:${ctx.endpoint}:${ctx.user}`,
   ]
 
   for (const scope of scopes) {
-    const result = inspectAbuseScope(scope, max)
+    const result = inspectAbuseScope(scope, max, options)
     if (result.ok) continue
     logSecurityEvent(result.action, ctx, { reason: result.reason, retryAfter: result.retryAfter })
     if (result.action === 'block') {
@@ -242,12 +274,6 @@ function modelBlockedResponse(model: string, retryAfter: number, ch: Record<stri
   }, 503, ch, { 'Retry-After': String(retryAfter) })
 }
 
-function validateProxyAuth(req: Request): boolean {
-  if (!PROXY_AUTH_TOKEN) return true
-  const token = req.headers.get('x-proxy-token') || ''
-  return token === PROXY_AUTH_TOKEN
-}
-
 const MODELSCOPE_API_BASE = 'https://api-inference.modelscope.cn/v1'
 const MODELSCOPE_API_KEY = (Deno.env.get('MODELSCOPE_API_KEY') || '').trim()
 const MODELSCOPE_API_KEY_1 = (Deno.env.get('MODELSCOPE_API_KEY_1') || '').trim()
@@ -286,6 +312,59 @@ const NEWAPI_API_KEY = Deno.env.get('NEWAPI_API_KEY') || ''
 const NEWAPI_API_KEY_2 = Deno.env.get('NEWAPI_API_KEY_2') || ''
 
 type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo' | 'newapi'
+
+const PUBLIC_MODEL_ROUTES: Record<string, string> = {
+  'deepseek-v4-flash': 'deepseek-v4-flash',
+  'deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
+  'deepseek-v4-pro-alt': 'deepseek-v4-pro-dashscope',
+  'step-3.5-flash': 'stepfun-ai/Step-3.5-Flash',
+  'hy3-preview': 'tencent/hy3-preview:free',
+  'gpt-oss-120b': 'openai/gpt-oss-120b:free',
+  'gpt-5.4': 'gpt-5.4',
+  'claude-opus-4.6': 'claude-opus-4.6',
+  'claude-sonnet-4.6': 'claude-sonnet-4.6',
+  'gemini-2.5-pro': 'gemini-2.5-pro',
+  'nemotron-3-super': 'nvidia/nemotron-3-super-120b-a12b:free',
+  'ling-2.6-1t': 'inclusionai/ling-2.6-1t:free',
+  'ling-2.6-1t-alt': 'inclusionAI/Ling-2.6-1T',
+  'spark-x2': 'spark-x',
+  'deepseek-r1': 'deepseek-r1',
+  'qwen3.5': 'Qwen/Qwen3.5-397B-A17B',
+  'qwen3-coder': 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+  'kimi-k2.5': 'moonshotai/Kimi-K2.5',
+  'kimi-k2.6': 'kimi-k2.6',
+  'kimi-k2.6-alt': 'kimi-k2.6-moonshot',
+  'kimi-k2.6-extended': 'kimi-k2.6-line3',
+  'glm-5': 'glm-5',
+  'glm-5.1': 'ZhipuAI/GLM-5.1',
+  'glm-5.1-alt': 'glm-5.1-dashscope',
+  'glm-4.7': 'glm-4.7',
+  'qwen3.6-max-preview': 'qwen3.6-max-preview',
+  'qwen3.6-plus': 'qwen3.6-plus',
+  'minimax-m2.5': 'MiniMax/MiniMax-M2.5',
+  'qwen3.6-flash': 'qwen3.6-flash',
+  'kimi-k2.5-alt': 'kimi-k2.5-dashscope',
+  'deepseek-v3.2': 'deepseek-v3.2',
+  'deepseek-v3.2-exp': 'deepseek-v3.2-exp',
+  'glm-4.5-air': 'glm-4.5-air',
+  'minimax-m2.5-alt': 'minimax-m2.5-dashscope',
+  'deepseek-v3.1': 'deepseek-v3.1',
+  'qwen3-coder-plus': 'qwen3-coder-plus',
+  'qwen3-max': 'qwen3-max',
+  'kimi-k2-instruct': 'kimi-k2-instruct',
+  'qwen3.6-plus-20260402': 'qwen3.6-plus-20260402',
+  'deepseek-r1-0528': 'deepseek-r1-0528',
+  'mimo-v2.5-pro': 'mimo-v2.5-pro',
+  'mimo-v2.5-tts': 'mimo-v2.5-tts',
+  'mimo-v2.5-tts-voicedesign': 'mimo-v2.5-tts-voicedesign',
+  'image-fast': 'Tongyi-MAI/Z-Image-Turbo',
+  'image-precise': 'dall-e-3',
+}
+
+function resolvePublicModelId(model: string): string {
+  const clean = String(model || '').trim()
+  return PUBLIC_MODEL_ROUTES[clean] || ''
+}
 
 function isOpenAICompatibleModel(model: string): boolean {
   return model === 'dall-e-3'
@@ -1007,36 +1086,46 @@ serve(async (req: Request) => {
 
   const clientIp = getClientIp(req)
 
-  // 自动拦截并发轰炸
-  if (checkBurst(clientIp)) {
-    console.log(JSON.stringify({ event: 'burst_blocked', ip: clientIp }))
-    return new Response(JSON.stringify({ error: 'blocked', code: 'burst_detected', message: '检测到异常并发请求' }), { status: 403, headers: { ...ch, 'Content-Type': 'application/json' } })
-  }
-
   if (isIpBlocked(clientIp)) {
     console.log(JSON.stringify({ event: 'ip_blocked', ip: clientIp }))
     return new Response(JSON.stringify({ error: 'blocked', code: 'ip_blocked', message: '该 IP 已被永久封禁' }), { status: 403, headers: { ...ch, 'Content-Type': 'application/json' } })
   }
 
   const startedAt = performance.now()
-  const originResponse = rejectDisallowedOrigin(req, ch)
-  if (originResponse) return originResponse
+  const authenticatedUserId = getForwardedUserId(req)
+  if (!authenticatedUserId) {
+    const originResponse = rejectDisallowedOrigin(req, ch)
+    if (originResponse) return originResponse
+  }
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: ch })
   }
 
+  if (!authenticatedUserId) {
+    return jsonResponse({ error: 'Internal gateway required', code: 'gateway_required' }, 403, ch)
+  }
+
   try {
-    const baseCtx = getRequestContext(req, 'modelscope-proxy')
+    const baseCtx = getRequestContext(req, 'modelscope-proxy', 'unknown', '', authenticatedUserId)
     const oversized = rejectOversizedRequest(req, ch, baseCtx)
     if (oversized) return oversized
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
-    const { endpoint = 'chat', client_turn_id: clientTurnId, turn_id: legacyTurnId, ...requestData } = body
+    const { endpoint = 'chat', client_turn_id: clientTurnId, turn_id: legacyTurnId, ...rawRequestData } = body
     const endpointName = cleanHeader(String(endpoint || 'chat'))
-    const model = String(requestData.model || '')
-    const ctx = getRequestContext(req, 'modelscope-proxy', endpointName, model)
-    const abuseResponse = enforceAbuseGuard(ctx, ch)
+    const requestedModel = String(rawRequestData.model || '').trim()
+    const model = requestedModel ? resolvePublicModelId(requestedModel) : ''
+    if (requestedModel && !model) {
+      return jsonResponse({ error: 'Unknown model', code: 'unknown_model' }, 400, ch)
+    }
+    const requestData = model ? { ...rawRequestData, model } : rawRequestData
+    const ctx = getRequestContext(req, 'modelscope-proxy', endpointName, model, authenticatedUserId)
+
+    const hasTurnId = Boolean(clientTurnId || legacyTurnId || req.headers.get('x-chat-turn-id'))
+    const ignoreRapidSpeed = hasTurnId || endpointName === 'ping' || endpointName === 'task'
+
+    const abuseResponse = enforceAbuseGuard(ctx, ch, { ignoreSpeed: ignoreRapidSpeed })
     if (abuseResponse) return abuseResponse
     logSecurityEvent('request_started', ctx, { method: req.method })
 
@@ -1333,7 +1422,7 @@ serve(async (req: Request) => {
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    const ctx = getRequestContext(req, 'modelscope-proxy')
+    const ctx = getRequestContext(req, 'modelscope-proxy', 'unknown', '', authenticatedUserId)
     logSecurityEvent('request_failed', ctx, { durationMs: Math.round(performance.now() - startedAt), error: message.slice(0, 160) })
     return new Response(JSON.stringify({ error: 'Internal error' }), {
       headers: { ...ch, 'Content-Type': 'application/json' },

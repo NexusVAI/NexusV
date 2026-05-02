@@ -1,6 +1,11 @@
 /// <reference lib="dom" />
+/// <reference lib="deno.ns" />
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
 function normalizeAllowedOrigin(value: string): string {
   const clean = value.trim().replace(/\/+$/, '')
@@ -13,7 +18,6 @@ function normalizeAllowedOrigin(value: string): string {
 }
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
-const PROXY_AUTH_TOKEN = (Deno.env.get('PROXY_AUTH_TOKEN') || '').trim()
 
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
@@ -27,16 +31,10 @@ function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
   return {
     'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id, x-api-key, x-proxy-token, accept, origin',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept, origin, x-chat-turn-id',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
   }
-}
-
-function validateProxyAuth(req: Request): boolean {
-  if (!PROXY_AUTH_TOKEN) return true
-  const token = req.headers.get('x-proxy-token') || ''
-  return token === PROXY_AUTH_TOKEN
 }
 
 const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
@@ -62,6 +60,12 @@ function cleanHeader(value: string | null): string {
   return String(value || '').replace(/[\r\n\t]/g, '').trim()
 }
 
+function getBearerToken(req: Request): string {
+  const authorization = cleanHeader(req.headers.get('authorization'))
+  const match = authorization.match(/^Bearer\s+(.+)$/i)
+  return match?.[1]?.trim() || ''
+}
+
 function getClientIp(req: Request): string {
   const cfIp = cleanHeader(req.headers.get('cf-connecting-ip'))
   if (cfIp) return cfIp
@@ -80,9 +84,9 @@ function maskIdentifier(value: string): string {
   return `${clean.slice(0, 6)}…${clean.slice(-4)}`
 }
 
-function getRequestContext(req: Request, service: string, endpoint = 'unknown'): RequestContext {
+function getRequestContext(req: Request, service: string, endpoint = 'unknown', userId = ''): RequestContext {
   const ip = getClientIp(req)
-  const user = cleanHeader(req.headers.get('x-user-id')) || cleanHeader(req.headers.get('x-api-key'))
+  const user = userId
   const ua = cleanHeader(req.headers.get('user-agent')).slice(0, 96) || 'unknown'
   return {
     service,
@@ -110,12 +114,39 @@ function rejectDisallowedOrigin(req: Request, ch: Record<string, string>): Respo
   return jsonResponse({ error: 'Origin not allowed', code: 'origin_not_allowed' }, 403, ch)
 }
 
+async function authenticateRequest(req: Request, ch: Record<string, string>, ctx: RequestContext): Promise<
+  { ok: true; userId: string } | { ok: false; response: Response }
+> {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    logSecurityEvent('request_rejected', ctx, { reason: 'service_not_configured' })
+    return { ok: false, response: jsonResponse({ error: 'Service not configured', code: 'service_not_configured' }, 500, ch) }
+  }
+
+  const jwt = getBearerToken(req)
+  if (!jwt) {
+    logSecurityEvent('request_rejected', ctx, { reason: 'missing_authorization' })
+    return { ok: false, response: jsonResponse({ error: 'Missing Authorization bearer token', code: 'missing_authorization' }, 401, ch) }
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data, error } = await supabase.auth.getUser(jwt)
+  if (error || !data?.user?.id) {
+    logSecurityEvent('request_rejected', ctx, { reason: 'invalid_jwt', detail: error?.message || 'no_user' })
+    return { ok: false, response: jsonResponse({ error: 'Invalid session', code: 'invalid_session' }, 401, ch) }
+  }
+
+  return { ok: true, userId: data.user.id }
+}
+
 function getEndpointLimit(endpoint: string): number {
   if (endpoint === 'fetch_web_page') return 12
   return RATE_LIMIT_MAX
 }
 
-function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false; action: 'challenge' | 'block'; reason: string; retryAfter: number } {
+function inspectAbuseScope(key: string, max: number, options: { ignoreSpeed?: boolean } = {}): { ok: true } | { ok: false; action: 'challenge' | 'block'; reason: string; retryAfter: number } {
   const now = Date.now()
   const entry = abuseMap.get(key) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS, lastAt: 0, rapidHits: 0, challengeUntil: 0, blockedUntil: 0 }
   if (entry.blockedUntil > now) {
@@ -139,9 +170,9 @@ function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false
   abuseMap.set(key, entry)
 
   const limitHit = entry.count > max
-  const speedHit = entry.rapidHits >= 4
+  const speedHit = !options.ignoreSpeed && entry.rapidHits >= 4
   if (entry.challengeUntil > now) {
-    if (limitHit || speedHit || interval < RAPID_REQUEST_MS) {
+    if (limitHit || speedHit || (!options.ignoreSpeed && interval < RAPID_REQUEST_MS)) {
       entry.blockedUntil = now + BLOCK_DURATION_MS
       abuseMap.set(key, entry)
       return { ok: false, action: 'block', reason: limitHit ? 'challenge_limit_repeat' : 'challenge_speed_repeat', retryAfter: Math.ceil(BLOCK_DURATION_MS / 1000) }
@@ -158,15 +189,16 @@ function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false
   return { ok: true }
 }
 
-function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>): Response | null {
+function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>, options: { ignoreSpeed?: boolean } = {}): Response | null {
   const max = getEndpointLimit(ctx.endpoint)
   const scopes = [
     `ip:${ctx.endpoint}:${ctx.ip}`,
     `device:${ctx.endpoint}:${ctx.device}`,
+    `user:${ctx.endpoint}:${ctx.user}`,
   ]
 
   for (const scope of scopes) {
-    const result = inspectAbuseScope(scope, max)
+    const result = inspectAbuseScope(scope, max, options)
     if (result.ok) continue
     logSecurityEvent(result.action, ctx, { reason: result.reason, retryAfter: result.retryAfter })
     if (result.action === 'block') {
@@ -511,10 +543,16 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: ch });
   }
 
+  let authenticatedUserId = ''
+
   try {
     const baseCtx = getRequestContext(req, 'web-search')
     const oversized = rejectOversizedRequest(req, ch, baseCtx)
     if (oversized) return oversized
+
+    const auth = await authenticateRequest(req, ch, baseCtx)
+    if (!auth.ok) return auth.response
+    authenticatedUserId = auth.userId
 
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -525,8 +563,13 @@ serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const endpoint = cleanText(body.endpoint || 'web_search');
-    const ctx = getRequestContext(req, 'web-search', endpoint)
-    const abuseResponse = enforceAbuseGuard(ctx, ch)
+    const clientTurnId = cleanText(body.client_turn_id || '');
+    const ctx = getRequestContext(req, 'web-search', endpoint, authenticatedUserId)
+
+    const hasTurnId = Boolean(clientTurnId || req.headers.get('x-chat-turn-id'))
+    const ignoreRapidSpeed = hasTurnId
+
+    const abuseResponse = enforceAbuseGuard(ctx, ch, { ignoreSpeed: ignoreRapidSpeed })
     if (abuseResponse) return abuseResponse
     logSecurityEvent('request_started', ctx, { method: req.method })
 
@@ -585,7 +628,7 @@ serve(async (req: Request) => {
       headers: { ...ch, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    const ctx = getRequestContext(req, 'web-search')
+    const ctx = getRequestContext(req, 'web-search', 'unknown', authenticatedUserId)
     const message = error instanceof Error ? error.message : String(error)
     logSecurityEvent('request_failed', ctx, { durationMs: Math.round(performance.now() - startedAt), error: message.slice(0, 160) })
     return new Response(JSON.stringify({ error: 'Internal error', detail: message.slice(0, 300) }), {

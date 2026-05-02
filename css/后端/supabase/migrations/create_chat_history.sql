@@ -1,43 +1,60 @@
--- 创建聊天记录表
-CREATE TABLE IF NOT EXISTS chat_history (
+-- Chat history storage for Supabase Auth users, including anonymous users.
+CREATE TABLE IF NOT EXISTS public.chat_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL, -- 用户标识（基于 API key 或 session）
-  title TEXT NOT NULL DEFAULT '新对话', -- 对话标题
-  messages JSONB NOT NULL DEFAULT '[]'::jsonb, -- 消息列表
-  model TEXT NOT NULL DEFAULT 'deepseek-v4', -- 使用的模型
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id TEXT,
+  title TEXT NOT NULL DEFAULT '新对话',
+  messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  model TEXT NOT NULL DEFAULT 'deepseek-v4-flash',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- 创建索引
-CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
-CREATE INDEX IF NOT EXISTS idx_chat_history_created_at ON chat_history(created_at DESC);
+ALTER TABLE public.chat_history
+  ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS user_id TEXT,
+  ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '新对话',
+  ADD COLUMN IF NOT EXISTS messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS model TEXT NOT NULL DEFAULT 'deepseek-v4-flash',
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
 
--- 启用行级安全策略
-ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_chat_history_owner_id ON public.chat_history(owner_id);
+CREATE INDEX IF NOT EXISTS idx_chat_history_updated_at ON public.chat_history(updated_at DESC);
 
--- 用户只能访问自己的聊天记录
+ALTER TABLE public.chat_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own chat history" ON public.chat_history;
+DROP POLICY IF EXISTS "Users can create own chat history" ON public.chat_history;
+DROP POLICY IF EXISTS "Users can update own chat history" ON public.chat_history;
+DROP POLICY IF EXISTS "Users can delete own chat history" ON public.chat_history;
+
 CREATE POLICY "Users can view own chat history"
-  ON chat_history FOR SELECT
-  USING (user_id = current_setting('app.current_user_id', true));
+  ON public.chat_history
+  FOR SELECT
+  TO authenticated
+  USING (owner_id = auth.uid());
 
--- 用户可以创建自己的聊天记录
 CREATE POLICY "Users can create own chat history"
-  ON chat_history FOR INSERT
-  WITH CHECK (user_id = current_setting('app.current_user_id', true));
+  ON public.chat_history
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (owner_id = auth.uid());
 
--- 用户可以更新自己的聊天记录
 CREATE POLICY "Users can update own chat history"
-  ON chat_history FOR UPDATE
-  USING (user_id = current_setting('app.current_user_id', true));
+  ON public.chat_history
+  FOR UPDATE
+  TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
 
--- 用户可以删除自己的聊天记录
 CREATE POLICY "Users can delete own chat history"
-  ON chat_history FOR DELETE
-  USING (user_id = current_setting('app.current_user_id', true));
+  ON public.chat_history
+  FOR DELETE
+  TO authenticated
+  USING (owner_id = auth.uid());
 
--- 自动更新 updated_at 时间戳
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -45,7 +62,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_chat_history_updated_at ON public.chat_history;
 CREATE TRIGGER update_chat_history_updated_at
-  BEFORE UPDATE ON chat_history
+  BEFORE UPDATE ON public.chat_history
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+  EXECUTE FUNCTION public.update_updated_at_column();

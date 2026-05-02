@@ -4,7 +4,7 @@ name: Deploy static content to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["main"]
+    branches: ["main", "master"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -34,7 +34,7 @@ jobs:
       - name: Inject runtime config
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://diusqgphvybnzazgopor.supabase.co' }}
-          PROXY_AUTH_TOKEN: ${{ secrets.PROXY_AUTH_TOKEN }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           python - <<'PY'
           import json
@@ -43,9 +43,12 @@ jobs:
           from pathlib import Path
 
           supabase_url = os.environ.get("SUPABASE_URL", "").strip() or "https://diusqgphvybnzazgopor.supabase.co"
-          proxy_token = os.environ.get("PROXY_AUTH_TOKEN", "").strip()
+          supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
           if not supabase_url:
               print("::error::GitHub Secret SUPABASE_URL is missing")
+              sys.exit(1)
+          if not supabase_anon_key:
+              print("::error::GitHub Secret SUPABASE_ANON_KEY is missing")
               sys.exit(1)
 
           target = Path("chat AI/cancri_chat_ui_v_3.html")
@@ -59,24 +62,57 @@ jobs:
               f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
           )
           html = html.replace(
-              "window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';",
-              f"window.__PROXY_TOKEN__ = {json.dumps(proxy_token)};",
+              "window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || '';",
+              f"window.__SUPABASE_ANON_KEY__ = {json.dumps(supabase_anon_key)};",
           )
           if "window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || '';" in html:
               print("::error::SUPABASE_URL placeholder was not replaced")
               sys.exit(1)
-          if "window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';" in html:
-              print("::error::PROXY_TOKEN placeholder was not replaced")
+          if "window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || '';" in html:
+              print("::error::SUPABASE_ANON_KEY placeholder was not replaced")
               sys.exit(1)
           target.write_text(html, encoding="utf-8")
           PY
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Build Pages artifact
+        run: |
+          set -euo pipefail
+          rm -rf pages-dist
+          mkdir -p pages-dist/css pages-dist/js "pages-dist/chat AI"
+
+          cp -a index.html about.html article.html pages-dist/
+          cp -a Logo pages-dist/Logo
+          find css -maxdepth 1 -type f -print0 | xargs -0 -I{} cp "{}" pages-dist/css/
+          cp -a js/. pages-dist/js/
+
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          src = Path("chat AI")
+          dst = Path("pages-dist/chat AI")
+          for name in ["cancri_chat_ui_v_3.html", "cancri_chat.css", "cancri_chat.js"]:
+              shutil.copy2(src / name, dst / name)
+          for svg in src.glob("*.svg"):
+              shutil.copy2(svg, dst / svg.name)
+          katex = src / "katex"
+          if katex.exists():
+              shutil.copytree(katex, dst / "katex", dirs_exist_ok=True)
+          PY
+
+          if grep -R -n -E 'PROXY_AUTH_TOKEN|__PROXY_TOKEN__|x-proxy-token|modelscope-proxy|chat-history|web-search' pages-dist; then
+            echo "::error::Pages artifact contains backend route/provider material"
+            exit 1
+          fi
+          if grep -R -n -E 'dashscope|modelscope|siliconflow|pingUrl|线路|供应商|官方API' "pages-dist/chat AI"; then
+            echo "::error::ChatAI frontend contains route/provider material"
+            exit 1
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          path: pages-dist
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
