@@ -588,7 +588,7 @@ serve(async (req: Request) => {
     const ctx = getRequestContext(req, 'web-search')
     const message = error instanceof Error ? error.message : String(error)
     logSecurityEvent('request_failed', ctx, { durationMs: Math.round(performance.now() - startedAt), error: message.slice(0, 160) })
-    return new Response(JSON.stringify({ error: 'Internal error' }), {
+    return new Response(JSON.stringify({ error: 'Internal error', detail: message.slice(0, 300) }), {
       status: 500,
       headers: { ...ch, 'Content-Type': 'application/json' },
     });
