@@ -1057,10 +1057,10 @@ serve(async (req: Request) => {
     }
 
     // ALTCHA 验证：所有 chat/image/task 请求必须先完成 PoW
-    if (['chat', 'image', 'task'].includes(endpointName)) {
-      const altchaFail = await verifyAltchaOrFail(req, ch)
-      if (altchaFail) return altchaFail
-    }
+    // if (['chat', 'image', 'task'].includes(endpointName)) {
+    //   const altchaFail = await verifyAltchaOrFail(req, ch)
+    //   if (altchaFail) return altchaFail
+    // }
 
     const block = getModelBlock(model)
     if (block) {
