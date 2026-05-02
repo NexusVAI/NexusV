@@ -143,9 +143,13 @@
       try {
         const parsed = JSON.parse(raw);
         const parsedError = parsed?.error;
-        const message = typeof parsedError === 'string'
+        let message = typeof parsedError === 'string'
           ? parsedError
           : parsedError?.message || parsed?.message || parsed?.detail || raw;
+        // 如果 error 是通用占位符（如 "Internal error"），优先使用 detail 字段
+        if (message === 'Internal error' && parsed?.detail) {
+          message = parsed.detail;
+        }
         return {
           message,
           code: String(parsed?.code || parsedError?.code || parsed?.error || '').trim(),
