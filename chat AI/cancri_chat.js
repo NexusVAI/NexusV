@@ -1,4 +1,4 @@
-﻿    const state = {
+    const state = {
       theme: 'light',
       contrast: '系统',
       accentName: '绿色',
@@ -83,7 +83,7 @@
     const MODEL_TELEMETRY_STORAGE_KEY = 'cancri_model_telemetry';
     const MODEL_TELEMETRY_CACHE_VERSION = 6;
 
-    // ModelScope API 额度信息
+    // 共享额度信息
     let rateLimitInfo = {
       userLimit: null,
       userRemaining: null,
@@ -95,23 +95,20 @@
       lastUpdateTime: null
     };
     const MODEL_LOCK_DURATION_MS = 60 * 60 * 1000;
-    const MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 魔塔额度页面打开探测一次，后续主要跟随真实请求头更新
-    const NON_MODELSCOPE_PING_INTERVAL_MS = 60 * 60 * 1000; // 非魔塔模型1小时ping一次
-    const MODEL_STATUS_REFRESH_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
-    const RATE_LIMIT_UPDATE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
+    const SHARED_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 共享额度页面打开探测一次，后续主要跟随真实请求头更新
+    const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
+    const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
+    const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
     const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
-    const NON_MODELSCOPE_MODEL_IDS = new Set(['kimi-k2.6', 'kimi-k2.6-moonshot', 'glm-5', 'glm-5.1-dashscope', 'glm-5.1-siliconflow', 'glm-4.7', 'qwen3.6-plus', 'qwen3.6-max-preview', 'dall-e-3', 'deepseek-v4-flash-dashscope', 'deepseek-v4-pro-dashscope', 'deepseek-v4-flash-siliconflow', 'step-3.5-flash', 'hy3-preview', 'gpt-oss-120b', 'nemotron-3-super', 'ling-2.6-1t', 'spark-x2', 'deepseek-r1', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'deepseek-v3.2', 'deepseek-v3.2-exp', 'glm-4.5-air', 'minimax-m2.5-dashscope', 'deepseek-v3.1', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402', 'deepseek-r1-0528',
-      // MiMo 模型
-      'mimo-v2.5-pro', 'mimo-v2.5-tts', 'mimo-v2.5-tts-voicedesign'
-    ]);
+    let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
     let rateLimitRefreshToken = 0;
-    let nonModelscopePingTimer = null;
+    let independentModelPingTimer = null;
     let modelTelemetryLastRefreshedAt = 0;
 
     // 模型状态：额度和速度
     const modelStatus = new Map(); // modelId -> { quotaRemaining, quotaLimit, speedMs, speedLevel, lastChecked, error }
-    const SPEED_TEST_INTERVAL_MS = NON_MODELSCOPE_PING_INTERVAL_MS;
-    const QUOTA_PROBE_INTERVAL_MS = MODELSCOPE_QUOTA_REFRESH_INTERVAL_MS;
+    const SPEED_TEST_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
+    const QUOTA_PROBE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
 
     function getModelSpeedLevel(speedMs) {
       if (speedMs === null || speedMs === undefined) return 'unknown';
@@ -133,13 +130,14 @@
         case 429:
           return '当前模型额度已用完，请切换其他模型再试。';
         default:
-          return '当前模型暂时不可用，请切换其他模型再试。';
+          return '当前模型暂时不可用，请检查网络后重试。';
       }
     }
 
     function parseBackendErrorPayload(errorText) {
       const raw = String(errorText || '').trim();
       if (!raw) return { message: '', code: '' };
+
       try {
         const parsed = JSON.parse(raw);
         const parsedError = parsed?.error;
@@ -154,8 +152,6 @@
           message,
           code: String(parsed?.code || parsedError?.code || parsed?.error || '').trim(),
           retryAfter: parsed?.retry_after_seconds,
-          provider: parsed?.provider,
-          missing: parsed?.missing,
         };
       } catch {
         return { message: raw, code: '' };
@@ -250,8 +246,8 @@
 
     function getQuotaLockMessage(modelId = currentModel) {
       const now = Date.now();
-      if (isModelScopeModel(modelId) && Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil > now) {
-        return '今日魔塔用户额度已用完，请明天 0 点后再试，或先切换非魔塔模型。';
+      if (usesSharedQuota(modelId) && Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil > now) {
+        return '今日共享额度已用完，请明天 0 点后再试，或先切换其他模型。';
       }
 
       const status = getModelStatus(modelId);
@@ -272,12 +268,12 @@
       const now = Date.now();
       const targetModelId = modelId || currentModel;
       const targetStatus = getModelStatus(targetModelId);
-      const isScopeModel = isModelScopeModel(targetModelId);
+      const isScopeModel = usesSharedQuota(targetModelId);
 
-      const userLimit = parseHeaderInteger(headers.get('modelscope-ratelimit-requests-limit') || headers.get('ModelScope-Ratelimit-Requests-Limit'));
-      const userRemaining = parseHeaderInteger(headers.get('modelscope-ratelimit-requests-remaining') || headers.get('ModelScope-Ratelimit-Requests-Remaining'));
-      const modelLimit = parseHeaderInteger(headers.get('modelscope-ratelimit-model-requests-limit') || headers.get('ModelScope-Ratelimit-Model-Requests-Limit'));
-      const modelRemaining = parseHeaderInteger(headers.get('modelscope-ratelimit-model-requests-remaining') || headers.get('ModelScope-Ratelimit-Model-Requests-Remaining'));
+      const userLimit = parseHeaderInteger(headers.get('x-cancri-user-limit') || headers.get('X-Cancri-User-Limit'));
+      const userRemaining = parseHeaderInteger(headers.get('x-cancri-user-remaining') || headers.get('X-Cancri-User-Remaining'));
+      const modelLimit = parseHeaderInteger(headers.get('x-cancri-model-limit') || headers.get('X-Cancri-Model-Limit'));
+      const modelRemaining = parseHeaderInteger(headers.get('x-cancri-model-remaining') || headers.get('X-Cancri-Model-Remaining'));
 
       if (Number.isFinite(userLimit)) {
         rateLimitInfo.userLimit = userLimit;
@@ -301,7 +297,7 @@
           if (userRemaining <= 0) {
             const until = getNextLocalMidnightTimestamp(now);
             setUserQuotaLock(until, 'quota');
-            for (const scopeModelId of Object.keys(MODEL_IDS).filter(isModelScopeModel)) {
+            for (const scopeModelId of Object.keys(MODEL_IDS).filter(usesSharedQuota)) {
               const scopeStatus = getModelStatus(scopeModelId);
               scopeStatus.lockedUntil = until;
               scopeStatus.lockReason = 'quota';
@@ -435,7 +431,7 @@
           const [modelId, status] = Array.isArray(entry) ? entry : [];
           if (!modelId || !MODEL_IDS[modelId]) continue;
           const snapshot = normalizeModelStatusSnapshot(status);
-          if (!isModelScopeModel(modelId)) {
+          if (!usesSharedQuota(modelId)) {
             snapshot.error = null;
             snapshot.lockedUntil = null;
             snapshot.lockReason = null;
@@ -449,30 +445,30 @@
       return true;
     }
 
-    function scheduleNonModelscopePingRefresh(delayMs) {
-      if (nonModelscopePingTimer) {
-        clearTimeout(nonModelscopePingTimer);
-        nonModelscopePingTimer = null;
+    function scheduleIndependentModelPingRefresh(delayMs) {
+      if (independentModelPingTimer) {
+        clearTimeout(independentModelPingTimer);
+        independentModelPingTimer = null;
       }
 
-      nonModelscopePingTimer = setTimeout(() => {
-        refreshNonModelscopePing()
+      independentModelPingTimer = setTimeout(() => {
+        refreshIndependentModelPing()
           .catch(() => {})
           .finally(() => {
-            scheduleNonModelscopePingRefresh(NON_MODELSCOPE_PING_INTERVAL_MS);
+            scheduleIndependentModelPingRefresh(INDEPENDENT_MODEL_PING_INTERVAL_MS);
           });
       }, Math.max(0, delayMs));
     }
 
-    async function refreshModelscopeQuota() {
+    async function refreshSharedQuota() {
       await refreshRateLimitForCurrentModel(true);
       modelTelemetryLastRefreshedAt = Date.now();
       persistModelTelemetryCache();
     }
 
-    async function refreshNonModelscopePing() {
-      const nonModelscopeIds = Object.keys(MODEL_IDS).filter(id => !isModelScopeModel(id));
-      const promises = nonModelscopeIds.map(async (modelId) => {
+    async function refreshIndependentModelPing() {
+      const independentModelIds = Object.keys(MODEL_IDS).filter(id => !usesSharedQuota(id));
+      const promises = independentModelIds.map(async (modelId) => {
         const result = await pingModel(modelId);
         const status = getModelStatus(modelId);
         status.speedMs = result.speedMs;
@@ -512,18 +508,18 @@
 
       // 页面打开时刷新一次，后续主要跟随真实请求头更新
       await Promise.allSettled([
-        refreshModelscopeQuota(),
-        refreshNonModelscopePing(),
+        refreshSharedQuota(),
+        refreshIndependentModelPing(),
       ]);
       autoSwitchIfCurrentModelUnavailable();
-      scheduleNonModelscopePingRefresh(NON_MODELSCOPE_PING_INTERVAL_MS);
+      scheduleIndependentModelPingRefresh(INDEPENDENT_MODEL_PING_INTERVAL_MS);
     }
 
     function isModelAvailable(modelId) {
       clearExpiredQuotaLocks();
       const now = Date.now();
 
-      if (isModelScopeModel(modelId)) {
+      if (usesSharedQuota(modelId)) {
         if (Number.isFinite(rateLimitInfo.userLockedUntil) && rateLimitInfo.userLockedUntil > now) {
           return false;
         }
@@ -534,7 +530,7 @@
         return true;
       }
 
-      // 非魔塔模型：看锁定状态，未锁定则可用
+      // 独立额度模型：看锁定状态，未锁定则可用
       const status = getModelStatus(modelId);
       if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) return false;
       return true;
@@ -548,7 +544,7 @@
 
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(),
           body: JSON.stringify({
             endpoint: 'ping',
             model: probeModel,
@@ -630,22 +626,22 @@
       });
     }
 
-    function isModelScopeModel(modelId = currentModel) {
-      return !NON_MODELSCOPE_MODEL_IDS.has(modelId);
+    function usesSharedQuota(modelId = currentModel) {
+      return !INDEPENDENT_QUOTA_MODEL_IDS.has(modelId);
     }
 
     function getRateLimitRequestModelId(modelId = currentModel) {
-      if (modelId === 'kimi-k2.6-moonshot') {
+      if (modelId === 'kimi-k2.6-alt') {
         return MODEL_IDS[modelId] || modelId;
       }
-      if (isModelScopeModel(modelId)) {
+      if (usesSharedQuota(modelId)) {
         return MODEL_IDS[modelId] || modelId;
       }
       return MODEL_IDS[RATE_LIMIT_PROBE_MODEL_ID] || RATE_LIMIT_PROBE_MODEL_ID;
     }
 
     function getModelProbeEndpoint(modelId = currentModel) {
-      return modelId === 'dall-e-3' ? 'image' : 'chat';
+      return modelId === 'image-precise' || modelId === 'image-fast' ? 'image' : 'chat';
     }
 
     // 全局错误捕获
@@ -667,14 +663,92 @@
     }
 
     const MODEL_SELECTION_MIGRATIONS = {
-      'deepseek-v4-flash-dashscope': 'deepseek-v4-flash',
+      'deepseek-v4-flash-alt': 'deepseek-v4-flash',
     };
+    const MODEL_CATALOG = [
+      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'], sharedQuota: true },
+      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], sharedQuota: true },
+      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'] },
+      { id: 'step-3.5-flash', displayName: 'Step-3.5', iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
+      { id: 'hy3-preview', displayName: '混元3', iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
+      { id: 'gpt-oss-120b', displayName: 'chatGPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'] },
+      { id: 'gpt-5.4', displayName: 'GPT-5.4', iconPath: './openai.svg', tags: ['每日限流', '通用'] },
+      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
+      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '均衡'] },
+      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
+      { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', iconPath: './nvidia-color.svg', tags: ['通用'] },
+      { id: 'ling-2.6-1t', displayName: 'ling-2.6', iconPath: './antgroup-color.svg', tags: ['大参数', '通用'] },
+      { id: 'ling-2.6-1t-alt', displayName: 'ling-2.6', iconPath: './antgroup-color.svg', tags: ['大参数', '稳定'], sharedQuota: true },
+      { id: 'spark-x2', displayName: 'spark-x2', iconPath: './spark-color.svg', tags: ['推理'] },
+      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
+      { id: 'qwen3.5', displayName: 'Qwen 3.5', iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true, sharedQuota: true },
+      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true, sharedQuota: true },
+      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true, sharedQuota: true },
+      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true },
+      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'glm-5', displayName: 'GLM-5', iconPath: './zhipu-color.svg', tags: ['深度编程'] },
+      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      { id: 'glm-5.1', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'], sharedQuota: true },
+      { id: 'glm-4.7', displayName: 'GLM-4.7', iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
+      { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', iconPath: './qwen-color.svg', tags: ['预览'] },
+      { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true },
+      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'], sharedQuota: true },
+      { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true },
+      { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', iconPath: './deepseek-color (1).svg', tags: ['稳定', '稳定'] },
+      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2-Exp', iconPath: './deepseek-color (1).svg', tags: ['实验版', '稳定'] },
+      { id: 'glm-4.5-air', displayName: 'GLM-4.5-Air', iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'] },
+      { id: 'minimax-m2.5-alt', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['稳定'] },
+      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'] },
+      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '专业编码', '稳定'], multimodal: true },
+      { id: 'qwen3-max', displayName: 'Qwen3-Max', iconPath: './qwen-color.svg', tags: ['多模态', '旗舰', '稳定'], multimodal: true },
+      { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true },
+      { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true },
+      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
+      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
+      { id: 'mimo-v2.5-tts', displayName: 'MiMo-TTS', iconPath: './xiaomimimo-color.svg', tags: ['语音合成'] },
+      { id: 'mimo-v2.5-tts-voicedesign', displayName: 'MiMo-TTS-VoiceDesign', iconPath: './xiaomimimo-color.svg', tags: ['语音定制'] }
+    ];
+    const MODEL_CATALOG_BY_ID = new Map(MODEL_CATALOG.map(model => [model.id, model]));
+    const MODEL_IDS = Object.fromEntries(MODEL_CATALOG.map(model => [model.id, model.id]));
+    const MULTIMODAL_MODEL_IDS = new Set(MODEL_CATALOG.filter(model => model.multimodal).map(model => model.id));
+    INDEPENDENT_QUOTA_MODEL_IDS = new Set(MODEL_CATALOG.filter(model => !model.sharedQuota).map(model => model.id));
+
+    function getModelMeta(modelId) {
+      return MODEL_CATALOG_BY_ID.get(modelId) || {
+        id: modelId || 'unknown',
+        displayName: modelId || '未知模型',
+        iconPath: './openai.svg',
+        tags: []
+      };
+    }
+
+    function getModelDisplayName(modelId) {
+      return getModelMeta(modelId).displayName || modelId;
+    }
+
+    function getModelIconPath(modelId) {
+      return getModelMeta(modelId).iconPath || './openai.svg';
+    }
+
+    function createModelMetadata(modelId = currentModel) {
+      const meta = getModelMeta(modelId);
+      return {
+        modelId: meta.id,
+        modelName: meta.displayName || meta.id,
+        iconPath: meta.iconPath || './openai.svg'
+      };
+    }
+
     const savedModelSelection = localStorage.getItem('cancri_current_model') || 'deepseek-v4-flash';
     let currentModel = MODEL_SELECTION_MIGRATIONS[savedModelSelection] || savedModelSelection;
+    if (!MODEL_CATALOG_BY_ID.has(currentModel)) {
+      currentModel = 'deepseek-v4-flash';
+    }
     if (currentModel !== savedModelSelection) {
       localStorage.setItem('cancri_current_model', currentModel);
     }
-    const MULTIMODAL_MODEL_IDS = new Set(['qwen3.5', 'kimi-k2.5', 'qwen3.6-plus', 'qwen3-coder', 'kimi-k2.6', 'kimi-k2.6-moonshot', 'qwen3.6-flash', 'kimi-k2.5-dashscope', 'qwen3-coder-plus', 'qwen3-max', 'kimi-k2-instruct', 'qwen3.6-plus-20260402']);
 
     function isMultimodalModel(modelId) {
       return MULTIMODAL_MODEL_IDS.has(modelId);
@@ -682,113 +756,8 @@
 
     let isMultimodal = isMultimodalModel(currentModel);
 
-    const MODEL_IDS = {
-      'deepseek-v4-flash': 'deepseek-ai/DeepSeek-V4-Flash',
-      'deepseek-v4-flash-dashscope': 'deepseek-v4-flash',
-      'deepseek-v4-flash-siliconflow': 'deepseek-ai/DeepSeek-V4-Flash',
-      'deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
-      'deepseek-v4-pro-dashscope': 'deepseek-v4-pro-dashscope',
-      'step-3.5-flash': 'stepfun-ai/Step-3.5-Flash',
-      'hy3-preview': 'tencent/hy3-preview:free',
-      'gpt-oss-120b': 'openai/gpt-oss-120b:free',
-      'gpt-5.4': 'gpt-5.4',
-      'claude-opus-4.6': 'claude-opus-4.6',
-      'claude-sonnet-4.6': 'claude-sonnet-4.6',
-      'gemini-2.5-pro': 'gemini-2.5-pro',
-      'nemotron-3-super': 'nvidia/nemotron-3-super-120b-a12b:free',
-      'ling-2.6-1t': 'inclusionai/ling-2.6-1t:free',
-      'ling-2.6-1t-modelscope': 'inclusionAI/Ling-2.6-1T',
-      'spark-x2': 'spark-x',
-      'qwen3.5': 'Qwen/Qwen3.5-397B-A17B',
-      'qwen3-coder': 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
-      'kimi-k2.5': 'moonshotai/Kimi-K2.5',
-      'kimi-k2.6': 'kimi-k2.6',
-      'kimi-k2.6-moonshot': 'kimi-k2.6',
-      'glm-5': 'glm-5',
-      'glm-5.1': 'ZhipuAI/GLM-5.1',
-      'glm-5.1-dashscope': 'glm-5.1',
-      'glm-5.1-siliconflow': 'zai-org/GLM-5.1',
-      'glm-4.7': 'ZhipuAI/glm-4.7',
-      'deepseek-r1': 'deepseek-ai/DeepSeek-R1-0528',
-      'minimax-m2.5': 'MiniMax/MiniMax-M2.5',
-      'qwen3.6-max-preview': 'qwen3.6-max-preview',
-      'qwen3.6-plus': 'qwen3.6-plus',
-      // 百炼新增模型
-      'deepseek-r1': 'deepseek-r1',
-      'qwen3.6-flash': 'qwen3.6-flash',
-      'kimi-k2.5-dashscope': 'kimi-k2.5',
-      'deepseek-v3.2': 'deepseek-v3.2',
-      'deepseek-v3.2-exp': 'deepseek-v3.2-exp',
-      'glm-4.5-air': 'glm-4.5-air',
-      'minimax-m2.5-dashscope': 'minimax-m2.5',
-      'deepseek-v3.1': 'deepseek-v3.1',
-      'qwen3-coder-plus': 'qwen3-coder-plus',
-      'qwen3-max': 'qwen3-max',
-      'kimi-k2-instruct': 'kimi-k2-instruct',
-      'qwen3.6-plus-20260402': 'qwen3.6-plus-20260402',
-      'deepseek-r1-0528': 'deepseek-r1-0528',
-      // MiMo 模型
-      'mimo-v2.5-pro': 'mimo-v2.5-pro',
-      'mimo-v2.5-tts': 'mimo-v2.5-tts',
-      'mimo-v2.5-tts-voicedesign': 'mimo-v2.5-tts-voicedesign'
-    };
-
-    function getModelDisplayName(modelId) {
-      const modelLabels = {
-        'deepseek-v4-flash': 'DeepSeek-V4-Flash',
-        'deepseek-v4-flash-dashscope': 'DeepSeek-V4-Flash',
-        'deepseek-v4-flash-siliconflow': 'DeepSeek-V4-Flash · 线路三',
-        'deepseek-v4-pro': 'DeepSeek-V4-Pro',
-        'deepseek-v4-pro-dashscope': 'DeepSeek-V4-Pro · 线路二',
-        'step-3.5-flash': 'Step-3.5',
-        'hy3-preview': '混元3',
-        'gpt-oss-120b': 'chatGPT-OSS',
-        'gpt-5.4': 'GPT-5.4',
-        'claude-opus-4.6': 'Claude Opus 4.6',
-        'claude-sonnet-4.6': 'Claude Sonnet 4.6',
-        'gemini-2.5-pro': 'Gemini 2.5 Pro',
-        'nemotron-3-super': 'Nemotron-3-super',
-        'ling-2.6-1t': 'ling-2.6',
-        'ling-2.6-1t-modelscope': 'ling-2.6 · 线路二',
-        'spark-x2': 'spark-x2',
-        'qwen3.5': 'Qwen 3.5',
-        'qwen3-coder': 'Qwen3-Coder',
-        'kimi-k2.5': 'Kimi K2.5',
-        'kimi-k2.6': 'Kimi K2.6',
-        'kimi-k2.6-moonshot': 'Kimi K2.6 · 线路二',
-        'glm-5': 'GLM-5',
-        'glm-5.1': 'GLM-5.1',
-        'glm-5.1-dashscope': 'GLM-5.1',
-        'glm-5.1-siliconflow': 'GLM-5.1 Pro · 线路三',
-        'glm-4.7': 'GLM-4.7',
-        'deepseek-r1': 'DeepSeek-R1',
-        'minimax-m2.5': 'MiniMax-M2.5',
-        'qwen3.6-max-preview': 'qwen3.6-max-preview',
-        'qwen3.6-plus': 'qwen3.6-plus',
-        // 百炼新增模型
-        'deepseek-r1': 'DeepSeek-R1',
-        'qwen3.6-flash': 'Qwen3.6-Flash',
-        'kimi-k2.5-dashscope': 'Kimi K2.5 · 线路二',
-        'deepseek-v3.2': 'DeepSeek-V3.2',
-        'deepseek-v3.2-exp': 'DeepSeek-V3.2-Exp',
-        'glm-4.5-air': 'GLM-4.5-Air',
-        'minimax-m2.5-dashscope': 'MiniMax-M2.5 · 线路二',
-        'deepseek-v3.1': 'DeepSeek-V3.1',
-        'qwen3-coder-plus': 'Qwen3-Coder-Plus',
-        'qwen3-max': 'Qwen3-Max',
-        'kimi-k2-instruct': 'Kimi-K2-Instruct',
-        'qwen3.6-plus-20260402': 'Qwen3.6-Plus · 线路三',
-        'deepseek-r1-0528': 'DeepSeek-R1-0528 · 线路三',
-        // MiMo 模型
-        'mimo-v2.5-pro': 'MiMo-V2.5-Pro',
-        'mimo-v2.5-tts': 'MiMo-TTS',
-        'mimo-v2.5-tts-voicedesign': 'MiMo-TTS- VoiceDesign'
-      };
-      return modelLabels[modelId] || modelId;
-    }
-
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1-dashscope' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-moonshot' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-dashscope' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-alt' || modelId === 'kimi-k2.6-extended' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
         return { enable_thinking: true };
       }
       return {};
@@ -1286,13 +1255,10 @@
     }
 
     const SUPABASE_URL = (window.__SUPABASE_URL__ || '').trim() || `${window.location.origin}/api/supabase`;
-    const PROXY_TOKEN = (window.__PROXY_TOKEN__ || '').trim();
-    const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/modelscope-proxy`;
-    const CHAT_HISTORY_URL = `${SUPABASE_URL}/functions/v1/chat-history`;
-    const WEB_SEARCH_URL = `${SUPABASE_URL}/functions/v1/web-search`;
-    const MODELSCOPE_IMAGE_MODEL = 'Tongyi-MAI/Z-Image-Turbo';
-    const OPENAI_IMAGE_MODEL = 'dall-e-3';
-    const MODELSCOPE_CHAT_MODEL = 'deepseek-ai/DeepSeek-V4-Flash';
+    const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || '').trim();
+    const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
+    const DEFAULT_IMAGE_MODEL = 'image-fast';
+    const OPENAI_IMAGE_MODEL = 'image-precise';
     const MAX_REPEATED_TOOL_CALLS = 3;
     const FETCH_TIMEOUT_MS = 20000;
     const CHAT_REQUEST_TIMEOUT_MS = 25000;
@@ -1304,21 +1270,59 @@
       return CHAT_REQUEST_TIMEOUT_MS;
     }
 
-    function proxyHeaders(extra = {}) {
+    let supabaseClient = null;
+    let authSessionPromise = null;
+
+    function getSupabaseClient() {
+      if (supabaseClient) return supabaseClient;
+      if (!SUPABASE_ANON_KEY) {
+        throw new Error('Supabase anon key 未配置，无法创建匿名会话。');
+      }
+      if (!window.supabase?.createClient) {
+        throw new Error('Supabase Auth SDK 加载失败，请检查网络或刷新页面。');
+      }
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          storageKey: 'cancri_supabase_auth'
+        }
+      });
+      return supabaseClient;
+    }
+
+    async function ensureAuthSession() {
+      if (!authSessionPromise) {
+        authSessionPromise = (async () => {
+          const client = getSupabaseClient();
+          const { data: sessionData, error: sessionError } = await client.auth.getSession();
+          if (sessionError) throw sessionError;
+          if (sessionData?.session?.access_token) return sessionData.session;
+
+          const { data, error } = await client.auth.signInAnonymously();
+          if (error) throw error;
+          if (!data?.session?.access_token) {
+            throw new Error('匿名登录未返回有效 session。');
+          }
+          return data.session;
+        })().catch(error => {
+          authSessionPromise = null;
+          throw error;
+        });
+      }
+      return authSessionPromise;
+    }
+
+    async function proxyHeaders(extra = {}) {
+      const session = await ensureAuthSession();
       const h = { 'Content-Type': 'application/json', ...extra };
-      if (PROXY_TOKEN) h['x-proxy-token'] = PROXY_TOKEN;
+      h.Authorization = `Bearer ${session.access_token}`;
       return h;
     }
 
     function createChatTurnId() {
       return `turn_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-    }
-
-    // 获取用户标识（基于 API key 或生成随机 ID）
-    let userId = localStorage.getItem('cancri_user_id');
-    if (!userId) {
-      userId = 'user_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('cancri_user_id', userId);
     }
 
     // 聊天记录管理
@@ -1415,10 +1419,10 @@
       try {
         const chat = await loadChatHistory(chatId);
         if (!chat) return;
-        const response = await fetch(CHAT_HISTORY_URL, {
-          method: 'PUT',
-          headers: proxyHeaders({ 'x-user-id': userId }),
-          body: JSON.stringify({ id: chatId, messages: chat.messages || [], title: newTitle })
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: 'chat_history', action: 'update', id: chatId, messages: chat.messages || [], title: newTitle })
         });
         if (!response.ok) throw new Error('重命名失败');
         if (currentChatId === chatId) {
@@ -1491,7 +1495,7 @@
         const chat = await loadChatHistory(chatId);
         if (chat && chat.messages) {
           currentChatId = chatId;
-          conversationHistory = chat.messages;
+          conversationHistory = Array.isArray(chat.messages) ? chat.messages.map(sanitizeHistoryMessage) : [];
           setActiveView('home');
           homeView.classList.add('chatting');
           chatMessages.classList.add('active');
@@ -1529,7 +1533,7 @@
           createUserMessage(message.content);
         } else if (message.role === 'assistant') {
           const content = typeof message.content === 'string' ? message.content : '';
-          const id = createAssistantMessage();
+          const id = createAssistantMessage(message.metadata || message.modelMetadata || null);
           updateAssistantMessage(id, { answer: content, thinking: false });
         }
       });
@@ -1537,10 +1541,12 @@
 
     async function saveChatHistory(messages) {
       try {
-        const response = await fetch(CHAT_HISTORY_URL, {
+        const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: proxyHeaders({ 'x-user-id': userId }),
+          headers: await proxyHeaders(),
           body: JSON.stringify({
+            endpoint: 'chat_history',
+            action: 'create',
             title: generateChatTitle(messages),
             messages: messages,
             model: currentModel
@@ -1559,10 +1565,12 @@
 
     async function updateChatHistory(chatId, messages) {
       try {
-        const response = await fetch(CHAT_HISTORY_URL, {
-          method: 'PUT',
-          headers: proxyHeaders({ 'x-user-id': userId }),
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
           body: JSON.stringify({
+            endpoint: 'chat_history',
+            action: 'update',
             id: chatId,
             messages: messages,
             title: generateChatTitle(messages)
@@ -1580,9 +1588,10 @@
 
     async function loadChatHistoryList() {
       try {
-        const response = await fetch(CHAT_HISTORY_URL, {
-          method: 'GET',
-          headers: proxyHeaders({ 'x-user-id': userId })
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: 'chat_history', action: 'list' })
         });
 
         if (!response.ok) throw new Error('加载聊天记录列表失败');
@@ -1598,9 +1607,10 @@
 
     async function loadChatHistory(chatId) {
       try {
-        const response = await fetch(`${CHAT_HISTORY_URL}?id=${chatId}`, {
-          method: 'GET',
-          headers: proxyHeaders({ 'x-user-id': userId })
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: 'chat_history', action: 'get', id: chatId })
         });
 
         if (!response.ok) throw new Error('加载聊天记录失败');
@@ -1615,9 +1625,10 @@
 
     async function deleteChatHistory(chatId) {
       try {
-        const response = await fetch(`${CHAT_HISTORY_URL}?id=${chatId}`, {
-          method: 'DELETE',
-          headers: proxyHeaders({ 'x-user-id': userId })
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: 'chat_history', action: 'delete', id: chatId })
         });
 
         const rawText = await response.text().catch(() => '');
@@ -2211,7 +2222,7 @@
       try {
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(),
           body: JSON.stringify({
             model: 'mimo-v2.5-tts',
             messages: [
@@ -2416,7 +2427,7 @@
       if (!rateLimitNote || !rateLimitUpdateTime || !userRateLimit || !modelRateLimit) return;
       clearExpiredQuotaLocks();
 
-      const showModelQuota = isModelScopeModel(currentModel);
+      const showModelQuota = usesSharedQuota(currentModel);
       const modelRateLimitItem = modelRateLimit.closest('.rate-limit-item');
 
       if (modelRateLimitItem) {
@@ -2458,8 +2469,8 @@
       return `${String(toolCall?.name || '').trim()}::${JSON.stringify(args)}`;
     }
 
-    function updateRateLimitFromHeaders(headers, showModelQuota = isModelScopeModel(currentModel), responseStatus = 200, errorText = '') {
-      applyQuotaSnapshotFromHeaders(currentModel, headers, {
+    function updateRateLimitFromHeaders(headers, showModelQuota = usesSharedQuota(currentModel), responseStatus = 200, errorText = '', modelId = currentModel) {
+      applyQuotaSnapshotFromHeaders(modelId, headers, {
         responseStatus,
         errorText,
         updateCurrentRateLimitInfo: showModelQuota,
@@ -2470,7 +2481,7 @@
     async function refreshRateLimitForCurrentModel(resetModelQuota = false) {
       const refreshToken = ++rateLimitRefreshToken;
       const targetModelId = currentModel;
-      const showModelQuota = isModelScopeModel(targetModelId);
+      const showModelQuota = usesSharedQuota(targetModelId);
 
       if (!showModelQuota) {
         rateLimitInfo.modelLimit = null;
@@ -2484,7 +2495,7 @@
         const probeEndpoint = getModelProbeEndpoint(targetModelId);
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(),
           body: JSON.stringify({
             endpoint: 'ping',
             model: probeModel,
@@ -2921,47 +2932,47 @@
     function getModelIdentity(modelId) {
       const identities = {
         'deepseek-v4-flash': '由NexusV支持的DeepSeekV4模型',
-        'deepseek-v4-flash-dashscope': '由NexusV支持的DeepSeekV4模型',
+        'deepseek-v4-flash-alt': '由NexusV支持的DeepSeekV4模型',
         'deepseek-v4-pro': '由NexusV支持的DeepSeekV4-Pro模型',
-        'deepseek-v4-pro-dashscope': '由NexusV支持的DeepSeekV4-Pro模型（线路二）',
+        'deepseek-v4-pro-alt': '由NexusV支持的DeepSeekV4-Pro模型（备用）',
         'step-3.5-flash': '由NexusV支持的Step-3.5模型',
         'hy3-preview': '由NexusV支持的混元3模型',
         'gpt-oss-120b': '由NexusV支持的chatGPT-OSS模型',
         'nemotron-3-super': '由NexusV支持的Nemotron-3-super模型',
         'ling-2.6-1t': '由NexusV支持的ling-2.6模型',
-        'ling-2.6-1t-modelscope': '由NexusV支持的ling-2.6模型（魔塔线路二）',
+        'ling-2.6-1t-alt': '由NexusV支持的ling-2.6模型（共享额度备用）',
         'spark-x2': '由NexusV支持的spark-x2模型',
         'qwen3.5': '由NexusV支持的Qwen3.5模型',
         'qwen3-coder': '由NexusV支持的Qwen3-Coder模型',
         'kimi-k2.5': '由NexusV支持的Kimi-K2.5模型',
-        'kimi-k2.6': '由NexusV支持的Kimi-K2.6模型（线路一）',
-        'kimi-k2.6-moonshot': '由NexusV支持的Kimi-K2.6模型（线路二）',
+        'kimi-k2.6': '由NexusV支持的Kimi-K2.6模型（稳定）',
+        'kimi-k2.6-alt': '由NexusV支持的Kimi-K2.6模型（备用）',
         'glm-5': '由NexusV支持的GLM-5模型',
         'glm-5.1': '由NexusV支持的GLM-5.1模型',
-        'glm-5.1-dashscope': '由NexusV支持的GLM-5.1模型',
+        'glm-5.1-alt': '由NexusV支持的GLM-5.1模型',
         'glm-4.7': '由NexusV支持的GLM-4.7模型',
         'deepseek-r1': '由NexusV支持的DeepSeek-R1模型',
         'minimax-m2.5': '由NexusV支持的MiniMax-M2.5模型',
         'qwen3.6-max-preview': '由NexusV支持的qwen3.6-max-preview模型',
         'qwen3.6-plus': '由NexusV支持的qwen3.6-plus模型',
-        // 百炼新增模型
-        'qwen3.6-flash': '由NexusV支持的Qwen3.6-Flash模型（百炼）',
-        'kimi-k2.5-dashscope': '由NexusV支持的Kimi-K2.5模型（百炼线路二）',
-        'deepseek-v3.2': '由NexusV支持的DeepSeek-V3.2模型（百炼）',
-        'deepseek-v3.2-exp': '由NexusV支持的DeepSeek-V3.2-Exp模型（百炼）',
-        'glm-4.5-air': '由NexusV支持的GLM-4.5-Air模型（百炼）',
-        'minimax-m2.5-dashscope': '由NexusV支持的MiniMax-M2.5模型（百炼线路二）',
-        'deepseek-v3.1': '由NexusV支持的DeepSeek-V3.1模型（百炼）',
-        'qwen3-coder-plus': '由NexusV支持的Qwen3-Coder-Plus模型（百炼）',
-        'qwen3-max': '由NexusV支持的Qwen3-Max模型（百炼）',
-        'kimi-k2-instruct': '由NexusV支持的Kimi-K2-Instruct模型（百炼）',
-        'qwen3.6-plus-20260402': '由NexusV支持的Qwen3.6-Plus模型（百炼线路三）',
-        'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（百炼线路三）',
+        // 稳定新增模型
+        'qwen3.6-flash': '由NexusV支持的Qwen3.6-Flash模型（稳定）',
+        'kimi-k2.5-alt': '由NexusV支持的Kimi-K2.5模型（稳定备用）',
+        'deepseek-v3.2': '由NexusV支持的DeepSeek-V3.2模型（稳定）',
+        'deepseek-v3.2-exp': '由NexusV支持的DeepSeek-V3.2-Exp模型（稳定）',
+        'glm-4.5-air': '由NexusV支持的GLM-4.5-Air模型（稳定）',
+        'minimax-m2.5-alt': '由NexusV支持的MiniMax-M2.5模型（稳定备用）',
+        'deepseek-v3.1': '由NexusV支持的DeepSeek-V3.1模型（稳定）',
+        'qwen3-coder-plus': '由NexusV支持的Qwen3-Coder-Plus模型（稳定）',
+        'qwen3-max': '由NexusV支持的Qwen3-Max模型（稳定）',
+        'kimi-k2-instruct': '由NexusV支持的Kimi-K2-Instruct模型（稳定）',
+        'qwen3.6-plus-20260402': '由NexusV支持的Qwen3.6-Plus模型（稳定备用）',
+        'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（稳定备用）',
         // MiMo 模型
         'mimo-v2.5-pro': '由NexusV支持的MiMo-V2.5-Pro模型（小米）',
         // 缺失的模型
         'gpt-5.4': '由NexusV支持的GPT-5.4模型',
-        'kimi-k2.6-line3': '由NexusV支持的Kimi-K2.6模型（线路三）',
+        'kimi-k2.6-extended': '由NexusV支持的Kimi-K2.6模型（备用）',
         // NewAPI 模型
         'claude-opus-4.6': '由NexusV支持的Claude Opus 4.6模型',
         'claude-sonnet-4.6': '由NexusV支持的Claude Sonnet 4.6模型',
@@ -3303,11 +3314,11 @@
       generatedImageGrid.prepend(card);
     }
 
-    async function generateImageFromPrompt(prompt, imageModel = MODELSCOPE_IMAGE_MODEL) {
+    async function generateImageFromPrompt(prompt, imageModel = DEFAULT_IMAGE_MODEL) {
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
-      const isOpenAIImage = imageModel === 'dall-e-3';
+      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL;
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
       showToast('图片生成已开始，请稍等。');
@@ -3317,7 +3328,7 @@
       try {
         const response = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(),
           body: JSON.stringify({
             endpoint: 'image',
             model: imageModel,
@@ -3360,7 +3371,7 @@
           return;
         }
 
-        // ModelScope async task-based flow
+        // Async task-based image flow
         const taskId = data.task_id;
         if (!taskId) {
           throw new Error('未返回 task_id。');
@@ -3371,7 +3382,7 @@
         while (true) {
           const resultResponse = await fetch(EDGE_FUNCTION_URL, {
             method: 'POST',
-            headers: proxyHeaders(),
+            headers: await proxyHeaders(),
             body: JSON.stringify({
               endpoint: 'task',
               taskId: taskId
@@ -3492,11 +3503,43 @@
       scrollChatToBottom(false);
     }
 
-    function createAssistantMessage() {
+    function normalizeAssistantMetadata(metadata) {
+      if (metadata === null) {
+        return {
+          modelId: 'unknown',
+          modelName: '未知模型',
+          iconPath: './openai.svg'
+        };
+      }
+      const base = metadata?.modelId ? metadata : createModelMetadata(currentModel);
+      return {
+        modelId: base.modelId || 'unknown',
+        modelName: base.modelName || getModelDisplayName(base.modelId) || '未知模型',
+        iconPath: base.iconPath || getModelIconPath(base.modelId)
+      };
+    }
+
+    function sanitizeHistoryMessage(message) {
+      if (!message || typeof message !== 'object') {
+        return { role: 'assistant', content: '' };
+      }
+      const sanitized = { ...message };
+      if (sanitized.role === 'assistant') {
+        sanitized.metadata = normalizeAssistantMetadata(sanitized.metadata || sanitized.modelMetadata || null);
+      } else {
+        delete sanitized.metadata;
+      }
+      delete sanitized.modelMetadata;
+      delete sanitized.provider;
+      return sanitized;
+    }
+
+    function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
       const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const messageDiv = document.createElement('div');
       messageDiv.className = 'message assistant';
       messageDiv.id = messageId;
+      const modelMetadata = normalizeAssistantMetadata(metadata);
 
       const avatar = document.createElement('div');
       avatar.className = 'message-avatar';
@@ -3504,6 +3547,20 @@
 
       const bubble = document.createElement('div');
       bubble.className = 'message-content md-content';
+
+      const modelBadge = document.createElement('div');
+      modelBadge.className = 'assistant-model-badge';
+
+      const modelIcon = document.createElement('img');
+      modelIcon.className = 'assistant-model-icon';
+      modelIcon.src = modelMetadata.iconPath;
+      modelIcon.alt = '';
+      modelBadge.appendChild(modelIcon);
+
+      const modelName = document.createElement('span');
+      modelName.className = 'assistant-model-name';
+      modelName.textContent = modelMetadata.modelName;
+      modelBadge.appendChild(modelName);
 
       const thinkBlock = document.createElement('details');
       thinkBlock.className = 'think-block';
@@ -3555,6 +3612,7 @@
 
       thinkBlock.appendChild(thinkSummary);
       thinkBlock.appendChild(thinkBody);
+      bubble.appendChild(modelBadge);
       bubble.appendChild(thinkBlock);
       bubble.appendChild(toolCallsContainer);
       bubble.appendChild(answerBody);
@@ -3601,6 +3659,7 @@
         answerBody,
         toolCallsContainer,
         messageActions,
+        modelMetadata,
         thinkStreamState: { text: '', ready: false },
         answerStreamState: { text: '', ready: false },
       };
@@ -3687,6 +3746,14 @@
 
       conversationHistory.push(message);
       updateContextMeter();
+    }
+
+    function assistantHistoryMessage(content, metadata) {
+      return {
+        role: 'assistant',
+        content,
+        metadata: normalizeAssistantMetadata(metadata)
+      };
     }
 
     async function saveOrUpdateChatHistory() {
@@ -3776,6 +3843,17 @@
       return summaryParts.join(' ').trim() || '（包含图片上下文）';
     }
 
+    function toApiMessage(message, modelId) {
+      const apiMessage = {
+        role: message.role,
+        content: normalizeHistoryContentForModel(message.content, modelId),
+      };
+      if (message.name) apiMessage.name = message.name;
+      if (message.tool_call_id) apiMessage.tool_call_id = message.tool_call_id;
+      if (Array.isArray(message.tool_calls)) apiMessage.tool_calls = message.tool_calls;
+      return apiMessage;
+    }
+
     async function buildApiMessages(query, extraSystemContent = '', userContent = null, modelId = currentModel) {
       const systemPrompt = await buildSystemPrompt(query, modelId);
       const recentConversationSnapshot = buildRecentConversationSnapshot(conversationHistory, 8);
@@ -3787,10 +3865,7 @@
       const mergedSystemContent = [systemPrompt, recentConversationSnapshot, extraSystemContent, multimodalHint].filter(Boolean).join('\n\n');
       const messages = [{ role: 'system', content: mergedSystemContent }];
       conversationHistory.forEach(message => {
-        messages.push({
-          ...message,
-          content: normalizeHistoryContentForModel(message.content, modelId),
-        });
+        messages.push(toApiMessage(message, modelId));
       });
       messages.push({
         role: 'user',
@@ -3818,7 +3893,7 @@
 
       const response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
         method: 'POST',
-        headers: proxyHeaders(),
+        headers: await proxyHeaders(),
         body: JSON.stringify({
           endpoint: 'chat',
           model: MODEL_IDS[modelId] || MODEL_IDS['deepseek-v4-flash'],
@@ -4005,12 +4080,10 @@
       let cleaned = text.replace(/\[\s*Call\s+[`']?[a-zA-Z0-9_\-]+[`']?\s+with\s+[`']?\{[\s\S]*?\}[`']?\s*\]/gi, '');
       // 移除 function_name({...}) 标记（行首或独立出现）
       cleaned = cleaned.replace(/(^|\n)\s*[a-zA-Z0-9_\-]+\s*\(\{[\s\S]*?\}\)\s*(?=\n|$)/g, '$1');
-      // 移除 <tool_call>...</tool_call>
-      cleaned = cleaned.replace(/<tool_call\s*>[a-zA-Z0-9_\-]+<\/tool_call>/gi, '');
-      return cleaned;
+      return cleaned.trim();
     }
 
-    async function executeWebSearchToolCall(toolCall) {
+    async function executeWebSearchToolCall(toolCall, activeTurnId = '') {
       const args = parseToolArguments(toolCall?.arguments);
       const query = String(args.search_query || args.query || args.keyword || '').trim();
       if (!query) {
@@ -4021,12 +4094,21 @@
       const limitValue = Number.isFinite(Number(args.limit)) ? Number(args.limit) : 5;
       const limit = Math.max(1, Math.min(10, Math.round(limitValue)));
 
-      const requestPayload = { endpoint: 'web_search', query, search_query: query, lang, limit };
+      const requestPayload = {
+        endpoint: 'web_search',
+        query,
+        search_query: query,
+        lang,
+        limit,
+        client_turn_id: activeTurnId,
+        tool_call_id: toolCall?.id || '',
+        tool_name: 'web_search'
+      };
 
       const tryFetchSearch = async (url) => {
         const response = await fetchWithTimeout(url, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(activeTurnId ? { 'X-Chat-Turn-Id': activeTurnId } : {}),
           body: JSON.stringify(requestPayload),
         }, FETCH_TIMEOUT_MS, '联网搜索');
 
@@ -4049,35 +4131,29 @@
         return data;
       };
 
-      try {
-        const data = await tryFetchSearch(EDGE_FUNCTION_URL);
-        return JSON.stringify(data, null, 2);
-      } catch (edgeError) {
-        try {
-          const data = await tryFetchSearch(WEB_SEARCH_URL);
-          return JSON.stringify(data, null, 2);
-        } catch (fallbackError) {
-          const message = [normalizeErrorMessage(edgeError), normalizeErrorMessage(fallbackError)]
-            .filter(Boolean)
-            .join(' / ');
-          throw new Error(message || '联网搜索服务暂时不可用，请稍后重试。');
-        }
-      }
+      const data = await tryFetchSearch(EDGE_FUNCTION_URL);
+      return JSON.stringify(data, null, 2);
     }
 
-    async function executeFetchWebPageToolCall(toolCall) {
+    async function executeFetchWebPageToolCall(toolCall, activeTurnId = '') {
       const args = parseToolArguments(toolCall?.arguments);
       const url = String(args.url || '').trim();
       if (!url) {
         return JSON.stringify({ error: 'fetch_web_page 需要 url 参数。' }, null, 2);
       }
 
-      const requestPayload = { endpoint: 'fetch_web_page', url };
+      const requestPayload = {
+        endpoint: 'fetch_web_page',
+        url,
+        client_turn_id: activeTurnId,
+        tool_call_id: toolCall?.id || '',
+        tool_name: 'fetch_web_page'
+      };
 
       const tryFetchPage = async (fetchUrl) => {
         const response = await fetchWithTimeout(fetchUrl, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(activeTurnId ? { 'X-Chat-Turn-Id': activeTurnId } : {}),
           body: JSON.stringify(requestPayload),
         }, FETCH_TIMEOUT_MS, '获取网页内容');
 
@@ -4098,7 +4174,7 @@
       };
 
       try {
-        const data = await tryFetchPage(WEB_SEARCH_URL);
+        const data = await tryFetchPage(EDGE_FUNCTION_URL);
         return JSON.stringify(data, null, 2);
       } catch (error) {
         const message = normalizeErrorMessage(error, '获取网页内容失败，请稍后重试。');
@@ -4106,7 +4182,7 @@
       }
     }
 
-    async function executeArticleToolCall(toolCall) {
+    async function executeArticleToolCall(toolCall, activeTurnId = '') {
       const name = String(toolCall?.name || '').trim();
       const args = parseToolArguments(toolCall?.arguments);
       const lang = args.lang === 'en' || args.lang === 'zh' ? args.lang : undefined;
@@ -4166,17 +4242,17 @@
           return JSON.stringify({ article }, null, 2);
         }
         case 'web_search': {
-          return executeWebSearchToolCall(toolCall);
+          return executeWebSearchToolCall(toolCall, activeTurnId);
         }
         case 'fetch_web_page': {
-          return executeFetchWebPageToolCall(toolCall);
+          return executeFetchWebPageToolCall(toolCall, activeTurnId);
         }
         default:
           return JSON.stringify({ error: `不支持的工具：${name}` }, null, 2);
       }
     }
 
-    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '' } = {}) {
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel } = {}) {
       let finalAnswer = '';
       let reasoningText = '';
       let streamBuffer = '';
@@ -4184,7 +4260,7 @@
       const toolCalls = [];
 
       let response = null;
-      const activeModelId = MODEL_IDS[currentModel] || MODEL_IDS['deepseek-v4-flash'];
+      const activeModelId = MODEL_IDS[modelId] || MODEL_IDS['deepseek-v4-flash'];
 
       // 清理消息内容，确保多模态格式正确
       const processedMessages = messages.map(msg => {
@@ -4213,7 +4289,7 @@
         messages: processedMessages,
         stream: true,
         temperature: 0.6,
-        ...getModelRequestOptions(currentModel),
+        ...getModelRequestOptions(modelId),
       };
 
       if (enableTools) {
@@ -4224,14 +4300,14 @@
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         response = await fetchWithTimeout(EDGE_FUNCTION_URL, {
           method: 'POST',
-          headers: proxyHeaders(),
+          headers: await proxyHeaders(),
           signal: controller.signal,
           body: JSON.stringify({
             endpoint: 'chat',
             client_turn_id: turnId,
             ...requestBody
           })
-        }, getChatRequestTimeoutMs(currentModel), '模型请求');
+        }, getChatRequestTimeoutMs(modelId), '模型请求');
 
         if (response.status !== 429 || attempt === 2) {
           break;
@@ -4240,24 +4316,22 @@
         await sleep(900 * attempt);
       }
 
-      const showModelQuota = isModelScopeModel(currentModel);
+      const showModelQuota = usesSharedQuota(modelId);
       const errorText = response.ok ? '' : await response.text().catch(() => '');
-      updateRateLimitFromHeaders(response.headers, showModelQuota, response.status, errorText);
+      updateRateLimitFromHeaders(response.headers, showModelQuota, response.status, errorText, modelId);
 
       if (response.status === 429) {
-        throw new Error(getQuotaLockMessage(activeModelId) || '模型额度已超，请切换模型重试。');
+        throw new Error(getQuotaLockMessage(modelId) || '模型额度已超，请切换模型重试。');
       }
 
       if (!response.ok) {
         let detail = errorText.trim();
         if (detail) {
           const parsed = parseBackendErrorPayload(detail);
-          applyBackendModelBlock(parsed, currentModel);
+          applyBackendModelBlock(parsed, modelId);
           detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
             ? formatSecurityGuardMessage(parsed)
             : parsed.message || detail;
-          if (parsed?.provider) detail += `; provider=${parsed.provider}`;
-          if (Array.isArray(parsed?.missing) && parsed.missing.length) detail += `; missing=${parsed.missing.join(',')}`;
         }
         // 多模态特定错误提示
         if (response.status === 400 && processedMessages.some(m => Array.isArray(m.content))) {
@@ -4511,6 +4585,8 @@
       if (attachmentsForSend.length && !isMultimodal) {
         setModel('qwen3.5');
       }
+      const turnModelId = currentModel;
+      const turnModelMetadata = createModelMetadata(turnModelId);
 
       const effectiveQuery = query || '请分析上传的图片。';
       const userContent = attachmentsForSend.length
@@ -4521,21 +4597,21 @@
       createUserMessage(query || effectiveQuery, attachmentsForSend);
       homeInput.value = '';
 
-      if (!isModelAvailable(currentModel)) {
-        await refreshModelscopeQuota().catch(() => {});
+      if (!isModelAvailable(turnModelId)) {
+        await refreshSharedQuota().catch(() => {});
       }
 
-      const currentStatus = getModelStatus(currentModel);
-      if (!isModelAvailable(currentModel)) {
-        const unavailableMessage = getQuotaLockMessage(currentModel)
+      const currentStatus = getModelStatus(turnModelId);
+      if (!isModelAvailable(turnModelId)) {
+        const unavailableMessage = getQuotaLockMessage(turnModelId)
           || (currentStatus.quotaRemaining !== null && currentStatus.quotaRemaining <= 0
           ? '当前模型额度已用完，请切换其他模型再试。'
           : '当前模型暂时不可用，请切换其他模型再试。');
-        const assistantMessageId = createAssistantMessage();
-        const detailedUnavailableMessage = `${unavailableMessage}${formatModelUnavailableDebug(currentModel, currentStatus)}`;
+        const assistantMessageId = createAssistantMessage(turnModelMetadata);
+        const detailedUnavailableMessage = `${unavailableMessage}${formatModelUnavailableDebug(turnModelId, currentStatus)}`;
         updateAssistantMessage(assistantMessageId, { answer: detailedUnavailableMessage, thinking: false });
         pushHistory(userHistoryMessage);
-        pushHistory('assistant', detailedUnavailableMessage);
+        pushHistory(assistantHistoryMessage(detailedUnavailableMessage, turnModelMetadata));
         await finalizeConversationTurn();
         return;
       }
@@ -4543,26 +4619,26 @@
       setComposerBusy(true);
 
       try {
-        await ensureContextBudget(userContent, currentModel);
+        await ensureContextBudget(userContent, turnModelId);
       } catch (error) {
         showToast(normalizeErrorMessage(error, '上下文压缩失败，请稍后再试。'));
         return;
       }
 
-      const assistantMessageId = createAssistantMessage();
+      const assistantMessageId = createAssistantMessage(turnModelMetadata);
       const controller = new AbortController();
       const clearTurnTimeout = startAbortTimer(controller, CHAT_TURN_TIMEOUT_MS, '对话请求');
       const turnId = createChatTurnId();
       state.activeRequestController = controller;
 
       try {
-        const baseMessages = await buildApiMessages(effectiveQuery, '', userContent, currentModel);
+        const baseMessages = await buildApiMessages(effectiveQuery, '', userContent, turnModelId);
         const requestMessages = baseMessages.map(message => ({ ...message }));
         const turnMessages = [];
         const repeatedToolCalls = new Map();
         let round = 0;
         while (!controller.signal.aborted) {
-          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId });
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId });
 
           if (roundResult.toolCalls.length) {
             const assistantToolMessage = {
@@ -4597,7 +4673,7 @@
                 updateAssistantMessage(assistantMessageId, { answer: repeatedAnswer, thinking: false });
                 pushHistory(userHistoryMessage);
                 turnMessages.forEach(message => pushHistory(message));
-                pushHistory('assistant', repeatedAnswer);
+                pushHistory(assistantHistoryMessage(repeatedAnswer, turnModelMetadata));
                 await finalizeConversationTurn();
                 return;
               }
@@ -4605,7 +4681,7 @@
               let toolOutput = '';
 
               try {
-                toolOutput = await executeArticleToolCall(toolCall);
+                toolOutput = await executeArticleToolCall(toolCall, turnId);
                 completeToolCallUI(uiBlock, toolOutput);
               } catch (toolError) {
                 const toolErrorMessage = normalizeErrorMessage(toolError, '工具调用失败，请稍后重试。');
@@ -4637,7 +4713,7 @@
 
           pushHistory(userHistoryMessage);
           turnMessages.forEach(message => pushHistory(message));
-          pushHistory('assistant', resolvedAnswer);
+          pushHistory(assistantHistoryMessage(resolvedAnswer, turnModelMetadata));
           await finalizeConversationTurn();
           return;
         }
@@ -4646,7 +4722,7 @@
         updateAssistantMessage(assistantMessageId, { answer: fallbackAnswer, thinking: false });
         pushHistory(userHistoryMessage);
         turnMessages.forEach(message => pushHistory(message));
-        pushHistory('assistant', fallbackAnswer);
+        pushHistory(assistantHistoryMessage(fallbackAnswer, turnModelMetadata));
         await finalizeConversationTurn();
       } catch (error) {
         const message = normalizeErrorMessage(error, '抱歉，发送消息时出现错误，请稍后重试。');
@@ -5149,6 +5225,50 @@
     document.addEventListener('scroll', closeCustomContextMenu, true);
     window.addEventListener('blur', closeCustomContextMenu);
 
+    function renderModelDropdownFromCatalog() {
+      const content = document.getElementById('modelDropdownContent');
+      if (!content) return;
+      content.textContent = '';
+
+      MODEL_CATALOG.forEach(model => {
+        const option = document.createElement('div');
+        option.className = 'model-option';
+        option.dataset.model = model.id;
+        option.dataset.multimodal = model.multimodal ? 'true' : 'false';
+        option.title = model.displayName || model.id;
+
+        const speedDot = document.createElement('span');
+        speedDot.className = 'model-speed-dot speed-unknown';
+        option.appendChild(speedDot);
+
+        const label = document.createElement('span');
+        label.className = 'model-label';
+
+        const icon = document.createElement('img');
+        icon.src = model.iconPath || './openai.svg';
+        icon.alt = '';
+        icon.className = 'model-option-icon';
+        label.appendChild(icon);
+
+        const name = document.createElement('span');
+        name.className = 'model-label-text';
+        name.textContent = model.displayName || model.id;
+        label.appendChild(name);
+        option.appendChild(label);
+
+        (model.tags || []).forEach(tagText => {
+          const tag = document.createElement('span');
+          tag.className = 'model-tag';
+          if (String(tagText).includes('多模态')) tag.classList.add('multimodal');
+          tag.textContent = tagText;
+          option.appendChild(tag);
+        });
+
+        option.classList.toggle('active', model.id === currentModel);
+        content.appendChild(option);
+      });
+    }
+
     // 模型下拉菜单分页
     const MODELS_PER_PAGE = 10;
     let currentModelPage = 1;
@@ -5269,6 +5389,8 @@
         }
       });
     }
+
+    renderModelDropdownFromCatalog();
 
     if (modelDropdown) {
       modelDropdown.querySelectorAll('.model-option').forEach(option => {

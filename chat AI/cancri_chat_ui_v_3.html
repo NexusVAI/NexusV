@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Cancri</title>
   <script>
-    window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';
-    window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
+    window.__SUPABASE_URL__ = 'https://diusqgphvybnzazgopor.supabase.co';
+    window.__SUPABASE_ANON_KEY__ = 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
   </script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=mathfix2-0502" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="./cancri_chat.css?v=secure-mobile-workbench-0502" />
   <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
   <link rel="stylesheet" href="./katex/katex.min.css" />
   <script src="./katex/katex.min.js"></script>
@@ -183,236 +184,7 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
             <div class="model-dropdown" id="modelDropdown">
-            <div class="model-dropdown-content" id="modelDropdownContent">
-              <div class="model-option" data-model="deepseek-v4-flash" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V4-Flash</span>
-                <span class="model-tag">闪电</span>
-                <span class="model-tag">快速</span>
-                <span class="model-tag">线路一</span>
-              </div>
-              <div class="model-option" data-model="deepseek-v4-pro" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V4-Pro</span>
-                <span class="model-tag">Pro研究级模型</span>
-                <span class="model-tag">线路一</span>
-              </div>
-              <div class="model-option" data-model="deepseek-v4-pro-dashscope" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V4-Pro</span>
-                <span class="model-tag">Pro研究级模型</span>
-                <span class="model-tag">线路二</span>
-              </div>
-              <div class="model-option" data-model="step-3.5-flash" data-multimodal="false">
-                <span class="model-label"><img src="./stepfun-color.svg" alt="" class="model-option-icon">Step-3.5</span>
-                <span class="model-tag">阶跃星辰</span>
-                <span class="model-tag">快准狠</span>
-              </div>
-              <div class="model-option" data-model="hy3-preview" data-multimodal="false">
-                <span class="model-label"><img src="./yuanbao-color.svg" alt="" class="model-option-icon">混元3</span>
-                <span class="model-tag">国产腾讯旗下最新AI</span>
-                <span class="model-tag">低限额</span>
-              </div>
-              <div class="model-option" data-model="gpt-oss-120b" data-multimodal="false">
-                <span class="model-label"><img src="./openai.svg" alt="" class="model-option-icon">chatGPT-OSS</span>
-                <span class="model-tag">OpenAI</span>
-                <span class="model-tag">慢</span>
-              </div>
-              <div class="model-option" data-model="gpt-5.4" data-multimodal="false">
-                <span class="model-label"><img src="./openai.svg" alt="" class="model-option-icon">GPT-5.4</span>
-                <span class="model-tag">每日限流</span>
-                <span class="model-tag">OpenAI</span>
-              </div>
-              <div class="model-option" data-model="claude-opus-4.6" data-multimodal="false">
-                <span class="model-label"><img src="./claude-color.svg" alt="" class="model-option-icon">Claude Opus 4.6</span>
-                <span class="model-tag">每日限流</span>
-                <span class="model-tag">Anthropic</span>
-              </div>
-              <div class="model-option" data-model="claude-sonnet-4.6" data-multimodal="false">
-                <span class="model-label"><img src="./claude-color.svg" alt="" class="model-option-icon">Claude Sonnet 4.6</span>
-                <span class="model-tag">每日限流</span>
-                <span class="model-tag">Anthropic</span>
-              </div>
-              <div class="model-option" data-model="gemini-2.5-pro" data-multimodal="false">
-                <span class="model-label"><img src="./gemini-color.svg" alt="" class="model-option-icon">Gemini 2.5 Pro</span>
-                <span class="model-tag">每日限流</span>
-                <span class="model-tag">Google</span>
-              </div>
-              <div class="model-option" data-model="nemotron-3-super" data-multimodal="false">
-                <span class="model-label"><img src="./nvidia-color.svg" alt="" class="model-option-icon">Nemotron-3-super</span>
-                <span class="model-tag">英伟达</span>
-              </div>
-              <div class="model-option" data-model="ling-2.6-1t" data-multimodal="false">
-                <span class="model-label"><img src="./antgroup-color.svg" alt="" class="model-option-icon">ling-2.6</span>
-                <span class="model-tag">蚂蚁集团百灵</span>
-                <span class="model-tag">大参数</span>
-              </div>
-              <div class="model-option" data-model="ling-2.6-1t-modelscope" data-multimodal="false">
-                <span class="model-label"><img src="./antgroup-color.svg" alt="" class="model-option-icon">ling-2.6</span>
-                <span class="model-tag">蚂蚁集团百灵</span>
-                <span class="model-tag">线路二</span>
-                <span class="model-tag">魔塔</span>
-              </div>
-              <div class="model-option" data-model="spark-x2" data-multimodal="false">
-                <span class="model-label"><img src="./spark-color.svg" alt="" class="model-option-icon">spark-x2</span>
-                <span class="model-tag">星火推理模型</span>
-              </div>
-              <div class="model-option" data-model="deepseek-r1" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-R1</span>
-                <span class="model-tag">强推理</span>
-              </div>
-              <div class="model-option" data-model="qwen3.5" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen 3.5</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">全能型AI</span>
-              </div>
-              <div class="model-option" data-model="qwen3-coder" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3-Coder</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">编码专项</span>
-              </div>
-              <div class="model-option" data-model="kimi-k2.5" data-multimodal="true">
-                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi K2.5</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">复杂任务处理</span>
-              </div>
-              <div class="model-option" data-model="kimi-k2.6" data-multimodal="true">
-                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi K2.6</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">超复杂编程</span>
-              </div>
-              <div class="model-option" data-model="kimi-k2.6-moonshot" data-multimodal="true">
-                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi K2.6</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">线路二</span>
-                <span class="model-tag">官方API</span>
-              </div>
-              <div class="model-option" data-model="kimi-k2.6-line3" data-multimodal="true">
-                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi K2.6</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">线路三</span>
-                <span class="model-tag">官方API</span>
-              </div>
-              <div class="model-option" data-model="glm-5" data-multimodal="false">
-                <span class="model-label"><img src="./zhipu-color.svg" alt="" class="model-option-icon">GLM-5</span>
-                <span class="model-tag">深度编程</span>
-              </div>
-              <div class="model-option" data-model="glm-5.1-dashscope" data-multimodal="false">
-                <span class="model-label"><img src="./zhipu-color.svg" alt="" class="model-option-icon">GLM-5.1</span>
-                <span class="model-tag">复杂编码处理</span>
-                <span class="model-tag">线路一</span>
-              </div>
-              <div class="model-option" data-model="glm-5.1" data-multimodal="false">
-                <span class="model-label"><img src="./zhipu-color.svg" alt="" class="model-option-icon">GLM-5.1</span>
-                <span class="model-tag">复杂编码处理</span>
-                <span class="model-tag">线路二</span>
-              </div>
-              <div class="model-option" data-model="glm-4.7" data-multimodal="false">
-                <span class="model-label"><img src="./zhipu-color.svg" alt="" class="model-option-icon">GLM-4.7</span>
-                <span class="model-tag">Max</span>
-                <span class="model-tag">约等于Gemini3</span>
-              </div>
-              <div class="model-option" data-model="qwen3.6-max-preview" data-multimodal="false">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">qwen3.6-max-preview</span>
-                <span class="model-tag">预览</span>
-              </div>
-              <div class="model-option" data-model="qwen3.6-plus" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">qwen3.6-plus</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">均衡之选</span>
-              </div>
-              <div class="model-option" data-model="minimax-m2.5" data-multimodal="false">
-                <span class="model-label"><img src="./minimax-color.svg" alt="" class="model-option-icon">MiniMax-M2.5</span>
-                <span class="model-tag">新</span>
-                <span class="model-tag">性价比之选 快速</span>
-              </div>
-              <!-- 百炼新增模型 -->
-              <div class="model-option" data-model="deepseek-r1" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-R1</span>
-                <span class="model-tag">强推理</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="qwen3.6-flash" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3.6-Flash</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">快速</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="kimi-k2.5-dashscope" data-multimodal="true">
-                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi K2.5</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">线路二</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="deepseek-v3.2" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V3.2</span>
-                <span class="model-tag">百炼</span>
-                <span class="model-tag">稳定</span>
-              </div>
-              <div class="model-option" data-model="deepseek-v3.2-exp" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V3.2-Exp</span>
-                <span class="model-tag">实验版</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="glm-4.5-air" data-multimodal="false">
-                <span class="model-label"><img src="./zhipu-color.svg" alt="" class="model-option-icon">GLM-4.5-Air</span>
-                <span class="model-tag">轻量</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="minimax-m2.5-dashscope" data-multimodal="false">
-                <span class="model-label"><img src="./minimax-color.svg" alt="" class="model-option-icon">MiniMax-M2.5</span>
-                <span class="model-tag">线路二</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="deepseek-v3.1" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-V3.1</span>
-                <span class="model-tag">百炼</span>
-                <span class="model-tag">均衡</span>
-              </div>
-              <div class="model-option" data-model="qwen3-coder-plus" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3-Coder-Plus</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">专业编码</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="qwen3-max" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3-Max</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">旗舰</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="kimi-k2-instruct" data-multimodal="true">
-                <span class="model-label"><img src="./moonshot.svg" alt="" class="model-option-icon">Kimi-K2-Instruct</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">指令优化</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="qwen3.6-plus-20260402" data-multimodal="true">
-                <span class="model-label"><img src="./qwen-color.svg" alt="" class="model-option-icon">Qwen3.6-Plus</span>
-                <span class="model-tag multimodal">多模态</span>
-                <span class="model-tag">2026-04-02</span>
-                <span class="model-tag">线路三</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="deepseek-r1-0528" data-multimodal="false">
-                <span class="model-label"><img src="./deepseek-color (1).svg" alt="" class="model-option-icon">DeepSeek-R1-0528</span>
-                <span class="model-tag">强推理</span>
-                <span class="model-tag">线路三</span>
-                <span class="model-tag">百炼</span>
-              </div>
-              <div class="model-option" data-model="mimo-v2.5-pro" data-multimodal="false">
-                <span class="model-label"><img src="./xiaomimimo-color.svg" alt="" class="model-option-icon">MiMo-V2.5-Pro</span>
-                <span class="model-tag">长程任务第一</span>
-                <span class="model-tag">国产新竞</span>
-              </div>
-              <div class="model-option" data-model="mimo-v2.5-tts" data-multimodal="false">
-                <span class="model-label"><img src="./xiaomimimo-color.svg" alt="" class="model-option-icon">MiMo-2.5-TTS</span>
-                <span class="model-tag">小米</span>
-                <span class="model-tag">语音合成</span>
-              </div>
-              <div class="model-option" data-model="mimo-v2.5-tts-voicedesign" data-multimodal="false">
-                <span class="model-label"><img src="./xiaomimimo-color.svg" alt="" class="model-option-icon">MiMo-2.5-TTS-VoiceDesign</span>
-                <span class="model-tag">小米</span>
-                <span class="model-tag">语音定制</span>
-              </div>
-            </div>
+            <div class="model-dropdown-content" id="modelDropdownContent"></div>
             <!-- 分页控件 -->
             <div class="model-dropdown-footer">
               <button class="model-page-btn" id="modelPagePrev" aria-label="上一页">
@@ -536,7 +308,7 @@
                   <span class="quota-hint" aria-label="共享池说明">
                     <svg class="quota-hint-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                     <span class="quota-tooltip">
-                      用户当天限额为多个魔塔 key 的合计；部分火热模型共享池，部分模型不受此约束。模型当天限额仅在当前选择魔塔线路模型时显示。
+                      用户当天限额按共享池统计；部分火热模型共享池，部分模型不受此约束。模型当天限额仅在当前选择共享池模型时显示。
                     </span>
                   </span>
                   <span id="userRateLimit">计算中</span>
@@ -995,6 +767,6 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=errfix-0502"></script>
+  <script src="./cancri_chat.js?v=secure-gateway-0502"></script>
 </body>
 </html>
