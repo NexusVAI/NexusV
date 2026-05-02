@@ -892,13 +892,57 @@ async function handleWebSearchRequest(requestData: Record<string, unknown>, req:
   })
 }
 
-const BLOCKED_IPS = new Set(['185.212.58.222'])
+const BLOCKED_IPS = new Set(['185.212.58.222', '185.212.58.66'])
+const BLOCKED_IP_RANGES = ['185.212.58.0/24']
+
+function ipInCidr(ip: string, cidr: string): boolean {
+  const [range, bits = '32'] = cidr.split('/')
+  const mask = parseInt(bits, 10)
+  const ipNum = ip.split('.').reduce((a, b) => (a << 8) + parseInt(b, 10), 0) >>> 0
+  const rangeNum = range.split('.').reduce((a, b) => (a << 8) + parseInt(b, 10), 0) >>> 0
+  const maskNum = (0xFFFFFFFF << (32 - mask)) >>> 0
+  return (ipNum & maskNum) === (rangeNum & maskNum)
+}
+
+function isIpBlocked(ip: string): boolean {
+  if (BLOCKED_IPS.has(ip)) return true
+  return BLOCKED_IP_RANGES.some(cidr => ipInCidr(ip, cidr))
+}
+
+// === 并发炸弹检测 ===
+const BURST_MAX = 8
+const BURST_WINDOW_MS = 5000
+const burstMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkBurst(ip: string): boolean {
+  const now = Date.now()
+  const entry = burstMap.get(ip) || { count: 0, resetAt: now + BURST_WINDOW_MS }
+  if (now > entry.resetAt) {
+    entry.count = 0
+    entry.resetAt = now + BURST_WINDOW_MS
+  }
+  entry.count++
+  burstMap.set(ip, entry)
+  if (burstMap.size > 5000) {
+    const first = burstMap.keys().next().value
+    if (first) burstMap.delete(first)
+  }
+  return entry.count > BURST_MAX
+}
+// ===================
 
 serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
 
   const clientIp = getClientIp(req)
-  if (BLOCKED_IPS.has(clientIp)) {
+
+  // 自动拦截并发轰炸
+  if (checkBurst(clientIp)) {
+    console.log(JSON.stringify({ event: 'burst_blocked', ip: clientIp }))
+    return new Response(JSON.stringify({ error: 'blocked', code: 'burst_detected', message: '检测到异常并发请求' }), { status: 403, headers: { ...ch, 'Content-Type': 'application/json' } })
+  }
+
+  if (isIpBlocked(clientIp)) {
     console.log(JSON.stringify({ event: 'ip_blocked', ip: clientIp }))
     return new Response(JSON.stringify({ error: 'blocked', code: 'ip_blocked', message: '该 IP 已被永久封禁' }), { status: 403, headers: { ...ch, 'Content-Type': 'application/json' } })
   }

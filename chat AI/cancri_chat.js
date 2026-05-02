@@ -2813,7 +2813,10 @@
         'qwen3.6-plus-20260402': '由NexusV支持的Qwen3.6-Plus模型（百炼线路三）',
         'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（百炼线路三）',
         // MiMo 模型
-        'mimo-v2.5-pro': '由NexusV支持的MiMo-V2.5-Pro模型（小米）'
+        'mimo-v2.5-pro': '由NexusV支持的MiMo-V2.5-Pro模型（小米）',
+        // 缺失的模型
+        'gpt-5.4': '由NexusV支持的GPT-5.4模型',
+        'kimi-k2.6-line3': '由NexusV支持的Kimi-K2.6模型（线路三）'
       };
       return identities[modelId] || identities['deepseek-v4-flash'];
     }
