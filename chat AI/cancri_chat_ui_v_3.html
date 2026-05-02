@@ -8,22 +8,41 @@
     window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';
     window.__PROXY_TOKEN__ = window.__PROXY_TOKEN__ || '';
   </script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=maintenance-0501" />
-  <!-- KaTeX for math rendering (with fallback CDNs) -->
+  <link rel="stylesheet" href="./cancri_chat.css?v=mathfix-0502" />
+  <!-- KaTeX for math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous"
-    onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css';">
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+    onerror="this.onerror=null;this.href='https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/katex.min.css';">
   <script>
-    // KaTeX fallback: if jsdelivr fails, try cdnjs
-    if (typeof katex === 'undefined') {
-      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"><\/script>');
-    }
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
-  <script>
-    if (typeof renderMathInElement === 'undefined') {
-      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"><\/script>');
-    }
+    // 加载 KaTeX，支持多 CDN 回退
+    (function() {
+      var cdns = [
+        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/',
+        'https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.9/',
+        'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/'
+      ];
+      function loadScript(src) {
+        return new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.crossOrigin = 'anonymous';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      function tryLoadCDN(index) {
+        if (index >= cdns.length) {
+          console.warn('All KaTeX CDNs failed');
+          window.__KATEX_FAILED__ = true;
+          return;
+        }
+        loadScript(cdns[index] + 'katex.min.js')
+          .then(function() { return loadScript(cdns[index] + 'contrib/auto-render.min.js'); })
+          .then(function() { console.log('KaTeX loaded from:', cdns[index]); })
+          .catch(function() { tryLoadCDN(index + 1); });
+      }
+      tryLoadCDN(0);
+    })();
   </script>
 </head>
 <body>
@@ -961,6 +980,6 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=diagnostic-0501c"></script>
+  <script src="./cancri_chat.js?v=mathfix-0502"></script>
 </body>
 </html>

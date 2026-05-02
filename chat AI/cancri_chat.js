@@ -2791,9 +2791,14 @@
     function renderMathInElement(element) {
       if (typeof window === 'undefined' || !element) return;
 
-      // 如果 KaTeX 未加载，等待加载完成
+      // 所有 CDN 都失败了，直接降级
+      if (window.__KATEX_FAILED__) {
+        fallbackMathRender(element);
+        return;
+      }
+
       let retryCount = 0;
-      const maxRetries = 50; // 最多重试 50 次 (5秒)
+      const maxRetries = 30;
 
       const tryRender = () => {
         if (window.renderMathInElement) {
@@ -2810,23 +2815,41 @@
               strict: false
             });
           } catch (e) {
-            // 渲染失败不影响主流程
             console.warn('KaTeX render error:', e);
           }
         } else if (retryCount < maxRetries) {
-          // KaTeX 未加载，延迟 100ms 后重试
           retryCount++;
-          if (retryCount === 1) {
-            console.log('KaTeX not loaded yet, waiting...');
-          }
           setTimeout(tryRender, 100);
         } else {
-          console.warn('KaTeX failed to load after', maxRetries, 'retries');
-          console.log('window.renderMathInElement exists:', !!window.renderMathInElement);
+          console.warn('KaTeX not available, applying fallback');
+          fallbackMathRender(element);
         }
       };
 
       tryRender();
+    }
+
+    // KaTeX 加载失败时的降级渲染：去掉 $ 定界符，保留公式内容
+    function fallbackMathRender(element) {
+      // 直接操作 innerHTML，替换所有数学定界符
+      let html = element.innerHTML;
+      // 处理 $$...$$（display math）— 用 blockquote 样式突出显示
+      html = html.replace(/\$\$([\s\S]*?)\$\$/g, function(_, formula) {
+        return '<div style="text-align:center;margin:8px 0;font-style:italic;color:var(--text);">' + formula.trim() + '</div>';
+      });
+      // 处理 $...$（inline math）— 用斜体显示
+      html = html.replace(/\$([^\$]+?)\$/g, function(_, formula) {
+        return '<em style="color:var(--text);">' + formula.trim() + '</em>';
+      });
+      // 处理 \[...\]（display math）
+      html = html.replace(/\\\[([\s\S]*?)\\\]/g, function(_, formula) {
+        return '<div style="text-align:center;margin:8px 0;font-style:italic;color:var(--text);">' + formula.trim() + '</div>';
+      });
+      // 处理 \(...\)（inline math）
+      html = html.replace(/\\\(([\s\S]*?)\\\)/g, function(_, formula) {
+        return '<em style="color:var(--text);">' + formula.trim() + '</em>';
+      });
+      element.innerHTML = html;
     }
 
     function renderAnimatedMarkdown(markdown) {
