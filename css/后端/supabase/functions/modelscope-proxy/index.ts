@@ -16,6 +16,22 @@ function normalizeAllowedOrigin(value: string): string {
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
 
+function readSupabaseKeyDict(name: string): Record<string, string> {
+  const raw = Deno.env.get(name) || '{}'
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function firstKey(dict: Record<string, string>): string {
+  return dict.default || Object.values(dict)[0] || ''
+}
+
+const SUPABASE_SECRET_KEY = firstKey(readSupabaseKeyDict('SUPABASE_SECRET_KEYS'))
+
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
   if (!origin) return null
@@ -82,7 +98,7 @@ function decodeJwtSubject(token: string): string {
 
 function getForwardedUserId(req: Request): string {
   const internalSecret = cleanHeader(req.headers.get('x-internal-secret'))
-  if (!SUPABASE_SERVICE_ROLE_KEY || internalSecret !== SUPABASE_SERVICE_ROLE_KEY) return ''
+  if (!SUPABASE_SECRET_KEY || internalSecret !== SUPABASE_SECRET_KEY) return ''
   return cleanHeader(req.headers.get('x-forwarded-user-id'))
 }
 
@@ -280,7 +296,6 @@ const MODELSCOPE_API_KEY = (Deno.env.get('MODELSCOPE_API_KEY') || '').trim()
 const MODELSCOPE_API_KEY_1 = (Deno.env.get('MODELSCOPE_API_KEY_1') || '').trim()
 const MODELSCOPE_API_KEY_2 = (Deno.env.get('MODELSCOPE_API_KEY_2') || '').trim()
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
 const OPENAI_COMPATIBLE_BASE_URL = (Deno.env.get('OPENAI_COMPATIBLE_BASE_URL') || '').replace(/\/$/, '')
 const OPENAI_COMPATIBLE_API_KEY = Deno.env.get('OPENAI_COMPATIBLE_API_KEY') || ''
@@ -665,12 +680,12 @@ async function resolveModelScopeApiKeys(): Promise<string[]> {
 
   modelScopeApiKeyLoaded = true
 
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_SECRET_KEY) {
     return []
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)
     const { data, error } = await supabase
       .from('api_config')
       .select('api_key')

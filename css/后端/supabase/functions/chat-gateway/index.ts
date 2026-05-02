@@ -17,8 +17,23 @@ function normalizeAllowedOrigin(value: string): string {
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'https://nexusvai.github.io').split(',').map(normalizeAllowedOrigin).filter(Boolean)
 const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') || '').replace(/\/+$/, '')
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
+
+function readSupabaseKeyDict(name: string): Record<string, string> {
+  const raw = Deno.env.get(name) || '{}'
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function firstKey(dict: Record<string, string>): string {
+  return dict.default || Object.values(dict)[0] || ''
+}
+
+const SUPABASE_PUBLISHABLE_KEY = firstKey(readSupabaseKeyDict('SUPABASE_PUBLISHABLE_KEYS'))
+const SUPABASE_SECRET_KEY = firstKey(readSupabaseKeyDict('SUPABASE_SECRET_KEYS'))
 
 function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
@@ -35,7 +50,8 @@ function corsHeadersFor(req: Request): Record<string, string> {
     'Access-Control-Allow-Headers': 'authorization, apikey, x-client-info, content-type, accept, origin, x-chat-turn-id',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
-    'Access-Control-Expose-Headers': 'x-cancri-user-limit, x-cancri-user-remaining, x-cancri-model-limit, x-cancri-model-remaining, retry-after',
+    'Access-Control-Expose-Headers': 'x-gateway-build, x-cancri-user-limit, x-cancri-user-remaining, x-cancri-model-limit, x-cancri-model-remaining, retry-after',
+    'X-Gateway-Build': 'no-auth-to-proxy-0502',
   }
 }
 
@@ -159,7 +175,7 @@ async function forwardJsonResponse(response: Response, ch: Record<string, string
 
 async function forwardToModelProxy(req: Request, ch: Record<string, string>, body: JsonObject, userId: string, endpoint: string): Promise<Response> {
   const proxyUrl = functionUrl('modelscope-proxy')
-  if (!proxyUrl || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!proxyUrl || !SUPABASE_SECRET_KEY) {
     return jsonResponse({ error: 'Service not configured', code: 'service_not_configured' }, 500, ch)
   }
 
@@ -167,8 +183,7 @@ async function forwardToModelProxy(req: Request, ch: Record<string, string>, bod
     method: 'POST',
     headers: appendForwardHeaders(req, {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_SERVICE_ROLE_KEY,
-      'X-Internal-Secret': SUPABASE_SERVICE_ROLE_KEY,
+      'X-Internal-Secret': SUPABASE_SECRET_KEY,
       'X-Forwarded-User-Id': userId,
     }),
     body: JSON.stringify({ ...body, endpoint }),
@@ -188,7 +203,7 @@ async function forwardToWebSearch(req: Request, ch: Record<string, string>, body
     method: 'POST',
     headers: appendForwardHeaders(req, {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
       'Authorization': `Bearer ${jwt}`,
     }),
     body: JSON.stringify({ ...body, endpoint }),
@@ -250,7 +265,7 @@ async function forwardToChatHistory(req: Request, ch: Record<string, string>, bo
     method: forward.method,
     headers: appendForwardHeaders(req, {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
       'Authorization': `Bearer ${jwt}`,
     }),
     body: forward.payload ? JSON.stringify(forward.payload) : undefined,
