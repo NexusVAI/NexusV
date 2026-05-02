@@ -1316,7 +1316,11 @@
 
     async function proxyHeaders(extra = {}) {
       const session = await ensureAuthSession();
-      const h = { 'Content-Type': 'application/json', ...extra };
+      const h = {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        ...extra
+      };
       h.Authorization = `Bearer ${session.access_token}`;
       return h;
     }
@@ -4582,9 +4586,6 @@
 
       homeView.classList.add('chatting');
       chatMessages.classList.add('active');
-      if (attachmentsForSend.length && !isMultimodal) {
-        setModel('qwen3.5');
-      }
       const turnModelId = currentModel;
       const turnModelMetadata = createModelMetadata(turnModelId);
 
