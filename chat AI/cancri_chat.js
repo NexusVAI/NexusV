@@ -688,6 +688,9 @@
       'hy3-preview': 'tencent/hy3-preview:free',
       'gpt-oss-120b': 'openai/gpt-oss-120b:free',
       'gpt-5.4': 'gpt-5.4',
+      'claude-opus-4.6': 'claude-opus-4.6',
+      'claude-sonnet-4.6': 'claude-sonnet-4.6',
+      'gemini-2.5-pro': 'gemini-2.5-pro',
       'nemotron-3-super': 'nvidia/nemotron-3-super-120b-a12b:free',
       'ling-2.6-1t': 'inclusionai/ling-2.6-1t:free',
       'ling-2.6-1t-modelscope': 'inclusionAI/Ling-2.6-1T',
@@ -737,6 +740,9 @@
         'hy3-preview': '混元3',
         'gpt-oss-120b': 'chatGPT-OSS',
         'gpt-5.4': 'GPT-5.4',
+        'claude-opus-4.6': 'Claude Opus 4.6',
+        'claude-sonnet-4.6': 'Claude Sonnet 4.6',
+        'gemini-2.5-pro': 'Gemini 2.5 Pro',
         'nemotron-3-super': 'Nemotron-3-super',
         'ling-2.6-1t': 'ling-2.6',
         'ling-2.6-1t-modelscope': 'ling-2.6 · 线路二',
@@ -2816,7 +2822,11 @@
         'mimo-v2.5-pro': '由NexusV支持的MiMo-V2.5-Pro模型（小米）',
         // 缺失的模型
         'gpt-5.4': '由NexusV支持的GPT-5.4模型',
-        'kimi-k2.6-line3': '由NexusV支持的Kimi-K2.6模型（线路三）'
+        'kimi-k2.6-line3': '由NexusV支持的Kimi-K2.6模型（线路三）',
+        // NewAPI 模型
+        'claude-opus-4.6': '由NexusV支持的Claude Opus 4.6模型',
+        'claude-sonnet-4.6': '由NexusV支持的Claude Sonnet 4.6模型',
+        'gemini-2.5-pro': '由NexusV支持的Gemini 2.5 Pro模型'
       };
       return identities[modelId] || identities['deepseek-v4-flash'];
     }

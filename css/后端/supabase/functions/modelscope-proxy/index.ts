@@ -283,6 +283,7 @@ const MIMO_API_KEY = Deno.env.get('MIMO_API_KEY') || ''
 
 const NEWAPI_BASE_URL = (Deno.env.get('NEWAPI_BASE_URL') || '').replace(/\/+$/, '')
 const NEWAPI_API_KEY = Deno.env.get('NEWAPI_API_KEY') || ''
+const NEWAPI_API_KEY_2 = Deno.env.get('NEWAPI_API_KEY_2') || ''
 
 type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo' | 'newapi'
 
@@ -408,7 +409,13 @@ function isMimoModel(model: string): boolean {
 }
 
 function isNewApiModel(model: string): boolean {
-  return model === 'gpt-5.4'
+  return model === 'gpt-5.4' || model === 'claude-opus-4.6' || model === 'claude-sonnet-4.6' || model === 'gemini-2.5-pro'
+}
+
+function getNewApiKey(model: string): string {
+  // GPT-5.4 uses original key, others use new key
+  if (model === 'gpt-5.4') return NEWAPI_API_KEY
+  return NEWAPI_API_KEY_2
 }
 
 function getProviderKind(model: string): ProviderKind {
@@ -931,6 +938,70 @@ function checkBurst(ip: string): boolean {
 }
 // ===================
 
+// === ALTCHA Proof-of-Work 验证 ===
+const ALTCHA_MAX_NUMBER = 1_000_000  // 难度控制：普通电脑 50-200ms
+
+async function hmacSha256(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', encoder.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  )
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message))
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function handleAltchaChallenge(req: Request): Promise<Response> {
+  const ch = corsHeadersFor(req)
+  const hmacKey = Deno.env.get('ALTCHA_HMAC_KEY') || ''
+  if (!hmacKey) {
+    return jsonResponse({ error: 'server_misconfig', message: 'ALTCHA not configured' }, 500, ch)
+  }
+
+  const salt = crypto.randomUUID()
+  const number = Math.floor(Math.random() * ALTCHA_MAX_NUMBER)
+  const signature = await hmacSha256(hmacKey, salt + number)
+
+  return jsonResponse({
+    algorithm: 'SHA-256',
+    challenge: signature,
+    salt,
+    signature,
+    maxnumber: ALTCHA_MAX_NUMBER,
+  }, 200, ch)
+}
+
+async function verifyAltcha(payload: string, hmacKey: string): Promise<boolean> {
+  try {
+    const data = JSON.parse(atob(payload))
+    const { salt, number, signature } = data
+    if (!salt || typeof number !== 'number' || !signature) return false
+    const check = await hmacSha256(hmacKey, salt + number)
+    return check === signature
+  } catch {
+    return false
+  }
+}
+
+async function verifyAltchaOrFail(req: Request, ch: Record<string, string>): Promise<Response | null> {
+  const hmacKey = Deno.env.get('ALTCHA_HMAC_KEY') || ''
+  if (!hmacKey) {
+    return jsonResponse({ error: 'server_misconfig', message: 'ALTCHA not configured' }, 500, ch)
+  }
+
+  const altchaPayload = cleanHeader(req.headers.get('x-altcha-payload'))
+  if (!altchaPayload || !(await verifyAltcha(altchaPayload, hmacKey))) {
+    return jsonResponse({
+      error: 'bot_challenge_failed',
+      code: 'altcha_required',
+      message: '请完成验证后重试',
+      altcha_endpoint: '/altcha/challenge',
+    }, 403, ch)
+  }
+  return null
+}
+// ===================
+
 serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
 
@@ -969,6 +1040,10 @@ serve(async (req: Request) => {
     if (abuseResponse) return abuseResponse
     logSecurityEvent('request_started', ctx, { method: req.method })
 
+    if (endpointName === 'altcha/challenge' || (req.method === 'GET' && req.url.includes('/altcha/challenge'))) {
+      return handleAltchaChallenge(req)
+    }
+
     if (endpointName === 'web_search') {
       const response = await handleWebSearchRequest(requestData, req)
       logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt) })
@@ -979,6 +1054,12 @@ serve(async (req: Request) => {
       const response = await handlePingRequest(requestData, req)
       logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt) })
       return response
+    }
+
+    // ALTCHA 验证：所有 chat/image/task 请求必须先完成 PoW
+    if (['chat', 'image', 'task'].includes(endpointName)) {
+      const altchaFail = await verifyAltchaOrFail(req, ch)
+      if (altchaFail) return altchaFail
     }
 
     const block = getModelBlock(model)
@@ -1047,11 +1128,15 @@ serve(async (req: Request) => {
       return providerConfigError(provider, ['MIMO_API_KEY'], ch)
     }
 
-    if (provider === 'newapi' && (!NEWAPI_BASE_URL || !NEWAPI_API_KEY)) {
-      return providerConfigError(provider, [
-        ...(!NEWAPI_BASE_URL ? ['NEWAPI_BASE_URL'] : []),
-        ...(!NEWAPI_API_KEY ? ['NEWAPI_API_KEY'] : []),
-      ], ch)
+    if (provider === 'newapi' && !NEWAPI_BASE_URL) {
+      return providerConfigError(provider, ['NEWAPI_BASE_URL'], ch)
+    }
+    if (provider === 'newapi') {
+      const requiredKey = getNewApiKey(model)
+      if (!requiredKey) {
+        const missingKey = model === 'gpt-5.4' ? 'NEWAPI_API_KEY' : 'NEWAPI_API_KEY_2'
+        return providerConfigError(provider, [missingKey], ch)
+      }
     }
 
     if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
@@ -1161,7 +1246,7 @@ serve(async (req: Request) => {
         headers['Authorization'] = `Bearer ${MIMO_API_KEY}`
       } else if (provider === 'newapi') {
         url = `${NEWAPI_BASE_URL}/chat/completions`
-        headers['Authorization'] = `Bearer ${NEWAPI_API_KEY}`
+        headers['Authorization'] = `Bearer ${getNewApiKey(model)}`
       } else {
         url = `${MODELSCOPE_API_BASE}/chat/completions`
         headers['Authorization'] = `Bearer ${modelScopeApiKey}`
