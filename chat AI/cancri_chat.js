@@ -467,33 +467,8 @@
     }
 
     async function refreshIndependentModelPing() {
-      const independentModelIds = Object.keys(MODEL_IDS).filter(id => !usesSharedQuota(id));
-      const promises = independentModelIds.map(async (modelId) => {
-        const result = await pingModel(modelId);
-        const status = getModelStatus(modelId);
-        status.speedMs = result.speedMs;
-        status.speedLevel = result.ok ? getModelSpeedLevel(result.speedMs) : 'error';
-        if (!result.ok) {
-          status.error = result.error;
-          if (result.shouldLock) {
-            status.lockedUntil = Date.now() + MODEL_LOCK_DURATION_MS;
-            status.lockReason = 'unavailable';
-          } else {
-            status.lockedUntil = null;
-            status.lockReason = null;
-          }
-        } else {
-          status.error = null;
-          status.lockedUntil = null;
-          status.lockReason = null;
-        }
-        status.lastChecked = Date.now();
-        modelStatus.set(modelId, normalizeModelStatusSnapshot(status));
-      });
-      await Promise.allSettled(promises);
-      updateModelDropdownIndicators();
-      updateRateLimitNote();
-      persistModelTelemetryCache();
+      // 临时禁用全模型批量 ping，避免页面启动时几十个 POST 并发打爆 chat-gateway
+      return;
     }
 
     async function bootstrapModelTelemetry() {
@@ -4746,6 +4721,7 @@
         if (state.activeRequestController === controller) {
           state.activeRequestController = null;
         }
+        state.sendLocked = false;
         setComposerBusy(false);
       }
     }
