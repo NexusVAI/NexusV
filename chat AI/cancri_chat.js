@@ -678,6 +678,7 @@
       'grok-4.20-fast',
       'grok-code-fast-1',
       'minimax-m2.7',
+      'gemini-3.0-flash-high',
       'gemini-3-flash-preview',
       'gemini-3.1-flash-lite-preview',
       'gemma-4-31b-chat',
@@ -689,6 +690,7 @@
       'deepseek-v4-pro',
       'deepseek-v4-flash',
       'glm-5.1',
+      'glm-5v-turbo',
       'qwen3-coder-plus',
       'qwen3-coder',
       'deepseek-r1',
@@ -710,7 +712,7 @@
       { id: 'gpt-oss-120b', displayName: 'GPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'] },
       { id: 'gpt-5.4', displayName: 'GPT-5.4', iconPath: './openai.svg', tags: ['每日限流', '通用'] },
       { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
-      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '均衡'] },
+      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['线路二', '均衡'] },
       { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
       { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', iconPath: './nvidia-color.svg', tags: ['通用'] },
       { id: 'ling-2.6-1t', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['通用'] },
@@ -742,6 +744,8 @@
       { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true },
       { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true },
       { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
+      { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
+      { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
       { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
