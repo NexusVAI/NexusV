@@ -136,6 +136,19 @@ function decodeJwtSubject(token: string): string {
   }
 }
 
+function isAnonymousJwt(token: string): boolean {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return false;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const parsed = JSON.parse(atob(padded));
+    return parsed?.is_anonymous === true;
+  } catch {
+    return false;
+  }
+}
+
 interface RequestContext {
   service: string;
   endpoint: string;
@@ -268,6 +281,11 @@ async function createUserScopedClient(req: Request, ch: Record<string, string>, 
   if (!jwt) {
     logSecurityEvent("request_rejected", ctx, { reason: "missing_authorization" });
     return { ok: false, response: jsonResponse({ error: "Missing Authorization bearer token", code: "missing_authorization" }, 401, ch) };
+  }
+
+  if (isAnonymousJwt(jwt)) {
+    logSecurityEvent("request_rejected", ctx, { reason: "anonymous_not_allowed" });
+    return { ok: false, response: jsonResponse({ error: "请使用邮箱验证码登录后再使用。", code: "anonymous_not_allowed" }, 401, ch) };
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {

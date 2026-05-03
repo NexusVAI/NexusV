@@ -137,6 +137,19 @@ function decodeJwtSubject(token: string): string {
   }
 }
 
+function isAnonymousJwt(token: string): boolean {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return false
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const parsed = JSON.parse(atob(padded))
+    return parsed?.is_anonymous === true
+  } catch {
+    return false
+  }
+}
+
 function jsonResponse(data: JsonObject, status: number, ch: Record<string, string>, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -782,8 +795,8 @@ async function handleArenaRequest(req: Request, ch: Record<string, string>, body
       ? calculateArenaElo(modelAStats.eloScore, modelBStats.eloScore, winner)
       : { modelA: modelAStats.eloScore, modelB: modelBStats.eloScore }
 
-    if (effective) {
-      const countEloGame = winner !== 'bad'
+    {
+      const countEloGame = effective && winner !== 'bad'
       await upsertArenaModelStats(
         supabase,
         String(match.model_a),
@@ -800,7 +813,9 @@ async function handleArenaRequest(req: Request, ch: Record<string, string>, body
         eloAfter.modelB,
         countEloGame
       )
+    }
 
+    if (effective) {
       await supabase
         .from('arena_votes')
         .update({
@@ -1012,6 +1027,10 @@ serve(async (req: Request) => {
     const userId = decodeJwtSubject(jwt)
     if (!userId) {
       return jsonResponse({ error: 'Invalid session', code: 'invalid_session' }, 401, ch)
+    }
+
+    if (isAnonymousJwt(jwt)) {
+      return jsonResponse({ error: '请使用邮箱验证码登录后再使用。', code: 'anonymous_not_allowed' }, 401, ch)
     }
 
     const endpoint = cleanHeader(String(body.endpoint || 'chat')) || 'chat'
