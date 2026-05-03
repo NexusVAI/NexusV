@@ -711,6 +711,7 @@
 
   /* ── MODEL SELECTOR ─────────────────────────────────────── */
   .model-selector { position:relative; display:inline-flex; align-items:center; }
+  .model-selector[hidden] { display:none; }
 
   .model-current {
     display: inline-flex; align-items: center; gap: 5px;

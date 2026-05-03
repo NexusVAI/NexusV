@@ -1528,7 +1528,7 @@
       if (verifyOtpBtn) {
         verifyOtpBtn.addEventListener('click', async () => {
           const token = (otpInput?.value || '').trim();
-          if (!token || token.length < 4) {
+          if (!token || token.length < 6) {
             if (otpError) otpError.textContent = '请输入验证码';
             return;
           }
