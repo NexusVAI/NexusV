@@ -22,6 +22,7 @@ function firstKey(dict: Record<string, string>): string {
 
 const supabaseAnonKey = firstKey(readSupabaseKeyDict('SUPABASE_PUBLISHABLE_KEYS'))
 const supabaseSecretKey = firstKey(readSupabaseKeyDict('SUPABASE_SECRET_KEYS'))
+const MAINTENANCE_MODE = (Deno.env.get('MAINTENANCE_MODE') || '').trim().toLowerCase() === 'true'
 
 function normalizeAllowedOrigin(value: string): string {
   const clean = value.trim().replace(/\/+$/, '')
@@ -58,10 +59,13 @@ const BANNED_IPS = new Set([
   '192.3.209.49', '137.184.239.207', '173.242.127.138', '31.172.69.16',
   '89.125.244.207', '138.2.31.37',
   '113.224.60.216',
+  '221.215.44.36', '223.78.71.11',
+  '61.185.160.206',
 ])
 const BANNED_USERS = new Set([
   '2613bd…a797', '804f13…edcd',
   '2787e3…62f9', 'eda2e7…fd73', '92c7a6…94a0',
+  'b88673…e13f', '40a8b3…7ba3',
 ])
 
 const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
@@ -609,6 +613,15 @@ serve(async (req: Request) => {
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: ch });
+  }
+
+  if (MAINTENANCE_MODE) {
+    return jsonResponse({
+      error: 'service_unavailable',
+      code: 'maintenance_mode',
+      message: '系统维护中，服务暂时不可用，请稍后再试。',
+      retry_after_seconds: 600,
+    }, 503, ch, { 'Retry-After': '600' })
   }
 
   let authenticatedUserId = ''

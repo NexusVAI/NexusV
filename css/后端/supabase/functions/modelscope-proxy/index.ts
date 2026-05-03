@@ -61,6 +61,9 @@ const MODEL_UNAVAILABLE_WINDOW_MS = 10 * 60_000
 const MODEL_UNAVAILABLE_BLOCK_MS = 60 * 60_000
 const MODEL_UNAVAILABLE_FAILURE_LIMIT = 3
 const modelAvailabilityMap = new Map<string, { failures: number; resetAt: number; blockedUntil: number }>()
+const turnUsageMap = new Map<string, { count: number; resetAt: number; counted: boolean; blockedUntil: number }>()
+const TURN_USAGE_TTL_MS = 15 * 60_000
+const MAX_MODEL_CALLS_PER_TURN = 18
 
 interface RequestContext {
   service: string
@@ -265,6 +268,59 @@ function enforceAbuseGuard(
   }
 
   return null
+}
+
+function enforceTurnAwareAbuseGuard(
+  ctx: RequestContext,
+  ch: Record<string, string>,
+  turnId: string,
+  options: { ignoreSpeed?: boolean } = {}
+): Response | null {
+  const cleanTurnId = cleanHeader(turnId).slice(0, 96)
+  if (ctx.endpoint !== 'chat' || !cleanTurnId) {
+    return enforceAbuseGuard(ctx, ch, options)
+  }
+
+  const now = Date.now()
+  const key = `turn:${ctx.user}:${ctx.device}:${ctx.model}:${cleanTurnId}`
+  const entry = turnUsageMap.get(key) || { count: 0, resetAt: now + TURN_USAGE_TTL_MS, counted: false, blockedUntil: 0 }
+  if (entry.resetAt <= now) {
+    entry.count = 0
+    entry.resetAt = now + TURN_USAGE_TTL_MS
+    entry.counted = false
+    entry.blockedUntil = 0
+  }
+  if (entry.blockedUntil > now) {
+    return jsonResponse({
+      error: 'challenge_required',
+      code: 'challenge_required',
+      message: '这个对话回合触发了异常多次模型调用，已临时停止以防止脚本消耗额度。',
+      retry_after_seconds: Math.ceil((entry.blockedUntil - now) / 1000),
+    }, 403, ch, { 'Retry-After': String(Math.ceil((entry.blockedUntil - now) / 1000)) })
+  }
+
+  entry.count += 1
+  if (entry.count > MAX_MODEL_CALLS_PER_TURN) {
+    entry.blockedUntil = now + CHALLENGE_DURATION_MS
+    turnUsageMap.set(key, entry)
+    logSecurityEvent('turn_call_limit', ctx, { turnId: maskIdentifier(cleanTurnId), count: entry.count, retryAfter: Math.ceil(CHALLENGE_DURATION_MS / 1000) })
+    return jsonResponse({
+      error: 'challenge_required',
+      code: 'challenge_required',
+      message: '这个对话回合的工具链调用次数异常偏高，请重新发起一轮对话。',
+      retry_after_seconds: Math.ceil(CHALLENGE_DURATION_MS / 1000),
+    }, 403, ch, { 'Retry-After': String(Math.ceil(CHALLENGE_DURATION_MS / 1000)) })
+  }
+
+  turnUsageMap.set(key, entry)
+  if (entry.counted) return null
+
+  const abuseResponse = enforceAbuseGuard(ctx, ch, { ...options, ignoreSpeed: true })
+  if (!abuseResponse) {
+    entry.counted = true
+    turnUsageMap.set(key, entry)
+  }
+  return abuseResponse
 }
 
 function rejectOversizedRequest(req: Request, ch: Record<string, string>, ctx: RequestContext): Response | null {
@@ -1072,10 +1128,13 @@ const BLOCKED_IPS = new Set([
   '192.3.209.49', '137.184.239.207', '173.242.127.138', '31.172.69.16',
   '89.125.244.207', '138.2.31.37',
   '113.224.60.216',
+  '221.215.44.36', '223.78.71.11',
+  '61.185.160.206',
 ])
 const BLOCKED_USERS = new Set([
   '2613bd…a797', '804f13…edcd',
   '2787e3…62f9', 'eda2e7…fd73', '92c7a6…94a0',
+  'b88673…e13f', '40a8b3…7ba3',
 ])
 const BLOCKED_IP_RANGES = ['185.212.58.0/24']
 
@@ -1183,8 +1242,23 @@ async function verifyAltchaOrFail(req: Request, ch: Record<string, string>): Pro
 }
 // ===================
 
+const MAINTENANCE_MODE = (Deno.env.get('MAINTENANCE_MODE') || '').trim().toLowerCase() === 'true'
+
 serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
+
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: ch })
+  }
+
+  if (MAINTENANCE_MODE) {
+    return jsonResponse({
+      error: 'service_unavailable',
+      code: 'maintenance_mode',
+      message: '系统维护中，服务暂时不可用，请稍后再试。',
+      retry_after_seconds: 600,
+    }, 503, ch, { 'Retry-After': '600' })
+  }
 
   const clientIp = getClientIp(req)
 
@@ -1226,10 +1300,11 @@ serve(async (req: Request) => {
     const requestData = model ? { ...rawRequestData, model } : rawRequestData
     const ctx = getRequestContext(req, 'modelscope-proxy', endpointName, model, authenticatedUserId)
 
-    const hasTurnId = Boolean(clientTurnId || legacyTurnId || req.headers.get('x-chat-turn-id'))
+    const activeTurnId = cleanHeader(String(clientTurnId || legacyTurnId || req.headers.get('x-chat-turn-id') || ''))
+    const hasTurnId = Boolean(activeTurnId)
     const ignoreRapidSpeed = hasTurnId || endpointName === 'ping' || endpointName === 'task'
 
-    const abuseResponse = enforceAbuseGuard(ctx, ch, { ignoreSpeed: ignoreRapidSpeed })
+    const abuseResponse = enforceTurnAwareAbuseGuard(ctx, ch, activeTurnId, { ignoreSpeed: ignoreRapidSpeed })
     if (abuseResponse) return abuseResponse
     logSecurityEvent('request_started', ctx, { method: req.method })
 

@@ -74,7 +74,7 @@
                 <div class="footer-column">
                     <div class="footer-label" data-i18n="footer.research">研究</div>
                     <a href="${base}/article.html?id=news9" data-i18n="footer.research_index">研究索引</a>
-                    <a href="${base}/article.html?id=hero" data-i18n="footer.research_overview">研究概述</a>
+                    <a href="${base}/article.html?id=tactfr600" data-i18n="footer.research_overview">研究概述</a>
                     <a href="${base}/index.html#latest-news" data-i18n="footer.latest_progress">最新进展</a>
                 </div>
                 <div class="footer-column">

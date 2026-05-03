@@ -2,7 +2,7 @@ var menuConfig = {
     research: {
         label: 'menu.research.label',
         items: [
-            { href: 'article.html?id=hero', i18n: 'menu.research.index' },
+            { href: 'article.html?id=tactfr600', i18n: 'menu.research.index' },
             { href: 'article.html?id=hero', i18n: 'menu.research.deep_nexusv5' },
             { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.deep_sentienceV4C' },
             { href: 'article.html?id=tactfr600', i18n: 'menu.research.deep_tactfr60' }
