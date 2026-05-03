@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,8 @@
     window.__SUPABASE_ANON_KEY__ = 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=secure-mobile-workbench-0502" />
+  <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0503" />
+  <link rel="stylesheet" href="./cancri_arena.css?v=arena-module-0503" />
   <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
   <link rel="stylesheet" href="./katex/katex.min.css" />
   <script src="./katex/katex.min.js"></script>
@@ -62,11 +63,6 @@
   </script>
 </head>
 <body>
-  <div class="emergency-ticker">
-    <div class="emergency-ticker-track">
-      <div class="emergency-ticker-message">🔧 NexusV AI服务维护 | 计划于 2026-05-03 16:00 进行后端系统更新维护，预计维护时长 2小时+。维护期间网站及AI对话服务将暂时不可用。如有疑问，请进Q群1083892008</div>
-    </div>
-  </div>
   <div class="app" id="appRoot">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-topbar">
@@ -87,11 +83,20 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
             <span class="sidebar-label">新聊天</span>
           </div>
-          <div class="nav-row" data-view-target="images" id="imageGenerationNavBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-            <span class="sidebar-label">图片生成</span>
+          <div class="nav-row" id="arenaLeaderboardNavBtn" data-view-target="leaderboard">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path><path d="M5 5H3v3a4 4 0 0 0 4 4"></path><path d="M19 5h2v3a4 4 0 0 1-4 4"></path></svg>
+            <span class="sidebar-label">排行榜</span>
           </div>
-          <div class="section-title">聊天记录</div>
+          <div class="sidebar-leaderboard-panel" id="sidebarLeaderboardPanel" hidden>
+            <div id="sidebarLeaderboardList">暂无排行榜数据。</div>
+          </div>
+          <div class="nav-row" id="sidebarSearchBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span class="sidebar-label">搜索</span>
+          </div>
+          <div class="sidebar-search-wrap" id="sidebarSearchWrap" hidden>
+            <input id="chatHistorySearchInput" type="search" placeholder="搜索对话" autocomplete="off" />
+          </div>
           <div class="recent-wrap" id="chatHistoryList">
             <!-- 聊天记录列表将在这里动态生成 -->
           </div>
@@ -116,10 +121,10 @@
         <div class="account-strip" id="accountTrigger">
           <div class="avatar">MR</div>
           <div class="account-meta">
-            <div class="account-name">Mr.Jony</div>
-            <div class="account-plan">免费版</div>
+            <div class="account-name">登录 / 注册</div>
+            <div class="account-plan">邮箱验证码账户</div>
           </div>
-          <button class="upgrade-btn" id="donateBtn">资助本站</button>
+          <button class="upgrade-btn" id="donateBtn">账户</button>
           <svg class="account-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
         </div>
       </div>
@@ -146,8 +151,8 @@
           <div class="popover-item">
             <div class="avatar" style="width:28px;height:28px;">MR</div>
             <div style="display:flex;flex-direction:column;line-height:1.15;">
-              <span style="font-size:14px;font-weight:700;">Mr.Jony</span>
-              <span style="font-size:12px;color:var(--text-soft);margin-top:3px;">免费版</span>
+              <span style="font-size:14px;font-weight:700;">登录 / 注册</span>
+              <span style="font-size:12px;color:var(--text-soft);margin-top:3px;">邮箱验证码登录</span>
             </div>
             <span class="grow"></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
@@ -186,13 +191,47 @@
           <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="切换侧边栏">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
           </button>
-          <span class="brand-title">Cancri</span>
+          <span class="brand-title">竞技场</span>
+          <div class="arena-top-mode" id="topArenaModeSelector">
+            <button class="arena-mode-current" id="topArenaModeBtn" type="button">
+              <span class="arena-mode-icon">◯</span>
+              <span id="topArenaModeLabel">单模型</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+            <div class="arena-mode-dropdown" id="topArenaModeDropdown">
+              <button class="arena-mode-option" data-mode="battle" type="button">
+                <span class="arena-mode-symbol">⚔</span>
+                <span><strong>匿名对战</strong><small>两个匿名模型同题回答</small></span>
+              </button>
+              <button class="arena-mode-option" data-mode="agent" type="button">
+                <span class="arena-mode-symbol">∞</span>
+                <span><strong>智能体模式 <em>预览</em></strong><small>多模态智能体对话</small></span>
+              </button>
+              <button class="arena-mode-option" data-mode="side_by_side" type="button">
+                <span class="arena-mode-symbol">◎</span>
+                <span><strong>双模型对话</strong><small>比较你选择的两个模型</small></span>
+              </button>
+              <button class="arena-mode-option active" data-mode="direct" type="button">
+                <span class="arena-mode-symbol">○</span>
+                <span><strong>单模型</strong><small>一次只和一个模型聊天</small></span>
+              </button>
+            </div>
+          </div>
           <div class="model-selector" id="modelSelector">
             <button class="model-current" id="modelCurrentBtn">
               <span class="model-name" id="currentModelName">DeepSeek-V4-Flash</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
             <div class="model-dropdown" id="modelDropdown">
+            <div class="model-search-panel">
+              <input id="modelSearchInput" type="search" placeholder="搜索模型" autocomplete="off" />
+              <div class="model-filter-row" id="modelFilterRow">
+                <button class="model-filter-chip active" data-filter="all" type="button">文本</button>
+                <button class="model-filter-chip" data-filter="code" type="button">代码</button>
+                <button class="model-filter-chip" data-filter="image" type="button">图像</button>
+                <button class="model-filter-chip" data-filter="search" type="button">搜索</button>
+              </div>
+            </div>
             <div class="model-dropdown-content" id="modelDropdownContent"></div>
             <!-- 分页控件 -->
             <div class="model-dropdown-footer">
@@ -205,6 +244,12 @@
               </button>
             </div>
             </div>
+          </div>
+          <div class="model-selector compare-model-selector" id="compareModelSelector" hidden>
+            <button class="model-current" id="compareModelCurrentBtn" type="button">
+              <span class="model-name" id="compareModelName">模型 B</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
           </div>
           <div class="context-meter" id="contextMeter" tabindex="0" aria-label="上下文额度">
             <div class="context-meter-ring">
@@ -440,13 +485,127 @@
               </div>
             </div>
           </div>
-        </div>
         <div class="footer-note">
           <span>请勿在对话中输入身份证号、银行卡号、验证码等敏感信息，详情见隐私协议。</span>
           <button class="footer-legal-link" id="privacyPolicyBtn" type="button">隐私协议</button>
         </div>
         <div class="nexusv-footer" role="img" aria-label="NEXUSV 品牌区">
           <span class="nexusv-footer-brand">NEXUSV</span>
+        </div>
+      </section>
+
+      <section class="view" id="leaderboardView">
+        <div class="leaderboard-page">
+          <aside class="leaderboard-side">
+            <div class="leaderboard-side-section">
+              <div class="leaderboard-side-title">View as</div>
+              <div class="leaderboard-segment">
+                <button class="active" type="button">☰ Ranking</button>
+                <button type="button">⌁ Pareto</button>
+              </div>
+            </div>
+            <div class="leaderboard-side-section">
+              <div class="leaderboard-side-title">Categories</div>
+              <div class="leaderboard-category active">🏆 Overall</div>
+              <div class="leaderboard-category">🤓 Expert</div>
+              <div class="leaderboard-category">💼 Occupational</div>
+              <div class="leaderboard-category">🧮 Math</div>
+              <div class="leaderboard-category">📝 Instruction Following</div>
+              <div class="leaderboard-category">💬 Multi-Turn</div>
+              <div class="leaderboard-category">🔥 Creative Writing</div>
+              <div class="leaderboard-category">💻 Coding</div>
+            </div>
+          </aside>
+          <section class="leaderboard-main">
+            <div class="leaderboard-hero">
+              <div>
+                <h1>Text Arena</h1>
+                <p>View overall rankings across AI models in chat tasks across math, coding, creative writing, and other open-ended domains.</p>
+                <div class="leaderboard-meta">
+                  <span>◷ Updated live</span>
+                  <span id="mainLeaderboardVoteCount">Votes loading</span>
+                  <span id="mainLeaderboardModelCount">Models loading</span>
+                </div>
+              </div>
+              <button class="leaderboard-start-btn" type="button" id="leaderboardStartVotingBtn">Start Voting</button>
+            </div>
+            <div class="leaderboard-toolbar">
+              <button type="button">☷ Hide Filters</button>
+              <span></span>
+              <button class="active" type="button">Models</button>
+              <button type="button">Labs</button>
+              <button type="button">⌕</button>
+            </div>
+            <div class="leaderboard-table" id="mainLeaderboardList">排行榜加载中…</div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="arenaView">
+        <div class="arena-page">
+          <div class="arena-hero">
+            <div>
+              <div class="arena-kicker">AI Arena</div>
+              <h1>匿名双模型竞技场</h1>
+              <p>输入同一个问题，随机抽取两个模型匿名回答。投票前隐藏身份，投票后揭晓模型。</p>
+            </div>
+            <div class="arena-security">
+              <span>持久风控</span>
+              <strong>防脚本刷票</strong>
+            </div>
+          </div>
+          <div class="arena-modebar">
+            <label>
+              <span>模式</span>
+              <select id="arenaModeSelect">
+                <option value="anonymous">匿名双模型对战</option>
+                <option value="side_by_side">双模型对战</option>
+                <option value="single">单模型</option>
+              </select>
+            </label>
+            <div class="arena-model-pickers" id="arenaModelPickers">
+              <label>
+                <span>模型 A</span>
+                <input id="arenaModelSearchA" list="arenaModelOptions" placeholder="搜索或输入模型 ID" />
+              </label>
+              <label id="arenaModelPickerB">
+                <span>模型 B</span>
+                <input id="arenaModelSearchB" list="arenaModelOptions" placeholder="搜索或输入模型 ID" />
+              </label>
+              <datalist id="arenaModelOptions"></datalist>
+            </div>
+          </div>
+          <div class="arena-compose">
+            <textarea id="arenaPromptInput" rows="3" placeholder="输入一个适合比较模型能力的问题"></textarea>
+            <button id="arenaStartBtn">开始对战</button>
+          </div>
+          <div class="arena-status" id="arenaStatus">等待开始一局新的匿名对战。</div>
+          <div class="arena-battle">
+            <article class="arena-card" data-slot="a">
+              <div class="arena-card-head">
+                <span class="arena-slot">Model A</span>
+                <span class="arena-model-name" id="arenaModelA">投票后揭晓</span>
+              </div>
+              <div class="arena-answer markdown-body" id="arenaAnswerA">左侧模型回答会显示在这里。</div>
+            </article>
+            <article class="arena-card" data-slot="b">
+              <div class="arena-card-head">
+                <span class="arena-slot">Model B</span>
+                <span class="arena-model-name" id="arenaModelB">投票后揭晓</span>
+              </div>
+              <div class="arena-answer markdown-body" id="arenaAnswerB">右侧模型回答会显示在这里。</div>
+            </article>
+          </div>
+          <div class="arena-vote-row" id="arenaVoteRow">
+            <button class="arena-vote-btn" data-winner="a">A 更好</button>
+            <button class="arena-vote-btn" data-winner="b">B 更好</button>
+            <button class="arena-vote-btn" data-winner="tie">平局</button>
+            <button class="arena-vote-btn danger" data-winner="bad">都不好</button>
+          </div>
+          <div class="arena-leaderboard">
+            <div class="arena-section-title">排行榜</div>
+            <div id="arenaLeaderboardList" class="arena-leaderboard-list">暂无投票数据。</div>
+          </div>
         </div>
       </section>
 
@@ -774,6 +933,8 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=auth-guard-0503"></script>
+  <script src="./cancri_chat.js?v=arena-host-0503"></script>
+  <script src="./cancri_announcement.js?v=announcement-module-0503"></script>
+  <script src="./cancri_arena.js?v=arena-module-0503"></script>
 </body>
 </html>

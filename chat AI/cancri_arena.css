@@ -1,0 +1,246 @@
+.arena-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: min(1180px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 34px 0 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+.arena-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.arena-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.arena-hero h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.arena-hero p {
+  font-size: 14px;
+  color: var(--text-2);
+  margin: 0;
+}
+.arena-security {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.arena-security strong {
+  display: block;
+  color: var(--accent);
+  font-size: 14px;
+}
+.arena-modebar {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 12px;
+  align-items: end;
+}
+.arena-modebar label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.arena-modebar label span {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.arena-modebar select,
+.arena-modebar input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  min-height: 42px;
+  padding: 0 12px;
+}
+.arena-modebar select:focus,
+.arena-modebar input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.arena-model-pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.arena-model-pickers[hidden] {
+  display: none;
+}
+.arena-compose {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+.arena-compose textarea {
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: var(--font);
+  background: var(--surface);
+  color: var(--text);
+  min-height: 56px;
+}
+.arena-compose textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.arena-compose button {
+  height: 56px;
+  min-width: 96px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.arena-compose button:hover { background: #0d8c6d; }
+.arena-compose button:disabled { opacity: .45; cursor: not-allowed; }
+.arena-status {
+  font-size: 13px;
+  color: var(--text-2);
+  padding: 0 2px;
+}
+.arena-battle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.arena-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 260px;
+}
+.arena-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.arena-slot {
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.arena-model-name {
+  font-weight: 400;
+  color: var(--text-2);
+}
+.arena-answer {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+  flex: 1;
+  overflow-y: auto;
+}
+.arena-vote-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.arena-vote-btn {
+  padding: 10px 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.arena-vote-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.arena-vote-btn.danger {
+  color: var(--danger);
+  border-color: rgba(240,64,64,.25);
+}
+.arena-vote-btn.danger:hover {
+  border-color: var(--danger);
+  background: rgba(240,64,64,.08);
+}
+.arena-vote-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.arena-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.arena-leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.arena-leaderboard-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.arena-leaderboard-row span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .arena-page {
+    width: calc(100vw - 24px);
+    padding-top: 18px;
+  }
+  .arena-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .arena-security { text-align: left; }
+  .arena-compose,
+  .arena-modebar,
+  .arena-battle {
+    grid-template-columns: 1fr;
+  }
+  .arena-model-pickers {
+    grid-template-columns: 1fr;
+  }
+  .arena-compose button { min-height: 42px; }
+  .arena-card { min-height: 220px; }
+}

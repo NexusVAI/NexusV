@@ -14,6 +14,7 @@
       activeRequestController: null,
       recentProjectName: '',
       homeMode: 'chat',
+      arenaMode: localStorage.getItem('cancri_arena_mode') || 'direct',
     };
 
     const root = document.documentElement;
@@ -24,6 +25,8 @@
     const customContextMenu = document.getElementById('customContextMenu');
     const devtoolsShield = document.getElementById('devtoolsShield');
     const homeView = document.getElementById('homeView');
+    const leaderboardView = document.getElementById('leaderboardView');
+    const arenaView = document.getElementById('arenaView');
     const imagesView = document.getElementById('imagesView');
     const heroTitle = document.getElementById('heroTitle');
     const homeInput = document.getElementById('homeInput');
@@ -40,7 +43,17 @@
     const modelSelector = document.getElementById('modelSelector');
     const modelCurrentBtn = document.getElementById('modelCurrentBtn');
     const modelDropdown = document.getElementById('modelDropdown');
+    const modelSearchInput = document.getElementById('modelSearchInput');
+    const modelFilterRow = document.getElementById('modelFilterRow');
     const currentModelName = document.getElementById('currentModelName');
+    const topArenaModeSelector = document.getElementById('topArenaModeSelector');
+    const topArenaModeBtn = document.getElementById('topArenaModeBtn');
+    const topArenaModeLabel = document.getElementById('topArenaModeLabel');
+    const compareModelSelector = document.getElementById('compareModelSelector');
+    const compareModelCurrentBtn = document.getElementById('compareModelCurrentBtn');
+    const compareModelName = document.getElementById('compareModelName');
+    const chatHistorySearchInput = document.getElementById('chatHistorySearchInput');
+    const sidebarSearchWrap = document.getElementById('sidebarSearchWrap');
     const fileInput = document.getElementById('fileInput');
     const fileUploadBtn = document.getElementById('fileUploadBtn');
     const attachmentPreview = document.getElementById('attachmentPreview');
@@ -744,6 +757,35 @@
       return getModelMeta(modelId).displayName || modelId;
     }
 
+    function getModelBrandName(modelId) {
+      const meta = getModelMeta(modelId);
+      const text = `${meta.id || ''} ${meta.displayName || ''} ${meta.iconPath || ''}`.toLowerCase();
+      if (text.includes('qwen')) return '通义千问';
+      if (text.includes('deepseek')) return 'DeepSeek';
+      if (text.includes('grok')) return 'Grok';
+      if (text.includes('gemini') || text.includes('gemma')) return 'Google';
+      if (text.includes('claude')) return 'Anthropic Claude';
+      if (text.includes('gpt') || text.includes('openai')) return 'OpenAI';
+      if (text.includes('kimi') || text.includes('moonshot')) return 'Kimi';
+      if (text.includes('glm') || text.includes('zhipu')) return '智谱 GLM';
+      if (text.includes('minimax')) return 'MiniMax';
+      if (text.includes('mimo') || text.includes('xiaomi')) return '小米 MiMo';
+      if (text.includes('hunyuan') || text.includes('hy3') || text.includes('yuanbao')) return '腾讯混元';
+      if (text.includes('spark')) return '讯飞星火';
+      if (text.includes('ling') || text.includes('antgroup')) return '蚂蚁 Ling';
+      if (text.includes('nemotron') || text.includes('nvidia')) return 'NVIDIA Nemotron';
+      if (text.includes('step')) return '阶跃星辰';
+      return meta.displayName || modelId || '未知模型';
+    }
+
+    function getArenaIdentityPrompt(modelId, anonymous = false) {
+      const brandName = getModelBrandName(modelId);
+      if (anonymous) {
+        return `你正在参加匿名 AI 对战。当前只允许你在被问及身份时最多透露厂商或模型系列：“${brandName}”。不要透露具体模型型号、版本号、后端线路、路由、供应商密钥或评测规则。除非当前厂商确实是 DeepSeek，否则不要声称自己是 DeepSeek、DeepSeekV4 或 DeepSeek-V4。`;
+      }
+      return `你正在参加双模型对比。当前模型身份是：${getModelDisplayName(modelId)}。如果用户询问身份，必须按该身份回答，不要冒充 DeepSeek、DeepSeekV4 或其他模型。`;
+    }
+
     function getModelIconPath(modelId) {
       return getModelMeta(modelId).iconPath || './openai.svg';
     }
@@ -765,6 +807,14 @@
     if (currentModel !== savedModelSelection) {
       localStorage.setItem('cancri_current_model', currentModel);
     }
+
+    const savedCompareModelSelection = localStorage.getItem('cancri_compare_model') || 'gemini-3-flash-preview';
+    let compareModel = MODEL_SELECTION_MIGRATIONS[savedCompareModelSelection] || savedCompareModelSelection;
+    if (!MODEL_CATALOG_BY_ID.has(compareModel) || compareModel === currentModel) {
+      compareModel = MODEL_CATALOG.find(model => model.id !== currentModel)?.id || 'grok-4.20-fast';
+    }
+
+    let modelSelectTarget = 'primary';
 
     function isMultimodalModel(modelId) {
       return MULTIMODAL_MODEL_IDS.has(modelId);
@@ -1408,6 +1458,24 @@
       writeCachedChatHistoryList(next);
     }
 
+    function getChatHistoryBucket(chat) {
+      const raw = chat?.updated_at || chat?.created_at || new Date().toISOString();
+      const date = new Date(raw);
+      const now = new Date();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startYesterday = startToday - 24 * 60 * 60 * 1000;
+      const time = Number.isFinite(date.getTime()) ? date.getTime() : startToday;
+      if (time >= startToday) return 'Today';
+      if (time >= startYesterday) return 'Yesterday';
+      return 'Older';
+    }
+
+    function matchesChatHistorySearch(chat, query) {
+      const q = String(query || '').trim().toLowerCase();
+      if (!q) return true;
+      return [chat?.title, chat?.model, chat?.id].some(value => String(value || '').toLowerCase().includes(q));
+    }
+
     function getPinnedChats() {
       try { return JSON.parse(localStorage.getItem('cancri_pinned_chats') || '[]'); }
       catch { return []; }
@@ -1535,36 +1603,52 @@
         }
 
         const pinned = getPinnedChats();
-        const sorted = [...chats].sort((a, b) => {
+        const searchQuery = chatHistorySearchInput ? chatHistorySearchInput.value : '';
+        const sorted = [...chats].filter(chat => matchesChatHistorySearch(chat, searchQuery)).sort((a, b) => {
           const ap = pinned.includes(a.id);
           const bp = pinned.includes(b.id);
           if (ap !== bp) return ap ? -1 : 1;
-          return 0;
+          const at = new Date(a.updated_at || a.created_at || 0).getTime();
+          const bt = new Date(b.updated_at || b.created_at || 0).getTime();
+          return bt - at;
         });
 
-        sorted.forEach(chat => {
-          const isPinned = pinned.includes(chat.id);
-          const item = document.createElement('div');
-          item.className = 'recent-item' + (isPinned ? ' recent-item-pinned' : '');
+        if (sorted.length === 0) {
+          listContainer.innerHTML = '<div style="padding:12px 8px;font-size:13px;color:var(--text-dim);">没有匹配的对话</div>';
+          return;
+        }
 
-          const titleSpan = document.createElement('span');
-          titleSpan.className = 'recent-item-title';
-          titleSpan.textContent = chat.title || '新对话';
-          titleSpan.title = chat.title || '新对话';
+        ['Today', 'Yesterday', 'Older'].forEach(bucket => {
+          const group = sorted.filter(chat => getChatHistoryBucket(chat) === bucket);
+          if (!group.length) return;
+          const section = document.createElement('div');
+          section.className = 'section-title history-date-title';
+          section.textContent = bucket;
+          listContainer.appendChild(section);
+          group.forEach(chat => {
+            const isPinned = pinned.includes(chat.id);
+            const item = document.createElement('div');
+            item.className = 'recent-item' + (isPinned ? ' recent-item-pinned' : '');
 
-          const actionsBtn = document.createElement('button');
-          actionsBtn.className = 'recent-item-actions';
-          actionsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>`;
-          actionsBtn.title = '更多操作';
-          actionsBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'recent-item-title';
+            titleSpan.textContent = chat.title || '新对话';
+            titleSpan.title = chat.title || '新对话';
+
+            const actionsBtn = document.createElement('button');
+            actionsBtn.className = 'recent-item-actions';
+            actionsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>`;
+            actionsBtn.title = '更多操作';
+            actionsBtn.addEventListener('click', e => {
+              e.stopPropagation();
+              showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
+            });
+
+            item.appendChild(titleSpan);
+            item.appendChild(actionsBtn);
+            item.addEventListener('click', () => loadChat(chat.id));
+            listContainer.appendChild(item);
           });
-
-          item.appendChild(titleSpan);
-          item.appendChild(actionsBtn);
-          item.addEventListener('click', () => loadChat(chat.id));
-          listContainer.appendChild(item);
         });
       } catch (error) {
         console.error('加载聊天记录列表失败:', error);
@@ -2464,6 +2548,8 @@
     function setActiveView(view) {
       state.currentView = view;
       homeView.classList.toggle('active', view === 'home');
+      if (leaderboardView) leaderboardView.classList.toggle('active', view === 'leaderboard');
+      if (arenaView) arenaView.classList.toggle('active', view === 'arena');
       imagesView.classList.toggle('active', view === 'images');
       navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
       closePopover();
@@ -2471,8 +2557,258 @@
       if (view === 'home') {
         updateHomeHeroText();
       }
+      if (view === 'leaderboard') {
+        loadMainLeaderboard();
+      }
+      window.dispatchEvent(new CustomEvent('cancri:viewchange', { detail: { view } }));
     }
 
+    function syncTopArenaMode() {
+      const modeLabels = {
+        direct: '单模型',
+        battle: '匿名对战',
+        side_by_side: '双模型对话',
+        agent: '智能体模式'
+      };
+      if (topArenaModeLabel) topArenaModeLabel.textContent = modeLabels[state.arenaMode] || '单模型';
+      topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.mode === state.arenaMode);
+      });
+      if (modelSelector) modelSelector.hidden = state.arenaMode === 'battle';
+      if (compareModelSelector) compareModelSelector.hidden = state.arenaMode !== 'side_by_side';
+      if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
+      if (homeInput) {
+        if (state.arenaMode === 'battle') homeInput.placeholder = '向两个匿名模型发起同一个问题';
+        else if (state.arenaMode === 'side_by_side') homeInput.placeholder = '比较你选择的两个模型回答';
+        else if (state.arenaMode === 'agent') homeInput.placeholder = '智能体模式预览中，先用单模型提问';
+        else homeInput.placeholder = '有问题，尽管问';
+      }
+    }
+    function setTopArenaMode(mode) {
+      state.arenaMode = mode || 'direct';
+      localStorage.setItem('cancri_arena_mode', state.arenaMode);
+      syncTopArenaMode();
+      topArenaModeSelector?.classList.remove('open');
+      if (state.arenaMode === 'direct') {
+        showToast('已切换到单模型聊天');
+      } else if (state.arenaMode === 'battle') {
+        showToast('已切换到匿名双模型对战');
+      } else if (state.arenaMode === 'side_by_side') {
+        showToast('已切换到双模型对话');
+      } else {
+        showToast('智能体模式预览中');
+      }
+    }
+
+    async function loadSidebarLeaderboard() {
+      const list = document.getElementById('sidebarLeaderboardList');
+      if (!list) return;
+      list.innerHTML = '<span style="color:var(--text-dim);font-size:12px;">加载排行榜中…</span>';
+      try {
+        const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: 'arena_leaderboard' })
+        }, FETCH_TIMEOUT_MS, '排行榜');
+        const result = await response.json().catch(() => ({}));
+        const rows = Array.isArray(result.data) ? result.data.slice(0, 12) : [];
+        if (!rows.length) {
+          list.innerHTML = '<span style="color:var(--text-dim);font-size:12px;">暂无排行榜数据。</span>';
+          return;
+        }
+        const headerHtml = `<div class="sidebar-leaderboard-title">🏆 Chat 排行榜</div>
+          <div class="sidebar-leaderboard-header sidebar-leaderboard-arena-head"><span>Rank</span><span>Rank Spread</span><span>Model</span><span>Score</span></div>`;
+        const rowsHtml = rows.map((row, index) => {
+          const name = escapeHtml(getModelDisplayName(row.model_id || 'unknown'));
+          const brand = escapeHtml(getModelBrandName(row.model_id || 'unknown'));
+          const elo = Math.round(Number(row.elo_score || 1000));
+          const spreadLow = Number(row.rank_spread_low || row.rank_min || index + 1);
+          const spreadHigh = Number(row.rank_spread_high || row.rank_max || Math.min(rows.length, index + 3));
+          const delta = Math.max(1, Math.round(Number(row.elo_delta || row.uncertainty || row.confidence || 20)));
+          const rankClass = index < 3 ? ' top' : '';
+          return `<div class="sidebar-leaderboard-row sidebar-leaderboard-arena-row"><span class="rank${rankClass}">${index + 1}</span><span class="sidebar-leaderboard-spread">${spreadLow} ↔ ${spreadHigh}</span><span class="sidebar-leaderboard-model"><strong>${name}</strong><small>${brand}</small></span><span class="sidebar-leaderboard-score">${elo}<small>±${delta}</small></span></div>`;
+        }).join('');
+        list.innerHTML = headerHtml + rowsHtml;
+      } catch (error) {
+        list.innerHTML = '<span style="color:var(--text-dim);font-size:12px;">排行榜加载失败。</span>';
+      }
+    }
+
+    function renderMainLeaderboardRows(rows) {
+      const header = `
+        <div class="leaderboard-table-head">
+          <span>Rank</span>
+          <span>Rank Spread</span>
+          <span>Model</span>
+          <span>Score</span>
+        </div>`;
+      const body = rows.map((row, index) => {
+        const name = escapeHtml(getModelDisplayName(row.model_id || 'unknown'));
+        const brand = escapeHtml(getModelBrandName(row.model_id || 'unknown'));
+        const elo = Math.round(Number(row.elo_score || 1000));
+        const spreadLow = Number(row.rank_spread_low || row.rank_min || index + 1);
+        const spreadHigh = Number(row.rank_spread_high || row.rank_max || Math.min(rows.length, index + 3));
+        const delta = Math.max(1, Math.round(Number(row.elo_delta || row.uncertainty || row.confidence || 20)));
+        return `
+          <div class="leaderboard-table-row">
+            <span class="leaderboard-rank">${index + 1}</span>
+            <span class="leaderboard-spread">${spreadLow} ↔ ${spreadHigh}</span>
+            <span class="leaderboard-model-cell">
+              <strong>${name}</strong>
+              <small>${brand} · Proprietary</small>
+            </span>
+            <span class="leaderboard-score">${elo}<small>±${delta}</small></span>
+          </div>`;
+      }).join('');
+      return header + body;
+    }
+
+    async function loadMainLeaderboard() {
+      const list = document.getElementById('mainLeaderboardList');
+      if (!list) return;
+      list.textContent = '排行榜加载中…';
+      try {
+        const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: 'arena_leaderboard' })
+        }, FETCH_TIMEOUT_MS, '排行榜');
+        const result = await response.json().catch(() => ({}));
+        const rows = Array.isArray(result.data) ? result.data.slice(0, 50) : [];
+        if (!rows.length) {
+          list.textContent = '暂无排行榜数据。';
+          return;
+        }
+        const totalVotes = rows.reduce((sum, row) => sum + Number(row.total_votes || 0), 0);
+        const voteCount = document.getElementById('mainLeaderboardVoteCount');
+        const modelCount = document.getElementById('mainLeaderboardModelCount');
+        if (voteCount) voteCount.textContent = `${totalVotes.toLocaleString()} votes`;
+        if (modelCount) modelCount.textContent = `${rows.length} models`;
+        list.innerHTML = renderMainLeaderboardRows(rows);
+      } catch (error) {
+        list.textContent = '排行榜加载失败。';
+      }
+    }
+
+    async function arenaMainApi(endpoint, payload = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+      const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: await proxyHeaders(),
+        body: JSON.stringify({ endpoint, ...payload })
+      }, timeoutMs, '\u5bf9\u6218\u8bf7\u6c42');
+      const text = await response.text().catch(() => '');
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
+      if (!response.ok) {
+        const parsed = parseBackendErrorPayload(text);
+        throw new Error(parsed.message || data.message || data.error || '\u5bf9\u6218\u8bf7\u6c42\u5931\u8d25');
+      }
+      return data;
+    }
+    function parseArenaMainStreamDelta(parsed) {
+      const delta = parsed?.choices?.[0]?.delta || {};
+      const message = parsed?.choices?.[0]?.message || {};
+      return String(delta.content || delta.reasoning_content || message.content || '');
+    }
+    async function streamMainArenaSlot(matchId, slot, prompt, duelMessageId, { modelId = '', anonymous = false } = {}) {
+      let answer = '';
+      const identityPrompt = getArenaIdentityPrompt(modelId, anonymous);
+      const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: await proxyHeaders(),
+        body: JSON.stringify({
+          endpoint: 'arena_slot_chat',
+          id: matchId,
+          slot,
+          messages: [
+            { role: 'system', content: `${identityPrompt}\n请直接回答用户问题，回答应清晰、有帮助、适度简洁。` },
+            { role: 'user', content: prompt }
+          ],
+          stream: true,
+          temperature: 0.6,
+          client_turn_id: createChatTurnId()
+        })
+      }, CHAT_TURN_TIMEOUT_MS, `\u6a21\u578b ${slot.toUpperCase()} \u8bf7\u6c42`);
+      const errorText = response.ok ? '' : await response.text().catch(() => '');
+      if (!response.ok) {
+        const parsed = parseBackendErrorPayload(errorText);
+        throw new Error(parsed.message || errorText || `\u6a21\u578b ${slot.toUpperCase()} \u8bf7\u6c42\u5931\u8d25`);
+      }
+      if (!response.body) throw new Error(`\u6a21\u578b ${slot.toUpperCase()} \u6ca1\u6709\u8fd4\u56de\u6570\u636e\u6d41`);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const chunk = parseArenaMainStreamDelta(JSON.parse(payload));
+            if (!chunk) continue;
+            answer += chunk;
+            updateDuelMessage(duelMessageId, slot, answer, { loading: true });
+          } catch { void 0; }
+        }
+      }
+      updateDuelMessage(duelMessageId, slot, answer || '\u8fd9\u4e2a\u6a21\u578b\u6ca1\u6709\u8fd4\u56de\u6709\u6548\u5185\u5bb9\u3002', { loading: false });
+      await arenaMainApi('arena_record_response', { id: matchId, slot, response: answer || '' });
+      return answer;
+    }
+    async function sendArenaDuelMessage(prompt, { anonymous = false } = {}) {
+      const selectedA = currentModel;
+      const selectedB = compareModel === currentModel
+        ? MODEL_CATALOG.find(model => model.id !== currentModel)?.id || compareModel
+        : compareModel;
+      const createPayload = anonymous
+        ? { prompt, mode: 'anonymous' }
+        : { prompt, mode: 'side_by_side', model_a: selectedA, model_b: selectedB };
+      const result = await arenaMainApi('arena_create_match', createPayload);
+      const match = result.data;
+      const modelA = anonymous ? (match?.model_a || selectedA) : selectedA;
+      const modelB = anonymous ? (match?.model_b || selectedB) : selectedB;
+      const duelMessageId = createDuelAssistantMessage({ anonymous, modelA, modelB });
+      const [a, b] = await Promise.allSettled([
+        streamMainArenaSlot(match.id, 'a', prompt, duelMessageId, { modelId: modelA, anonymous }),
+        streamMainArenaSlot(match.id, 'b', prompt, duelMessageId, { modelId: modelB, anonymous })
+      ]);
+      if (a.status === 'rejected') updateDuelMessage(duelMessageId, 'a', `\u8bf7\u6c42\u5931\u8d25\uff1a${a.reason?.message || a.reason}`, { loading: false });
+      if (b.status === 'rejected') updateDuelMessage(duelMessageId, 'b', `\u8bf7\u6c42\u5931\u8d25\uff1a${b.reason?.message || b.reason}`, { loading: false });
+      if (anonymous) {
+        const voteRow = document.createElement('div');
+        voteRow.className = 'duel-vote-row';
+        voteRow.innerHTML = `
+          <button data-winner="a">A \u66f4\u597d</button>
+          <button data-winner="b">B \u66f4\u597d</button>
+          <button data-winner="tie">\u5e73\u5c40</button>
+          <button data-winner="bad">\u90fd\u4e0d\u597d</button>
+        `;
+        const wrapper = document.getElementById(duelMessageId);
+        wrapper?.querySelector('.duel-grid')?.appendChild(voteRow);
+        voteRow.querySelectorAll('button').forEach(button => {
+          button.addEventListener('click', async () => {
+            voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
+            try {
+              const vote = await arenaMainApi('arena_vote', { id: match.id, winner: button.dataset.winner });
+              const reveal = vote?.data?.reveal || {};
+              updateDuelMessage(duelMessageId, 'a', a.status === 'fulfilled' ? a.value : '', { modelId: reveal.model_a });
+              updateDuelMessage(duelMessageId, 'b', b.status === 'fulfilled' ? b.value : '', { modelId: reveal.model_b });
+              showToast('\u6295\u7968\u6210\u529f\uff0c\u5df2\u63ed\u6653\u6a21\u578b\u3002');
+              loadSidebarLeaderboard();
+            } catch (error) {
+              showToast(error?.message || '\u6295\u7968\u5931\u8d25');
+              voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = false; });
+            }
+          });
+        });
+      }
+      return { answerA: a.status === 'fulfilled' ? a.value : '', answerB: b.status === 'fulfilled' ? b.value : '' };
+    }
     function getTodayText() {
       const now = new Date();
       return `${now.getMonth() + 1}月${now.getDate()}日`;
@@ -3055,7 +3391,7 @@
         'claude-sonnet-4.6': '由NexusV支持的Claude Sonnet 4.6模型',
         'gemini-2.5-pro': '由NexusV支持的Gemini 2.5 Pro模型'
       };
-      return identities[modelId] || identities['deepseek-v4-flash'];
+      return identities[modelId] || `由NexusV支持的${getModelDisplayName(modelId)}模型`;
     }
 
     function getAvailableToolDefinitions() {
@@ -3225,7 +3561,19 @@
         '- 不要为了显得智能而跳过工具；该查就查。',
         '- 工具结果不足时，先继续调用工具或向用户补充确认。',
         '- 回答尽量使用简洁 Markdown。',
-        '- 输出数学公式时，必须使用 LaTeX 格式：行内公式用 $...$（如 $E=mc^2$），独立公式用 $$...$$（如 $$\\sum_{i=1}^n x_i$$）。**严格要求：$符号与公式内容之间不能有空格，正确写法是 $E=mc^2$，错误写法是 $ E=mc^2 $。**',
+        '# Math Formatting (CRITICAL)',
+        '数学公式必须严格使用 LaTeX 语法，本站使用 KaTeX 渲染，以下规则必须遵守：',
+        '- 行内公式：$...$，如 $E=mc^2$、$\\alpha + \\beta$',
+        '- 独立/块级公式：$$...$$，如：',
+        '  $$\\sum_{i=1}^{n} x_i = x_1 + x_2 + \\cdots + x_n$$',
+        '- 严禁：$ 符号和公式之间加空格（错误：$ x^2 $，正确：$x^2$）',
+        '- 严禁：使用 \\( \\) 或 \\[ \\] 或 HTML 标签代替 $ 和 $$',
+        '- 严禁：把公式写成纯文本（如 "x的平方"），应写 $x^2$',
+        '- 分数用 \\frac{a}{b}，根号用 \\sqrt{x}，上下标用 ^{} 和 _{}',
+        '- 矩阵用 \\begin{pmatrix}...\\end{pmatrix}',
+        '- 多行推导用 $$\\begin{aligned} ... \\end{aligned}$$',
+        '- 如果数学公式比较多，请为每一步推导单独用 $$ 块，便于阅读',
+        '',
         '',
         '# Examples',
         'User: 你们网站最近更新了什么 AI 相关文章？',
@@ -3629,6 +3977,11 @@
       const modelBadge = document.createElement('div');
       modelBadge.className = 'assistant-model-badge';
 
+      const modelPulse = document.createElement('span');
+      modelPulse.className = 'assistant-model-pulse';
+      modelPulse.setAttribute('aria-hidden', 'true');
+      modelBadge.appendChild(modelPulse);
+
       const modelIcon = document.createElement('img');
       modelIcon.className = 'assistant-model-icon';
       modelIcon.src = modelMetadata.iconPath;
@@ -3640,23 +3993,22 @@
       modelName.textContent = modelMetadata.modelName;
       modelBadge.appendChild(modelName);
 
-      const thinkBlock = document.createElement('details');
+      const thinkBlock = document.createElement('div');
       thinkBlock.className = 'think-block';
       thinkBlock.hidden = true;
-      thinkBlock.open = true;
 
-      const thinkSummary = document.createElement('summary');
-      thinkSummary.innerHTML = `
-        <span class="think-label">思考过程</span>
-        <div class="think-spinner" style="display: none;"></div>
-      `;
+      const thinkHeader = document.createElement('button');
+      thinkHeader.className = 'think-header';
+      thinkHeader.type = 'button';
+      thinkHeader.setAttribute('aria-expanded', 'true');
+      thinkHeader.innerHTML = `<span class="think-label">Thinking</span><span class="think-caret">⌄</span>`;
 
       const thinkBody = document.createElement('div');
       thinkBody.className = 'think-body md-content';
 
       const answerBody = document.createElement('div');
       answerBody.className = 'answer-body md-content';
-      answerBody.innerHTML = '<span class="typing-indicator">正在思考中…</span>';
+      answerBody.innerHTML = '';
 
       const toolCallsContainer = document.createElement('div');
       toolCallsContainer.className = 'tool-calls-container';
@@ -3688,7 +4040,7 @@
         </button>
       `;
 
-      thinkBlock.appendChild(thinkSummary);
+      thinkBlock.appendChild(thinkHeader);
       thinkBlock.appendChild(thinkBody);
       bubble.appendChild(modelBadge);
       bubble.appendChild(thinkBlock);
@@ -3731,14 +4083,22 @@
         await speakTextWithMimo(text);
       });
 
+      thinkHeader.addEventListener('click', () => {
+        if (thinkBlock.hidden) return;
+        const collapsed = !thinkBlock.classList.contains('is-collapsed');
+        thinkBlock.classList.toggle('is-collapsed', collapsed);
+        thinkHeader.setAttribute('aria-expanded', String(!collapsed));
+      });
+
       messageDiv._parts = {
         thinkBlock,
+        thinkHeader,
         thinkBody,
         answerBody,
         toolCallsContainer,
         messageActions,
         modelMetadata,
-        thinkStreamState: { text: '', ready: false },
+        thinkStreamState: { text: '', ready: false, startedAt: 0, wasThinking: false, autoCollapsed: false },
         answerStreamState: { text: '', ready: false },
       };
       chatMessages.appendChild(messageDiv);
@@ -3747,12 +4107,67 @@
       return messageId;
     }
 
+    function createDuelAssistantMessage({ anonymous = false, modelA = currentModel, modelB = compareModel } = {}) {
+      const messageId = `duel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message assistant duel-message';
+      wrapper.id = messageId;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'A';
+
+      const grid = document.createElement('div');
+      grid.className = 'duel-grid';
+
+      const makeCard = (slot, modelId) => {
+        const card = document.createElement('article');
+        card.className = 'duel-card';
+        const title = anonymous ? `模型 ${slot.toUpperCase()}` : getModelDisplayName(modelId);
+        card.innerHTML = `
+          <div class="duel-card-head">
+            <span>${escapeHtml(title)}</span>
+            <small>${anonymous ? '投票后揭晓' : escapeHtml(modelId)}</small>
+          </div>
+          <div class="duel-answer md-content" data-duel-answer="${slot}"><span class="typing-indicator">正在生成…</span></div>
+        `;
+        return card;
+      };
+
+      grid.appendChild(makeCard('a', modelA));
+      grid.appendChild(makeCard('b', modelB));
+      wrapper.appendChild(avatar);
+      wrapper.appendChild(grid);
+      wrapper._duel = { anonymous, modelA, modelB };
+      chatMessages.appendChild(wrapper);
+      scrollChatToBottom(false);
+      return messageId;
+    }
+
+    function updateDuelMessage(messageId, slot, text, { loading = false, modelId = '' } = {}) {
+      const wrapper = document.getElementById(messageId);
+      if (!wrapper) return;
+      const target = wrapper.querySelector(`[data-duel-answer="${slot}"]`);
+      if (!target) return;
+      const value = String(text || '').trim();
+      target.innerHTML = value ? renderMarkdown(value) : `<span class="typing-indicator">${loading ? '正在生成…' : '暂无内容'}</span>`;
+      renderMathInElement(target);
+      if (modelId && wrapper._duel?.anonymous) {
+        const card = target.closest('.duel-card');
+        const head = card?.querySelector('.duel-card-head');
+        if (head) {
+          head.innerHTML = `<span>${escapeHtml(getModelDisplayName(modelId))}</span><small>${escapeHtml(modelId)}</small>`;
+        }
+      }
+    }
+
     function updateAssistantMessage(messageId, { reasoning = '', answer = '', thinking = false } = {}) {
       const messageDiv = document.getElementById(messageId);
       if (!messageDiv || !messageDiv._parts) return;
 
       const {
         thinkBlock,
+        thinkHeader,
         thinkBody,
         answerBody,
         toolCallsContainer,
@@ -3764,25 +4179,41 @@
       const hasReasoning = Boolean(reasoningText.trim());
       const hasAnswer = Boolean(answerText.trim());
 
-      thinkBlock.hidden = !hasReasoning;
+      thinkBlock.hidden = !hasReasoning && !thinking;
+      if (thinking && !thinkStreamState.wasThinking) {
+        thinkStreamState.startedAt = Date.now();
+        thinkStreamState.autoCollapsed = false;
+        thinkBlock.classList.remove('is-collapsed');
+        if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'true');
+      }
       if (hasReasoning) {
         syncStreamingMarkdownBlock(thinkBody, thinkStreamState, reasoningText, { thinking });
-        thinkBlock.open = true;
-      } else {
+      } else if (!thinking) {
         thinkBody.innerHTML = '';
         thinkStreamState.text = '';
         thinkStreamState.ready = false;
       }
 
-      const thinkSpinner = thinkBlock.querySelector('.think-spinner');
-      if (thinkSpinner) {
-        thinkSpinner.style.display = thinking ? 'block' : 'none';
+      if (thinking) thinkBlock.classList.add('is-thinking');
+      else thinkBlock.classList.remove('is-thinking');
+      if (thinkHeader) {
+        const label = thinkHeader.querySelector('.think-label');
+        const seconds = thinkStreamState.startedAt
+          ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000))
+          : 1;
+        if (label) label.textContent = thinking ? 'Thinking' : `Thought for ${seconds}s`;
       }
+      if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
+        thinkBlock.classList.add('is-collapsed');
+        if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'false');
+        thinkStreamState.autoCollapsed = true;
+      }
+      thinkStreamState.wasThinking = Boolean(thinking);
 
       if (hasAnswer) {
         syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, { thinking, placeholder: '正在思考中…' });
       } else if (thinking) {
-        answerBody.innerHTML = '<span class="typing-indicator">正在思考中…</span>';
+        answerBody.innerHTML = '';
         answerStreamState.text = '';
         answerStreamState.ready = false;
       } else {
@@ -3797,6 +4228,14 @@
       }
 
       scrollChatToBottom();
+    }
+
+    function composeReasoningText(previous, current) {
+      const left = String(previous || '').trim();
+      const right = String(current || '').trim();
+      if (!left) return right;
+      if (!right) return left;
+      return `${left}\n\n---\n\n${right}`;
     }
 
     function clearConversation() {
@@ -4333,7 +4772,7 @@
       }
     }
 
-    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel } = {}) {
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel, priorReasoning = '' } = {}) {
       let finalAnswer = '';
       let reasoningText = '';
       let streamBuffer = '';
@@ -4436,7 +4875,7 @@
 
         if (reasoning) {
           reasoningText += reasoning;
-          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: finalAnswer || '', thinking: true });
+          updateAssistantMessage(assistantMessageId, { reasoning: composeReasoningText(priorReasoning, reasoningText), answer: finalAnswer || '', thinking: true });
         }
 
         if (answer) {
@@ -4444,13 +4883,13 @@
             doneReasoning = true;
           }
           finalAnswer += answer;
-          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: finalAnswer, thinking: true });
+          updateAssistantMessage(assistantMessageId, { reasoning: composeReasoningText(priorReasoning, reasoningText), answer: finalAnswer, thinking: true });
         }
 
         // 兼容 OpenAI 格式的流式 tool_calls
         if (Array.isArray(delta.tool_calls) && delta.tool_calls.length) {
           mergeToolCallDeltas(toolCalls, delta.tool_calls);
-          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: '', thinking: true });
+          updateAssistantMessage(assistantMessageId, { reasoning: composeReasoningText(priorReasoning, reasoningText), answer: '', thinking: true });
         }
 
         // 兼容 function_call（旧版 OpenAI 格式）
@@ -4462,7 +4901,7 @@
               name: fc.name,
               arguments: fc.arguments || '',
             });
-            updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: '', thinking: true });
+            updateAssistantMessage(assistantMessageId, { reasoning: composeReasoningText(priorReasoning, reasoningText), answer: '', thinking: true });
           }
         }
 
@@ -4476,7 +4915,7 @@
               arguments: tc.function?.arguments || tc.arguments || '',
             });
           }
-          updateAssistantMessage(assistantMessageId, { reasoning: reasoningText, answer: '', thinking: true });
+          updateAssistantMessage(assistantMessageId, { reasoning: composeReasoningText(priorReasoning, reasoningText), answer: '', thinking: true });
         }
       }
 
@@ -4675,6 +5114,24 @@
       createUserMessage(query || effectiveQuery, attachmentsForSend);
       homeInput.value = '';
 
+      if (!attachmentsForSend.length && (state.arenaMode === 'battle' || state.arenaMode === 'side_by_side')) {
+        setComposerBusy(true);
+        try {
+          const duelResult = await sendArenaDuelMessage(effectiveQuery, { anonymous: state.arenaMode === 'battle' });
+          pushHistory(userHistoryMessage);
+          pushHistory(assistantHistoryMessage(`【模型 A】\n${duelResult.answerA || '无有效回复'}\n\n【模型 B】\n${duelResult.answerB || '无有效回复'}`, createModelMetadata(turnModelId)));
+          await finalizeConversationTurn();
+        } catch (error) {
+          const message = normalizeErrorMessage(error, '双模型对话失败，请稍后重试。');
+          const errorMessageId = createAssistantMessage(turnModelMetadata);
+          updateAssistantMessage(errorMessageId, { answer: message, thinking: false });
+          showToast(message);
+        } finally {
+          setComposerBusy(false);
+        }
+        return;
+      }
+
       if (!isModelAvailable(turnModelId)) {
         await refreshSharedQuota().catch(() => {});
       }
@@ -4716,9 +5173,11 @@
         const baseMessages = await buildApiMessages(effectiveQuery, '', userContent, turnModelId);
         const requestMessages = baseMessages.map(message => ({ ...message }));
         const repeatedToolCalls = new Map();
+        let accumulatedReasoningText = '';
         let round = 0;
         while (!controller.signal.aborted) {
-          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId });
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId, priorReasoning: accumulatedReasoningText });
+          accumulatedReasoningText = composeReasoningText(accumulatedReasoningText, roundResult.reasoningText);
 
           if (roundResult.toolCalls.length) {
             const assistantToolMessage = {
@@ -4738,7 +5197,7 @@
             turnMessages.push(assistantToolMessage);
 
             updateAssistantMessage(assistantMessageId, {
-              reasoning: roundResult.reasoningText,
+              reasoning: accumulatedReasoningText,
               answer: roundResult.finalAnswer || '',
               thinking: true,
             });
@@ -4750,7 +5209,7 @@
               repeatedToolCalls.set(signature, repeatedCount);
               if (repeatedCount > MAX_REPEATED_TOOL_CALLS) {
                 const repeatedAnswer = '检测到模型反复调用同一个工具，已自动停止工具链。请换个问法或缩小查询范围。';
-                updateAssistantMessage(assistantMessageId, { answer: repeatedAnswer, thinking: false });
+                updateAssistantMessage(assistantMessageId, { reasoning: accumulatedReasoningText, answer: repeatedAnswer, thinking: false });
                 pushHistory(userHistoryMessage);
                 turnMessages.forEach(message => pushHistory(message));
                 pushHistory(assistantHistoryMessage(repeatedAnswer, turnModelMetadata));
@@ -4786,7 +5245,7 @@
 
           const resolvedAnswer = roundResult.finalAnswer || roundResult.reasoningText || '我刚刚没有拿到有效回复。你可以再试一次。';
           updateAssistantMessage(assistantMessageId, {
-            reasoning: roundResult.reasoningText,
+            reasoning: accumulatedReasoningText,
             answer: resolvedAnswer,
             thinking: false,
           });
@@ -4995,58 +5454,45 @@
     if (donateBtn) {
       donateBtn.addEventListener('click', e => {
         e.stopPropagation();
-        const qrModal = document.createElement('div');
-        qrModal.style.cssText = 'position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);padding:20px;opacity:0;transition:opacity 0.3s ease;';
-        const qrCard = document.createElement('div');
-        qrCard.style.cssText = 'background:var(--panel);border-radius:20px;padding:24px;max-width:90%;max-height:90%;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 64px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.3s ease;';
-        qrCard.innerHTML = `
-          <h3 style="font-size:18px;font-weight:700;color:var(--text);margin:0;">扫码资助</h3>
-        `;
-
-        const qrImage = document.createElement('img');
-        qrImage.alt = '收款码';
-        qrImage.style.cssText = 'max-width:300px;max-height:400px;border-radius:12px;object-fit:contain;background:#fff;';
-        const qrImageCandidates = [
-          '../Logo/1107.jpg',
-          '../0429/Logo/1107.jpg',
-        ];
-        let qrImageIndex = 0;
-        const loadNextQrImage = () => {
-          if (qrImageIndex >= qrImageCandidates.length) {
-            qrImage.alt = '收款码加载失败';
-            qrImage.removeAttribute('src');
-            return;
-          }
-          qrImage.src = qrImageCandidates[qrImageIndex];
-          qrImageIndex += 1;
-        };
-        qrImage.addEventListener('error', loadNextQrImage);
-        loadNextQrImage();
-
-        const closeQrButton = document.createElement('button');
-        closeQrButton.id = 'closeQrModal';
-        closeQrButton.type = 'button';
-        closeQrButton.textContent = '关闭';
-        closeQrButton.style.cssText = 'padding:8px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;';
-
-        qrCard.appendChild(qrImage);
-        qrCard.appendChild(closeQrButton);
-        qrModal.appendChild(qrCard);
-        document.body.appendChild(qrModal);
-        requestAnimationFrame(() => {
-          qrModal.style.opacity = '1';
-          qrCard.style.transform = 'scale(1)';
-        });
-        const closeModal = () => {
-          qrModal.style.opacity = '0';
-          qrCard.style.transform = 'scale(0.95)';
-          setTimeout(() => qrModal.remove(), 300);
-        };
-        qrModal.addEventListener('click', e => {
-          if (e.target === qrModal) closeModal();
-        });
-        closeQrButton.addEventListener('click', closeModal);
+        showToast('账户系统建议使用 Supabase Auth 邮箱验证码，后端配置见本次总结。');
       });
+    }
+
+    if (topArenaModeBtn) {
+      topArenaModeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        topArenaModeSelector?.classList.toggle('open');
+        closeModelDropdown();
+      });
+      topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
+        option.addEventListener('click', e => {
+          e.stopPropagation();
+          setTopArenaMode(option.dataset.mode);
+        });
+      });
+      document.addEventListener('click', e => {
+        if (!topArenaModeSelector?.contains(e.target)) topArenaModeSelector?.classList.remove('open');
+      });
+    }
+
+    const arenaLeaderboardNavBtn = document.getElementById('arenaLeaderboardNavBtn');
+    if (arenaLeaderboardNavBtn) {
+      arenaLeaderboardNavBtn.addEventListener('click', () => {
+        const panel = document.getElementById('sidebarLeaderboardPanel');
+        if (panel) panel.hidden = true;
+      });
+    }
+
+    const sidebarSearchBtn = document.getElementById('sidebarSearchBtn');
+    if (sidebarSearchBtn) {
+      sidebarSearchBtn.addEventListener('click', () => {
+        if (sidebarSearchWrap) sidebarSearchWrap.hidden = !sidebarSearchWrap.hidden;
+        if (sidebarSearchWrap && !sidebarSearchWrap.hidden) chatHistorySearchInput?.focus();
+      });
+    }
+
+    if (chatHistorySearchInput) {
+      chatHistorySearchInput.addEventListener('input', renderChatHistoryList);
     }
 
     document.getElementById('settingsBtn').addEventListener('click', () => openModal('settingsModal'));
@@ -5077,6 +5523,14 @@
     document.getElementById('upgradeBtn').addEventListener('click', () => window.open('https://qm.qq.com/q/bxQU3rXRyo', '_blank'));
     const clearBtnEl = document.getElementById('clearBtn');
     if (clearBtnEl) clearBtnEl.addEventListener('click', () => clearConversation());
+    const leaderboardStartVotingBtn = document.getElementById('leaderboardStartVotingBtn');
+    if (leaderboardStartVotingBtn) {
+      leaderboardStartVotingBtn.addEventListener('click', () => {
+        setTopArenaMode('battle');
+        setActiveView('home');
+        homeInput?.focus();
+      });
+    }
     document.getElementById('micToastBtn').addEventListener('click', () => showToast('语音输入入口已响应。'));
     document.getElementById('imageMicToastBtn').addEventListener('click', () => showToast('图片语音输入入口已响应。'));
     document.getElementById('uploadToastBtn').addEventListener('click', () => attachmentInput?.click());
@@ -5297,24 +5751,25 @@
       }
     }
 
-    document.addEventListener('keydown', e => {
-      const key = String(e.key || '').toLowerCase();
-      if (key === 'f12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c', 'k'].includes(key)) || (e.ctrlKey && key === 'u') || (e.metaKey && e.altKey && ['i', 'j', 'c'].includes(key))) {
-        e.preventDefault();
-        e.stopPropagation();
-        showDevtoolsShield();
-      }
-    });
+    // [DISABLED] Devtools key blocking — re-enable after debugging
+    // document.addEventListener('keydown', e => {
+    //   const key = String(e.key || '').toLowerCase();
+    //   if (key === 'f12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c', 'k'].includes(key)) || (e.ctrlKey && key === 'u') || (e.metaKey && e.altKey && ['i', 'j', 'c'].includes(key))) {
+    //     e.preventDefault();
+    //     e.stopPropagation();
+    //     showDevtoolsShield();
+    //   }
+    // });
 
-    // 防右键/防F12（可选）
-    document.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      if (devtoolsShield && devtoolsShield.classList.contains('show')) {
-        closeCustomContextMenu();
-        return;
-      }
-      openCustomContextMenu(e.clientX, e.clientY, e.target);
-    });
+    // [DISABLED] 右键拦截 — re-enable after debugging
+    // document.addEventListener('contextmenu', e => {
+    //   e.preventDefault();
+    //   if (devtoolsShield && devtoolsShield.classList.contains('show')) {
+    //     closeCustomContextMenu();
+    //     return;
+    //   }
+    //   openCustomContextMenu(e.clientX, e.clientY, e.target);
+    // });
 
     document.addEventListener('click', event => {
       if (customContextMenu && !customContextMenu.contains(event.target)) {
@@ -5367,6 +5822,42 @@
         option.classList.toggle('active', model.id === currentModel);
         content.appendChild(option);
       });
+      applyModelDropdownFilters();
+    }
+
+    function getActiveModelFilter() {
+      return modelFilterRow?.querySelector('.model-filter-chip.active')?.dataset.filter || 'all';
+    }
+
+    function modelMatchesFilter(option, filter, query) {
+      const modelId = option.dataset.model || '';
+      const meta = getModelMeta(modelId);
+      const haystack = [modelId, meta.displayName, ...(meta.tags || [])].join(' ').toLowerCase();
+      const q = String(query || '').trim().toLowerCase();
+      if (q && !haystack.includes(q)) return false;
+      if (filter === 'code') return /code|coder|编程|编码/.test(haystack);
+      if (filter === 'image') return meta.multimodal || /image|多模态|视觉|图片/.test(haystack);
+      if (filter === 'search') return /search|联网|搜索/.test(haystack);
+      return true;
+    }
+
+    function applyModelDropdownFilters() {
+      const filter = getActiveModelFilter();
+      const query = modelSearchInput ? modelSearchInput.value : '';
+      const options = Array.from(modelDropdown?.querySelectorAll('.model-option') || []);
+      let visibleCount = 0;
+      options.forEach(option => {
+        const visible = modelMatchesFilter(option, filter, query);
+        option.dataset.filtered = visible ? 'true' : 'false';
+        option.style.display = visible ? 'flex' : 'none';
+        if (visible) visibleCount += 1;
+      });
+      const pageInfo = document.getElementById('modelPageInfo');
+      const prevBtn = document.getElementById('modelPagePrev');
+      const nextBtn = document.getElementById('modelPageNext');
+      if (pageInfo) pageInfo.textContent = visibleCount ? `${visibleCount} models` : 'No match';
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
     }
 
     // 模型下拉菜单分页
@@ -5375,6 +5866,10 @@
     let totalModelPages = 1;
 
     function initModelPagination() {
+      if ((modelSearchInput && modelSearchInput.value) || getActiveModelFilter() !== 'all') {
+        applyModelDropdownFilters();
+        return;
+      }
       const modelOptions = modelDropdown?.querySelectorAll('.model-option');
       if (!modelOptions) return;
 
@@ -5383,6 +5878,10 @@
     }
 
     function updateModelPageDisplay() {
+      if ((modelSearchInput && modelSearchInput.value) || getActiveModelFilter() !== 'all') {
+        applyModelDropdownFilters();
+        return;
+      }
       const modelOptions = modelDropdown?.querySelectorAll('.model-option');
       const startIndex = (currentModelPage - 1) * MODELS_PER_PAGE;
       const endIndex = startIndex + MODELS_PER_PAGE;
@@ -5413,6 +5912,7 @@
 
     function openModelDropdown() {
       modelSelector?.classList.add('open');
+      applyModelDropdownFilters();
       initModelPagination();
       // 确保当前选中的模型所在页可见
       const modelOptions = Array.from(modelDropdown?.querySelectorAll('.model-option') || []);
@@ -5442,10 +5942,27 @@
       }
     }
 
+    function setCompareModel(modelId) {
+      if (!MODEL_CATALOG_BY_ID.has(modelId)) return;
+      if (modelId === currentModel) {
+        showToast('\u6a21\u578b B \u4e0d\u80fd\u548c\u6a21\u578b A \u76f8\u540c');
+        return;
+      }
+      compareModel = modelId;
+      localStorage.setItem('cancri_compare_model', modelId);
+      if (compareModelName) compareModelName.textContent = getModelDisplayName(modelId);
+      closeModelDropdown();
+      showToast(`\u6a21\u578b B \u5df2\u5207\u6362\u81f3 ${getModelDisplayName(modelId)}`);
+    }
     function setModel(modelId) {
       currentModel = modelId;
       isMultimodal = isMultimodalModel(modelId);
       localStorage.setItem('cancri_current_model', modelId);
+      if (compareModel === currentModel) {
+        compareModel = MODEL_CATALOG.find(model => model.id !== currentModel)?.id || compareModel;
+        localStorage.setItem('cancri_compare_model', compareModel);
+        if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
+      }
 
       if (currentModelName) {
         currentModelName.textContent = getModelDisplayName(modelId);
@@ -5482,6 +5999,7 @@
     if (modelCurrentBtn) {
       modelCurrentBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        modelSelectTarget = 'primary';
         if (modelSelector?.classList.contains('open')) {
           closeModelDropdown();
         } else {
@@ -5490,6 +6008,14 @@
       });
     }
 
+    if (compareModelCurrentBtn) {
+      compareModelCurrentBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        modelSelectTarget = 'compare';
+        if (modelSelector?.classList.contains('open')) closeModelDropdown();
+        else openModelDropdown();
+      });
+    }
     renderModelDropdownFromCatalog();
 
     if (modelDropdown) {
@@ -5501,9 +6027,28 @@
             showToast(`${getModelDisplayName(modelId)} 当前不可用：${status.error || '额度已用完'}`);
             return;
           }
-          setModel(modelId);
+          if (modelSelectTarget === 'compare') setCompareModel(modelId);
+          else setModel(modelId);
         });
       });
+
+      if (modelSearchInput) {
+        modelSearchInput.addEventListener('input', () => {
+          currentModelPage = 1;
+          applyModelDropdownFilters();
+        });
+      }
+
+      if (modelFilterRow) {
+        modelFilterRow.querySelectorAll('.model-filter-chip').forEach(chip => {
+          chip.addEventListener('click', e => {
+            e.stopPropagation();
+            modelFilterRow.querySelectorAll('.model-filter-chip').forEach(item => item.classList.toggle('active', item === chip));
+            currentModelPage = 1;
+            applyModelDropdownFilters();
+          });
+        });
+      }
 
       // 分页按钮事件
       const prevBtn = document.getElementById('modelPagePrev');
@@ -5567,8 +6112,12 @@
     if (currentModelName) {
       currentModelName.textContent = getModelDisplayName(currentModel);
     }
+    if (compareModelName) {
+      compareModelName.textContent = getModelDisplayName(compareModel);
+    }
     updateModelSelectorActive();
     updateHomeModeChips();
+    syncTopArenaMode();
     setActiveView('home');
     setComposerBusy(false);
     updateTokenExpiryNote();
@@ -5619,61 +6168,20 @@
       });
     }
 
-    // 轮播公告逻辑
-    function initAnnouncementCarousel() {
-      const carousel = document.getElementById('announcementCarousel');
-      if (!carousel) return;
-
-      const items = carousel.querySelectorAll('.announcement-item');
-      const indicators = carousel.querySelectorAll('.indicator');
-      const total = items.length;
-      if (total === 0) return;
-
-      let currentIndex = 0;
-      let intervalId = null;
-      const INTERVAL_DURATION = 4000; // 4秒切换
-
-      function showItem(index) {
-        items.forEach((item, i) => {
-          item.classList.toggle('active', i === index);
-        });
-        indicators.forEach((ind, i) => {
-          ind.classList.toggle('active', i === index);
-        });
-        currentIndex = index;
-      }
-
-      function nextItem() {
-        const next = (currentIndex + 1) % total;
-        showItem(next);
-      }
-
-      function startAutoPlay() {
-        if (intervalId) clearInterval(intervalId);
-        intervalId = setInterval(nextItem, INTERVAL_DURATION);
-      }
-
-      function stopAutoPlay() {
-        if (intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-      }
-
-      // 指示器点击事件
-      indicators.forEach((ind, i) => {
-        ind.addEventListener('click', () => {
-          showItem(i);
-          startAutoPlay(); // 重置计时
-        });
-      });
-
-      // 鼠标悬停暂停
-      carousel.addEventListener('mouseenter', stopAutoPlay);
-      carousel.addEventListener('mouseleave', startAutoPlay);
-
-      // 开始自动轮播
-      startAutoPlay();
-    }
-
-    initAnnouncementCarousel();
+    window.CancriApp = {
+      state,
+      MODEL_CATALOG,
+      EDGE_FUNCTION_URL,
+      FETCH_TIMEOUT_MS,
+      CHAT_TURN_TIMEOUT_MS,
+      proxyHeaders,
+      proxyFetchWithTimeout,
+      authBody,
+      createChatTurnId,
+      parseBackendErrorPayload,
+      renderMarkdown,
+      escapeHtml,
+      getModelDisplayName,
+      showToast,
+      setActiveView,
+    };
