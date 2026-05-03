@@ -42,7 +42,17 @@ function getAllowedOrigin(req: Request): string | null {
   return null
 }
 
-const BANNED_IPS = new Set(['18.141.169.136', '47.130.152.123', '84.20.17.72'])
+const BANNED_IPS = new Set([
+  '18.141.169.136', '47.130.152.123', '84.20.17.72', '110.248.68.12', '112.65.37.61', '113.13.223.225',
+  '114.103.210.205', '5.34.220.150',
+  '192.3.209.49', '137.184.239.207', '173.242.127.138', '31.172.69.16',
+  '89.125.244.207', '138.2.31.37',
+  '113.224.60.216',
+])
+const BANNED_USERS = new Set([
+  '2613bd…a797', '804f13…edcd',
+  '2787e3…62f9', 'eda2e7…fd73', '92c7a6…94a0',
+])
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
@@ -71,10 +81,25 @@ function getClientIp(req: Request): string {
   return cleanHeader(req.headers.get('x-real-ip')) || 'unknown'
 }
 
-function checkBanned(req: Request, ch: Record<string, string>): Response | null {
+function maskIdentifier(value: string): string {
+  if (!value) return 'anonymous'
+  if (value.length <= 10) return value
+  return `${value.slice(0, 6)}…${value.slice(-4)}`
+}
+
+function checkBanned(req: Request, jwt: string, ch: Record<string, string>): Response | null {
   const ip = getClientIp(req)
+  const userId = decodeJwtSubject(jwt)
   if (BANNED_IPS.has(ip)) {
     console.log(JSON.stringify({ event: 'banned_ip', ip }))
+    return jsonResponse({
+      error: 'access_blocked',
+      code: 'access_blocked',
+      message: '访问被拒绝',
+    }, 403, ch)
+  }
+  if (userId && BANNED_USERS.has(userId)) {
+    console.log(JSON.stringify({ event: 'banned_user', ip, userId: maskIdentifier(userId) }))
     return jsonResponse({
       error: 'access_blocked',
       code: 'access_blocked',
@@ -306,9 +331,6 @@ serve(async (req: Request) => {
   const originResponse = rejectDisallowedOrigin(req, ch)
   if (originResponse) return originResponse
 
-  const banned = checkBanned(req, ch)
-  if (banned) return banned
-
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: ch })
   }
@@ -317,13 +339,18 @@ serve(async (req: Request) => {
     return jsonResponse({ error: 'Method not allowed', code: 'method_not_allowed' }, 405, ch)
   }
 
+  let body: JsonObject = {}
+  let jwt = ''
   try {
-    const body = await req.json().catch(() => ({} as JsonObject))
+    body = await req.json().catch(() => ({} as JsonObject))
 
     // JWT 优先从 body.__auth_token 读取（绕过 Cloudflare 对长 header 的拦截），其次从 header 读取
     const bodyToken = typeof body.__auth_token === 'string' ? body.__auth_token.trim() : ''
     delete body.__auth_token
-    const jwt = bodyToken || getBearerToken(req)
+    jwt = bodyToken || getBearerToken(req)
+
+    const banned = checkBanned(req, jwt, ch)
+    if (banned) return banned
 
     const userId = decodeJwtSubject(jwt)
     if (!userId) {

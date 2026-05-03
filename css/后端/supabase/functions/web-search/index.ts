@@ -52,7 +52,17 @@ function corsHeadersFor(req: Request): Record<string, string> {
   }
 }
 
-const BANNED_IPS = new Set(['18.141.169.136', '47.130.152.123', '84.20.17.72'])
+const BANNED_IPS = new Set([
+  '18.141.169.136', '47.130.152.123', '84.20.17.72', '110.248.68.12', '112.65.37.61', '113.13.223.225',
+  '114.103.210.205', '5.34.220.150',
+  '192.3.209.49', '137.184.239.207', '173.242.127.138', '31.172.69.16',
+  '89.125.244.207', '138.2.31.37',
+  '113.224.60.216',
+])
+const BANNED_USERS = new Set([
+  '2613bd…a797', '804f13…edcd',
+  '2787e3…62f9', 'eda2e7…fd73', '92c7a6…94a0',
+])
 
 const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
 const RATE_LIMIT_WINDOW_MS = 60_000
@@ -230,6 +240,14 @@ function inspectAbuseScope(key: string, max: number, options: { ignoreSpeed?: bo
 function checkBanned(ctx: RequestContext, ch: Record<string, string>): Response | null {
   if (BANNED_IPS.has(ctx.ip)) {
     logSecurityEvent('banned_ip', ctx, {})
+    return jsonResponse({
+      error: 'access_blocked',
+      code: 'access_blocked',
+      message: '访问被拒绝',
+    }, 403, ch)
+  }
+  if (ctx.user && BANNED_USERS.has(ctx.user)) {
+    logSecurityEvent('banned_user', ctx, {})
     return jsonResponse({
       error: 'access_blocked',
       code: 'access_blocked',
