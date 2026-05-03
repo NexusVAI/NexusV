@@ -82,6 +82,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
             <span class="sidebar-label">新聊天</span>
           </div>
+          <div class="nav-row" data-view-target="images" id="imageGenerationNavBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+            <span class="sidebar-label">图片生成</span>
+          </div>
           <div class="section-title">聊天记录</div>
           <div class="recent-wrap" id="chatHistoryList">
             <!-- 聊天记录列表将在这里动态生成 -->
@@ -334,6 +338,7 @@
               <div class="model-icons-track">
                 <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon">
                 <img src="./openai.svg" alt="OpenAI" class="model-icon">
+                <img src="./grok.svg" alt="Grok" class="model-icon">
                 <img src="./qwen-color.svg" alt="Qwen" class="model-icon">
                 <img src="./minimax-color.svg" alt="MiniMax" class="model-icon">
                 <img src="./moonshot.svg" alt="Moonshot" class="model-icon">
@@ -441,56 +446,50 @@
         <div class="images-page">
           <div class="images-scroll">
             <div class="images-inner">
-              <div class="images-title">图片</div>
-              <div class="image-search">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-                <input id="imagePromptInput" placeholder="描述新图片" />
-                <button class="input-icon" id="imageMicToastBtn" aria-label="图片语音输入">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="9" y="3.2" width="6" height="10.8" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v2.6"></path></svg>
-                </button>
-                <button class="circle-btn" id="sendImagePromptBtn" aria-label="提交图片提示词">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 5 0 14"></path><path d="m5 12 7-7 7 7"></path></svg>
-                </button>
-              </div>
-
-              <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:24px;">
-                <span>AI 生成结果</span>
-                <span class="images-status" id="imageGenerationStatus">等待输入提示词</span>
-              </div>
-              <div class="image-grid generated-gallery" id="generatedImageGrid">
-                <div class="grid-card" id="generatedImageEmpty">
-                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;color:var(--text-dim);font-size:13px;line-height:1.5;">
-                    生成后的图片会显示在这里
+              <div class="images-workbench">
+                <div class="image-compose-panel">
+                  <div class="images-title-row">
+                    <div>
+                      <div class="images-title">图片生成</div>
+                      <div class="images-subtitle">gpt-image-2</div>
+                    </div>
+                    <span class="images-status" id="imageGenerationStatus">等待输入提示词</span>
+                  </div>
+                  <div class="image-search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+                    <input id="imagePromptInput" placeholder="描述新图片" />
+                    <select class="image-size-select" id="imageSizeSelect" aria-label="图片尺寸">
+                      <option value="1024x1024">1:1</option>
+                      <option value="1024x1792">9:16</option>
+                      <option value="1792x1024">16:9</option>
+                    </select>
+                    <button class="input-icon" id="imageMicToastBtn" aria-label="图片语音输入">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="9" y="3.2" width="6" height="10.8" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v2.6"></path></svg>
+                    </button>
+                    <button class="circle-btn" id="sendImagePromptBtn" aria-label="提交图片提示词">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 5 0 14"></path><path d="m5 12 7-7 7 7"></path></svg>
+                    </button>
+                  </div>
+                  <div class="image-prompt-chips">
+                    <button class="image-prompt-chip" data-prompt="极简科技产品海报，白色背景，绿色点缀，中心是一枚精致的 Cancri AI 应用图标，柔和阴影，高清">产品海报</button>
+                    <button class="image-prompt-chip" data-prompt="未来感 AI 聊天应用界面概念图，干净白色工作台，绿色强调色，真实软件截图风格，高清">界面概念</button>
+                    <button class="image-prompt-chip" data-prompt="可爱的几何星座图标，白色背景，绿色和黑色线条，现代 app icon，精致矢量质感">应用图标</button>
+                    <button class="image-prompt-chip" data-prompt="社交媒体封面图，Cancri AI，明亮简洁，绿色品牌色，轻微玻璃质感，留白充足">封面图</button>
                   </div>
                 </div>
-              </div>
-
-              <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                <span>在图像上试用风格效果</span>
-                <div style="display:flex;gap:8px;">
-                  <button class="plain-icon" id="stylePrevBtn" aria-label="上一组风格"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 6-6 6 6 6"></path></svg></button>
-                  <button class="plain-icon" id="styleNextBtn" aria-label="下一组风格"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg></button>
+                <div class="image-results-panel">
+                  <div class="section-head image-results-head">
+                    <span>生成结果</span>
+                  </div>
+                  <div class="image-grid generated-gallery" id="generatedImageGrid">
+                    <div class="grid-card image-empty-card" id="generatedImageEmpty">
+                      <div class="image-empty-mark">
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+                      </div>
+                      <div class="image-empty-title">等待生成</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              <div class="style-carousel" id="styleCarousel">
-                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#4f4f4f,#252525);"><span>图形绘意照</span></div>
-                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#f59e0b,#7c2d12);"><span>暖调海报</span></div>
-                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#5b5b5b,#2e2e2e);"><span>夜拍闪光</span></div>
-                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#10a37f,#083344);"><span>动漫风</span></div>
-                <div class="preview-card" style="--card-bg:linear-gradient(145deg,#ef4444,#7f1d1d);"><span>漫画</span></div>
-              </div>
-
-              <div class="section-head" style="margin-top:40px;">我的图片</div>
-              <div class="image-grid">
-                <div class="grid-card"><div class="placeholder-box"></div></div>
-                <div class="grid-card"><div class="placeholder-box"></div></div>
-                <div class="grid-card"><div class="placeholder-box"></div></div>
-                <div class="grid-card"><img alt="sample" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23040714'/%3E%3Cstop offset='1' stop-color='%23121f40'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='800' fill='url(%23g)'/%3E%3Ccircle cx='140' cy='220' r='70' fill='%230a1837'/%3E%3Ccircle cx='675' cy='190' r='36' fill='%23f5c56d' opacity='.5'/%3E%3Crect x='362' y='110' width='78' height='300' rx='16' fill='%23101620'/%3E%3Crect x='320' y='210' width='160' height='360' rx='28' fill='%230c111a'/%3E%3Crect x='348' y='530' width='44' height='190' rx='14' fill='%230d1119'/%3E%3Crect x='408' y='530' width='44' height='190' rx='14' fill='%230d1119'/%3E%3Crect x='280' y='252' width='70' height='34' rx='10' fill='%230e1420'/%3E%3Crect x='452' y='252' width='70' height='34' rx='10' fill='%230e1420'/%3E%3Crect x='338' y='95' width='122' height='84' rx='26' fill='%23141d29'/%3E%3Crect x='360' y='117' width='78' height='40' rx='10' fill='%23242d3d'/%3E%3Cpath d='M90 540 C180 420, 260 610, 320 470' stroke='%23ff4c5d' stroke-width='18' opacity='.65'/%3E%3Cpath d='M500 610 C600 420, 700 610, 760 470' stroke='%2342a5ff' stroke-width='18' opacity='.65'/%3E%3Crect x='0' y='650' width='800' height='150' fill='%23050a12' opacity='.65'/%3E%3C/svg%3E" /></div>
-                <div class="grid-card"><div class="placeholder-box"></div></div>
-                <div class="grid-card"><div class="placeholder-box"></div></div>
-                <div class="grid-card"><div class="placeholder-box"></div></div>
-                <div class="grid-card"><div class="placeholder-box"></div></div>
               </div>
             </div>
           </div>

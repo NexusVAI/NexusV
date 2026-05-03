@@ -34,6 +34,7 @@
     const sendImagePromptBtn = document.getElementById('sendImagePromptBtn');
     const generatedImageGrid = document.getElementById('generatedImageGrid');
     const imageGenerationStatus = document.getElementById('imageGenerationStatus');
+    const imageSizeSelect = document.getElementById('imageSizeSelect');
     const attachBtn = document.getElementById('attachBtn');
     const attachmentInput = document.getElementById('attachmentInput');
     const modelSelector = document.getElementById('modelSelector');
@@ -639,21 +640,55 @@
 
     const MODEL_SELECTION_MIGRATIONS = {
       'deepseek-v4-flash-alt': 'deepseek-v4-flash',
+      'kimi-k2.6-futureppo': 'grok-4.20-fast',
+      'deepseek-v4-pro-futureppo': 'grok-4.20-fast',
+      'deepseek-v4-flash-futureppo': 'grok-4.20-fast',
+      'gemma-4-31b-it': 'gemma-4-31b-chat',
+      'gpt-oss-120b-futureppo': 'grok-code-fast-1',
+      'claude-haiku-4-5-20251001': 'grok-4.20-fast',
+      'glm-5.1-futureppo': 'grok-4.20-fast',
     };
+    const MODEL_PRIORITY_IDS = [
+      'grok-4.20-fast',
+      'grok-code-fast-1',
+      'minimax-m2.7',
+      'gemini-3-flash-preview',
+      'gemini-3.1-flash-lite-preview',
+      'gemma-4-31b-chat',
+      'gpt-5.4',
+      'claude-opus-4.6',
+      'gemini-2.5-pro',
+      'qwen3-max',
+      'kimi-k2.6',
+      'deepseek-v4-pro',
+      'deepseek-v4-flash',
+      'glm-5.1',
+      'qwen3-coder-plus',
+      'qwen3-coder',
+      'deepseek-r1',
+    ];
+    const MODEL_PRIORITY = new Map(MODEL_PRIORITY_IDS.map((id, index) => [id, index]));
+    const MODEL_DEPRIORITY = new Map();
     const MODEL_CATALOG = [
+      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', iconPath: './grok.svg', tags: ['线路二', '新'] },
+      { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', iconPath: './grok.svg', tags: ['线路二', '编码'] },
+      { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', iconPath: './minimax-color.svg', tags: ['线路二', '新'] },
+      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', iconPath: './gemini-color.svg', tags: ['线路二', '新'] },
+      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', iconPath: './gemini-color.svg', tags: ['线路二', '新'] },
+      { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', iconPath: './gemini-color.svg', tags: ['线路三', '新'] },
       { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'], sharedQuota: true },
       { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], sharedQuota: true },
       { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'] },
       { id: 'step-3.5-flash', displayName: 'Step-3.5', iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
       { id: 'hy3-preview', displayName: '混元3', iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
-      { id: 'gpt-oss-120b', displayName: 'chatGPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'] },
+      { id: 'gpt-oss-120b', displayName: 'GPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'] },
       { id: 'gpt-5.4', displayName: 'GPT-5.4', iconPath: './openai.svg', tags: ['每日限流', '通用'] },
       { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
       { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '均衡'] },
       { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
       { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', iconPath: './nvidia-color.svg', tags: ['通用'] },
-      { id: 'ling-2.6-1t', displayName: 'ling-2.6', iconPath: './antgroup-color.svg', tags: ['大参数', '通用'] },
-      { id: 'ling-2.6-1t-alt', displayName: 'ling-2.6', iconPath: './antgroup-color.svg', tags: ['大参数', '稳定'], sharedQuota: true },
+      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['通用'] },
+      { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['稳定'], sharedQuota: true },
       { id: 'spark-x2', displayName: 'spark-x2', iconPath: './spark-color.svg', tags: ['推理'] },
       { id: 'deepseek-r1', displayName: 'DeepSeek-R1', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
       { id: 'qwen3.5', displayName: 'Qwen 3.5', iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true, sharedQuota: true },
@@ -681,10 +716,16 @@
       { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true },
       { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true },
       { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
-      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
-      { id: 'mimo-v2.5-tts', displayName: 'MiMo-TTS', iconPath: './xiaomimimo-color.svg', tags: ['语音合成'] },
-      { id: 'mimo-v2.5-tts-voicedesign', displayName: 'MiMo-TTS-VoiceDesign', iconPath: './xiaomimimo-color.svg', tags: ['语音定制'] }
-    ];
+      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] }
+    ].sort((a, b) => {
+      const rankA = MODEL_PRIORITY.has(a.id)
+        ? MODEL_PRIORITY.get(a.id)
+        : (MODEL_DEPRIORITY.has(a.id) ? 2000 + MODEL_DEPRIORITY.get(a.id) : 1000);
+      const rankB = MODEL_PRIORITY.has(b.id)
+        ? MODEL_PRIORITY.get(b.id)
+        : (MODEL_DEPRIORITY.has(b.id) ? 2000 + MODEL_DEPRIORITY.get(b.id) : 1000);
+      return rankA - rankB;
+    });
     const MODEL_CATALOG_BY_ID = new Map(MODEL_CATALOG.map(model => [model.id, model]));
     const MODEL_IDS = Object.fromEntries(MODEL_CATALOG.map(model => [model.id, model.id]));
     const MULTIMODAL_MODEL_IDS = new Set(MODEL_CATALOG.filter(model => model.multimodal).map(model => model.id));
@@ -1232,7 +1273,7 @@
     const SUPABASE_URL = (window.__SUPABASE_URL__ || '').trim() || `${window.location.origin}/api/supabase`;
     const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || '').trim();
     const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
-    const DEFAULT_IMAGE_MODEL = 'image-fast';
+    const DEFAULT_IMAGE_MODEL = 'image-precise';
     const OPENAI_IMAGE_MODEL = 'image-precise';
     const MAX_REPEATED_TOOL_CALLS = 3;
     const FETCH_TIMEOUT_MS = 20000;
@@ -2261,7 +2302,7 @@
       }
     }
 
-    // MiMo TTS 朗读功能
+    // MiMo TTS 朗读功能，不在模型菜单展示。
     async function speakTextWithMimo(text) {
       if (!text || text.trim().length === 0) {
         showToast('没有可朗读的内容');
@@ -2275,16 +2316,11 @@
           method: 'POST',
           headers: await proxyHeaders(),
           body: JSON.stringify({
+            endpoint: 'chat',
             model: 'mimo-v2.5-tts',
             messages: [
-              {
-                role: 'user',
-                content: '用自然的声音朗读以下内容'
-              },
-              {
-                role: 'assistant',
-                content: text.slice(0, 2000) // 限制长度
-              }
+              { role: 'user', content: '用自然的声音朗读以下内容' },
+              { role: 'assistant', content: text.slice(0, 2000) }
             ],
             audio: {
               format: 'wav',
@@ -2299,46 +2335,36 @@
         }
 
         const data = await response.json();
-
-        if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.audio) {
-          const audioBase64 = data.choices[0].message.audio.data;
-          if (audioBase64) {
-            const audioBlob = base64ToBlob(audioBase64, 'audio/wav');
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-            audio.play();
-            showToast('开始朗读');
-            audio.onended = () => {
-              URL.revokeObjectURL(audioUrl);
-            };
-          } else {
-            throw new Error('无法获取音频数据');
-          }
-        } else {
-          throw new Error('响应格式不正确');
+        const audioBase64 = data?.choices?.[0]?.message?.audio?.data;
+        if (!audioBase64) {
+          throw new Error('无法获取音频数据');
         }
+
+        const audioBlob = base64ToBlob(audioBase64, 'audio/wav');
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+        showToast('开始朗读');
+        audio.onended = () => URL.revokeObjectURL(audioUrl);
       } catch (error) {
         console.error('TTS 错误:', error);
-        showToast('朗读失败: ' + (error.message || '未知错误'));
-        // 降级到浏览器原生语音合成
+        showToast('朗读失败，使用系统语音。');
         if ('speechSynthesis' in window) {
-          showToast('使用系统语音...');
-          const utterance = new SpeechSynthesisUtterance(text.slice(0, 200));
+          speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text.slice(0, 800));
           utterance.lang = 'zh-CN';
           speechSynthesis.speak(utterance);
         }
       }
     }
 
-    // Base64 转 Blob
     function base64ToBlob(base64, mimeType) {
       const byteCharacters = atob(base64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      return new Blob([byteArray], { type: mimeType });
+      return new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
     }
 
     function insertTextIntoEditable(target, text) {
@@ -3370,6 +3396,7 @@
       if (!value || state.isImageGenerating) return;
 
       const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL;
+      const imageSize = imageSizeSelect?.value || '1024x1024';
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
       showToast('图片生成已开始，请稍等。');
@@ -3385,7 +3412,7 @@
             model: imageModel,
             prompt: value,
             n: 1,
-            size: '1024x1024',
+            size: imageSize,
             response_format: 'url'
           })
         });
@@ -3410,7 +3437,7 @@
 
         // OpenAI-compatible API returns images directly
         if (isOpenAIImage) {
-          const imageUrl = data?.data?.[0]?.url;
+          const imageUrl = data?.data?.[0]?.url || (data?.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
           if (!imageUrl) {
             throw new Error('生成成功，但没有返回图片地址。');
           }
@@ -5091,6 +5118,15 @@
         return;
       }
       generateImageFromPrompt(value);
+    });
+
+    document.querySelectorAll('.image-prompt-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const prompt = chip.dataset.prompt || chip.textContent || '';
+        imagePromptInput.value = prompt.trim();
+        setImageGenerationBusy(state.isImageGenerating, imageGenerationStatus.textContent);
+        imagePromptInput.focus();
+      });
     });
 
     homeInput.addEventListener('input', () => {
