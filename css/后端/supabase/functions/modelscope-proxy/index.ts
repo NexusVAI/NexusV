@@ -334,13 +334,23 @@ const MIMO_API_KEY = Deno.env.get('MIMO_API_KEY') || ''
 const NEWAPI_BASE_URL = (Deno.env.get('NEWAPI_BASE_URL') || '').replace(/\/+$/, '')
 const NEWAPI_API_KEY = Deno.env.get('NEWAPI_API_KEY') || ''
 const NEWAPI_API_KEY_2 = Deno.env.get('NEWAPI_API_KEY_2') || ''
+const FUTUREPPO_BASE_URL = (Deno.env.get('FUTUREPPO_BASE_URL') || 'https://91vip.futureppo.top/v1').replace(/\/+$/, '')
+const FUTUREPPO_API_KEY = Deno.env.get('FUTUREPPO_API_KEY') || ''
+const FUTUREPPO_GEMMA_API_KEY = Deno.env.get('FUTUREPPO_GEMMA_API_KEY') || ''
+const FUTUREPPO_MODEL_PREFIX = 'futureppo:'
 
-type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo' | 'newapi'
+type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo' | 'newapi' | 'futureppo'
 
 const PUBLIC_MODEL_ROUTES: Record<string, string> = {
   'deepseek-v4-flash': 'deepseek-v4-flash',
   'deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
   'deepseek-v4-pro-alt': 'deepseek-v4-pro-dashscope',
+  'grok-4.20-fast': `${FUTUREPPO_MODEL_PREFIX}grok-4.20-fast`,
+  'grok-code-fast-1': `${FUTUREPPO_MODEL_PREFIX}grok-code-fast-1`,
+  'minimax-m2.7': `${FUTUREPPO_MODEL_PREFIX}minimax-m2.7`,
+  'gemini-3.1-flash-lite-preview': `${FUTUREPPO_MODEL_PREFIX}gemini-3.1-flash-lite-preview`,
+  'gemini-3-flash-preview': `${FUTUREPPO_MODEL_PREFIX}gemini-3-flash-preview`,
+  'gemma-4-31b-chat': `${FUTUREPPO_MODEL_PREFIX}gemma-4-31b-chat`,
   'step-3.5-flash': 'stepfun-ai/Step-3.5-Flash',
   'hy3-preview': 'tencent/hy3-preview:free',
   'gpt-oss-120b': 'openai/gpt-oss-120b:free',
@@ -382,7 +392,8 @@ const PUBLIC_MODEL_ROUTES: Record<string, string> = {
   'mimo-v2.5-tts': 'mimo-v2.5-tts',
   'mimo-v2.5-tts-voicedesign': 'mimo-v2.5-tts-voicedesign',
   'image-fast': 'Tongyi-MAI/Z-Image-Turbo',
-  'image-precise': 'dall-e-3',
+  'image-precise': `${FUTUREPPO_MODEL_PREFIX}gpt-image-2`,
+  'gpt-image-2': `${FUTUREPPO_MODEL_PREFIX}gpt-image-2`,
 }
 
 function resolvePublicModelId(model: string): string {
@@ -392,6 +403,20 @@ function resolvePublicModelId(model: string): string {
 
 function isOpenAICompatibleModel(model: string): boolean {
   return model === 'dall-e-3'
+}
+
+function isFuturePpoModel(model: string): boolean {
+  return model.startsWith(FUTUREPPO_MODEL_PREFIX)
+}
+
+function toFuturePpoModelId(model: string): string {
+  return model.startsWith(FUTUREPPO_MODEL_PREFIX) ? model.slice(FUTUREPPO_MODEL_PREFIX.length) : model
+}
+
+function getFuturePpoApiKey(model: string): string {
+  const publicModel = toFuturePpoModelId(model)
+  if (publicModel === 'gemma-4-31b-chat') return FUTUREPPO_GEMMA_API_KEY || FUTUREPPO_API_KEY
+  return FUTUREPPO_API_KEY
 }
 
 function isMoonshotModel(model: string): boolean {
@@ -522,6 +547,7 @@ function getNewApiKey(model: string): string {
 }
 
 function getProviderKind(model: string): ProviderKind {
+  if (isFuturePpoModel(model)) return 'futureppo'
   if (isOpenAICompatibleModel(model)) return 'openai_compatible'
   if (isMoonshotModel(model)) return 'moonshot'
   if (isDashScopeCompatibleModel(model)) return 'dashscope'
@@ -542,6 +568,9 @@ function providerConfigError(provider: ProviderKind, missing: string[], ch: Reco
 
 function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
   if (probeEndpoint === 'image') {
+    if (provider === 'futureppo') {
+      return `${FUTUREPPO_BASE_URL}/images/generations`
+    }
     if (provider === 'openai_compatible') {
       return `${OPENAI_COMPATIBLE_BASE_URL}/images/generations`
     }
@@ -573,6 +602,9 @@ function getPingUrl(provider: ProviderKind, probeEndpoint: string): string {
   }
   if (provider === 'newapi') {
     return `${NEWAPI_BASE_URL}/chat/completions`
+  }
+  if (provider === 'futureppo') {
+    return `${FUTUREPPO_BASE_URL}/chat/completions`
   }
   return `${MODELSCOPE_API_BASE}/chat/completions`
 }
@@ -1264,6 +1296,15 @@ serve(async (req: Request) => {
       }
     }
 
+    const futurePpoApiKey = provider === 'futureppo' ? getFuturePpoApiKey(model) : ''
+
+    if (provider === 'futureppo' && (!FUTUREPPO_BASE_URL || !futurePpoApiKey)) {
+      return providerConfigError(provider, [
+        ...(!FUTUREPPO_BASE_URL ? ['FUTUREPPO_BASE_URL'] : []),
+        ...(!futurePpoApiKey ? [toFuturePpoModelId(model) === 'gemma-4-31b-chat' ? 'FUTUREPPO_GEMMA_API_KEY or FUTUREPPO_API_KEY' : 'FUTUREPPO_API_KEY'] : []),
+      ], ch)
+    }
+
     if (provider === 'dashscope' && isLocalOnlyBaseUrl(DASHSCOPE_COMPATIBLE_BASE_URL)) {
       return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
         status: 500,
@@ -1299,6 +1340,13 @@ serve(async (req: Request) => {
       })
     }
 
+    if (provider === 'futureppo' && isLocalOnlyBaseUrl(FUTUREPPO_BASE_URL)) {
+      return new Response(JSON.stringify({ error: 'Invalid provider configuration' }), {
+        status: 500,
+        headers: { ...ch, 'Content-Type': 'application/json' },
+      })
+    }
+
     if (provider === 'modelscope' && !modelScopeApiKey) {
       return providerConfigError(provider, ['MODELSCOPE_API_KEY or api_config.service_name=modelscope'], ch)
     }
@@ -1311,7 +1359,11 @@ serve(async (req: Request) => {
 
     // Configure based on endpoint type and model
     if (endpointName === 'image') {
-      if (provider === 'openai_compatible') {
+      if (provider === 'futureppo') {
+        url = `${FUTUREPPO_BASE_URL}/images/generations`
+        headers['Authorization'] = `Bearer ${futurePpoApiKey}`
+        forwardedRequestData = { ...requestData, model: toFuturePpoModelId(model) }
+      } else if (provider === 'openai_compatible') {
         url = `${OPENAI_COMPATIBLE_BASE_URL}/images/generations`
         headers['Authorization'] = `Bearer ${OPENAI_COMPATIBLE_API_KEY}`
       } else if (provider === 'dashscope') {
@@ -1339,6 +1391,8 @@ serve(async (req: Request) => {
       // 根据provider进行模型ID映射
       if (provider === 'moonshot') {
         forwardedRequestData = { ...requestData, model: 'kimi-k2.6' }
+      } else if (provider === 'futureppo') {
+        forwardedRequestData = { ...requestData, model: toFuturePpoModelId(model) }
       } else if (provider === 'dashscope') {
         forwardedRequestData = { ...requestData, model: toDashScopeModelId(model) }
       } else {
@@ -1372,6 +1426,9 @@ serve(async (req: Request) => {
       } else if (provider === 'newapi') {
         url = `${NEWAPI_BASE_URL}/chat/completions`
         headers['Authorization'] = `Bearer ${getNewApiKey(model)}`
+      } else if (provider === 'futureppo') {
+        url = `${FUTUREPPO_BASE_URL}/chat/completions`
+        headers['Authorization'] = `Bearer ${futurePpoApiKey}`
       } else {
         url = `${MODELSCOPE_API_BASE}/chat/completions`
         headers['Authorization'] = `Bearer ${modelScopeApiKey}`
