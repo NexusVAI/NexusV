@@ -662,13 +662,15 @@ async function handleArenaRequest(req: Request, ch: Record<string, string>, body
         }),
       ]
       : []
-    return await forwardToModelProxy(req, ch, {
+    const arenaChatPayload: JsonObject = {
       model,
       messages: arenaMessages,
       stream: body.stream !== false,
       temperature: typeof body.temperature === 'number' ? body.temperature : 0.6,
       client_turn_id: cleanHeader(String(body.client_turn_id || '')),
-    }, verifiedUserId, 'chat')
+    }
+    if (body.enable_thinking) arenaChatPayload.enable_thinking = true
+    return await forwardToModelProxy(req, ch, arenaChatPayload, verifiedUserId, 'chat')
   }
 
   if (action === 'arena_record_response') {
@@ -789,13 +791,16 @@ async function handleArenaRequest(req: Request, ch: Record<string, string>, body
       .eq('id', id)
       .eq('owner_id', verifiedUserId)
 
-    const modelAStats = await getArenaStatsSnapshot(supabase, String(match.model_a))
-    const modelBStats = await getArenaStatsSnapshot(supabase, String(match.model_b))
-    const eloAfter = effective
-      ? calculateArenaElo(modelAStats.eloScore, modelBStats.eloScore, winner)
-      : { modelA: modelAStats.eloScore, modelB: modelBStats.eloScore }
+    let eloAfter = { modelA: ARENA_INITIAL_ELO, modelB: ARENA_INITIAL_ELO }
+    let modelAStats: ArenaStatsSnapshot = normalizeArenaStats(null)
+    let modelBStats: ArenaStatsSnapshot = normalizeArenaStats(null)
+    try {
+      modelAStats = await getArenaStatsSnapshot(supabase, String(match.model_a))
+      modelBStats = await getArenaStatsSnapshot(supabase, String(match.model_b))
+      eloAfter = effective
+        ? calculateArenaElo(modelAStats.eloScore, modelBStats.eloScore, winner)
+        : { modelA: modelAStats.eloScore, modelB: modelBStats.eloScore }
 
-    {
       const countEloGame = effective && winner !== 'bad'
       await upsertArenaModelStats(
         supabase,
@@ -813,18 +818,20 @@ async function handleArenaRequest(req: Request, ch: Record<string, string>, body
         eloAfter.modelB,
         countEloGame
       )
-    }
 
-    if (effective) {
-      await supabase
-        .from('arena_votes')
-        .update({
-          model_a_elo_before: modelAStats.eloScore,
-          model_b_elo_before: modelBStats.eloScore,
-          model_a_elo_after: eloAfter.modelA,
-          model_b_elo_after: eloAfter.modelB,
-        })
-        .eq('id', vote.id)
+      if (effective) {
+        await supabase
+          .from('arena_votes')
+          .update({
+            model_a_elo_before: modelAStats.eloScore,
+            model_b_elo_before: modelBStats.eloScore,
+            model_a_elo_after: eloAfter.modelA,
+            model_b_elo_after: eloAfter.modelB,
+          })
+          .eq('id', vote.id)
+      }
+    } catch (eloError) {
+      console.warn('Arena ELO update failed (reveal still returned):', eloError)
     }
 
     return jsonResponse({
