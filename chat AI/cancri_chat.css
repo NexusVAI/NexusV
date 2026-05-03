@@ -32,7 +32,7 @@
     align-items: center;
     background: #D32F2F;
     box-shadow: 0 4px 18px rgba(0,0,0,0.28);
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .emergency-ticker-track {
