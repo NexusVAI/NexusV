@@ -1212,15 +1212,32 @@
   @media (max-width: 980px) {
     .leaderboard-page {
       grid-template-columns: 1fr;
-      padding: 20px 16px;
+      padding: 16px 12px;
+      gap: 16px;
     }
     .leaderboard-side {
       border-right: 0;
       border-bottom: 1px solid var(--line);
-      padding: 0 0 14px;
+      padding: 0 0 12px;
+    }
+    .leaderboard-side-section {
+      margin-bottom: 16px;
     }
     .leaderboard-side-section:last-child {
       display: none;
+    }
+    .leaderboard-main h2 {
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+    .leaderboard-main > p {
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .leaderboard-meta-row {
+      gap: 12px;
+      font-size: 12px;
+      margin-bottom: 20px;
     }
     .leaderboard-table-head,
     .leaderboard-table-row {
@@ -2641,10 +2658,30 @@
   }
 
   @media (max-width: 380px) {
-    .model-current { max-width: 44vw; font-size: 11px; }
+    .model-current {
+      max-width: 35vw;
+      font-size: 11px;
+      padding: 3px 6px;
+    }
+    .brand-title {
+      font-size: 12px;
+    }
+    .header-left {
+      gap: 4px;
+    }
+    .header-right {
+      gap: 2px;
+    }
+    .clear-btn {
+      width: 28px;
+      height: 28px;
+    }
     .composer { min-height: 50px; }
     .composer-input { font-size: 14px; }
     .message.user .message-content { max-width: 93%; }
+    .hero {
+      font-size: 20px;
+    }
   }
 
   /* ── HIDDEN ELEMENTS (ALWAYS HIDDEN IN THIS BUILD) ────────── */
@@ -3000,7 +3037,28 @@
     }
 
     .brand-title {
-      font-size: 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Make header elements more compact on mobile */
+    .header-left {
+      gap: 6px;
+    }
+
+    .header-right {
+      gap: 4px;
+    }
+
+    .model-current {
+      font-size: 12px;
+      padding: 4px 8px;
+      max-width: 38vw;
+    }
+
+    .mobile-menu-btn {
+      width: 36px;
+      height: 36px;
     }
 
     .model-dropdown {
@@ -3026,6 +3084,11 @@
       display: none !important;
     }
 
+    /* Hide arena mode selector on mobile to save header space */
+    .arena-top-mode {
+      display: none !important;
+    }
+
     .clear-btn {
       width: 30px;
       padding: 0;
@@ -3045,8 +3108,18 @@
     }
 
     .hero {
-      font-size: clamp(25px, 8vw, 34px);
-      margin-bottom: 18px;
+      font-size: clamp(22px, 6.5vw, 30px);
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    /* Compact announcement carousel on mobile */
+    .announcement-carousel {
+      height: 28px;
+    }
+    .announcement-text {
+      font-size: 11px;
+      max-width: 90vw;
     }
 
     .composer {
@@ -3075,8 +3148,44 @@
     }
 
     .token-expiry-note {
+      margin-top: 8px;
+      max-width: calc(100vw - 24px);
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    .token-dates {
+      font-size: 9px;
+    }
+
+    .rate-limit-note {
+      padding: 8px 10px;
+      margin-top: 8px;
+    }
+    .rate-limit-title {
+      font-size: 11px;
+    }
+    .rate-limit-content {
+      gap: 6px;
+    }
+    .rate-limit-item {
+      font-size: 10px;
+    }
+
+    /* Compact model icons section on mobile */
+    .model-icons-scroll {
       margin-top: 10px;
-      max-width: calc(100vw - 32px);
+      gap: 6px;
+    }
+    .model-icons-track {
+      gap: 14px;
+      padding: 4px 0;
+    }
+    .model-icon {
+      height: 28px;
+      width: 28px;
+    }
+    .model-icons-text {
+      font-size: 10px;
     }
 
     .message {
@@ -3575,5 +3684,132 @@
       padding: 0 8px;
       font-size: 11px;
     }
+  }
+
+  /* ── AUTH OVERLAY ──────────────────────────────────────── */
+  .auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .auth-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+  .auth-card {
+    background: var(--panel);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    padding: 32px 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .auth-logo {
+    margin-bottom: 4px;
+  }
+  .auth-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+  }
+  .auth-subtitle {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin: 0;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .auth-step {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .auth-input {
+    width: 100%;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line-2);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    padding: 0 12px;
+    outline: none;
+    transition: border-color 0.15s ease;
+    box-sizing: border-box;
+  }
+  .auth-input:focus {
+    border-color: var(--accent);
+  }
+  .auth-otp-input {
+    letter-spacing: 6px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .auth-btn {
+    width: 100%;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  .auth-btn:hover { opacity: 0.9; }
+  .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auth-link {
+    background: none;
+    border: none;
+    color: var(--text-soft);
+    font-size: 12.5px;
+    cursor: pointer;
+    padding: 2px 0;
+    text-align: center;
+  }
+  .auth-link:hover { color: var(--text); }
+  .auth-error {
+    font-size: 12.5px;
+    color: #e55;
+    min-height: 16px;
+    text-align: center;
+  }
+  .auth-otp-hint {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin: 0;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .auth-otp-hint strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .auth-footer {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  [data-theme="dark"] .auth-overlay {
+    background: rgba(0,0,0,0.7);
   }
 

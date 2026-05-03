@@ -59,6 +59,9 @@
     if (arenaModelPickers) arenaModelPickers.hidden = mode === 'anonymous';
     if (arenaModelPickerB) arenaModelPickerB.hidden = mode === 'single';
     if (arenaStartBtn) arenaStartBtn.textContent = mode === 'single' ? '开始单模型' : '开始对战';
+    const cardB = document.querySelector('.arena-card[data-slot="b"]');
+    if (cardB) cardB.hidden = mode === 'single';
+    if (arenaVoteRow) arenaVoteRow.hidden = true;
   }
 
   function initArenaModelOptions() {
@@ -288,6 +291,7 @@
     });
   }
   if (arenaVoteRow) {
+    arenaVoteRow.hidden = true;
     arenaVoteRow.querySelectorAll('button[data-winner]').forEach(function (button) {
       button.addEventListener('click', function () { voteArenaMatch(button.dataset.winner); });
     });

@@ -176,6 +176,11 @@
       const code = String(payload?.code || '').trim();
       const message = String(payload?.message || '').trim();
       const retryAfter = Number(payload?.retryAfter);
+      if (code === 'anonymous_not_allowed') {
+        authSessionPromise = null;
+        showAuthOverlay();
+        return message || '请使用邮箱验证码登录后再使用。';
+      }
       if (code === 'access_blocked') {
         return message || '检测到异常高频请求，已暂时停止为此 IP 提供服务。';
       }
@@ -1338,11 +1343,12 @@
 
     let supabaseClient = null;
     let authSessionPromise = null;
+    let authInitialized = false;
 
     function getSupabaseClient() {
       if (supabaseClient) return supabaseClient;
       if (!SUPABASE_ANON_KEY) {
-        throw new Error('Supabase anon key 未配置，无法创建匿名会话。');
+        throw new Error('Supabase anon key 未配置，无法创建会话。');
       }
       if (!window.supabase?.createClient) {
         throw new Error('Supabase Auth SDK 加载失败，请检查网络或刷新页面。');
@@ -1358,26 +1364,244 @@
       return supabaseClient;
     }
 
+    function showAuthOverlay() {
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) overlay.classList.add('visible');
+    }
+
+    function hideAuthOverlay() {
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) overlay.classList.remove('visible');
+    }
+
+    function updateAccountInfo(user) {
+      if (!user) return;
+      const email = user.email || '';
+      const initials = email ? email.charAt(0).toUpperCase() : 'U';
+      // 更新侧边栏账户信息
+      const accountName = document.querySelector('.account-strip .account-name');
+      const accountPlan = document.querySelector('.account-strip .account-plan');
+      const avatarEl = document.querySelector('.account-strip .avatar');
+      const popoverAvatar = document.querySelector('.account-popover .avatar');
+      const popoverName = document.querySelector('.account-popover .popover-item span[style*="font-size:14px"]');
+      const popoverSub = document.querySelector('.account-popover .popover-item span[style*="font-size:12px"]');
+      if (accountName) accountName.textContent = email;
+      if (accountPlan) accountPlan.textContent = '已登录';
+      if (avatarEl) avatarEl.textContent = initials;
+      if (popoverAvatar) popoverAvatar.textContent = initials;
+      if (popoverName) popoverName.textContent = email;
+      if (popoverSub) popoverSub.textContent = '邮箱验证码登录';
+    }
+
     async function ensureAuthSession() {
       if (!authSessionPromise) {
         authSessionPromise = (async () => {
           const client = getSupabaseClient();
           const { data: sessionData, error: sessionError } = await client.auth.getSession();
           if (sessionError) throw sessionError;
-          if (sessionData?.session?.access_token) return sessionData.session;
-
-          const { data, error } = await client.auth.signInAnonymously();
-          if (error) throw error;
-          if (!data?.session?.access_token) {
-            throw new Error('匿名登录未返回有效 session。');
+          if (sessionData?.session?.access_token) {
+            const user = sessionData.session.user;
+            // 检查是否为匿名用户
+            if (user?.is_anonymous) {
+              // 匿名用户需要重新登录
+              await client.auth.signOut();
+              authSessionPromise = null;
+              showAuthOverlay();
+              throw new Error('请使用邮箱验证码登录。');
+            }
+            updateAccountInfo(user);
+            hideAuthOverlay();
+            return sessionData.session;
           }
-          return data.session;
+          // 无会话，显示登录界面
+          showAuthOverlay();
+          throw new Error('请先登录后再使用。');
         })().catch(error => {
           authSessionPromise = null;
           throw error;
         });
       }
       return authSessionPromise;
+    }
+
+    async function sendOtp(email) {
+      const client = getSupabaseClient();
+      const { error } = await client.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: window.location.origin + window.location.pathname,
+        },
+      });
+      if (error) throw error;
+    }
+
+    async function verifyOtp(email, token) {
+      const client = getSupabaseClient();
+      const { data, error } = await client.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+      });
+      if (error) throw error;
+      return data;
+    }
+
+    async function handleLogout() {
+      const client = getSupabaseClient();
+      await client.auth.signOut();
+      authSessionPromise = null;
+      authInitialized = false;
+      showAuthOverlay();
+      // 重置账户显示
+      const accountName = document.querySelector('.account-strip .account-name');
+      const accountPlan = document.querySelector('.account-strip .account-plan');
+      const avatarEl = document.querySelector('.account-strip .avatar');
+      if (accountName) accountName.textContent = '登录 / 注册';
+      if (accountPlan) accountPlan.textContent = '邮箱验证码账户';
+      if (avatarEl) avatarEl.textContent = 'MR';
+    }
+
+    function initAuthOverlay() {
+      const overlay = document.getElementById('authOverlay');
+      if (!overlay) return;
+
+      const emailInput = document.getElementById('authEmailInput');
+      const sendOtpBtn = document.getElementById('authSendOtpBtn');
+      const emailError = document.getElementById('authEmailError');
+      const stepEmail = document.getElementById('authStepEmail');
+      const stepOtp = document.getElementById('authStepOtp');
+      const otpInput = document.getElementById('authOtpInput');
+      const verifyOtpBtn = document.getElementById('authVerifyOtpBtn');
+      const otpError = document.getElementById('authOtpError');
+      const emailDisplay = document.getElementById('authEmailDisplay');
+      const resendOtpBtn = document.getElementById('authResendOtpBtn');
+      const backToEmailBtn = document.getElementById('authBackToEmailBtn');
+
+      let currentEmail = '';
+      let resendCooldown = 0;
+
+      function showStepOtp() {
+        stepEmail.style.display = 'none';
+        stepOtp.style.display = '';
+        if (emailDisplay) emailDisplay.textContent = currentEmail;
+        if (otpInput) otpInput.value = '';
+        if (otpError) otpError.textContent = '';
+        setTimeout(() => otpInput?.focus(), 100);
+      }
+
+      function showStepEmail() {
+        stepEmail.style.display = '';
+        stepOtp.style.display = 'none';
+        if (emailError) emailError.textContent = '';
+      }
+
+      if (sendOtpBtn) {
+        sendOtpBtn.addEventListener('click', async () => {
+          const email = (emailInput?.value || '').trim();
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            if (emailError) emailError.textContent = '请输入有效的邮箱地址';
+            return;
+          }
+          sendOtpBtn.disabled = true;
+          sendOtpBtn.textContent = '发送中...';
+          if (emailError) emailError.textContent = '';
+          try {
+            currentEmail = email;
+            await sendOtp(email);
+            showStepOtp();
+          } catch (err) {
+            if (emailError) emailError.textContent = err.message || '发送失败，请重试';
+          } finally {
+            sendOtpBtn.disabled = false;
+            sendOtpBtn.textContent = '发送验证码';
+          }
+        });
+      }
+
+      if (emailInput) {
+        emailInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') sendOtpBtn?.click();
+        });
+      }
+
+      if (verifyOtpBtn) {
+        verifyOtpBtn.addEventListener('click', async () => {
+          const token = (otpInput?.value || '').trim();
+          if (!token || token.length < 4) {
+            if (otpError) otpError.textContent = '请输入验证码';
+            return;
+          }
+          verifyOtpBtn.disabled = true;
+          verifyOtpBtn.textContent = '验证中...';
+          if (otpError) otpError.textContent = '';
+          try {
+            const result = await verifyOtp(currentEmail, token);
+            if (result?.session) {
+              authSessionPromise = Promise.resolve(result.session);
+              updateAccountInfo(result.session.user);
+              hideAuthOverlay();
+              authInitialized = true;
+            } else {
+              if (otpError) otpError.textContent = '验证失败，请重试';
+            }
+          } catch (err) {
+            if (otpError) otpError.textContent = err.message || '验证码错误或已过期';
+          } finally {
+            verifyOtpBtn.disabled = false;
+            verifyOtpBtn.textContent = '验证登录';
+          }
+        });
+      }
+
+      if (otpInput) {
+        otpInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') verifyOtpBtn?.click();
+        });
+      }
+
+      if (resendOtpBtn) {
+        resendOtpBtn.addEventListener('click', async () => {
+          if (resendCooldown > Date.now()) return;
+          resendOtpBtn.textContent = '发送中...';
+          try {
+            await sendOtp(currentEmail);
+            resendCooldown = Date.now() + 60000;
+            resendOtpBtn.textContent = '已重发（60s）';
+            const tick = setInterval(() => {
+              const remain = Math.ceil((resendCooldown - Date.now()) / 1000);
+              if (remain <= 0) {
+                clearInterval(tick);
+              resendOtpBtn.textContent = '重新发送';
+              } else {
+                resendOtpBtn.textContent = `重新发送（${remain}s）`;
+              }
+            }, 1000);
+          } catch (err) {
+            if (otpError) otpError.textContent = err.message || '重发失败';
+            resendOtpBtn.textContent = '重新发送';
+          }
+        });
+      }
+
+      if (backToEmailBtn) {
+        backToEmailBtn.addEventListener('click', showStepEmail);
+      }
+
+      // 监听 Supabase auth 状态变化
+      const client = getSupabaseClient();
+      client.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user && !session.user.is_anonymous) {
+          authSessionPromise = Promise.resolve(session);
+          updateAccountInfo(session.user);
+          hideAuthOverlay();
+          authInitialized = true;
+        } else if (event === 'SIGNED_OUT') {
+          authSessionPromise = null;
+          authInitialized = false;
+          showAuthOverlay();
+        }
+      });
     }
 
     async function proxyHeaders(extra = {}) {
@@ -2567,8 +2791,7 @@
       const modeLabels = {
         direct: '单模型',
         battle: '匿名对战',
-        side_by_side: '双模型对话',
-        agent: '智能体模式'
+        side_by_side: '双模型对话'
       };
       if (topArenaModeLabel) topArenaModeLabel.textContent = modeLabels[state.arenaMode] || '单模型';
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
@@ -2580,7 +2803,6 @@
       if (homeInput) {
         if (state.arenaMode === 'battle') homeInput.placeholder = '向两个匿名模型发起同一个问题';
         else if (state.arenaMode === 'side_by_side') homeInput.placeholder = '比较你选择的两个模型回答';
-        else if (state.arenaMode === 'agent') homeInput.placeholder = '智能体模式预览中，先用单模型提问';
         else homeInput.placeholder = '有问题，尽管问';
       }
     }
@@ -2595,8 +2817,6 @@
         showToast('已切换到匿名双模型对战');
       } else if (state.arenaMode === 'side_by_side') {
         showToast('已切换到双模型对话');
-      } else {
-        showToast('智能体模式预览中');
       }
     }
 
@@ -3774,7 +3994,7 @@
           let detail = errorText.trim();
           if (detail) {
             const parsed = parseBackendErrorPayload(detail);
-            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
               ? formatSecurityGuardMessage(parsed)
               : parsed.message || detail;
           }
@@ -3824,7 +4044,7 @@
           if (!resultResponse.ok) {
             const errorText = await resultResponse.text().catch(() => '');
             const parsed = parseBackendErrorPayload(errorText);
-            const detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+            const detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
               ? formatSecurityGuardMessage(parsed)
               : parsed.message;
             throw new Error(detail || `HTTP error! status: ${resultResponse.status}`);
@@ -4438,7 +4658,7 @@
         if (detail) {
           try {
             const parsed = parseBackendErrorPayload(detail);
-            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
               ? formatSecurityGuardMessage(parsed)
               : parsed.message || detail;
           } catch (parseError) {
@@ -4637,7 +4857,7 @@
           let detail = errorText.trim();
           if (detail) {
             const parsed = parseBackendErrorPayload(detail);
-            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
               ? formatSecurityGuardMessage(parsed)
               : parsed.message || detail;
           }
@@ -4682,7 +4902,7 @@
           let detail = errorText.trim();
           if (detail) {
             const parsed = parseBackendErrorPayload(detail);
-            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+            detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
               ? formatSecurityGuardMessage(parsed)
               : parsed.message || detail;
           }
@@ -4849,7 +5069,7 @@
         if (detail) {
           const parsed = parseBackendErrorPayload(detail);
           applyBackendModelBlock(parsed, modelId);
-          detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked'
+          detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
             ? formatSecurityGuardMessage(parsed)
             : parsed.message || detail;
         }
@@ -5540,7 +5760,11 @@
     document.getElementById('openAppsToast').addEventListener('click', () => showToast('应用中心入口已响应。'));
     document.getElementById('profileToastBtn').addEventListener('click', () => showToast('个人资料入口已响应。'));
     document.getElementById('helpToastBtn').addEventListener('click', () => showToast('帮助中心入口已响应。'));
-    document.getElementById('logoutToastBtn').addEventListener('click', () => showToast('退出登录入口已响应。'));
+    document.getElementById('logoutToastBtn').addEventListener('click', async () => {
+      closePopover();
+      await handleLogout();
+      showToast('已退出登录');
+    });
     document.getElementById('mfaToastBtn').addEventListener('click', () => showToast('MFA 设置入口已响应。'));
     document.getElementById('projectSettingToastBtn').addEventListener('click', () => showToast('项目高级设置入口已响应。'));
     document.getElementById('plusMoreBtn').addEventListener('click', () => showToast('更多二级菜单可继续扩展。'));
@@ -6122,6 +6346,7 @@
     setComposerBusy(false);
     updateTokenExpiryNote();
     setInterval(updateTokenExpiryNote, 1000);
+    initAuthOverlay();
     bootstrapModelTelemetry();
 
     if (nexusvFooter && typeof IntersectionObserver !== 'undefined') {
