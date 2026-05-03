@@ -21,6 +21,11 @@
     escapeHtml,
     getModelDisplayName,
     showToast,
+    getModelRequestOptions,
+    mergeToolCallDeltas,
+    syncStreamingMarkdownBlock,
+    TOOL_DISPLAY_NAMES,
+    parseToolArguments,
   } = app;
 
   const arenaPromptInput = document.getElementById('arenaPromptInput');
@@ -89,11 +94,127 @@
     }
   }
 
+  function ensureArenaCardParts(target) {
+    const card = target.closest('.arena-card');
+    if (!card) return null;
+    if (card._arenaParts) return card._arenaParts;
+    const thinkBlock = document.createElement('div');
+    thinkBlock.className = 'think-block';
+    thinkBlock.hidden = true;
+    const thinkHeader = document.createElement('button');
+    thinkHeader.className = 'think-header';
+    thinkHeader.type = 'button';
+    thinkHeader.setAttribute('aria-expanded', 'true');
+    thinkHeader.innerHTML = '<span class="think-label">Thinking</span><span class="think-caret">⌄</span>';
+    thinkHeader.addEventListener('click', function () {
+      if (thinkBlock.hidden) return;
+      const collapsed = !thinkBlock.classList.contains('is-collapsed');
+      thinkBlock.classList.toggle('is-collapsed', collapsed);
+      thinkHeader.setAttribute('aria-expanded', String(!collapsed));
+    });
+    const thinkBody = document.createElement('div');
+    thinkBody.className = 'think-body md-content';
+    thinkBlock.appendChild(thinkHeader);
+    thinkBlock.appendChild(thinkBody);
+    const toolCallsContainer = document.createElement('div');
+    toolCallsContainer.className = 'tool-calls-container';
+    target.parentNode.insertBefore(thinkBlock, target);
+    target.parentNode.insertBefore(toolCallsContainer, target);
+    card._arenaParts = {
+      thinkBlock: thinkBlock,
+      thinkHeader: thinkHeader,
+      thinkBody: thinkBody,
+      toolCallsContainer: toolCallsContainer,
+      answerBody: target,
+      thinkStreamState: { text: '', ready: false, startedAt: 0, wasThinking: false, autoCollapsed: false },
+      answerStreamState: { text: '', ready: false },
+    };
+    return card._arenaParts;
+  }
+
   function renderArenaText(target, text, loading) {
     if (!target) return;
-    const value = String(text || '').trim();
-    target.innerHTML = value ? renderMarkdown(value) : '<span class="typing-indicator">' + (loading ? '正在生成…' : '暂无内容') + '</span>';
-    if (window.renderMathInElement) window.renderMathInElement(target);
+    const parts = ensureArenaCardParts(target);
+    if (typeof text === 'string') {
+      const value = String(text || '').trim();
+      target.innerHTML = value ? renderMarkdown(value) : '<span class="typing-indicator">' + (loading ? '正在生成…' : '暂无内容') + '</span>';
+      if (window.renderMathInElement) window.renderMathInElement(target);
+      return;
+    }
+    if (!parts) return;
+    const { reasoning, answer, thinking, toolCalls } = text;
+    const reasoningText = String(reasoning || '').trim();
+    const answerText = String(answer || '').trim();
+    const hasReasoning = Boolean(reasoningText);
+    const hasAnswer = Boolean(answerText);
+    const { thinkBlock, thinkHeader, thinkBody, answerBody, toolCallsContainer, thinkStreamState, answerStreamState } = parts;
+    thinkBlock.hidden = !hasReasoning && !thinking;
+    if (thinking && !thinkStreamState.wasThinking) {
+      thinkStreamState.startedAt = Date.now();
+      thinkStreamState.autoCollapsed = false;
+      thinkBlock.classList.remove('is-collapsed');
+      if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'true');
+    }
+    if (hasReasoning) {
+      syncStreamingMarkdownBlock(thinkBody, thinkStreamState, reasoningText, { thinking: thinking });
+    } else if (!thinking) {
+      thinkBody.innerHTML = '';
+      thinkStreamState.text = '';
+      thinkStreamState.ready = false;
+    }
+    if (thinking) thinkBlock.classList.add('is-thinking');
+    else thinkBlock.classList.remove('is-thinking');
+    if (thinkHeader) {
+      const label = thinkHeader.querySelector('.think-label');
+      const seconds = thinkStreamState.startedAt ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000)) : 1;
+      if (label) label.textContent = thinking ? 'Thinking' : 'Thought for ' + seconds + 's';
+    }
+    if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
+      thinkBlock.classList.add('is-collapsed');
+      if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'false');
+      thinkStreamState.autoCollapsed = true;
+    }
+    thinkStreamState.wasThinking = Boolean(thinking);
+    if (hasAnswer) {
+      syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, { thinking: thinking, placeholder: '正在思考中…' });
+    } else if (thinking) {
+      answerBody.innerHTML = '';
+      answerStreamState.text = '';
+      answerStreamState.ready = false;
+    } else if (!hasReasoning) {
+      answerBody.innerHTML = '<span class="typing-indicator">暂无内容</span>';
+    }
+    if (Array.isArray(toolCalls) && toolCalls.length) {
+      var existing = toolCallsContainer.querySelectorAll('.tool-call-block');
+      var existingIds = new Set([].slice.call(existing).map(function (el) { return el.dataset.toolCallId; }));
+      for (var i = 0; i < toolCalls.length; i++) {
+        var tc = toolCalls[i];
+        var tcId = tc.id || 'call_' + tc.name;
+        if (existingIds.has(tcId)) continue;
+        var block = document.createElement('div');
+        block.className = 'tool-call-block';
+        block.dataset.toolCallId = tcId;
+        var header = document.createElement('div');
+        header.className = 'tool-call-header';
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'tool-call-name';
+        var displayName = TOOL_DISPLAY_NAMES[tc.name] || tc.name;
+        var args = parseToolArguments(tc.arguments);
+        var argHint = args.search_query || args.query || args.keyword || args.article_id || args.articleId || args.article_title || args.title || args.id || '';
+        nameSpan.textContent = argHint ? displayName + '：' + argHint : displayName;
+        var status = document.createElement('span');
+        status.className = 'tool-call-status';
+        status.textContent = '（竞技场模式不执行）';
+        header.appendChild(nameSpan);
+        header.appendChild(status);
+        header.addEventListener('click', (function (b) { return function () { b.classList.toggle('expanded'); }; })(block));
+        block.appendChild(header);
+        toolCallsContainer.appendChild(block);
+      }
+    }
+    if (hasAnswer || hasReasoning) {
+      if (window.renderMathInElement) window.renderMathInElement(answerBody.closest('.arena-card'));
+    }
   }
 
   async function arenaApi(endpoint, payload, timeoutMs) {
@@ -118,17 +239,24 @@
   function parseArenaStreamDelta(parsed) {
     const delta = parsed && parsed.choices && parsed.choices[0] ? parsed.choices[0].delta : {};
     const message = parsed && parsed.choices && parsed.choices[0] ? parsed.choices[0].message : {};
-    return String(delta.content || delta.reasoning_content || message.content || '');
+    const reasoning = String(delta.reasoning_content || '');
+    const content = String(delta.content || message.content || '');
+    const toolCalls = Array.isArray(delta.tool_calls) && delta.tool_calls.length ? delta.tool_calls : null;
+    return { reasoning, content, toolCalls };
   }
 
-  async function streamArenaSlot(matchId, slot, prompt, target) {
-    let answer = '';
+  async function streamArenaSlot(matchId, slot, prompt, target, modelId) {
+    let reasoningText = '';
+    let answerText = '';
+    let doneReasoning = false;
+    const toolCalls = [];
     const turnId = createChatTurnId();
     renderArenaText(target, '', true);
     const messages = [
       { role: 'system', content: '你正在参加匿名 AI 竞技场。请直接回答用户问题，不要透露或猜测自己的模型身份，不要提及评分规则。回答应清晰、有帮助、适度简洁。' },
       { role: 'user', content: prompt }
     ];
+    const requestOptions = modelId ? getModelRequestOptions(modelId) : {};
 
     const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
       method: 'POST',
@@ -140,7 +268,8 @@
         messages,
         stream: true,
         temperature: 0.6,
-        client_turn_id: turnId
+        client_turn_id: turnId,
+        ...requestOptions
       })
     }, CHAT_TURN_TIMEOUT_MS, '竞技场模型请求');
 
@@ -166,21 +295,40 @@
         if (!payload || payload === '[DONE]') continue;
         try {
           const chunk = parseArenaStreamDelta(JSON.parse(payload));
-          if (!chunk) continue;
-          answer += chunk;
-          renderArenaText(target, answer, true);
+          if (chunk.reasoning) {
+            reasoningText += chunk.reasoning;
+            renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true });
+          }
+          if (chunk.content) {
+            if (!doneReasoning) doneReasoning = true;
+            answerText += chunk.content;
+            renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true });
+          }
+          if (chunk.toolCalls) {
+            mergeToolCallDeltas(toolCalls, chunk.toolCalls);
+            renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true, toolCalls: toolCalls });
+          }
         } catch { continue; }
       }
     }
     if (buffer.trim().startsWith('data: ')) {
       const payload = buffer.trim().slice(6).trim();
       if (payload && payload !== '[DONE]') {
-        try { answer += parseArenaStreamDelta(JSON.parse(payload)); } catch { void 0; }
+        try {
+          var tailChunk = parseArenaStreamDelta(JSON.parse(payload));
+          if (tailChunk.reasoning) reasoningText += tailChunk.reasoning;
+          if (tailChunk.content) answerText += tailChunk.content;
+        } catch { void 0; }
       }
     }
-    renderArenaText(target, answer || '这个模型没有返回有效内容。', false);
-    await arenaApi('arena_record_response', { id: matchId, slot, response: answer || '' });
-    return answer;
+    renderArenaText(target, {
+      reasoning: reasoningText,
+      answer: answerText || '这个模型没有返回有效内容。',
+      thinking: false,
+      toolCalls: toolCalls.length ? toolCalls : undefined
+    });
+    await arenaApi('arena_record_response', { id: matchId, slot, response: answerText || '' });
+    return answerText;
   }
 
   async function loadArenaLeaderboard() {
@@ -232,7 +380,7 @@
       currentArenaMatch = { id: match.id, prompt: prompt, ready: false, voted: mode === 'single', reveal: null, mode };
       setArenaBusy(true);
       if (mode === 'single') {
-        const answerA = await streamArenaSlot(match.id, 'a', prompt, arenaAnswerA);
+        const answerA = await streamArenaSlot(match.id, 'a', prompt, arenaAnswerA, modelA);
         currentArenaMatch.ready = true;
         if (arenaVoteRow) arenaVoteRow.hidden = true;
         setArenaStatus(answerA ? '单模型回答完成。' : '单模型没有返回有效内容。');
@@ -240,8 +388,8 @@
       }
       if (arenaVoteRow) arenaVoteRow.hidden = false;
       const [answerA, answerB] = await Promise.allSettled([
-        streamArenaSlot(match.id, 'a', prompt, arenaAnswerA),
-        streamArenaSlot(match.id, 'b', prompt, arenaAnswerB)
+        streamArenaSlot(match.id, 'a', prompt, arenaAnswerA, mode !== 'anonymous' ? modelA : ''),
+        streamArenaSlot(match.id, 'b', prompt, arenaAnswerB, mode !== 'anonymous' ? modelB : '')
       ]);
       if (answerA.status === 'rejected') renderArenaText(arenaAnswerA, '请求失败：' + (answerA.reason ? answerA.reason.message : answerA.reason), false);
       if (answerB.status === 'rejected') renderArenaText(arenaAnswerB, '请求失败：' + (answerB.reason ? answerB.reason.message : answerB.reason), false);

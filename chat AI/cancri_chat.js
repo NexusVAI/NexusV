@@ -2960,11 +2960,18 @@
     function parseArenaMainStreamDelta(parsed) {
       const delta = parsed?.choices?.[0]?.delta || {};
       const message = parsed?.choices?.[0]?.message || {};
-      return String(delta.content || delta.reasoning_content || message.content || '');
+      const reasoning = String(delta.reasoning_content || '');
+      const content = String(delta.content || message.content || '');
+      const toolCalls = Array.isArray(delta.tool_calls) && delta.tool_calls.length ? delta.tool_calls : null;
+      return { reasoning, content, toolCalls };
     }
     async function streamMainArenaSlot(matchId, slot, prompt, duelMessageId, { modelId = '', anonymous = false } = {}) {
-      let answer = '';
+      let reasoningText = '';
+      let answerText = '';
+      let doneReasoning = false;
+      const toolCalls = [];
       const identityPrompt = getArenaIdentityPrompt(modelId, anonymous);
+      const requestOptions = getModelRequestOptions(modelId);
       const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
         method: 'POST',
         headers: await proxyHeaders(),
@@ -2978,7 +2985,8 @@
           ],
           stream: true,
           temperature: 0.6,
-          client_turn_id: createChatTurnId()
+          client_turn_id: createChatTurnId(),
+          ...requestOptions
         })
       }, CHAT_TURN_TIMEOUT_MS, `\u6a21\u578b ${slot.toUpperCase()} \u8bf7\u6c42`);
       const errorText = response.ok ? '' : await response.text().catch(() => '');
@@ -3002,15 +3010,30 @@
           if (!payload || payload === '[DONE]') continue;
           try {
             const chunk = parseArenaMainStreamDelta(JSON.parse(payload));
-            if (!chunk) continue;
-            answer += chunk;
-            updateDuelMessage(duelMessageId, slot, answer, { loading: true });
+            if (chunk.reasoning) {
+              reasoningText += chunk.reasoning;
+              updateDuelMessage(duelMessageId, slot, { reasoning: reasoningText, answer: answerText, thinking: true });
+            }
+            if (chunk.content) {
+              if (!doneReasoning) doneReasoning = true;
+              answerText += chunk.content;
+              updateDuelMessage(duelMessageId, slot, { reasoning: reasoningText, answer: answerText, thinking: true });
+            }
+            if (chunk.toolCalls) {
+              mergeToolCallDeltas(toolCalls, chunk.toolCalls);
+              updateDuelMessage(duelMessageId, slot, { reasoning: reasoningText, answer: answerText, thinking: true, toolCalls });
+            }
           } catch { void 0; }
         }
       }
-      updateDuelMessage(duelMessageId, slot, answer || '\u8fd9\u4e2a\u6a21\u578b\u6ca1\u6709\u8fd4\u56de\u6709\u6548\u5185\u5bb9\u3002', { loading: false });
-      await arenaMainApi('arena_record_response', { id: matchId, slot, response: answer || '' });
-      return answer;
+      updateDuelMessage(duelMessageId, slot, {
+        reasoning: reasoningText,
+        answer: answerText || '\u8fd9\u4e2a\u6a21\u578b\u6ca1\u6709\u8fd4\u56de\u6709\u6548\u5185\u5bb9\u3002',
+        thinking: false,
+        toolCalls: toolCalls.length ? toolCalls : undefined
+      });
+      await arenaMainApi('arena_record_response', { id: matchId, slot, response: answerText || '' });
+      return answerText;
     }
     async function sendArenaDuelMessage(prompt, { anonymous = false } = {}) {
       const selectedA = currentModel;
@@ -4407,13 +4430,54 @@
         card.className = 'duel-card';
         card.dataset.duelSlot = slot;
         const title = anonymous ? `模型 ${slot.toUpperCase()}` : getModelDisplayName(modelId);
-        card.innerHTML = `
-          <div class="duel-card-head">
-            <span>${escapeHtml(title)}</span>
-            <small>${anonymous ? '投票后揭晓' : escapeHtml(modelId)}</small>
-          </div>
-          <div class="duel-answer md-content" data-duel-answer="${slot}"><span class="typing-indicator">正在生成…</span></div>
-        `;
+
+        const head = document.createElement('div');
+        head.className = 'duel-card-head';
+        head.innerHTML = `<span>${escapeHtml(title)}</span><small>${anonymous ? '投票后揭晓' : escapeHtml(modelId)}</small>`;
+
+        const thinkBlock = document.createElement('div');
+        thinkBlock.className = 'think-block';
+        thinkBlock.hidden = true;
+
+        const thinkHeader = document.createElement('button');
+        thinkHeader.className = 'think-header';
+        thinkHeader.type = 'button';
+        thinkHeader.setAttribute('aria-expanded', 'true');
+        thinkHeader.innerHTML = '<span class="think-label">Thinking</span><span class="think-caret">⌄</span>';
+        thinkHeader.addEventListener('click', () => {
+          if (thinkBlock.hidden) return;
+          const collapsed = !thinkBlock.classList.contains('is-collapsed');
+          thinkBlock.classList.toggle('is-collapsed', collapsed);
+          thinkHeader.setAttribute('aria-expanded', String(!collapsed));
+        });
+
+        const thinkBody = document.createElement('div');
+        thinkBody.className = 'think-body md-content';
+        thinkBlock.appendChild(thinkHeader);
+        thinkBlock.appendChild(thinkBody);
+
+        const toolCallsContainer = document.createElement('div');
+        toolCallsContainer.className = 'tool-calls-container';
+
+        const answerBody = document.createElement('div');
+        answerBody.className = 'duel-answer md-content';
+        answerBody.dataset.duelAnswer = slot;
+        answerBody.innerHTML = '<span class="typing-indicator">正在生成…</span>';
+
+        card.appendChild(head);
+        card.appendChild(thinkBlock);
+        card.appendChild(toolCallsContainer);
+        card.appendChild(answerBody);
+
+        card._duelParts = {
+          thinkBlock,
+          thinkHeader,
+          thinkBody,
+          toolCallsContainer,
+          answerBody,
+          thinkStreamState: { text: '', ready: false, startedAt: 0, wasThinking: false, autoCollapsed: false },
+          answerStreamState: { text: '', ready: false },
+        };
         return card;
       };
 
@@ -4431,21 +4495,118 @@
       return messageId;
     }
 
-    function updateDuelMessage(messageId, slot, text, { loading = false, modelId = '' } = {}) {
+    function updateDuelMessage(messageId, slot, textOrData, { loading = false, modelId = '' } = {}) {
       const wrapper = document.getElementById(messageId);
       if (!wrapper) return;
-      const target = wrapper.querySelector(`[data-duel-answer="${slot}"]`);
-      if (!target) return;
-      const value = String(text || '').trim();
-      target.innerHTML = value ? renderMarkdown(value) : `<span class="typing-indicator">${loading ? '正在生成…' : '暂无内容'}</span>`;
-      renderMathInElement(target);
-      if (modelId && wrapper._duel?.anonymous) {
-        const card = target.closest('.duel-card');
-        const head = card?.querySelector('.duel-card-head');
-        if (head) {
-          head.innerHTML = `<span>${escapeHtml(getModelDisplayName(modelId))}</span><small>${escapeHtml(modelId)}</small>`;
+      const card = wrapper.querySelector(`.duel-card[data-duel-slot="${slot}"]`);
+      if (!card) return;
+      const parts = card._duelParts;
+
+      // Legacy string-based call (backward compat)
+      if (typeof textOrData === 'string') {
+        const target = parts?.answerBody || wrapper.querySelector(`[data-duel-answer="${slot}"]`);
+        if (!target) return;
+        const value = textOrData.trim();
+        target.innerHTML = value ? renderMarkdown(value) : `<span class="typing-indicator">${loading ? '正在生成…' : '暂无内容'}</span>`;
+        renderMathInElement(target);
+        if (modelId && wrapper._duel?.anonymous) {
+          const head = card.querySelector('.duel-card-head');
+          if (head) head.innerHTML = `<span>${escapeHtml(getModelDisplayName(modelId))}</span><small>${escapeHtml(modelId)}</small>`;
         }
+        return;
       }
+
+      // Structured data: { reasoning, answer, thinking, toolCalls }
+      const { reasoning = '', answer = '', thinking = false, toolCalls } = textOrData;
+      const reasoningText = String(reasoning || '').trim();
+      const answerText = String(answer || '').trim();
+      const hasReasoning = Boolean(reasoningText);
+      const hasAnswer = Boolean(answerText);
+
+      if (parts) {
+        const { thinkBlock, thinkHeader, thinkBody, answerBody, toolCallsContainer, thinkStreamState, answerStreamState } = parts;
+
+        // Think block
+        thinkBlock.hidden = !hasReasoning && !thinking;
+        if (thinking && !thinkStreamState.wasThinking) {
+          thinkStreamState.startedAt = Date.now();
+          thinkStreamState.autoCollapsed = false;
+          thinkBlock.classList.remove('is-collapsed');
+          if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'true');
+        }
+        if (hasReasoning) {
+          syncStreamingMarkdownBlock(thinkBody, thinkStreamState, reasoningText, { thinking });
+        } else if (!thinking) {
+          thinkBody.innerHTML = '';
+          thinkStreamState.text = '';
+          thinkStreamState.ready = false;
+        }
+        if (thinking) thinkBlock.classList.add('is-thinking');
+        else thinkBlock.classList.remove('is-thinking');
+        if (thinkHeader) {
+          const label = thinkHeader.querySelector('.think-label');
+          const seconds = thinkStreamState.startedAt
+            ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000))
+            : 1;
+          if (label) label.textContent = thinking ? 'Thinking' : `Thought for ${seconds}s`;
+        }
+        if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
+          thinkBlock.classList.add('is-collapsed');
+          if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'false');
+          thinkStreamState.autoCollapsed = true;
+        }
+        thinkStreamState.wasThinking = Boolean(thinking);
+
+        // Answer body
+        if (hasAnswer) {
+          syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, { thinking, placeholder: '正在思考中…' });
+        } else if (thinking) {
+          answerBody.innerHTML = '';
+          answerStreamState.text = '';
+          answerStreamState.ready = false;
+        } else if (!hasReasoning) {
+          answerBody.innerHTML = '<span class="typing-indicator">暂无内容</span>';
+        }
+
+        // Tool calls display (badge only, no execution in Arena)
+        if (Array.isArray(toolCalls) && toolCalls.length) {
+          const existing = toolCallsContainer.querySelectorAll('.tool-call-block');
+          const existingIds = new Set([...existing].map(el => el.dataset.toolCallId));
+          for (const tc of toolCalls) {
+            const tcId = tc.id || `call_${tc.name}`;
+            if (existingIds.has(tcId)) continue;
+            const block = document.createElement('div');
+            block.className = 'tool-call-block';
+            block.dataset.toolCallId = tcId;
+            const header = document.createElement('div');
+            header.className = 'tool-call-header';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'tool-call-name';
+            const displayName = TOOL_DISPLAY_NAMES[tc.name] || tc.name;
+            const args = parseToolArguments(tc.arguments);
+            const argHint = args.search_query || args.query || args.keyword || args.article_id || args.articleId || args.article_title || args.title || args.id || '';
+            nameSpan.textContent = argHint ? `${displayName}：${argHint}` : displayName;
+            const status = document.createElement('span');
+            status.className = 'tool-call-status';
+            status.textContent = '（竞技场模式不执行）';
+            header.appendChild(nameSpan);
+            header.appendChild(status);
+            header.addEventListener('click', () => block.classList.toggle('expanded'));
+            block.appendChild(header);
+            toolCallsContainer.appendChild(block);
+          }
+        }
+
+        if (hasAnswer || hasReasoning) renderMathInElement(card);
+      }
+
+      // Reveal model name
+      if (modelId && wrapper._duel?.anonymous) {
+        const head = card.querySelector('.duel-card-head');
+        if (head) head.innerHTML = `<span>${escapeHtml(getModelDisplayName(modelId))}</span><small>${escapeHtml(modelId)}</small>`;
+      }
+
+      scrollChatToBottom();
     }
 
     function updateAssistantMessage(messageId, { reasoning = '', answer = '', thinking = false } = {}) {
@@ -6542,4 +6703,9 @@
       getModelDisplayName,
       showToast,
       setActiveView,
+      getModelRequestOptions,
+      mergeToolCallDeltas,
+      syncStreamingMarkdownBlock,
+      TOOL_DISPLAY_NAMES,
+      parseToolArguments,
     };
