@@ -39,7 +39,6 @@ function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
   if (!origin) return null
   if (ALLOWED_ORIGINS.some((allowed: string) => origin === allowed)) return origin
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
   return null
 }
 
@@ -52,6 +51,8 @@ function corsHeadersFor(req: Request): Record<string, string> {
     'Access-Control-Max-Age': '86400',
   }
 }
+
+const BANNED_IPS = new Set(['18.141.169.136', '47.130.152.123', '84.20.17.72'])
 
 const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
 const RATE_LIMIT_WINDOW_MS = 60_000
@@ -224,6 +225,18 @@ function inspectAbuseScope(key: string, max: number, options: { ignoreSpeed?: bo
   }
 
   return { ok: true }
+}
+
+function checkBanned(ctx: RequestContext, ch: Record<string, string>): Response | null {
+  if (BANNED_IPS.has(ctx.ip)) {
+    logSecurityEvent('banned_ip', ctx, {})
+    return jsonResponse({
+      error: 'access_blocked',
+      code: 'access_blocked',
+      message: '访问被拒绝',
+    }, 403, ch)
+  }
+  return null
 }
 
 function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>, options: { ignoreSpeed?: boolean } = {}): Response | null {
@@ -584,6 +597,8 @@ serve(async (req: Request) => {
 
   try {
     const baseCtx = getRequestContext(req, 'web-search')
+    const banned = checkBanned(baseCtx, ch)
+    if (banned) return banned
     const oversized = rejectOversizedRequest(req, ch, baseCtx)
     if (oversized) return oversized
 

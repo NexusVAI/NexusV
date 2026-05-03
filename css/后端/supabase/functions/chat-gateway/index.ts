@@ -39,9 +39,10 @@ function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
   if (!origin) return null
   if (ALLOWED_ORIGINS.some(allowed => origin === allowed)) return origin
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
   return null
 }
+
+const BANNED_IPS = new Set(['18.141.169.136', '47.130.152.123', '84.20.17.72'])
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
@@ -68,6 +69,19 @@ function getClientIp(req: Request): string {
     if (first) return first
   }
   return cleanHeader(req.headers.get('x-real-ip')) || 'unknown'
+}
+
+function checkBanned(req: Request, ch: Record<string, string>): Response | null {
+  const ip = getClientIp(req)
+  if (BANNED_IPS.has(ip)) {
+    console.log(JSON.stringify({ event: 'banned_ip', ip }))
+    return jsonResponse({
+      error: 'access_blocked',
+      code: 'access_blocked',
+      message: '访问被拒绝',
+    }, 403, ch)
+  }
+  return null
 }
 
 function getBearerToken(req: Request): string {
@@ -291,6 +305,9 @@ serve(async (req: Request) => {
   const ch = corsHeadersFor(req)
   const originResponse = rejectDisallowedOrigin(req, ch)
   if (originResponse) return originResponse
+
+  const banned = checkBanned(req, ch)
+  if (banned) return banned
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: ch })

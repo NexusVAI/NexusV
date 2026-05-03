@@ -36,7 +36,6 @@ function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get('origin') || ''
   if (!origin) return null
   if (ALLOWED_ORIGINS.some(allowed => origin === allowed)) return origin
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
   return null
 }
 
@@ -211,6 +210,18 @@ function inspectAbuseScope(
   }
 
   return { ok: true }
+}
+
+function checkBanned(ctx: RequestContext, ch: Record<string, string>): Response | null {
+  if (isIpBlocked(ctx.ip)) {
+    logSecurityEvent('banned_ip', ctx, {})
+    return jsonResponse({
+      error: 'access_blocked',
+      code: 'access_blocked',
+      message: '访问被拒绝',
+    }, 403, ch)
+  }
+  return null
 }
 
 function enforceAbuseGuard(
@@ -1046,7 +1057,13 @@ async function handleWebSearchRequest(requestData: Record<string, unknown>, req:
   })
 }
 
-const BLOCKED_IPS = new Set(['185.212.58.222', '185.212.58.66'])
+const BLOCKED_IPS = new Set([
+  '185.212.58.222',
+  '185.212.58.66',
+  '18.141.169.136',
+  '47.130.152.123',
+  '84.20.17.72',
+])
 const BLOCKED_IP_RANGES = ['185.212.58.0/24']
 
 function ipInCidr(ip: string, cidr: string): boolean {
@@ -1176,6 +1193,8 @@ serve(async (req: Request) => {
 
   try {
     const baseCtx = getRequestContext(req, 'modelscope-proxy', 'unknown', '', authenticatedUserId)
+    const banned = checkBanned(baseCtx, ch)
+    if (banned) return banned
     const oversized = rejectOversizedRequest(req, ch, baseCtx)
     if (oversized) return oversized
 

@@ -43,9 +43,10 @@ function getAllowedOrigin(req: Request): string | null {
   const origin = req.headers.get("origin") || "";
   if (!origin) return null;
   if (ALLOWED_ORIGINS.some((allowed: string) => origin === allowed)) return origin;
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
   return null;
 }
+
+const BANNED_IPS = new Set(['18.141.169.136', '47.130.152.123', '84.20.17.72'])
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req);
@@ -192,6 +193,18 @@ function inspectAbuseScope(key: string, max: number): { ok: true } | { ok: false
   return { ok: true };
 }
 
+function checkBanned(ctx: RequestContext, ch: Record<string, string>): Response | null {
+  if (BANNED_IPS.has(ctx.ip)) {
+    console.log(JSON.stringify({ event: 'banned_ip', ip: ctx.ip }))
+    return jsonResponse({
+      error: 'access_blocked',
+      code: 'access_blocked',
+      message: '访问被拒绝',
+    }, 403, ch)
+  }
+  return null
+}
+
 function enforceAbuseGuard(ctx: RequestContext, ch: Record<string, string>): Response | null {
   const scopes = [
     `ip:${ctx.endpoint}:${ctx.ip}`,
@@ -279,6 +292,8 @@ serve(async (req: Request) => {
     if (!scoped.ok) return scoped.response;
     const { supabase, userId } = scoped;
     const ctx = getRequestContext(req, "chat-history", method.toLowerCase(), userId);
+    const banned = checkBanned(ctx, ch);
+    if (banned) return banned;
     const abuseResponse = enforceAbuseGuard(ctx, ch);
     if (abuseResponse) return abuseResponse;
     logSecurityEvent("request_started", ctx, { method });
@@ -290,7 +305,7 @@ serve(async (req: Request) => {
           .from("chat_history")
           .select("*")
           .eq("id", id)
-          .eq("owner_id", userId)
+          .or(`owner_id.eq.${userId},user_id.eq.${userId},user_id.eq.user_${userId}`)
           .maybeSingle();
 
         if (error) throw error;
@@ -303,7 +318,7 @@ serve(async (req: Request) => {
       const { data, error } = await supabase
         .from("chat_history")
         .select("id, title, model, created_at, updated_at")
-        .eq("owner_id", userId)
+        .or(`owner_id.eq.${userId},user_id.eq.${userId},user_id.eq.user_${userId}`)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
