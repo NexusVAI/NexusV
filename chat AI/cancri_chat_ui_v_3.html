@@ -7,6 +7,33 @@
   <script>
     window.__SUPABASE_URL__ = 'https://diusqgphvybnzazgopor.supabase.co';
     window.__SUPABASE_ANON_KEY__ = 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
+
+    // Early anti-debugging protection
+    (function() {
+      'use strict';
+      // Block iframe embedding (prevent debugging via iframe)
+      if (window.top !== window.self) {
+        window.top.location = window.self.location;
+      }
+      // Disable drag and drop to prevent saving page
+      window.addEventListener('dragstart', function(e) { e.preventDefault(); }, true);
+      window.addEventListener('drop', function(e) { e.preventDefault(); }, true);
+      window.addEventListener('dragover', function(e) { e.preventDefault(); }, true);
+      // Disable beforeprint (prevent print-to-PDF inspection)
+      window.addEventListener('beforeprint', function(e) { e.preventDefault(); }, true);
+      // Debugger trap - makes breakpoints difficult
+      setInterval(function() {
+        (function() {}).constructor('debugger')();
+      }, 100);
+      // Continuous debugger check
+      const start = new Date().getTime();
+      (function() {}).constructor('debugger')();
+      const end = new Date().getTime();
+      if (end - start > 100) {
+        // Debugger detected
+        document.body.style.display = 'none';
+      }
+    })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0503" />
@@ -526,35 +553,27 @@
               </div>
             </div>
             <div class="leaderboard-side-section">
-              <div class="leaderboard-side-title">Categories</div>
-              <div class="leaderboard-category active">🏆 Overall</div>
-              <div class="leaderboard-category">🤓 Expert</div>
-              <div class="leaderboard-category">💼 Occupational</div>
-              <div class="leaderboard-category">🧮 Math</div>
-              <div class="leaderboard-category">📝 Instruction Following</div>
-              <div class="leaderboard-category">💬 Multi-Turn</div>
-              <div class="leaderboard-category">🔥 Creative Writing</div>
-              <div class="leaderboard-category">💻 Coding</div>
+              <div class="leaderboard-side-title">分类</div>
+              <div class="leaderboard-category active">🏆 综合排行</div>
             </div>
           </aside>
           <section class="leaderboard-main">
             <div class="leaderboard-hero">
               <div>
-                <h1>Text Arena</h1>
-                <p>View overall rankings across AI models in chat tasks across math, coding, creative writing, and other open-ended domains.</p>
+                <h1>竞技场排行榜</h1>
+                <p>AI 模型在开放问答、数学、编程、创意写作等任务中的综合 Elo 排名。</p>
                 <div class="leaderboard-meta">
-                  <span>◷ Updated live</span>
-                  <span id="mainLeaderboardVoteCount">Votes loading</span>
-                  <span id="mainLeaderboardModelCount">Models loading</span>
+                  <span>◷ 实时更新</span>
+                  <span id="mainLeaderboardVoteCount">加载中</span>
+                  <span id="mainLeaderboardModelCount">加载中</span>
                 </div>
               </div>
-              <button class="leaderboard-start-btn" type="button" id="leaderboardStartVotingBtn">Start Voting</button>
+              <button class="leaderboard-start-btn" type="button" id="leaderboardStartVotingBtn">开始投票</button>
             </div>
             <div class="leaderboard-toolbar">
-              <button type="button">☷ Hide Filters</button>
+              <button type="button">☷ 隐藏筛选</button>
               <span></span>
-              <button class="active" type="button">Models</button>
-              <button type="button">Labs</button>
+              <button class="active" type="button">模型</button>
               <button type="button">⌕</button>
             </div>
             <div class="leaderboard-table" id="mainLeaderboardList">排行榜加载中…</div>

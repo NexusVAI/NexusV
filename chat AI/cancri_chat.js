@@ -1,3 +1,11 @@
+    const savedArenaMode = localStorage.getItem('cancri_arena_mode');
+    const mobileArenaLayoutSeen = localStorage.getItem('cancri_arena_mobile_layout_seen') === '1';
+    const prefersMobileSideBySide = window.matchMedia?.('(max-width: 640px)')?.matches && (!savedArenaMode || (!mobileArenaLayoutSeen && savedArenaMode === 'direct'));
+    if (prefersMobileSideBySide) {
+      localStorage.setItem('cancri_arena_mode', 'side_by_side');
+      localStorage.setItem('cancri_arena_mobile_layout_seen', '1');
+    }
+
     const state = {
       theme: 'light',
       contrast: '系统',
@@ -14,7 +22,7 @@
       activeRequestController: null,
       recentProjectName: '',
       homeMode: 'chat',
-      arenaMode: localStorage.getItem('cancri_arena_mode') || 'direct',
+      arenaMode: prefersMobileSideBySide ? 'side_by_side' : (savedArenaMode || 'direct'),
     };
 
     const root = document.documentElement;
@@ -1466,6 +1474,30 @@
       const overlay = document.getElementById('authOverlay');
       if (!overlay) return;
 
+      // 主动检查现有 session，如果是匿名用户则清除并显示登录
+      (async () => {
+        try {
+          const client = getSupabaseClient();
+          const { data } = await client.auth.getSession();
+          if (data?.session?.user) {
+            if (data.session.user.is_anonymous) {
+              await client.auth.signOut();
+              authSessionPromise = null;
+              showAuthOverlay();
+            } else {
+              updateAccountInfo(data.session.user);
+              hideAuthOverlay();
+              authSessionPromise = Promise.resolve(data.session);
+              authInitialized = true;
+            }
+          } else {
+            showAuthOverlay();
+          }
+        } catch {
+          showAuthOverlay();
+        }
+      })();
+
       const emailInput = document.getElementById('authEmailInput');
       const sendOtpBtn = document.getElementById('authSendOtpBtn');
       const emailError = document.getElementById('authEmailError');
@@ -2791,7 +2823,7 @@
       const modeLabels = {
         direct: '单模型',
         battle: '匿名对战',
-        side_by_side: '双模型对话'
+        side_by_side: 'Side by Side'
       };
       if (topArenaModeLabel) topArenaModeLabel.textContent = modeLabels[state.arenaMode] || '单模型';
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
@@ -2857,10 +2889,10 @@
     function renderMainLeaderboardRows(rows) {
       const header = `
         <div class="leaderboard-table-head">
-          <span>Rank</span>
-          <span>Rank Spread</span>
-          <span>Model</span>
-          <span>Score</span>
+          <span>排名</span>
+          <span>排名区间</span>
+          <span>模型</span>
+          <span>分数</span>
         </div>`;
       const body = rows.map((row, index) => {
         const name = escapeHtml(getModelDisplayName(row.model_id || 'unknown'));
@@ -2902,8 +2934,8 @@
         const totalVotes = rows.reduce((sum, row) => sum + Number(row.total_votes || 0), 0);
         const voteCount = document.getElementById('mainLeaderboardVoteCount');
         const modelCount = document.getElementById('mainLeaderboardModelCount');
-        if (voteCount) voteCount.textContent = `${totalVotes.toLocaleString()} votes`;
-        if (modelCount) modelCount.textContent = `${rows.length} models`;
+        if (voteCount) voteCount.textContent = `${totalVotes.toLocaleString()} 票`;
+        if (modelCount) modelCount.textContent = `${rows.length} 个模型`;
         list.innerHTML = renderMainLeaderboardRows(rows);
       } catch (error) {
         list.textContent = '排行榜加载失败。';
@@ -2999,36 +3031,66 @@
       ]);
       if (a.status === 'rejected') updateDuelMessage(duelMessageId, 'a', `\u8bf7\u6c42\u5931\u8d25\uff1a${a.reason?.message || a.reason}`, { loading: false });
       if (b.status === 'rejected') updateDuelMessage(duelMessageId, 'b', `\u8bf7\u6c42\u5931\u8d25\uff1a${b.reason?.message || b.reason}`, { loading: false });
-      if (anonymous) {
-        const voteRow = document.createElement('div');
-        voteRow.className = 'duel-vote-row';
-        voteRow.innerHTML = `
-          <button data-winner="a">A \u66f4\u597d</button>
-          <button data-winner="b">B \u66f4\u597d</button>
-          <button data-winner="tie">\u5e73\u5c40</button>
-          <button data-winner="bad">\u90fd\u4e0d\u597d</button>
-        `;
-        const wrapper = document.getElementById(duelMessageId);
-        wrapper?.querySelector('.duel-grid')?.appendChild(voteRow);
-        voteRow.querySelectorAll('button').forEach(button => {
-          button.addEventListener('click', async () => {
-            voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
-            try {
-              const vote = await arenaMainApi('arena_vote', { id: match.id, winner: button.dataset.winner });
-              const reveal = vote?.data?.reveal || {};
-              updateDuelMessage(duelMessageId, 'a', a.status === 'fulfilled' ? a.value : '', { modelId: reveal.model_a });
-              updateDuelMessage(duelMessageId, 'b', b.status === 'fulfilled' ? b.value : '', { modelId: reveal.model_b });
-              showToast('\u6295\u7968\u6210\u529f\uff0c\u5df2\u63ed\u6653\u6a21\u578b\u3002');
-              loadSidebarLeaderboard();
-            } catch (error) {
-              showToast(error?.message || '\u6295\u7968\u5931\u8d25');
-              voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = false; });
-            }
-          });
-        });
-      }
+      attachDuelVoteRow(duelMessageId, match.id, {
+        anonymous,
+        answerA: a.status === 'fulfilled' ? a.value : '',
+        answerB: b.status === 'fulfilled' ? b.value : '',
+      });
       return { answerA: a.status === 'fulfilled' ? a.value : '', answerB: b.status === 'fulfilled' ? b.value : '' };
     }
+
+    function setDuelSelection(wrapper, winner, { preview = false } = {}) {
+      if (!wrapper) return;
+      const effectiveWinner = winner || wrapper.dataset.duelSelected || '';
+      wrapper.dataset.duelPreview = preview ? effectiveWinner : '';
+      wrapper.querySelectorAll('.duel-card').forEach(card => {
+        const slot = card.dataset.duelSlot;
+        card.classList.toggle('is-good', effectiveWinner === slot || effectiveWinner === 'tie');
+        card.classList.toggle('is-bad', effectiveWinner === 'bad');
+      });
+      wrapper.querySelectorAll('.duel-vote-row button').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.winner === effectiveWinner);
+      });
+    }
+
+    function attachDuelVoteRow(messageId, matchId, { anonymous = false, answerA = '', answerB = '' } = {}) {
+      const wrapper = document.getElementById(messageId);
+      const grid = wrapper?.querySelector('.duel-grid');
+      if (!wrapper || !grid || wrapper.querySelector('.duel-vote-row')) return;
+      const voteRow = document.createElement('div');
+      voteRow.className = 'duel-vote-row';
+      voteRow.innerHTML = `
+        <button data-winner="a">A \u66f4\u597d</button>
+        <button data-winner="tie">\u21c4</button>
+        <button data-winner="bad">\u2298</button>
+        <button data-winner="b">B \u66f4\u597d</button>
+      `;
+      grid.appendChild(voteRow);
+      voteRow.querySelectorAll('button').forEach(button => {
+        button.addEventListener('mouseenter', () => setDuelSelection(wrapper, button.dataset.winner, { preview: true }));
+        button.addEventListener('mouseleave', () => setDuelSelection(wrapper, wrapper.dataset.duelSelected || ''));
+        button.addEventListener('click', async () => {
+          wrapper.dataset.duelSelected = button.dataset.winner || '';
+          setDuelSelection(wrapper, wrapper.dataset.duelSelected);
+          voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
+          try {
+            const vote = await arenaMainApi('arena_vote', { id: matchId, winner: button.dataset.winner });
+            const reveal = vote?.data?.reveal || {};
+            if (anonymous) {
+              updateDuelMessage(messageId, 'a', answerA, { modelId: reveal.model_a });
+              updateDuelMessage(messageId, 'b', answerB, { modelId: reveal.model_b });
+            }
+            showToast(anonymous ? '投票成功，已揭晓模型。' : '已记录你的偏好。');
+            loadSidebarLeaderboard();
+            loadMainLeaderboard();
+          } catch (error) {
+            showToast(error?.message || '\u6295\u7968\u5931\u8d25');
+            voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = false; });
+          }
+        });
+      });
+    }
+
     function getTodayText() {
       const now = new Date();
       return `${now.getMonth() + 1}月${now.getDate()}日`;
@@ -4343,6 +4405,7 @@
       const makeCard = (slot, modelId) => {
         const card = document.createElement('article');
         card.className = 'duel-card';
+        card.dataset.duelSlot = slot;
         const title = anonymous ? `模型 ${slot.toUpperCase()}` : getModelDisplayName(modelId);
         card.innerHTML = `
           <div class="duel-card-head">
@@ -4356,6 +4419,10 @@
 
       grid.appendChild(makeCard('a', modelA));
       grid.appendChild(makeCard('b', modelB));
+      const dots = document.createElement('div');
+      dots.className = 'duel-carousel-dots';
+      dots.innerHTML = '<span class="active"></span><span></span>';
+      grid.appendChild(dots);
       wrapper.appendChild(avatar);
       wrapper.appendChild(grid);
       wrapper._duel = { anonymous, modelA, modelB };
@@ -5341,6 +5408,7 @@
           pushHistory(userHistoryMessage);
           pushHistory(assistantHistoryMessage(`【模型 A】\n${duelResult.answerA || '无有效回复'}\n\n【模型 B】\n${duelResult.answerB || '无有效回复'}`, createModelMetadata(turnModelId)));
           await finalizeConversationTurn();
+          homeInput.placeholder = 'Ask followup...';
         } catch (error) {
           const message = normalizeErrorMessage(error, '双模型对话失败，请稍后重试。');
           const errorMessageId = createAssistantMessage(turnModelMetadata);
@@ -5975,25 +6043,53 @@
       }
     }
 
-    // [DISABLED] Devtools key blocking — re-enable after debugging
-    // document.addEventListener('keydown', e => {
-    //   const key = String(e.key || '').toLowerCase();
-    //   if (key === 'f12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c', 'k'].includes(key)) || (e.ctrlKey && key === 'u') || (e.metaKey && e.altKey && ['i', 'j', 'c'].includes(key))) {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-    //     showDevtoolsShield();
-    //   }
-    // });
+    // Devtools key blocking — comprehensive protection
+    document.addEventListener('keydown', e => {
+      const key = String(e.key || '').toLowerCase();
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+      const isAlt = e.altKey;
 
-    // [DISABLED] 右键拦截 — re-enable after debugging
-    // document.addEventListener('contextmenu', e => {
-    //   e.preventDefault();
-    //   if (devtoolsShield && devtoolsShield.classList.contains('show')) {
-    //     closeCustomContextMenu();
-    //     return;
-    //   }
-    //   openCustomContextMenu(e.clientX, e.clientY, e.target);
-    // });
+      // Block F12
+      const isF12 = key === 'f12';
+      // Block Ctrl+Shift+I/J/C/K (DevTools, Console, Element inspector)
+      const isDevToolsCombo = isCtrl && isShift && ['i', 'j', 'c', 'k'].includes(key);
+      // Block Ctrl+U (View source)
+      const isViewSource = isCtrl && key === 'u';
+      // Block Ctrl+S/P (Save, Print)
+      const isSavePrint = isCtrl && (key === 's' || key === 'p');
+      // Block Mac: Cmd+Opt+I/J/C
+      const isMacDevTools = (e.metaKey && isAlt && ['i', 'j', 'c'].includes(key));
+      // Block Ctrl+Shift+S (Save as)
+      const isSaveAs = isCtrl && isShift && key === 's';
+
+      if (isF12 || isDevToolsCombo || isViewSource || isSavePrint || isMacDevTools || isSaveAs) {
+        e.preventDefault();
+        e.stopPropagation();
+        showDevtoolsShield();
+        return false;
+      }
+    }, true); // Use capture phase to catch before others
+
+    // Block Ctrl+Shift+Delete (Clear browser data)
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Delete') {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, true);
+
+    // Right-click hijack — custom menu with copy/paste only
+    document.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (devtoolsShield && devtoolsShield.classList.contains('show')) {
+        closeCustomContextMenu();
+        return;
+      }
+      openCustomContextMenu(e.clientX, e.clientY, e.target);
+    }, false);
 
     document.addEventListener('click', event => {
       if (customContextMenu && !customContextMenu.contains(event.target)) {
@@ -6348,6 +6444,43 @@
     setInterval(updateTokenExpiryNote, 1000);
     initAuthOverlay();
     bootstrapModelTelemetry();
+
+    // Anti-debugging protection — start detection loop
+    setInterval(detectDevtools, 500);
+
+    // Additional protection: disable console methods to hinder debugging
+    (function() {
+      const noop = function() {};
+      // Preserve errors but hide other console methods
+      const originalError = console.error;
+      ['log', 'warn', 'info', 'debug', 'table', 'dir', 'dirxml', 'group', 'groupEnd', 'time', 'timeEnd', 'count'].forEach(function(method) {
+        console[method] = noop;
+      });
+      // Keep error logging but wrapped
+      console.error = function() {
+        originalError.apply(console, ['[E]'].concat(Array.prototype.slice.call(arguments)));
+      };
+    })();
+
+    // DevTools timing check (debugger breakpoint detection)
+    setInterval(function() {
+      const start = performance.now();
+      (function() {}).constructor('debugger')();
+      const end = performance.now();
+      if (end - start > 100) {
+        // Breakpoint detected
+        document.body.innerHTML = '<div style="position:fixed;inset:0;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;">调试检测</div>';
+      }
+    }, 2000);
+
+    // Block opening new window/tab via Ctrl+Click or middle-click
+    document.addEventListener('click', function(e) {
+      if (e.ctrlKey || e.metaKey || e.button === 1) {
+        if (e.target.tagName === 'A') {
+          e.preventDefault();
+        }
+      }
+    }, true);
 
     if (nexusvFooter && typeof IntersectionObserver !== 'undefined') {
       const nexusvFooterObserver = new IntersectionObserver((entries) => {

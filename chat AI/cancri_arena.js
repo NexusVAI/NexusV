@@ -107,6 +107,9 @@
     try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
     if (!response.ok) {
       const parsed = parseBackendErrorPayload(text);
+      if (parsed.code === 'anonymous_not_allowed') {
+        throw new Error(formatSecurityGuardMessage(parsed));
+      }
       throw new Error(parsed.message || data.message || data.error || 'Arena request failed: ' + response.status);
     }
     return data;

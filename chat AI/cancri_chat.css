@@ -711,7 +711,8 @@
 
   /* ── MODEL SELECTOR ─────────────────────────────────────── */
   .model-selector { position:relative; display:inline-flex; align-items:center; }
-  .model-selector[hidden] { display:none; }
+  .model-selector[hidden],
+  .compare-model-selector[hidden] { display:none !important; }
 
   .model-current {
     display: inline-flex; align-items: center; gap: 5px;
@@ -1697,6 +1698,10 @@
     overflow: auto;
     font-size: 14px;
     line-height: 1.65;
+  }
+
+  .duel-carousel-dots {
+    display: none;
   }
 
   .duel-vote-row {
@@ -3684,6 +3689,434 @@
       min-width: 44px;
       padding: 0 8px;
       font-size: 11px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    :root {
+      --header-h: 102px;
+    }
+
+    .main-header {
+      height: var(--header-h);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: 50px 52px;
+      align-items: center;
+      padding: 0 16px;
+      gap: 0 12px;
+    }
+
+    .header-left {
+      display: contents;
+    }
+
+    .header-right {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+      gap: 0;
+    }
+
+    .mobile-menu-btn {
+      display: grid;
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+      width: 34px;
+      height: 34px;
+    }
+
+    .brand-title,
+    .context-meter,
+    .theme-switcher,
+    .clear-btn,
+    .get-plus-btn {
+      display: none !important;
+    }
+
+    .arena-top-mode {
+      display: inline-flex !important;
+      grid-column: 1 / 3;
+      grid-row: 1;
+      justify-self: center;
+      max-width: calc(100vw - 120px);
+      min-width: 0;
+    }
+
+    .arena-mode-current {
+      height: 36px;
+      padding: 0 8px;
+      border-color: transparent;
+      background: transparent;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      max-width: 100%;
+    }
+
+    #topArenaModeLabel {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .model-selector {
+      width: 100%;
+      min-width: 0;
+    }
+
+    #modelSelector {
+      grid-column: 1;
+      grid-row: 2;
+      justify-self: stretch;
+    }
+
+    #compareModelSelector {
+      grid-column: 2;
+      grid-row: 2;
+      justify-self: stretch;
+    }
+
+    .main-header:has(#compareModelSelector[hidden]) #modelSelector {
+      grid-column: 1 / 3;
+    }
+
+    .model-current {
+      width: 100%;
+      max-width: none;
+      height: 38px;
+      justify-content: space-between;
+      padding: 0 6px;
+      border-color: transparent;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .model-name {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .model-dropdown {
+      position: fixed;
+      top: calc(var(--header-h) + 8px);
+      left: 12px;
+      right: 12px;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      max-height: min(520px, calc(100dvh - var(--header-h) - 20px));
+      transform: translateY(-4px) scale(.98);
+    }
+
+    .model-selector.open .model-dropdown {
+      transform: translateY(0) scale(1);
+    }
+
+    .announcement-carousel,
+    #homeView:not(.chatting) .token-expiry-note,
+    #homeView:not(.chatting) .rate-limit-note,
+    #homeView:not(.chatting) .model-icons-scroll,
+    #homeView:not(.chatting) .footer-note,
+    #homeView:not(.chatting) .nexusv-footer {
+      display: none !important;
+    }
+
+    #homeView {
+      height: calc(100dvh - var(--header-h));
+    }
+
+    #homeView.chatting {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #homeView.chatting .chat-messages.active {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 86px 0 214px;
+    }
+
+    #homeView.chatting .home-center {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 0 16px max(8px, env(safe-area-inset-bottom));
+      border-top: 0;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    #homeView.chatting .composer-wrap {
+      max-width: none;
+      width: 100%;
+    }
+
+    #homeView.chatting .composer {
+      border-radius: 0 0 14px 14px;
+      border-top-color: var(--line);
+      box-shadow: none;
+    }
+
+    #homeView:not(.chatting) .home-center {
+      min-height: calc(100dvh - var(--header-h));
+      justify-content: space-between;
+      padding: min(31dvh, 280px) 16px max(22px, env(safe-area-inset-bottom));
+    }
+
+    .hero {
+      max-width: min(92vw, 520px);
+      margin: 0;
+      font-family: Georgia, "Times New Roman", "Noto Serif SC", "Songti SC", serif;
+      font-size: clamp(34px, 9.6vw, 48px);
+      line-height: 1.12;
+      font-weight: 500;
+      letter-spacing: -0.045em;
+      text-align: center;
+    }
+
+    .composer-wrap {
+      max-width: none;
+      width: 100%;
+    }
+
+    .composer {
+      width: 100%;
+      min-height: 126px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 14px 10px 10px;
+      border-radius: 14px;
+    }
+
+    .composer-input {
+      order: 1;
+      flex: 1 0 100%;
+      min-height: 48px;
+      max-height: 58px;
+      padding: 0 2px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .plus-btn,
+    .attach-btn,
+    .file-upload-btn {
+      order: 2;
+      align-self: flex-end;
+      width: 32px;
+      height: 32px;
+    }
+
+    .composer-right {
+      order: 3;
+      margin-left: auto;
+      align-self: flex-end;
+    }
+
+    #micToastBtn,
+    #expandInputBtn {
+      display: none !important;
+    }
+
+    .voice-btn,
+    .send-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+    }
+
+    .duel-message {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .duel-message .message-avatar {
+      display: none;
+    }
+
+    .duel-grid {
+      width: 100vw;
+      max-width: none;
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: visible;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      padding: 0 16px 36px 32px;
+    }
+
+    .duel-grid::-webkit-scrollbar {
+      display: none;
+    }
+
+    .duel-card {
+      flex: 0 0 calc(100vw - 80px);
+      min-height: 92px;
+      max-height: 220px;
+      scroll-snap-align: center;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--panel) 82%, transparent);
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .duel-card.is-good {
+      border-color: #21c55d;
+      box-shadow: 0 0 0 1px rgba(34,197,94,.55);
+    }
+
+    .duel-card.is-good .duel-card-head,
+    .duel-card.is-good .duel-card-head small {
+      color: #22c55e;
+    }
+
+    .duel-card.is-bad {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 1px rgba(239,68,68,.55);
+    }
+
+    .duel-card.is-bad .duel-card-head,
+    .duel-card.is-bad .duel-card-head small {
+      color: #ef4444;
+    }
+
+    .duel-card-head {
+      min-height: 40px;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .duel-card-head span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .duel-card-head small {
+      display: none;
+    }
+
+    .duel-answer {
+      min-height: 48px;
+      max-height: 168px;
+      padding: 12px;
+      font-size: 14px;
+      line-height: 1.55;
+      overflow-y: auto;
+    }
+
+    .duel-carousel-dots {
+      position: fixed;
+      top: calc(var(--header-h) + 188px);
+      left: 0;
+      right: 0;
+      z-index: 12;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .duel-carousel-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--text) 32%, transparent);
+    }
+
+    .duel-carousel-dots span.active {
+      width: 24px;
+      background: color-mix(in srgb, var(--text) 82%, transparent);
+    }
+
+    .duel-vote-row {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: calc(130px + max(8px, env(safe-area-inset-bottom)));
+      z-index: 35;
+      display: grid;
+      grid-template-columns: 1fr 48px 48px 1fr;
+      gap: 12px;
+      padding: 8px;
+      border: 1px solid var(--line-2);
+      border-radius: 10px 10px 0 0;
+      background: color-mix(in srgb, var(--input) 94%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .duel-vote-row button {
+      height: 38px;
+      min-width: 0;
+      padding: 0 8px;
+      border-radius: 6px;
+      background: transparent;
+      font-size: 13px;
+    }
+
+    .duel-vote-row button[data-winner="a"].is-active,
+    .duel-vote-row button[data-winner="a"]:hover:not(:disabled),
+    .duel-vote-row button[data-winner="b"].is-active,
+    .duel-vote-row button[data-winner="b"]:hover:not(:disabled),
+    .duel-vote-row button[data-winner="tie"].is-active,
+    .duel-vote-row button[data-winner="tie"]:hover:not(:disabled) {
+      color: #22c55e;
+      border-color: #22c55e;
+      background: rgba(34,197,94,.1);
+    }
+
+    .duel-vote-row button[data-winner="bad"].is-active,
+    .duel-vote-row button[data-winner="bad"]:hover:not(:disabled) {
+      color: #ef4444;
+      border-color: #ef4444;
+      background: rgba(239,68,68,.1);
+    }
+  }
+
+  @media (max-width: 380px) {
+    .main-header {
+      padding: 0 12px;
+      gap: 0 8px;
+    }
+
+    .arena-mode-current {
+      font-size: 15px;
+    }
+
+    .model-current {
+      font-size: 12px;
+      padding: 0 4px;
+    }
+
+    #homeView:not(.chatting) .home-center {
+      padding-top: min(29dvh, 250px);
+    }
+
+    .hero {
+      font-size: clamp(31px, 9vw, 40px);
+    }
+
+    .composer {
+      min-height: 118px;
+      padding: 12px 8px 8px;
     }
   }
 
