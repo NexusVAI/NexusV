@@ -1,4 +1,4 @@
--- Chat history storage for Supabase Auth users, including anonymous users.
+-- Chat history storage for verified Supabase Auth users.
 CREATE TABLE IF NOT EXISTS public.chat_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
