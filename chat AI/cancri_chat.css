@@ -4436,3 +4436,39 @@
   [data-theme="dark"] .auth-overlay {
     background: rgba(0,0,0,0.7);
   }
+
+  /* ── FIX: view switching must always hide inactive views ───────── */
+  .main > .view:not(.active) {
+    display: none !important;
+  }
+
+  /* 聊天态不能绕过 view 切换 */
+  #homeView.chatting:not(.active) {
+    display: none !important;
+  }
+
+  /* 当前视图统一占满主区域 */
+  .main > .view.active {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* 排行榜页面内部自己滚动，不要把整个主区撑成两段 */
+  #leaderboardView.active {
+    height: calc(100dvh - var(--header-h));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #leaderboardView .leaderboard-page {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #leaderboardView .leaderboard-main {
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 48px;
+  }

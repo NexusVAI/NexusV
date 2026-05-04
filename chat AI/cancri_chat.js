@@ -2783,9 +2783,15 @@
 
     function setActiveView(view) {
       state.currentView = view;
-      homeView.classList.toggle('active', view === 'home');
+
+      document.querySelectorAll('.main > .view').forEach(el => {
+        el.classList.toggle('active', el.id === `${view}View`);
+      });
+
+      if (homeView) homeView.classList.toggle('active', view === 'home');
       if (leaderboardView) leaderboardView.classList.toggle('active', view === 'leaderboard');
-      imagesView.classList.toggle('active', view === 'images');
+      if (imagesView) imagesView.classList.toggle('active', view === 'images');
+
       navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
       closePopover();
       closeModal();
