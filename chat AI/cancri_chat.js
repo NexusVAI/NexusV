@@ -1,5 +1,19 @@
+    const ARENA_MODE_MIGRATIONS = {
+      battle: 'anonymous',
+      direct: 'single',
+    };
+    const ARENA_MODES = new Set(['anonymous', 'side_by_side', 'single']);
+    function normalizeArenaMode(mode) {
+      const value = String(mode || '').trim();
+      const migrated = ARENA_MODE_MIGRATIONS[value] || value;
+      return ARENA_MODES.has(migrated) ? migrated : 'anonymous';
+    }
+
     const savedArenaMode = localStorage.getItem('cancri_arena_mode');
-    const initialArenaMode = savedArenaMode || 'battle';
+    const initialArenaMode = normalizeArenaMode(savedArenaMode);
+    if (savedArenaMode !== initialArenaMode) {
+      localStorage.setItem('cancri_arena_mode', initialArenaMode);
+    }
 
     const state = {
       theme: 'light',
@@ -114,7 +128,9 @@
     const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
     const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
     const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
-    const RATE_LIMIT_PROBE_MODEL_ID = 'deepseek-v4-flash';
+    const DEFAULT_MODEL_ID = 'grok-4.20-fast';
+    const DEFAULT_COMPARE_MODEL_ID = 'minimax-m2.7';
+    const RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
     let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
     let rateLimitRefreshToken = 0;
     let independentModelPingTimer = null;
@@ -512,6 +528,7 @@
 
     function isModelAvailable(modelId) {
       clearExpiredQuotaLocks();
+      if (!isModelEnabled(modelId)) return false;
       const now = Date.now();
 
       if (usesSharedQuota(modelId)) {
@@ -574,7 +591,7 @@
 
     function autoSwitchIfCurrentModelUnavailable() {
       if (isModelAvailable(currentModel)) return;
-      const availableModels = Object.keys(MODEL_IDS).filter(id => id !== currentModel && isModelAvailable(id));
+      const availableModels = SELECTABLE_MODELS.map(model => model.id).filter(id => id !== currentModel && isModelAvailable(id));
       if (availableModels.length === 0) {
         showToast('当前模型额度已用完，且暂无其他可用模型，请稍后重试。');
         return;
@@ -658,32 +675,35 @@
     }
 
     const MODEL_SELECTION_MIGRATIONS = {
-      'deepseek-v4-flash-alt': 'deepseek-v4-flash',
-      'kimi-k2.6-futureppo': 'grok-4.20-fast',
-      'deepseek-v4-pro-futureppo': 'grok-4.20-fast',
-      'deepseek-v4-flash-futureppo': 'grok-4.20-fast',
-      'gemma-4-31b-it': 'gemma-4-31b-chat',
-      'gpt-oss-120b-futureppo': 'grok-code-fast-1',
-      'claude-haiku-4-5-20251001': 'grok-4.20-fast',
-      'glm-5.1-futureppo': 'grok-4.20-fast',
+      'deepseek-v4-flash': DEFAULT_MODEL_ID,
+      'deepseek-v4-flash-alt': DEFAULT_MODEL_ID,
+      'kimi-k2.6': DEFAULT_MODEL_ID,
+      'kimi-k2.6-futureppo': DEFAULT_MODEL_ID,
+      'deepseek-v4-pro-futureppo': DEFAULT_MODEL_ID,
+      'deepseek-v4-flash-futureppo': DEFAULT_MODEL_ID,
+      'gemma-4-31b-it': DEFAULT_MODEL_ID,
+      'gemma-4-31b-chat': DEFAULT_MODEL_ID,
+      'gpt-oss-120b-futureppo': DEFAULT_MODEL_ID,
+      'grok-code-fast-1': DEFAULT_MODEL_ID,
+      'gemini-3.0-flash-high': DEFAULT_MODEL_ID,
+      'gemini-3-flash-preview': DEFAULT_MODEL_ID,
+      'gemini-3.1-flash-lite-preview': DEFAULT_MODEL_ID,
+      'gpt-5.4': DEFAULT_MODEL_ID,
+      'glm-5v-turbo': DEFAULT_MODEL_ID,
+      'kimi-k2-instruct': DEFAULT_MODEL_ID,
+      'minimax-m2.5-alt': DEFAULT_MODEL_ID,
+      'claude-haiku-4-5-20251001': DEFAULT_MODEL_ID,
+      'glm-5.1-futureppo': DEFAULT_MODEL_ID,
     };
     const MODEL_PRIORITY_IDS = [
-      'grok-4.20-fast',
-      'grok-code-fast-1',
       'minimax-m2.7',
-      'gemini-3.0-flash-high',
-      'gemini-3-flash-preview',
-      'gemini-3.1-flash-lite-preview',
-      'gemma-4-31b-chat',
-      'gpt-5.4',
+      'grok-4.20-fast',
       'claude-opus-4.6',
       'gemini-2.5-pro',
       'qwen3-max',
-      'kimi-k2.6',
-      'deepseek-v4-pro',
-      'deepseek-v4-flash',
+      'kimi-k2.6-alt',
+      'kimi-k2.6-extended',
       'glm-5.1',
-      'glm-5v-turbo',
       'qwen3-coder-plus',
       'qwen3-coder',
       'deepseek-r1',
@@ -691,55 +711,55 @@
     const MODEL_PRIORITY = new Map(MODEL_PRIORITY_IDS.map((id, index) => [id, index]));
     const MODEL_DEPRIORITY = new Map();
     const MODEL_CATALOG = [
-      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', iconPath: './grok.svg', tags: ['新', '快速'], pricePerMToken: 0.60 },
-      { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', iconPath: './grok.svg', tags: ['编码', '快速'], pricePerMToken: 0.60 },
-      { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', iconPath: './minimax-color.svg', tags: ['新', '快速'], pricePerMToken: 0.15 },
-      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', iconPath: './gemini-color.svg', tags: ['新', '轻量'], pricePerMToken: 0.075 },
-      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', iconPath: './gemini-color.svg', tags: ['新', '均衡'], pricePerMToken: 0.15 },
-      { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', iconPath: './gemini-color.svg', tags: ['新', '开放'], pricePerMToken: 0.10 },
-      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'], sharedQuota: true, pricePerMToken: 0.07 },
-      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], sharedQuota: true, pricePerMToken: 0.35 },
-      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], pricePerMToken: 0.35 },
-      { id: 'step-3.5-flash', displayName: 'Step-3.5', iconPath: './stepfun-color.svg', tags: ['快速', '稳定'], pricePerMToken: 0.20 },
-      { id: 'hy3-preview', displayName: '混元3', iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'], pricePerMToken: 0.12 },
-      { id: 'gpt-oss-120b', displayName: 'GPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'], pricePerMToken: 0.50 },
-      { id: 'gpt-5.4', displayName: 'GPT-5.4', iconPath: './openai.svg', tags: ['每日限流', '通用'], pricePerMToken: 2.50 },
-      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '长文本'], pricePerMToken: 15.00 },
-      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['均衡', '长文本'], pricePerMToken: 3.00 },
-      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', iconPath: './gemini-color.svg', tags: ['每日限流', '推理'], pricePerMToken: 1.25 },
-      { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', iconPath: './nvidia-color.svg', tags: ['通用'], pricePerMToken: 0.40 },
-      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['通用'], pricePerMToken: 0.25 },
-      { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['稳定'], sharedQuota: true, pricePerMToken: 0.25 },
-      { id: 'spark-x2', displayName: 'spark-x2', iconPath: './spark-color.svg', tags: ['推理'], pricePerMToken: 0.30 },
-      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'], pricePerMToken: 0.55 },
-      { id: 'qwen3.5', displayName: 'Qwen 3.5', iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true, sharedQuota: true, pricePerMToken: 0.80 },
-      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true, sharedQuota: true, pricePerMToken: 0.35 },
-      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true, sharedQuota: true, pricePerMToken: 1.50 },
-      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true, pricePerMToken: 3.00 },
-      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true, pricePerMToken: 3.00 },
-      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true, pricePerMToken: 3.00 },
-      { id: 'glm-5', displayName: 'GLM-5', iconPath: './zhipu-color.svg', tags: ['深度编程'], pricePerMToken: 0.50 },
-      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'], pricePerMToken: 0.60 },
-      { id: 'glm-5.1', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'], sharedQuota: true, pricePerMToken: 0.60 },
-      { id: 'glm-4.7', displayName: 'GLM-4.7', iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'], pricePerMToken: 1.00 },
-      { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', iconPath: './qwen-color.svg', tags: ['预览'], pricePerMToken: 1.80 },
-      { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true, pricePerMToken: 0.80 },
-      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'], sharedQuota: true, pricePerMToken: 0.13 },
-      { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true, pricePerMToken: 0.20 },
-      { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true, pricePerMToken: 1.50 },
-      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', iconPath: './deepseek-color (1).svg', tags: ['稳定', '稳定'], pricePerMToken: 0.25 },
-      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2-Exp', iconPath: './deepseek-color (1).svg', tags: ['实验版', '稳定'], pricePerMToken: 0.25 },
-      { id: 'glm-4.5-air', displayName: 'GLM-4.5-Air', iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'], pricePerMToken: 0.30 },
-      { id: 'minimax-m2.5-alt', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['稳定'], pricePerMToken: 0.13 },
-      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'], pricePerMToken: 0.20 },
-      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '专业编码', '稳定'], multimodal: true, pricePerMToken: 0.50 },
-      { id: 'qwen3-max', displayName: 'Qwen3-Max', iconPath: './qwen-color.svg', tags: ['多模态', '旗舰', '稳定'], multimodal: true, pricePerMToken: 1.20 },
-      { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true, pricePerMToken: 1.20 },
-      { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true, pricePerMToken: 0.80 },
-      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'], pricePerMToken: 0.55 },
-      { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true, pricePerMToken: 0.15 },
-      { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true, pricePerMToken: 0.80 },
-      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'], pricePerMToken: 0.45 }
+      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', brand: 'Grok', canonicalId: 'grok-4.20-fast', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './grok.svg', tags: ['新', '快速'] },
+      { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', brand: 'Grok', canonicalId: 'grok-code-fast-1', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './grok.svg', tags: ['编码', '快速'] },
+      { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', brand: 'MiniMax', canonicalId: 'minimax-m2.7', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './minimax-color.svg', tags: ['新', '快速'] },
+      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '轻量'] },
+      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '均衡'] },
+      { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', brand: 'Google', canonicalId: 'gemma-4-31b-chat', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '开放'] },
+      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
+      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '隐藏调试'] },
+      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: false, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '隐藏调试'] },
+      { id: 'step-3.5-flash', displayName: 'Step-3.5', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
+      { id: 'hy3-preview', displayName: '混元3', brand: '腾讯混元', canonicalId: 'hy3-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
+      { id: 'gpt-oss-120b', displayName: 'GPT-OSS', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['通用', '慢'] },
+      { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['每日限流', '通用'] },
+      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
+      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4.6', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['均衡', '隐藏调试'] },
+      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
+      { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', brand: 'NVIDIA Nemotron', canonicalId: 'nemotron-3-super', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './nvidia-color.svg', tags: ['通用'] },
+      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['通用'] },
+      { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['稳定'] },
+      { id: 'spark-x2', displayName: 'spark-x2', brand: '讯飞星火', canonicalId: 'spark-x2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './spark-color.svg', tags: ['推理'] },
+      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', brand: 'DeepSeek', canonicalId: 'deepseek-r1', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
+      { id: 'qwen3.5', displayName: 'Qwen 3.5', brand: '通义千问', canonicalId: 'qwen3.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true },
+      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true },
+      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
+      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true },
+      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'glm-5', displayName: 'GLM-5', brand: '智谱 GLM', canonicalId: 'glm-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './zhipu-color.svg', tags: ['深度编程'] },
+      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      { id: 'glm-5.1', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      { id: 'glm-4.7', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
+      { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['预览'] },
+      { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', brand: '通义千问', canonicalId: 'qwen3.6-plus', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true },
+      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'] },
+      { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', brand: '通义千问', canonicalId: 'qwen3.6-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true },
+      { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定', '稳定'] },
+      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2-Exp', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2-exp', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['实验版', '稳定'] },
+      { id: 'glm-4.5-air', displayName: 'GLM-4.5-Air', brand: '智谱 GLM', canonicalId: 'glm-4.5-air', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'] },
+      { id: 'minimax-m2.5-alt', displayName: 'MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路二', visible: false, enabled: false, arena: false, iconPath: './minimax-color.svg', tags: ['稳定'] },
+      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', brand: 'DeepSeek', canonicalId: 'deepseek-v3.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'] },
+      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', brand: '通义千问', canonicalId: 'qwen3-coder-plus', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '专业编码', '稳定'], multimodal: true },
+      { id: 'qwen3-max', displayName: 'Qwen3-Max', brand: '通义千问', canonicalId: 'qwen3-max', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '旗舰', '稳定'], multimodal: true },
+      { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', brand: 'Kimi', canonicalId: 'kimi-k2-instruct', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true },
+      { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', brand: '通义千问', canonicalId: 'qwen3.6-plus-20260402', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true },
+      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', brand: 'DeepSeek', canonicalId: 'deepseek-r1-0528', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
+      { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
+      { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
+      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -750,17 +770,47 @@
       return rankA - rankB;
     });
     const MODEL_CATALOG_BY_ID = new Map(MODEL_CATALOG.map(model => [model.id, model]));
-    const MODEL_IDS = Object.fromEntries(MODEL_CATALOG.map(model => [model.id, model.id]));
-    const MULTIMODAL_MODEL_IDS = new Set(MODEL_CATALOG.filter(model => model.multimodal).map(model => model.id));
-    INDEPENDENT_QUOTA_MODEL_IDS = new Set(MODEL_CATALOG.filter(model => !model.sharedQuota).map(model => model.id));
+    const ENABLED_MODEL_CATALOG = MODEL_CATALOG.filter(model => model.enabled !== false);
+    const SELECTABLE_MODELS = MODEL_CATALOG.filter(model => model.visible !== false && model.enabled !== false);
+    const ARENA_MODELS = SELECTABLE_MODELS.filter(model => model.arena !== false && !String(model.id).startsWith('image-'));
+    const MODEL_IDS = Object.fromEntries(ENABLED_MODEL_CATALOG.map(model => [model.id, model.id]));
+    const MULTIMODAL_MODEL_IDS = new Set(ENABLED_MODEL_CATALOG.filter(model => model.multimodal).map(model => model.id));
+    INDEPENDENT_QUOTA_MODEL_IDS = new Set();
 
     function getModelMeta(modelId) {
       return MODEL_CATALOG_BY_ID.get(modelId) || {
         id: modelId || 'unknown',
         displayName: modelId || '未知模型',
+        brand: '未知品牌',
+        canonicalId: modelId || 'unknown',
+        lineLabel: '',
+        visible: false,
+        enabled: false,
+        arena: false,
         iconPath: './openai.svg',
         tags: []
       };
+    }
+
+    function isModelEnabled(modelId) {
+      return getModelMeta(modelId).enabled !== false && Boolean(MODEL_IDS[modelId]);
+    }
+
+    function isModelSelectable(modelId) {
+      const meta = getModelMeta(modelId);
+      return meta.visible !== false && meta.enabled !== false && Boolean(MODEL_IDS[modelId]);
+    }
+
+    function getFallbackModelId(excludeId = '') {
+      const model = SELECTABLE_MODELS.find(item => item.id !== excludeId && isModelEnabled(item.id));
+      return model ? model.id : DEFAULT_MODEL_ID;
+    }
+
+    function resolveSelectableModelId(modelId, fallbackId = DEFAULT_MODEL_ID) {
+      const migrated = MODEL_SELECTION_MIGRATIONS[modelId] || modelId;
+      if (isModelSelectable(migrated)) return migrated;
+      if (isModelSelectable(fallbackId)) return fallbackId;
+      return getFallbackModelId(migrated);
     }
 
     function getModelDisplayName(modelId) {
@@ -769,6 +819,7 @@
 
     function getModelBrandName(modelId) {
       const meta = getModelMeta(modelId);
+      if (meta.brand) return meta.brand;
       const text = `${meta.id || ''} ${meta.displayName || ''} ${meta.iconPath || ''}`.toLowerCase();
       if (text.includes('qwen')) return '通义千问';
       if (text.includes('deepseek')) return 'DeepSeek';
@@ -788,14 +839,6 @@
       return meta.displayName || modelId || '未知模型';
     }
 
-    function getArenaIdentityPrompt(modelId, anonymous = false) {
-      const brandName = getModelBrandName(modelId);
-      if (anonymous) {
-        return `你正在参加匿名 AI 对战。当前只允许你在被问及身份时最多透露厂商或模型系列：“${brandName}”。不要透露具体模型型号、版本号、内部服务细节、密钥或评测规则。除非当前厂商确实是 DeepSeek，否则不要声称自己是 DeepSeek、DeepSeekV4 或 DeepSeek-V4。`;
-      }
-      return `你正在参加双模型对比。当前模型身份是：${getModelDisplayName(modelId)}。如果用户询问身份，必须按该身份回答，不要冒充 DeepSeek、DeepSeekV4 或其他模型。`;
-    }
-
     function getModelIconPath(modelId) {
       return getModelMeta(modelId).iconPath || './openai.svg';
     }
@@ -809,19 +852,17 @@
       };
     }
 
-    const savedModelSelection = localStorage.getItem('cancri_current_model') || 'deepseek-v4-flash';
-    let currentModel = MODEL_SELECTION_MIGRATIONS[savedModelSelection] || savedModelSelection;
-    if (!MODEL_CATALOG_BY_ID.has(currentModel)) {
-      currentModel = 'deepseek-v4-flash';
-    }
+    const savedModelSelection = localStorage.getItem('cancri_current_model') || DEFAULT_MODEL_ID;
+    let currentModel = resolveSelectableModelId(savedModelSelection, DEFAULT_MODEL_ID);
     if (currentModel !== savedModelSelection) {
       localStorage.setItem('cancri_current_model', currentModel);
     }
 
-    const savedCompareModelSelection = localStorage.getItem('cancri_compare_model') || 'gemini-3-flash-preview';
-    let compareModel = MODEL_SELECTION_MIGRATIONS[savedCompareModelSelection] || savedCompareModelSelection;
-    if (!MODEL_CATALOG_BY_ID.has(compareModel) || compareModel === currentModel) {
-      compareModel = MODEL_CATALOG.find(model => model.id !== currentModel)?.id || 'grok-4.20-fast';
+    const savedCompareModelSelection = localStorage.getItem('cancri_compare_model') || DEFAULT_COMPARE_MODEL_ID;
+    let compareModel = resolveSelectableModelId(savedCompareModelSelection, DEFAULT_COMPARE_MODEL_ID);
+    if (compareModel === currentModel) {
+      compareModel = getFallbackModelId(currentModel);
+      localStorage.setItem('cancri_compare_model', compareModel);
     }
 
     let modelSelectTarget = 'primary';
@@ -1391,12 +1432,13 @@
       const popoverAvatar = document.querySelector('.account-popover .avatar');
       const popoverName = document.querySelector('.account-popover .popover-item span[style*="font-size:14px"]');
       const popoverSub = document.querySelector('.account-popover .popover-item span[style*="font-size:12px"]');
-      if (accountName) accountName.textContent = email;
+      if (accountName) accountName.textContent = getNickname() || email;
       if (accountPlan) accountPlan.textContent = '已登录';
       if (avatarEl) avatarEl.textContent = initials;
       if (popoverAvatar) popoverAvatar.textContent = initials;
-      if (popoverName) popoverName.textContent = email;
+      if (popoverName) popoverName.textContent = getNickname() || email;
       if (popoverSub) popoverSub.textContent = '邮箱验证码登录';
+      refreshNicknameUI();
       // 同步刷新hero区域的个性化问候语
       updateHomeHeroText();
     }
@@ -1856,11 +1898,14 @@
       if (!listContainer) return;
 
       try {
+        if (!chatHistoryList.length) {
+          listContainer.innerHTML = '<div class="recent-placeholder recent-placeholder-loading">正在加载中</div>';
+        }
         const chats = await loadChatHistoryList();
         listContainer.innerHTML = '';
 
         if (chats.length === 0) {
-          listContainer.innerHTML = '<div style="padding:12px 8px;font-size:13px;color:var(--text-dim);">暂无聊天记录</div>';
+          listContainer.innerHTML = '<div class="recent-placeholder">暂无聊天记录</div>';
           return;
         }
 
@@ -1876,7 +1921,7 @@
         });
 
         if (sorted.length === 0) {
-          listContainer.innerHTML = '<div style="padding:12px 8px;font-size:13px;color:var(--text-dim);">没有匹配的对话</div>';
+          listContainer.innerHTML = '<div class="recent-placeholder">没有匹配的对话</div>';
           return;
         }
 
@@ -1914,7 +1959,7 @@
         });
       } catch (error) {
         console.error('加载聊天记录列表失败:', error);
-        listContainer.innerHTML = '<div style="padding:12px 8px;font-size:13px;color:var(--text-dim);">加载失败</div>';
+        listContainer.innerHTML = '<div class="recent-placeholder">加载失败</div>';
       }
     }
 
@@ -2806,35 +2851,52 @@
 
     function syncTopArenaMode() {
       const modeLabels = {
-        direct: '单模型',
-        battle: '匿名对战',
+        single: '单模型',
+        anonymous: '匿名对战',
         side_by_side: 'Side by Side'
       };
       if (topArenaModeLabel) topArenaModeLabel.textContent = modeLabels[state.arenaMode] || '单模型';
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
         option.classList.toggle('active', option.dataset.mode === state.arenaMode);
       });
-      if (modelSelector) modelSelector.hidden = state.arenaMode === 'battle';
+      if (modelSelector) modelSelector.hidden = state.arenaMode === 'anonymous';
       if (compareModelSelector) compareModelSelector.hidden = state.arenaMode !== 'side_by_side';
       if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
       if (homeInput) {
-        if (state.arenaMode === 'battle') homeInput.placeholder = '向两个匿名模型发起同一个问题';
+        if (state.arenaMode === 'anonymous') homeInput.placeholder = '向两个匿名模型发起同一个问题';
         else if (state.arenaMode === 'side_by_side') homeInput.placeholder = '比较你选择的两个模型回答';
         else homeInput.placeholder = '有问题，尽管问';
       }
     }
     function setTopArenaMode(mode) {
-      state.arenaMode = mode || 'direct';
+      state.arenaMode = normalizeArenaMode(mode || 'single');
       localStorage.setItem('cancri_arena_mode', state.arenaMode);
       syncTopArenaMode();
       topArenaModeSelector?.classList.remove('open');
-      if (state.arenaMode === 'direct') {
+      if (state.arenaMode === 'single') {
         showToast('已切换到单模型聊天');
-      } else if (state.arenaMode === 'battle') {
+      } else if (state.arenaMode === 'anonymous') {
         showToast('已切换到匿名双模型对战');
       } else if (state.arenaMode === 'side_by_side') {
         showToast('已切换到双模型对话');
       }
+    }
+
+    function getLeaderboardRowMeta(row = {}) {
+      const bestLineModelId = row.best_line_model_id || row.source_model_id || row.model_id || 'unknown';
+      const canonicalModelId = row.model_id || row.canonical_id || row.canonical_model_id || bestLineModelId;
+      const bestLineMeta = getModelMeta(bestLineModelId);
+      const canonicalMeta = getModelMeta(canonicalModelId);
+      const displayName = row.display_name || canonicalMeta.displayName || bestLineMeta.displayName || canonicalModelId;
+      const brand = row.brand || canonicalMeta.brand || bestLineMeta.brand || getModelBrandName(bestLineModelId);
+      const lineLabel = row.line_label || bestLineMeta.lineLabel || '';
+      return {
+        displayName,
+        brand,
+        lineLabel,
+        bestLineModelId,
+        canonicalModelId,
+      };
     }
 
     async function loadSidebarLeaderboard() {
@@ -2856,14 +2918,18 @@
         const headerHtml = `<div class="sidebar-leaderboard-title">🏆 Chat 排行榜</div>
           <div class="sidebar-leaderboard-header sidebar-leaderboard-arena-head"><span>Rank</span><span>Rank Spread</span><span>Model</span><span>Score</span></div>`;
         const rowsHtml = rows.map((row, index) => {
-          const name = escapeHtml(getModelDisplayName(row.model_id || 'unknown'));
-          const brand = escapeHtml(getModelBrandName(row.model_id || 'unknown'));
+          const meta = getLeaderboardRowMeta(row);
+          const name = escapeHtml(meta.displayName);
+          const brand = escapeHtml(meta.brand);
+          const lineLabel = escapeHtml(meta.lineLabel || '线路一');
+          const total = Number(row.total_votes || 0);
+          const winRate = Number(row.win_rate || 0);
           const elo = Math.round(Number(row.elo_score || 1000));
           const spreadLow = Number(row.rank_spread_low || row.rank_min || index + 1);
           const spreadHigh = Number(row.rank_spread_high || row.rank_max || Math.min(rows.length, index + 3));
           const delta = Math.max(1, Math.round(Number(row.elo_delta || row.uncertainty || row.confidence || 20)));
           const rankClass = index < 3 ? ' top' : '';
-          return `<div class="sidebar-leaderboard-row sidebar-leaderboard-arena-row"><span class="rank${rankClass}">${index + 1}</span><span class="sidebar-leaderboard-spread">${spreadLow} ↔ ${spreadHigh}</span><span class="sidebar-leaderboard-model"><strong>${name}</strong><small>${brand}</small></span><span class="sidebar-leaderboard-score">${elo}<small>±${delta}</small></span></div>`;
+          return `<div class="sidebar-leaderboard-row sidebar-leaderboard-arena-row"><span class="rank${rankClass}">${index + 1}</span><span class="sidebar-leaderboard-spread">${spreadLow} ↔ ${spreadHigh}</span><span class="sidebar-leaderboard-model"><strong>${name}</strong><small>${brand} · 最高线路：${lineLabel} · 有效票 ${total.toLocaleString()} · 胜率 ${winRate}%</small></span><span class="sidebar-leaderboard-score">${elo}<small>±${delta}</small></span></div>`;
         }).join('');
         list.innerHTML = headerHtml + rowsHtml;
       } catch (error) {
@@ -2880,8 +2946,10 @@
           <span>Elo</span>
         </div>`;
       const body = rows.map((row, index) => {
-        const name = escapeHtml(getModelDisplayName(row.model_id || 'unknown'));
-        const brand = escapeHtml(getModelBrandName(row.model_id || 'unknown'));
+        const meta = getLeaderboardRowMeta(row);
+        const name = escapeHtml(meta.displayName);
+        const brand = escapeHtml(meta.brand);
+        const lineLabel = escapeHtml(meta.lineLabel || '线路一');
         const elo = Math.round(Number(row.elo_score || 1000));
         const total = Number(row.total_votes || 0);
         const winRate = Number(row.win_rate || 0);
@@ -2895,7 +2963,7 @@
             <span class="leaderboard-spread">${spreadLow} ↔ ${spreadHigh}</span>
             <span class="leaderboard-model-cell">
               <strong>${name}</strong>
-              <small>${brand} · ${total.toLocaleString()} 有效票 · 胜率 ${winRate}%</small>
+              <small>${brand} · 最高线路：${lineLabel} · 有效票 ${total.toLocaleString()} · 胜率 ${winRate}%</small>
             </span>
             <span class="leaderboard-score"><strong>${elo}</strong><small><span class="leaderboard-delta">±${delta}</span><span class="leaderboard-updated"> · ${updatedAt}</span></small></span>
           </div>`;
@@ -2915,7 +2983,7 @@
     }
 
     function computeParetoFrontier(points) {
-      const sorted = points.filter(p => p.price > 0 && p.elo > 0).sort((a, b) => a.price - b.price);
+      const sorted = points.filter(p => p.votes > 0 && p.elo > 0).sort((a, b) => a.votes - b.votes);
       const frontier = [];
       let maxElo = -Infinity;
       for (const p of sorted) {
@@ -2932,26 +3000,24 @@
       container.className = 'pareto-chart-container';
 
       const data = rows.map(row => {
-        const modelId = row.model_id;
-        const meta = MODEL_CATALOG_BY_ID.get(modelId) || {};
+        const meta = getLeaderboardRowMeta(row);
         return {
-          id: modelId,
-          name: getModelDisplayName(modelId),
-          brand: getModelBrandName(modelId),
+          id: meta.canonicalModelId,
+          name: meta.displayName,
+          brand: meta.brand,
           elo: Number(row.elo_score || 1000),
-          price: meta.pricePerMToken || 0.5,
-          votes: Number(row.total_votes || 0),
+          votes: Math.max(1, Number(row.total_votes || 0)),
         };
-      }).filter(d => d.price > 0 && d.elo > 0);
+      }).filter(d => d.votes > 0 && d.elo > 0);
 
       if (!data.length) return '<div class="pareto-empty">暂无数据</div>';
 
       const frontier = computeParetoFrontier(data);
-      const minPrice = Math.min(...data.map(d => d.price));
-      const maxPrice = Math.max(...data.map(d => d.price));
+      const minVotes = Math.min(...data.map(d => d.votes));
+      const maxVotes = Math.max(...data.map(d => d.votes));
       const minElo = Math.min(...data.map(d => d.elo));
       const maxElo = Math.max(...data.map(d => d.elo));
-      const priceRange = maxPrice - minPrice || 1;
+      const voteRange = maxVotes - minVotes || 1;
       const eloRange = maxElo - minElo || 1;
 
       const width = 800;
@@ -2960,12 +3026,12 @@
       const chartW = width - padding.left - padding.right;
       const chartH = height - padding.top - padding.bottom;
 
-      const toX = (price) => padding.left + ((price - minPrice) / priceRange) * chartW;
+      const toX = (votes) => padding.left + ((votes - minVotes) / voteRange) * chartW;
       const toY = (elo) => padding.top + chartH - ((elo - minElo) / eloRange) * chartH;
 
       let frontierPath = '';
       if (frontier.length > 1) {
-        frontierPath = frontier.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(p.price)},${toY(p.elo)}`).join(' ');
+        frontierPath = frontier.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(p.votes)},${toY(p.elo)}`).join(' ');
       }
 
       const gridLinesX = [0, 0.25, 0.5, 0.75, 1].map(r => {
@@ -2978,10 +3044,10 @@
         return `<line x1="${padding.left}" y1="${y}" x2="${padding.left + chartW}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,2" opacity="0.3"/>`;
       }).join('');
 
-      const priceLabels = [0, 0.2, 0.4, 0.6, 0.8, 1].map(r => {
-        const price = minPrice + r * priceRange;
+      const voteLabels = [0, 0.2, 0.4, 0.6, 0.8, 1].map(r => {
+        const votes = minVotes + r * voteRange;
         const x = padding.left + r * chartW;
-        return `<text x="${x}" y="${height - 15}" text-anchor="middle" fill="var(--text-secondary)" font-size="11">$${price.toFixed(2)}</text>`;
+        return `<text x="${x}" y="${height - 15}" text-anchor="middle" fill="var(--text-secondary)" font-size="11">${Math.round(votes)}</text>`;
       }).join('');
 
       const eloLabels = [0, 0.25, 0.5, 0.75, 1].map(r => {
@@ -3010,11 +3076,11 @@
       };
 
       const points = data.map(d => {
-        const x = toX(d.price);
+        const x = toX(d.votes);
         const y = toY(d.elo);
         const color = getBrandColor(d.brand);
         const r = Math.max(4, Math.min(10, Math.sqrt(d.votes) / 2));
-        return `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.8" class="pareto-point" data-model="${escapeHtml(d.name)}" data-brand="${escapeHtml(d.brand)}" data-elo="${d.elo}" data-price="${d.price}"/>`;
+        return `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.8" class="pareto-point" data-model="${escapeHtml(d.name)}" data-brand="${escapeHtml(d.brand)}" data-elo="${d.elo}" data-votes="${d.votes}"/>`;
       }).join('');
 
       const frontierSvg = frontierPath ? `<path d="${frontierPath}" fill="none" stroke="#10a37f" stroke-width="2" opacity="0.9"/>` : '';
@@ -3028,9 +3094,9 @@
             <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartH}" stroke="var(--border)" stroke-width="1"/>
             ${frontierSvg}
             ${points}
-            ${priceLabels}
+            ${voteLabels}
             ${eloLabels}
-            <text x="${width / 2}" y="${height - 2}" text-anchor="middle" fill="var(--text-secondary)" font-size="12">价格/百万token</text>
+            <text x="${width / 2}" y="${height - 2}" text-anchor="middle" fill="var(--text-secondary)" font-size="12">有效票数</text>
             <text x="15" y="${height / 2}" text-anchor="middle" fill="var(--text-secondary)" font-size="12" transform="rotate(-90, 15, ${height / 2})">Elo 分数</text>
           </svg>
           <div class="pareto-legend">
@@ -3056,8 +3122,8 @@
             const model = e.target.dataset.model;
             const brand = e.target.dataset.brand;
             const elo = e.target.dataset.elo;
-            const price = e.target.dataset.price;
-            tooltip.innerHTML = `<strong>${model}</strong><br/><small>${brand}</small><br/>Elo: ${Math.round(elo)} · $${Number(price).toFixed(2)}/M`;
+            const votes = e.target.dataset.votes;
+            tooltip.innerHTML = `<strong>${model}</strong><br/><small>${brand}</small><br/>Elo: ${Math.round(elo)} · 有效票 ${Number(votes).toLocaleString()}`;
             tooltip.style.opacity = '1';
           });
           point.addEventListener('mousemove', (e) => {
@@ -3153,20 +3219,16 @@
       const toolCalls = Array.isArray(delta.tool_calls) && delta.tool_calls.length ? delta.tool_calls : null;
       return { reasoning, content, toolCalls };
     }
-    async function streamMainArenaSlot(matchId, slot, prompt, duelMessageId, { modelId = '', anonymous = false } = {}) {
+    async function streamMainArenaSlot(matchId, slot, prompt, duelMessageId, turnId = '', { modelId = '', anonymous = false } = {}) {
       let reasoningText = '';
       let answerText = '';
       let doneReasoning = false;
       const toolCalls = [];
-      const identityPrompt = getArenaIdentityPrompt(modelId, anonymous);
       const requestOptions = getModelRequestOptions(modelId);
-      // 构建消息数组，包含历史上下文
-      const messages = [
-        { role: 'system', content: `${identityPrompt}\n请直接回答用户问题，回答应清晰、有帮助、适度简洁。` }
-      ];
+      const messages = [];
       // 添加完整历史对话上下文（128K上下文兜底）
       const MAX_ARENA_CONTEXT_TOKENS = 120 * 1024; // 留8K给回答
-      let estimatedTokens = estimateMessageTokens({ role: 'system', content: identityPrompt });
+      let estimatedTokens = 0;
       const contextMessages = [];
       // 从后往前累积历史，直到接近上限
       for (let i = conversationHistory.length - 1; i >= 0; i--) {
@@ -3197,7 +3259,11 @@
           messages,
           stream: true,
           temperature: 0.6,
-          client_turn_id: createChatTurnId(),
+          client_turn_id: turnId || createChatTurnId(),
+          request_kind: 'arena_model_answer',
+          arena_match_id: matchId,
+          arena_slot: slot,
+          arena_mode: anonymous ? 'anonymous' : 'side_by_side',
           ...requestOptions
         })
       }, CHAT_TURN_TIMEOUT_MS, `\u6a21\u578b ${slot.toUpperCase()} \u8bf7\u6c42`);
@@ -3244,25 +3310,32 @@
         thinking: false,
         toolCalls: toolCalls.length ? toolCalls : undefined
       });
-      await arenaMainApi('arena_record_response', { id: matchId, slot, response: answerText || '' });
       return answerText;
+    }
+    function getArenaSlotTurnId(match, slot) {
+      const slots = Array.isArray(match?.slots) ? match.slots : [];
+      const found = slots.find(item => item && item.slot === slot);
+      return String(found?.turn_id || found?.client_turn_id || '');
     }
     async function sendArenaDuelMessage(prompt, { anonymous = false } = {}) {
       const selectedA = currentModel;
       const selectedB = compareModel === currentModel
-        ? MODEL_CATALOG.find(model => model.id !== currentModel)?.id || compareModel
+        ? getFallbackModelId(currentModel)
         : compareModel;
       const createPayload = anonymous
         ? { prompt, mode: 'anonymous' }
         : { prompt, mode: 'side_by_side', model_a: selectedA, model_b: selectedB };
       const result = await arenaMainApi('arena_create_match', createPayload);
       const match = result.data;
-      const modelA = anonymous ? (match?.model_a || selectedA) : selectedA;
-      const modelB = anonymous ? (match?.model_b || selectedB) : selectedB;
+      const modelA = anonymous ? '' : selectedA;
+      const modelB = anonymous ? '' : selectedB;
       const duelMessageId = createDuelAssistantMessage({ anonymous, modelA, modelB });
+      const duelTurnId = `compare_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const slotTurnA = getArenaSlotTurnId(match, 'a') || duelTurnId;
+      const slotTurnB = getArenaSlotTurnId(match, 'b') || duelTurnId;
       const [a, b] = await Promise.allSettled([
-        streamMainArenaSlot(match.id, 'a', prompt, duelMessageId, { modelId: modelA, anonymous }),
-        streamMainArenaSlot(match.id, 'b', prompt, duelMessageId, { modelId: modelB, anonymous })
+        streamMainArenaSlot(match.id, 'a', prompt, duelMessageId, slotTurnA, { modelId: modelA, anonymous }),
+        streamMainArenaSlot(match.id, 'b', prompt, duelMessageId, slotTurnB, { modelId: modelB, anonymous })
       ]);
       if (a.status === 'rejected') updateDuelMessage(duelMessageId, 'a', `\u8bf7\u6c42\u5931\u8d25\uff1a${a.reason?.message || a.reason}`, { loading: false });
       if (b.status === 'rejected') updateDuelMessage(duelMessageId, 'b', `\u8bf7\u6c42\u5931\u8d25\uff1a${b.reason?.message || b.reason}`, { loading: false });
@@ -3289,6 +3362,10 @@
     }
 
     function attachDuelVoteRow(messageId, matchId, { anonymous = false, answerA = '', answerB = '' } = {}) {
+      if (!String(answerA || '').trim() || !String(answerB || '').trim()) {
+        showToast('A/B 有一侧未返回有效内容，本轮不开放投票。');
+        return;
+      }
       const wrapper = document.getElementById(messageId);
       const grid = wrapper?.querySelector('.duel-grid');
       if (!wrapper || !grid || wrapper.querySelector('.duel-vote-row')) return;
@@ -3352,11 +3429,6 @@
       }
       const details = [modelA ? `A ${modelA}` : '', modelB ? `B ${modelB}` : ''].filter(Boolean).join(' · ');
       note.innerHTML = `<strong>${effective ? '已计入公开榜' : '未计入公开榜'}</strong><span>${details || '本次偏好已记录。'}</span>`;
-    }
-
-    function getTodayText() {
-      const now = new Date();
-      return `${now.getMonth() + 1}月${now.getDate()}日`;
     }
 
     function formatCountdownDuration(ms) {
@@ -3526,10 +3598,10 @@
       };
       // 先保护数学公式，避免被 escapeHtml 转义
       let output = text
-        .replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => keep(`$$${formula.trim()}$$`))
-        .replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => keep(`\\[${formula}\\]`))
-        .replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) => keep(`\\(${formula}\\)`))
-        .replace(/\$\s*([^\$]+?)\s*\$/g, (match, formula) => keep(`$${formula.trim()}$`))
+        .replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => keep(`$$${escapeHtml(formula.trim())}$$`))
+        .replace(/\\\[([\s\S]*?)\\\]/g, (match, formula) => keep(`\\[${escapeHtml(formula)}\\]`))
+        .replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) => keep(`\\(${escapeHtml(formula)}\\)`))
+        .replace(/\$\s*([^\$]+?)\s*\$/g, (match, formula) => keep(`$${escapeHtml(formula.trim())}$`))
         .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${escapeHtml(code)}</code>`))
         .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
           const href = safeUrl(url);
@@ -3638,7 +3710,7 @@
 
       function flushMath() {
         if (!mathLines.length) return;
-        blocks.push(`<p>\\[${mathLines.join('\n')}\\]</p>`);
+        blocks.push(`<p>\\[${escapeHtml(mathLines.join('\n'))}\\]</p>`);
         mathLines = [];
       }
 
@@ -3823,19 +3895,19 @@
       let html = element.innerHTML;
       // 处理 $$...$$（display math）— 用 blockquote 样式突出显示
       html = html.replace(/\$\$([\s\S]*?)\$\$/g, function(_, formula) {
-        return '<div style="text-align:center;margin:8px 0;font-style:italic;color:var(--text);">' + formula.trim() + '</div>';
+        return '<div style="text-align:center;margin:8px 0;font-style:italic;color:var(--text);">' + escapeHtml(formula.trim()) + '</div>';
       });
       // 处理 $...$（inline math）— 用斜体显示
       html = html.replace(/\$([^\$]+?)\$/g, function(_, formula) {
-        return '<em style="color:var(--text);">' + formula.trim() + '</em>';
+        return '<em style="color:var(--text);">' + escapeHtml(formula.trim()) + '</em>';
       });
       // 处理 \[...\]（display math）
       html = html.replace(/\\\[([\s\S]*?)\\\]/g, function(_, formula) {
-        return '<div style="text-align:center;margin:8px 0;font-style:italic;color:var(--text);">' + formula.trim() + '</div>';
+        return '<div style="text-align:center;margin:8px 0;font-style:italic;color:var(--text);">' + escapeHtml(formula.trim()) + '</div>';
       });
       // 处理 \(...\)（inline math）
       html = html.replace(/\\\(([\s\S]*?)\\\)/g, function(_, formula) {
-        return '<em style="color:var(--text);">' + formula.trim() + '</em>';
+        return '<em style="color:var(--text);">' + escapeHtml(formula.trim()) + '</em>';
       });
       element.innerHTML = html;
     }
@@ -3887,66 +3959,38 @@
       streamState.thinking = thinking;
     }
 
-    function getModelIdentity(modelId) {
-      const identities = {
-        'deepseek-v4-flash': '由NexusV支持的DeepSeekV4模型',
-        'deepseek-v4-flash-alt': '由NexusV支持的DeepSeekV4模型',
-        'deepseek-v4-pro': '由NexusV支持的DeepSeekV4-Pro模型',
-        'deepseek-v4-pro-alt': '由NexusV支持的DeepSeekV4-Pro模型（备用）',
-        'step-3.5-flash': '由NexusV支持的Step-3.5模型',
-        'hy3-preview': '由NexusV支持的混元3模型',
-        'gpt-oss-120b': '由NexusV支持的chatGPT-OSS模型',
-        'nemotron-3-super': '由NexusV支持的Nemotron-3-super模型',
-        'ling-2.6-1t': '由NexusV支持的ling-2.6模型',
-        'ling-2.6-1t-alt': '由NexusV支持的ling-2.6模型（共享额度备用）',
-        'spark-x2': '由NexusV支持的spark-x2模型',
-        'qwen3.5': '由NexusV支持的Qwen3.5模型',
-        'qwen3-coder': '由NexusV支持的Qwen3-Coder模型',
-        'kimi-k2.5': '由NexusV支持的Kimi-K2.5模型',
-        'kimi-k2.6': '由NexusV支持的Kimi-K2.6模型（稳定）',
-        'kimi-k2.6-alt': '由NexusV支持的Kimi-K2.6模型（备用）',
-        'glm-5': '由NexusV支持的GLM-5模型',
-        'glm-5.1': '由NexusV支持的GLM-5.1模型',
-        'glm-5.1-alt': '由NexusV支持的GLM-5.1模型',
-        'glm-4.7': '由NexusV支持的GLM-4.7模型',
-        'deepseek-r1': '由NexusV支持的DeepSeek-R1模型',
-        'minimax-m2.5': '由NexusV支持的MiniMax-M2.5模型',
-        'qwen3.6-max-preview': '由NexusV支持的qwen3.6-max-preview模型',
-        'qwen3.6-plus': '由NexusV支持的qwen3.6-plus模型',
-        // 稳定新增模型
-        'qwen3.6-flash': '由NexusV支持的Qwen3.6-Flash模型（稳定）',
-        'kimi-k2.5-alt': '由NexusV支持的Kimi-K2.5模型（稳定备用）',
-        'deepseek-v3.2': '由NexusV支持的DeepSeek-V3.2模型（稳定）',
-        'deepseek-v3.2-exp': '由NexusV支持的DeepSeek-V3.2-Exp模型（稳定）',
-        'glm-4.5-air': '由NexusV支持的GLM-4.5-Air模型（稳定）',
-        'minimax-m2.5-alt': '由NexusV支持的MiniMax-M2.5模型（稳定备用）',
-        'deepseek-v3.1': '由NexusV支持的DeepSeek-V3.1模型（稳定）',
-        'qwen3-coder-plus': '由NexusV支持的Qwen3-Coder-Plus模型（稳定）',
-        'qwen3-max': '由NexusV支持的Qwen3-Max模型（稳定）',
-        'kimi-k2-instruct': '由NexusV支持的Kimi-K2-Instruct模型（稳定）',
-        'qwen3.6-plus-20260402': '由NexusV支持的Qwen3.6-Plus模型（稳定备用）',
-        'deepseek-r1-0528': '由NexusV支持的DeepSeek-R1-0528模型（稳定备用）',
-        // MiMo 模型
-        'mimo-v2.5-pro': '由NexusV支持的MiMo-V2.5-Pro模型（小米）',
-        // 缺失的模型
-        'gpt-5.4': '由NexusV支持的GPT-5.4模型',
-        'kimi-k2.6-extended': '由NexusV支持的Kimi-K2.6模型（备用）',
-        // NewAPI 模型
-        'claude-opus-4.6': '由NexusV支持的Claude Opus 4.6模型',
-        'claude-sonnet-4.6': '由NexusV支持的Claude Sonnet 4.6模型',
-        'gemini-2.5-pro': '由NexusV支持的Gemini 2.5 Pro模型'
-      };
-      return identities[modelId] || `由NexusV支持的${getModelDisplayName(modelId)}模型`;
-    }
-
     function getAvailableToolDefinitions() {
       return [...ARTICLE_TOOL_DEFINITIONS, WEB_SEARCH_TOOL_DEFINITION, FETCH_WEB_PAGE_TOOL_DEFINITION];
     }
 
     function getHomeDisplayName() {
+      const nickname = getNickname();
+      if (nickname) return nickname;
       const rawName = String(document.querySelector('.account-name')?.textContent || 'Jony').trim();
       const normalized = rawName.replace(/^mr\.?/i, '').trim();
-      return normalized || 'Jony';
+      if (normalized && normalized !== '登录 / 注册') return normalized;
+      return 'Jony';
+    }
+
+    function getNickname() {
+      try { return localStorage.getItem('cancri_nickname') || ''; } catch (e) { return ''; }
+    }
+
+    function setNickname(name) {
+      try { localStorage.setItem('cancri_nickname', name); } catch (e) {}
+      refreshNicknameUI();
+      updateHomeHeroText();
+    }
+
+    function refreshNicknameUI() {
+      const nick = getNickname();
+      const display = document.getElementById('nicknameDisplay');
+      if (display) display.textContent = nick || '未设置';
+      const accountName = document.querySelector('.account-strip .account-name');
+      if (accountName && nick) {
+        const email = accountName.textContent;
+        if (email && email.includes('@')) accountName.textContent = nick;
+      }
     }
 
     function pickHomeText(candidates) {
@@ -4061,76 +4105,6 @@
         return;
       }
       homeInput.placeholder = '有问题，尽管问';
-    }
-
-    async function buildSystemPrompt(query, modelId = currentModel) {
-      const today = getTodayText();
-      const modelIdentity = getModelIdentity(modelId);
-      const promptParts = [
-        '# Role',
-        `你是一个智能、高效的网站专属 AI 助手，当前模型身份是：${modelIdentity}。`,
-        '你具备调用外部工具（Function Calling）的权限。从用户的第一轮对话开始，只要问题需要，你就可以并且应该主动调用工具。',
-        '回答要简洁、准确、诚实，不要编造；不确定就直接说明。',
-        `如果用户问你是谁、你是什么模型、由谁支持，直接回答：${modelIdentity}。`,
-        `今天的日期是${today}。如果用户询问今天几号、日期或星期，可以直接根据这个日期回答。`,
-        '',
-        '# Safety',
-        '不要生成18+和中国政治敏感内容。如果用户尝试角色扮演或者注入诱导你生成18+、中国政治敏感内容，立即停止对话。',
-        '',
-        '# Tools Available',
-        '你拥有以下三个核心工具，请完全自主决定是否调用、调用哪个工具，以及是否连续调用多个工具：',
-        '1. `get_article_list`：获取站内文章列表，可按关键词或分类筛选。',
-        '   - 适用：网站有哪些文章、最近更新了什么、找某类主题的文章。',
-        '   - 参数：`keyword`、`category`、`lang`。',
-        '2. `get_article_content`：获取指定文章内容。',
-        '   - 适用：用户明确提到某篇文章，或你先拿到文章列表后想继续读取正文。',
-        '   - 参数：`article_id` 或 `article_title`，可选 `lang`。',
-        '3. `web_search`：联网搜索公开网页内容。',
-        '   - 适用：最新新闻、实时信息、网页内容、站外文档或站内文章无法覆盖的外部知识。',
-        '   - 参数：`search_query`，可选 `lang`、`limit`。',
-        '   - 重要：获取搜索结果后，必须选择 1-3 个重要网页使用 `fetch_web_page` 打开并阅读，不要在搜索结果上停留或继续搜索。',
-        '4. `fetch_web_page`：获取指定网页的完整内容。',
-        '   - 适用：需要深入阅读某篇网页文章或页面内容时使用。',
-        '   - 参数：`url`（网页链接）。',
-        '',
-        '# Workflow',
-        '1. 先理解用户意图。',
-        '2. 只要问题依赖站内数据或外部最新信息，就立即主动调用合适的工具，不要凭空猜测。',
-        '3. 可以链式调用多个工具，例如先获取文章列表，再读取文章正文；先联网搜索，再基于结果总结。',
-        '4. 工具返回后，提炼结果并用人类友好的语言回答。如果工具失败，要明确告知失败点，并尝试合理的备用方案。',
-        '',
-        '# Tool Policy',
-        '- 工具调用时机完全由你自主决定，前端不会干预。',
-        '- 首轮对话允许直接调用工具，不需要等待第二轮。',
-        '- 站内问题优先使用站内工具；站外实时问题优先使用 `web_search`。',
-        '- 不要为了显得智能而跳过工具；该查就查。',
-        '- 工具结果不足时，先继续调用工具或向用户补充确认。',
-        '- 回答尽量使用简洁 Markdown。',
-        '# Math Formatting (CRITICAL)',
-        '数学公式必须严格使用 LaTeX 语法，本站使用 KaTeX 渲染，以下规则必须遵守：',
-        '- 行内公式：$...$，如 $E=mc^2$、$\\alpha + \\beta$',
-        '- 独立/块级公式：$$...$$，如：',
-        '  $$\\sum_{i=1}^{n} x_i = x_1 + x_2 + \\cdots + x_n$$',
-        '- 严禁：$ 符号和公式之间加空格（错误：$ x^2 $，正确：$x^2$）',
-        '- 严禁：使用 \\( \\) 或 \\[ \\] 或 HTML 标签代替 $ 和 $$',
-        '- 严禁：把公式写成纯文本（如 "x的平方"），应写 $x^2$',
-        '- 分数用 \\frac{a}{b}，根号用 \\sqrt{x}，上下标用 ^{} 和 _{}',
-        '- 矩阵用 \\begin{pmatrix}...\\end{pmatrix}',
-        '- 多行推导用 $$\\begin{aligned} ... \\end{aligned}$$',
-        '- 如果数学公式比较多，请为每一步推导单独用 $$ 块，便于阅读',
-        '',
-        '',
-        '# Examples',
-        'User: 你们网站最近更新了什么 AI 相关文章？',
-        'Assistant: [Call `get_article_list` with `{"keyword":"AI"}`]',
-        'User: 把关于 Supabase 教程的文章内容发我看看。',
-        'Assistant: [Call `get_article_list` with `{"keyword":"Supabase"}`]',
-        'Assistant: [Call `get_article_content` with `{"article_id":"..."}`]',
-        'User: 昨天马斯克发了什么推特？',
-        'Assistant: [Call `web_search` with `{"search_query":"马斯克 推特 昨天"}`]',
-      ];
-
-      return promptParts.join('\n');
     }
 
     function scrollChatToBottom(smooth = true) {
@@ -4356,6 +4330,7 @@
             headers: await proxyHeaders(),
             body: JSON.stringify({
               endpoint: 'task',
+              model: imageModel,
               taskId: taskId
             })
           });
@@ -5067,28 +5042,6 @@
       return summaryParts.join(' ').trim() || '（包含图片上下文）';
     }
 
-    function buildRecentConversationSnapshot(history = conversationHistory, maxEntries = 8) {
-      if (!Array.isArray(history) || !history.length) return '';
-
-      const relevantMessages = history.filter(message => message && ['user', 'assistant', 'tool'].includes(message.role));
-      const recentMessages = relevantMessages.slice(-maxEntries);
-      if (!recentMessages.length) return '';
-
-      const lines = recentMessages.map(message => {
-        const role = message.role === 'user' ? '用户' : message.role === 'assistant' ? '助手' : '工具';
-        const toolName = message.role === 'tool'
-          ? `(${String(message.name || message.tool_call_id || '').trim() || 'tool'})`
-          : '';
-        const contentText = describeContentForCompression(message.content)
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 260);
-        return `${role}${toolName}: ${contentText || '（空内容）'}`;
-      });
-
-      return ['# 最近对话摘要', ...lines].join('\n');
-    }
-
     function findLastMultimodalAnchorIndex(history = conversationHistory) {
       if (!Array.isArray(history) || !history.length) return -1;
 
@@ -5130,15 +5083,8 @@
     }
 
     async function buildApiMessages(query, extraSystemContent = '', userContent = null, modelId = currentModel) {
-      const systemPrompt = await buildSystemPrompt(query, modelId);
-      const recentConversationSnapshot = buildRecentConversationSnapshot(conversationHistory, 8);
-      const hasImageAttachment = Array.isArray(userContent)
-        && userContent.some(part => part && part.type === 'image_url');
-      const multimodalHint = hasImageAttachment
-        ? '本轮用户附带了图片，请先识别图片内容，再结合文字回答；不要忽略图片附件。'
-        : '';
-      const mergedSystemContent = [systemPrompt, recentConversationSnapshot, extraSystemContent, multimodalHint].filter(Boolean).join('\n\n');
-      const messages = [{ role: 'system', content: mergedSystemContent }];
+      void extraSystemContent;
+      const messages = [];
       conversationHistory.forEach(message => {
         messages.push(toApiMessage(message, modelId));
       });
@@ -5171,15 +5117,11 @@
         headers: await proxyHeaders(),
         body: JSON.stringify({
           endpoint: 'chat',
-          model: MODEL_IDS[modelId] || MODEL_IDS['deepseek-v4-flash'],
+          model: MODEL_IDS[modelId] || MODEL_IDS[DEFAULT_MODEL_ID] || DEFAULT_MODEL_ID,
           messages: [
             {
-              role: 'system',
-              content: '你将收到一整段历史对话。请将其压缩为可继续聊天的简明摘要。必须保留：目标、已确认事实、用户偏好、重要约束、未完成事项、待继续的问题。请用简洁中文输出，格式固定为：## 目标\n## 已确认信息\n## 未完成事项\n## 延续建议。不要编造。'
-            },
-            {
               role: 'user',
-              content: `请压缩以下历史对话：\n\n${transcript}`
+              content: `请将以下历史对话压缩为可继续聊天的简明摘要。必须保留：目标、已确认事实、用户偏好、重要约束、未完成事项、待继续的问题。请用简洁中文输出，格式固定为：## 目标\n## 已确认信息\n## 未完成事项\n## 延续建议。不要编造。\n\n${transcript}`
             }
           ],
           stream: false,
@@ -5212,8 +5154,8 @@
       const previousHistory = conversationHistory.slice();
 
       conversationHistory = [{
-        role: 'system',
-        content: `以下是上一段对话的压缩摘要，请在后续回合继续沿用其中已确认的事实、目标、约束与待办。\n\n${summary}`
+        role: 'assistant',
+        content: `【历史摘要】\n以下是上一段对话的压缩摘要，请在后续回合继续沿用其中已确认的事实、目标、约束与待办。\n\n${summary}`
       }];
 
       if (isMultimodalModel(modelId)) {
@@ -5281,6 +5223,7 @@
 
     // 从模型文本输出中提取工具调用标记（兜底解析）
     function extractToolCallsFromText(text) {
+      return [];
       const results = [];
       if (!text || typeof text !== 'string') return results;
 
@@ -5350,6 +5293,7 @@
 
     // 从文本中移除已识别的工具调用标记，保留纯回答内容
     function removeToolCallMarkers(text) {
+      return text;
       if (!text || typeof text !== 'string') return text;
       // 移除 [Call ... with ...] 标记
       let cleaned = text.replace(/\[\s*Call\s+[`']?[a-zA-Z0-9_\-]+[`']?\s+with\s+[`']?\{[\s\S]*?\}[`']?\s*\]/gi, '');
@@ -5377,7 +5321,9 @@
         limit,
         client_turn_id: activeTurnId,
         tool_call_id: toolCall?.id || '',
-        tool_name: 'web_search'
+        tool_name: 'web_search',
+        request_kind: 'tool_call',
+        tool_index: Number(toolCall?._index ?? 0)
       };
 
       const tryFetchSearch = async (url) => {
@@ -5422,7 +5368,9 @@
         url,
         client_turn_id: activeTurnId,
         tool_call_id: toolCall?.id || '',
-        tool_name: 'fetch_web_page'
+        tool_name: 'fetch_web_page',
+        request_kind: 'tool_call',
+        tool_index: Number(toolCall?._index ?? 0)
       };
 
       const tryFetchPage = async (fetchUrl) => {
@@ -5527,7 +5475,7 @@
       }
     }
 
-    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel, priorReasoning = '' } = {}) {
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel, priorReasoning = '', requestKind = 'direct_chat' } = {}) {
       let finalAnswer = '';
       let reasoningText = '';
       let streamBuffer = '';
@@ -5535,7 +5483,7 @@
       const toolCalls = [];
 
       let response = null;
-      const activeModelId = MODEL_IDS[modelId] || MODEL_IDS['deepseek-v4-flash'];
+      const activeModelId = MODEL_IDS[modelId] || MODEL_IDS[DEFAULT_MODEL_ID] || DEFAULT_MODEL_ID;
 
       // 清理消息内容，确保多模态格式正确
       const processedMessages = messages.map(msg => {
@@ -5580,6 +5528,7 @@
           body: JSON.stringify({
             endpoint: 'chat',
             client_turn_id: turnId,
+            request_kind: requestKind,
             ...requestBody
           })
         }, getChatRequestTimeoutMs(modelId), '模型请求');
@@ -5708,16 +5657,6 @@
 
       if (!finalAnswer && !reasoningText && toolCalls.length) {
         finalAnswer = '';
-      }
-
-      // 兜底：如果标准格式没有解析到工具调用，但文本中包含工具调用标记，尝试提取
-      if (!toolCalls.length && finalAnswer) {
-        const extracted = extractToolCallsFromText(finalAnswer);
-        if (extracted.length) {
-          toolCalls.push(...extracted);
-          // 从 finalAnswer 中移除已提取的工具调用文本
-          finalAnswer = removeToolCallMarkers(finalAnswer).trim();
-        }
       }
 
       return {
@@ -5870,10 +5809,10 @@
       homeInput.value = '';
 
       let fallbackToSingleModel = false;
-      if (!attachmentsForSend.length && (state.arenaMode === 'battle' || state.arenaMode === 'side_by_side')) {
+      if (!attachmentsForSend.length && (state.arenaMode === 'anonymous' || state.arenaMode === 'side_by_side')) {
         setComposerBusy(true);
         try {
-          const duelResult = await sendArenaDuelMessage(effectiveQuery, { anonymous: state.arenaMode === 'battle' });
+          const duelResult = await sendArenaDuelMessage(effectiveQuery, { anonymous: state.arenaMode === 'anonymous' });
           pushHistory(userHistoryMessage);
           pushHistory(assistantHistoryMessage(`【模型 A】\n${duelResult.answerA || '无有效回复'}\n\n【模型 B】\n${duelResult.answerB || '无有效回复'}`, createModelMetadata(turnModelId)));
           await finalizeConversationTurn();
@@ -5939,7 +5878,7 @@
         let accumulatedReasoningText = '';
         let round = 0;
         while (!controller.signal.aborted) {
-          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId, priorReasoning: accumulatedReasoningText });
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId, priorReasoning: accumulatedReasoningText, requestKind: round === 0 ? 'direct_chat' : 'tool_followup_chat' });
           accumulatedReasoningText = composeReasoningText(accumulatedReasoningText, roundResult.reasoningText);
 
           if (roundResult.toolCalls.length) {
@@ -5983,6 +5922,7 @@
               let toolOutput = '';
 
               try {
+                toolCall._index = index;
                 const toolPromise = executeArticleToolCall(toolCall, turnId);
                 const timeoutPromise = new Promise((_, reject) => {
                   setTimeout(() => reject(new Error('工具调用超时（25秒），请稍后重试。')), TOOL_CALL_TIMEOUT_MS);
@@ -6284,9 +6224,9 @@
     on('imageModeChipBtn', 'click', () => setHomeMode('image'));
     on('videoModeChipBtn', 'click', () => setHomeMode('video'));
 
-    on('searchChatsBtn', 'click', () => showToast('聊天搜索已响应。'));
-    on('codexBtn', 'click', () => showToast('Codex 面板已响应。'));
-    document.getElementById('teamToastBtn').addEventListener('click', () => showToast('团队邀请入口已响应。'));
+    on('searchChatsBtn', 'click', () => {});
+    on('codexBtn', 'click', () => {});
+    document.getElementById('teamToastBtn').addEventListener('click', () => {});
     document.getElementById('upgradeBtn').addEventListener('click', () => window.open('https://qm.qq.com/q/bxQU3rXRyo', '_blank'));
     const clearBtnEl = document.getElementById('clearBtn');
     if (clearBtnEl) clearBtnEl.addEventListener('click', () => clearConversation());
@@ -6295,7 +6235,7 @@
     const leaderboardStartVotingBtn = document.getElementById('leaderboardStartVotingBtn');
     if (leaderboardStartVotingBtn) {
       leaderboardStartVotingBtn.addEventListener('click', () => {
-        setTopArenaMode('battle');
+        setTopArenaMode('anonymous');
         setActiveView('home');
         homeInput?.focus();
       });
@@ -6305,23 +6245,31 @@
       leaderboardSegmentButtons[0].addEventListener('click', () => switchLeaderboardView('ranking'));
       leaderboardSegmentButtons[1].addEventListener('click', () => switchLeaderboardView('pareto'));
     }
-    document.getElementById('micToastBtn').addEventListener('click', () => showToast('语音输入入口已响应。'));
-    document.getElementById('imageMicToastBtn').addEventListener('click', () => showToast('图片语音输入入口已响应。'));
+    document.getElementById('micToastBtn').addEventListener('click', () => {});
+    document.getElementById('imageMicToastBtn').addEventListener('click', () => {});
     document.getElementById('uploadToastBtn').addEventListener('click', () => attachmentInput?.click());
-    document.getElementById('thinkingToastBtn').addEventListener('click', () => showToast('思考模式入口已响应。'));
-    document.getElementById('researchToastBtn2').addEventListener('click', () => showToast('深度研究入口已响应。'));
-    document.getElementById('openResearchToast').addEventListener('click', () => showToast('深度研究入口已响应。'));
-    document.getElementById('openAppsToast').addEventListener('click', () => showToast('应用中心入口已响应。'));
-    document.getElementById('profileToastBtn').addEventListener('click', () => showToast('个人资料入口已响应。'));
-    document.getElementById('helpToastBtn').addEventListener('click', () => showToast('帮助中心入口已响应。'));
+    document.getElementById('thinkingToastBtn').addEventListener('click', () => {});
+    document.getElementById('researchToastBtn2').addEventListener('click', () => {});
+    document.getElementById('openResearchToast').addEventListener('click', () => {});
+    document.getElementById('openAppsToast').addEventListener('click', () => {});
+    document.getElementById('profileToastBtn').addEventListener('click', () => {});
+    document.getElementById('helpToastBtn').addEventListener('click', () => {
+      window.open('https://nexusvai.github.io/NexusV/article.html?id=hero', '_blank');
+    });
+    document.getElementById('nicknameEditBtn').addEventListener('click', () => {
+      closePopover();
+      const current = getNickname();
+      const name = prompt('输入你的昵称（留空则清除）：', current);
+      if (name !== null) setNickname(name.trim());
+    });
     document.getElementById('logoutToastBtn').addEventListener('click', async () => {
       closePopover();
       await handleLogout();
       showToast('已退出登录');
     });
-    document.getElementById('mfaToastBtn').addEventListener('click', () => showToast('MFA 设置入口已响应。'));
-    document.getElementById('projectSettingToastBtn').addEventListener('click', () => showToast('项目高级设置入口已响应。'));
-    document.getElementById('plusMoreBtn').addEventListener('click', () => showToast('更多二级菜单可继续扩展。'));
+    document.getElementById('mfaToastBtn').addEventListener('click', () => {});
+    document.getElementById('projectSettingToastBtn').addEventListener('click', () => {});
+    document.getElementById('plusMoreBtn').addEventListener('click', () => {});
 
     document.getElementById('continueTempChatBtn').addEventListener('click', () => {
       closeModal();
@@ -6543,42 +6491,76 @@
       if (!content) return;
       content.textContent = '';
 
-      MODEL_CATALOG.forEach(model => {
-        const option = document.createElement('div');
-        option.className = 'model-option';
-        option.dataset.model = model.id;
-        option.dataset.multimodal = model.multimodal ? 'true' : 'false';
-        option.title = model.displayName || model.id;
+      const grouped = new Map();
+      SELECTABLE_MODELS.forEach(model => {
+        const brand = model.brand || getModelBrandName(model.id);
+        if (!grouped.has(brand)) grouped.set(brand, []);
+        grouped.get(brand).push(model);
+      });
 
-        const speedDot = document.createElement('span');
-        speedDot.className = 'model-speed-dot speed-unknown';
-        option.appendChild(speedDot);
+      grouped.forEach((models, brand) => {
+        const header = document.createElement('div');
+        header.className = 'model-group-header';
+        header.dataset.brand = brand;
+        header.textContent = brand;
+        content.appendChild(header);
 
-        const label = document.createElement('span');
-        label.className = 'model-label';
+        models
+          .slice()
+          .sort((a, b) => {
+            const canonical = String(a.canonicalId || a.id).localeCompare(String(b.canonicalId || b.id));
+            if (canonical !== 0) return canonical;
+            return String(a.lineLabel || '').localeCompare(String(b.lineLabel || ''));
+          })
+          .forEach(model => {
+            const option = document.createElement('div');
+            option.className = 'model-option';
+            option.dataset.model = model.id;
+            option.dataset.brand = brand;
+            option.dataset.canonical = model.canonicalId || model.id;
+            option.dataset.lineLabel = model.lineLabel || '';
+            option.dataset.multimodal = model.multimodal ? 'true' : 'false';
+            option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : (model.displayName || model.id);
 
-        const icon = document.createElement('img');
-        icon.src = model.iconPath || './openai.svg';
-        icon.alt = '';
-        icon.className = 'model-option-icon';
-        label.appendChild(icon);
+            const speedDot = document.createElement('span');
+            speedDot.className = 'model-speed-dot speed-unknown';
+            option.appendChild(speedDot);
 
-        const name = document.createElement('span');
-        name.className = 'model-label-text';
-        name.textContent = model.displayName || model.id;
-        label.appendChild(name);
-        option.appendChild(label);
+            const label = document.createElement('span');
+            label.className = 'model-label';
 
-        (model.tags || []).forEach(tagText => {
-          const tag = document.createElement('span');
-          tag.className = 'model-tag';
-          if (String(tagText).includes('多模态')) tag.classList.add('multimodal');
-          tag.textContent = tagText;
-          option.appendChild(tag);
-        });
+            const icon = document.createElement('img');
+            icon.src = model.iconPath || './openai.svg';
+            icon.alt = '';
+            icon.className = 'model-option-icon';
+            label.appendChild(icon);
 
-        option.classList.toggle('active', model.id === currentModel);
-        content.appendChild(option);
+            const textWrap = document.createElement('span');
+            textWrap.className = 'model-label-stack';
+
+            const name = document.createElement('span');
+            name.className = 'model-label-text';
+            name.textContent = model.displayName || model.id;
+            textWrap.appendChild(name);
+
+            const subtext = document.createElement('span');
+            subtext.className = 'model-label-subtext';
+            subtext.textContent = [model.lineLabel, model.canonicalId && model.canonicalId !== model.id ? model.canonicalId : ''].filter(Boolean).join(' · ');
+            if (subtext.textContent) textWrap.appendChild(subtext);
+            label.appendChild(textWrap);
+            option.appendChild(label);
+
+            (model.tags || []).forEach(tagText => {
+              const tag = document.createElement('span');
+              tag.className = 'model-tag';
+              if (String(tagText).includes('多模态')) tag.classList.add('multimodal');
+              tag.textContent = tagText;
+              option.appendChild(tag);
+            });
+
+            option.classList.toggle('active', model.id === currentModel);
+            content.appendChild(option);
+          });
       });
       applyModelDropdownFilters();
     }
@@ -6590,7 +6572,7 @@
     function modelMatchesFilter(option, filter, query) {
       const modelId = option.dataset.model || '';
       const meta = getModelMeta(modelId);
-      const haystack = [modelId, meta.displayName, ...(meta.tags || [])].join(' ').toLowerCase();
+      const haystack = [modelId, meta.canonicalId, meta.displayName, meta.brand, meta.lineLabel, ...(meta.tags || [])].join(' ').toLowerCase();
       const q = String(query || '').trim().toLowerCase();
       if (q && !haystack.includes(q)) return false;
       if (filter === 'code') return /code|coder|编程|编码/.test(haystack);
@@ -6604,11 +6586,18 @@
       const query = modelSearchInput ? modelSearchInput.value : '';
       const options = Array.from(modelDropdown?.querySelectorAll('.model-option') || []);
       let visibleCount = 0;
+      const visibleBrands = new Set();
       options.forEach(option => {
         const visible = modelMatchesFilter(option, filter, query);
         option.dataset.filtered = visible ? 'true' : 'false';
         option.style.display = visible ? 'flex' : 'none';
-        if (visible) visibleCount += 1;
+        if (visible) {
+          visibleCount += 1;
+          if (option.dataset.brand) visibleBrands.add(option.dataset.brand);
+        }
+      });
+      modelDropdown?.querySelectorAll('.model-group-header').forEach(header => {
+        header.style.display = visibleBrands.has(header.dataset.brand || '') ? 'block' : 'none';
       });
       const pageInfo = document.getElementById('modelPageInfo');
       const prevBtn = document.getElementById('modelPagePrev');
@@ -6624,42 +6613,13 @@
     let totalModelPages = 1;
 
     function initModelPagination() {
-      if ((modelSearchInput && modelSearchInput.value) || getActiveModelFilter() !== 'all') {
-        applyModelDropdownFilters();
-        return;
-      }
-      const modelOptions = modelDropdown?.querySelectorAll('.model-option');
-      if (!modelOptions) return;
-
-      totalModelPages = Math.ceil(modelOptions.length / MODELS_PER_PAGE);
-      updateModelPageDisplay();
+      currentModelPage = 1;
+      totalModelPages = 1;
+      applyModelDropdownFilters();
     }
 
     function updateModelPageDisplay() {
-      if ((modelSearchInput && modelSearchInput.value) || getActiveModelFilter() !== 'all') {
-        applyModelDropdownFilters();
-        return;
-      }
-      const modelOptions = modelDropdown?.querySelectorAll('.model-option');
-      const startIndex = (currentModelPage - 1) * MODELS_PER_PAGE;
-      const endIndex = startIndex + MODELS_PER_PAGE;
-
-      modelOptions?.forEach((opt, index) => {
-        if (index >= startIndex && index < endIndex) {
-          opt.style.display = 'flex';
-        } else {
-          opt.style.display = 'none';
-        }
-      });
-
-      // 更新分页控件
-      const pageInfo = document.getElementById('modelPageInfo');
-      const prevBtn = document.getElementById('modelPagePrev');
-      const nextBtn = document.getElementById('modelPageNext');
-
-      if (pageInfo) pageInfo.textContent = `${currentModelPage} / ${totalModelPages}`;
-      if (prevBtn) prevBtn.disabled = currentModelPage <= 1;
-      if (nextBtn) nextBtn.disabled = currentModelPage >= totalModelPages;
+      applyModelDropdownFilters();
     }
 
     function goToModelPage(page) {
@@ -6701,7 +6661,7 @@
     }
 
     function setCompareModel(modelId) {
-      if (!MODEL_CATALOG_BY_ID.has(modelId)) return;
+      if (!isModelSelectable(modelId)) return;
       if (modelId === currentModel) {
         showToast('\u6a21\u578b B \u4e0d\u80fd\u548c\u6a21\u578b A \u76f8\u540c');
         return;
@@ -6713,11 +6673,12 @@
       showToast(`\u6a21\u578b B \u5df2\u5207\u6362\u81f3 ${getModelDisplayName(modelId)}`);
     }
     function setModel(modelId) {
+      if (!isModelSelectable(modelId)) return;
       currentModel = modelId;
       isMultimodal = isMultimodalModel(modelId);
       localStorage.setItem('cancri_current_model', modelId);
       if (compareModel === currentModel) {
-        compareModel = MODEL_CATALOG.find(model => model.id !== currentModel)?.id || compareModel;
+        compareModel = getFallbackModelId(currentModel);
         localStorage.setItem('cancri_compare_model', compareModel);
         if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
       }
@@ -6877,6 +6838,7 @@
     updateHomeModeChips();
     syncTopArenaMode();
     setActiveView('home');
+    refreshNicknameUI();
     setComposerBusy(false);
     updateTokenExpiryNote();
     setInterval(updateTokenExpiryNote, 1000);
@@ -6930,6 +6892,8 @@
     window.CancriApp = {
       state,
       MODEL_CATALOG,
+      SELECTABLE_MODELS,
+      ARENA_MODELS,
       EDGE_FUNCTION_URL,
       FETCH_TIMEOUT_MS,
       CHAT_TURN_TIMEOUT_MS,
@@ -6941,6 +6905,7 @@
       renderMarkdown,
       escapeHtml,
       getModelDisplayName,
+      getLeaderboardRowMeta,
       showToast,
       setActiveView,
       getModelRequestOptions,

@@ -3,64 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self';">
   <title>Cancri</title>
-  <script>
-    window.__SUPABASE_URL__ = 'https://diusqgphvybnzazgopor.supabase.co';
-    window.__SUPABASE_ANON_KEY__ = 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
-  </script>
+  <script src="./cancri_config.js?v=0504"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0503" />
-  <link rel="stylesheet" href="./cancri_arena.css?v=arena-module-0503" />
+  <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0504" />
+  <link rel="stylesheet" href="./cancri_arena.css?v=arena-module-0504" />
   <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
   <link rel="stylesheet" href="./katex/katex.min.css" />
   <script src="./katex/katex.min.js"></script>
   <script src="./katex/contrib/auto-render.min.js"></script>
-  <script>
-    // 保存 KaTeX 原版 renderMathInElement，防止被 cancri_chat.js 中的同名函数覆盖
-    window.__katexRender = window.renderMathInElement;
-  </script>
-  <script>
-    // 检测本地 KaTeX 是否加载成功，失败则从 CDN 补加载
-    (function() {
-      if (typeof katex !== 'undefined' && typeof renderMathInElement === 'function') {
-        console.log('KaTeX loaded locally');
-        return;
-      }
-      console.warn('Local KaTeX not found, trying CDNs...');
-      var cdns = [
-        'https://cdn.staticfile.org/katex@0.16.9/dist/',
-        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/',
-        'https://lib.baomitu.com/KaTeX/0.16.9/',
-        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/'
-      ];
-      var i = 0;
-      function tryNext() {
-        if (i >= cdns.length) {
-          console.warn('All KaTeX CDNs failed, using fallback renderer');
-          window.__KATEX_FAILED__ = true;
-          return;
-        }
-        var url = cdns[i++];
-        var css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = url + 'katex.min.css';
-        css.onerror = tryNext;
-        document.head.appendChild(css);
-        var s1 = document.createElement('script');
-        s1.src = url + 'katex.min.js';
-        s1.onerror = tryNext;
-        s1.onload = function() {
-          var s2 = document.createElement('script');
-          s2.src = url + 'contrib/auto-render.min.js';
-          s2.onerror = tryNext;
-          s2.onload = function() { console.log('KaTeX loaded from CDN:', url); };
-          document.head.appendChild(s2);
-        };
-        document.head.appendChild(s1);
-      }
-      tryNext();
-    })();
-  </script>
+  <script src="./cancri_katex_fallback.js?v=0504"></script>
 </head>
 <body>
   <!-- 登录遮罩层：未登录时覆盖整个页面 -->
@@ -182,6 +135,12 @@
             <span class="grow"></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
           </div>
+          <div class="popover-item" id="nicknameEditBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>昵称</span>
+            <span class="grow"></span>
+            <span id="nicknameDisplay" style="font-size:12px;color:var(--text-soft);"></span>
+          </div>
           <div class="popover-sep"></div>
           <div class="popover-item" id="themeShortcutBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="M2 12h4"></path><path d="m6.3 17.7 2.8-2.8"></path><path d="M12 18v4"></path><path d="m17.7 17.7-2.8-2.8"></path><path d="M18 12h4"></path><path d="m17.7 6.3-2.8 2.8"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
@@ -224,7 +183,7 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
             <div class="arena-mode-dropdown" id="topArenaModeDropdown">
-              <button class="arena-mode-option active" data-mode="battle" type="button">
+              <button class="arena-mode-option active" data-mode="anonymous" type="button">
                 <span class="arena-mode-symbol">⚔</span>
                 <span><strong>匿名对战</strong><small>两个匿名模型同题回答</small></span>
               </button>
@@ -232,7 +191,7 @@
                 <span class="arena-mode-symbol">◎</span>
                 <span><strong>双模型对话</strong><small>比较你选择的两个模型</small></span>
               </button>
-              <button class="arena-mode-option" data-mode="direct" type="button">
+              <button class="arena-mode-option" data-mode="single" type="button">
                 <span class="arena-mode-symbol">○</span>
                 <span><strong>单模型</strong><small>一次只和一个模型聊天</small></span>
               </button>
@@ -876,8 +835,8 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=arena-host-0503"></script>
-  <script src="./cancri_announcement.js?v=announcement-module-0503"></script>
-  <script src="./cancri_arena.js?v=arena-module-0503"></script>
+  <script src="./cancri_chat.js?v=arena-host-0504"></script>
+  <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
+  <script src="./cancri_arena.js?v=arena-module-0504"></script>
 </body>
 </html>

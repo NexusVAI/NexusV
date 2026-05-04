@@ -10,6 +10,7 @@
   const {
     state,
     MODEL_CATALOG,
+    ARENA_MODELS,
     EDGE_FUNCTION_URL,
     FETCH_TIMEOUT_MS,
     CHAT_TURN_TIMEOUT_MS,
@@ -20,6 +21,7 @@
     renderMarkdown,
     escapeHtml,
     getModelDisplayName,
+    getLeaderboardRowMeta,
     showToast,
     getModelRequestOptions,
     mergeToolCallDeltas,
@@ -47,7 +49,9 @@
   let currentArenaMatch = null;
   state.isArenaRunning = false;
 
-  const arenaModels = Array.isArray(MODEL_CATALOG) ? MODEL_CATALOG.filter(model => model && model.id && !String(model.id).startsWith('image-')) : [];
+  const arenaModels = Array.isArray(ARENA_MODELS)
+    ? ARENA_MODELS
+    : (Array.isArray(MODEL_CATALOG) ? MODEL_CATALOG.filter(model => model && model.id && model.visible !== false && model.enabled !== false && model.arena !== false && !String(model.id).startsWith('image-')) : []);
 
   function getModelIdFromInput(input) {
     const value = String(input?.value || '').trim();
@@ -55,7 +59,7 @@
     const exact = arenaModels.find(model => model.id === value || model.displayName === value);
     if (exact) return exact.id;
     const lowered = value.toLowerCase();
-    const fuzzy = arenaModels.find(model => String(model.id).toLowerCase().includes(lowered) || String(model.displayName || '').toLowerCase().includes(lowered));
+    const fuzzy = arenaModels.find(model => [model.id, model.displayName, model.brand, model.canonicalId, model.lineLabel].some(item => String(item || '').toLowerCase().includes(lowered)));
     return fuzzy ? fuzzy.id : '';
   }
 
@@ -72,7 +76,7 @@
   function initArenaModelOptions() {
     if (!arenaModelOptions) return;
     arenaModelOptions.innerHTML = arenaModels.map(model => {
-      const label = `${model.displayName || model.id} · ${model.id}`;
+      const label = [model.displayName || model.id, model.lineLabel, model.brand].filter(Boolean).join(' · ');
       return `<option value="${escapeHtml(model.id)}" label="${escapeHtml(label)}"></option>`;
     }).join('');
     if (arenaModelSearchA && !arenaModelSearchA.value && arenaModels[0]) arenaModelSearchA.value = arenaModels[0].id;
@@ -245,17 +249,14 @@
     return { reasoning, content, toolCalls };
   }
 
-  async function streamArenaSlot(matchId, slot, prompt, target, modelId) {
+  async function streamArenaSlot(matchId, slot, prompt, target, modelId, turnId = '') {
     let reasoningText = '';
     let answerText = '';
     let doneReasoning = false;
     const toolCalls = [];
-    const turnId = createChatTurnId();
+    const effectiveTurnId = turnId || createChatTurnId();
     renderArenaText(target, '', true);
-    const messages = [
-      { role: 'system', content: '你正在参加匿名 AI 竞技场。请直接回答用户问题，不要透露或猜测自己的模型身份，不要提及评分规则。回答应清晰、有帮助、适度简洁。' },
-      { role: 'user', content: prompt }
-    ];
+    const messages = [{ role: 'user', content: prompt }];
     const requestOptions = modelId ? getModelRequestOptions(modelId) : {};
 
     const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
@@ -268,7 +269,11 @@
         messages,
         stream: true,
         temperature: 0.6,
-        client_turn_id: turnId,
+        client_turn_id: effectiveTurnId,
+        request_kind: 'arena_model_answer',
+        arena_match_id: matchId,
+        arena_slot: slot,
+        arena_mode: currentArenaMatch?.mode || 'anonymous',
         ...requestOptions
       })
     }, CHAT_TURN_TIMEOUT_MS, '竞技场模型请求');
@@ -327,8 +332,13 @@
       thinking: false,
       toolCalls: toolCalls.length ? toolCalls : undefined
     });
-    await arenaApi('arena_record_response', { id: matchId, slot, response: answerText || '' });
     return answerText;
+  }
+
+  function getArenaSlotTurnId(match, slot) {
+    const slots = Array.isArray(match?.slots) ? match.slots : [];
+    const found = slots.find(item => item && item.slot === slot);
+    return String(found?.turn_id || found?.client_turn_id || '');
   }
 
   function formatArenaUpdatedAt(value) {
@@ -359,6 +369,74 @@
     return details ? ' Elo：' + details : '';
   }
 
+  async function streamSingleArenaChat(prompt, target, modelId, turnId = '') {
+    let reasoningText = '';
+    let answerText = '';
+    const toolCalls = [];
+    const effectiveTurnId = turnId || createChatTurnId();
+    renderArenaText(target, '', true);
+    const requestOptions = modelId ? getModelRequestOptions(modelId) : {};
+    const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: await proxyHeaders(),
+      body: JSON.stringify({
+        endpoint: 'chat',
+        model: modelId,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true,
+        temperature: 0.6,
+        client_turn_id: effectiveTurnId,
+        request_kind: 'single_model_answer',
+        ...requestOptions
+      })
+    }, CHAT_TURN_TIMEOUT_MS, '单模型请求');
+    const errorText = response.ok ? '' : await response.text().catch(() => '');
+    if (!response.ok) {
+      const parsed = parseBackendErrorPayload(errorText);
+      throw new Error(parsed.message || errorText || '单模型请求失败');
+    }
+    if (!response.body) throw new Error('单模型没有返回数据流');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const chunk = parseArenaStreamDelta(JSON.parse(payload));
+          if (chunk.reasoning) reasoningText += chunk.reasoning;
+          if (chunk.content) answerText += chunk.content;
+          if (chunk.toolCalls) mergeToolCallDeltas(toolCalls, chunk.toolCalls);
+          renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true, toolCalls: toolCalls.length ? toolCalls : undefined });
+        } catch { continue; }
+      }
+    }
+    if (buffer.trim().startsWith('data: ')) {
+      const payload = buffer.trim().slice(6).trim();
+      if (payload && payload !== '[DONE]') {
+        try {
+          const tailChunk = parseArenaStreamDelta(JSON.parse(payload));
+          if (tailChunk.reasoning) reasoningText += tailChunk.reasoning;
+          if (tailChunk.content) answerText += tailChunk.content;
+        } catch { void 0; }
+      }
+    }
+    renderArenaText(target, {
+      reasoning: reasoningText,
+      answer: answerText || '这个模型没有返回有效内容。',
+      thinking: false,
+      toolCalls: toolCalls.length ? toolCalls : undefined
+    });
+    return answerText;
+  }
+
   async function loadArenaLeaderboard() {
     if (!arenaLeaderboardList) return;
     try {
@@ -369,12 +447,16 @@
         return;
       }
       arenaLeaderboardList.innerHTML = rows.map(function (row, index) {
-        const name = getModelDisplayName(row.model_id);
+        const rowMeta = typeof getLeaderboardRowMeta === 'function'
+          ? getLeaderboardRowMeta(row)
+          : { displayName: row.display_name || getModelDisplayName(row.best_line_model_id || row.model_id), brand: row.brand || '', lineLabel: row.line_label || '' };
+        const name = rowMeta.displayName;
+        const detail = [rowMeta.brand, rowMeta.lineLabel ? `最高线路：${rowMeta.lineLabel}` : ''].filter(Boolean).join(' · ');
         const total = Number(row.total_votes || 0);
         const rate = Number(row.win_rate || 0);
         const elo = Number(row.elo_score || 1000).toFixed(0);
         const updated = formatArenaUpdatedAt(row.updated_at);
-        return '<div class="arena-leaderboard-row"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><span>Elo ' + elo + ' · ' + total + ' 有效票 · 胜率 ' + rate + '%' + updated + '</span></div>';
+        return '<div class="arena-leaderboard-row"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><span>' + escapeHtml(detail ? detail + ' · ' : '') + 'Elo ' + elo + ' · ' + total + ' 有效票 · 胜率 ' + rate + '%' + updated + '</span></div>';
       }).join('');
     } catch (error) {
       arenaLeaderboardList.textContent = '排行榜暂时加载失败。';
@@ -404,25 +486,40 @@
     setArenaStatus(mode === 'single' ? '正在启动单模型…' : '正在创建对战，并启动模型…');
 
     try {
-      const result = await arenaApi('arena_create_match', { prompt, mode, model_a: modelA, model_b: modelB }, FETCH_TIMEOUT_MS);
-      const match = result.data;
-      currentArenaMatch = { id: match.id, prompt: prompt, ready: false, voted: mode === 'single', reveal: null, mode };
-      setArenaBusy(true);
+      const arenaTurnId = createChatTurnId();
       if (mode === 'single') {
-        const answerA = await streamArenaSlot(match.id, 'a', prompt, arenaAnswerA, modelA);
-        currentArenaMatch.ready = true;
+        currentArenaMatch = { id: '', prompt: prompt, ready: true, voted: true, reveal: null, mode, turnId: arenaTurnId };
+        const answerA = await streamSingleArenaChat(prompt, arenaAnswerA, modelA, arenaTurnId);
         if (arenaVoteRow) arenaVoteRow.hidden = true;
         setArenaStatus(answerA ? '单模型回答完成。' : '单模型没有返回有效内容。');
         return;
       }
-      if (arenaVoteRow) arenaVoteRow.hidden = false;
+      const createPayload = mode === 'anonymous'
+        ? { prompt, mode, request_kind: 'arena_create_match' }
+        : { prompt, mode, model_a: modelA, model_b: modelB, request_kind: 'arena_create_match' };
+      const result = await arenaApi('arena_create_match', createPayload, FETCH_TIMEOUT_MS);
+      const match = result.data;
+      currentArenaMatch = { id: match.id, prompt: prompt, ready: false, voted: mode === 'single', reveal: null, mode, turnId: arenaTurnId };
+      setArenaBusy(true);
+      const slotTurnA = getArenaSlotTurnId(match, 'a') || arenaTurnId;
+      const slotTurnB = getArenaSlotTurnId(match, 'b') || arenaTurnId;
+      if (arenaVoteRow) arenaVoteRow.hidden = true;
       const [answerA, answerB] = await Promise.allSettled([
-        streamArenaSlot(match.id, 'a', prompt, arenaAnswerA, mode !== 'anonymous' ? modelA : ''),
-        streamArenaSlot(match.id, 'b', prompt, arenaAnswerB, mode !== 'anonymous' ? modelB : '')
+        streamArenaSlot(match.id, 'a', prompt, arenaAnswerA, mode !== 'anonymous' ? modelA : '', slotTurnA),
+        streamArenaSlot(match.id, 'b', prompt, arenaAnswerB, mode !== 'anonymous' ? modelB : '', slotTurnB)
       ]);
       if (answerA.status === 'rejected') renderArenaText(arenaAnswerA, '请求失败：' + (answerA.reason ? answerA.reason.message : answerA.reason), false);
       if (answerB.status === 'rejected') renderArenaText(arenaAnswerB, '请求失败：' + (answerB.reason ? answerB.reason.message : answerB.reason), false);
+      const answerAText = answerA.status === 'fulfilled' ? String(answerA.value || '').trim() : '';
+      const answerBText = answerB.status === 'fulfilled' ? String(answerB.value || '').trim() : '';
+      if (!answerAText || !answerBText) {
+        currentArenaMatch.ready = false;
+        if (arenaVoteRow) arenaVoteRow.hidden = true;
+        setArenaStatus('A/B 有一侧未返回有效内容，本轮不开放投票。');
+        return;
+      }
       currentArenaMatch.ready = true;
+      if (arenaVoteRow) arenaVoteRow.hidden = false;
       setArenaStatus(mode === 'anonymous' ? '回答完成。请选择你认为更好的回答，投票后会揭晓模型。' : '回答完成。请选择你认为更好的回答。');
     } catch (error) {
       currentArenaMatch = null;

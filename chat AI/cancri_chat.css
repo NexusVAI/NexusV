@@ -430,6 +430,7 @@
   .recent-wrap::-webkit-scrollbar, .settings-scroll::-webkit-scrollbar, .images-scroll::-webkit-scrollbar { width:6px; }
   .recent-wrap::-webkit-scrollbar-thumb, .settings-scroll::-webkit-scrollbar-thumb, .images-scroll::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:999px; }
   .recent-wrap::-webkit-scrollbar-thumb:hover, .settings-scroll::-webkit-scrollbar-thumb:hover, .images-scroll::-webkit-scrollbar-thumb:hover { background:var(--text-dim); }
+  .recent-placeholder { padding:12px 8px; font-size:13px; color:var(--text-dim); background:transparent; box-shadow:none; filter:none; text-shadow:none; }
   .recent-item { height:28px; display:flex; align-items:center; padding:0 8px; border-radius:8px; font-size:12.8px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; position:relative; min-width:0; }
   .recent-item:hover { background:var(--hover); }
   .recent-item-pinned { background:var(--accent-soft); color:var(--accent); }
@@ -930,7 +931,28 @@
   .model-speed-dot.speed-unknown { background: var(--text-dim); opacity: 0.4; }
   .model-speed-dot.speed-error { background: #ef4444; opacity: 0.6; }
 
+  .model-group-header {
+    padding: 10px 10px 4px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
   .model-label { display:flex; align-items:center; gap:6px; }
+  .model-label-stack {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .model-label-subtext {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 500;
+  }
   .model-option-icon { width:20px; height:20px; flex-shrink:0; object-fit:contain; }
 
   .model-tag {
@@ -2066,17 +2088,18 @@
   }
 
   .think-block.is-thinking .think-label {
-    background: linear-gradient(90deg, var(--text-dim) 0%, var(--text-soft) 35%, var(--text) 50%, var(--text-soft) 65%, var(--text-dim) 100%);
-    background-size: 260% 100%;
+    background: linear-gradient(90deg, var(--text-dim) 0%, var(--text-dim) 34%, var(--text) 50%, var(--text-dim) 66%, var(--text-dim) 100%);
+    background-size: 200% 100%;
+    background-repeat: repeat-x;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: thinkTextShimmer 1.8s linear infinite;
+    animation: thinkTextShimmer 1.65s linear infinite;
   }
 
   @keyframes thinkTextShimmer {
-    0%   { background-position: 100% 0; }
-    100% { background-position: -100% 0; }
+    0% { background-position: 200% 0; }
+    100% { background-position: 0 0; }
   }
 
   .think-caret {
@@ -4278,6 +4301,41 @@
       color: #ef4444;
       border-color: #ef4444;
       background: rgba(239,68,68,.1);
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
+    .duel-message {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .duel-grid {
+      width: 100%;
+      max-width: none;
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: visible;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      padding: 0 18px 18px;
+    }
+
+    .duel-grid::-webkit-scrollbar {
+      display: none;
+    }
+
+    .duel-card {
+      flex: 0 0 min(520px, calc(100vw - 96px));
+      scroll-snap-align: center;
+    }
+
+    .duel-vote-row {
+      flex: 0 0 calc(100% - 36px);
+      scroll-snap-align: center;
     }
   }
 
