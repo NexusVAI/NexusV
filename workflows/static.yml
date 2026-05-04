@@ -39,6 +39,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import re
           import sys
           from pathlib import Path
 
@@ -53,23 +54,23 @@ jobs:
 
           target = Path("chat AI/cancri_chat_ui_v_3.html")
           html = target.read_text(encoding="utf-8")
-          html = html.replace(
-              "window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || '';",
+          html, url_count = re.subn(
+              r"window\.__SUPABASE_URL__\s*=\s*[^;]+;",
               f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
+              html,
+              count=1,
           )
-          html = html.replace(
-              "window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';",
-              f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
-          )
-          html = html.replace(
-              "window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || '';",
+          html, key_count = re.subn(
+              r"window\.__SUPABASE_ANON_KEY__\s*=\s*[^;]+;",
               f"window.__SUPABASE_ANON_KEY__ = {json.dumps(supabase_anon_key)};",
+              html,
+              count=1,
           )
-          if "window.__SUPABASE_URL__ = window.__SUPABASE_URL__ || '';" in html:
-              print("::error::SUPABASE_URL placeholder was not replaced")
+          if url_count != 1:
+              print("::error::SUPABASE_URL assignment was not replaced")
               sys.exit(1)
-          if "window.__SUPABASE_ANON_KEY__ = window.__SUPABASE_ANON_KEY__ || '';" in html:
-              print("::error::SUPABASE_ANON_KEY placeholder was not replaced")
+          if key_count != 1:
+              print("::error::SUPABASE_ANON_KEY assignment was not replaced")
               sys.exit(1)
           target.write_text(html, encoding="utf-8")
           PY
@@ -92,7 +93,14 @@ jobs:
 
           src = Path("chat AI")
           dst = Path("pages-dist/chat AI")
-          for name in ["cancri_chat_ui_v_3.html", "cancri_chat.css", "cancri_chat.js"]:
+          for name in [
+              "cancri_chat_ui_v_3.html",
+              "cancri_chat.css",
+              "cancri_chat.js",
+              "cancri_announcement.js",
+              "cancri_arena.css",
+              "cancri_arena.js",
+          ]:
               shutil.copy2(src / name, dst / name)
           for svg in src.glob("*.svg"):
               shutil.copy2(svg, dst / svg.name)
@@ -107,6 +115,10 @@ jobs:
           fi
           if grep -R -n -E 'dashscope|modelscope|siliconflow|pingUrl|线路|供应商|官方API' "pages-dist/chat AI"; then
             echo "::error::ChatAI frontend contains route/provider material"
+            exit 1
+          fi
+          if find pages-dist \( -path '*/supabase/*' -o -path '*/后端/*' -o -path '*/备份/*' -o -path '*/.github/*' -o -path '*/supabase-cli/*' \) -print -quit | grep -q .; then
+            echo "::error::Pages artifact contains private deployment or backup paths"
             exit 1
           fi
       - name: Upload artifact

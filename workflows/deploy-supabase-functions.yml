@@ -33,6 +33,8 @@ jobs:
         env:
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           CHAT_AUTH_SECRET: ${{ secrets.CHAT_AUTH_SECRET }}
+          BANNED_USER_IDS: ${{ secrets.BANNED_USER_IDS }}
+          BLOCKED_USER_IDS: ${{ secrets.BLOCKED_USER_IDS }}
           MODELSCOPE_API_KEY: ${{ secrets.MODELSCOPE_API_KEY }}
           MODELSCOPE_API_KEY_1: ${{ secrets.MODELSCOPE_API_KEY_1 }}
           MODELSCOPE_API_KEY_2: ${{ secrets.MODELSCOPE_API_KEY_2 }}
@@ -53,6 +55,9 @@ jobs:
           NEWAPI_BASE_URL: ${{ secrets.NEWAPI_BASE_URL }}
           NEWAPI_API_KEY: ${{ secrets.NEWAPI_API_KEY }}
           NEWAPI_API_KEY_2: ${{ secrets.NEWAPI_API_KEY_2 }}
+          FUTUREPPO_BASE_URL: ${{ secrets.FUTUREPPO_BASE_URL }}
+          FUTUREPPO_API_KEY: ${{ secrets.FUTUREPPO_API_KEY }}
+          FUTUREPPO_GEMMA_API_KEY: ${{ secrets.FUTUREPPO_GEMMA_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -83,6 +88,8 @@ jobs:
             "ALLOWED_ORIGINS=$ALLOWED_ORIGINS"
 
           set_secret_if_present CHAT_AUTH_SECRET
+          set_secret_if_present BANNED_USER_IDS
+          set_secret_if_present BLOCKED_USER_IDS
 
           set_secret_if_present MODELSCOPE_API_KEY
           set_secret_if_present MODELSCOPE_API_KEY_1
@@ -104,6 +111,9 @@ jobs:
           set_secret_if_present NEWAPI_BASE_URL
           set_secret_if_present NEWAPI_API_KEY
           set_secret_if_present NEWAPI_API_KEY_2
+          set_secret_if_present FUTUREPPO_BASE_URL
+          set_secret_if_present FUTUREPPO_API_KEY
+          set_secret_if_present FUTUREPPO_GEMMA_API_KEY
 
       - name: Push database migrations
         env:
@@ -115,6 +125,19 @@ jobs:
             exit 1
           fi
           supabase db push --project-ref "$PROJECT_ID"
+
+      - name: Guard deploy flags
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          workflow = Path("../../.github/workflows/deploy-supabase-functions.yml")
+          needle = "--" + "no-verify-jwt"
+          for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
+              stripped = line.strip()
+              if stripped.startswith("supabase functions deploy") and needle in stripped:
+                  print(f"::error file=.github/workflows/deploy-supabase-functions.yml,line={line_number}::Do not deploy edge functions with {needle}")
+                  raise SystemExit(1)
+          PY
 
       - name: Deploy edge functions
         run: |
