@@ -41,13 +41,14 @@ function getAllowedOrigin(req: Request): string | null {
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
-  return {
-    'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept, origin, x-chat-turn-id',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'modelscope-ratelimit-requests-limit, modelscope-ratelimit-requests-remaining, modelscope-ratelimit-model-requests-limit, modelscope-ratelimit-model-requests-remaining',
   }
+  if (origin) headers['Access-Control-Allow-Origin'] = origin
+  return headers
 }
 
 const abuseMap = new Map<string, { count: number; resetAt: number; lastAt: number; rapidHits: number; challengeUntil: number; blockedUntil: number }>()
@@ -63,7 +64,19 @@ const MODEL_UNAVAILABLE_FAILURE_LIMIT = 3
 const modelAvailabilityMap = new Map<string, { failures: number; resetAt: number; blockedUntil: number }>()
 const turnUsageMap = new Map<string, { count: number; resetAt: number; counted: boolean; blockedUntil: number }>()
 const TURN_USAGE_TTL_MS = 15 * 60_000
-const MAX_MODEL_CALLS_PER_TURN = 18
+const TURN_LIMITS: Record<string, number> = {
+  direct_chat: 18,
+  tool_followup_chat: 32,
+  compare_model_answer: 4,
+  arena_model_answer: 4,
+  arena_create_match: 4,
+  tool_call: 12,
+}
+const DEFAULT_TURN_LIMIT = 18
+
+function getTurnCallLimit(requestKind: string): number {
+  return TURN_LIMITS[requestKind] ?? DEFAULT_TURN_LIMIT
+}
 
 interface RequestContext {
   service: string
@@ -255,6 +268,7 @@ function enforceTurnAwareAbuseGuard(
   ctx: RequestContext,
   ch: Record<string, string>,
   turnId: string,
+  requestKind: string,
   options: { ignoreSpeed?: boolean } = {}
 ): Response | null {
   const cleanTurnId = cleanHeader(turnId).slice(0, 96)
@@ -281,10 +295,11 @@ function enforceTurnAwareAbuseGuard(
   }
 
   entry.count += 1
-  if (entry.count > MAX_MODEL_CALLS_PER_TURN) {
+  const turnLimit = getTurnCallLimit(requestKind)
+  if (entry.count > turnLimit) {
     entry.blockedUntil = now + CHALLENGE_DURATION_MS
     turnUsageMap.set(key, entry)
-    logSecurityEvent('turn_call_limit', ctx, { turnId: maskIdentifier(cleanTurnId), count: entry.count, retryAfter: Math.ceil(CHALLENGE_DURATION_MS / 1000) })
+    logSecurityEvent('turn_call_limit', ctx, { turnId: maskIdentifier(cleanTurnId), requestKind, count: entry.count, limit: turnLimit, retryAfter: Math.ceil(CHALLENGE_DURATION_MS / 1000) })
     return jsonResponse({
       error: 'challenge_required',
       code: 'challenge_required',
@@ -320,18 +335,35 @@ function getModelBlock(model: string): { retryAfter: number } | null {
   return { retryAfter: Math.ceil((entry.blockedUntil - now) / 1000) }
 }
 
-function isModelUnavailableStatus(status: number): boolean {
+function isTemporaryUnavailableText(status: number, text: string): boolean {
+  const value = String(text || '').replace(/\s+/g, ' ').trim()
+  if (!value) return false
+  const lower = value.toLowerCase()
+  const apiIncompatible = lower.includes('does not support the chat_completions api')
+  const modelMissing = lower.includes('does not exist or you do not have access')
+  const invalidToken = lower.includes('invalid token')
+  const exhausted = /free tier[\s\S]{0,80}exhausted/i.test(value)
+  const chineseQuota = value.includes('用户额度不足') || value.includes('模型额度已超')
+
+  if (status === 400) return apiIncompatible || modelMissing
+  if (status === 403) return modelMissing || invalidToken || exhausted || chineseQuota
+  return apiIncompatible || modelMissing || invalidToken || exhausted || chineseQuota
+}
+
+function isModelUnavailableStatus(status: number, text = ''): boolean {
+  if (status === 400 || status === 403) return isTemporaryUnavailableText(status, text)
+  if (isTemporaryUnavailableText(status, text)) return true
   return status === 404 || status === 409 || status === 410 || status === 424 || status === 500 || status === 502 || status === 503 || status === 504
 }
 
-function recordModelAvailability(model: string, status: number, ctx: RequestContext): void {
+function recordModelAvailability(model: string, status: number, ctx: RequestContext, upstreamText = ''): void {
   if (!model) return
   const now = Date.now()
   if (status >= 200 && status < 300) {
     modelAvailabilityMap.delete(model)
     return
   }
-  if (!isModelUnavailableStatus(status)) return
+  if (!isModelUnavailableStatus(status, upstreamText)) return
   const entry = modelAvailabilityMap.get(model) || { failures: 0, resetAt: now + MODEL_UNAVAILABLE_WINDOW_MS, blockedUntil: 0 }
   if (now > entry.resetAt) {
     entry.failures = 0
@@ -343,6 +375,20 @@ function recordModelAvailability(model: string, status: number, ctx: RequestCont
     logSecurityEvent('model_blocked', ctx, { model, status, retryAfter: Math.ceil(MODEL_UNAVAILABLE_BLOCK_MS / 1000) })
   }
   modelAvailabilityMap.set(model, entry)
+}
+
+function extractUpstreamErrorText(data: unknown): string {
+  if (!data) return ''
+  if (typeof data === 'string') return data
+  if (typeof data !== 'object') return ''
+  const value = data as Record<string, unknown>
+  const pieces: string[] = []
+  for (const key of ['error', 'message', 'detail', 'code']) {
+    const item = value[key]
+    if (typeof item === 'string') pieces.push(item)
+    else if (item && typeof item === 'object') pieces.push(extractUpstreamErrorText(item))
+  }
+  return pieces.filter(Boolean).join(' ')
 }
 
 function modelBlockedResponse(model: string, retryAfter: number, ch: Record<string, string>): Response {
@@ -403,66 +449,82 @@ const GEMINI3_MODEL_PREFIX = 'gemini3:'
 
 type ProviderKind = 'modelscope' | 'openai_compatible' | 'moonshot' | 'dashscope' | 'siliconflow' | 'openrouter' | 'spark' | 'mimo' | 'newapi' | 'futureppo' | 'gemini3'
 
-const PUBLIC_MODEL_ROUTES: Record<string, string> = {
-  'deepseek-v4-flash': 'deepseek-v4-flash',
-  'deepseek-v4-pro': 'deepseek-ai/DeepSeek-V4-Pro',
-  'deepseek-v4-pro-alt': 'deepseek-v4-pro-dashscope',
-  'grok-4.20-fast': `${FUTUREPPO_MODEL_PREFIX}grok-4.20-fast`,
-  'grok-code-fast-1': `${FUTUREPPO_MODEL_PREFIX}grok-code-fast-1`,
-  'minimax-m2.7': `${FUTUREPPO_MODEL_PREFIX}minimax-m2.7`,
-  'gemini-3.1-flash-lite-preview': `${FUTUREPPO_MODEL_PREFIX}gemini-3.1-flash-lite-preview`,
-  'gemini-3-flash-preview': `${FUTUREPPO_MODEL_PREFIX}gemini-3-flash-preview`,
-  'gemma-4-31b-chat': `${FUTUREPPO_MODEL_PREFIX}gemma-4-31b-chat`,
-  'step-3.5-flash': 'stepfun-ai/Step-3.5-Flash',
-  'hy3-preview': 'tencent/hy3-preview:free',
-  'gpt-oss-120b': 'openai/gpt-oss-120b:free',
-  'gpt-5.4': 'gpt-5.4',
-  'claude-opus-4.6': 'claude-opus-4.6',
-  'claude-sonnet-4.6': `${FUTUREPPO_MODEL_PREFIX}claude-sonnet-4-6`,
-  'gemini-2.5-pro': 'gemini-2.5-pro',
-  'nemotron-3-super': 'nvidia/nemotron-3-super-120b-a12b:free',
-  'ling-2.6-1t': 'inclusionai/ling-2.6-1t:free',
-  'ling-2.6-1t-alt': 'inclusionAI/Ling-2.6-1T',
-  'spark-x2': 'spark-x',
-  'deepseek-r1': 'deepseek-r1',
-  'qwen3.5': 'Qwen/Qwen3.5-397B-A17B',
-  'qwen3-coder': 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
-  'kimi-k2.5': 'moonshotai/Kimi-K2.5',
-  'kimi-k2.6': 'kimi-k2.6',
-  'kimi-k2.6-alt': 'kimi-k2.6-moonshot',
-  'kimi-k2.6-extended': 'kimi-k2.6-line3',
-  'glm-5': 'glm-5',
-  'glm-5.1': 'ZhipuAI/GLM-5.1',
-  'glm-5.1-alt': 'glm-5.1-dashscope',
-  'glm-4.7': 'glm-4.7',
-  'qwen3.6-max-preview': 'qwen3.6-max-preview',
-  'qwen3.6-plus': 'qwen3.6-plus',
-  'minimax-m2.5': 'MiniMax/MiniMax-M2.5',
-  'qwen3.6-flash': 'qwen3.6-flash',
-  'kimi-k2.5-alt': 'kimi-k2.5-dashscope',
-  'deepseek-v3.2': 'deepseek-v3.2',
-  'deepseek-v3.2-exp': 'deepseek-v3.2-exp',
-  'glm-4.5-air': 'glm-4.5-air',
-  'minimax-m2.5-alt': 'minimax-m2.5-dashscope',
-  'deepseek-v3.1': 'deepseek-v3.1',
-  'qwen3-coder-plus': 'qwen3-coder-plus',
-  'qwen3-max': 'qwen3-max',
-  'kimi-k2-instruct': 'kimi-k2-instruct',
-  'qwen3.6-plus-20260402': 'qwen3.6-plus-20260402',
-  'deepseek-r1-0528': 'deepseek-r1-0528',
-  'mimo-v2.5-pro': 'mimo-v2.5-pro',
-  'mimo-v2.5-tts': 'mimo-v2.5-tts',
-  'mimo-v2.5-tts-voicedesign': 'mimo-v2.5-tts-voicedesign',
-  'gemini-3.0-flash-high': `${GEMINI3_MODEL_PREFIX}gemini-3.0-flash-high`,
-  'glm-5v-turbo': `${FUTUREPPO_MODEL_PREFIX}glm-5v-turbo`,
-  'image-fast': 'Tongyi-MAI/Z-Image-Turbo',
-  'image-precise': `${FUTUREPPO_MODEL_PREFIX}gpt-image-2`,
-  'gpt-image-2': `${FUTUREPPO_MODEL_PREFIX}gpt-image-2`,
+type PublicModelRoute = {
+  upstreamId: string
+  brand: string
+  canonicalId: string
+  lineLabel: string
+  visible: boolean
+  enabled: boolean
+  arena: boolean
+}
+
+const PUBLIC_MODEL_ROUTES: Record<string, PublicModelRoute> = {
+  'deepseek-v4-flash': { upstreamId: 'deepseek-v4-flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'deepseek-v4-pro': { upstreamId: 'deepseek-ai/DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: false, enabled: true, arena: false },
+  'deepseek-v4-pro-alt': { upstreamId: 'deepseek-v4-pro-dashscope', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: false, enabled: true, arena: false },
+  'grok-4.20-fast': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}grok-4.20-fast`, brand: 'Grok', canonicalId: 'grok-4.20-fast', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'grok-code-fast-1': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}grok-code-fast-1`, brand: 'Grok', canonicalId: 'grok-code-fast-1', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'minimax-m2.7': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}minimax-m2.7`, brand: 'MiniMax', canonicalId: 'minimax-m2.7', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'gemini-3.1-flash-lite-preview': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}gemini-3.1-flash-lite-preview`, brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'gemini-3-flash-preview': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}gemini-3-flash-preview`, brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'gemma-4-31b-chat': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}gemma-4-31b-chat`, brand: 'Google', canonicalId: 'gemma-4-31b-chat', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'step-3.5-flash': { upstreamId: 'stepfun-ai/Step-3.5-Flash', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'hy3-preview': { upstreamId: 'tencent/hy3-preview:free', brand: '腾讯混元', canonicalId: 'hy3-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'gpt-oss-120b': { upstreamId: 'openai/gpt-oss-120b:free', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'gpt-5.4': { upstreamId: 'gpt-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'claude-opus-4.6': { upstreamId: 'claude-opus-4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4.6', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'claude-sonnet-4.6': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}claude-sonnet-4-6`, brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4.6', lineLabel: '线路一', visible: false, enabled: true, arena: false },
+  'gemini-2.5-pro': { upstreamId: 'gemini-2.5-pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'nemotron-3-super': { upstreamId: 'nvidia/nemotron-3-super-120b-a12b:free', brand: 'NVIDIA Nemotron', canonicalId: 'nemotron-3-super', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'ling-2.6-1t': { upstreamId: 'inclusionai/ling-2.6-1t:free', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'ling-2.6-1t-alt': { upstreamId: 'inclusionAI/Ling-2.6-1T', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路二', visible: true, enabled: true, arena: false },
+  'spark-x2': { upstreamId: 'spark-x', brand: '讯飞星火', canonicalId: 'spark-x2', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'deepseek-r1': { upstreamId: 'deepseek-r1', brand: 'DeepSeek', canonicalId: 'deepseek-r1', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'qwen3.5': { upstreamId: 'Qwen/Qwen3.5-397B-A17B', brand: '通义千问', canonicalId: 'qwen3.5', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'qwen3-coder': { upstreamId: 'Qwen/Qwen3-Coder-480B-A35B-Instruct', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'kimi-k2.5': { upstreamId: 'moonshotai/Kimi-K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'kimi-k2.6': { upstreamId: 'kimi-k2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'kimi-k2.6-alt': { upstreamId: 'kimi-k2.6-moonshot', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路二', visible: true, enabled: true, arena: false },
+  'kimi-k2.6-extended': { upstreamId: 'kimi-k2.6-line3', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路三', visible: true, enabled: true, arena: false },
+  'glm-5': { upstreamId: 'glm-5', brand: '智谱 GLM', canonicalId: 'glm-5', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'glm-5.1': { upstreamId: 'ZhipuAI/GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'glm-5.1-alt': { upstreamId: 'glm-5.1-dashscope', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false },
+  'glm-4.7': { upstreamId: 'glm-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'qwen3.6-max-preview': { upstreamId: 'qwen3.6-max-preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'qwen3.6-plus': { upstreamId: 'qwen3.6-plus', brand: '通义千问', canonicalId: 'qwen3.6-plus', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'minimax-m2.5': { upstreamId: 'MiniMax/MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'qwen3.6-flash': { upstreamId: 'qwen3.6-flash', brand: '通义千问', canonicalId: 'qwen3.6-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'kimi-k2.5-alt': { upstreamId: 'kimi-k2.5-dashscope', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路二', visible: true, enabled: true, arena: false },
+  'deepseek-v3.2': { upstreamId: 'deepseek-v3.2', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'deepseek-v3.2-exp': { upstreamId: 'deepseek-v3.2-exp', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2-exp', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'glm-4.5-air': { upstreamId: 'glm-4.5-air', brand: '智谱 GLM', canonicalId: 'glm-4.5-air', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'minimax-m2.5-alt': { upstreamId: 'minimax-m2.5-dashscope', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路二', visible: false, enabled: false, arena: false },
+  'deepseek-v3.1': { upstreamId: 'deepseek-v3.1', brand: 'DeepSeek', canonicalId: 'deepseek-v3.1', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'qwen3-coder-plus': { upstreamId: 'qwen3-coder-plus', brand: '通义千问', canonicalId: 'qwen3-coder-plus', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'qwen3-max': { upstreamId: 'qwen3-max', brand: '通义千问', canonicalId: 'qwen3-max', lineLabel: '线路一', visible: true, enabled: true, arena: true },
+  'kimi-k2-instruct': { upstreamId: 'kimi-k2-instruct', brand: 'Kimi', canonicalId: 'kimi-k2-instruct', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'qwen3.6-plus-20260402': { upstreamId: 'qwen3.6-plus-20260402', brand: '通义千问', canonicalId: 'qwen3.6-plus-20260402', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'deepseek-r1-0528': { upstreamId: 'deepseek-r1-0528', brand: 'DeepSeek', canonicalId: 'deepseek-r1-0528', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'mimo-v2.5-pro': { upstreamId: 'mimo-v2.5-pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false },
+  'mimo-v2.5-tts': { upstreamId: 'mimo-v2.5-tts', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-tts', lineLabel: '线路一', visible: false, enabled: true, arena: false },
+  'mimo-v2.5-tts-voicedesign': { upstreamId: 'mimo-v2.5-tts-voicedesign', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-tts-voicedesign', lineLabel: '线路一', visible: false, enabled: true, arena: false },
+  'gemini-3.0-flash-high': { upstreamId: `${GEMINI3_MODEL_PREFIX}gemini-3.0-flash-high`, brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'glm-5v-turbo': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}glm-5v-turbo`, brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false },
+  'image-fast': { upstreamId: 'Tongyi-MAI/Z-Image-Turbo', brand: 'Image', canonicalId: 'image-fast', lineLabel: '线路一', visible: false, enabled: true, arena: false },
+  'image-precise': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}gpt-image-2`, brand: 'Image', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: false, enabled: true, arena: false },
+  'gpt-image-2': { upstreamId: `${FUTUREPPO_MODEL_PREFIX}gpt-image-2`, brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路二', visible: false, enabled: true, arena: false },
+}
+
+function getPublicModelRoute(model: string): PublicModelRoute | null {
+  const clean = String(model || '').trim()
+  return PUBLIC_MODEL_ROUTES[clean] || null
 }
 
 function resolvePublicModelId(model: string): string {
-  const clean = String(model || '').trim()
-  return PUBLIC_MODEL_ROUTES[clean] || ''
+  const route = getPublicModelRoute(model)
+  if (!route || route.enabled === false) return ''
+  return route.upstreamId
 }
 
 function isOpenAICompatibleModel(model: string): boolean {
@@ -1300,12 +1362,21 @@ serve(async (req: Request) => {
     if (oversized) return oversized
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>))
-    const { endpoint = 'chat', client_turn_id: clientTurnId, turn_id: legacyTurnId, ...rawRequestData } = body
+    const { endpoint = 'chat', client_turn_id: clientTurnId, turn_id: legacyTurnId, request_kind: rawRequestKind, arena_mode: arenaMode, arena_slot: arenaSlot, arena_match_id: arenaMatchId, tool_name: toolName, tool_index: rawToolIndex, ...rawRequestData } = body
     const endpointName = cleanHeader(String(endpoint || 'chat'))
+    const requestKind = cleanHeader(String(rawRequestKind || 'direct_chat'))
+    const toolIndex = Number(rawToolIndex || 0)
     const requestedModel = String(rawRequestData.model || '').trim()
+    const publicRoute = requestedModel ? getPublicModelRoute(requestedModel) : null
     const model = requestedModel ? resolvePublicModelId(requestedModel) : ''
     if (requestedModel && !model) {
-      return jsonResponse({ error: 'Unknown model', code: 'unknown_model' }, 400, ch)
+      return jsonResponse({
+        error: 'invalid_model',
+        code: 'invalid_model',
+        reason: publicRoute ? 'disabled' : 'unknown',
+        canonical_id: publicRoute?.canonicalId || '',
+        message: 'The selected model is unavailable.',
+      }, 400, ch)
     }
     const requestData = model ? { ...rawRequestData, model } : rawRequestData
     const ctx = getRequestContext(req, 'modelscope-proxy', endpointName, model, authenticatedUserId)
@@ -1314,9 +1385,9 @@ serve(async (req: Request) => {
     const hasTurnId = Boolean(activeTurnId)
     const ignoreRapidSpeed = hasTurnId || endpointName === 'ping' || endpointName === 'task'
 
-    const abuseResponse = enforceTurnAwareAbuseGuard(ctx, ch, activeTurnId, { ignoreSpeed: ignoreRapidSpeed })
+    const abuseResponse = enforceTurnAwareAbuseGuard(ctx, ch, activeTurnId, requestKind, { ignoreSpeed: ignoreRapidSpeed })
     if (abuseResponse) return abuseResponse
-    logSecurityEvent('request_started', ctx, { method: req.method })
+    logSecurityEvent('request_started', ctx, { method: req.method, turnId: maskIdentifier(activeTurnId), requestKind, arenaMode: cleanHeader(String(arenaMode || '')), arenaSlot: cleanHeader(String(arenaSlot || '')), arenaMatchId: cleanHeader(String(arenaMatchId || '')), toolName: cleanHeader(String(toolName || '')), toolIndex })
 
     if (endpointName === 'altcha/challenge' || (req.method === 'GET' && req.url.includes('/altcha/challenge'))) {
       return handleAltchaChallenge(req)
@@ -1324,13 +1395,13 @@ serve(async (req: Request) => {
 
     if (endpointName === 'web_search') {
       const response = await handleWebSearchRequest(requestData, req)
-      logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt) })
+      logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt), turnId: maskIdentifier(activeTurnId), requestKind })
       return response
     }
 
     if (endpointName === 'ping') {
       const response = await handlePingRequest(requestData, req)
-      logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt) })
+      logSecurityEvent('request_finished', ctx, { status: response.status, durationMs: Math.round(performance.now() - startedAt), turnId: maskIdentifier(activeTurnId), requestKind })
       return response
     }
 
@@ -1594,12 +1665,12 @@ serve(async (req: Request) => {
       modelScopeTurnId,
       modelScopeSelection.slot
     )
-    recordModelAvailability(model, response.status, ctx)
     const contentType = response.headers.get('content-type') || ''
     const rateLimitHeaders = collectProviderRateLimitHeaders(provider, rateLimitHeaderSources, response)
 
     // Handle streaming response
     if (contentType.includes('text/event-stream')) {
+      recordModelAvailability(model, response.status, ctx)
       const reader = response.body?.getReader()
       if (!reader) {
         throw new Error('No response body')
@@ -1633,6 +1704,7 @@ serve(async (req: Request) => {
 
     if (!contentType.includes('json')) {
       const upstreamText = await response.text().catch(() => '')
+      recordModelAvailability(model, response.status, ctx, upstreamText)
       const exposedStatus = response.status === 403 ? 502 : response.status
       const code = response.status === 403 ? 'upstream_forbidden' : 'upstream_non_json'
       logSecurityEvent('request_finished', ctx, {
@@ -1660,6 +1732,7 @@ serve(async (req: Request) => {
 
     // Handle JSON response
     const data = await response.json()
+    recordModelAvailability(model, response.status, ctx, extractUpstreamErrorText(data))
 
     logSecurityEvent('request_finished', ctx, { status: response.status, provider, durationMs: Math.round(performance.now() - startedAt) })
 

@@ -22,6 +22,7 @@ function firstKey(dict: Record<string, string>): string {
 
 const supabaseAnonKey = firstKey(readSupabaseKeyDict('SUPABASE_PUBLISHABLE_KEYS'))
 const supabaseSecretKey = firstKey(readSupabaseKeyDict('SUPABASE_SECRET_KEYS'))
+const INTERNAL_GATEWAY_SECRET = Deno.env.get('INTERNAL_GATEWAY_SECRET') || supabaseSecretKey
 const MAINTENANCE_MODE = (Deno.env.get('MAINTENANCE_MODE') || '').trim().toLowerCase() === 'true'
 
 function normalizeAllowedOrigin(value: string): string {
@@ -45,12 +46,13 @@ function getAllowedOrigin(req: Request): string | null {
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req)
-  return {
-    'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0] || '*',
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, accept, origin, x-chat-turn-id, x-supabase-auth',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
   }
+  if (origin) headers['Access-Control-Allow-Origin'] = origin
+  return headers
 }
 
 const BANNED_IPS = new Set([
@@ -84,6 +86,9 @@ const RAPID_REQUEST_MS = 700
 const MAX_REQUEST_BYTES = 1024 * 1024
 const SEARCH_FETCH_TIMEOUT_MS = 12_000
 const PAGE_FETCH_TIMEOUT_MS = 18_000
+const MAX_SEARCH_QUERY_LENGTH = 120
+const MAX_SEARCH_RESULTS = 5
+const MAX_PAGE_BYTES = 512_000
 
 interface RequestContext {
   service: string
@@ -100,7 +105,7 @@ function cleanHeader(value: string | null): string {
 
 function isInternalGatewayRequest(req: Request): boolean {
   const internalSecret = cleanHeader(req.headers.get('x-internal-secret'))
-  return Boolean(supabaseSecretKey && internalSecret === supabaseSecretKey)
+  return Boolean(INTERNAL_GATEWAY_SECRET && internalSecret === INTERNAL_GATEWAY_SECRET)
 }
 
 function getTrustedGatewayHeader(req: Request, name: string): string {
@@ -330,13 +335,24 @@ function rejectOversizedRequest(req: Request, ch: Record<string, string>, ctx: R
   return null
 }
 
+function isPrivateHostname(host: string): boolean {
+  if (!host) return true
+  if (/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.|localhost|::1|fc|fd|fe80)/i.test(host)) return true
+  if (/(\.local|metadata\.google\.internal)$/i.test(host)) return true
+  // Block IPv4 decimal/octal/hex variants
+  if (/^0[xX][0-9a-fA-F]+$/i.test(host)) return true
+  if (/^0[0-7]+$/.test(host)) return true
+  if (/^\d{8,}$/.test(host)) return true
+  // Block IPv6-mapped IPv4
+  if (/^::ffff:/i.test(host)) return true
+  return false
+}
+
 function isPrivateUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return true
-    const host = parsed.hostname
-    if (/^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.|localhost|::1|fc|fd|fe80)/i.test(host)) return true
-    if (/(\.local|metadata\.google\.internal)$/i.test(host)) return true
+    if (parsed.protocol !== 'https:') return true
+    if (isPrivateHostname(parsed.hostname)) return true
     return false
   } catch {
     return true
@@ -548,8 +564,12 @@ async function fetchWebPage(url: string): Promise<{ title: string; content: stri
     if (response.url && isPrivateUrl(response.url)) {
       throw new Error('Redirect target not allowed');
     }
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    if (Number.isFinite(contentLength) && contentLength > MAX_PAGE_BYTES) {
+      throw new Error('Page too large');
+    }
 
-    const html = await response.text();
+    const html = (await response.text()).slice(0, MAX_PAGE_BYTES);
 
     // 提取标题
     const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/is);
@@ -679,6 +699,9 @@ serve(async (req: Request) => {
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
     const endpoint = cleanText(body.endpoint || 'web_search');
     const clientTurnId = cleanText(body.client_turn_id || '');
+    const requestKind = cleanText(body.request_kind || 'tool_call');
+    const toolName = cleanText(body.tool_name || endpoint);
+    const toolIndex = Number(body.tool_index || 0);
     const ctx = getRequestContext(req, 'web-search', endpoint, authenticatedUserId)
 
     const hasTurnId = Boolean(clientTurnId || req.headers.get('x-chat-turn-id'))
@@ -686,7 +709,7 @@ serve(async (req: Request) => {
 
     const abuseResponse = enforceAbuseGuard(ctx, ch, { ignoreSpeed: ignoreRapidSpeed })
     if (abuseResponse) return abuseResponse
-    logSecurityEvent('request_started', ctx, { method: req.method })
+    logSecurityEvent('request_started', ctx, { method: req.method, turnId: maskIdentifier(clientTurnId), requestKind, toolName, toolIndex })
 
     if (endpoint === 'fetch_web_page') {
       const url = cleanText(body.url);
@@ -725,10 +748,16 @@ serve(async (req: Request) => {
         headers: { ...ch, 'Content-Type': 'application/json' },
       });
     }
+    if (query.length > MAX_SEARCH_QUERY_LENGTH) {
+      return new Response(JSON.stringify({ error: 'Query too long', code: 'query_too_long' }), {
+        status: 400,
+        headers: { ...ch, 'Content-Type': 'application/json' },
+      });
+    }
 
     const lang = body.lang === 'en' ? 'en' : 'zh';
     const limitValue = Number(body.limit);
-    const limit = Math.max(1, Math.min(10, Number.isFinite(limitValue) ? Math.round(limitValue) : 5));
+    const limit = Math.max(1, Math.min(MAX_SEARCH_RESULTS, Number.isFinite(limitValue) ? Math.round(limitValue) : MAX_SEARCH_RESULTS));
     const results = await searchBaidu(query, lang, limit);
     logSecurityEvent('request_finished', ctx, { status: 200, resultCount: results.length, durationMs: Math.round(performance.now() - startedAt) })
 

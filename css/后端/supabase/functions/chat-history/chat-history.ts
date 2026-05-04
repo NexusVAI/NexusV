@@ -71,12 +71,13 @@ const BANNED_USERS = parseBlockedUserIds(Deno.env.get('BANNED_USER_IDS') || Deno
 
 function corsHeadersFor(req: Request): Record<string, string> {
   const origin = getAllowedOrigin(req);
-  return {
-    "Access-Control-Allow-Origin": origin || ALLOWED_ORIGINS[0] || "*",
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept, origin, x-supabase-auth",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Max-Age": "86400",
   };
+  if (origin) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
 }
 
 function jsonResponse(payload: Record<string, unknown>, status: number, ch: Record<string, string>, extraHeaders: Record<string, string> = {}): Response {
