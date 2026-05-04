@@ -244,3 +244,72 @@
   .arena-compose button { min-height: 42px; }
   .arena-card { min-height: 220px; }
 }
+
+@media (max-width: 640px) {
+  .arena-page {
+    width: 100vw;
+    padding: 14px 0 96px;
+  }
+
+  .arena-hero,
+  .arena-modebar,
+  .arena-model-pickers,
+  .arena-compose,
+  .arena-status,
+  .arena-leaderboard {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .arena-battle {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 0 12px 92px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .arena-card {
+    flex: 0 0 calc(100vw - 32px);
+    min-height: calc(100dvh - 290px);
+    padding: 14px;
+    scroll-snap-align: center;
+  }
+
+  .arena-model-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .arena-card[hidden] {
+    display: none !important;
+  }
+
+  .arena-vote-row {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 60;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .arena-vote-row[hidden] {
+    display: none !important;
+  }
+
+  .arena-vote-btn {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+}

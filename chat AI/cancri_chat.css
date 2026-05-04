@@ -608,6 +608,16 @@
     }
     .announcement-indicators {
       right: 8px;
+      gap: 3px;
+    }
+    .announcement-indicators .indicator {
+      width: 4px;
+      height: 4px;
+      opacity: 0.25;
+    }
+    .announcement-indicators .indicator.active {
+      opacity: 0.7;
+      transform: scale(1.1);
     }
   }
 
@@ -1100,6 +1110,12 @@
     margin: 0 0 12px;
   }
 
+  .leaderboard-hero .leaderboard-trust-note {
+    margin-top: -4px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
   .leaderboard-meta {
     display: flex;
     flex-wrap: wrap;
@@ -1198,17 +1214,126 @@
 
   .leaderboard-score {
     display: flex;
+    flex-direction: column;
     justify-content: flex-end;
-    gap: 7px;
-    align-items: baseline;
+    gap: 2px;
+    align-items: flex-end;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
+  }
+
+  .leaderboard-score strong {
+    font-size: 15px;
+    line-height: 1.1;
   }
 
   .leaderboard-score small {
     color: var(--text-dim);
     font-size: 11px;
     font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .leaderboard-updated {
+    white-space: nowrap;
+  }
+
+  .leaderboard-table.pareto-mode {
+    background: transparent;
+    border: none;
+  }
+
+  .pareto-chart-container {
+    width: 100%;
+    min-height: 500px;
+  }
+
+  .pareto-chart-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .pareto-svg {
+    flex: 1;
+    max-width: 800px;
+    height: auto;
+    background: var(--panel);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+  }
+
+  .pareto-point {
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .pareto-point:hover {
+    opacity: 1 !important;
+    stroke: var(--text);
+    stroke-width: 2px;
+  }
+
+  .pareto-legend {
+    width: 140px;
+    padding: 16px;
+    background: var(--panel);
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .pareto-legend-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .pareto-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+
+  .pareto-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pareto-legend-line {
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .pareto-tooltip {
+    position: absolute;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+    max-width: 220px;
+  }
+
+  .pareto-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-soft);
+    font-size: 15px;
   }
 
   @media (max-width: 980px) {
@@ -1247,6 +1372,51 @@
       min-width: 560px;
       padding-left: 12px;
       padding-right: 12px;
+    }
+  }
+
+  /* 更小屏幕的排行榜优化 */
+  @media (max-width: 640px) {
+    .leaderboard-table-head,
+    .leaderboard-table-row {
+      grid-template-columns: 48px 80px minmax(140px, 1fr) 72px;
+      min-width: 460px;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    .leaderboard-rank {
+      font-size: 13px;
+    }
+    .leaderboard-spread {
+      font-size: 11px;
+    }
+    .leaderboard-model-cell strong {
+      font-size: 12px;
+    }
+    .leaderboard-model-cell small {
+      font-size: 10px;
+    }
+    .leaderboard-score {
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .leaderboard-table-head,
+    .leaderboard-table-row {
+      grid-template-columns: 36px 58px minmax(132px, 1fr) 68px;
+      min-width: 100%;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+    .leaderboard-table-head {
+      font-size: 10px;
+    }
+    .leaderboard-table-row {
+      min-height: 52px;
+    }
+    .leaderboard-updated {
+      display: none;
     }
   }
 
@@ -1733,6 +1903,34 @@
   .duel-vote-row button:disabled {
     opacity: .55;
     cursor: not-allowed;
+  }
+
+  .duel-result-note {
+    grid-column: 1 / -1;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--panel-2);
+    color: var(--text-soft);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .duel-result-note strong {
+    color: var(--text);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .duel-result-note span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: right;
   }
 
   @keyframes scrollIcons {
@@ -2587,15 +2785,6 @@
     letter-spacing:.06em;
   }
 
-  /* ── DEVTOOLS SHIELD ─────────────────────────────────────── */
-  .devtools-shield {
-    position:fixed; inset:0; z-index:9999;
-    background:var(--bg); display:none;
-    flex-direction:column; align-items:center; justify-content:center; gap:12px;
-  }
-
-  .devtools-shield.show { display:flex; }
-
   /* ── CONTEXT MENU ────────────────────────────────────────── */
   .custom-context-menu {
     position:fixed; z-index:500; padding:4px;
@@ -3024,13 +3213,14 @@
 
     .sidebar.collapsed {
       width: min(82vw, 280px);
-      transform: translateX(calc(-100% + var(--rail-w)));
+      transform: translateX(-100%);
       box-shadow: none;
+      pointer-events: none;
     }
 
     .main {
-      width: calc(100vw - var(--rail-w));
-      margin-left: var(--rail-w);
+      width: 100vw;
+      margin-left: 0;
     }
 
     .main-header {
@@ -4023,27 +4213,27 @@
 
     .duel-carousel-dots {
       position: fixed;
-      top: calc(var(--header-h) + 188px);
+      top: calc(var(--header-h) + 210px);
       left: 0;
       right: 0;
       z-index: 12;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       pointer-events: none;
     }
 
     .duel-carousel-dots span {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 999px;
-      background: color-mix(in srgb, var(--text) 32%, transparent);
+      background: color-mix(in srgb, var(--text) 18%, transparent);
     }
 
     .duel-carousel-dots span.active {
-      width: 24px;
-      background: color-mix(in srgb, var(--text) 82%, transparent);
+      width: 18px;
+      background: color-mix(in srgb, var(--accent) 65%, transparent);
     }
 
     .duel-vote-row {
@@ -4246,4 +4436,3 @@
   [data-theme="dark"] .auth-overlay {
     background: rgba(0,0,0,0.7);
   }
-

@@ -226,13 +226,13 @@
     const text = await response.text().catch(() => '');
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
-    if (!response.ok) {
-      const parsed = parseBackendErrorPayload(text);
-      if (parsed.code === 'anonymous_not_allowed') {
-        throw new Error(formatSecurityGuardMessage(parsed));
+      if (!response.ok) {
+        const parsed = parseBackendErrorPayload(text);
+        if (parsed.code === 'anonymous_not_allowed') {
+          throw new Error(parsed.message || '请使用邮箱验证码登录后再使用。');
+        }
+        throw new Error(parsed.message || data.message || data.error || 'Arena request failed: ' + response.status);
       }
-      throw new Error(parsed.message || data.message || data.error || 'Arena request failed: ' + response.status);
-    }
     return data;
   }
 
@@ -331,6 +331,34 @@
     return answerText;
   }
 
+  function formatArenaUpdatedAt(value) {
+    const date = new Date(value || '');
+    if (!Number.isFinite(date.getTime())) return '';
+    const text = new Intl.DateTimeFormat('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+    return ' · ' + text;
+  }
+
+  function formatArenaEloSlot(before, after) {
+    const start = Number(before);
+    const end = Number(after);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return '';
+    const delta = Math.round((end - start) * 10) / 10;
+    const sign = delta > 0 ? '+' : '';
+    return `${Math.round(end)} (${sign}${delta})`;
+  }
+
+  function formatArenaEloReveal(reveal) {
+    const modelA = formatArenaEloSlot(reveal.model_a_elo_before, reveal.model_a_elo_after);
+    const modelB = formatArenaEloSlot(reveal.model_b_elo_before, reveal.model_b_elo_after);
+    const details = [modelA ? `A ${modelA}` : '', modelB ? `B ${modelB}` : ''].filter(Boolean).join(' · ');
+    return details ? ' Elo：' + details : '';
+  }
+
   async function loadArenaLeaderboard() {
     if (!arenaLeaderboardList) return;
     try {
@@ -345,7 +373,8 @@
         const total = Number(row.total_votes || 0);
         const rate = Number(row.win_rate || 0);
         const elo = Number(row.elo_score || 1000).toFixed(0);
-        return '<div class="arena-leaderboard-row"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><span>Elo ' + elo + ' · ' + total + ' 票 · 胜率 ' + rate + '%</span></div>';
+        const updated = formatArenaUpdatedAt(row.updated_at);
+        return '<div class="arena-leaderboard-row"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><span>Elo ' + elo + ' · ' + total + ' 有效票 · 胜率 ' + rate + '%' + updated + '</span></div>';
       }).join('');
     } catch (error) {
       arenaLeaderboardList.textContent = '排行榜暂时加载失败。';
@@ -414,8 +443,8 @@
       currentArenaMatch.reveal = reveal;
       if (arenaModelA) arenaModelA.textContent = getModelDisplayName(reveal.model_a || 'Model A');
       if (arenaModelB) arenaModelB.textContent = getModelDisplayName(reveal.model_b || 'Model B');
-      const eloText = reveal.model_a_elo_after && reveal.model_b_elo_after ? ` Elo：A ${Math.round(reveal.model_a_elo_after)} / B ${Math.round(reveal.model_b_elo_after)}` : '';
-      setArenaStatus((result && result.data && result.data.effective === false) ? '投票已记录，但因风控评分较高，不计入公开榜。' : '投票成功，排行榜已更新。' + eloText);
+      const eloText = formatArenaEloReveal(reveal);
+      setArenaStatus((result && result.data && result.data.effective === false) ? '投票已记录，但因风控评分较高，不计入公开榜。' + eloText : '投票成功，已计入公开榜。' + eloText);
       await loadArenaLeaderboard();
     } catch (error) {
       setArenaStatus(error ? error.message : '投票失败，请稍后重试。');

@@ -1,10 +1,5 @@
     const savedArenaMode = localStorage.getItem('cancri_arena_mode');
-    const mobileArenaLayoutSeen = localStorage.getItem('cancri_arena_mobile_layout_seen') === '1';
-    const prefersMobileSideBySide = window.matchMedia?.('(max-width: 640px)')?.matches && (!savedArenaMode || (!mobileArenaLayoutSeen && savedArenaMode === 'direct'));
-    if (prefersMobileSideBySide) {
-      localStorage.setItem('cancri_arena_mode', 'side_by_side');
-      localStorage.setItem('cancri_arena_mobile_layout_seen', '1');
-    }
+    const initialArenaMode = savedArenaMode || 'battle';
 
     const state = {
       theme: 'light',
@@ -22,7 +17,7 @@
       activeRequestController: null,
       recentProjectName: '',
       homeMode: 'chat',
-      arenaMode: prefersMobileSideBySide ? 'side_by_side' : (savedArenaMode || 'direct'),
+      arenaMode: initialArenaMode,
     };
 
     const root = document.documentElement;
@@ -31,10 +26,8 @@
     const toast = document.getElementById('toast');
     const pageWatermarkGrid = document.getElementById('pageWatermarkGrid');
     const customContextMenu = document.getElementById('customContextMenu');
-    const devtoolsShield = document.getElementById('devtoolsShield');
     const homeView = document.getElementById('homeView');
     const leaderboardView = document.getElementById('leaderboardView');
-    const arenaView = document.getElementById('arenaView');
     const imagesView = document.getElementById('imagesView');
     const heroTitle = document.getElementById('heroTitle');
     const homeInput = document.getElementById('homeInput');
@@ -698,55 +691,55 @@
     const MODEL_PRIORITY = new Map(MODEL_PRIORITY_IDS.map((id, index) => [id, index]));
     const MODEL_DEPRIORITY = new Map();
     const MODEL_CATALOG = [
-      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', iconPath: './grok.svg', tags: ['线路二', '新'] },
-      { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', iconPath: './grok.svg', tags: ['线路二', '编码'] },
-      { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', iconPath: './minimax-color.svg', tags: ['线路二', '新'] },
-      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', iconPath: './gemini-color.svg', tags: ['线路二', '新'] },
-      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', iconPath: './gemini-color.svg', tags: ['线路二', '新'] },
-      { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', iconPath: './gemini-color.svg', tags: ['线路三', '新'] },
-      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'], sharedQuota: true },
-      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], sharedQuota: true },
-      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'] },
-      { id: 'step-3.5-flash', displayName: 'Step-3.5', iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
-      { id: 'hy3-preview', displayName: '混元3', iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
-      { id: 'gpt-oss-120b', displayName: 'GPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'] },
-      { id: 'gpt-5.4', displayName: 'GPT-5.4', iconPath: './openai.svg', tags: ['每日限流', '通用'] },
-      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
-      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['线路二', '均衡'] },
-      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
-      { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', iconPath: './nvidia-color.svg', tags: ['通用'] },
-      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['通用'] },
-      { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['稳定'], sharedQuota: true },
-      { id: 'spark-x2', displayName: 'spark-x2', iconPath: './spark-color.svg', tags: ['推理'] },
-      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
-      { id: 'qwen3.5', displayName: 'Qwen 3.5', iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true, sharedQuota: true },
-      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true, sharedQuota: true },
-      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true, sharedQuota: true },
-      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true },
-      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'glm-5', displayName: 'GLM-5', iconPath: './zhipu-color.svg', tags: ['深度编程'] },
-      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
-      { id: 'glm-5.1', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'], sharedQuota: true },
-      { id: 'glm-4.7', displayName: 'GLM-4.7', iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
-      { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', iconPath: './qwen-color.svg', tags: ['预览'] },
-      { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true },
-      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'], sharedQuota: true },
-      { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true },
-      { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', iconPath: './deepseek-color (1).svg', tags: ['稳定', '稳定'] },
-      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2-Exp', iconPath: './deepseek-color (1).svg', tags: ['实验版', '稳定'] },
-      { id: 'glm-4.5-air', displayName: 'GLM-4.5-Air', iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'] },
-      { id: 'minimax-m2.5-alt', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['稳定'] },
-      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'] },
-      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '专业编码', '稳定'], multimodal: true },
-      { id: 'qwen3-max', displayName: 'Qwen3-Max', iconPath: './qwen-color.svg', tags: ['多模态', '旗舰', '稳定'], multimodal: true },
-      { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true },
-      { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true },
-      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
-      { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
-      { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
-      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] }
+      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', iconPath: './grok.svg', tags: ['新', '快速'], pricePerMToken: 0.60 },
+      { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', iconPath: './grok.svg', tags: ['编码', '快速'], pricePerMToken: 0.60 },
+      { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', iconPath: './minimax-color.svg', tags: ['新', '快速'], pricePerMToken: 0.15 },
+      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', iconPath: './gemini-color.svg', tags: ['新', '轻量'], pricePerMToken: 0.075 },
+      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', iconPath: './gemini-color.svg', tags: ['新', '均衡'], pricePerMToken: 0.15 },
+      { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', iconPath: './gemini-color.svg', tags: ['新', '开放'], pricePerMToken: 0.10 },
+      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'], sharedQuota: true, pricePerMToken: 0.07 },
+      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], sharedQuota: true, pricePerMToken: 0.35 },
+      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '稳定'], pricePerMToken: 0.35 },
+      { id: 'step-3.5-flash', displayName: 'Step-3.5', iconPath: './stepfun-color.svg', tags: ['快速', '稳定'], pricePerMToken: 0.20 },
+      { id: 'hy3-preview', displayName: '混元3', iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'], pricePerMToken: 0.12 },
+      { id: 'gpt-oss-120b', displayName: 'GPT-OSS', iconPath: './openai.svg', tags: ['通用', '慢'], pricePerMToken: 0.50 },
+      { id: 'gpt-5.4', displayName: 'GPT-5.4', iconPath: './openai.svg', tags: ['每日限流', '通用'], pricePerMToken: 2.50 },
+      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', iconPath: './claude-color.svg', tags: ['每日限流', '长文本'], pricePerMToken: 15.00 },
+      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', iconPath: './claude-color.svg', tags: ['均衡', '长文本'], pricePerMToken: 3.00 },
+      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', iconPath: './gemini-color.svg', tags: ['每日限流', '推理'], pricePerMToken: 1.25 },
+      { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', iconPath: './nvidia-color.svg', tags: ['通用'], pricePerMToken: 0.40 },
+      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['通用'], pricePerMToken: 0.25 },
+      { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', iconPath: './antgroup-color.svg', tags: ['稳定'], sharedQuota: true, pricePerMToken: 0.25 },
+      { id: 'spark-x2', displayName: 'spark-x2', iconPath: './spark-color.svg', tags: ['推理'], pricePerMToken: 0.30 },
+      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'], pricePerMToken: 0.55 },
+      { id: 'qwen3.5', displayName: 'Qwen 3.5', iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true, sharedQuota: true, pricePerMToken: 0.80 },
+      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true, sharedQuota: true, pricePerMToken: 0.35 },
+      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true, sharedQuota: true, pricePerMToken: 1.50 },
+      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true, pricePerMToken: 3.00 },
+      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true, pricePerMToken: 3.00 },
+      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true, pricePerMToken: 3.00 },
+      { id: 'glm-5', displayName: 'GLM-5', iconPath: './zhipu-color.svg', tags: ['深度编程'], pricePerMToken: 0.50 },
+      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'], pricePerMToken: 0.60 },
+      { id: 'glm-5.1', displayName: 'GLM-5.1', iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'], sharedQuota: true, pricePerMToken: 0.60 },
+      { id: 'glm-4.7', displayName: 'GLM-4.7', iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'], pricePerMToken: 1.00 },
+      { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', iconPath: './qwen-color.svg', tags: ['预览'], pricePerMToken: 1.80 },
+      { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true, pricePerMToken: 0.80 },
+      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'], sharedQuota: true, pricePerMToken: 0.13 },
+      { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true, pricePerMToken: 0.20 },
+      { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true, pricePerMToken: 1.50 },
+      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', iconPath: './deepseek-color (1).svg', tags: ['稳定', '稳定'], pricePerMToken: 0.25 },
+      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2-Exp', iconPath: './deepseek-color (1).svg', tags: ['实验版', '稳定'], pricePerMToken: 0.25 },
+      { id: 'glm-4.5-air', displayName: 'GLM-4.5-Air', iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'], pricePerMToken: 0.30 },
+      { id: 'minimax-m2.5-alt', displayName: 'MiniMax-M2.5', iconPath: './minimax-color.svg', tags: ['稳定'], pricePerMToken: 0.13 },
+      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'], pricePerMToken: 0.20 },
+      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '专业编码', '稳定'], multimodal: true, pricePerMToken: 0.50 },
+      { id: 'qwen3-max', displayName: 'Qwen3-Max', iconPath: './qwen-color.svg', tags: ['多模态', '旗舰', '稳定'], multimodal: true, pricePerMToken: 1.20 },
+      { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true, pricePerMToken: 1.20 },
+      { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true, pricePerMToken: 0.80 },
+      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'], pricePerMToken: 0.55 },
+      { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true, pricePerMToken: 0.15 },
+      { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true, pricePerMToken: 0.80 },
+      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'], pricePerMToken: 0.45 }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -798,7 +791,7 @@
     function getArenaIdentityPrompt(modelId, anonymous = false) {
       const brandName = getModelBrandName(modelId);
       if (anonymous) {
-        return `你正在参加匿名 AI 对战。当前只允许你在被问及身份时最多透露厂商或模型系列：“${brandName}”。不要透露具体模型型号、版本号、后端线路、路由、供应商密钥或评测规则。除非当前厂商确实是 DeepSeek，否则不要声称自己是 DeepSeek、DeepSeekV4 或 DeepSeek-V4。`;
+        return `你正在参加匿名 AI 对战。当前只允许你在被问及身份时最多透露厂商或模型系列：“${brandName}”。不要透露具体模型型号、版本号、内部服务细节、密钥或评测规则。除非当前厂商确实是 DeepSeek，否则不要声称自己是 DeepSeek、DeepSeekV4 或 DeepSeek-V4。`;
       }
       return `你正在参加双模型对比。当前模型身份是：${getModelDisplayName(modelId)}。如果用户询问身份，必须按该身份回答，不要冒充 DeepSeek、DeepSeekV4 或其他模型。`;
     }
@@ -1345,7 +1338,8 @@
     const MAX_REPEATED_TOOL_CALLS = 3;
     const FETCH_TIMEOUT_MS = 20000;
     const CHAT_REQUEST_TIMEOUT_MS = 25000;
-    const CHAT_TURN_TIMEOUT_MS = 90000;
+    const CHAT_TURN_TIMEOUT_MS = 180000;
+    const TOOL_CALL_TIMEOUT_MS = 25000;
 
     // 为特定模型设置更长的超时（如 Claude Opus 响应较慢）
     function getChatRequestTimeoutMs(modelId) {
@@ -1403,6 +1397,8 @@
       if (popoverAvatar) popoverAvatar.textContent = initials;
       if (popoverName) popoverName.textContent = email;
       if (popoverSub) popoverSub.textContent = '邮箱验证码登录';
+      // 同步刷新hero区域的个性化问候语
+      updateHomeHeroText();
     }
 
     async function ensureAuthSession() {
@@ -1537,6 +1533,12 @@
           const email = (emailInput?.value || '').trim();
           if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             if (emailError) emailError.textContent = '请输入有效的邮箱地址';
+            return;
+          }
+          // QQ邮箱限制：只允许qq.com和foxmail.com
+          const emailLower = email.toLowerCase();
+          if (!emailLower.endsWith('@qq.com') && !emailLower.endsWith('@foxmail.com')) {
+            if (emailError) emailError.textContent = '暂仅支持QQ邮箱（@qq.com 或 @foxmail.com）注册';
             return;
           }
           sendOtpBtn.disabled = true;
@@ -2779,37 +2781,10 @@
       }
     }
 
-    let devtoolsLastVisible = false;
-
-    function showDevtoolsShield() {
-      if (!devtoolsShield) return;
-      closeCustomContextMenu();
-      devtoolsLastVisible = true;
-      devtoolsShield.classList.add('show');
-    }
-
-    function hideDevtoolsShield() {
-      if (!devtoolsShield) return;
-      devtoolsLastVisible = false;
-      devtoolsShield.classList.remove('show');
-    }
-
-    function detectDevtools() {
-      const widthGap = Math.abs(window.outerWidth - window.innerWidth);
-      const heightGap = Math.abs(window.outerHeight - window.innerHeight);
-      const isOpen = widthGap > 160 || heightGap > 160;
-      if (isOpen) {
-        showDevtoolsShield();
-      } else if (devtoolsLastVisible) {
-        hideDevtoolsShield();
-      }
-    }
-
     function setActiveView(view) {
       state.currentView = view;
       homeView.classList.toggle('active', view === 'home');
       if (leaderboardView) leaderboardView.classList.toggle('active', view === 'leaderboard');
-      if (arenaView) arenaView.classList.toggle('active', view === 'arena');
       imagesView.classList.toggle('active', view === 'images');
       navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
       closePopover();
@@ -2895,28 +2870,224 @@
         <div class="leaderboard-table-head">
           <span>排名</span>
           <span>排名区间</span>
-          <span>模型</span>
-          <span>分数</span>
+          <span>模型 / 有效票</span>
+          <span>Elo</span>
         </div>`;
       const body = rows.map((row, index) => {
         const name = escapeHtml(getModelDisplayName(row.model_id || 'unknown'));
         const brand = escapeHtml(getModelBrandName(row.model_id || 'unknown'));
         const elo = Math.round(Number(row.elo_score || 1000));
+        const total = Number(row.total_votes || 0);
+        const winRate = Number(row.win_rate || 0);
         const spreadLow = Number(row.rank_spread_low || row.rank_min || index + 1);
         const spreadHigh = Number(row.rank_spread_high || row.rank_max || Math.min(rows.length, index + 3));
         const delta = Math.max(1, Math.round(Number(row.elo_delta || row.uncertainty || row.confidence || 20)));
+        const updatedAt = formatLeaderboardUpdatedAt(row.updated_at);
         return `
           <div class="leaderboard-table-row">
             <span class="leaderboard-rank">${index + 1}</span>
             <span class="leaderboard-spread">${spreadLow} ↔ ${spreadHigh}</span>
             <span class="leaderboard-model-cell">
               <strong>${name}</strong>
-              <small>${brand} · Proprietary</small>
+              <small>${brand} · ${total.toLocaleString()} 有效票 · 胜率 ${winRate}%</small>
             </span>
-            <span class="leaderboard-score">${elo}<small>±${delta}</small></span>
+            <span class="leaderboard-score"><strong>${elo}</strong><small><span class="leaderboard-delta">±${delta}</span><span class="leaderboard-updated"> · ${updatedAt}</span></small></span>
           </div>`;
       }).join('');
       return header + body;
+    }
+
+    function formatLeaderboardUpdatedAt(value) {
+      const date = new Date(value || '');
+      if (!Number.isFinite(date.getTime())) return '更新时间未知';
+      return new Intl.DateTimeFormat('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+    }
+
+    function computeParetoFrontier(points) {
+      const sorted = points.filter(p => p.price > 0 && p.elo > 0).sort((a, b) => a.price - b.price);
+      const frontier = [];
+      let maxElo = -Infinity;
+      for (const p of sorted) {
+        if (p.elo > maxElo) {
+          frontier.push(p);
+          maxElo = p.elo;
+        }
+      }
+      return frontier;
+    }
+
+    function renderParetoChart(rows) {
+      const container = document.createElement('div');
+      container.className = 'pareto-chart-container';
+
+      const data = rows.map(row => {
+        const modelId = row.model_id;
+        const meta = MODEL_CATALOG_BY_ID.get(modelId) || {};
+        return {
+          id: modelId,
+          name: getModelDisplayName(modelId),
+          brand: getModelBrandName(modelId),
+          elo: Number(row.elo_score || 1000),
+          price: meta.pricePerMToken || 0.5,
+          votes: Number(row.total_votes || 0),
+        };
+      }).filter(d => d.price > 0 && d.elo > 0);
+
+      if (!data.length) return '<div class="pareto-empty">暂无数据</div>';
+
+      const frontier = computeParetoFrontier(data);
+      const minPrice = Math.min(...data.map(d => d.price));
+      const maxPrice = Math.max(...data.map(d => d.price));
+      const minElo = Math.min(...data.map(d => d.elo));
+      const maxElo = Math.max(...data.map(d => d.elo));
+      const priceRange = maxPrice - minPrice || 1;
+      const eloRange = maxElo - minElo || 1;
+
+      const width = 800;
+      const height = 400;
+      const padding = { top: 20, right: 30, bottom: 50, left: 60 };
+      const chartW = width - padding.left - padding.right;
+      const chartH = height - padding.top - padding.bottom;
+
+      const toX = (price) => padding.left + ((price - minPrice) / priceRange) * chartW;
+      const toY = (elo) => padding.top + chartH - ((elo - minElo) / eloRange) * chartH;
+
+      let frontierPath = '';
+      if (frontier.length > 1) {
+        frontierPath = frontier.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(p.price)},${toY(p.elo)}`).join(' ');
+      }
+
+      const gridLinesX = [0, 0.25, 0.5, 0.75, 1].map(r => {
+        const x = padding.left + r * chartW;
+        return `<line x1="${x}" y1="${padding.top}" x2="${x}" y2="${padding.top + chartH}" stroke="var(--border)" stroke-dasharray="2,2" opacity="0.3"/>`;
+      }).join('');
+
+      const gridLinesY = [0, 0.25, 0.5, 0.75, 1].map(r => {
+        const y = padding.top + r * chartH;
+        return `<line x1="${padding.left}" y1="${y}" x2="${padding.left + chartW}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,2" opacity="0.3"/>`;
+      }).join('');
+
+      const priceLabels = [0, 0.2, 0.4, 0.6, 0.8, 1].map(r => {
+        const price = minPrice + r * priceRange;
+        const x = padding.left + r * chartW;
+        return `<text x="${x}" y="${height - 15}" text-anchor="middle" fill="var(--text-secondary)" font-size="11">$${price.toFixed(2)}</text>`;
+      }).join('');
+
+      const eloLabels = [0, 0.25, 0.5, 0.75, 1].map(r => {
+        const elo = minElo + (1 - r) * eloRange;
+        const y = padding.top + r * chartH;
+        return `<text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" fill="var(--text-secondary)" font-size="11">${Math.round(elo)}</text>`;
+      }).join('');
+
+      const brandColors = {
+        'openai': '#10a37f',
+        'anthropic': '#d97757',
+        'google': '#4285f4',
+        'deepseek': '#4f46e5',
+        'qwen': '#8b5cf6',
+        'moonshot': '#f59e0b',
+        'zhipu': '#06b6d4',
+        'grok': '#ef4444',
+        'minimax': '#10b981',
+        'nvidia': '#76b900',
+        'default': '#6b7280'
+      };
+
+      const getBrandColor = (brand) => {
+        const key = Object.keys(brandColors).find(k => brand.toLowerCase().includes(k));
+        return key ? brandColors[key] : brandColors.default;
+      };
+
+      const points = data.map(d => {
+        const x = toX(d.price);
+        const y = toY(d.elo);
+        const color = getBrandColor(d.brand);
+        const r = Math.max(4, Math.min(10, Math.sqrt(d.votes) / 2));
+        return `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="0.8" class="pareto-point" data-model="${escapeHtml(d.name)}" data-brand="${escapeHtml(d.brand)}" data-elo="${d.elo}" data-price="${d.price}"/>`;
+      }).join('');
+
+      const frontierSvg = frontierPath ? `<path d="${frontierPath}" fill="none" stroke="#10a37f" stroke-width="2" opacity="0.9"/>` : '';
+
+      container.innerHTML = `
+        <div class="pareto-chart-wrapper">
+          <svg viewBox="0 0 ${width} ${height}" class="pareto-svg">
+            ${gridLinesX}
+            ${gridLinesY}
+            <line x1="${padding.left}" y1="${padding.top + chartH}" x2="${padding.left + chartW}" y2="${padding.top + chartH}" stroke="var(--border)" stroke-width="1"/>
+            <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + chartH}" stroke="var(--border)" stroke-width="1"/>
+            ${frontierSvg}
+            ${points}
+            ${priceLabels}
+            ${eloLabels}
+            <text x="${width / 2}" y="${height - 2}" text-anchor="middle" fill="var(--text-secondary)" font-size="12">价格/百万token</text>
+            <text x="15" y="${height / 2}" text-anchor="middle" fill="var(--text-secondary)" font-size="12" transform="rotate(-90, 15, ${height / 2})">Elo 分数</text>
+          </svg>
+          <div class="pareto-legend">
+            <div class="pareto-legend-title">Pareto 前沿</div>
+            <div class="pareto-legend-item">
+              <span class="pareto-legend-line" style="background:#10a37f"></span>
+              <span>性价比最优</span>
+            </div>
+            <div class="pareto-legend-title" style="margin-top:12px">模型品牌</div>
+            ${Object.entries(brandColors).filter(([k]) => k !== 'default').map(([brand, color]) => {
+              const name = {openai:'OpenAI',anthropic:'Anthropic',google:'Google',deepseek:'DeepSeek',qwen:'Qwen',moonshot:'Moonshot',zhipu:'Zhipu',grok:'Grok',minimax:'MiniMax',nvidia:'NVIDIA'}[brand];
+              return `<div class="pareto-legend-item"><span class="pareto-legend-dot" style="background:${color}"></span><span>${name}</span></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="pareto-tooltip" id="paretoTooltip"></div>
+      `;
+
+      requestAnimationFrame(() => {
+        const tooltip = container.querySelector('#paretoTooltip');
+        container.querySelectorAll('.pareto-point').forEach(point => {
+          point.addEventListener('mouseenter', (e) => {
+            const model = e.target.dataset.model;
+            const brand = e.target.dataset.brand;
+            const elo = e.target.dataset.elo;
+            const price = e.target.dataset.price;
+            tooltip.innerHTML = `<strong>${model}</strong><br/><small>${brand}</small><br/>Elo: ${Math.round(elo)} · $${Number(price).toFixed(2)}/M`;
+            tooltip.style.opacity = '1';
+          });
+          point.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+            tooltip.style.top = (e.clientY - rect.top - 30) + 'px';
+          });
+          point.addEventListener('mouseleave', () => {
+            tooltip.style.opacity = '0';
+          });
+        });
+      });
+
+      return container;
+    }
+
+    let currentLeaderboardData = [];
+    let currentLeaderboardView = 'ranking';
+
+    function switchLeaderboardView(view) {
+      currentLeaderboardView = view;
+      const list = document.getElementById('mainLeaderboardList');
+      const buttons = document.querySelectorAll('.leaderboard-segment button');
+      buttons.forEach((btn, i) => btn.classList.toggle('active', i === (view === 'ranking' ? 0 : 1)));
+
+      if (!list || !currentLeaderboardData.length) return;
+
+      if (view === 'pareto') {
+        const chart = renderParetoChart(currentLeaderboardData);
+        list.innerHTML = '';
+        list.appendChild(chart);
+        list.classList.add('pareto-mode');
+      } else {
+        list.innerHTML = renderMainLeaderboardRows(currentLeaderboardData);
+        list.classList.remove('pareto-mode');
+      }
     }
 
     async function loadMainLeaderboard() {
@@ -2935,12 +3106,19 @@
           list.textContent = '暂无排行榜数据。';
           return;
         }
+        currentLeaderboardData = rows;
         const totalVotes = rows.reduce((sum, row) => sum + Number(row.total_votes || 0), 0);
+        const latestUpdatedAt = rows
+          .map(row => new Date(row.updated_at || '').getTime())
+          .filter(value => Number.isFinite(value))
+          .sort((a, b) => b - a)[0];
         const voteCount = document.getElementById('mainLeaderboardVoteCount');
         const modelCount = document.getElementById('mainLeaderboardModelCount');
-        if (voteCount) voteCount.textContent = `${totalVotes.toLocaleString()} 票`;
+        const updatedAt = document.getElementById('mainLeaderboardUpdatedAt');
+        if (voteCount) voteCount.textContent = `${totalVotes.toLocaleString()} 有效票`;
         if (modelCount) modelCount.textContent = `${rows.length} 个模型`;
-        list.innerHTML = renderMainLeaderboardRows(rows);
+        if (updatedAt) updatedAt.textContent = latestUpdatedAt ? `最近更新 ${formatLeaderboardUpdatedAt(latestUpdatedAt)}` : '最近更新未知';
+        switchLeaderboardView(currentLeaderboardView);
       } catch (error) {
         list.textContent = '排行榜加载失败。';
       }
@@ -2976,6 +3154,33 @@
       const toolCalls = [];
       const identityPrompt = getArenaIdentityPrompt(modelId, anonymous);
       const requestOptions = getModelRequestOptions(modelId);
+      // 构建消息数组，包含历史上下文
+      const messages = [
+        { role: 'system', content: `${identityPrompt}\n请直接回答用户问题，回答应清晰、有帮助、适度简洁。` }
+      ];
+      // 添加完整历史对话上下文（128K上下文兜底）
+      const MAX_ARENA_CONTEXT_TOKENS = 120 * 1024; // 留8K给回答
+      let estimatedTokens = estimateMessageTokens({ role: 'system', content: identityPrompt });
+      const contextMessages = [];
+      // 从后往前累积历史，直到接近上限
+      for (let i = conversationHistory.length - 1; i >= 0; i--) {
+        const msg = conversationHistory[i];
+        const msgTokens = estimateMessageTokens(msg);
+        if (estimatedTokens + msgTokens > MAX_ARENA_CONTEXT_TOKENS) break;
+        contextMessages.unshift(toApiMessage(msg, modelId));
+        estimatedTokens += msgTokens;
+      }
+      messages.push(...contextMessages);
+      // 添加当前用户消息
+      const userMsg = { role: 'user', content: prompt };
+      if (estimatedTokens + estimateMessageTokens(userMsg) > CONTEXT_TOKEN_LIMIT) {
+        updateDuelMessage(duelMessageId, slot, {
+          answer: '**上下文已满**\n\n当前对话已超过128K上下文限制，请导出聊天记录后开启新对话继续。',
+          thinking: false
+        });
+        return '';
+      }
+      messages.push(userMsg);
       const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
         method: 'POST',
         headers: await proxyHeaders(),
@@ -2983,10 +3188,7 @@
           endpoint: 'arena_slot_chat',
           id: matchId,
           slot,
-          messages: [
-            { role: 'system', content: `${identityPrompt}\n请直接回答用户问题，回答应清晰、有帮助、适度简洁。` },
-            { role: 'user', content: prompt }
-          ],
+          messages,
           stream: true,
           temperature: 0.6,
           client_turn_id: createChatTurnId(),
@@ -3107,7 +3309,8 @@
               updateDuelMessage(messageId, 'a', answerA, { modelId: reveal.model_a });
               updateDuelMessage(messageId, 'b', answerB, { modelId: reveal.model_b });
             }
-            showToast(anonymous ? '投票成功，已揭晓模型。' : '已记录你的偏好。');
+            renderDuelVoteResult(wrapper, vote);
+            showToast(vote?.data?.effective === false ? '投票已记录，未计入公开榜。' : (anonymous ? '投票成功，已揭晓并计入公开榜。' : '已记录你的偏好。'));
             loadSidebarLeaderboard();
             loadMainLeaderboard();
           } catch (error) {
@@ -3116,6 +3319,33 @@
           }
         });
       });
+    }
+
+    function formatSignedEloDelta(before, after) {
+      const start = Number(before);
+      const end = Number(after);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return '';
+      const delta = Math.round((end - start) * 10) / 10;
+      const sign = delta > 0 ? '+' : '';
+      return `${Math.round(end)} (${sign}${delta})`;
+    }
+
+    function renderDuelVoteResult(wrapper, vote) {
+      if (!wrapper) return;
+      const grid = wrapper.querySelector('.duel-grid');
+      if (!grid) return;
+      const reveal = vote?.data?.reveal || {};
+      const effective = vote?.data?.effective !== false;
+      const modelA = formatSignedEloDelta(reveal.model_a_elo_before, reveal.model_a_elo_after);
+      const modelB = formatSignedEloDelta(reveal.model_b_elo_before, reveal.model_b_elo_after);
+      let note = wrapper.querySelector('.duel-result-note');
+      if (!note) {
+        note = document.createElement('div');
+        note.className = 'duel-result-note';
+        grid.appendChild(note);
+      }
+      const details = [modelA ? `A ${modelA}` : '', modelB ? `B ${modelB}` : ''].filter(Boolean).join(' · ');
+      note.innerHTML = `<strong>${effective ? '已计入公开榜' : '未计入公开榜'}</strong><span>${details || '本次偏好已记录。'}</span>`;
     }
 
     function getTodayText() {
@@ -4690,6 +4920,73 @@
       return `${left}\n\n---\n\n${right}`;
     }
 
+    function exportChatToMarkdown() {
+      if (!conversationHistory || conversationHistory.length === 0) {
+        showToast('当前没有可导出的对话记录');
+        return;
+      }
+
+      const now = new Date();
+      const dateStr = now.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).replace(/\//g, '-').replace(/:/g, '-');
+
+      let markdown = `# ChatAI 对话记录\n\n导出时间: ${now.toLocaleString('zh-CN')}\n总消息数: ${conversationHistory.length}\n\n---\n\n`;
+
+      conversationHistory.forEach((msg, index) => {
+        const role = msg.role === 'user' ? '用户' : (msg.role === 'assistant' ? '助手' : '系统');
+        markdown += `## ${role} (${index + 1})\n\n`;
+
+        if (Array.isArray(msg.content)) {
+          // 多模态内容
+          msg.content.forEach(part => {
+            if (part.type === 'text') {
+              markdown += `${part.text}\n\n`;
+            } else if (part.type === 'image_url') {
+              markdown += `[图片附件]\n\n`;
+            } else if (part.type === 'input_file') {
+              markdown += `[文件附件: ${part.file_name || '未知'}]\n\n`;
+            }
+          });
+        } else {
+          markdown += `${msg.content}\n\n`;
+        }
+
+        if (msg.tool_calls && msg.tool_calls.length > 0) {
+          markdown += `**工具调用**:\n`;
+          msg.tool_calls.forEach(tool => {
+            markdown += `- \`${tool.function?.name}\`\n`;
+          });
+          markdown += '\n';
+        }
+
+        markdown += '---\n\n';
+      });
+
+      // 添加Token统计
+      const totalTokens = estimateConversationTokens(conversationHistory);
+      markdown += `\n## 统计信息\n\n- 总Token数: ${formatTokenCount(totalTokens)}\n- 消息数: ${conversationHistory.length}\n\n`;
+
+      // 创建下载
+      const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ChatAI-对话-${dateStr}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('对话记录已导出');
+    }
+
     function clearConversation() {
       stopVoiceRecognition();
       if (state.activeRequestController) {
@@ -5566,6 +5863,7 @@
       createUserMessage(query || effectiveQuery, attachmentsForSend);
       homeInput.value = '';
 
+      let fallbackToSingleModel = false;
       if (!attachmentsForSend.length && (state.arenaMode === 'battle' || state.arenaMode === 'side_by_side')) {
         setComposerBusy(true);
         try {
@@ -5576,13 +5874,19 @@
           homeInput.placeholder = 'Ask followup...';
         } catch (error) {
           const message = normalizeErrorMessage(error, '双模型对话失败，请稍后重试。');
-          const errorMessageId = createAssistantMessage(turnModelMetadata);
-          updateAssistantMessage(errorMessageId, { answer: message, thinking: false });
-          showToast(message);
+          const isSecurityError = /登录|访问被拒绝|暂仅支持|邮箱验证码|Invalid session|access_blocked|email_domain_not_allowed/i.test(message);
+          if (isSecurityError) {
+            const errorMessageId = createAssistantMessage(turnModelMetadata);
+            updateAssistantMessage(errorMessageId, { answer: message, thinking: false });
+            showToast(message);
+          } else {
+            fallbackToSingleModel = true;
+            showToast('对战暂不可用，已用单模型继续。');
+          }
         } finally {
           setComposerBusy(false);
         }
-        return;
+        if (!fallbackToSingleModel) return;
       }
 
       if (!isModelAvailable(turnModelId)) {
@@ -5673,7 +5977,11 @@
               let toolOutput = '';
 
               try {
-                toolOutput = await executeArticleToolCall(toolCall, turnId);
+                const toolPromise = executeArticleToolCall(toolCall, turnId);
+                const timeoutPromise = new Promise((_, reject) => {
+                  setTimeout(() => reject(new Error('工具调用超时（25秒），请稍后重试。')), TOOL_CALL_TIMEOUT_MS);
+                });
+                toolOutput = await Promise.race([toolPromise, timeoutPromise]);
                 completeToolCallUI(uiBlock, toolOutput);
               } catch (toolError) {
                 const toolErrorMessage = normalizeErrorMessage(toolError, '工具调用失败，请稍后重试。');
@@ -5710,7 +6018,7 @@
           return;
         }
 
-        const fallbackAnswer = '请求已取消。';
+        const fallbackAnswer = controller.signal.aborted ? '请求已取消。' : '请求超时（对话回合超过3分钟），建议简化问题或分多次询问。';
         updateAssistantMessage(assistantMessageId, { answer: fallbackAnswer, thinking: false });
         pushHistory(userHistoryMessage);
         turnMessages.forEach(message => pushHistory(message));
@@ -5976,6 +6284,8 @@
     document.getElementById('upgradeBtn').addEventListener('click', () => window.open('https://qm.qq.com/q/bxQU3rXRyo', '_blank'));
     const clearBtnEl = document.getElementById('clearBtn');
     if (clearBtnEl) clearBtnEl.addEventListener('click', () => clearConversation());
+    const exportBtnEl = document.getElementById('exportBtn');
+    if (exportBtnEl) exportBtnEl.addEventListener('click', () => exportChatToMarkdown());
     const leaderboardStartVotingBtn = document.getElementById('leaderboardStartVotingBtn');
     if (leaderboardStartVotingBtn) {
       leaderboardStartVotingBtn.addEventListener('click', () => {
@@ -5983,6 +6293,11 @@
         setActiveView('home');
         homeInput?.focus();
       });
+    }
+    const leaderboardSegmentButtons = document.querySelectorAll('.leaderboard-segment button');
+    if (leaderboardSegmentButtons.length >= 2) {
+      leaderboardSegmentButtons[0].addEventListener('click', () => switchLeaderboardView('ranking'));
+      leaderboardSegmentButtons[1].addEventListener('click', () => switchLeaderboardView('pareto'));
     }
     document.getElementById('micToastBtn').addEventListener('click', () => showToast('语音输入入口已响应。'));
     document.getElementById('imageMicToastBtn').addEventListener('click', () => showToast('图片语音输入入口已响应。'));
@@ -6207,54 +6522,6 @@
         setComposerBusy(false);
       }
     }
-
-    // Devtools key blocking — comprehensive protection
-    document.addEventListener('keydown', e => {
-      const key = String(e.key || '').toLowerCase();
-      const isCtrl = e.ctrlKey || e.metaKey;
-      const isShift = e.shiftKey;
-      const isAlt = e.altKey;
-
-      // Block F12
-      const isF12 = key === 'f12';
-      // Block Ctrl+Shift+I/J/C/K (DevTools, Console, Element inspector)
-      const isDevToolsCombo = isCtrl && isShift && ['i', 'j', 'c', 'k'].includes(key);
-      // Block Ctrl+U (View source)
-      const isViewSource = isCtrl && key === 'u';
-      // Block Ctrl+S/P (Save, Print)
-      const isSavePrint = isCtrl && (key === 's' || key === 'p');
-      // Block Mac: Cmd+Opt+I/J/C
-      const isMacDevTools = (e.metaKey && isAlt && ['i', 'j', 'c'].includes(key));
-      // Block Ctrl+Shift+S (Save as)
-      const isSaveAs = isCtrl && isShift && key === 's';
-
-      if (isF12 || isDevToolsCombo || isViewSource || isSavePrint || isMacDevTools || isSaveAs) {
-        e.preventDefault();
-        e.stopPropagation();
-        showDevtoolsShield();
-        return false;
-      }
-    }, true); // Use capture phase to catch before others
-
-    // Block Ctrl+Shift+Delete (Clear browser data)
-    document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Delete') {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    }, true);
-
-    // Right-click hijack — custom menu with copy/paste only
-    document.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (devtoolsShield && devtoolsShield.classList.contains('show')) {
-        closeCustomContextMenu();
-        return;
-      }
-      openCustomContextMenu(e.clientX, e.clientY, e.target);
-    }, false);
 
     document.addEventListener('click', event => {
       if (customContextMenu && !customContextMenu.contains(event.target)) {
@@ -6609,43 +6876,6 @@
     setInterval(updateTokenExpiryNote, 1000);
     initAuthOverlay();
     bootstrapModelTelemetry();
-
-    // Anti-debugging protection — start detection loop
-    setInterval(detectDevtools, 500);
-
-    // Additional protection: disable console methods to hinder debugging
-    (function() {
-      const noop = function() {};
-      // Preserve errors but hide other console methods
-      const originalError = console.error;
-      ['log', 'warn', 'info', 'debug', 'table', 'dir', 'dirxml', 'group', 'groupEnd', 'time', 'timeEnd', 'count'].forEach(function(method) {
-        console[method] = noop;
-      });
-      // Keep error logging but wrapped
-      console.error = function() {
-        originalError.apply(console, ['[E]'].concat(Array.prototype.slice.call(arguments)));
-      };
-    })();
-
-    // DevTools timing check (debugger breakpoint detection)
-    setInterval(function() {
-      const start = performance.now();
-      (function() {}).constructor('debugger')();
-      const end = performance.now();
-      if (end - start > 100) {
-        // Breakpoint detected
-        document.body.innerHTML = '<div style="position:fixed;inset:0;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;">调试检测</div>';
-      }
-    }, 2000);
-
-    // Block opening new window/tab via Ctrl+Click or middle-click
-    document.addEventListener('click', function(e) {
-      if (e.ctrlKey || e.metaKey || e.button === 1) {
-        if (e.target.tagName === 'A') {
-          e.preventDefault();
-        }
-      }
-    }, true);
 
     if (nexusvFooter && typeof IntersectionObserver !== 'undefined') {
       const nexusvFooterObserver = new IntersectionObserver((entries) => {
