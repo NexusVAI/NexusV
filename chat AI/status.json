@@ -232,6 +232,71 @@
       "name": "SenseNova U1 Fast",
       "description": "图像生成",
       "status": "operational"
+    },
+    {
+      "name": "Claude Opus 4.5",
+      "description": "旗舰 · 线路一 (supxh)",
+      "status": "operational"
+    },
+    {
+      "name": "Claude Sonnet 4.5",
+      "description": "旗舰 · 线路一 (supxh)",
+      "status": "operational"
+    },
+    {
+      "name": "Gemini 3.1 Pro",
+      "description": "旗舰 · 线路一 (supxh)",
+      "status": "operational"
+    },
+    {
+      "name": "Gemini 3 Flash",
+      "description": "快速 · 线路一 (supxh)",
+      "status": "operational"
+    },
+    {
+      "name": "Gemini 2.5 Pro",
+      "description": "线路一 (supxh)",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.5",
+      "description": "线路二 (pwcen)",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.4",
+      "description": "线路二 (pwcen)",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.3 Codex",
+      "description": "编程 · 线路一 (pwcen)",
+      "status": "operational"
+    },
+    {
+      "name": "GLM-5.1",
+      "description": "线路三 (pwcen)",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.3 Codex Spark",
+      "description": "编程 · 线路一 (xiangluapi)",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.4",
+      "description": "线路三 (xiangluapi)",
+      "status": "operational"
+    },
+    {
+      "name": "Claude Sonnet 4.6",
+      "description": "线路一 (gemai)",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5",
+      "description": "旗舰 · 线路一 (gemai)",
+      "status": "operational"
     }
   ]
 }

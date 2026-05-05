@@ -779,7 +779,7 @@
       { id: 'gpt-5.4-xiangluapi', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
       // gemai.cc
       { id: 'claude-sonnet-4-6-gemai', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-6-gemai', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新'] },
-      { id: 'gpt-5-gemai', displayName: 'GPT-5', brand: 'OpenAI', canonicalId: 'gpt-5-gemai', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新', '旗舰'] }
+      { id: 'gpt-5', displayName: 'GPT-5', brand: 'OpenAI', canonicalId: 'gpt-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新', '旗舰'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
