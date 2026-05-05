@@ -762,7 +762,24 @@
       { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
       { id: 'sensenova-6.7-flash-lite', displayName: 'SenseNova 6.7 Flash-Lite', brand: 'SenseNova', canonicalId: 'sensenova-6.7-flash-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './sensenova-color.svg', tags: ['多模态', '快速'], multimodal: true },
       { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova-color.svg', tags: ['生图'] },
-      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] }
+      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
+      // supxh.xin
+      { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
+      { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
+      { id: 'gemini-3.1-pro', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新', '旗舰'] },
+      { id: 'gemini-3-flash', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '快速'] },
+      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新'] },
+      // pwcen.cn
+      { id: 'gpt-5.5-pwcen', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
+      { id: 'gpt-5.4-pwcen', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
+      { id: 'gpt-5.3-codex', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
+      { id: 'glm-5.1-pwcen', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      // xiangluapi.com
+      { id: 'gpt-5.3-codex-spark', displayName: 'GPT-5.3 Codex Spark', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex-spark', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
+      { id: 'gpt-5.4-xiangluapi', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
+      // gemai.cc
+      { id: 'claude-sonnet-4-6-gemai', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-6-gemai', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新'] },
+      { id: 'gpt-5-gemai', displayName: 'GPT-5', brand: 'OpenAI', canonicalId: 'gpt-5-gemai', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新', '旗舰'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)

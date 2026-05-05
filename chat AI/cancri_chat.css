@@ -3105,6 +3105,7 @@
   /* 兼容当前 modal 结构：你的 modal 不是 modal-content 包裹 */
   .modal.open {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
