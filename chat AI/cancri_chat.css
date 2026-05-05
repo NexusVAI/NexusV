@@ -4280,28 +4280,7 @@
     }
 
     .duel-carousel-dots {
-      position: fixed;
-      top: calc(var(--header-h) + 210px);
-      left: 0;
-      right: 0;
-      z-index: 12;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      pointer-events: none;
-    }
-
-    .duel-carousel-dots span {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--text) 18%, transparent);
-    }
-
-    .duel-carousel-dots span.active {
-      width: 18px;
-      background: color-mix(in srgb, var(--accent) 65%, transparent);
+      display: none;
     }
 
     .duel-vote-row {
