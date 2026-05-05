@@ -29,13 +29,28 @@
       "status": "operational"
     },
     {
-      "name": "GPT-5.4",
-      "description": "OpenAI · 每日限流",
-      "status": "degraded"
+      "name": "GPT-OSS-120B",
+      "description": "OpenAI · 慢",
+      "status": "operational"
     },
     {
-      "name": "chatGPT-OSS",
-      "description": "OpenAI · 慢",
+      "name": "GPT-OSS-20B",
+      "description": "推理 · iamhc",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.4",
+      "description": "iamhc",
+      "status": "operational"
+    },
+    {
+      "name": "Gemma-4-31B",
+      "description": "Google · iamhc",
+      "status": "operational"
+    },
+    {
+      "name": "Grok Imagine",
+      "description": "生图 · freeapi",
       "status": "operational"
     },
     {

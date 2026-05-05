@@ -4463,7 +4463,7 @@
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
-      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2' || imageModel === 'sensenova-u1-fast';
+      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2' || imageModel === 'sensenova-u1-fast' || imageModel === 'grok-imagine-image-lite';
       const imageSize = imageSizeSelect?.value || '1024x1024';
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
