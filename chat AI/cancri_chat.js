@@ -4342,7 +4342,8 @@
         if (isOpenAIImage) {
           const imageUrl = data?.data?.[0]?.url || (data?.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
           if (!imageUrl) {
-            throw new Error('生成成功，但没有返回图片地址。');
+            const detail = data?.error?.message || data?.message || JSON.stringify(data).slice(0, 200);
+            throw new Error(detail || '生成成功，但没有返回图片地址。');
           }
           appendGeneratedImageCard(imageUrl, value);
           if (imagePromptInput) imagePromptInput.value = '';
@@ -4414,10 +4415,12 @@
           imageGenerationStatus.textContent = RATE_LIMIT_MESSAGE;
           finalStatusText = RATE_LIMIT_MESSAGE;
           showToast(RATE_LIMIT_MESSAGE);
+          throw error;
         } else if (error.name !== 'AbortError') {
           imageGenerationStatus.textContent = `生成失败：${error.message}`;
           finalStatusText = `生成失败：${error.message}`;
           showToast(`图片生成失败：${error.message}`);
+          throw error;
         }
       } finally {
         setImageGenerationBusy(false, finalStatusText);
