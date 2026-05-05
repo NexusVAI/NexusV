@@ -3612,7 +3612,7 @@
         .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, url) => {
           const href = safeUrl(url);
           if (href === '#') return alt;
-          return keep(`<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;cursor:pointer;" onclick="window.open('${escapeHtml(href)}','_blank','noopener,noreferrer')">`);
+          return keep(`<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;cursor:pointer;" onclick="window.open('${escapeHtml(href)}','_blank','noopener,noreferrer')"><br><small style="color:#888;font-size:12px;">图片链接可能随时失效，请及时下载到本地保存。</small>`);
         });
       // 转义剩余的 HTML
       output = escapeHtml(output)
@@ -4115,6 +4115,9 @@
 
     function scrollChatToBottom(smooth = true) {
       if (!chatMessages) return;
+      const threshold = 120;
+      const distanceFromBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight;
+      if (distanceFromBottom > threshold) return;
       if (smooth) {
         chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
       } else {
@@ -4124,7 +4127,15 @@
 
     function setComposerBusy(isBusy) {
       state.isStreaming = isBusy;
-      sendChatBtn.disabled = isBusy || (!homeInput.value.trim() && !pendingAttachments.length);
+      if (isBusy) {
+        sendChatBtn.classList.add('is-streaming');
+        sendChatBtn.disabled = false;
+        sendChatBtn.setAttribute('aria-label', '停止生成');
+      } else {
+        sendChatBtn.classList.remove('is-streaming');
+        sendChatBtn.disabled = !homeInput.value.trim() && !pendingAttachments.length;
+        sendChatBtn.setAttribute('aria-label', '发送消息');
+      }
       homeInput.disabled = isBusy;
       if (voiceInputBtn) {
         voiceInputBtn.disabled = isBusy;
@@ -4262,8 +4273,23 @@
       caption.style.textOverflow = 'ellipsis';
       caption.textContent = prompt;
 
+      const hint = document.createElement('div');
+      hint.textContent = '图片链接可能随时失效，请及时下载到本地保存。';
+      hint.style.position = 'absolute';
+      hint.style.left = '12px';
+      hint.style.right = '12px';
+      hint.style.bottom = '4px';
+      hint.style.zIndex = '1';
+      hint.style.color = '#ccc';
+      hint.style.fontSize = '10px';
+      hint.style.textShadow = '0 2px 10px rgba(0,0,0,.32)';
+      hint.style.whiteSpace = 'nowrap';
+      hint.style.overflow = 'hidden';
+      hint.style.textOverflow = 'ellipsis';
+
       card.appendChild(image);
       card.appendChild(caption);
+      card.appendChild(hint);
       card.addEventListener('click', () => window.open(imageUrl, '_blank', 'noopener,noreferrer'));
       generatedImageGrid.prepend(card);
     }
@@ -4272,7 +4298,7 @@
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
-      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL;
+      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2';
       const imageSize = imageSizeSelect?.value || '1024x1024';
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
@@ -5841,7 +5867,7 @@
       const turnModelId = currentModel;
       const turnModelMetadata = createModelMetadata(turnModelId);
 
-      if (turnModelId === 'gpt-image-2' || turnModelId === 'image-precise' || turnModelId === 'image-fast') {
+      if (turnModelId === 'gpt-image-2') {
         if (!query && !attachmentsForSend.length) return;
         await sendImageGenerationMessage(query, turnModelId, turnModelMetadata);
         return;
@@ -6410,6 +6436,13 @@
     });
 
     sendChatBtn.addEventListener('click', () => {
+      if (state.isStreaming) {
+        if (state.activeRequestController) {
+          state.activeRequestController.abort(createAbortError('已停止生成。'));
+          state.activeRequestController = null;
+        }
+        return;
+      }
       if (homeInput.value.trim() || pendingAttachments.length) handleHomeSubmit();
     });
 

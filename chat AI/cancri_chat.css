@@ -1527,6 +1527,15 @@
     transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
   }
 
+  .send-icon-stop { display: none; }
+  .send-btn.is-streaming .send-icon-arrow { display: none; }
+  .send-btn.is-streaming .send-icon-stop { display: block; }
+  .send-btn.is-streaming {
+    background: #ef4444;
+    box-shadow: 0 4px 16px rgba(239,68,68,0.28);
+  }
+  .send-btn.is-streaming:hover { background: #dc2626; }
+
   .send-btn:hover { background: #0d9270; transform: scale(1.04); }
   .send-btn:active { transform: scale(0.97); }
   .send-btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; transform: none; }
