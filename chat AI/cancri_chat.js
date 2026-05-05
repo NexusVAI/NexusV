@@ -2089,6 +2089,18 @@
       img.style.cssText = 'max-width:100%;border-radius:10px;display:block;cursor:default';
       img.addEventListener('contextmenu', (e) => e.preventDefault());
       img.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+      img.onerror = function() {
+        this.onerror = null;
+        this.style.cssText = 'max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px';
+        this.removeAttribute('src');
+        this.alt = '';
+        this.parentElement.querySelector('button')?.remove();
+        const tip = document.createElement('span');
+        tip.textContent = '图片已过期';
+        tip.style.cssText = 'display:block;text-align:center;line-height:120px';
+        this.parentElement.insertBefore(tip, this);
+        this.style.display = 'none';
+      };
       const dlBtn = document.createElement('button');
       dlBtn.title = '下载图片';
       dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
@@ -2107,24 +2119,7 @@
           document.body.removeChild(a);
           URL.revokeObjectURL(a.href);
         } catch {
-          try {
-            const canvas = document.createElement('canvas');
-            const tempImg = new Image();
-            tempImg.crossOrigin = 'anonymous';
-            tempImg.onload = () => {
-              canvas.width = tempImg.naturalWidth;
-              canvas.height = tempImg.naturalHeight;
-              canvas.getContext('2d').drawImage(tempImg, 0, 0);
-              const a = document.createElement('a');
-              a.href = canvas.toDataURL('image/png');
-              a.download = `cancri-image-${Date.now()}.png`;
-              a.click();
-            };
-            tempImg.onerror = () => { window.open(imageUrl, '_blank'); };
-            tempImg.src = imageUrl;
-          } catch {
-            window.open(imageUrl, '_blank');
-          }
+          showToast('图片已过期，无法下载');
         } finally {
           dlBtn.disabled = false;
         }
@@ -4453,7 +4448,7 @@
       generatedImageGrid.prepend(card);
     }
 
-    async function generateImageFromPrompt(prompt, imageModel = DEFAULT_IMAGE_MODEL) {
+    async function generateImageFromPrompt(prompt, imageModel = DEFAULT_IMAGE_MODEL, attachments = []) {
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
@@ -4465,18 +4460,25 @@
 
       let finalStatusText = '等待输入提示词';
 
+      const imageAttachments = (attachments || []).filter(a => !a.isTextFile && (a.dataUrl || a.url));
+
       try {
+        const requestBody = {
+          endpoint: 'image',
+          model: imageModel,
+          prompt: value,
+          n: 1,
+          size: imageSize,
+          response_format: 'url'
+        };
+        if (imageAttachments.length) {
+          requestBody.image = imageAttachments.map(a => a.dataUrl || a.url);
+        }
+
         const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
-          body: JSON.stringify({
-            endpoint: 'image',
-            model: imageModel,
-            prompt: value,
-            n: 1,
-            size: imageSize,
-            response_format: 'url'
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (response.status === 429) {
@@ -4590,8 +4592,8 @@
       return '';
     }
 
-    async function sendImageGenerationMessage(query, modelId, metadata) {
-      createUserMessage(query, []);
+    async function sendImageGenerationMessage(query, modelId, metadata, attachments = []) {
+      createUserMessage(query, attachments);
       homeInput.value = '';
 
       const assistantMessageId = createAssistantMessage(metadata);
@@ -4600,7 +4602,7 @@
       setComposerBusy(true);
 
       try {
-        const imageUrl = await generateImageFromPrompt(query, modelId);
+        const imageUrl = await generateImageFromPrompt(query, modelId, attachments);
         if (imageUrl) {
           updateAssistantMessage(assistantMessageId, { answer: '', thinking: false });
           const messageDiv = document.getElementById(assistantMessageId);
@@ -4615,6 +4617,18 @@
             img.style.cssText = 'max-width:100%;border-radius:10px;display:block;cursor:default';
             img.addEventListener('contextmenu', (e) => e.preventDefault());
             img.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+            img.onerror = function() {
+              this.onerror = null;
+              this.style.cssText = 'max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px';
+              this.removeAttribute('src');
+              this.alt = '';
+              this.parentElement.querySelector('button')?.remove();
+              const tip = document.createElement('span');
+              tip.textContent = '图片已过期';
+              tip.style.cssText = 'display:block;text-align:center;line-height:120px';
+              this.parentElement.insertBefore(tip, this);
+              this.style.display = 'none';
+            };
             const dlBtn = document.createElement('button');
             dlBtn.title = '下载图片';
             dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
@@ -4633,24 +4647,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(a.href);
               } catch {
-                try {
-                  const canvas = document.createElement('canvas');
-                  const tempImg = new Image();
-                  tempImg.crossOrigin = 'anonymous';
-                  tempImg.onload = () => {
-                    canvas.width = tempImg.naturalWidth;
-                    canvas.height = tempImg.naturalHeight;
-                    canvas.getContext('2d').drawImage(tempImg, 0, 0);
-                    const a = document.createElement('a');
-                    a.href = canvas.toDataURL('image/png');
-                    a.download = `cancri-image-${Date.now()}.png`;
-                    a.click();
-                  };
-                  tempImg.onerror = () => { window.open(imageUrl, '_blank'); };
-                  tempImg.src = imageUrl;
-                } catch {
-                  window.open(imageUrl, '_blank');
-                }
+                showToast('图片已过期，无法下载');
               } finally {
                 dlBtn.disabled = false;
               }
@@ -6090,7 +6087,7 @@
 
       if (turnModelId === 'gpt-image-2' || turnModelId === 'sensenova-u1-fast') {
         if (!query && !attachmentsForSend.length) return;
-        await sendImageGenerationMessage(query, turnModelId, turnModelMetadata);
+        await sendImageGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
         return;
       }
 
@@ -7003,9 +7000,14 @@
     }
 
 
+    function isImageOnlyModel(modelId) {
+      const meta = MODEL_CATALOG_BY_ID.get(modelId);
+      return meta?.imageOnly === true;
+    }
+
     function updateAttachBtnVisibility() {
       if (attachBtn) {
-        attachBtn.style.display = isMultimodal ? 'grid' : 'none';
+        attachBtn.style.display = (isMultimodal || isImageOnlyModel(currentModel)) ? 'grid' : 'none';
       }
       if (fileUploadBtn) {
         fileUploadBtn.style.display = 'grid';
