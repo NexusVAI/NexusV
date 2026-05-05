@@ -3614,7 +3614,7 @@
           if (href === '#') return alt;
           const escHref = escapeHtml(href);
           const escAlt = escapeHtml(alt);
-          return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block"><span style="position:absolute;bottom:8px;right:8px;display:flex;gap:6px"><a href="${escHref}" target="_blank" rel="noopener noreferrer" style="width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none" title="新窗口打开"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a><button onclick="(async()=>{try{const r=await fetch('${escHref}');const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){window.open('${escHref}','_blank')}})()" style="width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span></span>`);
+          return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block" oncontextmenu="return false"><button onclick="(async()=>{try{const r=await fetch('${escHref}');const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){}})()" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
         });
       // 转义剩余的 HTML
       output = escapeHtml(output)
@@ -4259,6 +4259,7 @@
       const image = document.createElement('img');
       image.alt = prompt;
       image.src = imageUrl;
+      image.addEventListener('contextmenu', (e) => e.preventDefault());
 
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:absolute;left:0;right:0;bottom:0;padding:10px 12px;z-index:2;display:flex;align-items:center;gap:8px;background:linear-gradient(transparent,rgba(0,0,0,.55))';
@@ -4287,7 +4288,7 @@
           document.body.removeChild(a);
           URL.revokeObjectURL(a.href);
         } catch {
-          window.open(imageUrl, '_blank', 'noopener,noreferrer');
+          // download failed silently
         } finally {
           downloadBtn.disabled = false;
         }
@@ -4458,20 +4459,11 @@
             const img = document.createElement('img');
             img.src = imageUrl;
             img.alt = 'generated image';
-            img.style.cssText = 'max-width:100%;border-radius:10px;display:block;cursor:pointer';
-            img.addEventListener('click', () => window.open(imageUrl, '_blank', 'noopener,noreferrer'));
-            const btnBar = document.createElement('span');
-            btnBar.style.cssText = 'position:absolute;bottom:8px;right:8px;display:flex;gap:6px';
-            const openBtn = document.createElement('a');
-            openBtn.href = imageUrl;
-            openBtn.target = '_blank';
-            openBtn.rel = 'noopener noreferrer';
-            openBtn.title = '新窗口打开';
-            openBtn.style.cssText = 'width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none';
-            openBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+            img.style.cssText = 'max-width:100%;border-radius:10px;display:block';
+            img.addEventListener('contextmenu', (e) => e.preventDefault());
             const dlBtn = document.createElement('button');
             dlBtn.title = '下载图片';
-            dlBtn.style.cssText = 'width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
+            dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
             dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
             dlBtn.addEventListener('click', async (e) => {
               e.stopPropagation();
@@ -4487,15 +4479,13 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(a.href);
               } catch {
-                window.open(imageUrl, '_blank', 'noopener,noreferrer');
+                // fallback: do nothing
               } finally {
                 dlBtn.disabled = false;
               }
             });
-            btnBar.appendChild(openBtn);
-            btnBar.appendChild(dlBtn);
             wrapper.appendChild(img);
-            wrapper.appendChild(btnBar);
+            wrapper.appendChild(dlBtn);
             answerBody.appendChild(wrapper);
           }
           pushHistory('user', query);
