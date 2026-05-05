@@ -2,67 +2,45 @@
 <html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self';">
   <title>Cancri</title>
-  <script>
-    window.__SUPABASE_URL__ = 'https://diusqgphvybnzazgopor.supabase.co';
-    window.__SUPABASE_ANON_KEY__ = 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
-  </script>
+  <script src="./cancri_config.js?v=0504"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0503" />
-  <link rel="stylesheet" href="./cancri_arena.css?v=arena-module-0503" />
+  <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0504" />
+  <link rel="stylesheet" href="./cancri_arena.css?v=arena-module-0504" />
   <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
   <link rel="stylesheet" href="./katex/katex.min.css" />
   <script src="./katex/katex.min.js"></script>
   <script src="./katex/contrib/auto-render.min.js"></script>
-  <script>
-    // 保存 KaTeX 原版 renderMathInElement，防止被 cancri_chat.js 中的同名函数覆盖
-    window.__katexRender = window.renderMathInElement;
-  </script>
-  <script>
-    // 检测本地 KaTeX 是否加载成功，失败则从 CDN 补加载
-    (function() {
-      if (typeof katex !== 'undefined' && typeof renderMathInElement === 'function') {
-        console.log('KaTeX loaded locally');
-        return;
-      }
-      console.warn('Local KaTeX not found, trying CDNs...');
-      var cdns = [
-        'https://cdn.staticfile.org/katex@0.16.9/dist/',
-        'https://cdn.bootcdn.net/ajax/libs/katex@0.16.9/dist/',
-        'https://lib.baomitu.com/KaTeX/0.16.9/',
-        'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/'
-      ];
-      var i = 0;
-      function tryNext() {
-        if (i >= cdns.length) {
-          console.warn('All KaTeX CDNs failed, using fallback renderer');
-          window.__KATEX_FAILED__ = true;
-          return;
-        }
-        var url = cdns[i++];
-        var css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = url + 'katex.min.css';
-        css.onerror = tryNext;
-        document.head.appendChild(css);
-        var s1 = document.createElement('script');
-        s1.src = url + 'katex.min.js';
-        s1.onerror = tryNext;
-        s1.onload = function() {
-          var s2 = document.createElement('script');
-          s2.src = url + 'contrib/auto-render.min.js';
-          s2.onerror = tryNext;
-          s2.onload = function() { console.log('KaTeX loaded from CDN:', url); };
-          document.head.appendChild(s2);
-        };
-        document.head.appendChild(s1);
-      }
-      tryNext();
-    })();
-  </script>
+  <script src="./cancri_katex_fallback.js?v=0504"></script>
 </head>
 <body>
+  <!-- 登录遮罩层：未登录时覆盖整个页面 -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="../Logo/Cancri.png" alt="Cancri" width="40" height="40" style="border-radius:8px;">
+      </div>
+      <h2 class="auth-title">登录 Cancri</h2>
+      <p class="auth-subtitle">使用邮箱验证码登录，获得永久账户</p>
+      <div class="auth-step" id="authStepEmail">
+        <input type="email" class="auth-input" id="authEmailInput" placeholder="输入你的邮箱" autocomplete="email" />
+        <button class="auth-btn" id="authSendOtpBtn" type="button">发送验证码</button>
+        <div class="auth-error" id="authEmailError"></div>
+      </div>
+      <div class="auth-step" id="authStepOtp" style="display:none">
+        <p class="auth-otp-hint">验证码已发送至 <strong id="authEmailDisplay"></strong></p>
+        <input type="text" class="auth-input auth-otp-input" id="authOtpInput" placeholder="输入验证码" maxlength="10" inputmode="numeric" autocomplete="one-time-code" />
+        <button class="auth-btn" id="authVerifyOtpBtn" type="button">验证登录</button>
+        <button class="auth-link" id="authResendOtpBtn" type="button">重新发送</button>
+        <button class="auth-link" id="authBackToEmailBtn" type="button">更换邮箱</button>
+        <div class="auth-error" id="authOtpError"></div>
+      </div>
+      <div class="auth-footer">登录即代表同意服务条款 · 安全邮箱认证</div>
+    </div>
+  </div>
+
   <div class="app" id="appRoot">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-topbar">
@@ -81,7 +59,7 @@
         <div class="nav-group">
           <div class="nav-row active" data-view-target="home" id="newChatBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
-            <span class="sidebar-label">新聊天</span>
+            <span class="sidebar-label">新对战</span>
           </div>
           <div class="nav-row" id="arenaLeaderboardNavBtn" data-view-target="leaderboard">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path><path d="M5 5H3v3a4 4 0 0 0 4 4"></path><path d="M19 5h2v3a4 4 0 0 1-4 4"></path></svg>
@@ -157,6 +135,12 @@
             <span class="grow"></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
           </div>
+          <div class="popover-item" id="nicknameEditBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>昵称</span>
+            <span class="grow"></span>
+            <span id="nicknameDisplay" style="font-size:12px;color:var(--text-soft);"></span>
+          </div>
           <div class="popover-sep"></div>
           <div class="popover-item" id="themeShortcutBtn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="M2 12h4"></path><path d="m6.3 17.7 2.8-2.8"></path><path d="M12 18v4"></path><path d="m17.7 17.7-2.8-2.8"></path><path d="M18 12h4"></path><path d="m17.7 6.3-2.8 2.8"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
@@ -195,23 +179,19 @@
           <div class="arena-top-mode" id="topArenaModeSelector">
             <button class="arena-mode-current" id="topArenaModeBtn" type="button">
               <span class="arena-mode-icon">◯</span>
-              <span id="topArenaModeLabel">单模型</span>
+              <span id="topArenaModeLabel">匿名对战</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
             <div class="arena-mode-dropdown" id="topArenaModeDropdown">
-              <button class="arena-mode-option" data-mode="battle" type="button">
+              <button class="arena-mode-option active" data-mode="anonymous" type="button">
                 <span class="arena-mode-symbol">⚔</span>
                 <span><strong>匿名对战</strong><small>两个匿名模型同题回答</small></span>
-              </button>
-              <button class="arena-mode-option" data-mode="agent" type="button">
-                <span class="arena-mode-symbol">∞</span>
-                <span><strong>智能体模式 <em>预览</em></strong><small>多模态智能体对话</small></span>
               </button>
               <button class="arena-mode-option" data-mode="side_by_side" type="button">
                 <span class="arena-mode-symbol">◎</span>
                 <span><strong>双模型对话</strong><small>比较你选择的两个模型</small></span>
               </button>
-              <button class="arena-mode-option active" data-mode="direct" type="button">
+              <button class="arena-mode-option" data-mode="single" type="button">
                 <span class="arena-mode-symbol">○</span>
                 <span><strong>单模型</strong><small>一次只和一个模型聊天</small></span>
               </button>
@@ -269,6 +249,10 @@
             <button class="theme-btn" data-theme="yellow" title="暖黄"><span class="theme-dot" style="background:#faf6e8;border:1.5px solid #b8860b;"></span></button>
             <button class="theme-btn" data-theme="blue" title="淡蓝"><span class="theme-dot" style="background:#edf1f7;border:1.5px solid #4a7abf;"></span></button>
           </div>
+          <button class="clear-btn" id="exportBtn" aria-label="导出对话" title="导出聊天记录为 Markdown">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            导出
+          </button>
           <button class="clear-btn" id="clearBtn" aria-label="清空对话">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg>
             清空
@@ -336,7 +320,8 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>
                   </button>
                   <button class="send-btn" id="sendChatBtn" aria-label="发送消息" disabled>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    <svg class="send-icon-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                    <svg class="send-icon-stop" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="7" y="7" width="10" height="10" rx="1.5"></rect></svg>
                   </button>
                 </div>
               </div>
@@ -505,107 +490,33 @@
               </div>
             </div>
             <div class="leaderboard-side-section">
-              <div class="leaderboard-side-title">Categories</div>
-              <div class="leaderboard-category active">🏆 Overall</div>
-              <div class="leaderboard-category">🤓 Expert</div>
-              <div class="leaderboard-category">💼 Occupational</div>
-              <div class="leaderboard-category">🧮 Math</div>
-              <div class="leaderboard-category">📝 Instruction Following</div>
-              <div class="leaderboard-category">💬 Multi-Turn</div>
-              <div class="leaderboard-category">🔥 Creative Writing</div>
-              <div class="leaderboard-category">💻 Coding</div>
+              <div class="leaderboard-side-title">分类</div>
+              <div class="leaderboard-category active">🏆 综合排行</div>
             </div>
           </aside>
           <section class="leaderboard-main">
             <div class="leaderboard-hero">
               <div>
-                <h1>Text Arena</h1>
-                <p>View overall rankings across AI models in chat tasks across math, coding, creative writing, and other open-ended domains.</p>
+                <h1>竞技场排行榜</h1>
+                <p>AI 模型在开放问答、数学、编程、创意写作等任务中的综合 Elo 排名。</p>
+                <p class="leaderboard-trust-note">仅匿名模式且通过风控的投票计入公开榜。</p>
                 <div class="leaderboard-meta">
-                  <span>◷ Updated live</span>
-                  <span id="mainLeaderboardVoteCount">Votes loading</span>
-                  <span id="mainLeaderboardModelCount">Models loading</span>
+                  <span>◷ 实时更新</span>
+                  <span id="mainLeaderboardVoteCount">加载中</span>
+                  <span id="mainLeaderboardModelCount">加载中</span>
+                  <span id="mainLeaderboardUpdatedAt">最近更新加载中</span>
                 </div>
               </div>
-              <button class="leaderboard-start-btn" type="button" id="leaderboardStartVotingBtn">Start Voting</button>
+              <button class="leaderboard-start-btn" type="button" id="leaderboardStartVotingBtn">开始投票</button>
             </div>
             <div class="leaderboard-toolbar">
-              <button type="button">☷ Hide Filters</button>
+              <button type="button">☷ 隐藏筛选</button>
               <span></span>
-              <button class="active" type="button">Models</button>
-              <button type="button">Labs</button>
+              <button class="active" type="button">模型</button>
               <button type="button">⌕</button>
             </div>
             <div class="leaderboard-table" id="mainLeaderboardList">排行榜加载中…</div>
           </section>
-        </div>
-      </section>
-
-      <section class="view" id="arenaView">
-        <div class="arena-page">
-          <div class="arena-hero">
-            <div>
-              <div class="arena-kicker">AI Arena</div>
-              <h1>匿名双模型竞技场</h1>
-              <p>输入同一个问题，随机抽取两个模型匿名回答。投票前隐藏身份，投票后揭晓模型。</p>
-            </div>
-            <div class="arena-security">
-              <span>持久风控</span>
-              <strong>防脚本刷票</strong>
-            </div>
-          </div>
-          <div class="arena-modebar">
-            <label>
-              <span>模式</span>
-              <select id="arenaModeSelect">
-                <option value="anonymous">匿名双模型对战</option>
-                <option value="side_by_side">双模型对战</option>
-                <option value="single">单模型</option>
-              </select>
-            </label>
-            <div class="arena-model-pickers" id="arenaModelPickers">
-              <label>
-                <span>模型 A</span>
-                <input id="arenaModelSearchA" list="arenaModelOptions" placeholder="搜索或输入模型 ID" />
-              </label>
-              <label id="arenaModelPickerB">
-                <span>模型 B</span>
-                <input id="arenaModelSearchB" list="arenaModelOptions" placeholder="搜索或输入模型 ID" />
-              </label>
-              <datalist id="arenaModelOptions"></datalist>
-            </div>
-          </div>
-          <div class="arena-compose">
-            <textarea id="arenaPromptInput" rows="3" placeholder="输入一个适合比较模型能力的问题"></textarea>
-            <button id="arenaStartBtn">开始对战</button>
-          </div>
-          <div class="arena-status" id="arenaStatus">等待开始一局新的匿名对战。</div>
-          <div class="arena-battle">
-            <article class="arena-card" data-slot="a">
-              <div class="arena-card-head">
-                <span class="arena-slot">Model A</span>
-                <span class="arena-model-name" id="arenaModelA">投票后揭晓</span>
-              </div>
-              <div class="arena-answer markdown-body" id="arenaAnswerA">左侧模型回答会显示在这里。</div>
-            </article>
-            <article class="arena-card" data-slot="b">
-              <div class="arena-card-head">
-                <span class="arena-slot">Model B</span>
-                <span class="arena-model-name" id="arenaModelB">投票后揭晓</span>
-              </div>
-              <div class="arena-answer markdown-body" id="arenaAnswerB">右侧模型回答会显示在这里。</div>
-            </article>
-          </div>
-          <div class="arena-vote-row" id="arenaVoteRow">
-            <button class="arena-vote-btn" data-winner="a">A 更好</button>
-            <button class="arena-vote-btn" data-winner="b">B 更好</button>
-            <button class="arena-vote-btn" data-winner="tie">平局</button>
-            <button class="arena-vote-btn danger" data-winner="bad">都不好</button>
-          </div>
-          <div class="arena-leaderboard">
-            <div class="arena-section-title">排行榜</div>
-            <div id="arenaLeaderboardList" class="arena-leaderboard-list">暂无投票数据。</div>
-          </div>
         </div>
       </section>
 
@@ -902,14 +813,6 @@
     <button class="context-menu-btn" type="button" data-menu-action="paste">粘贴</button>
   </div>
 
-  <div class="devtools-shield" id="devtoolsShield" aria-hidden="true">
-    <div class="devtools-card">
-      <div class="devtools-kicker">开发者工具已打开</div>
-      <h2 class="devtools-title">请关闭开发者工具后继续使用</h2>
-      <p class="devtools-text">为保护服务安全，部分功能在开发者工具打开时受限。关闭 F12 即可恢复正常体验。</p>
-    </div>
-  </div>
-
   <div class="modal medium" id="announcementModal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -933,8 +836,8 @@
     </div>
   </div>
 
-  <script src="./cancri_chat.js?v=arena-host-0503"></script>
-  <script src="./cancri_announcement.js?v=announcement-module-0503"></script>
-  <script src="./cancri_arena.js?v=arena-module-0503"></script>
+  <script src="./cancri_chat.js?v=arena-host-0504"></script>
+  <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
+  <script src="./cancri_arena.js?v=arena-module-0504"></script>
 </body>
 </html>

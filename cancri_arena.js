@@ -10,6 +10,7 @@
   const {
     state,
     MODEL_CATALOG,
+    ARENA_MODELS,
     EDGE_FUNCTION_URL,
     FETCH_TIMEOUT_MS,
     CHAT_TURN_TIMEOUT_MS,
@@ -20,7 +21,13 @@
     renderMarkdown,
     escapeHtml,
     getModelDisplayName,
+    getLeaderboardRowMeta,
     showToast,
+    getModelRequestOptions,
+    mergeToolCallDeltas,
+    syncStreamingMarkdownBlock,
+    TOOL_DISPLAY_NAMES,
+    parseToolArguments,
   } = app;
 
   const arenaPromptInput = document.getElementById('arenaPromptInput');
@@ -42,7 +49,9 @@
   let currentArenaMatch = null;
   state.isArenaRunning = false;
 
-  const arenaModels = Array.isArray(MODEL_CATALOG) ? MODEL_CATALOG.filter(model => model && model.id && !String(model.id).startsWith('image-')) : [];
+  const arenaModels = Array.isArray(ARENA_MODELS)
+    ? ARENA_MODELS
+    : (Array.isArray(MODEL_CATALOG) ? MODEL_CATALOG.filter(model => model && model.id && model.visible !== false && model.enabled !== false && model.arena !== false && !String(model.id).startsWith('image-')) : []);
 
   function getModelIdFromInput(input) {
     const value = String(input?.value || '').trim();
@@ -50,7 +59,7 @@
     const exact = arenaModels.find(model => model.id === value || model.displayName === value);
     if (exact) return exact.id;
     const lowered = value.toLowerCase();
-    const fuzzy = arenaModels.find(model => String(model.id).toLowerCase().includes(lowered) || String(model.displayName || '').toLowerCase().includes(lowered));
+    const fuzzy = arenaModels.find(model => [model.id, model.displayName, model.brand, model.canonicalId, model.lineLabel].some(item => String(item || '').toLowerCase().includes(lowered)));
     return fuzzy ? fuzzy.id : '';
   }
 
@@ -59,12 +68,15 @@
     if (arenaModelPickers) arenaModelPickers.hidden = mode === 'anonymous';
     if (arenaModelPickerB) arenaModelPickerB.hidden = mode === 'single';
     if (arenaStartBtn) arenaStartBtn.textContent = mode === 'single' ? '开始单模型' : '开始对战';
+    const cardB = document.querySelector('.arena-card[data-slot="b"]');
+    if (cardB) cardB.hidden = mode === 'single';
+    if (arenaVoteRow) arenaVoteRow.hidden = true;
   }
 
   function initArenaModelOptions() {
     if (!arenaModelOptions) return;
     arenaModelOptions.innerHTML = arenaModels.map(model => {
-      const label = `${model.displayName || model.id} · ${model.id}`;
+      const label = [model.displayName || model.id, model.lineLabel, model.brand].filter(Boolean).join(' · ');
       return `<option value="${escapeHtml(model.id)}" label="${escapeHtml(label)}"></option>`;
     }).join('');
     if (arenaModelSearchA && !arenaModelSearchA.value && arenaModels[0]) arenaModelSearchA.value = arenaModels[0].id;
@@ -86,11 +98,127 @@
     }
   }
 
+  function ensureArenaCardParts(target) {
+    const card = target.closest('.arena-card');
+    if (!card) return null;
+    if (card._arenaParts) return card._arenaParts;
+    const thinkBlock = document.createElement('div');
+    thinkBlock.className = 'think-block';
+    thinkBlock.hidden = true;
+    const thinkHeader = document.createElement('button');
+    thinkHeader.className = 'think-header';
+    thinkHeader.type = 'button';
+    thinkHeader.setAttribute('aria-expanded', 'true');
+    thinkHeader.innerHTML = '<span class="think-label">Thinking</span><span class="think-caret">⌄</span>';
+    thinkHeader.addEventListener('click', function () {
+      if (thinkBlock.hidden) return;
+      const collapsed = !thinkBlock.classList.contains('is-collapsed');
+      thinkBlock.classList.toggle('is-collapsed', collapsed);
+      thinkHeader.setAttribute('aria-expanded', String(!collapsed));
+    });
+    const thinkBody = document.createElement('div');
+    thinkBody.className = 'think-body md-content';
+    thinkBlock.appendChild(thinkHeader);
+    thinkBlock.appendChild(thinkBody);
+    const toolCallsContainer = document.createElement('div');
+    toolCallsContainer.className = 'tool-calls-container';
+    target.parentNode.insertBefore(thinkBlock, target);
+    target.parentNode.insertBefore(toolCallsContainer, target);
+    card._arenaParts = {
+      thinkBlock: thinkBlock,
+      thinkHeader: thinkHeader,
+      thinkBody: thinkBody,
+      toolCallsContainer: toolCallsContainer,
+      answerBody: target,
+      thinkStreamState: { text: '', ready: false, startedAt: 0, wasThinking: false, autoCollapsed: false },
+      answerStreamState: { text: '', ready: false },
+    };
+    return card._arenaParts;
+  }
+
   function renderArenaText(target, text, loading) {
     if (!target) return;
-    const value = String(text || '').trim();
-    target.innerHTML = value ? renderMarkdown(value) : '<span class="typing-indicator">' + (loading ? '正在生成…' : '暂无内容') + '</span>';
-    if (window.renderMathInElement) window.renderMathInElement(target);
+    const parts = ensureArenaCardParts(target);
+    if (typeof text === 'string') {
+      const value = String(text || '').trim();
+      target.innerHTML = value ? renderMarkdown(value) : '<span class="typing-indicator">' + (loading ? '正在生成…' : '暂无内容') + '</span>';
+      if (window.renderMathInElement) window.renderMathInElement(target);
+      return;
+    }
+    if (!parts) return;
+    const { reasoning, answer, thinking, toolCalls } = text;
+    const reasoningText = String(reasoning || '').trim();
+    const answerText = String(answer || '').trim();
+    const hasReasoning = Boolean(reasoningText);
+    const hasAnswer = Boolean(answerText);
+    const { thinkBlock, thinkHeader, thinkBody, answerBody, toolCallsContainer, thinkStreamState, answerStreamState } = parts;
+    thinkBlock.hidden = !hasReasoning && !thinking;
+    if (thinking && !thinkStreamState.wasThinking) {
+      thinkStreamState.startedAt = Date.now();
+      thinkStreamState.autoCollapsed = false;
+      thinkBlock.classList.remove('is-collapsed');
+      if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'true');
+    }
+    if (hasReasoning) {
+      syncStreamingMarkdownBlock(thinkBody, thinkStreamState, reasoningText, { thinking: thinking });
+    } else if (!thinking) {
+      thinkBody.innerHTML = '';
+      thinkStreamState.text = '';
+      thinkStreamState.ready = false;
+    }
+    if (thinking) thinkBlock.classList.add('is-thinking');
+    else thinkBlock.classList.remove('is-thinking');
+    if (thinkHeader) {
+      const label = thinkHeader.querySelector('.think-label');
+      const seconds = thinkStreamState.startedAt ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000)) : 1;
+      if (label) label.textContent = thinking ? 'Thinking' : 'Thought for ' + seconds + 's';
+    }
+    if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
+      thinkBlock.classList.add('is-collapsed');
+      if (thinkHeader) thinkHeader.setAttribute('aria-expanded', 'false');
+      thinkStreamState.autoCollapsed = true;
+    }
+    thinkStreamState.wasThinking = Boolean(thinking);
+    if (hasAnswer) {
+      syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, { thinking: thinking, placeholder: '正在思考中…' });
+    } else if (thinking) {
+      answerBody.innerHTML = '';
+      answerStreamState.text = '';
+      answerStreamState.ready = false;
+    } else if (!hasReasoning) {
+      answerBody.innerHTML = '<span class="typing-indicator">暂无内容</span>';
+    }
+    if (Array.isArray(toolCalls) && toolCalls.length) {
+      var existing = toolCallsContainer.querySelectorAll('.tool-call-block');
+      var existingIds = new Set([].slice.call(existing).map(function (el) { return el.dataset.toolCallId; }));
+      for (var i = 0; i < toolCalls.length; i++) {
+        var tc = toolCalls[i];
+        var tcId = tc.id || 'call_' + tc.name;
+        if (existingIds.has(tcId)) continue;
+        var block = document.createElement('div');
+        block.className = 'tool-call-block';
+        block.dataset.toolCallId = tcId;
+        var header = document.createElement('div');
+        header.className = 'tool-call-header';
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'tool-call-name';
+        var displayName = TOOL_DISPLAY_NAMES[tc.name] || tc.name;
+        var args = parseToolArguments(tc.arguments);
+        var argHint = args.search_query || args.query || args.keyword || args.article_id || args.articleId || args.article_title || args.title || args.id || '';
+        nameSpan.textContent = argHint ? displayName + '：' + argHint : displayName;
+        var status = document.createElement('span');
+        status.className = 'tool-call-status';
+        status.textContent = '（竞技场模式不执行）';
+        header.appendChild(nameSpan);
+        header.appendChild(status);
+        header.addEventListener('click', (function (b) { return function () { b.classList.toggle('expanded'); }; })(block));
+        block.appendChild(header);
+        toolCallsContainer.appendChild(block);
+      }
+    }
+    if (hasAnswer || hasReasoning) {
+      if (window.renderMathInElement) window.renderMathInElement(answerBody.closest('.arena-card'));
+    }
   }
 
   async function arenaApi(endpoint, payload, timeoutMs) {
@@ -102,27 +230,34 @@
     const text = await response.text().catch(() => '');
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
-    if (!response.ok) {
-      const parsed = parseBackendErrorPayload(text);
-      throw new Error(parsed.message || data.message || data.error || 'Arena request failed: ' + response.status);
-    }
+      if (!response.ok) {
+        const parsed = parseBackendErrorPayload(text);
+        if (parsed.code === 'anonymous_not_allowed') {
+          throw new Error(parsed.message || '请使用邮箱验证码登录后再使用。');
+        }
+        throw new Error(parsed.message || data.message || data.error || 'Arena request failed: ' + response.status);
+      }
     return data;
   }
 
   function parseArenaStreamDelta(parsed) {
     const delta = parsed && parsed.choices && parsed.choices[0] ? parsed.choices[0].delta : {};
     const message = parsed && parsed.choices && parsed.choices[0] ? parsed.choices[0].message : {};
-    return String(delta.content || delta.reasoning_content || message.content || '');
+    const reasoning = String(delta.reasoning_content || '');
+    const content = String(delta.content || message.content || '');
+    const toolCalls = Array.isArray(delta.tool_calls) && delta.tool_calls.length ? delta.tool_calls : null;
+    return { reasoning, content, toolCalls };
   }
 
-  async function streamArenaSlot(matchId, slot, prompt, target) {
-    let answer = '';
-    const turnId = createChatTurnId();
+  async function streamArenaSlot(matchId, slot, prompt, target, modelId, turnId = '') {
+    let reasoningText = '';
+    let answerText = '';
+    let doneReasoning = false;
+    const toolCalls = [];
+    const effectiveTurnId = turnId || createChatTurnId();
     renderArenaText(target, '', true);
-    const messages = [
-      { role: 'system', content: '你正在参加匿名 AI 竞技场。请直接回答用户问题，不要透露或猜测自己的模型身份，不要提及评分规则。回答应清晰、有帮助、适度简洁。' },
-      { role: 'user', content: prompt }
-    ];
+    const messages = [{ role: 'user', content: prompt }];
+    const requestOptions = modelId ? getModelRequestOptions(modelId) : {};
 
     const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
       method: 'POST',
@@ -134,7 +269,12 @@
         messages,
         stream: true,
         temperature: 0.6,
-        client_turn_id: turnId
+        client_turn_id: effectiveTurnId,
+        request_kind: 'arena_model_answer',
+        arena_match_id: matchId,
+        arena_slot: slot,
+        arena_mode: currentArenaMatch?.mode || 'anonymous',
+        ...requestOptions
       })
     }, CHAT_TURN_TIMEOUT_MS, '竞技场模型请求');
 
@@ -160,21 +300,141 @@
         if (!payload || payload === '[DONE]') continue;
         try {
           const chunk = parseArenaStreamDelta(JSON.parse(payload));
-          if (!chunk) continue;
-          answer += chunk;
-          renderArenaText(target, answer, true);
+          if (chunk.reasoning) {
+            reasoningText += chunk.reasoning;
+            renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true });
+          }
+          if (chunk.content) {
+            if (!doneReasoning) doneReasoning = true;
+            answerText += chunk.content;
+            renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true });
+          }
+          if (chunk.toolCalls) {
+            mergeToolCallDeltas(toolCalls, chunk.toolCalls);
+            renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true, toolCalls: toolCalls });
+          }
         } catch { continue; }
       }
     }
     if (buffer.trim().startsWith('data: ')) {
       const payload = buffer.trim().slice(6).trim();
       if (payload && payload !== '[DONE]') {
-        try { answer += parseArenaStreamDelta(JSON.parse(payload)); } catch { void 0; }
+        try {
+          var tailChunk = parseArenaStreamDelta(JSON.parse(payload));
+          if (tailChunk.reasoning) reasoningText += tailChunk.reasoning;
+          if (tailChunk.content) answerText += tailChunk.content;
+        } catch { void 0; }
       }
     }
-    renderArenaText(target, answer || '这个模型没有返回有效内容。', false);
-    await arenaApi('arena_record_response', { id: matchId, slot, response: answer || '' });
-    return answer;
+    renderArenaText(target, {
+      reasoning: reasoningText,
+      answer: answerText || '这个模型没有返回有效内容。',
+      thinking: false,
+      toolCalls: toolCalls.length ? toolCalls : undefined
+    });
+    return answerText;
+  }
+
+  function getArenaSlotTurnId(match, slot) {
+    const slots = Array.isArray(match?.slots) ? match.slots : [];
+    const found = slots.find(item => item && item.slot === slot);
+    return String(found?.turn_id || found?.client_turn_id || '');
+  }
+
+  function formatArenaUpdatedAt(value) {
+    const date = new Date(value || '');
+    if (!Number.isFinite(date.getTime())) return '';
+    const text = new Intl.DateTimeFormat('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+    return ' · ' + text;
+  }
+
+  function formatArenaEloSlot(before, after) {
+    const start = Number(before);
+    const end = Number(after);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return '';
+    const delta = Math.round((end - start) * 10) / 10;
+    const sign = delta > 0 ? '+' : '';
+    return `${Math.round(end)} (${sign}${delta})`;
+  }
+
+  function formatArenaEloReveal(reveal) {
+    const modelA = formatArenaEloSlot(reveal.model_a_elo_before, reveal.model_a_elo_after);
+    const modelB = formatArenaEloSlot(reveal.model_b_elo_before, reveal.model_b_elo_after);
+    const details = [modelA ? `A ${modelA}` : '', modelB ? `B ${modelB}` : ''].filter(Boolean).join(' · ');
+    return details ? ' Elo：' + details : '';
+  }
+
+  async function streamSingleArenaChat(prompt, target, modelId, turnId = '') {
+    let reasoningText = '';
+    let answerText = '';
+    const toolCalls = [];
+    const effectiveTurnId = turnId || createChatTurnId();
+    renderArenaText(target, '', true);
+    const requestOptions = modelId ? getModelRequestOptions(modelId) : {};
+    const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: await proxyHeaders(),
+      body: JSON.stringify({
+        endpoint: 'chat',
+        model: modelId,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true,
+        temperature: 0.6,
+        client_turn_id: effectiveTurnId,
+        request_kind: 'single_model_answer',
+        ...requestOptions
+      })
+    }, CHAT_TURN_TIMEOUT_MS, '单模型请求');
+    const errorText = response.ok ? '' : await response.text().catch(() => '');
+    if (!response.ok) {
+      const parsed = parseBackendErrorPayload(errorText);
+      throw new Error(parsed.message || errorText || '单模型请求失败');
+    }
+    if (!response.body) throw new Error('单模型没有返回数据流');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const chunk = parseArenaStreamDelta(JSON.parse(payload));
+          if (chunk.reasoning) reasoningText += chunk.reasoning;
+          if (chunk.content) answerText += chunk.content;
+          if (chunk.toolCalls) mergeToolCallDeltas(toolCalls, chunk.toolCalls);
+          renderArenaText(target, { reasoning: reasoningText, answer: answerText, thinking: true, toolCalls: toolCalls.length ? toolCalls : undefined });
+        } catch { continue; }
+      }
+    }
+    if (buffer.trim().startsWith('data: ')) {
+      const payload = buffer.trim().slice(6).trim();
+      if (payload && payload !== '[DONE]') {
+        try {
+          const tailChunk = parseArenaStreamDelta(JSON.parse(payload));
+          if (tailChunk.reasoning) reasoningText += tailChunk.reasoning;
+          if (tailChunk.content) answerText += tailChunk.content;
+        } catch { void 0; }
+      }
+    }
+    renderArenaText(target, {
+      reasoning: reasoningText,
+      answer: answerText || '这个模型没有返回有效内容。',
+      thinking: false,
+      toolCalls: toolCalls.length ? toolCalls : undefined
+    });
+    return answerText;
   }
 
   async function loadArenaLeaderboard() {
@@ -187,11 +447,16 @@
         return;
       }
       arenaLeaderboardList.innerHTML = rows.map(function (row, index) {
-        const name = getModelDisplayName(row.model_id);
+        const rowMeta = typeof getLeaderboardRowMeta === 'function'
+          ? getLeaderboardRowMeta(row)
+          : { displayName: row.display_name || getModelDisplayName(row.best_line_model_id || row.model_id), brand: row.brand || '', lineLabel: row.line_label || '' };
+        const name = rowMeta.displayName;
+        const detail = [rowMeta.brand, rowMeta.lineLabel ? `最高线路：${rowMeta.lineLabel}` : ''].filter(Boolean).join(' · ');
         const total = Number(row.total_votes || 0);
         const rate = Number(row.win_rate || 0);
         const elo = Number(row.elo_score || 1000).toFixed(0);
-        return '<div class="arena-leaderboard-row"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><span>Elo ' + elo + ' · ' + total + ' 票 · 胜率 ' + rate + '%</span></div>';
+        const updated = formatArenaUpdatedAt(row.updated_at);
+        return '<div class="arena-leaderboard-row"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><span>' + escapeHtml(detail ? detail + ' · ' : '') + 'Elo ' + elo + ' · ' + total + ' 有效票 · 胜率 ' + rate + '%' + updated + '</span></div>';
       }).join('');
     } catch (error) {
       arenaLeaderboardList.textContent = '排行榜暂时加载失败。';
@@ -221,25 +486,40 @@
     setArenaStatus(mode === 'single' ? '正在启动单模型…' : '正在创建对战，并启动模型…');
 
     try {
-      const result = await arenaApi('arena_create_match', { prompt, mode, model_a: modelA, model_b: modelB }, FETCH_TIMEOUT_MS);
-      const match = result.data;
-      currentArenaMatch = { id: match.id, prompt: prompt, ready: false, voted: mode === 'single', reveal: null, mode };
-      setArenaBusy(true);
+      const arenaTurnId = createChatTurnId();
       if (mode === 'single') {
-        const answerA = await streamArenaSlot(match.id, 'a', prompt, arenaAnswerA);
-        currentArenaMatch.ready = true;
+        currentArenaMatch = { id: '', prompt: prompt, ready: true, voted: true, reveal: null, mode, turnId: arenaTurnId };
+        const answerA = await streamSingleArenaChat(prompt, arenaAnswerA, modelA, arenaTurnId);
         if (arenaVoteRow) arenaVoteRow.hidden = true;
         setArenaStatus(answerA ? '单模型回答完成。' : '单模型没有返回有效内容。');
         return;
       }
-      if (arenaVoteRow) arenaVoteRow.hidden = false;
+      const createPayload = mode === 'anonymous'
+        ? { prompt, mode, request_kind: 'arena_create_match' }
+        : { prompt, mode, model_a: modelA, model_b: modelB, request_kind: 'arena_create_match' };
+      const result = await arenaApi('arena_create_match', createPayload, FETCH_TIMEOUT_MS);
+      const match = result.data;
+      currentArenaMatch = { id: match.id, prompt: prompt, ready: false, voted: mode === 'single', reveal: null, mode, turnId: arenaTurnId };
+      setArenaBusy(true);
+      const slotTurnA = getArenaSlotTurnId(match, 'a') || arenaTurnId;
+      const slotTurnB = getArenaSlotTurnId(match, 'b') || arenaTurnId;
+      if (arenaVoteRow) arenaVoteRow.hidden = true;
       const [answerA, answerB] = await Promise.allSettled([
-        streamArenaSlot(match.id, 'a', prompt, arenaAnswerA),
-        streamArenaSlot(match.id, 'b', prompt, arenaAnswerB)
+        streamArenaSlot(match.id, 'a', prompt, arenaAnswerA, mode !== 'anonymous' ? modelA : '', slotTurnA),
+        streamArenaSlot(match.id, 'b', prompt, arenaAnswerB, mode !== 'anonymous' ? modelB : '', slotTurnB)
       ]);
       if (answerA.status === 'rejected') renderArenaText(arenaAnswerA, '请求失败：' + (answerA.reason ? answerA.reason.message : answerA.reason), false);
       if (answerB.status === 'rejected') renderArenaText(arenaAnswerB, '请求失败：' + (answerB.reason ? answerB.reason.message : answerB.reason), false);
+      const answerAText = answerA.status === 'fulfilled' ? String(answerA.value || '').trim() : '';
+      const answerBText = answerB.status === 'fulfilled' ? String(answerB.value || '').trim() : '';
+      if (!answerAText || !answerBText) {
+        currentArenaMatch.ready = false;
+        if (arenaVoteRow) arenaVoteRow.hidden = true;
+        setArenaStatus('A/B 有一侧未返回有效内容，本轮不开放投票。');
+        return;
+      }
       currentArenaMatch.ready = true;
+      if (arenaVoteRow) arenaVoteRow.hidden = false;
       setArenaStatus(mode === 'anonymous' ? '回答完成。请选择你认为更好的回答，投票后会揭晓模型。' : '回答完成。请选择你认为更好的回答。');
     } catch (error) {
       currentArenaMatch = null;
@@ -260,8 +540,8 @@
       currentArenaMatch.reveal = reveal;
       if (arenaModelA) arenaModelA.textContent = getModelDisplayName(reveal.model_a || 'Model A');
       if (arenaModelB) arenaModelB.textContent = getModelDisplayName(reveal.model_b || 'Model B');
-      const eloText = reveal.model_a_elo_after && reveal.model_b_elo_after ? ` Elo：A ${Math.round(reveal.model_a_elo_after)} / B ${Math.round(reveal.model_b_elo_after)}` : '';
-      setArenaStatus((result && result.data && result.data.effective === false) ? '投票已记录，但因风控评分较高，不计入公开榜。' : '投票成功，排行榜已更新。' + eloText);
+      const eloText = formatArenaEloReveal(reveal);
+      setArenaStatus((result && result.data && result.data.effective === false) ? '投票已记录，但因风控评分较高，不计入公开榜。' + eloText : '投票成功，已计入公开榜。' + eloText);
       await loadArenaLeaderboard();
     } catch (error) {
       setArenaStatus(error ? error.message : '投票失败，请稍后重试。');
@@ -288,6 +568,7 @@
     });
   }
   if (arenaVoteRow) {
+    arenaVoteRow.hidden = true;
     arenaVoteRow.querySelectorAll('button[data-winner]').forEach(function (button) {
       button.addEventListener('click', function () { voteArenaMatch(button.dataset.winner); });
     });
