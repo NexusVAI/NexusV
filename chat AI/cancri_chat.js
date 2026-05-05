@@ -732,6 +732,8 @@
       { id: 'qwen3-coder', displayName: 'Qwen3-Coder', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true },
       { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
       { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'moonshotai-kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'moonshotai-kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '新'] },
+      { id: 'gpt-5.5', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
       { id: 'glm-5', displayName: 'GLM-5', brand: '智谱 GLM', canonicalId: 'glm-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './zhipu-color.svg', tags: ['深度编程'] },
       { id: 'glm-5.1', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },

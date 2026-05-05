@@ -84,6 +84,16 @@
       "status": "operational"
     },
     {
+      "name": "Kimi K2.6",
+      "description": "多模态 · 线路二",
+      "status": "operational"
+    },
+    {
+      "name": "GPT-5.5",
+      "description": "新 · TokenFlux",
+      "status": "operational"
+    },
+    {
       "name": "GLM-5",
       "description": "深度编程",
       "status": "operational"
