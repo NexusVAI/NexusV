@@ -231,7 +231,7 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
           </div>
-          <div class="context-meter" id="contextMeter" tabindex="0" aria-label="上下文额度">
+          <div class="context-meter hidden" id="contextMeter" tabindex="0" aria-label="上下文额度">
             <div class="context-meter-ring">
               <div class="context-meter-inner" id="contextMeterValue">0</div>
             </div>
@@ -243,12 +243,6 @@
           </div>
         </div><!-- /.header-left -->
         <div class="header-right">
-          <div class="theme-switcher" id="themeSwitcherHeader" style="gap:4px;padding:0;margin-right:2px">
-            <button class="theme-btn" data-theme="light" title="浅色"><span class="theme-dot" style="background:#f9f9f8;border:1.5px solid rgba(0,0,0,.18);"></span></button>
-            <button class="theme-btn" data-theme="dark" title="深色"><span class="theme-dot" style="background:#0a0a0a;border:1.5px solid rgba(255,255,255,.18);"></span></button>
-            <button class="theme-btn" data-theme="yellow" title="暖黄"><span class="theme-dot" style="background:#faf6e8;border:1.5px solid #b8860b;"></span></button>
-            <button class="theme-btn" data-theme="blue" title="淡蓝"><span class="theme-dot" style="background:#edf1f7;border:1.5px solid #4a7abf;"></span></button>
-          </div>
           <button class="clear-btn" id="exportBtn" aria-label="导出对话" title="导出聊天记录为 Markdown">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             导出
@@ -282,7 +276,7 @@
           </div>
           <div class="announcement-item">
             <span class="announcement-icon">🚀</span>
-            <span class="announcement-text">网站即将从「聚合站」转型为「竞技场」模式，敬请期待全新体验</span>
+            <span class="announcement-text">网站即将开展API业务，敬请期待</span>
           </div>
         </div>
         <div class="announcement-indicators">
@@ -295,6 +289,20 @@
       <section class="view active" id="homeView">
         <div class="chat-messages" id="chatMessages"></div>
         <div class="home-center" id="homeCenter">
+          <div class="social-links" style="display:flex;gap:16px;justify-content:center;margin-bottom:20px;">
+            <a href="https://github.com/NexusVAI" target="_blank" rel="noopener noreferrer" title="GitHub">
+              <img src="./github.svg" alt="GitHub" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            </a>
+            <a href="https://huggingface.co/xingy555888" target="_blank" rel="noopener noreferrer" title="HuggingFace">
+              <img src="./huggingface-color.svg" alt="HuggingFace" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            </a>
+            <a href="https://space.bilibili.com/3691002594331274?spm_id_from=333.1007.0.0" target="_blank" rel="noopener noreferrer" title="Bilibili">
+              <img src="./bilibili-color.svg" alt="Bilibili" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            </a>
+            <a href="https://x.com/NexusVAI" target="_blank" rel="noopener noreferrer" title="X (Twitter)">
+              <img src="./x.svg" alt="X (Twitter)" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            </a>
+          </div>
           <h1 class="hero" id="heroTitle">有什么可以帮忙的？</h1>
             <div class="composer-wrap">
               <div class="composer-halo"></div>
@@ -330,33 +338,7 @@
             </div>
             <div class="attachment-preview" id="attachmentPreview" hidden></div>
             <div class="token-expiry-note" id="tokenExpiryNote" aria-live="polite">
-              <div>
-                <span class="token-warning">令牌一个月后自动过期</span>
-                <span id="tokenRemainingText">· 剩余时间计算中</span>
-              </div>
-              <div class="token-dates">起始日 2026-04-28 22:52:10 · 结束日 2026-05-28 22:52:10</div>
-            </div>
-            <div class="rate-limit-note" id="rateLimitNote" aria-live="polite">
-              <div class="rate-limit-header">
-                <span class="rate-limit-title">API 额度</span>
-                <span id="rateLimitUpdateTime">更新中...</span>
-              </div>
-              <div class="rate-limit-content">
-                <div class="rate-limit-item">
-                  <span class="rate-limit-label">用户额度</span>
-                  <span class="quota-hint" aria-label="共享池说明">
-                    <svg class="quota-hint-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <span class="quota-tooltip">
-                      用户当天限额按共享池统计；部分火热模型共享池，部分模型不受此约束。模型当天限额仅在当前选择共享池模型时显示。
-                    </span>
-                  </span>
-                  <span id="userRateLimit">计算中</span>
-                </div>
-                <div class="rate-limit-item">
-                  <span class="rate-limit-label">模型额度</span>
-                  <span id="modelRateLimit">计算中</span>
-                </div>
-              </div>
+              开站纪念日 2026-04-28
             </div>
             <div class="chip-row">
               <button class="ghost-chip" id="imageModeChipBtn">
@@ -819,14 +801,17 @@
   <div class="modal medium" id="announcementModal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">五一维护完成公告</div>
+        <div class="modal-title">通知</div>
         <button class="modal-close" data-close-modal="announcementModal" aria-label="关闭公告">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
         </button>
       </div>
       <div class="modal-body">
         <div class="announcement-content">
-          <p class="announcement-highlight">🛡️ 近期风控系统识别到高频自动化请求（固定间隔轮询、硬编码重试等），已触发滥用防护。我们已对异常请求源实施封禁（110.248.68.x、18.141.169.0/24 等网段）。风控以行为特征为核心，IP仅作辅助指标，正常用户不受影响。</p>
+          <p class="announcement-highlight">🚀 网站即将开展API业务，敬请期待</p>
+          <p style="margin-top:12px;font-size:14px;color:var(--text-soft);line-height:1.6;">
+            <strong>QQ交流群：</strong><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">1083892008</a>
+          </p>
         </div>
         <label style="display:flex;align-items:center;gap:8px;margin:16px 0 4px;font-size:13px;color:var(--text-soft);cursor:pointer;">
           <input type="checkbox" id="dismissNoticeCheckbox" style="width:16px;height:16px;cursor:pointer;">

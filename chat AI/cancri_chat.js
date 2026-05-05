@@ -1976,6 +1976,11 @@
           setActiveView('home');
           homeView.classList.add('chatting');
           chatMessages.classList.add('active');
+
+          if (contextMeter) {
+            contextMeter.classList.remove('hidden');
+          }
+
           renderMessages();
           updateContextMeter();
           setComposerBusy(false);
@@ -5470,6 +5475,10 @@
       chatMessages.innerHTML = '';
       homeView.classList.add('chatting');
       chatMessages.classList.add('active');
+
+      if (contextMeter) {
+        contextMeter.classList.remove('hidden');
+      }
       renderMessages();
       updateContextMeter();
       showToast('上下文已自动压缩，并作为新对话继续');

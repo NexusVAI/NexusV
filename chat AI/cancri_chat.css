@@ -276,9 +276,11 @@
   }
 
   .nav-row.active { background: var(--hover-strong); }
-  .nav-row svg { flex-shrink: 0; }
+  .nav-row svg { flex-shrink: 0; transform: translateY(1px); }
 
-  .sidebar.collapsed .nav-row { width: 36px; height: 36px; margin: 4px auto; justify-content: center; padding: 0; }
+  .sidebar.collapsed .nav-row { width: 32px; height: 32px; margin: 6px auto 2px; display: grid; place-items: center; padding: 0; }
+  .sidebar.collapsed .sidebar-body { padding: 2px 0; }
+  .sidebar.collapsed .nav-row svg { flex-shrink: 0; transform: translateY(7px); }
   .sidebar.collapsed .sidebar-label,
   .sidebar.collapsed .section-title,
   .sidebar.collapsed .recent-wrap,
@@ -967,6 +969,10 @@
   .context-meter {
     position: relative; width: 34px; height: 34px;
     margin-left: 8px; flex-shrink: 0; --meter-angle: 0deg;
+  }
+
+  .context-meter.hidden {
+    display: none;
   }
 
   .context-meter-ring {
@@ -3035,7 +3041,7 @@
     flex: 0 0 auto;
     min-height: calc(100dvh - var(--header-h));
     justify-content: center;
-    padding: clamp(16px, 4vh, 32px) 20px clamp(20px, 8vh, 56px);
+    padding: clamp(8px, 2vh, 20px) 20px clamp(20px, 8vh, 56px);
   }
 
   /* 聊天态：消息区滚动，输入框固定在底部区域 */
@@ -3116,36 +3122,16 @@
   }
 
   .modal.large.open {
-    flex-direction: column;
-    width: min(760px, calc(100vw - 28px));
-    max-height: min(680px, calc(100dvh - 28px));
-    left: 50%;
-    top: 50%;
-    right: auto;
-    bottom: auto;
-    transform: translate(-50%, -50%);
-    border-radius: 20px;
-    border: 1px solid var(--line-2);
-    background: var(--panel);
-    box-shadow: var(--shadow-xl);
-    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    border: none;
   }
 
   .modal.medium.open,
   .modal.small.open {
-    flex-direction: column;
-    width: min(520px, calc(100vw - 28px));
-    max-height: min(620px, calc(100dvh - 28px));
-    left: 50%;
-    top: 50%;
-    right: auto;
-    bottom: auto;
-    transform: translate(-50%, -50%);
-    border-radius: 20px;
-    border: 1px solid var(--line-2);
-    background: var(--panel);
-    box-shadow: var(--shadow-xl);
-    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    border: none;
   }
 
   .modal-header {
@@ -4046,7 +4032,7 @@
       width: 100%;
       max-width: none;
       height: 38px;
-      justify-content: space-between;
+      justify-content: center;
       padding: 0 6px;
       border-color: transparent;
       background: transparent;
