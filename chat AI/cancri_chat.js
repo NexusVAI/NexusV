@@ -760,7 +760,7 @@
       { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
       { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
       { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
-      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['生图'] }
+      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -799,7 +799,9 @@
 
     function isModelSelectable(modelId) {
       const meta = getModelMeta(modelId);
-      return meta.visible !== false && meta.enabled !== false && Boolean(MODEL_IDS[modelId]);
+      if (meta.visible === false || meta.enabled === false || !MODEL_IDS[modelId]) return false;
+      if (meta.imageOnly && (state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous')) return false;
+      return true;
     }
 
     function getFallbackModelId(excludeId = '') {
@@ -2008,10 +2010,115 @@
           createUserMessage(message.content);
         } else if (message.role === 'assistant') {
           const content = typeof message.content === 'string' ? message.content : '';
-          const id = createAssistantMessage(message.metadata || message.modelMetadata || null);
+          const metadata = message.metadata || message.modelMetadata || null;
+
+          // 检测对战卡片格式：【模型 A】...【模型 B】...
+          const duelMatch = content.match(/【模型\s*A】\s*([\s\S]*?)【模型\s*B】\s*([\s\S]*)$/);
+          if (duelMatch) {
+            const answerA = duelMatch[1].trim();
+            const answerB = duelMatch[2].trim();
+            renderRestoredDuelMessage(answerA, answerB, metadata);
+            return;
+          }
+
+          // 检测生成图片格式：![generated image](url)
+          const imageMatch = content.match(/^!\[generated image\]\((https?:\/\/[^\)]+)\)$/);
+          if (imageMatch) {
+            const imageUrl = imageMatch[1];
+            const id = createAssistantMessage(metadata);
+            const messageDiv = document.getElementById(id);
+            const answerBody = messageDiv?.querySelector('.answer-body');
+            if (answerBody) {
+              answerBody.innerHTML = '';
+              answerBody.appendChild(createRestoredImageElement(imageUrl));
+            }
+            return;
+          }
+
+          const id = createAssistantMessage(metadata);
           updateAssistantMessage(id, { answer: content, thinking: false });
         }
       });
+    }
+
+    function renderRestoredDuelMessage(answerA, answerB, metadata) {
+      const messageId = `duel-restored-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message assistant duel-message';
+      wrapper.id = messageId;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'A';
+
+      const grid = document.createElement('div');
+      grid.className = 'duel-grid';
+
+      const makeCard = (slot, answer) => {
+        const card = document.createElement('article');
+        card.className = 'duel-card';
+        card.dataset.duelSlot = slot;
+        const title = `模型 ${slot.toUpperCase()}`;
+
+        const head = document.createElement('div');
+        head.className = 'duel-card-head';
+        head.innerHTML = `<span>${escapeHtml(title)}</span>`;
+
+        const answerBody = document.createElement('div');
+        answerBody.className = 'duel-answer md-content';
+        answerBody.dataset.duelAnswer = slot;
+        answerBody.innerHTML = answer ? renderMarkdown(answer) : '<span class="typing-indicator">暂无内容</span>';
+
+        card.appendChild(head);
+        card.appendChild(answerBody);
+        return card;
+      };
+
+      grid.appendChild(makeCard('a', answerA));
+      grid.appendChild(makeCard('b', answerB));
+      wrapper.appendChild(avatar);
+      wrapper.appendChild(grid);
+      chatMessages.appendChild(wrapper);
+
+      if (window.renderMathInElement) {
+        window.renderMathInElement(wrapper);
+      }
+    }
+
+    function createRestoredImageElement(imageUrl) {
+      const wrapper = document.createElement('span');
+      wrapper.style.cssText = 'display:inline-block;position:relative;max-width:360px';
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = 'generated image';
+      img.style.cssText = 'max-width:100%;border-radius:10px;display:block';
+      img.addEventListener('contextmenu', (e) => e.preventDefault());
+      const dlBtn = document.createElement('button');
+      dlBtn.title = '下载图片';
+      dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
+      dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      dlBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dlBtn.disabled = true;
+        try {
+          const resp = await fetch(imageUrl);
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `cancri-image-${Date.now()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+        } catch {
+          window.open(imageUrl, '_blank');
+        } finally {
+          dlBtn.disabled = false;
+        }
+      });
+      wrapper.appendChild(img);
+      wrapper.appendChild(dlBtn);
+      return wrapper;
     }
 
     async function saveChatHistory(messages) {
@@ -2841,6 +2948,10 @@
       navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
       closePopover();
       closeModal();
+
+      if (modelSelector) modelSelector.hidden = view === 'leaderboard' || state.arenaMode === 'anonymous';
+      if (topArenaModeSelector) topArenaModeSelector.style.display = view === 'leaderboard' ? 'none' : '';
+
       if (view === 'home') {
         updateHomeHeroText();
       }
@@ -2860,8 +2971,9 @@
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
         option.classList.toggle('active', option.dataset.mode === state.arenaMode);
       });
-      if (modelSelector) modelSelector.hidden = state.arenaMode === 'anonymous';
-      if (compareModelSelector) compareModelSelector.hidden = state.arenaMode !== 'side_by_side';
+      if (topArenaModeSelector) topArenaModeSelector.style.display = state.currentView === 'leaderboard' ? 'none' : '';
+      if (modelSelector) modelSelector.hidden = state.arenaMode === 'anonymous' || state.currentView === 'leaderboard';
+      if (compareModelSelector) compareModelSelector.hidden = state.arenaMode !== 'side_by_side' || state.currentView === 'leaderboard';
       if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
       if (homeInput) {
         if (state.arenaMode === 'anonymous') homeInput.placeholder = '向两个匿名模型发起同一个问题';
@@ -2873,6 +2985,13 @@
       state.arenaMode = normalizeArenaMode(mode || 'single');
       localStorage.setItem('cancri_arena_mode', state.arenaMode);
       syncTopArenaMode();
+      renderModelDropdownFromCatalog();
+      // 如果当前模型是图像专用模型，切换到非图像模型
+      const currentMeta = getModelMeta(currentModel);
+      if (currentMeta.imageOnly && state.arenaMode !== 'single') {
+        const fallback = getFallbackModelId(currentModel);
+        setModel(fallback);
+      }
       topArenaModeSelector?.classList.remove('open');
       if (state.arenaMode === 'single') {
         showToast('已切换到单模型聊天');
@@ -3021,9 +3140,9 @@
       const voteRange = maxVotes - minVotes || 1;
       const eloRange = maxElo - minElo || 1;
 
-      const width = 800;
-      const height = 400;
-      const padding = { top: 20, right: 30, bottom: 50, left: 60 };
+      const width = 960;
+      const height = 480;
+      const padding = { top: 24, right: 36, bottom: 56, left: 68 };
       const chartW = width - padding.left - padding.right;
       const chartH = height - padding.top - padding.bottom;
 
@@ -4288,7 +4407,7 @@
           document.body.removeChild(a);
           URL.revokeObjectURL(a.href);
         } catch {
-          // download failed silently
+          window.open(imageUrl, '_blank');
         } finally {
           downloadBtn.disabled = false;
         }
@@ -4479,7 +4598,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(a.href);
               } catch {
-                // fallback: do nothing
+                window.open(imageUrl, '_blank');
               } finally {
                 dlBtn.disabled = false;
               }
@@ -6622,8 +6741,10 @@
       if (!content) return;
       content.textContent = '';
 
+      const isArenaMode = state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous';
       const grouped = new Map();
       SELECTABLE_MODELS.forEach(model => {
+        if (isArenaMode && model.imageOnly) return;
         const brand = model.brand || getModelBrandName(model.id);
         if (!grouped.has(brand)) grouped.set(brand, []);
         grouped.get(brand).push(model);

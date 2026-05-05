@@ -140,7 +140,7 @@
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   min-height: 260px;
 }
 .arena-card-head {
@@ -166,6 +166,15 @@
   color: var(--text);
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.arena-card .think-block {
+  margin-bottom: 2px;
+}
+
+.arena-card .think-body {
+  max-height: 200px;
 }
 .arena-vote-row {
   display: flex;
@@ -271,9 +280,9 @@
   }
 
   .arena-card {
-    flex: 0 0 calc(100vw - 32px);
-    min-height: calc(100dvh - 290px);
-    padding: 14px;
+    flex: 0 0 calc(100vw - 24px);
+    min-height: calc(100dvh - 240px);
+    padding: 16px;
     scroll-snap-align: center;
   }
 
