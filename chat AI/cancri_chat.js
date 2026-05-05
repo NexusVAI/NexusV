@@ -643,9 +643,6 @@
     }
 
     function getRateLimitRequestModelId(modelId = currentModel) {
-      if (modelId === 'kimi-k2.6-alt') {
-        return MODEL_IDS[modelId] || modelId;
-      }
       if (usesSharedQuota(modelId)) {
         return MODEL_IDS[modelId] || modelId;
       }
@@ -653,7 +650,7 @@
     }
 
     function getModelProbeEndpoint(modelId = currentModel) {
-      return modelId === 'image-precise' || modelId === 'image-fast' || modelId === 'gpt-image-2' ? 'image' : 'chat';
+      return modelId === 'image-precise' || modelId === 'image-fast' || modelId === 'gpt-image-2' || modelId === 'sensenova-u1-fast' ? 'image' : 'chat';
     }
 
     // 全局错误捕获
@@ -677,7 +674,6 @@
     const MODEL_SELECTION_MIGRATIONS = {
       'deepseek-v4-flash': DEFAULT_MODEL_ID,
       'deepseek-v4-flash-alt': DEFAULT_MODEL_ID,
-      'kimi-k2.6': DEFAULT_MODEL_ID,
       'kimi-k2.6-futureppo': DEFAULT_MODEL_ID,
       'deepseek-v4-pro-futureppo': DEFAULT_MODEL_ID,
       'deepseek-v4-flash-futureppo': DEFAULT_MODEL_ID,
@@ -694,15 +690,17 @@
       'minimax-m2.5-alt': DEFAULT_MODEL_ID,
       'claude-haiku-4-5-20251001': DEFAULT_MODEL_ID,
       'glm-5.1-futureppo': DEFAULT_MODEL_ID,
+      'claude-opus-4.6': DEFAULT_MODEL_ID,
+      'gemini-2.5-pro': DEFAULT_MODEL_ID,
+      'kimi-k2.6-alt': DEFAULT_MODEL_ID,
+      'kimi-k2.6-extended': DEFAULT_MODEL_ID,
     };
     const MODEL_PRIORITY_IDS = [
       'minimax-m2.7',
       'grok-4.20-fast',
-      'claude-opus-4.6',
-      'gemini-2.5-pro',
+      'deepseek-v4-pro',
+      'kimi-k2.6',
       'qwen3-max',
-      'kimi-k2.6-alt',
-      'kimi-k2.6-extended',
       'glm-5.1',
       'qwen3-coder-plus',
       'qwen3-coder',
@@ -717,16 +715,14 @@
       { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '轻量'] },
       { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '均衡'] },
       { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', brand: 'Google', canonicalId: 'gemma-4-31b-chat', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '开放'] },
-      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
-      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '隐藏调试'] },
-      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: false, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '隐藏调试'] },
+      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
+      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
+      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
       { id: 'step-3.5-flash', displayName: 'Step-3.5', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
       { id: 'hy3-preview', displayName: '混元3', brand: '腾讯混元', canonicalId: 'hy3-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
       { id: 'gpt-oss-120b', displayName: 'GPT-OSS', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['通用', '慢'] },
       { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['每日限流', '通用'] },
-      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
       { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4.6', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['均衡', '隐藏调试'] },
-      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
       { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', brand: 'NVIDIA Nemotron', canonicalId: 'nemotron-3-super', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './nvidia-color.svg', tags: ['通用'] },
       { id: 'ling-2.6-1t', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['通用'] },
       { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['稳定'] },
@@ -735,12 +731,10 @@
       { id: 'qwen3.5', displayName: 'Qwen 3.5', brand: '通义千问', canonicalId: 'qwen3.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true },
       { id: 'qwen3-coder', displayName: 'Qwen3-Coder', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true },
       { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
-      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true },
-      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
       { id: 'glm-5', displayName: 'GLM-5', brand: '智谱 GLM', canonicalId: 'glm-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './zhipu-color.svg', tags: ['深度编程'] },
-      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       { id: 'glm-5.1', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       { id: 'glm-4.7', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
       { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['预览'] },
       { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', brand: '通义千问', canonicalId: 'qwen3.6-plus', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true },
@@ -760,6 +754,8 @@
       { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
       { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
       { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
+      { id: 'sensenova-6.7-flash-lite', displayName: 'SenseNova 6.7 Flash-Lite', brand: 'SenseNova', canonicalId: 'sensenova-6.7-flash-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './sensenova.svg', tags: ['多模态', '快速'], multimodal: true },
+      { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova.svg', tags: ['生图'] },
       { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
@@ -877,7 +873,7 @@
     let isMultimodal = isMultimodalModel(currentModel);
 
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-alt' || modelId === 'kimi-k2.6-extended' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
         return { enable_thinking: true };
       }
       return {};
@@ -1385,9 +1381,7 @@
     const CHAT_TURN_TIMEOUT_MS = 180000;
     const TOOL_CALL_TIMEOUT_MS = 25000;
 
-    // 为特定模型设置更长的超时（如 Claude Opus 响应较慢）
     function getChatRequestTimeoutMs(modelId) {
-      if (modelId === 'claude-opus-4.6') return 60000; // Claude Opus 60秒
       return CHAT_REQUEST_TIMEOUT_MS;
     }
 
@@ -4463,7 +4457,7 @@
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
-      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2';
+      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2' || imageModel === 'sensenova-u1-fast';
       const imageSize = imageSizeSelect?.value || '1024x1024';
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
@@ -6094,7 +6088,7 @@
       const turnModelId = currentModel;
       const turnModelMetadata = createModelMetadata(turnModelId);
 
-      if (turnModelId === 'gpt-image-2') {
+      if (turnModelId === 'gpt-image-2' || turnModelId === 'sensenova-u1-fast') {
         if (!query && !attachmentsForSend.length) return;
         await sendImageGenerationMessage(query, turnModelId, turnModelMetadata);
         return;
