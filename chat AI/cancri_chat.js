@@ -6792,6 +6792,26 @@
       });
     }
 
+    // 全局右键菜单拦截：只允许自定义菜单
+    document.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      openCustomContextMenu(e.clientX, e.clientY, e.target);
+    });
+
+    // 点击空白处关闭自定义菜单
+    document.addEventListener('click', () => closeCustomContextMenu());
+    document.addEventListener('scroll', () => closeCustomContextMenu(), true);
+
+    // 禁止打开开发者工具
+    document.addEventListener('keydown', e => {
+      // F12
+      if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return; }
+      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+      if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'i' || e.key === 'j' || e.key === 'c')) { e.preventDefault(); return; }
+      // Ctrl+U (查看源代码)
+      if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) { e.preventDefault(); return; }
+    });
+
     // 接收从首页传来的问题参数
     function initQueryFromUrl() {
       const params = new URLSearchParams(window.location.search);
