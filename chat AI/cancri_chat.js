@@ -291,6 +291,7 @@
                 challengeId: challengeData.challengeId,
                 answer,
                 signature: challengeData.signature,
+                expiresAt: challengeData.expiresAt,
               }),
             });
             const data = await resp.json();
@@ -884,7 +885,6 @@
       { id: 'gpt-5.5-pwcen', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
       { id: 'gpt-5.4-pwcen', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
       { id: 'gpt-5.3-codex', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
-      { id: 'glm-5.1-pwcen', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       // xiangluapi.com
       { id: 'gpt-5.3-codex-spark', displayName: 'GPT-5.3 Codex Spark', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex-spark', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
       { id: 'gpt-5.4-xiangluapi', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
@@ -1641,7 +1641,7 @@
       const avatarEl = document.querySelector('.account-strip .avatar');
       if (accountName) accountName.textContent = '登录 / 注册';
       if (accountPlan) accountPlan.textContent = '邮箱验证码账户';
-      if (avatarEl) avatarEl.textContent = 'MR';
+      if (avatarEl) avatarEl.textContent = '--';
     }
 
     function initAuthOverlay() {
@@ -3395,7 +3395,13 @@
             const brand = e.target.dataset.brand;
             const elo = e.target.dataset.elo;
             const votes = e.target.dataset.votes;
-            tooltip.innerHTML = `<strong>${model}</strong><br/><small>${brand}</small><br/>Elo: ${Math.round(elo)} · 有效票 ${Number(votes).toLocaleString()}`;
+            const strong = document.createElement('strong');
+            strong.textContent = model || '';
+            const brandLine = document.createElement('small');
+            brandLine.textContent = brand || '';
+            const scoreLine = document.createElement('span');
+            scoreLine.textContent = `Elo: ${Math.round(Number(elo) || 0)} · 有效票 ${Number(votes || 0).toLocaleString()}`;
+            tooltip.replaceChildren(strong, document.createElement('br'), brandLine, document.createElement('br'), scoreLine);
             tooltip.style.opacity = '1';
           });
           point.addEventListener('mousemove', (e) => {
@@ -3663,7 +3669,20 @@
           setDuelSelection(wrapper, wrapper.dataset.duelSelected);
           voteRow.querySelectorAll('button').forEach(btn => { btn.disabled = true; });
           try {
-            const vote = await arenaMainApi('arena_vote', { id: matchId, winner: button.dataset.winner });
+            let vote;
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                vote = await arenaMainApi('arena_vote', { id: matchId, winner: button.dataset.winner });
+                break;
+              } catch (retryErr) {
+                const msg = String(retryErr?.message || '');
+                if (msg.includes('Match not answered') && attempt < 2) {
+                  await new Promise(r => setTimeout(r, 2000));
+                  continue;
+                }
+                throw retryErr;
+              }
+            }
             const reveal = vote?.data?.reveal || {};
             if (anonymous) {
               updateDuelMessage(messageId, 'a', answerA, { modelId: reveal.model_a });
@@ -3866,6 +3885,54 @@
       return '#';
     }
 
+    async function downloadMarkdownImage(url) {
+      const href = safeUrl(url);
+      if (href === '#') return;
+      try {
+        const response = await fetch(href, { mode: 'cors' });
+        const blob = await response.blob();
+        const anchor = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        anchor.href = objectUrl;
+        anchor.download = `cancri-image-${Date.now()}.png`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(objectUrl);
+      } catch {
+        try {
+          const canvas = document.createElement('canvas');
+          const image = new Image();
+          image.crossOrigin = 'anonymous';
+          image.onload = () => {
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            canvas.getContext('2d').drawImage(image, 0, 0);
+            const anchor = document.createElement('a');
+            anchor.href = canvas.toDataURL('image/png');
+            anchor.download = `cancri-image-${Date.now()}.png`;
+            anchor.click();
+          };
+          image.onerror = () => window.open(href, '_blank', 'noopener,noreferrer');
+          image.src = href;
+        } catch {
+          window.open(href, '_blank', 'noopener,noreferrer');
+        }
+      }
+    }
+
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest('.markdown-image-download');
+      if (!(button instanceof HTMLElement)) return;
+      const wrapper = button.closest('.markdown-image-wrap');
+      const href = wrapper instanceof HTMLElement ? wrapper.dataset.imageSrc || '' : '';
+      event.preventDefault();
+      event.stopPropagation();
+      downloadMarkdownImage(href);
+    });
+
     function renderInlineMarkdown(text) {
       const placeholders = [];
       const keep = html => {
@@ -3885,7 +3952,7 @@
           if (href === '#') return alt;
           const escHref = escapeHtml(href);
           const escAlt = escapeHtml(alt);
-          return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" crossorigin="anonymous" style="max-width:100%;border-radius:8px;display:block;cursor:default" oncontextmenu="return false" onclick="event.preventDefault();event.stopPropagation()"><button onclick="event.stopPropagation();(async()=>{try{const r=await fetch('${escHref}',{mode:'cors'});const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){try{const c=document.createElement('canvas');const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{c.width=i.naturalWidth;c.height=i.naturalHeight;c.getContext('2d').drawImage(i,0,0);const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='cancri-image-'+Date.now()+'.png';a.click()};i.onerror=()=>{window.open('${escHref}','_blank')};i.src='${escHref}'}catch(e2){window.open('${escHref}','_blank')}})()" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
+          return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" crossorigin="anonymous" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
         })
         .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
           const href = safeUrl(url);
@@ -4250,10 +4317,10 @@
     function getHomeDisplayName() {
       const nickname = getNickname();
       if (nickname) return nickname;
-      const rawName = String(document.querySelector('.account-name')?.textContent || 'Jony').trim();
+      const rawName = String(document.querySelector('.account-name')?.textContent || '').trim();
       const normalized = rawName.replace(/^mr\.?/i, '').trim();
       if (normalized && normalized !== '登录 / 注册') return normalized;
-      return 'Jony';
+      return '用户';
     }
 
     function getNickname() {
@@ -5737,7 +5804,6 @@
 
     // 从文本中移除已识别的工具调用标记，保留纯回答内容
     function removeToolCallMarkers(text) {
-      return text;
       if (!text || typeof text !== 'string') return text;
       // 移除 [Call ... with ...] 标记
       let cleaned = text.replace(/\[\s*Call\s+[`']?[a-zA-Z0-9_\-]+[`']?\s+with\s+[`']?\{[\s\S]*?\}[`']?\s*\]/gi, '');
@@ -6107,6 +6173,7 @@
       if (!finalAnswer && !reasoningText && toolCalls.length) {
         finalAnswer = '';
       }
+      finalAnswer = removeToolCallMarkers(finalAnswer);
 
       return {
         reasoningText,

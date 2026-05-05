@@ -269,11 +269,6 @@
       "status": "operational"
     },
     {
-      "name": "GLM-5.1",
-      "description": "线路三 (pwcen)",
-      "status": "operational"
-    },
-    {
       "name": "GPT-5.3 Codex Spark",
       "description": "编程 · 线路一 (xiangluapi)",
       "status": "operational"
