@@ -643,9 +643,6 @@
     }
 
     function getRateLimitRequestModelId(modelId = currentModel) {
-      if (modelId === 'kimi-k2.6-alt') {
-        return MODEL_IDS[modelId] || modelId;
-      }
       if (usesSharedQuota(modelId)) {
         return MODEL_IDS[modelId] || modelId;
       }
@@ -653,7 +650,7 @@
     }
 
     function getModelProbeEndpoint(modelId = currentModel) {
-      return modelId === 'image-precise' || modelId === 'image-fast' || modelId === 'gpt-image-2' ? 'image' : 'chat';
+      return modelId === 'image-precise' || modelId === 'image-fast' || modelId === 'gpt-image-2' || modelId === 'sensenova-u1-fast' ? 'image' : 'chat';
     }
 
     // 全局错误捕获
@@ -677,7 +674,6 @@
     const MODEL_SELECTION_MIGRATIONS = {
       'deepseek-v4-flash': DEFAULT_MODEL_ID,
       'deepseek-v4-flash-alt': DEFAULT_MODEL_ID,
-      'kimi-k2.6': DEFAULT_MODEL_ID,
       'kimi-k2.6-futureppo': DEFAULT_MODEL_ID,
       'deepseek-v4-pro-futureppo': DEFAULT_MODEL_ID,
       'deepseek-v4-flash-futureppo': DEFAULT_MODEL_ID,
@@ -694,15 +690,17 @@
       'minimax-m2.5-alt': DEFAULT_MODEL_ID,
       'claude-haiku-4-5-20251001': DEFAULT_MODEL_ID,
       'glm-5.1-futureppo': DEFAULT_MODEL_ID,
+      'claude-opus-4.6': DEFAULT_MODEL_ID,
+      'gemini-2.5-pro': DEFAULT_MODEL_ID,
+      'kimi-k2.6-alt': DEFAULT_MODEL_ID,
+      'kimi-k2.6-extended': DEFAULT_MODEL_ID,
     };
     const MODEL_PRIORITY_IDS = [
       'minimax-m2.7',
       'grok-4.20-fast',
-      'claude-opus-4.6',
-      'gemini-2.5-pro',
+      'deepseek-v4-pro',
+      'kimi-k2.6',
       'qwen3-max',
-      'kimi-k2.6-alt',
-      'kimi-k2.6-extended',
       'glm-5.1',
       'qwen3-coder-plus',
       'qwen3-coder',
@@ -717,16 +715,14 @@
       { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '轻量'] },
       { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '均衡'] },
       { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', brand: 'Google', canonicalId: 'gemma-4-31b-chat', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '开放'] },
-      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
-      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '隐藏调试'] },
-      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: false, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型', '隐藏调试'] },
+      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
+      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
+      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
       { id: 'step-3.5-flash', displayName: 'Step-3.5', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
       { id: 'hy3-preview', displayName: '混元3', brand: '腾讯混元', canonicalId: 'hy3-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
       { id: 'gpt-oss-120b', displayName: 'GPT-OSS', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['通用', '慢'] },
       { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['每日限流', '通用'] },
-      { id: 'claude-opus-4.6', displayName: 'Claude Opus 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['每日限流', '长文本'] },
       { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4.6', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['均衡', '隐藏调试'] },
-      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['每日限流', '推理'] },
       { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', brand: 'NVIDIA Nemotron', canonicalId: 'nemotron-3-super', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './nvidia-color.svg', tags: ['通用'] },
       { id: 'ling-2.6-1t', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['通用'] },
       { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['稳定'] },
@@ -735,12 +731,10 @@
       { id: 'qwen3.5', displayName: 'Qwen 3.5', brand: '通义千问', canonicalId: 'qwen3.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true },
       { id: 'qwen3-coder', displayName: 'Qwen3-Coder', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true },
       { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
-      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '超复杂编程'], multimodal: true },
-      { id: 'kimi-k2.6-alt', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'kimi-k2.6-extended', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
       { id: 'glm-5', displayName: 'GLM-5', brand: '智谱 GLM', canonicalId: 'glm-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './zhipu-color.svg', tags: ['深度编程'] },
-      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       { id: 'glm-5.1', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       { id: 'glm-4.7', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
       { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['预览'] },
       { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', brand: '通义千问', canonicalId: 'qwen3.6-plus', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true },
@@ -760,7 +754,9 @@
       { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
       { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
       { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
-      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['生图'] }
+      { id: 'sensenova-6.7-flash-lite', displayName: 'SenseNova 6.7 Flash-Lite', brand: 'SenseNova', canonicalId: 'sensenova-6.7-flash-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './sensenova-color.svg', tags: ['多模态', '快速'], multimodal: true },
+      { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova-color.svg', tags: ['生图'] },
+      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -799,7 +795,9 @@
 
     function isModelSelectable(modelId) {
       const meta = getModelMeta(modelId);
-      return meta.visible !== false && meta.enabled !== false && Boolean(MODEL_IDS[modelId]);
+      if (meta.visible === false || meta.enabled === false || !MODEL_IDS[modelId]) return false;
+      if (meta.imageOnly && (state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous')) return false;
+      return true;
     }
 
     function getFallbackModelId(excludeId = '') {
@@ -875,7 +873,7 @@
     let isMultimodal = isMultimodalModel(currentModel);
 
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'kimi-k2.6-alt' || modelId === 'kimi-k2.6-extended' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
         return { enable_thinking: true };
       }
       return {};
@@ -1383,9 +1381,7 @@
     const CHAT_TURN_TIMEOUT_MS = 180000;
     const TOOL_CALL_TIMEOUT_MS = 25000;
 
-    // 为特定模型设置更长的超时（如 Claude Opus 响应较慢）
     function getChatRequestTimeoutMs(modelId) {
-      if (modelId === 'claude-opus-4.6') return 60000; // Claude Opus 60秒
       return CHAT_REQUEST_TIMEOUT_MS;
     }
 
@@ -2008,10 +2004,129 @@
           createUserMessage(message.content);
         } else if (message.role === 'assistant') {
           const content = typeof message.content === 'string' ? message.content : '';
-          const id = createAssistantMessage(message.metadata || message.modelMetadata || null);
+          const metadata = message.metadata || message.modelMetadata || null;
+
+          // 检测对战卡片格式：【模型 A】...【模型 B】...
+          const duelMatch = content.match(/【模型\s*A】\s*([\s\S]*?)【模型\s*B】\s*([\s\S]*)$/);
+          if (duelMatch) {
+            const answerA = duelMatch[1].trim();
+            const answerB = duelMatch[2].trim();
+            renderRestoredDuelMessage(answerA, answerB, metadata);
+            return;
+          }
+
+          // 检测生成图片格式：![generated image](url)
+          const imageMatch = content.match(/^!\[generated image\]\((https?:\/\/[^\)]+)\)$/);
+          if (imageMatch) {
+            const imageUrl = imageMatch[1];
+            const id = createAssistantMessage(metadata);
+            const messageDiv = document.getElementById(id);
+            const answerBody = messageDiv?.querySelector('.answer-body');
+            if (answerBody) {
+              answerBody.innerHTML = '';
+              answerBody.appendChild(createRestoredImageElement(imageUrl));
+            }
+            return;
+          }
+
+          const id = createAssistantMessage(metadata);
           updateAssistantMessage(id, { answer: content, thinking: false });
         }
       });
+    }
+
+    function renderRestoredDuelMessage(answerA, answerB, metadata) {
+      const messageId = `duel-restored-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message assistant duel-message';
+      wrapper.id = messageId;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'A';
+
+      const grid = document.createElement('div');
+      grid.className = 'duel-grid';
+
+      const makeCard = (slot, answer) => {
+        const card = document.createElement('article');
+        card.className = 'duel-card';
+        card.dataset.duelSlot = slot;
+        const title = `模型 ${slot.toUpperCase()}`;
+
+        const head = document.createElement('div');
+        head.className = 'duel-card-head';
+        head.innerHTML = `<span>${escapeHtml(title)}</span>`;
+
+        const answerBody = document.createElement('div');
+        answerBody.className = 'duel-answer md-content';
+        answerBody.dataset.duelAnswer = slot;
+        answerBody.innerHTML = answer ? renderMarkdown(answer) : '<span class="typing-indicator">暂无内容</span>';
+
+        card.appendChild(head);
+        card.appendChild(answerBody);
+        return card;
+      };
+
+      grid.appendChild(makeCard('a', answerA));
+      grid.appendChild(makeCard('b', answerB));
+      wrapper.appendChild(avatar);
+      wrapper.appendChild(grid);
+      chatMessages.appendChild(wrapper);
+
+      if (window.renderMathInElement) {
+        window.renderMathInElement(wrapper);
+      }
+    }
+
+    function createRestoredImageElement(imageUrl) {
+      const wrapper = document.createElement('span');
+      wrapper.style.cssText = 'display:inline-block;position:relative;max-width:360px';
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = 'generated image';
+      img.crossOrigin = 'anonymous';
+      img.style.cssText = 'max-width:100%;border-radius:10px;display:block;cursor:default';
+      img.addEventListener('contextmenu', (e) => e.preventDefault());
+      img.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+      img.onerror = function() {
+        this.onerror = null;
+        this.style.cssText = 'max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px';
+        this.removeAttribute('src');
+        this.alt = '';
+        this.parentElement.querySelector('button')?.remove();
+        const tip = document.createElement('span');
+        tip.textContent = '图片已过期';
+        tip.style.cssText = 'display:block;text-align:center;line-height:120px';
+        this.parentElement.insertBefore(tip, this);
+        this.style.display = 'none';
+      };
+      const dlBtn = document.createElement('button');
+      dlBtn.title = '下载图片';
+      dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
+      dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      dlBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dlBtn.disabled = true;
+        try {
+          const resp = await fetch(imageUrl, { mode: 'cors' });
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `cancri-image-${Date.now()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+        } catch {
+          showToast('图片已过期，无法下载');
+        } finally {
+          dlBtn.disabled = false;
+        }
+      });
+      wrapper.appendChild(img);
+      wrapper.appendChild(dlBtn);
+      return wrapper;
     }
 
     async function saveChatHistory(messages) {
@@ -2841,6 +2956,10 @@
       navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
       closePopover();
       closeModal();
+
+      if (modelSelector) modelSelector.hidden = view === 'leaderboard' || state.arenaMode === 'anonymous';
+      if (topArenaModeSelector) topArenaModeSelector.style.display = view === 'leaderboard' ? 'none' : '';
+
       if (view === 'home') {
         updateHomeHeroText();
       }
@@ -2860,8 +2979,9 @@
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
         option.classList.toggle('active', option.dataset.mode === state.arenaMode);
       });
-      if (modelSelector) modelSelector.hidden = state.arenaMode === 'anonymous';
-      if (compareModelSelector) compareModelSelector.hidden = state.arenaMode !== 'side_by_side';
+      if (topArenaModeSelector) topArenaModeSelector.style.display = state.currentView === 'leaderboard' ? 'none' : '';
+      if (modelSelector) modelSelector.hidden = state.arenaMode === 'anonymous' || state.currentView === 'leaderboard';
+      if (compareModelSelector) compareModelSelector.hidden = state.arenaMode !== 'side_by_side' || state.currentView === 'leaderboard';
       if (compareModelName) compareModelName.textContent = getModelDisplayName(compareModel);
       if (homeInput) {
         if (state.arenaMode === 'anonymous') homeInput.placeholder = '向两个匿名模型发起同一个问题';
@@ -2873,6 +2993,13 @@
       state.arenaMode = normalizeArenaMode(mode || 'single');
       localStorage.setItem('cancri_arena_mode', state.arenaMode);
       syncTopArenaMode();
+      renderModelDropdownFromCatalog();
+      // 如果当前模型是图像专用模型，切换到非图像模型
+      const currentMeta = getModelMeta(currentModel);
+      if (currentMeta.imageOnly && state.arenaMode !== 'single') {
+        const fallback = getFallbackModelId(currentModel);
+        setModel(fallback);
+      }
       topArenaModeSelector?.classList.remove('open');
       if (state.arenaMode === 'single') {
         showToast('已切换到单模型聊天');
@@ -3021,9 +3148,9 @@
       const voteRange = maxVotes - minVotes || 1;
       const eloRange = maxElo - minElo || 1;
 
-      const width = 800;
-      const height = 400;
-      const padding = { top: 20, right: 30, bottom: 50, left: 60 };
+      const width = 960;
+      const height = 480;
+      const padding = { top: 24, right: 36, bottom: 56, left: 68 };
       const chartW = width - padding.left - padding.right;
       const chartH = height - padding.top - padding.bottom;
 
@@ -3614,7 +3741,7 @@
           if (href === '#') return alt;
           const escHref = escapeHtml(href);
           const escAlt = escapeHtml(alt);
-          return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block"><span style="position:absolute;bottom:8px;right:8px;display:flex;gap:6px"><a href="${escHref}" target="_blank" rel="noopener noreferrer" style="width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none" title="新窗口打开"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a><button onclick="(async()=>{try{const r=await fetch('${escHref}');const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){window.open('${escHref}','_blank')}})()" style="width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span></span>`);
+          return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" crossorigin="anonymous" style="max-width:100%;border-radius:8px;display:block;cursor:default" oncontextmenu="return false" onclick="event.preventDefault();event.stopPropagation()"><button onclick="event.stopPropagation();(async()=>{try{const r=await fetch('${escHref}',{mode:'cors'});const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){try{const c=document.createElement('canvas');const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{c.width=i.naturalWidth;c.height=i.naturalHeight;c.getContext('2d').drawImage(i,0,0);const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='cancri-image-'+Date.now()+'.png';a.click()};i.onerror=()=>{window.open('${escHref}','_blank')};i.src='${escHref}'}catch(e2){window.open('${escHref}','_blank')}})()" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
         });
       // 转义剩余的 HTML
       output = escapeHtml(output)
@@ -4259,6 +4386,10 @@
       const image = document.createElement('img');
       image.alt = prompt;
       image.src = imageUrl;
+      image.crossOrigin = 'anonymous';
+      image.style.cursor = 'default';
+      image.addEventListener('contextmenu', (e) => e.preventDefault());
+      image.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
 
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:absolute;left:0;right:0;bottom:0;padding:10px 12px;z-index:2;display:flex;align-items:center;gap:8px;background:linear-gradient(transparent,rgba(0,0,0,.55))';
@@ -4277,7 +4408,7 @@
         e.stopPropagation();
         downloadBtn.disabled = true;
         try {
-          const resp = await fetch(imageUrl);
+          const resp = await fetch(imageUrl, { mode: 'cors' });
           const blob = await resp.blob();
           const a = document.createElement('a');
           a.href = URL.createObjectURL(blob);
@@ -4287,7 +4418,24 @@
           document.body.removeChild(a);
           URL.revokeObjectURL(a.href);
         } catch {
-          window.open(imageUrl, '_blank', 'noopener,noreferrer');
+          try {
+            const canvas = document.createElement('canvas');
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            tempImg.onload = () => {
+              canvas.width = tempImg.naturalWidth;
+              canvas.height = tempImg.naturalHeight;
+              canvas.getContext('2d').drawImage(tempImg, 0, 0);
+              const a = document.createElement('a');
+              a.href = canvas.toDataURL('image/png');
+              a.download = `cancri-image-${Date.now()}.png`;
+              a.click();
+            };
+            tempImg.onerror = () => { window.open(imageUrl, '_blank'); };
+            tempImg.src = imageUrl;
+          } catch {
+            window.open(imageUrl, '_blank');
+          }
         } finally {
           downloadBtn.disabled = false;
         }
@@ -4300,11 +4448,11 @@
       generatedImageGrid.prepend(card);
     }
 
-    async function generateImageFromPrompt(prompt, imageModel = DEFAULT_IMAGE_MODEL) {
+    async function generateImageFromPrompt(prompt, imageModel = DEFAULT_IMAGE_MODEL, attachments = []) {
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
-      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2';
+      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2' || imageModel === 'sensenova-u1-fast';
       const imageSize = imageSizeSelect?.value || '1024x1024';
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
@@ -4312,18 +4460,25 @@
 
       let finalStatusText = '等待输入提示词';
 
+      const imageAttachments = (attachments || []).filter(a => !a.isTextFile && (a.dataUrl || a.url));
+
       try {
+        const requestBody = {
+          endpoint: 'image',
+          model: imageModel,
+          prompt: value,
+          n: 1,
+          size: imageSize,
+          response_format: 'url'
+        };
+        if (imageAttachments.length) {
+          requestBody.image = imageAttachments.map(a => a.dataUrl || a.url);
+        }
+
         const response = await proxyFetch(EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: await proxyHeaders(),
-          body: JSON.stringify({
-            endpoint: 'image',
-            model: imageModel,
-            prompt: value,
-            n: 1,
-            size: imageSize,
-            response_format: 'url'
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (response.status === 429) {
@@ -4437,8 +4592,8 @@
       return '';
     }
 
-    async function sendImageGenerationMessage(query, modelId, metadata) {
-      createUserMessage(query, []);
+    async function sendImageGenerationMessage(query, modelId, metadata, attachments = []) {
+      createUserMessage(query, attachments);
       homeInput.value = '';
 
       const assistantMessageId = createAssistantMessage(metadata);
@@ -4447,9 +4602,60 @@
       setComposerBusy(true);
 
       try {
-        const imageUrl = await generateImageFromPrompt(query, modelId);
+        const imageUrl = await generateImageFromPrompt(query, modelId, attachments);
         if (imageUrl) {
-          updateAssistantMessage(assistantMessageId, { answer: `![generated image](${imageUrl})`, thinking: false });
+          updateAssistantMessage(assistantMessageId, { answer: '', thinking: false });
+          const messageDiv = document.getElementById(assistantMessageId);
+          const answerBody = messageDiv?.querySelector('.answer-body');
+          if (answerBody) {
+            const wrapper = document.createElement('span');
+            wrapper.style.cssText = 'display:inline-block;position:relative;max-width:360px';
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'generated image';
+            img.crossOrigin = 'anonymous';
+            img.style.cssText = 'max-width:100%;border-radius:10px;display:block;cursor:default';
+            img.addEventListener('contextmenu', (e) => e.preventDefault());
+            img.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+            img.onerror = function() {
+              this.onerror = null;
+              this.style.cssText = 'max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px';
+              this.removeAttribute('src');
+              this.alt = '';
+              this.parentElement.querySelector('button')?.remove();
+              const tip = document.createElement('span');
+              tip.textContent = '图片已过期';
+              tip.style.cssText = 'display:block;text-align:center;line-height:120px';
+              this.parentElement.insertBefore(tip, this);
+              this.style.display = 'none';
+            };
+            const dlBtn = document.createElement('button');
+            dlBtn.title = '下载图片';
+            dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
+            dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+            dlBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              dlBtn.disabled = true;
+              try {
+                const resp = await fetch(imageUrl, { mode: 'cors' });
+                const blob = await resp.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `cancri-image-${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+              } catch {
+                showToast('图片已过期，无法下载');
+              } finally {
+                dlBtn.disabled = false;
+              }
+            });
+            wrapper.appendChild(img);
+            wrapper.appendChild(dlBtn);
+            answerBody.appendChild(wrapper);
+          }
           pushHistory('user', query);
           pushHistory(assistantHistoryMessage(`![generated image](${imageUrl})`, metadata));
           await finalizeConversationTurn();
@@ -5879,9 +6085,9 @@
       const turnModelId = currentModel;
       const turnModelMetadata = createModelMetadata(turnModelId);
 
-      if (turnModelId === 'gpt-image-2') {
+      if (turnModelId === 'gpt-image-2' || turnModelId === 'sensenova-u1-fast') {
         if (!query && !attachmentsForSend.length) return;
-        await sendImageGenerationMessage(query, turnModelId, turnModelMetadata);
+        await sendImageGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
         return;
       }
 
@@ -6584,8 +6790,10 @@
       if (!content) return;
       content.textContent = '';
 
+      const isArenaMode = state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous';
       const grouped = new Map();
       SELECTABLE_MODELS.forEach(model => {
+        if (isArenaMode && model.imageOnly) return;
         const brand = model.brand || getModelBrandName(model.id);
         if (!grouped.has(brand)) grouped.set(brand, []);
         grouped.get(brand).push(model);
@@ -6792,9 +7000,14 @@
     }
 
 
+    function isImageOnlyModel(modelId) {
+      const meta = MODEL_CATALOG_BY_ID.get(modelId);
+      return meta?.imageOnly === true;
+    }
+
     function updateAttachBtnVisibility() {
       if (attachBtn) {
-        attachBtn.style.display = isMultimodal ? 'grid' : 'none';
+        attachBtn.style.display = (isMultimodal || isImageOnlyModel(currentModel)) ? 'grid' : 'none';
       }
       if (fileUploadBtn) {
         fileUploadBtn.style.display = 'grid';
@@ -6831,17 +7044,18 @@
     renderModelDropdownFromCatalog();
 
     if (modelDropdown) {
-      modelDropdown.querySelectorAll('.model-option').forEach(option => {
-        option.addEventListener('click', () => {
-          const modelId = option.dataset.model;
-          if (!isModelAvailable(modelId)) {
-            const status = getModelStatus(modelId);
-            showToast(`${getModelDisplayName(modelId)} 当前不可用：${status.error || '额度已用完'}`);
-            return;
-          }
-          if (modelSelectTarget === 'compare') setCompareModel(modelId);
-          else setModel(modelId);
-        });
+      // 事件委托：监听容器上的点击，动态创建的 .model-option 也能响应
+      modelDropdown.addEventListener('click', (e) => {
+        const option = e.target.closest('.model-option');
+        if (!option || !modelDropdown.contains(option)) return;
+        const modelId = option.dataset.model;
+        if (!isModelAvailable(modelId)) {
+          const status = getModelStatus(modelId);
+          showToast(`${getModelDisplayName(modelId)} 当前不可用：${status.error || '额度已用完'}`);
+          return;
+        }
+        if (modelSelectTarget === 'compare') setCompareModel(modelId);
+        else setModel(modelId);
       });
 
       if (modelSearchInput) {
