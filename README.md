@@ -87,7 +87,7 @@ npx http-server
 ### 📝 主要功能模块
 
 #### Chat AI 对话模块
-- 仿 OpenAI ChatGPT 的对话界面
+- 自主创新的 的对话界面
 - 支持流式响应显示
 - Markdown 渲染支持
 - 代码高亮显示
