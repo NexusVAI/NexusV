@@ -175,7 +175,7 @@ const API_KEY = 'your-api-key';
 
 ### 📞 联系方式
 
-- 📧 Email: support@nexusai.com
+- 📧 Email: 3573799137@QQ.com
 - 🐛 Bug 报告: [Issues](https://github.com/NexusVAI/NexusV/issues)
 - 💬 讨论: [Discussions](https://github.com/NexusVAI/NexusV/discussions)
 
