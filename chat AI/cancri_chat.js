@@ -653,7 +653,7 @@
     }
 
     function getModelProbeEndpoint(modelId = currentModel) {
-      return modelId === 'image-precise' || modelId === 'image-fast' ? 'image' : 'chat';
+      return modelId === 'image-precise' || modelId === 'image-fast' || modelId === 'gpt-image-2' ? 'image' : 'chat';
     }
 
     // 全局错误捕获
@@ -759,7 +759,8 @@
       { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', brand: 'DeepSeek', canonicalId: 'deepseek-r1-0528', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
       { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
       { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
-      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] }
+      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
+      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['生图'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -3607,6 +3608,11 @@
           const href = safeUrl(url);
           if (href === '#') return label;
           return keep(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
+        })
+        .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, url) => {
+          const href = safeUrl(url);
+          if (href === '#') return alt;
+          return keep(`<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;cursor:pointer;" onclick="window.open('${escapeHtml(href)}','_blank','noopener,noreferrer')">`);
         });
       // 转义剩余的 HTML
       output = escapeHtml(output)
@@ -4216,10 +4222,14 @@
 
     function setImageGenerationBusy(isBusy, statusText) {
       state.isImageGenerating = isBusy;
-      imagePromptInput.disabled = isBusy;
-      sendImagePromptBtn.disabled = isBusy || !imagePromptInput.value.trim();
-      sendImagePromptBtn.setAttribute('aria-disabled', String(sendImagePromptBtn.disabled));
-      if (typeof statusText === 'string') {
+      if (imagePromptInput) {
+        imagePromptInput.disabled = isBusy;
+      }
+      if (sendImagePromptBtn) {
+        sendImagePromptBtn.disabled = isBusy || !(imagePromptInput && imagePromptInput.value.trim());
+        sendImagePromptBtn.setAttribute('aria-disabled', String(sendImagePromptBtn.disabled));
+      }
+      if (imageGenerationStatus && typeof statusText === 'string') {
         imageGenerationStatus.textContent = statusText;
       }
     }
@@ -4309,11 +4319,11 @@
             throw new Error('生成成功，但没有返回图片地址。');
           }
           appendGeneratedImageCard(imageUrl, value);
-          imagePromptInput.value = '';
-          imageGenerationStatus.textContent = '图片已生成。';
+          if (imagePromptInput) imagePromptInput.value = '';
+          if (imageGenerationStatus) imageGenerationStatus.textContent = '图片已生成。';
           finalStatusText = '图片已生成。';
           showToast('图片已生成。');
-          return;
+          return imageUrl;
         }
 
         // Async task-based image flow
@@ -4359,11 +4369,11 @@
             }
 
             appendGeneratedImageCard(imageUrl, value);
-            imagePromptInput.value = '';
-            imageGenerationStatus.textContent = '图片已生成。';
+            if (imagePromptInput) imagePromptInput.value = '';
+            if (imageGenerationStatus) imageGenerationStatus.textContent = '图片已生成。';
             finalStatusText = '图片已生成。';
             showToast('图片已生成。');
-            break;
+            return imageUrl;
           }
 
           if (taskData.task_status === 'FAILED') {
@@ -4385,6 +4395,38 @@
         }
       } finally {
         setImageGenerationBusy(false, finalStatusText);
+      }
+      return '';
+    }
+
+    async function sendImageGenerationMessage(query, modelId, metadata) {
+      createUserMessage(query, []);
+      homeInput.value = '';
+
+      const assistantMessageId = createAssistantMessage(metadata);
+      updateAssistantMessage(assistantMessageId, { answer: '正在生成图片...', thinking: true });
+
+      setComposerBusy(true);
+
+      try {
+        const imageUrl = await generateImageFromPrompt(query, modelId);
+        if (imageUrl) {
+          updateAssistantMessage(assistantMessageId, { answer: `![generated image](${imageUrl})`, thinking: false });
+          pushHistory('user', query);
+          pushHistory(assistantHistoryMessage(`![generated image](${imageUrl})`, metadata));
+          await finalizeConversationTurn();
+        } else {
+          updateAssistantMessage(assistantMessageId, { answer: '图片生成失败，未返回图片地址。', thinking: false });
+          pushHistory('user', query);
+          pushHistory(assistantHistoryMessage('图片生成失败，未返回图片地址。', metadata));
+        }
+      } catch (error) {
+        const message = normalizeErrorMessage(error, '图片生成失败，请稍后重试。');
+        updateAssistantMessage(assistantMessageId, { answer: `图片生成失败：${message}`, thinking: false });
+        pushHistory('user', query);
+        pushHistory(assistantHistoryMessage(`图片生成失败：${message}`, metadata));
+      } finally {
+        setComposerBusy(false);
       }
     }
 
@@ -5799,6 +5841,12 @@
       const turnModelId = currentModel;
       const turnModelMetadata = createModelMetadata(turnModelId);
 
+      if (turnModelId === 'gpt-image-2' || turnModelId === 'image-precise' || turnModelId === 'image-fast') {
+        if (!query && !attachmentsForSend.length) return;
+        await sendImageGenerationMessage(query, turnModelId, turnModelMetadata);
+        return;
+      }
+
       const effectiveQuery = query || '请分析上传的图片。';
       const userContent = attachmentsForSend.length
         ? attachmentToUserContent(effectiveQuery, attachmentsForSend)
@@ -6576,7 +6624,7 @@
       const q = String(query || '').trim().toLowerCase();
       if (q && !haystack.includes(q)) return false;
       if (filter === 'code') return /code|coder|编程|编码/.test(haystack);
-      if (filter === 'image') return meta.multimodal || /image|多模态|视觉|图片/.test(haystack);
+      if (filter === 'image') return meta.multimodal || /image|多模态|视觉|图片|生图/.test(haystack);
       if (filter === 'search') return /search|联网|搜索/.test(haystack);
       return true;
     }
