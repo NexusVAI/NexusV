@@ -754,8 +754,8 @@
       { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
       { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
       { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
-      { id: 'sensenova-6.7-flash-lite', displayName: 'SenseNova 6.7 Flash-Lite', brand: 'SenseNova', canonicalId: 'sensenova-6.7-flash-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './sensenova.svg', tags: ['多模态', '快速'], multimodal: true },
-      { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova.svg', tags: ['生图'] },
+      { id: 'sensenova-6.7-flash-lite', displayName: 'SenseNova 6.7 Flash-Lite', brand: 'SenseNova', canonicalId: 'sensenova-6.7-flash-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './sensenova-color.svg', tags: ['多模态', '快速'], multimodal: true },
+      { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova-color.svg', tags: ['生图'] },
       { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
