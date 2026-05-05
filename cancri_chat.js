@@ -3612,7 +3612,9 @@
         .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, url) => {
           const href = safeUrl(url);
           if (href === '#') return alt;
-          return keep(`<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;cursor:pointer;" onclick="window.open('${escapeHtml(href)}','_blank','noopener,noreferrer')"><br><small style="color:#888;font-size:12px;">图片链接可能随时失效，请及时下载到本地保存。</small>`);
+          const escHref = escapeHtml(href);
+          const escAlt = escapeHtml(alt);
+          return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block"><span style="position:absolute;bottom:8px;right:8px;display:flex;gap:6px"><a href="${escHref}" target="_blank" rel="noopener noreferrer" style="width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none" title="新窗口打开"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a><button onclick="(async()=>{try{const r=await fetch('${escHref}');const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){window.open('${escHref}','_blank')}})()" style="width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span></span>`);
         });
       // 转义剩余的 HTML
       output = escapeHtml(output)
@@ -4258,39 +4260,43 @@
       image.alt = prompt;
       image.src = imageUrl;
 
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:absolute;left:0;right:0;bottom:0;padding:10px 12px;z-index:2;display:flex;align-items:center;gap:8px;background:linear-gradient(transparent,rgba(0,0,0,.55))';
+
       const caption = document.createElement('div');
-      caption.style.position = 'absolute';
-      caption.style.left = '12px';
-      caption.style.right = '12px';
-      caption.style.bottom = '12px';
-      caption.style.zIndex = '1';
-      caption.style.color = '#fff';
-      caption.style.fontSize = '12px';
-      caption.style.fontWeight = '650';
-      caption.style.textShadow = '0 2px 10px rgba(0,0,0,.32)';
-      caption.style.whiteSpace = 'nowrap';
-      caption.style.overflow = 'hidden';
-      caption.style.textOverflow = 'ellipsis';
+      caption.style.cssText = 'flex:1;color:#fff;font-size:12px;font-weight:650;text-shadow:0 2px 10px rgba(0,0,0,.32);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
       caption.textContent = prompt;
 
-      const hint = document.createElement('div');
-      hint.textContent = '图片链接可能随时失效，请及时下载到本地保存。';
-      hint.style.position = 'absolute';
-      hint.style.left = '12px';
-      hint.style.right = '12px';
-      hint.style.bottom = '4px';
-      hint.style.zIndex = '1';
-      hint.style.color = '#ccc';
-      hint.style.fontSize = '10px';
-      hint.style.textShadow = '0 2px 10px rgba(0,0,0,.32)';
-      hint.style.whiteSpace = 'nowrap';
-      hint.style.overflow = 'hidden';
-      hint.style.textOverflow = 'ellipsis';
+      const downloadBtn = document.createElement('button');
+      downloadBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      downloadBtn.title = '下载图片';
+      downloadBtn.style.cssText = 'width:32px;height:32px;border-radius:8px;border:none;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s';
+      downloadBtn.onmouseenter = () => { downloadBtn.style.background = 'rgba(255,255,255,.35)' };
+      downloadBtn.onmouseleave = () => { downloadBtn.style.background = 'rgba(255,255,255,.18)' };
+      downloadBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        downloadBtn.disabled = true;
+        try {
+          const resp = await fetch(imageUrl);
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `cancri-image-${Date.now()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+        } catch {
+          window.open(imageUrl, '_blank', 'noopener,noreferrer');
+        } finally {
+          downloadBtn.disabled = false;
+        }
+      });
 
+      overlay.appendChild(caption);
+      overlay.appendChild(downloadBtn);
       card.appendChild(image);
-      card.appendChild(caption);
-      card.appendChild(hint);
-      card.addEventListener('click', () => window.open(imageUrl, '_blank', 'noopener,noreferrer'));
+      card.appendChild(overlay);
       generatedImageGrid.prepend(card);
     }
 
@@ -4342,8 +4348,11 @@
         if (isOpenAIImage) {
           const imageUrl = data?.data?.[0]?.url || (data?.data?.[0]?.b64_json ? `data:image/png;base64,${data.data[0].b64_json}` : '');
           if (!imageUrl) {
-            const detail = data?.error?.message || data?.message || JSON.stringify(data).slice(0, 200);
-            throw new Error(detail || '生成成功，但没有返回图片地址。');
+            const revised = data?.data?.[0]?.revised_prompt;
+            const detail = data?.error?.message || data?.message
+              || (revised ? `提示词可能被过滤（修正后：${String(revised).slice(0, 60)}）` : '')
+              || '图片生成失败，未返回图片数据。';
+            throw new Error(detail);
           }
           appendGeneratedImageCard(imageUrl, value);
           if (imagePromptInput) imagePromptInput.value = '';
@@ -4415,10 +4424,12 @@
           imageGenerationStatus.textContent = RATE_LIMIT_MESSAGE;
           finalStatusText = RATE_LIMIT_MESSAGE;
           showToast(RATE_LIMIT_MESSAGE);
+          throw error;
         } else if (error.name !== 'AbortError') {
           imageGenerationStatus.textContent = `生成失败：${error.message}`;
           finalStatusText = `生成失败：${error.message}`;
           showToast(`图片生成失败：${error.message}`);
+          throw error;
         }
       } finally {
         setImageGenerationBusy(false, finalStatusText);
