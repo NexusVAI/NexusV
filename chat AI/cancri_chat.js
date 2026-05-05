@@ -3742,17 +3742,17 @@
         .replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) => keep(`\\(${escapeHtml(formula)}\\)`))
         .replace(/\$\s*([^\$]+?)\s*\$/g, (match, formula) => keep(`$${escapeHtml(formula.trim())}$`))
         .replace(/`([^`]+)`/g, (match, code) => keep(`<code>${escapeHtml(code)}</code>`))
-        .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
-          const href = safeUrl(url);
-          if (href === '#') return label;
-          return keep(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
-        })
         .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, url) => {
           const href = safeUrl(url);
           if (href === '#') return alt;
           const escHref = escapeHtml(href);
           const escAlt = escapeHtml(alt);
           return keep(`<span style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" crossorigin="anonymous" style="max-width:100%;border-radius:8px;display:block;cursor:default" oncontextmenu="return false" onclick="event.preventDefault();event.stopPropagation()"><button onclick="event.stopPropagation();(async()=>{try{const r=await fetch('${escHref}',{mode:'cors'});const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cancri-image-'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href)}catch(e){try{const c=document.createElement('canvas');const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{c.width=i.naturalWidth;c.height=i.naturalHeight;c.getContext('2d').drawImage(i,0,0);const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='cancri-image-'+Date.now()+'.png';a.click()};i.onerror=()=>{window.open('${escHref}','_blank')};i.src='${escHref}'}catch(e2){window.open('${escHref}','_blank')}})()" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
+        })
+        .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
+          const href = safeUrl(url);
+          if (href === '#') return label;
+          return keep(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
         });
       // 转义剩余的 HTML
       output = escapeHtml(output)
