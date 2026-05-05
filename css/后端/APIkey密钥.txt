@@ -1,2 +1,0 @@
-sb_secret_pp22ORhCOGN6Mpaac0SkRQ_ZF00QFAM
-https://diusqgphvybnzazgopor.supabase.co/rest/v1/
