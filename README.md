@@ -5,6 +5,9 @@
 [English](#english-version) | [中文](#中文版本)
 
 ---
+### ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=NexusVAI/NexusV&type=date)](https://www.star-history.com/?repos=NexusVAI%2FNexusV&type=date)
 
 ## 中文版本
 
@@ -349,7 +352,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ### 📞 Contact
 
-- 📧 Email: support@nexusai.com
+- 📧 Email: 3573799137@QQ.com
 - 🐛 Bug Reports: [Issues](https://github.com/NexusVAI/NexusV/issues)
 - 💬 Discussions: [Discussions](https://github.com/NexusVAI/NexusV/discussions)
 
