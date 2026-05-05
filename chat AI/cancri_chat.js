@@ -201,11 +201,122 @@
       if (code === 'access_blocked') {
         return message || '检测到异常高频请求，已暂时停止为此 IP 提供服务。';
       }
+      if (code === 'captcha_required') {
+        return '__CAPTCHA_REQUIRED__';
+      }
       if (code === 'challenge_required') {
         const suffix = Number.isFinite(retryAfter) && retryAfter > 0 ? `（建议 ${retryAfter} 秒后重试）` : '';
         return `${message || fallback}${suffix}`;
       }
       return message || fallback;
+    }
+
+    function showCaptchaModal(payload) {
+      return new Promise(async (resolve) => {
+        let existing = document.getElementById('captchaModal');
+        if (existing) existing.remove();
+
+        const retryAfter = Number(payload?.retryAfter) || 0;
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.id = 'captchaModal';
+        modal.setAttribute('aria-hidden', 'false');
+        modal.innerHTML = `
+          <div class="modal-header">
+            <div class="modal-title" style="margin-right:auto;padding-left:10px;">安全验证</div>
+          </div>
+          <div style="padding:24px;text-align:center;">
+            <p style="margin-bottom:16px;color:var(--text-secondary);">为防止滥用，请完成算术验证后继续${retryAfter > 0 ? `（${retryAfter}秒后可跳过）` : ''}</p>
+            <div id="captchaProblem" style="font-size:24px;font-weight:600;margin:20px 0;user-select:all;">加载中...</div>
+            <input id="captchaInput" type="number" placeholder="输入答案" style="width:160px;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-size:18px;text-align:center;background:var(--bg-color);color:var(--text-color);outline:none;" autocomplete="off" />
+            <div id="captchaError" style="color:#ef4444;margin-top:8px;font-size:13px;min-height:20px;"></div>
+            <button id="captchaSubmitBtn" style="margin-top:16px;padding:10px 32px;border:none;border-radius:8px;background:var(--accent-color);color:#fff;font-size:15px;cursor:pointer;font-weight:500;">验证</button>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+        requestAnimationFrame(() => modal.classList.add('open'));
+
+        const input = document.getElementById('captchaInput');
+        const btn = document.getElementById('captchaSubmitBtn');
+        const problemEl = document.getElementById('captchaProblem');
+        const errorEl = document.getElementById('captchaError');
+
+        let challengeData = null;
+
+        async function fetchChallenge() {
+          try {
+            const session = await ensureAuthSession();
+            const resp = await fetch(EDGE_FUNCTION_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+              body: JSON.stringify({ endpoint: 'captcha_challenge', __auth_token: session.access_token }),
+            });
+            const data = await resp.json();
+            if (data.problem) {
+              challengeData = data;
+              problemEl.textContent = data.problem;
+              input.focus();
+            } else {
+              problemEl.textContent = '获取验证失败';
+              errorEl.textContent = data.message || '请刷新重试';
+            }
+          } catch {
+            problemEl.textContent = '网络错误';
+            errorEl.textContent = '无法获取验证题目';
+          }
+        }
+
+        async function verify() {
+          const answer = Number(input.value);
+          if (!Number.isFinite(answer)) {
+            errorEl.textContent = '请输入数字';
+            return;
+          }
+          if (!challengeData) {
+            errorEl.textContent = '验证题目未加载';
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = '验证中...';
+          errorEl.textContent = '';
+          try {
+            const session = await ensureAuthSession();
+            const resp = await fetch(EDGE_FUNCTION_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+              body: JSON.stringify({
+                endpoint: 'captcha_verify',
+                __auth_token: session.access_token,
+                challengeId: challengeData.challengeId,
+                answer,
+                signature: challengeData.signature,
+              }),
+            });
+            const data = await resp.json();
+            if (data.verified && data.token) {
+              captchaToken = data.token;
+              modal.classList.remove('open');
+              setTimeout(() => modal.remove(), 300);
+              resolve(true);
+            } else {
+              errorEl.textContent = data.message || '验证失败，请重试';
+              btn.disabled = false;
+              btn.textContent = '验证';
+              await fetchChallenge();
+            }
+          } catch {
+            errorEl.textContent = '网络错误，请重试';
+            btn.disabled = false;
+            btn.textContent = '验证';
+          }
+        }
+
+        btn.addEventListener('click', verify);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') verify(); });
+
+        await fetchChallenge();
+      });
     }
 
     function applyBackendModelBlock(payload, modelId = currentModel) {
@@ -691,7 +802,6 @@
       'claude-haiku-4-5-20251001': DEFAULT_MODEL_ID,
       'glm-5.1-futureppo': DEFAULT_MODEL_ID,
       'claude-opus-4.6': DEFAULT_MODEL_ID,
-      'gemini-2.5-pro': DEFAULT_MODEL_ID,
       'kimi-k2.6-alt': DEFAULT_MODEL_ID,
       'kimi-k2.6-extended': DEFAULT_MODEL_ID,
     };
@@ -724,6 +834,7 @@
       { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['每日限流', '通用'] },
       { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4.6', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['均衡', '隐藏调试'] },
       { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', brand: 'NVIDIA Nemotron', canonicalId: 'nemotron-3-super', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './nvidia-color.svg', tags: ['通用'] },
+      { id: 'llama-3.3-70b', displayName: 'llama-3.3', brand: 'Meta', canonicalId: 'llama-3.3-70b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './meta-color.svg', tags: ['快速', '通用'] },
       { id: 'ling-2.6-1t', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['通用'] },
       { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['稳定'] },
       { id: 'spark-x2', displayName: 'spark-x2', brand: '讯飞星火', canonicalId: 'spark-x2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './spark-color.svg', tags: ['推理'] },
@@ -743,7 +854,6 @@
       { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
       { id: 'glm-4.7', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
       { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['预览'] },
-      { id: 'qwen3.6-plus', displayName: 'qwen3.6-plus', brand: '通义千问', canonicalId: 'qwen3.6-plus', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '均衡之选'], multimodal: true },
       { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'] },
       { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', brand: '通义千问', canonicalId: 'qwen3.6-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true },
       { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
@@ -767,6 +877,7 @@
       { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
       { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
       { id: 'gemini-3.1-pro', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新', '旗舰'] },
+      { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro Preview', brand: 'Google', canonicalId: 'gemini-3.1-pro-preview', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '预览'] },
       { id: 'gemini-3-flash', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '快速'] },
       { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新'] },
       // pwcen.cn
@@ -857,6 +968,7 @@
       if (text.includes('spark')) return '讯飞星火';
       if (text.includes('ling') || text.includes('antgroup')) return '蚂蚁 Ling';
       if (text.includes('nemotron') || text.includes('nvidia')) return 'NVIDIA Nemotron';
+      if (text.includes('llama') || text.includes('meta')) return 'Meta';
       if (text.includes('step')) return '阶跃星辰';
       return meta.displayName || modelId || '未知模型';
     }
@@ -896,7 +1008,7 @@
     let isMultimodal = isMultimodalModel(currentModel);
 
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-plus' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
         return { enable_thinking: true };
       }
       return {};
@@ -1704,12 +1816,16 @@
       });
     }
 
+    let captchaToken = '';
+
     async function proxyHeaders(extra = {}) {
-      return {
+      const headers = {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
         ...extra
       };
+      if (captchaToken) headers['x-captcha-token'] = captchaToken;
+      return headers;
     }
 
     async function authBody(body) {
@@ -3363,6 +3479,11 @@
       try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text }; }
       if (!response.ok) {
         const parsed = parseBackendErrorPayload(text);
+        if (parsed.code === 'captcha_required') {
+          const solved = await showCaptchaModal(parsed);
+          if (solved) return await arenaMainApi(endpoint, payload, timeoutMs);
+          throw new Error('\u9700\u8981\u5b8c\u6210\u5b89\u5168\u9a8c\u8bc1\u624d\u80fd\u7ee7\u7eed\u3002');
+        }
         throw new Error(parsed.message || data.message || data.error || '\u5bf9\u6218\u8bf7\u6c42\u5931\u8d25');
       }
       return data;
@@ -4518,6 +4639,11 @@
           let detail = errorText.trim();
           if (detail) {
             const parsed = parseBackendErrorPayload(detail);
+            if (parsed.code === 'captcha_required') {
+              const solved = await showCaptchaModal(parsed);
+              if (solved) return await sendImageGenerationMessage(query, modelId, metadata, attachments);
+              throw new Error('需要完成安全验证才能继续。');
+            }
             detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
               ? formatSecurityGuardMessage(parsed)
               : parsed.message || detail;
@@ -5870,6 +5996,11 @@
         let detail = errorText.trim();
         if (detail) {
           const parsed = parseBackendErrorPayload(detail);
+          if (parsed.code === 'captcha_required') {
+            const solved = await showCaptchaModal(parsed);
+            if (solved) return await streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools, turnId, modelId, priorReasoning, requestKind });
+            throw new Error('需要完成安全验证才能继续。');
+          }
           applyBackendModelBlock(parsed, modelId);
           detail = parsed.code === 'challenge_required' || parsed.code === 'access_blocked' || parsed.code === 'anonymous_not_allowed'
             ? formatSecurityGuardMessage(parsed)
@@ -6296,6 +6427,17 @@
         await finalizeConversationTurn();
       } catch (error) {
         const message = normalizeErrorMessage(error, '抱歉，发送消息时出现错误，请稍后重试。');
+        if (/Invalid session|invalid_session/i.test(message)) {
+          authSessionPromise = null;
+          showAuthOverlay();
+          updateAssistantMessage(assistantMessageId, { answer: '登录已过期，请重新登录后再试。', thinking: false });
+          pushHistory(userHistoryMessage);
+          pushHistory(assistantHistoryMessage('登录已过期，请重新登录后再试。', turnModelMetadata));
+          await finalizeConversationTurn().catch(() => {});
+          state.sendLocked = false;
+          setComposerBusy(false);
+          return;
+        }
         let failureAnswer = '';
         if (message.includes('额度已用完')
           || message.includes('切换其他模型再试')

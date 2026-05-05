@@ -134,11 +134,6 @@
       "status": "operational"
     },
     {
-      "name": "qwen3.6-plus",
-      "description": "多模态 · 均衡之选",
-      "status": "operational"
-    },
-    {
       "name": "MiniMax-M2.5",
       "description": "新 · 性价比之选 快速",
       "status": "operational"
