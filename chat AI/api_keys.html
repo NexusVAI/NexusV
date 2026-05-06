@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Key 管理 - Cancri</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; padding: 24px; }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
+    .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 15px; margin-bottom: 12px; color: #aaa; }
+    .key-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
+    .key-row:last-child { border-bottom: none; }
+    .key-info { flex: 1; }
+    .key-name { font-size: 14px; font-weight: 500; }
+    .key-prefix { font-family: monospace; font-size: 13px; color: #60a5fa; margin-top: 2px; }
+    .key-meta { font-size: 12px; color: #666; margin-top: 2px; }
+    .key-actions { display: flex; gap: 8px; }
+    .btn { padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-danger { background: #991b1b; color: #fca5a5; }
+    .btn-danger:hover { background: #7f1d1d; }
+    .btn-secondary { background: #333; color: #aaa; }
+    .btn-secondary:hover { background: #444; }
+    .empty { color: #666; font-size: 13px; padding: 12px 0; }
+    .new-key-reveal { background: #0a2e0a; border: 1px solid #166534; border-radius: 8px; padding: 12px; margin-top: 12px; display: none; }
+    .new-key-reveal code { font-family: monospace; font-size: 13px; color: #4ade80; word-break: break-all; }
+    .new-key-reveal .warn { color: #fbbf24; font-size: 12px; margin-top: 8px; }
+    .input-row { display: flex; gap: 8px; margin-top: 12px; }
+    .input-row input { flex: 1; padding: 8px 10px; background: #111; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: 13px; }
+    .input-row input:focus { border-color: #555; outline: none; }
+    .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-top: 12px; display: none; }
+    .msg.ok { background: #0a2e0a; border: 1px solid #166534; color: #4ade80; }
+    .msg.err { background: #2e0a0a; border: 1px solid #651616; color: #f87171; }
+    .doc-link { display: block; margin-top: 16px; color: #60a5fa; font-size: 13px; text-decoration: none; }
+    .doc-link:hover { text-decoration: underline; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .usage-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .usage-table th { text-align: left; color: #888; font-weight: normal; padding: 6px 8px; border-bottom: 1px solid #333; }
+    .usage-table td { padding: 6px 8px; border-bottom: 1px solid #222; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div>
+        <h1>API Key 管理</h1>
+        <p class="subtitle">查看和管理你的 API Keys</p>
+      </div>
+      <button class="btn btn-secondary" onclick="location.href='./cancri_chat_ui_v_3.html'">返回聊天</button>
+    </div>
+
+    <div id="loading" style="text-align:center;padding:40px;color:#888">加载中...</div>
+
+    <div id="login-section" style="display:none">
+      <div class="card">
+        <p style="margin-bottom:12px">请先登录。</p>
+        <button class="btn btn-primary" onclick="location.href='./cancri_chat_ui_v_3.html'">前往登录</button>
+      </div>
+    </div>
+
+    <div id="no-approval" style="display:none">
+      <div class="card">
+        <p style="margin-bottom:12px">你还没有通过 API 申请审核。</p>
+        <button class="btn btn-primary" onclick="location.href='./api_apply.html'">去申请</button>
+      </div>
+    </div>
+
+    <div id="main-section" style="display:none">
+      <!-- Generate new key -->
+      <div class="card">
+        <h2>生成新 Key</h2>
+        <div class="input-row">
+          <input type="text" id="key-name" placeholder="Key 名称（可选，如：my-project）">
+          <button class="btn btn-primary" onclick="generateKey()">生成</button>
+        </div>
+        <div class="new-key-reveal" id="new-key-box">
+          <div>你的新 API Key：</div>
+          <code id="new-key-value"></code>
+          <div class="warn">请立即复制保存，此 key 不会再次显示。</div>
+          <button class="btn btn-secondary" style="margin-top:8px" onclick="copyKey()">复制</button>
+        </div>
+        <div class="msg" id="gen-msg"></div>
+      </div>
+
+      <!-- My keys -->
+      <div class="card">
+        <h2>我的 Keys</h2>
+        <div id="keys-list"><div class="empty">暂无 Key</div></div>
+      </div>
+
+      <!-- Usage -->
+      <div class="card">
+        <h2>最近用量</h2>
+        <div id="usage-list"><div class="empty">暂无记录</div></div>
+      </div>
+
+      <!-- API Docs -->
+      <div class="card">
+        <h2>使用文档</h2>
+        <p style="font-size:13px;color:#aaa;line-height:1.6">
+          Base URL: <code style="color:#60a5fa">https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</code>
+        </p>
+        <p style="font-size:13px;color:#aaa;margin-top:8px;line-height:1.6">
+          认证方式: <code style="color:#60a5fa">Authorization: Bearer cancri_sk_xxx</code>
+        </p>
+        <pre style="background:#111;border:1px solid #333;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#ccc;overflow-x:auto;white-space:pre-wrap"><code>curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+  -H "Authorization: Bearer cancri_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "deepseek-v4-pro",
+    "messages": [{"role":"user","content":"hello"}],
+    "stream": true
+  }'</code></pre>
+        <a class="doc-link" href="#" onclick="alert('OpenAI 兼容格式。支持 /v1/chat/completions, /v1/models, /v1/images/generations')">查看完整 API 文档</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="./cancri_config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const sb = window.supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON_KEY__);
+    const GW = window.__SUPABASE_URL__ + '/functions/v1/chat-gateway';
+    let currentKeys = [];
+
+    async function init() {
+      const { data: { user } } = await sb.auth.getUser();
+      document.getElementById('loading').style.display = 'none';
+      if (!user || user.is_anonymous) {
+        document.getElementById('login-section').style.display = 'block';
+        return;
+      }
+      await loadData();
+    }
+
+    async function getSession() {
+      const { data: { session } } = await sb.auth.getSession();
+      return session;
+    }
+
+    async function loadData() {
+      const session = await getSession();
+      if (!session) { document.getElementById('login-section').style.display = 'block'; return; }
+      const resp = await fetch(GW, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ endpoint: 'api_my_keys' })
+      });
+      const data = await resp.json();
+      const hasApproved = data.applications && data.applications.some(a => a.status === 'approved');
+      if (!hasApproved) {
+        document.getElementById('no-approval').style.display = 'block';
+        return;
+      }
+      document.getElementById('main-section').style.display = 'block';
+      currentKeys = data.keys || [];
+      renderKeys();
+      loadUsage();
+    }
+
+    function renderKeys() {
+      const el = document.getElementById('keys-list');
+      if (currentKeys.length === 0) { el.innerHTML = '<div class="empty">暂无 Key，请点击上方生成。</div>'; return; }
+      el.innerHTML = currentKeys.map(k => {
+        const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString('zh-CN') : '从未使用';
+        return '<div class="key-row"><div class="key-info"><div class="key-name">' + esc(k.name) + ' <span style="font-size:11px;color:#666">(' + k.tier + ')</span></div><div class="key-prefix">' + esc(k.key_prefix) + '</div><div class="key-meta">创建：' + new Date(k.created_at).toLocaleDateString('zh-CN') + ' | 最后使用：' + lastUsed + '</div></div></div>';
+      }).join('');
+    }
+
+    async function loadUsage() {
+      try {
+        const session = await getSession();
+        const resp = await fetch(GW, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          body: JSON.stringify({ endpoint: 'api_my_keys' })
+        });
+        const data = await resp.json();
+        // api_my_keys doesn't return usage, we need admin endpoint or a separate one
+        // For now show keys info
+      } catch (e) { console.error(e); }
+    }
+
+    async function generateKey() {
+      const name = document.getElementById('key-name').value.trim() || 'default';
+      const btn = event.target;
+      btn.disabled = true; btn.textContent = '生成中...';
+      try {
+        const session = await getSession();
+        const resp = await fetch(GW, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          body: JSON.stringify({ endpoint: 'api_generate_key', name })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.key) {
+          document.getElementById('new-key-value').textContent = data.key;
+          document.getElementById('new-key-box').style.display = 'block';
+          showMsg('Key 生成成功！', false);
+          await loadData();
+        } else {
+          showMsg(data.error || '生成失败', true);
+        }
+      } catch (e) {
+        showMsg('网络错误', true);
+      }
+      btn.disabled = false; btn.textContent = '生成';
+    }
+
+    function copyKey() {
+      const key = document.getElementById('new-key-value').textContent;
+      navigator.clipboard.writeText(key).then(() => {
+        showMsg('已复制到剪贴板', false);
+      });
+    }
+
+    function showMsg(text, isErr) {
+      const el = document.getElementById('gen-msg');
+      el.textContent = text;
+      el.className = 'msg ' + (isErr ? 'err' : 'ok');
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    init();
+  </script>
+</body>
+</html>

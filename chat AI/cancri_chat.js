@@ -32,6 +32,7 @@
       recentProjectName: '',
       homeMode: 'chat',
       arenaMode: initialArenaMode,
+      webSearchEnabled: false,
     };
 
     const root = document.documentElement;
@@ -73,6 +74,9 @@
     const fileUploadBtn = document.getElementById('fileUploadBtn');
     const attachmentPreview = document.getElementById('attachmentPreview');
     const voiceInputBtn = document.getElementById('voiceToastBtn');
+    const webSearchToggle = document.getElementById('webSearchToggle');
+    const webSearchStatusPill = document.getElementById('webSearchStatusPill');
+    const attachmentStatusPill = document.getElementById('attachmentStatusPill');
     const contextMeter = document.getElementById('contextMeter');
     const contextMeterValue = document.getElementById('contextMeterValue');
     const contextMeterText = document.getElementById('contextMeterText');
@@ -823,12 +827,11 @@
       { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', brand: 'Grok', canonicalId: 'grok-4.20-fast', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './grok.svg', tags: ['新', '快速'] },
       { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', brand: 'Grok', canonicalId: 'grok-code-fast-1', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './grok.svg', tags: ['编码', '快速'] },
       { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', brand: 'MiniMax', canonicalId: 'minimax-m2.7', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './minimax-color.svg', tags: ['新', '快速'] },
-      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite Preview', brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '轻量'] },
-      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash Preview', brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '均衡'] },
+      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite', brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '轻量'] },
       { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', brand: 'Google', canonicalId: 'gemma-4-31b-chat', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '开放'] },
       { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
       { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
-      { id: 'deepseek-v4-pro-alt', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
+
       { id: 'step-3.5-flash', displayName: 'Step-3.5', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
       { id: 'hy3-preview', displayName: '混元3', brand: '腾讯混元', canonicalId: 'hy3-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
       { id: 'gpt-oss-120b', displayName: 'GPT-OSS-120B', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['通用', '慢'] },
@@ -845,8 +848,7 @@
       { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
       { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
       { id: 'moonshotai-kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'moonshotai-kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '新'] },
-      { id: 'gpt-5.5', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
-      { id: 'gpt-5.4-iamhc', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4-iamhc', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
+      { id: 'gpt-5.4-iamhc', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4-iamhc', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['新'] },
       { id: 'gemma-4-31b-it', displayName: 'Gemma-4-31B', brand: 'Google', canonicalId: 'gemma-4-31b-it', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新'] },
       { id: 'gpt-oss-20b', displayName: 'GPT-OSS-20B', brand: 'OpenAI', canonicalId: 'gpt-oss-20b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['推理'] },
       { id: 'grok-imagine-image-lite', displayName: 'Grok Imagine', brand: 'Grok', canonicalId: 'grok-imagine-image-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './grok.svg', tags: ['生图'] },
@@ -875,22 +877,30 @@
       { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova-color.svg', tags: ['生图'] },
       { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
       // supxh.xin
-      { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
-      { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
-      { id: 'gemini-3.1-pro', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新', '旗舰'] },
-      { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro Preview', brand: 'Google', canonicalId: 'gemini-3.1-pro-preview', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '预览'] },
-      { id: 'gemini-3-flash', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '快速'] },
+      { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路一', visible: false, enabled: false, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
+      { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路一', visible: false, enabled: false, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
+      { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro-preview', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新', '旗舰'] },
+      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '快速'] },
       { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新'] },
       // pwcen.cn
       { id: 'gpt-5.5-pwcen', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
       { id: 'gpt-5.4-pwcen', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
       { id: 'gpt-5.3-codex', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
       // xiangluapi.com
-      { id: 'gpt-5.3-codex-spark', displayName: 'GPT-5.3 Codex Spark', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex-spark', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
-      { id: 'gpt-5.4-xiangluapi', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
       // gemai.cc
-      { id: 'claude-sonnet-4-6-gemai', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-6-gemai', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新'] },
-      { id: 'gpt-5', displayName: 'GPT-5', brand: 'OpenAI', canonicalId: 'gpt-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新', '旗舰'] }
+      { id: 'gpt-5.2', displayName: 'GPT-5.2', brand: 'OpenAI', canonicalId: 'gpt-5.2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
+      { id: 'gpt-5-nano', displayName: 'GPT-5 Nano', brand: 'OpenAI', canonicalId: 'gpt-5-nano', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '轻量'] },
+      { id: 'gpt-5-mini', displayName: 'GPT-5 Mini', brand: 'OpenAI', canonicalId: 'gpt-5-mini', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '轻量'] },
+      // api456.me
+      { id: 'claude-opus-4-6', displayName: 'Claude Opus 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
+      { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新'] },
+      { id: 'claude-opus-4-5-api456', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['旗舰'] },
+      { id: 'claude-sonnet-4-5-api456', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['旗舰'] },
+      { id: 'gpt-5.3-codex-spark', displayName: 'GPT-5.3 Codex Spark', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex-spark', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
+      { id: 'gpt-image-2-api456', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路二', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
+      // api520.pro
+      { id: 'gpt-5.5', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
+      { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] }
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -1008,7 +1018,7 @@
     let isMultimodal = isMultimodalModel(currentModel);
 
     function getModelRequestOptions(modelId) {
-      if (modelId === 'glm-5' || modelId === 'glm-5.1' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-v4-pro-alt' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
+      if (modelId === 'glm-5' || modelId === 'glm-5.1' || modelId === 'glm-5.1-alt' || modelId === 'glm-4.7' || modelId === 'qwen3.6-max-preview' || modelId === 'kimi-k2.6' || modelId === 'deepseek-v4-pro' || modelId === 'deepseek-r1' || modelId === 'deepseek-v3.2' || modelId === 'deepseek-v3.2-exp' || modelId === 'deepseek-v3.1' || modelId === 'deepseek-r1-0528') {
         return { enable_thinking: true };
       }
       return {};
@@ -1128,6 +1138,7 @@
 
       if (!pendingAttachments.length) {
         attachmentPreview.hidden = true;
+        updateComposerToolStatus();
         return;
       }
 
@@ -1177,6 +1188,8 @@
         });
         attachmentPreview.appendChild(item);
       });
+
+      updateComposerToolStatus();
     }
 
     function removePendingAttachment(index) {
@@ -1245,13 +1258,38 @@
     }
 
     function clearPendingAttachments() {
-      pendingAttachments.forEach(item => {
-        if (item?.previewUrl?.startsWith('blob:')) {
-          URL.revokeObjectURL(item.previewUrl);
-        }
-      });
+      const attachmentService = window.NexusWorkbench?.fileAttachments;
+      if (attachmentService?.cleanupAttachments) {
+        attachmentService.cleanupAttachments(pendingAttachments);
+      } else {
+        pendingAttachments.forEach(item => {
+          if (item?.previewUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(item.previewUrl);
+          }
+        });
+      }
       pendingAttachments = [];
       updateAttachmentPreview();
+    }
+
+    function updateComposerToolStatus() {
+      if (webSearchToggle) {
+        webSearchToggle.classList.toggle('is-active', Boolean(state.webSearchEnabled));
+        webSearchToggle.setAttribute('aria-pressed', String(Boolean(state.webSearchEnabled)));
+      }
+      if (webSearchStatusPill) {
+        webSearchStatusPill.hidden = !state.webSearchEnabled;
+      }
+      if (attachmentStatusPill) {
+        const count = pendingAttachments.length;
+        attachmentStatusPill.hidden = count === 0;
+        attachmentStatusPill.textContent = count ? `${count} 个附件` : '';
+      }
+    }
+
+    function setWebSearchEnabled(enabled) {
+      state.webSearchEnabled = Boolean(enabled);
+      updateComposerToolStatus();
     }
 
     function updateVoiceButtonState() {
@@ -1360,6 +1398,15 @@
     }
 
     async function filesToAttachments(files) {
+      const attachmentService = window.NexusWorkbench?.fileAttachments;
+      if (attachmentService?.filesToAttachments) {
+        return attachmentService.filesToAttachments(files, pendingAttachments, {
+          maxCount: MAX_ATTACHMENT_COUNT,
+          maxSize: MAX_ATTACHMENT_SIZE,
+          onWarning: showToast,
+        });
+      }
+
       const accepted = [];
       const fileList = Array.from(files || []);
       const remainingSlots = Math.max(0, MAX_ATTACHMENT_COUNT - pendingAttachments.length);
@@ -1475,6 +1522,11 @@
     }
 
     function attachmentToUserContent(query, attachments) {
+      const attachmentService = window.NexusWorkbench?.fileAttachments;
+      if (attachmentService?.attachmentToUserContent) {
+        return attachmentService.attachmentToUserContent(query, attachments);
+      }
+
       const textPart = String(query || '').trim();
       const content = [];
       const hasImageAttachment = attachments.some(item => !item?.isTextFile);
@@ -2866,12 +2918,12 @@
       }
       root.setAttribute('data-theme', state.theme);
       root.style.setProperty('--accent', state.accentValue);
-      appearanceValue.textContent = themeCycle[themeIndex].label;
-      contrastValue.textContent = state.contrast;
-      accentValueEl.textContent = state.accentName;
-      accentDot.style.background = state.accentValue;
-      languageValue.textContent = state.language;
-      speechValue.textContent = state.speech;
+      if (appearanceValue) appearanceValue.textContent = themeCycle[themeIndex].label;
+      if (contrastValue) contrastValue.textContent = state.contrast;
+      if (accentValueEl) accentValueEl.textContent = state.accentName;
+      if (accentDot) accentDot.style.background = state.accentValue;
+      if (languageValue) languageValue.textContent = state.language;
+      if (speechValue) speechValue.textContent = state.speech;
       persistUiPreferences();
     }
 
@@ -3088,6 +3140,8 @@
 
     function setActiveView(view) {
       state.currentView = view;
+      document.body.dataset.view = view;
+      document.body.dataset.arenaMode = state.arenaMode;
 
       document.querySelectorAll('.main > .view').forEach(el => {
         el.classList.toggle('active', el.id === `${view}View`);
@@ -3095,14 +3149,13 @@
 
       if (homeView) homeView.classList.toggle('active', view === 'home');
       if (leaderboardView) leaderboardView.classList.toggle('active', view === 'leaderboard');
-      if (imagesView) imagesView.classList.toggle('active', view === 'images');
 
       navRows.forEach(row => row.classList.toggle('active', row.dataset.viewTarget === view));
       closePopover();
       closeModal();
 
-      if (modelSelector) modelSelector.hidden = view === 'leaderboard' || state.arenaMode === 'anonymous';
-      if (topArenaModeSelector) topArenaModeSelector.style.display = view === 'leaderboard' ? 'none' : '';
+      if (modelSelector) modelSelector.hidden = view === 'leaderboard' || view === 'arena' || state.arenaMode === 'anonymous';
+      if (topArenaModeSelector) topArenaModeSelector.style.display = (view === 'leaderboard' || view === 'arena') ? 'none' : '';
 
       if (view === 'home') {
         updateHomeHeroText();
@@ -3117,7 +3170,7 @@
       const modeLabels = {
         single: '单模型',
         anonymous: '匿名对战',
-        side_by_side: 'Side by Side'
+        side_by_side: '双模型对话'
       };
       if (topArenaModeLabel) topArenaModeLabel.textContent = modeLabels[state.arenaMode] || '单模型';
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
@@ -3132,6 +3185,16 @@
         else if (state.arenaMode === 'side_by_side') homeInput.placeholder = '比较你选择的两个模型回答';
         else homeInput.placeholder = '有问题，尽管问';
       }
+      document.body.dataset.arenaMode = state.arenaMode;
+      document.documentElement.dataset.arenaMode = state.arenaMode;
+      document.body.classList.toggle('arena-anonymous-active', state.arenaMode === 'anonymous');
+      document.body.classList.toggle('arena-single-active', state.arenaMode === 'single');
+      document.body.classList.toggle('arena-compare-active', state.arenaMode === 'side_by_side');
+    }
+    function closeTopArenaModeDropdown() {
+      topArenaModeSelector?.classList.remove('open', 'is-open');
+      document.body.classList.remove('header-mode-menu-open');
+      topArenaModeBtn?.setAttribute('aria-expanded', 'false');
     }
     function setTopArenaMode(mode) {
       state.arenaMode = normalizeArenaMode(mode || 'single');
@@ -3144,7 +3207,7 @@
         const fallback = getFallbackModelId(currentModel);
         setModel(fallback);
       }
-      topArenaModeSelector?.classList.remove('open');
+      closeTopArenaModeDropdown();
       if (state.arenaMode === 'single') {
         showToast('已切换到单模型聊天');
       } else if (state.arenaMode === 'anonymous') {
@@ -3152,6 +3215,7 @@
       } else if (state.arenaMode === 'side_by_side') {
         showToast('已切换到双模型对话');
       }
+      requestAnimationFrame(autoResizeComposerInput);
     }
 
     function getLeaderboardRowMeta(row = {}) {
@@ -3372,7 +3436,7 @@
             <text x="15" y="${height / 2}" text-anchor="middle" fill="var(--text-secondary)" font-size="12" transform="rotate(-90, 15, ${height / 2})">Elo 分数</text>
           </svg>
           <div class="pareto-legend">
-            <div class="pareto-legend-title">Pareto 前沿</div>
+            <div class="pareto-legend-title">帕累托前沿</div>
             <div class="pareto-legend-item">
               <span class="pareto-legend-line" style="background:#10a37f"></span>
               <span>性价比最优</span>
@@ -4310,8 +4374,23 @@
       streamState.thinking = thinking;
     }
 
-    function getAvailableToolDefinitions() {
-      return [...ARTICLE_TOOL_DEFINITIONS, WEB_SEARCH_TOOL_DEFINITION, FETCH_WEB_PAGE_TOOL_DEFINITION];
+    function getToolDefinitionsForCurrentTurn({ webSearch = state.webSearchEnabled } = {}) {
+      if (window.NexusWorkbench?.getTools) {
+        return window.NexusWorkbench.getTools({
+          articleSearch: true,
+          webSearch,
+        }, {
+          articleTools: ARTICLE_TOOL_DEFINITIONS,
+          webSearchTool: WEB_SEARCH_TOOL_DEFINITION,
+          fetchWebPageTool: FETCH_WEB_PAGE_TOOL_DEFINITION,
+        });
+      }
+
+      const tools = [...ARTICLE_TOOL_DEFINITIONS];
+      if (webSearch) {
+        tools.push(WEB_SEARCH_TOOL_DEFINITION, FETCH_WEB_PAGE_TOOL_DEFINITION);
+      }
+      return tools;
     }
 
     function getHomeDisplayName() {
@@ -4356,6 +4435,15 @@
       const hour = now.getHours();
       const weekday = now.getDay();
       const name = getHomeDisplayName();
+      const emailLikeName = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name);
+
+      if (emailLikeName) {
+        if (hour < 5) return `夜深了，\n${name}`;
+        if (hour < 11) return `早上好，\n${name}`;
+        if (hour < 14) return `中午好，\n${name}`;
+        if (hour < 18) return `下午好，\n${name}`;
+        return `晚上好，\n${name}`;
+      }
 
       if (weekday === 0 || weekday === 6) {
         return pickHomeText([
@@ -4486,6 +4574,30 @@
         voiceInputBtn.disabled = isBusy;
       }
       sendChatBtn.setAttribute('aria-disabled', String(sendChatBtn.disabled));
+      updateComposerToolStatus();
+    }
+
+    function getComposerResizeMaxHeight() {
+      if (window.matchMedia('(max-width: 640px)').matches) {
+        return Math.min(176, Math.max(120, Math.floor(window.innerHeight * 0.28)));
+      }
+      return 220;
+    }
+
+    function autoResizeComposerInput() {
+      if (!homeInput) return;
+      const composer = homeInput.closest('[data-workbench-composer], .composer');
+      const minHeight = window.matchMedia('(max-width: 640px)').matches ? 48 : 44;
+      const maxHeight = getComposerResizeMaxHeight();
+
+      homeInput.style.height = '0px';
+      const next = Math.max(minHeight, Math.min(homeInput.scrollHeight, maxHeight));
+      homeInput.style.height = `${next}px`;
+      homeInput.style.overflowY = homeInput.scrollHeight > maxHeight ? 'auto' : 'hidden';
+
+      if (composer) {
+        composer.classList.toggle('is-multiline', next > minHeight + 12 || homeInput.value.includes('\n'));
+      }
     }
 
     function sleep(ms) {
@@ -4668,7 +4780,7 @@
       const value = String(prompt || '').trim();
       if (!value || state.isImageGenerating) return;
 
-      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2' || imageModel === 'sensenova-u1-fast' || imageModel === 'grok-imagine-image-lite';
+      const isOpenAIImage = imageModel === OPENAI_IMAGE_MODEL || imageModel === 'gpt-image-2' || imageModel === 'gpt-image-2-api456' || imageModel === 'sensenova-u1-fast' || imageModel === 'grok-imagine-image-lite';
       const imageSize = imageSizeSelect?.value || '1024x1024';
 
       setImageGenerationBusy(true, isOpenAIImage ? '正在生成图片...' : '正在提交图片生成任务...');
@@ -4797,12 +4909,12 @@
         }
       } catch (error) {
         if (error.message === RATE_LIMIT_MESSAGE) {
-          imageGenerationStatus.textContent = RATE_LIMIT_MESSAGE;
+          if (imageGenerationStatus) imageGenerationStatus.textContent = RATE_LIMIT_MESSAGE;
           finalStatusText = RATE_LIMIT_MESSAGE;
           showToast(RATE_LIMIT_MESSAGE);
           throw error;
         } else if (error.name !== 'AbortError') {
-          imageGenerationStatus.textContent = `生成失败：${error.message}`;
+          if (imageGenerationStatus) imageGenerationStatus.textContent = `生成失败：${error.message}`;
           finalStatusText = `生成失败：${error.message}`;
           showToast(`图片生成失败：${error.message}`);
           throw error;
@@ -4816,6 +4928,7 @@
     async function sendImageGenerationMessage(query, modelId, metadata, attachments = []) {
       createUserMessage(query, attachments);
       homeInput.value = '';
+      autoResizeComposerInput();
 
       const assistantMessageId = createAssistantMessage(metadata);
       updateAssistantMessage(assistantMessageId, { answer: '正在生成图片...', thinking: true });
@@ -5028,7 +5141,7 @@
       thinkHeader.className = 'think-header';
       thinkHeader.type = 'button';
       thinkHeader.setAttribute('aria-expanded', 'true');
-      thinkHeader.innerHTML = `<span class="think-label">Thinking</span><span class="think-caret">⌄</span>`;
+      thinkHeader.innerHTML = `<span class="think-label">思考中</span><span class="think-caret">⌄</span>`;
 
       const thinkBody = document.createElement('div');
       thinkBody.className = 'think-body md-content';
@@ -5165,7 +5278,7 @@
         thinkHeader.className = 'think-header';
         thinkHeader.type = 'button';
         thinkHeader.setAttribute('aria-expanded', 'true');
-        thinkHeader.innerHTML = '<span class="think-label">Thinking</span><span class="think-caret">⌄</span>';
+        thinkHeader.innerHTML = '<span class="think-label">思考中</span><span class="think-caret">⌄</span>';
         thinkHeader.addEventListener('click', () => {
           if (thinkBlock.hidden) return;
           const collapsed = !thinkBlock.classList.contains('is-collapsed');
@@ -5270,7 +5383,7 @@
           const seconds = thinkStreamState.startedAt
             ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000))
             : 1;
-          if (label) label.textContent = thinking ? 'Thinking' : `Thought for ${seconds}s`;
+          if (label) label.textContent = thinking ? '思考中' : `思考 ${seconds} 秒`;
         }
         if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
           thinkBlock.classList.add('is-collapsed');
@@ -5371,7 +5484,7 @@
         const seconds = thinkStreamState.startedAt
           ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000))
           : 1;
-        if (label) label.textContent = thinking ? 'Thinking' : `Thought for ${seconds}s`;
+        if (label) label.textContent = thinking ? '思考中' : `思考 ${seconds} 秒`;
       }
       if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
         thinkBlock.classList.add('is-collapsed');
@@ -5488,6 +5601,7 @@
       chatMessages.classList.remove('active');
       homeView.classList.remove('chatting');
       homeInput.value = '';
+      autoResizeComposerInput();
       updateHomeHeroText();
       setComposerBusy(false);
       homeInput.focus();
@@ -5985,7 +6099,7 @@
       }
     }
 
-    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel, priorReasoning = '', requestKind = 'direct_chat' } = {}) {
+    async function streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools = true, turnId = '', modelId = currentModel, priorReasoning = '', requestKind = 'direct_chat', webSearchEnabled = state.webSearchEnabled } = {}) {
       let finalAnswer = '';
       let reasoningText = '';
       let streamBuffer = '';
@@ -6025,9 +6139,14 @@
         ...getModelRequestOptions(modelId),
       };
 
+      requestBody.web_search_enabled = Boolean(webSearchEnabled);
+
       if (enableTools) {
-        requestBody.tools = getAvailableToolDefinitions();
-        requestBody.tool_choice = 'auto';
+        const tools = getToolDefinitionsForCurrentTurn({ webSearch: webSearchEnabled });
+        if (tools.length) {
+          requestBody.tools = tools;
+          requestBody.tool_choice = 'auto';
+        }
       }
 
       for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -6064,7 +6183,7 @@
           const parsed = parseBackendErrorPayload(detail);
           if (parsed.code === 'captcha_required') {
             const solved = await showCaptchaModal(parsed);
-            if (solved) return await streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools, turnId, modelId, priorReasoning, requestKind });
+            if (solved) return await streamChatCompletionRound(messages, assistantMessageId, controller, { enableTools, turnId, modelId, priorReasoning, requestKind, webSearchEnabled });
             throw new Error('需要完成安全验证才能继续。');
           }
           applyBackendModelBlock(parsed, modelId);
@@ -6306,6 +6425,7 @@
 
       const query = String(content || '').trim();
       const attachmentsForSend = pendingAttachments.slice();
+      const webSearchEnabledForTurn = Boolean(state.webSearchEnabled);
       if ((!query && !attachmentsForSend.length) || state.isStreaming) return;
 
       stopVoiceRecognition();
@@ -6318,6 +6438,7 @@
       if (turnModelId === 'gpt-image-2' || turnModelId === 'sensenova-u1-fast') {
         if (!query && !attachmentsForSend.length) return;
         await sendImageGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
+        if (webSearchEnabledForTurn) setWebSearchEnabled(false);
         return;
       }
 
@@ -6329,9 +6450,10 @@
 
       createUserMessage(query || effectiveQuery, attachmentsForSend);
       homeInput.value = '';
+      autoResizeComposerInput();
 
       let fallbackToSingleModel = false;
-      if (!attachmentsForSend.length && (state.arenaMode === 'anonymous' || state.arenaMode === 'side_by_side')) {
+      if (!attachmentsForSend.length && !webSearchEnabledForTurn && (state.arenaMode === 'anonymous' || state.arenaMode === 'side_by_side')) {
         setComposerBusy(true);
         try {
           const duelResult = await sendArenaDuelMessage(effectiveQuery, { anonymous: state.arenaMode === 'anonymous' });
@@ -6372,6 +6494,7 @@
         pushHistory(userHistoryMessage);
         pushHistory(assistantHistoryMessage(detailedUnavailableMessage, turnModelMetadata));
         await finalizeConversationTurn();
+        if (webSearchEnabledForTurn) setWebSearchEnabled(false);
         return;
       }
 
@@ -6383,6 +6506,7 @@
         showToast(normalizeErrorMessage(error, '上下文压缩失败，请稍后再试。'));
         state.sendLocked = false;
         setComposerBusy(false);
+        if (webSearchEnabledForTurn) setWebSearchEnabled(false);
         return;
       }
 
@@ -6400,7 +6524,7 @@
         let accumulatedReasoningText = '';
         let round = 0;
         while (!controller.signal.aborted) {
-          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId, priorReasoning: accumulatedReasoningText, requestKind: round === 0 ? 'direct_chat' : 'tool_followup_chat' });
+          const roundResult = await streamChatCompletionRound(requestMessages, assistantMessageId, controller, { turnId, modelId: turnModelId, priorReasoning: accumulatedReasoningText, requestKind: round === 0 ? 'direct_chat' : 'tool_followup_chat', webSearchEnabled: webSearchEnabledForTurn });
           accumulatedReasoningText = composeReasoningText(accumulatedReasoningText, roundResult.reasoningText);
 
           if (roundResult.toolCalls.length) {
@@ -6536,6 +6660,7 @@
         }
         state.sendLocked = false;
         setComposerBusy(false);
+        if (webSearchEnabledForTurn) setWebSearchEnabled(false);
       }
     }
 
@@ -6553,13 +6678,11 @@
       if ((!query && !pendingAttachments.length) || state.isStreaming) return;
 
       if (state.homeMode === 'image' && query && !pendingAttachments.length) {
-        setActiveView('images');
-        if (imagePromptInput) {
-          imagePromptInput.value = query;
-        }
         homeInput.value = '';
+        autoResizeComposerInput();
         setComposerBusy(false);
-        await generateImageFromPrompt(query, OPENAI_IMAGE_MODEL);
+        await sendImageGenerationMessage(query, OPENAI_IMAGE_MODEL);
+        setWebSearchEnabled(false);
         return;
       }
 
@@ -6604,6 +6727,11 @@
         m.classList.remove('open');
         m.setAttribute('aria-hidden', 'true');
       });
+      const annModal = document.getElementById('announcementModal');
+      if (annModal) {
+        annModal.classList.remove('open');
+        annModal.setAttribute('aria-hidden', 'true');
+      }
       state.modal = null;
       updateScrimVisibility();
     }
@@ -6679,7 +6807,22 @@
       setActiveView('home');
       clearConversation();
     });
-    document.getElementById('plusTrigger').addEventListener('click', e => { e.stopPropagation(); openPopover(plusPopover); });
+    const brandHomeBtnTop = document.getElementById('brandHomeBtnTop');
+    if (brandHomeBtnTop) brandHomeBtnTop.addEventListener('click', () => {
+      setActiveView('home');
+      clearConversation();
+    });
+    document.getElementById('plusTrigger').addEventListener('click', e => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      const rect = btn.getBoundingClientRect();
+      plusPopover.style.position = 'fixed';
+      plusPopover.style.left = Math.max(8, rect.left) + 'px';
+      plusPopover.style.top = (rect.bottom + 8) + 'px';
+      plusPopover.style.bottom = 'auto';
+      plusPopover.style.transform = 'none';
+      openPopover(plusPopover);
+    });
     on('moreEntry', 'click', e => { e.stopPropagation(); openPopover(morePopover); });
     document.getElementById('accountTrigger').addEventListener('click', e => {
       e.stopPropagation();
@@ -6699,19 +6842,33 @@
     }
 
     if (topArenaModeBtn) {
+      topArenaModeBtn.setAttribute('aria-haspopup', 'listbox');
+      topArenaModeBtn.setAttribute('aria-expanded', 'false');
+
       topArenaModeBtn.addEventListener('click', e => {
+        e.preventDefault();
         e.stopPropagation();
-        topArenaModeSelector?.classList.toggle('open');
+
+        const willOpen = !topArenaModeSelector?.classList.contains('open');
+
         closeModelDropdown();
+
+        topArenaModeSelector?.classList.toggle('open', willOpen);
+        topArenaModeSelector?.classList.toggle('is-open', willOpen);
+        document.body.classList.toggle('header-mode-menu-open', willOpen);
+        topArenaModeBtn.setAttribute('aria-expanded', String(willOpen));
       });
+
       topArenaModeSelector?.querySelectorAll('.arena-mode-option').forEach(option => {
         option.addEventListener('click', e => {
+          e.preventDefault();
           e.stopPropagation();
           setTopArenaMode(option.dataset.mode);
         });
       });
+
       document.addEventListener('click', e => {
-        if (!topArenaModeSelector?.contains(e.target)) topArenaModeSelector?.classList.remove('open');
+        if (!topArenaModeSelector?.contains(e.target)) closeTopArenaModeDropdown();
       });
     }
 
@@ -6735,16 +6892,22 @@
       chatHistorySearchInput.addEventListener('input', renderChatHistoryList);
     }
 
-    document.getElementById('settingsBtn').addEventListener('click', () => openModal('settingsModal'));
-    document.getElementById('themeShortcutBtn').addEventListener('click', () => openModal('settingsModal'));
-    document.getElementById('tempChatBtn').addEventListener('click', () => openModal('tempChatModal'));
+    on('settingsBtn', 'click', () => openModal('settingsModal'));
+    on('themeShortcutBtn', 'click', () => openModal('settingsModal'));
+    on('tempChatBtn', 'click', () => openModal('tempChatModal'));
     on('projectBtn', 'click', () => openModal('projectModal'));
-    document.getElementById('createProjectFromPlus').addEventListener('click', () => openModal('projectModal'));
-    document.getElementById('privacyPolicyBtn').addEventListener('click', () => openModal('privacyPolicyModal'));
+    on('createProjectFromPlus', 'click', () => openModal('projectModal'));
+    on('privacyPolicyBtn', 'click', () => openModal('privacyPolicyModal'));
+    on('privacySettingsRow', 'click', () => openModal('privacyPolicyModal'));
 
     navRows.forEach(row => {
       row.addEventListener('click', () => {
         const target = row.dataset.viewTarget;
+        if (row.id === 'arenaViewNavBtn') {
+          setTopArenaMode('anonymous');
+          setActiveView('home');
+          return;
+        }
         setActiveView(target);
         if (target === 'home') {
           clearConversation();
@@ -6752,19 +6915,14 @@
       });
     });
 
-    document.getElementById('openImagesFromPlus').addEventListener('click', () => setActiveView('images'));
-    document.getElementById('openImagesFromMore').addEventListener('click', () => setActiveView('images'));
     on('imageModeChipBtn', 'click', () => setHomeMode('image'));
     on('videoModeChipBtn', 'click', () => setHomeMode('video'));
 
-    on('searchChatsBtn', 'click', () => {});
-    on('codexBtn', 'click', () => {});
-    document.getElementById('teamToastBtn').addEventListener('click', () => {});
-    document.getElementById('upgradeBtn').addEventListener('click', () => window.open('https://qm.qq.com/q/bxQU3rXRyo', '_blank'));
+    document.getElementById('upgradeBtn').addEventListener('click', () => { closePopover(); window.open('https://qm.qq.com/q/bxQU3rXRyo', '_blank'); });
     const clearBtnEl = document.getElementById('clearBtn');
-    if (clearBtnEl) clearBtnEl.addEventListener('click', () => clearConversation());
+    if (clearBtnEl) clearBtnEl.addEventListener('click', () => { closePopover(); clearConversation(); });
     const exportBtnEl = document.getElementById('exportBtn');
-    if (exportBtnEl) exportBtnEl.addEventListener('click', () => exportChatToMarkdown());
+    if (exportBtnEl) exportBtnEl.addEventListener('click', () => { closePopover(); exportChatToMarkdown(); });
     const leaderboardStartVotingBtn = document.getElementById('leaderboardStartVotingBtn');
     if (leaderboardStartVotingBtn) {
       leaderboardStartVotingBtn.addEventListener('click', () => {
@@ -6778,14 +6936,6 @@
       leaderboardSegmentButtons[0].addEventListener('click', () => switchLeaderboardView('ranking'));
       leaderboardSegmentButtons[1].addEventListener('click', () => switchLeaderboardView('pareto'));
     }
-    document.getElementById('micToastBtn').addEventListener('click', () => {});
-    document.getElementById('imageMicToastBtn').addEventListener('click', () => {});
-    document.getElementById('uploadToastBtn').addEventListener('click', () => attachmentInput?.click());
-    document.getElementById('thinkingToastBtn').addEventListener('click', () => {});
-    document.getElementById('researchToastBtn2').addEventListener('click', () => {});
-    document.getElementById('openResearchToast').addEventListener('click', () => {});
-    document.getElementById('openAppsToast').addEventListener('click', () => {});
-    document.getElementById('profileToastBtn').addEventListener('click', () => {});
     document.getElementById('helpToastBtn').addEventListener('click', () => {
       window.open('https://nexusvai.github.io/NexusV/article.html?id=hero', '_blank');
     });
@@ -6795,15 +6945,21 @@
       const name = prompt('输入你的昵称（留空则清除）：', current);
       if (name !== null) setNickname(name.trim());
     });
+    on('nicknameSettingsRow', 'click', () => {
+      const current = getNickname();
+      const name = prompt('输入你的昵称（留空则清除）：', current);
+      if (name !== null) setNickname(name.trim());
+    });
     document.getElementById('logoutToastBtn').addEventListener('click', async () => {
       closePopover();
       await handleLogout();
       showToast('已退出登录');
     });
-    document.getElementById('mfaToastBtn').addEventListener('click', () => {});
-    document.getElementById('projectSettingToastBtn').addEventListener('click', () => {});
-    document.getElementById('plusMoreBtn').addEventListener('click', () => {});
-
+    on('settingsLogoutRow', 'click', async () => {
+      closeModal();
+      await handleLogout();
+      showToast('已退出登录');
+    });
     document.getElementById('continueTempChatBtn').addEventListener('click', () => {
       closeModal();
       homeInput.focus();
@@ -6823,28 +6979,17 @@
       showToast(`项目“${value}”已创建。`);
     });
 
-    document.getElementById('sendImagePromptBtn').addEventListener('click', () => {
-      const value = imagePromptInput.value.trim();
-      if (!value) {
-        showToast('请输入图片描述。');
-        imagePromptInput.focus();
-        return;
-      }
-      generateImageFromPrompt(value);
-    });
-
-    document.querySelectorAll('.image-prompt-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const prompt = chip.dataset.prompt || chip.textContent || '';
-        imagePromptInput.value = prompt.trim();
-        setImageGenerationBusy(state.isImageGenerating, imageGenerationStatus.textContent);
-        imagePromptInput.focus();
-      });
-    });
-
     homeInput.addEventListener('input', () => {
+      autoResizeComposerInput();
       setComposerBusy(state.isStreaming);
     });
+
+    if (webSearchToggle) {
+      webSearchToggle.addEventListener('click', () => {
+        if (state.isStreaming) return;
+        setWebSearchEnabled(!state.webSearchEnabled);
+      });
+    }
 
     if (voiceInputBtn) {
       voiceInputBtn.addEventListener('click', toggleVoiceInput);
@@ -6857,7 +7002,10 @@
     }
 
     if (attachBtn && attachmentInput) {
-      attachBtn.addEventListener('click', () => attachmentInput.click());
+      attachBtn.addEventListener('click', () => {
+        closePopover();
+        attachmentInput.click();
+      });
       attachmentInput.addEventListener('change', async () => {
         const nextAttachments = await filesToAttachments(attachmentInput.files);
         if (nextAttachments.length) {
@@ -6871,7 +7019,10 @@
 
     // 文件上传按钮事件处理
     if (fileUploadBtn && fileInput) {
-      fileUploadBtn.addEventListener('click', () => fileInput.click());
+      fileUploadBtn.addEventListener('click', () => {
+        closePopover();
+        fileInput.click();
+      });
       fileInput.addEventListener('change', async () => {
         const nextAttachments = await filesToAttachments(fileInput.files);
         if (nextAttachments.length) {
@@ -6883,14 +7034,23 @@
       });
     }
 
-    imagePromptInput.addEventListener('input', () => {
-      setImageGenerationBusy(state.isImageGenerating, imagePromptInput.value.trim() ? imageGenerationStatus.textContent : '等待输入提示词');
-    });
+    if (imagePromptInput) {
+      imagePromptInput.addEventListener('input', () => {
+        setImageGenerationBusy(state.isImageGenerating, imagePromptInput.value.trim() ? (imageGenerationStatus?.textContent || '') : '等待输入提示词');
+      });
+    }
 
     homeInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && (homeInput.value.trim() || pendingAttachments.length)) {
-        e.preventDefault();
-        handleHomeSubmit();
+      const isMobile = window.matchMedia('(max-width: 640px)').matches;
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        if (isMobile) {
+          requestAnimationFrame(autoResizeComposerInput);
+          return;
+        }
+        if (homeInput.value.trim() || pendingAttachments.length) {
+          e.preventDefault();
+          handleHomeSubmit();
+        }
       }
     });
 
@@ -6914,12 +7074,16 @@
       });
     }
 
-    sendImagePromptBtn.disabled = true;
-    sendImagePromptBtn.setAttribute('aria-disabled', 'true');
+    if (sendImagePromptBtn) {
+      sendImagePromptBtn.disabled = true;
+      sendImagePromptBtn.setAttribute('aria-disabled', 'true');
+    }
 
-    imagePromptInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') sendImagePromptBtn.click();
-    });
+    if (imagePromptInput) {
+      imagePromptInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && sendImagePromptBtn) sendImagePromptBtn.click();
+      });
+    }
 
     projectNameInput.addEventListener('input', () => {
       const hasValue = projectNameInput.value.trim().length > 0;
@@ -6927,16 +7091,15 @@
       btn.className = hasValue ? 'primary-btn' : 'muted-btn';
     });
 
-    document.getElementById('appearanceRow').addEventListener('click', cycleAppearance);
-    document.getElementById('contrastRow').addEventListener('click', cycleContrast);
-    document.getElementById('accentRow').addEventListener('click', cycleAccent);
-    document.getElementById('languageRow').addEventListener('click', cycleLanguage);
-    document.getElementById('speechRow').addEventListener('click', cycleSpeech);
+    on('appearanceRow', 'click', cycleAppearance);
+    on('accentRow', 'click', cycleAccent);
 
-    dismissMfaBtn.addEventListener('click', () => {
-      dismissMfaBtn.closest('.mfa-box').style.display = 'none';
-      showToast('已隐藏 MFA 推荐。');
-    });
+    if (dismissMfaBtn) {
+      dismissMfaBtn.addEventListener('click', () => {
+        dismissMfaBtn.closest('.mfa-box').style.display = 'none';
+        showToast('已隐藏 MFA 推荐。');
+      });
+    }
 
     settingTabs.forEach(tab => {
       tab.addEventListener('click', () => activateSettingsPanel(tab.dataset.settingsPanel));
@@ -7190,36 +7353,87 @@
       updateModelPageDisplay();
     }
 
-    function openModelDropdown() {
+    function openModelDropdown(triggerEl) {
+      closeTopArenaModeDropdown();
+
+      const activeRoot = triggerEl?.closest('.model-selector') || modelSelector;
+
       modelSelector?.classList.add('open');
+      modelSelector?.classList.toggle('is-open', activeRoot === modelSelector);
+      compareModelSelector?.classList.toggle('is-open', activeRoot === compareModelSelector);
+      document.body.classList.add('header-model-menu-open');
+
+      if (modelDropdown) {
+        modelDropdown.hidden = false;
+      }
+
       applyModelDropdownFilters();
       initModelPagination();
-      // 确保当前选中的模型所在页可见
+
       const modelOptions = Array.from(modelDropdown?.querySelectorAll('.model-option') || []);
-      const activeIndex = modelOptions.findIndex(opt => opt.dataset.model === currentModel);
+      const activeModelForTarget = modelSelectTarget === 'compare' ? compareModel : currentModel;
+      const activeIndex = modelOptions.findIndex(opt => opt.dataset.model === activeModelForTarget);
+
       if (activeIndex >= 0) {
         currentModelPage = Math.floor(activeIndex / MODELS_PER_PAGE) + 1;
         updateModelPageDisplay();
       }
+
       if (modelDropdown) {
         modelDropdown.classList.add('animating');
         modelDropdown.querySelectorAll('.model-option').forEach((opt, i) => {
           opt.style.setProperty('--stagger', String(i));
         });
+
+        if (triggerEl) {
+          const rect = triggerEl.getBoundingClientRect();
+          const isCompact = window.matchMedia('(max-width: 768px)').matches;
+
+          if (isCompact) {
+            modelDropdown.style.top = `${Math.round(rect.bottom + 8)}px`;
+            modelDropdown.style.left = '12px';
+            modelDropdown.style.right = '12px';
+            modelDropdown.style.width = 'auto';
+          } else {
+            const width = Math.min(520, Math.max(420, rect.width));
+            const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
+            modelDropdown.style.top = `${Math.round(rect.bottom + 8)}px`;
+            modelDropdown.style.left = `${Math.round(left)}px`;
+            modelDropdown.style.right = 'auto';
+            modelDropdown.style.width = `${Math.round(width)}px`;
+          }
+
+          modelDropdown.style.transform = 'translateY(-4px) scale(.98)';
+        }
       }
+
       document.addEventListener('click', closeModelDropdownOutside);
     }
 
     function closeModelDropdown() {
-      modelSelector?.classList.remove('open');
+      modelSelector?.classList.remove('open', 'is-open');
+      compareModelSelector?.classList.remove('open', 'is-open');
+      document.body.classList.remove('header-model-menu-open');
+
+      modelCurrentBtn?.setAttribute('aria-expanded', 'false');
+      compareModelCurrentBtn?.setAttribute('aria-expanded', 'false');
+
       modelDropdown?.classList.remove('animating');
+
+      if (modelDropdown) {
+        modelDropdown.style.top = '';
+        modelDropdown.style.left = '';
+        modelDropdown.style.right = '';
+        modelDropdown.style.width = '';
+        modelDropdown.style.transform = '';
+      }
+
       document.removeEventListener('click', closeModelDropdownOutside);
     }
 
     function closeModelDropdownOutside(e) {
-      if (!modelSelector?.contains(e.target)) {
-        closeModelDropdown();
-      }
+      if (modelSelector?.contains(e.target) || compareModelSelector?.contains(e.target)) return;
+      closeModelDropdown();
     }
 
     function setCompareModel(modelId) {
@@ -7268,10 +7482,10 @@
 
     function updateAttachBtnVisibility() {
       if (attachBtn) {
-        attachBtn.style.display = (isMultimodal || isImageOnlyModel(currentModel)) ? 'grid' : 'none';
+        attachBtn.hidden = !(isMultimodal || isImageOnlyModel(currentModel));
       }
       if (fileUploadBtn) {
-        fileUploadBtn.style.display = 'grid';
+        fileUploadBtn.hidden = false;
       }
     }
 
@@ -7286,10 +7500,11 @@
       modelCurrentBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         modelSelectTarget = 'primary';
-        if (modelSelector?.classList.contains('open')) {
+        if (modelSelector?.classList.contains('open') && modelSelector.classList.contains('is-open')) {
           closeModelDropdown();
         } else {
-          openModelDropdown();
+          openModelDropdown(modelCurrentBtn);
+          modelCurrentBtn.setAttribute('aria-expanded', 'true');
         }
       });
     }
@@ -7298,8 +7513,11 @@
       compareModelCurrentBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         modelSelectTarget = 'compare';
-        if (modelSelector?.classList.contains('open')) closeModelDropdown();
-        else openModelDropdown();
+        if (modelSelector?.classList.contains('open') && compareModelSelector?.classList.contains('is-open')) closeModelDropdown();
+        else {
+          openModelDropdown(compareModelCurrentBtn);
+          compareModelCurrentBtn.setAttribute('aria-expanded', 'true');
+        }
       });
     }
     renderModelDropdownFromCatalog();
@@ -7383,10 +7601,18 @@
     restoreUiPreferences();
     applyTheme();
     updateThemeSwitcherActive();
+
+    // 同步侧边栏主题标签
+    const _sidebarThemeLabelInit = document.getElementById('sidebarThemeLabel');
+    if (_sidebarThemeLabelInit) {
+      _sidebarThemeLabelInit.textContent = state.theme === 'dark' ? '浅色模式' : '深色模式';
+    }
     updateModelSelectorActive();
     updateContextMeter();
     updateVoiceButtonState();
     updateComposerPlaceholder();
+    updateComposerToolStatus();
+    autoResizeComposerInput();
     // 初始化上传按钮显示状态
     updateAttachBtnVisibility();
     if (isMobileViewport() && sidebar) {
@@ -7476,9 +7702,12 @@
       getLeaderboardRowMeta,
       showToast,
       setActiveView,
+      applyTheme,
       getModelRequestOptions,
       mergeToolCallDeltas,
       syncStreamingMarkdownBlock,
       TOOL_DISPLAY_NAMES,
       parseToolArguments,
     };
+
+    // 侧边栏主题切换按钮由 js/ui/theme.js 统一处理，此处不再重复绑定

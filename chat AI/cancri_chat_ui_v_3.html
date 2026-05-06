@@ -1,831 +1,2631 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self';">
-  <title>Cancri</title>
-  <script src="./cancri_config.js?v=0504"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="./cancri_chat.css?v=arena-modular-0504" />
-  <link rel="stylesheet" href="./cancri_arena.css?v=arena-module-0504" />
-  <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
-  <link rel="stylesheet" href="./katex/katex.min.css" />
-  <script src="./katex/katex.min.js"></script>
-  <script src="./katex/contrib/auto-render.min.js"></script>
-  <script src="./cancri_katex_fallback.js?v=0504"></script>
-</head>
-<body>
-  <!-- 登录遮罩层：未登录时覆盖整个页面 -->
-  <div class="auth-overlay" id="authOverlay">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <img src="../Logo/Cancri.png" alt="Cancri" width="40" height="40" style="border-radius:8px;">
-      </div>
-      <h2 class="auth-title">登录 Cancri</h2>
-      <p class="auth-subtitle">使用邮箱验证码登录，获得永久账户</p>
-      <div class="auth-step" id="authStepEmail">
-        <input type="email" class="auth-input" id="authEmailInput" placeholder="输入你的邮箱" autocomplete="email" />
-        <button class="auth-btn" id="authSendOtpBtn" type="button">发送验证码</button>
-        <div class="auth-error" id="authEmailError"></div>
-      </div>
-      <div class="auth-step" id="authStepOtp" style="display:none">
-        <p class="auth-otp-hint">验证码已发送至 <strong id="authEmailDisplay"></strong></p>
-        <input type="text" class="auth-input auth-otp-input" id="authOtpInput" placeholder="输入验证码" maxlength="10" inputmode="numeric" autocomplete="one-time-code" />
-        <button class="auth-btn" id="authVerifyOtpBtn" type="button">验证登录</button>
-        <button class="auth-link" id="authResendOtpBtn" type="button">重新发送</button>
-        <button class="auth-link" id="authBackToEmailBtn" type="button">更换邮箱</button>
-        <div class="auth-error" id="authOtpError"></div>
-      </div>
-      <div class="auth-footer">登录即代表同意服务条款 · 安全邮箱认证</div>
-    </div>
-  </div>
-
-  <div class="app" id="appRoot">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-topbar">
-        <button class="brand-mark" id="brandHomeBtn" aria-label="回到首页">
-          <img src="../Logo/Cancri.png" alt="Cancri" width="20" height="20" style="border-radius:4px;object-fit:cover;display:block;">
-        </button>
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="切换侧边栏">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="4" y="4.5" width="16" height="15" rx="3"></rect>
-            <path d="M10 4.5v15"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div class="sidebar-body">
-        <div class="nav-group">
-          <div class="nav-row active" data-view-target="home" id="newChatBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
-            <span class="sidebar-label">新对战</span>
-          </div>
-          <div class="nav-row" id="arenaLeaderboardNavBtn" data-view-target="leaderboard">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path><path d="M5 5H3v3a4 4 0 0 0 4 4"></path><path d="M19 5h2v3a4 4 0 0 1-4 4"></path></svg>
-            <span class="sidebar-label">排行榜</span>
-          </div>
-          <div class="sidebar-leaderboard-panel" id="sidebarLeaderboardPanel" hidden>
-            <div id="sidebarLeaderboardList">暂无排行榜数据。</div>
-          </div>
-          <div class="nav-row" id="sidebarSearchBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-            <span class="sidebar-label">搜索</span>
-          </div>
-          <div class="sidebar-search-wrap" id="sidebarSearchWrap" hidden>
-            <input id="chatHistorySearchInput" type="search" placeholder="搜索对话" autocomplete="off" />
-          </div>
-          <div class="recent-wrap" id="chatHistoryList">
-            <!-- 聊天记录列表将在这里动态生成 -->
-          </div>
-        </div>
-      </div>
-
-      <div class="sidebar-footer">
-        <div class="theme-switcher" id="themeSwitcher">
-          <button class="theme-btn" data-theme="light" title="浅色">
-            <span class="theme-dot" style="background:#ffffff;border:1.5px solid rgba(0,0,0,.2);"></span>
-          </button>
-          <button class="theme-btn" data-theme="dark" title="深色">
-            <span class="theme-dot" style="background:#111111;border:1.5px solid rgba(255,255,255,.2);"></span>
-          </button>
-          <button class="theme-btn" data-theme="yellow" title="暖黄">
-            <span class="theme-dot" style="background:#fef9e7;border:1.5px solid #d4af37;"></span>
-          </button>
-          <button class="theme-btn" data-theme="blue" title="淡蓝">
-            <span class="theme-dot" style="background:#f0f4f8;border:1.5px solid #6495ed;"></span>
-          </button>
-        </div>
-        <div class="account-strip" id="accountTrigger">
-          <div class="avatar">MR</div>
-          <div class="account-meta">
-            <div class="account-name">登录 / 注册</div>
-            <div class="account-plan">邮箱验证码账户</div>
-          </div>
-          <button class="upgrade-btn" id="donateBtn">账户</button>
-          <svg class="account-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
-        </div>
-      </div>
-
-      <div class="popover more-popover" id="morePopover">
-        <div class="popover-inner">
-          <div class="popover-item" id="openImagesFromMore">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-            <span>图片</span>
-          </div>
-          <div class="popover-item" id="openResearchToast">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.1 4.6 5 .6-3.7 3.5 1 5-4.4-2.5-4.4 2.5 1-5L4.9 8.2l5-.6L12 3Z"></path></svg>
-            <span>深度研究</span>
-          </div>
-          <div class="popover-item" id="openAppsToast">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1.4"></rect><rect x="14" y="4" width="6" height="6" rx="1.4"></rect><rect x="4" y="14" width="6" height="6" rx="1.4"></rect><rect x="14" y="14" width="6" height="6" rx="1.4"></rect></svg>
-            <span>应用</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="popover account-popover" id="accountPopover">
-        <div class="popover-inner">
-          <div class="popover-item">
-            <div class="avatar" style="width:28px;height:28px;">--</div>
-            <div style="display:flex;flex-direction:column;line-height:1.15;">
-              <span style="font-size:14px;font-weight:700;">登录 / 注册</span>
-              <span style="font-size:12px;color:var(--text-soft);margin-top:3px;">邮箱验证码登录</span>
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self';"
+        />
+        <title>Cancri</title>
+        <script src="./cancri_config.js?v=0504"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <link rel="stylesheet" href="./cancri_chat.css?v=header-final-0507" />
+        <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
+        <link
+            rel="stylesheet"
+            href="./styles/00-tokens.css?v=header-final-0507"
+        />
+        <link
+            rel="stylesheet"
+            href="./styles/02-themes.css?v=header-final-0507"
+        />
+        <link
+            rel="stylesheet"
+            href="./styles/component-composer.css?v=header-final-0507"
+        />
+        <link
+            rel="stylesheet"
+            href="./styles/layout-sidebar.css?v=header-final-0507"
+        />
+        <link
+            rel="stylesheet"
+            href="./styles/99-polish-fixes.css?v=mobile-header-fix-0601"
+        />
+        <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
+        <link rel="stylesheet" href="./katex/katex.min.css" />
+        <script src="./katex/katex.min.js"></script>
+        <script src="./katex/contrib/auto-render.min.js"></script>
+        <script src="./cancri_katex_fallback.js?v=0504"></script>
+    </head>
+    <body>
+        <!-- 登录遮罩层：未登录时覆盖整个页面 -->
+        <div class="auth-overlay" id="authOverlay">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <img
+                        src="../Logo/Cancri.png"
+                        alt="Cancri"
+                        width="40"
+                        height="40"
+                        style="border-radius: 8px"
+                    />
+                </div>
+                <h2 class="auth-title">登录 Cancri</h2>
+                <p class="auth-subtitle">使用邮箱验证码登录，获得永久账户</p>
+                <div class="auth-step" id="authStepEmail">
+                    <input
+                        type="email"
+                        class="auth-input"
+                        id="authEmailInput"
+                        placeholder="输入你的邮箱"
+                        autocomplete="email"
+                    />
+                    <button class="auth-btn" id="authSendOtpBtn" type="button">
+                        发送验证码
+                    </button>
+                    <div class="auth-error" id="authEmailError"></div>
+                </div>
+                <div class="auth-step" id="authStepOtp" style="display: none">
+                    <p class="auth-otp-hint">
+                        验证码已发送至 <strong id="authEmailDisplay"></strong>
+                    </p>
+                    <input
+                        type="text"
+                        class="auth-input auth-otp-input"
+                        id="authOtpInput"
+                        placeholder="输入验证码"
+                        maxlength="10"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                    />
+                    <button
+                        class="auth-btn"
+                        id="authVerifyOtpBtn"
+                        type="button"
+                    >
+                        验证登录
+                    </button>
+                    <button
+                        class="auth-link"
+                        id="authResendOtpBtn"
+                        type="button"
+                    >
+                        重新发送
+                    </button>
+                    <button
+                        class="auth-link"
+                        id="authBackToEmailBtn"
+                        type="button"
+                    >
+                        更换邮箱
+                    </button>
+                    <div class="auth-error" id="authOtpError"></div>
+                </div>
+                <div class="auth-footer">
+                    登录即代表同意服务条款 · 安全邮箱认证
+                </div>
             </div>
-            <span class="grow"></span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
-          </div>
-          <div class="popover-item" id="nicknameEditBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            <span>昵称</span>
-            <span class="grow"></span>
-            <span id="nicknameDisplay" style="font-size:12px;color:var(--text-soft);"></span>
-          </div>
-          <div class="popover-sep"></div>
-          <div class="popover-item" id="themeShortcutBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="M2 12h4"></path><path d="m6.3 17.7 2.8-2.8"></path><path d="M12 18v4"></path><path d="m17.7 17.7-2.8-2.8"></path><path d="M18 12h4"></path><path d="m17.7 6.3-2.8 2.8"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
-            <span>个性化</span>
-          </div>
-          <div class="popover-item" id="profileToastBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path><path d="M19 21a7 7 0 0 0-14 0"></path></svg>
-            <span>个人资料</span>
-          </div>
-          <div class="popover-item" id="settingsBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"></path></svg>
-            <span>设置</span>
-          </div>
-          <div class="popover-sep"></div>
-          <div class="popover-item" id="helpToastBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M9.1 9a3 3 0 1 1 5.7 1.3c-.5 1.1-1.8 1.5-2.3 2.7"></path><path d="M12 17h.01"></path></svg>
-            <span>帮助</span>
-            <span class="grow"></span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
-          </div>
-          <div class="popover-item" id="logoutToastBtn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="m10 17 5-5-5-5"></path><path d="M15 12H3"></path></svg>
-            <span>退出登录</span>
-          </div>
         </div>
-      </div>
-    </aside>
 
-    <main class="main">
-      <div class="main-header">
-        <div class="header-left">
-          <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="切换侧边栏">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
-          </button>
-          <span class="brand-title">竞技场</span>
-          <div class="arena-top-mode" id="topArenaModeSelector">
-            <button class="arena-mode-current" id="topArenaModeBtn" type="button">
-              <span class="arena-mode-icon">◯</span>
-              <span id="topArenaModeLabel">匿名对战</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
-            <div class="arena-mode-dropdown" id="topArenaModeDropdown">
-              <button class="arena-mode-option active" data-mode="anonymous" type="button">
-                <span class="arena-mode-symbol">⚔</span>
-                <span><strong>匿名对战</strong><small>两个匿名模型同题回答</small></span>
-              </button>
-              <button class="arena-mode-option" data-mode="side_by_side" type="button">
-                <span class="arena-mode-symbol">◎</span>
-                <span><strong>双模型对话</strong><small>比较你选择的两个模型</small></span>
-              </button>
-              <button class="arena-mode-option" data-mode="single" type="button">
-                <span class="arena-mode-symbol">○</span>
-                <span><strong>单模型</strong><small>一次只和一个模型聊天</small></span>
-              </button>
-            </div>
-          </div>
-          <div class="model-selector" id="modelSelector">
-            <button class="model-current" id="modelCurrentBtn">
-              <span class="model-name" id="currentModelName">DeepSeek-V4-Flash</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
-            <div class="model-dropdown" id="modelDropdown">
-            <div class="model-search-panel">
-              <input id="modelSearchInput" type="search" placeholder="搜索模型" autocomplete="off" />
-              <div class="model-filter-row" id="modelFilterRow">
-                <button class="model-filter-chip active" data-filter="all" type="button">文本</button>
-                <button class="model-filter-chip" data-filter="code" type="button">代码</button>
-                <button class="model-filter-chip" data-filter="image" type="button">图像</button>
-                <button class="model-filter-chip" data-filter="search" type="button">搜索</button>
-              </div>
-            </div>
-            <div class="model-dropdown-content" id="modelDropdownContent"></div>
-            <!-- 分页控件 -->
-            <div class="model-dropdown-footer">
-              <button class="model-page-btn" id="modelPagePrev" aria-label="上一页">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"></path></svg>
-              </button>
-              <span class="model-page-info" id="modelPageInfo">1 / 3</span>
-              <button class="model-page-btn" id="modelPageNext" aria-label="下一页">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"></path></svg>
-              </button>
-            </div>
-            </div>
-          </div>
-          <div class="model-selector compare-model-selector" id="compareModelSelector" hidden>
-            <button class="model-current" id="compareModelCurrentBtn" type="button">
-              <span class="model-name" id="compareModelName">模型 B</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
-          </div>
-          <div class="context-meter hidden" id="contextMeter" tabindex="0" aria-label="上下文额度">
-            <div class="context-meter-ring">
-              <div class="context-meter-inner" id="contextMeterValue">0</div>
-            </div>
-            <div class="context-meter-popover" id="contextMeterPopover">
-              <div class="context-meter-title">上下文额度</div>
-              <div class="context-meter-text" id="contextMeterText">当前会话上下文约使用 0 / 128K tokens。</div>
-              <div class="context-meter-subtext">悬停可查看详情，超限后会自动压缩为摘要并开启新对话继续。</div>
-            </div>
-          </div>
-        </div><!-- /.header-left -->
-        <div class="header-right">
-          <button class="clear-btn" id="exportBtn" aria-label="导出对话" title="导出聊天记录为 Markdown">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            导出
-          </button>
-          <button class="clear-btn" id="clearBtn" aria-label="清空对话">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg>
-            清空
-          </button>
-          <button class="get-plus-btn" id="upgradeBtn">加入社区</button>
-          <button class="icon-btn" id="teamToastBtn" aria-label="添加成员" style="display:none">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="3"></circle><path d="M19 8v6"></path><path d="M16 11h6"></path></svg>
-          </button>
-          <button class="icon-btn" id="tempChatBtn" aria-label="临时聊天" style="display:none">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.6" stroke-dasharray="2 2"></circle></svg>
-          </button>
-        </div>
-        <button class="top-pill" id="legacyUpgradePill" style="display:none">Plus</button>
-        <div class="header-actions" style="display:none"></div>
-      </div>
+        <div class="app" id="appRoot">
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-topbar">
+                    <button
+                        class="brand-mark"
+                        id="brandHomeBtn"
+                        aria-label="回到首页"
+                    >
+                        <img
+                            src="../Logo/Cancri.png"
+                            alt="Cancri"
+                            width="20"
+                            height="20"
+                            style="
+                                border-radius: 4px;
+                                object-fit: cover;
+                                display: block;
+                            "
+                        />
+                    </button>
+                    <button
+                        class="sidebar-toggle"
+                        id="sidebarToggle"
+                        aria-label="切换侧边栏"
+                    >
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <rect
+                                x="4"
+                                y="4.5"
+                                width="16"
+                                height="15"
+                                rx="3"
+                            ></rect>
+                            <path d="M10 4.5v15"></path>
+                        </svg>
+                    </button>
+                </div>
 
-      <!-- 轮播公告栏 -->
-      <div class="announcement-carousel" id="announcementCarousel">
-        <div class="announcement-track">
-          <div class="announcement-item active">
-            <span class="announcement-icon">🎉</span>
-            <span class="announcement-text">🛡️ 近期风控系统识别到高频自动化请求（固定间隔轮询、硬编码重试等），已触发滥用防护。我们已对异常请求源实施封禁（110.248.68.x、18.141.169.0/24 等网段）。风控以行为特征为核心，IP仅作辅助指标，正常用户不受影响。</span>
-          </div>
-          <div class="announcement-item">
-            <span class="announcement-icon">📊</span>
-            <span class="announcement-text">服务状态实时监控：<a href="https://nexusvai.github.io/ChatAI-status/" target="_blank" rel="noopener">点击查看</a></span>
-          </div>
-          <div class="announcement-item">
-            <span class="announcement-icon">🚀</span>
-            <span class="announcement-text">网站即将开展API业务，敬请期待</span>
-          </div>
-        </div>
-        <div class="announcement-indicators">
-          <span class="indicator active" data-index="0"></span>
-          <span class="indicator" data-index="1"></span>
-          <span class="indicator" data-index="2"></span>
-        </div>
-      </div>
+                <div class="sidebar-body">
+                    <div class="nav-group">
+                        <div
+                            class="nav-row active"
+                            data-view-target="home"
+                            id="newChatBtn"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                            >
+                                <path d="M12 5v14M5 12h14"></path>
+                            </svg>
+                            <span class="sidebar-label">新对战</span>
+                        </div>
+                        <div
+                            class="nav-row"
+                            id="arenaLeaderboardNavBtn"
+                            data-view-target="leaderboard"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                            >
+                                <path d="M8 21h8"></path>
+                                <path d="M12 17v4"></path>
+                                <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path>
+                                <path d="M5 5H3v3a4 4 0 0 0 4 4"></path>
+                                <path d="M19 5h2v3a4 4 0 0 1-4 4"></path>
+                            </svg>
+                            <span class="sidebar-label">排行榜</span>
+                        </div>
+                        <div
+                            class="sidebar-leaderboard-panel"
+                            id="sidebarLeaderboardPanel"
+                            hidden
+                        >
+                            <div id="sidebarLeaderboardList">
+                                暂无排行榜数据。
+                            </div>
+                        </div>
+                        <div class="nav-row" id="sidebarSearchBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                            >
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="m20 20-3.5-3.5"></path>
+                            </svg>
+                            <span class="sidebar-label">搜索</span>
+                        </div>
+                        <div
+                            class="sidebar-search-wrap"
+                            id="sidebarSearchWrap"
+                            hidden
+                        >
+                            <input
+                                id="chatHistorySearchInput"
+                                type="search"
+                                placeholder="搜索对话"
+                                autocomplete="off"
+                            />
+                        </div>
+                        <div class="recent-wrap" id="chatHistoryList">
+                            <!-- 聊天记录列表将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
 
-      <section class="view active" id="homeView">
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="home-center" id="homeCenter">
-          <div class="social-links" style="display:flex;gap:16px;justify-content:center;margin-bottom:20px;">
-            <a href="https://github.com/NexusVAI" target="_blank" rel="noopener noreferrer" title="GitHub">
-              <img src="./github.svg" alt="GitHub" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-            </a>
-            <a href="https://huggingface.co/xingy555888" target="_blank" rel="noopener noreferrer" title="HuggingFace">
-              <img src="./huggingface-color.svg" alt="HuggingFace" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-            </a>
-            <a href="https://space.bilibili.com/3691002594331274?spm_id_from=333.1007.0.0" target="_blank" rel="noopener noreferrer" title="Bilibili">
-              <img src="./bilibili-color.svg" alt="Bilibili" style="width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-            </a>
-            <a href="https://x.com/NexusVAI" target="_blank" rel="noopener noreferrer" title="X (Twitter)" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;opacity:0.7;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><path fill="#000" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            </a>
-          </div>
-          <h1 class="hero" id="heroTitle">有什么可以帮忙的？</h1>
-            <div class="composer-wrap">
-              <div class="composer-halo"></div>
-              <div class="composer">
-                <button class="plus-btn" id="plusTrigger" aria-label="更多操作">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"></path></svg>
+                <div class="sidebar-footer">
+                    <div class="sidebar-footer-actions">
+                        <button
+                            class="sidebar-footer-btn"
+                            id="sidebarThemeToggle"
+                            type="button"
+                        >
+                            <svg
+                                class="sidebar-footer-icon theme-icon-light"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <path
+                                    d="M12 2v2.2M12 19.8V22M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2 12h2.2M19.8 12H22M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"
+                                ></path>
+                            </svg>
+                            <svg
+                                class="sidebar-footer-icon theme-icon-dark"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M20 14.7A7.4 7.4 0 0 1 9.3 4a8.2 8.2 0 1 0 10.7 10.7Z"
+                                ></path>
+                            </svg>
+                            <span
+                                class="sidebar-footer-text"
+                                id="sidebarThemeLabel"
+                                >深色模式</span
+                            >
+                        </button>
+                    </div>
+                    <div class="account-strip" id="accountTrigger">
+                        <div class="avatar">MR</div>
+                        <div class="account-meta">
+                            <div class="account-name">登录 / 注册</div>
+                            <div class="account-plan">邮箱验证码账户</div>
+                        </div>
+                        <button class="upgrade-btn" id="donateBtn">账户</button>
+                        <svg
+                            class="account-arrow"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="m9 6 6 6-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="popover more-popover" id="morePopover">
+                    <div class="popover-inner">
+                        <div class="popover-item" id="openResearchToast">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M12 3l2.1 4.6 5 .6-3.7 3.5 1 5-4.4-2.5-4.4 2.5 1-5L4.9 8.2l5-.6L12 3Z"
+                                ></path>
+                            </svg>
+                            <span>深度研究</span>
+                        </div>
+                        <div class="popover-item" id="openAppsToast">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <rect
+                                    x="4"
+                                    y="4"
+                                    width="6"
+                                    height="6"
+                                    rx="1.4"
+                                ></rect>
+                                <rect
+                                    x="14"
+                                    y="4"
+                                    width="6"
+                                    height="6"
+                                    rx="1.4"
+                                ></rect>
+                                <rect
+                                    x="4"
+                                    y="14"
+                                    width="6"
+                                    height="6"
+                                    rx="1.4"
+                                ></rect>
+                                <rect
+                                    x="14"
+                                    y="14"
+                                    width="6"
+                                    height="6"
+                                    rx="1.4"
+                                ></rect>
+                            </svg>
+                            <span>应用</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="popover account-popover" id="accountPopover">
+                    <div class="popover-inner">
+                        <div class="popover-item">
+                            <div
+                                class="avatar"
+                                style="width: 28px; height: 28px"
+                            >
+                                --
+                            </div>
+                            <div
+                                style="
+                                    display: flex;
+                                    flex-direction: column;
+                                    line-height: 1.15;
+                                "
+                            >
+                                <span style="font-size: 14px; font-weight: 700"
+                                    >登录 / 注册</span
+                                >
+                                <span
+                                    style="
+                                        font-size: 12px;
+                                        color: var(--text-soft);
+                                        margin-top: 3px;
+                                    "
+                                    >邮箱验证码登录</span
+                                >
+                            </div>
+                            <span class="grow"></span>
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="m9 6 6 6-6 6"></path>
+                            </svg>
+                        </div>
+                        <div class="popover-item" id="nicknameEditBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                                ></path>
+                                <path
+                                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                                ></path>
+                            </svg>
+                            <span>昵称</span>
+                            <span class="grow"></span>
+                            <span
+                                id="nicknameDisplay"
+                                style="font-size: 12px; color: var(--text-soft)"
+                            ></span>
+                        </div>
+                        <div class="popover-sep"></div>
+                        <div class="popover-item" id="themeShortcutBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M12 2v4"></path>
+                                <path d="m6.3 6.3 2.8 2.8"></path>
+                                <path d="M2 12h4"></path>
+                                <path d="m6.3 17.7 2.8-2.8"></path>
+                                <path d="M12 18v4"></path>
+                                <path d="m17.7 17.7-2.8-2.8"></path>
+                                <path d="M18 12h4"></path>
+                                <path d="m17.7 6.3-2.8 2.8"></path>
+                                <circle cx="12" cy="12" r="3.2"></circle>
+                            </svg>
+                            <span>个性化</span>
+                        </div>
+                        <div class="popover-item" id="profileToastBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                                ></path>
+                                <path d="M19 21a7 7 0 0 0-14 0"></path>
+                            </svg>
+                            <span>个人资料</span>
+                        </div>
+                        <div class="popover-item" id="settingsBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"
+                                ></path>
+                                <path
+                                    d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"
+                                ></path>
+                            </svg>
+                            <span>设置</span>
+                        </div>
+                        <div class="popover-sep"></div>
+                        <div class="popover-item" id="exportBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                ></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>导出对话</span>
+                        </div>
+                        <div
+                            class="popover-item"
+                            id="clearBtn"
+                            style="color: var(--danger)"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
+                                ></path>
+                            </svg>
+                            <span>清空对话</span>
+                        </div>
+                        <div class="popover-item" id="upgradeBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                                ></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <span>加入社区</span>
+                        </div>
+                        <div class="popover-sep"></div>
+                        <div class="popover-item" id="helpToastBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path
+                                    d="M9.1 9a3 3 0 1 1 5.7 1.3c-.5 1.1-1.8 1.5-2.3 2.7"
+                                ></path>
+                                <path d="M12 17h.01"></path>
+                            </svg>
+                            <span>帮助</span>
+                            <span class="grow"></span>
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="m9 6 6 6-6 6"></path>
+                            </svg>
+                        </div>
+                        <div class="popover-item" id="logoutToastBtn">
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"
+                                ></path>
+                                <path d="m10 17 5-5-5-5"></path>
+                                <path d="M15 12H3"></path>
+                            </svg>
+                            <span>退出登录</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main">
+                <div class="main-header">
+                    <div class="header-left">
+                        <button
+                            class="mobile-menu-btn"
+                            id="mobileMenuBtn"
+                            aria-label="切换侧边栏"
+                        >
+                            <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <a
+                            class="app-brand"
+                            id="brandHomeBtnTop"
+                            href="javascript:void(0)"
+                            aria-label="回到首页"
+                        >
+                            <img src="../Logo/Cancri.png" alt="" />
+                            <span>NexusV</span>
+                        </a>
+                        <div class="arena-top-mode" id="topArenaModeSelector">
+                            <button
+                                class="arena-mode-current"
+                                id="topArenaModeBtn"
+                                type="button"
+                            >
+                                <svg
+                                    class="arena-mode-icon"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                >
+                                    <circle cx="12" cy="12" r="9"></circle>
+                                </svg>
+                                <span id="topArenaModeLabel">匿名对战</span>
+                                <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                >
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                            <div
+                                class="arena-mode-dropdown"
+                                id="topArenaModeDropdown"
+                            >
+                                <button
+                                    class="arena-mode-option active"
+                                    data-mode="anonymous"
+                                    type="button"
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <path
+                                            d="M14.5 17.5L3 6V3h3l11.5 11.5"
+                                        ></path>
+                                        <path d="M13 19l6-6"></path>
+                                        <path d="m16 16 4 4"></path>
+                                        <path d="m19 19 2 2"></path>
+                                        <path d="M9 4.5L3 6v3l6.5-4.5"></path>
+                                        <path d="M5 9l4 4"></path>
+                                        <path d="m7 7 3 3"></path>
+                                        <path d="M9 4 7 2l-3 3 2 2 4-3Z"></path>
+                                    </svg>
+                                    <span
+                                        ><strong>匿名对战</strong
+                                        ><small
+                                            >两个匿名模型同题回答</small
+                                        ></span
+                                    >
+                                </button>
+                                <button
+                                    class="arena-mode-option"
+                                    data-mode="side_by_side"
+                                    type="button"
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <circle cx="8" cy="12" r="4.5"></circle>
+                                        <circle
+                                            cx="16"
+                                            cy="12"
+                                            r="4.5"
+                                        ></circle>
+                                    </svg>
+                                    <span
+                                        ><strong>双模型对话</strong
+                                        ><small
+                                            >比较你选择的两个模型</small
+                                        ></span
+                                    >
+                                </button>
+                                <button
+                                    class="arena-mode-option"
+                                    data-mode="single"
+                                    type="button"
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <circle cx="12" cy="12" r="8"></circle>
+                                        <path d="M12 8v4l3 3"></path>
+                                    </svg>
+                                    <span
+                                        ><strong>单模型</strong
+                                        ><small
+                                            >一次只和一个模型聊天</small
+                                        ></span
+                                    >
+                                </button>
+                            </div>
+                        </div>
+                        <div class="model-selector" id="modelSelector">
+                            <button class="model-current" id="modelCurrentBtn">
+                                <span class="model-name" id="currentModelName"
+                                    >DeepSeek-V4-Flash</span
+                                >
+                                <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                >
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                            <div class="model-dropdown" id="modelDropdown">
+                                <div class="model-search-panel">
+                                    <input
+                                        id="modelSearchInput"
+                                        type="search"
+                                        placeholder="搜索模型"
+                                        autocomplete="off"
+                                    />
+                                    <div
+                                        class="model-filter-row"
+                                        id="modelFilterRow"
+                                    >
+                                        <button
+                                            class="model-filter-chip active"
+                                            data-filter="all"
+                                            type="button"
+                                        >
+                                            文本
+                                        </button>
+                                        <button
+                                            class="model-filter-chip"
+                                            data-filter="code"
+                                            type="button"
+                                        >
+                                            代码
+                                        </button>
+                                        <button
+                                            class="model-filter-chip"
+                                            data-filter="image"
+                                            type="button"
+                                        >
+                                            图像
+                                        </button>
+                                        <button
+                                            class="model-filter-chip"
+                                            data-filter="search"
+                                            type="button"
+                                        >
+                                            搜索
+                                        </button>
+                                    </div>
+                                </div>
+                                <div
+                                    class="model-dropdown-content"
+                                    id="modelDropdownContent"
+                                ></div>
+                                <!-- 分页控件 -->
+                                <div class="model-dropdown-footer">
+                                    <button
+                                        class="model-page-btn"
+                                        id="modelPagePrev"
+                                        aria-label="上一页"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path d="m15 18-6-6 6-6"></path>
+                                        </svg>
+                                    </button>
+                                    <span
+                                        class="model-page-info"
+                                        id="modelPageInfo"
+                                        >1 / 3</span
+                                    >
+                                    <button
+                                        class="model-page-btn"
+                                        id="modelPageNext"
+                                        aria-label="下一页"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path d="m9 18 6-6-6-6"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="model-selector compare-model-selector"
+                            id="compareModelSelector"
+                            hidden
+                        >
+                            <button
+                                class="model-current"
+                                id="compareModelCurrentBtn"
+                                type="button"
+                            >
+                                <span class="model-name" id="compareModelName"
+                                    >模型 B</span
+                                >
+                                <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                >
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div
+                            class="context-meter hidden"
+                            id="contextMeter"
+                            tabindex="0"
+                            aria-label="上下文额度"
+                        >
+                            <div class="context-meter-ring">
+                                <div
+                                    class="context-meter-inner"
+                                    id="contextMeterValue"
+                                >
+                                    0
+                                </div>
+                            </div>
+                            <div
+                                class="context-meter-popover"
+                                id="contextMeterPopover"
+                            >
+                                <div class="context-meter-title">
+                                    上下文额度
+                                </div>
+                                <div
+                                    class="context-meter-text"
+                                    id="contextMeterText"
+                                >
+                                    当前会话上下文约使用 0 / 128K tokens。
+                                </div>
+                                <div class="context-meter-subtext">
+                                    悬停可查看详情，超限后会自动压缩为摘要并开启新对话继续。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.header-left -->
+                    <div class="header-right">
+                        <button
+                            class="icon-btn"
+                            id="teamToastBtn"
+                            aria-label="添加成员"
+                            style="display: none"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
+                                ></path>
+                                <circle cx="9.5" cy="7" r="3"></circle>
+                                <path d="M19 8v6"></path>
+                                <path d="M16 11h6"></path>
+                            </svg>
+                        </button>
+                        <button
+                            class="icon-btn"
+                            id="tempChatBtn"
+                            aria-label="临时聊天"
+                            style="display: none"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="8.6"
+                                    stroke-dasharray="2 2"
+                                ></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <button
+                        class="top-pill"
+                        id="legacyUpgradePill"
+                        style="display: none"
+                    >
+                        Plus
+                    </button>
+                    <div class="header-actions" style="display: none"></div>
+                </div>
+
+                <!-- 轮播公告栏 -->
+                <div class="announcement-carousel" id="announcementCarousel">
+                    <div class="announcement-track">
+                        <div class="announcement-item active">
+                            <span class="announcement-icon">🎉</span>
+                            <span class="announcement-text"
+                                >🛡️
+                                近期风控系统识别到高频自动化请求（固定间隔轮询、硬编码重试等），已触发滥用防护。我们已对异常请求源实施封禁（110.248.68.x、18.141.169.0/24
+                                等网段）。风控以行为特征为核心，IP仅作辅助指标，正常用户不受影响。</span
+                            >
+                        </div>
+                        <div class="announcement-item">
+                            <span class="announcement-icon">📊</span>
+                            <span class="announcement-text"
+                                >服务状态实时监控：<a
+                                    href="https://nexusvai.github.io/ChatAI-status/"
+                                    target="_blank"
+                                    rel="noopener"
+                                    >点击查看</a
+                                ></span
+                            >
+                        </div>
+                        <div class="announcement-item">
+                            <span class="announcement-icon">🚀</span>
+                            <span class="announcement-text"
+                                >网站即将开展API业务，敬请期待</span
+                            >
+                        </div>
+                    </div>
+                    <div class="announcement-indicators">
+                        <span class="indicator active" data-index="0"></span>
+                        <span class="indicator" data-index="1"></span>
+                        <span class="indicator" data-index="2"></span>
+                    </div>
+                </div>
+
+                <section class="view active" id="homeView">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="home-center" id="homeCenter">
+                        <div class="mobile-home-brand" aria-label="NexusV">
+                            <img src="../Logo/Cancri.png" alt="" />
+                            <span>NexusV</span>
+                        </div>
+                        <div
+                            class="social-links"
+                            style="
+                                display: flex;
+                                gap: 16px;
+                                justify-content: center;
+                                margin-bottom: 20px;
+                            "
+                        >
+                            <a
+                                href="https://github.com/NexusVAI"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="GitHub"
+                            >
+                                <img
+                                    src="./github.svg"
+                                    alt="GitHub"
+                                    style="
+                                        width: 32px;
+                                        height: 32px;
+                                        opacity: 0.7;
+                                        transition: opacity 0.2s;
+                                    "
+                                    onmouseover="this.style.opacity = '1'"
+                                    onmouseout="this.style.opacity = '0.7'"
+                                />
+                            </a>
+                            <a
+                                href="https://huggingface.co/xingy555888"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="HuggingFace"
+                            >
+                                <img
+                                    src="./huggingface-color.svg"
+                                    alt="HuggingFace"
+                                    style="
+                                        width: 36px;
+                                        height: 36px;
+                                        opacity: 0.7;
+                                        transition: opacity 0.2s;
+                                    "
+                                    onmouseover="this.style.opacity = '1'"
+                                    onmouseout="this.style.opacity = '0.7'"
+                                />
+                            </a>
+                            <a
+                                href="https://space.bilibili.com/3691002594331274?spm_id_from=333.1007.0.0"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Bilibili"
+                            >
+                                <img
+                                    src="./bilibili-color.svg"
+                                    alt="Bilibili"
+                                    style="
+                                        width: 32px;
+                                        height: 32px;
+                                        opacity: 0.7;
+                                        transition: opacity 0.2s;
+                                    "
+                                    onmouseover="this.style.opacity = '1'"
+                                    onmouseout="this.style.opacity = '0.7'"
+                                />
+                            </a>
+                            <a
+                                href="https://x.com/NexusVAI"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="X (Twitter)"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    width="32"
+                                    height="32"
+                                    style="
+                                        opacity: 0.7;
+                                        transition: opacity 0.2s;
+                                    "
+                                    onmouseover="this.style.opacity = '1'"
+                                    onmouseout="this.style.opacity = '0.7'"
+                                >
+                                    <path
+                                        fill="#000"
+                                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                                    />
+                                </svg>
+                            </a>
+                        </div>
+                        <h1 class="hero" id="heroTitle">有什么可以帮忙的？</h1>
+                        <div class="composer-wrap">
+                            <div class="composer" data-workbench-composer>
+                                <div
+                                    class="attachment-preview"
+                                    id="attachmentPreview"
+                                    hidden
+                                ></div>
+                                <textarea
+                                    class="composer-input"
+                                    id="homeInput"
+                                    rows="1"
+                                    placeholder="有问题，尽管问"
+                                ></textarea>
+                                <div class="composer-bottom">
+                                    <div
+                                        class="composer-status"
+                                        aria-live="polite"
+                                    >
+                                        <span
+                                            class="tool-pill"
+                                            id="attachmentStatusPill"
+                                            hidden
+                                        ></span>
+                                    </div>
+                                    <div class="composer-tools-row">
+                                        <div
+                                            class="composer-tools"
+                                            aria-label="本轮工具"
+                                        >
+                                            <button
+                                                class="composer-tool-btn"
+                                                id="plusTrigger"
+                                                type="button"
+                                                aria-label="添加附件或创建内容"
+                                                title="添加附件"
+                                            >
+                                                <svg
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.9"
+                                                >
+                                                    <path
+                                                        d="M12 5v14M5 12h14"
+                                                    ></path>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                class="composer-tool-btn web-search-toggle"
+                                                id="webSearchToggle"
+                                                type="button"
+                                                aria-label="本轮允许联网搜索"
+                                                aria-pressed="false"
+                                                title="本轮联网搜索"
+                                            >
+                                                <svg
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.8"
+                                                >
+                                                    <circle
+                                                        cx="12"
+                                                        cy="12"
+                                                        r="8.5"
+                                                    ></circle>
+                                                    <path
+                                                        d="M3.8 12h16.4"
+                                                    ></path>
+                                                    <path
+                                                        d="M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5"
+                                                    ></path>
+                                                    <path
+                                                        d="M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"
+                                                    ></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="composer-actions">
+                                            <button
+                                                class="voice-btn"
+                                                id="voiceToastBtn"
+                                                aria-label="语音输入"
+                                                title="语音输入"
+                                            >
+                                                <svg
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.8"
+                                                >
+                                                    <rect
+                                                        x="9"
+                                                        y="2"
+                                                        width="6"
+                                                        height="12"
+                                                        rx="3"
+                                                    ></rect>
+                                                    <path
+                                                        d="M5 10a7 7 0 0 0 14 0"
+                                                    ></path>
+                                                    <path d="M12 18v4"></path>
+                                                    <path d="M8 22h8"></path>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                class="send-btn"
+                                                id="sendChatBtn"
+                                                aria-label="发送消息"
+                                                disabled
+                                            >
+                                                <svg
+                                                    class="send-icon-arrow"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2.2"
+                                                >
+                                                    <path d="M12 19V5"></path>
+                                                    <path
+                                                        d="m5 12 7-7 7 7"
+                                                    ></path>
+                                                </svg>
+                                                <svg
+                                                    class="send-icon-stop"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="currentColor"
+                                                    stroke="none"
+                                                >
+                                                    <rect
+                                                        x="7"
+                                                        y="7"
+                                                        width="10"
+                                                        height="10"
+                                                        rx="1.5"
+                                                    ></rect>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                id="attachmentInput"
+                                accept="image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv"
+                                multiple
+                                hidden
+                            />
+                            <input
+                                type="file"
+                                id="fileInput"
+                                accept=".txt,.md,.json,.csv,.pdf,.doc,.docx"
+                                multiple
+                                hidden
+                            />
+                        </div>
+                        <div
+                            class="token-expiry-note"
+                            id="tokenExpiryNote"
+                            aria-live="polite"
+                        >
+                            开站纪念日 2026-04-28
+                        </div>
+                        <div class="chip-row">
+                            <button class="ghost-chip" id="imageModeChipBtn">
+                                <svg
+                                    width="15"
+                                    height="15"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                >
+                                    <rect
+                                        x="4"
+                                        y="4"
+                                        width="16"
+                                        height="16"
+                                        rx="3"
+                                    ></rect>
+                                    <circle cx="9" cy="9" r="1.6"></circle>
+                                    <path d="m20 15-4.8-4.8L6 19"></path>
+                                </svg>
+                                <span>图片生成</span>
+                            </button>
+                            <button class="ghost-chip" id="videoModeChipBtn">
+                                <svg
+                                    width="15"
+                                    height="15"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                >
+                                    <rect
+                                        x="3.5"
+                                        y="5"
+                                        width="13"
+                                        height="14"
+                                        rx="3"
+                                    ></rect>
+                                    <path
+                                        d="m16.5 10.2 4-2.4v8.4l-4-2.4z"
+                                    ></path>
+                                </svg>
+                                <span>视频生成</span>
+                            </button>
+                        </div>
+
+                        <div class="model-icons-scroll">
+                            <div class="model-icons-track">
+                                <img
+                                    src="./deepseek-color (1).svg"
+                                    alt="DeepSeek"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./openai.svg"
+                                    alt="OpenAI"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./grok.svg"
+                                    alt="Grok"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./qwen-color.svg"
+                                    alt="Qwen"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./minimax-color.svg"
+                                    alt="MiniMax"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./moonshot.svg"
+                                    alt="Moonshot"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./zhipu-color.svg"
+                                    alt="Zhipu"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./stepfun-color.svg"
+                                    alt="StepFun"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./spark-color.svg"
+                                    alt="Spark"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./kling-color.svg"
+                                    alt="Kling"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./antgroup-color.svg"
+                                    alt="AntGroup"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./nvidia-color.svg"
+                                    alt="NVIDIA"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./yuanbao-color.svg"
+                                    alt="Yuanbao"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./xiaomimimo-color.svg"
+                                    alt="MiMo"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./sensenova-color.svg"
+                                    alt="SenseNova"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./claude-color.svg"
+                                    alt="Claude"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./gemini-color.svg"
+                                    alt="Gemini"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./deepseek-color (1).svg"
+                                    alt="DeepSeek"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./openai.svg"
+                                    alt="OpenAI"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./grok.svg"
+                                    alt="Grok"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./qwen-color.svg"
+                                    alt="Qwen"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./minimax-color.svg"
+                                    alt="MiniMax"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./moonshot.svg"
+                                    alt="Moonshot"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./zhipu-color.svg"
+                                    alt="Zhipu"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./stepfun-color.svg"
+                                    alt="StepFun"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./spark-color.svg"
+                                    alt="Spark"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./kling-color.svg"
+                                    alt="Kling"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./antgroup-color.svg"
+                                    alt="AntGroup"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./nvidia-color.svg"
+                                    alt="NVIDIA"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./yuanbao-color.svg"
+                                    alt="Yuanbao"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./xiaomimimo-color.svg"
+                                    alt="MiMo"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./sensenova-color.svg"
+                                    alt="SenseNova"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./claude-color.svg"
+                                    alt="Claude"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./gemini-color.svg"
+                                    alt="Gemini"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./deepseek-color (1).svg"
+                                    alt="DeepSeek"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./openai.svg"
+                                    alt="OpenAI"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./grok.svg"
+                                    alt="Grok"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./qwen-color.svg"
+                                    alt="Qwen"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./minimax-color.svg"
+                                    alt="MiniMax"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./moonshot.svg"
+                                    alt="Moonshot"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./zhipu-color.svg"
+                                    alt="Zhipu"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./stepfun-color.svg"
+                                    alt="StepFun"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./spark-color.svg"
+                                    alt="Spark"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./kling-color.svg"
+                                    alt="Kling"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./antgroup-color.svg"
+                                    alt="AntGroup"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./nvidia-color.svg"
+                                    alt="NVIDIA"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./yuanbao-color.svg"
+                                    alt="Yuanbao"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./xiaomimimo-color.svg"
+                                    alt="MiMo"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./sensenova-color.svg"
+                                    alt="SenseNova"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./claude-color.svg"
+                                    alt="Claude"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./gemini-color.svg"
+                                    alt="Gemini"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./deepseek-color (1).svg"
+                                    alt="DeepSeek"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./openai.svg"
+                                    alt="OpenAI"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./grok.svg"
+                                    alt="Grok"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./qwen-color.svg"
+                                    alt="Qwen"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./minimax-color.svg"
+                                    alt="MiniMax"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./moonshot.svg"
+                                    alt="Moonshot"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./zhipu-color.svg"
+                                    alt="Zhipu"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./stepfun-color.svg"
+                                    alt="StepFun"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./spark-color.svg"
+                                    alt="Spark"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./kling-color.svg"
+                                    alt="Kling"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./antgroup-color.svg"
+                                    alt="AntGroup"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./nvidia-color.svg"
+                                    alt="NVIDIA"
+                                    class="model-icon"
+                                />
+                                <img
+                                    src="./yuanbao-color.svg"
+                                    alt="Yuanbao"
+                                    class="model-icon"
+                                />
+                            </div>
+                            <div class="model-icons-text">
+                                支持全球14+大模型 免费调用
+                            </div>
+                        </div>
+
+                        <div class="popover plus-popover" id="plusPopover">
+                            <div class="popover-inner">
+                                <button
+                                    class="popover-item upload-menu-item"
+                                    id="attachBtn"
+                                    type="button"
+                                >
+                                    <svg
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <rect
+                                            x="4"
+                                            y="4"
+                                            width="16"
+                                            height="16"
+                                            rx="3"
+                                        ></rect>
+                                        <circle cx="9" cy="9" r="1.6"></circle>
+                                        <path d="m20 15-4.8-4.8L6 19"></path>
+                                    </svg>
+                                    <span>上传图片</span>
+                                </button>
+                                <button
+                                    class="popover-item upload-menu-item"
+                                    id="fileUploadBtn"
+                                    type="button"
+                                >
+                                    <svg
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <path
+                                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                        ></path>
+                                        <path d="M14 2v6h6"></path>
+                                        <path d="M12 18v-6"></path>
+                                        <path d="m9 15 3 3 3-3"></path>
+                                    </svg>
+                                    <span>上传文件</span>
+                                    <small>txt / md / json / csv 最稳</small>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer-note">
+                        <span
+                            >请勿在对话中输入身份证号、银行卡号、验证码等敏感信息，详情见隐私协议。</span
+                        >
+                        <button
+                            class="footer-legal-link"
+                            id="privacyPolicyBtn"
+                            type="button"
+                        >
+                            隐私协议
+                        </button>
+                    </div>
+                    <div
+                        class="nexusv-footer"
+                        role="img"
+                        aria-label="NEXUSV 品牌区"
+                    >
+                        <span class="nexusv-footer-brand">NEXUSV</span>
+                    </div>
+                </section>
+
+                <section class="view" id="leaderboardView">
+                    <div class="leaderboard-page">
+                        <aside class="leaderboard-side">
+                            <div class="leaderboard-side-section">
+                                <div class="leaderboard-side-title">
+                                    查看方式
+                                </div>
+                                <div class="leaderboard-segment">
+                                    <button class="active" type="button">
+                                        ☰ 排名
+                                    </button>
+                                    <button type="button">⌁ 帕累托</button>
+                                </div>
+                            </div>
+                            <div class="leaderboard-side-section">
+                                <div class="leaderboard-side-title">分类</div>
+                                <div class="leaderboard-category active">
+                                    🏆 综合排行
+                                </div>
+                            </div>
+                        </aside>
+                        <section class="leaderboard-main">
+                            <div class="leaderboard-hero">
+                                <div>
+                                    <h1>竞技场排行榜</h1>
+                                    <p>
+                                        AI
+                                        模型在开放问答、数学、编程、创意写作等任务中的综合
+                                        Elo 排名。
+                                    </p>
+                                    <p class="leaderboard-trust-note">
+                                        仅匿名模式且通过风控的投票计入公开榜。
+                                    </p>
+                                    <div class="leaderboard-meta">
+                                        <span>◷ 实时更新</span>
+                                        <span id="mainLeaderboardVoteCount"
+                                            >加载中</span
+                                        >
+                                        <span id="mainLeaderboardModelCount"
+                                            >加载中</span
+                                        >
+                                        <span id="mainLeaderboardUpdatedAt"
+                                            >最近更新加载中</span
+                                        >
+                                    </div>
+                                </div>
+                                <button
+                                    class="leaderboard-start-btn"
+                                    type="button"
+                                    id="leaderboardStartVotingBtn"
+                                >
+                                    开始投票
+                                </button>
+                            </div>
+                            <div class="leaderboard-toolbar">
+                                <button type="button">☷ 隐藏筛选</button>
+                                <span></span>
+                                <button class="active" type="button">
+                                    模型
+                                </button>
+                                <button type="button">⌕</button>
+                            </div>
+                            <div
+                                class="leaderboard-table"
+                                id="mainLeaderboardList"
+                            >
+                                排行榜加载中…
+                            </div>
+                        </section>
+                    </div>
+                </section>
+
+                <section class="view" id="arenaView">
+                    <div class="arena-page">
+                        <div class="arena-hero">
+                            <div class="arena-kicker">
+                                NexusVArena Workbench
+                            </div>
+                            <h1>匿名模型竞技场</h1>
+                            <p>
+                                用同一个问题并排比较模型回答，匿名投票结果才会进入公开榜。
+                            </p>
+                            <div class="arena-security">
+                                <strong>公开榜规则</strong
+                                ><span
+                                    >仅匿名模式、完整双回答、通过风控的投票计入
+                                    Elo。</span
+                                >
+                            </div>
+                        </div>
+                        <div class="arena-modebar">
+                            <label>
+                                <span>模式</span>
+                                <select id="arenaModeSelect">
+                                    <option value="anonymous">匿名对战</option>
+                                    <option value="side_by_side">
+                                        双模型对话
+                                    </option>
+                                    <option value="single">单模型</option>
+                                </select>
+                            </label>
+                            <div
+                                class="arena-model-pickers"
+                                id="arenaModelPickers"
+                            >
+                                <label>
+                                    <span>模型 A</span>
+                                    <input
+                                        id="arenaModelSearchA"
+                                        list="arenaModelOptions"
+                                        placeholder="选择模型 A"
+                                        autocomplete="off"
+                                    />
+                                </label>
+                                <label id="arenaModelPickerB">
+                                    <span>模型 B</span>
+                                    <input
+                                        id="arenaModelSearchB"
+                                        list="arenaModelOptions"
+                                        placeholder="选择模型 B"
+                                        autocomplete="off"
+                                    />
+                                </label>
+                                <datalist id="arenaModelOptions"></datalist>
+                            </div>
+                        </div>
+                        <div class="arena-compose">
+                            <textarea
+                                id="arenaPromptInput"
+                                rows="4"
+                                placeholder="输入对战题目"
+                            ></textarea>
+                            <button id="arenaStartBtn" type="button">
+                                开始对战
+                            </button>
+                        </div>
+                        <div class="arena-status" id="arenaStatus">
+                            等待题目。
+                        </div>
+                        <div class="arena-battle">
+                            <article class="arena-card" data-slot="a">
+                                <div class="arena-card-head">
+                                    <span class="arena-slot">A</span>
+                                    <strong
+                                        class="arena-model-name"
+                                        id="arenaModelA"
+                                        >投票后揭晓</strong
+                                    >
+                                </div>
+                                <div
+                                    class="arena-answer md-content"
+                                    id="arenaAnswerA"
+                                >
+                                    等待模型 A。
+                                </div>
+                            </article>
+                            <article class="arena-card" data-slot="b">
+                                <div class="arena-card-head">
+                                    <span class="arena-slot">B</span>
+                                    <strong
+                                        class="arena-model-name"
+                                        id="arenaModelB"
+                                        >投票后揭晓</strong
+                                    >
+                                </div>
+                                <div
+                                    class="arena-answer md-content"
+                                    id="arenaAnswerB"
+                                >
+                                    等待模型 B。
+                                </div>
+                            </article>
+                        </div>
+                        <div class="arena-vote-row" id="arenaVoteRow" hidden>
+                            <button
+                                class="arena-vote-btn"
+                                data-winner="a"
+                                type="button"
+                            >
+                                A 更好
+                            </button>
+                            <button
+                                class="arena-vote-btn"
+                                data-winner="tie"
+                                type="button"
+                            >
+                                平局
+                            </button>
+                            <button
+                                class="arena-vote-btn danger"
+                                data-winner="bad"
+                                type="button"
+                            >
+                                都不好
+                            </button>
+                            <button
+                                class="arena-vote-btn"
+                                data-winner="b"
+                                type="button"
+                            >
+                                B 更好
+                            </button>
+                        </div>
+                        <div class="arena-leaderboard">
+                            <div class="arena-section-title">Arena 实时榜</div>
+                            <div
+                                class="arena-leaderboard-list"
+                                id="arenaLeaderboardList"
+                            >
+                                排行榜加载中...
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="view" id="imagesView">
+                    <div class="images-page">
+                        <div class="images-scroll">
+                            <div class="images-inner">
+                                <div class="images-workbench">
+                                    <div class="image-compose-panel">
+                                        <div class="images-title-row">
+                                            <div>
+                                                <div class="images-title">
+                                                    图片生成
+                                                </div>
+                                                <div class="images-subtitle">
+                                                    gpt-image-2
+                                                </div>
+                                            </div>
+                                            <span
+                                                class="images-status"
+                                                id="imageGenerationStatus"
+                                                >等待输入提示词</span
+                                            >
+                                        </div>
+                                        <div class="image-search">
+                                            <svg
+                                                width="18"
+                                                height="18"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="1.8"
+                                            >
+                                                <rect
+                                                    x="4"
+                                                    y="4"
+                                                    width="16"
+                                                    height="16"
+                                                    rx="3"
+                                                ></rect>
+                                                <circle
+                                                    cx="9"
+                                                    cy="9"
+                                                    r="1.6"
+                                                ></circle>
+                                                <path
+                                                    d="m20 15-4.8-4.8L6 19"
+                                                ></path>
+                                            </svg>
+                                            <input
+                                                id="imagePromptInput"
+                                                placeholder="描述新图片"
+                                            />
+                                            <select
+                                                class="image-size-select"
+                                                id="imageSizeSelect"
+                                                aria-label="图片尺寸"
+                                            >
+                                                <option value="1024x1024">
+                                                    1:1
+                                                </option>
+                                                <option value="1024x1792">
+                                                    9:16
+                                                </option>
+                                                <option value="1792x1024">
+                                                    16:9
+                                                </option>
+                                            </select>
+                                            <button
+                                                class="input-icon"
+                                                id="imageMicToastBtn"
+                                                aria-label="图片语音输入"
+                                            >
+                                                <svg
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="1.9"
+                                                >
+                                                    <rect
+                                                        x="9"
+                                                        y="3.2"
+                                                        width="6"
+                                                        height="10.8"
+                                                        rx="3"
+                                                    ></rect>
+                                                    <path
+                                                        d="M5 11a7 7 0 0 0 14 0"
+                                                    ></path>
+                                                    <path d="M12 18v2.6"></path>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                class="circle-btn"
+                                                id="sendImagePromptBtn"
+                                                aria-label="提交图片提示词"
+                                            >
+                                                <svg
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                >
+                                                    <path d="m12 5 0 14"></path>
+                                                    <path
+                                                        d="m5 12 7-7 7 7"
+                                                    ></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="image-prompt-chips">
+                                            <button
+                                                class="image-prompt-chip"
+                                                data-prompt="极简科技产品海报，白色背景，绿色点缀，中心是一枚精致的 Cancri AI 应用图标，柔和阴影，高清"
+                                            >
+                                                产品海报
+                                            </button>
+                                            <button
+                                                class="image-prompt-chip"
+                                                data-prompt="未来感 AI 聊天应用界面概念图，干净白色工作台，绿色强调色，真实软件截图风格，高清"
+                                            >
+                                                界面概念
+                                            </button>
+                                            <button
+                                                class="image-prompt-chip"
+                                                data-prompt="可爱的几何星座图标，白色背景，绿色和黑色线条，现代 app icon，精致矢量质感"
+                                            >
+                                                应用图标
+                                            </button>
+                                            <button
+                                                class="image-prompt-chip"
+                                                data-prompt="社交媒体封面图，Cancri AI，明亮简洁，绿色品牌色，轻微玻璃质感，留白充足"
+                                            >
+                                                封面图
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="image-results-panel">
+                                        <div
+                                            class="section-head image-results-head"
+                                        >
+                                            <span>生成结果</span>
+                                        </div>
+                                        <div
+                                            class="image-grid generated-gallery"
+                                            id="generatedImageGrid"
+                                        >
+                                            <div
+                                                class="grid-card image-empty-card"
+                                                id="generatedImageEmpty"
+                                            >
+                                                <div class="image-empty-mark">
+                                                    <svg
+                                                        width="42"
+                                                        height="42"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="1.5"
+                                                    >
+                                                        <rect
+                                                            x="4"
+                                                            y="4"
+                                                            width="16"
+                                                            height="16"
+                                                            rx="3"
+                                                        ></rect>
+                                                        <circle
+                                                            cx="9"
+                                                            cy="9"
+                                                            r="1.6"
+                                                        ></circle>
+                                                        <path
+                                                            d="m20 15-4.8-4.8L6 19"
+                                                        ></path>
+                                                    </svg>
+                                                </div>
+                                                <div class="image-empty-title">
+                                                    等待生成
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <div class="scrim" id="scrim"></div>
+
+        <div class="modal large" id="settingsModal" aria-hidden="true">
+            <div class="modal-header">
+                <button
+                    class="modal-close"
+                    data-close-modal="settingsModal"
+                    aria-label="关闭设置"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
                 </button>
-                <button class="attach-btn" id="attachBtn" aria-label="上传图片" title="上传图片">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.5"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
+                <div
+                    class="modal-title"
+                    style="margin-right: auto; padding-left: 10px"
+                >
+                    设置
+                </div>
+            </div>
+            <div class="settings-layout">
+                <div class="settings-nav">
+                    <div
+                        class="settings-nav-item active"
+                        data-settings-panel="generalPanel"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path
+                                d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"
+                            ></path>
+                            <path
+                                d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"
+                            ></path>
+                        </svg>
+                        <span>常规</span>
+                    </div>
+                    <div
+                        class="settings-nav-item"
+                        data-settings-panel="accountPanel"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <circle cx="12" cy="8" r="4"></circle>
+                            <path d="M4 20a8 8 0 1 1 16 0"></path></svg
+                        ><span>账户</span>
+                    </div>
+                </div>
+
+                <div class="settings-content">
+                    <div class="settings-scroll">
+                        <div class="settings-panel active" id="generalPanel">
+                            <h3 class="settings-heading">常规</h3>
+                            <div class="list-row" id="appearanceRow">
+                                <div class="list-label">外观</div>
+                                <div class="list-value">
+                                    <span id="appearanceValue">深色</span
+                                    ><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="list-row" id="accentRow">
+                                <div class="list-label">重点色</div>
+                                <div class="list-value">
+                                    <span class="dot" id="accentDot"></span
+                                    ><span id="accentValue">默认</span
+                                    ><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="list-row with-note">
+                                <div>
+                                    <div class="list-label">API / 额度</div>
+                                    <div class="list-sub">即将开放。</div>
+                                </div>
+                                <div class="badge">Soon</div>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel" id="accountPanel">
+                            <h3 class="settings-heading">账户</h3>
+                            <div class="list-row">
+                                <div class="list-label">邮箱</div>
+                                <div class="list-value">未登录</div>
+                            </div>
+                            <div class="list-row" id="nicknameSettingsRow">
+                                <div class="list-label">昵称</div>
+                                <div class="list-value">
+                                    点击左下账户菜单设置
+                                </div>
+                            </div>
+                            <div class="list-row" id="privacySettingsRow">
+                                <div class="list-label">隐私协议</div>
+                                <div class="list-value">查看</div>
+                            </div>
+                            <div class="list-row" id="settingsLogoutRow">
+                                <div class="list-label">退出登录</div>
+                                <div class="badge">退出</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal small" id="tempChatModal" aria-hidden="true">
+            <div class="modal-header">
+                <div class="modal-title">临时聊天</div>
+                <button
+                    class="modal-close"
+                    data-close-modal="tempChatModal"
+                    aria-label="关闭临时聊天"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
                 </button>
-                <button class="file-upload-btn" id="fileUploadBtn" aria-label="上传文件" title="上传文件">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 18v-6"></path><path d="M9 15l3 3 3-3"></path></svg>
-                </button>
-                <textarea class="composer-input" id="homeInput" rows="1" placeholder="有问题，尽管问"></textarea>
-                <div class="composer-right">
-                  <button class="input-icon" id="micToastBtn" aria-label="语音输入">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="9" y="3.2" width="6" height="10.8" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v2.6"></path></svg>
-                  </button>
-                  <button class="voice-btn" id="voiceToastBtn" aria-label="语音输入" title="语音输入">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 12h1"></path><path d="M8 9v6"></path><path d="M12 7v10"></path><path d="M16 9v6"></path><path d="M19.5 12h1"></path></svg>
-                  </button>
-                  <button class="expand-btn" id="expandInputBtn" aria-label="展开输入框" title="展开输入框">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>
-                  </button>
-                  <button class="send-btn" id="sendChatBtn" aria-label="发送消息" disabled>
-                    <svg class="send-icon-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-                    <svg class="send-icon-stop" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="7" y="7" width="10" height="10" rx="1.5"></rect></svg>
-                  </button>
-                </div>
-              </div>
-              <input type="file" id="attachmentInput" accept="image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv" multiple hidden />
-              <input type="file" id="fileInput" accept=".pdf,.txt,.doc,.docx,.md,.json,.csv" multiple hidden />
             </div>
-            <div class="attachment-preview" id="attachmentPreview" hidden></div>
-            <div class="token-expiry-note" id="tokenExpiryNote" aria-live="polite">
-              开站纪念日 2026-04-28
+            <div class="modal-body">
+                <div class="temp-card">
+                    <div class="temp-item">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="8.5"
+                                stroke-dasharray="3 2"
+                            ></circle>
+                        </svg>
+                        <div>
+                            <h4>不包含在历史记录中</h4>
+                            <p>
+                                临时聊天不会出现在你的历史记录中。为了安全考虑，我们可能会保留对话记录最多30天。
+                            </p>
+                        </div>
+                    </div>
+                    <div class="temp-item">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M4 12h4l2-6 4 12 2-6h4"></path>
+                        </svg>
+                        <div>
+                            <h4>不会用于模型训练</h4>
+                            <p>临时聊天不会被用来改进我们的模型。</p>
+                        </div>
+                    </div>
+                    <div class="temp-item">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <rect
+                                x="6"
+                                y="4"
+                                width="12"
+                                height="16"
+                                rx="2"
+                            ></rect>
+                        </svg>
+                        <div>
+                            <h4>记忆关闭</h4>
+                            <p>
+                                使用临时聊天时，Cancri
+                                不会使用或更新记忆。系统仍然会遵循你的自定义指令。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="primary-btn" id="continueTempChatBtn">
+                        继续
+                    </button>
+                </div>
             </div>
-            <div class="chip-row">
-              <button class="ghost-chip" id="imageModeChipBtn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-                <span>图片生成</span>
-              </button>
-              <button class="ghost-chip" id="videoModeChipBtn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="13" height="14" rx="3"></rect><path d="m16.5 10.2 4-2.4v8.4l-4-2.4z"></path></svg>
-                <span>视频生成</span>
-              </button>
-            </div>
-
-            <div class="model-icons-scroll">
-              <div class="model-icons-track">
-                <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon">
-                <img src="./openai.svg" alt="OpenAI" class="model-icon">
-                <img src="./grok.svg" alt="Grok" class="model-icon">
-                <img src="./qwen-color.svg" alt="Qwen" class="model-icon">
-                <img src="./minimax-color.svg" alt="MiniMax" class="model-icon">
-                <img src="./moonshot.svg" alt="Moonshot" class="model-icon">
-                <img src="./zhipu-color.svg" alt="Zhipu" class="model-icon">
-                <img src="./stepfun-color.svg" alt="StepFun" class="model-icon">
-                <img src="./spark-color.svg" alt="Spark" class="model-icon">
-                <img src="./kling-color.svg" alt="Kling" class="model-icon">
-                <img src="./antgroup-color.svg" alt="AntGroup" class="model-icon">
-                <img src="./nvidia-color.svg" alt="NVIDIA" class="model-icon">
-                <img src="./yuanbao-color.svg" alt="Yuanbao" class="model-icon">
-                <img src="./xiaomimimo-color.svg" alt="MiMo" class="model-icon">
-                <img src="./sensenova-color.svg" alt="SenseNova" class="model-icon">
-                <img src="./claude-color.svg" alt="Claude" class="model-icon">
-                <img src="./gemini-color.svg" alt="Gemini" class="model-icon">
-                <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon">
-                <img src="./openai.svg" alt="OpenAI" class="model-icon">
-                <img src="./grok.svg" alt="Grok" class="model-icon">
-                <img src="./qwen-color.svg" alt="Qwen" class="model-icon">
-                <img src="./minimax-color.svg" alt="MiniMax" class="model-icon">
-                <img src="./moonshot.svg" alt="Moonshot" class="model-icon">
-                <img src="./zhipu-color.svg" alt="Zhipu" class="model-icon">
-                <img src="./stepfun-color.svg" alt="StepFun" class="model-icon">
-                <img src="./spark-color.svg" alt="Spark" class="model-icon">
-                <img src="./kling-color.svg" alt="Kling" class="model-icon">
-                <img src="./antgroup-color.svg" alt="AntGroup" class="model-icon">
-                <img src="./nvidia-color.svg" alt="NVIDIA" class="model-icon">
-                <img src="./yuanbao-color.svg" alt="Yuanbao" class="model-icon">
-                <img src="./xiaomimimo-color.svg" alt="MiMo" class="model-icon">
-                <img src="./sensenova-color.svg" alt="SenseNova" class="model-icon">
-                <img src="./claude-color.svg" alt="Claude" class="model-icon">
-                <img src="./gemini-color.svg" alt="Gemini" class="model-icon">
-                <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon">
-                <img src="./openai.svg" alt="OpenAI" class="model-icon">
-                <img src="./grok.svg" alt="Grok" class="model-icon">
-                <img src="./qwen-color.svg" alt="Qwen" class="model-icon">
-                <img src="./minimax-color.svg" alt="MiniMax" class="model-icon">
-                <img src="./moonshot.svg" alt="Moonshot" class="model-icon">
-                <img src="./zhipu-color.svg" alt="Zhipu" class="model-icon">
-                <img src="./stepfun-color.svg" alt="StepFun" class="model-icon">
-                <img src="./spark-color.svg" alt="Spark" class="model-icon">
-                <img src="./kling-color.svg" alt="Kling" class="model-icon">
-                <img src="./antgroup-color.svg" alt="AntGroup" class="model-icon">
-                <img src="./nvidia-color.svg" alt="NVIDIA" class="model-icon">
-                <img src="./yuanbao-color.svg" alt="Yuanbao" class="model-icon">
-                <img src="./xiaomimimo-color.svg" alt="MiMo" class="model-icon">
-                <img src="./sensenova-color.svg" alt="SenseNova" class="model-icon">
-                <img src="./claude-color.svg" alt="Claude" class="model-icon">
-                <img src="./gemini-color.svg" alt="Gemini" class="model-icon">
-                <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon">
-                <img src="./openai.svg" alt="OpenAI" class="model-icon">
-                <img src="./grok.svg" alt="Grok" class="model-icon">
-                <img src="./qwen-color.svg" alt="Qwen" class="model-icon">
-                <img src="./minimax-color.svg" alt="MiniMax" class="model-icon">
-                <img src="./moonshot.svg" alt="Moonshot" class="model-icon">
-                <img src="./zhipu-color.svg" alt="Zhipu" class="model-icon">
-                <img src="./stepfun-color.svg" alt="StepFun" class="model-icon">
-                <img src="./spark-color.svg" alt="Spark" class="model-icon">
-                <img src="./kling-color.svg" alt="Kling" class="model-icon">
-                <img src="./antgroup-color.svg" alt="AntGroup" class="model-icon">
-                <img src="./nvidia-color.svg" alt="NVIDIA" class="model-icon">
-                <img src="./yuanbao-color.svg" alt="Yuanbao" class="model-icon">
-              </div>
-              <div class="model-icons-text">支持全球14+大模型 免费调用</div>
-            </div>
-
-            <div class="popover plus-popover" id="plusPopover">
-              <div class="popover-inner">
-                <div class="popover-item" id="uploadToastBtn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"></path></svg>
-                  <span>添加照片和文件</span>
-                </div>
-                <div class="popover-item" id="openImagesFromPlus">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-                  <span>创建图片</span>
-                </div>
-                <div class="popover-item" id="thinkingToastBtn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.5 14 8l5.7.5-4.3 3.5 1.3 5.6L12 14.9 7.3 17.6l1.3-5.6L4.3 8.5 10 8 12 2.5Z"></path></svg>
-                  <span>思考一下</span>
-                </div>
-                <div class="popover-item" id="researchToastBtn2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.1 4.6 5 .6-3.7 3.5 1 5-4.4-2.5-4.4 2.5 1-5L4.9 8.2l5-.6L12 3Z"></path></svg>
-                  <span>深度研究</span>
-                </div>
-                <div class="popover-item" id="plusMoreBtn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg>
-                  <span>更多</span>
-                  <span class="grow"></span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
-                </div>
-                <div class="popover-sep"></div>
-                <div class="popover-item" id="createProjectFromPlus">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z"></path></svg>
-                  <span>项目</span>
-                  <span class="grow"></span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        <div class="footer-note">
-          <span>请勿在对话中输入身份证号、银行卡号、验证码等敏感信息，详情见隐私协议。</span>
-          <button class="footer-legal-link" id="privacyPolicyBtn" type="button">隐私协议</button>
         </div>
-        <div class="nexusv-footer" role="img" aria-label="NEXUSV 品牌区">
-          <span class="nexusv-footer-brand">NEXUSV</span>
-        </div>
-      </section>
 
-      <section class="view" id="leaderboardView">
-        <div class="leaderboard-page">
-          <aside class="leaderboard-side">
-            <div class="leaderboard-side-section">
-              <div class="leaderboard-side-title">View as</div>
-              <div class="leaderboard-segment">
-                <button class="active" type="button">☰ Ranking</button>
-                <button type="button">⌁ Pareto</button>
-              </div>
-            </div>
-            <div class="leaderboard-side-section">
-              <div class="leaderboard-side-title">分类</div>
-              <div class="leaderboard-category active">🏆 综合排行</div>
-            </div>
-          </aside>
-          <section class="leaderboard-main">
-            <div class="leaderboard-hero">
-              <div>
-                <h1>竞技场排行榜</h1>
-                <p>AI 模型在开放问答、数学、编程、创意写作等任务中的综合 Elo 排名。</p>
-                <p class="leaderboard-trust-note">仅匿名模式且通过风控的投票计入公开榜。</p>
-                <div class="leaderboard-meta">
-                  <span>◷ 实时更新</span>
-                  <span id="mainLeaderboardVoteCount">加载中</span>
-                  <span id="mainLeaderboardModelCount">加载中</span>
-                  <span id="mainLeaderboardUpdatedAt">最近更新加载中</span>
+        <div class="modal medium" id="projectModal" aria-hidden="true">
+            <div class="modal-header" style="padding-bottom: 0">
+                <div class="modal-title">创建项目</div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                    <button
+                        class="plain-icon"
+                        id="projectSettingToastBtn"
+                        aria-label="项目设置"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path
+                                d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"
+                            ></path>
+                            <path
+                                d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"
+                            ></path>
+                        </svg>
+                    </button>
+                    <button
+                        class="modal-close"
+                        data-close-modal="projectModal"
+                        aria-label="关闭创建项目"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M18 6 6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
-              </div>
-              <button class="leaderboard-start-btn" type="button" id="leaderboardStartVotingBtn">开始投票</button>
             </div>
-            <div class="leaderboard-toolbar">
-              <button type="button">☷ 隐藏筛选</button>
-              <span></span>
-              <button class="active" type="button">模型</button>
-              <button type="button">⌕</button>
-            </div>
-            <div class="leaderboard-table" id="mainLeaderboardList">排行榜加载中…</div>
-          </section>
-        </div>
-      </section>
-
-      <section class="view" id="imagesView">
-        <div class="images-page">
-          <div class="images-scroll">
-            <div class="images-inner">
-              <div class="images-workbench">
-                <div class="image-compose-panel">
-                  <div class="images-title-row">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="projectNameInput"
+                        >项目名称</label
+                    >
+                    <input
+                        class="form-input"
+                        id="projectNameInput"
+                        placeholder="哥本哈根之旅"
+                    />
+                </div>
+                <div class="hint-box">
+                    <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 8v4"></path>
+                        <path d="M12 16h.01"></path>
+                    </svg>
                     <div>
-                      <div class="images-title">图片生成</div>
-                      <div class="images-subtitle">gpt-image-2</div>
+                        项目功能可将聊天、文件和自定义指令集中保存，以便用于持续进行的工作，或者单纯用于整理内容，让一切更井然有序。
                     </div>
-                    <span class="images-status" id="imageGenerationStatus">等待输入提示词</span>
-                  </div>
-                  <div class="image-search">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-                    <input id="imagePromptInput" placeholder="描述新图片" />
-                    <select class="image-size-select" id="imageSizeSelect" aria-label="图片尺寸">
-                      <option value="1024x1024">1:1</option>
-                      <option value="1024x1792">9:16</option>
-                      <option value="1792x1024">16:9</option>
-                    </select>
-                    <button class="input-icon" id="imageMicToastBtn" aria-label="图片语音输入">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="9" y="3.2" width="6" height="10.8" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v2.6"></path></svg>
-                    </button>
-                    <button class="circle-btn" id="sendImagePromptBtn" aria-label="提交图片提示词">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 5 0 14"></path><path d="m5 12 7-7 7 7"></path></svg>
-                    </button>
-                  </div>
-                  <div class="image-prompt-chips">
-                    <button class="image-prompt-chip" data-prompt="极简科技产品海报，白色背景，绿色点缀，中心是一枚精致的 Cancri AI 应用图标，柔和阴影，高清">产品海报</button>
-                    <button class="image-prompt-chip" data-prompt="未来感 AI 聊天应用界面概念图，干净白色工作台，绿色强调色，真实软件截图风格，高清">界面概念</button>
-                    <button class="image-prompt-chip" data-prompt="可爱的几何星座图标，白色背景，绿色和黑色线条，现代 app icon，精致矢量质感">应用图标</button>
-                    <button class="image-prompt-chip" data-prompt="社交媒体封面图，Cancri AI，明亮简洁，绿色品牌色，轻微玻璃质感，留白充足">封面图</button>
-                  </div>
                 </div>
-                <div class="image-results-panel">
-                  <div class="section-head image-results-head">
-                    <span>生成结果</span>
-                  </div>
-                  <div class="image-grid generated-gallery" id="generatedImageGrid">
-                    <div class="grid-card image-empty-card" id="generatedImageEmpty">
-                      <div class="image-empty-mark">
-                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg>
-                      </div>
-                      <div class="image-empty-title">等待生成</div>
-                    </div>
-                  </div>
+                <div class="modal-actions">
+                    <button class="muted-btn" id="createProjectConfirmBtn">
+                        创建项目
+                    </button>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
-      </section>
-    </main>
-  </div>
 
-  <div class="scrim" id="scrim"></div>
-
-  <div class="modal large" id="settingsModal" aria-hidden="true">
-    <div class="modal-header">
-      <button class="modal-close" data-close-modal="settingsModal" aria-label="关闭设置">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-      </button>
-      <div class="modal-title" style="margin-right:auto;padding-left:10px;">设置</div>
-    </div>
-    <div class="settings-layout">
-      <div class="settings-nav">
-        <div class="settings-nav-item active" data-settings-panel="generalPanel">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"></path></svg>
-          <span>常规</span>
-        </div>
-        <div class="settings-nav-item" data-settings-panel="notifyPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V10a6 6 0 1 0-12 0v4.2a2 2 0 0 1-.6 1.4L4 17h5"></path><path d="M9.5 17a2.5 2.5 0 0 0 5 0"></path></svg><span>通知</span></div>
-        <div class="settings-nav-item" data-settings-panel="personalPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4"></path><path d="m6.3 6.3 2.8 2.8"></path><path d="M2 12h4"></path><path d="m6.3 17.7 2.8-2.8"></path><path d="M12 18v4"></path><path d="m17.7 17.7-2.8-2.8"></path><path d="M18 12h4"></path><path d="m17.7 6.3-2.8 2.8"></path><circle cx="12" cy="12" r="3.2"></circle></svg><span>个性化</span></div>
-        <div class="settings-nav-item" data-settings-panel="appsPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1.3"></rect><rect x="14" y="4" width="6" height="6" rx="1.3"></rect><rect x="4" y="14" width="6" height="6" rx="1.3"></rect><rect x="14" y="14" width="6" height="6" rx="1.3"></rect></svg><span>应用</span></div>
-        <div class="settings-nav-item" data-settings-panel="ordersPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"></path><path d="M14 2v6h6"></path></svg><span>订单</span></div>
-        <div class="settings-nav-item" data-settings-panel="safetyPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.6 2.6 8.7 7 10 4.4-1.3 7-5.4 7-10V6l-7-3Z"></path></svg><span>安全</span></div>
-        <div class="settings-nav-item" data-settings-panel="accountPanel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"></circle><path d="M4 20a8 8 0 1 1 16 0"></path></svg><span>账户</span></div>
-      </div>
-
-      <div class="settings-content">
-        <div class="settings-scroll">
-          <div class="settings-panel active" id="generalPanel">
-            <h3 class="settings-heading">常规</h3>
-            <div class="mfa-box">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                <div>
-                  <div class="mfa-title">保护你的账户</div>
-                  <p class="mfa-text">添加多重身份验证（MFA），如短信或身份验证器应用，帮助在登录时保护您的账户。</p>
-                </div>
-                <button class="plain-icon" id="dismissMfaBtn" aria-label="关闭MFA推荐">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        <div class="modal large" id="privacyPolicyModal" aria-hidden="true">
+            <div class="modal-header">
+                <div class="modal-title">隐私协议</div>
+                <button
+                    class="modal-close"
+                    data-close-modal="privacyPolicyModal"
+                    aria-label="关闭隐私协议"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
                 </button>
-              </div>
-              <button class="secondary-btn" id="mfaToastBtn">设置 MFA</button>
             </div>
-            <div class="list-row" id="appearanceRow">
-              <div class="list-label">外观</div>
-              <div class="list-value"><span id="appearanceValue">深色</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+            <div class="modal-body">
+                <div class="privacy-policy-content">
+                    <div class="privacy-policy-note">
+                        更新日期：2026年4月30日。本协议适用于 Cancri
+                        在中国大陆地区提供的聊天、图片生成、文件处理、搜索与历史记录相关功能。
+                    </div>
+
+                    <section class="privacy-policy-section">
+                        <h4>一、我们收集的信息</h4>
+                        <p>
+                            为提供基础功能、改进体验和保障安全，我们可能收集你主动输入的聊天内容、上传的图片或文件、搜索关键词、反馈内容，以及与服务相关的设备信息、浏览器信息、IP
+                            地址、访问时间、错误日志、Cookie
+                            和本地存储中的偏好设置。
+                        </p>
+                    </section>
+
+                    <section class="privacy-policy-section">
+                        <h4>二、我们如何使用信息</h4>
+                        <ul class="privacy-policy-list">
+                            <li>
+                                向你提供聊天、图片生成、文件分析、联网搜索和历史记录等功能。
+                            </li>
+                            <li>
+                                保存你的主题、语言、模型选择与会话状态等本地偏好。
+                            </li>
+                            <li>
+                                进行故障排查、性能优化、风控检测与滥用防护。
+                            </li>
+                            <li>
+                                在你发起请求时，将必要内容发送给对应的模型服务、搜索服务或存储服务完成处理。
+                            </li>
+                        </ul>
+                    </section>
+
+                    <section class="privacy-policy-section">
+                        <h4>三、信息共享与委托处理</h4>
+                        <p>
+                            为了实现具体功能，你的请求内容可能会被发送至第三方模型服务商、搜索服务商、云基础设施或托管服务商进行处理。我们仅在实现服务所必需的范围内共享必要信息，不会向无关第三方出售个人信息。
+                        </p>
+                    </section>
+
+                    <section class="privacy-policy-section">
+                        <h4>四、信息存储与保护</h4>
+                        <p>
+                            我们会采取合理的技术与管理措施保护信息安全，并尽量减少数据收集范围。你的本地偏好通常保存在浏览器本地存储中；聊天历史可能会按账号或会话进行保存。若你清空对话或要求删除，我们会在可行范围内处理相关记录。
+                        </p>
+                    </section>
+
+                    <section class="privacy-policy-section">
+                        <h4>五、你的权利</h4>
+                        <ul class="privacy-policy-list">
+                            <li>你可以查看、复制、清空或删除本地会话内容。</li>
+                            <li>
+                                你可以撤回已授予的部分授权，并关闭不必要的权限。
+                            </li>
+                            <li>
+                                如需查阅、更正、删除个人信息，或对本协议有疑问，可通过站内反馈或社区渠道联系我们。
+                            </li>
+                        </ul>
+                    </section>
+
+                    <section class="privacy-policy-section">
+                        <h4>六、未成年人保护</h4>
+                        <p>
+                            如你是未成年人，请在监护人的陪同或授权下使用本服务，并避免提交身份证号、银行卡号、验证码、密钥等敏感信息。
+                        </p>
+                    </section>
+
+                    <section class="privacy-policy-section">
+                        <h4>七、协议更新</h4>
+                        <p>
+                            我们可能会根据产品变化、法律法规或监管要求更新本协议。更新后会在此页面公布，继续使用即表示你接受更新后的内容。
+                        </p>
+                    </section>
+                </div>
             </div>
-            <div class="list-row" id="contrastRow">
-              <div class="list-label">对比度</div>
-              <div class="list-value"><span id="contrastValue">系统</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+
+        <div class="page-watermark" id="pageWatermark" aria-hidden="true">
+            <div class="page-watermark-grid" id="pageWatermarkGrid"></div>
+        </div>
+
+        <div
+            class="custom-context-menu"
+            id="customContextMenu"
+            aria-hidden="true"
+        >
+            <button
+                class="context-menu-btn"
+                type="button"
+                data-menu-action="copy"
+            >
+                复制
+            </button>
+            <button
+                class="context-menu-btn"
+                type="button"
+                data-menu-action="paste"
+            >
+                粘贴
+            </button>
+        </div>
+
+        <div class="modal medium" id="announcementModal" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">通知</div>
+                    <button
+                        class="modal-close"
+                        data-close-modal="announcementModal"
+                        aria-label="关闭公告"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M18 6 6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="announcement-content">
+                        <p class="announcement-highlight">
+                            🚀 网站即将开展API业务，敬请期待
+                        </p>
+                        <p
+                            style="
+                                margin-top: 12px;
+                                font-size: 14px;
+                                color: var(--text-soft);
+                                line-height: 1.6;
+                            "
+                        >
+                            <strong>QQ交流群：</strong
+                            ><a
+                                href="https://qm.qq.com/q/1083892008"
+                                target="_blank"
+                                rel="noopener"
+                                style="
+                                    color: var(--accent);
+                                    text-decoration: none;
+                                "
+                                >1083892008</a
+                            >
+                        </p>
+                    </div>
+                    <label
+                        style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            margin: 16px 0 4px;
+                            font-size: 13px;
+                            color: var(--text-soft);
+                            cursor: pointer;
+                        "
+                    >
+                        <input
+                            type="checkbox"
+                            id="dismissNoticeCheckbox"
+                            style="width: 16px; height: 16px; cursor: pointer"
+                        />
+                        <span>下次不再提示</span>
+                    </label>
+                    <div class="modal-actions">
+                        <button class="primary-btn" id="closeAnnouncementBtn">
+                            我知道了
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="list-row" id="accentRow">
-              <div class="list-label">重点色</div>
-              <div class="list-value"><span class="dot" id="accentDot"></span><span id="accentValue">默认</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
-            </div>
-            <div class="list-row" id="languageRow">
-              <div class="list-label">语言</div>
-              <div class="list-value"><span id="languageValue">自动检测</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
-            </div>
-            <div class="list-row with-note" id="speechRow">
-              <div>
-                <div class="list-label">口语</div>
-                <div class="list-sub">为获得最佳结果，请选择你使用的主要语言。即使未列出的语言也可能通过自动检测功能进行识别。</div>
-              </div>
-              <div class="list-value"><span id="speechValue">自动检测</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"></path></svg></div>
-            </div>
-          </div>
-
-          <div class="settings-panel" id="notifyPanel">
-            <h3 class="settings-heading">通知</h3>
-            <div class="list-row"><div class="list-label">桌面通知</div><div class="badge">已关闭</div></div>
-            <div class="list-row"><div class="list-label">产品更新</div><div class="badge">订阅</div></div>
-          </div>
-
-          <div class="settings-panel" id="personalPanel">
-            <h3 class="settings-heading">个性化</h3>
-            <div class="list-row"><div class="list-label">称呼偏好</div><div class="list-value">未设置</div></div>
-            <div class="list-row"><div class="list-label">默认首页</div><div class="list-value">聊天</div></div>
-          </div>
-
-          <div class="settings-panel" id="appsPanel">
-            <h3 class="settings-heading">应用</h3>
-            <div class="list-row"><div class="list-label">已连接应用</div><div class="badge">0</div></div>
-            <div class="list-row"><div class="list-label">文件访问权限</div><div class="badge">默认</div></div>
-          </div>
-
-          <div class="settings-panel" id="ordersPanel">
-            <h3 class="settings-heading">订单</h3>
-            <div class="list-row"><div class="list-label">当前计划</div><div class="list-value">免费版</div></div>
-            <div class="list-row"><div class="list-label">升级方案</div><div class="badge">Plus</div></div>
-          </div>
-
-          <div class="settings-panel" id="safetyPanel">
-            <h3 class="settings-heading">安全</h3>
-            <div class="list-row"><div class="list-label">登录设备</div><div class="badge">1 台</div></div>
-            <div class="list-row"><div class="list-label">双重验证</div><div class="badge">未开启</div></div>
-          </div>
-
-          <div class="settings-panel" id="accountPanel">
-            <h3 class="settings-heading">账户</h3>
-            <div class="list-row"><div class="list-label">邮箱</div><div class="list-value">未登录</div></div>
-            <div class="list-row"><div class="list-label">昵称</div><div class="list-value">未设置</div></div>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="modal small" id="tempChatModal" aria-hidden="true">
-    <div class="modal-header">
-      <div class="modal-title">临时聊天</div>
-      <button class="modal-close" data-close-modal="tempChatModal" aria-label="关闭临时聊天">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="temp-card">
-        <div class="temp-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 2"></circle></svg>
-          <div>
-            <h4>不包含在历史记录中</h4>
-            <p>临时聊天不会出现在你的历史记录中。为了安全考虑，我们可能会保留对话记录最多30天。</p>
-          </div>
-        </div>
-        <div class="temp-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h4l2-6 4 12 2-6h4"></path></svg>
-          <div>
-            <h4>不会用于模型训练</h4>
-            <p>临时聊天不会被用来改进我们的模型。</p>
-          </div>
-        </div>
-        <div class="temp-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"></rect></svg>
-          <div>
-            <h4>记忆关闭</h4>
-            <p>使用临时聊天时，Cancri 不会使用或更新记忆。系统仍然会遵循你的自定义指令。</p>
-          </div>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button class="primary-btn" id="continueTempChatBtn">继续</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal medium" id="projectModal" aria-hidden="true">
-    <div class="modal-header" style="padding-bottom:0;">
-      <div class="modal-title">创建项目</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button class="plain-icon" id="projectSettingToastBtn" aria-label="项目设置">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"></path><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"></path></svg>
-        </button>
-        <button class="modal-close" data-close-modal="projectModal" aria-label="关闭创建项目">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-        </button>
-      </div>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label" for="projectNameInput">项目名称</label>
-        <input class="form-input" id="projectNameInput" placeholder="哥本哈根之旅" />
-      </div>
-      <div class="hint-box">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
-        <div>项目功能可将聊天、文件和自定义指令集中保存，以便用于持续进行的工作，或者单纯用于整理内容，让一切更井然有序。</div>
-      </div>
-      <div class="modal-actions">
-        <button class="muted-btn" id="createProjectConfirmBtn">创建项目</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal large" id="privacyPolicyModal" aria-hidden="true">
-    <div class="modal-header">
-      <div class="modal-title">隐私协议</div>
-      <button class="modal-close" data-close-modal="privacyPolicyModal" aria-label="关闭隐私协议">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="privacy-policy-content">
-        <div class="privacy-policy-note">更新日期：2026年4月30日。本协议适用于 Cancri 在中国大陆地区提供的聊天、图片生成、文件处理、搜索与历史记录相关功能。</div>
-
-        <section class="privacy-policy-section">
-          <h4>一、我们收集的信息</h4>
-          <p>为提供基础功能、改进体验和保障安全，我们可能收集你主动输入的聊天内容、上传的图片或文件、搜索关键词、反馈内容，以及与服务相关的设备信息、浏览器信息、IP 地址、访问时间、错误日志、Cookie 和本地存储中的偏好设置。</p>
-        </section>
-
-        <section class="privacy-policy-section">
-          <h4>二、我们如何使用信息</h4>
-          <ul class="privacy-policy-list">
-            <li>向你提供聊天、图片生成、文件分析、联网搜索和历史记录等功能。</li>
-            <li>保存你的主题、语言、模型选择与会话状态等本地偏好。</li>
-            <li>进行故障排查、性能优化、风控检测与滥用防护。</li>
-            <li>在你发起请求时，将必要内容发送给对应的模型服务、搜索服务或存储服务完成处理。</li>
-          </ul>
-        </section>
-
-        <section class="privacy-policy-section">
-          <h4>三、信息共享与委托处理</h4>
-          <p>为了实现具体功能，你的请求内容可能会被发送至第三方模型服务商、搜索服务商、云基础设施或托管服务商进行处理。我们仅在实现服务所必需的范围内共享必要信息，不会向无关第三方出售个人信息。</p>
-        </section>
-
-        <section class="privacy-policy-section">
-          <h4>四、信息存储与保护</h4>
-          <p>我们会采取合理的技术与管理措施保护信息安全，并尽量减少数据收集范围。你的本地偏好通常保存在浏览器本地存储中；聊天历史可能会按账号或会话进行保存。若你清空对话或要求删除，我们会在可行范围内处理相关记录。</p>
-        </section>
-
-        <section class="privacy-policy-section">
-          <h4>五、你的权利</h4>
-          <ul class="privacy-policy-list">
-            <li>你可以查看、复制、清空或删除本地会话内容。</li>
-            <li>你可以撤回已授予的部分授权，并关闭不必要的权限。</li>
-            <li>如需查阅、更正、删除个人信息，或对本协议有疑问，可通过站内反馈或社区渠道联系我们。</li>
-          </ul>
-        </section>
-
-        <section class="privacy-policy-section">
-          <h4>六、未成年人保护</h4>
-          <p>如你是未成年人，请在监护人的陪同或授权下使用本服务，并避免提交身份证号、银行卡号、验证码、密钥等敏感信息。</p>
-        </section>
-
-        <section class="privacy-policy-section">
-          <h4>七、协议更新</h4>
-          <p>我们可能会根据产品变化、法律法规或监管要求更新本协议。更新后会在此页面公布，继续使用即表示你接受更新后的内容。</p>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
-  <div class="page-watermark" id="pageWatermark" aria-hidden="true">
-    <div class="page-watermark-grid" id="pageWatermarkGrid"></div>
-  </div>
-
-  <div class="custom-context-menu" id="customContextMenu" aria-hidden="true">
-    <button class="context-menu-btn" type="button" data-menu-action="copy">复制</button>
-    <button class="context-menu-btn" type="button" data-menu-action="paste">粘贴</button>
-  </div>
-
-  <div class="modal medium" id="announcementModal" aria-hidden="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">通知</div>
-        <button class="modal-close" data-close-modal="announcementModal" aria-label="关闭公告">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="announcement-content">
-          <p class="announcement-highlight">🚀 网站即将开展API业务，敬请期待</p>
-          <p style="margin-top:12px;font-size:14px;color:var(--text-soft);line-height:1.6;">
-            <strong>QQ交流群：</strong><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">1083892008</a>
-          </p>
-        </div>
-        <label style="display:flex;align-items:center;gap:8px;margin:16px 0 4px;font-size:13px;color:var(--text-soft);cursor:pointer;">
-          <input type="checkbox" id="dismissNoticeCheckbox" style="width:16px;height:16px;cursor:pointer;">
-          <span>下次不再提示</span>
-        </label>
-        <div class="modal-actions">
-          <button class="primary-btn" id="closeAnnouncementBtn">我知道了</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="./cancri_chat.js?v=arena-host-0504"></script>
-  <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
-  <script src="./cancri_arena.js?v=arena-module-0504"></script>
-</body>
+        <script src="./cancri_chat.js?v=header-final-0507"></script>
+        <script type="module" src="./js/main.js?v=workbench-0506"></script>
+        <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
+        <script src="./cancri_arena.js?v=arena-module-0504"></script>
+    </body>
 </html>

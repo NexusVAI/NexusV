@@ -109,7 +109,7 @@
     thinkHeader.className = 'think-header';
     thinkHeader.type = 'button';
     thinkHeader.setAttribute('aria-expanded', 'true');
-    thinkHeader.innerHTML = '<span class="think-label">Thinking</span><span class="think-caret">⌄</span>';
+    thinkHeader.innerHTML = '<span class="think-label">思考中</span><span class="think-caret">⌄</span>';
     thinkHeader.addEventListener('click', function () {
       if (thinkBlock.hidden) return;
       const collapsed = !thinkBlock.classList.contains('is-collapsed');
@@ -171,7 +171,7 @@
     if (thinkHeader) {
       const label = thinkHeader.querySelector('.think-label');
       const seconds = thinkStreamState.startedAt ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000)) : 1;
-      if (label) label.textContent = thinking ? 'Thinking' : 'Thought for ' + seconds + 's';
+      if (label) label.textContent = thinking ? '思考中' : '思考 ' + seconds + ' 秒';
     }
     if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
       thinkBlock.classList.add('is-collapsed');

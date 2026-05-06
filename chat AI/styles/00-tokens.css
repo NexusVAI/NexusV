@@ -1,0 +1,18 @@
+:root {
+  --workbench-sidebar-width: 232px;
+  --workbench-rail-width: 56px;
+  --workbench-radius-sm: 8px;
+  --workbench-radius-md: 12px;
+  --workbench-radius-lg: 18px;
+  --workbench-ease: cubic-bezier(.2,.8,.2,1);
+  --workbench-accent: #12a987;
+  --workbench-accent-2: #21c7b7;
+  --send-bg: #111111;
+  --send-fg: #ffffff;
+  --composer-bg: var(--input);
+  --surface: var(--panel);
+  --surface-elevated: var(--panel-2);
+  --border: var(--line);
+  --text-muted: var(--text-soft);
+}
+
