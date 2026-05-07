@@ -89,7 +89,7 @@
     transform: translateY(-8px) scale(0.96);
     transition:
         opacity 180ms ease,
-        transform 220s cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
         visibility 180ms ease;
     border-radius: 14px;
     padding: 6px;
@@ -887,7 +887,13 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
         width: min(292px, calc(100vw - 32px)) !important;
         max-height: min(360px, calc(100dvh - 88px)) !important;
         overflow-y: auto !important;
+        /* Use only translate for centering — no Y/scale animation on mobile
+           to avoid conflict with the global opacity/transform animation */
         transform: translateX(-50%) !important;
+        /* Override the global transform transition so there's no drift */
+        transition:
+            opacity 180ms ease,
+            visibility 180ms ease !important;
         z-index: 1000 !important;
     }
 
@@ -954,5 +960,151 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
         #compareModelSelector
         .model-name {
         max-width: calc((100vw - 140px) / 2) !important;
+    }
+}
+
+/* ================================
+   Remaining UI Fixes
+   B: think-block spacing
+   C: leaderboard mobile scroll
+   D: duel cards size + think scroll
+   E: logo strip edge-to-edge
+================================ */
+
+/* ── B: Think-block spacing ── */
+/* Prevent first child of answer-body from adding top margin */
+.answer-body > *:first-child {
+    margin-top: 0 !important;
+}
+/* Tighten gap between think-block and answer-body */
+.think-block {
+    margin-bottom: 2px !important;
+}
+.think-body {
+    padding-bottom: 2px !important;
+}
+/* Prevent last think content child from leaving trailing space */
+.think-body > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* ── C: Leaderboard mobile scroll ── */
+/* The base CSS sets overflow:hidden which blocks scrolling;
+   override to make the leaderboard view scroll on mobile */
+#leaderboardView.active {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+/* Let the page flow naturally so the view's scroll handles everything */
+#leaderboardView .leaderboard-page {
+    height: auto !important;
+    overflow: visible !important;
+}
+/* leaderboard-main doesn't need its own scroll now (parent scrolls) */
+#leaderboardView .leaderboard-main {
+    overflow-y: visible !important;
+}
+
+/* ── D: Duel cards — desktop size ── */
+.duel-card {
+    min-height: 360px;
+}
+/* Limit think-body inside duel cards so it doesn't consume all space */
+.duel-answer .think-body {
+    max-height: 140px;
+}
+
+/* ── D: Duel cards — mobile size + scroll fix ── */
+@media (max-width: 768px) {
+    /* Taller cards so content is readable */
+    .duel-card {
+        max-height: min(72dvh, 520px) !important;
+        min-height: 180px !important;
+    }
+    /* Let duel-answer grow to fill the card */
+    .duel-answer {
+        max-height: none !important;
+        overflow-y: auto !important;
+        /* Allow touch scroll to bubble to duel-answer */
+        overscroll-behavior: contain;
+    }
+    /* think-body inside duel cards: NOT independently scrollable
+       so touching it scrolls the parent duel-answer instead */
+    .duel-answer .think-body {
+        max-height: 120px !important;
+        overflow: hidden !important;
+        overscroll-behavior: auto;
+    }
+    /* duel-answer needs enough height for content */
+    .duel-answer {
+        min-height: 120px !important;
+    }
+}
+
+/* ── E: Model logo strip — edge to edge ── */
+.model-icons-scroll {
+    width: min(760px, 100vw) !important;
+    /* remove side margins on small screens */
+    margin-left: 0;
+    margin-right: 0;
+}
+@media (max-width: 760px) {
+    .model-icons-scroll {
+        width: 100vw !important;
+        align-self: stretch;
+    }
+    .model-icons-track {
+        /* Add start/end padding so first/last icons aren't flush-to-edge */
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* ================================
+   Global themed scrollbars
+   Follows the active color theme
+================================ */
+
+/* Firefox (standard) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 999px;
+    /* Make thumb a bit more visible than the default */
+    min-height: 40px;
+    min-width: 40px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--text-dim);
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* ================================
+   PC model dropdown — responsive constraints
+   Prevent overflow on narrow viewports.
+   JS handles the actual left/right placement;
+   CSS only sets bounds so nothing clips.
+================================ */
+
+/* On very narrow non-mobile screens (641–900px), allow narrower dropdown */
+@media (min-width: 641px) and (max-width: 900px) {
+    .model-dropdown {
+        max-width: calc(100vw - 24px) !important;
+        /* JS may compute min-width: 420px; override when viewport is too narrow */
+        min-width: min(420px, calc(100vw - 24px)) !important;
     }
 }
