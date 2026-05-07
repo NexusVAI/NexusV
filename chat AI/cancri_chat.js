@@ -800,7 +800,6 @@
       'gemini-3.0-flash-high': DEFAULT_MODEL_ID,
       'gemini-3-flash-preview': DEFAULT_MODEL_ID,
       'gemini-3.1-flash-lite-preview': DEFAULT_MODEL_ID,
-      'gpt-5.4': DEFAULT_MODEL_ID,
       'glm-5v-turbo': DEFAULT_MODEL_ID,
       'kimi-k2-instruct': DEFAULT_MODEL_ID,
       'minimax-m2.5-alt': DEFAULT_MODEL_ID,
@@ -809,98 +808,140 @@
       'claude-opus-4.6': DEFAULT_MODEL_ID,
       'kimi-k2.6-alt': DEFAULT_MODEL_ID,
       'kimi-k2.6-extended': DEFAULT_MODEL_ID,
+      'hy3-preview': DEFAULT_MODEL_ID,
+      'nemotron-3-super': DEFAULT_MODEL_ID,
+      'llama-3.3-70b': DEFAULT_MODEL_ID,
+      'ling-2.6-1t-alt': DEFAULT_MODEL_ID,
+      'spark-x2': DEFAULT_MODEL_ID,
+      'moonshotai-kimi-k2.6': DEFAULT_MODEL_ID,
+      'gpt-5.4': DEFAULT_MODEL_ID,
+      'gpt-5-mini': DEFAULT_MODEL_ID,
+      'claude-sonnet-4.6': DEFAULT_MODEL_ID,
+      'gemma-4-31b-it': DEFAULT_MODEL_ID,
+      'image-precise': DEFAULT_MODEL_ID,
+      'mimo-v2.5-tts': DEFAULT_MODEL_ID,
+      'mimo-v2.5-tts-voicedesign': DEFAULT_MODEL_ID,
+      'gemini-3-flash': DEFAULT_MODEL_ID,
+      'gemini-3.1-pro': DEFAULT_MODEL_ID,
+      'glm-5.1-alt': DEFAULT_MODEL_ID,
     };
     const MODEL_PRIORITY_IDS = [
-      'minimax-m2.7',
       'grok-4.20-fast',
       'deepseek-v4-pro',
       'kimi-k2.6',
+      'gpt-5.5',
       'qwen3-max',
       'glm-5.1',
-      'qwen3-coder-plus',
-      'qwen3-coder',
-      'deepseek-r1',
+      'gpt-5.4-pwcen',
+      'claude-opus-4-6',
+      'gemini-3.1-pro-preview',
     ];
     const MODEL_PRIORITY = new Map(MODEL_PRIORITY_IDS.map((id, index) => [id, index]));
     const MODEL_DEPRIORITY = new Map();
     const MODEL_CATALOG = [
-      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', brand: 'Grok', canonicalId: 'grok-4.20-fast', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './grok.svg', tags: ['新', '快速'] },
-      { id: 'grok-code-fast-1', displayName: 'Grok Code Fast 1', brand: 'Grok', canonicalId: 'grok-code-fast-1', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './grok.svg', tags: ['编码', '快速'] },
-      { id: 'minimax-m2.7', displayName: 'MiniMax M2.7', brand: 'MiniMax', canonicalId: 'minimax-m2.7', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './minimax-color.svg', tags: ['新', '快速'] },
-      { id: 'gemini-3.1-flash-lite-preview', displayName: 'Gemini 3.1 Flash Lite', brand: 'Google', canonicalId: 'gemini-3.1-flash-lite-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '轻量'] },
-      { id: 'gemma-4-31b-chat', displayName: 'Gemma 4 Chat', brand: 'Google', canonicalId: 'gemma-4-31b-chat', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '开放'] },
-      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速', '稳定'] },
-      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
-
-      { id: 'step-3.5-flash', displayName: 'Step-3.5', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
-      { id: 'hy3-preview', displayName: '混元3', brand: '腾讯混元', canonicalId: 'hy3-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './yuanbao-color.svg', tags: ['低限额', '通用'] },
-      { id: 'gpt-oss-120b', displayName: 'GPT-OSS-120B', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['通用', '慢'] },
-      { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['每日限流', '通用'] },
-      { id: 'claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4.6', lineLabel: '线路一', visible: false, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['均衡', '隐藏调试'] },
-      { id: 'nemotron-3-super', displayName: 'Nemotron-3-super', brand: 'NVIDIA Nemotron', canonicalId: 'nemotron-3-super', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './nvidia-color.svg', tags: ['通用'] },
-      { id: 'llama-3.3-70b', displayName: 'llama-3.3', brand: 'Meta', canonicalId: 'llama-3.3-70b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './meta-color.svg', tags: ['快速', '通用'] },
-      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['通用'] },
-      { id: 'ling-2.6-1t-alt', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['稳定'] },
-      { id: 'spark-x2', displayName: 'spark-x2', brand: '讯飞星火', canonicalId: 'spark-x2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './spark-color.svg', tags: ['推理'] },
-      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', brand: 'DeepSeek', canonicalId: 'deepseek-r1', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
-      { id: 'qwen3.5', displayName: 'Qwen 3.5', brand: '通义千问', canonicalId: 'qwen3.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true },
-      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true },
-      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
-      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'moonshotai-kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'moonshotai-kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '新'] },
-      { id: 'gpt-5.4-iamhc', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4-iamhc', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './openai.svg', tags: ['新'] },
-      { id: 'gemma-4-31b-it', displayName: 'Gemma-4-31B', brand: 'Google', canonicalId: 'gemma-4-31b-it', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新'] },
+      // ── tokenflux.dev ──
+      { id: 'gpt-5.4-mini', displayName: 'ChatGPT-5.4-Mini', brand: 'OpenAI', canonicalId: 'gpt-5.4-mini', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['轻量', '编程'] },
+      // ── chshapi.cn ──
+      { id: 'gpt-5.2', displayName: 'GPT-5.2', brand: 'OpenAI', canonicalId: 'gpt-5.2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
+      // ── xem8k5.top ──
+      { id: 'gpt-5.3-codex', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['编程'] },
+      // ── futureppo (91vip.futureppo.top) ──
+      { id: 'grok-4.20-fast', displayName: 'Grok 4.20 Fast', brand: 'Grok', canonicalId: 'grok-4.20-fast', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './grok.svg', tags: ['快速'] },
+      { id: 'gpt-5.5', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['旗舰'] },
+      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
+      // ── iamhc (api.iamhc.cn) ──
+      { id: 'gpt-5.4-iamhc', displayName: 'GPT-4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['稳定'] },
+      // ── chunxueapi.com ──
+      { id: 'gpt-image-2-chunxue', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路二', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
+      // ── gemai.cc ──
+      { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro-preview', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['旗舰'] },
+      { id: 'gpt-5.3-codex-gemai', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['编程'] },
+      // ── xiangluapi.com ──
+      { id: 'gemini-3-flash', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['快速'] },
+      // ── newapi.qwqtao.com ──
+      { id: 'gpt-5.4-mini-alt', displayName: 'ChatGPT-5.4-Mini', brand: 'OpenAI', canonicalId: 'gpt-5.4-mini', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['轻量', '编程'] },
+      // ── orbitai.cc ──
+      { id: 'gpt-4.1-nano', displayName: 'GPT-4.1 Nano', brand: 'OpenAI', canonicalId: 'gpt-4.1-nano', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['轻量'] },
+      // ── uglycat.cc ──
+      { id: 'gpt-oss-120b', displayName: 'GPT-OSS-120B', brand: 'OpenAI', canonicalId: 'gpt-oss-120b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['通用'] },
       { id: 'gpt-oss-20b', displayName: 'GPT-OSS-20B', brand: 'OpenAI', canonicalId: 'gpt-oss-20b', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['推理'] },
-      { id: 'grok-imagine-image-lite', displayName: 'Grok Imagine', brand: 'Grok', canonicalId: 'grok-imagine-image-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './grok.svg', tags: ['生图'] },
+      // ── api456.me ──
+      { id: 'gpt-5.3-codex-api456', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['编程'] },
+      { id: 'gpt-5.3-codex-spark', displayName: 'GPT-5.3 Codex Spark', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex-spark', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['编程'] },
+      { id: 'gpt-5.4-api456', displayName: 'GPT-4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路三', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['稳定'] },
+      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['旗舰'] },
+      { id: 'gemini-3.1-pro', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['旗舰'] },
+      { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['旗舰'] },
+      { id: 'claude-opus-4-6', displayName: 'Claude Opus 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['旗舰'] },
+      { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新'] },
+      { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['旗舰'] },
+      { id: 'gpt-image-2-api456', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路三', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
+      // ── cxyquan.com ──
+      { id: 'gpt-5-nano', displayName: 'GPT-5 Nano', brand: 'OpenAI', canonicalId: 'gpt-5-nano', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['轻量'] },
+      // ── sparkcode.top ──
+      { id: 'gemini-3-flash-alt', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['快速'] },
+      { id: 'gpt-5-codex-mini', displayName: 'GPT-5 Codex Mini', brand: 'OpenAI', canonicalId: 'gpt-5-codex-mini', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['编程'] },
+      // ── modelscope (魔塔社区) ──
+      { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro', brand: 'DeepSeek', canonicalId: 'deepseek-v4-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['Pro研究级模型'] },
+      { id: 'deepseek-v4-flash', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速'] },
+      { id: 'ling-2.6-1t', displayName: 'Ling 2.6', brand: '蚂蚁 Ling', canonicalId: 'ling-2.6-1t', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './antgroup-color.svg', tags: ['通用'] },
       { id: 'glm-5', displayName: 'GLM-5', brand: '智谱 GLM', canonicalId: 'glm-5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './zhipu-color.svg', tags: ['深度编程'] },
-      { id: 'glm-5.1', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
-      { id: 'glm-5.1-alt', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
-      { id: 'glm-4.7', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max', '约等于Gemini3'] },
-      { id: 'qwen3.6-max-preview', displayName: 'qwen3.6-max-preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['预览'] },
-      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['新', '性价比之选 快速'] },
-      { id: 'qwen3.6-flash', displayName: 'Qwen3.6-Flash', brand: '通义千问', canonicalId: 'qwen3.6-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '快速', '稳定'], multimodal: true },
-      { id: 'kimi-k2.5-alt', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
-      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定', '稳定'] },
-      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2-Exp', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2-exp', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['实验版', '稳定'] },
-      { id: 'glm-4.5-air', displayName: 'GLM-4.5-Air', brand: '智谱 GLM', canonicalId: 'glm-4.5-air', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'] },
-      { id: 'minimax-m2.5-alt', displayName: 'MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路二', visible: false, enabled: false, arena: false, iconPath: './minimax-color.svg', tags: ['稳定'] },
-      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', brand: 'DeepSeek', canonicalId: 'deepseek-v3.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'] },
-      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', brand: '通义千问', canonicalId: 'qwen3-coder-plus', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '专业编码', '稳定'], multimodal: true },
-      { id: 'qwen3-max', displayName: 'Qwen3-Max', brand: '通义千问', canonicalId: 'qwen3-max', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '旗舰', '稳定'], multimodal: true },
-      { id: 'kimi-k2-instruct', displayName: 'Kimi-K2-Instruct', brand: 'Kimi', canonicalId: 'kimi-k2-instruct', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '指令优化', '稳定'], multimodal: true },
-      { id: 'qwen3.6-plus-20260402', displayName: 'Qwen3.6-Plus', brand: '通义千问', canonicalId: 'qwen3.6-plus-20260402', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '2026-04-02', '稳定'], multimodal: true },
-      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', brand: 'DeepSeek', canonicalId: 'deepseek-r1-0528', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
-      { id: 'gemini-3.0-flash-high', displayName: 'Gemini 3.0 Flash High', brand: 'Google', canonicalId: 'gemini-3.0-flash-high', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './gemini-color.svg', tags: ['新', '高速'], multimodal: true },
-      { id: 'glm-5v-turbo', displayName: 'GLM-5V-Turbo', brand: '智谱 GLM', canonicalId: 'glm-5v-turbo', lineLabel: '线路一', visible: false, enabled: false, arena: false, iconPath: './zhipu-color.svg', tags: ['多模态', '视觉', '新'], multimodal: true },
-      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
+      { id: 'minimax-m2.5', displayName: 'MiniMax-M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['性价比之选', '快速'] },
+      // ── sensenova (日日新) ──
       { id: 'sensenova-6.7-flash-lite', displayName: 'SenseNova 6.7 Flash-Lite', brand: 'SenseNova', canonicalId: 'sensenova-6.7-flash-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './sensenova-color.svg', tags: ['多模态', '快速'], multimodal: true },
       { id: 'sensenova-u1-fast', displayName: 'SenseNova U1 Fast', brand: 'SenseNova', canonicalId: 'sensenova-u1-fast', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './sensenova-color.svg', tags: ['生图'] },
-      { id: 'gpt-image-2', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
-      // supxh.xin
-      { id: 'claude-opus-4-5', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路一', visible: false, enabled: false, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
-      { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路一', visible: false, enabled: false, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
-      { id: 'gemini-3.1-pro-preview', displayName: 'Gemini 3.1 Pro', brand: 'Google', canonicalId: 'gemini-3.1-pro-preview', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新', '旗舰'] },
-      { id: 'gemini-3-flash-preview', displayName: 'Gemini 3 Flash', brand: 'Google', canonicalId: 'gemini-3-flash-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './gemini-color.svg', tags: ['新', '快速'] },
-      { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', brand: 'Google', canonicalId: 'gemini-2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './gemini-color.svg', tags: ['新'] },
-      // pwcen.cn
-      { id: 'gpt-5.5-pwcen', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
-      { id: 'gpt-5.4-pwcen', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
-      { id: 'gpt-5.3-codex', displayName: 'GPT-5.3 Codex', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
-      // xiangluapi.com
-      // gemai.cc
-      { id: 'gpt-5.2', displayName: 'GPT-5.2', brand: 'OpenAI', canonicalId: 'gpt-5.2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] },
-      { id: 'gpt-5-nano', displayName: 'GPT-5 Nano', brand: 'OpenAI', canonicalId: 'gpt-5-nano', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '轻量'] },
-      { id: 'gpt-5-mini', displayName: 'GPT-5 Mini', brand: 'OpenAI', canonicalId: 'gpt-5-mini', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '轻量'] },
-      // api456.me
-      { id: 'claude-opus-4-6', displayName: 'Claude Opus 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新', '旗舰'] },
-      { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './claude-color.svg', tags: ['新'] },
-      { id: 'claude-opus-4-5-api456', displayName: 'Claude Opus 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-opus-4-5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['旗舰'] },
-      { id: 'claude-sonnet-4-5-api456', displayName: 'Claude Sonnet 4.5', brand: 'Anthropic Claude', canonicalId: 'claude-sonnet-4-5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './claude-color.svg', tags: ['旗舰'] },
-      { id: 'gpt-5.3-codex-spark', displayName: 'GPT-5.3 Codex Spark', brand: 'OpenAI', canonicalId: 'gpt-5.3-codex-spark', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新', '编程'] },
-      { id: 'gpt-image-2-api456', displayName: 'GPT Image 2', brand: 'OpenAI', canonicalId: 'gpt-image-2', lineLabel: '线路二', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './openai.svg', tags: ['生图'] },
-      // api520.pro
-      { id: 'gpt-5.5', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['新'] },
-      { id: 'gpt-5.4', displayName: 'GPT-5.4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['新'] }
+      { id: 'deepseek-v4-flash-sensenova', displayName: 'DeepSeek-V4-Flash', brand: 'DeepSeek', canonicalId: 'deepseek-v4-flash', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['闪电', '快速'] },
+      // ── dashscope (阿里云线路一) ──
+      { id: 'qwen3.6-plus', displayName: 'Qwen3.6 Plus', brand: '通义千问', canonicalId: 'qwen3.6-plus', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['均衡'] },
+      { id: 'qwen3.6-flash', displayName: 'Qwen3.6 Flash', brand: '通义千问', canonicalId: 'qwen3.6-flash', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '快速'], multimodal: true },
+      { id: 'qwen3-coder-plus', displayName: 'Qwen3-Coder-Plus', brand: '通义千问', canonicalId: 'qwen3-coder-plus', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '专业编码'], multimodal: true },
+      { id: 'kimi-k2.6', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'kimi-k2.5', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '复杂任务处理'], multimodal: true },
+      { id: 'kimi-k2-thinking', displayName: 'Kimi K2 Thinking', brand: 'Kimi', canonicalId: 'kimi-k2-thinking', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['推理'] },
+      { id: 'moonshot-kimi-k2-instruct', displayName: 'Moonshot-Kimi-K2-Instruct', brand: 'Kimi', canonicalId: 'moonshot-kimi-k2-instruct', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['指令优化'] },
+      { id: 'qwen3.5-omni-plus', displayName: 'Qwen3.5 Omni Plus', brand: '通义千问', canonicalId: 'qwen3.5-omni-plus', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['全能'] },
+      { id: 'minimax-m2.1', displayName: 'MiniMax M2.1', brand: 'MiniMax', canonicalId: 'minimax-m2.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['轻量'] },
+      { id: 'glm-4.5-air', displayName: 'GLM-4.5 Air', brand: '智谱 GLM', canonicalId: 'glm-4.5-air', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['轻量', '稳定'] },
+      { id: 'glm-4.5', displayName: 'GLM-4.5', brand: '智谱 GLM', canonicalId: 'glm-4.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['均衡'] },
+      { id: 'glm-4.6', displayName: 'GLM-4.6', brand: '智谱 GLM', canonicalId: 'glm-4.6', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['均衡'] },
+      { id: 'glm-4.7', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max'] },
+      { id: 'deepseek-r1', displayName: 'DeepSeek-R1', brand: 'DeepSeek', canonicalId: 'deepseek-r1', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './deepseek-color (1).svg', tags: ['强推理', '稳定'] },
+      { id: 'deepseek-v3.1', displayName: 'DeepSeek-V3.1', brand: 'DeepSeek', canonicalId: 'deepseek-v3.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定', '均衡'] },
+      { id: 'deepseek-v3.2', displayName: 'DeepSeek-V3.2', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定'] },
+      { id: 'deepseek-v3', displayName: 'DeepSeek-V3', brand: 'DeepSeek', canonicalId: 'deepseek-v3', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定'] },
+      { id: 'deepseek-r1-0528', displayName: 'DeepSeek-R1-0528', brand: 'DeepSeek', canonicalId: 'deepseek-r1-0528', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['强推理'] },
+      { id: 'deepseek-v3.2-exp', displayName: 'DeepSeek-V3.2 Exp', brand: 'DeepSeek', canonicalId: 'deepseek-v3.2-exp', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['实验版'] },
+      { id: 'qwen3.6-max-preview', displayName: 'Qwen3.6 Max Preview', brand: '通义千问', canonicalId: 'qwen3.6-max-preview', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['预览', '旗舰'] },
+      { id: 'qwen3.6-flash-2026-04-16', displayName: 'Qwen3.6 Flash', brand: '通义千问', canonicalId: 'qwen3.6-flash-2026-04-16', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['快速'] },
+      { id: 'qwen3.6-plus-2026-04-02', displayName: 'Qwen3.6 Plus', brand: '通义千问', canonicalId: 'qwen3.6-plus-2026-04-02', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['均衡'] },
+      { id: 'qwen3-max', displayName: 'Qwen3-Max', brand: '通义千问', canonicalId: 'qwen3-max', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './qwen-color.svg', tags: ['多模态', '旗舰'], multimodal: true },
+      { id: 'qwen3.5', displayName: 'Qwen 3.5', brand: '通义千问', canonicalId: 'qwen3.5', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '全能型AI'], multimodal: true },
+      { id: 'qwen3-coder', displayName: 'Qwen3-Coder', brand: '通义千问', canonicalId: 'qwen3-coder', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['多模态', '编码专项'], multimodal: true },
+      // ── dashscope (阿里云线路二) ──
+      { id: 'minimax-m2.5-dashscope', displayName: 'MiniMax M2.5', brand: 'MiniMax', canonicalId: 'minimax-m2.5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['性价比之选'] },
+      { id: 'minimax-m2.1-dashscope', displayName: 'MiniMax M2.1', brand: 'MiniMax', canonicalId: 'minimax-m2.1', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './minimax-color.svg', tags: ['轻量'] },
+      { id: 'kimi-k2-thinking-dashscope', displayName: 'Kimi K2 Thinking', brand: 'Kimi', canonicalId: 'kimi-k2-thinking', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['推理'] },
+      { id: 'moonshot-kimi-k2-instruct-dashscope', displayName: 'Moonshot-Kimi-K2-Instruct', brand: 'Kimi', canonicalId: 'moonshot-kimi-k2-instruct', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['指令优化'] },
+      { id: 'kimi-k2.5-dashscope', displayName: 'Kimi K2.5', brand: 'Kimi', canonicalId: 'kimi-k2.5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态', '稳定'], multimodal: true },
+      { id: 'glm-4.6-dashscope', displayName: 'GLM-4.6', brand: '智谱 GLM', canonicalId: 'glm-4.6', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['均衡'] },
+      { id: 'glm-4.5-dashscope', displayName: 'GLM-4.5', brand: '智谱 GLM', canonicalId: 'glm-4.5', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['均衡'] },
+      { id: 'deepseek-v3-dashscope', displayName: 'DeepSeek-V3', brand: 'DeepSeek', canonicalId: 'deepseek-v3', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './deepseek-color (1).svg', tags: ['稳定'] },
+      { id: 'qwen3.6-flash-2026-04-16-dashscope', displayName: 'Qwen3.6 Flash', brand: '通义千问', canonicalId: 'qwen3.6-flash-2026-04-16', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['快速'] },
+      { id: 'qwen3.6-plus-2026-04-02-dashscope', displayName: 'Qwen3.6 Plus', brand: '通义千问', canonicalId: 'qwen3.6-plus-2026-04-02', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './qwen-color.svg', tags: ['均衡'] },
+      // ── dashscope 视频生成 ──
+      { id: 'happyhorse-1.0-t2v', displayName: '视频生成', brand: '视频', canonicalId: 'happyhorse-1.0-t2v', lineLabel: '线路一', visible: true, enabled: true, arena: false, videoOnly: true, iconPath: './video.svg', tags: ['视频'] },
+      // ── siliconflow (硅基流动) ──
+      { id: 'kimi-k2.6-siliconflow', displayName: 'Kimi K2.6', brand: 'Kimi', canonicalId: 'kimi-k2.6', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './moonshot.svg', tags: ['多模态'] },
+      { id: 'glm-4.7-siliconflow', displayName: 'GLM-4.7', brand: '智谱 GLM', canonicalId: 'glm-4.7', lineLabel: '线路二', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['Max'] },
+      { id: 'step-3.5-flash', displayName: 'Step-3.5', brand: '阶跃星辰', canonicalId: 'step-3.5-flash', lineLabel: '线路一', visible: true, enabled: true, arena: true, iconPath: './stepfun-color.svg', tags: ['快速', '稳定'] },
+      { id: 'glm-5.1', displayName: 'GLM-5.1', brand: '智谱 GLM', canonicalId: 'glm-5.1', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './zhipu-color.svg', tags: ['复杂编码处理', '稳定'] },
+      // ── pwcen.cn ──
+      { id: 'gpt-5.4-pwcen', displayName: 'GPT-4', brand: 'OpenAI', canonicalId: 'gpt-5.4', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './openai.svg', tags: ['稳定'] },
+      { id: 'gpt-5.5-pwcen', displayName: 'GPT-5.5', brand: 'OpenAI', canonicalId: 'gpt-5.5', lineLabel: '线路二', visible: true, enabled: true, arena: true, iconPath: './openai.svg', tags: ['旗舰'] },
+      // ── freeapi (grok-imagine, 不动) ──
+      { id: 'grok-imagine-image-lite', displayName: 'Grok Imagine', brand: 'Grok', canonicalId: 'grok-imagine-image-lite', lineLabel: '线路一', visible: true, enabled: true, arena: false, imageOnly: true, iconPath: './grok.svg', tags: ['生图'] },
+      // ── mimo (小米) ──
+      { id: 'mimo-v2.5-pro', displayName: 'MiMo-V2.5-Pro', brand: '小米 MiMo', canonicalId: 'mimo-v2.5-pro', lineLabel: '线路一', visible: true, enabled: true, arena: false, iconPath: './xiaomimimo-color.svg', tags: ['长程任务', '推理'] },
     ].sort((a, b) => {
       const rankA = MODEL_PRIORITY.has(a.id)
         ? MODEL_PRIORITY.get(a.id)
@@ -940,7 +981,7 @@
     function isModelSelectable(modelId) {
       const meta = getModelMeta(modelId);
       if (meta.visible === false || meta.enabled === false || !MODEL_IDS[modelId]) return false;
-      if (meta.imageOnly && (state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous')) return false;
+      if ((meta.imageOnly || meta.videoOnly) && (state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous')) return false;
       return true;
     }
 
@@ -2225,6 +2266,20 @@
             return;
           }
 
+          // 检测生成视频格式：![generated video](url)
+          const videoMatch = content.match(/^!\[generated video\]\((https?:\/\/[^\)]+)\)$/);
+          if (videoMatch) {
+            const videoUrl = videoMatch[1];
+            const id = createAssistantMessage(metadata);
+            const messageDiv = document.getElementById(id);
+            const answerBody = messageDiv?.querySelector('.answer-body');
+            if (answerBody) {
+              answerBody.innerHTML = '';
+              answerBody.appendChild(createRestoredVideoElement(videoUrl));
+            }
+            return;
+          }
+
           const id = createAssistantMessage(metadata);
           updateAssistantMessage(id, { answer: content, thinking: false });
         }
@@ -2321,6 +2376,51 @@
         }
       });
       wrapper.appendChild(img);
+      wrapper.appendChild(dlBtn);
+      return wrapper;
+    }
+
+    function createRestoredVideoElement(videoUrl) {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:inline-block;position:relative;max-width:480px';
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.controls = true;
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.style.cssText = 'max-width:100%;border-radius:10px;display:block';
+      video.addEventListener('error', () => {
+        video.style.display = 'none';
+        const tip = document.createElement('div');
+        tip.textContent = '视频已过期';
+        tip.style.cssText = 'padding:40px;text-align:center;color:rgba(255,255,255,.45);font-size:13px;background:rgba(255,255,255,.06);border-radius:10px';
+        wrapper.appendChild(tip);
+      });
+      const dlBtn = document.createElement('button');
+      dlBtn.title = '下载视频';
+      dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
+      dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      dlBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dlBtn.disabled = true;
+        try {
+          const resp = await fetch(videoUrl, { mode: 'cors' });
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `cancri-video-${Date.now()}.mp4`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(a.href);
+        } catch {
+          showToast('视频已过期，无法下载');
+        } finally {
+          dlBtn.disabled = false;
+        }
+      });
+      wrapper.appendChild(video);
       wrapper.appendChild(dlBtn);
       return wrapper;
     }
@@ -3203,7 +3303,7 @@
       renderModelDropdownFromCatalog();
       // 如果当前模型是图像专用模型，切换到非图像模型
       const currentMeta = getModelMeta(currentModel);
-      if (currentMeta.imageOnly && state.arenaMode !== 'single') {
+      if ((currentMeta.imageOnly || currentMeta.videoOnly) && state.arenaMode !== 'single') {
         const fallback = getFallbackModelId(currentModel);
         setModel(fallback);
       }
@@ -5008,6 +5108,172 @@
       }
     }
 
+    async function generateVideoFromPrompt(prompt, modelId = 'happyhorse-1.0-t2v') {
+      const value = String(prompt || '').trim();
+      if (!value || state.isImageGenerating) return '';
+
+      setImageGenerationBusy(true, '正在提交视频生成任务...');
+      showToast('视频生成已开始，请稍等。');
+
+      let finalStatusText = '等待输入提示词';
+
+      try {
+        const response = await proxyFetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: await proxyHeaders(),
+          body: JSON.stringify({
+            endpoint: 'video',
+            model: modelId,
+            prompt: value,
+          })
+        });
+
+        if (response.status === 429) throw new Error(RATE_LIMIT_MESSAGE);
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '');
+          const parsed = parseBackendErrorPayload(errorText);
+          throw new Error(parsed.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const taskId = data.task_id;
+        if (!taskId) throw new Error('未返回 task_id。');
+
+        setImageGenerationBusy(true, '任务已提交，正在生成视频...');
+
+        while (true) {
+          await sleep(5000);
+
+          const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
+            method: 'POST',
+            headers: await proxyHeaders(),
+            body: JSON.stringify({
+              endpoint: 'video-task',
+              model: modelId,
+              taskId: taskId,
+            })
+          });
+
+          if (resultResponse.status === 429) {
+            setImageGenerationBusy(true, RATE_LIMIT_MESSAGE);
+            continue;
+          }
+          if (!resultResponse.ok) {
+            const errorText = await resultResponse.text().catch(() => '');
+            const parsed = parseBackendErrorPayload(errorText);
+            throw new Error(parsed.message || `HTTP error! status: ${resultResponse.status}`);
+          }
+
+          const taskData = await resultResponse.json();
+
+          if (taskData.task_status === 'SUCCEED') {
+            const videoUrl = taskData.output_videos?.[0] || taskData.output_video?.url || taskData.results?.[0]?.url || '';
+            if (!videoUrl) throw new Error('生成成功，但没有返回视频地址。');
+            setImageGenerationBusy(true, '视频已生成。');
+            finalStatusText = '视频已生成。';
+            showToast('视频已生成。');
+            return videoUrl;
+          }
+
+          if (taskData.task_status === 'FAILED') {
+            throw new Error('视频生成失败。');
+          }
+
+          setImageGenerationBusy(true, `正在生成中... ${taskData.task_status || 'PENDING'}`);
+        }
+      } catch (error) {
+        if (error.message === RATE_LIMIT_MESSAGE) {
+          finalStatusText = RATE_LIMIT_MESSAGE;
+          showToast(RATE_LIMIT_MESSAGE);
+        } else if (error.name !== 'AbortError') {
+          finalStatusText = `生成失败：${error.message}`;
+          showToast(`视频生成失败：${error.message}`);
+        }
+        throw error;
+      } finally {
+        setImageGenerationBusy(false, finalStatusText);
+      }
+    }
+
+    async function sendVideoGenerationMessage(query, modelId, metadata) {
+      createUserMessage(query);
+      homeInput.value = '';
+      autoResizeComposerInput();
+
+      const assistantMessageId = createAssistantMessage(metadata);
+      updateAssistantMessage(assistantMessageId, { answer: '正在生成视频...', thinking: true });
+
+      setComposerBusy(true);
+
+      try {
+        const videoUrl = await generateVideoFromPrompt(query, modelId);
+        if (videoUrl) {
+          updateAssistantMessage(assistantMessageId, { answer: '', thinking: false });
+          const messageDiv = document.getElementById(assistantMessageId);
+          const answerBody = messageDiv?.querySelector('.answer-body');
+          if (answerBody) {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'display:inline-block;position:relative;max-width:480px';
+            const video = document.createElement('video');
+            video.src = videoUrl;
+            video.controls = true;
+            video.autoplay = true;
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.style.cssText = 'max-width:100%;border-radius:10px;display:block';
+            video.addEventListener('error', () => {
+              video.style.display = 'none';
+              const tip = document.createElement('div');
+              tip.textContent = '视频已过期';
+              tip.style.cssText = 'padding:40px;text-align:center;color:rgba(255,255,255,.45);font-size:13px;background:rgba(255,255,255,.06);border-radius:10px';
+              wrapper.appendChild(tip);
+            });
+            const dlBtn = document.createElement('button');
+            dlBtn.title = '下载视频';
+            dlBtn.style.cssText = 'position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center';
+            dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+            dlBtn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              dlBtn.disabled = true;
+              try {
+                const resp = await fetch(videoUrl, { mode: 'cors' });
+                const blob = await resp.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `cancri-video-${Date.now()}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+              } catch {
+                showToast('视频已过期，无法下载');
+              } finally {
+                dlBtn.disabled = false;
+              }
+            });
+            wrapper.appendChild(video);
+            wrapper.appendChild(dlBtn);
+            answerBody.appendChild(wrapper);
+          }
+          pushHistory('user', query);
+          pushHistory(assistantHistoryMessage(`![generated video](${videoUrl})`, metadata));
+          await finalizeConversationTurn();
+        } else {
+          updateAssistantMessage(assistantMessageId, { answer: '视频生成失败，未返回视频地址。', thinking: false });
+          pushHistory('user', query);
+          pushHistory(assistantHistoryMessage('视频生成失败，未返回视频地址。', metadata));
+        }
+      } catch (error) {
+        const message = normalizeErrorMessage(error, '视频生成失败，请稍后重试。');
+        updateAssistantMessage(assistantMessageId, { answer: `视频生成失败：${message}`, thinking: false });
+        pushHistory('user', query);
+        pushHistory(assistantHistoryMessage(`视频生成失败：${message}`, metadata));
+      } finally {
+        setComposerBusy(false);
+      }
+    }
+
     function createUserMessage(content, attachments = []) {
       const messageDiv = document.createElement('div');
       messageDiv.className = 'message user';
@@ -6435,9 +6701,17 @@
       const turnModelId = currentModel;
       const turnModelMetadata = createModelMetadata(turnModelId);
 
-      if (turnModelId === 'gpt-image-2' || turnModelId === 'sensenova-u1-fast') {
+      const turnModelMeta = getModelMeta(turnModelId);
+      if (turnModelMeta.imageOnly) {
         if (!query && !attachmentsForSend.length) return;
         await sendImageGenerationMessage(query, turnModelId, turnModelMetadata, attachmentsForSend);
+        if (webSearchEnabledForTurn) setWebSearchEnabled(false);
+        return;
+      }
+
+      if (turnModelId === 'happyhorse-1.0-t2v') {
+        if (!query) return;
+        await sendVideoGenerationMessage(query, turnModelId, turnModelMetadata);
         if (webSearchEnabledForTurn) setWebSearchEnabled(false);
         return;
       }
@@ -6687,7 +6961,11 @@
       }
 
       if (state.homeMode === 'video' && query) {
-        await sendMessage(buildVideoGenerationPrompt(query));
+        homeInput.value = '';
+        autoResizeComposerInput();
+        setComposerBusy(false);
+        await sendVideoGenerationMessage(buildVideoGenerationPrompt(query), 'happyhorse-1.0-t2v', createModelMetadata('happyhorse-1.0-t2v'));
+        setWebSearchEnabled(false);
         return;
       }
 
@@ -7217,7 +7495,7 @@
       const isArenaMode = state.arenaMode === 'side_by_side' || state.arenaMode === 'anonymous';
       const grouped = new Map();
       SELECTABLE_MODELS.forEach(model => {
-        if (isArenaMode && model.imageOnly) return;
+        if (isArenaMode && (model.imageOnly || model.videoOnly)) return;
         const brand = model.brand || getModelBrandName(model.id);
         if (!grouped.has(brand)) grouped.set(brand, []);
         grouped.get(brand).push(model);
