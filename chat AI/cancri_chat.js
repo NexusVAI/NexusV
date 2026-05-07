@@ -9463,6 +9463,27 @@ if (donateBtn) {
   });
 }
 
+/* ── 侧边栏赞助卡片 ── */
+(function initDonationPromoCard() {
+  const STATE_KEY = "nexusv_promo_donation_v2";
+  const card = document.getElementById("donationPromoCard");
+  const toggleBtn = document.getElementById("donationPromoToggle");
+  if (!card || !toggleBtn) return;
+
+  // 恢复上次状态
+  if (localStorage.getItem(STATE_KEY) === "collapsed") {
+    card.classList.add("collapsed");
+    toggleBtn.setAttribute("aria-expanded", "false");
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    const willCollapse = !card.classList.contains("collapsed");
+    card.classList.toggle("collapsed", willCollapse);
+    toggleBtn.setAttribute("aria-expanded", String(!willCollapse));
+    localStorage.setItem(STATE_KEY, willCollapse ? "collapsed" : "expanded");
+  });
+})();
+
 if (topArenaModeBtn) {
   topArenaModeBtn.setAttribute("aria-haspopup", "listbox");
   topArenaModeBtn.setAttribute("aria-expanded", "false");

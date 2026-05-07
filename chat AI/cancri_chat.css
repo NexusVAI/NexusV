@@ -741,6 +741,89 @@ svg {
     margin: 2px 0;
 }
 
+/* ── 侧边栏赞助卡片 ──────────────────────────────── */
+.sidebar-promo-card {
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--panel-4);
+    border: 1px solid var(--line-2);
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+}
+.sidebar.collapsed .sidebar-promo-card {
+    display: none;
+}
+/* 折叠头—始终可见 */
+.sidebar-promo-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    transition: background 0.12s;
+    flex-shrink: 0;
+}
+.sidebar-promo-header:hover {
+    background: var(--hover);
+}
+.sidebar-promo-heart {
+    font-size: 13px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.sidebar-promo-header-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+.sidebar-promo-chevron {
+    flex-shrink: 0;
+    color: var(--text-dim);
+    transition: transform 0.25s ease;
+}
+.sidebar-promo-card.collapsed .sidebar-promo-chevron {
+    transform: rotate(180deg);
+}
+/* 可折叠内容区 */
+.sidebar-promo-content {
+    overflow: hidden;
+    max-height: 260px;
+    opacity: 1;
+    transition:
+        max-height 0.3s ease,
+        opacity 0.2s ease;
+}
+.sidebar-promo-card.collapsed .sidebar-promo-content {
+    max-height: 0;
+    opacity: 0;
+}
+.sidebar-promo-img {
+    width: 100%;
+    height: 185px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+.sidebar-promo-desc-wrap {
+    padding: 7px 11px 10px;
+}
+.sidebar-promo-desc {
+    font-size: 11px;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+
 .sidebar-footer {
     padding: 12px 10px;
     border-top: 1px solid var(--line);
