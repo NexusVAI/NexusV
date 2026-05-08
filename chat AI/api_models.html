@@ -328,6 +328,84 @@
       .footer-note a:hover {
         text-decoration: underline;
       }
+      /* ─── 赞助卡片（与主聊天页 sidebar-promo-card 视觉一致） ─── */
+      .promo-card {
+        margin-top: 24px;
+        padding: 14px 16px;
+        background: linear-gradient(
+          180deg,
+          rgba(244, 114, 182, 0.06),
+          rgba(168, 85, 247, 0.04)
+        );
+        border: 1px solid rgba(244, 114, 182, 0.18);
+        border-radius: 12px;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .promo-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        background: transparent;
+        border: 0;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        text-align: left;
+      }
+      .promo-heart {
+        color: #f472b6;
+        font-size: 14px;
+        animation: heartbeat 1.6s ease-in-out infinite;
+      }
+      @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        14% { transform: scale(1.18); }
+        28% { transform: scale(1); }
+        42% { transform: scale(1.12); }
+        70% { transform: scale(1); }
+      }
+      .promo-chevron {
+        margin-left: auto;
+        transition: transform 0.25s ease;
+      }
+      .promo-card.collapsed .promo-chevron {
+        transform: rotate(180deg);
+      }
+      .promo-content {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        max-height: 600px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, margin-top 0.3s ease, opacity 0.25s ease;
+        opacity: 1;
+      }
+      .promo-card.collapsed .promo-content {
+        max-height: 0;
+        margin-top: 0;
+        opacity: 0;
+      }
+      .promo-img {
+        width: 180px;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 10px;
+        background: #fff;
+        padding: 6px;
+      }
+      .promo-desc {
+        font-size: 12px;
+        color: var(--text-mute);
+        text-align: center;
+        line-height: 1.6;
+      }
     </style>
   </head>
   <body>
@@ -429,6 +507,39 @@
         <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions</code>
         ，把上面任意一个模型 ID 填到请求 body 的 <code>model</code> 字段即可。详见
         <a href="./api_docs.html">完整 API 文档</a>。
+      </div>
+
+      <!-- ── 站主赞助卡片 ── -->
+      <div class="promo-card" id="promoCard">
+        <button
+          class="promo-header"
+          id="promoToggle"
+          type="button"
+          aria-expanded="true"
+        >
+          <span class="promo-heart">❤</span>
+          <span>站主不易！</span>
+          <svg
+            class="promo-chevron"
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+          >
+            <path d="m18 15-6-6-6 6"></path>
+          </svg>
+        </button>
+        <div class="promo-content" id="promoContent">
+          <img
+            src="../Logo/1107.jpg"
+            alt="微信收款码"
+            class="promo-img"
+            loading="lazy"
+          />
+          <span class="promo-desc">多多益善，每一分都是更新下去的动力</span>
+        </div>
       </div>
     </div>
 
@@ -605,6 +716,31 @@
         activeTier = b.dataset.tier;
         render();
       });
+
+      // 赞助卡片折叠/展开
+      (function () {
+        const card = document.getElementById("promoCard");
+        const btn = document.getElementById("promoToggle");
+        if (!card || !btn) return;
+        // 默认展开。也尊重 localStorage 的折叠状态
+        try {
+          if (localStorage.getItem("promoCardCollapsed") === "1") {
+            card.classList.add("collapsed");
+            btn.setAttribute("aria-expanded", "false");
+          }
+        } catch (_) {}
+        btn.addEventListener("click", () => {
+          const willCollapse = !card.classList.contains("collapsed");
+          card.classList.toggle("collapsed", willCollapse);
+          btn.setAttribute("aria-expanded", willCollapse ? "false" : "true");
+          try {
+            localStorage.setItem(
+              "promoCardCollapsed",
+              willCollapse ? "1" : "0",
+            );
+          } catch (_) {}
+        });
+      })();
 
       load();
     </script>
