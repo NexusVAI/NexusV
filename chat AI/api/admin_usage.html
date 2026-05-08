@@ -452,6 +452,7 @@
         <a href="../api_docs.html">文档</a>
         <a href="./admin.html">审核</a>
         <a href="./admin_usage.html" class="active">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
@@ -637,9 +638,28 @@
           $("login-gate").style.display = "block";
           return;
         }
-        // The endpoint itself enforces ADMIN_USER_IDS; we just attempt the
-        // call and surface 403 → deny gate. This avoids hardcoding the admin
-        // list on the frontend.
+        // Pre-flight admin_check so non-admins see deny-gate immediately
+        // instead of a brief "loading" flash before the 403 lands.
+        try {
+          const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({ endpoint: "admin_check" }),
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok || !data?.is_admin) {
+            $("loading").style.display = "none";
+            $("deny-gate").style.display = "block";
+            return;
+          }
+        } catch (_e) {
+          $("loading").style.display = "none";
+          $("deny-gate").style.display = "block";
+          return;
+        }
         await loadUsage();
       }
 

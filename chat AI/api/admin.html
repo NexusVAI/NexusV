@@ -504,6 +504,7 @@
         <a href="../api_docs.html">文档</a>
         <a href="./admin.html" class="active">审核</a>
         <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
@@ -674,9 +675,27 @@
           $("login-gate").style.display = "block";
           return;
         }
-        // We can't tell from the client whether this user is in ADMIN_USER_IDS
-        // — only the backend can. Just attempt to load applications; backend
-        // returns 403 for non-admins.
+        // Pre-flight admin_check so non-admins see deny-gate immediately
+        // instead of a blank page (admin_list_api_applications would 403,
+        // but the user-facing UX is better with an explicit pre-check).
+        try {
+          const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({ endpoint: "admin_check" }),
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok || !data?.is_admin) {
+            $("deny-gate").style.display = "block";
+            return;
+          }
+        } catch (_e) {
+          $("deny-gate").style.display = "block";
+          return;
+        }
         await loadApps();
       }
 

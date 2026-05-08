@@ -137,7 +137,7 @@ const SHARED_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 共享额度页面�
 const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
 const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
 const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
-const DEFAULT_MODEL_ID = "grok-4.20-fast";
+const DEFAULT_MODEL_ID = "qwen3.6-max-preview";
 const DEFAULT_COMPARE_MODEL_ID = "minimax-m2.7";
 const RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
 let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
@@ -1144,7 +1144,7 @@ const MODEL_SELECTION_MIGRATIONS = {
   "glm-5.1-alt": DEFAULT_MODEL_ID,
 };
 const MODEL_PRIORITY_IDS = [
-  "grok-4.20-fast",
+  "qwen3.6-max-preview",
   "deepseek-v4-pro",
   "kimi-k2.6",
   "gpt-5.5",
@@ -1199,18 +1199,7 @@ const MODEL_CATALOG = [
     tags: ["编程"],
   },
   // ── futureppo (91vip.futureppo.top) ──
-  {
-    id: "grok-4.20-fast",
-    displayName: "Grok 4.20 Fast",
-    brand: "Grok",
-    canonicalId: "grok-4.20-fast",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./grok.svg",
-    tags: ["快速"],
-  },
+  // grok-4.20-fast removed 2026-05-08 — upstream key dead, no replacement.
   {
     id: "gpt-5.5",
     displayName: "GPT-5.5",
