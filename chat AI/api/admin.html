@@ -226,6 +226,150 @@
         font-size: 11px;
         color: var(--text-faint);
       }
+      td.ip {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+      .ip-link {
+        color: var(--text-mute);
+        cursor: pointer;
+        text-decoration: none;
+        border-bottom: 1px dashed transparent;
+      }
+      .ip-link:hover {
+        color: var(--text);
+        border-bottom-color: var(--text-faint);
+      }
+      .ip-dup {
+        color: var(--err);
+        font-weight: 600;
+      }
+      .ip-dup:hover {
+        color: #fca5a5;
+      }
+      .ip-count {
+        margin-left: 4px;
+        padding: 1px 6px;
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--err);
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .search-box {
+        flex: 1;
+        min-width: 200px;
+        max-width: 360px;
+        padding: 7px 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+      }
+      .search-box:focus {
+        border-color: var(--accent);
+      }
+      .search-box::placeholder {
+        color: var(--text-faint);
+      }
+      .ip-filter-bar {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        background: rgba(248, 113, 113, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.25);
+        border-radius: 8px;
+        font-size: 12.5px;
+        color: var(--text);
+      }
+      .ip-filter-bar.show {
+        display: flex;
+      }
+      .ip-filter-bar code {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--err);
+        font-weight: 600;
+      }
+      .ip-filter-bar button {
+        margin-left: auto;
+        padding: 4px 10px;
+        background: transparent;
+        border: 1px solid var(--border-strong);
+        color: var(--text-mute);
+        border-radius: 6px;
+        font-size: 11.5px;
+        cursor: pointer;
+      }
+      .ip-filter-bar button:hover {
+        color: var(--text);
+      }
+      .batch-bar {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        background: rgba(96, 165, 250, 0.08);
+        border: 1px solid rgba(96, 165, 250, 0.25);
+        border-radius: 8px;
+        font-size: 12.5px;
+      }
+      .batch-bar.show {
+        display: flex;
+      }
+      .batch-bar .count-pill {
+        padding: 2px 10px;
+        background: rgba(96, 165, 250, 0.18);
+        color: var(--accent);
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .batch-bar .btn-batch {
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .batch-bar .btn-batch.approve {
+        background: rgba(74, 222, 128, 0.18);
+        color: var(--ok);
+      }
+      .batch-bar .btn-batch.approve:hover {
+        background: rgba(74, 222, 128, 0.28);
+      }
+      .batch-bar .btn-batch.reject {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--err);
+      }
+      .batch-bar .btn-batch.reject:hover {
+        background: rgba(248, 113, 113, 0.25);
+      }
+      .batch-bar .btn-clear {
+        margin-left: auto;
+        padding: 4px 10px;
+        background: transparent;
+        border: 1px solid var(--border-strong);
+        color: var(--text-mute);
+        border-radius: 6px;
+        font-size: 11.5px;
+        cursor: pointer;
+      }
+      .batch-bar .btn-clear:hover {
+        color: var(--text);
+      }
+      input[type="checkbox"].row-check {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--accent);
+      }
       .status {
         display: inline-block;
         padding: 3px 10px;
@@ -423,24 +567,46 @@
               已拒绝<span class="count" id="cnt-rejected">0</span>
             </button>
           </div>
-          <span style="flex: 1"></span>
+          <input
+            id="search"
+            class="search-box"
+            type="search"
+            placeholder="搜邮箱 / IP / 用途 / user_id…"
+            autocomplete="off"
+          />
           <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+        </div>
+
+        <div class="ip-filter-bar" id="ipFilterBar">
+          已锁定 IP <code id="ipFilterValue"></code>，仅显示该 IP 的申请
+          <button id="ipFilterClear">取消筛选</button>
+        </div>
+
+        <div class="batch-bar" id="batchBar">
+          已选 <span class="count-pill" id="batchCount">0</span> 条申请
+          <button class="btn-batch approve" id="batchApprove">批量通过</button>
+          <button class="btn-batch reject" id="batchReject">批量拒绝</button>
+          <button class="btn-clear" id="batchClear">取消选择</button>
         </div>
 
         <div class="table-wrap" data-sensitive>
           <table>
             <thead>
               <tr>
-                <th style="width: 220px">邮箱</th>
+                <th style="width: 32px">
+                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可见" />
+                </th>
+                <th style="width: 200px">邮箱</th>
                 <th>用途说明</th>
-                <th style="width: 100px">状态</th>
-                <th style="width: 150px">提交时间</th>
-                <th style="width: 200px">操作</th>
+                <th style="width: 130px">IP</th>
+                <th style="width: 92px">状态</th>
+                <th style="width: 138px">提交时间</th>
+                <th style="width: 180px">操作</th>
               </tr>
             </thead>
             <tbody id="rows">
               <tr>
-                <td colspan="5" class="empty">加载中…</td>
+                <td colspan="7" class="empty">加载中…</td>
               </tr>
             </tbody>
           </table>
@@ -470,6 +636,13 @@
       const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
       let APPS = [];
       let activeStatus = "";
+      let activeSearch = "";
+      let activeIpFilter = "";
+      // IP -> count (across all APPS, regardless of current filter). Used to
+      // flag duplicates so the admin can mass-reject same-egress abuse.
+      let IP_COUNTS = new Map();
+      // Set of selected application ids for batch operations.
+      const SELECTED = new Set();
 
       const $ = (id) => document.getElementById(id);
       const esc = (s) => {
@@ -538,8 +711,10 @@
 
       function updateStats() {
         const counts = { pending: 0, approved: 0, rejected: 0 };
+        IP_COUNTS = new Map();
         APPS.forEach((a) => {
           if (counts[a.status] !== undefined) counts[a.status]++;
+          if (a.ip) IP_COUNTS.set(a.ip, (IP_COUNTS.get(a.ip) || 0) + 1);
         });
         $("stat-pending").textContent = counts.pending;
         $("stat-approved").textContent = counts.approved;
@@ -551,13 +726,58 @@
         $("cnt-rejected").textContent = counts.rejected;
       }
 
-      function render() {
-        const filtered = activeStatus
+      // Apply all filters (status / IP / free-text search) in order. Pulled
+      // out of render() so we can also reuse it when computing batch targets.
+      function getFilteredApps() {
+        let list = activeStatus
           ? APPS.filter((a) => a.status === activeStatus)
           : APPS;
+        if (activeIpFilter) {
+          list = list.filter((a) => a.ip === activeIpFilter);
+        }
+        if (activeSearch) {
+          const q = activeSearch.toLowerCase();
+          list = list.filter(
+            (a) =>
+              (a.email || "").toLowerCase().includes(q) ||
+              (a.ip || "").toLowerCase().includes(q) ||
+              (a.purpose || "").toLowerCase().includes(q) ||
+              (a.user_id || "").toLowerCase().includes(q),
+          );
+        }
+        return list;
+      }
+
+      function refreshBatchBar() {
+        const n = SELECTED.size;
+        $("batchBar").classList.toggle("show", n > 0);
+        $("batchCount").textContent = n;
+        // Sync the header check-all box state (checked / partial / empty).
+        const visible = getFilteredApps();
+        const visibleSelected = visible.filter((a) =>
+          SELECTED.has(a.id),
+        ).length;
+        const cb = $("checkAll");
+        if (visible.length === 0) {
+          cb.checked = false;
+          cb.indeterminate = false;
+        } else if (visibleSelected === visible.length) {
+          cb.checked = true;
+          cb.indeterminate = false;
+        } else if (visibleSelected > 0) {
+          cb.indeterminate = true;
+        } else {
+          cb.checked = false;
+          cb.indeterminate = false;
+        }
+      }
+
+      function render() {
+        const filtered = getFilteredApps();
         const tbody = $("rows");
         if (filtered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" class="empty">没有匹配的申请</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="empty">没有匹配的申请</td></tr>`;
+          refreshBatchBar();
           return;
         }
         tbody.innerHTML = filtered.map(rowHtml).join("");
@@ -565,6 +785,23 @@
         tbody.querySelectorAll("[data-action]").forEach((btn) => {
           btn.addEventListener("click", () => decide(btn));
         });
+        // Bind row checkboxes
+        tbody.querySelectorAll("input.row-check").forEach((cb) => {
+          cb.addEventListener("change", () => {
+            const id = cb.dataset.id;
+            if (cb.checked) SELECTED.add(id);
+            else SELECTED.delete(id);
+            refreshBatchBar();
+          });
+        });
+        // Bind IP click-to-filter (only meaningful for duplicate IPs)
+        tbody.querySelectorAll(".ip-link").forEach((el) => {
+          el.addEventListener("click", (e) => {
+            e.preventDefault();
+            setIpFilter(el.dataset.ip);
+          });
+        });
+        refreshBatchBar();
       }
 
       function rowHtml(a) {
@@ -577,12 +814,25 @@
             statusKey
           ] || statusKey;
         const isPending = statusKey === "pending";
+        const ip = a.ip || "";
+        const ipCount = ip ? IP_COUNTS.get(ip) || 0 : 0;
+        const ipDup = ipCount > 1;
+        const ipHtml = ip
+          ? `<a class="ip-link${ipDup ? " ip-dup" : ""}" data-ip="${esc(ip)}" href="#" title="${ipDup ? "该 IP 共 " + ipCount + " 条申请，点击仅看这条 IP" : "点击仅看这条 IP"}">${esc(ip)}${ipDup ? `<span class="ip-count">×${ipCount}</span>` : ""}</a>`
+          : `<span style="color:var(--text-faint)">—</span>`;
+        const checked = SELECTED.has(a.id) ? "checked" : "";
+        // Only allow checkbox on pending rows (batch ops only target pending).
+        const checkboxHtml = isPending
+          ? `<input type="checkbox" class="row-check" data-id="${esc(a.id)}" ${checked} />`
+          : "";
         return `<tr data-id="${esc(a.id)}">
+          <td>${checkboxHtml}</td>
           <td class="email">
             ${esc(a.email || "—")}
             <div class="user-id" style="margin-top:4px">${esc((a.user_id || "").slice(0, 13))}…</div>
           </td>
           <td class="purpose">${esc(a.purpose || "—")}</td>
+          <td class="ip">${ipHtml}</td>
           <td><span class="status status-${statusKey}">${statusLabel}</span></td>
           <td class="created">${esc(created)}</td>
           <td>
@@ -592,6 +842,73 @@
             </div>
           </td>
         </tr>`;
+      }
+
+      function setIpFilter(ip) {
+        activeIpFilter = ip || "";
+        const bar = $("ipFilterBar");
+        if (activeIpFilter) {
+          $("ipFilterValue").textContent = activeIpFilter;
+          bar.classList.add("show");
+        } else {
+          bar.classList.remove("show");
+        }
+        render();
+      }
+
+      async function batchDecide(newStatus) {
+        const ids = Array.from(SELECTED);
+        if (ids.length === 0) return;
+        // Filter to only pending ones (server will skip non-pending via update
+        // but we want accurate confirm count).
+        const pendingIds = APPS.filter(
+          (a) => SELECTED.has(a.id) && a.status === "pending",
+        ).map((a) => a.id);
+        if (pendingIds.length === 0) {
+          showToast("所选申请里没有待审核的", "err");
+          return;
+        }
+        const verb = newStatus === "approved" ? "通过" : "拒绝";
+        if (!confirm(`确认${verb} ${pendingIds.length} 条申请？`)) return;
+        // Disable the bar buttons during the call.
+        const aBtn = $("batchApprove");
+        const rBtn = $("batchReject");
+        aBtn.disabled = true;
+        rBtn.disabled = true;
+        try {
+          const session = await getSession();
+          const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({
+              endpoint: "admin_batch_review_api_applications",
+              application_ids: pendingIds,
+              status: newStatus,
+            }),
+          });
+          const data = await resp.json();
+          if (resp.ok && data.ok) {
+            showToast(`已${verb} ${data.updated ?? pendingIds.length} 条`, "ok");
+            // Update local state and re-render without a full reload.
+            const idSet = new Set(pendingIds);
+            APPS.forEach((a) => {
+              if (idSet.has(a.id)) a.status = newStatus;
+            });
+            SELECTED.clear();
+            updateStats();
+            render();
+          } else {
+            showToast(data.error || `批量${verb}失败`, "err");
+          }
+        } catch (e) {
+          showToast("网络错误：" + (e.message || e), "err");
+        } finally {
+          aBtn.disabled = false;
+          rBtn.disabled = false;
+        }
       }
 
       async function decide(btn) {
@@ -621,6 +938,10 @@
             // Update local data and re-render
             const app = APPS.find((a) => a.id === id);
             if (app) app.status = action;
+            // Remove from batch selection — the row is no longer pending so
+            // its checkbox won't render anyway, but the count badge would
+            // stay stale otherwise.
+            SELECTED.delete(id);
             updateStats();
             render();
           } else {
@@ -645,6 +966,34 @@
       });
 
       $("reload-btn").addEventListener("click", () => loadApps());
+
+      // Search box (instant filter; debounce not needed for ≤500 rows).
+      $("search").addEventListener("input", (e) => {
+        activeSearch = e.target.value.trim();
+        render();
+      });
+
+      // IP filter clear
+      $("ipFilterClear").addEventListener("click", () => setIpFilter(""));
+
+      // Batch bar
+      $("batchApprove").addEventListener("click", () => batchDecide("approved"));
+      $("batchReject").addEventListener("click", () => batchDecide("rejected"));
+      $("batchClear").addEventListener("click", () => {
+        SELECTED.clear();
+        render();
+      });
+
+      // Header check-all toggles all currently visible pending rows.
+      $("checkAll").addEventListener("change", (e) => {
+        const visible = getFilteredApps().filter((a) => a.status === "pending");
+        if (e.target.checked) {
+          visible.forEach((a) => SELECTED.add(a.id));
+        } else {
+          visible.forEach((a) => SELECTED.delete(a.id));
+        }
+        render();
+      });
 
       init();
     </script>

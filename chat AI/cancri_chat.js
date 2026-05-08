@@ -1707,6 +1707,18 @@ const MODEL_CATALOG = [
     tags: ["Pro研究级模型"],
   },
   {
+    id: "deepseek-v4-pro-line2",
+    displayName: "DeepSeek-V4-Pro",
+    brand: "DeepSeek",
+    canonicalId: "deepseek-v4-pro",
+    lineLabel: "线路二",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./deepseek-color (1).svg",
+    tags: ["新"],
+  },
+  {
     id: "deepseek-v4-flash",
     displayName: "DeepSeek-V4-Flash",
     brand: "DeepSeek",
