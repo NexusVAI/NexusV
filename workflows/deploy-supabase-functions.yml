@@ -58,6 +58,11 @@ jobs:
           FUTUREPPO_BASE_URL: ${{ secrets.FUTUREPPO_BASE_URL }}
           FUTUREPPO_API_KEY: ${{ secrets.FUTUREPPO_API_KEY }}
           FUTUREPPO_GEMMA_API_KEY: ${{ secrets.FUTUREPPO_GEMMA_API_KEY }}
+          SENSENOVA_BASE_URL: ${{ secrets.SENSENOVA_BASE_URL }}
+          SENSENOVA_API_KEY: ${{ secrets.SENSENOVA_API_KEY }}
+          ALTCHA_HMAC_KEY: ${{ secrets.ALTCHA_HMAC_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
         run: |
           set -euo pipefail
 
@@ -114,6 +119,12 @@ jobs:
           set_secret_if_present FUTUREPPO_BASE_URL
           set_secret_if_present FUTUREPPO_API_KEY
           set_secret_if_present FUTUREPPO_GEMMA_API_KEY
+          set_secret_if_present SENSENOVA_BASE_URL
+          set_secret_if_present SENSENOVA_API_KEY
+          set_secret_if_present ALTCHA_HMAC_KEY
+          set_secret_if_present LOG_HASH_SECRET
+          set_secret_if_present TURNSTILE_SECRET_KEY
+          set_secret_if_present TURNSTILE_SITE_KEY
 
       - name: Push database migrations
         env:
@@ -145,3 +156,6 @@ jobs:
           supabase functions deploy chat-history --project-ref $PROJECT_ID
           supabase functions deploy web-search --project-ref $PROJECT_ID
           supabase functions deploy chat-gateway --project-ref $PROJECT_ID
+          # Public API gateway for cancri_sk_* keys. config.toml sets verify_jwt = false
+          # so external developer requests are not rejected by Supabase's JWT validator.
+          supabase functions deploy api-gateway --project-ref $PROJECT_ID
