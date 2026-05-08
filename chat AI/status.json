@@ -239,18 +239,13 @@
       "status": "operational"
     },
     {
-      "name": "Gemini 3.1 Pro",
-      "description": "旗舰 · 线路一 (supxh)",
+      "name": "Gemini 3 Flash",
+      "description": "快速 · 线路一 (xiangluapi)",
       "status": "operational"
     },
     {
       "name": "Gemini 3 Flash",
-      "description": "快速 · 线路一 (supxh)",
-      "status": "operational"
-    },
-    {
-      "name": "Gemini 2.5 Pro",
-      "description": "线路一 (supxh)",
+      "description": "快速 · 线路二 (supxh)",
       "status": "operational"
     },
     {
