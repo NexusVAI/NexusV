@@ -571,7 +571,22 @@
           });
           if (!resp.ok) throw new Error("HTTP " + resp.status);
           const data = await resp.json();
-          MODELS = Array.isArray(data.models) ? data.models : [];
+          // Aggregate raw entries by canonicalId so this page never exposes
+          // upstream-leaking ids (e.g. -iamhc / -api456 / -chunxue). Mirrors
+          // the same dedup api-gateway does for /v1/models. The user-facing
+          // model id is the clean brand canonicalId; multiple upstream lines
+          // appear as one card with a redundancy badge.
+          const raw = Array.isArray(data.models) ? data.models : [];
+          const byCanonical = new Map();
+          for (const m of raw) {
+            const cid = m.canonicalId || m.id;
+            if (!byCanonical.has(cid)) {
+              byCanonical.set(cid, { ...m, id: cid, _lineCount: 1 });
+            } else {
+              byCanonical.get(cid)._lineCount += 1;
+            }
+          }
+          MODELS = Array.from(byCanonical.values());
           $("loading").style.display = "none";
           $("grid").style.display = "grid";
           updateStats();
@@ -684,7 +699,7 @@
           </div>
           <div class="meta">
             ${m.brand ? `<span class="badge">${esc(m.brand)}</span>` : ""}
-            ${m.lineLabel ? `<span class="badge">${esc(m.lineLabel)}</span>` : ""}
+            ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
             ${caps.map((c) => `<span class="badge cap">${c}</span>`).join("")}
           </div>
           <div class="specs">
