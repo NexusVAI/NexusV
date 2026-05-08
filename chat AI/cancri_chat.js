@@ -1142,6 +1142,19 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemini-3-flash-supxh": DEFAULT_MODEL_ID,
   "glm-5.1-alt": DEFAULT_MODEL_ID,
   "gpt-5.5-pwcen": DEFAULT_MODEL_ID,
+  "gpt-5.4-mini": DEFAULT_MODEL_ID,
+  "gpt-5.3-codex": DEFAULT_MODEL_ID,
+  "gpt-5.4-iamhc": DEFAULT_MODEL_ID,
+  "gpt-5.3-codex-gemai": DEFAULT_MODEL_ID,
+  "gpt-5.4-mini-alt": DEFAULT_MODEL_ID,
+  "gpt-5.3-codex-api456": DEFAULT_MODEL_ID,
+  "gpt-5.3-codex-spark": DEFAULT_MODEL_ID,
+  "gpt-5.4-api456": DEFAULT_MODEL_ID,
+  "claude-opus-4-6": DEFAULT_MODEL_ID,
+  "gemini-3.1-pro-api456": DEFAULT_MODEL_ID,
+  "claude-sonnet-4-6": DEFAULT_MODEL_ID,
+  "claude-sonnet-4-6-univibe": DEFAULT_MODEL_ID,
+  "gpt-5.4-pwcen": DEFAULT_MODEL_ID,
 };
 const MODEL_PRIORITY_IDS = [
   "qwen3.6-max-preview",
@@ -1150,27 +1163,12 @@ const MODEL_PRIORITY_IDS = [
   "gpt-5.5",
   "qwen3-max",
   "glm-5.1",
-  "gpt-5.4-pwcen",
-  "claude-opus-4-6",
 ];
 const MODEL_PRIORITY = new Map(
   MODEL_PRIORITY_IDS.map((id, index) => [id, index]),
 );
 const MODEL_DEPRIORITY = new Map();
 const MODEL_CATALOG = [
-  // ── tokenflux.dev ──
-  {
-    id: "gpt-5.4-mini",
-    displayName: "ChatGPT-5.4-Mini",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.4-mini",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["轻量", "编程"],
-  },
   // ── chshapi.cn ──
   {
     id: "gpt-5.2",
@@ -1183,19 +1181,6 @@ const MODEL_CATALOG = [
     arena: false,
     iconPath: "./openai.svg",
     tags: ["新"],
-  },
-  // ── xem8k5.top ──
-  {
-    id: "gpt-5.3-codex",
-    displayName: "GPT-5.3 Codex",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.3-codex",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["编程"],
   },
   // ── futureppo (91vip.futureppo.top) ──
   // grok-4.20-fast removed 2026-05-08 — upstream key dead, no replacement.
@@ -1224,19 +1209,6 @@ const MODEL_CATALOG = [
     iconPath: "./openai.svg",
     tags: ["生图"],
   },
-  // ── iamhc (api.iamhc.cn) ──
-  {
-    id: "gpt-5.4-iamhc",
-    displayName: "GPT-4",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.4",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["稳定"],
-  },
   // ── chunxueapi.com ──
   // gpt-image-2-chunxue retired 2026-05-08 — image-2 line consolidated to xem8k5.
   {
@@ -1251,19 +1223,6 @@ const MODEL_CATALOG = [
     imageOnly: true,
     iconPath: "./openai.svg",
     tags: ["生图"],
-  },
-  // ── gemai.cc ──
-  {
-    id: "gpt-5.3-codex-gemai",
-    displayName: "GPT-5.3 Codex",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.3-codex",
-    lineLabel: "线路三",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["编程"],
   },
   // ── xiangluapi.com ──
   {
@@ -1315,19 +1274,6 @@ const MODEL_CATALOG = [
     arena: true,
     iconPath: "./gemini-color.svg",
     tags: ["旗舰"],
-  },
-  // ── newapi.qwqtao.com ──
-  {
-    id: "gpt-5.4-mini-alt",
-    displayName: "ChatGPT-5.4-Mini",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.4-mini",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["轻量", "编程"],
   },
   // ── orbitai.cc ──
   {
@@ -1562,55 +1508,6 @@ const MODEL_CATALOG = [
   },
   // ── api456.me ──
   {
-    id: "gpt-5.3-codex-api456",
-    displayName: "GPT-5.3 Codex",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.3-codex",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["编程"],
-  },
-  {
-    id: "gpt-5.3-codex-spark",
-    displayName: "GPT-5.3 Codex Spark",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.3-codex-spark",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["编程"],
-  },
-  {
-    id: "gpt-5.4-api456",
-    displayName: "GPT-5.4",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.4",
-    lineLabel: "线路三",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["稳定"],
-  },
-  // claude-opus-4-6 / glm-5v-turbo / gemini-3.1-pro-api456 added 2026-05-08 via api456.
-  {
-    id: "claude-opus-4-6",
-    displayName: "Claude Opus 4.6",
-    brand: "Anthropic Claude",
-    canonicalId: "claude-opus-4-6",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./claude-color.svg",
-    tags: ["旗舰"],
-  },
-  {
     id: "glm-5v-turbo",
     displayName: "GLM-5v Turbo",
     brand: "智谱 GLM",
@@ -1621,42 +1518,6 @@ const MODEL_CATALOG = [
     arena: true,
     iconPath: "./zhipu-color.svg",
     tags: ["多模态"],
-  },
-  {
-    id: "gemini-3.1-pro-api456",
-    displayName: "Gemini 3.1 Pro",
-    brand: "Google",
-    canonicalId: "gemini-3.1-pro",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./gemini-color.svg",
-    tags: ["旗舰"],
-  },
-  {
-    id: "claude-sonnet-4-6",
-    displayName: "Claude Sonnet 4.6",
-    brand: "Anthropic Claude",
-    canonicalId: "claude-sonnet-4-6",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./claude-color.svg",
-    tags: ["新"],
-  },
-  {
-    id: "claude-sonnet-4-6-univibe",
-    displayName: "Claude Sonnet 4.6",
-    brand: "Anthropic Claude",
-    canonicalId: "claude-sonnet-4-6",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./claude-color.svg",
-    tags: ["新"],
   },
   // gpt-image-2-api456 retired 2026-05-08 — image-2 line consolidated to xem8k5.
   {
@@ -2290,19 +2151,6 @@ const MODEL_CATALOG = [
     arena: false,
     iconPath: "./zhipu-color.svg",
     tags: ["复杂编码处理", "稳定"],
-  },
-  // ── pwcen.cn ──
-  {
-    id: "gpt-5.4-pwcen",
-    displayName: "GPT-5.4",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.4",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["稳定"],
   },
   // ── freeapi (grok-imagine, 不动) ──
   {
