@@ -395,7 +395,14 @@
         <h4>API 端点</h4>
         <a href="#models">列出模型</a>
         <a href="#chat">Chat Completions</a>
-        <a href="#images">图像生成</a>
+        <a href="#messages">Messages（Anthropic）</a>
+        <a href="#responses">Responses（Codex）</a>
+
+        <h4>CLI 工具</h4>
+        <a href="#cli-codex">Codex CLI</a>
+        <a href="#cli-claude">Claude Code</a>
+        <a href="#cli-opencode">OpenCode</a>
+        <a href="#cli-openclaw">OpenClaw</a>
 
         <h4>规则</h4>
         <a href="#ratelimit">速率限制</a>
@@ -407,17 +414,48 @@
       <main>
         <h1>Cancri API 文档</h1>
         <p>
-          OpenAI 兼容的多模型聚合 API。一个 Key，调用全部上线模型。
+          OpenAI / Anthropic 双协议兼容的多模型聚合 API。一个 Key，OpenAI SDK、
+          Anthropic SDK、Codex CLI、Claude Code、OpenCode、OpenClaw 都能直接接入。
         </p>
 
         <section id="intro">
           <h2>概述</h2>
           <p>
-            Cancri API 是一个 <b>OpenAI 协议兼容</b> 的统一接口层。它把多个
-            模型供应商（魔塔 / 百炼 / Claude / Gemini / OpenAI 兼容线路 等）封装在
-            一个端点后面，你只需要换一下 Base URL 和 API Key，就能复用任何 OpenAI
-            SDK / 工具链。
+            Cancri API 是一个统一接口层，把多个模型供应商（魔塔 / 百炼 / Claude /
+            Gemini / OpenAI 兼容线路 等）封装在一个端点后面。<b>同一把 Key，三种协议</b>
+            ——选你的客户端原生支持的那一种就行：
           </p>
+          <table>
+            <thead>
+              <tr>
+                <th>路径</th>
+                <th>协议</th>
+                <th>适合的客户端</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>POST /v1/chat/completions</td>
+                <td>OpenAI Chat Completions</td>
+                <td>openai SDK、LangChain、LiteLLM、OpenCode 等</td>
+              </tr>
+              <tr>
+                <td>POST /v1/responses</td>
+                <td>OpenAI Responses</td>
+                <td>Codex CLI（默认协议）</td>
+              </tr>
+              <tr>
+                <td>POST /v1/messages</td>
+                <td>Anthropic Messages</td>
+                <td>Claude Code、@anthropic-ai/sdk、OpenClaw</td>
+              </tr>
+              <tr>
+                <td>GET /v1/models</td>
+                <td>OpenAI / Anthropic 自适应</td>
+                <td>带 <code>anthropic-version</code> header 时返回 Anthropic 格式</td>
+              </tr>
+            </tbody>
+          </table>
           <div class="endpoint">
             <span style="color: var(--text-mute)">Base URL：</span>
             <span id="base-url"
@@ -426,10 +464,10 @@
             <button class="copy-icon" data-copy-text="base-url">复制</button>
           </div>
           <ul>
-            <li>认证：<code>Authorization: Bearer cancri_sk_xxx</code></li>
-            <li>请求/响应格式：完全兼容 OpenAI Chat Completions API</li>
+            <li>认证：<code>Authorization: Bearer cancri_sk_xxx</code> 或 <code>x-api-key: cancri_sk_xxx</code></li>
             <li>支持流式（SSE）和非流式两种模式</li>
             <li>所有模型在 <a href="./api_models.html">模型广场</a> 可见</li>
+            <li>图像 / 视频生成只在网页版开放，<b>不</b>对外 API 暴露</li>
           </ul>
           <div class="alert info">
             <b>多线路冗余对你透明。</b> 你看到的 <code>model</code> 字段（如
@@ -719,16 +757,20 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
           </div>
         </section>
 
-        <section id="images">
-          <h2>图像生成</h2>
+        <section id="messages">
+          <h2>Messages（Anthropic 协议）</h2>
           <div class="endpoint">
             <span class="method post">POST</span>
-            <span>/v1/images/generations</span>
+            <span>/v1/messages</span>
           </div>
           <p>
-            调用图像模型（<code>gpt-image-2</code> /
-            <code>image-fast</code> 等）生成图片。
+            <b>Anthropic Messages API 兼容</b>，给 Claude Code、官方 <code>@anthropic-ai/sdk</code>、
+            OpenClaw 等以 Anthropic 协议为母语的客户端用。请求体和响应体跟 Anthropic 一模一样，
+            但模型 ID 用我们这边的（<code>claude-sonnet-4-6</code>、<code>gpt-5.4</code>、
+            <code>deepseek-v4-pro</code> 等都行——网关会自动识别协议并代为翻译）。
           </p>
+
+          <h3>请求参数</h3>
           <table>
             <thead>
               <tr>
@@ -743,42 +785,344 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
                 <td>model</td>
                 <td>string</td>
                 <td>是</td>
-                <td>图像模型 ID（参考广场带 <code>image</code> 标签的）</td>
+                <td>模型 ID（与 Chat Completions 共用同一份 <a href="./api_models.html">模型广场</a>）</td>
               </tr>
               <tr>
-                <td>prompt</td>
-                <td>string</td>
+                <td>messages</td>
+                <td>array</td>
                 <td>是</td>
-                <td>图像描述</td>
+                <td>Anthropic 风格的对话历史（支持 <code>text</code> / <code>image</code> / <code>tool_use</code> / <code>tool_result</code> content blocks）</td>
               </tr>
               <tr>
-                <td>n</td>
+                <td>system</td>
+                <td>string / array</td>
+                <td>否</td>
+                <td>系统提示，单字符串或 text-block 数组都可以</td>
+              </tr>
+              <tr>
+                <td>max_tokens</td>
                 <td>number</td>
-                <td>否</td>
-                <td>生成张数（多数模型仅支持 1）</td>
+                <td>是</td>
+                <td>Anthropic 协议要求显式指定最大输出</td>
               </tr>
               <tr>
-                <td>size</td>
-                <td>string</td>
+                <td>stream</td>
+                <td>boolean</td>
                 <td>否</td>
-                <td>例如 <code>1024x1024</code> / <code>1024x1792</code></td>
+                <td>true 走 Anthropic SSE 帧（<code>message_start</code> / <code>content_block_delta</code> / <code>message_stop</code>）</td>
+              </tr>
+              <tr>
+                <td>tools</td>
+                <td>array</td>
+                <td>否</td>
+                <td>Anthropic 工具定义 <code>{name, description, input_schema}</code>，工具调用结果通过 <code>tool_use</code> / <code>tool_result</code> 往返</td>
               </tr>
             </tbody>
           </table>
+
+          <h3>非流式示例</h3>
           <div class="code-block">
-            <button class="copy-icon" data-copy-grp="img">复制</button>
-            <pre class="lang active" data-grp="img" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/images/generations \
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="msg1" data-lang="curl">curl</button>
+              <button class="code-tab" data-grp="msg1" data-lang="js">Node.js</button>
+              <button class="code-tab" data-grp="msg1" data-lang="py">Python</button>
+              <button class="code-tab" data-grp="msg1" data-lang="resp">响应</button>
+            </div>
+            <button class="copy-icon" data-copy-grp="msg1">复制</button>
+            <pre class="lang active" data-grp="msg1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/messages \
+  -H <span class="s">"x-api-key: cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"anthropic-version: 2023-06-01"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "claude-sonnet-4-6",
+    "max_tokens": 256,
+    "system": "你是简洁的助手",
+    "messages": [{"role":"user","content":"用一句话解释 RLS"}]
+  }'</span></pre>
+            <pre class="lang" data-grp="msg1" data-lang="js"><span class="c">// npm i @anthropic-ai/sdk</span>
+<span class="k">import</span> Anthropic <span class="k">from</span> <span class="s">"@anthropic-ai/sdk"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> Anthropic({
+  apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
+  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>,
+});
+
+<span class="k">const</span> r = <span class="k">await</span> client.messages.create({
+  model: <span class="s">"claude-sonnet-4-6"</span>,
+  max_tokens: <span class="n">256</span>,
+  system: <span class="s">"你是简洁的助手"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释 RLS"</span> }],
+});
+console.log(r.content[<span class="n">0</span>].text);</pre>
+            <pre class="lang" data-grp="msg1" data-lang="py"><span class="c"># pip install anthropic</span>
+<span class="k">from</span> anthropic <span class="k">import</span> Anthropic
+
+client = Anthropic(
+    api_key=<span class="s">"cancri_sk_YOUR_KEY"</span>,
+    base_url=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>,
+)
+
+r = client.messages.create(
+    model=<span class="s">"claude-sonnet-4-6"</span>,
+    max_tokens=<span class="n">256</span>,
+    system=<span class="s">"你是简洁的助手"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释 RLS"</span>}],
+)
+<span class="k">print</span>(r.content[<span class="n">0</span>].text)</pre>
+            <pre class="lang" data-grp="msg1" data-lang="resp">{
+  <span class="s">"id"</span>: <span class="s">"msg_xxx"</span>,
+  <span class="s">"type"</span>: <span class="s">"message"</span>,
+  <span class="s">"role"</span>: <span class="s">"assistant"</span>,
+  <span class="s">"model"</span>: <span class="s">"claude-sonnet-4-6"</span>,
+  <span class="s">"content"</span>: [
+    { <span class="s">"type"</span>: <span class="s">"text"</span>, <span class="s">"text"</span>: <span class="s">"行级安全策略，按行控制谁能读写。"</span> }
+  ],
+  <span class="s">"stop_reason"</span>: <span class="s">"end_turn"</span>,
+  <span class="s">"stop_sequence"</span>: <span class="k">null</span>,
+  <span class="s">"usage"</span>: { <span class="s">"input_tokens"</span>: <span class="n">22</span>, <span class="s">"output_tokens"</span>: <span class="n">14</span> }
+}</pre>
+          </div>
+
+          <div class="alert info">
+            <b>流式（SSE）</b> 在请求里加 <code>"stream": true</code> 即可，输出严格符合 Anthropic
+            事件协议——<code>message_start → content_block_start → content_block_delta×N →
+            content_block_stop → message_delta → message_stop</code>。Claude Code 默认走这条路径。
+          </div>
+
+          <div class="alert warn">
+            <b>当前限制：</b> <code>cache_control</code>（提示缓存）字段会被忽略；
+            extended thinking blocks 当作普通文本透传；Responses-only 的 <code>web_search</code>/
+            <code>file_search</code> 等内置工具不支持，仅 <code>function</code> 类自定义工具可用。
+          </div>
+        </section>
+
+        <section id="responses">
+          <h2>Responses（OpenAI 新协议）</h2>
+          <div class="endpoint">
+            <span class="method post">POST</span>
+            <span>/v1/responses</span>
+          </div>
+          <p>
+            <b>OpenAI Responses API 兼容</b>，主要给 Codex CLI 这类默认走新协议的客户端用。
+            字段名跟 Chat Completions 不太一样（<code>input</code> 而不是 <code>messages</code>，
+            <code>instructions</code> 而不是 system 消息，<code>max_output_tokens</code>
+            而不是 <code>max_tokens</code> 等）——网关会自动转换到内部 Chat 协议再翻译回来。
+          </p>
+
+          <h3>请求参数</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>类型</th>
+                <th>必填</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>model</td>
+                <td>string</td>
+                <td>是</td>
+                <td>模型 ID。Codex 推荐 <code>gpt-5.3-codex</code> / <code>gpt-5.4</code></td>
+              </tr>
+              <tr>
+                <td>input</td>
+                <td>string / array</td>
+                <td>是</td>
+                <td>输入：单字符串简写，或 <code>{type, role, content}</code> / <code>function_call</code> / <code>function_call_output</code> 项的数组</td>
+              </tr>
+              <tr>
+                <td>instructions</td>
+                <td>string</td>
+                <td>否</td>
+                <td>系统提示，会自动提到 input 最前面</td>
+              </tr>
+              <tr>
+                <td>max_output_tokens</td>
+                <td>number</td>
+                <td>否</td>
+                <td>最大生成 tokens（也兼容 <code>max_tokens</code>）</td>
+              </tr>
+              <tr>
+                <td>stream</td>
+                <td>boolean</td>
+                <td>否</td>
+                <td>true 走 Responses SSE（<code>response.created</code> / <code>response.output_text.delta</code> / <code>response.completed</code>）</td>
+              </tr>
+              <tr>
+                <td>tools</td>
+                <td>array</td>
+                <td>否</td>
+                <td>Responses 风格 <code>{type:"function", name, description, parameters}</code>。<code>web_search</code>/<code>file_search</code> 等内置工具暂不支持</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>非流式示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="rsp1" data-lang="curl">curl</button>
+              <button class="code-tab" data-grp="rsp1" data-lang="js">Node.js</button>
+              <button class="code-tab" data-grp="rsp1" data-lang="resp">响应</button>
+            </div>
+            <button class="copy-icon" data-copy-grp="rsp1">复制</button>
+            <pre class="lang active" data-grp="rsp1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/responses \
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{
-    "model": "gpt-image-2",
-    "prompt": "一只在月光下吃面条的橘猫，水彩风格",
-    "size": "1024x1024"
+    "model": "gpt-5.3-codex",
+    "instructions": "你是简洁的助手",
+    "input": [
+      {"type":"message","role":"user","content":[{"type":"input_text","text":"用一句话解释 RLS"}]}
+    ],
+    "max_output_tokens": 256
   }'</span></pre>
+            <pre class="lang" data-grp="rsp1" data-lang="js"><span class="c">// 用官方 openai 包，新协议走 client.responses</span>
+<span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
+  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+});
+
+<span class="k">const</span> r = <span class="k">await</span> client.responses.create({
+  model: <span class="s">"gpt-5.3-codex"</span>,
+  instructions: <span class="s">"你是简洁的助手"</span>,
+  input: <span class="s">"用一句话解释 RLS"</span>,
+  max_output_tokens: <span class="n">256</span>,
+});
+console.log(r.output[<span class="n">0</span>].content[<span class="n">0</span>].text);</pre>
+            <pre class="lang" data-grp="rsp1" data-lang="resp">{
+  <span class="s">"id"</span>: <span class="s">"resp_xxx"</span>,
+  <span class="s">"object"</span>: <span class="s">"response"</span>,
+  <span class="s">"created_at"</span>: <span class="n">1740000000</span>,
+  <span class="s">"model"</span>: <span class="s">"gpt-5.3-codex"</span>,
+  <span class="s">"status"</span>: <span class="s">"completed"</span>,
+  <span class="s">"output"</span>: [{
+    <span class="s">"type"</span>: <span class="s">"message"</span>,
+    <span class="s">"id"</span>: <span class="s">"msg_xxx"</span>,
+    <span class="s">"status"</span>: <span class="s">"completed"</span>,
+    <span class="s">"role"</span>: <span class="s">"assistant"</span>,
+    <span class="s">"content"</span>: [{ <span class="s">"type"</span>: <span class="s">"output_text"</span>, <span class="s">"text"</span>: <span class="s">"行级安全策略，按行控制谁能读写。"</span> }]
+  }],
+  <span class="s">"usage"</span>: { <span class="s">"input_tokens"</span>: <span class="n">22</span>, <span class="s">"output_tokens"</span>: <span class="n">14</span>, <span class="s">"total_tokens"</span>: <span class="n">36</span> }
+}</pre>
+          </div>
+
+          <div class="alert info">
+            <b>不想折腾新协议？</b> Codex CLI 也支持 <code>wire_api = "chat"</code>，可以让它走
+            <a href="#chat">Chat Completions</a>，这样所有内部转换都跳过去，更简单。配置见
+            <a href="#cli-codex">下面的 Codex CLI 一节</a>。
+          </div>
+        </section>
+
+        <section id="cli-codex">
+          <h2>Codex CLI 接入</h2>
+          <p>
+            OpenAI 官方编码 CLI。把它指向我们的网关后，它就能用我们这边的所有模型。
+            编辑 <code>~/.codex/config.toml</code>：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-codex">复制</button>
+            <pre class="lang active" data-grp="cli-codex" data-lang="toml">model = <span class="s">"gpt-5.3-codex"</span>
+model_provider = <span class="s">"cancri"</span>
+
+[model_providers.cancri]
+name = <span class="s">"Cancri"</span>
+base_url = <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>
+wire_api = <span class="s">"responses"</span>
+env_key = <span class="s">"CANCRI_API_KEY"</span></pre>
+          </div>
+          <p>然后注入 Key 启动：</p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-codex-run">复制</button>
+            <pre class="lang active" data-grp="cli-codex-run" data-lang="sh"><span class="k">export</span> CANCRI_API_KEY=<span class="s">"cancri_sk_YOUR_KEY"</span>
+codex</pre>
           </div>
           <div class="alert info">
-            完整可用图像模型见 <a href="./api_models.html">模型广场</a> 中带
-            <span class="pill">image</span> 标签的项。
+            想走更稳定的 Chat Completions 协议？把 <code>wire_api = "responses"</code>
+            改成 <code>wire_api = "chat"</code> 即可。两条路径 Codex 都支持。
+          </div>
+        </section>
+
+        <section id="cli-claude">
+          <h2>Claude Code 接入</h2>
+          <p>
+            Anthropic 官方编码 CLI。把它的两个环境变量指过来即可：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-claude">复制</button>
+            <pre class="lang active" data-grp="cli-claude" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>
+<span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
+claude</pre>
+          </div>
+          <p>
+            启动后 Claude Code 会自动调 <code>/v1/models</code> 拉模型列表（网关检测到
+            <code>anthropic-version</code> 头会自动返回 Anthropic 格式）。模型选择器里挑
+            <code>claude-sonnet-4-6</code> / <code>claude-opus-4-5</code> 或者其它兼容模型都行。
+          </p>
+        </section>
+
+        <section id="cli-opencode">
+          <h2>OpenCode 接入</h2>
+          <p>
+            <a href="https://github.com/sst/opencode">sst/opencode</a> 走 OpenAI 兼容协议，
+            添加一个 provider 即可。在 <code>~/.config/opencode/opencode.json</code>
+            或项目根目录的 <code>opencode.json</code> 里：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-opencode">复制</button>
+            <pre class="lang active" data-grp="cli-opencode" data-lang="json">{
+  <span class="s">"$schema"</span>: <span class="s">"https://opencode.ai/config.json"</span>,
+  <span class="s">"provider"</span>: {
+    <span class="s">"cancri"</span>: {
+      <span class="s">"npm"</span>: <span class="s">"@ai-sdk/openai-compatible"</span>,
+      <span class="s">"name"</span>: <span class="s">"Cancri"</span>,
+      <span class="s">"options"</span>: {
+        <span class="s">"baseURL"</span>: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+        <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
+      },
+      <span class="s">"models"</span>: {
+        <span class="s">"gpt-5.4"</span>: {},
+        <span class="s">"gpt-5.3-codex"</span>: {},
+        <span class="s">"claude-sonnet-4-6"</span>: {},
+        <span class="s">"deepseek-v4-pro"</span>: {},
+        <span class="s">"gemini-3.1-pro"</span>: {}
+      }
+    }
+  }
+}</pre>
+          </div>
+        </section>
+
+        <section id="cli-openclaw">
+          <h2>OpenClaw 接入</h2>
+          <p>
+            <a href="https://github.com/openclaw/openclaw">openclaw/openclaw</a>
+            默认走 Anthropic 协议，所以直接复用 Claude Code 那套环境变量：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-openclaw-anth">复制</button>
+            <pre class="lang active" data-grp="cli-openclaw-anth" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>
+<span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
+openclaw agent</pre>
+          </div>
+          <p>
+            如果 OpenClaw 想直接用 OpenAI 协议的某个模型（比如 <code>gpt-5.4</code>），在
+            <code>~/.config/openclaw/config.json</code> 里追加一个 OpenAI provider：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-openclaw-oai">复制</button>
+            <pre class="lang active" data-grp="cli-openclaw-oai" data-lang="json">{
+  <span class="s">"providers"</span>: {
+    <span class="s">"cancri-openai"</span>: {
+      <span class="s">"type"</span>: <span class="s">"openai"</span>,
+      <span class="s">"baseURL"</span>: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+      <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
+    }
+  }
+}</pre>
           </div>
         </section>
 
@@ -966,30 +1310,84 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
         <section id="sdk">
           <h2>SDK 兼容</h2>
           <p>
-            因为 100% 兼容 OpenAI 协议，你可以直接用任何 OpenAI SDK：
+            网关同时讲 OpenAI 协议（Chat Completions + Responses）和 Anthropic 协议
+            （Messages），现成的 SDK 都能接：
           </p>
+
+          <h3>OpenAI 阵营</h3>
           <ul>
             <li>官方 <code>openai</code>（Python / Node.js）</li>
-            <li><code>@ai-sdk/openai</code>（Vercel AI SDK）</li>
+            <li><code>@ai-sdk/openai</code>、<code>@ai-sdk/openai-compatible</code>（Vercel AI SDK）</li>
             <li>LangChain <code>ChatOpenAI</code></li>
             <li>LiteLLM、OneAPI、Cherry Studio 等聚合工具</li>
+            <li><b>Codex CLI</b>（见 <a href="#cli-codex">上面的接入说明</a>）</li>
+            <li><b>OpenCode</b>（见 <a href="#cli-opencode">上面的接入说明</a>）</li>
           </ul>
-          <p>都只需要改两个参数：</p>
+          <p>改两个参数即可：</p>
           <ul>
             <li>
-              <code>baseURL</code> /
-              <code>OPENAI_BASE_URL</code> →
+              <code>baseURL</code> / <code>OPENAI_BASE_URL</code> →
               <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code>
             </li>
             <li>
-              <code>apiKey</code> /
-              <code>OPENAI_API_KEY</code> → <code>cancri_sk_xxx</code>
+              <code>apiKey</code> / <code>OPENAI_API_KEY</code> →
+              <code>cancri_sk_xxx</code>
             </li>
           </ul>
+
+          <h3>Anthropic 阵营</h3>
+          <ul>
+            <li>官方 <code>@anthropic-ai/sdk</code>（Python 包名 <code>anthropic</code>）</li>
+            <li><code>@ai-sdk/anthropic</code>（Vercel AI SDK）</li>
+            <li>LangChain <code>ChatAnthropic</code></li>
+            <li><b>Claude Code</b>（见 <a href="#cli-claude">上面的接入说明</a>）</li>
+            <li><b>OpenClaw</b>（见 <a href="#cli-openclaw">上面的接入说明</a>）</li>
+          </ul>
+          <p>同样改两个参数：</p>
+          <ul>
+            <li>
+              <code>baseURL</code> / <code>ANTHROPIC_BASE_URL</code> →
+              <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</code>
+              <span style="color: var(--text-faint)">（Anthropic SDK 自带 <code>/v1</code> 后缀，不要重复加）</span>
+            </li>
+            <li>
+              <code>apiKey</code> / <code>ANTHROPIC_AUTH_TOKEN</code> →
+              <code>cancri_sk_xxx</code>
+            </li>
+          </ul>
+          <div class="alert info">
+            <b>同一把 Key 可以在两个 SDK 里同时用。</b> 限流是按 Key 维度统一计的，不分协议。
+            想在同一个项目里 OpenAI + Anthropic 双 SDK 并用？没问题。
+          </div>
         </section>
 
         <section id="faq">
           <h2>常见问题</h2>
+          <h3>三个端点我该用哪个？</h3>
+          <ul>
+            <li><b>无脑用 <a href="#chat">/v1/chat/completions</a></b>——支持的 SDK / 工具最多，调用最稳。</li>
+            <li>客户端是 <b>Codex CLI</b>、想走它的默认协议→ <a href="#responses">/v1/responses</a>。</li>
+            <li>客户端是 <b>Claude Code</b>、Anthropic SDK、OpenClaw→ <a href="#messages">/v1/messages</a>。</li>
+          </ul>
+          <h3>图像生成怎么没了？</h3>
+          <p>
+            <code>/v1/images/generations</code> 和 <code>/v1/videos/generations</code>
+            <b>已下线 API 入口</b>，改为只在网页版可用。如果你之前在调用，会收到
+            <code>403 endpoint_disabled</code>。后续如果重开会在这里另行说明。
+          </p>
+          <h3>CLI 模型选择器里看不到我想要的模型？</h3>
+          <p>
+            CLI（特别是 Claude Code）启动时会拉一次 <code>/v1/models</code>，名字必须跟那
+            一份列表对得上。直接 <code>curl /v1/models</code> 看一下，或到
+            <a href="./api_models.html">模型广场</a> 查可用 ID；不要照搬 Anthropic / OpenAI 官方
+            的版本号（比如 <code>claude-3-5-sonnet-20241022</code> 这边没有）。
+          </p>
+          <h3>tool calling（function calling）支持吗？</h3>
+          <p>
+            三条路径都支持，自定义 <code>function</code> 工具会原样翻译往返。但 Responses 协议
+            的 <code>web_search</code> / <code>file_search</code> / <code>computer_use</code>
+            等内置工具暂未实现，传过来会被忽略。
+          </p>
           <h3>怎么追踪用量？</h3>
           <p>
             到 <a href="./api_keys.html">Keys 管理页</a> 可看到每个 Key 的最后使用时间和调用统计。详细的 token 消耗后续会上线。
@@ -1000,7 +1398,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
           </p>
           <h3>支持的国家/IP 限制？</h3>
           <p>
-            后端会做地域级速率限制和 IP 维度风控，但**不**主动屏蔽国家。
+            后端会做地域级速率限制和 IP 维度风控，但<b>不</b>主动屏蔽国家。
             如发现可疑流量会临时封锁。
           </p>
           <h3>Key 丢了怎么办？</h3>
