@@ -85,7 +85,8 @@
   <script src="./cancri_config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const sb = window.supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON_KEY__);
+    // IMPORTANT: storageKey must match cancri_chat.js so session is shared with main chat page
+    const sb = window.supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON_KEY__, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'cancri_supabase_auth' } });
     const GW = window.__SUPABASE_URL__ + '/functions/v1/chat-gateway';
     let currentUser = null;
 
