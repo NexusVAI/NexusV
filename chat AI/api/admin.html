@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>管理员 · API 审核 · Cancri</title>
+    <script src="./_anti-debug.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #0a0a0a;
+        --bg-elev: #131313;
+        --bg-card: #1a1a1a;
+        --border: #2a2a2a;
+        --border-strong: #383838;
+        --text: #e8e8e8;
+        --text-mute: #9a9a9a;
+        --text-faint: #666;
+        --accent: #60a5fa;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+        --err: #f87171;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 20px 48px;
+      }
+      .nav {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .nav a {
+        padding: 8px 14px;
+        color: var(--text-mute);
+        text-decoration: none;
+        font-size: 13px;
+        border-radius: 8px;
+        transition: all 0.15s;
+      }
+      .nav a:hover {
+        background: var(--bg-elev);
+        color: var(--text);
+      }
+      .nav a.active {
+        color: var(--text);
+        background: var(--bg-card);
+      }
+      .nav .spacer {
+        flex: 1;
+      }
+      .nav .badge-admin {
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--err);
+        padding: 3px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+      }
+      header h1 {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      header p {
+        color: var(--text-mute);
+        font-size: 13px;
+        margin-top: 4px;
+        margin-bottom: 20px;
+      }
+      .gate {
+        max-width: 520px;
+        margin: 80px auto 0;
+        padding: 32px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: center;
+      }
+      .gate h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .gate p {
+        color: var(--text-mute);
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      .gate.deny {
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+      .gate.deny h2 {
+        color: var(--err);
+      }
+      .btn-primary {
+        display: inline-block;
+        padding: 9px 18px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      .btn-primary:hover {
+        background: #2563eb;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .filter-group {
+        display: flex;
+        gap: 4px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 3px;
+      }
+      .filter-btn {
+        padding: 6px 14px;
+        background: transparent;
+        border: none;
+        color: var(--text-mute);
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.15s;
+      }
+      .filter-btn:hover {
+        color: var(--text);
+      }
+      .filter-btn.active {
+        background: var(--bg-elev);
+        color: var(--text);
+      }
+      .filter-btn .count {
+        margin-left: 6px;
+        font-weight: 600;
+      }
+      .reload-btn {
+        padding: 7px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        font-size: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .reload-btn:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        background: var(--bg-elev);
+        color: var(--text);
+        font-weight: 600;
+        font-size: 12px;
+        position: sticky;
+        top: 0;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td.email {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 12.5px;
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.purpose {
+        max-width: 380px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: var(--text-mute);
+      }
+      td.created {
+        color: var(--text-faint);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      td.user-id {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .status {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .status-pending {
+        background: rgba(251, 191, 36, 0.12);
+        color: var(--warn);
+      }
+      .status-approved {
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--ok);
+      }
+      .status-rejected {
+        background: rgba(248, 113, 113, 0.12);
+        color: var(--err);
+      }
+      .actions {
+        display: flex;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .btn-approve,
+      .btn-reject {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .btn-approve {
+        background: rgba(74, 222, 128, 0.15);
+        color: var(--ok);
+      }
+      .btn-approve:hover {
+        background: rgba(74, 222, 128, 0.25);
+      }
+      .btn-reject {
+        background: rgba(248, 113, 113, 0.12);
+        color: var(--err);
+      }
+      .btn-reject:hover {
+        background: rgba(248, 113, 113, 0.22);
+      }
+      .btn-approve:disabled,
+      .btn-reject:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .empty,
+      .loading {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--text-mute);
+        font-size: 13px;
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 18px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        border-radius: 10px;
+        font-size: 13px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.18s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toast.ok {
+        border-color: rgba(74, 222, 128, 0.4);
+        color: var(--ok);
+      }
+      .toast.err {
+        border-color: rgba(248, 113, 113, 0.4);
+        color: var(--err);
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .stat-card .label {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .stat-card .value {
+        font-size: 22px;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .stat-card.pending .value {
+        color: var(--warn);
+      }
+      .stat-card.approved .value {
+        color: var(--ok);
+      }
+      .stat-card.rejected .value {
+        color: var(--err);
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="../api_apply.html">申请 API</a>
+        <a href="../api_keys.html">我的 Keys</a>
+        <a href="../api_models.html">模型广场</a>
+        <a href="../api_docs.html">文档</a>
+        <a href="./admin.html" class="active">审核</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
+          >← 返回聊天</a
+        >
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
+        <a class="btn-primary" href="../cancri_chat_ui_v_3.html">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>
+          这个页面仅站点管理员可见。如果你认为这是误判，请联系
+          <code>站主</code>。
+        </p>
+        <a class="btn-primary" href="../cancri_chat_ui_v_3.html">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>API 申请审核</h1>
+          <p>查看待审核的 API Key 申请，一键 approve / reject。</p>
+        </header>
+
+        <div class="stats" id="stats">
+          <div class="stat-card pending">
+            <div class="label">待审核</div>
+            <div class="value" id="stat-pending">—</div>
+          </div>
+          <div class="stat-card approved">
+            <div class="label">已通过</div>
+            <div class="value" id="stat-approved">—</div>
+          </div>
+          <div class="stat-card rejected">
+            <div class="label">已拒绝</div>
+            <div class="value" id="stat-rejected">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">总数</div>
+            <div class="value" id="stat-total">—</div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="filter-group" id="statusFilter">
+            <button class="filter-btn active" data-status="">
+              全部<span class="count" id="cnt-all">0</span>
+            </button>
+            <button class="filter-btn" data-status="pending">
+              待审核<span class="count" id="cnt-pending">0</span>
+            </button>
+            <button class="filter-btn" data-status="approved">
+              已通过<span class="count" id="cnt-approved">0</span>
+            </button>
+            <button class="filter-btn" data-status="rejected">
+              已拒绝<span class="count" id="cnt-rejected">0</span>
+            </button>
+          </div>
+          <span style="flex: 1"></span>
+          <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+        </div>
+
+        <div class="table-wrap" data-sensitive>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 220px">邮箱</th>
+                <th>用途说明</th>
+                <th style="width: 100px">状态</th>
+                <th style="width: 150px">提交时间</th>
+                <th style="width: 200px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="rows">
+              <tr>
+                <td colspan="5" class="empty">加载中…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const sb = window.supabase.createClient(
+        window.__SUPABASE_URL__,
+        window.__SUPABASE_ANON_KEY__,
+      );
+      const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
+      let APPS = [];
+      let activeStatus = "";
+
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => {
+        const d = document.createElement("div");
+        d.textContent = String(s == null ? "" : s);
+        return d.innerHTML;
+      };
+
+      function showToast(msg, kind) {
+        const t = $("toast");
+        t.textContent = msg;
+        t.className = "toast " + (kind || "");
+        requestAnimationFrame(() => t.classList.add("show"));
+        setTimeout(() => t.classList.remove("show"), 2400);
+      }
+
+      async function getSession() {
+        const {
+          data: { session },
+        } = await sb.auth.getSession();
+        return session;
+      }
+
+      async function init() {
+        const session = await getSession();
+        $("loading").style.display = "none";
+        if (!session || !session.user || session.user.is_anonymous) {
+          $("login-gate").style.display = "block";
+          return;
+        }
+        // We can't tell from the client whether this user is in ADMIN_USER_IDS
+        // — only the backend can. Just attempt to load applications; backend
+        // returns 403 for non-admins.
+        await loadApps();
+      }
+
+      async function loadApps() {
+        const session = await getSession();
+        try {
+          const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({
+              endpoint: "admin_list_api_applications",
+            }),
+          });
+          if (resp.status === 403) {
+            $("deny-gate").style.display = "block";
+            return;
+          }
+          if (!resp.ok) {
+            throw new Error("HTTP " + resp.status);
+          }
+          const data = await resp.json();
+          APPS = Array.isArray(data.applications) ? data.applications : [];
+          $("main").style.display = "block";
+          updateStats();
+          render();
+        } catch (e) {
+          showToast("加载失败：" + (e.message || e), "err");
+        }
+      }
+
+      function updateStats() {
+        const counts = { pending: 0, approved: 0, rejected: 0 };
+        APPS.forEach((a) => {
+          if (counts[a.status] !== undefined) counts[a.status]++;
+        });
+        $("stat-pending").textContent = counts.pending;
+        $("stat-approved").textContent = counts.approved;
+        $("stat-rejected").textContent = counts.rejected;
+        $("stat-total").textContent = APPS.length;
+        $("cnt-all").textContent = APPS.length;
+        $("cnt-pending").textContent = counts.pending;
+        $("cnt-approved").textContent = counts.approved;
+        $("cnt-rejected").textContent = counts.rejected;
+      }
+
+      function render() {
+        const filtered = activeStatus
+          ? APPS.filter((a) => a.status === activeStatus)
+          : APPS;
+        const tbody = $("rows");
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="empty">没有匹配的申请</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = filtered.map(rowHtml).join("");
+        // Bind action buttons
+        tbody.querySelectorAll("[data-action]").forEach((btn) => {
+          btn.addEventListener("click", () => decide(btn));
+        });
+      }
+
+      function rowHtml(a) {
+        const created = a.created_at
+          ? new Date(a.created_at).toLocaleString("zh-CN", { hour12: false })
+          : "—";
+        const statusKey = a.status || "pending";
+        const statusLabel =
+          { pending: "待审核", approved: "已通过", rejected: "已拒绝" }[
+            statusKey
+          ] || statusKey;
+        const isPending = statusKey === "pending";
+        return `<tr data-id="${esc(a.id)}">
+          <td class="email">
+            ${esc(a.email || "—")}
+            <div class="user-id" style="margin-top:4px">${esc((a.user_id || "").slice(0, 13))}…</div>
+          </td>
+          <td class="purpose">${esc(a.purpose || "—")}</td>
+          <td><span class="status status-${statusKey}">${statusLabel}</span></td>
+          <td class="created">${esc(created)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-approve" data-action="approved" data-id="${esc(a.id)}" ${isPending ? "" : "disabled"}>通过</button>
+              <button class="btn-reject" data-action="rejected" data-id="${esc(a.id)}" ${isPending ? "" : "disabled"}>拒绝</button>
+            </div>
+          </td>
+        </tr>`;
+      }
+
+      async function decide(btn) {
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        const verb = action === "approved" ? "通过" : "拒绝";
+        if (!confirm(`确认${verb}这个申请？`)) return;
+        const row = btn.closest("tr");
+        row.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        try {
+          const session = await getSession();
+          const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({
+              endpoint: "admin_review_api_application",
+              application_id: id,
+              status: action,
+            }),
+          });
+          const data = await resp.json();
+          if (resp.ok && data.ok) {
+            showToast(`已${verb}`, "ok");
+            // Update local data and re-render
+            const app = APPS.find((a) => a.id === id);
+            if (app) app.status = action;
+            updateStats();
+            render();
+          } else {
+            showToast(data.error || `${verb}失败`, "err");
+            row.querySelectorAll("button").forEach((b) => (b.disabled = false));
+          }
+        } catch (e) {
+          showToast("网络错误：" + (e.message || e), "err");
+          row.querySelectorAll("button").forEach((b) => (b.disabled = false));
+        }
+      }
+
+      $("statusFilter").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-status]");
+        if (!b) return;
+        $("statusFilter")
+          .querySelectorAll(".filter-btn")
+          .forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        activeStatus = b.dataset.status;
+        render();
+      });
+
+      $("reload-btn").addEventListener("click", () => loadApps());
+
+      init();
+    </script>
+  </body>
+</html>

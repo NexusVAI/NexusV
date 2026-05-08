@@ -30,9 +30,23 @@
     .status-rejected { background: #651616; color: #f87171; }
     .btn-secondary { background: #333; margin-top: 12px; }
     .btn-secondary:hover { background: #444; }
+    .nav-bar { position: fixed; top: 0; left: 0; right: 0; background: rgba(10,10,10,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid #2a2a2a; padding: 10px 20px; z-index: 100; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .nav-bar a { padding: 6px 12px; color: #9a9a9a; text-decoration: none; font-size: 13px; border-radius: 6px; }
+    .nav-bar a:hover { background: #1a1a1a; color: #e8e8e8; }
+    .nav-bar a.active { color: #e8e8e8; background: #1a1a1a; }
+    .nav-bar .spacer { flex: 1; }
+    body { padding-top: 60px; }
   </style>
 </head>
 <body>
+  <nav class="nav-bar">
+    <a href="./api_apply.html" class="active">申请 API</a>
+    <a href="./api_keys.html">我的 Keys</a>
+    <a href="./api_models.html">模型广场</a>
+    <a href="./api_docs.html">文档</a>
+    <span class="spacer"></span>
+    <a href="./cancri_chat_ui_v_3.html" style="color:#666">← 返回聊天</a>
+  </nav>
   <div class="card">
     <h1>API 申请</h1>
     <p class="subtitle">申请 Cancri API Key，用于调用大模型接口</p>

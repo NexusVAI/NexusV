@@ -40,6 +40,14 @@
         <script src="./katex/katex.min.js"></script>
         <script src="./katex/contrib/auto-render.min.js"></script>
         <script src="./cancri_katex_fallback.js?v=0504"></script>
+        <!-- Cloudflare Turnstile: invisible bot challenge.
+             Loaded async; if it fails to load (offline / blocked) the chat UI
+             gracefully falls back to the legacy math-captcha modal. -->
+        <script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            async
+            defer
+        ></script>
     </head>
     <body>
         <!-- 登录遮罩层：未登录时覆盖整个页面 -->
@@ -231,6 +239,26 @@
                                 autocomplete="off"
                             />
                         </div>
+                        <a
+                            class="nav-row"
+                            id="sidebarApiPlatformBtn"
+                            href="./api_apply.html"
+                            style="text-decoration: none; color: inherit"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                            >
+                                <path
+                                    d="M16 18l6-6-6-6M8 6l-6 6 6 6M14 4l-4 16"
+                                ></path>
+                            </svg>
+                            <span class="sidebar-label">API 平台</span>
+                        </a>
                         <div class="recent-wrap" id="chatHistoryList">
                             <!-- 聊天记录列表将在这里动态生成 -->
                         </div>
@@ -338,66 +366,6 @@
                         >
                             <path d="m9 6 6 6-6 6"></path>
                         </svg>
-                    </div>
-                </div>
-
-                <div class="popover more-popover" id="morePopover">
-                    <div class="popover-inner">
-                        <div class="popover-item" id="openResearchToast">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M12 3l2.1 4.6 5 .6-3.7 3.5 1 5-4.4-2.5-4.4 2.5 1-5L4.9 8.2l5-.6L12 3Z"
-                                ></path>
-                            </svg>
-                            <span>深度研究</span>
-                        </div>
-                        <div class="popover-item" id="openAppsToast">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <rect
-                                    x="4"
-                                    y="4"
-                                    width="6"
-                                    height="6"
-                                    rx="1.4"
-                                ></rect>
-                                <rect
-                                    x="14"
-                                    y="4"
-                                    width="6"
-                                    height="6"
-                                    rx="1.4"
-                                ></rect>
-                                <rect
-                                    x="4"
-                                    y="14"
-                                    width="6"
-                                    height="6"
-                                    rx="1.4"
-                                ></rect>
-                                <rect
-                                    x="14"
-                                    y="14"
-                                    width="6"
-                                    height="6"
-                                    rx="1.4"
-                                ></rect>
-                            </svg>
-                            <span>应用</span>
-                        </div>
                     </div>
                 </div>
 

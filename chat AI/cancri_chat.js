@@ -86,7 +86,6 @@ const contextMeterValue = document.getElementById("contextMeterValue");
 const contextMeterText = document.getElementById("contextMeterText");
 const projectNameInput = document.getElementById("projectNameInput");
 const plusPopover = document.getElementById("plusPopover");
-const morePopover = document.getElementById("morePopover");
 const accountPopover = document.getElementById("accountPopover");
 const settingsModal = document.getElementById("settingsModal");
 const tempChatModal = document.getElementById("tempChatModal");
@@ -230,8 +229,129 @@ function formatSecurityGuardMessage(
   return message || fallback;
 }
 
+// Try Cloudflare Turnstile invisible challenge first. Resolves with `true` if
+// the user passed (captchaToken updated, no UI shown), `false` if Turnstile is
+// not configured / not loaded / failed (caller should fall back to math
+// captcha modal).
+function tryTurnstileChallenge(payload) {
+  return new Promise((resolve) => {
+    const siteKey = payload?.turnstile_site_key;
+    const endpoint = payload?.turnstile_endpoint;
+    if (!siteKey || !endpoint) return resolve(false);
+    if (typeof window === "undefined" || !window.turnstile) return resolve(false);
+
+    // Turnstile widget needs a real DOM container. Use a hidden one — the
+    // widget renders invisibly when execution mode is "invisible" but Cloudflare
+    // still requires the element to exist in the document.
+    let container = document.getElementById("turnstileHiddenContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "turnstileHiddenContainer";
+      container.style.position = "fixed";
+      container.style.bottom = "0";
+      container.style.right = "0";
+      container.style.width = "1px";
+      container.style.height = "1px";
+      container.style.opacity = "0";
+      container.style.pointerEvents = "none";
+      document.body.appendChild(container);
+    }
+    container.innerHTML = "";
+
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve(false);
+    }, 15000);
+
+    let widgetId = null;
+    try {
+      widgetId = window.turnstile.render(container, {
+        sitekey: siteKey,
+        size: "invisible",
+        callback: async (turnstileToken) => {
+          if (settled) return;
+          try {
+            const session = await ensureAuthSession();
+            const resp = await fetch(EDGE_FUNCTION_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: SUPABASE_ANON_KEY,
+              },
+              body: JSON.stringify({
+                endpoint: "turnstile_verify",
+                __auth_token: session?.access_token,
+                turnstile_token: turnstileToken,
+              }),
+            });
+            const data = await resp.json();
+            if (data.verified && data.token) {
+              captchaToken = data.token;
+              settled = true;
+              clearTimeout(timeoutId);
+              try {
+                if (widgetId !== null && window.turnstile?.remove)
+                  window.turnstile.remove(widgetId);
+              } catch (_e) {
+                // ignore widget cleanup errors
+              }
+              resolve(true);
+              return;
+            }
+          } catch (_e) {
+            // fall through to fallback
+          }
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            resolve(false);
+          }
+        },
+        "error-callback": () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          resolve(false);
+        },
+        "timeout-callback": () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          resolve(false);
+        },
+      });
+      // Some loader builds need an explicit execute() call for invisible mode.
+      try {
+        if (widgetId !== null && window.turnstile?.execute) {
+          window.turnstile.execute(widgetId);
+        }
+      } catch (_e) {
+        // ignore — render's callback will still fire if it succeeds
+      }
+    } catch (_e) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      resolve(false);
+    }
+  });
+}
+
 function showCaptchaModal(payload) {
   return new Promise(async (resolve) => {
+    // Try Turnstile first — invisible to the user when it works.
+    try {
+      const turnstilePassed = await tryTurnstileChallenge(payload);
+      if (turnstilePassed) {
+        resolve(true);
+        return;
+      }
+    } catch (_e) {
+      // Any unexpected error: silently fall back to math captcha.
+    }
+
     let existing = document.getElementById("captchaModal");
     if (existing) existing.remove();
 
@@ -9309,9 +9429,7 @@ function openPopover(el) {
 }
 
 function closePopover() {
-  [plusPopover, morePopover, accountPopover].forEach((p) =>
-    p.classList.remove("open"),
-  );
+  [plusPopover, accountPopover].forEach((p) => p.classList.remove("open"));
   state.popover = null;
 }
 
@@ -9437,10 +9555,6 @@ document.getElementById("plusTrigger").addEventListener("click", (e) => {
   plusPopover.style.bottom = "auto";
   plusPopover.style.transform = "none";
   openPopover(plusPopover);
-});
-on("moreEntry", "click", (e) => {
-  e.stopPropagation();
-  openPopover(morePopover);
 });
 document.getElementById("accountTrigger").addEventListener("click", (e) => {
   e.stopPropagation();

@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API 文档 · Cancri</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #0a0a0a;
+        --bg-elev: #131313;
+        --bg-card: #1a1a1a;
+        --bg-code: #0d0d0d;
+        --border: #2a2a2a;
+        --border-strong: #383838;
+        --text: #e8e8e8;
+        --text-mute: #9a9a9a;
+        --text-faint: #666;
+        --accent: #60a5fa;
+        --accent-strong: #2563eb;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+        --err: #f87171;
+        --purple: #c084fc;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.6;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 32px;
+        padding: 24px 20px 48px;
+      }
+      .nav-top {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-top a {
+        padding: 8px 14px;
+        color: var(--text-mute);
+        text-decoration: none;
+        font-size: 13px;
+        border-radius: 8px;
+        transition: all 0.15s;
+      }
+      .nav-top a:hover {
+        background: var(--bg-elev);
+        color: var(--text);
+      }
+      .nav-top a.active {
+        color: var(--text);
+        background: var(--bg-card);
+      }
+      .nav-top .spacer {
+        flex: 1;
+      }
+      aside.toc {
+        position: sticky;
+        top: 24px;
+        height: fit-content;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        font-size: 13px;
+      }
+      aside.toc h4 {
+        color: var(--text-faint);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 16px 0 6px;
+      }
+      aside.toc h4:first-child {
+        margin-top: 0;
+      }
+      aside.toc a {
+        display: block;
+        padding: 5px 10px;
+        color: var(--text-mute);
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 1px;
+        transition: all 0.15s;
+        border-left: 2px solid transparent;
+      }
+      aside.toc a:hover {
+        color: var(--text);
+        background: var(--bg-card);
+      }
+      aside.toc a.active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+        background: var(--bg-card);
+      }
+      main {
+        min-width: 0;
+      }
+      h1 {
+        font-size: 30px;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+      }
+      h1 + p {
+        color: var(--text-mute);
+        font-size: 14px;
+        margin-bottom: 32px;
+      }
+      h2 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 40px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+        scroll-margin-top: 24px;
+      }
+      h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 24px 0 8px;
+        scroll-margin-top: 24px;
+      }
+      p {
+        color: var(--text-mute);
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+      p code,
+      li code,
+      td code {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        background: var(--bg-card);
+        padding: 1px 6px;
+        border-radius: 4px;
+        color: var(--accent);
+        font-size: 12.5px;
+      }
+      ul,
+      ol {
+        margin: 0 0 12px 20px;
+        color: var(--text-mute);
+        font-size: 14px;
+      }
+      ul li,
+      ol li {
+        margin-bottom: 4px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin: 12px 0 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 14px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-mute);
+      }
+      th {
+        background: var(--bg-elev);
+        color: var(--text);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td:first-child {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text);
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+      .endpoint {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 13px;
+        margin: 8px 0;
+      }
+      .method {
+        font-weight: 700;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .method.get {
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--ok);
+      }
+      .method.post {
+        background: rgba(96, 165, 250, 0.12);
+        color: var(--accent);
+      }
+      .code-block {
+        position: relative;
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin: 12px 0;
+        overflow: hidden;
+      }
+      .code-tabs {
+        display: flex;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+        padding: 0 6px;
+      }
+      .code-tab {
+        padding: 8px 14px;
+        background: transparent;
+        border: none;
+        color: var(--text-mute);
+        font-size: 12px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+      }
+      .code-tab:hover {
+        color: var(--text);
+      }
+      .code-tab.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
+      .copy-icon {
+        position: absolute;
+        top: 38px;
+        right: 8px;
+        padding: 4px 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        font-size: 11px;
+        border-radius: 5px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.15s;
+      }
+      .code-block:hover .copy-icon {
+        opacity: 1;
+      }
+      .copy-icon:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+      .copy-icon.copied {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.3);
+        opacity: 1;
+      }
+      pre {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.65;
+        color: #d8d8d8;
+        padding: 14px 16px;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      pre.lang {
+        display: none;
+      }
+      pre.lang.active {
+        display: block;
+      }
+      pre .k {
+        color: #c084fc;
+      }
+      pre .s {
+        color: #86efac;
+      }
+      pre .n {
+        color: #fbbf24;
+      }
+      pre .c {
+        color: var(--text-faint);
+        font-style: italic;
+      }
+      .alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        margin: 16px 0;
+        line-height: 1.6;
+      }
+      .alert.info {
+        background: rgba(96, 165, 250, 0.08);
+        border: 1px solid rgba(96, 165, 250, 0.25);
+        color: var(--text);
+      }
+      .alert.warn {
+        background: rgba(251, 191, 36, 0.08);
+        border: 1px solid rgba(251, 191, 36, 0.25);
+        color: var(--text);
+      }
+      .alert.danger {
+        background: rgba(248, 113, 113, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.25);
+        color: var(--text);
+      }
+      .alert b {
+        color: var(--text);
+      }
+      .pill {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        margin-right: 4px;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      }
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        aside.toc {
+          position: static;
+          max-height: none;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 16px;
+        }
+        aside.toc a {
+          display: inline-block;
+          margin-right: 4px;
+          margin-bottom: 4px;
+          border-left: none;
+        }
+        aside.toc h4 {
+          display: inline-block;
+          margin-right: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="nav-top">
+        <a href="./api_apply.html">申请 API</a>
+        <a href="./api_keys.html">我的 Keys</a>
+        <a href="./api_models.html">模型广场</a>
+        <a href="./api_docs.html" class="active">文档</a>
+        <span class="spacer"></span>
+        <a href="./cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
+          >← 返回聊天</a
+        >
+      </nav>
+
+      <aside class="toc">
+        <h4>开始</h4>
+        <a href="#intro">概述</a>
+        <a href="#auth">认证</a>
+        <a href="#quickstart">快速开始</a>
+
+        <h4>API 端点</h4>
+        <a href="#models">列出模型</a>
+        <a href="#chat">Chat Completions</a>
+        <a href="#images">图像生成</a>
+
+        <h4>规则</h4>
+        <a href="#ratelimit">速率限制</a>
+        <a href="#errors">错误码</a>
+        <a href="#sdk">SDK 兼容</a>
+        <a href="#faq">常见问题</a>
+      </aside>
+
+      <main>
+        <h1>Cancri API 文档</h1>
+        <p>
+          OpenAI 兼容的多模型聚合 API。一个 Key，调用全部上线模型。
+        </p>
+
+        <section id="intro">
+          <h2>概述</h2>
+          <p>
+            Cancri API 是一个 <b>OpenAI 协议兼容</b> 的统一接口层。它把多个
+            模型供应商（魔塔 / 百炼 / Claude / Gemini / OpenAI 兼容线路 等）封装在
+            一个端点后面，你只需要换一下 Base URL 和 API Key，就能复用任何 OpenAI
+            SDK / 工具链。
+          </p>
+          <div class="endpoint">
+            <span style="color: var(--text-mute)">Base URL：</span>
+            <span id="base-url"
+              >https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</span
+            >
+            <button class="copy-icon" data-copy-text="base-url">复制</button>
+          </div>
+          <ul>
+            <li>认证：<code>Authorization: Bearer cancri_sk_xxx</code></li>
+            <li>请求/响应格式：完全兼容 OpenAI Chat Completions API</li>
+            <li>支持流式（SSE）和非流式两种模式</li>
+            <li>所有模型在 <a href="./api_models.html">模型广场</a> 可见</li>
+          </ul>
+        </section>
+
+        <section id="auth">
+          <h2>认证</h2>
+          <p>
+            所有 API 请求都必须在 <code>Authorization</code> 头里带 Bearer Token。Key 形如：
+          </p>
+          <div class="endpoint">
+            <code style="color: var(--accent)">cancri_sk_</code
+            ><span style="color: var(--text-faint)">48 个十六进制字符</span>
+          </div>
+          <ol>
+            <li>到 <a href="./api_apply.html">申请页</a> 提交申请</li>
+            <li>审核通过后到 <a href="./api_keys.html">Keys 管理页</a> 生成 Key</li>
+            <li>把 Key 安全存好（生成后只显示一次）</li>
+          </ol>
+          <div class="alert warn">
+            <b>⚠️ 不要在浏览器代码或开源仓库里硬编码 Key。</b> Key 一旦泄露，
+            立刻到 Keys 管理页撤销并重新生成。
+          </div>
+          <p>每个账号最多同时持有 <b>5 个</b> 活跃 Key，超过需先撤销旧的。</p>
+        </section>
+
+        <section id="quickstart">
+          <h2>快速开始</h2>
+          <p>用 curl 测试你的 Key 是否可用：</p>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="qs" data-lang="curl">
+                curl
+              </button>
+              <button class="code-tab" data-grp="qs" data-lang="js">
+                Node.js
+              </button>
+              <button class="code-tab" data-grp="qs" data-lang="py">
+                Python
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="qs">复制</button>
+            <pre class="lang active" data-grp="qs" data-lang="curl"><span class="c"># 列出可用模型（不消耗额度）</span>
+curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/models \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
+            <pre class="lang" data-grp="qs" data-lang="js"><span class="c">// 用官方 openai 包，把 baseURL 指过来即可</span>
+<span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
+  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+});
+
+<span class="k">const</span> r = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">"deepseek-v4-pro"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"你好"</span> }],
+});
+console.log(r.choices[<span class="n">0</span>].message.content);</pre>
+            <pre class="lang" data-grp="qs" data-lang="py"><span class="c"># pip install openai</span>
+<span class="k">from</span> openai <span class="k">import</span> OpenAI
+
+client = OpenAI(
+    api_key=<span class="s">"cancri_sk_YOUR_KEY"</span>,
+    base_url=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+)
+
+r = client.chat.completions.create(
+    model=<span class="s">"deepseek-v4-pro"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"你好"</span>}],
+)
+<span class="k">print</span>(r.choices[<span class="n">0</span>].message.content)</pre>
+          </div>
+        </section>
+
+        <section id="models">
+          <h2>列出模型</h2>
+          <div class="endpoint">
+            <span class="method get">GET</span>
+            <span>/v1/models</span>
+          </div>
+          <p>返回当前可调用的全部模型，OpenAI 兼容格式。</p>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="m" data-lang="req">
+                请求
+              </button>
+              <button class="code-tab" data-grp="m" data-lang="resp">
+                响应
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="m">复制</button>
+            <pre class="lang active" data-grp="m" data-lang="req">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/models \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
+            <pre class="lang" data-grp="m" data-lang="resp">{
+  <span class="s">"object"</span>: <span class="s">"list"</span>,
+  <span class="s">"data"</span>: [
+    {
+      <span class="s">"id"</span>: <span class="s">"deepseek-v4-pro"</span>,
+      <span class="s">"object"</span>: <span class="s">"model"</span>,
+      <span class="s">"created"</span>: <span class="n">1740000000</span>,
+      <span class="s">"owned_by"</span>: <span class="s">"cancri"</span>
+    }
+    <span class="c">// ... 更多模型</span>
+  ]
+}</pre>
+          </div>
+          <p>
+            完整模型列表（含品牌、价格档位、能力标签）请到
+            <a href="./api_models.html">模型广场</a> 查看。
+          </p>
+        </section>
+
+        <section id="chat">
+          <h2>Chat Completions</h2>
+          <div class="endpoint">
+            <span class="method post">POST</span>
+            <span>/v1/chat/completions</span>
+          </div>
+          <p>调用任意聊天模型生成回答，支持流式与非流式。</p>
+
+          <h3>请求参数</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>类型</th>
+                <th>必填</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>model</td>
+                <td>string</td>
+                <td>是</td>
+                <td>
+                  模型 ID，例如 <code>deepseek-v4-pro</code>。完整列表见
+                  <a href="./api_models.html">模型广场</a>
+                </td>
+              </tr>
+              <tr>
+                <td>messages</td>
+                <td>array</td>
+                <td>是</td>
+                <td>消息历史，元素 <code>{role, content}</code></td>
+              </tr>
+              <tr>
+                <td>stream</td>
+                <td>boolean</td>
+                <td>否</td>
+                <td>设 true 启用 SSE 流式输出，默认 false</td>
+              </tr>
+              <tr>
+                <td>temperature</td>
+                <td>number</td>
+                <td>否</td>
+                <td>0-2，越高越随机，默认 1</td>
+              </tr>
+              <tr>
+                <td>max_tokens</td>
+                <td>number</td>
+                <td>否</td>
+                <td>最大生成 tokens，受模型能力上限约束</td>
+              </tr>
+              <tr>
+                <td>top_p</td>
+                <td>number</td>
+                <td>否</td>
+                <td>0-1 核采样阈值</td>
+              </tr>
+              <tr>
+                <td>tools</td>
+                <td>array</td>
+                <td>否</td>
+                <td>函数调用工具集（部分模型支持）</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>非流式示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="c1" data-lang="curl">
+                curl
+              </button>
+              <button class="code-tab" data-grp="c1" data-lang="js">
+                Node.js
+              </button>
+              <button class="code-tab" data-grp="c1" data-lang="py">
+                Python
+              </button>
+              <button class="code-tab" data-grp="c1" data-lang="resp">
+                响应
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="c1">复制</button>
+            <pre class="lang active" data-grp="c1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "deepseek-v4-pro",
+    "messages": [
+      {"role": "system", "content": "你是简洁的助手"},
+      {"role": "user", "content": "用一句话解释 RLS"}
+    ]
+  }'</span></pre>
+            <pre class="lang" data-grp="c1" data-lang="js"><span class="k">const</span> r = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">"deepseek-v4-pro"</span>,
+  messages: [
+    { role: <span class="s">"system"</span>, content: <span class="s">"你是简洁的助手"</span> },
+    { role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释 RLS"</span> },
+  ],
+});
+console.log(r.choices[<span class="n">0</span>].message.content);</pre>
+            <pre class="lang" data-grp="c1" data-lang="py">r = client.chat.completions.create(
+    model=<span class="s">"deepseek-v4-pro"</span>,
+    messages=[
+        {<span class="s">"role"</span>: <span class="s">"system"</span>, <span class="s">"content"</span>: <span class="s">"你是简洁的助手"</span>},
+        {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释 RLS"</span>},
+    ],
+)
+<span class="k">print</span>(r.choices[<span class="n">0</span>].message.content)</pre>
+            <pre class="lang" data-grp="c1" data-lang="resp">{
+  <span class="s">"id"</span>: <span class="s">"chatcmpl-xxx"</span>,
+  <span class="s">"object"</span>: <span class="s">"chat.completion"</span>,
+  <span class="s">"created"</span>: <span class="n">1740000000</span>,
+  <span class="s">"model"</span>: <span class="s">"deepseek-v4-pro"</span>,
+  <span class="s">"choices"</span>: [{
+    <span class="s">"index"</span>: <span class="n">0</span>,
+    <span class="s">"message"</span>: {
+      <span class="s">"role"</span>: <span class="s">"assistant"</span>,
+      <span class="s">"content"</span>: <span class="s">"行级安全策略，按行控制谁能读写。"</span>
+    },
+    <span class="s">"finish_reason"</span>: <span class="s">"stop"</span>
+  }],
+  <span class="s">"usage"</span>: { <span class="s">"prompt_tokens"</span>: <span class="n">22</span>, <span class="s">"completion_tokens"</span>: <span class="n">14</span>, <span class="s">"total_tokens"</span>: <span class="n">36</span> }
+}</pre>
+          </div>
+
+          <h3>流式（SSE）示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="c2" data-lang="curl">
+                curl
+              </button>
+              <button class="code-tab" data-grp="c2" data-lang="js">
+                Node.js
+              </button>
+              <button class="code-tab" data-grp="c2" data-lang="py">
+                Python
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="c2">复制</button>
+            <pre class="lang active" data-grp="c2" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -N \
+  -d <span class="s">'{
+    "model": "deepseek-v4-pro",
+    "messages": [{"role":"user","content":"hello"}],
+    "stream": true
+  }'</span></pre>
+            <pre class="lang" data-grp="c2" data-lang="js"><span class="k">const</span> stream = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">"deepseek-v4-pro"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"hello"</span> }],
+  stream: <span class="k">true</span>,
+});
+<span class="k">for await</span> (<span class="k">const</span> chunk <span class="k">of</span> stream) {
+  process.stdout.write(chunk.choices[<span class="n">0</span>]?.delta?.content || <span class="s">""</span>);
+}</pre>
+            <pre class="lang" data-grp="c2" data-lang="py">stream = client.chat.completions.create(
+    model=<span class="s">"deepseek-v4-pro"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"hello"</span>}],
+    stream=<span class="k">True</span>,
+)
+<span class="k">for</span> chunk <span class="k">in</span> stream:
+    <span class="k">print</span>(chunk.choices[<span class="n">0</span>].delta.content <span class="k">or</span> <span class="s">""</span>, end=<span class="s">""</span>, flush=<span class="k">True</span>)</pre>
+          </div>
+          <div class="alert info">
+            <b>SSE 格式：</b> 每个事件以 <code>data: </code> 开头的 JSON 行，
+            最后以 <code>data: [DONE]</code> 结束。每个 chunk 的
+            <code>choices[0].delta.content</code> 是增量文本。
+          </div>
+        </section>
+
+        <section id="images">
+          <h2>图像生成</h2>
+          <div class="endpoint">
+            <span class="method post">POST</span>
+            <span>/v1/images/generations</span>
+          </div>
+          <p>
+            调用图像模型（<code>gpt-image-2</code> /
+            <code>image-fast</code> 等）生成图片。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>类型</th>
+                <th>必填</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>model</td>
+                <td>string</td>
+                <td>是</td>
+                <td>图像模型 ID（参考广场带 <code>image</code> 标签的）</td>
+              </tr>
+              <tr>
+                <td>prompt</td>
+                <td>string</td>
+                <td>是</td>
+                <td>图像描述</td>
+              </tr>
+              <tr>
+                <td>n</td>
+                <td>number</td>
+                <td>否</td>
+                <td>生成张数（多数模型仅支持 1）</td>
+              </tr>
+              <tr>
+                <td>size</td>
+                <td>string</td>
+                <td>否</td>
+                <td>例如 <code>1024x1024</code> / <code>1024x1792</code></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="img">复制</button>
+            <pre class="lang active" data-grp="img" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/images/generations \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "gpt-image-2",
+    "prompt": "一只在月光下吃面条的橘猫，水彩风格",
+    "size": "1024x1024"
+  }'</span></pre>
+          </div>
+        </section>
+
+        <section id="ratelimit">
+          <h2>速率限制</h2>
+          <p>
+            为避免单个 Key 被滥用，按 Key 维度做了速率限制（具体阈值随模型档位
+            <code>costTier</code> 调整）：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>档位</th>
+                <th>每分钟请求</th>
+                <th>每小时请求</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill">free</span></td>
+                <td>20</td>
+                <td>200</td>
+                <td>开源/小模型</td>
+              </tr>
+              <tr>
+                <td><span class="pill">cheap</span></td>
+                <td>15</td>
+                <td>150</td>
+                <td>轻量模型</td>
+              </tr>
+              <tr>
+                <td><span class="pill">normal</span></td>
+                <td>10</td>
+                <td>100</td>
+                <td>主力模型</td>
+              </tr>
+              <tr>
+                <td><span class="pill">expensive</span></td>
+                <td>5</td>
+                <td>50</td>
+                <td>顶级聊天</td>
+              </tr>
+              <tr>
+                <td><span class="pill">vip</span></td>
+                <td>3</td>
+                <td>30</td>
+                <td>图像生成</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="alert info">
+            响应头会带 <code>X-RateLimit-Remaining</code> 和
+            <code>Retry-After</code>，撞上限时返回 <code>429</code>。
+          </div>
+        </section>
+
+        <section id="errors">
+          <h2>错误码</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>HTTP</th>
+                <th>code</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>400</td>
+                <td>invalid_request</td>
+                <td>请求体格式错误，或缺必填字段</td>
+              </tr>
+              <tr>
+                <td>401</td>
+                <td>invalid_api_key</td>
+                <td>Key 不存在 / 已撤销 / 格式错误</td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td>model_not_allowed</td>
+                <td>该 Key 的 tier 不允许调用此模型</td>
+              </tr>
+              <tr>
+                <td>404</td>
+                <td>model_not_found</td>
+                <td>model 字段不在 <a href="./api_models.html">模型广场</a> 列表里</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>rate_limited</td>
+                <td>触发速率限制，看 <code>Retry-After</code> 头</td>
+              </tr>
+              <tr>
+                <td>500</td>
+                <td>upstream_error</td>
+                <td>上游模型供应商出错（自动重试别的线路后仍失败）</td>
+              </tr>
+              <tr>
+                <td>503</td>
+                <td>service_unavailable</td>
+                <td>所有上游线路都不可用，稍后重试</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>所有错误响应都符合 OpenAI 的错误格式：</p>
+          <div class="code-block">
+            <pre class="lang active">{
+  <span class="s">"error"</span>: {
+    <span class="s">"message"</span>: <span class="s">"..."</span>,
+    <span class="s">"type"</span>: <span class="s">"invalid_api_key"</span>,
+    <span class="s">"code"</span>: <span class="s">"invalid_api_key"</span>
+  }
+}</pre>
+          </div>
+        </section>
+
+        <section id="sdk">
+          <h2>SDK 兼容</h2>
+          <p>
+            因为 100% 兼容 OpenAI 协议，你可以直接用任何 OpenAI SDK：
+          </p>
+          <ul>
+            <li>官方 <code>openai</code>（Python / Node.js）</li>
+            <li><code>@ai-sdk/openai</code>（Vercel AI SDK）</li>
+            <li>LangChain <code>ChatOpenAI</code></li>
+            <li>LiteLLM、OneAPI、Cherry Studio 等聚合工具</li>
+          </ul>
+          <p>都只需要改两个参数：</p>
+          <ul>
+            <li>
+              <code>baseURL</code> /
+              <code>OPENAI_BASE_URL</code> →
+              <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code>
+            </li>
+            <li>
+              <code>apiKey</code> /
+              <code>OPENAI_API_KEY</code> → <code>cancri_sk_xxx</code>
+            </li>
+          </ul>
+        </section>
+
+        <section id="faq">
+          <h2>常见问题</h2>
+          <h3>怎么追踪用量？</h3>
+          <p>
+            到 <a href="./api_keys.html">Keys 管理页</a> 可看到每个 Key 的最后使用时间和调用统计。详细的 token 消耗后续会上线。
+          </p>
+          <h3>能在浏览器里直接调吗？</h3>
+          <p>
+            <b>不要</b>。Key 暴露在前端等于免费送给所有人。请始终从你的服务端转发。
+          </p>
+          <h3>支持的国家/IP 限制？</h3>
+          <p>
+            后端会做地域级速率限制和 IP 维度风控，但**不**主动屏蔽国家。
+            如发现可疑流量会临时封锁。
+          </p>
+          <h3>Key 丢了怎么办？</h3>
+          <p>
+            生成时只显示一次，无法找回。到
+            <a href="./api_keys.html">Keys 管理页</a> 撤销旧 Key，重新生成。
+          </p>
+          <h3>计费怎么算？</h3>
+          <p>
+            目前所有 Key 都是 <code>free</code> tier，按速率限制控制成本，不
+            按 token 计费。商业化定价后会提前通知。
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      // Tabbed code blocks
+      document.querySelectorAll(".code-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const grp = btn.dataset.grp;
+          const lang = btn.dataset.lang;
+          document
+            .querySelectorAll(`.code-tab[data-grp="${grp}"]`)
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          document
+            .querySelectorAll(`pre.lang[data-grp="${grp}"]`)
+            .forEach((p) => p.classList.remove("active"));
+          const target = document.querySelector(
+            `pre.lang[data-grp="${grp}"][data-lang="${lang}"]`,
+          );
+          if (target) target.classList.add("active");
+        });
+      });
+
+      // Copy buttons
+      document.querySelectorAll(".copy-icon").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          let text = "";
+          if (btn.dataset.copyText) {
+            const el = document.getElementById(btn.dataset.copyText);
+            if (el) text = el.textContent.trim();
+          } else if (btn.dataset.copyGrp) {
+            const active = document.querySelector(
+              `pre.lang[data-grp="${btn.dataset.copyGrp}"].active`,
+            );
+            if (active) text = active.textContent;
+          }
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = "已复制";
+            btn.classList.add("copied");
+            setTimeout(() => {
+              btn.textContent = orig;
+              btn.classList.remove("copied");
+            }, 1200);
+          });
+        });
+      });
+
+      // Active TOC highlight on scroll
+      const sections = document.querySelectorAll("main section[id]");
+      const tocLinks = document.querySelectorAll("aside.toc a");
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              tocLinks.forEach((a) => a.classList.remove("active"));
+              const link = document.querySelector(
+                `aside.toc a[href="#${e.target.id}"]`,
+              );
+              if (link) link.classList.add("active");
+            }
+          });
+        },
+        { rootMargin: "-30% 0px -60% 0px" },
+      );
+      sections.forEach((s) => observer.observe(s));
+    </script>
+  </body>
+</html>

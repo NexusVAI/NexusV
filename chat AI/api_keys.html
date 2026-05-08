@@ -4,6 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>API Key 管理 - Cancri</title>
+        <script src="./api/_anti-debug.js"></script>
         <style>
             * {
                 margin: 0;
@@ -194,21 +195,59 @@
                 padding: 6px 8px;
                 border-bottom: 1px solid #222;
             }
+            .nav-bar {
+                position: sticky;
+                top: 0;
+                background: rgba(10, 10, 10, 0.85);
+                backdrop-filter: blur(8px);
+                border-bottom: 1px solid #2a2a2a;
+                padding: 10px 0;
+                margin: -24px -24px 20px;
+                padding-left: 24px;
+                padding-right: 24px;
+                z-index: 100;
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .nav-bar a {
+                padding: 6px 12px;
+                color: #9a9a9a;
+                text-decoration: none;
+                font-size: 13px;
+                border-radius: 6px;
+            }
+            .nav-bar a:hover {
+                background: #1a1a1a;
+                color: #e8e8e8;
+            }
+            .nav-bar a.active {
+                color: #e8e8e8;
+                background: #1a1a1a;
+            }
+            .nav-bar .spacer {
+                flex: 1;
+            }
         </style>
     </head>
     <body>
         <div class="container">
+            <nav class="nav-bar">
+                <a href="./api_apply.html">申请 API</a>
+                <a href="./api_keys.html" class="active">我的 Keys</a>
+                <a href="./api_models.html">模型广场</a>
+                <a href="./api_docs.html">文档</a>
+                <span class="spacer"></span>
+                <a href="./cancri_chat_ui_v_3.html" style="color: #666"
+                    >← 返回聊天</a
+                >
+            </nav>
             <div class="top-bar">
                 <div>
                     <h1>API Key 管理</h1>
                     <p class="subtitle">查看和管理你的 API Keys</p>
                 </div>
-                <button
-                    class="btn btn-secondary"
-                    onclick="location.href = './cancri_chat_ui_v_3.html'"
-                >
-                    返回聊天
-                </button>
             </div>
 
             <div
@@ -258,7 +297,7 @@
                             生成
                         </button>
                     </div>
-                    <div class="new-key-reveal" id="new-key-box">
+                    <div class="new-key-reveal" id="new-key-box" data-sensitive>
                         <div>你的新 API Key：</div>
                         <code id="new-key-value"></code>
                         <div class="warn">
@@ -276,15 +315,69 @@
                 </div>
 
                 <!-- My keys -->
-                <div class="card">
+                <div class="card" data-sensitive>
                     <h2>我的 Keys</h2>
                     <div id="keys-list"><div class="empty">暂无 Key</div></div>
                 </div>
 
                 <!-- Usage -->
                 <div class="card">
-                    <h2>最近用量</h2>
-                    <div id="usage-list"><div class="empty">暂无记录</div></div>
+                    <h2>最近 30 天用量</h2>
+                    <div
+                        id="usage-summary"
+                        style="
+                            display: flex;
+                            gap: 16px;
+                            font-size: 12px;
+                            color: #888;
+                            margin-bottom: 12px;
+                            flex-wrap: wrap;
+                        "
+                    >
+                        <span
+                            >总调用 <b id="u-total" style="color: #e0e0e0">—</b></span
+                        >
+                        <span
+                            >总输入 tokens
+                            <b id="u-tokens-in" style="color: #e0e0e0">—</b></span
+                        >
+                        <span
+                            >总输出 tokens
+                            <b id="u-tokens-out" style="color: #e0e0e0">—</b></span
+                        >
+                        <span
+                            >失败率
+                            <b id="u-error-rate" style="color: #e0e0e0">—</b></span
+                        >
+                    </div>
+                    <div
+                        id="usage-chart"
+                        style="
+                            display: flex;
+                            align-items: flex-end;
+                            gap: 4px;
+                            height: 80px;
+                            padding: 6px 0;
+                            border-bottom: 1px solid #222;
+                            margin-bottom: 6px;
+                        "
+                    ></div>
+                    <div
+                        id="usage-axis"
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 10px;
+                            color: #555;
+                        "
+                    ></div>
+                    <div
+                        id="usage-by-model"
+                        style="margin-top: 14px"
+                    ></div>
+                    <div id="usage-empty" class="empty" style="display: none">
+                        最近 30 天内没有调用记录
+                    </div>
                 </div>
 
                 <!-- API Docs -->
@@ -329,15 +422,8 @@
     "messages": [{"role":"user","content":"hello"}],
     "stream": true
   }'</code></pre>
-                    <a
-                        class="doc-link"
-                        href="#"
-                        onclick="
-                            alert(
-                                'OpenAI 兼容格式。支持 /v1/chat/completions, /v1/models, /v1/images/generations',
-                            )
-                        "
-                        >查看完整 API 文档</a
+                    <a class="doc-link" href="./api_docs.html"
+                        >查看完整 API 文档 →</a
                     >
                 </div>
             </div>
@@ -479,13 +565,124 @@
                             "Content-Type": "application/json",
                             Authorization: "Bearer " + session.access_token,
                         },
-                        body: JSON.stringify({ endpoint: "api_my_keys" }),
+                        body: JSON.stringify({ endpoint: "api_my_usage" }),
                     });
+                    if (!resp.ok) return;
                     const data = await resp.json();
-                    // api_my_keys doesn't return usage, we need admin endpoint or a separate one
-                    // For now show keys info
+                    renderUsage(data.usage || []);
                 } catch (e) {
                     console.error(e);
+                }
+            }
+
+            function renderUsage(rows) {
+                const chart = document.getElementById("usage-chart");
+                const axis = document.getElementById("usage-axis");
+                const empty = document.getElementById("usage-empty");
+                const byModelEl = document.getElementById("usage-by-model");
+                if (!rows.length) {
+                    chart.innerHTML = "";
+                    axis.innerHTML = "";
+                    byModelEl.innerHTML = "";
+                    empty.style.display = "block";
+                    document.getElementById("u-total").textContent = "0";
+                    document.getElementById("u-tokens-in").textContent = "0";
+                    document.getElementById("u-tokens-out").textContent = "0";
+                    document.getElementById("u-error-rate").textContent = "0%";
+                    return;
+                }
+                empty.style.display = "none";
+
+                // Aggregate per day for last 30 days
+                const dayBuckets = new Map();
+                const modelBuckets = new Map();
+                let totalIn = 0,
+                    totalOut = 0,
+                    totalCalls = rows.length,
+                    errorCalls = 0;
+                const now = Date.now();
+                const dayMs = 86400 * 1000;
+                for (let i = 29; i >= 0; i--) {
+                    const d = new Date(now - i * dayMs);
+                    const k =
+                        d.getFullYear() +
+                        "-" +
+                        String(d.getMonth() + 1).padStart(2, "0") +
+                        "-" +
+                        String(d.getDate()).padStart(2, "0");
+                    dayBuckets.set(k, 0);
+                }
+                rows.forEach((r) => {
+                    const d = new Date(r.created_at);
+                    const k =
+                        d.getFullYear() +
+                        "-" +
+                        String(d.getMonth() + 1).padStart(2, "0") +
+                        "-" +
+                        String(d.getDate()).padStart(2, "0");
+                    if (dayBuckets.has(k)) dayBuckets.set(k, dayBuckets.get(k) + 1);
+                    const m = r.model || "unknown";
+                    if (!modelBuckets.has(m))
+                        modelBuckets.set(m, { calls: 0, tin: 0, tout: 0 });
+                    const mb = modelBuckets.get(m);
+                    mb.calls++;
+                    mb.tin += Number(r.tokens_in) || 0;
+                    mb.tout += Number(r.tokens_out) || 0;
+                    totalIn += Number(r.tokens_in) || 0;
+                    totalOut += Number(r.tokens_out) || 0;
+                    if (
+                        r.status_code &&
+                        Number(r.status_code) >= 400
+                    )
+                        errorCalls++;
+                });
+
+                const days = Array.from(dayBuckets.entries());
+                const maxCount = Math.max(1, ...days.map(([_, v]) => v));
+                chart.innerHTML = days
+                    .map(([day, count]) => {
+                        const h = Math.max(2, (count / maxCount) * 76);
+                        return `<div title="${day}: ${count} 次" style="flex:1;height:${h}px;background:${count > 0 ? "#2563eb" : "#222"};border-radius:2px 2px 0 0;"></div>`;
+                    })
+                    .join("");
+                axis.innerHTML =
+                    `<span>${days[0][0].slice(5)}</span>` +
+                    `<span>${days[Math.floor(days.length / 2)][0].slice(5)}</span>` +
+                    `<span>${days[days.length - 1][0].slice(5)}</span>`;
+
+                document.getElementById("u-total").textContent = totalCalls;
+                document.getElementById("u-tokens-in").textContent =
+                    totalIn.toLocaleString();
+                document.getElementById("u-tokens-out").textContent =
+                    totalOut.toLocaleString();
+                document.getElementById("u-error-rate").textContent =
+                    totalCalls === 0
+                        ? "0%"
+                        : Math.round((errorCalls / totalCalls) * 100) + "%";
+
+                // By-model breakdown (top 6)
+                const sorted = Array.from(modelBuckets.entries()).sort(
+                    (a, b) => b[1].calls - a[1].calls,
+                );
+                const top = sorted.slice(0, 6);
+                if (top.length === 0) {
+                    byModelEl.innerHTML = "";
+                } else {
+                    const maxModelCalls = Math.max(
+                        ...top.map(([_, v]) => v.calls),
+                    );
+                    byModelEl.innerHTML =
+                        '<div style="font-size:12px;color:#888;margin-bottom:6px">按模型</div>' +
+                        top
+                            .map(([m, v]) => {
+                                const w = (v.calls / maxModelCalls) * 100;
+                                return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px">
+                          <span style="flex:0 0 110px;font-family:ui-monospace,monospace;color:#60a5fa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(m)}">${esc(m)}</span>
+                          <div style="flex:1;height:6px;background:#222;border-radius:3px;overflow:hidden"><div style="width:${w}%;height:100%;background:#2563eb"></div></div>
+                          <span style="flex:0 0 80px;text-align:right;color:#aaa">${v.calls} · ${(v.tin + v.tout).toLocaleString()} tok</span>
+                        </div>`;
+                            })
+                            .join("");
                 }
             }
 
