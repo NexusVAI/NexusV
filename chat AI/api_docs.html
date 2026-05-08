@@ -765,64 +765,107 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{
-    "model": "gpt-image-2",
+    "model": "gpt-image-2-chunxue",
     "prompt": "一只在月光下吃面条的橘猫，水彩风格",
     "size": "1024x1024"
   }'</span></pre>
+          </div>
+          <div class="alert info">
+            <code>gpt-image-2</code> 已下架，请使用 <code>gpt-image-2-chunxue</code> 或 
+            <code>gpt-image-2-api456</code>。完整可用图像模型见
+            <a href="./api_models.html">模型广场</a> 中带 <span class="pill">image</span> 标签的项。
           </div>
         </section>
 
         <section id="ratelimit">
           <h2>速率限制</h2>
           <p>
-            为避免单个 Key 被滥用，按 Key 维度做了速率限制（具体阈值随模型档位
-            <code>costTier</code> 调整）：
+            每个 Key 同时受 <b>4 道防线</b> 保护，任何一道撞上都会返回
+            <code>429</code> + <code>Retry-After</code>。不分模型档位，所有 Key
+            使用同一套阈值：
           </p>
           <table>
             <thead>
               <tr>
-                <th>档位</th>
-                <th>每分钟请求</th>
-                <th>每小时请求</th>
-                <th>说明</th>
+                <th>防线</th>
+                <th>阈值</th>
+                <th>拦什么</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><span class="pill">free</span></td>
-                <td>20</td>
-                <td>200</td>
-                <td>开源/小模型</td>
+                <td><span class="pill">per-minute</span></td>
+                <td>10 次 / 分钟</td>
+                <td>脚本狂推、瞬间爆量</td>
               </tr>
               <tr>
-                <td><span class="pill">cheap</span></td>
-                <td>15</td>
-                <td>150</td>
-                <td>轻量模型</td>
+                <td><span class="pill">per-hour</span></td>
+                <td>60 次 / 小时</td>
+                <td>持续高频撞击</td>
               </tr>
               <tr>
-                <td><span class="pill">normal</span></td>
-                <td>10</td>
-                <td>100</td>
-                <td>主力模型</td>
+                <td><span class="pill">per-day</span></td>
+                <td>1000 次 / 天</td>
+                <td>24h 挂机慢刷</td>
               </tr>
               <tr>
-                <td><span class="pill">expensive</span></td>
-                <td>5</td>
-                <td>50</td>
-                <td>顶级聊天</td>
-              </tr>
-              <tr>
-                <td><span class="pill">vip</span></td>
-                <td>3</td>
-                <td>30</td>
-                <td>图像生成</td>
+                <td><span class="pill">concurrent</span></td>
+                <td>2 个同时进行</td>
+                <td>多线程并发刷</td>
               </tr>
             </tbody>
           </table>
+          <h3>响应头</h3>
+          <p>每个成功响应都会带以下 6 个限流头，客户端可据此预报手节奏：</p>
+          <table>
+            <thead>
+              <tr>
+                <th>响应头</th>
+                <th>含义</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>X-RateLimit-Limit-Minute</td>
+                <td>当前分钟阈值（10）</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Remaining-Minute</td>
+                <td>本分钟剩余调用额度</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Limit-Hour</td>
+                <td>当前小时阈值（60）</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Remaining-Hour</td>
+                <td>本小时剩余调用额度</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Limit-Day</td>
+                <td>当日阈值（1000）</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Remaining-Day</td>
+                <td>今天剩余调用额度</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            撞限后的 <code>429</code> 响应额外带：
+          </p>
+          <ul>
+            <li>
+              <code>Retry-After</code>：等多少秒后再重试
+            </li>
+            <li>
+              <code>X-RateLimit-Scope</code>：哪一道防线被撞（<code>per_minute</code> /
+              <code>per_hour</code> / <code>per_day</code>）
+            </li>
+          </ul>
           <div class="alert info">
-            响应头会带 <code>X-RateLimit-Remaining</code> 和
-            <code>Retry-After</code>，撞上限时返回 <code>429</code>。
+            <b>并发限制不记在响应头里</b>。超过 2 个同时请求时，额外请求会被
+            <code>concurrent_limit_exceeded</code>（如下一节）拒接，请等其他请求返回后重试。
           </div>
         </section>
 
@@ -839,8 +882,8 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
             <tbody>
               <tr>
                 <td>400</td>
-                <td>invalid_request</td>
-                <td>请求体格式错误，或缺必填字段</td>
+                <td>—</td>
+                <td>请求体格式错误或缺必填字段（<code>type: invalid_request_error</code>）</td>
               </tr>
               <tr>
                 <td>401</td>
@@ -848,19 +891,31 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
                 <td>Key 不存在 / 已撤销 / 格式错误</td>
               </tr>
               <tr>
-                <td>403</td>
-                <td>model_not_allowed</td>
-                <td>该 Key 的 tier 不允许调用此模型</td>
-              </tr>
-              <tr>
                 <td>404</td>
                 <td>model_not_found</td>
-                <td>model 字段不在 <a href="./api_models.html">模型广场</a> 列表里</td>
+                <td>
+                  model 字段不在可用列表里。两种可能：<b>不存在</b>或
+                  <b>被健康度临时隐藏</b>（见下节）。
+                </td>
+              </tr>
+              <tr>
+                <td>413</td>
+                <td>payload_too_large</td>
+                <td>请求体超过 1 MB。请压缩上下文或拆分多轮。</td>
               </tr>
               <tr>
                 <td>429</td>
-                <td>rate_limited</td>
-                <td>触发速率限制，看 <code>Retry-After</code> 头</td>
+                <td>rate_limit_exceeded</td>
+                <td>
+                  撞到 per-minute / per-hour / per-day 三道限流之一。响应体里
+                  <code>scope</code> 字段告诉你具体哪一道，
+                  <code>Retry-After</code> 头告诉你几秒后重试。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>concurrent_limit_exceeded</td>
+                <td>超过同时 2 个进行中请求。等剩余请求完成后再发。</td>
               </tr>
               <tr>
                 <td>500</td>
@@ -874,6 +929,23 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
               </tr>
             </tbody>
           </table>
+
+          <h3>模型健康度自动隐藏</h3>
+          <p>
+            为了不让你在坏掉的上游上浪费重试额度，后端会以 1 小时为滑动窗口记录每个
+            模型的调用成功率：
+          </p>
+          <ul>
+            <li>调用 ≥ 3 次 且 成功率 &lt; 30% → <b>临时从模型列表隐藏</b>（返回
+              <code>404 model_not_found</code>）</li>
+            <li>一小时后如果指标恢复→ <b>自动重新出现在列表里</b>，无需人工介入</li>
+            <li>如果反复故障→ 继续按滑动窗口隐藏</li>
+          </ul>
+          <p>
+            如果你之前能调通的模型突然 <code>404</code>，请出 <a href="./api_models.html">模型广场</a>
+            确认它是否还在列表里。不在→ 等1 小时后重试。
+          </p>
+
           <p>所有错误响应都符合 OpenAI 的错误格式：</p>
           <div class="code-block">
             <pre class="lang active">{
