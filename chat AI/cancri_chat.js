@@ -1239,14 +1239,15 @@ const MODEL_CATALOG = [
     tags: ["稳定"],
   },
   // ── chunxueapi.com ──
+  // gpt-image-2-chunxue retired 2026-05-08 — image-2 line consolidated to xem8k5.
   {
     id: "gpt-image-2-chunxue",
     displayName: "GPT Image 2",
     brand: "OpenAI",
     canonicalId: "gpt-image-2",
     lineLabel: "线路二",
-    visible: true,
-    enabled: true,
+    visible: false,
+    enabled: false,
     arena: false,
     imageOnly: true,
     iconPath: "./openai.svg",
@@ -1631,14 +1632,15 @@ const MODEL_CATALOG = [
     iconPath: "./claude-color.svg",
     tags: ["旗舰"],
   },
+  // gpt-image-2-api456 retired 2026-05-08 — image-2 line consolidated to xem8k5.
   {
     id: "gpt-image-2-api456",
     displayName: "GPT Image 2",
     brand: "OpenAI",
     canonicalId: "gpt-image-2",
     lineLabel: "线路三",
-    visible: true,
-    enabled: true,
+    visible: false,
+    enabled: false,
     arena: false,
     imageOnly: true,
     iconPath: "./openai.svg",
