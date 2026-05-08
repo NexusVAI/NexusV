@@ -431,6 +431,12 @@
             <li>支持流式（SSE）和非流式两种模式</li>
             <li>所有模型在 <a href="./api_models.html">模型广场</a> 可见</li>
           </ul>
+          <div class="alert info">
+            <b>多线路冗余对你透明。</b> 你看到的 <code>model</code> 字段（如
+            <code>gpt-5.4</code>、<code>deepseek-v3</code>）是统一的品牌 ID，后端会在
+            多条上游线路里按健康度自动选最优路由。某条线路抽风时其他线路自动接管，
+            你不需要改 <code>model</code> 字段。
+          </div>
         </section>
 
         <section id="auth">
@@ -765,15 +771,14 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{
-    "model": "gpt-image-2-chunxue",
+    "model": "gpt-image-2",
     "prompt": "一只在月光下吃面条的橘猫，水彩风格",
     "size": "1024x1024"
   }'</span></pre>
           </div>
           <div class="alert info">
-            <code>gpt-image-2</code> 已下架，请使用 <code>gpt-image-2-chunxue</code> 或 
-            <code>gpt-image-2-api456</code>。完整可用图像模型见
-            <a href="./api_models.html">模型广场</a> 中带 <span class="pill">image</span> 标签的项。
+            完整可用图像模型见 <a href="./api_models.html">模型广场</a> 中带
+            <span class="pill">image</span> 标签的项。
           </div>
         </section>
 
