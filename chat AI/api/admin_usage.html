@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>管理员 · API 调用日志 · Cancri</title>
+    <script src="./_anti-debug.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #0a0a0a;
+        --bg-elev: #131313;
+        --bg-card: #1a1a1a;
+        --border: #2a2a2a;
+        --border-strong: #383838;
+        --text: #e8e8e8;
+        --text-mute: #9a9a9a;
+        --text-faint: #666;
+        --accent: #60a5fa;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+        --err: #f87171;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px 20px 48px;
+      }
+      .nav {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .nav a {
+        padding: 8px 14px;
+        color: var(--text-mute);
+        text-decoration: none;
+        font-size: 13px;
+        border-radius: 8px;
+        transition: all 0.15s;
+      }
+      .nav a:hover {
+        background: var(--bg-elev);
+        color: var(--text);
+      }
+      .nav a.active {
+        color: var(--text);
+        background: var(--bg-card);
+      }
+      .nav .spacer {
+        flex: 1;
+      }
+      .nav .badge-admin {
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--err);
+        padding: 3px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+      }
+      header h1 {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      header p {
+        color: var(--text-mute);
+        font-size: 13px;
+        margin-top: 4px;
+        margin-bottom: 20px;
+      }
+      .gate {
+        max-width: 520px;
+        margin: 80px auto 0;
+        padding: 32px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        text-align: center;
+      }
+      .gate h2 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .gate p {
+        color: var(--text-mute);
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      .gate.deny {
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+      .gate.deny h2 {
+        color: var(--err);
+      }
+      .btn-primary {
+        display: inline-block;
+        padding: 9px 18px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      .btn-primary:hover {
+        background: #2563eb;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .stat-card .label {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .stat-card .value {
+        font-size: 22px;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .stat-card .sub {
+        font-size: 11px;
+        color: var(--text-mute);
+        margin-top: 2px;
+      }
+      .stat-card.calls .value {
+        color: var(--accent);
+      }
+      .stat-card.errors .value {
+        color: var(--err);
+      }
+      .stat-card.tokens .value {
+        color: var(--ok);
+      }
+      .panels {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .panel h3 {
+        font-size: 12px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+      .panel-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 0;
+        font-size: 12.5px;
+        border-bottom: 1px dashed var(--border);
+      }
+      .panel-row:last-child {
+        border-bottom: none;
+      }
+      .panel-row .key {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text);
+      }
+      .panel-row .key.click {
+        cursor: pointer;
+        color: var(--accent);
+      }
+      .panel-row .key.click:hover {
+        text-decoration: underline;
+      }
+      .panel-row .count {
+        color: var(--text-mute);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .filter-group {
+        display: flex;
+        gap: 4px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 3px;
+      }
+      .filter-btn {
+        padding: 6px 14px;
+        background: transparent;
+        border: none;
+        color: var(--text-mute);
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.15s;
+      }
+      .filter-btn:hover {
+        color: var(--text);
+      }
+      .filter-btn.active {
+        background: var(--bg-elev);
+        color: var(--text);
+      }
+      .search-box {
+        flex: 1;
+        min-width: 200px;
+        max-width: 380px;
+        padding: 7px 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+      }
+      .search-box:focus {
+        border-color: var(--accent);
+      }
+      .search-box::placeholder {
+        color: var(--text-faint);
+      }
+      .reload-btn {
+        padding: 7px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        font-size: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .reload-btn:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+      .filter-chip-bar {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .filter-chip-bar.show {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        background: rgba(96, 165, 250, 0.1);
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--text);
+      }
+      .chip code {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--accent);
+      }
+      .chip button {
+        background: transparent;
+        border: none;
+        color: var(--text-mute);
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0 0 0 4px;
+      }
+      .chip button:hover {
+        color: var(--text);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 12.5px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        background: var(--bg-elev);
+        color: var(--text);
+        font-weight: 600;
+        font-size: 11.5px;
+        position: sticky;
+        top: 0;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr.row-error {
+        background: rgba(248, 113, 113, 0.04);
+      }
+      td.email {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--accent);
+        white-space: nowrap;
+      }
+      td.email .uid {
+        display: block;
+        margin-top: 2px;
+        font-size: 10.5px;
+        color: var(--text-faint);
+      }
+      td.model {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text);
+        font-size: 11.5px;
+      }
+      td.tokens {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text-mute);
+        white-space: nowrap;
+      }
+      td.tokens .in-out {
+        font-size: 10.5px;
+        color: var(--text-faint);
+      }
+      td.ip a {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text-mute);
+        text-decoration: none;
+        cursor: pointer;
+        border-bottom: 1px dashed transparent;
+      }
+      td.ip a:hover {
+        color: var(--text);
+        border-bottom-color: var(--text-faint);
+      }
+      td.created {
+        color: var(--text-faint);
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+      .status-pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10.5px;
+        font-weight: 600;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      }
+      .s-2xx {
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--ok);
+      }
+      .s-4xx {
+        background: rgba(251, 191, 36, 0.15);
+        color: var(--warn);
+      }
+      .s-5xx {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--err);
+      }
+      .empty,
+      .loading {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--text-mute);
+        font-size: 13px;
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 18px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-strong);
+        border-radius: 10px;
+        font-size: 13px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.18s;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toast.err {
+        border-color: rgba(248, 113, 113, 0.4);
+        color: var(--err);
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="../api_apply.html">申请 API</a>
+        <a href="../api_keys.html">我的 Keys</a>
+        <a href="../api_models.html">模型广场</a>
+        <a href="../api_docs.html">文档</a>
+        <a href="./admin.html">审核</a>
+        <a href="./admin_usage.html" class="active">调用日志</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
+          >← 返回聊天</a
+        >
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
+        <a class="btn-primary" href="../cancri_chat_ui_v_3.html">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>这个页面仅站点管理员可见。</p>
+        <a class="btn-primary" href="../cancri_chat_ui_v_3.html">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>API 调用日志</h1>
+          <p>所有通过 cancri_sk_* key 进入 api-gateway 的调用，按时间倒序。</p>
+        </header>
+
+        <div class="toolbar">
+          <div class="filter-group" id="windowFilter">
+            <button class="filter-btn" data-window="3600000">最近 1 小时</button>
+            <button class="filter-btn" data-window="86400000">24 小时</button>
+            <button class="filter-btn active" data-window="604800000">7 天</button>
+            <button class="filter-btn" data-window="2592000000">30 天</button>
+          </div>
+          <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+        </div>
+
+        <div class="stats" id="stats" style="display: none">
+          <div class="stat-card calls">
+            <div class="label">总调用</div>
+            <div class="value" id="stat-calls">—</div>
+            <div class="sub" id="stat-calls-sub"></div>
+          </div>
+          <div class="stat-card errors">
+            <div class="label">错误调用</div>
+            <div class="value" id="stat-errors">—</div>
+            <div class="sub" id="stat-errors-sub"></div>
+          </div>
+          <div class="stat-card tokens">
+            <div class="label">输入 Token</div>
+            <div class="value" id="stat-tin">—</div>
+          </div>
+          <div class="stat-card tokens">
+            <div class="label">输出 Token</div>
+            <div class="value" id="stat-tout">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">独立用户</div>
+            <div class="value" id="stat-users">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">独立 IP</div>
+            <div class="value" id="stat-ips">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">使用模型</div>
+            <div class="value" id="stat-models">—</div>
+          </div>
+        </div>
+
+        <div class="panels" id="panels" style="display: none">
+          <div class="panel">
+            <h3>Top 模型</h3>
+            <div id="top-models"></div>
+          </div>
+          <div class="panel">
+            <h3>Top 用户</h3>
+            <div id="top-users"></div>
+          </div>
+          <div class="panel">
+            <h3>Top IP</h3>
+            <div id="top-ips"></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input
+            id="search"
+            class="search-box"
+            type="search"
+            placeholder="搜邮箱 / IP / model / user_id / key prefix…"
+            autocomplete="off"
+          />
+          <span style="flex: 1"></span>
+          <span style="font-size: 12px; color: var(--text-faint)" id="row-count"></span>
+        </div>
+
+        <div class="filter-chip-bar" id="chipBar"></div>
+
+        <div class="table-wrap" data-sensitive>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 200px">用户</th>
+                <th style="width: 130px">IP</th>
+                <th style="width: 160px">模型</th>
+                <th style="width: 110px">Tokens</th>
+                <th style="width: 70px">状态</th>
+                <th style="width: 130px">Key</th>
+                <th style="width: 140px">时间</th>
+              </tr>
+            </thead>
+            <tbody id="rows">
+              <tr>
+                <td colspan="7" class="empty">加载中…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // Mirrors the storageKey used by the main chat UI so the admin's
+      // existing session is visible here without re-login.
+      const sb = window.supabase.createClient(
+        window.__SUPABASE_URL__,
+        window.__SUPABASE_ANON_KEY__,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false,
+            storageKey: "cancri_supabase_auth",
+          },
+        },
+      );
+      const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
+
+      let USAGE = [];
+      let STATS = null;
+      let activeWindowMs = 7 * 86400_000;
+      let activeSearch = "";
+      // Free-form filter chips: { type: 'ip' | 'user_id' | 'model', value }
+      const FILTERS = [];
+
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => {
+        const d = document.createElement("div");
+        d.textContent = String(s == null ? "" : s);
+        return d.innerHTML;
+      };
+      const fmt = (n) =>
+        n == null ? "—" : Number(n).toLocaleString("en-US");
+      const fmtTime = (iso) => {
+        if (!iso) return "—";
+        const d = new Date(iso);
+        return d.toLocaleString("zh-CN", { hour12: false });
+      };
+
+      function showToast(msg, kind) {
+        const t = $("toast");
+        t.textContent = msg;
+        t.className = "toast show " + (kind || "");
+        setTimeout(() => {
+          t.classList.remove("show");
+        }, 2500);
+      }
+
+      async function getSession() {
+        const { data } = await sb.auth.getSession();
+        return data.session;
+      }
+
+      async function init() {
+        const session = await getSession();
+        if (!session) {
+          $("loading").style.display = "none";
+          $("login-gate").style.display = "block";
+          return;
+        }
+        // The endpoint itself enforces ADMIN_USER_IDS; we just attempt the
+        // call and surface 403 → deny gate. This avoids hardcoding the admin
+        // list on the frontend.
+        await loadUsage();
+      }
+
+      async function loadUsage() {
+        $("loading").style.display = "block";
+        $("loading").textContent = "加载中…";
+        try {
+          const session = await getSession();
+          const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({
+              endpoint: "admin_list_api_usage",
+              since_ms: activeWindowMs,
+              limit: 1000,
+            }),
+          });
+          if (resp.status === 403) {
+            $("loading").style.display = "none";
+            $("deny-gate").style.display = "block";
+            return;
+          }
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          const data = await resp.json();
+          USAGE = Array.isArray(data.usage) ? data.usage : [];
+          STATS = data.stats || null;
+          $("loading").style.display = "none";
+          $("main").style.display = "block";
+          renderStats();
+          render();
+        } catch (e) {
+          $("loading").style.display = "none";
+          showToast("加载失败：" + (e.message || e), "err");
+        }
+      }
+
+      function renderStats() {
+        if (!STATS) return;
+        $("stats").style.display = "grid";
+        $("panels").style.display = "grid";
+        $("stat-calls").textContent = fmt(STATS.total_calls);
+        $("stat-calls-sub").textContent = STATS.truncated
+          ? "已截断到 1000 条"
+          : "";
+        $("stat-errors").textContent = fmt(STATS.error_calls);
+        const errPct =
+          STATS.total_calls > 0
+            ? ((STATS.error_calls / STATS.total_calls) * 100).toFixed(1) + "%"
+            : "—";
+        $("stat-errors-sub").textContent = errPct;
+        $("stat-tin").textContent = fmt(STATS.total_tokens_in);
+        $("stat-tout").textContent = fmt(STATS.total_tokens_out);
+        $("stat-users").textContent = fmt(STATS.unique_users);
+        $("stat-ips").textContent = fmt(STATS.unique_ips);
+        $("stat-models").textContent = fmt(STATS.unique_models);
+
+        // Top panels
+        $("top-models").innerHTML = (STATS.top_models || [])
+          .map(
+            (m) => `<div class="panel-row">
+              <span class="key click" data-filter-type="model" data-filter-value="${esc(m.key)}">${esc(m.key)}</span>
+              <span class="count">${fmt(m.count)}</span>
+            </div>`,
+          )
+          .join("") || `<div class="panel-row"><span class="key">无数据</span></div>`;
+        $("top-users").innerHTML = (STATS.top_users || [])
+          .map(
+            (u) => `<div class="panel-row">
+              <span class="key click" data-filter-type="user_id" data-filter-value="${esc(u.user_id)}" title="${esc(u.user_id)}">${esc(u.email || u.user_id.slice(0, 13) + "…")}</span>
+              <span class="count">${fmt(u.count)}</span>
+            </div>`,
+          )
+          .join("") || `<div class="panel-row"><span class="key">无数据</span></div>`;
+        $("top-ips").innerHTML = (STATS.top_ips || [])
+          .map(
+            (i) => `<div class="panel-row">
+              <span class="key click" data-filter-type="ip" data-filter-value="${esc(i.key)}">${esc(i.key)}</span>
+              <span class="count">${fmt(i.count)}</span>
+            </div>`,
+          )
+          .join("") || `<div class="panel-row"><span class="key">无数据</span></div>`;
+
+        // Bind click-to-filter on Top panels
+        document
+          .querySelectorAll("[data-filter-type]")
+          .forEach((el) => {
+            el.addEventListener("click", () => {
+              addFilter(el.dataset.filterType, el.dataset.filterValue);
+            });
+          });
+      }
+
+      function addFilter(type, value) {
+        if (!type || !value) return;
+        // Replace any existing filter of the same type (single-value per
+        // type — keeps the chip bar tidy).
+        const existing = FILTERS.findIndex((f) => f.type === type);
+        if (existing >= 0) FILTERS.splice(existing, 1);
+        FILTERS.push({ type, value });
+        render();
+      }
+
+      function removeFilter(type) {
+        const i = FILTERS.findIndex((f) => f.type === type);
+        if (i >= 0) FILTERS.splice(i, 1);
+        render();
+      }
+
+      function applyFilters(rows) {
+        let out = rows;
+        for (const f of FILTERS) {
+          if (f.type === "ip") out = out.filter((r) => r.ip === f.value);
+          else if (f.type === "user_id")
+            out = out.filter((r) => r.user_id === f.value);
+          else if (f.type === "model")
+            out = out.filter((r) => r.model === f.value);
+        }
+        if (activeSearch) {
+          const q = activeSearch.toLowerCase();
+          out = out.filter(
+            (r) =>
+              (r.email || "").toLowerCase().includes(q) ||
+              (r.ip || "").toLowerCase().includes(q) ||
+              (r.model || "").toLowerCase().includes(q) ||
+              (r.user_id || "").toLowerCase().includes(q) ||
+              (r.key_prefix || "").toLowerCase().includes(q),
+          );
+        }
+        return out;
+      }
+
+      function renderChips() {
+        const bar = $("chipBar");
+        if (FILTERS.length === 0) {
+          bar.classList.remove("show");
+          bar.innerHTML = "";
+          return;
+        }
+        bar.classList.add("show");
+        const labelMap = { ip: "IP", user_id: "用户", model: "模型" };
+        bar.innerHTML = FILTERS.map(
+          (f) =>
+            `<span class="chip">${labelMap[f.type] || f.type}: <code>${esc(f.value)}</code><button data-rm="${esc(f.type)}">×</button></span>`,
+        ).join("");
+        bar.querySelectorAll("button[data-rm]").forEach((b) => {
+          b.addEventListener("click", () => removeFilter(b.dataset.rm));
+        });
+      }
+
+      function render() {
+        renderChips();
+        const filtered = applyFilters(USAGE);
+        $("row-count").textContent = `共 ${filtered.length} 条`;
+        const tbody = $("rows");
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="empty">没有匹配的调用</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = filtered.map(rowHtml).join("");
+        // IP click-to-filter (rows only — Top panel handled separately)
+        tbody.querySelectorAll(".ip-link").forEach((el) => {
+          el.addEventListener("click", (e) => {
+            e.preventDefault();
+            addFilter("ip", el.dataset.ip);
+          });
+        });
+        tbody.querySelectorAll(".user-link").forEach((el) => {
+          el.addEventListener("click", (e) => {
+            e.preventDefault();
+            addFilter("user_id", el.dataset.uid);
+          });
+        });
+      }
+
+      function rowHtml(r) {
+        const sc = r.status_code || 0;
+        const sClass = sc >= 500 ? "s-5xx" : sc >= 400 ? "s-4xx" : "s-2xx";
+        const isErr = sc >= 400;
+        const userCell = r.user_id
+          ? `<a class="user-link" href="#" data-uid="${esc(r.user_id)}">${esc(r.email || r.user_id.slice(0, 13) + "…")}</a><span class="uid" title="${esc(r.user_id)}">${esc(r.user_id.slice(0, 13))}…</span>`
+          : `<span style="color:var(--text-faint)">—</span>`;
+        const ipCell = r.ip
+          ? `<a class="ip-link" href="#" data-ip="${esc(r.ip)}">${esc(r.ip)}</a>`
+          : `<span style="color:var(--text-faint)">—</span>`;
+        return `<tr${isErr ? ' class="row-error"' : ""}>
+          <td class="email">${userCell}</td>
+          <td class="ip">${ipCell}</td>
+          <td class="model">${esc(r.model || "—")}</td>
+          <td class="tokens">
+            ${fmt((r.tokens_in || 0) + (r.tokens_out || 0))}
+            <div class="in-out">↓${fmt(r.tokens_in)} ↑${fmt(r.tokens_out)}</div>
+          </td>
+          <td><span class="status-pill ${sClass}">${sc}</span></td>
+          <td class="tokens" title="${esc(r.key_name || "")}">${esc(r.key_prefix || "—")}</td>
+          <td class="created">${esc(fmtTime(r.created_at))}</td>
+        </tr>`;
+      }
+
+      $("windowFilter").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-window]");
+        if (!b) return;
+        $("windowFilter")
+          .querySelectorAll(".filter-btn")
+          .forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        activeWindowMs = Number(b.dataset.window);
+        loadUsage();
+      });
+
+      $("reload-btn").addEventListener("click", () => loadUsage());
+
+      $("search").addEventListener("input", (e) => {
+        activeSearch = e.target.value.trim();
+        render();
+      });
+
+      init();
+    </script>
+  </body>
+</html>
