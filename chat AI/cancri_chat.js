@@ -7077,9 +7077,12 @@ async function generateImageFromPrompt(
       // each down to ~300-600 KB and still looks indistinguishable at
       // normal viewing size for i2i.
       setImageGenerationBusy(true, "正在压缩上传图片...");
+      // Aggressive cap: 1024 px long edge, JPEG q=0.82 ≈ 150-300 KB per
+      // image. This keeps the request body well under the 2 MB gateway
+      // limit and trims CPU pressure on the edge-function JSON pipeline.
       const compressed = await Promise.all(
         imageAttachments.map((a) =>
-          shrinkImageForEdit(a.dataUrl || a.url, 1536, 0.88),
+          shrinkImageForEdit(a.dataUrl || a.url, 1024, 0.82),
         ),
       );
       requestBody.image = compressed.filter(Boolean);
