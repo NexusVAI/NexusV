@@ -5961,18 +5961,38 @@ async function downloadViaMediaProxy(url, kind) {
   // accepts http(s) URLs.
   if (/^data:/i.test(trimmed)) {
     try {
-      const blob = await (await fetch(trimmed)).blob();
+      // Why not just `await fetch(dataUri).blob()`?
+      // Chromium throws `TypeError: Failed to fetch` on data: URIs that
+      // exceed roughly 2-4 MB (which gpt-image-2 b64_json responses
+      // routinely do — the upstream returns ~3 MB base64 PNGs). Decoding
+      // the base64 manually with atob → Uint8Array sidesteps the fetch
+      // path entirely and works regardless of size.
+      const match = /^data:([^;,]+)(?:;([^,]+))?,(.*)$/i.exec(trimmed);
+      if (!match) throw new Error("无法解析 data URI。");
+      const mimeType = match[1] || "application/octet-stream";
+      const isBase64 = (match[2] || "").toLowerCase().includes("base64");
+      const payload = match[3] || "";
+      let bytes;
+      if (isBase64) {
+        const binary = atob(payload);
+        bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++)
+          bytes[i] = binary.charCodeAt(i);
+      } else {
+        bytes = new TextEncoder().encode(decodeURIComponent(payload));
+      }
+      const blob = new Blob([bytes], { type: mimeType });
       const anchor = document.createElement("a");
       const objectUrl = URL.createObjectURL(blob);
       anchor.href = objectUrl;
       const ext =
         kind === "video"
           ? "mp4"
-          : blob.type.includes("png")
+          : mimeType.includes("png")
             ? "png"
-            : blob.type.includes("webp")
+            : mimeType.includes("webp")
               ? "webp"
-              : blob.type.includes("jpeg") || blob.type.includes("jpg")
+              : mimeType.includes("jpeg") || mimeType.includes("jpg")
                 ? "jpg"
                 : "bin";
       anchor.download = `cancri-${kind || "media"}-${Date.now()}.${ext}`;
