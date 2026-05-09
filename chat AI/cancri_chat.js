@@ -5971,6 +5971,40 @@ function safeUrl(url) {
 // extension from the upstream Content-Type header.
 async function downloadViaMediaProxy(url, kind) {
   const trimmed = String(url || "").trim();
+  // ── data: URI 直接下载 ─────────────────────────────────
+  // OpenAI-style image APIs sometimes return b64_json, in which case the
+  // frontend builds `data:image/png;base64,XXX` as imageUrl. There's no
+  // upstream URL to leak and no CORS issue, so skip the server proxy and
+  // download from the in-memory data URI directly. Without this branch
+  // every base64 image would surface "链接无效" because the proxy only
+  // accepts http(s) URLs.
+  if (/^data:/i.test(trimmed)) {
+    try {
+      const blob = await (await fetch(trimmed)).blob();
+      const anchor = document.createElement("a");
+      const objectUrl = URL.createObjectURL(blob);
+      anchor.href = objectUrl;
+      const ext =
+        kind === "video"
+          ? "mp4"
+          : blob.type.includes("png")
+            ? "png"
+            : blob.type.includes("webp")
+              ? "webp"
+              : blob.type.includes("jpeg") || blob.type.includes("jpg")
+                ? "jpg"
+                : "bin";
+      anchor.download = `cancri-${kind || "media"}-${Date.now()}.${ext}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+      return true;
+    } catch (e) {
+      showToast(`下载失败：${e?.message || e}`);
+      return false;
+    }
+  }
   if (!/^https?:\/\//i.test(trimmed)) {
     showToast("无法下载：链接无效");
     return false;
@@ -6944,6 +6978,26 @@ async function generateImageFromPrompt(
   const imageAttachments = (attachments || []).filter(
     (a) => !a.isTextFile && (a.dataUrl || a.url),
   );
+
+  // ── 图生图（i2i）支持白名单 ─────────────────────────────────
+  // 我们走的是 OpenAI-style /v1/images/generations 端点，这条路是纯
+  // 文本生图，不接受 image 字段。当前接入的图像模型（gpt-image-2、
+  // sensenova-u1-fast、grok-imagine-image-lite、gpt-image-2-api456）
+  // 都没有暴露 /images/edits，所以暂时把整组列为不支持 i2i。
+  // 想新增 i2i 模型时，把它从 noI2iModels 列表里拿掉并在后端实现 edits 路径。
+  const noI2iModels = new Set([
+    "gpt-image-2",
+    "gpt-image-2-api456",
+    "sensenova-u1-fast",
+    "grok-imagine-image-lite",
+    "image-precise",
+    "image-fast",
+  ]);
+  if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
+    setImageGenerationBusy(false);
+    showToast(`${imageModel} 暂不支持图生图，请删除附件后重试。`);
+    return;
+  }
 
   try {
     const requestBody = {
