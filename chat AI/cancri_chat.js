@@ -2086,22 +2086,10 @@ const MODEL_CATALOG = [
     tags: ["均衡"],
   },
   // ── dashscope 视频生成（HappyHorse 1.0 系列）──
-  // 三个 HappyHorse 模型用 ../Logo/欢乐马.webp 图标，统一品牌“欢乐马 视频生成”。
+  // 2026-05-09: 仅保留 HappyHorse-1.0-i2v；t2v / r2v 已在阿里云百炼欢乐马
+  // 账号下停用。前端用 ../Logo/欢乐马.webp 图标，统一品牌"欢乐马 视频生成"。
   // GitHub Pages 部署脚本（.github/workflows/static.yml）只拷贝 chat AI/*.svg，
   // 不含其他格式；.webp 图标放在 /Logo/ 根目录下，需以 ../Logo/ 访问。
-  {
-    id: "happyhorse-1.0-t2v",
-    displayName: "HappyHorse-1.0 满血",
-    brand: "欢乐马 视频生成",
-    canonicalId: "happyhorse-1.0-t2v",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    videoOnly: true,
-    iconPath: "../Logo/欢乐马.webp",
-    tags: ["欢乐马 视频生成"],
-  },
   {
     id: "happyhorse-1.0-i2v",
     displayName: "HappyHorse-1.0 图生视频",
@@ -2114,19 +2102,6 @@ const MODEL_CATALOG = [
     videoOnly: true,
     iconPath: "../Logo/欢乐马.webp",
     tags: ["欢乐马 图生视频"],
-  },
-  {
-    id: "happyhorse-1.0-r2v",
-    displayName: "HappyHorse-1.0 参考生视频",
-    brand: "欢乐马 视频生成",
-    canonicalId: "happyhorse-1.0-r2v",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    videoOnly: true,
-    iconPath: "../Logo/欢乐马.webp",
-    tags: ["欢乐马 参考生视频"],
   },
   // ── dashscope 视频生成（万相 2.7 系列）──
   // Wan2.7 用 qwen-color.svg 图标。
@@ -7267,11 +7242,10 @@ async function sendImageGenerationMessage(
 
 // Build the per-model `media` array DashScope expects. Model id determines
 // what kinds of media blocks are allowed:
-//   t2v  → no media
-//   i2v  → first_frame (one image)
-//   r2v  → reference_image (≤9)
-//   wan2.7-i2v → first_frame + driving_audio
-//   wan2.7-r2v → reference_video / reference_image (mixed, ≤9)
+//   happyhorse-1.0-i2v → first_frame (one image, required)
+//   wan2.7-i2v         → first_frame + driving_audio
+//   wan2.7-r2v         → reference_video / reference_image (mixed, ≤9)
+// (HappyHorse t2v / r2v retired 2026-05-09 — see comment in MODEL_CATALOG.)
 function buildVideoMediaForModel(modelId, attachments) {
   const list = Array.isArray(attachments) ? attachments : [];
   const usable = list
@@ -7288,18 +7262,9 @@ function buildVideoMediaForModel(modelId, attachments) {
     })
     .filter(Boolean);
 
-  if (modelId === "happyhorse-1.0-t2v") return [];
-
   if (modelId === "happyhorse-1.0-i2v") {
     const first = usable.find((u) => /image|jpeg|png|webp/i.test(u.mime));
     return first ? [{ type: "first_frame", url: first.url }] : [];
-  }
-
-  if (modelId === "happyhorse-1.0-r2v") {
-    return usable
-      .filter((u) => /image|jpeg|png|webp/i.test(u.mime))
-      .slice(0, 9)
-      .map((u) => ({ type: "reference_image", url: u.url }));
   }
 
   if (modelId === "wan2.7-i2v") {
@@ -7331,7 +7296,7 @@ function buildVideoMediaForModel(modelId, attachments) {
 
 async function generateVideoFromPrompt(
   prompt,
-  modelId = "happyhorse-1.0-t2v",
+  modelId = "happyhorse-1.0-i2v",
   attachments = [],
 ) {
   const value = String(prompt || "").trim();
@@ -9640,13 +9605,24 @@ async function handleHomeSubmit() {
   }
 
   if (state.homeMode === "video" && query) {
+    // 当前唯一启用的 HappyHorse 线路是 i2v（图生视频），必须有一张参考图
+    // 才能向 DashScope 提交任务。如果用户在首页快捷"视频"按钮里只输入了
+    // 文字、没上传图片，就提前提示而不是让请求到达上游被 400 回。
+    if (!pendingAttachments.length) {
+      showToast(
+        "HappyHorse 当前为图生视频线路，请上传一张参考图后再生成视频。",
+      );
+      return;
+    }
+    const attachmentsForVideo = pendingAttachments.slice();
     homeInput.value = "";
     autoResizeComposerInput();
     setComposerBusy(false);
     await sendVideoGenerationMessage(
       buildVideoGenerationPrompt(query),
-      "happyhorse-1.0-t2v",
-      createModelMetadata("happyhorse-1.0-t2v"),
+      "happyhorse-1.0-i2v",
+      createModelMetadata("happyhorse-1.0-i2v"),
+      attachmentsForVideo,
     );
     setWebSearchEnabled(false);
     return;
