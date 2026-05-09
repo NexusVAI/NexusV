@@ -5928,6 +5928,12 @@ function escapeHtml(value) {
 function safeUrl(url) {
   const trimmed = String(url || "").trim();
   if (/^(https?:|\/)/i.test(trimmed)) return trimmed;
+  // Allow inline image/video data URIs — required so generated images that
+  // come back as `b64_json` (e.g. xem8k5 `gpt-image-2`) survive a chat
+  // history reload. We deliberately only whitelist `data:image/` and
+  // `data:video/` so a malicious assistant can't sneak in
+  // `data:text/html,<script>...` and turn a chat bubble into an XSS vector.
+  if (/^data:(image|video)\/[a-z0-9.+-]+;/i.test(trimmed)) return trimmed;
   return "#";
 }
 
@@ -6960,13 +6966,13 @@ async function generateImageFromPrompt(
   );
 
   // ── 图生图（i2i）支持白名单 ─────────────────────────────────
-  // 我们走的是 OpenAI-style /v1/images/generations 端点，这条路是纯
-  // 文本生图，不接受 image 字段。当前接入的图像模型（gpt-image-2、
-  // sensenova-u1-fast、grok-imagine-image-lite、gpt-image-2-api456）
-  // 都没有暴露 /images/edits，所以暂时把整组列为不支持 i2i。
-  // 想新增 i2i 模型时，把它从 noI2iModels 列表里拿掉并在后端实现 edits 路径。
+  // 我们走的是 OpenAI-style /v1/images/generations 端点。大多数中转
+  // 直接接受顶层 `image` 字段做 i2i（OpenAI 的扩展），所以把已经实测
+  // 通过的模型从禁用列表移除：
+  //   • gpt-image-2 (xem8k5 线路)：实测支持 string / array image 字段
+  // 仍未支持的模型保留在白名单里，前端会在用户附了图时拦截并提示。
+  // 想新增 i2i 模型时，把它从 noI2iModels 列表里拿掉并确认上游通过。
   const noI2iModels = new Set([
-    "gpt-image-2",
     "gpt-image-2-api456",
     "sensenova-u1-fast",
     "grok-imagine-image-lite",
