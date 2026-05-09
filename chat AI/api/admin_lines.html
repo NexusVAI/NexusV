@@ -6,225 +6,18 @@
     <meta name="robots" content="noindex,nofollow" />
     <title>管理员 · 模型线路 · Cancri</title>
     <script src="./_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api-platform.css" />
     <style>
-      *,
-      *::before,
-      *::after {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      :root {
-        --bg: #0a0a0a;
-        --bg-elev: #131313;
-        --bg-card: #1a1a1a;
-        --border: #2a2a2a;
-        --border-strong: #383838;
-        --text: #e8e8e8;
-        --text-mute: #9a9a9a;
-        --text-faint: #666;
-        --accent: #60a5fa;
-        --ok: #4ade80;
-        --warn: #fbbf24;
-        --err: #f87171;
-      }
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
-          "PingFang SC", "Microsoft YaHei", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        line-height: 1.5;
-      }
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px 20px 48px;
-      }
-      .nav {
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-        padding-bottom: 14px;
-        border-bottom: 1px solid var(--border);
-        align-items: center;
-      }
-      .nav a {
-        padding: 8px 14px;
-        color: var(--text-mute);
-        text-decoration: none;
-        font-size: 13px;
-        border-radius: 8px;
-        transition: all 0.15s;
-      }
-      .nav a:hover {
-        background: var(--bg-elev);
-        color: var(--text);
-      }
-      .nav a.active {
-        color: var(--text);
-        background: var(--bg-card);
-      }
-      .nav .spacer {
-        flex: 1;
-      }
-      .nav .badge-admin {
-        font-size: 10px;
-        font-weight: 700;
-        background: rgba(248, 113, 113, 0.15);
-        color: var(--err);
-        padding: 3px 8px;
-        border-radius: 4px;
-        letter-spacing: 0.05em;
-      }
-      header h1 {
-        font-size: 24px;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-      }
-      header p {
-        color: var(--text-mute);
-        font-size: 13px;
-        margin-top: 4px;
-        margin-bottom: 20px;
-      }
-      .gate {
-        max-width: 520px;
-        margin: 80px auto 0;
-        padding: 32px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        text-align: center;
-      }
-      .gate h2 {
-        font-size: 18px;
-        margin-bottom: 8px;
-      }
-      .gate p {
-        color: var(--text-mute);
-        font-size: 14px;
-        margin-bottom: 16px;
-      }
-      .gate.deny {
-        border-color: rgba(248, 113, 113, 0.3);
-      }
-      .gate.deny h2 {
-        color: var(--err);
-      }
-      .btn-primary {
-        display: inline-block;
-        padding: 9px 18px;
-        background: var(--accent);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-size: 13px;
-        cursor: pointer;
-        text-decoration: none;
-      }
-      .btn-primary:hover {
-        background: #2563eb;
-      }
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-      .stat-card {
-        padding: 16px 18px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-      }
+      /* 页面专有：模型线路分组 / 状态 pill / 重启按钮 / 危险 stat */
       .stat-card.danger {
         border-color: rgba(248, 113, 113, 0.4);
         background: rgba(248, 113, 113, 0.05);
       }
-      .stat-card .label {
-        font-size: 11px;
-        color: var(--text-mute);
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        margin-bottom: 6px;
-      }
-      .stat-card .value {
-        font-size: 24px;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-      }
       .stat-card.danger .value {
         color: var(--err);
       }
-      .toolbar {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .filter-group {
-        display: flex;
-        gap: 4px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 3px;
-      }
-      .filter-btn {
-        padding: 6px 14px;
-        background: transparent;
-        border: none;
-        color: var(--text-mute);
-        font-size: 12px;
-        cursor: pointer;
-        border-radius: 6px;
-        transition: all 0.15s;
-      }
-      .filter-btn:hover {
-        color: var(--text);
-      }
-      .filter-btn.active {
-        background: var(--bg-elev);
-        color: var(--text);
-      }
-      .filter-btn .count {
-        margin-left: 6px;
-        font-weight: 600;
-      }
-      .search-box {
-        flex: 1;
-        min-width: 200px;
-        max-width: 360px;
-        padding: 7px 12px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--text);
-        font-size: 13px;
-        outline: none;
-      }
-      .search-box:focus {
-        border-color: var(--accent);
-      }
-      .search-box::placeholder {
-        color: var(--text-faint);
-      }
-      .reload-btn {
-        padding: 7px 14px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        color: var(--text-mute);
-        font-size: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-      }
-      .reload-btn:hover {
-        color: var(--text);
-        border-color: var(--border-strong);
+      .stat-card .value {
+        font-variant-numeric: tabular-nums;
       }
       .group {
         background: var(--bg-card);
@@ -361,43 +154,14 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
-      .empty {
-        padding: 40px 20px;
-        text-align: center;
-        color: var(--text-faint);
-        font-size: 13px;
-      }
-      .loading {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--text-faint);
-        font-size: 13px;
-      }
+      /* 本页 toast 在底部居中而非右下 */
       .toast {
-        position: fixed;
-        bottom: 32px;
+        right: auto;
         left: 50%;
-        transform: translateX(-50%) translateY(20px);
-        padding: 10px 20px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--text);
-        font-size: 13px;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.2s;
-        z-index: 100;
+        transform: translateX(-50%) translateY(8px);
       }
       .toast.show {
-        opacity: 1;
         transform: translateX(-50%) translateY(0);
-      }
-      .toast.ok {
-        border-color: rgba(74, 222, 128, 0.4);
-      }
-      .toast.err {
-        border-color: rgba(248, 113, 113, 0.4);
       }
       @media (max-width: 720px) {
         .line {
