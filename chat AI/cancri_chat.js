@@ -238,7 +238,8 @@ function tryTurnstileChallenge(payload) {
     const siteKey = payload?.turnstile_site_key;
     const endpoint = payload?.turnstile_endpoint;
     if (!siteKey || !endpoint) return resolve(false);
-    if (typeof window === "undefined" || !window.turnstile) return resolve(false);
+    if (typeof window === "undefined" || !window.turnstile)
+      return resolve(false);
 
     // Turnstile widget needs a real DOM container. Use a hidden one — the
     // widget renders invisibly when execution mode is "invisible" but Cloudflare
@@ -1125,15 +1126,11 @@ const MODEL_SELECTION_MIGRATIONS = {
   "minimax-m2.5-alt": DEFAULT_MODEL_ID,
   "claude-haiku-4-5-20251001": DEFAULT_MODEL_ID,
   "glm-5.1-futureppo": DEFAULT_MODEL_ID,
-  "claude-opus-4.6": DEFAULT_MODEL_ID,
   "kimi-k2.6-alt": DEFAULT_MODEL_ID,
   "kimi-k2.6-extended": DEFAULT_MODEL_ID,
   "ling-2.6-1t-alt": DEFAULT_MODEL_ID,
   "spark-x2": DEFAULT_MODEL_ID,
   "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
-  "gpt-5.4": DEFAULT_MODEL_ID,
-  "gpt-5-mini": DEFAULT_MODEL_ID,
-  "claude-sonnet-4.6": DEFAULT_MODEL_ID,
   "gemma-4-31b-it": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "mimo-v2.5-tts": DEFAULT_MODEL_ID,
@@ -1141,26 +1138,12 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemini-3-flash": DEFAULT_MODEL_ID,
   "gemini-3-flash-supxh": DEFAULT_MODEL_ID,
   "glm-5.1-alt": DEFAULT_MODEL_ID,
-  "gpt-5.5-pwcen": DEFAULT_MODEL_ID,
-  "gpt-5.4-mini": DEFAULT_MODEL_ID,
-  "gpt-5.3-codex": DEFAULT_MODEL_ID,
-  "gpt-5.4-iamhc": DEFAULT_MODEL_ID,
-  "gpt-5.3-codex-gemai": DEFAULT_MODEL_ID,
-  "gpt-5.4-mini-alt": DEFAULT_MODEL_ID,
-  "gpt-5.3-codex-api456": DEFAULT_MODEL_ID,
-  "gpt-5.3-codex-spark": DEFAULT_MODEL_ID,
-  "gpt-5.4-api456": DEFAULT_MODEL_ID,
-  "claude-opus-4-6": DEFAULT_MODEL_ID,
   "gemini-3.1-pro-api456": DEFAULT_MODEL_ID,
-  "claude-sonnet-4-6": DEFAULT_MODEL_ID,
-  "claude-sonnet-4-6-univibe": DEFAULT_MODEL_ID,
-  "gpt-5.4-pwcen": DEFAULT_MODEL_ID,
 };
 const MODEL_PRIORITY_IDS = [
   "qwen3.6-max-preview",
   "deepseek-v4-pro",
   "kimi-k2.6",
-  "gpt-5.5",
   "qwen3-max",
   "glm-5.1",
 ];
@@ -1169,33 +1152,7 @@ const MODEL_PRIORITY = new Map(
 );
 const MODEL_DEPRIORITY = new Map();
 const MODEL_CATALOG = [
-  // ── chshapi.cn ──
-  {
-    id: "gpt-5.2",
-    displayName: "GPT-5.2",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.2",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./openai.svg",
-    tags: ["新"],
-  },
-  // ── futureppo (91vip.futureppo.top) ──
-  // grok-4.20-fast removed 2026-05-08 — upstream key dead, no replacement.
-  {
-    id: "gpt-5.5",
-    displayName: "GPT-5.5",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.5",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./openai.svg",
-    tags: ["旗舰"],
-  },
+  // ── freemodel.dev ──
   {
     id: "gpt-image-2",
     displayName: "GPT Image 2",
@@ -1204,21 +1161,6 @@ const MODEL_CATALOG = [
     lineLabel: "线路一",
     visible: true,
     enabled: true,
-    arena: false,
-    imageOnly: true,
-    iconPath: "./openai.svg",
-    tags: ["生图"],
-  },
-  // ── chunxueapi.com ──
-  // gpt-image-2-chunxue retired 2026-05-08 — image-2 line consolidated to xem8k5.
-  {
-    id: "gpt-image-2-chunxue",
-    displayName: "GPT Image 2",
-    brand: "OpenAI",
-    canonicalId: "gpt-image-2",
-    lineLabel: "线路二",
-    visible: false,
-    enabled: false,
     arena: false,
     imageOnly: true,
     iconPath: "./openai.svg",
@@ -1250,21 +1192,35 @@ const MODEL_CATALOG = [
     iconPath: "./gemini-color.svg",
     tags: ["快速"],
   },
-  // ── supxh (Claude / Gemini 3.1 Pro) ──
+  // ── cpass.cc (Claude Sonnet 4.6) ──
   {
-    id: "claude-opus-4-5",
-    displayName: "Claude Opus 4.5",
+    id: "claude-sonnet-4-6",
+    displayName: "Claude Sonnet 4.6",
     brand: "Anthropic Claude",
-    canonicalId: "claude-opus-4-5",
+    canonicalId: "claude-sonnet-4-6",
     lineLabel: "线路一",
     visible: true,
     enabled: true,
     arena: true,
     iconPath: "./claude-color.svg",
-    tags: ["旗舰"],
+    tags: ["新"],
   },
+  // ── sparkcode.top (Claude Opus 4.6 Thinking) ──
   {
-    id: "gemini-3.1-pro-supxh",
+    id: "claude-opus-4-6-thinking",
+    displayName: "Claude Opus 4.6 Thinking",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-opus-4-6",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["旗舰", "推理"],
+  },
+  // ── supxh (Gemini 3.1 Pro) ──
+  {
+    id: "gemini-3.1-pro",
     displayName: "Gemini 3.1 Pro",
     brand: "Google",
     canonicalId: "gemini-3.1-pro",
@@ -1287,18 +1243,6 @@ const MODEL_CATALOG = [
     arena: false,
     iconPath: "./openai.svg",
     tags: ["轻量"],
-  },
-  {
-    id: "gemini-3-pro-preview",
-    displayName: "Gemini 3 Pro Preview",
-    brand: "Google",
-    canonicalId: "gemini-3-pro-preview",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./gemini-color.svg",
-    tags: ["生图"],
   },
   // ── uglycat.cc ──
   {
@@ -2152,7 +2096,7 @@ const MODEL_CATALOG = [
     iconPath: "./zhipu-color.svg",
     tags: ["复杂编码处理", "稳定"],
   },
-  // ── freeapi (grok-imagine, 不动) ──
+  // ── freeapi (grok) ──
   {
     id: "grok-imagine-image-lite",
     displayName: "Grok Imagine",
@@ -2165,6 +2109,30 @@ const MODEL_CATALOG = [
     imageOnly: true,
     iconPath: "./grok.svg",
     tags: ["生图"],
+  },
+  {
+    id: "grok-4.20-fast",
+    displayName: "Grok 4.20 Fast",
+    brand: "Grok",
+    canonicalId: "grok-4.20-fast",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./grok.svg",
+    tags: ["快速"],
+  },
+  {
+    id: "grok-4.20-thinking",
+    displayName: "Grok 4.20 Thinking",
+    brand: "Grok",
+    canonicalId: "grok-4.20-thinking",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./grok.svg",
+    tags: ["推理"],
   },
   // ── mimo (小米) ──
   {

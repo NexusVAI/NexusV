@@ -4,38 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>API 文档 · Cancri</title>
+    <link rel="stylesheet" href="./api/api-platform.css" />
     <style>
-      *,
-      *::before,
-      *::after {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
       :root {
-        --bg: #0a0a0a;
-        --bg-elev: #131313;
-        --bg-card: #1a1a1a;
         --bg-code: #0d0d0d;
-        --border: #2a2a2a;
-        --border-strong: #383838;
-        --text: #e8e8e8;
-        --text-mute: #9a9a9a;
-        --text-faint: #666;
-        --accent: #60a5fa;
-        --accent-strong: #2563eb;
-        --ok: #4ade80;
-        --warn: #fbbf24;
-        --err: #f87171;
         --purple: #c084fc;
       }
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
-          "PingFang SC", "Microsoft YaHei", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
         line-height: 1.6;
       }
       .layout {
@@ -52,7 +27,9 @@
         gap: 4px;
         flex-wrap: wrap;
         padding-bottom: 16px;
+        margin-bottom: 0;
         border-bottom: 1px solid var(--border);
+        align-items: center;
       }
       .nav-top a {
         padding: 8px 14px;
@@ -60,7 +37,9 @@
         text-decoration: none;
         font-size: 13px;
         border-radius: 8px;
-        transition: all 0.15s;
+        transition:
+          background 0.15s,
+          color 0.15s;
       }
       .nav-top a:hover {
         background: var(--bg-elev);
@@ -1216,6 +1195,40 @@ openclaw agent</pre>
             <b>并发限制不记在响应头里</b>。超过 2 个同时请求时，额外请求会被
             <code>concurrent_limit_exceeded</code>（如下一节）拒接，请等其他请求返回后重试。
           </div>
+
+          <h3>per-model 上游限制（重要）</h3>
+          <p>
+            上面 4 道防线是 <b>gateway 层的总闸</b>，控制整个 API Key 的总调用量。
+            <b>每个模型还会受到其上游线路自身的速率限制</b>，这部分不在我们 gateway
+            的控制范围内，且各家阈值不同（部分免费线路可能低至 10 次/小时）。
+          </p>
+          <p>当上游 per-model 限速被撞，会返回：</p>
+          <ul>
+            <li>HTTP <code>429</code></li>
+            <li><code>error.code = "upstream_rate_limit"</code></li>
+            <li><code>error.type = "rate_limit_error"</code></li>
+            <li>
+              <code>error.message</code> 里会以 "<i>upstream details</i>"
+              附上上游原始信息（仅供排查；具体文本随上游变化，<b>不要</b>用作判定依据）
+            </li>
+          </ul>
+          <div class="alert warn">
+            <b>识别规则</b>：拿到 429 时
+            <code>error.code</code> 必看：
+            <ul>
+              <li>
+                <code>rate_limit_exceeded</code> → 撞到 gateway 总闸（见上表），
+                结合 <code>X-RateLimit-Scope</code> 决定退避；同模型重试可行。
+              </li>
+              <li>
+                <code>upstream_rate_limit</code> → 该模型的上游线路被限速，
+                <b>同模型短时间内重试无效</b>，建议立即换模型。
+              </li>
+              <li>
+                <code>concurrent_limit_exceeded</code> → 等已有请求结束。
+              </li>
+            </ul>
+          </div>
         </section>
 
         <section id="errors">
@@ -1256,15 +1269,32 @@ openclaw agent</pre>
                 <td>429</td>
                 <td>rate_limit_exceeded</td>
                 <td>
-                  撞到 per-minute / per-hour / per-day 三道限流之一。响应体里
+                  撞到 gateway 总闸 per-minute / per-hour / per-day 三道限流之一。响应体里
                   <code>scope</code> 字段告诉你具体哪一道，
                   <code>Retry-After</code> 头告诉你几秒后重试。
                 </td>
               </tr>
               <tr>
                 <td>429</td>
+                <td>upstream_rate_limit</td>
+                <td>
+                  该模型的<b>上游线路</b>被限速（不是 gateway 层）。
+                  通常重试同模型短时间内无效，建议改用其他模型。
+                  <code>error.message</code> 末尾会带上游原始信息以便排查。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
                 <td>concurrent_limit_exceeded</td>
                 <td>超过同时 2 个进行中请求。等剩余请求完成后再发。</td>
+              </tr>
+              <tr>
+                <td>401 / 403</td>
+                <td>upstream_auth_error</td>
+                <td>
+                  该模型的上游凭证被拒（不是你的 API Key 问题）。请改用其他模型，
+                  并向我们反馈受影响的模型 ID。
+                </td>
               </tr>
               <tr>
                 <td>500</td>

@@ -4,58 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>API 申请 - Cancri</title>
+  <link rel="stylesheet" href="./api/api-platform.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 32px; max-width: 480px; width: 90%; }
-    h1 { font-size: 20px; margin-bottom: 8px; }
-    .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
-    .form-group { margin-bottom: 16px; }
-    label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
-    input, textarea { width: 100%; padding: 10px 12px; background: #111; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 14px; outline: none; }
-    input:focus, textarea:focus { border-color: #555; }
-    textarea { resize: vertical; min-height: 80px; }
-    button { width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 8px; }
-    button:hover { background: #1d4ed8; }
-    button:disabled { background: #333; cursor: not-allowed; }
-    .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-top: 12px; display: none; }
-    .msg.ok { background: #0a2e0a; border: 1px solid #166534; color: #4ade80; }
-    .msg.err { background: #2e0a0a; border: 1px solid #651616; color: #f87171; }
+    /* 页面专有：申请页是单卡居中布局 */
+    body { display: flex; align-items: center; justify-content: center; padding-top: 76px; padding-bottom: 32px; }
+    .nav-bar { position: fixed; top: 0; left: 0; right: 0; padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--border); }
+    .nav-bar.nav-bar--sticky { background: rgba(10, 10, 10, 0.85); }
+    .apply-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; max-width: 480px; width: 90%; }
+    .apply-card .full-btn { width: 100%; padding: 12px; margin-top: 8px; font-size: 14px; }
+    .apply-card .secondary-btn { width: 100%; padding: 10px; margin-top: 16px; font-size: 13px; }
     .login-hint { text-align: center; margin-top: 16px; }
-    .login-hint a { color: #60a5fa; text-decoration: none; }
-    .status-box { background: #111; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-    .status-pending { background: #854d0e; color: #fbbf24; }
-    .status-approved { background: #166534; color: #4ade80; }
-    .status-rejected { background: #651616; color: #f87171; }
-    .btn-secondary { background: #333; margin-top: 12px; }
-    .btn-secondary:hover { background: #444; }
-    .nav-bar { position: fixed; top: 0; left: 0; right: 0; background: rgba(10,10,10,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid #2a2a2a; padding: 10px 20px; z-index: 100; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-    .nav-bar a { padding: 6px 12px; color: #9a9a9a; text-decoration: none; font-size: 13px; border-radius: 6px; }
-    .nav-bar a:hover { background: #1a1a1a; color: #e8e8e8; }
-    .nav-bar a.active { color: #e8e8e8; background: #1a1a1a; }
-    .nav-bar .spacer { flex: 1; }
-    body { padding-top: 60px; }
   </style>
 </head>
 <body>
-  <nav class="nav-bar">
+  <nav class="nav-bar nav-bar--sticky">
     <a href="./api_apply.html" class="active">申请 API</a>
     <a href="./api_keys.html">我的 Keys</a>
     <a href="./api_models.html">模型广场</a>
     <a href="./api_docs.html">文档</a>
     <span class="spacer"></span>
-    <a href="./cancri_chat_ui_v_3.html" style="color:#666">← 返回聊天</a>
+    <a href="./cancri_chat_ui_v_3.html" style="color: var(--text-faint)">← 返回聊天</a>
   </nav>
-  <div class="card">
-    <h1>API 申请</h1>
+  <div class="apply-card">
+    <h1 class="page-title">API 申请</h1>
     <p class="subtitle">申请 Cancri API Key，用于调用大模型接口</p>
 
-    <div id="loading" style="text-align:center;padding:20px;color:#888">加载中...</div>
+    <div id="loading" class="loading">加载中...</div>
 
     <div id="login-section" style="display:none">
       <p style="margin-bottom:12px">请先登录后再申请 API Key。</p>
-      <button onclick="location.href='./cancri_chat_ui_v_3.html'">前往登录</button>
+      <button class="btn-primary full-btn" onclick="location.href='./cancri_chat_ui_v_3.html'">前往登录</button>
     </div>
 
     <div id="apply-section" style="display:none">
@@ -69,17 +47,17 @@
           <label>用途说明</label>
           <textarea id="purpose" placeholder="简要描述你的使用场景，例如：个人项目开发、学术研究、企业集成等"></textarea>
         </div>
-        <button id="submit-btn" onclick="submitApplication()">提交申请</button>
+        <button id="submit-btn" class="btn-primary full-btn" onclick="submitApplication()">提交申请</button>
         <div class="msg" id="msg"></div>
       </div>
     </div>
 
     <div id="key-section" style="display:none">
-      <p style="margin-bottom:12px; color:#4ade80">你的申请已通过！可以生成 API Key 了。</p>
-      <button onclick="location.href='./api_keys.html'">管理 API Keys</button>
+      <p style="margin-bottom:12px; color: var(--ok)">你的申请已通过！可以生成 API Key 了。</p>
+      <button class="btn-primary full-btn" onclick="location.href='./api_keys.html'">管理 API Keys</button>
     </div>
 
-    <button class="btn-secondary" onclick="location.href='./cancri_chat_ui_v_3.html'" style="width:100%;padding:10px;background:#333;color:#aaa;border:none;border-radius:8px;font-size:13px;cursor:pointer;margin-top:16px">返回聊天</button>
+    <button class="btn-secondary secondary-btn" onclick="location.href='./cancri_chat_ui_v_3.html'">返回聊天</button>
   </div>
 
   <script src="./cancri_config.js"></script>
@@ -118,7 +96,7 @@
           box.style.display = 'block';
           const badgeClass = 'status-' + app.status;
           const statusText = { pending: '审核中', approved: '已通过', rejected: '已拒绝' }[app.status] || app.status;
-          box.innerHTML = '<div class="status-box"><div>申请状态：<span class="status-badge ' + badgeClass + '">' + statusText + '</span></div><div style="color:#666;font-size:12px;margin-top:6px">申请时间：' + new Date(app.created_at).toLocaleString('zh-CN') + '</div></div>';
+          box.innerHTML = '<div class="status-box"><div>申请状态：<span class="status-badge ' + badgeClass + '">' + statusText + '</span></div><div style="color: var(--text-faint); font-size:12px; margin-top:6px">申请时间：' + new Date(app.created_at).toLocaleString('zh-CN') + '</div></div>';
           document.getElementById('apply-form').style.display = 'none';
           if (app.status === 'approved') {
             document.getElementById('key-section').style.display = 'block';
