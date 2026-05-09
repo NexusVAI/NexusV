@@ -7344,9 +7344,14 @@ async function generateVideoFromPrompt(
       }
 
       const taskData = await resultResponse.json();
+      // DashScope 返回 SUCCEEDED/FAILED/RUNNING/PENDING，与历史 ModelScope
+      // 的 SUCCEED 不同。modelscope-proxy 已把 output.{task_status,video_url}
+      // 提到顶层，所以这里直接读 taskData.task_status / taskData.video_url。
+      const status = String(taskData.task_status || "").toUpperCase();
 
-      if (taskData.task_status === "SUCCEED") {
+      if (status === "SUCCEEDED" || status === "SUCCEED") {
         const videoUrl =
+          taskData.video_url ||
           taskData.output_videos?.[0] ||
           taskData.output_video?.url ||
           taskData.results?.[0]?.url ||
@@ -7358,14 +7363,12 @@ async function generateVideoFromPrompt(
         return videoUrl;
       }
 
-      if (taskData.task_status === "FAILED") {
-        throw new Error("视频生成失败。");
+      if (status === "FAILED" || status === "CANCELED") {
+        const reason = taskData.message || taskData.code || "";
+        throw new Error(reason ? `视频生成失败：${reason}` : "视频生成失败。");
       }
 
-      setImageGenerationBusy(
-        true,
-        `正在生成中... ${taskData.task_status || "PENDING"}`,
-      );
+      setImageGenerationBusy(true, `正在生成中... ${status || "PENDING"}`);
     }
   } catch (error) {
     if (error.message === RATE_LIMIT_MESSAGE) {
