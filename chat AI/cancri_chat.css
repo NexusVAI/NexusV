@@ -1435,9 +1435,12 @@ svg {
 
 .model-dropdown.animating .model-option {
     opacity: 0;
-    transform: translateY(-8px);
-    animation: modelOptionAppear 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
-    animation-delay: calc(var(--stagger, 0) * 40ms);
+    transform: translateY(-6px);
+    animation: modelOptionAppear 0.18s cubic-bezier(0.4, 0, 0.2, 1) both;
+    /* Was 40ms × index (so the 50th item waited 2s — bottom of the
+       drawer looked frozen). Cap the per-item delay to a tight 8ms
+       step and a 180ms ceiling so the whole list lands in <250ms. */
+    animation-delay: min(180ms, calc(var(--stagger, 0) * 8ms));
 }
 
 @keyframes modelOptionAppear {

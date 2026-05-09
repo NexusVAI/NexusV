@@ -6942,6 +6942,11 @@ async function generateImageFromPrompt(
     imageModel === "grok-imagine-image-lite";
   const imageSize = imageSizeSelect?.value || "1024x1024";
 
+  // Track an abort controller so the global stop button can cancel an
+  // in-flight image request just like it cancels chat streams.
+  const controller = new AbortController();
+  state.activeRequestController = controller;
+
   setImageGenerationBusy(
     true,
     isOpenAIImage ? "正在生成图片..." : "正在提交图片生成任务...",
@@ -6991,6 +6996,7 @@ async function generateImageFromPrompt(
       method: "POST",
       headers: await proxyHeaders(),
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
 
     if (response.status === 429) {
@@ -7061,6 +7067,7 @@ async function generateImageFromPrompt(
     setImageGenerationBusy(true, "任务已提交，正在生成图片...");
 
     while (true) {
+      if (controller.signal.aborted) throw createAbortError("已停止生成。");
       const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: await proxyHeaders(),
@@ -7069,6 +7076,7 @@ async function generateImageFromPrompt(
           model: imageModel,
           taskId: taskId,
         }),
+        signal: controller.signal,
       });
 
       if (resultResponse.status === 429) {
@@ -7117,6 +7125,7 @@ async function generateImageFromPrompt(
         `正在生成中... ${taskData.task_status || "PENDING"}`,
       );
       await sleep(5000);
+      if (controller.signal.aborted) throw createAbortError("已停止生成。");
     }
   } catch (error) {
     if (error.message === RATE_LIMIT_MESSAGE) {
@@ -7125,7 +7134,13 @@ async function generateImageFromPrompt(
       finalStatusText = RATE_LIMIT_MESSAGE;
       showToast(RATE_LIMIT_MESSAGE);
       throw error;
-    } else if (error.name !== "AbortError") {
+    } else if (error.name === "AbortError") {
+      if (imageGenerationStatus)
+        imageGenerationStatus.textContent = "已停止生成。";
+      finalStatusText = "已停止生成。";
+      showToast("已停止生成。");
+      throw error;
+    } else {
       if (imageGenerationStatus)
         imageGenerationStatus.textContent = `生成失败：${error.message}`;
       finalStatusText = `生成失败：${error.message}`;
@@ -7133,6 +7148,9 @@ async function generateImageFromPrompt(
       throw error;
     }
   } finally {
+    if (state.activeRequestController === controller) {
+      state.activeRequestController = null;
+    }
     setImageGenerationBusy(false, finalStatusText);
   }
   return "";
@@ -7228,13 +7246,22 @@ async function sendImageGenerationMessage(
       );
     }
   } catch (error) {
-    const message = normalizeErrorMessage(error, "图片生成失败，请稍后重试。");
-    updateAssistantMessage(assistantMessageId, {
-      answer: `图片生成失败：${message}`,
-      thinking: false,
-    });
-    pushHistory("user", query);
-    pushHistory(assistantHistoryMessage(`图片生成失败：${message}`, metadata));
+    if (error?.name === "AbortError") {
+      updateAssistantMessage(assistantMessageId, {
+        answer: "已停止生成。",
+        thinking: false,
+      });
+      pushHistory("user", query);
+      pushHistory(assistantHistoryMessage("已停止生成。", metadata));
+    } else {
+      const message = normalizeErrorMessage(error, "图片生成失败，请稍后重试。");
+      updateAssistantMessage(assistantMessageId, {
+        answer: `图片生成失败：${message}`,
+        thinking: false,
+      });
+      pushHistory("user", query);
+      pushHistory(assistantHistoryMessage(`图片生成失败：${message}`, metadata));
+    }
   } finally {
     setComposerBusy(false);
   }
@@ -7304,6 +7331,12 @@ async function generateVideoFromPrompt(
 
   const media = buildVideoMediaForModel(modelId, attachments);
 
+  // Track an abort controller for the whole video flow (submit + poll). The
+  // global stop button reads `state.activeRequestController` and can now
+  // interrupt long-running video jobs the same way it cancels chat streams.
+  const controller = new AbortController();
+  state.activeRequestController = controller;
+
   setImageGenerationBusy(true, "正在提交视频生成任务...");
   showToast("视频生成已开始，请稍等。");
 
@@ -7320,6 +7353,7 @@ async function generateVideoFromPrompt(
       method: "POST",
       headers: await proxyHeaders(),
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
 
     if (response.status === 429) throw new Error(RATE_LIMIT_MESSAGE);
@@ -7338,7 +7372,12 @@ async function generateVideoFromPrompt(
     setImageGenerationBusy(true, "任务已提交，正在生成视频...");
 
     while (true) {
+      // Bail early if the user clicked the stop button while we were
+      // sleeping between polls — sleep() doesn't itself listen on the
+      // signal, so we re-check around it.
+      if (controller.signal.aborted) throw createAbortError("已停止生成。");
       await sleep(5000);
+      if (controller.signal.aborted) throw createAbortError("已停止生成。");
 
       const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
@@ -7348,6 +7387,7 @@ async function generateVideoFromPrompt(
           model: modelId,
           taskId: taskId,
         }),
+        signal: controller.signal,
       });
 
       if (resultResponse.status === 429) {
@@ -7393,12 +7433,18 @@ async function generateVideoFromPrompt(
     if (error.message === RATE_LIMIT_MESSAGE) {
       finalStatusText = RATE_LIMIT_MESSAGE;
       showToast(RATE_LIMIT_MESSAGE);
-    } else if (error.name !== "AbortError") {
+    } else if (error.name === "AbortError") {
+      finalStatusText = "已停止生成。";
+      showToast("已停止生成。");
+    } else {
       finalStatusText = `生成失败：${error.message}`;
       showToast(`视频生成失败：${error.message}`);
     }
     throw error;
   } finally {
+    if (state.activeRequestController === controller) {
+      state.activeRequestController = null;
+    }
     setImageGenerationBusy(false, finalStatusText);
   }
 }
@@ -7489,13 +7535,22 @@ async function sendVideoGenerationMessage(
       );
     }
   } catch (error) {
-    const message = normalizeErrorMessage(error, "视频生成失败，请稍后重试。");
-    updateAssistantMessage(assistantMessageId, {
-      answer: `视频生成失败：${message}`,
-      thinking: false,
-    });
-    pushHistory("user", query);
-    pushHistory(assistantHistoryMessage(`视频生成失败：${message}`, metadata));
+    if (error?.name === "AbortError") {
+      updateAssistantMessage(assistantMessageId, {
+        answer: "已停止生成。",
+        thinking: false,
+      });
+      pushHistory("user", query);
+      pushHistory(assistantHistoryMessage("已停止生成。", metadata));
+    } else {
+      const message = normalizeErrorMessage(error, "视频生成失败，请稍后重试。");
+      updateAssistantMessage(assistantMessageId, {
+        answer: `视频生成失败：${message}`,
+        thinking: false,
+      });
+      pushHistory("user", query);
+      pushHistory(assistantHistoryMessage(`视频生成失败：${message}`, metadata));
+    }
   } finally {
     setComposerBusy(false);
   }
@@ -9263,6 +9318,30 @@ async function sendMessage(content) {
 
   if (turnModelMeta.videoOnly) {
     if (!query) return;
+    // i2v/r2v lines all require a reference image. Pre-validate here so
+    // the user sees a friendly toast instead of a cryptic upstream
+    // "Field required: input.media" after a half-second proxy round-trip.
+    const needsMedia =
+      turnModelId === "happyhorse-1.0-i2v" ||
+      turnModelId === "wan2.7-i2v" ||
+      turnModelId === "wan2.7-r2v";
+    if (needsMedia) {
+      const hasUsableMedia = attachmentsForSend.some(
+        (a) =>
+          (a?.dataUrl || a?.url) &&
+          (/^image\//i.test(a?.mime || "") ||
+            /^video\//i.test(a?.mime || "") ||
+            /\.(png|jpe?g|webp|gif|bmp|mp4|mov|webm)$/i.test(a?.name || "")),
+      );
+      if (!hasUsableMedia) {
+        showToast(
+          turnModelId === "wan2.7-r2v"
+            ? "Wan 2.7 参考生视频需要至少一张参考图或参考视频。"
+            : "该模型为图生视频，请先上传一张参考图。",
+        );
+        return;
+      }
+    }
     await sendVideoGenerationMessage(
       query,
       turnModelId,
