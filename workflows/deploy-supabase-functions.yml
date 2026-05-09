@@ -55,6 +55,9 @@ jobs:
           NEWAPI_BASE_URL: ${{ secrets.NEWAPI_BASE_URL }}
           NEWAPI_API_KEY: ${{ secrets.NEWAPI_API_KEY }}
           NEWAPI_API_KEY_2: ${{ secrets.NEWAPI_API_KEY_2 }}
+          XEM8K5_BASE_URL: ${{ secrets.XEM8K5_BASE_URL }}
+          XEM8K5_API_KEY: ${{ secrets.XEM8K5_API_KEY }}
+          XEM8K5_API_KEY_2: ${{ secrets.XEM8K5_API_KEY_2 }}
           FUTUREPPO_BASE_URL: ${{ secrets.FUTUREPPO_BASE_URL }}
           FUTUREPPO_API_KEY: ${{ secrets.FUTUREPPO_API_KEY }}
           FUTUREPPO_GEMMA_API_KEY: ${{ secrets.FUTUREPPO_GEMMA_API_KEY }}
@@ -116,6 +119,9 @@ jobs:
           set_secret_if_present NEWAPI_BASE_URL
           set_secret_if_present NEWAPI_API_KEY
           set_secret_if_present NEWAPI_API_KEY_2
+          set_secret_if_present XEM8K5_BASE_URL
+          set_secret_if_present XEM8K5_API_KEY
+          set_secret_if_present XEM8K5_API_KEY_2
           set_secret_if_present FUTUREPPO_BASE_URL
           set_secret_if_present FUTUREPPO_API_KEY
           set_secret_if_present FUTUREPPO_GEMMA_API_KEY
