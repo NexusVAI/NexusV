@@ -2826,6 +2826,61 @@ function readFileAsDataUrl(file) {
   });
 }
 
+// Shrink an image source (data URI or http URL) to a size that survives
+// the two-hop Supabase Edge Function pipeline without blowing the CPU /
+// memory budget.
+//
+// Why this exists:
+// The gateway → modelscope-proxy → upstream chain parses + re-serializes
+// the whole JSON body at every hop. A 3-4 MB base64 image means each hop
+// allocates multiple copies of the string, and Supabase Edge Functions
+// start rejecting with "Function failed due to not having enough compute
+// resources" once CPU time / memory budget runs out. Capping the long
+// edge at ~1536 px and re-encoding as JPEG quality 0.88 brings a typical
+// phone photo down to ~300-600 KB, which comfortably fits.
+//
+// Returns a `data:image/jpeg;base64,...` URL on success, or the original
+// source string if shrinking fails (caller should still be able to try
+// the upload — better to attempt with the full payload than to block the
+// user entirely).
+async function shrinkImageForEdit(src, maxEdge = 1536, quality = 0.88) {
+  const source = String(src || "");
+  if (!source) return source;
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.crossOrigin = "anonymous";
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("图片加载失败"));
+      el.src = source;
+    });
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return source;
+    // Nothing to do if the image is already smaller than our cap AND is
+    // already a small-ish data URI. We still re-encode data URIs larger
+    // than ~1.2 MB to cut base64 bloat even if the dimensions are modest.
+    const skipResize = Math.max(w, h) <= maxEdge;
+    const isSmallDataUri = source.startsWith("data:") && source.length < 1.2e6;
+    if (skipResize && isSmallDataUri) return source;
+    const scale = Math.min(1, maxEdge / Math.max(w, h));
+    const targetW = Math.max(1, Math.round(w * scale));
+    const targetH = Math.max(1, Math.round(h * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return source;
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+    // Always JPEG — PNG is huge for photos and most i2i upstreams accept
+    // JPEG fine. If the caller really needs PNG transparency they should
+    // not be piping through i2i anyway.
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return source;
+  }
+}
+
 async function filesToAttachments(files) {
   const attachmentService = window.NexusWorkbench?.fileAttachments;
   if (attachmentService?.filesToAttachments) {
@@ -7015,7 +7070,23 @@ async function generateImageFromPrompt(
       response_format: "url",
     };
     if (imageAttachments.length) {
-      requestBody.image = imageAttachments.map((a) => a.dataUrl || a.url);
+      // Shrink every attachment before it joins the JSON body. A typical
+      // phone photo (4-5 MB base64) blows the Supabase Edge Function
+      // compute budget once it's parsed + re-serialized through the
+      // gateway → modelscope-proxy chain. 1536 px / JPEG q=0.88 brings
+      // each down to ~300-600 KB and still looks indistinguishable at
+      // normal viewing size for i2i.
+      setImageGenerationBusy(true, "正在压缩上传图片...");
+      const compressed = await Promise.all(
+        imageAttachments.map((a) =>
+          shrinkImageForEdit(a.dataUrl || a.url, 1536, 0.88),
+        ),
+      );
+      requestBody.image = compressed.filter(Boolean);
+      setImageGenerationBusy(
+        true,
+        isOpenAIImage ? "正在生成图片..." : "正在提交图片生成任务...",
+      );
     }
 
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
