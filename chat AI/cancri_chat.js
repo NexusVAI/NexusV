@@ -2086,7 +2086,9 @@ const MODEL_CATALOG = [
     tags: ["均衡"],
   },
   // ── dashscope 视频生成（HappyHorse 1.0 系列）──
-  // 三个 HappyHorse 模型用 ./欢乐马.webp 图标，统一品牌"欢乐马 视频生成"。
+  // 三个 HappyHorse 模型用 ../Logo/欢乐马.webp 图标，统一品牌“欢乐马 视频生成”。
+  // GitHub Pages 部署脚本（.github/workflows/static.yml）只拷贝 chat AI/*.svg，
+  // 不含其他格式；.webp 图标放在 /Logo/ 根目录下，需以 ../Logo/ 访问。
   {
     id: "happyhorse-1.0-t2v",
     displayName: "HappyHorse-1.0 满血",
@@ -2097,7 +2099,7 @@ const MODEL_CATALOG = [
     enabled: true,
     arena: false,
     videoOnly: true,
-    iconPath: "./欢乐马.webp",
+    iconPath: "../Logo/欢乐马.webp",
     tags: ["欢乐马 视频生成"],
   },
   {
@@ -2110,7 +2112,7 @@ const MODEL_CATALOG = [
     enabled: true,
     arena: false,
     videoOnly: true,
-    iconPath: "./欢乐马.webp",
+    iconPath: "../Logo/欢乐马.webp",
     tags: ["欢乐马 图生视频"],
   },
   {
@@ -2123,7 +2125,7 @@ const MODEL_CATALOG = [
     enabled: true,
     arena: false,
     videoOnly: true,
-    iconPath: "./欢乐马.webp",
+    iconPath: "../Logo/欢乐马.webp",
     tags: ["欢乐马 参考生视频"],
   },
   // ── dashscope 视频生成（万相 2.7 系列）──
