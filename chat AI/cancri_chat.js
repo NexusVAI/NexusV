@@ -2085,19 +2085,74 @@ const MODEL_CATALOG = [
     iconPath: "./qwen-color.svg",
     tags: ["均衡"],
   },
-  // ── dashscope 视频生成 ──
+  // ── dashscope 视频生成（HappyHorse 1.0 系列）──
+  // 三个 HappyHorse 模型用 ./欢乐马.webp 图标，统一品牌"欢乐马 视频生成"。
   {
     id: "happyhorse-1.0-t2v",
-    displayName: "视频生成",
-    brand: "视频",
+    displayName: "HappyHorse-1.0 满血",
+    brand: "欢乐马 视频生成",
     canonicalId: "happyhorse-1.0-t2v",
     lineLabel: "线路一",
     visible: true,
     enabled: true,
     arena: false,
     videoOnly: true,
-    iconPath: "./video.svg",
-    tags: ["视频"],
+    iconPath: "./欢乐马.webp",
+    tags: ["欢乐马 视频生成"],
+  },
+  {
+    id: "happyhorse-1.0-i2v",
+    displayName: "HappyHorse-1.0 图生视频",
+    brand: "欢乐马 视频生成",
+    canonicalId: "happyhorse-1.0-i2v",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: false,
+    videoOnly: true,
+    iconPath: "./欢乐马.webp",
+    tags: ["欢乐马 图生视频"],
+  },
+  {
+    id: "happyhorse-1.0-r2v",
+    displayName: "HappyHorse-1.0 参考生视频",
+    brand: "欢乐马 视频生成",
+    canonicalId: "happyhorse-1.0-r2v",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: false,
+    videoOnly: true,
+    iconPath: "./欢乐马.webp",
+    tags: ["欢乐马 参考生视频"],
+  },
+  // ── dashscope 视频生成（万相 2.7 系列）──
+  // Wan2.7 用 qwen-color.svg 图标。
+  {
+    id: "wan2.7-i2v",
+    displayName: "Wan2.7 满血",
+    brand: "万相 视频生成",
+    canonicalId: "wan2.7-i2v",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: false,
+    videoOnly: true,
+    iconPath: "./qwen-color.svg",
+    tags: ["满血"],
+  },
+  {
+    id: "wan2.7-r2v",
+    displayName: "万相2.7 参考生视频",
+    brand: "万相 视频生成",
+    canonicalId: "wan2.7-r2v",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: false,
+    videoOnly: true,
+    iconPath: "./qwen-color.svg",
+    tags: ["满血"],
   },
   // ── siliconflow (硅基流动) ──
   {
@@ -2968,8 +3023,11 @@ const SUPABASE_URL =
   `${window.location.origin}/api/supabase`;
 const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
-const DEFAULT_IMAGE_MODEL = "image-precise";
-const OPENAI_IMAGE_MODEL = "image-precise";
+// image-precise was the legacy ModelScope image alias; it was retired when
+// gpt-image-2 took over but the frontend default never moved. Hard-coding
+// gpt-image-2 here keeps the home image-mode quick action working.
+const DEFAULT_IMAGE_MODEL = "gpt-image-2";
+const OPENAI_IMAGE_MODEL = "gpt-image-2";
 const MAX_REPEATED_TOOL_CALLS = 3;
 const FETCH_TIMEOUT_MS = 20000;
 const CHAT_REQUEST_TIMEOUT_MS = 25000;
@@ -3828,18 +3886,9 @@ function createRestoredImageElement(imageUrl) {
     e.stopPropagation();
     dlBtn.disabled = true;
     try {
-      const resp = await fetch(imageUrl);
-      const blob = await resp.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `cancri-image-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    } catch {
-      window.open(imageUrl, "_blank");
-      showToast("已在新标签页中打开图片，请右键保存");
+      // Always go through the server proxy — hides the upstream URL and
+      // bypasses CORS on provider CDNs.
+      await downloadViaMediaProxy(imageUrl, "image");
     } finally {
       dlBtn.disabled = false;
     }
@@ -3878,18 +3927,7 @@ function createRestoredVideoElement(videoUrl) {
     e.stopPropagation();
     dlBtn.disabled = true;
     try {
-      const resp = await fetch(videoUrl);
-      const blob = await resp.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `cancri-video-${Date.now()}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    } catch {
-      window.open(videoUrl, "_blank");
-      showToast("已在新标签页中打开视频，请右键保存");
+      await downloadViaMediaProxy(videoUrl, "video");
     } finally {
       dlBtn.disabled = false;
     }
@@ -5916,24 +5954,76 @@ function safeUrl(url) {
   return "#";
 }
 
-async function downloadMarkdownImage(url) {
-  const href = safeUrl(url);
-  if (href === "#") return;
+// Server-side proxy download. Posts the upstream URL to chat-gateway's
+// `media-download` endpoint, which fetches the bytes and streams them back
+// with `Content-Disposition: attachment`. This is the ONLY supported way to
+// download generated images/videos:
+//   1. The upstream URL never leaves the user's session — no DevTools leak,
+//      no "open in new tab" fallback, no right-click → save link as.
+//   2. CORS issues with provider CDNs (DashScope OSS, oaiusercontent, etc.)
+//      are bypassed since the gateway does the fetch.
+//   3. Filename is forced server-side so users always get a clean
+//      `cancri-media-*.{png,mp4,…}` name.
+//
+// `kind` is informational only ("image" | "video"); the gateway picks the
+// extension from the upstream Content-Type header.
+async function downloadViaMediaProxy(url, kind) {
+  const trimmed = String(url || "").trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    showToast("无法下载：链接无效");
+    return false;
+  }
   try {
-    const response = await fetch(href);
+    const response = await proxyFetch(EDGE_FUNCTION_URL, {
+      method: "POST",
+      headers: await proxyHeaders(),
+      body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
+    });
+    if (!response.ok) {
+      let errMsg = `HTTP ${response.status}`;
+      try {
+        const errJson = await response.json();
+        errMsg = errJson?.message || errJson?.error || errMsg;
+      } catch {
+        /* ignore parse error */
+      }
+      showToast(`下载失败：${errMsg}`);
+      return false;
+    }
     const blob = await response.blob();
     const anchor = document.createElement("a");
     const objectUrl = URL.createObjectURL(blob);
     anchor.href = objectUrl;
-    anchor.download = `cancri-image-${Date.now()}.png`;
+    // Strip the leading "attachment; filename=" the server sent — the
+    // browser handles that for us via Content-Disposition once we click.
+    const ext =
+      kind === "video"
+        ? "mp4"
+        : blob.type.includes("png")
+          ? "png"
+          : blob.type.includes("webp")
+            ? "webp"
+            : blob.type.includes("jpeg") || blob.type.includes("jpg")
+              ? "jpg"
+              : "bin";
+    anchor.download = `cancri-${kind || "media"}-${Date.now()}.${ext}`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(objectUrl);
-  } catch {
-    window.open(href, "_blank", "noopener,noreferrer");
-    showToast("已在新标签页中打开图片，请右键保存");
+    return true;
+  } catch (e) {
+    showToast(`下载失败：${e?.message || e}`);
+    return false;
   }
+}
+
+async function downloadMarkdownImage(url) {
+  const href = safeUrl(url);
+  if (href === "#") return;
+  // Always go through the server-side proxy. Direct browser fetch leaks
+  // the upstream link in DevTools and breaks on CDN CORS rules.
+  await downloadViaMediaProxy(href, "image");
 }
 
 document.addEventListener("click", (event) => {
@@ -6812,18 +6902,7 @@ function appendGeneratedImageCard(imageUrl, prompt) {
     e.stopPropagation();
     downloadBtn.disabled = true;
     try {
-      const resp = await fetch(imageUrl);
-      const blob = await resp.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `cancri-image-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    } catch {
-      window.open(imageUrl, "_blank");
-      showToast("已在新标签页中打开图片，请右键保存");
+      await downloadViaMediaProxy(imageUrl, "image");
     } finally {
       downloadBtn.disabled = false;
     }
@@ -7093,18 +7172,7 @@ async function sendImageGenerationMessage(
           e.stopPropagation();
           dlBtn.disabled = true;
           try {
-            const resp = await fetch(imageUrl);
-            const blob = await resp.blob();
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `cancri-image-${Date.now()}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
-          } catch {
-            window.open(imageUrl, "_blank");
-            showToast("已在新标签页中打开图片，请右键保存");
+            await downloadViaMediaProxy(imageUrl, "image");
           } finally {
             dlBtn.disabled = false;
           }
@@ -7141,9 +7209,79 @@ async function sendImageGenerationMessage(
   }
 }
 
-async function generateVideoFromPrompt(prompt, modelId = "happyhorse-1.0-t2v") {
+// Build the per-model `media` array DashScope expects. Model id determines
+// what kinds of media blocks are allowed:
+//   t2v  → no media
+//   i2v  → first_frame (one image)
+//   r2v  → reference_image (≤9)
+//   wan2.7-i2v → first_frame + driving_audio
+//   wan2.7-r2v → reference_video / reference_image (mixed, ≤9)
+function buildVideoMediaForModel(modelId, attachments) {
+  const list = Array.isArray(attachments) ? attachments : [];
+  const usable = list
+    .map((a) => {
+      // Backend allowlist accepts http(s) URLs or data: URIs. Prefer
+      // public URLs when available (DashScope can fetch them); fall back
+      // to dataUrl for user-uploaded files.
+      const url = String(a?.url || a?.dataUrl || "").trim();
+      if (!url) return null;
+      const isHttp = /^https?:\/\//i.test(url);
+      const isData = url.startsWith("data:");
+      if (!isHttp && !isData) return null;
+      return { url, mime: String(a?.mimeType || a?.type || "") };
+    })
+    .filter(Boolean);
+
+  if (modelId === "happyhorse-1.0-t2v") return [];
+
+  if (modelId === "happyhorse-1.0-i2v") {
+    const first = usable.find((u) => /image|jpeg|png|webp/i.test(u.mime));
+    return first ? [{ type: "first_frame", url: first.url }] : [];
+  }
+
+  if (modelId === "happyhorse-1.0-r2v") {
+    return usable
+      .filter((u) => /image|jpeg|png|webp/i.test(u.mime))
+      .slice(0, 9)
+      .map((u) => ({ type: "reference_image", url: u.url }));
+  }
+
+  if (modelId === "wan2.7-i2v") {
+    const out = [];
+    const firstImg = usable.find((u) => /image|jpeg|png|webp/i.test(u.mime));
+    if (firstImg) out.push({ type: "first_frame", url: firstImg.url });
+    const audio = usable.find((u) => /audio|mp3|wav|m4a/i.test(u.mime));
+    if (audio) out.push({ type: "driving_audio", url: audio.url });
+    return out;
+  }
+
+  if (modelId === "wan2.7-r2v") {
+    return usable
+      .slice(0, 9)
+      .map((u) => {
+        if (/video|mp4|mov|webm/i.test(u.mime)) {
+          return { type: "reference_video", url: u.url };
+        }
+        if (/image|jpeg|png|webp/i.test(u.mime)) {
+          return { type: "reference_image", url: u.url };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+async function generateVideoFromPrompt(
+  prompt,
+  modelId = "happyhorse-1.0-t2v",
+  attachments = [],
+) {
   const value = String(prompt || "").trim();
   if (!value || state.isImageGenerating) return "";
+
+  const media = buildVideoMediaForModel(modelId, attachments);
 
   setImageGenerationBusy(true, "正在提交视频生成任务...");
   showToast("视频生成已开始，请稍等。");
@@ -7151,14 +7289,16 @@ async function generateVideoFromPrompt(prompt, modelId = "happyhorse-1.0-t2v") {
   let finalStatusText = "等待输入提示词";
 
   try {
+    const requestBody = {
+      endpoint: "video",
+      model: modelId,
+      prompt: value,
+    };
+    if (media.length > 0) requestBody.media = media;
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
       method: "POST",
       headers: await proxyHeaders(),
-      body: JSON.stringify({
-        endpoint: "video",
-        model: modelId,
-        prompt: value,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (response.status === 429) throw new Error(RATE_LIMIT_MESSAGE);
@@ -7239,8 +7379,13 @@ async function generateVideoFromPrompt(prompt, modelId = "happyhorse-1.0-t2v") {
   }
 }
 
-async function sendVideoGenerationMessage(query, modelId, metadata) {
-  createUserMessage(query);
+async function sendVideoGenerationMessage(
+  query,
+  modelId,
+  metadata,
+  attachments = [],
+) {
+  createUserMessage(query, attachments);
   homeInput.value = "";
   autoResizeComposerInput();
 
@@ -7253,7 +7398,11 @@ async function sendVideoGenerationMessage(query, modelId, metadata) {
   setComposerBusy(true);
 
   try {
-    const videoUrl = await generateVideoFromPrompt(query, modelId);
+    const videoUrl = await generateVideoFromPrompt(
+      query,
+      modelId,
+      attachments,
+    );
     if (videoUrl) {
       updateAssistantMessage(assistantMessageId, {
         answer: "",
@@ -7291,18 +7440,7 @@ async function sendVideoGenerationMessage(query, modelId, metadata) {
           e.stopPropagation();
           dlBtn.disabled = true;
           try {
-            const resp = await fetch(videoUrl);
-            const blob = await resp.blob();
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `cancri-video-${Date.now()}.mp4`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
-          } catch {
-            window.open(videoUrl, "_blank");
-            showToast("已在新标签页中打开视频，请右键保存");
+            await downloadViaMediaProxy(videoUrl, "video");
           } finally {
             dlBtn.disabled = false;
           }
@@ -9099,9 +9237,14 @@ async function sendMessage(content) {
     return;
   }
 
-  if (turnModelId === "happyhorse-1.0-t2v") {
+  if (turnModelMeta.videoOnly) {
     if (!query) return;
-    await sendVideoGenerationMessage(query, turnModelId, turnModelMetadata);
+    await sendVideoGenerationMessage(
+      query,
+      turnModelId,
+      turnModelMetadata,
+      attachmentsForSend,
+    );
     if (webSearchEnabledForTurn) setWebSearchEnabled(false);
     return;
   }

@@ -442,9 +442,17 @@
         $("stats").style.display = "grid";
         $("panels").style.display = "grid";
         $("stat-calls").textContent = fmt(STATS.total_calls);
-        $("stat-calls-sub").textContent = STATS.truncated
-          ? "已截断到 1000 条"
-          : "";
+        // Stats are computed across the full window in Postgres. The row
+        // table below is capped at `rows_limit` for browser-side perf — we
+        // disclose that explicitly so the totals card never disagrees with
+        // what the table appears to show.
+        if (STATS.rows_returned != null && STATS.rows_returned < STATS.total_calls) {
+          $("stat-calls-sub").textContent =
+            "明细仅展示最近 " + fmt(STATS.rows_returned) +
+            " 条（共 " + fmt(STATS.total_calls) + " 条）";
+        } else {
+          $("stat-calls-sub").textContent = "";
+        }
         $("stat-errors").textContent = fmt(STATS.error_calls);
         const errPct =
           STATS.total_calls > 0
