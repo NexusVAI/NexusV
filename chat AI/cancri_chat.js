@@ -7064,6 +7064,20 @@ async function generateImageFromPrompt(
   const controller = new AbortController();
   state.activeRequestController = controller;
 
+  // 在结果区里立即占位一张"正在生成"动画卡（光晕点阵 / 水滴 metaball）。
+  // 让用户从点下回车那一刻就有视觉反馈，而不是干瞪着一行状态文字。
+  // 成功 → 移除并 prepend 真实图片；失败 / 中止 → 同样移除。
+  let pendingLoader = null;
+  if (generatedImageGrid && window.CancriOrbLoader) {
+    const emptyCard = document.getElementById("generatedImageEmpty");
+    if (emptyCard) emptyCard.remove();
+    pendingLoader = window.CancriOrbLoader.create({
+      caption: isOpenAIImage ? "正在生成图片…" : "提交任务中…",
+      subCaption: value.length > 30 ? value.slice(0, 30) + "…" : value,
+    });
+    generatedImageGrid.prepend(pendingLoader.element);
+  }
+
   setImageGenerationBusy(
     true,
     isOpenAIImage ? "正在生成图片..." : "正在提交图片生成任务...",
@@ -7286,6 +7300,24 @@ async function generateImageFromPrompt(
   } finally {
     if (state.activeRequestController === controller) {
       state.activeRequestController = null;
+    }
+    // 关掉占位动画卡。成功路径里 appendGeneratedImageCard 已经在网格最前面
+    // 插入了真实图片，destroy() 只移除我们这张占位卡；失败 / 中止路径则等
+    // 同于直接撤掉占位卡，让用户看到原状态。
+    if (pendingLoader && !pendingLoader.isDestroyed()) {
+      pendingLoader.destroy();
+    }
+    // 如果网格被清空（生成失败 + 之前没有任何图片），把空状态卡放回来。
+    if (
+      generatedImageGrid &&
+      !generatedImageGrid.querySelector(".grid-card")
+    ) {
+      const empty = document.createElement("div");
+      empty.className = "grid-card image-empty-card";
+      empty.id = "generatedImageEmpty";
+      empty.innerHTML =
+        '<div class="image-empty-mark"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg></div><div class="image-empty-title">等待生成</div>';
+      generatedImageGrid.appendChild(empty);
     }
     setImageGenerationBusy(false, finalStatusText);
   }
@@ -7597,9 +7629,32 @@ async function sendVideoGenerationMessage(
 
   const assistantMessageId = createAssistantMessage(metadata);
   updateAssistantMessage(assistantMessageId, {
-    answer: "正在生成视频...",
-    thinking: true,
+    answer: "",
+    thinking: false,
   });
+
+  // 视频生成动辄要等 30 秒以上，干瞪着 "正在生成视频..." 的文字太煎熬。
+  // 在助手气泡里直接放一张 metaball 动画占位卡，等真实视频回来再替换。
+  let videoPendingLoader = null;
+  {
+    const messageDiv = document.getElementById(assistantMessageId);
+    const answerBody = messageDiv?.querySelector(".answer-body");
+    if (answerBody && window.CancriOrbLoader) {
+      answerBody.innerHTML = "";
+      videoPendingLoader = window.CancriOrbLoader.create({
+        caption: "正在生成视频…",
+        subCaption: query.length > 30 ? query.slice(0, 30) + "…" : query,
+      });
+      videoPendingLoader.element.classList.add("orb-loader-inline");
+      answerBody.appendChild(videoPendingLoader.element);
+    } else {
+      // 极端兜底：没有 OrbLoader 就退回老的纯文字提示。
+      updateAssistantMessage(assistantMessageId, {
+        answer: "正在生成视频...",
+        thinking: true,
+      });
+    }
+  }
 
   setComposerBusy(true);
 
@@ -7610,6 +7665,11 @@ async function sendVideoGenerationMessage(
       attachments,
     );
     if (videoUrl) {
+      // 先把占位动画卡拆掉，再清空气泡 → 注入真实视频。
+      if (videoPendingLoader && !videoPendingLoader.isDestroyed()) {
+        videoPendingLoader.destroy();
+        videoPendingLoader = null;
+      }
       updateAssistantMessage(assistantMessageId, {
         answer: "",
         thinking: false,
@@ -7688,6 +7748,11 @@ async function sendVideoGenerationMessage(
       pushHistory(assistantHistoryMessage(`视频生成失败：${message}`, metadata));
     }
   } finally {
+    // 任何退出路径（成功 / 失败 / 中止）都要把还活着的占位动画关掉，
+    // 防止 "视频生成失败：xxx" 这类文字之上还有动画卡叠着不消失。
+    if (videoPendingLoader && !videoPendingLoader.isDestroyed()) {
+      videoPendingLoader.destroy();
+    }
     setComposerBusy(false);
   }
 }
