@@ -8,11 +8,14 @@
   <link rel="apple-touch-icon" href="../Logo/Cancri.png">
   <link rel="stylesheet" href="./api/api-platform.css">
   <style>
-    /* 页面专有：申请页是单卡居中布局 */
-    body { display: flex; align-items: center; justify-content: center; padding-top: 76px; padding-bottom: 32px; }
+    /* 页面专有：申请页是 banner + 单卡上下堆叠，水平居中。
+       原本是 flex row 单卡居中，现在改为 column 以支持上方赞助 banner。 */
+    body { display: flex; flex-direction: column; align-items: center; padding-top: 76px; padding-bottom: 32px; gap: 16px; }
     .nav-bar { position: fixed; top: 0; left: 0; right: 0; padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--border); }
     .nav-bar.nav-bar--sticky { background: rgba(10, 10, 10, 0.85); }
-    .apply-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; max-width: 480px; width: 90%; }
+    .apply-page-stack { width: 90%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+    .apply-page-stack .cancri-promo-banner { margin: 0; }
+    .apply-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; width: 100%; }
     .apply-card .full-btn { width: 100%; padding: 12px; margin-top: 8px; font-size: 14px; }
     .apply-card .secondary-btn { width: 100%; padding: 10px; margin-top: 16px; font-size: 13px; }
     .login-hint { text-align: center; margin-top: 16px; }
@@ -27,7 +30,33 @@
     <span class="spacer"></span>
     <a href="./cancri_chat_ui_v_3.html" style="color: var(--text-faint)">← 返回聊天</a>
   </nav>
-  <div class="apply-card">
+  <div class="apply-page-stack">
+    <!-- ── 站主赞助横幅（与模型广场同款） ── -->
+    <div class="cancri-promo-banner" id="cancriPromoBanner">
+      <button
+        type="button"
+        class="cancri-promo-banner__head"
+        id="cancriPromoToggle"
+        aria-expanded="true"
+        aria-controls="cancriPromoBody"
+      >
+        <span class="cancri-promo-banner__heart" aria-hidden="true">❤</span>
+        <span class="cancri-promo-banner__title">站主不易，喜欢就请喝杯咖啡</span>
+        <span class="cancri-promo-banner__hint">点击展开/收起</span>
+        <svg class="cancri-promo-banner__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+          <path d="m18 15-6-6-6 6"></path>
+        </svg>
+      </button>
+      <div class="cancri-promo-banner__body" id="cancriPromoBody">
+        <img src="../Logo/1107.jpg" alt="微信收款码" class="cancri-promo-banner__qr" loading="lazy" />
+        <div class="cancri-promo-banner__copy">
+          <span class="cancri-promo-banner__lead">所有模型免费，API 也免费申请使用。如果觉得对你有帮助，扫码随手打赏一点。</span>
+          <span class="cancri-promo-banner__sub">打赏完全自愿，与申请审核、额度、优先级无任何关联。</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="apply-card">
     <h1 class="page-title">API 申请</h1>
     <p class="subtitle">申请 Cancri API Key，用于调用大模型接口</p>
 
@@ -60,6 +89,7 @@
     </div>
 
     <button class="btn-secondary secondary-btn" onclick="location.href='./cancri_chat_ui_v_3.html'">返回聊天</button>
+    </div>
   </div>
 
   <script src="./cancri_config.js"></script>
@@ -142,6 +172,27 @@
     }
 
     init();
+
+    // 赞助横幅折叠/展开。localStorage key 与模型广场、主聊天侧边栏共用，
+    // 一处收起、全站收起，避免多页反复弹出打扰。
+    (function () {
+      const banner = document.getElementById('cancriPromoBanner');
+      const btn = document.getElementById('cancriPromoToggle');
+      if (!banner || !btn) return;
+      const KEY = 'nexusv_promo_donation_v2';
+      try {
+        if (localStorage.getItem(KEY) === 'collapsed') {
+          banner.classList.add('is-collapsed');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      } catch (_) {}
+      btn.addEventListener('click', () => {
+        const willCollapse = !banner.classList.contains('is-collapsed');
+        banner.classList.toggle('is-collapsed', willCollapse);
+        btn.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+        try { localStorage.setItem(KEY, willCollapse ? 'collapsed' : 'expanded'); } catch (_) {}
+      });
+    })();
   </script>
 </body>
 </html>
