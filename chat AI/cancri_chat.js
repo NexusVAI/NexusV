@@ -4913,7 +4913,12 @@ async function speakTextWithMimo(text) {
     audio.onended = () => URL.revokeObjectURL(audioUrl);
   } catch (error) {
     console.error("TTS 错误:", error);
-    showToast("朗读失败，使用系统语音。");
+    // Surface the real error in the toast so we don't have to dig through
+    // DevTools to know what failed. Cap length to keep the toast readable.
+    const reason = (error && error.message ? error.message : String(error))
+      .toString()
+      .slice(0, 240);
+    showToast(`朗读失败：${reason}（已切换系统语音）`);
     if ("speechSynthesis" in window) {
       speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text.slice(0, 800));
