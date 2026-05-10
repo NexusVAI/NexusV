@@ -4795,13 +4795,38 @@ async function readClipboardText() {
 //   • stream=true（**必须**，非流式不返回音频）
 //
 // 流式响应每个 SSE 块的 `delta.audio.data` 是 base64 编码的 PCM16LE
-// 24kHz 单声道片段。我们把所有片段拼接成完整 PCM，再加 44 字节 WAV
-// 头转成可播放 Blob。chat-gateway 的 RAW_PASSTHROUGH_MODELS 让请求体
-// 直通到上游，不会被注入系统提示词。
+// 24kHz 单声道片段。我们把所有片段拼接成完整 PCM，再用 Web Audio
+// API 直接 createBuffer/start 播放（跳过 WAV 容器解析，浏览器兼容性
+// 最稳）。chat-gateway 的 RAW_PASSTHROUGH_MODELS 让请求体直通到上
+// 游，不会被注入系统提示词。
+// Module-scope AudioContext, lazily constructed inside the click-handler
+// path so the user-gesture is fresh when we eventually call .start().
+let __mimoAudioCtx = null;
+function getMimoAudioContext() {
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if (!Ctor) return null;
+  if (!__mimoAudioCtx || __mimoAudioCtx.state === "closed") {
+    __mimoAudioCtx = new Ctor({ sampleRate: 24000 });
+  }
+  return __mimoAudioCtx;
+}
+
 async function speakTextWithMimo(text) {
   if (!text || text.trim().length === 0) {
     showToast("没有可朗读的内容");
     return;
+  }
+
+  // Pre-warm the AudioContext while we still hold a fresh user gesture
+  // (the click event). If we wait until after the network round-trip,
+  // some browsers will refuse to start playback citing autoplay policy.
+  const audioCtx = getMimoAudioContext();
+  if (audioCtx && audioCtx.state === "suspended") {
+    try {
+      await audioCtx.resume();
+    } catch {
+      /* will surface as a play error below if it actually mattered */
+    }
   }
 
   showToast("正在生成语音...");
@@ -4894,8 +4919,13 @@ async function speakTextWithMimo(text) {
     if (totalPcmBytes === 0) {
       throw new Error("无法获取音频数据");
     }
+    if (totalPcmBytes % 2 !== 0) {
+      throw new Error(
+        `PCM 字节数非偶数 (${totalPcmBytes})，可能流被截断`,
+      );
+    }
 
-    // 合并 PCM 块并打 WAV 头。
+    // 合并 PCM 块。
     const pcm = new Uint8Array(totalPcmBytes);
     {
       let offset = 0;
@@ -4904,13 +4934,24 @@ async function speakTextWithMimo(text) {
         offset += chunk.length;
       }
     }
-    const wavBlob = pcm16ToWavBlob(pcm, 24000, 1);
 
-    const audioUrl = URL.createObjectURL(wavBlob);
-    const audio = new Audio(audioUrl);
-    await audio.play();
+    // 直接走 Web Audio API：AudioBuffer 接受 Float32 样本，跳过 WAV 容器
+    // 解析这一步，浏览器兼容性最稳。Int16 → Float32 用 sample/32768。
+    if (!audioCtx) {
+      throw new Error("当前浏览器不支持 Web Audio API");
+    }
+    const sampleCount = totalPcmBytes / 2;
+    const audioBuffer = audioCtx.createBuffer(1, sampleCount, 24000);
+    const channel = audioBuffer.getChannelData(0);
+    const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+    for (let i = 0; i < sampleCount; i++) {
+      channel[i] = view.getInt16(i * 2, true) / 32768;
+    }
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioCtx.destination);
+    source.start();
     showToast("开始朗读");
-    audio.onended = () => URL.revokeObjectURL(audioUrl);
   } catch (error) {
     console.error("TTS 错误:", error);
     // Surface the real error in the toast so we don't have to dig through
@@ -4926,43 +4967,6 @@ async function speakTextWithMimo(text) {
       speechSynthesis.speak(utterance);
     }
   }
-}
-
-// 把原始 PCM16LE 字节串包装成 WAV Blob。
-// WAV header = 44 bytes (RIFF/WAVE/fmt /data subchunks)。
-// 参考: http://soundfile.sapp.org/doc/WaveFormat/
-function pcm16ToWavBlob(pcmBytes, sampleRate, numChannels) {
-  const bitsPerSample = 16;
-  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const dataSize = pcmBytes.length;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  // RIFF chunk
-  writeAsciiToView(view, 0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeAsciiToView(view, 8, "WAVE");
-  // fmt subchunk
-  writeAsciiToView(view, 12, "fmt ");
-  view.setUint32(16, 16, true); // subchunk1Size = 16 for PCM
-  view.setUint16(20, 1, true); // audioFormat = 1 (PCM)
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-  // data subchunk
-  writeAsciiToView(view, 36, "data");
-  view.setUint32(40, dataSize, true);
-
-  new Uint8Array(buffer, 44).set(pcmBytes);
-  return new Blob([buffer], { type: "audio/wav" });
-}
-
-function writeAsciiToView(view, offset, str) {
-  for (let i = 0; i < str.length; i++)
-    view.setUint8(offset + i, str.charCodeAt(i));
 }
 
 function base64ToBlob(base64, mimeType) {
