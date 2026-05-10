@@ -1661,6 +1661,31 @@ const MODEL_CATALOG = [
     iconPath: "./deepseek-color (1).svg",
     tags: ["Pro研究级模型"],
   },
+  // ── qnaigc.com ──
+  {
+    id: "deepseek-v4-pro-qnaigc",
+    displayName: "DeepSeek-V4-Pro",
+    brand: "DeepSeek",
+    canonicalId: "deepseek-v4-pro",
+    lineLabel: "线路二",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./deepseek-color (1).svg",
+    tags: ["Pro研究级模型"],
+  },
+  {
+    id: "doubao-seed-2.0-pro",
+    displayName: "Doubao Seed 2.0 Pro",
+    brand: "字节跳动",
+    canonicalId: "doubao-seed-2.0-pro",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./doubao-color.svg",
+    tags: ["Pro研究级模型"],
+  },
   {
     id: "deepseek-v4-flash",
     displayName: "DeepSeek-V4-Flash",
@@ -2418,6 +2443,8 @@ function getModelRequestOptions(modelId) {
     modelId === "glm-5.1-alt" ||
     modelId === "kimi-k2.6" ||
     modelId === "deepseek-v4-pro" ||
+    modelId === "deepseek-v4-pro-qnaigc" ||
+    modelId === "doubao-seed-2.0-pro" ||
     modelId === "deepseek-r1" ||
     modelId === "deepseek-v3.2" ||
     modelId === "deepseek-v3.2-exp" ||
@@ -4760,6 +4787,17 @@ async function readClipboardText() {
 }
 
 // MiMo TTS 朗读功能，不在模型菜单展示。
+//
+// 上游契约（api.xiaomimimo.com/v1/chat/completions, model=mimo-v2.5-tts）：
+//   • messages[0] role=user      → 朗读风格描述（语速 / 情绪 / 音色提示）
+//   • messages[1] role=assistant → 实际要朗读的文本（被合成为语音）
+//   • audio.format=pcm16, audio.voice=Chloe
+//   • stream=true（**必须**，非流式不返回音频）
+//
+// 流式响应每个 SSE 块的 `delta.audio.data` 是 base64 编码的 PCM16LE
+// 24kHz 单声道片段。我们把所有片段拼接成完整 PCM，再加 44 字节 WAV
+// 头转成可播放 Blob。chat-gateway 的 RAW_PASSTHROUGH_MODELS 让请求体
+// 直通到上游，不会被注入系统提示词。
 async function speakTextWithMimo(text) {
   if (!text || text.trim().length === 0) {
     showToast("没有可朗读的内容");
@@ -4776,13 +4814,18 @@ async function speakTextWithMimo(text) {
         endpoint: "chat",
         model: "mimo-v2.5-tts",
         messages: [
-          { role: "user", content: "用自然的声音朗读以下内容" },
+          {
+            role: "user",
+            content:
+              "Speak in a natural, warm Chinese voice with steady pacing and clear articulation.",
+          },
           { role: "assistant", content: text.slice(0, 2000) },
         ],
         audio: {
-          format: "wav",
+          format: "pcm16",
           voice: "Chloe",
         },
+        stream: true,
       }),
     });
 
@@ -4791,16 +4834,82 @@ async function speakTextWithMimo(text) {
       throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
-    const data = await response.json();
-    const audioBase64 = data?.choices?.[0]?.message?.audio?.data;
-    if (!audioBase64) {
+    if (!response.body) {
+      throw new Error("浏览器不支持流式响应");
+    }
+
+    // SSE 流式解码：累积 base64 PCM16LE 块。
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    const pcmChunks = []; // Array<Uint8Array> 原始 PCM 字节
+    let totalPcmBytes = 0;
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // 按 SSE 双换行切分事件块（兼容 \n\n 和 \r\n\r\n）。
+      let sepIdx;
+      while (
+        (sepIdx = buffer.indexOf("\n\n")) !== -1 ||
+        (sepIdx = buffer.indexOf("\r\n\r\n")) !== -1
+      ) {
+        const sepLen = buffer.startsWith("\r", sepIdx) ? 4 : 2;
+        const eventBlock = buffer.slice(0, sepIdx);
+        buffer = buffer.slice(sepIdx + sepLen);
+
+        for (const line of eventBlock.split(/\r?\n/)) {
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+
+          let json;
+          try {
+            json = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+
+          // 上游错误帧（被网关 sanitize 过会带 error 字段）→ 抛出。
+          if (json?.error) {
+            throw new Error(
+              json.error.message || json.error.code || "上游返回错误",
+            );
+          }
+
+          const audioData = json?.choices?.[0]?.delta?.audio?.data;
+          if (typeof audioData !== "string" || audioData.length === 0) continue;
+
+          // base64 → Uint8Array。atob 解码后逐字节拷贝。
+          const bin = atob(audioData);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          pcmChunks.push(bytes);
+          totalPcmBytes += bytes.length;
+        }
+      }
+    }
+
+    if (totalPcmBytes === 0) {
       throw new Error("无法获取音频数据");
     }
 
-    const audioBlob = base64ToBlob(audioBase64, "audio/wav");
-    const audioUrl = URL.createObjectURL(audioBlob);
+    // 合并 PCM 块并打 WAV 头。
+    const pcm = new Uint8Array(totalPcmBytes);
+    {
+      let offset = 0;
+      for (const chunk of pcmChunks) {
+        pcm.set(chunk, offset);
+        offset += chunk.length;
+      }
+    }
+    const wavBlob = pcm16ToWavBlob(pcm, 24000, 1);
+
+    const audioUrl = URL.createObjectURL(wavBlob);
     const audio = new Audio(audioUrl);
-    audio.play();
+    await audio.play();
     showToast("开始朗读");
     audio.onended = () => URL.revokeObjectURL(audioUrl);
   } catch (error) {
@@ -4813,6 +4922,43 @@ async function speakTextWithMimo(text) {
       speechSynthesis.speak(utterance);
     }
   }
+}
+
+// 把原始 PCM16LE 字节串包装成 WAV Blob。
+// WAV header = 44 bytes (RIFF/WAVE/fmt /data subchunks)。
+// 参考: http://soundfile.sapp.org/doc/WaveFormat/
+function pcm16ToWavBlob(pcmBytes, sampleRate, numChannels) {
+  const bitsPerSample = 16;
+  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const dataSize = pcmBytes.length;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  // RIFF chunk
+  writeAsciiToView(view, 0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeAsciiToView(view, 8, "WAVE");
+  // fmt subchunk
+  writeAsciiToView(view, 12, "fmt ");
+  view.setUint32(16, 16, true); // subchunk1Size = 16 for PCM
+  view.setUint16(20, 1, true); // audioFormat = 1 (PCM)
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  // data subchunk
+  writeAsciiToView(view, 36, "data");
+  view.setUint32(40, dataSize, true);
+
+  new Uint8Array(buffer, 44).set(pcmBytes);
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function writeAsciiToView(view, offset, str) {
+  for (let i = 0; i < str.length; i++)
+    view.setUint8(offset + i, str.charCodeAt(i));
 }
 
 function base64ToBlob(base64, mimeType) {
