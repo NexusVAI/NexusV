@@ -118,6 +118,43 @@
         color: var(--text-mute);
         font-family: ui-monospace, "SF Mono", Consolas, monospace;
       }
+      .caps {
+        margin-top: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .cap {
+        display: inline-flex;
+        align-items: center;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        color: var(--text-mute);
+        line-height: 1.5;
+        letter-spacing: 0.02em;
+      }
+      .cap.on {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.3);
+        background: rgba(74, 222, 128, 0.08);
+      }
+      .cap.off {
+        color: var(--err);
+        border-color: rgba(248, 113, 113, 0.3);
+        background: rgba(248, 113, 113, 0.06);
+      }
+      .cap.tier {
+        color: var(--text-mute);
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      }
+      .cap.tokens {
+        color: var(--text-faint);
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      }
       .reason .when {
         display: block;
         color: var(--text-faint);
@@ -191,6 +228,7 @@
         <a href="./admin.html">审核</a>
         <a href="./admin_usage.html">调用日志</a>
         <a href="./admin_lines.html" class="active">线路</a>
+        <a href="./admin_users.html">用户</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
@@ -448,8 +486,21 @@
                 const action = disabled
                   ? `<button class="btn-restore" data-act="enable" data-id="${esc(l.id)}">恢复</button>`
                   : `<button class="btn-disable" data-act="disable" data-id="${esc(l.id)}">禁用</button>`;
+                const capBadges = [
+                  l.public !== false ? '<span class="cap on">公开 API</span>' : '<span class="cap off">仅内部</span>',
+                  l.visible !== false ? '<span class="cap on">聊天可见</span>' : '<span class="cap off">已隐藏</span>',
+                  l.enabled !== false ? '' : '<span class="cap off">已禁用(注册表)</span>',
+                  l.chat ? '<span class="cap on">chat</span>' : '',
+                  l.arena ? '<span class="cap on">arena</span>' : '',
+                  l.image ? '<span class="cap on">image</span>' : '',
+                  l.video ? '<span class="cap on">video</span>' : '',
+                  l.multimodal ? '<span class="cap on">多模态</span>' : '',
+                  l.costTier ? `<span class="cap tier">${esc(l.costTier)}</span>` : '',
+                  l.maxInputTokens ? `<span class="cap tokens">in:${esc(l.maxInputTokens)}</span>` : '',
+                  l.maxOutputTokens ? `<span class="cap tokens">out:${esc(l.maxOutputTokens)}</span>` : '',
+                ].filter(Boolean).join('');
                 return `<div class="line${disabled ? " disabled" : ""}">
-                  <div class="line-id">${esc(l.id)}<span class="label">${esc(l.lineLabel || "")}</span></div>
+                  <div class="line-id">${esc(l.id)}<span class="label">${esc(l.lineLabel || "")}</span><div class="caps">${capBadges}</div></div>
                   ${pill}
                   <div class="reason-cell">${reason}</div>
                   <div class="meta">${esc(l.brand || "")}</div>
