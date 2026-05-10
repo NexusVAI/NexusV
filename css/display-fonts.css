@@ -1,0 +1,65 @@
+/* ============================================================================
+ * display-fonts.css
+ * 站内大标题 / Hero 文案的衬线字体（参考 Anthropic Claude 站点的 Copernicus
+ * 风格）。Copernicus 是 Anthropic 私有商用字体，开源最接近的免费替代是 Google
+ * Fonts 的 Newsreader（开源 OFL 协议）。
+ *
+ * 应用范围有意控制得很窄 —— 仅限明显是"展示类"的大标题，正文和 UI 元素仍
+ * 保留原本的 Inter / 系统 sans-serif，避免长文阅读疲劳和中英文混排时的排版
+ * 错位问题。
+ *
+ * Newsreader 不含中文字形，中文字符会按照 fallback 链回退到系统衬线
+ * （Songti / 思源宋体 / Times）。这是预期行为：英文走衬线感更强、中文走系统
+ * 字体保证清晰度。
+ * ========================================================================== */
+
+:root {
+    /* 仅限展示标题；正文别用 */
+    --font-display:
+        'Newsreader',
+        'Source Serif 4',
+        'Source Serif Pro',
+        'Songti SC',
+        'PingFang SC',
+        'Noto Serif SC',
+        Georgia,
+        'Times New Roman',
+        serif;
+}
+
+/* ── 应用到具体的大标题 ── */
+/* 首页 hero 大标题：「有什么可以帮你的？」 */
+.ai-hero-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+}
+
+/* 关于页 hero：「简介」 */
+.about-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+}
+
+/* 关于页二级大标题：「打造我们未来的愿景」 */
+.about-text h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+/* CTA 大标题：「开始使用 Nexus V」 */
+.cta-section h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+}
+
+/* 文章页大标题（如果存在） */
+.article-page h1,
+.article-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
