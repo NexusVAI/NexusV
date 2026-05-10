@@ -2105,9 +2105,10 @@ const MODEL_CATALOG = [
     iconPath: "./qwen-color.svg",
     tags: ["快速"],
   },
-  // ── dashscope 视频生成（HappyHorse 1.0 系列）──
-  // 2026-05-09: 仅保留 HappyHorse-1.0-i2v；t2v / r2v 已在阿里云百炼欢乐马
-  // 账号下停用。前端用 ../Logo/欢乐马.webp 图标，统一品牌"欢乐马 视频生成"。
+  // ── dashscope 媒体生成（HappyHorse 1.0 + 万相 2.7）──
+  // 2026-05-10: HappyHorse 1.0 i2v / t2v / r2v + Wan 2.7 t2v + Wan 2.7
+  // image-pro。HappyHorse 与 Wan 2.7 现在共用同一个阿里云百炼账号。
+  // HappyHorse 系列用 ../Logo/欢乐马.webp 图标；万相系列用 qwen-color.svg。
   // GitHub Pages 部署脚本（.github/workflows/static.yml）只拷贝 chat AI/*.svg，
   // 不含其他格式；.webp 图标放在 /Logo/ 根目录下，需以 ../Logo/ 访问。
   {
@@ -2123,33 +2124,57 @@ const MODEL_CATALOG = [
     iconPath: "../Logo/欢乐马.webp",
     tags: ["欢乐马 图生视频"],
   },
-  // ── dashscope 视频生成（万相 2.7 系列）──
-  // Wan2.7 用 qwen-color.svg 图标。
   {
-    id: "wan2.7-i2v",
-    displayName: "Wan2.7 满血",
-    brand: "万相 视频生成",
-    canonicalId: "wan2.7-i2v",
+    id: "happyhorse-1.0-t2v",
+    displayName: "HappyHorse-1.0 文生视频",
+    brand: "欢乐马 视频生成",
+    canonicalId: "happyhorse-1.0-t2v",
     lineLabel: "线路一",
     visible: true,
     enabled: true,
     arena: false,
     videoOnly: true,
-    iconPath: "./qwen-color.svg",
-    tags: ["满血"],
+    iconPath: "../Logo/欢乐马.webp",
+    tags: ["欢乐马 文生视频"],
   },
   {
-    id: "wan2.7-r2v",
-    displayName: "万相2.7 参考生视频",
+    id: "happyhorse-1.0-r2v",
+    displayName: "HappyHorse-1.0 参考生视频",
+    brand: "欢乐马 视频生成",
+    canonicalId: "happyhorse-1.0-r2v",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: false,
+    videoOnly: true,
+    iconPath: "../Logo/欢乐马.webp",
+    tags: ["欢乐马 参考生视频"],
+  },
+  {
+    id: "wan2.7-t2v",
+    displayName: "Wan2.7 文生视频",
     brand: "万相 视频生成",
-    canonicalId: "wan2.7-r2v",
+    canonicalId: "wan2.7-t2v",
     lineLabel: "线路一",
     visible: true,
     enabled: true,
     arena: false,
     videoOnly: true,
     iconPath: "./qwen-color.svg",
-    tags: ["满血"],
+    tags: ["满血", "文生视频"],
+  },
+  {
+    id: "wan2.7-image-pro",
+    displayName: "Wan2.7 图像生成",
+    brand: "万相 图像生成",
+    canonicalId: "wan2.7-image-pro",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: false,
+    imageOnly: true,
+    iconPath: "./qwen-color.svg",
+    tags: ["文生图", "图像编辑"],
   },
   // ── siliconflow (硅基流动) ──
   {
@@ -6965,7 +6990,8 @@ async function generateImageFromPrompt(
     imageModel === "gpt-image-2" ||
     imageModel === "gpt-image-2-api456" ||
     imageModel === "sensenova-u1-fast" ||
-    imageModel === "grok-imagine-image-lite";
+    imageModel === "grok-imagine-image-lite" ||
+    imageModel === "wan2.7-image-pro";
   // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
   const imageSize = "1024x1024";
 
@@ -7341,9 +7367,9 @@ async function sendImageGenerationMessage(
 // Build the per-model `media` array DashScope expects. Model id determines
 // what kinds of media blocks are allowed:
 //   happyhorse-1.0-i2v → first_frame (one image, required)
-//   wan2.7-i2v         → first_frame + driving_audio
-//   wan2.7-r2v         → reference_video / reference_image (mixed, ≤9)
-// (HappyHorse t2v / r2v retired 2026-05-09 — see comment in MODEL_CATALOG.)
+//   happyhorse-1.0-t2v → 文生视频，无需媒体
+//   happyhorse-1.0-r2v → reference_image (≤9 张参考图，至少一张)
+//   wan2.7-t2v         → 文生视频，无需媒体
 function buildVideoMediaForModel(modelId, attachments) {
   const list = Array.isArray(attachments) ? attachments : [];
   const usable = list
@@ -7365,30 +7391,15 @@ function buildVideoMediaForModel(modelId, attachments) {
     return first ? [{ type: "first_frame", url: first.url }] : [];
   }
 
-  if (modelId === "wan2.7-i2v") {
-    const out = [];
-    const firstImg = usable.find((u) => /image|jpeg|png|webp/i.test(u.mime));
-    if (firstImg) out.push({ type: "first_frame", url: firstImg.url });
-    const audio = usable.find((u) => /audio|mp3|wav|m4a/i.test(u.mime));
-    if (audio) out.push({ type: "driving_audio", url: audio.url });
-    return out;
-  }
-
-  if (modelId === "wan2.7-r2v") {
+  if (modelId === "happyhorse-1.0-r2v") {
+    // 只接受图片参考，最多 9 张。
     return usable
+      .filter((u) => /image|jpeg|png|webp/i.test(u.mime))
       .slice(0, 9)
-      .map((u) => {
-        if (/video|mp4|mov|webm/i.test(u.mime)) {
-          return { type: "reference_video", url: u.url };
-        }
-        if (/image|jpeg|png|webp/i.test(u.mime)) {
-          return { type: "reference_image", url: u.url };
-        }
-        return null;
-      })
-      .filter(Boolean);
+      .map((u) => ({ type: "reference_image", url: u.url }));
   }
 
+  // happyhorse-1.0-t2v 和 wan2.7-t2v 都是文生视频，不需要媒体。
   return [];
 }
 
@@ -9422,25 +9433,24 @@ async function sendMessage(content) {
 
   if (turnModelMeta.videoOnly) {
     if (!query) return;
-    // i2v/r2v lines all require a reference image. Pre-validate here so
-    // the user sees a friendly toast instead of a cryptic upstream
+    // i2v / r2v lines require reference media. Pre-validate here so the
+    // user sees a friendly toast instead of a cryptic upstream
     // "Field required: input.media" after a half-second proxy round-trip.
+    // t2v lines (happyhorse-1.0-t2v / wan2.7-t2v) need no media.
     const needsMedia =
       turnModelId === "happyhorse-1.0-i2v" ||
-      turnModelId === "wan2.7-i2v" ||
-      turnModelId === "wan2.7-r2v";
+      turnModelId === "happyhorse-1.0-r2v";
     if (needsMedia) {
       const hasUsableMedia = attachmentsForSend.some(
         (a) =>
           (a?.dataUrl || a?.url) &&
           (/^image\//i.test(a?.mime || "") ||
-            /^video\//i.test(a?.mime || "") ||
-            /\.(png|jpe?g|webp|gif|bmp|mp4|mov|webm)$/i.test(a?.name || "")),
+            /\.(png|jpe?g|webp|gif|bmp)$/i.test(a?.name || "")),
       );
       if (!hasUsableMedia) {
         showToast(
-          turnModelId === "wan2.7-r2v"
-            ? "Wan 2.7 参考生视频需要至少一张参考图或参考视频。"
+          turnModelId === "happyhorse-1.0-r2v"
+            ? "参考生视频需要至少一张参考图（最多 9 张）。"
             : "该模型为图生视频，请先上传一张参考图。",
         );
         return;
