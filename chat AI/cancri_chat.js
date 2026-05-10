@@ -3321,15 +3321,12 @@ function initAuthOverlay() {
         if (emailError) emailError.textContent = "请输入有效的邮箱地址";
         return;
       }
-      // QQ邮箱限制：只允许qq.com和foxmail.com
-      const emailLower = email.toLowerCase();
-      if (
-        !emailLower.endsWith("@qq.com") &&
-        !emailLower.endsWith("@foxmail.com")
-      ) {
+      // QQ邮箱限制：只允许「纯数字@qq.com」（大小写均可，例如 3573799137@QQ.COM）
+      // 已注册的旧邮箱（含 foxmail / 字母@qq.com）仍可登录，仅在新注册时拦截。
+      if (!/^[0-9]+@qq\.com$/i.test(email)) {
         if (emailError)
           emailError.textContent =
-            "暂仅支持QQ邮箱（@qq.com 或 @foxmail.com）注册";
+            "仅支持纯数字 QQ 邮箱（如 3573799137@qq.com）注册";
         return;
       }
       sendOtpBtn.disabled = true;
