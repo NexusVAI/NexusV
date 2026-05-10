@@ -287,13 +287,11 @@ svg {
 .icon-btn,
 .input-icon,
 .plus-btn,
-.circle-btn,
 .ghost-chip,
 .nav-row,
 .account-strip,
 .popover-item,
-.settings-nav-item,
-.grid-card {
+.settings-nav-item {
     transition:
         background var(--transition),
         border-color var(--transition),
@@ -306,8 +304,7 @@ svg {
 .sidebar-toggle,
 .icon-btn,
 .plus-btn,
-.input-icon,
-.circle-btn {
+.input-icon {
     border: none;
     background: transparent;
     cursor: pointer;
@@ -337,10 +334,8 @@ svg {
 .settings-nav-item:hover,
 .plus-btn:hover,
 .input-icon:hover,
-.circle-btn:hover,
 .list-row:hover,
-.preview-card:hover,
-.grid-card:hover {
+.preview-card:hover {
     background: var(--hover);
 }
 
@@ -617,19 +612,16 @@ svg {
     scrollbar-color: var(--line-2) transparent;
 }
 .recent-wrap::-webkit-scrollbar,
-.settings-scroll::-webkit-scrollbar,
-.images-scroll::-webkit-scrollbar {
+.settings-scroll::-webkit-scrollbar {
     width: 6px;
 }
 .recent-wrap::-webkit-scrollbar-thumb,
-.settings-scroll::-webkit-scrollbar-thumb,
-.images-scroll::-webkit-scrollbar-thumb {
+.settings-scroll::-webkit-scrollbar-thumb {
     background: var(--line-2);
     border-radius: 999px;
 }
 .recent-wrap::-webkit-scrollbar-thumb:hover,
-.settings-scroll::-webkit-scrollbar-thumb:hover,
-.images-scroll::-webkit-scrollbar-thumb:hover {
+.settings-scroll::-webkit-scrollbar-thumb:hover {
     background: var(--text-dim);
 }
 .recent-placeholder {
@@ -3761,211 +3753,6 @@ body[data-view="leaderboard"] #compareModelSelector {
     display: block;
 }
 
-/* ── IMAGES VIEW ─────────────────────────────────────────── */
-.images-page {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--main-bg);
-}
-.images-scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-}
-.images-inner {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 28px 24px 56px;
-    width: 100%;
-}
-.images-workbench {
-    display: grid;
-    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-    gap: 20px;
-    align-items: start;
-}
-.image-compose-panel,
-.image-results-panel {
-    border: 1px solid var(--line);
-    background: var(--panel);
-    border-radius: 12px;
-    padding: 16px;
-}
-.images-title-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
-}
-.images-title {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 0;
-}
-.images-subtitle {
-    margin-top: 3px;
-    font-size: 12px;
-    color: var(--text-soft);
-    font-family: "DM Mono", monospace;
-}
-
-.image-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--line-2);
-    background: var(--input);
-    box-shadow: var(--input-shadow);
-}
-
-.image-search input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 15px;
-    color: var(--text);
-}
-.image-search input::placeholder {
-    color: var(--text-dim);
-}
-.image-size-select {
-    height: 30px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--panel-2);
-    color: var(--text);
-    font-size: 12px;
-    padding: 0 8px;
-    outline: none;
-}
-.image-prompt-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-}
-.image-prompt-chip {
-    height: 30px;
-    padding: 0 10px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: var(--panel-2);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-}
-.image-prompt-chip:hover {
-    background: var(--hover);
-}
-
-.circle-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition:
-        background var(--transition),
-        transform var(--transition);
-}
-.circle-btn:hover {
-    background: #0d9270;
-}
-.circle-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-.section-head {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 24px 0 10px;
-}
-.images-status {
-    font-size: 12px;
-    color: var(--text-soft);
-    font-weight: 400;
-    text-transform: none;
-    letter-spacing: 0;
-}
-
-.image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 10px;
-}
-.generated-gallery {
-    min-height: 220px;
-}
-.image-results-head {
-    margin-top: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.grid-card {
-    aspect-ratio: 1;
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    cursor: pointer;
-    transition:
-        transform var(--transition),
-        box-shadow var(--transition);
-}
-
-.grid-card:hover {
-    transform: scale(1.02);
-    box-shadow: var(--shadow-md);
-}
-.grid-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-.image-empty-card {
-    cursor: default;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: var(--text-dim);
-    border-style: dashed;
-}
-.image-empty-card:hover {
-    transform: none;
-    box-shadow: none;
-}
-.image-empty-mark {
-    color: var(--text-soft);
-    opacity: 0.62;
-}
-.image-empty-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-soft);
-}
-
 /* ── Orb Loader (图片 / 视频生成占位动画) ── */
 .orb-loader-card {
     position: relative;
@@ -4080,36 +3867,6 @@ body[data-view="leaderboard"] #compareModelSelector {
     color: var(--text);
 }
 
-@media (max-width: 860px) {
-    .images-inner {
-        padding: 16px 12px 36px;
-    }
-    .images-workbench {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    .image-compose-panel,
-    .image-results-panel {
-        border-radius: 10px;
-        padding: 12px;
-    }
-    .images-title {
-        font-size: 19px;
-    }
-    .image-search {
-        flex-wrap: wrap;
-    }
-    .image-search input {
-        flex-basis: 100%;
-        order: 2;
-    }
-    .image-size-select {
-        order: 3;
-    }
-    .image-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-}
 
 .secondary-btn {
     min-height: 34px;

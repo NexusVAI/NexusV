@@ -43,17 +43,11 @@ const pageWatermarkGrid = document.getElementById("pageWatermarkGrid");
 const customContextMenu = document.getElementById("customContextMenu");
 const homeView = document.getElementById("homeView");
 const leaderboardView = document.getElementById("leaderboardView");
-const imagesView = document.getElementById("imagesView");
 const heroTitle = document.getElementById("heroTitle");
 const homeInput = document.getElementById("homeInput");
 const sendChatBtn = document.getElementById("sendChatBtn");
 const chatMessages = document.getElementById("chatMessages");
 const homeCenter = document.getElementById("homeCenter");
-const imagePromptInput = document.getElementById("imagePromptInput");
-const sendImagePromptBtn = document.getElementById("sendImagePromptBtn");
-const generatedImageGrid = document.getElementById("generatedImageGrid");
-const imageGenerationStatus = document.getElementById("imageGenerationStatus");
-const imageSizeSelect = document.getElementById("imageSizeSelect");
 const attachBtn = document.getElementById("attachBtn");
 const attachmentInput = document.getElementById("attachmentInput");
 const modelSelector = document.getElementById("modelSelector");
@@ -6968,79 +6962,11 @@ async function fetchWithTimeout(
   }
 }
 
-function setImageGenerationBusy(isBusy, statusText) {
+// 图片工作台已下线，原本依赖 DOM 状态条 / 输入框的 setImageGenerationBusy
+// 现在只保留 state.isImageGenerating 这一个并发互斥位 —— 它仍是
+// generateImageFromPrompt 入口处 "if (state.isImageGenerating) return" 的核心。
+function setImageGenerationBusy(isBusy, _statusText) {
   state.isImageGenerating = isBusy;
-  if (imagePromptInput) {
-    imagePromptInput.disabled = isBusy;
-  }
-  if (sendImagePromptBtn) {
-    sendImagePromptBtn.disabled =
-      isBusy || !(imagePromptInput && imagePromptInput.value.trim());
-    sendImagePromptBtn.setAttribute(
-      "aria-disabled",
-      String(sendImagePromptBtn.disabled),
-    );
-  }
-  if (imageGenerationStatus && typeof statusText === "string") {
-    imageGenerationStatus.textContent = statusText;
-  }
-}
-
-function appendGeneratedImageCard(imageUrl, prompt) {
-  if (!generatedImageGrid) return;
-  const emptyCard = document.getElementById("generatedImageEmpty");
-  if (emptyCard) emptyCard.remove();
-
-  const card = document.createElement("div");
-  card.className = "grid-card";
-  card.title = prompt;
-
-  const image = document.createElement("img");
-  image.alt = prompt;
-  image.src = imageUrl;
-  image.style.cursor = "default";
-  image.addEventListener("contextmenu", (e) => e.preventDefault());
-  image.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-
-  const overlay = document.createElement("div");
-  overlay.style.cssText =
-    "position:absolute;left:0;right:0;bottom:0;padding:10px 12px;z-index:2;display:flex;align-items:center;gap:8px;background:linear-gradient(transparent,rgba(0,0,0,.55))";
-
-  const caption = document.createElement("div");
-  caption.style.cssText =
-    "flex:1;color:#fff;font-size:12px;font-weight:650;text-shadow:0 2px 10px rgba(0,0,0,.32);white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
-  caption.textContent = prompt;
-
-  const downloadBtn = document.createElement("button");
-  downloadBtn.innerHTML =
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-  downloadBtn.title = "下载图片";
-  downloadBtn.style.cssText =
-    "width:32px;height:32px;border-radius:8px;border:none;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s";
-  downloadBtn.onmouseenter = () => {
-    downloadBtn.style.background = "rgba(255,255,255,.35)";
-  };
-  downloadBtn.onmouseleave = () => {
-    downloadBtn.style.background = "rgba(255,255,255,.18)";
-  };
-  downloadBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    downloadBtn.disabled = true;
-    try {
-      await downloadViaMediaProxy(imageUrl, "image");
-    } finally {
-      downloadBtn.disabled = false;
-    }
-  });
-
-  overlay.appendChild(caption);
-  overlay.appendChild(downloadBtn);
-  card.appendChild(image);
-  card.appendChild(overlay);
-  generatedImageGrid.prepend(card);
 }
 
 async function generateImageFromPrompt(
@@ -7057,26 +6983,13 @@ async function generateImageFromPrompt(
     imageModel === "gpt-image-2-api456" ||
     imageModel === "sensenova-u1-fast" ||
     imageModel === "grok-imagine-image-lite";
-  const imageSize = imageSizeSelect?.value || "1024x1024";
+  // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
+  const imageSize = "1024x1024";
 
   // Track an abort controller so the global stop button can cancel an
   // in-flight image request just like it cancels chat streams.
   const controller = new AbortController();
   state.activeRequestController = controller;
-
-  // 在结果区里立即占位一张"正在生成"动画卡（光晕点阵 / 水滴 metaball）。
-  // 让用户从点下回车那一刻就有视觉反馈，而不是干瞪着一行状态文字。
-  // 成功 → 移除并 prepend 真实图片；失败 / 中止 → 同样移除。
-  let pendingLoader = null;
-  if (generatedImageGrid && window.CancriOrbLoader) {
-    const emptyCard = document.getElementById("generatedImageEmpty");
-    if (emptyCard) emptyCard.remove();
-    pendingLoader = window.CancriOrbLoader.create({
-      caption: isOpenAIImage ? "正在生成图片…" : "提交任务中…",
-      subCaption: value.length > 30 ? value.slice(0, 30) + "…" : value,
-    });
-    generatedImageGrid.prepend(pendingLoader.element);
-  }
 
   setImageGenerationBusy(
     true,
@@ -7199,10 +7112,8 @@ async function generateImageFromPrompt(
           "图片生成失败，未返回图片数据。";
         throw new Error(detail);
       }
-      appendGeneratedImageCard(imageUrl, value);
-      if (imagePromptInput) imagePromptInput.value = "";
-      if (imageGenerationStatus)
-        imageGenerationStatus.textContent = "图片已生成。";
+      // 图片工作台已下线 —— 真实图片由调用方（sendImageGenerationMessage）
+      // 渲染到聊天气泡里，这里只返回 URL。
       finalStatusText = "图片已生成。";
       showToast("图片已生成。");
       return imageUrl;
@@ -7257,10 +7168,6 @@ async function generateImageFromPrompt(
           throw new Error("生成成功，但没有返回图片地址。");
         }
 
-        appendGeneratedImageCard(imageUrl, value);
-        if (imagePromptInput) imagePromptInput.value = "";
-        if (imageGenerationStatus)
-          imageGenerationStatus.textContent = "图片已生成。";
         finalStatusText = "图片已生成。";
         showToast("图片已生成。");
         return imageUrl;
@@ -7279,20 +7186,14 @@ async function generateImageFromPrompt(
     }
   } catch (error) {
     if (error.message === RATE_LIMIT_MESSAGE) {
-      if (imageGenerationStatus)
-        imageGenerationStatus.textContent = RATE_LIMIT_MESSAGE;
       finalStatusText = RATE_LIMIT_MESSAGE;
       showToast(RATE_LIMIT_MESSAGE);
       throw error;
     } else if (error.name === "AbortError") {
-      if (imageGenerationStatus)
-        imageGenerationStatus.textContent = "已停止生成。";
       finalStatusText = "已停止生成。";
       showToast("已停止生成。");
       throw error;
     } else {
-      if (imageGenerationStatus)
-        imageGenerationStatus.textContent = `生成失败：${error.message}`;
       finalStatusText = `生成失败：${error.message}`;
       showToast(`图片生成失败：${error.message}`);
       throw error;
@@ -7300,24 +7201,6 @@ async function generateImageFromPrompt(
   } finally {
     if (state.activeRequestController === controller) {
       state.activeRequestController = null;
-    }
-    // 关掉占位动画卡。成功路径里 appendGeneratedImageCard 已经在网格最前面
-    // 插入了真实图片，destroy() 只移除我们这张占位卡；失败 / 中止路径则等
-    // 同于直接撤掉占位卡，让用户看到原状态。
-    if (pendingLoader && !pendingLoader.isDestroyed()) {
-      pendingLoader.destroy();
-    }
-    // 如果网格被清空（生成失败 + 之前没有任何图片），把空状态卡放回来。
-    if (
-      generatedImageGrid &&
-      !generatedImageGrid.querySelector(".grid-card")
-    ) {
-      const empty = document.createElement("div");
-      empty.className = "grid-card image-empty-card";
-      empty.id = "generatedImageEmpty";
-      empty.innerHTML =
-        '<div class="image-empty-mark"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="9" cy="9" r="1.6"></circle><path d="m20 15-4.8-4.8L6 19"></path></svg></div><div class="image-empty-title">等待生成</div>';
-      generatedImageGrid.appendChild(empty);
     }
     setImageGenerationBusy(false, finalStatusText);
   }
@@ -7336,15 +7219,47 @@ async function sendImageGenerationMessage(
 
   const assistantMessageId = createAssistantMessage(metadata);
   updateAssistantMessage(assistantMessageId, {
-    answer: "正在生成图片...",
-    thinking: true,
+    answer: "",
+    thinking: false,
   });
+
+  // 聊天模式下的图片生成 —— 跟视频生成一样，在助手气泡里直接放 metaball
+  // 占位卡，比"正在生成图片..."的纯文字直观得多。
+  let chatImagePendingLoader = null;
+  {
+    const messageDiv = document.getElementById(assistantMessageId);
+    const answerBody = messageDiv?.querySelector(".answer-body");
+    if (answerBody && window.CancriOrbLoader) {
+      answerBody.innerHTML = "";
+      chatImagePendingLoader = window.CancriOrbLoader.create({
+        caption: "正在生成图片…",
+        subCaption: query.length > 30 ? query.slice(0, 30) + "…" : query,
+      });
+      // 聊天气泡里的图片占位卡用方形（图片本身大多 1:1），不强制宽度
+      // 让它跟随气泡，但盖一个上限避免占满屏幕。
+      const el = chatImagePendingLoader.element;
+      el.style.maxWidth = "320px";
+      el.style.width = "100%";
+      answerBody.appendChild(el);
+    } else {
+      // OrbLoader 不可用就退回老的纯文字提示
+      updateAssistantMessage(assistantMessageId, {
+        answer: "正在生成图片...",
+        thinking: true,
+      });
+    }
+  }
 
   setComposerBusy(true);
 
   try {
     const imageUrl = await generateImageFromPrompt(query, modelId, attachments);
     if (imageUrl) {
+      // 先把占位动画卡拆掉，再清空气泡 → 注入真实图片
+      if (chatImagePendingLoader && !chatImagePendingLoader.isDestroyed()) {
+        chatImagePendingLoader.destroy();
+        chatImagePendingLoader = null;
+      }
       updateAssistantMessage(assistantMessageId, {
         answer: "",
         thinking: false,
@@ -7431,6 +7346,11 @@ async function sendImageGenerationMessage(
       pushHistory(assistantHistoryMessage(`图片生成失败：${message}`, metadata));
     }
   } finally {
+    // 任何退出路径（成功 / 失败 / 中止）都把还活着的占位动画关掉，
+    // 防止 "图片生成失败：xxx" 文字之上叠着没消失的动画卡。
+    if (chatImagePendingLoader && !chatImagePendingLoader.isDestroyed()) {
+      chatImagePendingLoader.destroy();
+    }
     setComposerBusy(false);
   }
 }
@@ -10318,17 +10238,6 @@ if (fileUploadBtn && fileInput) {
   });
 }
 
-if (imagePromptInput) {
-  imagePromptInput.addEventListener("input", () => {
-    setImageGenerationBusy(
-      state.isImageGenerating,
-      imagePromptInput.value.trim()
-        ? imageGenerationStatus?.textContent || ""
-        : "等待输入提示词",
-    );
-  });
-}
-
 homeInput.addEventListener("keydown", (e) => {
   const isMobile = window.matchMedia("(max-width: 640px)").matches;
   if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
@@ -10360,17 +10269,6 @@ if (expandInputBtn) {
     const composer = document.querySelector(".composer");
     composer.classList.toggle("expanded");
     homeInput.focus();
-  });
-}
-
-if (sendImagePromptBtn) {
-  sendImagePromptBtn.disabled = true;
-  sendImagePromptBtn.setAttribute("aria-disabled", "true");
-}
-
-if (imagePromptInput) {
-  imagePromptInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && sendImagePromptBtn) sendImagePromptBtn.click();
   });
 }
 
@@ -10448,10 +10346,6 @@ document.querySelectorAll(".preview-card").forEach((card) => {
   card.addEventListener("click", () =>
     showToast(`已选中风格：${card.textContent.trim()}`),
   );
-});
-
-document.querySelectorAll(".grid-card").forEach((card, index) => {
-  card.addEventListener("click", () => showToast(`已打开图片 ${index + 1}`));
 });
 
 on("stylePrevBtn", "click", () => showToast("已切换到上一组风格。"));
