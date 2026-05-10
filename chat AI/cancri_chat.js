@@ -4848,19 +4848,18 @@ async function speakTextWithMimo(text) {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      // Normalize CRLF→LF up front so the event-block splitter only
+      // needs to look for "\n\n". Mixed line endings would otherwise
+      // make `indexOf` race between two delimiters.
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
 
-      // 按 SSE 双换行切分事件块（兼容 \n\n 和 \r\n\r\n）。
+      // 按 SSE 双换行切分事件块。
       let sepIdx;
-      while (
-        (sepIdx = buffer.indexOf("\n\n")) !== -1 ||
-        (sepIdx = buffer.indexOf("\r\n\r\n")) !== -1
-      ) {
-        const sepLen = buffer.startsWith("\r", sepIdx) ? 4 : 2;
+      while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
         const eventBlock = buffer.slice(0, sepIdx);
-        buffer = buffer.slice(sepIdx + sepLen);
+        buffer = buffer.slice(sepIdx + 2);
 
-        for (const line of eventBlock.split(/\r?\n/)) {
+        for (const line of eventBlock.split("\n")) {
           if (!line.startsWith("data:")) continue;
           const payload = line.slice(5).trim();
           if (!payload || payload === "[DONE]") continue;
