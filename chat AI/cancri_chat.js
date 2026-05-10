@@ -1131,6 +1131,7 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemini-3-flash": DEFAULT_MODEL_ID,
   "gemini-3-flash-supxh": DEFAULT_MODEL_ID,
   "glm-5.1-alt": DEFAULT_MODEL_ID,
+  "glm-5-freeapi": DEFAULT_MODEL_ID,
   "gemini-3.1-pro-api456": DEFAULT_MODEL_ID,
   // 2026-05-10 管理员页熔断后下架的模型 → 默认 grok-4.3
   "claude-sonnet-4-5": DEFAULT_MODEL_ID,
@@ -1362,19 +1363,7 @@ const MODEL_CATALOG = [
     iconPath: "./claude-color.svg",
     tags: ["均衡", "推理"],
   },
-  // ── freeapi.dgbmc.top (z-ai/glm5 + minimaxai/minimax-m2.7 — 共用 key) ──
-  {
-    id: "glm-5-freeapi",
-    displayName: "GLM-5",
-    brand: "智谱 GLM",
-    canonicalId: "glm-5-freeapi",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./zhipu-color.svg",
-    tags: ["编程"],
-  },
+  // ── freeapi.dgbmc.top (minimaxai/minimax-m2.7) ──
   {
     id: "minimax-m2.7",
     displayName: "MiniMax M2.7",
@@ -2427,7 +2416,6 @@ function getModelRequestOptions(modelId) {
     modelId === "glm-5" ||
     modelId === "glm-5.1" ||
     modelId === "glm-5.1-alt" ||
-    modelId === "glm-5-freeapi" ||
     modelId === "kimi-k2.6" ||
     modelId === "deepseek-v4-pro" ||
     modelId === "deepseek-r1" ||
