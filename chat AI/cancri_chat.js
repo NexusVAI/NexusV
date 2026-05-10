@@ -131,7 +131,7 @@ const SHARED_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 共享额度页面�
 const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
 const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
 const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
-const DEFAULT_MODEL_ID = "qwen3.6-max-preview";
+const DEFAULT_MODEL_ID = "grok-4.3";
 const DEFAULT_COMPARE_MODEL_ID = "minimax-m2.7";
 const RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
 let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
@@ -1132,11 +1132,25 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemini-3-flash-supxh": DEFAULT_MODEL_ID,
   "glm-5.1-alt": DEFAULT_MODEL_ID,
   "gemini-3.1-pro-api456": DEFAULT_MODEL_ID,
-  "claude-opus-4-6-thinking": "claude-opus-4-5",
-  "claude-opus-4-6": "claude-opus-4-5",
+  // 2026-05-10 管理员页熔断后下架的模型 → 默认 grok-4.3
+  "claude-sonnet-4-5": DEFAULT_MODEL_ID,
+  "claude-opus-4-5": DEFAULT_MODEL_ID,
+  "gemini-3-flash-alt": DEFAULT_MODEL_ID,
+  "gemini-3.1-pro": DEFAULT_MODEL_ID,
+  "glm-4.7": DEFAULT_MODEL_ID,
+  "glm-4.7-siliconflow": DEFAULT_MODEL_ID,
+  "gpt-5.4": DEFAULT_MODEL_ID,
+  "gpt-5.3-codex": DEFAULT_MODEL_ID,
+  "qwen3.6-plus": DEFAULT_MODEL_ID,
+  "qwen3.6-plus-2026-04-02": DEFAULT_MODEL_ID,
+  "qwen3.6-plus-2026-04-02-dashscope": DEFAULT_MODEL_ID,
+  "qwen3.6-max-preview": DEFAULT_MODEL_ID,
+  "qwen3.5-omni-plus": DEFAULT_MODEL_ID,
 };
 const MODEL_PRIORITY_IDS = [
-  "qwen3.6-max-preview",
+  "grok-4.3",
+  "claude-opus-4-7",
+  "claude-opus-4-6",
   "deepseek-v4-pro",
   "kimi-k2.6",
   "qwen3-max",
@@ -1174,32 +1188,6 @@ const MODEL_CATALOG = [
     iconPath: "./gemini-color.svg",
     tags: ["快速"],
   },
-  // ── supxh (Gemini 3 Flash 线路二) ──
-  {
-    id: "gemini-3-flash-supxh",
-    displayName: "Gemini 3 Flash",
-    brand: "Google",
-    canonicalId: "gemini-3-flash",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./gemini-color.svg",
-    tags: ["快速"],
-  },
-  // ── supxh (Claude Sonnet 4.5) ──
-  {
-    id: "claude-sonnet-4-5",
-    displayName: "Claude Sonnet 4.5",
-    brand: "Anthropic Claude",
-    canonicalId: "claude-sonnet-4-5",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./claude-color.svg",
-    tags: ["新"],
-  },
   // ── cpass.cc (Claude Sonnet 4.6) ──
   {
     id: "claude-sonnet-4-6",
@@ -1212,19 +1200,6 @@ const MODEL_CATALOG = [
     arena: true,
     iconPath: "./claude-color.svg",
     tags: ["新"],
-  },
-  // ── supxh (Claude Opus 4.5) ──
-  {
-    id: "claude-opus-4-5",
-    displayName: "Claude Opus 4.5",
-    brand: "Anthropic Claude",
-    canonicalId: "claude-opus-4-5",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./claude-color.svg",
-    tags: ["旗舰"],
   },
   // ── sparkcode.top (GPT-5.x 系列) ──
   {
@@ -1240,18 +1215,6 @@ const MODEL_CATALOG = [
     tags: ["旗舰"],
   },
   {
-    id: "gpt-5.4",
-    displayName: "GPT-5.4",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.4",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./openai.svg",
-    tags: ["新"],
-  },
-  {
     id: "gpt-5.4-mini",
     displayName: "GPT-5.4 Mini",
     brand: "OpenAI",
@@ -1262,31 +1225,6 @@ const MODEL_CATALOG = [
     arena: true,
     iconPath: "./openai.svg",
     tags: ["快速"],
-  },
-  {
-    id: "gpt-5.3-codex",
-    displayName: "GPT-5.3 Codex",
-    brand: "OpenAI",
-    canonicalId: "gpt-5.3-codex",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./openai.svg",
-    tags: ["代码"],
-  },
-  // ── supxh (Gemini 3.1 Pro) ──
-  {
-    id: "gemini-3.1-pro",
-    displayName: "Gemini 3.1 Pro",
-    brand: "Google",
-    canonicalId: "gemini-3.1-pro",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./gemini-color.svg",
-    tags: ["旗舰"],
   },
   // ── newapi.qwqtao.com (Gemini 3.1 preview 系列) ──
   {
@@ -1312,6 +1250,142 @@ const MODEL_CATALOG = [
     arena: true,
     iconPath: "./gemini-color.svg",
     tags: ["预览"],
+  },
+  // ── newapi.qwqtao.com (xAI Grok 4.3 — 默认模型) ──
+  {
+    id: "grok-4.3",
+    displayName: "Grok 4.3",
+    brand: "Grok",
+    canonicalId: "grok-4.3",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./grok.svg",
+    tags: ["默认", "旗舰"],
+  },
+  // ── newapi.qwqtao.com (OpenAI gpt-5.4-nano / gpt-5-mini — 共用 _2 key) ──
+  {
+    id: "gpt-5.4-nano",
+    displayName: "GPT-5.4 Nano",
+    brand: "OpenAI",
+    canonicalId: "gpt-5.4-nano",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./openai.svg",
+    tags: ["轻量", "快速"],
+  },
+  {
+    id: "gpt-5-mini",
+    displayName: "GPT-5 Mini",
+    brand: "OpenAI",
+    canonicalId: "gpt-5-mini",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./openai.svg",
+    tags: ["推理"],
+  },
+  // ── freeapi.dgbmc.top (Claude 4.6 / 4.7 全系 — 专用 key) ──
+  {
+    id: "claude-opus-4-6",
+    displayName: "Claude Opus 4.6",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-opus-4-6",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["旗舰"],
+  },
+  {
+    id: "claude-opus-4-6-thinking",
+    displayName: "Claude Opus 4.6 Thinking",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-opus-4-6-thinking",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["旗舰", "推理"],
+  },
+  {
+    id: "claude-opus-4-7",
+    displayName: "Claude Opus 4.7",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-opus-4-7",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["旗舰", "新"],
+  },
+  {
+    id: "claude-opus-4-7-thinking",
+    displayName: "Claude Opus 4.7 Thinking",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-opus-4-7-thinking",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["旗舰", "新", "推理"],
+  },
+  {
+    id: "claude-sonnet-4-6-freeapi",
+    displayName: "Claude Sonnet 4.6",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-sonnet-4-6",
+    lineLabel: "线路二",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["均衡"],
+  },
+  {
+    id: "claude-sonnet-4-6-thinking",
+    displayName: "Claude Sonnet 4.6 Thinking",
+    brand: "Anthropic Claude",
+    canonicalId: "claude-sonnet-4-6-thinking",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./claude-color.svg",
+    tags: ["均衡", "推理"],
+  },
+  // ── freeapi.dgbmc.top (z-ai/glm5 + minimaxai/minimax-m2.7 — 共用 key) ──
+  {
+    id: "glm-5-freeapi",
+    displayName: "GLM-5",
+    brand: "智谱 GLM",
+    canonicalId: "glm-5-freeapi",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./zhipu-color.svg",
+    tags: ["编程"],
+  },
+  {
+    id: "minimax-m2.7",
+    displayName: "MiniMax M2.7",
+    brand: "MiniMax",
+    canonicalId: "minimax-m2.7",
+    lineLabel: "线路一",
+    visible: true,
+    enabled: true,
+    arena: true,
+    iconPath: "./minimax-color.svg",
+    tags: ["推理", "新"],
   },
   // ── orbitai.cc ──
   {
@@ -1574,18 +1648,6 @@ const MODEL_CATALOG = [
   },
   // ── sparkcode.top ──
   {
-    id: "gemini-3-flash-alt",
-    displayName: "Gemini 3 Flash",
-    brand: "Google",
-    canonicalId: "gemini-3-flash",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./gemini-color.svg",
-    tags: ["快速"],
-  },
-  {
     id: "gpt-5-codex-mini",
     displayName: "GPT-5 Codex Mini",
     brand: "OpenAI",
@@ -1687,18 +1749,6 @@ const MODEL_CATALOG = [
   },
   // ── dashscope (阿里云线路一) ──
   {
-    id: "qwen3.6-plus",
-    displayName: "Qwen3.6 Plus",
-    brand: "通义千问",
-    canonicalId: "qwen3.6-plus",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./qwen-color.svg",
-    tags: ["均衡"],
-  },
-  {
     id: "qwen3.6-flash",
     displayName: "Qwen3.6 Flash",
     brand: "通义千问",
@@ -1775,18 +1825,6 @@ const MODEL_CATALOG = [
     tags: ["指令优化"],
   },
   {
-    id: "qwen3.5-omni-plus",
-    displayName: "Qwen3.5 Omni Plus",
-    brand: "通义千问",
-    canonicalId: "qwen3.5-omni-plus",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./qwen-color.svg",
-    tags: ["全能"],
-  },
-  {
     id: "minimax-m2.1",
     displayName: "MiniMax M2.1",
     brand: "MiniMax",
@@ -1833,18 +1871,6 @@ const MODEL_CATALOG = [
     arena: false,
     iconPath: "./zhipu-color.svg",
     tags: ["均衡"],
-  },
-  {
-    id: "glm-4.7",
-    displayName: "GLM-4.7",
-    brand: "智谱 GLM",
-    canonicalId: "glm-4.7",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./zhipu-color.svg",
-    tags: ["Max"],
   },
   {
     id: "deepseek-r1",
@@ -1919,18 +1945,6 @@ const MODEL_CATALOG = [
     tags: ["实验版"],
   },
   {
-    id: "qwen3.6-max-preview",
-    displayName: "Qwen3.6 Max Preview",
-    brand: "通义千问",
-    canonicalId: "qwen3.6-max-preview",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./qwen-color.svg",
-    tags: ["预览", "旗舰"],
-  },
-  {
     id: "qwen3.6-flash-2026-04-16",
     displayName: "Qwen3.6 Flash",
     brand: "通义千问",
@@ -1941,18 +1955,6 @@ const MODEL_CATALOG = [
     arena: false,
     iconPath: "./qwen-color.svg",
     tags: ["快速"],
-  },
-  {
-    id: "qwen3.6-plus-2026-04-02",
-    displayName: "Qwen3.6 Plus",
-    brand: "通义千问",
-    canonicalId: "qwen3.6-plus-2026-04-02",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./qwen-color.svg",
-    tags: ["均衡"],
   },
   {
     id: "qwen3-max",
@@ -2103,18 +2105,6 @@ const MODEL_CATALOG = [
     iconPath: "./qwen-color.svg",
     tags: ["快速"],
   },
-  {
-    id: "qwen3.6-plus-2026-04-02-dashscope",
-    displayName: "Qwen3.6 Plus",
-    brand: "通义千问",
-    canonicalId: "qwen3.6-plus-2026-04-02",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./qwen-color.svg",
-    tags: ["均衡"],
-  },
   // ── dashscope 视频生成（HappyHorse 1.0 系列）──
   // 2026-05-09: 仅保留 HappyHorse-1.0-i2v；t2v / r2v 已在阿里云百炼欢乐马
   // 账号下停用。前端用 ../Logo/欢乐马.webp 图标，统一品牌"欢乐马 视频生成"。
@@ -2173,18 +2163,6 @@ const MODEL_CATALOG = [
     arena: false,
     iconPath: "./moonshot.svg",
     tags: ["多模态"],
-  },
-  {
-    id: "glm-4.7-siliconflow",
-    displayName: "GLM-4.7",
-    brand: "智谱 GLM",
-    canonicalId: "glm-4.7",
-    lineLabel: "线路二",
-    visible: true,
-    enabled: true,
-    arena: false,
-    iconPath: "./zhipu-color.svg",
-    tags: ["Max"],
   },
   {
     id: "step-3.5-flash",
@@ -2424,8 +2402,7 @@ function getModelRequestOptions(modelId) {
     modelId === "glm-5" ||
     modelId === "glm-5.1" ||
     modelId === "glm-5.1-alt" ||
-    modelId === "glm-4.7" ||
-    modelId === "qwen3.6-max-preview" ||
+    modelId === "glm-5-freeapi" ||
     modelId === "kimi-k2.6" ||
     modelId === "deepseek-v4-pro" ||
     modelId === "deepseek-r1" ||
