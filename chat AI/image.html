@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动态变化光晕点阵</title>
+<style>
+    body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        overflow: hidden;
+    }
+    canvas {
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        background-color: #fafafa;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="gridCanvas"></canvas>
+
+<script>
+    // 1. 配置参数（调节这些数字可以改变动画效果）
+    const COLS = 30;
+    const ROWS = 30;
+    const SPACING = 26;
+    const DOT_MIN_SIZE = 1;      // 最小尺寸（淡出时几乎消失）
+    const DOT_MAX_SIZE = 12;     // 最大尺寸（光晕中心时很醒目）
+    const BASE_RADIUS = 120;     // 基础光晕半径
+    const SPEED = 0.006;         // 核心移动速度
+
+    const canvas = document.getElementById('gridCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const MARGIN = 40;
+    canvas.width = (COLS - 1) * SPACING + MARGIN * 2;
+    canvas.height = (ROWS - 1) * SPACING + MARGIN * 2;
+
+    // 2. 生成点阵坐标
+    const dots = [];
+    for (let i = 0; i < COLS; i++) {
+        for (let j = 0; j < ROWS; j++) {
+            dots.push({
+                x: MARGIN + i * SPACING,
+                y: MARGIN + j * SPACING
+            });
+        }
+    }
+
+    let time = 0;
+
+    // 3. 动画主循环
+    function animate() {
+        time += SPEED;
+
+        // ---- 核心控制点移动轨迹 ----
+        // 使用复杂的 Lissajous 轨迹，让光晕中心移动路径更曲折
+        const centerX = canvas.width / 2 + 140 * Math.sin(time * 0.7 + 0.5);
+        const centerY = canvas.height / 2 + 100 * Math.cos(time * 1.1 + 1.0);
+
+        // ---- 动态形状切换 ----
+        // shapeMix1 和 shapeMix2 会在 0 到 1 之间不断变化，让形状平滑过渡
+        const shapeMix1 = 0.5 + 0.5 * Math.sin(time * 0.4);
+        const shapeMix2 = 0.5 + 0.5 * Math.sin(time * 0.3 + 2.0);
+
+        // 当前的动态光晕半径（产生脉动效果）
+        const currentRadius = BASE_RADIUS + 40 * Math.sin(time * 0.5);
+
+        // ---- 清空画布 ----
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // ---- 绘制点阵 ----
+        dots.forEach(dot => {
+            const dx = dot.x - centerX;
+            const dy = dot.y - centerY;
+
+            // 1) 计算基础距离（欧几里得距离，圆形）
+            const distCircle = Math.sqrt(dx * dx + dy * dy);
+            
+            // 2) 曼哈顿距离（菱形）
+            const distDiamond = Math.abs(dx) + Math.abs(dy);
+            
+            // 3) 切比雪夫距离（正方形）
+            const distSquare = Math.max(Math.abs(dx), Math.abs(dy));
+            
+            // 4) 五角星形（角度相关）
+            const angle = Math.atan2(dy, dx);
+            const distStar = Math.sqrt(dx * dx + dy * dy) * (1 + 0.4 * Math.sin(5 * angle));
+
+            // ---- 混合四种形状 ----
+            // 先用mix1混合圆形和菱形，再用mix2混合正方形和星形，最后再混合在一起
+            let mixedDist = distCircle * (1 - shapeMix1) + distDiamond * shapeMix1;
+            let mixedDist2 = distSquare * (1 - shapeMix2) + distStar * shapeMix2;
+            // 最终距离是混合后的结果
+            let distance = mixedDist * (1 - shapeMix2) + mixedDist2 * shapeMix2;
+
+            // ---- 根据距离计算点的「亮度因子」----
+            // 高斯衰减，越靠近中心越亮
+            // 额外加上一点随机因子让每个点有细微差别，更生动 (可选)
+            let factor = Math.exp(-(distance * distance) / (2 * currentRadius * currentRadius));
+
+            // 限制因子范围
+            factor = Math.min(1, Math.max(0, factor));
+            
+            // 可以加一点阈值处理，让中心更亮，边缘更干净
+            // factor = Math.pow(factor, 0.6); // 故意提高中间亮度对比
+
+            // ---- 动态尺寸和透明度 ----
+            const currentSize = DOT_MIN_SIZE + (DOT_MAX_SIZE - DOT_MIN_SIZE) * factor;
+            const alpha = 0.05 + 0.95 * factor; // 透明度：从几乎看不到到完全实心
+
+            // ---- 绘制点 ----
+            ctx.beginPath();
+            ctx.arc(dot.x, dot.y, currentSize, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(20, 20, 20, ${alpha})`;
+            ctx.fill();
+        });
+
+        // 请求下一帧
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
