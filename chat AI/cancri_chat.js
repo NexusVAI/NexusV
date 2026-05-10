@@ -3091,6 +3091,9 @@ const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
 const DEFAULT_IMAGE_MODEL = "gpt-image-2";
 const OPENAI_IMAGE_MODEL = "gpt-image-2";
 const MAX_REPEATED_TOOL_CALLS = 3;
+// 单次回答中允许的最多工具调用轮次。达到上限后下一轮强制禁用 tools，
+// 让模型必须基于已有结果用纯自然语言给出最终答复（防止无限多轮 tool 调用）。
+const MAX_TOOL_ROUNDS = 3;
 const FETCH_TIMEOUT_MS = 20000;
 const CHAT_REQUEST_TIMEOUT_MS = 25000;
 const CHAT_TURN_TIMEOUT_MS = 180000;
@@ -9591,11 +9594,14 @@ async function sendMessage(content) {
     let accumulatedReasoningText = "";
     let round = 0;
     while (!controller.signal.aborted) {
+      // 已经发起过 MAX_TOOL_ROUNDS 轮工具调用后，强制禁用 tools，让模型必须出最终回答。
+      const toolsAllowedThisRound = round < MAX_TOOL_ROUNDS;
       const roundResult = await streamChatCompletionRound(
         requestMessages,
         assistantMessageId,
         controller,
         {
+          enableTools: toolsAllowedThisRound,
           turnId,
           modelId: turnModelId,
           priorReasoning: accumulatedReasoningText,
@@ -9967,8 +9973,11 @@ document.getElementById("plusTrigger").addEventListener("click", (e) => {
   const rect = btn.getBoundingClientRect();
   plusPopover.style.position = "fixed";
   plusPopover.style.left = Math.max(8, rect.left) + "px";
-  plusPopover.style.top = rect.bottom + 8 + "px";
-  plusPopover.style.bottom = "auto";
+  plusPopover.style.right = "auto";
+  // 在聊天视图中，"+" 按钮位于视口底部，向下展开会被截掉。
+  // 始终向上展开以保证两种视图（首页 / 聊天）都能正常显示。
+  plusPopover.style.top = "auto";
+  plusPopover.style.bottom = window.innerHeight - rect.top + 8 + "px";
   plusPopover.style.transform = "none";
   openPopover(plusPopover);
 });
