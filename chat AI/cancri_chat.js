@@ -3093,7 +3093,10 @@ const OPENAI_IMAGE_MODEL = "gpt-image-2";
 const MAX_REPEATED_TOOL_CALLS = 3;
 // 单次回答中允许的最多工具调用轮次。达到上限后下一轮强制禁用 tools，
 // 让模型必须基于已有结果用纯自然语言给出最终答复（防止无限多轮 tool 调用）。
-const MAX_TOOL_ROUNDS = 3;
+const MAX_TOOL_ROUNDS = 10;
+// 当已经完成的工具调用轮次达到该阈值时，向请求中插入一条系统提示，
+// 鼓励模型尽快基于已有工具结果给出最终答案，但仍保留继续调用工具的能力。
+const TOOL_REMINDER_AT_ROUND = 3;
 const FETCH_TIMEOUT_MS = 20000;
 const CHAT_REQUEST_TIMEOUT_MS = 25000;
 const CHAT_TURN_TIMEOUT_MS = 180000;
@@ -9593,9 +9596,26 @@ async function sendMessage(content) {
     const repeatedToolCalls = new Map();
     let accumulatedReasoningText = "";
     let round = 0;
+    let toolReminderInjected = false;
     while (!controller.signal.aborted) {
       // 已经发起过 MAX_TOOL_ROUNDS 轮工具调用后，强制禁用 tools，让模型必须出最终回答。
       const toolsAllowedThisRound = round < MAX_TOOL_ROUNDS;
+      // 完成 TOOL_REMINDER_AT_ROUND 轮工具调用后，注入一次温和的系统提醒，
+      // 鼓励模型尽快总结答案，但仍允许在 MAX_TOOL_ROUNDS 之前继续调用工具求证。
+      if (
+        !toolReminderInjected &&
+        toolsAllowedThisRound &&
+        round >= TOOL_REMINDER_AT_ROUND
+      ) {
+        requestMessages.push({
+          role: "system",
+          content:
+            `[系统提醒] 你已经第 ${round} 次使用工具了，请尽快基于已有的工具结果给用户最终答案，` +
+            `但确保答案正确。如果对答案还不自信，可以继续调用工具求证，但最多到第 ${MAX_TOOL_ROUNDS} 次为止。` +
+            `优先输出明确、可读的答复，避免不必要的额外工具调用。`,
+        });
+        toolReminderInjected = true;
+      }
       const roundResult = await streamChatCompletionRound(
         requestMessages,
         assistantMessageId,
