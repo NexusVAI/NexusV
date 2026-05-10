@@ -467,6 +467,10 @@
             <code style="color: var(--accent)">cancri_sk_</code
             ><span style="color: var(--text-faint)">48 个十六进制字符</span>
           </div>
+          <p style="color: var(--text-faint); font-size: 12.5px; margin-top: -4px">
+            前缀 <code>cancri_sk_</code>（10 字符）+ 24 字节随机熵的十六进制（48 字符）= <b>总长度恒为 58 字符</b>。
+            做 Key 长度校验的客户端按这个写。
+          </p>
           <ol>
             <li>到 <a href="./api_apply.html">申请页</a> 提交申请</li>
             <li>审核通过后到 <a href="./api_keys.html">Keys 管理页</a> 生成 Key</li>
@@ -1299,14 +1303,15 @@ openclaw agent</pre>
                 </td>
               </tr>
               <tr>
-                <td>500</td>
+                <td>500 / 502 / 503</td>
                 <td>upstream_error</td>
-                <td>上游模型供应商出错（自动重试别的线路后仍失败）</td>
-              </tr>
-              <tr>
-                <td>503</td>
-                <td>service_unavailable</td>
-                <td>所有上游线路都不可用，稍后重试</td>
+                <td>
+                  上游模型供应商出错或返回非法 JSON。<b>所有 5xx 都统一映射成
+                  <code>upstream_error</code></b>，不会出现
+                  <code>service_unavailable</code> 等其它 code——这是为了让客户端只用一个分支处理
+                  所有上游故障。<code>503</code> 还会带 <code>Retry-After</code>，表示该模型被临时
+                  熔断（一小时滑动窗口内连续失败）；改用其他模型即可，无需等待。
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1437,6 +1442,24 @@ openclaw agent</pre>
           <p>
             生成时只显示一次，无法找回。到
             <a href="./api_keys.html">Keys 管理页</a> 撤销旧 Key，重新生成。
+          </p>
+          <h3>能在 TRAE IDE 里用吗？</h3>
+          <p>
+            <b>暂时不行。</b> 字节跳动的 TRAE IDE 目前在「自定义模型」里只允许填
+            Model ID 和 API Key 两个字段，<b>不开放 Base URL 设置</b>，所以 TRAE 的请求只能
+            发到官方 <code>api.openai.com</code>，没办法指过来 Cancri。这是 TRAE 自身的能力
+            缺失，跟踪官方 issue
+            <a href="https://github.com/Trae-AI/Trae/issues/1206" target="_blank" rel="noopener">#1206</a>
+            /
+            <a href="https://github.com/Trae-AI/Trae/issues/963" target="_blank" rel="noopener">#963</a>。
+            等 TRAE 加上 base_url 字段后，配置方法跟
+            <a href="#cli-opencode">OpenCode</a> 完全一致。
+          </p>
+          <p>
+            急用的话可以参考开源项目
+            <a href="https://github.com/arch3rPro/Trae-Proxy" target="_blank" rel="noopener">arch3rPro/Trae-Proxy</a>，
+            它通过本地 hosts 重定向 + 自签证书把 OpenAI 域名劫持到自定义后端。<b>需要管理员权限</b>，
+            折腾门槛较高，不推荐普通用户。
           </p>
           <h3>计费怎么算？</h3>
           <p>
