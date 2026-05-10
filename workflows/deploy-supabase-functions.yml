@@ -44,6 +44,12 @@ jobs:
           DASHSCOPE_API_KEY_1: ${{ secrets.DASHSCOPE_API_KEY_1 }}
           DASHSCOPE_API_KEY_2: ${{ secrets.DASHSCOPE_API_KEY_2 }}
           DASHSCOPE_API_KEY_NEW: ${{ secrets.DASHSCOPE_API_KEY_NEW }}
+          # HappyHorse 1.0 视频生成专用密钥（阿里云百炼欢乐马账号）。可空，
+          # 空值时回退到 DASHSCOPE_API_KEY 池。
+          DASHSCOPE_VIDEO_API_KEY: ${{ secrets.DASHSCOPE_VIDEO_API_KEY }}
+          # Wan 2.7 视频生成专用密钥（阿里云百炼万相账号，独立于欢乐马账号）。
+          # 必须与 HappyHorse 用不同的 Bailian 账号 key，否则混用会 401。
+          DASHSCOPE_WAN_API_KEY: ${{ secrets.DASHSCOPE_WAN_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
           MOONSHOT_API_KEY_LINE3: ${{ secrets.MOONSHOT_API_KEY_LINE3 }}
@@ -108,6 +114,8 @@ jobs:
           set_secret_if_present DASHSCOPE_API_KEY_1
           set_secret_if_present DASHSCOPE_API_KEY_2
           set_secret_if_present DASHSCOPE_API_KEY_NEW
+          set_secret_if_present DASHSCOPE_VIDEO_API_KEY
+          set_secret_if_present DASHSCOPE_WAN_API_KEY
           set_secret_if_present SILICONFLOW_API_KEY
           set_secret_if_present MOONSHOT_API_KEY
           set_secret_if_present MOONSHOT_API_KEY_LINE3
