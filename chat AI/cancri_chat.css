@@ -6222,18 +6222,18 @@ html[data-theme="blue"] {
 
 .wenjuan-float {
     position: fixed;
-    left: calc(var(--sidebar-w) + 12px);
-    bottom: calc(18px + env(safe-area-inset-bottom));
+    right: 0;
+    bottom: calc(96px + env(safe-area-inset-bottom));
     z-index: 150;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    min-height: 112px;
-    padding: 10px 8px;
-    border-radius: 0 16px 16px 0;
+    width: 36px;
+    min-height: 104px;
+    padding: 8px 6px;
+    border-radius: 14px 0 0 14px;
     border: 1px solid var(--line-2);
-    border-left: none;
+    border-right: none;
     background: linear-gradient(
         135deg,
         color-mix(in srgb, var(--panel) 72%, var(--accent) 28%),
@@ -6253,7 +6253,7 @@ html[data-theme="blue"] {
 
 .wenjuan-float:hover,
 .wenjuan-float:focus-within {
-    transform: translateX(2px);
+    transform: translateX(-2px);
     filter: saturate(1.04);
     box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
 }
@@ -6283,17 +6283,15 @@ html[data-theme="blue"] {
 
 @media (max-width: 768px) {
     .wenjuan-float {
-        left: 12px;
-        width: auto;
-        min-height: 44px;
-        border-radius: 999px;
-        border-left: 1px solid var(--line-2);
-        padding: 0 16px;
+        right: 0;
+        bottom: calc(120px + env(safe-area-inset-bottom));
+        width: 28px;
+        min-height: 88px;
+        padding: 6px 4px;
     }
 
     .wenjuan-float a {
-        writing-mode: horizontal-tb;
-        letter-spacing: 0.08em;
-        font-size: 13px;
+        font-size: 12px;
+        letter-spacing: 0.1em;
     }
 }
