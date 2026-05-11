@@ -175,18 +175,33 @@ function parseBackendErrorPayload(errorText) {
   try {
     const parsed = JSON.parse(raw);
     const parsedError = parsed?.error;
+    // 后端通常会同时返回 { error: "challenge_required", code: "...",
+    //   message: "检测到异常搜索速度..." }——这里要优先用 `message`，否则
+    // 用户看到的就是 error code 字面量（或者 normalizeErrorMessage 兜底成
+    // "请求触发安全风控"），完全丢掉了具体的退避指引。旧实现只要 `error`
+    // 是字符串就直接覆盖掉 `message`，是导致风控错误总是显示成同一句话的
+    // 关键 bug。
     let message =
-      typeof parsedError === "string"
-        ? parsedError
-        : parsedError?.message || parsed?.message || parsed?.detail || raw;
-    // 如果 error 是通用占位符（如 "Internal error"），优先使用 detail 字段
+      parsed?.message ||
+      (parsedError && typeof parsedError === "object"
+        ? parsedError.message
+        : "") ||
+      (typeof parsedError === "string" ? parsedError : "") ||
+      parsed?.detail ||
+      raw;
+    // 如果 message 落到了通用占位符（如 "Internal error"），优先使用 detail
     if (message === "Internal error" && parsed?.detail) {
       message = parsed.detail;
     }
     return {
       message,
       code: String(
-        parsed?.code || parsedError?.code || parsed?.error || "",
+        parsed?.code ||
+          (parsedError && typeof parsedError === "object"
+            ? parsedError.code
+            : "") ||
+          (typeof parsedError === "string" ? parsedError : "") ||
+          "",
       ).trim(),
       retryAfter: parsed?.retry_after_seconds,
     };
@@ -2904,12 +2919,16 @@ async function shrinkImageForEdit(src, maxEdge = 1536, quality = 0.88) {
     const w = img.naturalWidth || img.width;
     const h = img.naturalHeight || img.height;
     if (!w || !h) return source;
-    // Nothing to do if the image is already smaller than our cap AND is
-    // already a small-ish data URI. We still re-encode data URIs larger
-    // than ~1.2 MB to cut base64 bloat even if the dimensions are modest.
+    // Only short-circuit for already-tiny data URIs (≤150 KB). Anything
+    // larger gets re-encoded as JPEG even if pixel dimensions are modest —
+    // base64 bulk is what burns the edge-function CPU budget on i2i, not
+    // raw pixel count. A 1024×1024 PNG screenshot easily sits at 1 MB+
+    // even though its dimensions are at the cap, and used to slip past
+    // the old isSmallDataUri (<1.2 MB) check.
     const skipResize = Math.max(w, h) <= maxEdge;
-    const isSmallDataUri = source.startsWith("data:") && source.length < 1.2e6;
-    if (skipResize && isSmallDataUri) return source;
+    const isAlreadyTiny =
+      source.startsWith("data:") && source.length < 150_000;
+    if (skipResize && isAlreadyTiny) return source;
     const scale = Math.min(1, maxEdge / Math.max(w, h));
     const targetW = Math.max(1, Math.round(w * scale));
     const targetH = Math.max(1, Math.round(h * scale));
@@ -7188,12 +7207,16 @@ async function generateImageFromPrompt(
       // each down to ~300-600 KB and still looks indistinguishable at
       // normal viewing size for i2i.
       setImageGenerationBusy(true, "正在压缩上传图片...");
-      // Aggressive cap: 1024 px long edge, JPEG q=0.82 ≈ 150-300 KB per
-      // image. This keeps the request body well under the 2 MB gateway
-      // limit and trims CPU pressure on the edge-function JSON pipeline.
+      // Aggressive cap: 896 px long edge, JPEG q=0.78 ≈ 80-180 KB per
+      // image. i2i upstreams (xem8k5 gpt-image-2 etc.) don't need full
+      // 1024 detail from the reference — they synthesize at their own
+      // resolution. Smaller refs mean less base64 bulk going through the
+      // 2-hop JSON pipeline (frontend → gateway → modelscope-proxy),
+      // which was the root cause of "not having enough compute resources"
+      // errors on multi-image i2i.
       const compressed = await Promise.all(
         imageAttachments.map((a) =>
-          shrinkImageForEdit(a.dataUrl || a.url, 1024, 0.82),
+          shrinkImageForEdit(a.dataUrl || a.url, 896, 0.78),
         ),
       );
       requestBody.image = compressed.filter(Boolean);
