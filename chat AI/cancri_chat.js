@@ -456,7 +456,10 @@ function showCaptchaModal(payload) {
         if (data.verified && data.token) {
           captchaToken = data.token;
           modal.classList.remove("open");
-          setTimeout(() => modal.remove(), 300);
+          window.setTimeout(() => {
+            form.remove();
+            frame.remove();
+          }, 120000);
           resolve(true);
         } else {
           errorEl.textContent = data.message || "验证失败，请重试";
@@ -3497,6 +3500,46 @@ async function proxyFetchWithTimeout(url, options = {}, timeoutMs, label) {
   );
 }
 
+async function submitMediaDownloadForm(url) {
+  const session = await ensureAuthSession();
+  const frameName = `cancri-download-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
+  const frame = document.createElement("iframe");
+  frame.name = frameName;
+  frame.style.display = "none";
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = EDGE_FUNCTION_URL;
+  form.target = frameName;
+  form.enctype = "application/x-www-form-urlencoded";
+  form.acceptCharset = "UTF-8";
+  form.style.display = "none";
+
+  const fields = {
+    endpoint: "media-download",
+    url,
+    __auth_token: session.access_token,
+  };
+  Object.entries(fields).forEach(([name, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = String(value || "");
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(frame);
+  document.body.appendChild(form);
+  form.submit();
+  window.setTimeout(() => {
+    form.remove();
+    frame.remove();
+  }, 600000);
+  return true;
+}
+
 function createChatTurnId() {
   return `turn_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -6260,6 +6303,16 @@ async function downloadViaMediaProxy(url, kind) {
   if (!/^https?:\/\//i.test(trimmed)) {
     showToast("无法下载：链接无效");
     return false;
+  }
+  if (kind === "video") {
+    try {
+      await submitMediaDownloadForm(trimmed);
+      showToast("正在开始视频下载...");
+      return true;
+    } catch (e) {
+      showToast(`下载失败：${e?.message || e}`);
+      return false;
+    }
   }
   try {
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
