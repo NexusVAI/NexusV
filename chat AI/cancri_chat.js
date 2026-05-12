@@ -2141,7 +2141,7 @@ const MODEL_CATALOG = [
   // 2026-05-10: HappyHorse 1.0 i2v / t2v / r2v + Wan 2.7 t2v + Wan 2.7
   // image-pro。HappyHorse 与 Wan 2.7 现在共用同一个阿里云百炼账号。
   // HappyHorse 系列用 ../Logo/欢乐马.webp 图标；万相系列用 qwen-color.svg。
-  // GitHub Pages 部署脚本（.github/workflows/static.yml）只拷贝 chat AI/*.svg，
+  // GitHub Pages 部署脚本（.github/workflows/static.yml）只拷贝 chat/*.svg，
   // 不含其他格式；.webp 图标放在 /Logo/ 根目录下，需以 ../Logo/ 访问。
   {
     id: "happyhorse-1.0-i2v",
@@ -3240,13 +3240,94 @@ async function ensureAuthSession() {
   return authSessionPromise;
 }
 
+// Render an invisible Cloudflare Turnstile widget and resolve with the
+// resulting token. Used to satisfy the Supabase Auth `captchaToken`
+// requirement when `security_captcha_enabled = true` is set server-side.
+//
+// Rejects (rather than resolves with an empty token) on any failure so the
+// caller can show a clear error — Supabase will reject the signInWithOtp
+// call anyway if the token is missing or invalid, so we'd rather fail fast
+// here with a UI-friendly message.
+function getLoginCaptchaToken() {
+  return new Promise((resolve, reject) => {
+    const siteKey = (typeof window !== "undefined" && window.__LOGIN_TURNSTILE_SITE_KEY__) || "";
+    if (!siteKey) return reject(new Error("Login captcha is not configured."));
+    if (typeof window === "undefined" || !window.turnstile) {
+      return reject(new Error("人机验证脚本未加载，请刷新页面后重试。"));
+    }
+
+    let container = document.getElementById("loginTurnstileContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "loginTurnstileContainer";
+      // Position off-screen but render-able. Turnstile's "invisible" size
+      // still requires a real, attached DOM node.
+      container.style.position = "fixed";
+      container.style.bottom = "0";
+      container.style.right = "0";
+      container.style.width = "300px";
+      container.style.height = "65px";
+      container.style.opacity = "0";
+      container.style.pointerEvents = "none";
+      container.style.zIndex = "-1";
+      document.body.appendChild(container);
+    }
+
+    let settled = false;
+    let widgetId = null;
+    const cleanup = () => {
+      try {
+        if (widgetId !== null && window.turnstile?.remove) {
+          window.turnstile.remove(widgetId);
+        }
+      } catch (_e) {
+        /* ignore widget cleanup errors */
+      }
+    };
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      cleanup();
+      fn(value);
+    };
+    const timeoutId = setTimeout(() => {
+      finish(reject, new Error("人机验证超时，请重试。"));
+    }, 15000);
+
+    try {
+      widgetId = window.turnstile.render(container, {
+        sitekey: siteKey,
+        size: "invisible",
+        callback: (token) => finish(resolve, token),
+        "error-callback": () => finish(reject, new Error("人机验证失败，请重试。")),
+        "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
+        "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
+      });
+      // Invisible mode usually triggers automatically, but some loader
+      // builds need an explicit execute() call.
+      if (widgetId !== null && window.turnstile?.execute) {
+        try {
+          window.turnstile.execute(widgetId);
+        } catch (_e) {
+          /* render's callback will still fire if it succeeds */
+        }
+      }
+    } catch (err) {
+      finish(reject, err instanceof Error ? err : new Error(String(err)));
+    }
+  });
+}
+
 async function sendOtp(email) {
   const client = getSupabaseClient();
+  const captchaToken = await getLoginCaptchaToken();
   const { error } = await client.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: true,
       emailRedirectTo: window.location.origin + window.location.pathname,
+      captchaToken,
     },
   });
   if (error) throw error;

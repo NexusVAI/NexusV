@@ -2,13 +2,13 @@
  * Cancri API 平台共享样式
  *
  * 适用页面：
- *   chat AI/api_apply.html      （申请 API）
- *   chat AI/api_keys.html       （我的 Keys）
- *   chat AI/api_models.html     （模型广场）
- *   chat AI/api_docs.html       （API 文档）
- *   chat AI/api/admin.html      （管理员审核）
- *   chat AI/api/admin_lines.html（管理员模型线路）
- *   chat AI/api/admin_usage.html（管理员调用日志）
+ *   chat/api_apply.html      （申请 API）
+ *   chat/api_keys.html       （我的 Keys）
+ *   chat/api_models.html     （模型广场）
+ *   chat/api_docs.html       （API 文档）
+ *   chat/api/admin.html      （管理员审核）
+ *   chat/api/admin_lines.html（管理员模型线路）
+ *   chat/api/admin_usage.html（管理员调用日志）
  *
  * 设计目标：与主 ChatAI 暗色风格一致，统一间距 / 字体 / 配色 / 状态颜色。
  * 仅引入页面共有的视觉语言；页面专有样式（如 admin 表格列宽、模型卡片等）

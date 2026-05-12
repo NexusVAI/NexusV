@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>管理员 · API 调用日志 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
@@ -196,7 +197,7 @@
         <a href="./admin_users.html">用户</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
-        <a href="../cancri_chat_ui_v_3.html" style="color: var(--text-faint)"
+        <a href="../" style="color: var(--text-faint)"
           >← 返回聊天</a
         >
       </nav>
@@ -206,13 +207,13 @@
       <div id="login-gate" class="gate" style="display: none">
         <h2>需要登录</h2>
         <p>请先登录账号，验证你的管理员身份。</p>
-        <a class="btn-primary" href="../cancri_chat_ui_v_3.html">前往登录</a>
+        <a class="btn-primary" href="../">前往登录</a>
       </div>
 
       <div id="deny-gate" class="gate deny" style="display: none">
         <h2>无权访问</h2>
         <p>这个页面仅站点管理员可见。</p>
-        <a class="btn-primary" href="../cancri_chat_ui_v_3.html">返回聊天</a>
+        <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
       <div id="main" style="display: none">
