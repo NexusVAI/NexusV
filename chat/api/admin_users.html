@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>管理员 · 用户 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+    <script src="./_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api-platform.css" />
+    <style>
+      .stat-card.danger {
+        border-color: rgba(248, 113, 113, 0.4);
+        background: rgba(248, 113, 113, 0.05);
+      }
+      .stat-card.danger .value {
+        color: var(--err);
+      }
+      .stat-card .value {
+        font-variant-numeric: tabular-nums;
+      }
+      .panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+      }
+      .panel-head {
+        padding: 12px 18px 10px;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .panel-head .hint {
+        font-weight: 400;
+        font-size: 12px;
+        color: var(--text-mute);
+      }
+      .panel-body {
+        padding: 14px 18px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .form-row.full {
+        grid-template-columns: 1fr;
+      }
+      .form-row label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--text-mute);
+      }
+      .form-row input,
+      .form-row select,
+      .form-row textarea {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-family: inherit;
+      }
+      .form-row textarea {
+        min-height: 64px;
+        resize: vertical;
+      }
+      .form-row input[type="search"] {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      }
+      .matches {
+        margin-top: 8px;
+        max-height: 280px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-elev);
+      }
+      .matches:empty {
+        display: none;
+      }
+      .match-row {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+      }
+      .match-row:last-child {
+        border-bottom: none;
+      }
+      .match-row:hover,
+      .match-row.selected {
+        background: rgba(74, 222, 128, 0.06);
+      }
+      .match-row .email {
+        flex: 1;
+        font-size: 13px;
+      }
+      .match-row .uid {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .match-row .meta {
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .match-row.banned {
+        background: rgba(248, 113, 113, 0.05);
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 10.5px;
+        font-weight: 600;
+        border-radius: 999px;
+      }
+      .pill.banned {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--err);
+      }
+      .pill.anon {
+        background: rgba(154, 154, 154, 0.12);
+        color: var(--text-mute);
+      }
+      .btn-ban {
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid rgba(248, 113, 113, 0.3);
+        background: rgba(248, 113, 113, 0.08);
+        color: var(--err);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .btn-ban:hover {
+        background: rgba(248, 113, 113, 0.15);
+      }
+      .btn-ban:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-unban {
+        padding: 5px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        background: rgba(74, 222, 128, 0.08);
+        color: var(--ok);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .btn-unban:hover {
+        background: rgba(74, 222, 128, 0.15);
+      }
+      .ban-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 110px 120px;
+        gap: 12px;
+        align-items: center;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .ban-row:last-child {
+        border-bottom: none;
+      }
+      .ban-row .uid {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11.5px;
+        color: var(--text-mute);
+      }
+      .ban-row .reason {
+        font-size: 12px;
+        color: var(--text-mute);
+      }
+      .ban-row .when {
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .ban-row .actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+      .toast {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%) translateY(8px);
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      .empty-bans {
+        padding: 22px;
+        text-align: center;
+        color: var(--text-mute);
+        font-size: 13px;
+      }
+      @media (max-width: 720px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .ban-row {
+          grid-template-columns: 1fr 90px;
+          grid-template-rows: auto auto auto;
+        }
+        .ban-row .reason,
+        .ban-row .when,
+        .ban-row .actions {
+          grid-column: 1 / -1;
+        }
+        .ban-row .actions {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="../api_apply.html">申请 API</a>
+        <a href="../api_keys.html">我的 Keys</a>
+        <a href="../api_models.html">模型广场</a>
+        <a href="../api_docs.html">文档</a>
+        <a href="./admin.html">审核</a>
+        <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
+        <a href="./admin_users.html" class="active">用户</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../" style="color: var(--text-faint)"
+          >← 返回聊天</a
+        >
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>
+          这个页面仅站点管理员可见。如果你认为这是误判，请联系
+          <code>站主</code>。
+        </p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>用户封禁</h1>
+          <p>
+            从 <code>auth.users</code> 搜索用户（邮箱或 user_id 前缀），封禁后
+            会进入 <code>public.user_bans</code>，所有 chat / image / api 请求
+            在 60s 内被拒（403）。轮换 / 撤销点"解封"。
+          </p>
+        </header>
+
+        <div class="stats">
+          <div class="stat-card danger">
+            <div class="label">当前封禁</div>
+            <div class="value" id="stat-active">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">历史总数</div>
+            <div class="value" id="stat-total">—</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            搜索 + 封禁
+            <span class="hint">支持邮箱片段或 user_id 前缀（≥3 字符）</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-row full">
+              <label>
+                关键字
+                <input
+                  id="searchInput"
+                  type="search"
+                  placeholder="user@example.com 或 a3b4..."
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+            <div class="matches" id="matches"></div>
+            <div class="form-row">
+              <label>
+                被封禁的 user_id（手填或从上方点选）
+                <input
+                  id="userIdInput"
+                  type="text"
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                  spellcheck="false"
+                />
+              </label>
+              <label>
+                到期时间（可选，留空 = 永久）
+                <input id="expiresAtInput" type="datetime-local" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label>
+                封禁原因（短，进 reason 字段）
+                <input
+                  id="reasonInput"
+                  type="text"
+                  placeholder="abuse / spam / quota / test ..."
+                  maxlength="64"
+                />
+              </label>
+              <label style="display: flex; align-items: flex-end">
+                <button class="btn-ban" id="banBtn">封禁此用户</button>
+              </label>
+            </div>
+            <div class="form-row full">
+              <label>
+                附加说明（可选，进 notes 字段，仅管理员可见）
+                <textarea
+                  id="notesInput"
+                  placeholder="例如：滥用免费额度，工单 #123，IP 88.x.x.x"
+                  maxlength="1024"
+                ></textarea>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            当前封禁
+            <span class="hint">按封禁时间倒序，最多 500 条</span>
+            <span class="spacer" style="flex: 1"></span>
+            <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+          </div>
+          <div id="bansList"></div>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const sb = window.supabase.createClient(
+        window.__SUPABASE_URL__,
+        window.__SUPABASE_ANON_KEY__,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false,
+            storageKey: "cancri_supabase_auth",
+          },
+        },
+      );
+      const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
+      let BANS = [];
+      let BANNED_SET = new Set();
+      let searchTimer = null;
+      let lastQuery = "";
+
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => {
+        const d = document.createElement("div");
+        d.textContent = String(s == null ? "" : s);
+        return d.innerHTML;
+      };
+
+      function showToast(msg, kind) {
+        const t = $("toast");
+        t.textContent = msg;
+        t.className = "toast " + (kind || "");
+        requestAnimationFrame(() => t.classList.add("show"));
+        setTimeout(() => t.classList.remove("show"), 2400);
+      }
+
+      async function getSession() {
+        const {
+          data: { session },
+        } = await sb.auth.getSession();
+        return session;
+      }
+
+      async function callGW(payload, session) {
+        const resp = await fetch(GW, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + session.access_token,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json().catch(() => ({}));
+        return { ok: resp.ok, status: resp.status, data };
+      }
+
+      async function init() {
+        const session = await getSession();
+        $("loading").style.display = "none";
+        if (!session || !session.user || session.user.is_anonymous) {
+          $("login-gate").style.display = "block";
+          return;
+        }
+        const check = await callGW({ endpoint: "admin_check" }, session);
+        if (!check.ok || !check.data?.is_admin) {
+          $("deny-gate").style.display = "block";
+          return;
+        }
+        $("main").style.display = "block";
+        await loadBans();
+      }
+
+      async function loadBans() {
+        const session = await getSession();
+        const r = await callGW({ endpoint: "admin_list_bans" }, session);
+        if (r.status === 403) {
+          $("deny-gate").style.display = "block";
+          return;
+        }
+        if (!r.ok) {
+          showToast("加载失败：HTTP " + r.status, "err");
+          return;
+        }
+        BANS = Array.isArray(r.data?.bans) ? r.data.bans : [];
+        BANNED_SET = new Set(BANS.filter((b) => b.is_active).map((b) => b.user_id));
+        const active = BANS.filter((b) => b.is_active).length;
+        $("stat-active").textContent = active;
+        $("stat-total").textContent = BANS.length;
+        renderBans();
+        // Re-run any pending search to refresh banned indicators.
+        if (lastQuery) doSearch();
+      }
+
+      function shortTime(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        const diff = Date.now() - d.getTime();
+        if (diff < 60_000) return Math.round(diff / 1000) + "s 前";
+        if (diff < 3600_000) return Math.round(diff / 60000) + "m 前";
+        if (diff < 86400_000) return Math.round(diff / 3600000) + "h 前";
+        return d.toLocaleString("zh-CN", { hour12: false });
+      }
+
+      function renderBans() {
+        const root = $("bansList");
+        if (!BANS.length) {
+          root.innerHTML = '<div class="empty-bans">暂无封禁记录。</div>';
+          return;
+        }
+        root.innerHTML = BANS.map((b) => {
+          const expires = b.expires_at
+            ? `到期：${esc(new Date(b.expires_at).toLocaleString("zh-CN", { hour12: false }))}`
+            : "永久";
+          const status = b.is_active
+            ? '<span class="pill banned">已封禁</span>'
+            : '<span class="pill anon">已过期</span>';
+          return `<div class="ban-row">
+            <div>
+              <div>${esc(b.email || "(未知邮箱)")}</div>
+              <div class="uid">${esc(b.user_id)}</div>
+            </div>
+            <div>
+              <div class="reason">${esc(b.reason || "—")}</div>
+              <div class="when">${esc(shortTime(b.banned_at))} · ${esc(b.banned_by_email || b.banned_by || "system")}</div>
+              <div class="when">${esc(expires)}</div>
+              ${b.notes ? `<div class="when" style="margin-top:4px">${esc(b.notes)}</div>` : ""}
+            </div>
+            <div>${status}</div>
+            <div class="actions">
+              <button class="btn-unban" data-uid="${esc(b.user_id)}">解封</button>
+            </div>
+          </div>`;
+        }).join("");
+        root.querySelectorAll("button.btn-unban").forEach((btn) => {
+          btn.addEventListener("click", () => doUnban(btn.dataset.uid, btn));
+        });
+      }
+
+      async function doSearch() {
+        const q = $("searchInput").value.trim();
+        const matchesEl = $("matches");
+        if (q.length < 3) {
+          matchesEl.innerHTML = "";
+          lastQuery = "";
+          return;
+        }
+        lastQuery = q;
+        const session = await getSession();
+        const r = await callGW(
+          { endpoint: "admin_find_user", query: q },
+          session,
+        );
+        if (!r.ok) {
+          matchesEl.innerHTML = `<div class="match-row" style="color:var(--err);cursor:default">查询失败：${esc(r.data?.message || r.status)}</div>`;
+          return;
+        }
+        const matches = Array.isArray(r.data?.matches) ? r.data.matches : [];
+        if (!matches.length) {
+          matchesEl.innerHTML =
+            '<div class="match-row" style="color:var(--text-mute);cursor:default">无匹配。</div>';
+          return;
+        }
+        matchesEl.innerHTML = matches
+          .map((m) => {
+            const isBanned = BANNED_SET.has(m.user_id);
+            const banPill = isBanned
+              ? '<span class="pill banned">已封禁</span>'
+              : "";
+            const anonPill = m.is_anonymous
+              ? '<span class="pill anon">匿名</span>'
+              : "";
+            return `<div class="match-row${isBanned ? " banned" : ""}" data-uid="${esc(m.user_id)}">
+              <div class="email">${esc(m.email || "(无邮箱)")}</div>
+              ${anonPill}
+              ${banPill}
+              <div class="uid">${esc(m.user_id.slice(0, 8))}…</div>
+              <div class="meta">${esc(shortTime(m.last_sign_in_at || m.created_at))}</div>
+            </div>`;
+          })
+          .join("");
+        matchesEl.querySelectorAll(".match-row[data-uid]").forEach((row) => {
+          row.addEventListener("click", () => {
+            $("userIdInput").value = row.dataset.uid;
+            matchesEl
+              .querySelectorAll(".match-row")
+              .forEach((r) => r.classList.remove("selected"));
+            row.classList.add("selected");
+          });
+        });
+      }
+
+      async function doBan() {
+        const userId = $("userIdInput").value.trim().toLowerCase();
+        const reason = $("reasonInput").value.trim() || "manual";
+        const notes = $("notesInput").value.trim();
+        const expiresLocal = $("expiresAtInput").value.trim();
+        let expiresIso = null;
+        if (expiresLocal) {
+          const d = new Date(expiresLocal);
+          if (isNaN(d.getTime()) || d.getTime() <= Date.now()) {
+            showToast("到期时间必须在未来", "err");
+            return;
+          }
+          expiresIso = d.toISOString();
+        }
+        if (
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            userId,
+          )
+        ) {
+          showToast("user_id 必须是 UUID", "err");
+          return;
+        }
+        if (
+          !confirm(
+            "确定封禁此用户？\nuser_id: " +
+              userId +
+              "\n原因: " +
+              reason +
+              "\n" +
+              (expiresIso ? "到期: " + expiresIso : "永久"),
+          )
+        ) {
+          return;
+        }
+        const session = await getSession();
+        const btn = $("banBtn");
+        btn.disabled = true;
+        btn.textContent = "封禁中…";
+        const r = await callGW(
+          {
+            endpoint: "admin_ban_user",
+            user_id: userId,
+            reason,
+            notes,
+            expires_at: expiresIso,
+          },
+          session,
+        );
+        btn.disabled = false;
+        btn.textContent = "封禁此用户";
+        if (!r.ok) {
+          showToast("封禁失败：" + (r.data?.message || r.status), "err");
+          return;
+        }
+        showToast("已封禁 " + userId.slice(0, 8) + "…", "ok");
+        $("userIdInput").value = "";
+        $("reasonInput").value = "";
+        $("notesInput").value = "";
+        $("expiresAtInput").value = "";
+        await loadBans();
+      }
+
+      async function doUnban(userId, btn) {
+        if (!confirm("确定解封 " + userId + "？")) return;
+        const session = await getSession();
+        btn.disabled = true;
+        btn.textContent = "解封中…";
+        const r = await callGW(
+          { endpoint: "admin_unban_user", user_id: userId },
+          session,
+        );
+        if (!r.ok) {
+          showToast("解封失败：" + (r.data?.message || r.status), "err");
+          btn.disabled = false;
+          btn.textContent = "解封";
+          return;
+        }
+        showToast("已解封 " + userId.slice(0, 8) + "…", "ok");
+        await loadBans();
+      }
+
+      $("searchInput").addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(doSearch, 250);
+      });
+      $("banBtn").addEventListener("click", doBan);
+      $("reload-btn").addEventListener("click", loadBans);
+
+      init();
+    </script>
+  </body>
+</html>

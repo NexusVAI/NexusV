@@ -1,0 +1,250 @@
+.composer-wrap {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.composer-halo,
+.composer-right,
+.input-icon,
+.expand-btn {
+  display: none !important;
+}
+
+[data-workbench-composer] {
+  width: min(860px, calc(100vw - 32px));
+  min-height: 124px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--workbench-radius-lg);
+  background: var(--composer-bg);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 18px 48px rgba(15,23,42,.13);
+}
+
+html[data-theme="dark"] [data-workbench-composer] {
+  box-shadow: 0 22px 56px rgba(0,0,0,.34);
+}
+
+[data-workbench-composer]:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 52%, transparent);
+  box-shadow: 0 18px 48px rgba(15,23,42,.13), 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+
+[data-workbench-composer] .composer-input {
+  width: 100%;
+  min-height: 46px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 2px 4px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  resize: none;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+[data-workbench-composer] .composer-bottom {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.composer-tools-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0;
+}
+
+.composer-tools,
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.composer-tool-btn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.composer-tool-btn:hover {
+  background: var(--hover);
+  border-color: var(--line-2);
+  color: var(--text);
+}
+
+.composer-tool-btn.is-active {
+  background: color-mix(in srgb, var(--accent) 17%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  color: var(--accent);
+}
+
+.composer-status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+
+.tool-pill {
+  max-width: 100%;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.tool-pill[hidden] {
+  display: none;
+}
+
+.attachment-preview {
+  width: 100%;
+  max-height: 112px;
+  margin: 0;
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding: 0 2px 2px;
+}
+
+.attachment-preview[hidden] {
+  display: none;
+}
+
+.attachment-item {
+  width: 88px;
+  height: 74px;
+  border-radius: var(--workbench-radius-md);
+  background: var(--surface-elevated);
+}
+
+.send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--send-bg);
+  color: var(--send-fg);
+  box-shadow: none;
+}
+
+.send-btn:hover {
+  background: var(--send-bg);
+  transform: translateY(-1px);
+}
+
+.send-btn.is-streaming {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.send-btn:disabled {
+  opacity: .34;
+}
+
+.plus-popover .popover-inner {
+  min-width: 218px;
+}
+
+.plus-popover {
+  position: fixed;
+  z-index: 120;
+  top: auto;
+  left: auto;
+  bottom: auto;
+  margin: 0;
+  transform-origin: top left;
+}
+
+.plus-popover.open,
+.plus-popover.show {
+  transform: none;
+}
+
+.upload-menu-item {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  background: transparent;
+  color: var(--text);
+}
+
+.upload-menu-item small {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  [data-workbench-composer] {
+    width: 100%;
+    min-height: 116px;
+    padding: 12px 10px 10px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  [data-workbench-composer] .composer-input {
+    min-height: 48px;
+    max-height: 138px;
+  }
+
+  [data-workbench-composer] .composer-bottom {
+    min-height: 0;
+  }
+
+  .composer-tools-row {
+    gap: 8px;
+  }
+
+  .composer-status {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .tool-pill {
+    display: none !important;
+  }
+
+  .composer-actions {
+    flex-shrink: 0;
+  }
+
+  .composer-tool-btn,
+  .composer-actions .voice-btn,
+  .composer-actions .send-btn {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+  }
+}

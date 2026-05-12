@@ -1,0 +1,182 @@
+.sidebar {
+  width: var(--workbench-sidebar-width);
+  background: var(--sidebar-bg);
+  transition:
+    width 220ms var(--workbench-ease),
+    transform 220ms var(--workbench-ease),
+    background 160ms ease,
+    box-shadow 180ms ease;
+}
+
+.sidebar.collapsed,
+.sidebar[data-collapsed="true"] {
+  width: var(--workbench-rail-width);
+}
+
+.sidebar-label,
+.sidebar-footer-text,
+.conversation-title,
+.recent-item-title,
+.account-meta,
+.upgrade-btn,
+.account-arrow {
+  transition: opacity 140ms ease, transform 180ms ease, width 180ms ease;
+}
+
+.sidebar.collapsed .sidebar-label,
+.sidebar[data-collapsed="true"] .sidebar-label,
+.sidebar.collapsed .sidebar-footer-text,
+.sidebar[data-collapsed="true"] .sidebar-footer-text,
+.sidebar.collapsed .conversation-title,
+.sidebar[data-collapsed="true"] .conversation-title,
+.sidebar.collapsed .recent-item-title,
+.sidebar[data-collapsed="true"] .recent-item-title,
+.sidebar.collapsed .account-meta,
+.sidebar[data-collapsed="true"] .account-meta,
+.sidebar.collapsed .upgrade-btn,
+.sidebar[data-collapsed="true"] .upgrade-btn,
+.sidebar.collapsed .account-arrow,
+.sidebar[data-collapsed="true"] .account-arrow {
+  opacity: 0;
+  width: 0;
+  max-width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.sidebar-footer {
+  padding: 10px;
+  gap: 8px;
+}
+
+.sidebar-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-footer-btn {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--workbench-radius-sm);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.sidebar-footer-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.sidebar-footer-icon {
+  flex: 0 0 auto;
+}
+
+html[data-theme="dark"] .theme-icon-dark,
+html:not([data-theme="dark"]) .theme-icon-light {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-footer-btn,
+.sidebar[data-collapsed="true"] .sidebar-footer-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  margin: 5px auto !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 12px !important;
+}
+
+.sidebar.collapsed .recent-wrap,
+.sidebar[data-collapsed="true"] .recent-wrap {
+  opacity: 0;
+  width: 0;
+  max-width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.sidebar.collapsed .sidebar-search-wrap,
+.sidebar[data-collapsed="true"] .sidebar-search-wrap {
+  opacity: 0;
+  width: 0;
+  max-width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.sidebar.collapsed .conversation-item-title,
+.sidebar[data-collapsed="true"] .conversation-item-title,
+.sidebar.collapsed .conversation-item-preview,
+.sidebar[data-collapsed="true"] .conversation-item-preview,
+.sidebar.collapsed .recent-conversation-title,
+.sidebar[data-collapsed="true"] .recent-conversation-title {
+  opacity: 0;
+  width: 0;
+  max-width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.sidebar[data-open="true"] {
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(86vw, 304px) !important;
+    max-width: 304px;
+    height: 100dvh;
+    z-index: 140;
+    transform: translateX(-100%);
+    pointer-events: none;
+    box-shadow: none;
+  }
+
+  .sidebar[data-open="true"],
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+    pointer-events: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,.28);
+  }
+
+  .sidebar[data-collapsed="true"] {
+    width: min(86vw, 304px) !important;
+  }
+
+  .sidebar .sidebar-label,
+  .sidebar .sidebar-footer-text,
+  .sidebar .account-meta,
+  .sidebar .upgrade-btn,
+  .sidebar .account-arrow,
+  .sidebar .recent-wrap {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+

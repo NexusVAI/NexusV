@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>API 文档 · Cancri</title>
+    <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+    <link rel="stylesheet" href="./api/api-platform.css" />
+    <style>
+      :root {
+        --bg-code: #0d0d0d;
+        --purple: #c084fc;
+      }
+      body {
+        line-height: 1.6;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 32px;
+        padding: 24px 20px 48px;
+      }
+      .nav-top {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        padding-bottom: 16px;
+        margin-bottom: 0;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .nav-top a {
+        padding: 8px 14px;
+        color: var(--text-mute);
+        text-decoration: none;
+        font-size: 13px;
+        border-radius: 8px;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .nav-top a:hover {
+        background: var(--bg-elev);
+        color: var(--text);
+      }
+      .nav-top a.active {
+        color: var(--text);
+        background: var(--bg-card);
+      }
+      .nav-top .spacer {
+        flex: 1;
+      }
+      aside.toc {
+        position: sticky;
+        top: 24px;
+        height: fit-content;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        font-size: 13px;
+      }
+      aside.toc h4 {
+        color: var(--text-faint);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 16px 0 6px;
+      }
+      aside.toc h4:first-child {
+        margin-top: 0;
+      }
+      aside.toc a {
+        display: block;
+        padding: 5px 10px;
+        color: var(--text-mute);
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 1px;
+        transition: all 0.15s;
+        border-left: 2px solid transparent;
+      }
+      aside.toc a:hover {
+        color: var(--text);
+        background: var(--bg-card);
+      }
+      aside.toc a.active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+        background: var(--bg-card);
+      }
+      main {
+        min-width: 0;
+      }
+      h1 {
+        font-size: 30px;
+        letter-spacing: -0.02em;
+        margin-bottom: 6px;
+      }
+      h1 + p {
+        color: var(--text-mute);
+        font-size: 14px;
+        margin-bottom: 32px;
+      }
+      h2 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 40px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+        scroll-margin-top: 24px;
+      }
+      h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 24px 0 8px;
+        scroll-margin-top: 24px;
+      }
+      p {
+        color: var(--text-mute);
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+      p code,
+      li code,
+      td code {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        background: var(--bg-card);
+        padding: 1px 6px;
+        border-radius: 4px;
+        color: var(--accent);
+        font-size: 12.5px;
+      }
+      ul,
+      ol {
+        margin: 0 0 12px 20px;
+        color: var(--text-mute);
+        font-size: 14px;
+      }
+      ul li,
+      ol li {
+        margin-bottom: 4px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin: 12px 0 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 14px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-mute);
+      }
+      th {
+        background: var(--bg-elev);
+        color: var(--text);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td:first-child {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text);
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+      .endpoint {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 13px;
+        margin: 8px 0;
+      }
+      .method {
+        font-weight: 700;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .method.get {
+        background: rgba(74, 222, 128, 0.12);
+        color: var(--ok);
+      }
+      .method.post {
+        background: rgba(96, 165, 250, 0.12);
+        color: var(--accent);
+      }
+      .code-block {
+        position: relative;
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin: 12px 0;
+        overflow: hidden;
+      }
+      .code-tabs {
+        display: flex;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+        padding: 0 6px;
+      }
+      .code-tab {
+        padding: 8px 14px;
+        background: transparent;
+        border: none;
+        color: var(--text-mute);
+        font-size: 12px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+      }
+      .code-tab:hover {
+        color: var(--text);
+      }
+      .code-tab.active {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+      }
+      .copy-icon {
+        position: absolute;
+        top: 38px;
+        right: 8px;
+        padding: 4px 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        font-size: 11px;
+        border-radius: 5px;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.15s;
+      }
+      .code-block:hover .copy-icon {
+        opacity: 1;
+      }
+      .copy-icon:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+      .copy-icon.copied {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.3);
+        opacity: 1;
+      }
+      pre {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.65;
+        color: #d8d8d8;
+        padding: 14px 16px;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      pre.lang {
+        display: none;
+      }
+      pre.lang.active {
+        display: block;
+      }
+      pre .k {
+        color: #c084fc;
+      }
+      pre .s {
+        color: #86efac;
+      }
+      pre .n {
+        color: #fbbf24;
+      }
+      pre .c {
+        color: var(--text-faint);
+        font-style: italic;
+      }
+      .alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        margin: 16px 0;
+        line-height: 1.6;
+      }
+      .alert.info {
+        background: rgba(96, 165, 250, 0.08);
+        border: 1px solid rgba(96, 165, 250, 0.25);
+        color: var(--text);
+      }
+      .alert.warn {
+        background: rgba(251, 191, 36, 0.08);
+        border: 1px solid rgba(251, 191, 36, 0.25);
+        color: var(--text);
+      }
+      .alert.danger {
+        background: rgba(248, 113, 113, 0.08);
+        border: 1px solid rgba(248, 113, 113, 0.25);
+        color: var(--text);
+      }
+      .alert b {
+        color: var(--text);
+      }
+      .pill {
+        display: inline-block;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        margin-right: 4px;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+      }
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        aside.toc {
+          position: static;
+          max-height: none;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 16px;
+        }
+        aside.toc a {
+          display: inline-block;
+          margin-right: 4px;
+          margin-bottom: 4px;
+          border-left: none;
+        }
+        aside.toc h4 {
+          display: inline-block;
+          margin-right: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <nav class="nav-top">
+        <a href="./api_apply.html">申请 API</a>
+        <a href="./api_keys.html">我的 Keys</a>
+        <a href="./api_models.html">模型广场</a>
+        <a href="./api_docs.html" class="active">文档</a>
+        <span class="spacer"></span>
+        <a href="./" style="color: var(--text-faint)"
+          >← 返回聊天</a
+        >
+      </nav>
+
+      <aside class="toc">
+        <h4>开始</h4>
+        <a href="#intro">概述</a>
+        <a href="#auth">认证</a>
+        <a href="#quickstart">快速开始</a>
+
+        <h4>API 端点</h4>
+        <a href="#models">列出模型</a>
+        <a href="#chat">Chat Completions</a>
+        <a href="#messages">Messages（Anthropic）</a>
+        <a href="#responses">Responses（Codex）</a>
+
+        <h4>CLI 工具</h4>
+        <a href="#cli-codex">Codex CLI</a>
+        <a href="#cli-claude">Claude Code</a>
+        <a href="#cli-opencode">OpenCode</a>
+        <a href="#cli-openclaw">OpenClaw</a>
+
+        <h4>规则</h4>
+        <a href="#ratelimit">速率限制</a>
+        <a href="#errors">错误码</a>
+        <a href="#sdk">SDK 兼容</a>
+        <a href="#faq">常见问题</a>
+      </aside>
+
+      <main>
+        <h1>Cancri API 文档</h1>
+        <p>
+          OpenAI / Anthropic 双协议兼容的多模型聚合 API。一个 Key，OpenAI SDK、
+          Anthropic SDK、Codex CLI、Claude Code、OpenCode、OpenClaw 都能直接接入。
+        </p>
+
+        <section id="intro">
+          <h2>概述</h2>
+          <p>
+            Cancri API 是一个统一接口层，把多个模型供应商（魔塔 / 百炼 / Claude /
+            Gemini / OpenAI 兼容线路 等）封装在一个端点后面。<b>同一把 Key，三种协议</b>
+            ——选你的客户端原生支持的那一种就行：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>路径</th>
+                <th>协议</th>
+                <th>适合的客户端</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>POST /v1/chat/completions</td>
+                <td>OpenAI Chat Completions</td>
+                <td>openai SDK、LangChain、LiteLLM、OpenCode 等</td>
+              </tr>
+              <tr>
+                <td>POST /v1/responses</td>
+                <td>OpenAI Responses</td>
+                <td>Codex CLI（默认协议）</td>
+              </tr>
+              <tr>
+                <td>POST /v1/messages</td>
+                <td>Anthropic Messages</td>
+                <td>Claude Code、@anthropic-ai/sdk、OpenClaw</td>
+              </tr>
+              <tr>
+                <td>GET /v1/models</td>
+                <td>OpenAI / Anthropic 自适应</td>
+                <td>带 <code>anthropic-version</code> header 时返回 Anthropic 格式</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="endpoint">
+            <span style="color: var(--text-mute)">Base URL：</span>
+            <span id="base-url"
+              >https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</span
+            >
+            <button class="copy-icon" data-copy-text="base-url">复制</button>
+          </div>
+          <ul>
+            <li>认证：<code>Authorization: Bearer cancri_sk_xxx</code> 或 <code>x-api-key: cancri_sk_xxx</code></li>
+            <li>支持流式（SSE）和非流式两种模式</li>
+            <li>所有模型在 <a href="./api_models.html">模型广场</a> 可见</li>
+            <li>图像 / 视频生成只在网页版开放，<b>不</b>对外 API 暴露</li>
+          </ul>
+          <div class="alert info">
+            <b>多线路冗余对你透明。</b> 你看到的 <code>model</code> 字段（如
+            <code>gpt-5.4</code>、<code>deepseek-v3</code>）是统一的品牌 ID，后端会在
+            多条上游线路里按健康度自动选最优路由。某条线路抽风时其他线路自动接管，
+            你不需要改 <code>model</code> 字段。
+          </div>
+        </section>
+
+        <section id="auth">
+          <h2>认证</h2>
+          <p>
+            所有 API 请求都必须在 <code>Authorization</code> 头里带 Bearer Token。Key 形如：
+          </p>
+          <div class="endpoint">
+            <code style="color: var(--accent)">cancri_sk_</code
+            ><span style="color: var(--text-faint)">48 个十六进制字符</span>
+          </div>
+          <p style="color: var(--text-faint); font-size: 12.5px; margin-top: -4px">
+            前缀 <code>cancri_sk_</code>（10 字符）+ 24 字节随机熵的十六进制（48 字符）= <b>总长度恒为 58 字符</b>。
+            做 Key 长度校验的客户端按这个写。
+          </p>
+          <ol>
+            <li>到 <a href="./api_apply.html">申请页</a> 提交申请</li>
+            <li>审核通过后到 <a href="./api_keys.html">Keys 管理页</a> 生成 Key</li>
+            <li>把 Key 安全存好（生成后只显示一次）</li>
+          </ol>
+          <div class="alert warn">
+            <b>⚠️ 不要在浏览器代码或开源仓库里硬编码 Key。</b> Key 一旦泄露，
+            立刻到 Keys 管理页撤销并重新生成。
+          </div>
+          <p>每个账号最多同时持有 <b>5 个</b> 活跃 Key，超过需先撤销旧的。</p>
+        </section>
+
+        <section id="quickstart">
+          <h2>快速开始</h2>
+          <p>用 curl 测试你的 Key 是否可用：</p>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="qs" data-lang="curl">
+                curl
+              </button>
+              <button class="code-tab" data-grp="qs" data-lang="js">
+                Node.js
+              </button>
+              <button class="code-tab" data-grp="qs" data-lang="py">
+                Python
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="qs">复制</button>
+            <pre class="lang active" data-grp="qs" data-lang="curl"><span class="c"># 列出可用模型（不消耗额度）</span>
+curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/models \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
+            <pre class="lang" data-grp="qs" data-lang="js"><span class="c">// 用官方 openai 包，把 baseURL 指过来即可</span>
+<span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
+  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+});
+
+<span class="k">const</span> r = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">"deepseek-v4-pro"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"你好"</span> }],
+});
+console.log(r.choices[<span class="n">0</span>].message.content);</pre>
+            <pre class="lang" data-grp="qs" data-lang="py"><span class="c"># pip install openai</span>
+<span class="k">from</span> openai <span class="k">import</span> OpenAI
+
+client = OpenAI(
+    api_key=<span class="s">"cancri_sk_YOUR_KEY"</span>,
+    base_url=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+)
+
+r = client.chat.completions.create(
+    model=<span class="s">"deepseek-v4-pro"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"你好"</span>}],
+)
+<span class="k">print</span>(r.choices[<span class="n">0</span>].message.content)</pre>
+          </div>
+        </section>
+
+        <section id="models">
+          <h2>列出模型</h2>
+          <div class="endpoint">
+            <span class="method get">GET</span>
+            <span>/v1/models</span>
+          </div>
+          <p>返回当前可调用的全部模型，OpenAI 兼容格式。</p>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="m" data-lang="req">
+                请求
+              </button>
+              <button class="code-tab" data-grp="m" data-lang="resp">
+                响应
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="m">复制</button>
+            <pre class="lang active" data-grp="m" data-lang="req">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/models \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
+            <pre class="lang" data-grp="m" data-lang="resp">{
+  <span class="s">"object"</span>: <span class="s">"list"</span>,
+  <span class="s">"data"</span>: [
+    {
+      <span class="s">"id"</span>: <span class="s">"deepseek-v4-pro"</span>,
+      <span class="s">"object"</span>: <span class="s">"model"</span>,
+      <span class="s">"created"</span>: <span class="n">1740000000</span>,
+      <span class="s">"owned_by"</span>: <span class="s">"cancri"</span>
+    }
+    <span class="c">// ... 更多模型</span>
+  ]
+}</pre>
+          </div>
+          <p>
+            完整模型列表（含品牌、价格档位、能力标签）请到
+            <a href="./api_models.html">模型广场</a> 查看。
+          </p>
+        </section>
+
+        <section id="chat">
+          <h2>Chat Completions</h2>
+          <div class="endpoint">
+            <span class="method post">POST</span>
+            <span>/v1/chat/completions</span>
+          </div>
+          <p>调用任意聊天模型生成回答，支持流式与非流式。</p>
+
+          <h3>请求参数</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>类型</th>
+                <th>必填</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>model</td>
+                <td>string</td>
+                <td>是</td>
+                <td>
+                  模型 ID，例如 <code>deepseek-v4-pro</code>。完整列表见
+                  <a href="./api_models.html">模型广场</a>
+                </td>
+              </tr>
+              <tr>
+                <td>messages</td>
+                <td>array</td>
+                <td>是</td>
+                <td>消息历史，元素 <code>{role, content}</code></td>
+              </tr>
+              <tr>
+                <td>stream</td>
+                <td>boolean</td>
+                <td>否</td>
+                <td>设 true 启用 SSE 流式输出，默认 false</td>
+              </tr>
+              <tr>
+                <td>temperature</td>
+                <td>number</td>
+                <td>否</td>
+                <td>0-2，越高越随机，默认 1</td>
+              </tr>
+              <tr>
+                <td>max_tokens</td>
+                <td>number</td>
+                <td>否</td>
+                <td>最大生成 tokens，受模型能力上限约束</td>
+              </tr>
+              <tr>
+                <td>top_p</td>
+                <td>number</td>
+                <td>否</td>
+                <td>0-1 核采样阈值</td>
+              </tr>
+              <tr>
+                <td>tools</td>
+                <td>array</td>
+                <td>否</td>
+                <td>函数调用工具集（部分模型支持）</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>非流式示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="c1" data-lang="curl">
+                curl
+              </button>
+              <button class="code-tab" data-grp="c1" data-lang="js">
+                Node.js
+              </button>
+              <button class="code-tab" data-grp="c1" data-lang="py">
+                Python
+              </button>
+              <button class="code-tab" data-grp="c1" data-lang="resp">
+                响应
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="c1">复制</button>
+            <pre class="lang active" data-grp="c1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "deepseek-v4-pro",
+    "messages": [
+      {"role": "system", "content": "你是简洁的助手"},
+      {"role": "user", "content": "用一句话解释 RLS"}
+    ]
+  }'</span></pre>
+            <pre class="lang" data-grp="c1" data-lang="js"><span class="k">const</span> r = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">"deepseek-v4-pro"</span>,
+  messages: [
+    { role: <span class="s">"system"</span>, content: <span class="s">"你是简洁的助手"</span> },
+    { role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释 RLS"</span> },
+  ],
+});
+console.log(r.choices[<span class="n">0</span>].message.content);</pre>
+            <pre class="lang" data-grp="c1" data-lang="py">r = client.chat.completions.create(
+    model=<span class="s">"deepseek-v4-pro"</span>,
+    messages=[
+        {<span class="s">"role"</span>: <span class="s">"system"</span>, <span class="s">"content"</span>: <span class="s">"你是简洁的助手"</span>},
+        {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释 RLS"</span>},
+    ],
+)
+<span class="k">print</span>(r.choices[<span class="n">0</span>].message.content)</pre>
+            <pre class="lang" data-grp="c1" data-lang="resp">{
+  <span class="s">"id"</span>: <span class="s">"chatcmpl-xxx"</span>,
+  <span class="s">"object"</span>: <span class="s">"chat.completion"</span>,
+  <span class="s">"created"</span>: <span class="n">1740000000</span>,
+  <span class="s">"model"</span>: <span class="s">"deepseek-v4-pro"</span>,
+  <span class="s">"choices"</span>: [{
+    <span class="s">"index"</span>: <span class="n">0</span>,
+    <span class="s">"message"</span>: {
+      <span class="s">"role"</span>: <span class="s">"assistant"</span>,
+      <span class="s">"content"</span>: <span class="s">"行级安全策略，按行控制谁能读写。"</span>
+    },
+    <span class="s">"finish_reason"</span>: <span class="s">"stop"</span>
+  }],
+  <span class="s">"usage"</span>: { <span class="s">"prompt_tokens"</span>: <span class="n">22</span>, <span class="s">"completion_tokens"</span>: <span class="n">14</span>, <span class="s">"total_tokens"</span>: <span class="n">36</span> }
+}</pre>
+          </div>
+
+          <h3>流式（SSE）示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="c2" data-lang="curl">
+                curl
+              </button>
+              <button class="code-tab" data-grp="c2" data-lang="js">
+                Node.js
+              </button>
+              <button class="code-tab" data-grp="c2" data-lang="py">
+                Python
+              </button>
+            </div>
+            <button class="copy-icon" data-copy-grp="c2">复制</button>
+            <pre class="lang active" data-grp="c2" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -N \
+  -d <span class="s">'{
+    "model": "deepseek-v4-pro",
+    "messages": [{"role":"user","content":"hello"}],
+    "stream": true
+  }'</span></pre>
+            <pre class="lang" data-grp="c2" data-lang="js"><span class="k">const</span> stream = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="s">"deepseek-v4-pro"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"hello"</span> }],
+  stream: <span class="k">true</span>,
+});
+<span class="k">for await</span> (<span class="k">const</span> chunk <span class="k">of</span> stream) {
+  process.stdout.write(chunk.choices[<span class="n">0</span>]?.delta?.content || <span class="s">""</span>);
+}</pre>
+            <pre class="lang" data-grp="c2" data-lang="py">stream = client.chat.completions.create(
+    model=<span class="s">"deepseek-v4-pro"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"hello"</span>}],
+    stream=<span class="k">True</span>,
+)
+<span class="k">for</span> chunk <span class="k">in</span> stream:
+    <span class="k">print</span>(chunk.choices[<span class="n">0</span>].delta.content <span class="k">or</span> <span class="s">""</span>, end=<span class="s">""</span>, flush=<span class="k">True</span>)</pre>
+          </div>
+          <div class="alert info">
+            <b>SSE 格式：</b> 每个事件以 <code>data: </code> 开头的 JSON 行，
+            最后以 <code>data: [DONE]</code> 结束。每个 chunk 的
+            <code>choices[0].delta.content</code> 是增量文本。
+          </div>
+        </section>
+
+        <section id="messages">
+          <h2>Messages（Anthropic 协议）</h2>
+          <div class="endpoint">
+            <span class="method post">POST</span>
+            <span>/v1/messages</span>
+          </div>
+          <p>
+            <b>Anthropic Messages API 兼容</b>，给 Claude Code、官方 <code>@anthropic-ai/sdk</code>、
+            OpenClaw 等以 Anthropic 协议为母语的客户端用。请求体和响应体跟 Anthropic 一模一样，
+            但模型 ID 用我们这边的（<code>claude-sonnet-4-6</code>、<code>gpt-5.4</code>、
+            <code>deepseek-v4-pro</code> 等都行——网关会自动识别协议并代为翻译）。
+          </p>
+
+          <h3>请求参数</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>类型</th>
+                <th>必填</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>model</td>
+                <td>string</td>
+                <td>是</td>
+                <td>模型 ID（与 Chat Completions 共用同一份 <a href="./api_models.html">模型广场</a>）</td>
+              </tr>
+              <tr>
+                <td>messages</td>
+                <td>array</td>
+                <td>是</td>
+                <td>Anthropic 风格的对话历史（支持 <code>text</code> / <code>image</code> / <code>tool_use</code> / <code>tool_result</code> content blocks）</td>
+              </tr>
+              <tr>
+                <td>system</td>
+                <td>string / array</td>
+                <td>否</td>
+                <td>系统提示，单字符串或 text-block 数组都可以</td>
+              </tr>
+              <tr>
+                <td>max_tokens</td>
+                <td>number</td>
+                <td>是</td>
+                <td>Anthropic 协议要求显式指定最大输出</td>
+              </tr>
+              <tr>
+                <td>stream</td>
+                <td>boolean</td>
+                <td>否</td>
+                <td>true 走 Anthropic SSE 帧（<code>message_start</code> / <code>content_block_delta</code> / <code>message_stop</code>）</td>
+              </tr>
+              <tr>
+                <td>tools</td>
+                <td>array</td>
+                <td>否</td>
+                <td>Anthropic 工具定义 <code>{name, description, input_schema}</code>，工具调用结果通过 <code>tool_use</code> / <code>tool_result</code> 往返</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>非流式示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="msg1" data-lang="curl">curl</button>
+              <button class="code-tab" data-grp="msg1" data-lang="js">Node.js</button>
+              <button class="code-tab" data-grp="msg1" data-lang="py">Python</button>
+              <button class="code-tab" data-grp="msg1" data-lang="resp">响应</button>
+            </div>
+            <button class="copy-icon" data-copy-grp="msg1">复制</button>
+            <pre class="lang active" data-grp="msg1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/messages \
+  -H <span class="s">"x-api-key: cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"anthropic-version: 2023-06-01"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "claude-sonnet-4-6",
+    "max_tokens": 256,
+    "system": "你是简洁的助手",
+    "messages": [{"role":"user","content":"用一句话解释 RLS"}]
+  }'</span></pre>
+            <pre class="lang" data-grp="msg1" data-lang="js"><span class="c">// npm i @anthropic-ai/sdk</span>
+<span class="k">import</span> Anthropic <span class="k">from</span> <span class="s">"@anthropic-ai/sdk"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> Anthropic({
+  apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
+  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>,
+});
+
+<span class="k">const</span> r = <span class="k">await</span> client.messages.create({
+  model: <span class="s">"claude-sonnet-4-6"</span>,
+  max_tokens: <span class="n">256</span>,
+  system: <span class="s">"你是简洁的助手"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释 RLS"</span> }],
+});
+console.log(r.content[<span class="n">0</span>].text);</pre>
+            <pre class="lang" data-grp="msg1" data-lang="py"><span class="c"># pip install anthropic</span>
+<span class="k">from</span> anthropic <span class="k">import</span> Anthropic
+
+client = Anthropic(
+    api_key=<span class="s">"cancri_sk_YOUR_KEY"</span>,
+    base_url=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>,
+)
+
+r = client.messages.create(
+    model=<span class="s">"claude-sonnet-4-6"</span>,
+    max_tokens=<span class="n">256</span>,
+    system=<span class="s">"你是简洁的助手"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释 RLS"</span>}],
+)
+<span class="k">print</span>(r.content[<span class="n">0</span>].text)</pre>
+            <pre class="lang" data-grp="msg1" data-lang="resp">{
+  <span class="s">"id"</span>: <span class="s">"msg_xxx"</span>,
+  <span class="s">"type"</span>: <span class="s">"message"</span>,
+  <span class="s">"role"</span>: <span class="s">"assistant"</span>,
+  <span class="s">"model"</span>: <span class="s">"claude-sonnet-4-6"</span>,
+  <span class="s">"content"</span>: [
+    { <span class="s">"type"</span>: <span class="s">"text"</span>, <span class="s">"text"</span>: <span class="s">"行级安全策略，按行控制谁能读写。"</span> }
+  ],
+  <span class="s">"stop_reason"</span>: <span class="s">"end_turn"</span>,
+  <span class="s">"stop_sequence"</span>: <span class="k">null</span>,
+  <span class="s">"usage"</span>: { <span class="s">"input_tokens"</span>: <span class="n">22</span>, <span class="s">"output_tokens"</span>: <span class="n">14</span> }
+}</pre>
+          </div>
+
+          <div class="alert info">
+            <b>流式（SSE）</b> 在请求里加 <code>"stream": true</code> 即可，输出严格符合 Anthropic
+            事件协议——<code>message_start → content_block_start → content_block_delta×N →
+            content_block_stop → message_delta → message_stop</code>。Claude Code 默认走这条路径。
+          </div>
+
+          <div class="alert warn">
+            <b>当前限制：</b> <code>cache_control</code>（提示缓存）字段会被忽略；
+            extended thinking blocks 当作普通文本透传；Responses-only 的 <code>web_search</code>/
+            <code>file_search</code> 等内置工具不支持，仅 <code>function</code> 类自定义工具可用。
+          </div>
+        </section>
+
+        <section id="responses">
+          <h2>Responses（OpenAI 新协议）</h2>
+          <div class="endpoint">
+            <span class="method post">POST</span>
+            <span>/v1/responses</span>
+          </div>
+          <p>
+            <b>OpenAI Responses API 兼容</b>，主要给 Codex CLI 这类默认走新协议的客户端用。
+            字段名跟 Chat Completions 不太一样（<code>input</code> 而不是 <code>messages</code>，
+            <code>instructions</code> 而不是 system 消息，<code>max_output_tokens</code>
+            而不是 <code>max_tokens</code> 等）——网关会自动转换到内部 Chat 协议再翻译回来。
+          </p>
+
+          <h3>请求参数</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>参数</th>
+                <th>类型</th>
+                <th>必填</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>model</td>
+                <td>string</td>
+                <td>是</td>
+                <td>模型 ID。Codex 推荐 <code>gpt-5.3-codex</code> / <code>gpt-5.4</code></td>
+              </tr>
+              <tr>
+                <td>input</td>
+                <td>string / array</td>
+                <td>是</td>
+                <td>输入：单字符串简写，或 <code>{type, role, content}</code> / <code>function_call</code> / <code>function_call_output</code> 项的数组</td>
+              </tr>
+              <tr>
+                <td>instructions</td>
+                <td>string</td>
+                <td>否</td>
+                <td>系统提示，会自动提到 input 最前面</td>
+              </tr>
+              <tr>
+                <td>max_output_tokens</td>
+                <td>number</td>
+                <td>否</td>
+                <td>最大生成 tokens（也兼容 <code>max_tokens</code>）</td>
+              </tr>
+              <tr>
+                <td>stream</td>
+                <td>boolean</td>
+                <td>否</td>
+                <td>true 走 Responses SSE（<code>response.created</code> / <code>response.output_text.delta</code> / <code>response.completed</code>）</td>
+              </tr>
+              <tr>
+                <td>tools</td>
+                <td>array</td>
+                <td>否</td>
+                <td>Responses 风格 <code>{type:"function", name, description, parameters}</code>。<code>web_search</code>/<code>file_search</code> 等内置工具暂不支持</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>非流式示例</h3>
+          <div class="code-block">
+            <div class="code-tabs">
+              <button class="code-tab active" data-grp="rsp1" data-lang="curl">curl</button>
+              <button class="code-tab" data-grp="rsp1" data-lang="js">Node.js</button>
+              <button class="code-tab" data-grp="rsp1" data-lang="resp">响应</button>
+            </div>
+            <button class="copy-icon" data-copy-grp="rsp1">复制</button>
+            <pre class="lang active" data-grp="rsp1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/responses \
+  -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "model": "gpt-5.3-codex",
+    "instructions": "你是简洁的助手",
+    "input": [
+      {"type":"message","role":"user","content":[{"type":"input_text","text":"用一句话解释 RLS"}]}
+    ],
+    "max_output_tokens": 256
+  }'</span></pre>
+            <pre class="lang" data-grp="rsp1" data-lang="js"><span class="c">// 用官方 openai 包，新协议走 client.responses</span>
+<span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
+  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+});
+
+<span class="k">const</span> r = <span class="k">await</span> client.responses.create({
+  model: <span class="s">"gpt-5.3-codex"</span>,
+  instructions: <span class="s">"你是简洁的助手"</span>,
+  input: <span class="s">"用一句话解释 RLS"</span>,
+  max_output_tokens: <span class="n">256</span>,
+});
+console.log(r.output[<span class="n">0</span>].content[<span class="n">0</span>].text);</pre>
+            <pre class="lang" data-grp="rsp1" data-lang="resp">{
+  <span class="s">"id"</span>: <span class="s">"resp_xxx"</span>,
+  <span class="s">"object"</span>: <span class="s">"response"</span>,
+  <span class="s">"created_at"</span>: <span class="n">1740000000</span>,
+  <span class="s">"model"</span>: <span class="s">"gpt-5.3-codex"</span>,
+  <span class="s">"status"</span>: <span class="s">"completed"</span>,
+  <span class="s">"output"</span>: [{
+    <span class="s">"type"</span>: <span class="s">"message"</span>,
+    <span class="s">"id"</span>: <span class="s">"msg_xxx"</span>,
+    <span class="s">"status"</span>: <span class="s">"completed"</span>,
+    <span class="s">"role"</span>: <span class="s">"assistant"</span>,
+    <span class="s">"content"</span>: [{ <span class="s">"type"</span>: <span class="s">"output_text"</span>, <span class="s">"text"</span>: <span class="s">"行级安全策略，按行控制谁能读写。"</span> }]
+  }],
+  <span class="s">"usage"</span>: { <span class="s">"input_tokens"</span>: <span class="n">22</span>, <span class="s">"output_tokens"</span>: <span class="n">14</span>, <span class="s">"total_tokens"</span>: <span class="n">36</span> }
+}</pre>
+          </div>
+
+          <div class="alert info">
+            <b>不想折腾新协议？</b> Codex CLI 也支持 <code>wire_api = "chat"</code>，可以让它走
+            <a href="#chat">Chat Completions</a>，这样所有内部转换都跳过去，更简单。配置见
+            <a href="#cli-codex">下面的 Codex CLI 一节</a>。
+          </div>
+        </section>
+
+        <section id="cli-codex">
+          <h2>Codex CLI 接入</h2>
+          <p>
+            OpenAI 官方编码 CLI。把它指向我们的网关后，它就能用我们这边的所有模型。
+            编辑 <code>~/.codex/config.toml</code>：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-codex">复制</button>
+            <pre class="lang active" data-grp="cli-codex" data-lang="toml">model = <span class="s">"gpt-5.3-codex"</span>
+model_provider = <span class="s">"cancri"</span>
+
+[model_providers.cancri]
+name = <span class="s">"Cancri"</span>
+base_url = <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>
+wire_api = <span class="s">"responses"</span>
+env_key = <span class="s">"CANCRI_API_KEY"</span></pre>
+          </div>
+          <p>然后注入 Key 启动：</p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-codex-run">复制</button>
+            <pre class="lang active" data-grp="cli-codex-run" data-lang="sh"><span class="k">export</span> CANCRI_API_KEY=<span class="s">"cancri_sk_YOUR_KEY"</span>
+codex</pre>
+          </div>
+          <div class="alert info">
+            想走更稳定的 Chat Completions 协议？把 <code>wire_api = "responses"</code>
+            改成 <code>wire_api = "chat"</code> 即可。两条路径 Codex 都支持。
+          </div>
+        </section>
+
+        <section id="cli-claude">
+          <h2>Claude Code 接入</h2>
+          <p>
+            Anthropic 官方编码 CLI。把它的两个环境变量指过来即可：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-claude">复制</button>
+            <pre class="lang active" data-grp="cli-claude" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>
+<span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
+claude</pre>
+          </div>
+          <p>
+            启动后 Claude Code 会自动调 <code>/v1/models</code> 拉模型列表（网关检测到
+            <code>anthropic-version</code> 头会自动返回 Anthropic 格式）。模型选择器里挑
+            <code>claude-sonnet-4-6</code> / <code>claude-opus-4-5</code> 或者其它兼容模型都行。
+          </p>
+        </section>
+
+        <section id="cli-opencode">
+          <h2>OpenCode 接入</h2>
+          <p>
+            <a href="https://github.com/sst/opencode">sst/opencode</a> 走 OpenAI 兼容协议，
+            添加一个 provider 即可。在 <code>~/.config/opencode/opencode.json</code>
+            或项目根目录的 <code>opencode.json</code> 里：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-opencode">复制</button>
+            <pre class="lang active" data-grp="cli-opencode" data-lang="json">{
+  <span class="s">"$schema"</span>: <span class="s">"https://opencode.ai/config.json"</span>,
+  <span class="s">"provider"</span>: {
+    <span class="s">"cancri"</span>: {
+      <span class="s">"npm"</span>: <span class="s">"@ai-sdk/openai-compatible"</span>,
+      <span class="s">"name"</span>: <span class="s">"Cancri"</span>,
+      <span class="s">"options"</span>: {
+        <span class="s">"baseURL"</span>: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+        <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
+      },
+      <span class="s">"models"</span>: {
+        <span class="s">"gpt-5.4"</span>: {},
+        <span class="s">"gpt-5.3-codex"</span>: {},
+        <span class="s">"claude-sonnet-4-6"</span>: {},
+        <span class="s">"deepseek-v4-pro"</span>: {},
+        <span class="s">"gemini-3.1-pro"</span>: {}
+      }
+    }
+  }
+}</pre>
+          </div>
+        </section>
+
+        <section id="cli-openclaw">
+          <h2>OpenClaw 接入</h2>
+          <p>
+            <a href="https://github.com/openclaw/openclaw">openclaw/openclaw</a>
+            默认走 Anthropic 协议，所以直接复用 Claude Code 那套环境变量：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-openclaw-anth">复制</button>
+            <pre class="lang active" data-grp="cli-openclaw-anth" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>
+<span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
+openclaw agent</pre>
+          </div>
+          <p>
+            如果 OpenClaw 想直接用 OpenAI 协议的某个模型（比如 <code>gpt-5.4</code>），在
+            <code>~/.config/openclaw/config.json</code> 里追加一个 OpenAI provider：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-openclaw-oai">复制</button>
+            <pre class="lang active" data-grp="cli-openclaw-oai" data-lang="json">{
+  <span class="s">"providers"</span>: {
+    <span class="s">"cancri-openai"</span>: {
+      <span class="s">"type"</span>: <span class="s">"openai"</span>,
+      <span class="s">"baseURL"</span>: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+      <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
+    }
+  }
+}</pre>
+          </div>
+        </section>
+
+        <section id="ratelimit">
+          <h2>速率限制</h2>
+          <p>
+            每个 Key 同时受 <b>4 道防线</b> 保护，任何一道撞上都会返回
+            <code>429</code> + <code>Retry-After</code>。不分模型档位，所有 Key
+            使用同一套阈值：
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>防线</th>
+                <th>阈值</th>
+                <th>拦什么</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill">per-minute</span></td>
+                <td>10 次 / 分钟</td>
+                <td>脚本狂推、瞬间爆量</td>
+              </tr>
+              <tr>
+                <td><span class="pill">per-hour</span></td>
+                <td>60 次 / 小时</td>
+                <td>持续高频撞击</td>
+              </tr>
+              <tr>
+                <td><span class="pill">per-day</span></td>
+                <td>1000 次 / 天</td>
+                <td>24h 挂机慢刷</td>
+              </tr>
+              <tr>
+                <td><span class="pill">concurrent</span></td>
+                <td>2 个同时进行</td>
+                <td>多线程并发刷</td>
+              </tr>
+            </tbody>
+          </table>
+          <h3>响应头</h3>
+          <p>每个成功响应都会带以下 6 个限流头，客户端可据此预报手节奏：</p>
+          <table>
+            <thead>
+              <tr>
+                <th>响应头</th>
+                <th>含义</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>X-RateLimit-Limit-Minute</td>
+                <td>当前分钟阈值（10）</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Remaining-Minute</td>
+                <td>本分钟剩余调用额度</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Limit-Hour</td>
+                <td>当前小时阈值（60）</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Remaining-Hour</td>
+                <td>本小时剩余调用额度</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Limit-Day</td>
+                <td>当日阈值（1000）</td>
+              </tr>
+              <tr>
+                <td>X-RateLimit-Remaining-Day</td>
+                <td>今天剩余调用额度</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            撞限后的 <code>429</code> 响应额外带：
+          </p>
+          <ul>
+            <li>
+              <code>Retry-After</code>：等多少秒后再重试
+            </li>
+            <li>
+              <code>X-RateLimit-Scope</code>：哪一道防线被撞（<code>per_minute</code> /
+              <code>per_hour</code> / <code>per_day</code>）
+            </li>
+          </ul>
+          <div class="alert info">
+            <b>并发限制不记在响应头里</b>。超过 2 个同时请求时，额外请求会被
+            <code>concurrent_limit_exceeded</code>（如下一节）拒接，请等其他请求返回后重试。
+          </div>
+
+          <h3>per-model 上游限制（重要）</h3>
+          <p>
+            上面 4 道防线是 <b>gateway 层的总闸</b>，控制整个 API Key 的总调用量。
+            <b>每个模型还会受到其上游线路自身的速率限制</b>，这部分不在我们 gateway
+            的控制范围内，且各家阈值不同（部分免费线路可能低至 10 次/小时）。
+          </p>
+          <p>当上游 per-model 限速被撞，会返回：</p>
+          <ul>
+            <li>HTTP <code>429</code></li>
+            <li><code>error.code = "upstream_rate_limit"</code></li>
+            <li><code>error.type = "rate_limit_error"</code></li>
+            <li>
+              <code>error.message</code> 里会以 "<i>upstream details</i>"
+              附上上游原始信息（仅供排查；具体文本随上游变化，<b>不要</b>用作判定依据）
+            </li>
+          </ul>
+          <div class="alert warn">
+            <b>识别规则</b>：拿到 429 时
+            <code>error.code</code> 必看：
+            <ul>
+              <li>
+                <code>rate_limit_exceeded</code> → 撞到 gateway 总闸（见上表），
+                结合 <code>X-RateLimit-Scope</code> 决定退避；同模型重试可行。
+              </li>
+              <li>
+                <code>upstream_rate_limit</code> → 该模型的上游线路被限速，
+                <b>同模型短时间内重试无效</b>，建议立即换模型。
+              </li>
+              <li>
+                <code>concurrent_limit_exceeded</code> → 等已有请求结束。
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="errors">
+          <h2>错误码</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>HTTP</th>
+                <th>code</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>400</td>
+                <td>—</td>
+                <td>请求体格式错误或缺必填字段（<code>type: invalid_request_error</code>）</td>
+              </tr>
+              <tr>
+                <td>401</td>
+                <td>invalid_api_key</td>
+                <td>Key 不存在 / 已撤销 / 格式错误</td>
+              </tr>
+              <tr>
+                <td>404</td>
+                <td>model_not_found</td>
+                <td>
+                  model 字段不在可用列表里。两种可能：<b>不存在</b>或
+                  <b>被健康度临时隐藏</b>（见下节）。
+                </td>
+              </tr>
+              <tr>
+                <td>413</td>
+                <td>payload_too_large</td>
+                <td>请求体超过 1 MB。请压缩上下文或拆分多轮。</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>rate_limit_exceeded</td>
+                <td>
+                  撞到 gateway 总闸 per-minute / per-hour / per-day 三道限流之一。响应体里
+                  <code>scope</code> 字段告诉你具体哪一道，
+                  <code>Retry-After</code> 头告诉你几秒后重试。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>upstream_rate_limit</td>
+                <td>
+                  该模型的<b>上游线路</b>被限速（不是 gateway 层）。
+                  通常重试同模型短时间内无效，建议改用其他模型。
+                  <code>error.message</code> 末尾会带上游原始信息以便排查。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>concurrent_limit_exceeded</td>
+                <td>超过同时 2 个进行中请求。等剩余请求完成后再发。</td>
+              </tr>
+              <tr>
+                <td>401 / 403</td>
+                <td>upstream_auth_error</td>
+                <td>
+                  该模型的上游凭证被拒（不是你的 API Key 问题）。请改用其他模型，
+                  并向我们反馈受影响的模型 ID。
+                </td>
+              </tr>
+              <tr>
+                <td>500 / 502 / 503</td>
+                <td>upstream_error</td>
+                <td>
+                  上游模型供应商出错或返回非法 JSON。<b>所有 5xx 都统一映射成
+                  <code>upstream_error</code></b>，不会出现
+                  <code>service_unavailable</code> 等其它 code——这是为了让客户端只用一个分支处理
+                  所有上游故障。<code>503</code> 还会带 <code>Retry-After</code>，表示该模型被临时
+                  熔断（一小时滑动窗口内连续失败）；改用其他模型即可，无需等待。
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>模型健康度自动隐藏</h3>
+          <p>
+            为了不让你在坏掉的上游上浪费重试额度，后端会以 1 小时为滑动窗口记录每个
+            模型的调用成功率：
+          </p>
+          <ul>
+            <li>调用 ≥ 3 次 且 成功率 &lt; 30% → <b>临时从模型列表隐藏</b>（返回
+              <code>404 model_not_found</code>）</li>
+            <li>一小时后如果指标恢复→ <b>自动重新出现在列表里</b>，无需人工介入</li>
+            <li>如果反复故障→ 继续按滑动窗口隐藏</li>
+          </ul>
+          <p>
+            如果你之前能调通的模型突然 <code>404</code>，请出 <a href="./api_models.html">模型广场</a>
+            确认它是否还在列表里。不在→ 等1 小时后重试。
+          </p>
+
+          <p>所有错误响应都符合 OpenAI 的错误格式：</p>
+          <div class="code-block">
+            <pre class="lang active">{
+  <span class="s">"error"</span>: {
+    <span class="s">"message"</span>: <span class="s">"..."</span>,
+    <span class="s">"type"</span>: <span class="s">"invalid_api_key"</span>,
+    <span class="s">"code"</span>: <span class="s">"invalid_api_key"</span>
+  }
+}</pre>
+          </div>
+        </section>
+
+        <section id="sdk">
+          <h2>SDK 兼容</h2>
+          <p>
+            网关同时讲 OpenAI 协议（Chat Completions + Responses）和 Anthropic 协议
+            （Messages），现成的 SDK 都能接：
+          </p>
+
+          <h3>OpenAI 阵营</h3>
+          <ul>
+            <li>官方 <code>openai</code>（Python / Node.js）</li>
+            <li><code>@ai-sdk/openai</code>、<code>@ai-sdk/openai-compatible</code>（Vercel AI SDK）</li>
+            <li>LangChain <code>ChatOpenAI</code></li>
+            <li>LiteLLM、OneAPI、Cherry Studio 等聚合工具</li>
+            <li><b>Codex CLI</b>（见 <a href="#cli-codex">上面的接入说明</a>）</li>
+            <li><b>OpenCode</b>（见 <a href="#cli-opencode">上面的接入说明</a>）</li>
+          </ul>
+          <p>改两个参数即可：</p>
+          <ul>
+            <li>
+              <code>baseURL</code> / <code>OPENAI_BASE_URL</code> →
+              <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code>
+            </li>
+            <li>
+              <code>apiKey</code> / <code>OPENAI_API_KEY</code> →
+              <code>cancri_sk_xxx</code>
+            </li>
+          </ul>
+
+          <h3>Anthropic 阵营</h3>
+          <ul>
+            <li>官方 <code>@anthropic-ai/sdk</code>（Python 包名 <code>anthropic</code>）</li>
+            <li><code>@ai-sdk/anthropic</code>（Vercel AI SDK）</li>
+            <li>LangChain <code>ChatAnthropic</code></li>
+            <li><b>Claude Code</b>（见 <a href="#cli-claude">上面的接入说明</a>）</li>
+            <li><b>OpenClaw</b>（见 <a href="#cli-openclaw">上面的接入说明</a>）</li>
+          </ul>
+          <p>同样改两个参数：</p>
+          <ul>
+            <li>
+              <code>baseURL</code> / <code>ANTHROPIC_BASE_URL</code> →
+              <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</code>
+              <span style="color: var(--text-faint)">（Anthropic SDK 自带 <code>/v1</code> 后缀，不要重复加）</span>
+            </li>
+            <li>
+              <code>apiKey</code> / <code>ANTHROPIC_AUTH_TOKEN</code> →
+              <code>cancri_sk_xxx</code>
+            </li>
+          </ul>
+          <div class="alert info">
+            <b>同一把 Key 可以在两个 SDK 里同时用。</b> 限流是按 Key 维度统一计的，不分协议。
+            想在同一个项目里 OpenAI + Anthropic 双 SDK 并用？没问题。
+          </div>
+        </section>
+
+        <section id="faq">
+          <h2>常见问题</h2>
+          <h3>三个端点我该用哪个？</h3>
+          <ul>
+            <li><b>无脑用 <a href="#chat">/v1/chat/completions</a></b>——支持的 SDK / 工具最多，调用最稳。</li>
+            <li>客户端是 <b>Codex CLI</b>、想走它的默认协议→ <a href="#responses">/v1/responses</a>。</li>
+            <li>客户端是 <b>Claude Code</b>、Anthropic SDK、OpenClaw→ <a href="#messages">/v1/messages</a>。</li>
+          </ul>
+          <h3>图像生成怎么没了？</h3>
+          <p>
+            <code>/v1/images/generations</code> 和 <code>/v1/videos/generations</code>
+            <b>已下线 API 入口</b>，改为只在网页版可用。如果你之前在调用，会收到
+            <code>403 endpoint_disabled</code>。后续如果重开会在这里另行说明。
+          </p>
+          <h3>CLI 模型选择器里看不到我想要的模型？</h3>
+          <p>
+            CLI（特别是 Claude Code）启动时会拉一次 <code>/v1/models</code>，名字必须跟那
+            一份列表对得上。直接 <code>curl /v1/models</code> 看一下，或到
+            <a href="./api_models.html">模型广场</a> 查可用 ID；不要照搬 Anthropic / OpenAI 官方
+            的版本号（比如 <code>claude-3-5-sonnet-20241022</code> 这边没有）。
+          </p>
+          <h3>tool calling（function calling）支持吗？</h3>
+          <p>
+            三条路径都支持，自定义 <code>function</code> 工具会原样翻译往返。但 Responses 协议
+            的 <code>web_search</code> / <code>file_search</code> / <code>computer_use</code>
+            等内置工具暂未实现，传过来会被忽略。
+          </p>
+          <h3>怎么追踪用量？</h3>
+          <p>
+            到 <a href="./api_keys.html">Keys 管理页</a> 可看到每个 Key 的最后使用时间和调用统计。详细的 token 消耗后续会上线。
+          </p>
+          <h3>能在浏览器里直接调吗？</h3>
+          <p>
+            <b>不要</b>。Key 暴露在前端等于免费送给所有人。请始终从你的服务端转发。
+          </p>
+          <h3>支持的国家/IP 限制？</h3>
+          <p>
+            后端会做地域级速率限制和 IP 维度风控，但<b>不</b>主动屏蔽国家。
+            如发现可疑流量会临时封锁。
+          </p>
+          <h3>Key 丢了怎么办？</h3>
+          <p>
+            生成时只显示一次，无法找回。到
+            <a href="./api_keys.html">Keys 管理页</a> 撤销旧 Key，重新生成。
+          </p>
+          <h3>能在 TRAE IDE 里用吗？</h3>
+          <p>
+            <b>暂时不行。</b> 字节跳动的 TRAE IDE 目前在「自定义模型」里只允许填
+            Model ID 和 API Key 两个字段，<b>不开放 Base URL 设置</b>，所以 TRAE 的请求只能
+            发到官方 <code>api.openai.com</code>，没办法指过来 Cancri。这是 TRAE 自身的能力
+            缺失，跟踪官方 issue
+            <a href="https://github.com/Trae-AI/Trae/issues/1206" target="_blank" rel="noopener">#1206</a>
+            /
+            <a href="https://github.com/Trae-AI/Trae/issues/963" target="_blank" rel="noopener">#963</a>。
+            等 TRAE 加上 base_url 字段后，配置方法跟
+            <a href="#cli-opencode">OpenCode</a> 完全一致。
+          </p>
+          <p>
+            急用的话可以参考开源项目
+            <a href="https://github.com/arch3rPro/Trae-Proxy" target="_blank" rel="noopener">arch3rPro/Trae-Proxy</a>，
+            它通过本地 hosts 重定向 + 自签证书把 OpenAI 域名劫持到自定义后端。<b>需要管理员权限</b>，
+            折腾门槛较高，不推荐普通用户。
+          </p>
+          <h3>计费怎么算？</h3>
+          <p>
+            目前所有 Key 都是 <code>free</code> tier，按速率限制控制成本，不
+            按 token 计费。商业化定价后会提前通知。
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      // Tabbed code blocks
+      document.querySelectorAll(".code-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const grp = btn.dataset.grp;
+          const lang = btn.dataset.lang;
+          document
+            .querySelectorAll(`.code-tab[data-grp="${grp}"]`)
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          document
+            .querySelectorAll(`pre.lang[data-grp="${grp}"]`)
+            .forEach((p) => p.classList.remove("active"));
+          const target = document.querySelector(
+            `pre.lang[data-grp="${grp}"][data-lang="${lang}"]`,
+          );
+          if (target) target.classList.add("active");
+        });
+      });
+
+      // Copy buttons
+      document.querySelectorAll(".copy-icon").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          let text = "";
+          if (btn.dataset.copyText) {
+            const el = document.getElementById(btn.dataset.copyText);
+            if (el) text = el.textContent.trim();
+          } else if (btn.dataset.copyGrp) {
+            const active = document.querySelector(
+              `pre.lang[data-grp="${btn.dataset.copyGrp}"].active`,
+            );
+            if (active) text = active.textContent;
+          }
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = "已复制";
+            btn.classList.add("copied");
+            setTimeout(() => {
+              btn.textContent = orig;
+              btn.classList.remove("copied");
+            }, 1200);
+          });
+        });
+      });
+
+      // Active TOC highlight on scroll
+      const sections = document.querySelectorAll("main section[id]");
+      const tocLinks = document.querySelectorAll("aside.toc a");
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              tocLinks.forEach((a) => a.classList.remove("active"));
+              const link = document.querySelector(
+                `aside.toc a[href="#${e.target.id}"]`,
+              );
+              if (link) link.classList.add("active");
+            }
+          });
+        },
+        { rootMargin: "-30% 0px -60% 0px" },
+      );
+      sections.forEach((s) => observer.observe(s));
+    </script>
+  </body>
+</html>
