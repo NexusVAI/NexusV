@@ -3256,22 +3256,25 @@ function getLoginCaptchaToken() {
       return reject(new Error("人机验证脚本未加载，请刷新页面后重试。"));
     }
 
+    // Container is provided by index.html inside #authStepEmail. Fall back
+    // to a body-level element so the helper still works on pages that haven't
+    // included the markup yet (defensive — main login flow is on index.html).
     let container = document.getElementById("loginTurnstileContainer");
+    let createdContainer = false;
     if (!container) {
       container = document.createElement("div");
       container.id = "loginTurnstileContainer";
-      // Position off-screen but render-able. Turnstile's "invisible" size
-      // still requires a real, attached DOM node.
-      container.style.position = "fixed";
-      container.style.bottom = "0";
-      container.style.right = "0";
-      container.style.width = "300px";
-      container.style.height = "65px";
-      container.style.opacity = "0";
-      container.style.pointerEvents = "none";
-      container.style.zIndex = "-1";
+      container.style.margin = "8px 0";
+      container.style.minHeight = "65px";
       document.body.appendChild(container);
+      createdContainer = true;
     }
+    // Reveal the container while the widget is in flight so the user can see
+    // any Cloudflare error UI (e.g. "Hostname not allowed") and so Managed /
+    // Non-Interactive mode widgets are actually visible to interact with.
+    const previousDisplay = container.style.display;
+    container.style.display = "block";
+    container.innerHTML = "";
 
     let settled = false;
     let widgetId = null;
@@ -3283,6 +3286,12 @@ function getLoginCaptchaToken() {
       } catch (_e) {
         /* ignore widget cleanup errors */
       }
+      // Hide again only if we own the element / it was hidden originally.
+      if (createdContainer) {
+        try { container.remove(); } catch (_e) {}
+      } else {
+        container.style.display = previousDisplay || "none";
+      }
     };
     const finish = (fn, value) => {
       if (settled) return;
@@ -3291,29 +3300,31 @@ function getLoginCaptchaToken() {
       cleanup();
       fn(value);
     };
+    // Managed-mode widgets can take noticeably longer than invisible ones
+    // because the user may need to interact. 60s is the longest a Turnstile
+    // token stays valid anyway.
     const timeoutId = setTimeout(() => {
       finish(reject, new Error("人机验证超时，请重试。"));
-    }, 15000);
+    }, 60000);
 
     try {
+      // Deliberately omit `size` so the widget renders in whatever mode the
+      // Cloudflare dashboard says (Managed / Non-Interactive / Invisible).
+      // This avoids the "size:invisible on a non-Invisible widget" failure
+      // that otherwise looks identical to a hostname/key mismatch.
       widgetId = window.turnstile.render(container, {
         sitekey: siteKey,
-        size: "invisible",
         callback: (token) => finish(resolve, token),
-        "error-callback": () => finish(reject, new Error("人机验证失败，请重试。")),
+        "error-callback": (err) => {
+          // Surface CF's error code in the console so we can debug.
+          try { console.warn("[login turnstile] error-callback", err); } catch (_e) {}
+          finish(reject, new Error("人机验证失败，请重试。"));
+        },
         "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
         "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
       });
-      // Invisible mode usually triggers automatically, but some loader
-      // builds need an explicit execute() call.
-      if (widgetId !== null && window.turnstile?.execute) {
-        try {
-          window.turnstile.execute(widgetId);
-        } catch (_e) {
-          /* render's callback will still fire if it succeeds */
-        }
-      }
     } catch (err) {
+      try { console.warn("[login turnstile] render threw", err); } catch (_e) {}
       finish(reject, err instanceof Error ? err : new Error(String(err)));
     }
   });
