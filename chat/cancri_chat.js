@@ -1110,8 +1110,8 @@ function getRateLimitRequestModelId(modelId = currentModel) {
 function getModelProbeEndpoint(modelId = currentModel) {
   return modelId === "image-precise" ||
     modelId === "image-fast" ||
-    modelId === "gpt-image-2" ||
-    modelId === "sensenova-u1-fast"
+    modelId === "sensenova-u1-fast" ||
+    modelId === "wan2.7-image-pro"
     ? "image"
     : "chat";
 }
@@ -1156,6 +1156,7 @@ const MODEL_SELECTION_MIGRATIONS = {
   "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
   "gemma-4-31b-it": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
+  "gpt-image-2-api456": "wan2.7-image-pro",
   "mimo-v2.5-tts": DEFAULT_MODEL_ID,
   "mimo-v2.5-tts-voicedesign": DEFAULT_MODEL_ID,
   "gemini-3-flash": DEFAULT_MODEL_ID,
@@ -1192,7 +1193,7 @@ const MODEL_PRIORITY = new Map(
 );
 const MODEL_DEPRIORITY = new Map();
 const MODEL_CATALOG = [
-  // ── freemodel.dev ──
+  // ── xem8k5 (chat only) ──
   {
     id: "gpt-image-2",
     displayName: "GPT Image 2",
@@ -1202,9 +1203,8 @@ const MODEL_CATALOG = [
     visible: true,
     enabled: true,
     arena: false,
-    imageOnly: true,
     iconPath: "./openai.svg",
-    tags: ["生图"],
+    tags: ["聊天"],
   },
   // ── xiangluapi.com ──
   {
@@ -1637,20 +1637,6 @@ const MODEL_CATALOG = [
     arena: true,
     iconPath: "./zhipu-color.svg",
     tags: ["多模态"],
-  },
-  // gpt-image-2-api456 retired 2026-05-08 — image-2 line consolidated to xem8k5.
-  {
-    id: "gpt-image-2-api456",
-    displayName: "GPT Image 2",
-    brand: "OpenAI",
-    canonicalId: "gpt-image-2",
-    lineLabel: "线路三",
-    visible: false,
-    enabled: false,
-    arena: false,
-    imageOnly: true,
-    iconPath: "./openai.svg",
-    tags: ["生图"],
   },
   // ── cxyquan.com ──
   {
@@ -3137,10 +3123,9 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
 // image-precise was the legacy ModelScope image alias; it was retired when
-// gpt-image-2 took over but the frontend default never moved. Hard-coding
-// gpt-image-2 here keeps the home image-mode quick action working.
-const DEFAULT_IMAGE_MODEL = "gpt-image-2";
-const OPENAI_IMAGE_MODEL = "gpt-image-2";
+// the image quick action moved to the current image line. Hard-coding the
+// current image line here keeps the home image-mode quick action working.
+const DEFAULT_IMAGE_MODEL = "wan2.7-image-pro";
 const MAX_REPEATED_TOOL_CALLS = 3;
 // 单次回答中允许的最多工具调用轮次。达到上限后下一轮强制禁用 tools，
 // 让模型必须基于已有结果用纯自然语言给出最终答复（防止无限多轮 tool 调用）。
@@ -6306,7 +6291,7 @@ function safeUrl(url) {
   const trimmed = String(url || "").trim();
   if (/^(https?:|\/)/i.test(trimmed)) return trimmed;
   // Allow inline image/video data URIs — required so generated images that
-  // come back as `b64_json` (e.g. xem8k5 `gpt-image-2`) survive a chat
+  // come back as `b64_json` (e.g. the current xem8k5 image line) survive a chat
   // history reload. We deliberately only whitelist `data:image/` and
   // `data:video/` so a malicious assistant can't sneak in
   // `data:text/html,<script>...` and turn a chat bubble into an XSS vector.
@@ -6340,8 +6325,8 @@ async function downloadViaMediaProxy(url, kind) {
     try {
       // Why not just `await fetch(dataUri).blob()`?
       // Chromium throws `TypeError: Failed to fetch` on data: URIs that
-      // exceed roughly 2-4 MB (which gpt-image-2 b64_json responses
-      // routinely do — the upstream returns ~3 MB base64 PNGs). Decoding
+      // exceed roughly 2-4 MB (which image b64_json responses routinely
+      // do — the upstream returns ~3 MB base64 PNGs). Decoding
       // the base64 manually with atob → Uint8Array sidesteps the fetch
       // path entirely and works regardless of size.
       const match = /^data:([^;,]+)(?:;([^,]+))?,(.*)$/i.exec(trimmed);
@@ -7279,13 +7264,17 @@ async function generateImageFromPrompt(
   const value = String(prompt || "").trim();
   if (!value || state.isImageGenerating) return;
 
+  // OpenAI-style synchronous image line: POST /v1/images/generations returns
+  // {data:[{url | b64_json, revised_prompt?}]} in the same response. The
+  // "else" branch below instead kicks off an async task (DashScope-style)
+  // and polls /task until SUCCEED/FAILED. Keep this list in sync with the
+  // synchronous image upstreams — gpt-image-2 is the xem8k5 sync line;
+  // adding it here is what lets the chat page actually render its output.
   const isOpenAIImage =
-    imageModel === OPENAI_IMAGE_MODEL ||
-    imageModel === "gpt-image-2" ||
-    imageModel === "gpt-image-2-api456" ||
+    imageModel === DEFAULT_IMAGE_MODEL ||
     imageModel === "sensenova-u1-fast" ||
     imageModel === "grok-imagine-image-lite" ||
-    imageModel === "wan2.7-image-pro";
+    imageModel === "gpt-image-2";
   // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
   const imageSize = "1024x1024";
 
@@ -7309,12 +7298,10 @@ async function generateImageFromPrompt(
   // ── 图生图（i2i）支持白名单 ─────────────────────────────────
   // 我们走的是 OpenAI-style /v1/images/generations 端点。大多数中转
   // 直接接受顶层 `image` 字段做 i2i（OpenAI 的扩展），所以把已经实测
-  // 通过的模型从禁用列表移除：
-  //   • gpt-image-2 (xem8k5 线路)：实测支持 string / array image 字段
-  // 仍未支持的模型保留在白名单里，前端会在用户附了图时拦截并提示。
-  // 想新增 i2i 模型时，把它从 noI2iModels 列表里拿掉并确认上游通过。
+  // 通过的模型从禁用列表移除。仍未支持的模型保留在白名单里，
+  // 前端会在用户附了图时拦截并提示。想新增 i2i 模型时，把它从
+  // noI2iModels 列表里拿掉并确认上游通过。
   const noI2iModels = new Set([
-    "gpt-image-2-api456",
     "sensenova-u1-fast",
     "grok-imagine-image-lite",
     "image-precise",
@@ -7344,7 +7331,7 @@ async function generateImageFromPrompt(
       // normal viewing size for i2i.
       setImageGenerationBusy(true, "正在压缩上传图片...");
       // Aggressive cap: 896 px long edge, JPEG q=0.78 ≈ 80-180 KB per
-      // image. i2i upstreams (xem8k5 gpt-image-2 etc.) don't need full
+      // image. i2i upstreams (including the current xem8k5 image line) don't need full
       // 1024 detail from the reference — they synthesize at their own
       // resolution. Smaller refs mean less base64 bulk going through the
       // 2-hop JSON pipeline (frontend → gateway → modelscope-proxy),
@@ -10110,7 +10097,7 @@ async function handleHomeSubmit() {
     homeInput.value = "";
     autoResizeComposerInput();
     setComposerBusy(false);
-    await sendImageGenerationMessage(query, OPENAI_IMAGE_MODEL);
+    await sendImageGenerationMessage(query, DEFAULT_IMAGE_MODEL);
     setWebSearchEnabled(false);
     return;
   }
