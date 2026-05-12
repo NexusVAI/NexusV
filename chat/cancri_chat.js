@@ -3139,6 +3139,22 @@ const CHAT_TURN_TIMEOUT_MS = 180000;
 const TOOL_CALL_TIMEOUT_MS = 25000;
 
 function getChatRequestTimeoutMs(modelId) {
+  // Claude Opus / thinking 等模型经 freeapi.dgbmc.top 中转 + Anthropic 思考，
+  // 首字节响应 (TTFB) 经常 30~60 秒，默认 25 秒 TTFB 预算会被触发，
+  // 上抛浏览器原生 "The user aborted a request"。给慢思考模型更长预算，
+  // 仍小于 chat-gateway 的 UPSTREAM_TIMEOUT_MS=120s。
+  if (typeof modelId === "string" && modelId) {
+    const m = modelId.toLowerCase();
+    if (
+      m.startsWith("claude-") ||
+      m.includes("-thinking") ||
+      m.includes("opus") ||
+      m.includes("o1") ||
+      m.includes("o3")
+    ) {
+      return 90000;
+    }
+  }
   return CHAT_REQUEST_TIMEOUT_MS;
 }
 
@@ -7165,9 +7181,20 @@ function createTimeoutError(timeoutMs, label = "请求") {
 function normalizeErrorMessage(error, fallback = "请求失败，请稍后再试。") {
   if (!error) return fallback;
   if (error.name === "AbortError") {
-    return error.message && error.message !== "The operation was aborted."
-      ? error.message
-      : "请求已取消或超时，请重试。";
+    const abortMsg = (error.message || "").trim();
+    // 浏览器原生 abort 文案有 "The operation was aborted." /
+    // "The user aborted a request." / "signal is aborted without reason"
+    // 等多种英文形式，统一降级成中文友好文案，避免直接漏给 UI。
+    if (
+      !abortMsg ||
+      /^(the operation was aborted\.?|the user aborted a request\.?|signal is aborted.*|aborted)$/i.test(
+        abortMsg,
+      ) ||
+      /aborted a request/i.test(abortMsg)
+    ) {
+      return "请求已取消或超时（如使用 Claude Opus 等思考较慢的模型，请稍后重试或切换到其他模型）。";
+    }
+    return abortMsg;
   }
   const message = error instanceof Error ? error.message : String(error);
   // 处理浏览器原生 "The user aborted a request" 错误
@@ -8652,7 +8679,7 @@ function exportChatToMarkdown() {
 function clearConversation() {
   stopVoiceRecognition();
   if (state.activeRequestController) {
-    state.activeRequestController.abort();
+    state.activeRequestController.abort(createAbortError("已切换会话。"));
     state.activeRequestController = null;
   }
   conversationHistory.length = 0;
