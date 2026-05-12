@@ -3349,6 +3349,15 @@ function getLoginCaptchaToken() {
 async function sendOtp(email) {
   const client = getSupabaseClient();
   const captchaToken = await getLoginCaptchaToken();
+  // Defensive: if the widget resolved with an empty/falsy token (shouldn't
+  // happen under normal Cloudflare Turnstile behavior but seen in some
+  // privacy-shield browsers), refuse to send to Supabase rather than fall
+  // through and get the opaque server-side "no captcha_token found" error.
+  if (!captchaToken || typeof captchaToken !== "string" || captchaToken.length < 10) {
+    try { console.warn("[login sendOtp] empty captcha token", captchaToken); } catch (_e) {}
+    throw new Error("人机验证未通过（token 为空），请刷新页面后重试。");
+  }
+  try { console.info("[login sendOtp] captcha token len=" + captchaToken.length); } catch (_e) {}
   const { error } = await client.auth.signInWithOtp({
     email,
     options: {
