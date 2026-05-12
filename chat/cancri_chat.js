@@ -3278,7 +3278,10 @@ function getLoginCaptchaToken() {
 
     let settled = false;
     let widgetId = null;
-    const cleanup = () => {
+    const cleanup = (keepWidget) => {
+      if (keepWidget) return; // leave the widget visible so the user can see
+                              // any Cloudflare error UI (e.g. "Error: 110200")
+                              // rendered inside the widget iframe itself.
       try {
         if (widgetId !== null && window.turnstile?.remove) {
           window.turnstile.remove(widgetId);
@@ -3286,18 +3289,17 @@ function getLoginCaptchaToken() {
       } catch (_e) {
         /* ignore widget cleanup errors */
       }
-      // Hide again only if we own the element / it was hidden originally.
       if (createdContainer) {
         try { container.remove(); } catch (_e) {}
       } else {
         container.style.display = previousDisplay || "none";
       }
     };
-    const finish = (fn, value) => {
+    const finish = (fn, value, keepWidget) => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);
-      cleanup();
+      cleanup(!!keepWidget);
       fn(value);
     };
     // Managed-mode widgets can take noticeably longer than invisible ones
@@ -3314,7 +3316,7 @@ function getLoginCaptchaToken() {
       // that otherwise looks identical to a hostname/key mismatch.
       widgetId = window.turnstile.render(container, {
         sitekey: siteKey,
-        callback: (token) => finish(resolve, token),
+        callback: (token) => finish(resolve, token, false),
         "error-callback": (err) => {
           // Surface CF's error code both in the console and on screen so the
           // user can immediately see what Cloudflare is complaining about
@@ -3330,11 +3332,12 @@ function getLoginCaptchaToken() {
                 : "";
           const msg = code
             ? `人机验证失败 (Cloudflare 错误 ${code})${hint ? "\n" + hint : ""}`
-            : "人机验证失败，请重试。";
-          finish(reject, new Error(msg));
+            : "人机验证失败，请重试。请看上方 Turnstile widget 中显示的错误代码。";
+          // keepWidget=true so the user can read CF's own inline error display.
+          finish(reject, new Error(msg), true);
         },
-        "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
-        "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
+        "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
+        "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
       });
     } catch (err) {
       try { console.warn("[login turnstile] render threw", err); } catch (_e) {}
