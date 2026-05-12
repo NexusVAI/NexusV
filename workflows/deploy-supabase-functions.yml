@@ -44,11 +44,13 @@ jobs:
           DASHSCOPE_API_KEY_1: ${{ secrets.DASHSCOPE_API_KEY_1 }}
           DASHSCOPE_API_KEY_2: ${{ secrets.DASHSCOPE_API_KEY_2 }}
           DASHSCOPE_API_KEY_NEW: ${{ secrets.DASHSCOPE_API_KEY_NEW }}
-          # HappyHorse 1.0 视频生成专用密钥（阿里云百炼欢乐马账号）。可空，
-          # 空值时回退到 DASHSCOPE_API_KEY 池。
+          # 统一的 DashScope 媒体生成密钥（HappyHorse 1.0 i2v/t2v/r2v +
+          # Wan 2.7 t2v + Wan 2.7 image-pro）。2026-05-10: HappyHorse 和
+          # Wan 2.7 已合并到同一个阿里云百炼账号，所有视频/图像生成线路都用
+          # 这一个 key。空值时回退到 DASHSCOPE_API_KEY 池。
           DASHSCOPE_VIDEO_API_KEY: ${{ secrets.DASHSCOPE_VIDEO_API_KEY }}
-          # Wan 2.7 视频生成专用密钥（阿里云百炼万相账号，独立于欢乐马账号）。
-          # 必须与 HappyHorse 用不同的 Bailian 账号 key，否则混用会 401。
+          # 旧版 Wan 专用密钥（向后兼容）。新部署留空即可，proxy 会优先用
+          # DASHSCOPE_VIDEO_API_KEY；如果两个都设了，DASHSCOPE_VIDEO_API_KEY 胜出。
           DASHSCOPE_WAN_API_KEY: ${{ secrets.DASHSCOPE_WAN_API_KEY }}
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
           MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}

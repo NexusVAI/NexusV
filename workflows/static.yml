@@ -52,7 +52,7 @@ jobs:
               print("::error::GitHub Secret SUPABASE_ANON_KEY is missing")
               sys.exit(1)
 
-          target = Path("chat AI/cancri_chat_ui_v_3.html")
+          target = Path("chat/index.html")
           html = target.read_text(encoding="utf-8")
           html, url_count = re.subn(
               r"window\.__SUPABASE_URL__\s*=\s*[^;]+;",
@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf pages-dist
-          mkdir -p pages-dist/css pages-dist/js "pages-dist/chat AI"
+          mkdir -p pages-dist/css pages-dist/js pages-dist/chat "pages-dist/chat AI"
 
           cp -a index.html about.html article.html pages-dist/
           cp -a Logo pages-dist/Logo
@@ -91,10 +91,10 @@ jobs:
           from pathlib import Path
           import shutil
 
-          src = Path("chat AI")
-          dst = Path("pages-dist/chat AI")
+          src = Path("chat")
+          dst = Path("pages-dist/chat")
           for name in [
-              "cancri_chat_ui_v_3.html",
+              "index.html",
               "cancri_chat.css",
               "cancri_chat.js",
               "cancri_announcement.js",
@@ -107,13 +107,29 @@ jobs:
           katex = src / "katex"
           if katex.exists():
               shutil.copytree(katex, dst / "katex", dirs_exist_ok=True)
+
+          # Backward-compat redirect stub: old /chat%20AI/cancri_chat_ui_v_3.html
+          # bookmarks and pre-existing magic-link emails still resolve.
+          # Renders an HTML page that immediately forwards to /chat/ + same
+          # query string, with both <meta refresh> and JS for robustness.
+          legacy = Path("pages-dist/chat AI")
+          legacy.mkdir(parents=True, exist_ok=True)
+          (legacy / "cancri_chat_ui_v_3.html").write_text(
+              "<!doctype html><html lang=\"zh-CN\"><head>"
+              "<meta charset=\"utf-8\">"
+              "<title>Redirecting…</title>"
+              "<meta http-equiv=\"refresh\" content=\"0;url=/chat/\">"
+              "<script>location.replace('/chat/' + location.search + location.hash);</script>"
+              "</head><body>Redirecting to <a href=\"/chat/\">/chat/</a></body></html>\n",
+              encoding="utf-8",
+          )
           PY
 
           if grep -R -n -E 'PROXY_AUTH_TOKEN|__PROXY_TOKEN__|x-proxy-token|modelscope-proxy|chat-history|web-search' pages-dist; then
             echo "::error::Pages artifact contains backend route/provider material"
             exit 1
           fi
-          if grep -R -n -E 'dashscope|modelscope|siliconflow|pingUrl|线路|供应商|官方API' "pages-dist/chat AI"; then
+          if grep -R -n -E 'dashscope|modelscope|siliconflow|pingUrl|线路|供应商|官方API' pages-dist/chat; then
             echo "::error::ChatAI frontend contains route/provider material"
             exit 1
           fi
