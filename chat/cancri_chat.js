@@ -3252,120 +3252,25 @@ async function ensureAuthSession() {
   return authSessionPromise;
 }
 
-// Render an invisible Cloudflare Turnstile widget and resolve with the
-// resulting token. Used to satisfy the Supabase Auth `captchaToken`
-// requirement when `security_captcha_enabled = true` is set server-side.
-//
-// Rejects (rather than resolves with an empty token) on any failure so the
-// caller can show a clear error — Supabase will reject the signInWithOtp
-// call anyway if the token is missing or invalid, so we'd rather fail fast
-// here with a UI-friendly message.
+// =====================================================================
+// Login Turnstile (Supabase Auth captcha).
+// Implementation lives in chat/cancri_login_captcha.js (loaded BEFORE
+// this file in index.html) and is exposed as window.NexusLoginCaptcha.
+// We keep these thin wrappers so the rest of cancri_chat.js can call
+// the same names without caring where the implementation lives.
+// =====================================================================
+function prerenderLoginCaptcha() {
+  if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.prerender === "function") {
+    try { window.NexusLoginCaptcha.prerender(); } catch (_e) {}
+  }
+}
 function getLoginCaptchaToken() {
-  return new Promise((resolve, reject) => {
-    const siteKey = (typeof window !== "undefined" && window.__LOGIN_TURNSTILE_SITE_KEY__) || "";
-    if (!siteKey) return reject(new Error("Login captcha is not configured."));
-    if (typeof window === "undefined" || !window.turnstile) {
-      return reject(new Error("人机验证脚本未加载，请刷新页面后重试。"));
-    }
-
-    // Container is provided by index.html inside #authStepEmail. Fall back
-    // to a body-level element so the helper still works on pages that haven't
-    // included the markup yet (defensive — main login flow is on index.html).
-    let container = document.getElementById("loginTurnstileContainer");
-    let createdContainer = false;
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "loginTurnstileContainer";
-      container.style.margin = "8px 0";
-      container.style.minHeight = "65px";
-      document.body.appendChild(container);
-      createdContainer = true;
-    }
-    // Reveal the container while the widget is in flight so the user can see
-    // any Cloudflare error UI (e.g. "Hostname not allowed") and so Managed /
-    // Non-Interactive mode widgets are actually visible to interact with.
-    const previousDisplay = container.style.display;
-    container.style.display = "block";
-    container.innerHTML = "";
-
-    let settled = false;
-    let widgetId = null;
-    const cleanup = (keepWidget) => {
-      if (keepWidget) return; // leave the widget visible so the user can see
-                              // any Cloudflare error UI (e.g. "Error: 110200")
-                              // rendered inside the widget iframe itself.
-      try {
-        if (widgetId !== null && window.turnstile?.remove) {
-          window.turnstile.remove(widgetId);
-        }
-      } catch (_e) {
-        /* ignore widget cleanup errors */
-      }
-      if (createdContainer) {
-        try { container.remove(); } catch (_e) {}
-      } else {
-        container.style.display = previousDisplay || "none";
-      }
-    };
-    const finish = (fn, value, keepWidget) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      cleanup(!!keepWidget);
-      fn(value);
-    };
-    // Managed-mode widgets can take noticeably longer than invisible ones
-    // because the user may need to interact. 60s is the longest a Turnstile
-    // token stays valid anyway.
-    const timeoutId = setTimeout(() => {
-      finish(reject, new Error("人机验证超时，请重试。"), false);
-    }, 60000);
-
-    const doRender = () => {
-      try {
-        // Deliberately omit `size` so the widget renders in whatever mode the
-        // Cloudflare dashboard says (Managed / Non-Interactive / Invisible).
-        widgetId = window.turnstile.render(container, {
-          sitekey: siteKey,
-          callback: (token) => finish(resolve, token, false),
-          "error-callback": (err) => {
-            try { console.warn("[login turnstile] error-callback", err); } catch (_e) {}
-            const code = (typeof err === "string" || typeof err === "number") ? String(err) : "";
-            const hint = code === "110200"
-              ? "Cloudflare 110200：当前域名未在 Turnstile widget 的 Hostname 列表中。"
-              : code === "110100" || code === "110110" || code === "400020"
-                ? `Cloudflare ${code}：site key 无效。`
-                : code === "400070"
-                  ? "Cloudflare 400070：该 site key 已在 dashboard 中被禁用。"
-                  : "";
-            const msg = code
-              ? `人机验证失败 (Cloudflare 错误 ${code})${hint ? "\n" + hint : ""}`
-              : "人机验证失败，请重试。";
-            finish(reject, new Error(msg), true);
-          },
-          "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
-          "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
-        });
-      } catch (err) {
-        try { console.warn("[login turnstile] render threw", err); } catch (_e) {}
-        finish(reject, err instanceof Error ? err : new Error(String(err)), false);
-      }
-    };
-
-    // Canonical Cloudflare pattern: wrap render() in turnstile.ready() so we
-    // wait until the API is fully initialized. Required for explicit-rendering
-    // mode (`?render=explicit` on the loader URL) and for pages that already
-    // host other Turnstile widgets (our chat anti-bot flow). Without this,
-    // window.turnstile.render() can no-op silently — the iframe gets created
-    // but no callback ever fires, manifesting as a 60s timeout.
-    if (typeof window.turnstile.ready === "function") {
-      window.turnstile.ready(doRender);
-    } else {
-      // Older loader builds expose render() immediately. Fall back to direct
-      // invocation if ready() is not available (e.g. cached old script).
-      doRender();
-    }
-  });
+  if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") {
+    return window.NexusLoginCaptcha.getToken();
+  }
+  return Promise.reject(new Error(
+    "人机验证模块未加载（缺少 cancri_login_captcha.js），请强制刷新页面后重试。"
+  ));
 }
 
 async function sendOtp(email) {
@@ -3457,6 +3362,12 @@ function initAuthOverlay() {
   const resendOtpBtn = document.getElementById("authResendOtpBtn");
   const backToEmailBtn = document.getElementById("authBackToEmailBtn");
 
+  // Pre-render Turnstile so the widget is visible inside the auth form
+  // BEFORE the user clicks "发送验证码". This both fixes the legacy
+  // body-injection hidden-by-overlay bug and lets Managed-mode widgets
+  // auto-issue a token while the user is still typing their email.
+  prerenderLoginCaptcha();
+
   let currentEmail = "";
   let resendCooldown = 0;
 
@@ -3473,6 +3384,9 @@ function initAuthOverlay() {
     stepEmail.style.display = "";
     stepOtp.style.display = "none";
     if (emailError) emailError.textContent = "";
+    // Make sure the captcha widget is visible / mounted again in case the
+    // user navigated away (OTP step) or the widget self-removed.
+    try { prerenderLoginCaptcha(); } catch (_e) {}
   }
 
   if (sendOtpBtn) {
