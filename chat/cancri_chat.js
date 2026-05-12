@@ -276,75 +276,87 @@ function tryTurnstileChallenge(payload) {
     }, 15000);
 
     let widgetId = null;
-    try {
-      widgetId = window.turnstile.render(container, {
-        sitekey: siteKey,
-        size: "invisible",
-        callback: async (turnstileToken) => {
-          if (settled) return;
-          try {
-            const session = await ensureAuthSession();
-            const resp = await fetch(EDGE_FUNCTION_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: SUPABASE_ANON_KEY,
-              },
-              body: JSON.stringify({
-                endpoint: "turnstile_verify",
-                __auth_token: session?.access_token,
-                turnstile_token: turnstileToken,
-              }),
-            });
-            const data = await resp.json();
-            if (data.verified && data.token) {
-              captchaToken = data.token;
+    const doRender = () => {
+      try {
+        widgetId = window.turnstile.render(container, {
+          sitekey: siteKey,
+          size: "invisible",
+          callback: async (turnstileToken) => {
+            if (settled) return;
+            try {
+              const session = await ensureAuthSession();
+              const resp = await fetch(EDGE_FUNCTION_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({
+                  endpoint: "turnstile_verify",
+                  __auth_token: session?.access_token,
+                  turnstile_token: turnstileToken,
+                }),
+              });
+              const data = await resp.json();
+              if (data.verified && data.token) {
+                captchaToken = data.token;
+                settled = true;
+                clearTimeout(timeoutId);
+                try {
+                  if (widgetId !== null && window.turnstile?.remove)
+                    window.turnstile.remove(widgetId);
+                } catch (_e) {
+                  // ignore widget cleanup errors
+                }
+                resolve(true);
+                return;
+              }
+            } catch (_e) {
+              // fall through to fallback
+            }
+            if (!settled) {
               settled = true;
               clearTimeout(timeoutId);
-              try {
-                if (widgetId !== null && window.turnstile?.remove)
-                  window.turnstile.remove(widgetId);
-              } catch (_e) {
-                // ignore widget cleanup errors
-              }
-              resolve(true);
-              return;
+              resolve(false);
             }
-          } catch (_e) {
-            // fall through to fallback
-          }
-          if (!settled) {
+          },
+          "error-callback": () => {
+            if (settled) return;
             settled = true;
             clearTimeout(timeoutId);
             resolve(false);
+          },
+          "timeout-callback": () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            resolve(false);
+          },
+        });
+        // Some loader builds need an explicit execute() call for invisible mode.
+        try {
+          if (widgetId !== null && window.turnstile?.execute) {
+            window.turnstile.execute(widgetId);
           }
-        },
-        "error-callback": () => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeoutId);
-          resolve(false);
-        },
-        "timeout-callback": () => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeoutId);
-          resolve(false);
-        },
-      });
-      // Some loader builds need an explicit execute() call for invisible mode.
-      try {
-        if (widgetId !== null && window.turnstile?.execute) {
-          window.turnstile.execute(widgetId);
+        } catch (_e) {
+          // ignore — render's callback will still fire if it succeeds
         }
       } catch (_e) {
-        // ignore — render's callback will still fire if it succeeds
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        resolve(false);
       }
-    } catch (_e) {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      resolve(false);
+    };
+
+    // Canonical Cloudflare pattern: wrap render() in turnstile.ready() so the
+    // call waits for the API to finish initializing. Required when the loader
+    // is in explicit-rendering mode (`?render=explicit`) and for pages with
+    // multiple widgets.
+    if (typeof window.turnstile.ready === "function") {
+      window.turnstile.ready(doRender);
+    } else {
+      doRender();
     }
   });
 }
@@ -3306,42 +3318,52 @@ function getLoginCaptchaToken() {
     // because the user may need to interact. 60s is the longest a Turnstile
     // token stays valid anyway.
     const timeoutId = setTimeout(() => {
-      finish(reject, new Error("人机验证超时，请重试。"));
+      finish(reject, new Error("人机验证超时，请重试。"), false);
     }, 60000);
 
-    try {
-      // Deliberately omit `size` so the widget renders in whatever mode the
-      // Cloudflare dashboard says (Managed / Non-Interactive / Invisible).
-      // This avoids the "size:invisible on a non-Invisible widget" failure
-      // that otherwise looks identical to a hostname/key mismatch.
-      widgetId = window.turnstile.render(container, {
-        sitekey: siteKey,
-        callback: (token) => finish(resolve, token, false),
-        "error-callback": (err) => {
-          // Surface CF's error code both in the console and on screen so the
-          // user can immediately see what Cloudflare is complaining about
-          // (e.g. 110200 = domain not authorized).
-          try { console.warn("[login turnstile] error-callback", err); } catch (_e) {}
-          const code = (typeof err === "string" || typeof err === "number") ? String(err) : "";
-          const hint = code === "110200"
-            ? "Cloudflare 110200：当前域名未在 Turnstile widget 的 Hostname 列表中。"
-            : code === "110100" || code === "110110" || code === "400020"
-              ? `Cloudflare ${code}：site key 无效。请检查 cancri_config.js 里的 __LOGIN_TURNSTILE_SITE_KEY__ 是否正确。`
-              : code === "400070"
-                ? "Cloudflare 400070：该 site key 已在 dashboard 中被禁用。"
-                : "";
-          const msg = code
-            ? `人机验证失败 (Cloudflare 错误 ${code})${hint ? "\n" + hint : ""}`
-            : "人机验证失败，请重试。请看上方 Turnstile widget 中显示的错误代码。";
-          // keepWidget=true so the user can read CF's own inline error display.
-          finish(reject, new Error(msg), true);
-        },
-        "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
-        "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
-      });
-    } catch (err) {
-      try { console.warn("[login turnstile] render threw", err); } catch (_e) {}
-      finish(reject, err instanceof Error ? err : new Error(String(err)));
+    const doRender = () => {
+      try {
+        // Deliberately omit `size` so the widget renders in whatever mode the
+        // Cloudflare dashboard says (Managed / Non-Interactive / Invisible).
+        widgetId = window.turnstile.render(container, {
+          sitekey: siteKey,
+          callback: (token) => finish(resolve, token, false),
+          "error-callback": (err) => {
+            try { console.warn("[login turnstile] error-callback", err); } catch (_e) {}
+            const code = (typeof err === "string" || typeof err === "number") ? String(err) : "";
+            const hint = code === "110200"
+              ? "Cloudflare 110200：当前域名未在 Turnstile widget 的 Hostname 列表中。"
+              : code === "110100" || code === "110110" || code === "400020"
+                ? `Cloudflare ${code}：site key 无效。`
+                : code === "400070"
+                  ? "Cloudflare 400070：该 site key 已在 dashboard 中被禁用。"
+                  : "";
+            const msg = code
+              ? `人机验证失败 (Cloudflare 错误 ${code})${hint ? "\n" + hint : ""}`
+              : "人机验证失败，请重试。";
+            finish(reject, new Error(msg), true);
+          },
+          "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
+          "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。"), false),
+        });
+      } catch (err) {
+        try { console.warn("[login turnstile] render threw", err); } catch (_e) {}
+        finish(reject, err instanceof Error ? err : new Error(String(err)), false);
+      }
+    };
+
+    // Canonical Cloudflare pattern: wrap render() in turnstile.ready() so we
+    // wait until the API is fully initialized. Required for explicit-rendering
+    // mode (`?render=explicit` on the loader URL) and for pages that already
+    // host other Turnstile widgets (our chat anti-bot flow). Without this,
+    // window.turnstile.render() can no-op silently — the iframe gets created
+    // but no callback ever fires, manifesting as a 60s timeout.
+    if (typeof window.turnstile.ready === "function") {
+      window.turnstile.ready(doRender);
+    } else {
+      // Older loader builds expose render() immediately. Fall back to direct
+      // invocation if ready() is not available (e.g. cached old script).
+      doRender();
     }
   });
 }
