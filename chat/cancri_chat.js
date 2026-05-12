@@ -3273,26 +3273,56 @@ function getLoginCaptchaToken() {
   ));
 }
 
+// Best-effort Turnstile: race the captcha against a short budget so a
+// blocked / slow CF widget can NEVER hang the login UX. If we get a
+// token within the budget we pass it; if not we proceed without one.
+//
+// Why this is safe: Supabase Auth verifies captchaToken server-side
+// ONLY when `security_captcha_enabled = true` in the project Auth
+// config. When it's off, the token is ignored. When it's on, a missing
+// token is rejected by Supabase with a clear "captcha verification
+// failed" error — which is still a much better failure mode than the
+// previous 45s "发送中..." spinner.
+async function getLoginCaptchaTokenBestEffort(budgetMs) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (val) => { if (!settled) { settled = true; resolve(val); } };
+    const t = setTimeout(() => {
+      try { console.info("[login sendOtp] captcha budget exceeded, sending without token"); } catch (_e) {}
+      finish("");
+    }, budgetMs);
+    getLoginCaptchaToken().then(
+      (tok) => { clearTimeout(t); finish(tok || ""); },
+      (err) => {
+        clearTimeout(t);
+        try { console.info("[login sendOtp] captcha unavailable, sending without token:", err && err.message); } catch (_e) {}
+        finish("");
+      }
+    );
+  });
+}
+
 async function sendOtp(email) {
   const client = getSupabaseClient();
-  const captchaToken = await getLoginCaptchaToken();
-  // Defensive: if the widget resolved with an empty/falsy token (shouldn't
-  // happen under normal Cloudflare Turnstile behavior but seen in some
-  // privacy-shield browsers), refuse to send to Supabase rather than fall
-  // through and get the opaque server-side "no captcha_token found" error.
-  if (!captchaToken || typeof captchaToken !== "string" || captchaToken.length < 10) {
-    try { console.warn("[login sendOtp] empty captcha token", captchaToken); } catch (_e) {}
-    throw new Error("人机验证未通过（token 为空），请刷新页面后重试。");
+  // 8s is more than enough for an unblocked managed widget to auto-pass
+  // (most resolve in <2s). Anything longer means the widget is in real
+  // trouble (ad blocker, network) and the user shouldn't wait for it.
+  const captchaToken = await getLoginCaptchaTokenBestEffort(8000);
+  try {
+    console.info(
+      captchaToken
+        ? "[login sendOtp] captcha token len=" + captchaToken.length
+        : "[login sendOtp] proceeding WITHOUT captcha token (best-effort)"
+    );
+  } catch (_e) {}
+  const options = {
+    shouldCreateUser: true,
+    emailRedirectTo: window.location.origin + window.location.pathname,
+  };
+  if (captchaToken && typeof captchaToken === "string" && captchaToken.length >= 10) {
+    options.captchaToken = captchaToken;
   }
-  try { console.info("[login sendOtp] captcha token len=" + captchaToken.length); } catch (_e) {}
-  const { error } = await client.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: true,
-      emailRedirectTo: window.location.origin + window.location.pathname,
-      captchaToken,
-    },
-  });
+  const { error } = await client.auth.signInWithOtp({ email, options });
   if (error) throw error;
 }
 

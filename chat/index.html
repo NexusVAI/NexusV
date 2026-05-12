@@ -79,10 +79,19 @@
                         placeholder="QQ号@qq.com（如 3573799137@qq.com）"
                         autocomplete="email"
                     />
+                    <!-- Turnstile widget mounts here. We pre-render
+                         it visible (not display:none) with a
+                         "loading" placeholder so the user always
+                         sees something while CF's iframe loads — if
+                         CF's api.js is blocked by an ad blocker the
+                         placeholder text turns red and tells the
+                         user what to do. -->
                     <div
                         id="loginTurnstileContainer"
-                        style="display:none;margin:8px 0;min-height:65px;"
-                    ></div>
+                        style="margin:8px 0;min-height:70px;display:flex;align-items:center;justify-content:center;font-size:13px;color:rgba(255,255,255,0.55);"
+                    >
+                        <span id="loginTurnstileStatus">正在加载人机验证组件…</span>
+                    </div>
                     <button class="auth-btn" id="authSendOtpBtn" type="button">
                         发送验证码
                     </button>
@@ -2468,8 +2477,8 @@
         </div>
 
         <script src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
-        <script src="./cancri_login_captcha.js?v=login-captcha-module-0512"></script>
-        <script src="./cancri_chat.js?v=login-turnstile-prerender-0512"></script>
+        <script src="./cancri_login_captcha.js?v=login-captcha-diag-0512b"></script>
+        <script src="./cancri_chat.js?v=login-best-effort-0512c"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script src="./cancri_arena.js?v=arena-module-0504"></script>
