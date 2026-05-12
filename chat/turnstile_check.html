@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnstile Check · nexusvai</title>
+<!-- Diagnostic page for verifying that the Cloudflare Turnstile widget can
+     produce a token on the production nexusvai.xyz domain.  This page is
+     intentionally NOT linked from any nav and does NOT call Supabase. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0c0d10;
+    color: #e6e7ea;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    box-sizing: border-box;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #8a8d96; font-size: 13px; margin-bottom: 28px; }
+  .card {
+    background: #14161b;
+    border: 1px solid #23262d;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 560px;
+    width: 100%;
+  }
+  .row { margin: 10px 0; }
+  .label { color: #8a8d96; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  .value { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 13px; word-break: break-all; }
+  .ok    { color: #4ade80; }
+  .warn  { color: #fbbf24; }
+  .err   { color: #f87171; }
+  #turnstileMount {
+    margin: 18px 0;
+    min-height: 75px;
+    display: flex;
+    justify-content: center;
+  }
+  pre {
+    background: #0a0b0d;
+    border: 1px solid #23262d;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    overflow-x: auto;
+    margin: 6px 0 0;
+  }
+  button {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #2563eb;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { background: #1d4ed8; }
+</style>
+</head>
+<body>
+  <h1>Cloudflare Turnstile · 端到端验证</h1>
+  <div class="sub">如果 widget 能在这里拿到 token，登录就能用。否则就是 widget 配置问题。</div>
+
+  <div class="card">
+    <div class="row">
+      <div class="label">当前域名</div>
+      <div class="value" id="hostLine">…</div>
+    </div>
+    <div class="row">
+      <div class="label">Site Key</div>
+      <div class="value" id="siteKeyLine">0x4AAAAAADLKimsIGr-ntVPk</div>
+    </div>
+    <div class="row">
+      <div class="label">Turnstile 脚本状态</div>
+      <div class="value" id="scriptLine">加载中…</div>
+    </div>
+
+    <div id="turnstileMount"></div>
+
+    <div class="row">
+      <div class="label">结果</div>
+      <div class="value" id="resultLine">等待 widget…</div>
+    </div>
+
+    <div class="row" id="tokenRow" style="display:none">
+      <div class="label">Token (前 60 字符)</div>
+      <pre id="tokenLine"></pre>
+    </div>
+
+    <div class="row" id="errRow" style="display:none">
+      <div class="label">Cloudflare 错误码</div>
+      <pre id="errLine"></pre>
+    </div>
+
+    <button id="retryBtn" style="display:none">重新尝试</button>
+  </div>
+
+  <script>
+    var hostLine    = document.getElementById("hostLine");
+    var scriptLine  = document.getElementById("scriptLine");
+    var resultLine  = document.getElementById("resultLine");
+    var tokenRow    = document.getElementById("tokenRow");
+    var tokenLine   = document.getElementById("tokenLine");
+    var errRow      = document.getElementById("errRow");
+    var errLine     = document.getElementById("errLine");
+    var retryBtn    = document.getElementById("retryBtn");
+    var mount       = document.getElementById("turnstileMount");
+
+    hostLine.textContent = location.host;
+
+    var widgetId = null;
+
+    function setResult(cls, txt) {
+      resultLine.className = "value " + cls;
+      resultLine.textContent = txt;
+    }
+
+    function renderWidget() {
+      tokenRow.style.display = "none";
+      errRow.style.display = "none";
+      retryBtn.style.display = "none";
+      mount.innerHTML = "";
+      setResult("warn", "正在渲染 widget…");
+
+      try {
+        widgetId = window.turnstile.render(mount, {
+          sitekey: "0x4AAAAAADLKimsIGr-ntVPk",
+          // No `size` -> render in whatever mode the dashboard configures
+          // (Managed / Non-Interactive / Invisible).
+          callback: function (token) {
+            setResult("ok", "✅ 成功拿到 token，captcha 端到端工作正常");
+            tokenRow.style.display = "block";
+            tokenLine.textContent = (token || "").substring(0, 60) + "…  (总长 " + (token ? token.length : 0) + ")";
+            retryBtn.style.display = "inline-block";
+            try { console.info("[probe] success, token len =", token.length); } catch (e) {}
+          },
+          "error-callback": function (err) {
+            var code = (typeof err === "string" || typeof err === "number") ? String(err) : "(无代码)";
+            var hint = "";
+            if (code === "110200") hint = " ← 域名未授权。dashboard → widget Settings → Hostname Management 加 nexusvai.xyz";
+            else if (code === "110100" || code === "110110" || code === "400020") hint = " ← site key 无效";
+            else if (code === "400070") hint = " ← widget 被禁用";
+            setResult("err", "❌ widget 触发 error-callback");
+            errRow.style.display = "block";
+            errLine.textContent = code + hint;
+            retryBtn.style.display = "inline-block";
+            try { console.warn("[probe] error-callback:", err); } catch (e) {}
+          },
+          "timeout-callback": function () {
+            setResult("warn", "⚠️ widget 超时（CF 主动取消）");
+            retryBtn.style.display = "inline-block";
+          },
+          "expired-callback": function () {
+            setResult("warn", "⚠️ token 已过期（5 分钟）");
+            retryBtn.style.display = "inline-block";
+          }
+        });
+        try { console.info("[probe] render returned widgetId =", widgetId); } catch (e) {}
+      } catch (e) {
+        setResult("err", "❌ render() 抛异常：" + (e.message || e));
+        retryBtn.style.display = "inline-block";
+      }
+    }
+
+    retryBtn.addEventListener("click", renderWidget);
+
+    // Wait for Cloudflare Turnstile API to load.
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      if (window.turnstile) {
+        clearInterval(iv);
+        scriptLine.className = "value ok";
+        scriptLine.textContent = "已加载 (耗时约 " + (tries * 100) + "ms)";
+        renderWidget();
+      } else if (tries > 100) { // 10 seconds
+        clearInterval(iv);
+        scriptLine.className = "value err";
+        scriptLine.textContent = "脚本 10 秒未加载，可能被广告拦截器或 CSP 拦截";
+        setResult("err", "❌ 无法加载 https://challenges.cloudflare.com/turnstile/v0/api.js");
+      }
+    }, 100);
+  </script>
+</body>
+</html>
