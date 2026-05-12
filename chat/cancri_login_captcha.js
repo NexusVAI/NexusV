@@ -216,12 +216,34 @@
     state.container = container;
     state.rendering = true;
 
-    // Make the container visible. We DON'T clearStatus() here — we let
-    // the iframe push the status text out naturally once the widget
-    // mounts. If render fails, status still shows error.
-    if (!container.style.display || container.style.display === "none") {
-      container.style.display = "flex";
-    }
+    // CRITICAL: reset container layout BEFORE handing a child to
+    // Cloudflare. The original setup had container as display:flex
+    // with align-items:center / justify-content:center AND a status
+    // <span> as its only child. When turnstile.render(container, ...)
+    // appended its iframe, flex centring collapsed the iframe's
+    // height-zero placeholder so it was invisible. We now switch the
+    // container to plain block, drop the inline-flex centring, and
+    // hand CF a dedicated child div as its mount point.
+    container.innerHTML = "";
+    container.style.display = "block";
+    container.style.alignItems = "";
+    container.style.justifyContent = "";
+    state.statusEl = null;
+
+    // Status row stays visible until the widget proves itself.
+    var statusRow = document.createElement("div");
+    statusRow.id = "loginTurnstileStatus";
+    statusRow.textContent = "正在加载人机验证组件…";
+    statusRow.style.cssText = "font-size:13px;line-height:18px;color:rgba(255,255,255,0.55);margin-bottom:6px;text-align:center;";
+    container.appendChild(statusRow);
+    state.statusEl = statusRow;
+
+    // Dedicated CF mount point — block-level, fixed min-height so the
+    // iframe always has room to appear.
+    var mount = document.createElement("div");
+    mount.id = "loginTurnstileMount";
+    mount.style.cssText = "min-height:65px;display:block;";
+    container.appendChild(mount);
 
     var onCallback = function (token) {
       state.pendingToken = token || "";
@@ -269,7 +291,7 @@
       try {
         // Explicit options so behaviour doesn't depend on the
         // Cloudflare-dashboard defaults (which can change).
-        var id = window.turnstile.render(container, {
+        var id = window.turnstile.render(mount, {
           sitekey: siteKey,
           callback: onCallback,
           "error-callback": onError,
@@ -284,7 +306,38 @@
         });
         state.widgetId = id;
         state.rendering = false;
-        try { console.info("[login turnstile] widget rendered, id=", id); } catch (_e) {}
+        try { console.info("[login turnstile] widget rendered, id=", id, "mount children=", mount.children.length); } catch (_e) {}
+
+        // SANITY CHECK: 4s after we call render(), there should be a
+        // CF iframe inside `mount`. If not, the widget silently failed
+        // (often: a CSP rule, a browser extension intercepting the
+        // iframe load, or a stale CF cookie). Surface this to the user
+        // instead of letting them stare at an empty placeholder.
+        setTimeout(function () {
+          if (state.pendingToken) return;             // already produced a token
+          var iframe = mount.querySelector("iframe");
+          var iframeOk = !!iframe && iframe.offsetHeight > 10;
+          try { console.info("[login turnstile] post-render check, iframe=", !!iframe, "offsetHeight=", iframe ? iframe.offsetHeight : "n/a"); } catch (_e) {}
+          if (iframeOk) {
+            // Widget mounted successfully — drop the loading row so
+            // only the CF iframe shows. (CF will animate itself.)
+            if (state.statusEl && state.statusEl.parentNode) {
+              try { state.statusEl.parentNode.removeChild(state.statusEl); } catch (_e) {}
+            }
+            state.statusEl = null;
+            return;
+          }
+          if (!iframeOk && !state.lastError) {
+            var msg = "Cloudflare 验证组件没能渲染出来。\n" +
+                      "可能原因：\n" +
+                      "1) 浏览器扩展（uBlock / AdGuard / Privacy Badger）拦截了 challenges.cloudflare.com\n" +
+                      "2) 严格隐私模式（Brave Shields、Firefox 严格追踪保护）阻止了第三方 iframe\n" +
+                      "3) CF 站点 key 的 Hostname 列表不包含当前域名\n" +
+                      "建议：关闭扩展、切换到 Edge/Chrome 无痕模式、或换个网络后刷新页面。";
+            state.lastError = msg;
+            setStatus(msg, "#ff8a8a");
+          }
+        }, 4000);
       } catch (err) {
         try { console.warn("[login turnstile] render threw", err); } catch (_e) {}
         state.rendering = false;
