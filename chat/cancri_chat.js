@@ -3316,9 +3316,22 @@ function getLoginCaptchaToken() {
         sitekey: siteKey,
         callback: (token) => finish(resolve, token),
         "error-callback": (err) => {
-          // Surface CF's error code in the console so we can debug.
+          // Surface CF's error code both in the console and on screen so the
+          // user can immediately see what Cloudflare is complaining about
+          // (e.g. 110200 = domain not authorized).
           try { console.warn("[login turnstile] error-callback", err); } catch (_e) {}
-          finish(reject, new Error("人机验证失败，请重试。"));
+          const code = (typeof err === "string" || typeof err === "number") ? String(err) : "";
+          const hint = code === "110200"
+            ? "Cloudflare 110200：当前域名未在 Turnstile widget 的 Hostname 列表中。"
+            : code === "110100" || code === "110110" || code === "400020"
+              ? `Cloudflare ${code}：site key 无效。请检查 cancri_config.js 里的 __LOGIN_TURNSTILE_SITE_KEY__ 是否正确。`
+              : code === "400070"
+                ? "Cloudflare 400070：该 site key 已在 dashboard 中被禁用。"
+                : "";
+          const msg = code
+            ? `人机验证失败 (Cloudflare 错误 ${code})${hint ? "\n" + hint : ""}`
+            : "人机验证失败，请重试。";
+          finish(reject, new Error(msg));
         },
         "timeout-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
         "expired-callback": () => finish(reject, new Error("人机验证已过期，请重试。")),
