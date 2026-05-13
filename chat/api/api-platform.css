@@ -26,40 +26,76 @@
 }
 
 :root {
-  /* 表面 */
+  /* ── Clay palette (Anthropic-inspired, dark default) ── */
   --bg: #0a0a0a;
-  --bg-elev: #131313;
-  --bg-card: #1a1a1a;
-  --bg-input: #111;
+  --bg-1: #111111;
+  --bg-2: #161616;
+  --line: #1f1f1f;
+  --line-2: #2a2a2a;
 
-  /* 描边 */
-  --border: #2a2a2a;
-  --border-strong: #383838;
-  --border-mute: #222;
+  --ink: #ededec;
+  --ink-2: #a3a3a0;
+  --ink-3: #6f6f6c;
 
-  /* 文字 */
-  --text: #e8e8e8;
-  --text-mute: #9a9a9a;
-  --text-faint: #666;
+  --cream: #f5f4ed;
+  --cream-on: #1c1c1a;
+  --clay: #d97757;
+  --clay-2: #b85a3e;
 
-  /* 强调色 */
-  --accent: #60a5fa;
-  --accent-strong: #2563eb;
-  --accent-strong-hover: #1d4ed8;
-
-  /* 状态色 */
+  /* 状态色 (semantic, theme-stable) */
   --ok: #4ade80;
   --warn: #fbbf24;
   --err: #f87171;
 
+  /* 字体 */
+  --serif: "Instrument Serif", "Source Serif Pro", Georgia, "Times New Roman",
+    serif;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
   /* 投影 */
   --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.4);
 
-  /* 字体 */
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
-    "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* ── Legacy aliases (so existing pages render with the new palette
+   *    without per-page rewrites) ── */
+  --bg-elev: var(--bg-1);
+  --bg-card: var(--bg-1);
+  --bg-input: var(--bg-2);
+  --border: var(--line);
+  --border-strong: var(--line-2);
+  --border-mute: var(--line);
+  --text: var(--ink);
+  --text-mute: var(--ink-2);
+  --text-faint: var(--ink-3);
+  --accent: var(--clay);
+  --accent-strong: var(--clay);
+  --accent-strong-hover: var(--clay-2);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+}
+
+/* ── Light theme override ────────────────────────────────────
+ * 触发：在 <html data-theme="light"> 时启用。
+ * 设计参考 Anthropic 浅色页：暖白 + 深棕字 + 同款 Clay 强调。 */
+:root[data-theme="light"] {
+  --bg: #faf9f5;
+  --bg-1: #f3f1ea;
+  --bg-2: #e9e6dc;
+  --line: #e3dfd2;
+  --line-2: #cfcabd;
+
+  --ink: #1f1f1c;
+  --ink-2: #585854;
+  --ink-3: #8a8a85;
+
+  --cream: #1c1c1a;
+  --cream-on: #f5f4ed;
+  --clay: #c45a32;
+  --clay-2: #a14722;
+
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 /* ─── base ─────────────────────────────────────────────────── */
@@ -103,18 +139,18 @@ pre {
 .nav,
 .nav-bar {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: wrap;
   margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
   align-items: center;
 }
 
 .nav a,
 .nav-bar a {
-  padding: 8px 14px;
-  color: var(--text-mute);
+  padding: 7px 13px;
+  color: var(--ink-2);
   text-decoration: none;
   font-size: 13px;
   border-radius: 8px;
@@ -125,14 +161,16 @@ pre {
 
 .nav a:hover,
 .nav-bar a:hover {
-  background: var(--bg-elev);
-  color: var(--text);
+  background: var(--bg-1);
+  color: var(--ink);
 }
 
 .nav a.active,
 .nav-bar a.active {
-  color: var(--text);
-  background: var(--bg-card);
+  color: var(--ink);
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--clay);
+  border-radius: 0;
 }
 
 .nav .spacer,
@@ -155,17 +193,22 @@ pre {
 
 header h1,
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  line-height: 1.1;
 }
 
 header p,
 .subtitle {
+  font-family: var(--serif);
   color: var(--text-mute);
-  font-size: 13px;
-  margin-top: 4px;
+  font-size: 16px;
+  margin-top: 6px;
   margin-bottom: 20px;
+  line-height: 1.5;
 }
 
 .top-bar {
@@ -301,51 +344,67 @@ button {
 .btn-primary,
 .btn-secondary,
 .btn-danger {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   font-size: 13px;
   cursor: pointer;
   font-weight: 500;
   transition:
-    background 0.15s,
-    color 0.15s;
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s,
+    transform 0.18s;
+  font-family: inherit;
+  white-space: nowrap;
 }
 
 .btn-primary {
-  background: var(--accent-strong);
-  color: #fff;
+  background: var(--cream);
+  color: var(--cream-on);
 }
 
 .btn-primary:hover {
-  background: var(--accent-strong-hover);
+  filter: brightness(1.04);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: var(--border);
-  color: var(--text);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-2);
 }
 
 .btn-secondary:hover {
-  background: var(--border-strong);
+  border-color: var(--ink-2);
+  color: var(--ink);
 }
 
 .btn-danger {
-  background: #991b1b;
-  color: #fca5a5;
+  background: transparent;
+  color: var(--err);
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
 .btn-danger:hover {
-  background: #7f1d1d;
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.6);
 }
 
 .btn:disabled,
 .btn-primary:disabled,
 .btn-secondary:disabled,
 .btn-danger:disabled {
-  background: var(--border);
+  background: var(--bg-1);
   color: var(--text-faint);
+  border-color: var(--line);
   cursor: not-allowed;
+  transform: none;
+  filter: none;
 }
 
 .reload-btn {
@@ -934,4 +993,221 @@ td.ip {
     padding: 6px 10px;
     font-size: 12.5px;
   }
+}
+
+/* ─── 统一开放平台 Chrome ────────────────────────────────────
+ * 顶栏 / 品牌标识 / 导航 / 主题切换 / 站点页脚。
+ * 这一组类名独立于旧 .nav-bar 体系，所有 4 个旧 API 页 + 门户
+ * 都通过统一 HTML 结构使用同一套 chrome；
+ *   <header class="topbar">…</header>
+ *   <main class="page-shell">…</main>
+ *   <footer class="site-footer">…</footer>
+ * 改这一节 = 全平台同步升级。
+ * ──────────────────────────────────────────────────────────── */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+@supports not (background: color-mix(in srgb, white, black)) {
+  /* fallback for older browsers without color-mix */
+  .topbar {
+    background: rgba(10, 10, 10, 0.78);
+  }
+  :root[data-theme="light"] .topbar {
+    background: rgba(250, 249, 245, 0.85);
+  }
+}
+
+.topbar__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.brand__mark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--clay);
+  letter-spacing: -0.01em;
+}
+.brand__sep {
+  color: var(--ink-3);
+  font-size: 16px;
+  line-height: 1;
+}
+.brand__product {
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+}
+.topnav a {
+  padding: 7px 13px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: 8px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.topnav a:hover {
+  color: var(--ink);
+  background: var(--bg-1);
+}
+.topnav a.is-active {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--clay);
+  border-radius: 0;
+}
+.topnav__back {
+  color: var(--ink-3) !important;
+  margin-left: 8px;
+  padding-left: 14px !important;
+  border-left: 1px solid var(--line);
+  border-radius: 0 !important;
+}
+.topnav__back:hover {
+  color: var(--ink-2) !important;
+  background: transparent !important;
+}
+
+/* 主题切换按钮 — 顶栏右侧的小图标按钮 */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 6px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+  font-family: inherit;
+}
+.theme-toggle:hover {
+  color: var(--ink);
+  border-color: var(--ink-3);
+  background: var(--bg-1);
+}
+.theme-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+/* 暗色显示 sun（点击切到浅色），浅色显示 moon（点击切回深色） */
+:root[data-theme="light"] .theme-toggle__sun {
+  display: none;
+}
+:root:not([data-theme="light"]) .theme-toggle__moon {
+  display: none;
+}
+
+/* 主体容器（适配在 topbar 之下） */
+.page-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 28px 64px;
+}
+.page-shell--narrow {
+  max-width: 640px;
+}
+.page-shell--wide {
+  max-width: 1400px;
+}
+
+/* 站点页脚 — 与门户保持一致 */
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 40px 28px 64px;
+  color: var(--ink-3);
+  font-size: 12px;
+  margin-top: 48px;
+}
+.site-footer__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: baseline;
+}
+.site-footer__sig {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.site-footer__sig::before {
+  content: "§ ";
+  color: var(--clay);
+  font-style: normal;
+}
+
+@media (max-width: 720px) {
+  .topbar__inner {
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .topnav {
+    flex-wrap: wrap;
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .topnav a {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+  .topnav__back {
+    margin-left: auto;
+  }
+  .page-shell {
+    padding: 22px 18px 56px;
+  }
+  .site-footer {
+    padding: 32px 18px 48px;
+  }
+}
+
+/* ::selection 配色（开放平台所有页面统一） */
+::selection {
+  background: var(--clay);
+  color: var(--cream-on);
 }

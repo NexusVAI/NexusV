@@ -3,16 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>API 文档 · Cancri</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>API 文档 · Cancri 开放平台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
-    <link rel="stylesheet" href="./api/api-platform.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./api/api-platform.css?v=20260513" />
+    <script src="./api/api-platform.js?v=20260513"></script>
     <style>
       :root {
         --bg-code: #0d0d0d;
         --purple: #c084fc;
       }
+      /* code blocks 故意在浅色主题下也保持深色岛屿 — 参考 Anthropic / GitHub
+         docs 风格，避免浅底 + 高亮语法色相互冲突。 */
       body {
         line-height: 1.6;
       }
@@ -24,42 +30,11 @@
         gap: 32px;
         padding: 24px 20px 48px;
       }
-      .nav-top {
-        grid-column: 1 / -1;
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-        padding-bottom: 16px;
-        margin-bottom: 0;
-        border-bottom: 1px solid var(--border);
-        align-items: center;
-      }
-      .nav-top a {
-        padding: 8px 14px;
-        color: var(--text-mute);
-        text-decoration: none;
-        font-size: 13px;
-        border-radius: 8px;
-        transition:
-          background 0.15s,
-          color 0.15s;
-      }
-      .nav-top a:hover {
-        background: var(--bg-elev);
-        color: var(--text);
-      }
-      .nav-top a.active {
-        color: var(--text);
-        background: var(--bg-card);
-      }
-      .nav-top .spacer {
-        flex: 1;
-      }
       aside.toc {
         position: sticky;
-        top: 24px;
+        top: 76px;
         height: fit-content;
-        max-height: calc(100vh - 48px);
+        max-height: calc(100vh - 96px);
         overflow-y: auto;
         font-size: 13px;
       }
@@ -97,14 +72,20 @@
         min-width: 0;
       }
       h1 {
-        font-size: 30px;
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: 40px;
         letter-spacing: -0.02em;
-        margin-bottom: 6px;
+        line-height: 1.1;
+        margin-bottom: 8px;
+        color: var(--cream);
       }
       h1 + p {
+        font-family: var(--serif);
         color: var(--text-mute);
-        font-size: 14px;
-        margin-bottom: 32px;
+        font-size: 17px;
+        line-height: 1.5;
+        margin-bottom: 36px;
       }
       h2 {
         font-size: 22px;
@@ -112,13 +93,13 @@
         margin: 40px 0 12px;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--border);
-        scroll-margin-top: 24px;
+        scroll-margin-top: 76px;
       }
       h3 {
         font-size: 16px;
         font-weight: 600;
         margin: 24px 0 8px;
-        scroll-margin-top: 24px;
+        scroll-margin-top: 76px;
       }
       p {
         color: var(--text-mute);
@@ -213,42 +194,42 @@
       .code-block {
         position: relative;
         background: var(--bg-code);
-        border: 1px solid var(--border);
+        border: 1px solid #1f1f1f;
         border-radius: 10px;
         margin: 12px 0;
         overflow: hidden;
       }
       .code-tabs {
         display: flex;
-        background: var(--bg-elev);
-        border-bottom: 1px solid var(--border);
+        background: #161616;
+        border-bottom: 1px solid #1f1f1f;
         padding: 0 6px;
       }
       .code-tab {
         padding: 8px 14px;
         background: transparent;
         border: none;
-        color: var(--text-mute);
+        color: #a3a3a0;
         font-size: 12px;
         cursor: pointer;
         border-bottom: 2px solid transparent;
         transition: all 0.15s;
       }
       .code-tab:hover {
-        color: var(--text);
+        color: #ededec;
       }
       .code-tab.active {
-        color: var(--text);
-        border-bottom-color: var(--accent);
+        color: #ededec;
+        border-bottom-color: var(--clay);
       }
       .copy-icon {
         position: absolute;
         top: 38px;
         right: 8px;
         padding: 4px 10px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        color: var(--text-mute);
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        color: #a3a3a0;
         font-size: 11px;
         border-radius: 5px;
         cursor: pointer;
@@ -259,8 +240,8 @@
         opacity: 1;
       }
       .copy-icon:hover {
-        color: var(--text);
-        border-color: var(--border-strong);
+        color: #ededec;
+        border-color: #383838;
       }
       .copy-icon.copied {
         color: var(--ok);
@@ -356,18 +337,29 @@
     </style>
   </head>
   <body>
-    <div class="layout">
-      <nav class="nav-top">
-        <a href="./api_apply.html">申请 API</a>
-        <a href="./api_keys.html">我的 Keys</a>
-        <a href="./api_models.html">模型广场</a>
-        <a href="./api_docs.html" class="active">文档</a>
-        <span class="spacer"></span>
-        <a href="./" style="color: var(--text-faint)"
-          >← 返回聊天</a
-        >
-      </nav>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="brand" href="./api/">
+          <span class="brand__mark">N</span>
+          <span class="brand__sep">／</span>
+          <span class="brand__product">Open&nbsp;Platform</span>
+        </a>
+        <nav class="topnav" aria-label="开放平台导航">
+          <a href="./api/">概览</a>
+          <a href="./api_apply.html">申请</a>
+          <a href="./api_keys.html">Keys</a>
+          <a href="./api_models.html">模型</a>
+          <a href="./api_docs.html" class="is-active">文档</a>
+          <a href="./" class="topnav__back">← 返回聊天</a>
+        </nav>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
+          <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
 
+    <div class="layout">
       <aside class="toc">
         <h4>开始</h4>
         <a href="#intro">概述</a>
@@ -1470,6 +1462,13 @@ openclaw agent</pre>
         </section>
       </main>
     </div>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__sig">Built with care · Cancri</div>
+        <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+      </div>
+    </footer>
 
     <script>
       const $ = (id) => document.getElementById(id);

@@ -3,20 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>模型广场 · Cancri API</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>模型广场 · Cancri 开放平台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
-    <link rel="stylesheet" href="./api/api-platform.css?v=20260510" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./api/api-platform.css?v=20260513" />
+    <script src="./api/api-platform.js?v=20260513"></script>
     <style>
       :root {
         --vip: #c084fc;
-      }
-      .container {
-        max-width: 1080px;
-      }
-      .nav .back {
-        color: var(--text-faint);
       }
       header {
         margin-bottom: 24px;
@@ -237,16 +235,29 @@
     </style>
   </head>
   <body>
-    <div class="container">
-      <nav class="nav">
-        <a href="./api_apply.html">申请 API</a>
-        <a href="./api_keys.html">我的 Keys</a>
-        <a href="./api_models.html" class="active">模型广场</a>
-        <a href="./api_docs.html">文档</a>
-        <span class="spacer"></span>
-        <a href="./" class="back">← 返回聊天</a>
-      </nav>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="brand" href="./api/">
+          <span class="brand__mark">N</span>
+          <span class="brand__sep">／</span>
+          <span class="brand__product">Open&nbsp;Platform</span>
+        </a>
+        <nav class="topnav" aria-label="开放平台导航">
+          <a href="./api/">概览</a>
+          <a href="./api_apply.html">申请</a>
+          <a href="./api_keys.html">Keys</a>
+          <a href="./api_models.html" class="is-active">模型</a>
+          <a href="./api_docs.html">文档</a>
+          <a href="./" class="topnav__back">← 返回聊天</a>
+        </nav>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
+          <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
 
+    <main class="page-shell" style="max-width: 1080px;">
       <header>
         <h1>模型广场</h1>
         <p>Cancri API 当前可用的所有公开模型。点击 ID 即可复制。</p>
@@ -380,7 +391,14 @@
         <a href="./api_docs.html">完整 API 文档</a>。
       </div>
 
-    </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__sig">Built with care · Cancri</div>
+        <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+      </div>
+    </footer>
 
     <script src="./cancri_config.js"></script>
     <script>

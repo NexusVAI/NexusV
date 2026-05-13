@@ -17,140 +17,24 @@
     rel="stylesheet"
   />
 
+  <link rel="stylesheet" href="./api-platform.css?v=20260513" />
+  <script src="./api-platform.js?v=20260513"></script>
+
   <style>
-    /* ─── design tokens ───────────────────────────────────────
-     * 暗底但暖调。不要科技蓝，不要紫色渐变。
-     * 强调色 --clay 取自 Anthropic Clay（#d97757）。
+    /* design tokens、reset、topbar、品牌、顶部导航、主题切换、site-footer
+     * 全部从共享样式表 ./api-platform.css 引入，本页只保留门户特有的
+     * 视觉组件（hero / chapter / proto / code-tabs / entry-grid 等）。
      */
     :root {
-      --bg: #0a0a0a;
-      --bg-1: #111111;
-      --bg-2: #161616;
-      --line: #1f1f1f;
-      --line-2: #2a2a2a;
-
-      --ink: #ededec;
-      --ink-2: #a3a3a0;
-      --ink-3: #6f6f6c;
-
-      --cream: #f5f4ed;
-      --clay: #d97757;
-      --clay-2: #b85a3e;
-
-      --serif: "Instrument Serif", "Source Serif Pro", Georgia,
-        "Times New Roman", serif;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
-        "PingFang SC", "Microsoft YaHei", sans-serif;
-      --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas,
-        monospace;
-
       --radius: 14px;
     }
 
-    *,
-    *::before,
-    *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html,
+    /* 段落用更舒展的行距，与 chapter / hero 配合 */
     body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: var(--sans);
       line-height: 1.55;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    ::selection {
-      background: var(--clay);
-      color: #1a1a1a;
-    }
-
-    /* ─── 顶栏 ─────────────────────────────────────────────── */
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      background: rgba(10, 10, 10, 0.78);
-      backdrop-filter: saturate(160%) blur(12px);
-      -webkit-backdrop-filter: saturate(160%) blur(12px);
-      border-bottom: 1px solid var(--line);
-    }
-    .topbar__inner {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 14px 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-    }
-    .brand {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-    .brand__mark {
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: 26px;
-      line-height: 1;
-      color: var(--clay);
-      letter-spacing: -0.01em;
-    }
-    .brand__sep {
-      color: var(--ink-3);
-      font-size: 16px;
-      line-height: 1;
-    }
-    .brand__product {
-      color: var(--ink-2);
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 10.5px;
-      font-weight: 500;
-    }
-    .topnav {
-      display: flex;
-      gap: 2px;
-      font-size: 13px;
-    }
-    .topnav a {
-      padding: 7px 13px;
-      color: var(--ink-2);
-      border-radius: 8px;
-      transition:
-        color 0.15s,
-        background 0.15s;
-    }
-    .topnav a:hover {
-      color: var(--ink);
-      background: var(--bg-1);
-    }
-    .topnav a.is-active {
-      color: var(--ink);
-    }
-    .topnav__back {
-      color: var(--ink-3) !important;
-      margin-left: 8px;
-      padding-left: 14px !important;
-      border-left: 1px solid var(--line);
-      border-radius: 0 !important;
-    }
-    .topnav__back:hover {
-      color: var(--ink-2) !important;
-      background: transparent !important;
-    }
+    /* 门户首页让 active 的导航项保留下划线感 — 共享 .topnav a.is-active 已带 clay 下划线 */
 
     /* ─── HERO ────────────────────────────────────────────── */
     .hero {
@@ -235,6 +119,7 @@
       flex-wrap: wrap;
     }
 
+    /* 门户 hero 用的大尺寸 pill 按钮（区别于共享 .btn-primary 的 13px 标准尺寸） */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -255,10 +140,10 @@
     }
     .btn--primary {
       background: var(--cream);
-      color: #1c1c1a;
+      color: var(--cream-on);
     }
     .btn--primary:hover {
-      background: #fff;
+      filter: brightness(1.04);
       transform: translateY(-1px);
     }
     .btn--ghost {
@@ -539,35 +424,7 @@
       transform: translateX(4px);
     }
 
-    /* ─── footer ──────────────────────────────────────────── */
-    footer {
-      padding: 56px 28px 80px;
-      border-top: 1px solid var(--line);
-      color: var(--ink-3);
-      font-size: 12px;
-    }
-    .footer__inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: baseline;
-    }
-    .footer__sig {
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: 15px;
-      color: var(--ink-2);
-    }
-    .footer__sig::before {
-      content: "§ ";
-      color: var(--clay);
-      font-style: normal;
-    }
-
-    /* ─── 响应式 ──────────────────────────────────────────── */
+    /* footer / 响应式 chrome 部分迁移到共享样式表，本页仅保留门户特有的响应式 */
     @media (max-width: 860px) {
       .chapter__inner {
         grid-template-columns: 1fr;
@@ -578,12 +435,6 @@
       }
     }
     @media (max-width: 720px) {
-      .topbar__inner {
-        padding: 12px 18px;
-      }
-      .topnav {
-        display: none;
-      }
       .hero {
         padding: 72px 22px 60px;
       }
@@ -605,9 +456,6 @@
         white-space: normal;
         word-break: break-all;
       }
-      footer {
-        padding: 40px 22px 60px;
-      }
     }
   </style>
 </head>
@@ -628,6 +476,21 @@
         <a href="../api_docs.html">文档</a>
         <a href="../" class="topnav__back">← 返回聊天</a>
       </nav>
+      <button
+        class="theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="切换深色 / 浅色主题"
+        title="切换主题"
+      >
+        <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+        <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -821,9 +684,9 @@ console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>]
     </section>
   </main>
 
-  <footer>
-    <div class="footer__inner">
-      <div class="footer__sig">Built with care · Cancri</div>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__sig">Built with care · Cancri</div>
       <div>&copy; 2025 NexusV / Cancri Open Platform</div>
     </div>
   </footer>

@@ -3,34 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
-  <title>API 申请 - Cancri</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
+  <title>申请 · Cancri 开放平台</title>
   <link rel="icon" type="image/png" href="../Logo/Cancri.png">
   <link rel="apple-touch-icon" href="../Logo/Cancri.png">
-  <link rel="stylesheet" href="./api/api-platform.css?v=20260510">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./api/api-platform.css?v=20260513">
+  <script src="./api/api-platform.js?v=20260513"></script>
   <style>
-    /* 页面专有：申请页是 banner + 单卡上下堆叠，水平居中。
-       原本是 flex row 单卡居中，现在改为 column 以支持上方赞助 banner。 */
-    body { display: flex; flex-direction: column; align-items: center; padding-top: 76px; padding-bottom: 32px; gap: 16px; }
-    .nav-bar { position: fixed; top: 0; left: 0; right: 0; padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--border); }
-    .nav-bar.nav-bar--sticky { background: rgba(10, 10, 10, 0.85); }
-    .apply-page-stack { width: 90%; max-width: 480px; display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+    /* 页面专有：申请页是 banner + 单卡上下堆叠，水平居中 */
+    .apply-page-stack {
+      width: 100%;
+      max-width: 480px;
+      margin: 12px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
     .apply-page-stack .cancri-promo-banner { margin: 0; }
-    .apply-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; width: 100%; }
-    .apply-card .full-btn { width: 100%; padding: 12px; margin-top: 8px; font-size: 14px; }
+    .apply-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+    }
+    .apply-card .full-btn { width: 100%; padding: 11px; margin-top: 8px; font-size: 14px; }
     .apply-card .secondary-btn { width: 100%; padding: 10px; margin-top: 16px; font-size: 13px; }
     .login-hint { text-align: center; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <nav class="nav-bar nav-bar--sticky">
-    <a href="./api_apply.html" class="active">申请 API</a>
-    <a href="./api_keys.html">我的 Keys</a>
-    <a href="./api_models.html">模型广场</a>
-    <a href="./api_docs.html">文档</a>
-    <span class="spacer"></span>
-    <a href="./" style="color: var(--text-faint)">← 返回聊天</a>
-  </nav>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="./api/">
+        <span class="brand__mark">N</span>
+        <span class="brand__sep">／</span>
+        <span class="brand__product">Open&nbsp;Platform</span>
+      </a>
+      <nav class="topnav" aria-label="开放平台导航">
+        <a href="./api/">概览</a>
+        <a href="./api_apply.html" class="is-active">申请</a>
+        <a href="./api_keys.html">Keys</a>
+        <a href="./api_models.html">模型</a>
+        <a href="./api_docs.html">文档</a>
+        <a href="./" class="topnav__back">← 返回聊天</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
+        <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="page-shell page-shell--narrow">
   <div class="apply-page-stack">
     <!-- ── 站主赞助横幅（与模型广场同款） ── -->
     <div class="cancri-promo-banner" id="cancriPromoBanner">
@@ -92,6 +120,14 @@
     <button class="btn-secondary secondary-btn" onclick="location.href='./'">返回聊天</button>
     </div>
   </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__sig">Built with care · Cancri</div>
+      <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+    </div>
+  </footer>
 
   <script src="./cancri_config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
