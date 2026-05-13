@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>Cancri 开放平台 · Open Platform</title>
+  <meta
+    name="description"
+    content="一个端点，多种协议，一把密钥。Cancri 开放平台把 OpenAI、Anthropic 与 Codex 三套原生协议归一化到同一个 API 网关。"
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ─── design tokens ───────────────────────────────────────
+     * 暗底但暖调。不要科技蓝，不要紫色渐变。
+     * 强调色 --clay 取自 Anthropic Clay（#d97757）。
+     */
+    :root {
+      --bg: #0a0a0a;
+      --bg-1: #111111;
+      --bg-2: #161616;
+      --line: #1f1f1f;
+      --line-2: #2a2a2a;
+
+      --ink: #ededec;
+      --ink-2: #a3a3a0;
+      --ink-3: #6f6f6c;
+
+      --cream: #f5f4ed;
+      --clay: #d97757;
+      --clay-2: #b85a3e;
+
+      --serif: "Instrument Serif", "Source Serif Pro", Georgia,
+        "Times New Roman", serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas,
+        monospace;
+
+      --radius: 14px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    ::selection {
+      background: var(--clay);
+      color: #1a1a1a;
+    }
+
+    /* ─── 顶栏 ─────────────────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(10, 10, 10, 0.78);
+      backdrop-filter: saturate(160%) blur(12px);
+      -webkit-backdrop-filter: saturate(160%) blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar__inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .brand__mark {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 26px;
+      line-height: 1;
+      color: var(--clay);
+      letter-spacing: -0.01em;
+    }
+    .brand__sep {
+      color: var(--ink-3);
+      font-size: 16px;
+      line-height: 1;
+    }
+    .brand__product {
+      color: var(--ink-2);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 10.5px;
+      font-weight: 500;
+    }
+    .topnav {
+      display: flex;
+      gap: 2px;
+      font-size: 13px;
+    }
+    .topnav a {
+      padding: 7px 13px;
+      color: var(--ink-2);
+      border-radius: 8px;
+      transition:
+        color 0.15s,
+        background 0.15s;
+    }
+    .topnav a:hover {
+      color: var(--ink);
+      background: var(--bg-1);
+    }
+    .topnav a.is-active {
+      color: var(--ink);
+    }
+    .topnav__back {
+      color: var(--ink-3) !important;
+      margin-left: 8px;
+      padding-left: 14px !important;
+      border-left: 1px solid var(--line);
+      border-radius: 0 !important;
+    }
+    .topnav__back:hover {
+      color: var(--ink-2) !important;
+      background: transparent !important;
+    }
+
+    /* ─── HERO ────────────────────────────────────────────── */
+    .hero {
+      padding: 120px 28px 96px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      /* 一抹极弱的暖光，不是渐变流体，是纸边晕染感 */
+      content: "";
+      position: absolute;
+      top: -30%;
+      right: -10%;
+      width: 60%;
+      height: 80%;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(217, 119, 87, 0.08),
+        transparent 60%
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .hero__eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 36px;
+    }
+    .hero__eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--clay);
+    }
+    .hero__h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(46px, 7.6vw, 104px);
+      line-height: 1;
+      letter-spacing: -0.025em;
+      color: var(--cream);
+      max-width: 16ch;
+    }
+    .hero__h1 em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .hero__lede {
+      font-family: var(--serif);
+      font-size: clamp(19px, 2vw, 23px);
+      font-weight: 400;
+      color: var(--ink-2);
+      max-width: 56ch;
+      line-height: 1.5;
+      margin-top: 32px;
+    }
+    .hero__lede code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      padding: 1px 6px;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--ink);
+    }
+    .hero__cta {
+      display: flex;
+      gap: 12px;
+      margin-top: 44px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition:
+        background 0.18s,
+        color 0.18s,
+        border-color 0.18s,
+        transform 0.18s;
+      font-family: inherit;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn--primary {
+      background: var(--cream);
+      color: #1c1c1a;
+    }
+    .btn--primary:hover {
+      background: #fff;
+      transform: translateY(-1px);
+    }
+    .btn--ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line-2);
+    }
+    .btn--ghost:hover {
+      border-color: var(--ink-2);
+    }
+    .btn .arrow {
+      display: inline-block;
+      transition: transform 0.18s;
+    }
+    .btn:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    /* base URL 复制条 */
+    .endpoint-strip {
+      margin-top: 56px;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 9px 9px 9px 16px;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink-2);
+      background: var(--bg-1);
+      max-width: 100%;
+    }
+    .endpoint-strip__label {
+      color: var(--ink-3);
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .endpoint-strip__url {
+      color: var(--ink);
+      font-family: inherit;
+      user-select: all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .endpoint-strip__copy {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--line-2);
+      border-radius: 7px;
+      color: var(--ink-2);
+      font-family: inherit;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
+    }
+    .endpoint-strip__copy:hover {
+      color: var(--ink);
+      border-color: var(--ink-3);
+    }
+    .endpoint-strip__copy.is-ok {
+      color: var(--clay);
+      border-color: var(--clay);
+    }
+
+    /* ─── 章节通用 ────────────────────────────────────────── */
+    section.chapter {
+      padding: 88px 28px;
+      border-top: 1px solid var(--line);
+    }
+    .chapter__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 40px;
+    }
+    .chapter__head {
+      position: sticky;
+      top: 88px;
+      align-self: start;
+    }
+    .chapter__num {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--clay);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .chapter__title {
+      font-family: var(--serif);
+      font-size: clamp(30px, 4vw, 44px);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--cream);
+    }
+    .chapter__title em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .chapter__sub {
+      font-family: var(--serif);
+      font-size: 17px;
+      color: var(--ink-2);
+      max-width: 50ch;
+      margin-top: 14px;
+      line-height: 1.55;
+    }
+
+    /* ─── 协议表 ──────────────────────────────────────────── */
+    .proto-list {
+      border-top: 1px solid var(--line);
+    }
+    .proto-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 1.4fr;
+      gap: 28px;
+      padding: 30px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .proto-row__path {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--cream);
+      word-break: break-all;
+    }
+    .proto-row__name {
+      font-family: var(--serif);
+      font-size: 24px;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .proto-row__name em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .proto-row__desc {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      line-height: 1.6;
+    }
+
+    /* ─── 代码 tabs ───────────────────────────────────────── */
+    .code-tabs {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-1);
+    }
+    .code-tabs__head {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 0 6px;
+      background: var(--bg);
+    }
+    .code-tabs__btn {
+      background: transparent;
+      border: none;
+      padding: 14px 18px;
+      color: var(--ink-3);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      margin-bottom: -1px;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
+    }
+    .code-tabs__btn:hover {
+      color: var(--ink-2);
+    }
+    .code-tabs__btn.is-active {
+      color: var(--clay);
+      border-bottom-color: var(--clay);
+    }
+    .code-tabs__body {
+      padding: 22px 24px;
+      max-height: 460px;
+      overflow: auto;
+    }
+    .code-tabs__pre {
+      display: none;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.75;
+      white-space: pre;
+      tab-size: 2;
+    }
+    .code-tabs__pre.is-active {
+      display: block;
+    }
+    .c-key {
+      color: #d6a78a;
+    }
+    .c-str {
+      color: #c4a47b;
+    }
+    .c-cmt {
+      color: var(--ink-3);
+      font-style: italic;
+    }
+    .c-fn {
+      color: var(--clay);
+    }
+
+    /* ─── 入口 4 卡 ───────────────────────────────────────── */
+    .entry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .entry-card {
+      display: block;
+      padding: 36px 32px 64px;
+      background: var(--bg);
+      transition: background 0.2s;
+      position: relative;
+      min-height: 220px;
+    }
+    .entry-card:hover {
+      background: var(--bg-1);
+    }
+    .entry-card__num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      letter-spacing: 0.16em;
+    }
+    .entry-card__name {
+      font-family: var(--serif);
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      margin-top: 14px;
+      color: var(--cream);
+      line-height: 1.05;
+    }
+    .entry-card__name em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .entry-card__desc {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      margin-top: 12px;
+      max-width: 32ch;
+      line-height: 1.6;
+    }
+    .entry-card__arrow {
+      position: absolute;
+      bottom: 28px;
+      right: 28px;
+      color: var(--ink-3);
+      font-family: var(--mono);
+      transition:
+        transform 0.2s,
+        color 0.2s;
+    }
+    .entry-card:hover .entry-card__arrow {
+      color: var(--clay);
+      transform: translateX(4px);
+    }
+
+    /* ─── footer ──────────────────────────────────────────── */
+    footer {
+      padding: 56px 28px 80px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-3);
+      font-size: 12px;
+    }
+    .footer__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: baseline;
+    }
+    .footer__sig {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 15px;
+      color: var(--ink-2);
+    }
+    .footer__sig::before {
+      content: "§ ";
+      color: var(--clay);
+      font-style: normal;
+    }
+
+    /* ─── 响应式 ──────────────────────────────────────────── */
+    @media (max-width: 860px) {
+      .chapter__inner {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+      .chapter__head {
+        position: static;
+      }
+    }
+    @media (max-width: 720px) {
+      .topbar__inner {
+        padding: 12px 18px;
+      }
+      .topnav {
+        display: none;
+      }
+      .hero {
+        padding: 72px 22px 60px;
+      }
+      section.chapter {
+        padding: 56px 22px;
+      }
+      .proto-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 22px 0;
+      }
+      .entry-grid {
+        grid-template-columns: 1fr;
+      }
+      .endpoint-strip {
+        flex-wrap: wrap;
+      }
+      .endpoint-strip__url {
+        white-space: normal;
+        word-break: break-all;
+      }
+      footer {
+        padding: 40px 22px 60px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="./">
+        <span class="brand__mark">N</span>
+        <span class="brand__sep">／</span>
+        <span class="brand__product">Open&nbsp;Platform</span>
+      </a>
+      <nav class="topnav" aria-label="开放平台导航">
+        <a href="./" class="is-active">概览</a>
+        <a href="../api_apply.html">申请</a>
+        <a href="../api_keys.html">Keys</a>
+        <a href="../api_models.html">模型</a>
+        <a href="../api_docs.html">文档</a>
+        <a href="../" class="topnav__back">← 返回聊天</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero__inner">
+        <div class="hero__eyebrow">Cancri Open Platform</div>
+        <h1 class="hero__h1">
+          一个端点，<br />
+          多种<em>协议</em>，<br />
+          一把密钥。
+        </h1>
+        <p class="hero__lede">
+          Cancri 开放平台把 OpenAI、Anthropic 与 Codex 三套原生协议归一化到同一个
+          API 网关。在你的代码里，<code>import</code> 不变，把
+          <code>base_url</code> 替换即可。
+        </p>
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="../api_apply.html"
+            >申请密钥<span class="arrow">→</span></a
+          >
+          <a class="btn btn--ghost" href="../api_docs.html">阅读文档</a>
+        </div>
+        <div class="endpoint-strip" aria-label="API base URL">
+          <span class="endpoint-strip__label">Base&nbsp;URL</span>
+          <span class="endpoint-strip__url" id="endpoint-url"
+            >https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</span
+          >
+          <button
+            class="endpoint-strip__copy"
+            id="endpoint-copy"
+            type="button"
+            aria-label="复制 base URL"
+          >
+            复制
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 01 — Protocols -->
+    <section class="chapter">
+      <div class="chapter__inner">
+        <div class="chapter__head">
+          <div class="chapter__num">01 — Protocols</div>
+          <h2 class="chapter__title">三套原生协议，<em>一把</em>密钥。</h2>
+          <p class="chapter__sub">
+            不需要为不同模型提供商分别申请帐号、维护多份配额；一次申请，三处可用。
+          </p>
+        </div>
+        <div class="chapter__body">
+          <div class="proto-list">
+            <div class="proto-row">
+              <div class="proto-row__path">/v1/chat/completions</div>
+              <div class="proto-row__name">OpenAI&nbsp;<em>系</em></div>
+              <div class="proto-row__desc">
+                openai-python / openai-node SDK 直连可用，零代码改动。
+              </div>
+            </div>
+            <div class="proto-row">
+              <div class="proto-row__path">/v1/messages</div>
+              <div class="proto-row__name">Anthropic&nbsp;<em>系</em></div>
+              <div class="proto-row__desc">
+                原生 Claude Messages 协议，支持 Claude Code 等官方工具链。
+              </div>
+            </div>
+            <div class="proto-row">
+              <div class="proto-row__path">/v1/responses</div>
+              <div class="proto-row__name">Codex&nbsp;<em>系</em></div>
+              <div class="proto-row__desc">
+                兼容 OpenAI Codex CLI 的 responses 端点，支持工具调用与 reasoning。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 — Quickstart -->
+    <section class="chapter">
+      <div class="chapter__inner">
+        <div class="chapter__head">
+          <div class="chapter__num">02 — Quickstart</div>
+          <h2 class="chapter__title">三十秒，<em>跑起来</em>。</h2>
+          <p class="chapter__sub">
+            把 base URL 换成 Cancri，import 不变。下面是最小可运行示例。
+          </p>
+        </div>
+        <div class="chapter__body">
+          <div class="code-tabs">
+            <div class="code-tabs__head" role="tablist">
+              <button class="code-tabs__btn is-active" data-tab="curl" type="button">
+                curl
+              </button>
+              <button class="code-tabs__btn" data-tab="python" type="button">
+                python
+              </button>
+              <button class="code-tabs__btn" data-tab="node" type="button">
+                node
+              </button>
+            </div>
+            <div class="code-tabs__body">
+<pre class="code-tabs__pre is-active" data-tab="curl"><span class="c-cmt"># 兼容 OpenAI 协议</span>
+curl <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1/chat/completions"</span> \
+  -H <span class="c-str">"Authorization: Bearer $CANCRI_KEY"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{
+    "model": "gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'</span></pre>
+
+<pre class="code-tabs__pre" data-tab="python"><span class="c-key">from</span> openai <span class="c-key">import</span> OpenAI
+
+client = <span class="c-fn">OpenAI</span>(
+    api_key=<span class="c-str">"sk-cancri-..."</span>,
+    base_url=<span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1"</span>,
+)
+
+resp = client.chat.completions.<span class="c-fn">create</span>(
+    model=<span class="c-str">"gpt-4o-mini"</span>,
+    messages=[{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Hello"</span>}],
+)
+<span class="c-fn">print</span>(resp.choices[<span class="c-str">0</span>].message.content)</pre>
+
+<pre class="code-tabs__pre" data-tab="node"><span class="c-key">import</span> OpenAI <span class="c-key">from</span> <span class="c-str">"openai"</span>;
+
+<span class="c-key">const</span> client = <span class="c-key">new</span> <span class="c-fn">OpenAI</span>({
+  apiKey: process.env.<span class="c-str">CANCRI_KEY</span>,
+  baseURL: <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1"</span>,
+});
+
+<span class="c-key">const</span> resp = <span class="c-key">await</span> client.chat.completions.<span class="c-fn">create</span>({
+  model: <span class="c-str">"gpt-4o-mini"</span>,
+  messages: [{ role: <span class="c-str">"user"</span>, content: <span class="c-str">"Hello"</span> }],
+});
+console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>].message.content);</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 — Console -->
+    <section class="chapter">
+      <div class="chapter__inner">
+        <div class="chapter__head">
+          <div class="chapter__num">03 — Console</div>
+          <h2 class="chapter__title">从这里<em>开始</em>。</h2>
+          <p class="chapter__sub">
+            四个入口，覆盖从首次申请到日常运维的完整链路。
+          </p>
+        </div>
+        <div class="chapter__body">
+          <div class="entry-grid">
+            <a class="entry-card" href="../api_apply.html">
+              <div class="entry-card__num">3.1</div>
+              <div class="entry-card__name">申请&nbsp;<em>API</em></div>
+              <div class="entry-card__desc">
+                首次使用？提交申请进入白名单，通常 24 小时内审核完成。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+            <a class="entry-card" href="../api_keys.html">
+              <div class="entry-card__num">3.2</div>
+              <div class="entry-card__name">我的&nbsp;<em>Keys</em></div>
+              <div class="entry-card__desc">
+                创建、查看、撤销密钥；掌握每一把密钥的用量曲线。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+            <a class="entry-card" href="../api_models.html">
+              <div class="entry-card__num">3.3</div>
+              <div class="entry-card__name">模型&nbsp;<em>广场</em></div>
+              <div class="entry-card__desc">
+                浏览所有可调用模型、命名约定与每千 Token 价格。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+            <a class="entry-card" href="../api_docs.html">
+              <div class="entry-card__num">3.4</div>
+              <div class="entry-card__name">开发者&nbsp;<em>文档</em></div>
+              <div class="entry-card__desc">
+                端点参考、鉴权约定与 SDK 集成指南。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer__inner">
+      <div class="footer__sig">Built with care · Cancri</div>
+      <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+    </div>
+  </footer>
+
+  <script>
+    // 复制 base URL
+    (function () {
+      var btn = document.getElementById("endpoint-copy");
+      var url = document.getElementById("endpoint-url");
+      if (!btn || !url) return;
+      btn.addEventListener("click", async function () {
+        try {
+          await navigator.clipboard.writeText(
+            (url.textContent || "").trim()
+          );
+          btn.textContent = "已复制 ✓";
+          btn.classList.add("is-ok");
+        } catch (e) {
+          btn.textContent = "复制失败";
+        }
+        setTimeout(function () {
+          btn.textContent = "复制";
+          btn.classList.remove("is-ok");
+        }, 1400);
+      });
+    })();
+
+    // code tabs
+    (function () {
+      var btns = document.querySelectorAll(".code-tabs__btn");
+      var pres = document.querySelectorAll(".code-tabs__pre");
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () {
+          var t = b.dataset.tab;
+          btns.forEach(function (x) {
+            x.classList.toggle("is-active", x === b);
+          });
+          pres.forEach(function (p) {
+            p.classList.toggle("is-active", p.dataset.tab === t);
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
