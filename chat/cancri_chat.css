@@ -6120,6 +6120,11 @@ html[data-theme="blue"] {
     font-size: 18px;
     font-weight: 600;
 }
+.auth-otp-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 .auth-btn {
     width: 100%;
     height: 42px;

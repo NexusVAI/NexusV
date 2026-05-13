@@ -69,25 +69,34 @@
                         style="border-radius: 8px"
                     />
                 </div>
-                <h2 class="auth-title">进入 Cancri</h2>
-                <p class="auth-subtitle">完成站点安全验证后继续使用</p>
+                <h2 class="auth-title">登录 Cancri</h2>
+                <p class="auth-subtitle">使用邮箱验证码登录</p>
                 <div class="auth-step" id="authStepEmail">
-                    <!-- Turnstile widget mounts here. We pre-render
-                         it visible (not display:none) with a
-                         "loading" placeholder so the user always
-                         sees something while CF's iframe loads — if
-                         CF's api.js is blocked by an ad blocker the
-                         placeholder text turns red and tells the
-                         user what to do. -->
-                    <div
-                        id="loginTurnstileContainer"
-                        style="margin:8px 0;min-height:70px;display:flex;align-items:center;justify-content:center;font-size:13px;color:rgba(255,255,255,0.55);"
-                    >
-                        <span id="loginTurnstileStatus">正在加载人机验证组件…</span>
-                    </div>
+                    <input
+                        type="email"
+                        id="authEmailInput"
+                        class="auth-input"
+                        placeholder="请输入邮箱（QQ/Foxmail）"
+                        autocomplete="email"
+                        required
+                    />
                     <button class="auth-btn" id="authSendOtpBtn" type="button">
-                        进入 Cancri
+                        发送验证码
                     </button>
+                    <div class="auth-otp-section" id="authOtpSection" style="display:none;">
+                        <input
+                            type="text"
+                            id="authOtpInput"
+                            class="auth-input"
+                            placeholder="输入 8 位验证码"
+                            maxlength="8"
+                            inputmode="numeric"
+                            autocomplete="one-time-code"
+                        />
+                        <button class="auth-btn" id="authVerifyOtpBtn" type="button">
+                            验证登录
+                        </button>
+                    </div>
                     <div class="auth-error" id="authEmailError"></div>
                 </div>
                 <div class="auth-footer">
@@ -328,8 +337,8 @@
                     <div class="account-strip" id="accountTrigger">
                         <div class="avatar">MR</div>
                         <div class="account-meta">
-                            <div class="account-name">进入 Cancri</div>
-                            <div class="account-plan">站点安全验证</div>
+                            <div class="account-name">未登录</div>
+                            <div class="account-plan">请先登录</div>
                         </div>
                         <button class="upgrade-btn" id="donateBtn">账户</button>
                         <svg

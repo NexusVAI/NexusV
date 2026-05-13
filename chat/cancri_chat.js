@@ -3220,7 +3220,7 @@ function updateAccountInfo(user) {
     '.account-popover .popover-item span[style*="font-size:12px"]',
   );
   if (accountName) accountName.textContent = displayName;
-  if (accountPlan) accountPlan.textContent = "已通过安全验证";
+  if (accountPlan) accountPlan.textContent = email ? "已登录" : "已登录";
   if (avatarEl) avatarEl.textContent = initials;
   if (popoverAvatar) popoverAvatar.textContent = initials;
   if (popoverName) popoverName.textContent = displayName;
@@ -3304,20 +3304,22 @@ async function getLoginCaptchaTokenBestEffort(budgetMs) {
   });
 }
 
-async function enterSiteSession() {
+async function sendEmailOtp(email) {
   const client = getSupabaseClient();
-  const captchaToken = await getLoginCaptchaTokenBestEffort(8000);
-  const params = {};
-  if (captchaToken && typeof captchaToken === "string" && captchaToken.length >= 10) {
-    params.options = { captchaToken };
-  }
-  const { data, error } =
-    params.options
-      ? await client.auth.signInAnonymously(params)
-      : await client.auth.signInAnonymously();
+  const { error } = await client.auth.signInWithOtp({ email });
+  if (error) throw error;
+}
+
+async function verifyEmailOtp(email, token) {
+  const client = getSupabaseClient();
+  const { data, error } = await client.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
   if (error) throw error;
   if (!data?.session?.access_token) {
-    throw new Error("安全验证失败，请刷新页面后重试。");
+    throw new Error("验证失败，请重试。");
   }
   authSessionPromise = Promise.resolve(data.session);
   updateAccountInfo(data.session.user);
@@ -3336,8 +3338,8 @@ async function handleLogout() {
   const accountName = document.querySelector(".account-strip .account-name");
   const accountPlan = document.querySelector(".account-strip .account-plan");
   const avatarEl = document.querySelector(".account-strip .avatar");
-  if (accountName) accountName.textContent = "进入 Cancri";
-  if (accountPlan) accountPlan.textContent = "站点安全验证";
+  if (accountName) accountName.textContent = "未登录";
+  if (accountPlan) accountPlan.textContent = "请先登录";
   if (avatarEl) avatarEl.textContent = "--";
 }
 
@@ -3345,7 +3347,6 @@ function initAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (!overlay) return;
 
-  // 主动检查现有 session；匿名会话是站点门禁通过后的正常状态。
   (async () => {
     try {
       const client = getSupabaseClient();
@@ -3363,28 +3364,78 @@ function initAuthOverlay() {
     }
   })();
 
+  const emailInput = document.getElementById("authEmailInput");
   const sendOtpBtn = document.getElementById("authSendOtpBtn");
+  const otpSection = document.getElementById("authOtpSection");
+  const otpInput = document.getElementById("authOtpInput");
+  const verifyOtpBtn = document.getElementById("authVerifyOtpBtn");
   const emailError = document.getElementById("authEmailError");
-
-  // Pre-render Turnstile so the widget is visible inside the auth form
-  // before the user clicks the entry button, so Managed-mode widgets can
-  // auto-issue a token while the user is still reading the gate.
-  prerenderLoginCaptcha();
 
   if (sendOtpBtn) {
     sendOtpBtn.addEventListener("click", async () => {
+      const email = (emailInput && emailInput.value || "").trim();
+      if (!email || !email.includes("@")) {
+        if (emailError) emailError.textContent = "请输入有效的邮箱地址";
+        return;
+      }
+      const allowed = email.endsWith("@qq.com") || email.endsWith("@foxmail.com");
+      if (!allowed) {
+        if (emailError) emailError.textContent = "仅支持 @qq.com 和 @foxmail.com 邮箱";
+        return;
+      }
       sendOtpBtn.disabled = true;
-      sendOtpBtn.textContent = "验证中...";
+      sendOtpBtn.textContent = "发送中...";
       if (emailError) emailError.textContent = "";
       try {
-        await enterSiteSession();
+        await sendEmailOtp(email);
+        sendOtpBtn.style.display = "none";
+        if (otpSection) otpSection.style.display = "block";
+        if (otpInput) otpInput.focus();
+        if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
+        if (emailError) emailError.style.color = "#4ade80";
       } catch (err) {
-        if (emailError)
-          emailError.textContent = err.message || "安全验证失败，请重试";
+        if (emailError) emailError.textContent = err.message || "发送失败，请重试";
+        if (emailError) emailError.style.color = "";
       } finally {
         sendOtpBtn.disabled = false;
-        sendOtpBtn.textContent = "进入 Cancri";
+        sendOtpBtn.textContent = "发送验证码";
       }
+    });
+  }
+
+  if (verifyOtpBtn) {
+    verifyOtpBtn.addEventListener("click", async () => {
+      const email = (emailInput && emailInput.value || "").trim();
+      const code = (otpInput && otpInput.value || "").trim();
+      if (!code || code.length < 6) {
+        if (emailError) emailError.textContent = "请输入完整的验证码";
+        if (emailError) emailError.style.color = "";
+        return;
+      }
+      verifyOtpBtn.disabled = true;
+      verifyOtpBtn.textContent = "验证中...";
+      if (emailError) emailError.textContent = "";
+      if (emailError) emailError.style.color = "";
+      try {
+        await verifyEmailOtp(email, code);
+      } catch (err) {
+        if (emailError) emailError.textContent = err.message || "验证失败，请重试";
+      } finally {
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.textContent = "验证登录";
+      }
+    });
+  }
+
+  if (otpInput) {
+    otpInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && verifyOtpBtn) verifyOtpBtn.click();
+    });
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && sendOtpBtn) sendOtpBtn.click();
     });
   }
 
@@ -10233,9 +10284,12 @@ const donateBtn = document.getElementById("donateBtn");
 if (donateBtn) {
   donateBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    showToast(
-      "账户系统建议使用 Supabase Auth 邮箱验证码，后端配置见本次总结。",
-    );
+    const accountPopover = document.getElementById("accountPopover");
+    if (accountPopover) {
+      const isOpen = accountPopover.classList.contains("open");
+      document.querySelectorAll(".popover.open").forEach(p => p.classList.remove("open"));
+      if (!isOpen) accountPopover.classList.add("open");
+    }
   });
 }
 
