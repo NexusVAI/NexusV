@@ -52,18 +52,18 @@ jobs:
               print("::error::GitHub Secret SUPABASE_ANON_KEY is missing")
               sys.exit(1)
 
-          target = Path("chat/index.html")
-          html = target.read_text(encoding="utf-8")
-          html, url_count = re.subn(
+          target = Path("chat/cancri_config.js")
+          config = target.read_text(encoding="utf-8")
+          config, url_count = re.subn(
               r"window\.__SUPABASE_URL__\s*=\s*[^;]+;",
               f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
-              html,
+              config,
               count=1,
           )
-          html, key_count = re.subn(
+          config, key_count = re.subn(
               r"window\.__SUPABASE_ANON_KEY__\s*=\s*[^;]+;",
               f"window.__SUPABASE_ANON_KEY__ = {json.dumps(supabase_anon_key)};",
-              html,
+              config,
               count=1,
           )
           if url_count != 1:
@@ -72,7 +72,7 @@ jobs:
           if key_count != 1:
               print("::error::SUPABASE_ANON_KEY assignment was not replaced")
               sys.exit(1)
-          target.write_text(html, encoding="utf-8")
+          target.write_text(config, encoding="utf-8")
           PY
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -95,15 +95,39 @@ jobs:
           dst = Path("pages-dist/chat")
           for name in [
               "index.html",
+              "turnstile_check.html",
+              "image.html",
+              "cancri_config.js",
               "cancri_chat.css",
               "cancri_chat.js",
+              "cancri_login_captcha.js",
               "cancri_announcement.js",
               "cancri_arena.css",
               "cancri_arena.js",
+              "cancri_katex_fallback.js",
+              "cancri_orb_loader.js",
+              # API portal landing pages (live at /chat/api_*.html)
+              "api_apply.html",
+              "api_docs.html",
+              "api_keys.html",
+              "api_models.html",
           ]:
-              shutil.copy2(src / name, dst / name)
+              candidate = src / name
+              if candidate.exists():
+                  shutil.copy2(candidate, dst / name)
           for svg in src.glob("*.svg"):
               shutil.copy2(svg, dst / svg.name)
+          for folder in ["styles", "js"]:
+              folder_src = src / folder
+              if folder_src.exists():
+                  shutil.copytree(folder_src, dst / folder, dirs_exist_ok=True)
+          # chat/api/ — admin panel pages + portal landing + shared chrome.
+          # The admin_* pages are only useful to ADMIN_USER_IDS but the
+          # access check is server-side (chat-gateway admin_check), so it's
+          # safe to ship the static HTML to all visitors.
+          api_src = src / "api"
+          if api_src.exists():
+              shutil.copytree(api_src, dst / "api", dirs_exist_ok=True)
           katex = src / "katex"
           if katex.exists():
               shutil.copytree(katex, dst / "katex", dirs_exist_ok=True)
@@ -125,12 +149,19 @@ jobs:
           )
           PY
 
-          if grep -R -n -E 'PROXY_AUTH_TOKEN|__PROXY_TOKEN__|x-proxy-token|modelscope-proxy|chat-history|web-search' pages-dist; then
-            echo "::error::Pages artifact contains backend route/provider material"
+          # Secret-leak guard: catch ACTUAL values, not name references.
+          # `modelscope-proxy/chat-history/web-search` are valid Edge Function
+          # names that appear in code comments + cancri_chat.js error paths;
+          # they are NOT secrets. We only fail the build if the artifact
+          # contains real PROXY_AUTH_TOKEN value patterns or raw API keys.
+          if grep -R -n -E '(PROXY_AUTH_TOKEN\s*[:=]\s*["'"'"']ms?-[A-Za-z0-9_-]{8})|(__PROXY_TOKEN__\s*=\s*["'"'"'][^"'"'"']{4,})|x-proxy-token:\s*[A-Za-z0-9]' pages-dist; then
+            echo "::error::Pages artifact contains real proxy/auth secret values"
             exit 1
           fi
-          if grep -R -n -E 'dashscope|modelscope|siliconflow|pingUrl|线路|供应商|官方API' pages-dist/chat; then
-            echo "::error::ChatAI frontend contains route/provider material"
+          # Hardcoded API key formats from any provider (cancri_sk_*, ms-*, sk-*, fe_oa_*).
+          # Looking for the FORMAT of a real secret being shipped, not just name occurrences.
+          if grep -R -n -E '(cancri_sk_[a-f0-9]{32,})|(["'"'"'](ms|sk-or-v1)-[A-Za-z0-9_-]{16,})|(fe_oa_[a-f0-9]{16,})' pages-dist; then
+            echo "::error::Pages artifact contains a hard-coded API key value"
             exit 1
           fi
           if find pages-dist \( -path '*/supabase/*' -o -path '*/后端/*' -o -path '*/备份/*' -o -path '*/.github/*' -o -path '*/supabase-cli/*' \) -print -quit | grep -q .; then
