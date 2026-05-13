@@ -1643,19 +1643,6 @@ const MODEL_CATALOG = [
     iconPath: "./zhipu-color.svg",
     tags: ["新"],
   },
-  // ── api456.me ──
-  {
-    id: "glm-5v-turbo",
-    displayName: "GLM-5v Turbo",
-    brand: "智谱 GLM",
-    canonicalId: "glm-5v-turbo",
-    lineLabel: "线路一",
-    visible: true,
-    enabled: true,
-    arena: true,
-    iconPath: "./zhipu-color.svg",
-    tags: ["多模态"],
-  },
   // ── cxyquan.com ──
   {
     id: "gpt-5-nano",
@@ -3436,24 +3423,28 @@ async function authBody(body) {
 
 async function proxyFetch(url, options = {}) {
   const session = await ensureAuthSession();
-  const body =
-    typeof options.body === "string"
-      ? JSON.parse(options.body || "{}")
-      : options.body && typeof options.body === "object"
-        ? { ...options.body }
-        : {};
+  let body;
+  if (typeof options.body === "string") {
+    try { body = JSON.parse(options.body || "{}"); } catch (_e) { body = {}; }
+  } else if (options.body && typeof options.body === "object") {
+    body = { ...options.body };
+  } else {
+    body = {};
+  }
   body.__auth_token = session.access_token;
   return fetch(url, { ...options, body: JSON.stringify(body) });
 }
 
 async function proxyFetchWithTimeout(url, options = {}, timeoutMs, label) {
   const session = await ensureAuthSession();
-  const body =
-    typeof options.body === "string"
-      ? JSON.parse(options.body || "{}")
-      : options.body && typeof options.body === "object"
-        ? { ...options.body }
-        : {};
+  let body;
+  if (typeof options.body === "string") {
+    try { body = JSON.parse(options.body || "{}"); } catch (_e) { body = {}; }
+  } else if (options.body && typeof options.body === "object") {
+    body = { ...options.body };
+  } else {
+    body = {};
+  }
   body.__auth_token = session.access_token;
   return fetchWithTimeout(
     url,

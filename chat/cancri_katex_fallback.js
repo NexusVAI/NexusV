@@ -16,18 +16,20 @@
       return;
     }
     var url = cdns[i++];
+    var advanced = false;
+    var advance = function() { if (advanced) return; advanced = true; tryNext(); };
     var css = document.createElement('link');
     css.rel = 'stylesheet';
     css.href = url + 'katex.min.css';
-    css.onerror = tryNext;
+    css.onerror = advance;
     document.head.appendChild(css);
     var s1 = document.createElement('script');
     s1.src = url + 'katex.min.js';
-    s1.onerror = tryNext;
+    s1.onerror = advance;
     s1.onload = function() {
       var s2 = document.createElement('script');
       s2.src = url + 'contrib/auto-render.min.js';
-      s2.onerror = tryNext;
+      s2.onerror = advance;
       s2.onload = function() {
         window.__katexRender = window.renderMathInElement;
         console.log('KaTeX loaded from CDN:', url);
