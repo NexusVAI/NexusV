@@ -208,6 +208,8 @@ function applyFilters(rows) {
       out = out.filter((r) => r.user_id === f.value);
     else if (f.type === "model")
       out = out.filter((r) => r.model === f.value);
+    else if (f.type === "tier")
+      out = out.filter((r) => (r.tier || "") === f.value);
   }
   if (activeSearch) {
     const q = activeSearch.toLowerCase();
@@ -217,7 +219,8 @@ function applyFilters(rows) {
         (r.ip || "").toLowerCase().includes(q) ||
         (r.model || "").toLowerCase().includes(q) ||
         (r.user_id || "").toLowerCase().includes(q) ||
-        (r.key_prefix || "").toLowerCase().includes(q),
+        (r.key_prefix || "").toLowerCase().includes(q) ||
+        (r.tier || "").toLowerCase().includes(q),
     );
   }
   return out;
@@ -231,7 +234,7 @@ function renderChips() {
     return;
   }
   bar.classList.add("show");
-  const labelMap = { ip: "IP", user_id: "用户", model: "模型" };
+  const labelMap = { ip: "IP", user_id: "用户", model: "模型", tier: "付费" };
   bar.innerHTML = FILTERS.map(
     (f) =>
       `<span class="chip">${labelMap[f.type] || f.type}: <code>${esc(f.value)}</code><button data-rm="${esc(f.type)}">×</button></span>`,
@@ -247,7 +250,7 @@ function render() {
   $("row-count").textContent = `共 ${filtered.length} 条`;
   const tbody = $("rows");
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty">没有匹配的调用</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="empty">没有匹配的调用</td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(rowHtml).join("");
@@ -264,6 +267,22 @@ function render() {
       addFilter("user_id", el.dataset.uid);
     });
   });
+  tbody.querySelectorAll(".tier-pill").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      addFilter("tier", el.dataset.tier);
+    });
+  });
+}
+
+function tierCell(tier) {
+  if (tier === "paid") {
+    return `<span class="status-pill s-2xx tier-pill" data-tier="paid" title="付费档" style="cursor:pointer">Paid</span>`;
+  }
+  if (tier === "free") {
+    return `<span class="status-pill tier-pill" data-tier="free" title="免费档" style="cursor:pointer; background:var(--hover); color:var(--text-soft); border:1px solid var(--line)">Free</span>`;
+  }
+  return `<span style="color:var(--text-faint)">—</span>`;
 }
 
 function rowHtml(r) {
@@ -278,6 +297,7 @@ function rowHtml(r) {
     : `<span style="color:var(--text-faint)">—</span>`;
   return `<tr${isErr ? ' class="row-error"' : ""}>
     <td class="email">${userCell}</td>
+    <td>${tierCell(r.tier)}</td>
     <td class="ip">${ipCell}</td>
     <td class="model">${esc(r.model || "—")}</td>
     <td class="tokens">
