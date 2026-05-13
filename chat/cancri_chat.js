@@ -168,6 +168,26 @@ function getFriendlyHttpStatusMessage(status) {
   }
 }
 
+function parsedFriendlyModelError(message) {
+  const text = String(message || "").replace(/\s+/g, " ").trim();
+  if (!text || text.length > 160) return "";
+  if (
+    /provider|distributor|request\s*id|upstream|api[_-]?key|base[_-]?url|modelscope|dashscope|openrouter|siliconflow|new[_-]?api|chshapi|freeapi|分组|渠道|上游|请求\s*id|request_id|https?:\/\//i.test(
+      text,
+    )
+  ) {
+    return "";
+  }
+  if (
+    /额度|频繁|安全验证|暂时不可用|当前模型|切换其他模型|请求未被模型接受|请稍后|请调整内容/.test(
+      text,
+    )
+  ) {
+    return text;
+  }
+  return "";
+}
+
 function parseBackendErrorPayload(errorText) {
   const raw = String(errorText || "").trim();
   if (!raw) return { message: "", code: "" };
@@ -496,15 +516,24 @@ function showCaptchaModal(payload) {
 }
 
 function applyBackendModelBlock(payload, modelId = currentModel) {
-  if (!payload || payload.code !== "model_temporarily_unavailable")
+  if (
+    !payload ||
+    ![
+      "model_temporarily_unavailable",
+      "model_unavailable",
+      "model_temporary_failure",
+      "model_quota_exceeded",
+    ].includes(payload.code)
+  )
     return false;
-  const retryAfter = Number(payload.retryAfter);
+  const retryAfter = Number(payload.retryAfter || payload.retry_after_seconds);
   const until =
     Date.now() +
     (Number.isFinite(retryAfter) && retryAfter > 0
       ? retryAfter * 1000
       : MODEL_LOCK_DURATION_MS);
-  setModelQuotaLock(modelId, until, "unavailable");
+  const reason = payload.code === "model_quota_exceeded" ? "quota" : "unavailable";
+  setModelQuotaLock(modelId, until, reason);
   updateModelDropdownIndicators();
   persistModelTelemetryCache();
   return true;
@@ -529,22 +558,11 @@ function formatModelUnavailableDebug(
   modelId,
   status = getModelStatus(modelId),
 ) {
-  const lockedUntilText = Number.isFinite(status.lockedUntil)
-    ? new Date(status.lockedUntil).toLocaleString()
-    : "none";
-  const lastCheckedText =
-    Number.isFinite(status.lastChecked) && status.lastChecked > 0
-      ? new Date(status.lastChecked).toLocaleString()
-      : "never";
-  return `\n\n诊断: model=${modelId}; lockReason=${status.lockReason || "none"}; lockedUntil=${lockedUntilText}; quotaRemaining=${status.quotaRemaining ?? "unknown"}; userRemaining=${rateLimitInfo.userRemaining ?? "unknown"}; lastChecked=${lastCheckedText}; error=${status.error || "none"}`;
+  return "";
 }
 
 function formatBackendErrorDebug(status, detail) {
-  const text = String(detail || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 300);
-  return `后端返回 HTTP ${status}${text ? `：${text}` : ""}`;
+  return `请求返回 HTTP ${status}`;
 }
 
 function parseHeaderInteger(value) {
@@ -3198,7 +3216,11 @@ function hideAuthOverlay() {
 function updateAccountInfo(user) {
   if (!user) return;
   const email = user.email || "";
-  const initials = email ? email.charAt(0).toUpperCase() : "U";
+  const displayName =
+    getNickname() ||
+    email ||
+    (user.id ? `Cancri-${String(user.id).slice(0, 8)}` : "Cancri 用户");
+  const initials = displayName ? displayName.charAt(0).toUpperCase() : "C";
   // 更新侧边栏账户信息
   const accountName = document.querySelector(".account-strip .account-name");
   const accountPlan = document.querySelector(".account-strip .account-plan");
@@ -3210,12 +3232,12 @@ function updateAccountInfo(user) {
   const popoverSub = document.querySelector(
     '.account-popover .popover-item span[style*="font-size:12px"]',
   );
-  if (accountName) accountName.textContent = getNickname() || email;
-  if (accountPlan) accountPlan.textContent = "已登录";
+  if (accountName) accountName.textContent = displayName;
+  if (accountPlan) accountPlan.textContent = "已通过安全验证";
   if (avatarEl) avatarEl.textContent = initials;
   if (popoverAvatar) popoverAvatar.textContent = initials;
-  if (popoverName) popoverName.textContent = getNickname() || email;
-  if (popoverSub) popoverSub.textContent = "邮箱验证码登录";
+  if (popoverName) popoverName.textContent = displayName;
+  if (popoverSub) popoverSub.textContent = "站点安全验证";
   refreshNicknameUI();
   // 同步刷新hero区域的个性化问候语
   updateHomeHeroText();
@@ -3230,14 +3252,6 @@ async function ensureAuthSession() {
       if (sessionError) throw sessionError;
       if (sessionData?.session?.access_token) {
         const user = sessionData.session.user;
-        // 检查是否为匿名用户
-        if (user?.is_anonymous) {
-          // 匿名用户需要重新登录
-          await client.auth.signOut();
-          authSessionPromise = null;
-          showAuthOverlay();
-          throw new Error("请使用邮箱验证码登录。");
-        }
         updateAccountInfo(user);
         hideAuthOverlay();
         return sessionData.session;
@@ -3303,39 +3317,26 @@ async function getLoginCaptchaTokenBestEffort(budgetMs) {
   });
 }
 
-async function sendOtp(email) {
+async function enterSiteSession() {
   const client = getSupabaseClient();
-  // 8s is more than enough for an unblocked managed widget to auto-pass
-  // (most resolve in <2s). Anything longer means the widget is in real
-  // trouble (ad blocker, network) and the user shouldn't wait for it.
   const captchaToken = await getLoginCaptchaTokenBestEffort(8000);
-  try {
-    console.info(
-      captchaToken
-        ? "[login sendOtp] captcha token len=" + captchaToken.length
-        : "[login sendOtp] proceeding WITHOUT captcha token (best-effort)"
-    );
-  } catch (_e) {}
-  const options = {
-    shouldCreateUser: true,
-    emailRedirectTo: window.location.origin + window.location.pathname,
-  };
+  const params = {};
   if (captchaToken && typeof captchaToken === "string" && captchaToken.length >= 10) {
-    options.captchaToken = captchaToken;
+    params.options = { captchaToken };
   }
-  const { error } = await client.auth.signInWithOtp({ email, options });
+  const { data, error } =
+    params.options
+      ? await client.auth.signInAnonymously(params)
+      : await client.auth.signInAnonymously();
   if (error) throw error;
-}
-
-async function verifyOtp(email, token) {
-  const client = getSupabaseClient();
-  const { data, error } = await client.auth.verifyOtp({
-    email,
-    token,
-    type: "email",
-  });
-  if (error) throw error;
-  return data;
+  if (!data?.session?.access_token) {
+    throw new Error("安全验证失败，请刷新页面后重试。");
+  }
+  authSessionPromise = Promise.resolve(data.session);
+  updateAccountInfo(data.session.user);
+  hideAuthOverlay();
+  authInitialized = true;
+  return data.session;
 }
 
 async function handleLogout() {
@@ -3348,8 +3349,8 @@ async function handleLogout() {
   const accountName = document.querySelector(".account-strip .account-name");
   const accountPlan = document.querySelector(".account-strip .account-plan");
   const avatarEl = document.querySelector(".account-strip .avatar");
-  if (accountName) accountName.textContent = "登录 / 注册";
-  if (accountPlan) accountPlan.textContent = "邮箱验证码账户";
+  if (accountName) accountName.textContent = "进入 Cancri";
+  if (accountPlan) accountPlan.textContent = "站点安全验证";
   if (avatarEl) avatarEl.textContent = "--";
 }
 
@@ -3357,22 +3358,16 @@ function initAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (!overlay) return;
 
-  // 主动检查现有 session，如果是匿名用户则清除并显示登录
+  // 主动检查现有 session；匿名会话是站点门禁通过后的正常状态。
   (async () => {
     try {
       const client = getSupabaseClient();
       const { data } = await client.auth.getSession();
       if (data?.session?.user) {
-        if (data.session.user.is_anonymous) {
-          await client.auth.signOut();
-          authSessionPromise = null;
-          showAuthOverlay();
-        } else {
-          updateAccountInfo(data.session.user);
-          hideAuthOverlay();
-          authSessionPromise = Promise.resolve(data.session);
-          authInitialized = true;
-        }
+        updateAccountInfo(data.session.user);
+        hideAuthOverlay();
+        authSessionPromise = Promise.resolve(data.session);
+        authInitialized = true;
       } else {
         showAuthOverlay();
       }
@@ -3381,151 +3376,35 @@ function initAuthOverlay() {
     }
   })();
 
-  const emailInput = document.getElementById("authEmailInput");
   const sendOtpBtn = document.getElementById("authSendOtpBtn");
   const emailError = document.getElementById("authEmailError");
-  const stepEmail = document.getElementById("authStepEmail");
-  const stepOtp = document.getElementById("authStepOtp");
-  const otpInput = document.getElementById("authOtpInput");
-  const verifyOtpBtn = document.getElementById("authVerifyOtpBtn");
-  const otpError = document.getElementById("authOtpError");
-  const emailDisplay = document.getElementById("authEmailDisplay");
-  const resendOtpBtn = document.getElementById("authResendOtpBtn");
-  const backToEmailBtn = document.getElementById("authBackToEmailBtn");
 
   // Pre-render Turnstile so the widget is visible inside the auth form
-  // BEFORE the user clicks "发送验证码". This both fixes the legacy
-  // body-injection hidden-by-overlay bug and lets Managed-mode widgets
-  // auto-issue a token while the user is still typing their email.
+  // before the user clicks the entry button, so Managed-mode widgets can
+  // auto-issue a token while the user is still reading the gate.
   prerenderLoginCaptcha();
-
-  let currentEmail = "";
-  let resendCooldown = 0;
-
-  function showStepOtp() {
-    stepEmail.style.display = "none";
-    stepOtp.style.display = "";
-    if (emailDisplay) emailDisplay.textContent = currentEmail;
-    if (otpInput) otpInput.value = "";
-    if (otpError) otpError.textContent = "";
-    setTimeout(() => otpInput?.focus(), 100);
-  }
-
-  function showStepEmail() {
-    stepEmail.style.display = "";
-    stepOtp.style.display = "none";
-    if (emailError) emailError.textContent = "";
-    // Make sure the captcha widget is visible / mounted again in case the
-    // user navigated away (OTP step) or the widget self-removed.
-    try { prerenderLoginCaptcha(); } catch (_e) {}
-  }
 
   if (sendOtpBtn) {
     sendOtpBtn.addEventListener("click", async () => {
-      const email = (emailInput?.value || "").trim();
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        if (emailError) emailError.textContent = "请输入有效的邮箱地址";
-        return;
-      }
-      // QQ邮箱限制：只允许「纯数字@qq.com」（大小写均可，例如 3573799137@QQ.COM）
-      // 已注册的旧邮箱（含 foxmail / 字母@qq.com）仍可登录，仅在新注册时拦截。
-      if (!/^[0-9]+@qq\.com$/i.test(email)) {
-        if (emailError)
-          emailError.textContent =
-            "仅支持纯数字 QQ 邮箱（如 3573799137@qq.com）注册";
-        return;
-      }
       sendOtpBtn.disabled = true;
-      sendOtpBtn.textContent = "发送中...";
+      sendOtpBtn.textContent = "验证中...";
       if (emailError) emailError.textContent = "";
       try {
-        currentEmail = email;
-        await sendOtp(email);
-        showStepOtp();
+        await enterSiteSession();
       } catch (err) {
         if (emailError)
-          emailError.textContent = err.message || "发送失败，请重试";
+          emailError.textContent = err.message || "安全验证失败，请重试";
       } finally {
         sendOtpBtn.disabled = false;
-        sendOtpBtn.textContent = "发送验证码";
+        sendOtpBtn.textContent = "进入 Cancri";
       }
     });
-  }
-
-  if (emailInput) {
-    emailInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") sendOtpBtn?.click();
-    });
-  }
-
-  if (verifyOtpBtn) {
-    verifyOtpBtn.addEventListener("click", async () => {
-      const token = (otpInput?.value || "").trim();
-      if (!token || token.length < 6) {
-        if (otpError) otpError.textContent = "请输入验证码";
-        return;
-      }
-      verifyOtpBtn.disabled = true;
-      verifyOtpBtn.textContent = "验证中...";
-      if (otpError) otpError.textContent = "";
-      try {
-        const result = await verifyOtp(currentEmail, token);
-        if (result?.session) {
-          authSessionPromise = Promise.resolve(result.session);
-          updateAccountInfo(result.session.user);
-          hideAuthOverlay();
-          authInitialized = true;
-        } else {
-          if (otpError) otpError.textContent = "验证失败，请重试";
-        }
-      } catch (err) {
-        if (otpError)
-          otpError.textContent = err.message || "验证码错误或已过期";
-      } finally {
-        verifyOtpBtn.disabled = false;
-        verifyOtpBtn.textContent = "验证登录";
-      }
-    });
-  }
-
-  if (otpInput) {
-    otpInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") verifyOtpBtn?.click();
-    });
-  }
-
-  if (resendOtpBtn) {
-    resendOtpBtn.addEventListener("click", async () => {
-      if (resendCooldown > Date.now()) return;
-      resendOtpBtn.textContent = "发送中...";
-      try {
-        await sendOtp(currentEmail);
-        resendCooldown = Date.now() + 60000;
-        resendOtpBtn.textContent = "已重发（60s）";
-        const tick = setInterval(() => {
-          const remain = Math.ceil((resendCooldown - Date.now()) / 1000);
-          if (remain <= 0) {
-            clearInterval(tick);
-            resendOtpBtn.textContent = "重新发送";
-          } else {
-            resendOtpBtn.textContent = `重新发送（${remain}s）`;
-          }
-        }, 1000);
-      } catch (err) {
-        if (otpError) otpError.textContent = err.message || "重发失败";
-        resendOtpBtn.textContent = "重新发送";
-      }
-    });
-  }
-
-  if (backToEmailBtn) {
-    backToEmailBtn.addEventListener("click", showStepEmail);
   }
 
   // 监听 Supabase auth 状态变化
   const client = getSupabaseClient();
   client.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session?.user && !session.user.is_anonymous) {
+    if (event === "SIGNED_IN" && session?.user) {
       authSessionPromise = Promise.resolve(session);
       updateAccountInfo(session.user);
       hideAuthOverlay();
@@ -4082,7 +3961,6 @@ function createRestoredImageElement(imageUrl) {
   wrapper.style.cssText =
     "display:inline-block;position:relative;max-width:360px";
   const img = document.createElement("img");
-  img.src = imageUrl;
   img.alt = "generated image";
   img.style.cssText =
     "max-width:100%;border-radius:10px;display:block;cursor:default";
@@ -4104,6 +3982,13 @@ function createRestoredImageElement(imageUrl) {
     this.parentElement.insertBefore(tip, this);
     this.style.display = "none";
   };
+  mediaObjectUrlViaProxy(imageUrl, "image")
+    .then((src) => {
+      img.src = src;
+    })
+    .catch(() => {
+      img.onerror?.call(img);
+    });
   const dlBtn = document.createElement("button");
   dlBtn.title = "下载图片";
   dlBtn.style.cssText =
@@ -4131,7 +4016,6 @@ function createRestoredVideoElement(videoUrl) {
   wrapper.style.cssText =
     "display:inline-block;position:relative;max-width:480px";
   const video = document.createElement("video");
-  video.src = videoUrl;
   video.controls = true;
   video.loop = true;
   video.muted = true;
@@ -4145,6 +4029,13 @@ function createRestoredVideoElement(videoUrl) {
       "padding:40px;text-align:center;color:rgba(255,255,255,.45);font-size:13px;background:rgba(255,255,255,.06);border-radius:10px";
     wrapper.appendChild(tip);
   });
+  mediaObjectUrlViaProxy(videoUrl, "video")
+    .then((src) => {
+      video.src = src;
+    })
+    .catch(() => {
+      video.dispatchEvent(new Event("error"));
+    });
   const dlBtn = document.createElement("button");
   dlBtn.title = "下载视频";
   dlBtn.style.cssText =
@@ -6451,6 +6342,30 @@ async function downloadMarkdownImage(url) {
   await downloadViaMediaProxy(href, "image");
 }
 
+async function mediaObjectUrlViaProxy(url, kind) {
+  const trimmed = String(url || "").trim();
+  if (/^data:(image|video)\//i.test(trimmed) || /^blob:/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (!/^https?:\/\//i.test(trimmed)) {
+    throw new Error("invalid_media_url");
+  }
+  const response = await proxyFetch(EDGE_FUNCTION_URL, {
+    method: "POST",
+    headers: await proxyHeaders(),
+    body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
+  });
+  if (!response.ok) {
+    throw new Error(`media_proxy_${response.status}`);
+  }
+  const blob = await response.blob();
+  const expectedPrefix = kind === "video" ? "video/" : "image/";
+  if (blob.type && !blob.type.toLowerCase().startsWith(expectedPrefix)) {
+    throw new Error("invalid_media_type");
+  }
+  return URL.createObjectURL(blob);
+}
+
 document.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
@@ -7209,7 +7124,7 @@ function normalizeErrorMessage(error, fallback = "请求失败，请稍后再试
     return message.replace(/^Error:\s*/i, "");
   }
   if (message.includes("诊断:") || message.includes("后端返回 HTTP")) {
-    return message;
+    return fallback;
   }
   const httpMatch = message.match(
     /\b(?:HTTP(?: error! status)?|status)\s*:?\s*(\d{3})/i,
@@ -7592,7 +7507,6 @@ async function sendImageGenerationMessage(
         wrapper.style.cssText =
           "display:inline-block;position:relative;max-width:360px";
         const img = document.createElement("img");
-        img.src = imageUrl;
         img.alt = "generated image";
         img.style.cssText =
           "max-width:100%;border-radius:10px;display:block;cursor:default";
@@ -7615,6 +7529,13 @@ async function sendImageGenerationMessage(
           this.parentElement.insertBefore(tip, this);
           this.style.display = "none";
         };
+        mediaObjectUrlViaProxy(imageUrl, "image")
+          .then((src) => {
+            img.src = src;
+          })
+          .catch(() => {
+            img.onerror?.call(img);
+          });
         const dlBtn = document.createElement("button");
         dlBtn.title = "下载图片";
         dlBtn.style.cssText =
@@ -7907,7 +7828,6 @@ async function sendVideoGenerationMessage(
         wrapper.style.cssText =
           "display:inline-block;position:relative;max-width:480px";
         const video = document.createElement("video");
-        video.src = videoUrl;
         video.controls = true;
         video.autoplay = true;
         video.loop = true;
@@ -7922,6 +7842,13 @@ async function sendVideoGenerationMessage(
             "padding:40px;text-align:center;color:rgba(255,255,255,.45);font-size:13px;background:rgba(255,255,255,.06);border-radius:10px";
           wrapper.appendChild(tip);
         });
+        mediaObjectUrlViaProxy(videoUrl, "video")
+          .then((src) => {
+            video.src = src;
+          })
+          .catch(() => {
+            video.dispatchEvent(new Event("error"));
+          });
         const dlBtn = document.createElement("button");
         dlBtn.title = "下载视频";
         dlBtn.style.cssText =
@@ -9454,10 +9381,10 @@ async function streamChatCompletionRound(
     ) {
       detail += " (可能是图片格式不支持或图片过大)";
     }
-    const friendly = getFriendlyHttpStatusMessage(response.status);
-    throw new Error(
-      `${friendly}\n\n诊断: ${formatBackendErrorDebug(response.status, detail || errorText)}`,
-    );
+    const friendly =
+      parsedFriendlyModelError(detail) ||
+      getFriendlyHttpStatusMessage(response.status);
+    throw new Error(friendly);
   }
 
   if (!response.body) {

@@ -14,9 +14,9 @@
         <!-- Browser tab icon. -->
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
-        <script src="./cancri_config.js?v=0504"></script>
+        <script src="./cancri_config.js?v=privacy-login-0512"></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=header-final-0507" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=privacy-login-0512" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -69,16 +69,9 @@
                         style="border-radius: 8px"
                     />
                 </div>
-                <h2 class="auth-title">登录 Cancri</h2>
-                <p class="auth-subtitle">使用邮箱验证码登录，获得永久账户</p>
+                <h2 class="auth-title">进入 Cancri</h2>
+                <p class="auth-subtitle">完成站点安全验证后继续使用</p>
                 <div class="auth-step" id="authStepEmail">
-                    <input
-                        type="email"
-                        class="auth-input"
-                        id="authEmailInput"
-                        placeholder="QQ号@qq.com（如 3573799137@qq.com）"
-                        autocomplete="email"
-                    />
                     <!-- Turnstile widget mounts here. We pre-render
                          it visible (not display:none) with a
                          "loading" placeholder so the user always
@@ -93,48 +86,12 @@
                         <span id="loginTurnstileStatus">正在加载人机验证组件…</span>
                     </div>
                     <button class="auth-btn" id="authSendOtpBtn" type="button">
-                        发送验证码
+                        进入 Cancri
                     </button>
                     <div class="auth-error" id="authEmailError"></div>
                 </div>
-                <div class="auth-step" id="authStepOtp" style="display: none">
-                    <p class="auth-otp-hint">
-                        验证码已发送至 <strong id="authEmailDisplay"></strong>
-                    </p>
-                    <input
-                        type="text"
-                        class="auth-input auth-otp-input"
-                        id="authOtpInput"
-                        placeholder="输入验证码"
-                        maxlength="10"
-                        inputmode="numeric"
-                        autocomplete="one-time-code"
-                    />
-                    <button
-                        class="auth-btn"
-                        id="authVerifyOtpBtn"
-                        type="button"
-                    >
-                        验证登录
-                    </button>
-                    <button
-                        class="auth-link"
-                        id="authResendOtpBtn"
-                        type="button"
-                    >
-                        重新发送
-                    </button>
-                    <button
-                        class="auth-link"
-                        id="authBackToEmailBtn"
-                        type="button"
-                    >
-                        更换邮箱
-                    </button>
-                    <div class="auth-error" id="authOtpError"></div>
-                </div>
                 <div class="auth-footer">
-                    登录即代表同意服务条款 · 安全邮箱认证
+                    进入即代表同意服务条款和隐私协议
                 </div>
             </div>
         </div>
@@ -371,8 +328,8 @@
                     <div class="account-strip" id="accountTrigger">
                         <div class="avatar">MR</div>
                         <div class="account-meta">
-                            <div class="account-name">登录 / 注册</div>
-                            <div class="account-plan">邮箱验证码账户</div>
+                            <div class="account-name">进入 Cancri</div>
+                            <div class="account-plan">站点安全验证</div>
                         </div>
                         <button class="upgrade-btn" id="donateBtn">账户</button>
                         <svg
@@ -406,7 +363,7 @@
                                 "
                             >
                                 <span style="font-size: 14px; font-weight: 700"
-                                    >登录 / 注册</span
+                                    >进入 Cancri</span
                                 >
                                 <span
                                     style="
@@ -414,7 +371,7 @@
                                         color: var(--text-soft);
                                         margin-top: 3px;
                                     "
-                                    >邮箱验证码登录</span
+                                    >站点安全验证</span
                                 >
                             </div>
                             <span class="grow"></span>
@@ -2464,21 +2421,9 @@
             </div>
         </div>
 
-        <div class="wenjuan-float" id="wenjuan-float">
-            <a
-                href="https://wj.qq.com/s2/26629025/326a/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="问卷调查"
-                title="问卷调查"
-            >
-                问卷调查
-            </a>
-        </div>
-
         <script src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script src="./cancri_chat.js?v=login-best-effort-0512d"></script>
+        <script src="./cancri_chat.js?v=privacy-login-0512"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script src="./cancri_arena.js?v=arena-module-0504"></script>
