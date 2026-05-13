@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+        />
+        <title>我的订单 · Cancri 开放平台</title>
+        <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+        <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <script src="./api/_anti-debug.js"></script>
+        <link rel="stylesheet" href="./api/api-platform.css?v=20260513" />
+        <script src="./api/api-platform.js?v=20260513"></script>
+        <style>
+            .sub-card {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                gap: 16px;
+                align-items: center;
+            }
+            @media (max-width: 600px) {
+                .sub-card {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .sub-card .badge-tier {
+                font-size: 13px;
+                padding: 4px 12px;
+            }
+            .badge-tier {
+                display: inline-block;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-family: var(--font-mono);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+            .badge-tier.paid {
+                background: rgba(245, 158, 11, 0.18);
+                color: #f59e0b;
+            }
+            .badge-tier.free {
+                background: rgba(148, 163, 184, 0.18);
+                color: var(--text-mute);
+            }
+            .sub-meta h3 {
+                margin: 0 0 4px 0;
+                font-family: var(--serif);
+                font-size: 20px;
+                color: var(--text);
+            }
+            .sub-meta p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--text-mute);
+            }
+            .activate-form {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-top: 12px;
+            }
+            .activate-form input {
+                flex: 1;
+                min-width: 240px;
+                padding: 10px 12px;
+                border: 1px solid var(--border-strong);
+                border-radius: 8px;
+                background: var(--surface);
+                color: var(--text);
+                font-family: var(--font-mono);
+                font-size: 14px;
+                letter-spacing: 0.05em;
+            }
+            .activate-form input:focus {
+                outline: 1px solid var(--accent);
+            }
+            .orders-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13.5px;
+            }
+            .orders-table th,
+            .orders-table td {
+                padding: 12px 10px;
+                text-align: left;
+                border-bottom: 1px solid var(--border-mute);
+            }
+            .orders-table th {
+                font-size: 11px;
+                color: var(--text-faint);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                font-weight: 500;
+            }
+            .orders-table td.muted {
+                color: var(--text-mute);
+            }
+            .status-pill {
+                display: inline-block;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+                font-family: var(--font-mono);
+            }
+            .status-pill.submitted {
+                background: rgba(96, 165, 250, 0.18);
+                color: #60a5fa;
+            }
+            .status-pill.approved {
+                background: rgba(245, 158, 11, 0.18);
+                color: #f59e0b;
+            }
+            .status-pill.activated {
+                background: rgba(74, 222, 128, 0.18);
+                color: #4ade80;
+            }
+            .status-pill.rejected {
+                background: rgba(248, 113, 113, 0.18);
+                color: #f87171;
+            }
+            .code-cell code {
+                background: var(--surface);
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-family: var(--font-mono);
+                color: var(--accent);
+                font-size: 12.5px;
+                user-select: all;
+                cursor: text;
+            }
+            .alert {
+                padding: 10px 14px;
+                border-radius: 8px;
+                font-size: 13px;
+                line-height: 1.55;
+            }
+            .alert-info {
+                background: rgba(96, 165, 250, 0.1);
+                border: 1px solid rgba(96, 165, 250, 0.3);
+                color: var(--text);
+            }
+            .alert-warn {
+                background: rgba(248, 113, 113, 0.1);
+                border: 1px solid rgba(248, 113, 113, 0.3);
+                color: var(--text);
+            }
+            .alert-ok {
+                background: rgba(74, 222, 128, 0.1);
+                border: 1px solid rgba(74, 222, 128, 0.3);
+                color: var(--text);
+            }
+        </style>
+    </head>
+    <body>
+        <header class="topbar">
+            <div class="topbar__inner">
+                <a class="brand" href="./api/">
+                    <span class="brand__mark">N</span>
+                    <span class="brand__sep">／</span>
+                    <span class="brand__product">Open&nbsp;Platform</span>
+                </a>
+                <nav class="topnav" aria-label="开放平台导航">
+                    <a href="./api/">概览</a>
+                    <a href="./api_apply.html">申请</a>
+                    <a href="./api_keys.html">Keys</a>
+                    <a href="./api_models.html">模型</a>
+                    <a href="./api_docs.html">文档</a>
+                    <a href="./pricing.html">套餐</a>
+                    <a href="./orders.html" class="is-active">我的订单</a>
+                    <a href="./" class="topnav__back">← 返回聊天</a>
+                </nav>
+                <button
+                    class="theme-toggle"
+                    type="button"
+                    data-theme-toggle
+                    aria-label="切换主题"
+                    title="切换主题"
+                >
+                    <svg
+                        class="theme-toggle__sun"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="4" />
+                        <path
+                            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                        />
+                    </svg>
+                    <svg
+                        class="theme-toggle__moon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="page-shell page-shell--narrow">
+            <div class="top-bar">
+                <div>
+                    <h1 class="page-title">我的订单</h1>
+                    <p class="subtitle">查看付费订单进度 · 兑换激活码</p>
+                </div>
+            </div>
+
+            <div id="loading" class="loading">加载中…</div>
+
+            <div id="login-gate" style="display: none">
+                <div class="card">
+                    <div class="alert alert-info">请先登录账号。</div>
+                    <a class="btn btn-primary" href="./">前往登录</a>
+                </div>
+            </div>
+
+            <div id="main-section" style="display: none">
+                <div class="card" data-sensitive>
+                    <h2>当前订阅状态</h2>
+                    <div id="sub-card" class="sub-card">
+                        <span id="sub-badge" class="badge-tier free">FREE</span>
+                        <div class="sub-meta">
+                            <h3 id="sub-title">免费档</h3>
+                            <p id="sub-desc">高峰期可能要排队，单模型最多 3 个免费用户同时使用。</p>
+                        </div>
+                        <a class="btn btn-primary" href="./pricing.html">
+                            升级到 paid →
+                        </a>
+                    </div>
+
+                    <div style="margin-top: 18px">
+                        <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--text)">兑换激活码</h3>
+                        <form id="activate-form" class="activate-form" autocomplete="off">
+                            <input
+                                type="text"
+                                id="activate-code"
+                                placeholder="CANCRI-PAID-XXXX-XXXX-XXXX"
+                                maxlength="29"
+                                spellcheck="false"
+                                required
+                            />
+                            <button type="submit" class="btn btn-primary" id="activate-submit">
+                                兑换
+                            </button>
+                        </form>
+                        <div id="activate-msg" style="margin-top: 10px"></div>
+                    </div>
+                </div>
+
+                <div class="card" data-sensitive>
+                    <h2>订单列表</h2>
+                    <div id="orders-empty" class="empty" style="display: none">
+                        还没有订单。
+                        <a href="./pricing.html">去下单</a>
+                    </div>
+                    <div id="orders-wrap" style="display: none; overflow-x: auto">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>提交时间</th>
+                                    <th>金额</th>
+                                    <th>状态</th>
+                                    <th>激活码</th>
+                                    <th>站主备注</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="site-footer__inner">
+                <div class="site-footer__sig">Built with care · Cancri</div>
+                <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+            </div>
+        </footer>
+
+        <script src="./cancri_config.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script>
+            const sb = window.supabase.createClient(
+                window.__SUPABASE_URL__,
+                window.__SUPABASE_ANON_KEY__,
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: false,
+                        storageKey: "cancri_supabase_auth",
+                    },
+                },
+            );
+            const GW =
+                window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
+
+            async function getSession() {
+                const {
+                    data: { session },
+                } = await sb.auth.getSession();
+                return session;
+            }
+
+            function esc(s) {
+                const d = document.createElement("div");
+                d.textContent = String(s == null ? "" : s);
+                return d.innerHTML;
+            }
+
+            async function callGateway(endpoint, payload) {
+                const session = await getSession();
+                if (!session) throw new Error("not_logged_in");
+                const resp = await fetch(GW, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + session.access_token,
+                    },
+                    body: JSON.stringify({ endpoint, ...payload }),
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok)
+                    throw Object.assign(new Error(data.error || resp.statusText), {
+                        status: resp.status,
+                        body: data,
+                    });
+                return data;
+            }
+
+            function showMsg(el, text, kind) {
+                el.innerHTML =
+                    '<div class="alert alert-' +
+                    (kind || "info") +
+                    '">' +
+                    text +
+                    "</div>";
+            }
+
+            function renderSubscription(sub) {
+                const badge = document.getElementById("sub-badge");
+                const title = document.getElementById("sub-title");
+                const desc = document.getElementById("sub-desc");
+                if (sub && sub.tier === "paid" && sub.days_remaining > 0) {
+                    badge.className = "badge-tier paid";
+                    badge.textContent = "PAID";
+                    title.textContent = "付费会员";
+                    const exp = sub.expires_at
+                        ? new Date(sub.expires_at).toLocaleString("zh-CN", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                          })
+                        : "—";
+                    const renewHint =
+                        sub.days_remaining <= 7
+                            ? '<strong style="color:#f59e0b">即将到期，建议续费</strong> · '
+                            : "";
+                    desc.innerHTML =
+                        renewHint +
+                        "到期时间：" +
+                        esc(exp) +
+                        " · 剩余 " +
+                        sub.days_remaining +
+                        " 天";
+                } else {
+                    badge.className = "badge-tier free";
+                    badge.textContent = "FREE";
+                    title.textContent = "免费档";
+                    desc.textContent =
+                        "高峰期可能要排队，单模型最多 3 个免费用户同时使用。";
+                }
+            }
+
+            function renderOrders(orders) {
+                const empty = document.getElementById("orders-empty");
+                const wrap = document.getElementById("orders-wrap");
+                const tbody = document.getElementById("orders-rows");
+                if (!orders || orders.length === 0) {
+                    empty.style.display = "block";
+                    wrap.style.display = "none";
+                    return;
+                }
+                empty.style.display = "none";
+                wrap.style.display = "block";
+                tbody.innerHTML = orders
+                    .map((o) => {
+                        const created = new Date(o.created_at).toLocaleString(
+                            "zh-CN",
+                            { hour12: false },
+                        );
+                        const statusPill =
+                            '<span class="status-pill ' +
+                            esc(o.status) +
+                            '">' +
+                            esc(o.status_label || o.status) +
+                            "</span>";
+                        const code =
+                            o.activation_code && o.status === "approved"
+                                ? '<span class="code-cell"><code>' +
+                                  esc(o.activation_code) +
+                                  "</code> <button class=\"btn btn-secondary\" data-copy=\"" +
+                                  esc(o.activation_code) +
+                                  '" style="padding:3px 10px;font-size:11px">复制</button></span>'
+                                : o.activation_code && o.status === "activated"
+                                ? '<span class="code-cell"><code style="opacity:.5">' +
+                                  esc(o.activation_code) +
+                                  "</code></span>"
+                                : '<span style="color:var(--text-faint)">—</span>';
+                        const note = o.admin_note
+                            ? esc(o.admin_note)
+                            : '<span style="color:var(--text-faint)">—</span>';
+                        return (
+                            "<tr><td>" +
+                            esc(created) +
+                            "</td><td>¥" +
+                            esc(o.amount_cny) +
+                            "</td><td>" +
+                            statusPill +
+                            "</td><td>" +
+                            code +
+                            "</td><td class=\"muted\">" +
+                            note +
+                            "</td></tr>"
+                        );
+                    })
+                    .join("");
+
+                tbody.querySelectorAll("[data-copy]").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const code = btn.getAttribute("data-copy");
+                        navigator.clipboard.writeText(code).then(() => {
+                            btn.textContent = "已复制";
+                            setTimeout(() => (btn.textContent = "复制"), 1500);
+                        });
+                    });
+                });
+            }
+
+            async function loadAll() {
+                const data = await callGateway("list_my_orders", {});
+                renderSubscription(data.subscription);
+                renderOrders(data.orders || []);
+            }
+
+            document
+                .getElementById("activate-form")
+                .addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById("activate-submit");
+                    const msg = document.getElementById("activate-msg");
+                    btn.disabled = true;
+                    btn.textContent = "兑换中…";
+                    msg.innerHTML = "";
+                    try {
+                        const code = document
+                            .getElementById("activate-code")
+                            .value.trim()
+                            .toUpperCase();
+                        const r = await callGateway("activate_order_code", {
+                            code,
+                        });
+                        const exp = r.expires_at
+                            ? new Date(r.expires_at).toLocaleString("zh-CN", {
+                                  hour12: false,
+                              })
+                            : "—";
+                        showMsg(
+                            msg,
+                            "✅ 激活成功！您已是付费会员，到期时间 <code>" +
+                                esc(exp) +
+                                "</code>",
+                            "ok",
+                        );
+                        document.getElementById("activate-code").value = "";
+                        await loadAll();
+                    } catch (err) {
+                        const m =
+                            (err.body &&
+                                (err.body.message || err.body.error)) ||
+                            err.message ||
+                            "兑换失败";
+                        showMsg(msg, "❌ " + esc(m), "warn");
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = "兑换";
+                    }
+                });
+
+            async function init() {
+                const loading = document.getElementById("loading");
+                const gate = document.getElementById("login-gate");
+                const main = document.getElementById("main-section");
+                const {
+                    data: { user },
+                } = await sb.auth.getUser();
+                loading.style.display = "none";
+                if (!user || user.is_anonymous) {
+                    gate.style.display = "block";
+                    return;
+                }
+                main.style.display = "block";
+                try {
+                    await loadAll();
+                } catch (e) {
+                    console.error("loadAll:", e);
+                }
+            }
+
+            // Uppercase the activation code as the user types
+            document
+                .getElementById("activate-code")
+                .addEventListener("input", (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+
+            init();
+        </script>
+    </body>
+</html>
