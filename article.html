@@ -32,7 +32,6 @@
     <link rel="stylesheet" href="css/footer.css">
     <link rel="stylesheet" href="css/article.css">
     <link rel="stylesheet" href="css/charts.css">
-    <link rel="stylesheet" href="css/comments.css">
     <link rel="stylesheet" href="css/inter-fonts.css">
     <!-- 大标题用 Newsreader 衬线（最接近 Anthropic Copernicus 的开源替代） -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -101,9 +100,6 @@
 
     <div data-page-footer></div>
 
-
-    <div data-page-comments></div>
-
     <script src="js/components.js" defer></script>
     <script src="js/i18n.js" defer></script>
     <script src="js/theme.js" defer></script>
@@ -112,16 +108,8 @@
     <script src="js/charts.js" defer></script>
     <script src="js/main.js" defer></script>
     <script src="js/search.js" defer></script>
-    <script src="js/comments.js" defer></script>
     <script>document.addEventListener('DOMContentLoaded',function(){
-        var p=new URLSearchParams(window.location.search);
-        var aid=p.get('id')||'article';
-        injectComponents({commentsPageId:aid,commentsPageUrl:window.location.href,commentsPageTitle:document.title});
-        setTimeout(function(){
-            var t=document.querySelector('.article-title');
-            var c=document.getElementById('cusdis_thread');
-            if(t&&t.textContent&&c)c.setAttribute('data-page-title',t.textContent+' | NexusV');
-        },500);
+        injectComponents({});
     });</script>
 </body>
 </html>
