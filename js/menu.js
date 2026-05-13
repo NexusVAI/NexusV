@@ -28,7 +28,7 @@ var menuConfig = {
 var navMenuConfig = [
     { key: 'research', i18n: 'nav.research', submenu: true },
     { key: 'safety', i18n: 'nav.safety', submenu: true },
-    { i18n: 'nav.developer', href: 'API文档网站/index.html' },
+    { i18n: 'nav.developer', href: 'chat/api_docs.html' },
     { href: 'about.html', i18n: 'nav.company' },
     { href: 'index.html#latest-news', i18n: 'nav.news' },
     { href: 'about.html', i18n: 'nav.contact' }
@@ -383,20 +383,18 @@ function initMobileMenu() {
 
 function initActiveNavItem() {
     var navItems = document.querySelectorAll('.nav-item');
-    var currentHref = window.location.href;
+    var currentPath = window.location.pathname.replace(/\/$/, '/index.html');
 
     navItems.forEach(function(item) {
         item.classList.remove('current-page');
         var href = item.getAttribute('href');
         if (href) {
-            var isCurrentPage =
-                currentHref.endsWith(href) ||
-                currentHref.includes(href) ||
-                (href === 'about.html' && (currentHref.includes('about.html')));
-
-            if (isCurrentPage) {
-                item.classList.add('current-page');
-            }
+            try {
+                var targetPath = new URL(href, window.location.href).pathname.replace(/\/$/, '/index.html');
+                if (targetPath === currentPath) {
+                    item.classList.add('current-page');
+                }
+            } catch (_e) { /* invalid href, skip */ }
         }
     });
 }

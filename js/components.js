@@ -17,7 +17,7 @@
                 <div class="nav-links">
                     <div class="nav-item has-dropdown" data-menu="research" data-i18n="nav.research">研究</div>
                     <div class="nav-item has-dropdown" data-menu="safety" data-i18n="nav.safety">安全</div>
-                    <a href="${base}/API文档网站/index.html" class="nav-item" data-i18n="nav.developer">NexusV开放平台</a>
+                    <a href="${base}/chat/api_docs.html" class="nav-item" data-i18n="nav.developer">NexusV开放平台</a>
                     <a href="${base}/about.html" class="nav-item" data-i18n="nav.company">公司</a>
                     <a href="${base}/index.html#latest-news" class="nav-item" data-i18n="nav.news">新闻</a>
                     <a href="${base}/about.html" class="nav-item" data-i18n="nav.contact">联系我们</a>
@@ -146,35 +146,6 @@
         </div>
     </footer>`;
 
-    function getCommentsHTML(pageId, pageUrl, pageTitle) {
-        return `
-    <div class="comments-fab">
-        <div id="comments-liquid-glass-root"></div>
-    </div>
-    <div id="comments-overlay" class="comments-overlay">
-        <div class="comments-modal">
-            <div class="comments-modal-header">
-                <div class="comments-modal-title">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>和DeepSeek聊天</span>
-                </div>
-                <button id="comments-modal-close" class="comments-modal-close">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <div class="comments-modal-body">
-                <div id="cusdis_thread"
-                    data-host="https://cusdis.com"
-                    data-app-id="479a7441-1edc-4e8b-88ae-10ccc708c42a"
-                    data-page-id="${pageId}"
-                    data-page-url="${pageUrl}"
-                    data-page-title="${pageTitle}"
-                ></div>
-            </div>
-        </div>
-    </div>`;
-    }
-
     function injectComponents(config) {
         var body = document.body;
         var temp = document.createElement('div');
@@ -195,19 +166,6 @@
             temp.innerHTML = footerHTML;
             while (temp.firstChild) footerFrag.appendChild(temp.firstChild);
             footerMarker.replaceWith(footerFrag);
-        }
-
-        // Inject comments section
-        var commentsMarker = document.querySelector('[data-page-comments]');
-        if (commentsMarker) {
-            var commentsFrag = document.createDocumentFragment();
-            temp.innerHTML = getCommentsHTML(
-                config.commentsPageId || 'index',
-                config.commentsPageUrl || window.location.href,
-                config.commentsPageTitle || 'NexusV'
-            );
-            while (temp.firstChild) commentsFrag.appendChild(temp.firstChild);
-            commentsMarker.replaceWith(commentsFrag);
         }
 
         // Re-translate dynamically injected elements

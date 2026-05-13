@@ -16,11 +16,11 @@ const articleData = {
                 '• DeepSeek 系列：DeepSeek-V4-Flash（默认模型，极速稳定）、DeepSeek-V4-Pro（专业研究级）、DeepSeek-R1（强大推理能力）等 7 款模型。',
                 '• OpenAI / GPT 系列：GPT-5.4（通用旗舰）、GPT-OSS 120B（开源大参数模型）。',
                 '• Anthropic Claude 系列：Claude Opus 4.6（长文写作首选）、Claude Sonnet 4.6（均衡全能）。',
-                '• Google Gemini 系列：Gemini 3 Flash Preview、Gemini 2.5 Pro（推理强者）等 3 款模型。',
+                '• Google Gemini 系列：Gemini 3 Flash Preview 等模型。',
                 '• 阿里 Qwen 系列：Qwen 3.5（多模态全能）、Qwen3-Max（多模态旗舰）、Qwen3-Coder（编程专家）等 7 款模型。',
                 '• 月之暗面 Kimi 系列：Kimi K2.5、Kimi K2.6（超复杂编程）等 6 款模型。',
                 '• 智谱 GLM 系列：GLM-5（深度编程）、GLM-5.1（复杂代码处理）、GLM-4.7（顶级推理）等 5 款模型。',
-                '• xAI Grok 系列：Grok 4.20 Fast（优先级模型）、Grok Code Fast 1（编程专注）。',
+                '• xAI Grok 系列：Grok Code Fast 1（编程专注）、Grok Imagine（图像生成）。',
                 '• 更多模型：MiniMax M2.7、Step-3.5 Flash、Spark-X2、Nemotron-3-Super、Ling 2.6、MiMo-V2.5-Pro、HunYuan3 Preview 等。',
                 '每个模型都标注了速度等级（绿色=极快、黄色=中等、红色=慢速）和能力标签（通用、编程、推理、写作等），方便你快速选择最适合的模型。当当前模型配额用尽时，系统会自动切换到最快的可用模型，对话不中断。',
                 '完全免费，零门槛使用',
@@ -89,11 +89,11 @@ const articleData = {
                 '• DeepSeek Series: DeepSeek-V4-Flash (default, fast/stable), DeepSeek-V4-Pro (research grade), DeepSeek-R1 (strong reasoning), and more — 7 models total.',
                 '• OpenAI / GPT Series: GPT-5.4 (flagship general), GPT-OSS 120B (open-source large model).',
                 '• Anthropic Claude Series: Claude Opus 4.6 (long-form writing champion), Claude Sonnet 4.6 (balanced all-rounder).',
-                '• Google Gemini Series: Gemini 3 Flash Preview, Gemini 2.5 Pro (reasoning powerhouse), and more.',
+                '• Google Gemini Series: Gemini 3 Flash Preview, and more.',
                 '• Alibaba Qwen Series: Qwen 3.5 (multimodal), Qwen3-Max (multimodal flagship), Qwen3-Coder (coding specialist) — 7 models.',
                 '• Moonshot Kimi Series: Kimi K2.5, Kimi K2.6 (super-complex coding) — 6 models.',
                 '• Zhipu GLM Series: GLM-5 (deep programming), GLM-5.1 (complex code), GLM-4.7 (top reasoning) — 5 models.',
-                '• xAI Grok Series: Grok 4.20 Fast (priority), Grok Code Fast 1 (coding-focused).',
+                '• xAI Grok Series: Grok Code Fast 1 (coding-focused), Grok Imagine (image generation).',
                 '• And More: MiniMax M2.7, Step-3.5 Flash, Spark-X2, Nemotron-3-Super, Ling 2.6, MiMo-V2.5-Pro, HunYuan3 Preview, and more.',
                 'Each model displays speed ratings (green=fast, yellow=medium, red=slow) and capability tags (general, coding, reasoning, writing) for quick selection. When a model\'s quota is exhausted, the system auto-switches to the fastest available model — your conversation never interrupts.',
                 'Completely Free, Zero Barriers',
@@ -1710,6 +1710,11 @@ function swapArticleEntries(keyA, keyB) {
 
 swapArticleEntries('n2', 'news2');
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function initArticlePage() {
     const articleRoot = document.querySelector('.article-page');
     if (!articleRoot) return;
@@ -1851,8 +1856,8 @@ function initArticlePage() {
 
                 card.innerHTML = `
                     ${mediaHtml}
-                    <h4>${crData.title}</h4>
-                    <div class="meta"><span class="news-category">${crData.category}</span> ${crData.date}</div>
+                    <h4>${escapeHtml(crData.title)}</h4>
+                    <div class="meta"><span class="news-category">${escapeHtml(crData.category)}</span> ${escapeHtml(crData.date)}</div>
                 `;
                 crGrid.appendChild(card);
             });
@@ -1960,8 +1965,8 @@ function initIndexPage() {
                  card.innerHTML = `
                     ${mediaHtml}
                     <div class="card-text">
-                        <h3 class="card-title">${data.title}</h3>
-                        <p class="card-meta"><span>${data.category}</span> <span class="meta-time">${data.readTime}</span></p>
+                        <h3 class="card-title">${escapeHtml(data.title)}</h3>
+                        <p class="card-meta"><span>${escapeHtml(data.category)}</span> <span class="meta-time">${escapeHtml(data.readTime)}</span></p>
                     </div>
                  `;
                  scrollableList.appendChild(card);
@@ -1987,11 +1992,11 @@ function initIndexPage() {
                 
                 card.innerHTML = `
                     <div class="news-thumb">
-                        <img src="${src}" alt="${(item.media && item.media.alt) || ''}" loading="lazy" decoding="async" onerror="${onError}">
+                        <img src="${src}" alt="${escapeHtml((item.media && item.media.alt) || '')}" loading="lazy" decoding="async" onerror="${onError}">
                     </div>
                     <div class="news-info">
-                        <h3>${data.title}</h3>
-                        <p><span class="news-category">${data.category}</span> ${data.date}</p>
+                        <h3>${escapeHtml(data.title)}</h3>
+                        <p><span class="news-category">${escapeHtml(data.category)}</span> ${escapeHtml(data.date)}</p>
                     </div>
                 `;
                 newsGrid.appendChild(card);
@@ -2013,11 +2018,11 @@ function initIndexPage() {
 
                 card.innerHTML = `
                     <div class="latest-news-feature-thumb">
-                        <img src="${fallbackImg}" alt="${(item.media && item.media.alt) || ''}" loading="lazy" decoding="async" onerror="${onError}">
+                        <img src="${fallbackImg}" alt="${escapeHtml((item.media && item.media.alt) || '')}" loading="lazy" decoding="async" onerror="${onError}">
                     </div>
                     <div class="latest-news-feature-info">
-                        <h3>${data.title}</h3>
-                        <p><span class="news-category">${data.category}</span> ${data.date}</p>
+                        <h3>${escapeHtml(data.title)}</h3>
+                        <p><span class="news-category">${escapeHtml(data.category)}</span> ${escapeHtml(data.date)}</p>
                     </div>
                 `;
                 featureStrip.appendChild(card);

@@ -152,6 +152,7 @@
         try {
             if (!trainingData) {
                 var response = await fetch('training_metrics_clean.csv');
+                if (!response.ok) throw new Error('CSV fetch failed: ' + response.status);
                 var text = await response.text();
                 var lines = text.trim().split('\n');
                 var headers = lines[0].split(',');

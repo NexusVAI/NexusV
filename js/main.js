@@ -557,9 +557,9 @@ const AI_HERO = {
     },
 
     jumpToChat(question) {
-        // 编码问题，跳转到 chat AI 页面
-        const encoded = encodeURIComponent(question);
-        window.location.href = `chat%20AI/cancri_chat_ui_v_3.html?q=${encoded}`;
+        // 跳转到 /chat/。仅在 question 非空时才拼 ?q=，避免出现裸 ?q= 的丑链。
+        const q = (question || '').trim();
+        window.location.href = q ? `/chat/?q=${encodeURIComponent(q)}` : '/chat/';
     }
 };
 
