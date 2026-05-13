@@ -17,7 +17,7 @@
                 <div class="nav-links">
                     <div class="nav-item has-dropdown" data-menu="research" data-i18n="nav.research">研究</div>
                     <div class="nav-item has-dropdown" data-menu="safety" data-i18n="nav.safety">安全</div>
-                    <a href="${base}/chat/api_docs.html" class="nav-item" data-i18n="nav.developer">NexusV开放平台</a>
+                    <a href="${base}/chat/api/" class="nav-item" data-i18n="nav.developer">NexusV开放平台</a>
                     <a href="${base}/about.html" class="nav-item" data-i18n="nav.company">公司</a>
                     <a href="${base}/index.html#latest-news" class="nav-item" data-i18n="nav.news">新闻</a>
                     <a href="${base}/about.html" class="nav-item" data-i18n="nav.contact">联系我们</a>

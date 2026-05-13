@@ -28,7 +28,7 @@ var menuConfig = {
 var navMenuConfig = [
     { key: 'research', i18n: 'nav.research', submenu: true },
     { key: 'safety', i18n: 'nav.safety', submenu: true },
-    { i18n: 'nav.developer', href: 'chat/api_docs.html' },
+    { i18n: 'nav.developer', href: 'chat/api/' },
     { href: 'about.html', i18n: 'nav.company' },
     { href: 'index.html#latest-news', i18n: 'nav.news' },
     { href: 'about.html', i18n: 'nav.contact' }
