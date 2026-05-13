@@ -15,7 +15,16 @@
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
         <script src="./cancri_config.js?v=2026-05-13e"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <!-- supabase-js: 2026-05-13 审查后固定到具体 minor 版本。原 `@2` floating
+             tag 会被 jsdelivr 任意 redirect 到当前最新 v2.x，被劫持时无法察觉。
+             TODO: 添加 SRI integrity hash 完成防劫持：
+               curl -sL https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js \
+                 | openssl dgst -sha384 -binary | openssl base64 -A
+             把结果加成 integrity="sha384-XXX" -->
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+        ></script>
         <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-13e" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link

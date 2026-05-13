@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="robots" content="noindex,nofollow" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+        />
+        <title>管理员 · 订单审核 · Cancri</title>
+        <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+        <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+        <script src="./_anti-debug.js"></script>
+        <link rel="stylesheet" href="./api-platform.css" />
+        <style>
+            .order-row {
+                display: grid;
+                grid-template-columns: 1.2fr 1fr 1fr auto;
+                gap: 14px;
+                padding: 14px 16px;
+                border: 1px solid var(--border-mute);
+                border-radius: 10px;
+                margin-bottom: 10px;
+                background: var(--surface-elevated, var(--surface));
+                align-items: center;
+            }
+            @media (max-width: 920px) {
+                .order-row {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .order-meta-block {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                font-size: 12.5px;
+                color: var(--text-mute);
+            }
+            .order-meta-block strong {
+                color: var(--text);
+                font-size: 13.5px;
+            }
+            .order-meta-block code {
+                font-family: var(--font-mono);
+                color: var(--accent);
+                font-size: 12px;
+                user-select: all;
+            }
+            .order-actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+            .order-actions input[type="text"] {
+                flex: 1 1 200px;
+                min-width: 180px;
+                padding: 6px 10px;
+                border: 1px solid var(--border-strong);
+                border-radius: 6px;
+                background: var(--surface);
+                color: var(--text);
+                font-size: 12px;
+            }
+            .btn-tiny {
+                padding: 5px 12px;
+                border-radius: 6px;
+                font-size: 11.5px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+            }
+            .btn-tiny.approve {
+                background: rgba(74, 222, 128, 0.18);
+                color: var(--ok, #4ade80);
+            }
+            .btn-tiny.approve:hover {
+                background: rgba(74, 222, 128, 0.3);
+            }
+            .btn-tiny.reject {
+                background: rgba(248, 113, 113, 0.18);
+                color: var(--err, #f87171);
+            }
+            .btn-tiny.reject:hover {
+                background: rgba(248, 113, 113, 0.3);
+            }
+            .btn-tiny:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+            .status-pill {
+                display: inline-block;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+                font-family: var(--font-mono);
+            }
+            .status-pill.submitted {
+                background: rgba(96, 165, 250, 0.18);
+                color: #60a5fa;
+            }
+            .status-pill.approved {
+                background: rgba(245, 158, 11, 0.18);
+                color: #f59e0b;
+            }
+            .status-pill.activated {
+                background: rgba(74, 222, 128, 0.18);
+                color: #4ade80;
+            }
+            .status-pill.rejected {
+                background: rgba(248, 113, 113, 0.18);
+                color: #f87171;
+            }
+            .approved-code {
+                margin-top: 6px;
+                padding: 6px 10px;
+                background: rgba(245, 158, 11, 0.08);
+                border: 1px dashed rgba(245, 158, 11, 0.35);
+                border-radius: 6px;
+                font-family: var(--font-mono);
+                font-size: 12px;
+                color: #f59e0b;
+                user-select: all;
+            }
+            .filter-group {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+                margin-bottom: 12px;
+            }
+            .filter-btn {
+                padding: 6px 12px;
+                background: transparent;
+                border: 1px solid var(--border-strong);
+                color: var(--text-mute);
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+            }
+            .filter-btn.active {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: white;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <nav class="nav">
+                <a href="../api_apply.html">申请 API</a>
+                <a href="../api_keys.html">我的 Keys</a>
+                <a href="../api_models.html">模型广场</a>
+                <a href="../api_docs.html">文档</a>
+                <a href="./admin.html">审核</a>
+                <a href="./admin_orders.html" class="active">订单</a>
+                <a href="./admin_usage.html">调用日志</a>
+                <a href="./admin_lines.html">线路</a>
+                <a href="./admin_users.html">用户</a>
+                <span class="badge-admin">ADMIN</span>
+                <span class="spacer"></span>
+                <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+            </nav>
+
+            <div id="loading" class="loading">检查权限中…</div>
+
+            <div id="login-gate" class="gate" style="display: none">
+                <h2>需要登录</h2>
+                <p>请先登录账号，验证你的管理员身份。</p>
+                <a class="btn-primary" href="../">前往登录</a>
+            </div>
+
+            <div id="deny-gate" class="gate deny" style="display: none">
+                <h2>无权访问</h2>
+                <p>
+                    这个页面仅站点管理员可见。如果你认为这是误判，请联系
+                    <code>站主</code>。
+                </p>
+                <a class="btn-primary" href="../">返回聊天</a>
+            </div>
+
+            <div id="main" style="display: none">
+                <header>
+                    <h1>付费订单审核</h1>
+                    <p>
+                        审核 ¥9.9/月会员订单。审核通过会自动生成激活码，请把激活码记下来给用户。
+                    </p>
+                </header>
+
+                <div class="stats" id="stats">
+                    <div class="stat-card pending">
+                        <div class="label">待审</div>
+                        <div class="value" id="stat-submitted">—</div>
+                    </div>
+                    <div class="stat-card approved">
+                        <div class="label">已通过 · 待激活</div>
+                        <div class="value" id="stat-approved">—</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">已激活</div>
+                        <div class="value" id="stat-activated">—</div>
+                    </div>
+                    <div class="stat-card rejected">
+                        <div class="label">已拒绝</div>
+                        <div class="value" id="stat-rejected">—</div>
+                    </div>
+                </div>
+
+                <div class="filter-group" id="statusFilter">
+                    <button class="filter-btn active" data-status="">全部</button>
+                    <button class="filter-btn" data-status="submitted">待审核</button>
+                    <button class="filter-btn" data-status="approved">已通过</button>
+                    <button class="filter-btn" data-status="activated">已激活</button>
+                    <button class="filter-btn" data-status="rejected">已拒绝</button>
+                    <button class="reload-btn" id="reload-btn" style="margin-left: auto">
+                        ↻ 刷新
+                    </button>
+                </div>
+
+                <div id="orders"></div>
+
+                <div id="empty-msg" class="empty" style="display: none">
+                    没有匹配的订单。
+                </div>
+            </div>
+
+            <div id="toast" class="toast"></div>
+        </div>
+
+        <script src="../cancri_config.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+        ></script>
+        <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-orders-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
+        <script src="./admin-orders-app.js?v=2026-05-13"></script>
+    </body>
+</html>

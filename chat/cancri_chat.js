@@ -130,7 +130,7 @@ const SHARED_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 共享额度页面�
 const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
 const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
 const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
-const DEFAULT_MODEL_ID = "grok-4.3";
+const DEFAULT_MODEL_ID = "grok-4.20-0309";
 const DEFAULT_COMPARE_MODEL_ID = "minimax-m2.7";
 const RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
 let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
@@ -396,8 +396,10 @@ function showQueueModal(modelId, initialPosition, queueSessionId) {
         <div class="modal-title">排队中</div>
         <p class="modal-desc" style="margin:16px 0 8px;">当前模型 <strong>${modelId}</strong> 使用人数较多</p>
         <div id="queuePosition" style="font-size:48px;font-weight:700;color:var(--accent-color);margin:16px 0;">${initialPosition}</div>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px;">前面有 <span id="queueCount">${initialPosition}</span> 位用户，请耐心等待</p>
-        <div style="display:flex;gap:12px;justify-content:center;">
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:8px;">前面有 <span id="queueCount">${initialPosition}</span> 位用户，请耐心等待</p>
+        <p style="color:var(--text-secondary);font-size:13px;margin:0 0 24px;opacity:.85;">付费会员（¥9.9/月）可免排队 · <a href="./pricing.html" target="_blank" style="color:var(--accent-color);text-decoration:underline;">了解套餐</a></p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <a href="./pricing.html" target="_blank" class="primary-btn" style="padding:10px 24px;border-radius:8px;background:var(--accent-color);color:#fff;text-decoration:none;font-size:14px;font-weight:500;">升级免排队</a>
           <button id="queueCancelBtn" class="muted-btn" style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:14px;">取消排队</button>
         </div>
       </div>
@@ -1299,8 +1301,12 @@ function on(id, event, handler) {
   el.addEventListener(event, handler);
 }
 
+// 历史 localStorage 里残留的旧 ID → 当前默认模型。这里只列**目录已不再注册**的
+// ID；catalog 仍存在的 ID 绝对不要写在这里，否则会把老用户的有效选择重置掉。
+// 2026-05-13 审查：移除 claude-opus-4-5 / claude-haiku-4-5-20251001 / gpt-5.4 /
+// gpt-5.3-codex / glm-4.7 / qwen3.6-plus-2026-04-02 / qwen3.6-max-preview，
+// 这 7 个 ID 仍在 MODEL_CATALOG 中。
 const MODEL_SELECTION_MIGRATIONS = {
-  "deepseek-v4-flash": DEFAULT_MODEL_ID,
   "deepseek-v4-flash-alt": DEFAULT_MODEL_ID,
   "kimi-k2.6-futureppo": DEFAULT_MODEL_ID,
   "deepseek-v4-pro-futureppo": DEFAULT_MODEL_ID,
@@ -1312,7 +1318,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemini-3-flash-preview": DEFAULT_MODEL_ID,
   "kimi-k2-instruct": DEFAULT_MODEL_ID,
   "minimax-m2.5-alt": DEFAULT_MODEL_ID,
-  "claude-haiku-4-5-20251001": DEFAULT_MODEL_ID,
   "glm-5.1-futureppo": DEFAULT_MODEL_ID,
   "kimi-k2.6-alt": DEFAULT_MODEL_ID,
   "kimi-k2.6-extended": DEFAULT_MODEL_ID,
@@ -1337,24 +1342,23 @@ const MODEL_SELECTION_MIGRATIONS = {
   "glm-5.1-alt": DEFAULT_MODEL_ID,
   "glm-5-freeapi": DEFAULT_MODEL_ID,
   "gemini-3.1-pro-api456": DEFAULT_MODEL_ID,
-  // 2026-05-10 管理员页熔断后下架的模型 → 默认 grok-4.3
+  // 2026-05-10 管理员页熔断后下架的模型 → 默认
   "claude-sonnet-4-5": DEFAULT_MODEL_ID,
-  "claude-opus-4-5": DEFAULT_MODEL_ID,
   "gemini-3-flash-alt": DEFAULT_MODEL_ID,
   "gemini-3.1-pro": DEFAULT_MODEL_ID,
-  "glm-4.7": DEFAULT_MODEL_ID,
   "glm-4.7-siliconflow": DEFAULT_MODEL_ID,
-  "gpt-5.4": DEFAULT_MODEL_ID,
-  "gpt-5.3-codex": DEFAULT_MODEL_ID,
   "qwen3.6-plus": DEFAULT_MODEL_ID,
-  "qwen3.6-plus-2026-04-02": DEFAULT_MODEL_ID,
   "qwen3.6-plus-2026-04-02-dashscope": DEFAULT_MODEL_ID,
-  "qwen3.6-max-preview": DEFAULT_MODEL_ID,
   "qwen3.5-omni-plus": DEFAULT_MODEL_ID,
+  // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
+  "grok-4.3": DEFAULT_MODEL_ID,
+  // claude-opus-4-7 是 PRIORITY 残留但 catalog 从未注册过
+  "claude-opus-4-7": DEFAULT_MODEL_ID,
 };
+// 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则
+// 排序时会被忽略，等于排在最后。
 const MODEL_PRIORITY_IDS = [
-  "grok-4.3",
-  "claude-opus-4-7",
+  "grok-4.20-0309",
   "claude-opus-4-6",
   "deepseek-v4-pro",
   "kimi-k2.6",
@@ -2425,6 +2429,13 @@ async function ensureAuthSession() {
       throw new Error("请先登录后再使用。");
     })().catch((error) => {
       authSessionPromise = null;
+      const raw = error instanceof Error ? error.message : String(error);
+      // Supabase SDK 内部 bug 会抛 "Assignment to constant variable" 等
+      // 不可读的技术错误；拦截后转为用户可理解的提示。
+      if (/assignment to constant|immutable|readonly|cannot assign/i.test(raw)) {
+        console.error("[ensureAuthSession] SDK internal error:", error);
+        throw new Error("登录会话异常，请刷新页面后重试。");
+      }
       throw error;
     });
   }
@@ -2624,12 +2635,47 @@ function initAuthOverlay() {
       updateAccountInfo(session.user);
       hideAuthOverlay();
       authInitialized = true;
+      void maybeShowExpirySoonBanner();
     } else if (event === "SIGNED_OUT") {
       authSessionPromise = null;
       authInitialized = false;
       showAuthOverlay();
     }
   });
+}
+
+// 付费会员到期前 7 天提示续费。每个浏览器 session 最多提示一次。
+let _subscriptionBannerShown = false;
+async function maybeShowExpirySoonBanner() {
+  if (_subscriptionBannerShown) return;
+  try {
+    const session = await ensureAuthSession();
+    const resp = await fetch(EDGE_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        endpoint: "get_my_subscription",
+        __auth_token: session.access_token,
+      }),
+    });
+    if (!resp.ok) return;
+    const data = await resp.json().catch(() => null);
+    const sub = data?.subscription;
+    if (!sub || sub.tier !== "paid") return;
+    if (sub.days_remaining > 7) return;
+    _subscriptionBannerShown = true;
+    if (sub.days_remaining > 0) {
+      showToast(`付费会员将在 ${sub.days_remaining} 天后到期，请在「我的订单」续费。`);
+    } else {
+      showToast("付费会员已过期，已自动降级为免费档。续费请见「我的订单」。");
+    }
+  } catch (e) {
+    /* silent — banner is optional */
+  }
 }
 
 let captchaToken = "";
@@ -5418,10 +5464,12 @@ function safeUrl(url) {
   if (/^(https?:|\/)/i.test(trimmed)) return trimmed;
   // Allow inline image/video data URIs — required so generated images that
   // come back as `b64_json` (e.g. the current xem8k5 image line) survive a chat
-  // history reload. We deliberately only whitelist `data:image/` and
-  // `data:video/` so a malicious assistant can't sneak in
-  // `data:text/html,<script>...` and turn a chat bubble into an XSS vector.
-  if (/^data:(image|video)\/[a-z0-9.+-]+;/i.test(trimmed)) return trimmed;
+  // history reload. 2026-05-13 审查：原正则 `data:(image|video)/[a-z0-9.+-]+;`
+  // 会放行 `data:image/svg+xml;...`，SVG 可以内嵌 <script> 和 javascript: URI
+  // 直接 XSS。这里改用具体 MIME 白名单，只允许真正的位图 / 视频 / 音频容器。
+  if (/^data:image\/(png|jpe?g|webp|gif|bmp|x-icon|vnd\.microsoft\.icon)[;,]/i.test(trimmed)) return trimmed;
+  if (/^data:video\/(mp4|webm|ogg|quicktime)[;,]/i.test(trimmed)) return trimmed;
+  if (/^data:audio\/(mpeg|mp4|wav|ogg|webm)[;,]/i.test(trimmed)) return trimmed;
   return "#";
 }
 
@@ -9194,6 +9242,26 @@ async function sendMessage(content) {
       pushHistory(
         assistantHistoryMessage(
           "登录已过期，请重新登录后再试。",
+          turnModelMetadata,
+        ),
+      );
+      await finalizeConversationTurn().catch(() => {});
+      state.sendLocked = false;
+      setComposerBusy(false);
+      return;
+    }
+    if (/assignment to constant|immutable|readonly|cannot assign/i.test(message)) {
+      // Supabase SDK 内部 bug，不展示技术细节，提示刷新即可。
+      console.error("[sendMessage] SDK const-assignment error caught:", error);
+      authSessionPromise = null;
+      updateAssistantMessage(assistantMessageId, {
+        answer: "登录会话异常，请刷新页面后重试。",
+        thinking: false,
+      });
+      pushHistory(userHistoryMessage);
+      pushHistory(
+        assistantHistoryMessage(
+          "登录会话异常，请刷新页面后重试。",
           turnModelMetadata,
         ),
       );

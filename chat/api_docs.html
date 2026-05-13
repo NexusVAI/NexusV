@@ -350,6 +350,8 @@
           <a href="./api_keys.html">Keys</a>
           <a href="./api_models.html">模型</a>
           <a href="./api_docs.html" class="is-active">文档</a>
+          <a href="./pricing.html">套餐</a>
+          <a href="./orders.html">我的订单</a>
           <a href="./" class="topnav__back">← 返回聊天</a>
         </nav>
         <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
@@ -388,16 +390,16 @@
       <main>
         <h1>Cancri API 文档</h1>
         <p>
-          OpenAI / Anthropic 双协议兼容的多模型聚合 API。一个 Key，OpenAI SDK、
+          OpenAI / Anthropic 双协议兼容的统一模型 API。一个 Key，OpenAI SDK、
           Anthropic SDK、Codex CLI、Claude Code、OpenCode、OpenClaw 都能直接接入。
         </p>
 
         <section id="intro">
           <h2>概述</h2>
           <p>
-            Cancri API 是一个统一接口层，把多个模型供应商（魔塔 / 百炼 / Claude /
-            Gemini / OpenAI 兼容线路 等）封装在一个端点后面。<b>同一把 Key，三种协议</b>
-            ——选你的客户端原生支持的那一种就行：
+            Cancri API 在一个端点后面统一了 GPT、Claude、Gemini、DeepSeek、GLM、
+            Qwen 等主流模型，<b>同一把 Key，三种协议</b>——选你的客户端原生支持的
+            那一种就行：
           </p>
           <table>
             <thead>
@@ -444,10 +446,10 @@
             <li>图像 / 视频生成只在网页版开放，<b>不</b>对外 API 暴露</li>
           </ul>
           <div class="alert info">
-            <b>多线路冗余对你透明。</b> 你看到的 <code>model</code> 字段（如
-            <code>gpt-5.4</code>、<code>deepseek-v3</code>）是统一的品牌 ID，后端会在
-            多条上游线路里按健康度自动选最优路由。某条线路抽风时其他线路自动接管，
-            你不需要改 <code>model</code> 字段。
+            <b>稳定的模型 ID。</b> 你看到的 <code>model</code> 字段（如
+            <code>gpt-5.4</code>、<code>deepseek-v4-pro</code>、<code>claude-sonnet-4-6</code>）
+            是 Cancri 维护的稳定品牌 ID。后端会自动负载均衡与故障切换，
+            <b>调用方不需要感知具体路由</b>，也不需要为故障切换调整 <code>model</code> 字段。
           </div>
         </section>
 
@@ -743,9 +745,10 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
           </div>
           <p>
             <b>Anthropic Messages API 兼容</b>，给 Claude Code、官方 <code>@anthropic-ai/sdk</code>、
-            OpenClaw 等以 Anthropic 协议为母语的客户端用。请求体和响应体跟 Anthropic 一模一样，
-            但模型 ID 用我们这边的（<code>claude-sonnet-4-6</code>、<code>gpt-5.4</code>、
-            <code>deepseek-v4-pro</code> 等都行——网关会自动识别协议并代为翻译）。
+            OpenClaw 等以 Anthropic 协议为母语的客户端用。请求体和响应体严格符合 Anthropic
+            规范，且 <code>model</code> 字段不限于 Claude 系列 ——
+            <code>claude-sonnet-4-6</code>、<code>gpt-5.4</code>、<code>deepseek-v4-pro</code>
+            都可以直接传，网关内部会做协议翻译。
           </p>
 
           <h3>请求参数</h3>
@@ -1108,14 +1111,15 @@ openclaw agent</pre>
           <h2>速率限制</h2>
           <p>
             每个 Key 同时受 <b>4 道防线</b> 保护，任何一道撞上都会返回
-            <code>429</code> + <code>Retry-After</code>。不分模型档位，所有 Key
-            使用同一套阈值：
+            <code>429</code> + <code>Retry-After</code>。阈值按账户档位
+            （<code>free</code> / <code>paid</code>）分别配置：
           </p>
           <table>
             <thead>
               <tr>
                 <th>防线</th>
-                <th>阈值</th>
+                <th>Free</th>
+                <th>Paid（<a href="./pricing.html">¥9.9 / 月</a>）</th>
                 <th>拦什么</th>
               </tr>
             </thead>
@@ -1123,27 +1127,41 @@ openclaw agent</pre>
               <tr>
                 <td><span class="pill">per-minute</span></td>
                 <td>10 次 / 分钟</td>
+                <td>60 次 / 分钟</td>
                 <td>脚本狂推、瞬间爆量</td>
               </tr>
               <tr>
                 <td><span class="pill">per-hour</span></td>
                 <td>60 次 / 小时</td>
+                <td>600 次 / 小时</td>
                 <td>持续高频撞击</td>
               </tr>
               <tr>
                 <td><span class="pill">per-day</span></td>
-                <td>1000 次 / 天</td>
-                <td>24h 挂机慢刷</td>
+                <td>1 000 次 / 天</td>
+                <td>50 000 次 / 天</td>
+                <td>24 h 挂机慢刷</td>
               </tr>
               <tr>
                 <td><span class="pill">concurrent</span></td>
                 <td>2 个同时进行</td>
+                <td>不限</td>
                 <td>多线程并发刷</td>
+              </tr>
+              <tr>
+                <td><span class="pill">model lane</span></td>
+                <td>每个模型 3 名 free 用户同时使用，第 4 起排队</td>
+                <td>不参与排队，直通</td>
+                <td>单模型挤兑</td>
               </tr>
             </tbody>
           </table>
+          <p style="color: var(--text-faint); font-size: 12.5px; margin-top: -4px">
+            升级到 Paid 见 <a href="./pricing.html">套餐页</a>，激活后立即生效，无需更换 Key。
+          </p>
+
           <h3>响应头</h3>
-          <p>每个成功响应都会带以下 6 个限流头，客户端可据此预报手节奏：</p>
+          <p>每个成功响应都会带以下 6 个限流头，客户端可据此预估节奏：</p>
           <table>
             <thead>
               <tr>
@@ -1154,7 +1172,7 @@ openclaw agent</pre>
             <tbody>
               <tr>
                 <td>X-RateLimit-Limit-Minute</td>
-                <td>当前分钟阈值（10）</td>
+                <td>当前档位的分钟阈值</td>
               </tr>
               <tr>
                 <td>X-RateLimit-Remaining-Minute</td>
@@ -1162,7 +1180,7 @@ openclaw agent</pre>
               </tr>
               <tr>
                 <td>X-RateLimit-Limit-Hour</td>
-                <td>当前小时阈值（60）</td>
+                <td>当前档位的小时阈值</td>
               </tr>
               <tr>
                 <td>X-RateLimit-Remaining-Hour</td>
@@ -1170,7 +1188,7 @@ openclaw agent</pre>
               </tr>
               <tr>
                 <td>X-RateLimit-Limit-Day</td>
-                <td>当日阈值（1000）</td>
+                <td>当前档位的当日阈值</td>
               </tr>
               <tr>
                 <td>X-RateLimit-Remaining-Day</td>
@@ -1191,40 +1209,31 @@ openclaw agent</pre>
             </li>
           </ul>
           <div class="alert info">
-            <b>并发限制不记在响应头里</b>。超过 2 个同时请求时，额外请求会被
-            <code>concurrent_limit_exceeded</code>（如下一节）拒接，请等其他请求返回后重试。
+            <b>并发与模型排队不记在响应头里。</b> 超过并发上限或模型 lane 已满时，
+            会以 <code>concurrent_limit_exceeded</code> 或 <code>model_queue_full</code>
+            （见下一节）拒接，请按错误码描述决定重试或换模型。
           </div>
 
-          <h3>per-model 上游限制（重要）</h3>
-          <p>
-            上面 4 道防线是 <b>gateway 层的总闸</b>，控制整个 API Key 的总调用量。
-            <b>每个模型还会受到其上游线路自身的速率限制</b>，这部分不在我们 gateway
-            的控制范围内，且各家阈值不同（部分免费线路可能低至 10 次/小时）。
-          </p>
-          <p>当上游 per-model 限速被撞，会返回：</p>
-          <ul>
-            <li>HTTP <code>429</code></li>
-            <li><code>error.code = "upstream_rate_limit"</code></li>
-            <li><code>error.type = "rate_limit_error"</code></li>
-            <li>
-              <code>error.message</code> 里会以 "<i>upstream details</i>"
-              附上上游原始信息（仅供排查；具体文本随上游变化，<b>不要</b>用作判定依据）
-            </li>
-          </ul>
+          <h3>429 识别速查</h3>
+          <p>拿到 <code>429</code> 时按 <code>error.code</code> 区分原因：</p>
           <div class="alert warn">
-            <b>识别规则</b>：拿到 429 时
-            <code>error.code</code> 必看：
             <ul>
               <li>
-                <code>rate_limit_exceeded</code> → 撞到 gateway 总闸（见上表），
-                结合 <code>X-RateLimit-Scope</code> 决定退避；同模型重试可行。
+                <code>rate_limit_exceeded</code> → 撞到账户总闸（见上表），
+                结合 <code>X-RateLimit-Scope</code> 决定退避；<b>同模型重试可行</b>。
               </li>
               <li>
-                <code>upstream_rate_limit</code> → 该模型的上游线路被限速，
-                <b>同模型短时间内重试无效</b>，建议立即换模型。
+                <code>concurrent_limit_exceeded</code> → 并发上限（free=2）已用尽，
+                <b>等已有请求结束</b>再发新请求。Paid 不会触发此码。
               </li>
               <li>
-                <code>concurrent_limit_exceeded</code> → 等已有请求结束。
+                <code>model_queue_full</code> → 当前模型 free 通道满员，响应体里
+                <code>queue_position</code> 给出排位。建议：<b>等 10~30 秒重试</b>，
+                或<b>换一个模型</b>，或<b>升级到 Paid</b>跳过这道闸。
+              </li>
+              <li>
+                <code>upstream_rate_limit</code> → 该模型当前繁忙、暂时不可用。
+                <b>同模型短时间内重试无效，建议立即换模型。</b>
               </li>
             </ul>
           </div>
@@ -1265,45 +1274,63 @@ openclaw agent</pre>
                 <td>请求体超过 1 MB。请压缩上下文或拆分多轮。</td>
               </tr>
               <tr>
+                <td>403</td>
+                <td>endpoint_disabled</td>
+                <td>
+                  调用了未对外开放的端点（如 <code>/v1/images/generations</code> /
+                  <code>/v1/videos/generations</code>），仅网页端可用。
+                </td>
+              </tr>
+              <tr>
                 <td>429</td>
                 <td>rate_limit_exceeded</td>
                 <td>
-                  撞到 gateway 总闸 per-minute / per-hour / per-day 三道限流之一。响应体里
+                  撞到账户总闸 per-minute / per-hour / per-day 三道限流之一。响应体里
                   <code>scope</code> 字段告诉你具体哪一道，
                   <code>Retry-After</code> 头告诉你几秒后重试。
                 </td>
               </tr>
               <tr>
                 <td>429</td>
-                <td>upstream_rate_limit</td>
+                <td>concurrent_limit_exceeded</td>
                 <td>
-                  该模型的<b>上游线路</b>被限速（不是 gateway 层）。
-                  通常重试同模型短时间内无效，建议改用其他模型。
-                  <code>error.message</code> 末尾会带上游原始信息以便排查。
+                  Free 档超过同时 2 个进行中请求；等已有请求完成后再发。
+                  Paid 档不会触发此码。
                 </td>
               </tr>
               <tr>
                 <td>429</td>
-                <td>concurrent_limit_exceeded</td>
-                <td>超过同时 2 个进行中请求。等剩余请求完成后再发。</td>
+                <td>model_queue_full</td>
+                <td>
+                  当前模型 Free 通道满员（每模型最多 3 名 free 用户同时在用）。
+                  响应里 <code>queue_position</code> 告诉你排位。等 10~30 秒重试、
+                  换一个模型、或升级到 Paid 都可。Paid 档不会触发此码。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>upstream_rate_limit</td>
+                <td>
+                  该模型当前繁忙、暂时不可用。<b>同模型短时间内重试通常无效，
+                  建议换其他模型</b>。
+                </td>
               </tr>
               <tr>
                 <td>401 / 403</td>
                 <td>upstream_auth_error</td>
                 <td>
-                  该模型的上游凭证被拒（不是你的 API Key 问题）。请改用其他模型，
-                  并向我们反馈受影响的模型 ID。
+                  模型暂时不可用（与你的 API Key 无关）。请改用其他模型；
+                  若长时间未恢复，欢迎反馈模型 ID 给我们。
                 </td>
               </tr>
               <tr>
                 <td>500 / 502 / 503</td>
                 <td>upstream_error</td>
                 <td>
-                  上游模型供应商出错或返回非法 JSON。<b>所有 5xx 都统一映射成
-                  <code>upstream_error</code></b>，不会出现
-                  <code>service_unavailable</code> 等其它 code——这是为了让客户端只用一个分支处理
-                  所有上游故障。<code>503</code> 还会带 <code>Retry-After</code>，表示该模型被临时
-                  熔断（一小时滑动窗口内连续失败）；改用其他模型即可，无需等待。
+                  模型服务异常。<b>所有 5xx 统一映射为 <code>upstream_error</code></b>，
+                  客户端只用一个分支即可处理所有此类故障。<code>503</code>
+                  会带 <code>Retry-After</code>，表示该模型被临时熔断（1 小时滑动窗口连续失败）；
+                  改用其他模型即可，无需等待。
                 </td>
               </tr>
             </tbody>
@@ -1311,18 +1338,19 @@ openclaw agent</pre>
 
           <h3>模型健康度自动隐藏</h3>
           <p>
-            为了不让你在坏掉的上游上浪费重试额度，后端会以 1 小时为滑动窗口记录每个
-            模型的调用成功率：
+            为了不让调用方在临时不可用的模型上浪费重试额度，后端会以 1 小时为
+            滑动窗口记录每个模型的调用成功率：
           </p>
           <ul>
-            <li>调用 ≥ 3 次 且 成功率 &lt; 30% → <b>临时从模型列表隐藏</b>（返回
+            <li>调用 ≥ 3 次 且 成功率 &lt; 30% → <b>临时从模型列表隐藏</b>（再调用返回
               <code>404 model_not_found</code>）</li>
-            <li>一小时后如果指标恢复→ <b>自动重新出现在列表里</b>，无需人工介入</li>
-            <li>如果反复故障→ 继续按滑动窗口隐藏</li>
+            <li>1 小时后如果指标恢复 → <b>自动重新出现在列表里</b>，无需人工介入</li>
+            <li>持续故障 → 继续按滑动窗口隐藏</li>
           </ul>
           <p>
-            如果你之前能调通的模型突然 <code>404</code>，请出 <a href="./api_models.html">模型广场</a>
-            确认它是否还在列表里。不在→ 等1 小时后重试。
+            如果你之前能调通的模型突然 <code>404</code>，请到
+            <a href="./api_models.html">模型广场</a>
+            确认它是否还在列表里。不在 → 等 1 小时后重试，或先换其他模型。
           </p>
 
           <p>所有错误响应都符合 OpenAI 的错误格式：</p>
@@ -1420,7 +1448,17 @@ openclaw agent</pre>
           </p>
           <h3>怎么追踪用量？</h3>
           <p>
-            到 <a href="./api_keys.html">Keys 管理页</a> 可看到每个 Key 的最后使用时间和调用统计。详细的 token 消耗后续会上线。
+            到 <a href="./api_keys.html">Keys 管理页</a> 可看到每个 Key 的最后使用时间、
+            最近 30 天调用次数、token 消耗与按模型的分布。
+          </p>
+          <h3>怎么升到 Paid 档？现有 Key 还能用吗？</h3>
+          <p>
+            到 <a href="./pricing.html">套餐页</a>扫码付款 ¥9.9 / 月并提交订单，站主人工
+            对账后会给一个一次性激活码，在
+            <a href="./orders.html">我的订单</a>里兑换即可立即生效。
+            <b>升档不影响现有 Key</b>——同一把 Key 在 Free 和 Paid 下用法完全一致，
+            限流阈值会自动按你当前档位生效。Paid 到期后会自动降回 Free，
+            <code>cancri_sk_</code> 本身不会失效。
           </p>
           <h3>能在浏览器里直接调吗？</h3>
           <p>
@@ -1456,8 +1494,16 @@ openclaw agent</pre>
           </p>
           <h3>计费怎么算？</h3>
           <p>
-            目前所有 Key 都是 <code>free</code> tier，按速率限制控制成本，不
-            按 token 计费。商业化定价后会提前通知。
+            目前不按 token 计费，按账户档位限速：<b>Free 档免费</b>，
+            <b>Paid 档 ¥9.9 / 月</b>包月解锁更高配额并跳过模型排队（见
+            <a href="./pricing.html">套餐页</a>）。
+            按 token 的细粒度计费暂未上线，未来若引入会提前通知，且会保留至少一个免费档。
+          </p>
+          <h3>有 SLA 吗？</h3>
+          <p>
+            <b>没有</b>。Cancri 是个人维护的非营利项目，¥9.9 / 月用于覆盖运营成本。
+            服务尽力保证可用，但不承诺 SLA、不承诺特定模型永远在线、不承诺响应延迟。
+            生产关键路径请自行做故障转移。
           </p>
         </section>
       </main>
