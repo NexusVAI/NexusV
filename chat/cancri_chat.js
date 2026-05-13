@@ -979,6 +979,20 @@ function applyModelTelemetryCache(cache) {
         snapshot.lockedUntil = null;
         snapshot.lockReason = null;
       }
+      // 后端 disabled_models 是真相源——它每分钟可能变。如果 localStorage
+      // 里恢复出来的锁是 unavailable（disabled-line 同步加的），不要信
+      // 任旧值，直接丢掉。bootstrapModelTelemetry 启动时会立刻拉一次最
+      // 新的 disabled_models，没在那张表里的模型瞬间就解锁。
+      // quota / challenge_required / access_blocked 这些锁有 lockedUntil
+      // 时间戳兜底，留下来按时间过期就行。
+      // 这是 INDEPENDENT_QUOTA_MODEL_IDS 这套机制目前是空 Set 导致的兜底——
+      // 所有模型现在都被当成 shared quota，上面那个 if 分支永远不进，过
+      // 期的 unavailable 锁永远不会被清掉。
+      if (snapshot.lockReason === "unavailable") {
+        snapshot.lockedUntil = null;
+        snapshot.lockReason = null;
+        snapshot.error = null;
+      }
       modelStatus.set(modelId, snapshot);
     }
   }
@@ -1360,6 +1374,9 @@ const MODEL_CATALOG = [
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "claude-opus-4-6-thinking", "name": "Claude Opus 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
+  {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
+  {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "claude-sonnet-4-6-thinking", "name": "Claude Sonnet 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
@@ -1423,21 +1440,13 @@ const MODEL_CATALOG = [
   {"id": "sensenova-6.7-flash-lite", "name": "SenseNova 6.7 Flash Lite", "brand": "SenseNova", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "glm-4.7", "name": "GLM 4.7", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "mistral-medium-3-5", "name": "Mistral Medium 3.5", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "mistral-small-2603", "name": "Mistral Small (2603)", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
-  {"id": "mistral-large-2512", "name": "Mistral Large (2512)", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "ministral-14b-2512", "name": "Ministral 14B (2512)", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:nvidia/nemotron-3-super-120b-a12b", "name": "Nemotron 3 Super 120B", "brand": "NVIDIA", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:inclusionai/ring-2.6-1t", "name": "Ring 2.6 1T", "brand": "InclusionAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "or:poolside/laguna-m.1", "name": "Laguna M.1", "brand": "Poolside", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:openai/gpt-oss-120b", "name": "GPT OSS 120B", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:nvidia/nemotron-3-nano-30b-a3b", "name": "Nemotron 3 Nano 30B", "brand": "NVIDIA", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "or:poolside/laguna-xs.2", "name": "Laguna XS.2", "brand": "Poolside", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:openai/gpt-oss-20b", "name": "GPT OSS 20B", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "or:baidu/cobuddy", "name": "Cobuddy", "brand": "Baidu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "name": "Nemotron 3 Nano Omni 30B Reasoning", "brand": "NVIDIA", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free"},
   {"id": "or:google/gemma-4-31b-it", "name": "Gemma 4 31B IT", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "or:arcee-ai/trinity-large-thinking", "name": "Trinity Large Thinking", "brand": "Arcee", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free"},
   {"id": "or:google/gemma-4-26b-a4b-it", "name": "Gemma 4 26B A4B IT", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:qwen/qwen3-coder", "name": "Qwen3 Coder (OR)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:qwen/qwen3-next-80b-a3b-instruct", "name": "Qwen3 Next 80B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -6757,9 +6766,25 @@ async function sendImageGenerationMessage(
 //   happyhorse-1.0-t2v → 文生视频，无需媒体
 //   happyhorse-1.0-r2v → reference_image (≤9 张参考图，至少一张)
 //   wan2.7-t2v         → 文生视频，无需媒体
-function buildVideoMediaForModel(modelId, attachments) {
+// 视频参考图必须先压缩。chat-gateway body 上限 8MB（video 端点专属），
+// 一张原图 4-5MB 经 base64 +33% 体积就超了，浏览器 fetch 会被边缘层
+// 直接掐断变成 "Failed to fetch"。这里统一缩到 1280px 长边、JPEG
+// 0.82 质量，base64 后大约 700KB-1MB，留足余量给 prompt + 多张图。
+async function shrinkVideoMediaUrl(url) {
+  const s = String(url || "");
+  if (!s) return s;
+  // http(s) 公网 URL 直接交给上游，不经过浏览器内存；只压 data: URI。
+  if (!s.startsWith("data:")) return s;
+  try {
+    return await shrinkImageForEdit(s, 1280, 0.82);
+  } catch {
+    return s;
+  }
+}
+
+async function buildVideoMediaForModel(modelId, attachments) {
   const list = Array.isArray(attachments) ? attachments : [];
-  const usable = list
+  const raw = list
     .map((a) => {
       // Backend allowlist accepts http(s) URLs or data: URIs. Prefer
       // public URLs when available (DashScope can fetch them); fall back
@@ -6772,6 +6797,11 @@ function buildVideoMediaForModel(modelId, attachments) {
       return { url, mime: String(a?.mimeType || a?.type || "") };
     })
     .filter(Boolean);
+
+  // 把所有 data: URI 并行压缩。http URL 直通。
+  const usable = await Promise.all(
+    raw.map(async (u) => ({ ...u, url: await shrinkVideoMediaUrl(u.url) })),
+  );
 
   if (modelId === "happyhorse-1.0-i2v") {
     const first = usable.find((u) => /image|jpeg|png|webp/i.test(u.mime));
@@ -6798,7 +6828,7 @@ async function generateVideoFromPrompt(
   const value = String(prompt || "").trim();
   if (!value || state.isImageGenerating) return "";
 
-  const media = buildVideoMediaForModel(modelId, attachments);
+  const media = await buildVideoMediaForModel(modelId, attachments);
 
   // Track an abort controller for the whole video flow (submit + poll). The
   // global stop button reads `state.activeRequestController` and can now
@@ -9142,6 +9172,13 @@ async function sendMessage(content) {
     pushHistory(assistantHistoryMessage(fallbackAnswer, turnModelMetadata));
     await finalizeConversationTurn();
   } catch (error) {
+    // DIAGNOSTIC（2026-05-13f）：用户报告"Assignment to constant variable"
+    // 在每次回复完触发，但全量 AST 扫描未在自家 .js 里找到 const 重新赋
+    // 值。把完整 stack trace 打到 console，方便用户截图后定位真正抛出
+    // 的文件/行号。修好之后这块 console.error 可以删。
+    try {
+      console.error("[sendMessage] full stack:", error?.stack || error);
+    } catch (_) { /* ignore console errors */ }
     const message = normalizeErrorMessage(
       error,
       "抱歉，发送消息时出现错误，请稍后重试。",
