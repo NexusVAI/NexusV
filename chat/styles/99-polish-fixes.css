@@ -147,6 +147,15 @@
     display: grid !important;
     grid-template-columns: auto minmax(0, 1fr) auto !important;
     align-items: end !important;
+    /* When an attachment preview is shown the composer becomes a 3-row
+       column flex (preview / textarea / bottom). Without flex-shrink:0 the
+       bottom row (which hosts the send button) gets squeezed out of the
+       composer's max-height clamp once preview+textarea grow large enough,
+       making the "发送" button appear to vanish after uploading a file.
+       Pinning shrink:0 + a real min-height keeps the action row always
+       visible. */
+    flex-shrink: 0 !important;
+    min-height: 36px !important;
 }
 
 .composer-tools {
@@ -1041,17 +1050,14 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     }
 }
 
-/* ── E: Model logo strip — edge to edge ── */
-.model-icons-scroll {
-    width: min(760px, 100vw) !important;
-    /* remove side margins on small screens */
-    margin-left: 0;
-    margin-right: 0;
-}
+/* ── E: Model logo strip — mobile only edge-to-edge override ── */
 @media (max-width: 760px) {
     .model-icons-scroll {
         width: 100vw !important;
+        max-width: 100vw !important;
         align-self: stretch;
+        margin-left: 0;
+        margin-right: 0;
     }
     .model-icons-track {
         /* Add start/end padding so first/last icons aren't flush-to-edge */

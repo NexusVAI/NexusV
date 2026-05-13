@@ -64,35 +64,35 @@
 
 /* ── DARK THEME ─────────────────────────────────────────── */
 html[data-theme="dark"] {
-    --bg: #141414;
-    --bg-2: #1a1a1a;
-    --bg-3: #1e1e1e;
-    --panel: #1e1e1e;
-    --panel-2: #222222;
-    --panel-3: #262626;
-    --panel-4: #1a1a1a;
-    --line: rgba(255, 255, 255, 0.08);
-    --line-2: rgba(255, 255, 255, 0.12);
-    --hover: rgba(255, 255, 255, 0.06);
-    --hover-strong: rgba(255, 255, 255, 0.1);
-    --text: rgba(255, 255, 255, 0.94);
-    --text-soft: rgba(255, 255, 255, 0.56);
-    --text-dim: rgba(255, 255, 255, 0.34);
-    --chip: rgba(255, 255, 255, 0.04);
-    --input: #242424;
-    --voice: #e8e8e8;
-    --voice-text: #141414;
+    --bg: #1a1816;
+    --bg-2: #1f1d1a;
+    --bg-3: #252320;
+    --panel: #252320;
+    --panel-2: #2a2723;
+    --panel-3: #2f2c28;
+    --panel-4: #1f1d1a;
+    --line: rgba(255, 240, 230, 0.08);
+    --line-2: rgba(255, 240, 230, 0.12);
+    --hover: rgba(255, 240, 230, 0.06);
+    --hover-strong: rgba(255, 240, 230, 0.1);
+    --text: rgba(255, 250, 245, 0.95);
+    --text-soft: rgba(255, 250, 245, 0.66);
+    --text-dim: rgba(255, 250, 245, 0.34);
+    --chip: rgba(255, 240, 230, 0.04);
+    --input: #2a2723;
+    --voice: #e8e0d8;
+    --voice-text: #1a1816;
     --scrim: rgba(0, 0, 0, 0.5);
-    --sidebar-bg: #1a1a1a;
-    --main-bg: #141414;
+    --sidebar-bg: #1f1d1a;
+    --main-bg: #1a1816;
     --input-shadow:
-        0 16px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
+        0 16px 48px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 240, 230, 0.06);
     --msg-user-bg: linear-gradient(135deg, #d97757 0%, #b85a3e 100%);
     --msg-user-border: transparent;
-    --msg-ai-bg: #222222;
-    --msg-ai-border: rgba(255, 255, 255, 0.08);
-    --think-bg: rgba(255, 255, 255, 0.02);
-    --code-bg: #0d0d0d;
+    --msg-ai-bg: #2a2723;
+    --msg-ai-border: rgba(255, 240, 230, 0.08);
+    --think-bg: rgba(255, 240, 230, 0.02);
+    --code-bg: #18130f;
     --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
@@ -2314,16 +2314,23 @@ body[data-view="leaderboard"] #compareModelSelector {
 .send-btn.is-streaming .send-icon-stop {
     display: block;
 }
+/* Streaming "stop" state: monochrome, no glow.
+   Was a saturated red with red‑tinted box‑shadow which clashed with the
+   Claude warm palette. Now uses text/bg foreground inversion so it stays
+   neutral in both themes; users get an obvious stop affordance without a
+   neon halo. */
 .send-btn.is-streaming {
-    background: #ef4444;
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.28);
+    background: var(--text);
+    color: var(--bg);
+    box-shadow: none;
 }
 .send-btn.is-streaming:hover {
-    background: #dc2626;
+    background: var(--text);
+    opacity: 0.82;
 }
 
 .send-btn:hover {
-    background: #0d9270;
+    background: color-mix(in srgb, var(--accent) 85%, #000);
     transform: scale(1.04);
 }
 .send-btn:active {
@@ -2784,7 +2791,8 @@ body[data-view="leaderboard"] #compareModelSelector {
 
 /* ── MODEL ICONS SCROLL ───────────────────────────────────── */
 .model-icons-scroll {
-    width: min(760px, calc(100vw - 40px));
+    width: 100%;
+    max-width: 860px;
     margin-top: 16px;
     display: flex;
     flex-direction: column;
@@ -6258,7 +6266,84 @@ html[data-theme="blue"] {
     padding-bottom: 48px;
 }
 
-/* ── QUEUE CARD ───────────────────────────────────────────
+/* ── USER MESSAGE UNDO BUTTON ───────────────────────
+   Small "return" affordance pinned to the left edge of a user bubble. Click
+   to roll the conversation back: that user message and every message after
+   it is dropped, the original text is repopulated into the composer so the
+   user can edit and resend. Hidden by default; revealed on row hover for a
+   clean reading state. */
+.message.user {
+    position: relative;
+}
+
+.message-undo-btn {
+    position: absolute;
+    right: calc(100% - 760px + 20px + 8px);
+    /* Fallback if the row is narrower than 760px: place it just outside the
+       bubble. The right offset above is the "sidebar-relative" anchor; the
+       fallback below kicks in on small screens via the media query. */
+    bottom: 6px;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text-soft);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(2px);
+    transition:
+        opacity 160ms ease,
+        transform 160ms ease,
+        background 160ms ease,
+        color 160ms ease,
+        border-color 160ms ease;
+    z-index: 2;
+}
+
+.message.user:hover .message-undo-btn,
+.message-undo-btn:focus-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.message-undo-btn:hover {
+    background: var(--hover-strong);
+    color: var(--text);
+    border-color: var(--line-2);
+}
+
+.message-undo-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+@media (max-width: 820px) {
+    .message-undo-btn {
+        /* On narrow screens anchor immediately to the left of the bubble
+           rather than the 760px column edge, otherwise it slides off. */
+        right: auto;
+        left: 8px;
+        opacity: 0;
+    }
+    .message.user:hover .message-undo-btn,
+    .message-undo-btn:focus-visible {
+        opacity: 1;
+    }
+}
+
+@media (hover: none) {
+    /* Touch devices have no hover; keep the button visible but muted so
+       users can still discover it. */
+    .message-undo-btn {
+        opacity: 0.55;
+        transform: translateY(0);
+    }
+}
+
+/* ── QUEUE CARD ─────────────────────────────────
    Inline queue indicator inserted at the end of #chatMessages while a free
    user is waiting on a busy model lane. Replaces the old full-screen
    queueModal so the user can keep reading history / scrolling. The card

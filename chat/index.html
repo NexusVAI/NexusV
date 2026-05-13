@@ -25,7 +25,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-14a-claude" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-14c-orbit-fullwidth" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -45,7 +45,7 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/99-polish-fixes.css?v=dropdown-theme-fix-0602"
+            href="./styles/99-polish-fixes.css?v=2026-05-14c-orbit-mobile-only"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
         <link rel="stylesheet" href="./katex/katex.min.css" />
@@ -366,44 +366,6 @@
 
                 <div class="popover account-popover" id="accountPopover">
                     <div class="popover-inner">
-                        <div class="popover-item">
-                            <div
-                                class="avatar"
-                                style="width: 28px; height: 28px"
-                            >
-                                --
-                            </div>
-                            <div
-                                style="
-                                    display: flex;
-                                    flex-direction: column;
-                                    line-height: 1.15;
-                                "
-                            >
-                                <span style="font-size: 14px; font-weight: 700"
-                                    >进入 Cancri</span
-                                >
-                                <span
-                                    style="
-                                        font-size: 12px;
-                                        color: var(--text-soft);
-                                        margin-top: 3px;
-                                    "
-                                    >站点安全验证</span
-                                >
-                            </div>
-                            <span class="grow"></span>
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path d="m9 6 6 6-6 6"></path>
-                            </svg>
-                        </div>
                         <div class="popover-item" id="nicknameEditBtn">
                             <svg
                                 width="18"
@@ -448,22 +410,6 @@
                                 <circle cx="12" cy="12" r="3.2"></circle>
                             </svg>
                             <span>个性化</span>
-                        </div>
-                        <div class="popover-item" id="profileToastBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-                                ></path>
-                                <path d="M19 21a7 7 0 0 0-14 0"></path>
-                            </svg>
-                            <span>个人资料</span>
                         </div>
                         <div class="popover-item" id="settingsBtn">
                             <svg
@@ -1991,12 +1937,20 @@
                                     </svg>
                                 </div>
                             </div>
-                            <div class="list-row with-note">
-                                <div>
-                                    <div class="list-label">API / 额度</div>
-                                    <div class="list-sub">即将开放。</div>
+                            <div class="list-row" id="apiPlatformRow" role="button" tabindex="0">
+                                <div class="list-label">API 平台</div>
+                                <div class="list-value">
+                                    <span>打开</span><svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <path d="m9 6 6 6-6 6"></path>
+                                    </svg>
                                 </div>
-                                <div class="badge">Soon</div>
                             </div>
                         </div>
 
@@ -2411,7 +2365,7 @@
 
         <script src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script src="./cancri_chat.js?v=2026-05-14a-queue-card-claude"></script>
+        <script src="./cancri_chat.js?v=2026-05-14c-popover-cleanup"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script src="./cancri_arena.js?v=arena-module-0504"></script>

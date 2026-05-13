@@ -2437,19 +2437,9 @@ function updateAccountInfo(user) {
   const accountName = document.querySelector(".account-strip .account-name");
   const accountPlan = document.querySelector(".account-strip .account-plan");
   const avatarEl = document.querySelector(".account-strip .avatar");
-  const popoverAvatar = document.querySelector(".account-popover .avatar");
-  const popoverName = document.querySelector(
-    '.account-popover .popover-item span[style*="font-size:14px"]',
-  );
-  const popoverSub = document.querySelector(
-    '.account-popover .popover-item span[style*="font-size:12px"]',
-  );
   if (accountName) accountName.textContent = displayName;
   if (accountPlan) accountPlan.textContent = email ? "已登录" : "已登录";
   if (avatarEl) avatarEl.textContent = initials;
-  if (popoverAvatar) popoverAvatar.textContent = initials;
-  if (popoverName) popoverName.textContent = displayName;
-  if (popoverSub) popoverSub.textContent = "站点安全验证";
   refreshNicknameUI();
   // 同步刷新hero区域的个性化问候语
   updateHomeHeroText();
@@ -3162,9 +3152,11 @@ function renderMessages() {
   if (!chatMessages) return;
   chatMessages.innerHTML = "";
 
-  conversationHistory.forEach((message) => {
+  conversationHistory.forEach((message, i) => {
     if (message.role === "user") {
-      createUserMessage(message.content);
+      // Pass i so the undo button on this bubble knows exactly which slot of
+      // conversationHistory it represents (for rollback truncation).
+      createUserMessage(message.content, [], i);
     } else if (message.role === "assistant") {
       const content =
         typeof message.content === "string" ? message.content : "";
@@ -7196,9 +7188,23 @@ async function sendVideoGenerationMessage(
   }
 }
 
-function createUserMessage(content, attachments = []) {
+function createUserMessage(content, attachments = [], messageIndex = null) {
   const messageDiv = document.createElement("div");
   messageDiv.className = "message user";
+
+  // Track which slot of conversationHistory this DOM bubble represents so the
+  // undo button can roll back from this point forward.
+  //
+  // IMPORTANT: in the live-send paths (chat / image / video) the caller
+  // invokes createUserMessage BEFORE pushHistory, so the future index of
+  // this user message is `conversationHistory.length` at this moment — not
+  // length-1. renderMessages() iterates an already-populated history and
+  // passes an explicit `i` to override that inference.
+  const resolvedIndex =
+    typeof messageIndex === "number"
+      ? messageIndex
+      : conversationHistory.length;
+  messageDiv.dataset.messageIndex = String(resolvedIndex);
 
   const avatar = document.createElement("div");
   avatar.className = "message-avatar";
@@ -7215,6 +7221,34 @@ function createUserMessage(content, attachments = []) {
   const text = normalizedContent
     ? normalizedContent.text
     : String(content || "").trim();
+
+  // Stash the original user text on the DOM node so the undo button can
+  // repopulate the composer even if conversationHistory has not been pushed
+  // yet (e.g. user clicks undo while the response is still streaming and the
+  // history slot has not been written).
+  messageDiv.dataset.userText = text;
+
+  // Undo control: small "return" arrow that lets the user retract this turn,
+  // dropping it (and everything after) and re-loading the original text into
+  // the composer for editing. Placed before the bubble so it sits to the
+  // left of the right-aligned user message via absolute positioning.
+  const undoBtn = document.createElement("button");
+  undoBtn.type = "button";
+  undoBtn.className = "message-undo-btn";
+  undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
+  undoBtn.title = "撤回这条消息";
+  undoBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="9 14 4 9 9 4"></polyline>
+      <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+    </svg>
+  `;
+  undoBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const idx = Number(messageDiv.dataset.messageIndex);
+    undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+  });
+  messageDiv.appendChild(undoBtn);
 
   const textBlock = document.createElement("div");
   textBlock.textContent =
@@ -7268,6 +7302,78 @@ function createUserMessage(content, attachments = []) {
   messageDiv.appendChild(bubble);
   chatMessages.appendChild(messageDiv);
   scrollChatToBottom(false);
+}
+
+// Roll the conversation back to *before* the user message at `messageIndex`.
+// Behavior:
+//   1. If a stream / image / video request is still running, abort it first
+//      so the in-flight assistant reply does not finish writing into a slot
+//      we are about to wipe.
+//   2. Pull the original user text out of conversationHistory (or the DOM
+//      dataset fallback when the history push hadn't happened yet) and put
+//      it back into the composer for the user to edit.
+//   3. Truncate conversationHistory at messageIndex (drop this turn and any
+//      subsequent assistant replies / sub-messages).
+//   4. Re-render the chat. If history is now empty, return to the home
+//      hero state instead of leaving an empty chat shell.
+function undoUserMessage(messageIndex) {
+  if (!Number.isFinite(messageIndex) || messageIndex < 0) return;
+
+  // Abort any active request so its finally-block doesn't push assistant
+  // content into a now-truncated history.
+  if (state.activeRequestController) {
+    try {
+      state.activeRequestController.abort(createAbortError("已撤回输入。"));
+    } catch { /* ignore */ }
+    state.activeRequestController = null;
+  }
+
+  // Recover the original text. Prefer the canonical history copy; fall back
+  // to the DOM dataset if the history push hadn't happened yet (mid-stream
+  // undo).
+  let recoveredText = "";
+  const histMsg = conversationHistory[messageIndex];
+  if (histMsg && histMsg.role === "user") {
+    recoveredText = Array.isArray(histMsg.content)
+      ? extractUserMessageParts(histMsg.content).text
+      : String(histMsg.content || "");
+  }
+  if (!recoveredText) {
+    const domMatch = chatMessages?.querySelector(
+      `.message.user[data-message-index="${messageIndex}"]`,
+    );
+    if (domMatch?.dataset?.userText) {
+      recoveredText = domMatch.dataset.userText;
+    }
+  }
+
+  // Truncate. Math.min guards against indices that point past the end (which
+  // can happen if the live-send path crashed before pushHistory).
+  const truncateAt = Math.min(messageIndex, conversationHistory.length);
+  conversationHistory.length = truncateAt;
+  updateContextMeter();
+
+  // Repopulate composer + restore busy/disabled state to match new content.
+  if (homeInput) {
+    homeInput.value = recoveredText;
+    autoResizeComposerInput();
+  }
+  setComposerBusy(false);
+
+  // Re-render messages from the (now truncated) history.
+  renderMessages();
+
+  // If we just emptied the history, slide back to the home hero so the
+  // composer takes the centered first-message position again instead of
+  // leaving a hollow chat surface.
+  if (conversationHistory.length === 0) {
+    if (chatMessages) chatMessages.classList.remove("active");
+    if (homeView) homeView.classList.remove("chatting");
+    if (homeCenter) homeCenter.style.display = "flex";
+    currentChatId = null;
+  }
+
+  if (homeInput) homeInput.focus();
 }
 
 function normalizeAssistantMetadata(metadata) {
@@ -9833,6 +9939,9 @@ projectNameInput.addEventListener("input", () => {
 
 on("appearanceRow", "click", cycleAppearance);
 on("accentRow", "click", cycleAccent);
+on("apiPlatformRow", "click", () => {
+  window.location.href = "./api/";
+});
 
 if (dismissMfaBtn) {
   dismissMfaBtn.addEventListener("click", () => {
