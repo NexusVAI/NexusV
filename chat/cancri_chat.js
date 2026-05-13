@@ -30,7 +30,6 @@ const state = {
   isImageGenerating: false,
   activeRequestController: null,
   recentProjectName: "",
-  homeMode: "chat",
   arenaMode: initialArenaMode,
   webSearchEnabled: false,
 };
@@ -1126,12 +1125,7 @@ function getRateLimitRequestModelId(modelId = currentModel) {
 }
 
 function getModelProbeEndpoint(modelId = currentModel) {
-  return modelId === "image-precise" ||
-    modelId === "image-fast" ||
-    modelId === "sensenova-u1-fast" ||
-    modelId === "wan2.7-image-pro"
-    ? "image"
-    : "chat";
+  return getModelMeta(modelId).imageOnly ? "image" : "chat";
 }
 
 // 全局错误捕获
@@ -1174,7 +1168,15 @@ const MODEL_SELECTION_MIGRATIONS = {
   "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
   "gemma-4-31b-it": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
-  "gpt-image-2-api456": "wan2.7-image-pro",
+  "image-fast": DEFAULT_MODEL_ID,
+  "gpt-image-2": DEFAULT_MODEL_ID,
+  "gpt-image-2-api456": DEFAULT_MODEL_ID,
+  "wan2.7-image-pro": DEFAULT_MODEL_ID,
+  "sensenova-u1-fast": DEFAULT_MODEL_ID,
+  "wan2.5-t2i-preview": DEFAULT_MODEL_ID,
+  "wan2.6-t2i": DEFAULT_MODEL_ID,
+  "z-image-turbo": DEFAULT_MODEL_ID,
+  "wanx-poster-generation-v1": DEFAULT_MODEL_ID,
   "mimo-v2.5-tts": DEFAULT_MODEL_ID,
   "mimo-v2.5-tts-voicedesign": DEFAULT_MODEL_ID,
   "gemini-3-flash": DEFAULT_MODEL_ID,
@@ -1310,6 +1312,229 @@ const MODEL_CATALOG = [
   {"id": "or:qwen/qwen3-next-80b-a3b-instruct", "name": "Qwen3 Next 80B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:meta-llama/llama-3.3-70b-instruct", "name": "Llama 3.3 70B Instruct", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
 ];
+
+// ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
+const BRAND_ICON_MAP = {
+  "OpenAI": "./openai.svg",
+  "Anthropic": "./claude-color.svg",
+  "Google": "./gemini-color.svg",
+  "Qwen": "./qwen-color.svg",
+  "DeepSeek": "./deepseek-color (1).svg",
+  "Moonshot": "./moonshot.svg",
+  "Zhipu": "./zhipu-color.svg",
+  "MiniMax": "./minimax-color.svg",
+  "xAI": "./grok.svg",
+  "Mistral": "./mistral-color.svg",
+  "Meta": "./meta-color.svg",
+  "NVIDIA": "./nvidia-color.svg",
+  "Doubao": "./doubao-color.svg",
+  "SenseNova": "./sensenova-color.svg",
+  "Inclusion AI": "./antgroup-color.svg",
+  "InclusionAI": "./antgroup-color.svg",
+  "Wan": "./qwen-color.svg",
+  "HappyHorse": "./qwen-color.svg",
+};
+
+function getModelIconPath(brand) {
+  return BRAND_ICON_MAP[brand] || "./openai.svg";
+}
+
+const MODEL_META_MAP = new Map();
+const MODEL_IDS = {};
+const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
+  const tags = [];
+  if (entry.vision) tags.push("多模态");
+  if (entry.thinking) tags.push("思考");
+  if (entry.kind === "image") tags.push("图像");
+  if (entry.kind === "video") tags.push("视频");
+  const meta = {
+    id: entry.id,
+    canonicalId: entry.id,
+    displayName: entry.name,
+    brand: entry.brand,
+    lineLabel: "",
+    tags,
+    multimodal: !!entry.vision,
+    imageOnly: entry.kind === "image",
+    videoOnly: entry.kind === "video",
+    iconPath: getModelIconPath(entry.brand),
+    kind: entry.kind || "chat",
+    costTier: entry.costTier || "normal",
+  };
+  MODEL_META_MAP.set(entry.id, meta);
+  MODEL_IDS[entry.id] = entry.id;
+  return meta;
+});
+
+function getModelMeta(modelId) {
+  const cached = MODEL_META_MAP.get(modelId);
+  if (cached) return cached;
+  return {
+    id: modelId,
+    canonicalId: modelId,
+    displayName: modelId,
+    brand: "Other",
+    lineLabel: "",
+    tags: [],
+    multimodal: false,
+    imageOnly: false,
+    videoOnly: false,
+    iconPath: "./openai.svg",
+    kind: "chat",
+    costTier: "normal",
+  };
+}
+
+function getModelDisplayName(modelId) {
+  return getModelMeta(modelId).displayName || modelId;
+}
+
+function getModelBrandName(modelId) {
+  return getModelMeta(modelId).brand || "Other";
+}
+
+function isModelEnabled(modelId) {
+  return MODEL_META_MAP.has(modelId);
+}
+
+function isModelSelectable(modelId) {
+  return isModelEnabled(modelId);
+}
+
+function isMultimodalModel(modelId) {
+  return !!getModelMeta(modelId).multimodal;
+}
+
+// 从 localStorage 恢复用户上次选择的模型；遇到已下架/未注册的旧 ID 经
+// MODEL_SELECTION_MIGRATIONS 迁移到 DEFAULT_MODEL_ID，避免 setModel 拒绝。
+function resolveInitialModelId(storageKey, fallbackId) {
+  let raw = "";
+  try {
+    raw = localStorage.getItem(storageKey) || "";
+  } catch (_) {
+    raw = "";
+  }
+  const candidate = raw && (MODEL_SELECTION_MIGRATIONS[raw] || raw);
+  if (candidate && isModelEnabled(candidate)) return candidate;
+  return fallbackId;
+}
+
+let currentModel = resolveInitialModelId(
+  "cancri_current_model",
+  DEFAULT_MODEL_ID,
+);
+let compareModel = resolveInitialModelId(
+  "cancri_compare_model",
+  DEFAULT_COMPARE_MODEL_ID,
+);
+if (compareModel === currentModel) {
+  compareModel =
+    SELECTABLE_MODELS.find(
+      (m) => m.id !== currentModel && !m.imageOnly && !m.videoOnly,
+    )?.id || DEFAULT_COMPARE_MODEL_ID;
+}
+let isMultimodal = isMultimodalModel(currentModel);
+
+// 给当前模型挑选一个合理的 fallback：同品牌 / 非图像 / 非视频，否则退回默认。
+function getFallbackModelId(modelId) {
+  const meta = getModelMeta(modelId);
+  const sameBrand = SELECTABLE_MODELS.find(
+    (m) =>
+      m.id !== modelId &&
+      !m.imageOnly &&
+      !m.videoOnly &&
+      m.brand === meta.brand &&
+      isModelEnabled(m.id),
+  );
+  if (sameBrand) return sameBrand.id;
+  const anyChat = SELECTABLE_MODELS.find(
+    (m) => m.id !== modelId && !m.imageOnly && !m.videoOnly && isModelEnabled(m.id),
+  );
+  return anyChat?.id || DEFAULT_MODEL_ID;
+}
+
+// 用于消息条/历史等地方携带模型展示信息。后端实际识别模型靠请求体里
+// 的 model 字段，这里只是给前端 UI 用。
+function createModelMetadata(modelId) {
+  const meta = getModelMeta(modelId);
+  return {
+    modelId: meta.id,
+    modelName: meta.displayName,
+    brand: meta.brand,
+    iconPath: meta.iconPath,
+    canonicalId: meta.canonicalId,
+    lineLabel: meta.lineLabel,
+  };
+}
+
+// 返回随模型差异化的请求字段，spread 到 chat-completion body 后转给 gateway。
+// 当前后端 chat-gateway 会按 SERVER_MODEL_REGISTRY.meta.enableThinking 决定是否
+// 保留 enable_thinking 字段，未支持的模型会被静默剥掉，所以这里只要把前端
+// MODEL_CATALOG 标记为 thinking 的模型加上 enable_thinking 即可。
+// max_tokens 故意不发：服务端会根据 model 自动套用 maxOutputTokens，前端写死
+// 会反过来截断（比如 Claude Opus 4.6 thinking 后端 64k，前端误传 8k 反而坏）。
+function getModelRequestOptions(modelId) {
+  const meta = getModelMeta(modelId);
+  const out = {};
+  if (meta.tags?.includes?.("思考") || meta.thinking) {
+    out.enable_thinking = true;
+  }
+  return out;
+}
+
+function cleanupAttachments() {
+  if (!Array.isArray(pendingAttachments)) return;
+  for (const item of pendingAttachments) {
+    if (item?.previewUrl?.startsWith("blob:")) {
+      try { URL.revokeObjectURL(item.previewUrl); } catch (_) {}
+    }
+  }
+  pendingAttachments.length = 0;
+  updateAttachmentPreview?.();
+}
+
+// 当前会话挂起的附件（图片/文本文件）。setComposerBusy / handleHomeSubmit 等
+// 上传/发送链路都通过这个数组共享状态。
+const pendingAttachments = [];
+
+// Arena（双模型对比）默认可用的池子：纯 chat 模型，排除图像/视频/思考型。
+const ARENA_MODELS = SELECTABLE_MODELS.filter(
+  (m) => !m.imageOnly && !m.videoOnly && m.kind === "chat",
+).map((m) => m.id);
+
+// isImageOnlyModel(...) 用的 raw 目录索引；和 MODEL_META_MAP 字段对齐
+// （imageOnly / videoOnly 两个布尔字段是 meta 里就有的），直接复用即可。
+const MODEL_CATALOG_BY_ID = MODEL_META_MAP;
+
+// 模型选择器当前作用对象："primary" = 主对话；"compare" = Arena 对照模型 B。
+let modelSelectTarget = "primary";
+
+// 主题循环：sidebar 主题切换按钮一次循环换下一项。label 用作 UI 文案，
+// value 写入 documentElement.dataset.theme，被 CSS [data-theme="dark"] 命中。
+const themeCycle = [
+  { label: "浅色", value: "light" },
+  { label: "深色", value: "dark" },
+];
+
+// 前端节流：和后端独立，避免同一 tab 短时间内疯狂触发请求把 chat-gateway
+// 的速率守门当成洪水退避。后端真正的限频以响应头/HTTP 429 为准。
+const RATE_LIMIT_PER_MINUTE = 60;
+const RATE_LIMIT_PER_5SEC = 8;
+const RATE_LIMIT_EXCEEDED_MESSAGE =
+  "您发送得太快了，请稍等几秒再试。";
+const requestTimestamps = [];
+
+// 语音输入：拿到首选 SpeechRecognition 构造器，浏览器不支持时是 null，
+// 调用方都先判空兜底。
+const SpeechRecognitionCtor =
+  (typeof window !== "undefined" &&
+    (window.SpeechRecognition || window.webkitSpeechRecognition)) ||
+  null;
+let voiceRecognition = null;
+let voiceListening = false;
+let voiceBaseText = "";
+// ===== /派生表与 helper 结束 =====
+
 let themeIndex = 0;
 
 const contrastCycle = ["系统", "标准", "高对比"];
@@ -1941,10 +2166,6 @@ const SUPABASE_URL =
   `${window.location.origin}/api/supabase`;
 const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
-// image-precise was the legacy ModelScope image alias; it was retired when
-// the image quick action moved to the current image line. Hard-coding the
-// current image line here keeps the home image-mode quick action working.
-const DEFAULT_IMAGE_MODEL = "wan2.7-image-pro";
 const MAX_REPEATED_TOOL_CALLS = 3;
 // 单次回答中允许的最多工具调用轮次。达到上限后下一轮强制禁用 tools，
 // 让模型必须基于已有结果用纯自然语言给出最终答复（防止无限多轮 tool 调用）。
@@ -5806,63 +6027,21 @@ function getDefaultHomeHeroText() {
   ]);
 }
 
-function getModeHomeHeroText(mode) {
-  const name = getHomeDisplayName();
-  if (mode === "image") {
-    return pickHomeText([
-      "来点爆炸般的艺术？",
-      "把脑洞画出来？",
-      "来一张惊艳一点的图？",
-      `${name}，今天想生成点什么图？`,
-    ]);
-  }
-
-  if (mode === "video") {
-    return pickHomeText([
-      "看看新花样！",
-      "让画面动起来？",
-      "来一段会动的作品？",
-      `${name}，今天想拍点什么？`,
-    ]);
-  }
-
-  return getDefaultHomeHeroText();
-}
-
-function updateHomeModeChips() {
-  document
-    .getElementById("imageModeChipBtn")
-    ?.classList.toggle("active", state.homeMode === "image");
-  document
-    .getElementById("videoModeChipBtn")
-    ?.classList.toggle("active", state.homeMode === "video");
-}
-
 function updateHomeHeroText() {
   if (!heroTitle) return;
-  if (state.homeMode === "image" || state.homeMode === "video") {
-    heroTitle.textContent = getModeHomeHeroText(state.homeMode);
-    return;
-  }
   heroTitle.textContent = state.recentProjectName
     ? `继续处理「${state.recentProjectName}」？`
     : getDefaultHomeHeroText();
 }
 
-function setHomeMode(mode) {
-  state.homeMode = state.homeMode === mode ? "chat" : mode;
-  updateHomeModeChips();
-  updateHomeHeroText();
-  updateComposerPlaceholder();
-}
-
 function updateComposerPlaceholder() {
   if (!homeInput) return;
-  if (state.homeMode === "image") {
+  const meta = getModelMeta(currentModel);
+  if (meta.imageOnly) {
     homeInput.placeholder = "描述你想生成的图片";
     return;
   }
-  if (state.homeMode === "video") {
+  if (meta.videoOnly) {
     homeInput.placeholder = "描述你想生成的视频";
     return;
   }
@@ -6056,7 +6235,7 @@ function setImageGenerationBusy(isBusy, _statusText) {
 
 async function generateImageFromPrompt(
   prompt,
-  imageModel = DEFAULT_IMAGE_MODEL,
+  imageModel,
   attachments = [],
 ) {
   const value = String(prompt || "").trim();
@@ -6065,14 +6244,9 @@ async function generateImageFromPrompt(
   // OpenAI-style synchronous image line: POST /v1/images/generations returns
   // {data:[{url | b64_json, revised_prompt?}]} in the same response. The
   // "else" branch below instead kicks off an async task (DashScope-style)
-  // and polls /task until SUCCEED/FAILED. Keep this list in sync with the
-  // synchronous image upstreams — gpt-image-2 is the xem8k5 sync line;
-  // adding it here is what lets the chat page actually render its output.
-  const isOpenAIImage =
-    imageModel === DEFAULT_IMAGE_MODEL ||
-    imageModel === "sensenova-u1-fast" ||
-    imageModel === "grok-imagine-image-lite" ||
-    imageModel === "gpt-image-2";
+  // and polls /task until SUCCEED/FAILED. 当前下拉里唯一的图像模型是
+  // grok-imagine-image-lite，走 OpenAI-style 同步返回。
+  const isOpenAIImage = imageModel === "grok-imagine-image-lite";
   // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
   const imageSize = "1024x1024";
 
@@ -6093,21 +6267,12 @@ async function generateImageFromPrompt(
     (a) => !a.isTextFile && (a.dataUrl || a.url),
   );
 
-  // ── 图生图（i2i）支持白名单 ─────────────────────────────────
-  // 我们走的是 OpenAI-style /v1/images/generations 端点。大多数中转
-  // 直接接受顶层 `image` 字段做 i2i（OpenAI 的扩展），所以把已经实测
-  // 通过的模型从禁用列表移除。仍未支持的模型保留在白名单里，
-  // 前端会在用户附了图时拦截并提示。想新增 i2i 模型时，把它从
-  // noI2iModels 列表里拿掉并确认上游通过。
-  const noI2iModels = new Set([
-    "sensenova-u1-fast",
-    "grok-imagine-image-lite",
-    "image-precise",
-    "image-fast",
-  ]);
+  // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
+  // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
+  const noI2iModels = new Set(["grok-imagine-image-lite"]);
   if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
     setImageGenerationBusy(false);
-    showToast(`${imageModel} 暂不支持图生图，请删除附件后重试。`);
+    showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
     return;
   }
 
@@ -8903,39 +9068,6 @@ async function handleHomeSubmit() {
   const query = String(homeInput?.value || "").trim();
   if ((!query && !pendingAttachments.length) || state.isStreaming) return;
 
-  if (state.homeMode === "image" && query && !pendingAttachments.length) {
-    homeInput.value = "";
-    autoResizeComposerInput();
-    setComposerBusy(false);
-    await sendImageGenerationMessage(query, DEFAULT_IMAGE_MODEL);
-    setWebSearchEnabled(false);
-    return;
-  }
-
-  if (state.homeMode === "video" && query) {
-    // 当前唯一启用的 HappyHorse 线路是 i2v（图生视频），必须有一张参考图
-    // 才能向 DashScope 提交任务。如果用户在首页快捷"视频"按钮里只输入了
-    // 文字、没上传图片，就提前提示而不是让请求到达上游被 400 回。
-    if (!pendingAttachments.length) {
-      showToast(
-        "HappyHorse 当前为图生视频线路，请上传一张参考图后再生成视频。",
-      );
-      return;
-    }
-    const attachmentsForVideo = pendingAttachments.slice();
-    homeInput.value = "";
-    autoResizeComposerInput();
-    setComposerBusy(false);
-    await sendVideoGenerationMessage(
-      buildVideoGenerationPrompt(query),
-      "happyhorse-1.0-i2v",
-      createModelMetadata("happyhorse-1.0-i2v"),
-      attachmentsForVideo,
-    );
-    setWebSearchEnabled(false);
-    return;
-  }
-
   await sendMessage(query);
 }
 
@@ -9207,8 +9339,6 @@ navRows.forEach((row) => {
   });
 });
 
-on("imageModeChipBtn", "click", () => setHomeMode("image"));
-on("videoModeChipBtn", "click", () => setHomeMode("video"));
 
 document.getElementById("upgradeBtn").addEventListener("click", () => {
   closePopover();
@@ -9869,6 +9999,8 @@ function setModel(modelId) {
   // 根据模型是否多模态显示/隐藏上传图片按钮
   updateAttachBtnVisibility();
   updateRateLimitNote();
+  // 切到图像/视频模型时同步输入框提示语
+  updateComposerPlaceholder();
 }
 
 function isImageOnlyModel(modelId) {
@@ -10037,7 +10169,6 @@ if (compareModelName) {
   compareModelName.textContent = getModelDisplayName(compareModel);
 }
 updateModelSelectorActive();
-updateHomeModeChips();
 syncTopArenaMode();
 setActiveView("home");
 refreshNicknameUI();
