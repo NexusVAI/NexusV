@@ -2190,10 +2190,15 @@ body[data-view="leaderboard"] #compareModelSelector {
     box-shadow: var(--input-shadow);
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    /* 之前是 align-items: center；textarea 长大之后整一行被重新居中，
+     * 导致 +号 / 工具按钮 / 发送键往下"瞬移"。改成 flex-end 之后按钮始终
+     * 贴底，不会随 textarea 长高蹦动。 */
+    align-items: flex-end;
     padding: 12px 14px 10px;
     position: relative;
     z-index: 2;
+    /* 关键：禁止子元素溢出父盒。box-sizing 内边距已含在 width 里。 */
+    box-sizing: border-box;
     transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease;
@@ -2330,7 +2335,13 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 
 .composer-input {
-    flex: 1 0 100%;
+    /* flex-basis 100% 让 textarea 占整一行；min-width:0 + box-sizing:border-box
+     * 防止内容很长时撑爆父盒、挤掉右边按钮（之前长文案会把上传 / 附件预览推到
+     * 屏幕外面）。 */
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
     border: none;
     outline: none;
     background: transparent;
@@ -2342,6 +2353,9 @@ body[data-view="leaderboard"] #compareModelSelector {
     min-height: 24px;
     max-height: 200px;
     overflow-y: auto;
+    overflow-x: hidden;
+    word-break: break-word;
+    overflow-wrap: anywhere;
     line-height: 1.55;
     font-family: var(--font);
 }
@@ -2395,13 +2409,22 @@ body[data-view="leaderboard"] #compareModelSelector {
 
 /* ── ATTACHMENT PREVIEW ─────────────────────────────────── */
 .attachment-preview {
-    width: min(760px, calc(100vw - 40px));
-    margin-top: 10px;
+    /* 这块在 .composer 内部当作首行，必须 100% 宽并 box-sizing 算上 padding，
+     * 否则会越过 .composer 的右边界，把其它按钮挤到屏幕外（"上传框往右跑"）。
+     * flex: 1 1 100% 让它自己占独立一行，不和 textarea / 按钮挤同一行。 */
+    flex: 1 1 100%;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
+    /* 附件多了允许内部纵向滚，但不要把整个输入区顶高。 */
+    max-height: 168px;
+    overflow-y: auto;
 }
 
 .attachment-preview[hidden] {

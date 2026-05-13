@@ -163,7 +163,7 @@ function getFriendlyHttpStatusMessage(status) {
     case 429:
       return "当前模型额度已用完，请切换其他模型再试。";
     default:
-      return "当前模型暂时不可用，请检查网络后重试。";
+      return "当前模型暂时不可用，请切换其他模型再试。";
   }
 }
 
@@ -1019,6 +1019,62 @@ async function refreshIndependentModelPing() {
   return;
 }
 
+// 后台 chat-gateway 维护一张 model_line_disabled，凡是上游被自动 / 手动
+// 标死的线路都在里面。前端打开页面时拉一次，然后每 5 分钟刷一次：
+//   1. 新增的 disabled 模型 → 加 24h "unavailable" 本地锁，下拉框变灰；
+//   2. 不再 disabled 的模型 → 主动清掉 "unavailable" 锁（不能动 quota /
+//      challenge / access_blocked 这种与额度 / 安全相关的锁，那些有自己
+//      的过期机制和服务端 retry-after）。
+//
+// 之前这里只加锁不解锁，加上 localStorage 持久化，导致后端清掉死线之后
+// 用户那一边的 "当前模型暂时不可用" 一直留着，必须强制刷缓存才能看到模
+// 型恢复。
+let lastDisabledLineFingerprint = "";
+async function refreshDisabledModelLines() {
+  try {
+    const response = await proxyFetchWithTimeout(
+      EDGE_FUNCTION_URL,
+      {
+        method: "POST",
+        headers: await proxyHeaders(),
+        body: JSON.stringify({ endpoint: "disabled_models" }),
+      },
+      8000,
+      "禁用线路同步",
+    );
+    if (!response.ok) return;
+    const data = await response.json().catch(() => null);
+    if (!data || !Array.isArray(data.disabled)) return;
+    const ids = data.disabled
+      .map((id) => String(id || "").trim())
+      .filter(Boolean);
+    const fingerprint = ids.slice().sort().join("|");
+    if (fingerprint === lastDisabledLineFingerprint) return;
+    lastDisabledLineFingerprint = fingerprint;
+    const disabledSet = new Set(ids);
+    const until = Date.now() + 24 * 60 * 60 * 1000;
+    // 1) 给后端报告的 disabled 模型加锁
+    for (const id of ids) {
+      if (!isModelEnabled(id)) continue;
+      setModelQuotaLock(id, until, "unavailable");
+    }
+    // 2) 释放之前由 disabled-line 同步加上、但当前已不在 disabled 列表
+    //    里的锁。`lockReason === "unavailable"` 才动；`quota` / 其它
+    //    reason 是别的机制管的，别误清。
+    for (const [id, status] of modelStatus.entries()) {
+      if (disabledSet.has(id)) continue;
+      if (status?.lockReason !== "unavailable") continue;
+      const next = { ...status, lockedUntil: null, lockReason: null, error: null };
+      modelStatus.set(id, next);
+    }
+    updateModelDropdownIndicators();
+    persistModelTelemetryCache();
+    autoSwitchIfCurrentModelUnavailable?.();
+  } catch (_error) {
+    // 静默失败，下个间隔再试
+  }
+}
+
 async function bootstrapModelTelemetry() {
   const cache = readModelTelemetryCache();
   if (cache) {
@@ -1035,9 +1091,15 @@ async function bootstrapModelTelemetry() {
   await Promise.allSettled([
     refreshSharedQuota(),
     refreshIndependentModelPing(),
+    refreshDisabledModelLines(),
   ]);
   autoSwitchIfCurrentModelUnavailable();
   scheduleIndependentModelPingRefresh(INDEPENDENT_MODEL_PING_INTERVAL_MS);
+  // 后台每 5 分钟同步一次禁用线路（chat-gateway 自身缓存 60s，所以这里
+  // 比缓存稍慢一点也没关系），保证管理员手工启用 / 上游恢复时前端能及时解锁。
+  setInterval(() => {
+    refreshDisabledModelLines().catch(() => {});
+  }, 5 * 60 * 1000);
 }
 
 function isModelAvailable(modelId) {
@@ -1341,15 +1403,7 @@ const MODEL_CATALOG = [
   {"id": "qwen-coder-plus", "name": "Qwen Coder Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen-coder-turbo", "name": "Qwen Coder Turbo", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-coder-flash-2025-07-28", "name": "Qwen3 Coder Flash (0728)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
-  {"id": "tongyi-xiaomi-analysis-pro", "name": "Tongyi 小米分析 Pro", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "gui-plus", "name": "GUI Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3.6-35b-a3b", "name": "Qwen 3.6 35B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen-flash-character-2026-02-26", "name": "Qwen Flash 角色扮演", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
-  {"id": "qwen-math-plus", "name": "Qwen Math Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen-mt-plus", "name": "Qwen 翻译 Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen-deep-research-2025-12-15", "name": "Qwen 深入研究", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen-vl-ocr-2025-11-20", "name": "Qwen VL OCR", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen3-livetranslate-flash-realtime-2025-09-22", "name": "Qwen3 LiveTranslate", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "wan2.7-t2v", "name": "Wan 2.7 文生视频", "brand": "Wan", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip"},
   {"id": "wan2.6-t2v", "name": "Wan 2.6 文生视频", "brand": "Wan", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip"},
   {"id": "wan2.5-t2v-preview", "name": "Wan 2.5 文生视频", "brand": "Wan", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip"},
@@ -1869,7 +1923,9 @@ function clearPendingAttachments() {
       }
     });
   }
-  pendingAttachments = [];
+  // pendingAttachments 是 const 数组，不能整体替换，只能就地清空，
+  // 否则会触发 "Assignment to constant variable" 运行时错误。
+  pendingAttachments.length = 0;
   updateAttachmentPreview();
 }
 
