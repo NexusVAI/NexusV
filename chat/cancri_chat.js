@@ -380,6 +380,83 @@ function tryTurnstileChallenge(payload) {
   });
 }
 
+function showQueueModal(modelId, initialPosition, queueSessionId) {
+  return new Promise((resolve) => {
+    let existing = document.getElementById("queueModal");
+    if (existing) existing.remove();
+
+    let cancelled = false;
+    let pollTimer = null;
+    const modal = document.createElement("div");
+    modal.className = "modal";
+    modal.id = "queueModal";
+    modal.setAttribute("aria-hidden", "false");
+    modal.innerHTML = `
+      <div class="modal-content" style="text-align:center;">
+        <div class="modal-title">排队中</div>
+        <p class="modal-desc" style="margin:16px 0 8px;">当前模型 <strong>${modelId}</strong> 使用人数较多</p>
+        <div id="queuePosition" style="font-size:48px;font-weight:700;color:var(--accent-color);margin:16px 0;">${initialPosition}</div>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px;">前面有 <span id="queueCount">${initialPosition}</span> 位用户，请耐心等待</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button id="queueCancelBtn" class="muted-btn" style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:14px;">取消排队</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add("open"));
+
+    const positionEl = document.getElementById("queuePosition");
+    const countEl = document.getElementById("queueCount");
+    const cancelBtn = document.getElementById("queueCancelBtn");
+
+    function cleanup(result) {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+      modal.classList.remove("open");
+      setTimeout(() => modal.remove(), 200);
+      resolve(result);
+    }
+
+    cancelBtn.addEventListener("click", () => {
+      cancelled = true;
+      cleanup(false);
+    });
+
+    async function pollQueue() {
+      if (cancelled) return;
+      try {
+        const session = await ensureAuthSession();
+        const resp = await fetch(EDGE_FUNCTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            endpoint: "queue_status",
+            model: modelId,
+            queue_session_id: queueSessionId,
+            __auth_token: session.access_token,
+          }),
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const pos = Number(data.position) || 0;
+        positionEl.textContent = pos;
+        countEl.textContent = pos;
+        if (pos === 0) {
+          cleanup(true);
+        }
+      } catch { /* ignore */ }
+    }
+
+    pollQueue();
+    pollTimer = setInterval(pollQueue, 3000);
+  });
+}
+
 function showCaptchaModal(payload) {
   return new Promise(async (resolve) => {
     // Try Turnstile first — invisible to the user when it works.
@@ -8269,6 +8346,7 @@ async function streamChatCompletionRound(
     priorReasoning = "",
     requestKind = "direct_chat",
     webSearchEnabled = state.webSearchEnabled,
+    queueSessionIdOverride = null,
   } = {},
 ) {
   let finalAnswer = "";
@@ -8313,6 +8391,9 @@ async function streamChatCompletionRound(
   };
 
   requestBody.web_search_enabled = Boolean(webSearchEnabled);
+
+  const queueSessionId = queueSessionIdOverride || crypto.randomUUID();
+  requestBody.queue_session_id = queueSessionId;
 
   if (enableTools) {
     const tools = getToolDefinitionsForCurrentTurn({
@@ -8360,6 +8441,19 @@ async function streamChatCompletionRound(
   );
 
   if (response.status === 429) {
+    let parsed429 = null;
+    try { parsed429 = JSON.parse(errorText); } catch {}
+    if (parsed429?.code === "model_queue_full") {
+      const queuePosition = Number(parsed429.queuePosition) || 1;
+      const joined = await showQueueModal(modelId, queuePosition, queueSessionId);
+      if (joined) {
+        return await streamChatCompletionRound(messages, assistantMessageId, controller, {
+          enableTools, turnId, modelId, priorReasoning, requestKind, webSearchEnabled,
+          queueSessionIdOverride: queueSessionId,
+        });
+      }
+      throw new Error("已取消排队。");
+    }
     throw new Error(
       getQuotaLockMessage(modelId) || "模型额度已超，请切换模型重试。",
     );
