@@ -18,8 +18,10 @@ if (savedArenaMode !== initialArenaMode) {
 const state = {
   theme: "light",
   contrast: "系统",
-  accentName: "绿色",
-  accentValue: "#10a37f",
+  // accentValue=null 意味着“跟随主题”：applyTheme 不写 inline style，
+  // 让 CSS 中按主题定义的 --accent 生效。
+  accentName: "Claude",
+  accentValue: null,
   language: "自动检测",
   speech: "自动检测",
   currentView: "home",
@@ -380,43 +382,62 @@ function tryTurnstileChallenge(payload) {
   });
 }
 
+// 排队卡片（内联在消息流末尾，不阻塞页面）。
+// 行为：每 3 秒轮询 queue_status；轮到（position=0）时自动 resolve(true)，
+// 外层 streamChatCompletionRound 用同一 queueSessionId 重新发起请求 → 排完直接续上。
+// 用户点取消 → resolve(false)，外层走"已取消"分支。
+// modelId 在卡片里直接显示让用户知道在等哪个模型。
 function showQueueModal(modelId, initialPosition, queueSessionId) {
   return new Promise((resolve) => {
-    let existing = document.getElementById("queueModal");
+    const existing = document.getElementById("queueCard");
     if (existing) existing.remove();
 
     let cancelled = false;
     let pollTimer = null;
-    const modal = document.createElement("div");
-    modal.className = "modal";
-    modal.id = "queueModal";
-    modal.setAttribute("aria-hidden", "false");
-    modal.innerHTML = `
-      <div class="modal-content" style="text-align:center;">
-        <div class="modal-title">排队中</div>
-        <p class="modal-desc" style="margin:16px 0 8px;">当前模型 <strong>${modelId}</strong> 使用人数较多</p>
-        <div id="queuePosition" style="font-size:48px;font-weight:700;color:var(--accent-color);margin:16px 0;">${initialPosition}</div>
-        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:8px;">前面有 <span id="queueCount">${initialPosition}</span> 位用户，请耐心等待</p>
-        <p style="color:var(--text-secondary);font-size:13px;margin:0 0 24px;opacity:.85;">付费会员（¥9.9/月）可免排队 · <a href="./pricing.html" target="_blank" style="color:var(--accent-color);text-decoration:underline;">了解套餐</a></p>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-          <a href="./pricing.html" target="_blank" class="primary-btn" style="padding:10px 24px;border-radius:8px;background:var(--accent-color);color:#fff;text-decoration:none;font-size:14px;font-weight:500;">升级免排队</a>
-          <button id="queueCancelBtn" class="muted-btn" style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:14px;">取消排队</button>
+
+    // 优先挂在 chatMessages 末尾，让卡片像一条系统消息那样自然出现；
+    // 异常情况（容器找不到）才退化到 body fixed 角落。
+    const messagesEl = document.getElementById("chatMessages");
+    const card = document.createElement("div");
+    card.id = "queueCard";
+    card.className = "queue-card";
+    card.setAttribute("role", "status");
+    card.setAttribute("aria-live", "polite");
+    card.innerHTML = `
+      <div class="queue-card-row">
+        <span class="queue-card-spinner" aria-hidden="true"></span>
+        <div class="queue-card-text">
+          <div class="queue-card-title">排队中 · <span class="queue-card-model">${modelId}</span></div>
+          <div class="queue-card-meta">
+            前面 <strong id="queueCount">${initialPosition}</strong> 位用户 · 每 3 秒刷新 · 轮到时自动开始
+          </div>
+        </div>
+        <div class="queue-card-actions">
+          <a class="queue-card-upgrade" href="./pricing.html" target="_blank" rel="noopener">升级免排队</a>
+          <button type="button" class="queue-card-cancel" id="queueCancelBtn">取消</button>
         </div>
       </div>
     `;
 
-    document.body.appendChild(modal);
-    requestAnimationFrame(() => modal.classList.add("open"));
+    if (messagesEl) {
+      messagesEl.appendChild(card);
+      // 滚到底，让卡片可见
+      try {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      } catch { /* ignore */ }
+    } else {
+      card.classList.add("queue-card-floating");
+      document.body.appendChild(card);
+    }
 
-    const positionEl = document.getElementById("queuePosition");
-    const countEl = document.getElementById("queueCount");
-    const cancelBtn = document.getElementById("queueCancelBtn");
+    const countEl = card.querySelector("#queueCount");
+    const cancelBtn = card.querySelector("#queueCancelBtn");
 
     function cleanup(result) {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = null;
-      modal.classList.remove("open");
-      setTimeout(() => modal.remove(), 200);
+      card.classList.add("queue-card-leaving");
+      setTimeout(() => card.remove(), 180);
       resolve(result);
     }
 
@@ -427,6 +448,15 @@ function showQueueModal(modelId, initialPosition, queueSessionId) {
 
     async function pollQueue() {
       if (cancelled) return;
+      // 边界：用户在排队期间点了"新对话"或切换会话，会触发
+      // chatMessages.innerHTML = "" 把卡片从 DOM 里清掉。这种情况下当前
+      // 排队也应当作废——继续轮询既浪费请求又会让外层 await 永远不返回。
+      // 用 isConnected 兜底：卡片不在 DOM 上即视作取消。
+      if (!card.isConnected) {
+        cancelled = true;
+        cleanup(false);
+        return;
+      }
       try {
         const session = await ensureAuthSession();
         const resp = await fetch(EDGE_FUNCTION_URL, {
@@ -446,9 +476,10 @@ function showQueueModal(modelId, initialPosition, queueSessionId) {
         if (!resp.ok) return;
         const data = await resp.json();
         const pos = Number(data.position) || 0;
-        positionEl.textContent = pos;
-        countEl.textContent = pos;
+        if (countEl) countEl.textContent = pos;
         if (pos === 0) {
+          // 轮到了，立即结束卡片，外层 streamChatCompletionRound 会用同一 queueSessionId
+          // 直接进入聊天 —— 用户感受到的是"卡片消失 → 流式输出"，不会卡顿。
           cleanup(true);
         }
       } catch { /* ignore */ }
@@ -1684,7 +1715,9 @@ let themeIndex = 0;
 const contrastCycle = ["系统", "标准", "高对比"];
 let contrastIndex = 0;
 
+// 首项 value=null 表示“跟随主题”（Claude 风格），其它项走 inline style 覆盖。
 const accentCycle = [
+  { name: "Claude", value: null },
   { name: "绿色", value: "#10a37f" },
   { name: "琥珀", value: "#f59e0b" },
   { name: "珊瑚", value: "#ef4444" },
@@ -1718,14 +1751,25 @@ function restoreUiPreferences() {
       contrastIndex = nextContrastIndex;
       state.contrast = contrastCycle[nextContrastIndex];
     }
-    const nextAccentIndex = accentCycle.findIndex(
-      (item) =>
-        item.name === prefs.accentName || item.value === prefs.accentValue,
-    );
-    if (nextAccentIndex >= 0) {
-      accentIndex = nextAccentIndex;
-      state.accentName = accentCycle[nextAccentIndex].name;
-      state.accentValue = accentCycle[nextAccentIndex].value;
+    // 一次性迁移：把旧默认"绿色 #10a37f"偏好升级为新默认"Claude"（跟随主题）。
+    // 这样所有未显式选过其它颜色的老用户在 2026-05-14 后会直接看到新风格。
+    const isLegacyDefaultGreen =
+      (prefs.accentName === "绿色" || prefs.accentValue === "#10a37f") &&
+      prefs.accentName !== "Claude";
+    if (isLegacyDefaultGreen) {
+      accentIndex = 0;
+      state.accentName = accentCycle[0].name;
+      state.accentValue = accentCycle[0].value;
+    } else {
+      const nextAccentIndex = accentCycle.findIndex(
+        (item) =>
+          item.name === prefs.accentName || item.value === prefs.accentValue,
+      );
+      if (nextAccentIndex >= 0) {
+        accentIndex = nextAccentIndex;
+        state.accentName = accentCycle[nextAccentIndex].name;
+        state.accentValue = accentCycle[nextAccentIndex].value;
+      }
     }
   } catch (error) {
     console.warn("恢复主题偏好失败:", error);
@@ -3988,12 +4032,22 @@ function applyTheme() {
     themeIndex = nextThemeIndex;
   }
   root.setAttribute("data-theme", state.theme);
-  root.style.setProperty("--accent", state.accentValue);
+  // accentValue=null 表示跟随主题（Claude clay），不写 inline style，
+  // 让 cancri_chat.css 中 html[data-theme=...] 里定义的 --accent 生效。
+  if (state.accentValue) {
+    root.style.setProperty("--accent", state.accentValue);
+  } else {
+    root.style.removeProperty("--accent");
+  }
   if (appearanceValue)
     appearanceValue.textContent = themeCycle[themeIndex].label;
   if (contrastValue) contrastValue.textContent = state.contrast;
   if (accentValueEl) accentValueEl.textContent = state.accentName;
-  if (accentDot) accentDot.style.background = state.accentValue;
+  if (accentDot) {
+    accentDot.style.background = state.accentValue
+      ? state.accentValue
+      : "var(--accent)";
+  }
   if (languageValue) languageValue.textContent = state.language;
   if (speechValue) speechValue.textContent = state.speech;
   persistUiPreferences();
@@ -10468,7 +10522,7 @@ window
 const announcementModal = document.getElementById("announcementModal");
 const closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
-const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0501_2";
+const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0514_api_launch";
 
 // 每次进入都显示（除非用户已勾选「下次不再提示」并确认过）
 const alreadyDismissed = localStorage.getItem(NOTICE_DISMISS_KEY) === "true";
