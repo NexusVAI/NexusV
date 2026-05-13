@@ -2191,7 +2191,6 @@ body[data-view="leaderboard"] #compareModelSelector {
     border: 1px solid var(--line-2);
     box-shadow: var(--input-shadow);
     display: flex;
-    flex-wrap: wrap;
     /* 之前是 align-items: center；textarea 长大之后整一行被重新居中，
      * 导致 +号 / 工具按钮 / 发送键往下"瞬移"。改成 flex-end 之后按钮始终
      * 贴底，不会随 textarea 长高蹦动。 */
@@ -5845,7 +5844,6 @@ html[data-theme="blue"] {
         width: 100%;
         min-height: 116px;
         align-items: flex-start;
-        flex-wrap: wrap;
         gap: 6px;
         padding: 14px 10px 10px;
         border-radius: 14px;
