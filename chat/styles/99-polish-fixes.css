@@ -1115,3 +1115,18 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
         min-width: min(420px, calc(100vw - 24px)) !important;
     }
 }
+
+/* ================================
+   Phase 1 (2026-05-14): Arena 全面下线
+   仅前端隐藏，后端代码 / DB 表 / Edge Function 保留不动。
+   双保险（HTML hidden 属性 + CSS !important display:none）
+   防止 JS 调用 setTopArenaMode/syncTopArenaMode 时把这些元素重新展开。
+================================ */
+#topArenaModeSelector,
+#arenaLeaderboardNavBtn,
+#sidebarLeaderboardPanel,
+#arenaView,
+#leaderboardView,
+#compareModelSelector {
+    display: none !important;
+}
