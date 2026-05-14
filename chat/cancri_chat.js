@@ -10627,31 +10627,54 @@ window
     }
   });
 
-// 公告卡片逻辑
+// ── 公告 modal ────────────────────────────────────────────────
+// 触发方式从「页面加载自动弹」改为「右上角 broadcast 按钮 click 弹」。
+// 红点 = 用户未看过当前版本公告。版本号嵌在 NOTICE_DISMISS_KEY 里，
+// 只要后续修改 timeline 内容就把 key 升一版，所有用户会重新看到红点。
 const announcementModal = document.getElementById("announcementModal");
 const closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
-const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0514_api_launch";
+const openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
+const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0514_timeline_v1";
 
-// 每次进入都显示（除非用户已勾选「下次不再提示」并确认过）
-const alreadyDismissed = localStorage.getItem(NOTICE_DISMISS_KEY) === "true";
-if (!alreadyDismissed && announcementModal) {
+function openAnnouncementModal() {
+  if (!announcementModal) return;
   announcementModal.setAttribute("aria-hidden", "false");
   announcementModal.classList.add("open");
   if (scrim) scrim.classList.add("show");
 }
 
-// 关闭公告按钮事件
+function closeAnnouncementModal() {
+  if (!announcementModal) return;
+  announcementModal.setAttribute("aria-hidden", "true");
+  announcementModal.classList.remove("open");
+  if (scrim) scrim.classList.remove("show");
+}
+
+function refreshBroadcastDot() {
+  if (!openAnnouncementBtn) return;
+  const seen = localStorage.getItem(NOTICE_DISMISS_KEY) === "true";
+  openAnnouncementBtn.classList.toggle("has-update", !seen);
+}
+
+refreshBroadcastDot();
+
+if (openAnnouncementBtn) {
+  openAnnouncementBtn.addEventListener("click", () => {
+    openAnnouncementModal();
+    // 用户主动点开 → 已读，红点立刻消失
+    localStorage.setItem(NOTICE_DISMISS_KEY, "true");
+    refreshBroadcastDot();
+  });
+}
+
 if (closeAnnouncementBtn) {
   closeAnnouncementBtn.addEventListener("click", () => {
+    closeAnnouncementModal();
     if (dismissNoticeCheckbox && dismissNoticeCheckbox.checked) {
       localStorage.setItem(NOTICE_DISMISS_KEY, "true");
     }
-    if (announcementModal) {
-      announcementModal.setAttribute("aria-hidden", "true");
-      announcementModal.classList.remove("open");
-      if (scrim) scrim.classList.remove("show");
-    }
+    refreshBroadcastDot();
   });
 }
 

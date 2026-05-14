@@ -1,0 +1,755 @@
+/*
+ * Cancri Motion — minimal, "Claude / ChatGPT / Linear" quiet baseline.
+ *
+ * The previous version of this file added spring tap-feedback, sheet-
+ * slide modal entrance, per-message stagger, hover lift, scroll-snap…
+ * Together they made the UI feel like a marketing demo — too many
+ * elements shimmered at once. Claude / ChatGPT / Linear / Notion all
+ * use a much quieter motion vocabulary:
+ *
+ *   • Color / opacity transitions on hover and active states
+ *   • Small (≤200ms) durations
+ *   • Almost zero transforms, no overshoot, no scale snaps
+ *   • Modals / popovers fade rather than slide
+ *   • The tool feels "instant", not "celebrated"
+ *
+ * So this file now does ONLY:
+ *
+ *   1. Exports iOS-tuned easing tokens as CSS variables. They sit
+ *      unused until somebody opts in via `transition-timing-function:
+ *      var(--ease-ios-standard)`. We don't blanket-apply them.
+ *   2. Off-screen virtualisation for long lists (content-visibility).
+ *   3. Subtree containment for the message list (contain).
+ *   4. will-change on the three most-tapped composer buttons.
+ *   5. prefers-reduced-motion bypass for accessibility.
+ *
+ * What it intentionally does NOT do:
+ *   • No per-element entrance animations (popover / dropdown / modal
+ *     / message). The host file's existing opacity transitions are
+ *     enough — and quieter.
+ *   • No tap-spring scale-down. Buttons should feel solid, not bouncy.
+ *   • No hover translate-Y lift. Adds visual noise with no signal.
+ *   • No smooth scroll on <html>. Jumping to a chat history entry
+ *     should be instant, not a 600ms ride.
+ */
+
+:root {
+    /* ── iOS easing tokens ───────────────────────────────────────
+     * Values calibrated against SwiftUI's default Spring(.smooth) and
+     * Spring(.snappy) presets, projected to cubic-bezier. Use the
+     * `emphasized` curve for sheets/modals (long, soft), `snappy` for
+     * popovers / dropdowns (short, tiny overshoot), `spring` for tap
+     * springs (overshoots clearly on snap-back). */
+    --ease-ios-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-ios-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-ios-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --ease-ios-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --ease-ios-snappy: cubic-bezier(0.42, 1.42, 0.66, 1);
+    --ease-ios-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --dur-fast: 150ms;
+    --dur-base: 240ms;
+    --dur-slow: 360ms;
+    --dur-modal: 420ms;
+}
+
+/* ── Reduce-motion bypass (covers the whole site) ─────────────────
+ *
+ * Users who toggle "Reduce Motion" in their OS get every animation /
+ * transition flattened — across this stylesheet AND every other CSS
+ * file in the project. We zero-duration rather than `animation: none`
+ * because some keyframes elsewhere set the final state on the 100%
+ * stop; disabling animation entirely would skip that end state. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Performance: skip off-screen layout work ──────────────────────
+ *
+ * `content-visibility: auto` lets the browser skip the layout, paint,
+ * and even style recalc of an element when it's scrolled off-screen.
+ * `contain-intrinsic-size` provides a placeholder height so the
+ * scrollbar doesn't jump as items are virtualised in/out.
+ *
+ * Why these specific selectors:
+ *   • .recent-item — sidebar conversation list. Long-running users
+ *     have hundreds of past chats. Without this, the sidebar paints
+ *     all of them on every reflow. With this, only the ~10 visible
+ *     ones do work; the rest are basically free.
+ *   • .duel-message — arena's two-column compare cards are heavy
+ *     (markdown + math + code highlighting per side). Off-screen ones
+ *     skip all of that.
+ *
+ * Why we DON'T add it to .message: the streaming-typewriter animation
+ * during AI reply needs continuous paint on the active message; if it
+ * were content-visibility: auto and went off-screen mid-stream we'd
+ * lose paint cycles and the typing animation would freeze.
+ *
+ * `contain: layout style paint` on .chat-messages is a separate
+ * optimisation — it isolates the message-list subtree from the rest
+ * of the page so message updates can't trigger layout recalc on the
+ * sidebar / header / etc.
+ */
+.recent-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 44px;
+}
+
+.duel-message {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 280px;
+}
+
+.chat-messages {
+    contain: layout style paint;
+}
+
+/* ── Composited layers for known-animated surfaces ─────────────
+ *
+ * `will-change: transform` promotes these elements to their own GPU
+ * layer so transform-only animations (tap-spring, hover-lift) compose
+ * without re-paint. We use this sparingly — over-promoting layers
+ * costs GPU memory — only on elements that are reliably animated. */
+.send-btn,
+.voice-btn,
+.composer-tool-btn {
+    will-change: transform;
+}
+
+/* ── Site footer: 4 social icons (replaces NEXUSV glitch brand) ─────
+ *
+ * Visual target: a quiet row of 4 icons centered at the bottom of the
+ * home view, dimmed at rest, lit up on hover. Color/opacity-only
+ * transitions. No transform, no shadow, no fade-in. Mirrors how
+ * Claude / Linear / Notion handle their tiny footer social rows.
+ *
+ * Decoupled from `.nexusv-footer`: the HTML deliberately drops that
+ * legacy class so cancri_chat.js's `querySelector(".nexusv-footer")`
+ * returns null (and its null-guarded callers gracefully no-op),
+ * leaving the footer purely CSS-driven.
+ */
+.site-footer-socials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 14px 16px 26px;
+    margin-top: auto;
+    width: 100%;
+}
+
+/* Hide while a chat is in progress — bottom of the screen is for the
+   composer / message stream, not site chrome. */
+#homeView.chatting .site-footer-socials {
+    display: none;
+}
+
+.site-footer-socials > a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--text-soft, #9a9a96);
+    opacity: 0.55;
+    text-decoration: none;
+    transition:
+        opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.site-footer-socials > a:hover,
+.site-footer-socials > a:focus-visible {
+    opacity: 1;
+    background-color: rgba(127, 127, 127, 0.10);
+    outline: none;
+}
+
+.site-footer-socials img,
+.site-footer-socials svg {
+    display: block;
+    pointer-events: none;
+}
+
+/* Light theme: the X-twitter SVG uses fill="currentColor", so we
+   re-tint the link color to a soft black. The other three (github /
+   huggingface / bilibili) are <img> SVGs, unaffected. */
+html[data-theme="light"] .site-footer-socials > a {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* Mobile: shrink padding + icon target so the four icons fit
+   comfortably on a 320-360px-wide screen. */
+@media (max-width: 640px) {
+    .site-footer-socials {
+        gap: 18px;
+        padding: 10px 12px 18px;
+    }
+    .site-footer-socials > a {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* ── Sidebar brand: NexusV name next to the logo ────────────────
+ *
+ * The home button used to be an icon-only `<button class="brand-mark">`
+ * sized 20x20. We re-shaped it into a horizontal `<a class="brand-mark
+ * sidebar-brand">` with logo + "NexusV" wordmark sitting in the
+ * sidebar-topbar, like Claude / Linear / Notion. Original .brand-mark
+ * geometry from cancri_chat.css L313-316 is overridden here. */
+.sidebar-brand {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1 !important;
+}
+
+.sidebar-brand:hover {
+    background-color: rgba(127, 127, 127, 0.10);
+}
+
+.sidebar-brand-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+/* When the sidebar collapses, only the logo stays — wordmark hides. */
+.sidebar.collapsed .sidebar-brand-name {
+    display: none;
+}
+
+/* The cancri_chat.css L278-280 rule `.sidebar.collapsed .brand-mark
+   { display:none }` still applies when the sidebar collapses. We
+   want the brand logo visible even when collapsed (acts as the
+   "home" button), so flip it back. */
+.sidebar.collapsed .sidebar-brand {
+    display: inline-flex !important;
+}
+
+/* ── Sidebar Cancri Code entry: hide on mobile only ───────────
+ *
+ * The Cancri Code IDE-style app at /chat/code/ ships with a fixed
+ * left/right panel layout that needs ≥ 1024px to be usable. We hide
+ * the entry on screens ≤ 640px so mobile users don't tap through to
+ * a broken layout. The 50/150 daily-message quota that protects the
+ * underlying chat-gateway lives inside the Cancri Code app itself
+ * (consumed via chat-gateway counter), not in this sidebar row. */
+@media (max-width: 640px) {
+    .sidebar-cancri-code {
+        display: none !important;
+    }
+}
+
+/* ── Header broadcast bell ──────────────────────────────────── */
+.header-broadcast-btn {
+    position: relative;
+}
+
+.header-broadcast-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent, #cc7755);
+    box-shadow: 0 0 0 2px var(--bg, #1a1a1a);
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+        opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.header-broadcast-btn.has-update .header-broadcast-dot {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ── Announcement modal: timeline ─────────────────────────────── */
+.announcement-modal-content {
+    max-width: 580px;
+}
+
+.announcement-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 4px 4px 8px;
+    position: relative;
+}
+
+/* Single vertical guide line for the entire timeline */
+.announcement-timeline::before {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 14px;
+    bottom: 14px;
+    width: 1px;
+    background: var(--border, rgba(127, 127, 127, 0.22));
+}
+
+.timeline-item {
+    position: relative;
+    padding: 0 0 18px 32px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 4px;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--bg, #1a1a1a);
+    border: 1.6px solid var(--text-dim, #888);
+    box-sizing: border-box;
+}
+
+.timeline-item--latest .timeline-dot {
+    border-color: var(--accent, #cc7755);
+    background: var(--accent, #cc7755);
+    box-shadow: 0 0 0 4px rgba(204, 119, 85, 0.15);
+}
+
+.timeline-content {
+    color: var(--text);
+}
+
+.timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.timeline-body {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-soft);
+    margin: 0 0 4px;
+}
+
+.timeline-link {
+    color: var(--accent, #cc7755);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.timeline-link:hover {
+    text-decoration: underline;
+}
+
+.timeline-date {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 4px;
+}
+
+.announcement-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--border, rgba(127, 127, 127, 0.18));
+}
+
+.announcement-dismiss {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-soft);
+    cursor: pointer;
+}
+
+.announcement-dismiss input {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+/* ── Modal fade-in / fade-out ─────────────────────────────────
+ *
+ * `cancri_chat.css` originally toggled modals with `display: none ↔ flex`,
+ * which can't be transitioned. We override to a continuous-visibility
+ * model: the overlay stays `display: flex` but is hidden via
+ * `opacity + visibility + pointer-events`. The card inside also gets
+ * a small translate + scale curve for a soft "rise into focus" feel.
+ *
+ * Tested against:
+ *   • #announcementModal (timeline)
+ *   • #settingsModal & friends (all use .modal + .modal.open)
+ *
+ * Why !important on display: cancri_chat.css ships
+ * `.modal { display: none; }` as the base. We need to defeat that to
+ * keep visibility-based transitions working. We do *not* touch
+ * `.modal.open { display: flex }` rule — flex is the same final value,
+ * so visually nothing changes. */
+.modal {
+    display: flex !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal.open,
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.modal .modal-content {
+    transform: translateY(12px) scale(0.97);
+    opacity: 0;
+    transition:
+        transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+}
+
+.modal.open .modal-content,
+.modal.show .modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+/* Reduce motion: collapse to a plain fade, no transform. Matches the
+   global prefers-reduced-motion contract elsewhere in this file. */
+@media (prefers-reduced-motion: reduce) {
+    .modal,
+    .modal .modal-content {
+        transition-duration: 0ms !important;
+    }
+    .modal .modal-content {
+        transform: none;
+    }
+}
+
+/* ── Login stage (Claude-style) ────────────────────────────────
+ *
+ * This block fully replaces the visual treatment from
+ * cancri_chat.css L6090-6228 (.auth-overlay / .auth-card / .auth-title
+ * / .auth-input / .auth-btn). The DOM IDs that cancri_chat.js binds
+ * to (authEmailInput, authSendOtpBtn, authOtpInput, authVerifyOtpBtn,
+ * authOtpSection, authStepEmail, authEmailError) are preserved — only
+ * the chrome around them is rebuilt.
+ *
+ * Reference: claude.ai/login. Two-tier layout: hero (serif title +
+ * subtitle, breathing room) sits above a compact single-column card
+ * (label → input → button). Brand sits top-left, footer microcopy
+ * sits below the card. */
+.auth-overlay {
+    background: var(--bg, #1a1a1a) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+[data-theme="dark"] .auth-overlay {
+    background: #141414 !important;
+}
+
+.auth-stage {
+    width: 100%;
+    max-width: 440px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    position: relative;
+    padding: 80px 0 40px;
+}
+
+.auth-brand {
+    position: absolute;
+    top: 4px;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-brand:hover {
+    background: rgba(127, 127, 127, 0.1);
+}
+
+.auth-brand-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    object-fit: cover;
+    display: block;
+}
+
+.auth-brand-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.1px;
+}
+
+/* Mobile: keep the brand on its own row above the hero so it doesn't
+   overlap the centered title on narrow screens (≤520px). */
+@media (max-width: 520px) {
+    .auth-brand {
+        position: static;
+        align-self: flex-start;
+    }
+    .auth-stage {
+        padding-top: 32px;
+        gap: 22px;
+    }
+}
+
+.auth-hero {
+    text-align: center;
+    padding: 0 8px;
+}
+
+.auth-hero-title {
+    font-family:
+        "Newsreader", "Tiempos Headline", "Source Han Serif SC",
+        "Noto Serif SC", "Songti SC", serif;
+    font-size: clamp(34px, 5.2vw, 46px);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0 0 14px;
+    color: var(--text);
+}
+
+.auth-hero-subtitle {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--text-soft);
+    margin: 0;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auth-card {
+    width: 100%;
+    background: var(--panel, #1f1f1f) !important;
+    border: 1px solid var(--line-2, rgba(127, 127, 127, 0.18)) !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    padding: 22px !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch !important;
+    max-width: 100% !important;
+}
+
+[data-theme="light"] .auth-card {
+    background: #ffffff !important;
+    border-color: rgba(20, 20, 20, 0.08) !important;
+}
+
+.auth-step {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.auth-field-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-soft);
+    letter-spacing: 0.1px;
+    margin-bottom: 2px;
+}
+
+.auth-input {
+    width: 100%;
+    height: 44px !important;
+    border: 1px solid var(--line-2, rgba(127, 127, 127, 0.22)) !important;
+    background: var(--surface, #16161a) !important;
+    color: var(--text) !important;
+    font-size: 14.5px !important;
+    padding: 0 14px !important;
+    border-radius: 10px !important;
+    transition:
+        border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    outline: none;
+}
+
+[data-theme="light"] .auth-input {
+    background: #fafafa !important;
+}
+
+.auth-input::placeholder {
+    color: var(--text-dim, rgba(127, 127, 127, 0.6));
+}
+
+.auth-input:focus {
+    border-color: var(--accent, #cc7755) !important;
+    box-shadow: 0 0 0 3px rgba(204, 119, 85, 0.12) !important;
+}
+
+.auth-otp-input {
+    letter-spacing: 8px !important;
+    text-align: center !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+.auth-btn {
+    width: 100%;
+    height: 44px !important;
+    margin-top: 10px;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    background: var(--text, #fafafa) !important;
+    color: var(--bg, #1a1a1a) !important;
+    font-size: 14.5px !important;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 80ms cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1 !important;
+}
+
+.auth-btn:hover {
+    opacity: 0.88 !important;
+}
+
+.auth-btn:active {
+    transform: scale(0.985);
+}
+
+.auth-btn:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* .auth-btn-primary intentionally inherits everything from .auth-btn —
+   no override block, lint complains about empty rule. Future variants
+   (Google OAuth, secondary actions, etc.) can sit alongside without
+   needing a placeholder. */
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 18px 0 10px;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line-2, rgba(127, 127, 127, 0.2));
+}
+
+.auth-otp-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 0;
+}
+
+.auth-error {
+    font-size: 12.5px;
+    color: #e5556a;
+    min-height: 16px;
+    text-align: left;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.auth-footer-line {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    text-align: center;
+    margin: 0;
+    line-height: 1.55;
+    max-width: 380px;
+}
+
+.auth-footer-link {
+    color: var(--text-soft);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    transition: color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-footer-link:hover {
+    color: var(--text);
+}
+
+/* Hide legacy elements removed from the new HTML but still present
+   in the original auth CSS scope, in case some other page reuses
+   the old class names. */
+.auth-logo,
+.auth-title,
+.auth-subtitle,
+.auth-otp-hint,
+.auth-link {
+    display: none !important;
+}

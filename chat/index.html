@@ -14,6 +14,28 @@
         <!-- Browser tab icon. -->
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+        <!-- Logo 同时被 sidebar-topbar、登录页 .auth-brand、PWA install
+             prompt、模态框 hero 重复使用 6+ 次。fetchpriority=high 让浏览器
+             把这一张 PNG 排到 HTTP 队列最前，首屏 LCP 候选元素更快出现。 -->
+        <link
+            rel="preload"
+            as="image"
+            href="../Logo/Cancri.png"
+            fetchpriority="high"
+        />
+        <!-- Preconnect to the three remote origins this page hits during the
+             first 500ms: supabase (auth + every API call), jsdelivr (CDN for
+             supabase-js bundle), challenges.cloudflare.com (Turnstile CAPTCHA).
+             dns-prefetch is the universal fallback for browsers that don't
+             honour preconnect (older Safari / Firefox). Crossorigin is
+             required for preconnect to a CORS origin; without it the warm
+             connection is dropped and re-opened cold. -->
+        <link rel="preconnect" href="https://diusqgphvybnzazgopor.supabase.co" crossorigin />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+        <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
+        <link rel="dns-prefetch" href="https://diusqgphvybnzazgopor.supabase.co" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+        <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
         <script src="./cancri_config.js?v=2026-05-13e"></script>
         <!-- supabase-js: 2026-05-13 审查后固定到具体 minor 版本。原 `@2` floating
              tag 会被 jsdelivr 任意 redirect 到当前最新 v2.x，被劫持时无法察觉。
@@ -49,13 +71,20 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-a"
+            href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b"
         />
-        <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
+        <link
+            rel="stylesheet"
+            href="./styles/cancri_motion.css?v=2026-05-14-motion-e-claude-auth"
+        />
+        <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
+             defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
+             里仅在用户发消息后调用，且自身有本地实现兜底（见 cancri_chat.js
+             L5989），所以 KaTeX 延迟加载是安全的。 -->
         <link rel="stylesheet" href="./katex/katex.min.css" />
-        <script src="./katex/katex.min.js"></script>
-        <script src="./katex/contrib/auto-render.min.js"></script>
-        <script src="./cancri_katex_fallback.js?v=0504"></script>
+        <script defer src="./katex/katex.min.js"></script>
+        <script defer src="./katex/contrib/auto-render.min.js"></script>
+        <script defer src="./cancri_katex_fallback.js?v=0504"></script>
         <!-- Cloudflare Turnstile: explicit rendering mode.
              We have TWO independent widgets on this page (chat anti-bot &
              login OTP captcha), so per Cloudflare's official guidance we use
@@ -70,74 +99,133 @@
         ></script>
     </head>
     <body>
-        <!-- 登录遮罩层：未登录时覆盖整个页面 -->
+        <!-- ── Login stage (未登录时覆盖整个页面) ───────────────────
+             重设计自 Claude (claude.ai) 的登录页：暗底全屏 +
+             左上角 brand + 中央衬线大标题 + 副标题 + 单列卡片。
+             保留原 OTP 流程（邮箱 → 8 位验证码），所有 element ID 与
+             cancri_chat.js 的事件绑定保持一致：authEmailInput /
+             authSendOtpBtn / authOtpSection / authOtpInput /
+             authVerifyOtpBtn / authEmailError / authStepEmail.
+             视觉层面新增的元素只有 .auth-stage / .auth-brand /
+             .auth-hero / .auth-divider / .auth-footer-line，没有
+             绑事件。 -->
         <div class="auth-overlay" id="authOverlay">
-            <div class="auth-card">
-                <div class="auth-logo">
+            <div class="auth-stage">
+                <a
+                    class="auth-brand"
+                    href="/"
+                    aria-label="NexusV"
+                >
                     <img
                         src="../Logo/Cancri.png"
-                        alt="Cancri"
-                        width="40"
-                        height="40"
-                        style="border-radius: 8px"
+                        alt=""
+                        width="22"
+                        height="22"
+                        class="auth-brand-mark"
                     />
+                    <span class="auth-brand-name">NexusV</span>
+                </a>
+
+                <div class="auth-hero">
+                    <h1 class="auth-hero-title">免费聚合，<br />一键起飞。</h1>
+                    <p class="auth-hero-subtitle">
+                        20+ 主流大模型同台 · 永久免费 · 无需信用卡
+                    </p>
                 </div>
-                <h2 class="auth-title">登录 Cancri</h2>
-                <p class="auth-subtitle">使用邮箱验证码登录</p>
-                <div class="auth-step" id="authStepEmail">
-                    <input
-                        type="email"
-                        id="authEmailInput"
-                        class="auth-input"
-                        placeholder="请输入邮箱（QQ/Foxmail）"
-                        autocomplete="email"
-                        required
-                    />
-                    <button class="auth-btn" id="authSendOtpBtn" type="button">
-                        发送验证码
-                    </button>
-                    <div class="auth-otp-section" id="authOtpSection" style="display:none;">
+
+                <div class="auth-card">
+                    <div class="auth-step" id="authStepEmail">
+                        <label class="auth-field-label" for="authEmailInput"
+                            >邮箱地址</label
+                        >
                         <input
-                            type="text"
-                            id="authOtpInput"
+                            type="email"
+                            id="authEmailInput"
                             class="auth-input"
-                            placeholder="输入 8 位验证码"
-                            maxlength="8"
-                            inputmode="numeric"
-                            autocomplete="one-time-code"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
                         />
-                        <button class="auth-btn" id="authVerifyOtpBtn" type="button">
-                            验证登录
+                        <button
+                            class="auth-btn auth-btn-primary"
+                            id="authSendOtpBtn"
+                            type="button"
+                        >
+                            继续
                         </button>
+
+                        <div
+                            class="auth-otp-section"
+                            id="authOtpSection"
+                            style="display: none"
+                        >
+                            <div class="auth-divider">
+                                <span>已发送邮箱验证码</span>
+                            </div>
+                            <label class="auth-field-label" for="authOtpInput"
+                                >8 位验证码</label
+                            >
+                            <input
+                                type="text"
+                                id="authOtpInput"
+                                class="auth-input auth-otp-input"
+                                placeholder="••••••••"
+                                maxlength="8"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                            />
+                            <button
+                                class="auth-btn auth-btn-primary"
+                                id="authVerifyOtpBtn"
+                                type="button"
+                            >
+                                验证登录
+                            </button>
+                        </div>
+
+                        <div class="auth-error" id="authEmailError"></div>
                     </div>
-                    <div class="auth-error" id="authEmailError"></div>
                 </div>
-                <div class="auth-footer">
-                    进入即代表同意服务条款和隐私协议
-                </div>
+
+                <p class="auth-footer-line">
+                    继续即表示同意
+                    <a
+                        href="/about.html#terms"
+                        class="auth-footer-link"
+                        target="_blank"
+                        rel="noopener"
+                        >服务条款</a
+                    >
+                    与
+                    <a
+                        href="/about.html#privacy"
+                        class="auth-footer-link"
+                        target="_blank"
+                        rel="noopener"
+                        >隐私协议</a
+                    >。
+                </p>
             </div>
         </div>
 
         <div class="app" id="appRoot">
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-topbar">
-                    <button
-                        class="brand-mark"
+                    <a
+                        class="brand-mark sidebar-brand"
                         id="brandHomeBtn"
-                        aria-label="回到首页"
+                        href="javascript:void(0)"
+                        aria-label="NexusV · 回到首页"
                     >
                         <img
                             src="../Logo/Cancri.png"
-                            alt="Cancri"
+                            alt=""
                             width="20"
                             height="20"
-                            style="
-                                border-radius: 4px;
-                                object-fit: cover;
-                                display: block;
-                            "
+                            class="sidebar-brand-logo"
                         />
-                    </button>
+                        <span class="sidebar-brand-name">NexusV</span>
+                    </a>
                     <button
                         class="sidebar-toggle"
                         id="sidebarToggle"
@@ -238,8 +326,15 @@
                                 autocomplete="off"
                             />
                         </div>
+                        <!-- Cancri Code entry. PC-only: hidden on screens
+                             ≤ 640px via cancri_motion.css since the IDE-style
+                             UI inside /chat/code/ isn't usable on small
+                             touch screens. The per-user daily-message quota
+                             (free=50, paid=150) is enforced inside the
+                             Cancri Code app itself (via the chat-gateway
+                             counter), not displayed in this sidebar. -->
                         <a
-                            class="nav-row"
+                            class="nav-row sidebar-cancri-code"
                             id="sidebarCancriCodeBtn"
                             href="./code/"
                             style="text-decoration: none; color: inherit"
@@ -319,7 +414,7 @@
                             <img
                                 src="../Logo/1107.jpg"
                                 alt="微信收款码"
-                                class="sidebar-promo-img"
+                                class="sidebar-promo-img" loading="lazy" decoding="async"
                             />
                             <div class="sidebar-promo-desc-wrap">
                                 <span class="sidebar-promo-desc"
@@ -578,15 +673,20 @@
                                 <path d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
+                        <!-- main-header 不再展示 NexusV brand。
+                             brand 已迁移到 sidebar-topbar 左上角 (L143)，
+                             跟 Claude / Linear 一致：sidebar 顶部承担产品
+                             身份，main-header 只放当前模式 / 模型选择器。
+                             保留一个隐藏 anchor 仅为兼容老脚本（如有
+                             getElementById("brandHomeBtnTop") 残留），
+                             不可见也不可点。 -->
                         <a
                             class="app-brand"
                             id="brandHomeBtnTop"
                             href="javascript:void(0)"
                             aria-label="回到首页"
-                        >
-                            <img src="../Logo/Cancri.png" alt="" />
-                            <span>NexusV</span>
-                        </a>
+                            hidden
+                        ></a>
                         <div class="arena-top-mode" id="topArenaModeSelector">
                             <button
                                 class="arena-mode-current"
@@ -867,6 +967,33 @@
                     </div>
                     <!-- /.header-left -->
                     <div class="header-right">
+                        <!-- Broadcast / system announcement bell. Replaces
+                             the previous full-width carousel banner. Clicking
+                             opens #announcementModal (timeline-style list of
+                             site updates). Wired up in cancri_chat.js. -->
+                        <button
+                            class="icon-btn header-broadcast-btn"
+                            id="openAnnouncementBtn"
+                            type="button"
+                            aria-label="系统公告"
+                            title="系统公告"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M3 11v3a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z"></path>
+                                <path d="M16 8a5 5 0 0 1 0 8"></path>
+                                <path d="M19 5a9 9 0 0 1 0 14"></path>
+                            </svg>
+                            <span class="header-broadcast-dot" id="headerBroadcastDot" aria-hidden="true"></span>
+                        </button>
                         <button
                             class="icon-btn"
                             id="teamToastBtn"
@@ -922,47 +1049,9 @@
                     <div class="header-actions" style="display: none"></div>
                 </div>
 
-                <!-- 轮播公告栏 -->
-                <div class="announcement-carousel" id="announcementCarousel" data-glass="banner">
-                    <div class="announcement-track">
-                        <div class="announcement-item active">
-                            <span class="announcement-icon">🚀</span>
-                            <span class="announcement-text"
-                                >API 已上线，永久免费，<a
-                                    href="./api/"
-                                    style="
-                                        color: var(--accent);
-                                        text-decoration: underline;
-                                    "
-                                    >点此跳转</a
-                                >。</span
-                            >
-                        </div>
-                        <div class="announcement-item">
-                            <span class="announcement-icon">🛡️</span>
-                            <span class="announcement-text"
-                                >近期风控系统识别到高频自动化请求（固定间隔轮询、硬编码重试等），已触发滥用防护。我们已对异常请求源实施封禁（110.248.68.x、18.141.169.0/24
-                                等网段）。风控以行为特征为核心，IP仅作辅助指标，正常用户不受影响。</span
-                            >
-                        </div>
-                        <div class="announcement-item">
-                            <span class="announcement-icon">📊</span>
-                            <span class="announcement-text"
-                                >服务状态实时监控：<a
-                                    href="https://nexusvai.github.io/ChatAI-status/"
-                                    target="_blank"
-                                    rel="noopener"
-                                    >点击查看</a
-                                ></span
-                            >
-                        </div>
-                    </div>
-                    <div class="announcement-indicators">
-                        <span class="indicator active" data-index="0"></span>
-                        <span class="indicator" data-index="1"></span>
-                        <span class="indicator" data-index="2"></span>
-                    </div>
-                </div>
+                <!-- (legacy top-bar carousel removed; system announcements
+                     now live in #announcementModal, opened via the
+                     broadcast bell in the header-right of .main-header) -->
 
                 <section class="view active" id="homeView">
                     <div class="chat-messages" id="chatMessages"></div>
@@ -971,100 +1060,9 @@
                             <img src="../Logo/Cancri.png" alt="" />
                             <span>NexusV</span>
                         </div>
-                        <div
-                            class="social-links"
-                            style="
-                                display: flex;
-                                gap: 16px;
-                                justify-content: center;
-                                margin-bottom: 20px;
-                            "
-                        >
-                            <a
-                                href="https://github.com/NexusVAI"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="GitHub"
-                            >
-                                <img
-                                    src="./github.svg"
-                                    alt="GitHub"
-                                    style="
-                                        width: 32px;
-                                        height: 32px;
-                                        opacity: 0.7;
-                                        transition: opacity 0.2s;
-                                    "
-                                    onmouseover="this.style.opacity = '1'"
-                                    onmouseout="this.style.opacity = '0.7'"
-                                />
-                            </a>
-                            <a
-                                href="https://huggingface.co/xingy555888"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="HuggingFace"
-                            >
-                                <img
-                                    src="./huggingface-color.svg"
-                                    alt="HuggingFace"
-                                    style="
-                                        width: 36px;
-                                        height: 36px;
-                                        opacity: 0.7;
-                                        transition: opacity 0.2s;
-                                    "
-                                    onmouseover="this.style.opacity = '1'"
-                                    onmouseout="this.style.opacity = '0.7'"
-                                />
-                            </a>
-                            <a
-                                href="https://space.bilibili.com/3691002594331274?spm_id_from=333.1007.0.0"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Bilibili"
-                            >
-                                <img
-                                    src="./bilibili-color.svg"
-                                    alt="Bilibili"
-                                    style="
-                                        width: 32px;
-                                        height: 32px;
-                                        opacity: 0.7;
-                                        transition: opacity 0.2s;
-                                    "
-                                    onmouseover="this.style.opacity = '1'"
-                                    onmouseout="this.style.opacity = '0.7'"
-                                />
-                            </a>
-                            <a
-                                href="https://x.com/NexusVAI"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="X (Twitter)"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    width="32"
-                                    height="32"
-                                    style="
-                                        opacity: 0.7;
-                                        transition: opacity 0.2s;
-                                    "
-                                    onmouseover="this.style.opacity = '1'"
-                                    onmouseout="this.style.opacity = '0.7'"
-                                >
-                                    <path
-                                        fill="#000"
-                                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-                                    />
-                                </svg>
-                            </a>
-                        </div>
                         <h1 class="hero" id="heroTitle">有什么可以帮忙的？</h1>
                         <div class="composer-wrap">
-                            <div class="composer" data-workbench-composer data-glass="card">
+                            <div class="composer" data-workbench-composer>
                                 <div
                                     class="attachment-preview"
                                     id="attachmentPreview"
@@ -1241,331 +1239,77 @@
                         >
                             开站纪念日 2026-04-28
                         </div>
+                        <!-- Model brand marquee. The track is duplicated 3×
+                             so the CSS scroll animation reaches a seamless
+                             loop point. 20 unique brands × 3 = 60 imgs.
+                             All <img> are lazy-loaded so initial paint
+                             stays cheap; the marquee resumes once images
+                             enter the viewport. -->
                         <div class="model-icons-scroll">
                             <div class="model-icons-track">
-                                <img
-                                    src="./deepseek-color (1).svg"
-                                    alt="DeepSeek"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./openai.svg"
-                                    alt="OpenAI"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./grok.svg"
-                                    alt="Grok"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./qwen-color.svg"
-                                    alt="Qwen"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./minimax-color.svg"
-                                    alt="MiniMax"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./moonshot.svg"
-                                    alt="Moonshot"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./zhipu-color.svg"
-                                    alt="Zhipu"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./stepfun-color.svg"
-                                    alt="StepFun"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./spark-color.svg"
-                                    alt="Spark"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./kling-color.svg"
-                                    alt="Kling"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./antgroup-color.svg"
-                                    alt="AntGroup"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./nvidia-color.svg"
-                                    alt="NVIDIA"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./yuanbao-color.svg"
-                                    alt="Yuanbao"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./xiaomimimo-color.svg"
-                                    alt="MiMo"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./sensenova-color.svg"
-                                    alt="SenseNova"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./claude-color.svg"
-                                    alt="Claude"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./gemini-color.svg"
-                                    alt="Gemini"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./deepseek-color (1).svg"
-                                    alt="DeepSeek"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./openai.svg"
-                                    alt="OpenAI"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./grok.svg"
-                                    alt="Grok"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./qwen-color.svg"
-                                    alt="Qwen"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./minimax-color.svg"
-                                    alt="MiniMax"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./moonshot.svg"
-                                    alt="Moonshot"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./zhipu-color.svg"
-                                    alt="Zhipu"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./stepfun-color.svg"
-                                    alt="StepFun"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./spark-color.svg"
-                                    alt="Spark"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./kling-color.svg"
-                                    alt="Kling"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./antgroup-color.svg"
-                                    alt="AntGroup"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./nvidia-color.svg"
-                                    alt="NVIDIA"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./yuanbao-color.svg"
-                                    alt="Yuanbao"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./xiaomimimo-color.svg"
-                                    alt="MiMo"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./sensenova-color.svg"
-                                    alt="SenseNova"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./claude-color.svg"
-                                    alt="Claude"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./gemini-color.svg"
-                                    alt="Gemini"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./deepseek-color (1).svg"
-                                    alt="DeepSeek"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./openai.svg"
-                                    alt="OpenAI"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./grok.svg"
-                                    alt="Grok"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./qwen-color.svg"
-                                    alt="Qwen"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./minimax-color.svg"
-                                    alt="MiniMax"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./moonshot.svg"
-                                    alt="Moonshot"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./zhipu-color.svg"
-                                    alt="Zhipu"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./stepfun-color.svg"
-                                    alt="StepFun"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./spark-color.svg"
-                                    alt="Spark"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./kling-color.svg"
-                                    alt="Kling"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./antgroup-color.svg"
-                                    alt="AntGroup"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./nvidia-color.svg"
-                                    alt="NVIDIA"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./yuanbao-color.svg"
-                                    alt="Yuanbao"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./xiaomimimo-color.svg"
-                                    alt="MiMo"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./sensenova-color.svg"
-                                    alt="SenseNova"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./claude-color.svg"
-                                    alt="Claude"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./gemini-color.svg"
-                                    alt="Gemini"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./deepseek-color (1).svg"
-                                    alt="DeepSeek"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./openai.svg"
-                                    alt="OpenAI"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./grok.svg"
-                                    alt="Grok"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./qwen-color.svg"
-                                    alt="Qwen"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./minimax-color.svg"
-                                    alt="MiniMax"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./moonshot.svg"
-                                    alt="Moonshot"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./zhipu-color.svg"
-                                    alt="Zhipu"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./stepfun-color.svg"
-                                    alt="StepFun"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./spark-color.svg"
-                                    alt="Spark"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./kling-color.svg"
-                                    alt="Kling"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./antgroup-color.svg"
-                                    alt="AntGroup"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./nvidia-color.svg"
-                                    alt="NVIDIA"
-                                    class="model-icon"
-                                />
-                                <img
-                                    src="./yuanbao-color.svg"
-                                    alt="Yuanbao"
-                                    class="model-icon"
-                                />
+                                <img src="./openai.svg" alt="OpenAI" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./claude-color.svg" alt="Claude" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./gemini-color.svg" alt="Gemini" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./grok.svg" alt="Grok" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./meta-color.svg" alt="Meta" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./mistral-color.svg" alt="Mistral" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./nvidia-color.svg" alt="NVIDIA" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./qwen-color.svg" alt="Qwen" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./minimax-color.svg" alt="MiniMax" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./moonshot.svg" alt="Moonshot Kimi" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./zhipu-color.svg" alt="Zhipu GLM" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./doubao-color.svg" alt="Doubao" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./yuanbao-color.svg" alt="Yuanbao" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./stepfun-color.svg" alt="StepFun" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./spark-color.svg" alt="Spark" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./kling-color.svg" alt="Kling" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./antgroup-color.svg" alt="AntGroup Ling" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./xiaomimimo-color.svg" alt="Xiaomi MiMo" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./sensenova-color.svg" alt="SenseNova" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./openai.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./claude-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./gemini-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./grok.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./meta-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./mistral-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./nvidia-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./deepseek-color (1).svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./qwen-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./minimax-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./moonshot.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./zhipu-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./doubao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./yuanbao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./stepfun-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./spark-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./kling-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./antgroup-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./xiaomimimo-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./sensenova-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./openai.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./claude-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./gemini-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./grok.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./meta-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./mistral-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./nvidia-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./deepseek-color (1).svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./qwen-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./minimax-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./moonshot.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./zhipu-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./doubao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./yuanbao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./stepfun-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./spark-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./kling-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./antgroup-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./xiaomimimo-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
+                                <img src="./sensenova-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
                             </div>
                             <div class="model-icons-text">
-                                支持全球14+大模型 免费调用
+                                支持全球 20+ 大模型 免费调用
                             </div>
                         </div>
 
@@ -1634,13 +1378,90 @@
                             隐私协议
                         </button>
                     </div>
-                    <div
-                        class="nexusv-footer"
-                        role="img"
-                        aria-label="NEXUSV 品牌区"
+                    <!-- Site footer: four social icons.
+                         We deliberately do NOT carry the legacy
+                         `.nexusv-footer` class — that would drag in the
+                         opacity:0 + IntersectionObserver fade-in pattern
+                         from cancri_chat.js (L99..L102 / L9546 / L10599+)
+                         and the giant 72px "NEXUSV" glitch styling. With
+                         this class absent, the JS lookup returns null and
+                         falls through its null-checks gracefully, leaving
+                         our quiet 4-icon footer rendered directly by CSS
+                         in cancri_motion.css. -->
+                    <nav
+                        class="site-footer-socials"
+                        role="navigation"
+                        aria-label="社交链接"
                     >
-                        <span class="nexusv-footer-brand">NEXUSV</span>
-                    </div>
+                        <a
+                            href="https://github.com/NexusVAI"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="GitHub"
+                            title="GitHub"
+                        >
+                            <img
+                                src="./github.svg"
+                                alt=""
+                                width="20"
+                                height="20"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </a>
+                        <a
+                            href="https://huggingface.co/xingy555888"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="HuggingFace"
+                            title="HuggingFace"
+                        >
+                            <img
+                                src="./huggingface-color.svg"
+                                alt=""
+                                width="22"
+                                height="22"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </a>
+                        <a
+                            href="https://space.bilibili.com/3691002594331274?spm_id_from=333.1007.0.0"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Bilibili"
+                            title="Bilibili"
+                        >
+                            <img
+                                src="./bilibili-color.svg"
+                                alt=""
+                                width="20"
+                                height="20"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </a>
+                        <a
+                            href="https://x.com/NexusVAI"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="X (Twitter)"
+                            title="X"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                width="18"
+                                height="18"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                                />
+                            </svg>
+                        </a>
+                    </nav>
                 </section>
 
                 <section class="view" id="leaderboardView">
@@ -1863,7 +1684,7 @@
 
         <div class="scrim" id="scrim"></div>
 
-        <div class="modal large" id="settingsModal" aria-hidden="true" data-glass="modal">
+        <div class="modal large" id="settingsModal" aria-hidden="true">
             <div class="modal-header">
                 <button
                     class="modal-close"
@@ -2009,7 +1830,7 @@
             </div>
         </div>
 
-        <div class="modal small" id="tempChatModal" aria-hidden="true" data-glass="modal">
+        <div class="modal small" id="tempChatModal" aria-hidden="true">
             <div class="modal-header">
                 <div class="modal-title">临时聊天</div>
                 <button
@@ -2104,7 +1925,7 @@
             </div>
         </div>
 
-        <div class="modal medium" id="projectModal" aria-hidden="true" data-glass="modal">
+        <div class="modal medium" id="projectModal" aria-hidden="true">
             <div class="modal-header" style="padding-bottom: 0">
                 <div class="modal-title">创建项目</div>
                 <div style="display: flex; align-items: center; gap: 8px">
@@ -2183,7 +2004,7 @@
             </div>
         </div>
 
-        <div class="modal large" id="privacyPolicyModal" aria-hidden="true" data-glass="modal">
+        <div class="modal large" id="privacyPolicyModal" aria-hidden="true">
             <div class="modal-header">
                 <div class="modal-title">隐私协议</div>
                 <button
@@ -2308,10 +2129,13 @@
             </button>
         </div>
 
-        <div class="modal medium" id="announcementModal" aria-hidden="true" data-glass="modal">
-            <div class="modal-content">
+        <!-- 系统公告：时间线样式（参考 Claude Console 系统公告风格）。
+             条目按时间倒序，每条带圆点 + 日期 + 内容。新条目就在上面加
+             一个 .timeline-item，无需改任何 JS。 -->
+        <div class="modal medium" id="announcementModal" aria-hidden="true">
+            <div class="modal-content announcement-modal-content">
                 <div class="modal-header">
-                    <div class="modal-title">通知</div>
+                    <div class="modal-title">系统公告</div>
                     <button
                         class="modal-close"
                         data-close-modal="announcementModal"
@@ -2330,74 +2154,92 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="announcement-content">
-                        <p class="announcement-highlight">
-                            ✨ 站内模型永久免费
-                        </p>
-                        <p
-                            style="
-                                margin-top: 12px;
-                                font-size: 14px;
-                                color: var(--text-soft);
-                                line-height: 1.6;
-                            "
-                        >
-                            <strong>QQ 交流群：</strong
-                            ><a
-                                href="https://qm.qq.com/q/1083892008"
-                                target="_blank"
-                                rel="noopener"
-                                style="
-                                    color: var(--accent);
-                                    text-decoration: none;
-                                "
-                                >1083892008</a
-                            >
-                        </p>
-                        <p
-                            style="
-                                margin-top: 8px;
-                                font-size: 13px;
-                                color: var(--text-dim);
-                                line-height: 1.6;
-                            "
-                        >
-                            牢记网址不迷路。
-                        </p>
-                    </div>
-                    <label
-                        style="
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            margin: 16px 0 4px;
-                            font-size: 13px;
-                            color: var(--text-soft);
-                            cursor: pointer;
-                        "
-                    >
-                        <input
-                            type="checkbox"
-                            id="dismissNoticeCheckbox"
-                            style="width: 16px; height: 16px; cursor: pointer"
-                        />
-                        <span>下次不再提示</span>
+                    <ol class="announcement-timeline" id="announcementTimeline">
+                        <li class="timeline-item timeline-item--latest">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">API 平台已上线</div>
+                                <p class="timeline-body">
+                                    在线注册即可领取永久免费 API key，支持
+                                    OpenAI 兼容协议。
+                                    <a href="./api/" class="timeline-link">前往 API 平台 →</a>
+                                </p>
+                                <time class="timeline-date" datetime="2026-05-14">2026-05-14</time>
+                            </div>
+                        </li>
+                        <li class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">服务状态实时监控</div>
+                                <p class="timeline-body">
+                                    可随时查看各模型线路的健康状况和延迟数据。
+                                    <a
+                                        href="https://nexusvai.github.io/ChatAI-status/"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="timeline-link"
+                                        >前往 status 页面 →</a
+                                    >
+                                </p>
+                                <time class="timeline-date" datetime="2026-05-12">2026-05-12</time>
+                            </div>
+                        </li>
+                        <li class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">风控策略升级</div>
+                                <p class="timeline-body">
+                                    针对高频自动化请求（固定间隔轮询、硬编码重试等）启用滥用防护，
+                                    异常请求段已封禁。风控以行为特征为核心，正常用户不受影响。
+                                </p>
+                                <time class="timeline-date" datetime="2026-05-10">2026-05-10</time>
+                            </div>
+                        </li>
+                        <li class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">站内模型永久免费</div>
+                                <p class="timeline-body">
+                                    20+ 主流大模型免费调用，无 token 限额，登录即用。
+                                    <strong>QQ 交流群：</strong
+                                    ><a
+                                        href="https://qm.qq.com/q/1083892008"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="timeline-link"
+                                        >1083892008</a
+                                    >
+                                </p>
+                                <time class="timeline-date" datetime="2026-04-28">2026-04-28</time>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                <div class="modal-footer announcement-modal-footer">
+                    <label class="announcement-dismiss">
+                        <input type="checkbox" id="dismissNoticeCheckbox" />
+                        <span>下次不再自动弹出</span>
                     </label>
-                    <div class="modal-actions">
-                        <button class="primary-btn" id="closeAnnouncementBtn">
-                            我知道了
-                        </button>
-                    </div>
+                    <button class="primary-btn" id="closeAnnouncementBtn" type="button">
+                        我知道了
+                    </button>
                 </div>
             </div>
         </div>
 
-        <script src="./cancri_liquid_glass.js?v=2026-05-14-lg-a"></script>
-        <script src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
-        <script src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script src="./cancri_chat.js?v=2026-05-14e-stream-preserve"></script>
+        <!-- defer = 浏览器并行下载所有 script 但严格按 source order 串行执行，
+             和「6 个 body-bottom 裸 script」最终行为完全一致（启动期不会
+             阻塞 HTML parse；执行顺序保持 cancri_liquid_glass → orb_loader
+             → login_captcha → cancri_chat → main.js → announcement → arena）。
+             收益：把过去「下载 1 个 → 下载 2 个 → ...」的串行链改成并行
+             下载，首屏可交互平均提速 200-400ms（移动端 3G/4G 收益更大）。
+             type="module" 的 main.js 默认 defer，无需重复加。 -->
+        <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
+        <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
+        <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-14g-revert-cancri-code"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
-        <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
-        <script src="./cancri_arena.js?v=arena-module-0504"></script>
+        <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
+        <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
     </body>
 </html>

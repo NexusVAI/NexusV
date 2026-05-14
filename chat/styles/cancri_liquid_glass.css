@@ -1,53 +1,46 @@
 /*
- * Cancri site-wide Liquid Glass — Apple-style refractive surfaces.
+ * Cancri Liquid Glass — narrowly-applied refractive surface helper.
  *
- * How to use:
- *   <button data-glass="button">…</button>     small pill / icon button
- *   <div data-glass="card">…</div>             input panel, sidebar card
- *   <div data-glass="banner">…</div>           floating top strip
- *   <div data-glass="modal">…</div>            heavy floating layer
+ * Scope (deliberately minimal — earlier site-wide rollout caused frame
+ * drops, especially on mobile where backdrop-filter url(SVG) is GPU-heavy):
  *
- * Effect: backdrop-filter chains the shared SVG displacement filter
- * (id=cancri-liquid-glass, injected by cancri_liquid_glass.js) which
- * warps the backdrop like a real piece of curved glass, then blurs and
- * saturates the result. Per-variant CSS variables fine-tune blur depth
- * and the inner rim highlight intensity.
+ *   • Composer action buttons   (.send-btn / .voice-btn / .composer-tool-btn)
+ *   • Model picker dropdown     (.model-dropdown)
  *
- * Graceful degradation: Safari/Firefox don't support url() filters
- * chained inside backdrop-filter — those browsers automatically fall
- * back to a standard frosted blur via the @supports query below. The
- * UI still looks fine, just without the refractive bend.
+ * Everything else (composer body, modals, announcement carousel, admin
+ * stat cards…) was rolled back because the layered SVG displacement filter
+ * is too expensive to run on full-viewport / animated surfaces.
+ *
+ * Usage:
+ *   <button data-glass="button">…</button>   small pill / icon button
+ *   <div data-glass="card">…</div>           dropdown / floating menu
+ *
+ * Browsers without backdrop-filter: url() chain support (Safari, Firefox)
+ * fall back to plain frosted blur via @supports. Mobile / coarse-pointer
+ * devices ALSO fall back to plain blur regardless, because the SVG
+ * displacement pipeline destroys frame budgets on mobile GPUs.
  */
 
-/* ── Base surface ───────────────────────────────────────────────── */
+/* ── Base refractive surface ───────────────────────────────────── */
 
 [data-glass] {
-    /* Required so ::after can sit on top with absolute positioning. We
-       use `isolation` rather than forcing position: relative because some
-       targets (modals) already manage their own positioning explicitly. */
     position: relative;
     isolation: isolate;
-
-    /* Almost-transparent tint. The visual punch comes from the warped
-       backdrop showing through, NOT from a heavy white wash. */
     background-color: rgba(255, 255, 255, var(--lg-tint, 0.05)) !important;
-
-    /* Modern (Chrome / Edge): chain SVG filter + tiny blur + saturate. */
     backdrop-filter:
         url(#cancri-liquid-glass)
         blur(var(--lg-blur, 2px))
-        saturate(var(--lg-sat, 140%))
+        saturate(140%)
         brightness(1.05);
     -webkit-backdrop-filter:
         url(#cancri-liquid-glass)
         blur(var(--lg-blur, 2px))
-        saturate(var(--lg-sat, 140%))
+        saturate(140%)
         brightness(1.05);
 }
 
-/* Specular rim. ::after paints only the inset shadow ring, leaving the
-   middle of the pseudo-element fully transparent so the host's text /
-   icons / children remain visible through it. */
+/* Specular rim — paints only the inset ring, middle stays fully
+   transparent so the host element's text / icons show through. */
 [data-glass]::after {
     content: "";
     position: absolute;
@@ -60,8 +53,6 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.06);
 }
 
-/* Light-theme rim: switch from white inset to a softer dark inset so the
-   bevel reads correctly against pale backgrounds. */
 html[data-theme="light"] [data-glass]::after {
     box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, var(--lg-rim, 0.55)),
@@ -69,7 +60,7 @@ html[data-theme="light"] [data-glass]::after {
         inset 0 -1px 0 rgba(0, 0, 0, 0.04);
 }
 
-/* ── Variants ───────────────────────────────────────────────────── */
+/* ── Variants ──────────────────────────────────────────────────── */
 
 [data-glass="button"] {
     --lg-blur: 1px;
@@ -85,150 +76,59 @@ html[data-theme="light"] [data-glass]::after {
     --lg-rim-top: 0.34;
 }
 
-[data-glass="banner"] {
-    --lg-blur: 2px;
-    --lg-tint: 0.05;
-    --lg-rim: 0.20;
-    --lg-rim-top: 0.32;
-}
-
-[data-glass="modal"] {
-    --lg-blur: 10px;
-    --lg-tint: 0.04;
-    --lg-rim: 0.20;
-    --lg-rim-top: 0.30;
-}
-
-/* ── Fallback for Safari / Firefox / old Chromium ──────────────── */
-
+/* ── Performance-driven fallbacks ──────────────────────────────────
+ *
+ * 1. Safari / Firefox don't support url() filters chained inside
+ *    backdrop-filter — they auto-fall-back to plain blur.
+ * 2. Mobile / touch devices force plain blur too. SVG displacement on
+ *    mobile GPUs is the single biggest cause of "页面卡死" on this site,
+ *    so we bypass it entirely when (hover: none) or width <= 900px,
+ *    regardless of whether the browser CAN run the SVG filter.
+ * 3. Users who set "reduce motion" or "save data" — same treatment.
+ */
 @supports not (backdrop-filter: url(#x)) {
     [data-glass] {
-        backdrop-filter: blur(14px) saturate(170%);
-        -webkit-backdrop-filter: blur(14px) saturate(170%);
+        backdrop-filter: blur(10px) saturate(150%);
+        -webkit-backdrop-filter: blur(10px) saturate(150%);
+    }
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+    [data-glass] {
+        backdrop-filter: blur(8px) saturate(140%) !important;
+        -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
+    [data-glass] {
+        backdrop-filter: blur(6px) saturate(130%) !important;
+        -webkit-backdrop-filter: blur(6px) saturate(130%) !important;
     }
 }
 
 /* ── Per-element brand carve-outs ──────────────────────────────── */
 
-/* Send button must remain visually "the action" — keep brand orange
-   as a strong tint behind the displacement so it still pops while
-   gaining the refractive rim. */
+/* Send button keeps brand orange as a strong tint behind the displacement
+   so it still reads as "the primary action", not invisible glass. */
 .send-btn[data-glass] {
     background-color: color-mix(
         in srgb,
-        var(--accent) 80%,
+        var(--accent) 82%,
         rgba(255, 255, 255, 0.1)
     ) !important;
     --lg-tint: 0.06;
 }
 
-/* Tool buttons (plus / web search) should stay subtle — they are
-   secondary action affordances, not the primary CTA. */
+/* Tool buttons (+/web search) stay subtle — secondary affordances. */
 .composer-tool-btn[data-glass] {
     --lg-tint: 0.04;
     --lg-rim: 0.24;
 }
 
-/* The composer is the biggest glass element on screen — use the card
-   variant but with a touch more depth so it reads as a substantial
-   floating surface, not a thin overlay. */
-.composer[data-glass] {
+/* Model dropdown sits over varied page background — give it a touch
+   more tint so labels stay legible. */
+.model-dropdown[data-glass] {
+    --lg-tint: 0.06;
     --lg-blur: 4px;
-    --lg-rim: 0.18;
-    --lg-rim-top: 0.28;
 }
-
-/* ── Modal special-case ────────────────────────────────────────────
- *
- * `.modal` is a full-viewport flex wrapper that centers a card. Putting
- * the glass effect on the wrapper itself would make the WHOLE PAGE go
- * glass while a modal is open — too aggressive. The actual visible
- * panel is the modal's direct children (.modal-header / .modal-body /
- * .modal-content / .settings-layout), so we redirect the glass surface
- * to them and neutralize the wrapper's own [data-glass] paint.
- */
-.modal[data-glass="modal"] {
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-.modal[data-glass="modal"]::after {
-    display: none;
-}
-
-.modal[data-glass="modal"].open > .modal-header,
-.modal[data-glass="modal"].open > .modal-body,
-.modal[data-glass="modal"].open > .settings-layout,
-.modal[data-glass="modal"].open > .modal-content,
-.modal[data-glass="modal"].show > .modal-header,
-.modal[data-glass="modal"].show > .modal-body,
-.modal[data-glass="modal"].show > .settings-layout,
-.modal[data-glass="modal"].show > .modal-content {
-    background-color: color-mix(in srgb, var(--panel) 65%, transparent) !important;
-    backdrop-filter:
-        url(#cancri-liquid-glass)
-        blur(12px)
-        saturate(150%)
-        brightness(1.04);
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
-    box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28),
-        0 30px 80px rgba(0, 0, 0, 0.35);
-}
-
-/* ── Apple-rounded corners (CSS approximation) ─────────────────────
- *
- * Bump historical 18px corner radii into the 22-26px Apple iOS sweet
- * spot. WebKit (Safari) already auto-renders continuous corners at
- * radii ≥ ~16px; Blink (Chrome) approximates them closely enough to
- * read as "Apple-rounded" without per-element clip-path JS that would
- * interfere with existing box-shadow / drop-shadow effects.
- *
- * If you need a true superellipse later, wrap and use clip-path: path().
- */
-.message.user .message-content {
-    border-radius: 22px !important;
-}
-
-[data-workbench-composer],
-.composer {
-    border-radius: 24px !important;
-}
-
-#settingsModal.modal.large.open,
-.modal.large.open,
-.modal.medium.open,
-.modal.small.open {
-    /* When the modal CSS overrides border-radius via .modal.large etc.
-       we ensure those wrappers stay in the Apple sweet spot too. */
-    border-radius: 22px;
-}
-
-.modal[data-glass="modal"] > .modal-header:first-child,
-.modal[data-glass="modal"] > .modal-content {
-    border-top-left-radius: 22px;
-    border-top-right-radius: 22px;
-}
-.modal[data-glass="modal"] > .modal-body:last-child {
-    border-bottom-left-radius: 22px;
-    border-bottom-right-radius: 22px;
-}
-
-/* ── Apple-style continuous corners (CSS approximation) ────────────
- *
- * True iOS squircles need SVG clip-path because CSS `border-radius`
- * draws quarter-circle arcs (curvature jumps at the edge). At small
- * radii (≤14 px) nobody can tell — at 22-30 px the difference shows.
- *
- * As a low-risk site-wide approximation we just bump the radii of the
- * historically "rounded" elements up into the 22-26 px range, where
- * WebKit (Safari) already renders continuous corners by default and
- * Blink (Chrome) approximates them closely enough that the look reads
- * as "Apple-rounded" without needing per-element clip-path JS that
- * would interfere with existing box-shadow / drop-shadow effects.
- *
- * If you need true squircles on a specific element later, wrap it and
- * apply clip-path: path() on the inner; cancri_apple_squircle.js
- * (planned phase B) will provide a declarative `data-squircle` attr.
- */

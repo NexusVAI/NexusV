@@ -15,10 +15,10 @@
  * 仍保留在各自的 <style> 中。
  */
 
-/* Site-wide Liquid Glass surface helper. Pulls in [data-glass="*"]
-   utility classes so admin / portal pages can sprinkle the same
-   refractive surfaces the chat composer uses. */
-@import url("../styles/cancri_liquid_glass.css?v=2026-05-14-lg-a");
+/* Liquid Glass helper removed from admin pages 2026-05-14: the SVG
+   displacement filter chained inside backdrop-filter on .nav /
+   .stat-card / .gate was causing visible frame drops on mobile.
+   Chat-side small buttons keep it via chat/styles/cancri_liquid_glass.css. */
 
 /* ─── reset & tokens ────────────────────────────────────────── */
 
@@ -1217,80 +1217,8 @@ td.ip {
   color: var(--cream-on);
 }
 
-/* ─── Auto-applied Liquid Glass on standard portal surfaces ────────
- *
- * Rather than sprinkle `data-glass` across every admin HTML file we
- * piggy-back on the existing class names that already exist on every
- * page: .nav (top navigation bar), .stat-card (admin stat tiles),
- * .gate (login / deny placeholder card). Each becomes a refractive
- * surface automatically, and the @supports fallback keeps it usable
- * on Safari / Firefox.
- *
- * Tuning: nav uses a banner-style very-low blur so the page below
- * stays readable; stat cards use a slightly heavier card-style blur
- * because they sit on a busier dashboard backdrop.
- */
-.nav,
-.topnav,
-.stat-card,
-.gate {
-  position: relative;
-  isolation: isolate;
-  backdrop-filter:
-    url(#cancri-liquid-glass)
-    blur(3px)
-    saturate(140%)
-    brightness(1.04);
-  -webkit-backdrop-filter: blur(10px) saturate(160%);
-}
-
-.nav,
-.topnav {
-  /* The page header strip — very light blur so titles / nav links
-     under it remain legible if anything peeks through. */
-  --_lg-blur: 2px;
-}
-
-.nav::after,
-.topnav::after,
-.stat-card::after,
-.gate::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
-}
-
-/* Light-theme rim: switch the inset to soft dark so the bevel reads
-   on pale backgrounds. */
-html[data-theme="light"] .nav::after,
-html[data-theme="light"] .topnav::after,
-html[data-theme="light"] .stat-card::after,
-html[data-theme="light"] .gate::after {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
-}
-
-@supports not (backdrop-filter: url(#x)) {
-  .nav,
-  .topnav,
-  .stat-card,
-  .gate {
-    backdrop-filter: blur(14px) saturate(170%);
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
-  }
-}
-
-/* Apple-style continuous corners on the same surfaces. WebKit auto-
-   renders continuous corners at radii ≥ 16px; Blink approximates. */
-.stat-card,
-.gate {
-  border-radius: 18px !important;
-}
+/* Auto-applied Liquid Glass on admin surfaces was removed 2026-05-14
+   after profiling: 5+ full-width .nav / .stat-card backdrop-filter
+   regions, each chaining the SVG displacement filter, caused noticeable
+   frame drops on mobile and added ~80-120ms of paint per dashboard
+   render. The admin look is intentionally industrial, not glassy. */
