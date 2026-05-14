@@ -3,10 +3,11 @@ const ARENA_MODE_MIGRATIONS = {
   direct: "single",
 };
 const ARENA_MODES = new Set(["anonymous", "side_by_side", "single"]);
-function normalizeArenaMode(mode) {
-  const value = String(mode || "").trim();
-  const migrated = ARENA_MODE_MIGRATIONS[value] || value;
-  return ARENA_MODES.has(migrated) ? migrated : "anonymous";
+// 2026-05-14 Phase 1：Arena 全面下线，arenaMode 永久锁定为 single。
+// 保留 ARENA_MODES 常量是为了让旧调用点（setTopArenaMode、syncTopArenaMode、
+// 模型筛选）的逻辑分支自然走 single 路径，不需要批量删除调用站点。
+function normalizeArenaMode(_mode) {
+  return "single";
 }
 
 const savedArenaMode = localStorage.getItem("cancri_arena_mode");
@@ -4416,6 +4417,9 @@ async function handleContextMenuAction(action) {
 }
 
 function setActiveView(view) {
+  // 2026-05-14 Phase 1：Arena/Leaderboard 已下线，所有进入 arena/leaderboard
+  // 的导航统一重定向到 home。保留 view 参数支持其他可能的 view（settings 等）。
+  if (view === "arena" || view === "leaderboard") view = "home";
   state.currentView = view;
   document.body.dataset.view = view;
   document.body.dataset.arenaMode = state.arenaMode;
