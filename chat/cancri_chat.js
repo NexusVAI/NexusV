@@ -1358,7 +1358,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemma-4-31b-it": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "image-fast": DEFAULT_MODEL_ID,
-  "gpt-image-2": DEFAULT_MODEL_ID,
   "gpt-image-2-api456": DEFAULT_MODEL_ID,
   "wan2.7-image-pro": DEFAULT_MODEL_ID,
   "sensenova-u1-fast": DEFAULT_MODEL_ID,
@@ -1414,6 +1413,7 @@ const MODEL_CATALOG = [
   {"id": "claude-sonnet-4-6-thinking", "name": "Claude Sonnet 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
+  {"id": "gpt-image-2", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
@@ -6482,7 +6482,8 @@ async function generateImageFromPrompt(
   // "else" branch below instead kicks off an async task (DashScope-style)
   // and polls /task until SUCCEED/FAILED. 当前下拉里唯一的图像模型是
   // grok-imagine-image-lite，走 OpenAI-style 同步返回。
-  const isOpenAIImage = imageModel === "grok-imagine-image-lite";
+  const isOpenAIImage =
+    imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2";
   // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
   const imageSize = "1024x1024";
 
@@ -6505,7 +6506,7 @@ async function generateImageFromPrompt(
 
   // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
   // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-  const noI2iModels = new Set(["grok-imagine-image-lite"]);
+  const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2"]);
   if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
     setImageGenerationBusy(false);
     showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
