@@ -270,12 +270,13 @@
                             >
                                 <path d="M12 5v14M5 12h14"></path>
                             </svg>
-                            <span class="sidebar-label">新对战</span>
+                            <span class="sidebar-label">新聊天</span>
                         </div>
                         <div
                             class="nav-row"
                             id="arenaLeaderboardNavBtn"
                             data-view-target="leaderboard"
+                            hidden
                         >
                             <svg
                                 width="18"
@@ -689,7 +690,7 @@
                             aria-label="回到首页"
                             hidden
                         ></a>
-                        <div class="arena-top-mode" id="topArenaModeSelector">
+                        <div class="arena-top-mode" id="topArenaModeSelector" hidden>
                             <button
                                 class="arena-mode-current"
                                 id="topArenaModeBtn"
@@ -1466,7 +1467,7 @@
                     </nav>
                 </section>
 
-                <section class="view" id="leaderboardView">
+                <section class="view" id="leaderboardView" hidden>
                     <div class="leaderboard-page">
                         <aside class="leaderboard-side">
                             <div class="leaderboard-side-section">
@@ -1538,7 +1539,7 @@
                     </div>
                 </section>
 
-                <section class="view" id="arenaView">
+                <section class="view" id="arenaView" hidden>
                     <div class="arena-page">
                         <div class="arena-hero">
                             <div class="arena-kicker">
@@ -2239,7 +2240,7 @@
         <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script defer src="./cancri_chat.js?v=2026-05-14i-new-models"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-14k-claude-phase1"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
