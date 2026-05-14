@@ -195,7 +195,9 @@
           showMsg('申请已提交，请等待审核。', false);
           setTimeout(() => checkExisting(), 1000);
         } else {
-          showMsg(data.error || '提交失败', true);
+          // 优先用后端的友好中文 message，其次再回退到 error / code，
+          // 防止用户看到生硬的错误码（如 "invalid_purpose"）。
+          showMsg(data.message || data.error || data.code || '提交失败', true);
         }
       } catch (e) {
         showMsg('网络错误', true);
