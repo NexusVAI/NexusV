@@ -23,6 +23,16 @@
     </script>
     <link rel="icon" type="image/png" href="Logo/Cancri.png">
     <link rel="apple-touch-icon" href="Logo/Cancri.png">
+    <!-- 预热主站会跳转到 /chat/、/chat/api/ 子站时所需的第三方连接。
+         用户在主站停留期间 TLS 握手已完成，跳转过去几乎零延迟。
+         preconnect 比 dns-prefetch 多做完整 TCP+TLS，提供后者兜底
+         给老浏览器。crossorigin 是 CORS origin 的必要修饰。 -->
+    <link rel="preconnect" href="https://diusqgphvybnzazgopor.supabase.co" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://diusqgphvybnzazgopor.supabase.co">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://challenges.cloudflare.com">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/navbar.css">
     <link rel="stylesheet" href="css/mobile-menu.css">
