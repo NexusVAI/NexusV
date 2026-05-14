@@ -632,6 +632,7 @@ function applyBackendModelBlock(payload, modelId = currentModel) {
       "model_unavailable",
       "model_temporary_failure",
       "model_quota_exceeded",
+      "model_free_hour_limit",
     ].includes(payload.code)
   )
     return false;
@@ -641,7 +642,11 @@ function applyBackendModelBlock(payload, modelId = currentModel) {
     (Number.isFinite(retryAfter) && retryAfter > 0
       ? retryAfter * 1000
       : MODEL_LOCK_DURATION_MS);
-  const reason = payload.code === "model_quota_exceeded" ? "quota" : "unavailable";
+  const reason =
+    payload.code === "model_quota_exceeded" ||
+    payload.code === "model_free_hour_limit"
+      ? "quota"
+      : "unavailable";
   setModelQuotaLock(modelId, until, reason);
   updateModelDropdownIndicators();
   persistModelTelemetryCache();
@@ -733,6 +738,13 @@ function getQuotaLockMessage(modelId = currentModel) {
   const status = getModelStatus(modelId);
   if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) {
     if (status.lockReason === "quota") {
+      if (modelId === "claude-opus-4-7") {
+        const remainingSeconds = Math.max(
+          1,
+          Math.ceil((status.lockedUntil - now) / 1000),
+        );
+        return `Claude Opus 4.7 免费共享额度每小时 10 次已用完，约 ${formatCountdownDuration(remainingSeconds * 1000)} 后恢复；付费用户不受此限制。`;
+      }
       return "模型额度已超，请切换模型重试。";
     }
     return "当前模型暂时不可用，请切换其他模型重试。";
@@ -1382,8 +1394,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "qwen3.5-omni-plus": DEFAULT_MODEL_ID,
   // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
   "grok-4.3": DEFAULT_MODEL_ID,
-  // claude-opus-4-7 是 PRIORITY 残留但 catalog 从未注册过
-  "claude-opus-4-7": DEFAULT_MODEL_ID,
 };
 // 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则
 // 排序时会被忽略，等于排在最后。
@@ -1415,6 +1425,9 @@ const MODEL_CATALOG = [
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
+  {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "freeLimitNote": "免费共享 10/h，付费不限"},
+  {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
@@ -1522,6 +1535,7 @@ const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
   if (entry.thinking) tags.push("思考");
   if (entry.kind === "image") tags.push("图像");
   if (entry.kind === "video") tags.push("视频");
+  if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
   const meta = {
     id: entry.id,
     canonicalId: entry.id,
@@ -8748,6 +8762,15 @@ async function streamChatCompletionRound(
         });
       }
       throw new Error("已取消排队。");
+    }
+    const parsedLimit = parseBackendErrorPayload(errorText);
+    if (parsedLimit.code === "model_free_hour_limit") {
+      applyBackendModelBlock(parsedLimit, modelId);
+      throw new Error(
+        parsedLimit.message ||
+          getQuotaLockMessage(modelId) ||
+          "Claude Opus 4.7 免费共享额度每小时 10 次已用完，请稍后再试。",
+      );
     }
     throw new Error(
       getQuotaLockMessage(modelId) || "模型额度已超，请切换模型重试。",

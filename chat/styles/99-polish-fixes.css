@@ -371,6 +371,7 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
 .message.user .message-content {
     box-shadow: none;
     line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .message-actions {
