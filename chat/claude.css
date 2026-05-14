@@ -1,0 +1,1601 @@
+/* =============================================================
+   claude.css — 1:1 Claude.ai UI 复刻覆盖层
+   ----------------------------------------------------------------
+   引用顺序：在所有老 CSS 之后 link，所以这里的规则用 !important
+   或更高优先级选择器（#id）来确保赢过 cancri_chat.css / 99-polish-fixes.css
+   等的同名规则。
+   修改原则：
+     - 仅做"视觉/布局"层 override，不动任何 DOM 结构和事件绑定
+     - 所有 cancri_chat.js 依赖的 ID 都保留可访问
+     - 隐藏（display:none）老的不需要展示的元素，但不破坏其 ID 引用
+   ============================================================= */
+
+/* ───────────────────────────────────────────────────────────
+   1. THEME TOKENS（强制锁定 Claude 配色）
+   ─────────────────────────────────────────────────────────── */
+html, html[data-theme="light"], html[data-theme="dark"] {
+    --c-bg:        #1a1a1a;     /* 主区背景（中央列） */
+    --c-bg-side:   #1c1c1c;     /* 侧栏背景（更暗一点） */
+    --c-bg-elev:   #262624;     /* 输入框、卡片浮起背景 */
+    --c-bg-elev-2: #2d2d2b;     /* popover / dropdown 卡片 */
+    --c-bg-elev-3: #353532;     /* user message bubble */
+    --c-text:        rgba(245, 240, 230, 0.96);
+    --c-text-soft:   rgba(245, 240, 230, 0.62);
+    --c-text-dim:    rgba(245, 240, 230, 0.42);
+    --c-line:        rgba(255, 255, 255, 0.07);
+    --c-line-strong: rgba(255, 255, 255, 0.13);
+    --c-hover:        rgba(255, 255, 255, 0.05);
+    --c-hover-strong: rgba(255, 255, 255, 0.09);
+    --c-accent:        #c96e4a;
+    --c-accent-hover:  #d97757;
+    --c-accent-soft:   rgba(217, 119, 87, 0.16);
+    --c-sidebar-w: 240px;
+    --c-main-col: 760px;
+    --c-radius:    16px;
+    --c-radius-sm: 10px;
+    --c-radius-pill: 999px;
+    --c-shadow-pop: 0 10px 38px rgba(0, 0, 0, 0.45);
+    --c-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+              "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --c-font-serif: "Source Serif Pro", "Iowan Old Style", "Times New Roman",
+                    Georgia, serif;
+}
+
+/* 强制使用 dark 主题：claude.html 不允许 light 视觉。
+   不动 cancri_chat.js 里的 state.theme 切换逻辑 — 用户从设置切到 light
+   时只是 state 变了，DOM 不变，视觉一致维持 Claude dark。 */
+html, html[data-theme="light"] {
+    color-scheme: dark !important;
+    --bg:       var(--c-bg);
+    --bg-2:     var(--c-bg-side);
+    --bg-3:     var(--c-bg-elev);
+    --panel:    var(--c-bg-elev);
+    --panel-2:  var(--c-bg-elev-2);
+    --panel-3:  var(--c-bg-elev-2);
+    --panel-4:  var(--c-bg-elev);
+    --line:     var(--c-line);
+    --line-2:   var(--c-line-strong);
+    --hover:    var(--c-hover);
+    --hover-strong: var(--c-hover-strong);
+    --text:     var(--c-text);
+    --text-soft:var(--c-text-soft);
+    --text-dim: var(--c-text-dim);
+    --input:    var(--c-bg-elev);
+    --sidebar-bg: var(--c-bg-side);
+    --main-bg:    var(--c-bg);
+    --accent:      var(--c-accent);
+    --accent-soft: var(--c-accent-soft);
+    --msg-user-bg: var(--c-bg-elev-3);
+    --msg-user-border: transparent;
+    --msg-ai-bg:    transparent;
+    --msg-ai-border:transparent;
+    --code-bg:     #14110f;
+    --grain: none;
+}
+
+body {
+    background: var(--c-bg) !important;
+    color: var(--c-text) !important;
+    font-family: var(--c-font) !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ───────────────────────────────────────────────────────────
+   2. APP SHELL
+   ─────────────────────────────────────────────────────────── */
+.app {
+    background: var(--c-bg) !important;
+}
+
+.sidebar {
+    width: var(--c-sidebar-w) !important;
+    background: var(--c-bg-side) !important;
+    border-right: 1px solid var(--c-line) !important;
+}
+
+.main {
+    background: var(--c-bg) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   3. SIDEBAR — Claude 极简风格
+   ─────────────────────────────────────────────────────────── */
+
+/* 顶部品牌区：用 ::before 注入 "Claude" 文字 logo（图标是 cancri，
+   但视觉文字是 Claude 风格 wordmark）。原 .brand-mark 隐藏不影响 ID 引用。 */
+.sidebar-topbar {
+    height: 60px !important;
+    padding: 16px 16px 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+.sidebar-topbar::before {
+    content: "Cancri";
+    font-family: var(--c-font-serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    color: var(--c-text);
+    flex: 1;
+    line-height: 1;
+}
+.sidebar-topbar .brand-mark,
+.sidebar-topbar #brandHomeBtn {
+    display: none !important;
+}
+.sidebar-toggle {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+    color: var(--c-text-soft) !important;
+    flex-shrink: 0;
+}
+.sidebar-toggle:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+
+/* nav rows */
+.sidebar-body {
+    padding: 4px 8px 8px !important;
+    max-height: calc(100vh - 60px - 90px) !important;
+}
+.nav-group {
+    gap: 1px !important;
+}
+.nav-row {
+    height: 34px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    color: var(--c-text-soft) !important;
+    gap: 11px !important;
+}
+.nav-row svg {
+    width: 16px !important;
+    height: 16px !important;
+    opacity: 0.85;
+}
+.nav-row:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.nav-row.active {
+    background: var(--c-hover-strong) !important;
+    color: var(--c-text) !important;
+}
+
+/* 新聊天第一项 — 跟其它 nav-row 视觉一致，不再特殊 */
+#newChatBtn .sidebar-label {
+    font-weight: 450;
+    color: var(--c-text);
+}
+
+/* 折叠时（rail 模式）只显示图标。
+   参考图 ceff02：56px 宽，"Cancri" 文字隐，nav 只剩图标列居中，
+   底部头像保留，"运行历史" 区域全隐。 */
+.sidebar.collapsed {
+    width: 56px !important;
+}
+.sidebar.collapsed .sidebar-topbar {
+    padding: 16px 8px 8px !important;
+    justify-content: center !important;
+}
+.sidebar.collapsed .sidebar-topbar::before {
+    display: none !important;
+}
+.sidebar.collapsed .sidebar-toggle {
+    margin: 0 auto;
+}
+.sidebar.collapsed .sidebar-body {
+    padding: 4px 4px 8px !important;
+}
+.sidebar.collapsed .nav-row {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 2px auto !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+}
+.sidebar.collapsed .nav-row .sidebar-label,
+.sidebar.collapsed .nav-row .claude-nav-tag {
+    display: none !important;
+}
+.sidebar.collapsed .claude-recent-title,
+.sidebar.collapsed .recent-wrap,
+.sidebar.collapsed #chatHistoryList,
+.sidebar.collapsed #sidebarSearchWrap {
+    display: none !important;
+}
+.sidebar.collapsed .sidebar-footer {
+    padding: 8px 4px !important;
+}
+.sidebar.collapsed .account-strip {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    justify-content: center !important;
+    gap: 0 !important;
+}
+.sidebar.collapsed .account-strip .account-meta,
+.sidebar.collapsed .account-strip .upgrade-btn,
+.sidebar.collapsed .account-strip .account-arrow {
+    display: none !important;
+}
+
+/* 隐藏原侧栏里的 sidebarLeaderboardPanel（Phase 1 已 display:none，重申） */
+#sidebarLeaderboardPanel,
+#arenaLeaderboardNavBtn {
+    display: none !important;
+}
+
+/* 隐藏 sidebar 里 Phase 1 之后多余的 section title / footer text */
+.sidebar .section-title.section-title-history,
+.sidebar .recent-placeholder {
+    color: var(--c-text-dim) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase;
+    padding: 12px 10px 4px !important;
+}
+
+/* recent-wrap / 历史列表 */
+.recent-wrap, .conversation-list {
+    padding: 0 4px !important;
+}
+.recent-item, .conversation-item {
+    height: 32px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    color: var(--c-text-soft) !important;
+    gap: 8px !important;
+}
+.recent-item:hover, .conversation-item:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.recent-item.active, .conversation-item.active {
+    background: var(--c-hover-strong) !important;
+    color: var(--c-text) !important;
+}
+
+/* 账号底部 strip */
+.sidebar-footer, .account-strip-wrap {
+    border-top: 1px solid var(--c-line);
+    padding: 8px !important;
+}
+.account-strip {
+    height: 52px !important;
+    padding: 8px !important;
+    border-radius: 10px !important;
+    gap: 10px !important;
+}
+.account-strip:hover {
+    background: var(--c-hover) !important;
+}
+.account-strip .avatar {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    background: var(--c-accent) !important;
+    color: white !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.account-strip .account-meta {
+    flex: 1;
+    min-width: 0;
+}
+.account-strip .account-name {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--c-text) !important;
+    line-height: 1.3 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.account-strip .account-plan {
+    font-size: 11px !important;
+    color: var(--c-text-dim) !important;
+    line-height: 1.3 !important;
+}
+
+/* sidebar 底部"账户/升级"按钮 */
+#donateBtn,
+.upgrade-btn {
+    height: 28px !important;
+    padding: 0 10px !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    color: var(--c-text-soft) !important;
+    font-size: 12px !important;
+    border: 1px solid var(--c-line-strong) !important;
+}
+#donateBtn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   4. MAIN HEADER — 极简，只显示中央"免费计划·升级"pill
+   ─────────────────────────────────────────────────────────── */
+.main-header {
+    height: 56px !important;
+    padding: 12px 24px !important;
+    background: var(--c-bg) !important;
+    border-bottom: 0 !important;
+    position: relative;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.main-header .header-left {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 隐藏顶栏 left 侧的所有遗留控件（model-selector / arena 模式 / 移动汉堡），
+   保留它们的 ID 但不显示。模型选择器后面会嵌入到 composer 内部。
+   注意：#modelSelector 视觉上由「12.MODEL DROPDOWN」区块的相对定位 + 嵌入
+   composer-actions 处理；#compareModelSelector / #topArenaModeSelector
+   已在「11.隐藏废弃元素」display:none。 */
+@media (min-width: 768px) {
+    .main-header .header-left > #mobileMenuBtn {
+        display: none !important;
+    }
+}
+
+/* Claude 当前聊天标题：仅 chatting 状态显示在 main-header 左侧 */
+.claude-chat-title {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+    padding: 0 10px;
+    background: transparent;
+    color: var(--c-text);
+    border: 0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    max-width: 50vw;
+    transition: background 160ms;
+}
+.claude-chat-title:hover { background: var(--c-hover); }
+.claude-chat-title-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 50vw;
+}
+.claude-chat-title svg { color: var(--c-text-soft); flex-shrink: 0; }
+
+/* 在 chatting 状态显示标题：通过 body.is-chatting class 联动（claude_ui.js 同步） */
+body.is-chatting .claude-chat-title { display: inline-flex !important; }
+
+/* Claude 中央 pill：免费计划 · 升级 */
+.claude-plan-pill {
+    position: absolute !important;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    height: 28px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--c-radius-pill);
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line-strong);
+    color: var(--c-text-soft);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 160ms, border-color 160ms;
+    z-index: 5;
+}
+.claude-plan-pill:hover {
+    background: var(--c-bg-elev-2);
+    border-color: rgba(255,255,255,0.2);
+}
+.claude-plan-pill .claude-plan-label {
+    color: var(--c-text-soft);
+}
+.claude-plan-pill .claude-plan-divider {
+    color: var(--c-text-dim);
+}
+.claude-plan-pill .claude-plan-cta {
+    color: var(--c-text);
+    font-weight: 600;
+}
+
+/* header-right 隐藏遗留按钮（公告铃 + 登出 toast 按钮等）。账号头像在 sidebar 底部。
+   只保留 share / shrink 等可能用到的元素，将它们样式调淡。 */
+.main-header .header-right {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.main-header .header-right > * {
+    color: var(--c-text-soft);
+}
+
+/* ───────────────────────────────────────────────────────────
+   5. HOME VIEW — Hero / Composer / Suggest pills
+   ─────────────────────────────────────────────────────────── */
+
+/* 隐藏老 NexusV brand / token-expiry-note / 模型品牌滚动条 / 公告条 */
+.mobile-home-brand,
+.token-expiry-note,
+.model-icons-scroll,
+.model-icons-track,
+.home-welcome-notice,
+.compose-tip,
+.home-banner,
+.home-tags,
+.home-disclaimer,
+.broadcast-marquee,
+.donation-promo-card,
+.queue-card {
+    display: none !important;
+}
+
+#homeView {
+    background: var(--c-bg) !important;
+}
+
+#homeView.active {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 主页（非对话态）：chat-messages 不渲染（避免占空间把 composer 推到底部），
+   home-center 占据所有可用高度且垂直居中。 */
+#homeView:not(.chatting) .chat-messages {
+    display: none !important;
+}
+#homeView:not(.chatting) #homeCenter {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto;
+}
+
+/* home-center 居中 */
+#homeCenter {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px !important;
+    max-width: var(--c-main-col) !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    gap: 0 !important;
+}
+
+/* HERO */
+.hero, #heroTitle {
+    font-family: var(--c-font-serif) !important;
+    font-size: 30px !important;
+    font-weight: 400 !important;
+    color: var(--c-text) !important;
+    margin: 0 0 28px !important;
+    text-align: center;
+    line-height: 1.3 !important;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+.hero-star {
+    color: var(--c-accent);
+    font-size: 26px;
+    line-height: 1;
+    display: inline-block;
+    transform: translateY(-1px);
+}
+
+/* COMPOSER 主体 */
+.composer-wrap {
+    width: 100% !important;
+    max-width: 720px !important;
+}
+.composer {
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    border-radius: 18px !important;
+    padding: 14px 14px 8px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18) !important;
+    transition: border-color 200ms;
+}
+.composer:focus-within {
+    border-color: var(--c-line-strong) !important;
+}
+.composer-input {
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--c-text) !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    padding: 6px 4px !important;
+    min-height: 28px !important;
+    max-height: 320px !important;
+    resize: none !important;
+    width: 100%;
+    font-family: var(--c-font) !important;
+}
+.composer-input::placeholder {
+    color: var(--c-text-dim) !important;
+}
+
+/* composer 底部一行：左下 + 按钮、右下 模型名 + 麦克风 + 发送 */
+.composer-bottom {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px;
+    padding-top: 8px !important;
+    margin-top: 0 !important;
+    border-top: 0 !important;
+}
+.composer-tools-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+}
+.composer-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.composer-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.composer-tool-btn,
+.voice-btn,
+.send-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: var(--c-text-soft) !important;
+    border: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    cursor: pointer;
+    transition: background 160ms, color 160ms;
+}
+.composer-tool-btn:hover,
+.voice-btn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.send-btn:not(:disabled) {
+    background: var(--c-accent) !important;
+    color: white !important;
+}
+.send-btn:not(:disabled):hover {
+    background: var(--c-accent-hover) !important;
+}
+.send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* 把 #modelSelector 嵌入到 composer-actions 内（移到右下） */
+#modelSelector {
+    position: relative !important;
+    margin-right: 4px;
+}
+#modelSelector .model-current,
+#modelCurrentBtn {
+    height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: 7px !important;
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--c-text-soft) !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+#modelSelector .model-current:hover,
+#modelCurrentBtn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+#currentModelName {
+    color: inherit !important;
+    font-size: inherit !important;
+}
+
+/* SUGGEST PILLS（写/学习/代码/生活提示/Gmail） */
+.claude-suggest-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    width: 100%;
+    max-width: 720px;
+}
+.claude-suggest {
+    height: 32px;
+    padding: 0 14px;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+    border-radius: var(--c-radius-pill);
+    color: var(--c-text-soft);
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 160ms, border-color 160ms, color 160ms, transform 160ms;
+    font-family: inherit;
+}
+.claude-suggest:hover {
+    background: var(--c-bg-elev-2);
+    border-color: var(--c-line-strong);
+    color: var(--c-text);
+}
+.claude-suggest:active {
+    transform: scale(0.98);
+}
+.claude-suggest svg {
+    color: var(--c-accent);
+    flex-shrink: 0;
+}
+
+/* ───────────────────────────────────────────────────────────
+   6. MODEL DROPDOWN — Claude 选择卡片
+   ─────────────────────────────────────────────────────────── */
+.model-dropdown {
+    background: var(--c-bg-elev-2) !important;
+    border: 1px solid var(--c-line-strong) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--c-shadow-pop) !important;
+    padding: 6px !important;
+    color: var(--c-text);
+    min-width: 320px !important;
+    max-width: 380px !important;
+}
+.model-dropdown .model-search-panel {
+    padding: 8px !important;
+    border-bottom: 1px solid var(--c-line) !important;
+    margin-bottom: 4px;
+}
+.model-dropdown #modelSearchInput {
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    border-radius: 8px !important;
+    color: var(--c-text) !important;
+    font-size: 13px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+}
+.model-dropdown .model-filter-row {
+    gap: 4px !important;
+    margin-top: 6px;
+}
+.model-dropdown .model-filter-chip {
+    height: 26px !important;
+    padding: 0 10px !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    color: var(--c-text-soft) !important;
+    border: 0 !important;
+    font-size: 12px !important;
+}
+.model-dropdown .model-filter-chip.active {
+    background: var(--c-hover-strong) !important;
+    color: var(--c-text) !important;
+}
+
+/* model 选项行 */
+.model-dropdown .model-option {
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    margin: 1px 0 !important;
+    color: var(--c-text) !important;
+    font-size: 13px !important;
+}
+.model-dropdown .model-option:hover {
+    background: var(--c-hover) !important;
+}
+.model-dropdown .model-option.active,
+.model-dropdown .model-option.selected {
+    background: var(--c-hover-strong) !important;
+}
+.model-dropdown .model-option-name {
+    color: var(--c-text) !important;
+    font-weight: 500 !important;
+}
+.model-dropdown .model-option-desc {
+    color: var(--c-text-dim) !important;
+    font-size: 11px !important;
+}
+
+/* Active 模型行右侧 ✓ */
+.model-dropdown .model-option.active {
+    position: relative;
+}
+.model-dropdown .model-option.active::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 6px;
+    height: 11px;
+    border-right: 2px solid var(--c-accent);
+    border-bottom: 2px solid var(--c-accent);
+}
+
+/* 适应性思考开关行 */
+.claude-thinking-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    margin: 4px 0;
+    border-top: 1px solid var(--c-line);
+    border-bottom: 1px solid var(--c-line);
+}
+.claude-thinking-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.claude-thinking-title {
+    color: var(--c-text);
+    font-size: 13px;
+    font-weight: 500;
+}
+.claude-thinking-desc {
+    color: var(--c-text-dim);
+    font-size: 11.5px;
+    line-height: 1.3;
+}
+
+/* 模型品牌组头：更细更淡 */
+.model-dropdown .model-group-header {
+    color: var(--c-text-dim);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 12px 4px;
+    background: transparent !important;
+}
+
+.model-dropdown-footer {
+    border-top: 1px solid var(--c-line) !important;
+    padding: 4px !important;
+    margin-top: 4px;
+}
+.model-page-btn {
+    background: transparent !important;
+    color: var(--c-text-soft) !important;
+    border: 0 !important;
+}
+.model-page-btn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.model-page-info {
+    color: var(--c-text-dim) !important;
+    font-size: 12px !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   7. POPOVERS（账号 / 附件菜单）
+   ─────────────────────────────────────────────────────────── */
+.popover, .popover.account-popover, .popover.plus-popover {
+    background: var(--c-bg-elev-2) !important;
+    border: 1px solid var(--c-line-strong) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--c-shadow-pop) !important;
+    padding: 4px !important;
+    color: var(--c-text);
+    min-width: 220px;
+}
+.popover-item {
+    height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    color: var(--c-text-soft) !important;
+    font-size: 13px !important;
+    gap: 10px !important;
+    display: flex;
+    align-items: center;
+}
+.popover-item:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.popover-item svg {
+    width: 16px !important;
+    height: 16px !important;
+    opacity: 0.85;
+}
+.popover-divider {
+    height: 1px !important;
+    background: var(--c-line) !important;
+    margin: 4px 6px !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   8. CHAT MESSAGES — 用户右块、助手左裸
+   ─────────────────────────────────────────────────────────── */
+.chat-messages {
+    padding: 24px 24px 120px !important;
+    max-width: var(--c-main-col) !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+}
+.chat-messages .message {
+    margin: 16px 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+.chat-messages .message.user-message,
+.chat-messages .message[data-role="user"] {
+    display: flex !important;
+    justify-content: flex-end !important;
+}
+.chat-messages .message.user-message .message-content,
+.chat-messages .message[data-role="user"] .message-content {
+    background: var(--c-bg-elev-3) !important;
+    color: var(--c-text) !important;
+    border-radius: 16px !important;
+    padding: 12px 16px !important;
+    max-width: 70%;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    border: 0 !important;
+}
+.chat-messages .message.assistant-message,
+.chat-messages .message[data-role="assistant"] {
+    display: block !important;
+}
+.chat-messages .message.assistant-message .message-content,
+.chat-messages .message[data-role="assistant"] .message-content {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    color: var(--c-text) !important;
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    max-width: 100%;
+}
+.chat-messages .message-content code,
+.chat-messages .message-content pre {
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    border-radius: 8px !important;
+}
+.chat-messages .message-content code {
+    padding: 1px 5px !important;
+    font-size: 13px !important;
+}
+.chat-messages .message-content pre {
+    padding: 12px !important;
+    overflow-x: auto;
+}
+
+/* 当 chatMessages 进入对话状态（cancri_chat.js 给 #homeView 加 .chatting）：
+   - hero / 5 pill / token-expiry-note / model-icons-scroll 全隐
+   - home-center 从屏幕中心沉到底部，composer 占满底部
+   - chat-messages 占满中间，可滚动 */
+#homeView.chatting .hero,
+#homeView.chatting #heroTitle,
+#homeView.chatting .claude-suggest-row,
+#homeView.chatting .token-expiry-note,
+#homeView.chatting .model-icons-scroll,
+#homeView.chatting .mobile-home-brand,
+#homeView.chatting .nexusv-footer,
+#homeView.chatting .footer-note {
+    display: none !important;
+}
+
+#homeView.chatting {
+    display: flex !important;
+    flex-direction: column !important;
+}
+#homeView.chatting .chat-messages.active {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 16px 24px 8px !important;
+}
+#homeView.chatting .home-center {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    transform: none !important;
+    padding: 8px 24px 16px !important;
+    max-width: var(--c-main-col) !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+}
+#homeView.chatting .composer-wrap {
+    width: 100% !important;
+    max-width: var(--c-main-col) !important;
+    margin: 0 auto !important;
+}
+#homeView.chatting .composer {
+    width: 100% !important;
+    border-radius: 18px !important;
+}
+
+/* 对话进行中底部一行小字"Cancri 错错的，会忘错..." */
+#homeView.chatting::after {
+    content: "Cancri 可能会出错，请核实重要回复信息";
+    display: block;
+    text-align: center;
+    color: var(--c-text-dim);
+    font-size: 11.5px;
+    padding: 6px 24px 14px;
+    flex: 0 0 auto;
+}
+
+/* 对话页顶栏：标题居左 + 中央免费计划 pill 已就位。
+   announcement bell / header-share / shrink-toggle 等不需特殊样式，
+   走 .main-header .header-right > * 的统一灰色 token 即可。 */
+
+/* ───────────────────────────────────────────────────────────
+   9. SETTINGS MODAL — Claude 全屏设置（基本视觉对齐）
+   ─────────────────────────────────────────────────────────── */
+#settingsModal.modal,
+#settingsModal {
+    background: rgba(0,0,0,0.5) !important;
+}
+#settingsModal .modal-content {
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    border-radius: 16px !important;
+    color: var(--c-text);
+    max-width: 920px !important;
+    width: 92vw !important;
+    height: auto !important;
+    max-height: 86vh !important;
+}
+#settingsModal .modal-header,
+#settingsModal .modal-body,
+#settingsModal .modal-footer {
+    background: transparent !important;
+    color: var(--c-text);
+    border-color: var(--c-line) !important;
+}
+#settingsModal .settings-nav-item {
+    border-radius: 8px !important;
+    color: var(--c-text-soft) !important;
+}
+#settingsModal .settings-nav-item:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+#settingsModal .settings-nav-item.active {
+    background: var(--c-hover-strong) !important;
+    color: var(--c-text) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   10. AUTH OVERLAY — 保留现有登录页样式，只微调到 dark Claude
+   ─────────────────────────────────────────────────────────── */
+.auth-overlay {
+    background: var(--c-bg) !important;
+}
+.auth-stage {
+    background: var(--c-bg) !important;
+    color: var(--c-text);
+}
+
+/* ───────────────────────────────────────────────────────────
+   11. 隐藏所有 Phase 1+ 已废弃的元素（双保险）
+   ─────────────────────────────────────────────────────────── */
+#topArenaModeSelector,
+#arenaLeaderboardNavBtn,
+#sidebarLeaderboardPanel,
+#arenaView,
+#leaderboardView,
+#compareModelSelector {
+    display: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   11.5. SIDEBAR ADDITIONS（聊天/项目/文物/自定义/升级 tag/最近标题）
+   ─────────────────────────────────────────────────────────── */
+.claude-nav-tag {
+    margin-left: auto;
+    background: var(--c-accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+}
+.claude-recent-title {
+    color: var(--c-text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 14px 12px 4px;
+    margin-top: 2px;
+}
+/* 隐藏老 NexusV brand-mark + sidebar 底部 promo card / 主题切换按钮 +
+   API 平台等不属于 Claude UI 的元素 */
+.sidebar-promo-card,
+#sidebarThemeToggle,
+.sidebar-footer-actions,
+#sidebarApiPlatformBtn {
+    display: none !important;
+}
+/* sidebar-footer 简化：只保留 account-strip */
+.sidebar-footer {
+    border-top: 1px solid var(--c-line) !important;
+    padding: 10px !important;
+    background: transparent !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   11.6. CLAUDE FULL-PAGE VIEWS（聊天列表 / 项目）
+   ─────────────────────────────────────────────────────────── */
+#claudeChatsView, #claudeProjectsView {
+    background: var(--c-bg) !important;
+    overflow-y: auto;
+}
+#claudeChatsView:not(.active),
+#claudeProjectsView:not(.active) {
+    display: none !important;
+}
+.claude-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 32px 80px;
+    width: 100%;
+}
+.claude-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0 24px;
+}
+.claude-page-title {
+    font-family: var(--c-font-serif);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--c-text);
+    margin: 0;
+    letter-spacing: -0.005em;
+}
+.claude-page-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.claude-primary-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: var(--c-text);
+    color: var(--c-bg);
+    font-size: 13px;
+    font-weight: 500;
+    border: 0;
+    cursor: pointer;
+    transition: opacity 160ms;
+}
+.claude-primary-btn:hover { opacity: 0.85; }
+.claude-secondary-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-text-soft);
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--c-line-strong);
+    cursor: pointer;
+    transition: background 160ms, color 160ms;
+}
+.claude-secondary-btn:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+.claude-sort-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+    padding: 0 10px;
+    color: var(--c-text-soft);
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.claude-sort-pill:hover { background: var(--c-hover); }
+.claude-sort-pill .claude-sort-current { color: var(--c-text); font-weight: 500; }
+
+/* 搜索框（在 chats / projects view 内联） */
+.claude-page-search {
+    position: relative;
+    margin-bottom: 12px;
+}
+.claude-page-search svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c-text-dim);
+    pointer-events: none;
+}
+.claude-page-search input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px 0 38px;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+    border-radius: 10px;
+    color: var(--c-text);
+    font-size: 13.5px;
+    outline: none;
+    font-family: inherit;
+}
+.claude-page-search input::placeholder { color: var(--c-text-dim); }
+.claude-page-search input:focus { border-color: var(--c-line-strong); }
+
+/* 聊天列表条目 */
+.claude-chats-list {
+    margin-top: 8px;
+}
+.claude-chats-list .claude-empty-hint {
+    text-align: center;
+    color: var(--c-text-dim);
+    font-size: 13px;
+    padding: 60px 20px;
+}
+.claude-chat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--c-line);
+    cursor: pointer;
+}
+.claude-chat-row:hover { background: var(--c-hover); }
+.claude-chat-row-title { color: var(--c-text); font-size: 13.5px; font-weight: 500; }
+.claude-chat-row-time { color: var(--c-text-dim); font-size: 12px; }
+
+/* 项目空状态 */
+.claude-projects-empty {
+    text-align: center;
+    padding: 80px 20px 40px;
+}
+.claude-projects-empty-icon {
+    color: var(--c-text-dim);
+    margin-bottom: 18px;
+}
+.claude-projects-empty-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--c-text);
+    margin-bottom: 8px;
+}
+.claude-projects-empty-desc {
+    font-size: 13px;
+    color: var(--c-text-soft);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* ───────────────────────────────────────────────────────────
+   11.65. CLAUDE SETTINGS FULL-PAGE VIEW
+   ─────────────────────────────────────────────────────────── */
+#claudeSettingsView {
+    background: var(--c-bg) !important;
+    overflow-y: auto;
+}
+#claudeSettingsView:not(.active) {
+    display: none !important;
+}
+.claude-settings-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 32px 32px 80px;
+    width: 100%;
+    color: var(--c-text);
+}
+.claude-settings-title {
+    font-family: var(--c-font-serif);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--c-text);
+    margin: 0 0 24px;
+    letter-spacing: -0.005em;
+}
+.claude-settings-layout {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 36px;
+    align-items: start;
+}
+.claude-settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    position: sticky;
+    top: 16px;
+}
+.claude-snav-item {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-text-soft);
+    font-size: 13.5px;
+    font-weight: 500;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 160ms, color 160ms;
+}
+.claude-snav-item:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+.claude-snav-item.active {
+    background: var(--c-hover-strong);
+    color: var(--c-text);
+}
+
+.claude-settings-content {
+    min-width: 0;
+}
+.claude-snav-target { display: none; }
+.claude-snav-target.active { display: block; }
+
+.claude-settings-h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 12px;
+}
+.claude-settings-h2-mt { margin-top: 36px; }
+
+.claude-form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--c-line);
+}
+.claude-form-row:last-child { border-bottom: 0; }
+.claude-form-row-stack {
+    flex-direction: column;
+    align-items: stretch;
+}
+.claude-form-label {
+    color: var(--c-text);
+    font-size: 13.5px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+.claude-form-label-strong {
+    color: var(--c-text);
+    font-size: 14px;
+    font-weight: 500;
+}
+.claude-form-help {
+    color: var(--c-text-dim);
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+.claude-form-help a {
+    color: var(--c-accent);
+    text-decoration: none;
+}
+.claude-form-help a:hover { text-decoration: underline; }
+.claude-form-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+.claude-form-control {
+    flex-shrink: 0;
+}
+.claude-form-input,
+.claude-form-select {
+    height: 32px;
+    padding: 0 10px;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+    border-radius: 8px;
+    color: var(--c-text);
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    min-width: 200px;
+}
+.claude-form-input:focus,
+.claude-form-select:focus { border-color: var(--c-line-strong); }
+.claude-form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.4'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+}
+.claude-form-textarea {
+    width: 100%;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+    border-radius: 10px;
+    color: var(--c-text);
+    font-size: 13.5px;
+    font-family: inherit;
+    padding: 10px 12px;
+    resize: vertical;
+    min-height: 90px;
+    outline: none;
+}
+.claude-form-textarea:focus { border-color: var(--c-line-strong); }
+.claude-form-textarea::placeholder { color: var(--c-text-dim); }
+
+.claude-avatar-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--c-bg-elev-3);
+    color: var(--c-text);
+    font-size: 14px;
+    font-weight: 600;
+    display: grid;
+    place-items: center;
+}
+
+.claude-segmented {
+    display: inline-flex;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 1px;
+}
+.claude-seg-btn {
+    width: 32px;
+    height: 28px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--c-text-soft);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 160ms, color 160ms;
+}
+.claude-seg-btn:hover { background: var(--c-hover); color: var(--c-text); }
+.claude-seg-btn.active { background: var(--c-hover-strong); color: var(--c-text); }
+
+.claude-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+    cursor: pointer;
+}
+.claude-switch input {
+    opacity: 0;
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+}
+.claude-switch-track {
+    position: absolute;
+    inset: 0;
+    background: var(--c-line-strong);
+    border-radius: 999px;
+    transition: background 200ms;
+}
+.claude-switch-track::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 200ms;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.claude-switch input:checked + .claude-switch-track {
+    background: var(--c-accent);
+}
+.claude-switch input:checked + .claude-switch-track::before {
+    transform: translateX(16px);
+}
+
+/* 老 settingsModal 在 Claude UI 模式下永远不弹出 */
+#settingsModal,
+#settingsModal.modal {
+    display: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   11.7. CLAUDE SEARCH MODAL
+   ─────────────────────────────────────────────────────────── */
+.claude-search-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 18vh;
+}
+.claude-search-modal.open {
+    display: flex !important;
+}
+.claude-search-card {
+    width: min(560px, 92vw);
+    background: var(--c-bg-elev-2);
+    border: 1px solid var(--c-line-strong);
+    border-radius: 14px;
+    box-shadow: var(--c-shadow-pop);
+    padding: 4px;
+    color: var(--c-text);
+    max-height: 60vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.claude-search-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 10px 8px 10px 10px;
+    border-bottom: 1px solid var(--c-line);
+}
+.claude-search-icon {
+    color: var(--c-text-dim);
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.claude-search-input-wrap input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    color: var(--c-text);
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+}
+.claude-search-input-wrap input::placeholder { color: var(--c-text-dim); }
+.claude-search-close {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: transparent;
+    color: var(--c-text-soft);
+    border-radius: 6px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+.claude-search-close:hover { background: var(--c-hover); color: var(--c-text); }
+
+.claude-search-results {
+    overflow-y: auto;
+    padding: 4px;
+    max-height: calc(60vh - 56px);
+}
+.claude-search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--c-text-soft);
+    cursor: pointer;
+    font-size: 13.5px;
+}
+.claude-search-row:hover { background: var(--c-hover); color: var(--c-text); }
+.claude-search-row svg { color: var(--c-text-dim); flex-shrink: 0; }
+.claude-search-row-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.claude-search-empty {
+    text-align: center;
+    color: var(--c-text-dim);
+    padding: 30px 12px;
+    font-size: 13px;
+}
+
+/* ───────────────────────────────────────────────────────────
+   12. SCROLLBAR — Claude 风格细滚动条
+   ─────────────────────────────────────────────────────────── */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-line-strong) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: var(--c-line-strong);
+    border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--c-hover-strong); }
+
+/* ───────────────────────────────────────────────────────────
+   13. RESPONSIVE — 移动端折叠 sidebar
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar.is-mobile-open,
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+    #homeCenter {
+        padding: 16px !important;
+    }
+    .hero, #heroTitle {
+        font-size: 24px !important;
+    }
+    .claude-plan-pill {
+        position: static !important;
+        transform: none !important;
+        margin: 0 auto;
+    }
+    .main-header {
+        justify-content: center !important;
+    }
+}
