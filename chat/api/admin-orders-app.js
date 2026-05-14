@@ -53,13 +53,15 @@ async function callGateway(endpoint, payload) {
 }
 
 function showToast(text, kind) {
+    // api-platform.css .toast uses opacity:0 + .show class pattern, not
+    // display:none. Setting inline display:block does nothing because the
+    // base rule keeps opacity:0. Mirror admin-users-app.js's correct impl.
     const t = document.getElementById("toast");
+    if (!t) return;
     t.textContent = text;
     t.className = "toast" + (kind ? " " + kind : "");
-    t.style.display = "block";
-    setTimeout(() => {
-        t.style.display = "none";
-    }, 3500);
+    requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => t.classList.remove("show"), 3500);
 }
 
 function renderOrders() {
