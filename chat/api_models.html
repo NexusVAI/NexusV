@@ -403,6 +403,8 @@
     </footer>
 
     <script src="./cancri_config.js"></script>
+    <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+    <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
     <script>
       const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
       const ANON = window.__SUPABASE_ANON_KEY__;

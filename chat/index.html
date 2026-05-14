@@ -37,6 +37,8 @@
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
         <script src="./cancri_config.js?v=2026-05-13e"></script>
+        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+        <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
         <!-- supabase-js: 2026-05-13 审查后固定到具体 minor 版本。原 `@2` floating
              tag 会被 jsdelivr 任意 redirect 到当前最新 v2.x，被劫持时无法察觉。
              TODO: 添加 SRI integrity hash 完成防劫持：
