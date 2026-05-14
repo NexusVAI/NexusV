@@ -8834,7 +8834,7 @@ async function streamChatCompletionRound(
       mergeToolCallDeltas(toolCalls, delta.tool_calls);
       updateAssistantMessage(assistantMessageId, {
         reasoning: composeReasoningText(priorReasoning, reasoningText),
-        answer: "",
+        answer: finalAnswer,
         thinking: true,
       });
     }
@@ -8850,7 +8850,7 @@ async function streamChatCompletionRound(
         });
         updateAssistantMessage(assistantMessageId, {
           reasoning: composeReasoningText(priorReasoning, reasoningText),
-          answer: "",
+          answer: finalAnswer,
           thinking: true,
         });
       }
@@ -8868,7 +8868,7 @@ async function streamChatCompletionRound(
       }
       updateAssistantMessage(assistantMessageId, {
         reasoning: composeReasoningText(priorReasoning, reasoningText),
-        answer: "",
+        answer: finalAnswer,
         thinking: true,
       });
     }

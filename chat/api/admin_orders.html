@@ -12,6 +12,7 @@
         <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
         <script src="./_anti-debug.js"></script>
+        <script src="../cancri_liquid_glass.js?v=2026-05-14-lg-a"></script>
         <link rel="stylesheet" href="./api-platform.css" />
         <style>
             .order-row {
@@ -144,6 +145,90 @@
                 border-color: var(--accent);
                 color: white;
             }
+
+            /* Inline panel that lets the admin mint an activation code by
+               email (no order required). Reuses the page's existing surface
+               styling so it doesn't feel bolted on. */
+            .grant-panel {
+                margin: 12px 0 18px;
+                padding: 14px 16px;
+                border: 1px dashed var(--border-strong);
+                border-radius: 10px;
+                background: var(--surface-elevated, var(--surface));
+            }
+            .grant-panel-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text);
+                margin: 0 0 4px;
+            }
+            .grant-panel-hint {
+                font-size: 12px;
+                color: var(--text-mute);
+                margin: 0 0 12px;
+                line-height: 1.55;
+            }
+            .grant-form {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: stretch;
+            }
+            .grant-form input,
+            .grant-form textarea {
+                flex: 1 1 220px;
+                min-width: 200px;
+                padding: 8px 10px;
+                border: 1px solid var(--border-strong);
+                border-radius: 6px;
+                background: var(--surface);
+                color: var(--text);
+                font-size: 13px;
+                font-family: inherit;
+                resize: none;
+            }
+            .grant-form textarea {
+                flex: 1 1 280px;
+                min-height: 36px;
+                max-height: 90px;
+            }
+            .grant-form .btn-grant {
+                flex: 0 0 auto;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 6px;
+                background: var(--accent);
+                color: #fff;
+                font-size: 12.5px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+            .grant-form .btn-grant:hover {
+                filter: brightness(1.08);
+            }
+            .grant-form .btn-grant:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+            .grant-result {
+                display: none;
+                margin-top: 12px;
+                padding: 8px 12px;
+                background: rgba(245, 158, 11, 0.1);
+                border: 1px dashed rgba(245, 158, 11, 0.4);
+                border-radius: 6px;
+                font-family: var(--font-mono);
+                font-size: 12.5px;
+                color: var(--text);
+                user-select: all;
+                word-break: break-all;
+            }
+            .grant-result strong {
+                color: #f59e0b;
+            }
+            .grant-result.show {
+                display: block;
+            }
         </style>
     </head>
     <body>
@@ -207,6 +292,29 @@
                     </div>
                 </div>
 
+                <div class="grant-panel">
+                    <div class="grant-panel-title">指定邮箱赠送激活码</div>
+                    <p class="grant-panel-hint">
+                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），系统会立即生成一个一次性激活码。把激活码发给对方，他们在「我的订单」页粘贴即可激活 30 天会员。激活码激活后自动作废，不可重复使用。
+                    </p>
+                    <div class="grant-form">
+                        <input
+                            type="email"
+                            id="grantEmail"
+                            placeholder="对方邮箱（QQ / Foxmail）"
+                            autocomplete="off"
+                            maxlength="200"
+                        />
+                        <textarea
+                            id="grantNote"
+                            placeholder="备注（可选 · 仅站主可见，比如 '送 abc 一个月'）"
+                            maxlength="500"
+                        ></textarea>
+                        <button class="btn-grant" id="grantBtn" type="button">生成激活码</button>
+                    </div>
+                    <div class="grant-result" id="grantResult"></div>
+                </div>
+
                 <div class="filter-group" id="statusFilter">
                     <button class="filter-btn active" data-status="">全部</button>
                     <button class="filter-btn" data-status="submitted">待审核</button>
@@ -234,6 +342,6 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-orders-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./admin-orders-app.js?v=2026-05-13"></script>
+        <script src="./admin-orders-app.js?v=2026-05-14-grant"></script>
     </body>
 </html>

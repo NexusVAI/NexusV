@@ -168,4 +168,18 @@
     getTheme: currentTheme,
     THEME_KEY: THEME_KEY,
   };
+
+  // Auto-load the shared liquid-glass SVG defs so [data-glass] elements
+  // on admin / portal pages actually refract. We load via a same-origin
+  // <script> tag (CSP script-src 'self' permits it). Guarded so it
+  // only injects once even if the page loads api-platform.js twice.
+  (function loadLiquidGlass() {
+    if (document.getElementById("cancri-liquid-glass-defs")) return;
+    if (document.querySelector('script[data-cancri-lg-loader]')) return;
+    var s = document.createElement("script");
+    s.src = "../cancri_liquid_glass.js?v=2026-05-14-lg-a";
+    s.async = true;
+    s.setAttribute("data-cancri-lg-loader", "1");
+    document.head.appendChild(s);
+  })();
 })();

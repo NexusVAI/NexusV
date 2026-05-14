@@ -47,6 +47,10 @@
             rel="stylesheet"
             href="./styles/99-polish-fixes.css?v=2026-05-14c-orbit-mobile-only"
         />
+        <link
+            rel="stylesheet"
+            href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-a"
+        />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底 -->
         <link rel="stylesheet" href="./katex/katex.min.css" />
         <script src="./katex/katex.min.js"></script>
@@ -919,7 +923,7 @@
                 </div>
 
                 <!-- 轮播公告栏 -->
-                <div class="announcement-carousel" id="announcementCarousel">
+                <div class="announcement-carousel" id="announcementCarousel" data-glass="banner">
                     <div class="announcement-track">
                         <div class="announcement-item active">
                             <span class="announcement-icon">🚀</span>
@@ -1060,7 +1064,7 @@
                         </div>
                         <h1 class="hero" id="heroTitle">有什么可以帮忙的？</h1>
                         <div class="composer-wrap">
-                            <div class="composer" data-workbench-composer>
+                            <div class="composer" data-workbench-composer data-glass="card">
                                 <div
                                     class="attachment-preview"
                                     id="attachmentPreview"
@@ -1092,6 +1096,7 @@
                                                 class="composer-tool-btn"
                                                 id="plusTrigger"
                                                 type="button"
+                                                data-glass="button"
                                                 aria-label="添加附件或创建内容"
                                                 title="添加附件"
                                             >
@@ -1112,6 +1117,7 @@
                                                 class="composer-tool-btn web-search-toggle"
                                                 id="webSearchToggle"
                                                 type="button"
+                                                data-glass="button"
                                                 aria-label="本轮允许联网搜索"
                                                 aria-pressed="false"
                                                 title="本轮联网搜索"
@@ -1145,6 +1151,7 @@
                                             <button
                                                 class="voice-btn"
                                                 id="voiceToastBtn"
+                                                data-glass="button"
                                                 aria-label="语音输入"
                                                 title="语音输入"
                                             >
@@ -1173,6 +1180,7 @@
                                             <button
                                                 class="send-btn"
                                                 id="sendChatBtn"
+                                                data-glass="button"
                                                 aria-label="发送消息"
                                                 disabled
                                             >
@@ -1855,7 +1863,7 @@
 
         <div class="scrim" id="scrim"></div>
 
-        <div class="modal large" id="settingsModal" aria-hidden="true">
+        <div class="modal large" id="settingsModal" aria-hidden="true" data-glass="modal">
             <div class="modal-header">
                 <button
                     class="modal-close"
@@ -2001,7 +2009,7 @@
             </div>
         </div>
 
-        <div class="modal small" id="tempChatModal" aria-hidden="true">
+        <div class="modal small" id="tempChatModal" aria-hidden="true" data-glass="modal">
             <div class="modal-header">
                 <div class="modal-title">临时聊天</div>
                 <button
@@ -2096,7 +2104,7 @@
             </div>
         </div>
 
-        <div class="modal medium" id="projectModal" aria-hidden="true">
+        <div class="modal medium" id="projectModal" aria-hidden="true" data-glass="modal">
             <div class="modal-header" style="padding-bottom: 0">
                 <div class="modal-title">创建项目</div>
                 <div style="display: flex; align-items: center; gap: 8px">
@@ -2175,7 +2183,7 @@
             </div>
         </div>
 
-        <div class="modal large" id="privacyPolicyModal" aria-hidden="true">
+        <div class="modal large" id="privacyPolicyModal" aria-hidden="true" data-glass="modal">
             <div class="modal-header">
                 <div class="modal-title">隐私协议</div>
                 <button
@@ -2300,7 +2308,7 @@
             </button>
         </div>
 
-        <div class="modal medium" id="announcementModal" aria-hidden="true">
+        <div class="modal medium" id="announcementModal" aria-hidden="true" data-glass="modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="modal-title">通知</div>
@@ -2384,9 +2392,10 @@
             </div>
         </div>
 
+        <script src="./cancri_liquid_glass.js?v=2026-05-14-lg-a"></script>
         <script src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script src="./cancri_chat.js?v=2026-05-14c-popover-cleanup"></script>
+        <script src="./cancri_chat.js?v=2026-05-14e-stream-preserve"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script src="./cancri_arena.js?v=arena-module-0504"></script>

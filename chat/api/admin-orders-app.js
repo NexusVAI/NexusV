@@ -294,6 +294,86 @@ document
     .getElementById("reload-btn")
     .addEventListener("click", loadOrders);
 
+// Wire up the "邮箱赠码" panel. We attach the listener once on script load
+// (the panel is in static HTML) and reuse callGateway for transport so
+// auth + JSON encoding stay consistent with the rest of the page.
+function wireGrantPanel() {
+    const btn = document.getElementById("grantBtn");
+    const emailInput = document.getElementById("grantEmail");
+    const noteInput = document.getElementById("grantNote");
+    const resultBox = document.getElementById("grantResult");
+    if (!btn || !emailInput || !noteInput || !resultBox) return;
+
+    btn.addEventListener("click", async () => {
+        const email = emailInput.value.trim().toLowerCase();
+        const note = noteInput.value.trim();
+        // Mirror the backend regex so the user gets immediate feedback
+        // instead of waiting for a 400 round-trip.
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showToast("❌ 请输入有效邮箱", "err");
+            emailInput.focus();
+            return;
+        }
+        btn.disabled = true;
+        btn.textContent = "生成中…";
+        resultBox.classList.remove("show");
+        resultBox.innerHTML = "";
+        try {
+            const r = await callGateway("admin_grant_activation_code", {
+                email,
+                admin_note: note,
+            });
+            const code = r.activation_code || "";
+            // Show the code inline (user-select:all on the box) and try to
+            // auto-copy. Auto-copy can fail in some browsers if the click
+            // wasn't user-gesture-tied (it should be here, but we don't
+            // want a copy failure to block displaying the code).
+            resultBox.innerHTML =
+                "✅ 已为 <strong>" +
+                esc(r.email || email) +
+                "</strong> 生成激活码：<br/><strong>" +
+                esc(code) +
+                "</strong><br/><span style=\"font-size:11.5px;color:var(--text-mute);\">已自动复制到剪贴板，点击文本可重新选中。</span>";
+            resultBox.classList.add("show");
+            try {
+                await navigator.clipboard.writeText(code);
+                showToast("✅ 激活码已复制：" + code, "ok");
+            } catch {
+                showToast(
+                    "✅ 已生成（剪贴板权限被拒，请手动复制）",
+                    "ok",
+                );
+            }
+            // Reset the inputs so the admin can immediately grant another
+            // without manually clearing fields. Keep the result visible.
+            emailInput.value = "";
+            noteInput.value = "";
+            // Refresh the order list — the new row should now show up
+            // under "已通过 · 待激活" with admin-grant marker.
+            await loadOrders();
+        } catch (err) {
+            const m =
+                (err.body && (err.body.message || err.body.error)) ||
+                err.message ||
+                "生成失败";
+            showToast("❌ " + m, "err");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "生成激活码";
+        }
+    });
+
+    // Submit on Enter inside the email input for fast workflow.
+    emailInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            btn.click();
+        }
+    });
+}
+
+wireGrantPanel();
+
 async function init() {
     const loading = document.getElementById("loading");
     const loginGate = document.getElementById("login-gate");
