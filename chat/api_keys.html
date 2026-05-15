@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+        <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-keys-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
         <title>API Keys · Cancri 开放平台</title>
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
@@ -154,8 +155,8 @@
                 <div class="card">
                     <p style="margin-bottom: 12px">请先登录。</p>
                     <button
+                        id="login-redirect-btn"
                         class="btn btn-primary"
-                        onclick="location.href = './'"
                     >
                         前往登录
                     </button>
@@ -168,8 +169,8 @@
                         你还没有通过 API 申请审核。
                     </p>
                     <button
+                        id="apply-redirect-btn"
                         class="btn btn-primary"
-                        onclick="location.href = './api_apply.html'"
                     >
                         去申请
                     </button>
@@ -186,7 +187,7 @@
                             id="key-name"
                             placeholder="Key 名称（可选，如：my-project）"
                         />
-                        <button class="btn btn-primary" onclick="generateKey()">
+                        <button id="generate-key-btn" class="btn btn-primary">
                             生成
                         </button>
                     </div>
@@ -197,9 +198,9 @@
                             请立即复制保存，此 key 不会再次显示。
                         </div>
                         <button
+                            id="copy-key-btn"
                             class="btn btn-secondary"
                             style="margin-top: 8px"
-                            onclick="copyKey()"
                         >
                             复制
                         </button>
@@ -267,334 +268,7 @@
         <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
         <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script>
-            // IMPORTANT: storageKey must match cancri_chat.js so session is
-            // shared with main chat page (otherwise login on chat page won't
-            // be visible here)
-            const sb = window.supabase.createClient(
-                window.__SUPABASE_URL__,
-                window.__SUPABASE_ANON_KEY__,
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: false,
-                        storageKey: "cancri_supabase_auth",
-                    },
-                },
-            );
-            const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
-            let currentKeys = [];
-
-            async function init() {
-                const {
-                    data: { user },
-                } = await sb.auth.getUser();
-                document.getElementById("loading").style.display = "none";
-                if (!user || user.is_anonymous) {
-                    document.getElementById("login-section").style.display =
-                        "block";
-                    return;
-                }
-                await loadData();
-            }
-
-            async function getSession() {
-                const {
-                    data: { session },
-                } = await sb.auth.getSession();
-                return session;
-            }
-
-            async function loadData() {
-                const session = await getSession();
-                if (!session) {
-                    document.getElementById("login-section").style.display =
-                        "block";
-                    return;
-                }
-                const resp = await fetch(GW, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: "Bearer " + session.access_token,
-                    },
-                    body: JSON.stringify({ endpoint: "api_my_keys" }),
-                });
-                const data = await resp.json();
-                const hasApproved =
-                    data.applications &&
-                    data.applications.some((a) => a.status === "approved");
-                if (!hasApproved) {
-                    document.getElementById("no-approval").style.display =
-                        "block";
-                    return;
-                }
-                document.getElementById("main-section").style.display = "block";
-                currentKeys = data.keys || [];
-                renderKeys();
-                loadUsage();
-            }
-
-            function renderKeys() {
-                const el = document.getElementById("keys-list");
-                if (currentKeys.length === 0) {
-                    el.innerHTML =
-                        '<div class="empty">暂无 Key，请点击上方生成。</div>';
-                    return;
-                }
-                el.innerHTML = currentKeys
-                    .map((k) => {
-                        const lastUsed = k.last_used_at
-                            ? new Date(k.last_used_at).toLocaleString("zh-CN")
-                            : "从未使用";
-                        return (
-                            '<div class="key-row"><div class="key-info"><div class="key-name">' +
-                            esc(k.name) +
-                            ' <span class="key-tier">(' +
-                            k.tier +
-                            ')</span></div><div class="key-prefix">' +
-                            esc(k.key_prefix) +
-                            '</div><div class="key-meta">创建：' +
-                            new Date(k.created_at).toLocaleDateString("zh-CN") +
-                            " | 最后使用：" +
-                            lastUsed +
-                            '</div></div><div class="key-actions"><button class="btn btn-danger" onclick="deleteKey(\'' +
-                            esc(k.id) +
-                            "', '" +
-                            esc(k.key_prefix) +
-                            '\')" title="撤销此 Key">撤销</button></div></div>'
-                        );
-                    })
-                    .join("");
-            }
-
-            async function deleteKey(keyId, keyPrefix) {
-                if (
-                    !confirm(
-                        '确认撤销 Key "' +
-                            keyPrefix +
-                            '"？此操作不可恢复，撤销后该 Key 立即失效。',
-                    )
-                )
-                    return;
-                try {
-                    const session = await getSession();
-                    const resp = await fetch(GW, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: "Bearer " + session.access_token,
-                        },
-                        body: JSON.stringify({
-                            endpoint: "api_delete_key",
-                            key_id: keyId,
-                        }),
-                    });
-                    const data = await resp.json();
-                    if (resp.ok && data.ok) {
-                        showMsg("Key 已撤销。", false);
-                        await loadData();
-                    } else {
-                        showMsg(data.error || "撤销失败", true);
-                    }
-                } catch (e) {
-                    showMsg("网络错误", true);
-                }
-            }
-
-            async function loadUsage() {
-                try {
-                    const session = await getSession();
-                    const resp = await fetch(GW, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: "Bearer " + session.access_token,
-                        },
-                        body: JSON.stringify({ endpoint: "api_my_usage" }),
-                    });
-                    if (!resp.ok) return;
-                    const data = await resp.json();
-                    renderUsage(data.usage || []);
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-
-            function renderUsage(rows) {
-                const chart = document.getElementById("usage-chart");
-                const axis = document.getElementById("usage-axis");
-                const empty = document.getElementById("usage-empty");
-                const byModelEl = document.getElementById("usage-by-model");
-                if (!rows.length) {
-                    chart.innerHTML = "";
-                    axis.innerHTML = "";
-                    byModelEl.innerHTML = "";
-                    empty.style.display = "block";
-                    document.getElementById("u-total").textContent = "0";
-                    document.getElementById("u-tokens-in").textContent = "0";
-                    document.getElementById("u-tokens-out").textContent = "0";
-                    document.getElementById("u-error-rate").textContent = "0%";
-                    return;
-                }
-                empty.style.display = "none";
-
-                // Aggregate per day for last 30 days
-                const dayBuckets = new Map();
-                const modelBuckets = new Map();
-                let totalIn = 0,
-                    totalOut = 0,
-                    totalCalls = rows.length,
-                    errorCalls = 0;
-                const now = Date.now();
-                const dayMs = 86400 * 1000;
-                for (let i = 29; i >= 0; i--) {
-                    const d = new Date(now - i * dayMs);
-                    const k =
-                        d.getFullYear() +
-                        "-" +
-                        String(d.getMonth() + 1).padStart(2, "0") +
-                        "-" +
-                        String(d.getDate()).padStart(2, "0");
-                    dayBuckets.set(k, 0);
-                }
-                rows.forEach((r) => {
-                    const d = new Date(r.created_at);
-                    const k =
-                        d.getFullYear() +
-                        "-" +
-                        String(d.getMonth() + 1).padStart(2, "0") +
-                        "-" +
-                        String(d.getDate()).padStart(2, "0");
-                    if (dayBuckets.has(k)) dayBuckets.set(k, dayBuckets.get(k) + 1);
-                    const m = r.model || "unknown";
-                    if (!modelBuckets.has(m))
-                        modelBuckets.set(m, { calls: 0, tin: 0, tout: 0 });
-                    const mb = modelBuckets.get(m);
-                    mb.calls++;
-                    mb.tin += Number(r.tokens_in) || 0;
-                    mb.tout += Number(r.tokens_out) || 0;
-                    totalIn += Number(r.tokens_in) || 0;
-                    totalOut += Number(r.tokens_out) || 0;
-                    if (
-                        r.status_code &&
-                        Number(r.status_code) >= 400
-                    )
-                        errorCalls++;
-                });
-
-                const days = Array.from(dayBuckets.entries());
-                const maxCount = Math.max(1, ...days.map(([_, v]) => v));
-                chart.innerHTML = days
-                    .map(([day, count]) => {
-                        const h = Math.max(2, (count / maxCount) * 76);
-                        return `<div class="usage-chart-bar${count > 0 ? "" : " is-empty"}" title="${day}: ${count} 次" style="height:${h}px"></div>`;
-                    })
-                    .join("");
-                axis.innerHTML =
-                    `<span>${days[0][0].slice(5)}</span>` +
-                    `<span>${days[Math.floor(days.length / 2)][0].slice(5)}</span>` +
-                    `<span>${days[days.length - 1][0].slice(5)}</span>`;
-
-                document.getElementById("u-total").textContent = totalCalls;
-                document.getElementById("u-tokens-in").textContent =
-                    totalIn.toLocaleString();
-                document.getElementById("u-tokens-out").textContent =
-                    totalOut.toLocaleString();
-                document.getElementById("u-error-rate").textContent =
-                    totalCalls === 0
-                        ? "0%"
-                        : Math.round((errorCalls / totalCalls) * 100) + "%";
-
-                // By-model breakdown (top 6)
-                const sorted = Array.from(modelBuckets.entries()).sort(
-                    (a, b) => b[1].calls - a[1].calls,
-                );
-                const top = sorted.slice(0, 6);
-                if (top.length === 0) {
-                    byModelEl.innerHTML = "";
-                } else {
-                    const maxModelCalls = Math.max(
-                        ...top.map(([_, v]) => v.calls),
-                    );
-                    byModelEl.innerHTML =
-                        '<div class="model-bar-title">按模型</div>' +
-                        top
-                            .map(([m, v]) => {
-                                const w = (v.calls / maxModelCalls) * 100;
-                                return `<div class="model-bar-row">
-                          <span class="model-bar-name" title="${esc(m)}">${esc(m)}</span>
-                          <div class="model-bar-track"><div class="model-bar-fill" style="width:${w}%"></div></div>
-                          <span class="model-bar-stat">${v.calls} · ${(v.tin + v.tout).toLocaleString()} tok</span>
-                        </div>`;
-                            })
-                            .join("");
-                }
-            }
-
-            async function generateKey() {
-                const name =
-                    document.getElementById("key-name").value.trim() ||
-                    "default";
-                const btn = event.target;
-                btn.disabled = true;
-                btn.textContent = "生成中...";
-                try {
-                    const session = await getSession();
-                    const resp = await fetch(GW, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: "Bearer " + session.access_token,
-                        },
-                        body: JSON.stringify({
-                            endpoint: "api_generate_key",
-                            name,
-                        }),
-                    });
-                    const data = await resp.json();
-                    if (resp.ok && data.key) {
-                        document.getElementById("new-key-value").textContent =
-                            data.key;
-                        document.getElementById("new-key-box").style.display =
-                            "block";
-                        showMsg("Key 生成成功！", false);
-                        await loadData();
-                    } else {
-                        showMsg(data.error || "生成失败", true);
-                    }
-                } catch (e) {
-                    showMsg("网络错误", true);
-                }
-                btn.disabled = false;
-                btn.textContent = "生成";
-            }
-
-            function copyKey() {
-                const key =
-                    document.getElementById("new-key-value").textContent;
-                navigator.clipboard.writeText(key).then(() => {
-                    showMsg("已复制到剪贴板", false);
-                });
-            }
-
-            function showMsg(text, isErr) {
-                const el = document.getElementById("gen-msg");
-                el.textContent = text;
-                el.className = "msg " + (isErr ? "err" : "ok");
-                el.style.display = "block";
-                setTimeout(() => {
-                    el.style.display = "none";
-                }, 5000);
-            }
-
-            function esc(s) {
-                const d = document.createElement("div");
-                d.textContent = s;
-                return d.innerHTML;
-            }
-            init();
-        </script>
+        <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
+        <script src="./api/api-keys-app.js?v=2026-05-15-csp"></script>
     </body>
 </html>
