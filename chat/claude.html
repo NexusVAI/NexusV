@@ -94,7 +94,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-15-mobile-theme"
+            href="./claude.css?v=2026-05-15-fixes-e"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -627,7 +627,17 @@
                             <span>自定义</span>
                         </div>
                         <div class="popover-sep"></div>
-                        <div class="popover-item" id="themeShortcutBtn">
+                        <!-- 2026-05-15 fix(M5)：群友反馈"自定义和设置重复，且个性化点了没反应"。
+                             根因：
+                               - #settingsBtn 和 #themeShortcutBtn 两个项都开同一个老 settingsModal，
+                                 mobile 下渲染破损 + scrim 遮罩黑屏，体感"无反应"。
+                               - #claudeCustomPopoverBtn (自定义) 已经迁到新 claudeSettingsView。
+                             修复：
+                               - 删除 #settingsBtn (设置) 整项 — 跟自定义功能完全重复。
+                               - 给 #themeShortcutBtn (个性化) 加 data-claude-action="open-settings"
+                                 让 claude_ui.js bindCustomNav 接管，open 新的 claudeSettingsView，
+                                 不再走老 modal，scrim 也不会再出。 -->
+                        <div class="popover-item" id="themeShortcutBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
                             <svg
                                 width="18"
                                 height="18"
@@ -647,24 +657,6 @@
                                 <circle cx="12" cy="12" r="3.2"></circle>
                             </svg>
                             <span>个性化</span>
-                        </div>
-                        <div class="popover-item" id="settingsBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"
-                                ></path>
-                                <path
-                                    d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"
-                                ></path>
-                            </svg>
-                            <span>设置</span>
                         </div>
                         <div class="popover-sep"></div>
                         <div class="popover-item" id="exportBtn">
@@ -2612,6 +2604,6 @@
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-15-no-star"></script>
+        <script defer src="./claude_ui.js?v=2026-05-15-fixes-e"></script>
     </body>
 </html>
