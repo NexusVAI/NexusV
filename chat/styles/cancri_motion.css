@@ -482,17 +482,78 @@ html[data-theme="light"] .site-footer-socials > a {
  * (label → input → button). Brand sits top-left, footer microcopy
  * sits below the card. */
 .auth-overlay {
-    background: var(--bg, #1a1a1a) !important;
-    backdrop-filter: none !important;
+    /* 2026-05-15 v2：登录页背景 = 深栗 fallback + 等高线 SVG（auth-bg.svg）。
+       浅色主题切到 #e8d9b8 沙色 fallback + auth-bg-light.svg。
+       去掉了 background 的 !important，让 [data-theme="light"] 选择器能正常
+       覆盖（!important 互相冲突会因 specificity tie 而保留先到的）。 */
+    background: #1a120c;
     -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
     padding: 24px;
-    overflow-y: auto;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
 }
 
-[data-theme="dark"] .auth-overlay {
-    background: #141414 !important;
+html[data-theme="light"] .auth-overlay {
+    background: #e8d9b8;
 }
 
+/* ── beij.html 噪声背景（暖米黄"沙漠地形"质感）─────────── */
+.auth-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.auth-bg-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+/* 2026-05-15 v2：beij 等高线效果，独立 SVG 文件 + diffuseLighting + discrete
+   量化生成"等高线 banding"。深色版 auth-bg.svg（深栗暖色谱），浅色版
+   auth-bg-light.svg（沙色暖谱），切主题只换 url。
+   把 SVG 封装为外部 image resource：filter 在 image rasterize 阶段跑一次，
+   光栅结果被缓存，之后纯 image 不参与每帧 paint/composite，零持续开销。
+   叠的两层 radial-gradient 用于添加 Cancri 暖色 spotlight；浅色主题下
+   把 spotlight 降到几乎透明，避免在沙底上再叠橙色显脏。 */
+.auth-bg-island {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(120% 80% at 50% -10%,
+            rgba(217, 119, 87, 0.28) 0%,
+            rgba(201, 110, 74, 0.14) 22%,
+            transparent 55%),
+        radial-gradient(80% 60% at 10% 110%,
+            rgba(20, 12, 8, 0.45) 0%,
+            transparent 50%),
+        url("../img/auth-bg.svg?v=2026-05-15-topo-c") center/cover no-repeat,
+        #14100c;
+    background-blend-mode: normal, normal, multiply, normal;
+}
+html[data-theme="light"] .auth-bg-island {
+    background:
+        radial-gradient(120% 80% at 50% -10%,
+            rgba(217, 119, 87, 0.10) 0%,
+            transparent 55%),
+        radial-gradient(80% 60% at 10% 110%,
+            rgba(120, 90, 50, 0.12) 0%,
+            transparent 50%),
+        url("../img/auth-bg-light.svg?v=2026-05-15-topo-c") center/cover no-repeat,
+        #e8d9b8;
+    background-blend-mode: normal, normal, multiply, normal;
+}
+.auth-bg-islandt {
+    display: none;
+}
+
+/* auth-stage 浮于背景之上（z-index 1，盖住 .auth-bg z:0）。
+   ⚠️ 严禁给 .auth-stage 加 background — 否则会出一个深色矩形把整
+   个 hero+卡片+footer 包成"外卡片"。背景由 .auth-bg 单独负责。 */
 .auth-stage {
     width: 100%;
     max-width: 440px;
@@ -502,7 +563,111 @@ html[data-theme="light"] .site-footer-socials > a {
     align-items: center;
     gap: 28px;
     position: relative;
+    z-index: 1;
     padding: 80px 0 40px;
+    background: transparent !important;
+}
+
+/* 2026-05-15 v2：登录页外层字色（hero / brand / footer）按 theme 切换。
+   深色：背景是深栗 + 暖棕等高线 → 字色用暖白 #f5f0e6 / 半透明派生
+   浅色：背景是沙色 + 浅暖等高线 → 字色用深栗 #1a120c / 半透明派生
+   卡片内部（.auth-card 内）的字色由 brutalist 米白底固定的深栗主导，
+   不受这里影响（无论 theme 都是 #1a120c on cream）。 */
+.auth-overlay .auth-brand-name,
+.auth-overlay .auth-hero-title {
+    color: #f5f0e6;
+}
+.auth-overlay .auth-hero-subtitle {
+    color: rgba(245, 240, 230, 0.7);
+}
+.auth-overlay .auth-footer-line {
+    color: rgba(245, 240, 230, 0.55);
+}
+.auth-overlay .auth-footer-link {
+    color: rgba(245, 240, 230, 0.85);
+}
+.auth-overlay .auth-footer-link:hover {
+    color: #f5f0e6;
+}
+
+html[data-theme="light"] .auth-overlay .auth-brand-name,
+html[data-theme="light"] .auth-overlay .auth-hero-title {
+    color: #1a120c;
+}
+html[data-theme="light"] .auth-overlay .auth-hero-subtitle {
+    color: rgba(26, 18, 12, 0.65);
+}
+html[data-theme="light"] .auth-overlay .auth-footer-line {
+    color: rgba(26, 18, 12, 0.55);
+}
+html[data-theme="light"] .auth-overlay .auth-footer-link {
+    color: rgba(26, 18, 12, 0.78);
+}
+html[data-theme="light"] .auth-overlay .auth-footer-link:hover {
+    color: #1a120c;
+}
+
+/* 2026-05-15：登录页左下角 theme switch（brutalist 圆形）。
+   fixed 定位独立于 .auth-stage flow，跟卡片同 米白底/深栗边/4px 实色
+   阴影 视觉语言。.auth-theme-icon-sun / -moon 用 data-theme 切换显隐
+   （CSS selector，无需 JS 操作 hidden）。
+   位置 left/bottom 16px，z-index 2 浮于背景之上、低于卡片（卡片
+   z:1 但容器是 .auth-stage 内，按钮在 stage 外不会被卡片盖住）。 */
+.auth-theme-toggle {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 2;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 999px;
+    border: 2px solid #1a120c;
+    background: #f7f1e6;
+    color: #1a120c;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 3px 3px 0 0 #1a120c;
+    transition:
+        transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.auth-theme-toggle:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 0 #1a120c;
+}
+.auth-theme-toggle:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 0 #1a120c;
+}
+.auth-theme-toggle:focus-visible {
+    outline: none;
+    box-shadow:
+        3px 3px 0 0 #1a120c,
+        0 0 0 3px rgba(217, 119, 87, 0.4);
+}
+
+/* 2026-05-15 v2：浅色主题下反相 — 深栗按钮放在沙色背景上，对比清晰。
+   border 跟 bg 同色（#1a120c），视觉上是一个无边的深色圆 + offset 阴影，
+   保持 brutalist 风格。icon 翻成米白，跟深底对比。 */
+html[data-theme="light"] .auth-theme-toggle {
+    background: #1a120c;
+    color: #f7f1e6;
+}
+
+.auth-theme-icon {
+    pointer-events: none;
+    display: block;
+}
+/* data-theme="light"：显示太阳（点击会切到 dark） */
+html[data-theme="light"] .auth-theme-icon-moon,
+html:not([data-theme="dark"]) .auth-theme-icon-moon {
+    display: none;
+}
+html[data-theme="dark"] .auth-theme-icon-sun {
+    display: none;
 }
 
 .auth-brand {
@@ -579,12 +744,18 @@ html[data-theme="light"] .site-footer-socials > a {
 }
 
 .auth-card {
+    /* 2026-05-15：整卡 Brutalist 风格（参考 78.html）。米白底 + 深栗
+       2px 实边 + 8px 偏移实色阴影（无 blur）。
+       ⚠️ 卡顿根因修复：原版用 backdrop-filter: blur(14px)，浏览器对
+       卡片下方 SVG fractalNoise + diffuseLighting 输出每帧重新 blur，
+       等于 SVG filter 被反复光栅化，FPS 暴跌。改成实色米白底之后
+       SVG filter 一次 paint 完即被 GPU cache，零持续开销。 */
     width: 100%;
-    background: var(--panel, #1f1f1f) !important;
-    border: 1px solid var(--line-2, rgba(127, 127, 127, 0.18)) !important;
+    background: #f7f1e6 !important;
+    border: 2px solid #1a120c !important;
     border-radius: 14px !important;
-    box-shadow: none !important;
-    padding: 22px !important;
+    box-shadow: 8px 8px 0 0 #1a120c !important;
+    padding: 24px !important;
     display: flex !important;
     flex-direction: column;
     gap: 0;
@@ -593,8 +764,8 @@ html[data-theme="light"] .site-footer-socials > a {
 }
 
 [data-theme="light"] .auth-card {
-    background: #ffffff !important;
-    border-color: rgba(20, 20, 20, 0.08) !important;
+    background: #f7f1e6 !important;
+    border-color: #1a120c !important;
 }
 
 .auth-step {
@@ -605,104 +776,173 @@ html[data-theme="light"] .site-footer-socials > a {
 }
 
 .auth-field-label {
+    /* 2026-05-15：卡内字色统一翻到深栗（卡片改米白后原 text-soft 太淡）。
+       字重 600 + uppercase 一点小气，但 brutalist 风格需要这种"清晰
+       标签"感。 */
     font-size: 12.5px;
-    font-weight: 500;
-    color: var(--text-soft);
+    font-weight: 600;
+    color: #1a120c;
     letter-spacing: 0.1px;
     margin-bottom: 2px;
 }
 
 .auth-input {
+    /* 2026-05-15：Brutalist 输入框 — 几乎纯白底 + 深栗 2px 实边 + 4px
+       偏移实色阴影。focus 时阴影从 4px 拉到 6px + 平移按钮模拟"浮起"
+       感（跟主按钮 hover 一致语言）。 */
     width: 100%;
-    height: 44px !important;
-    border: 1px solid var(--line-2, rgba(127, 127, 127, 0.22)) !important;
-    background: var(--surface, #16161a) !important;
-    color: var(--text) !important;
+    height: 46px !important;
+    border: 2px solid #1a120c !important;
+    background: #fefdf8 !important;
+    color: #1a120c !important;
     font-size: 14.5px !important;
+    font-weight: 500;
     padding: 0 14px !important;
     border-radius: 10px !important;
+    box-shadow: 4px 4px 0 0 #1a120c !important;
     transition:
-        border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 180ms cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
     outline: none;
 }
 
 [data-theme="light"] .auth-input {
-    background: #fafafa !important;
+    background: #fefdf8 !important;
 }
 
 .auth-input::placeholder {
-    color: var(--text-dim, rgba(127, 127, 127, 0.6));
+    color: rgba(26, 18, 12, 0.45);
 }
 
 .auth-input:focus {
-    border-color: var(--accent, #cc7755) !important;
-    box-shadow: 0 0 0 3px rgba(204, 119, 85, 0.12) !important;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #1a120c !important;
+    border-color: #1a120c !important;
 }
 
 .auth-otp-input {
     letter-spacing: 8px !important;
     text-align: center !important;
     font-size: 18px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
+    color: #1a120c !important;
 }
 
+/* 2026-05-15：主登录按钮 — Brutalist 风格（参考 参考物体/78.html）。
+   米白底 + 深栗 2px 实边 + 4px 偏移实色阴影（无 blur），hover 时
+   ::before 从 left:0 width:0 平滑滑动展开到 100% 填 Cancri 橙色，
+   文字色由深栗翻到白。active 时按下感由阴影偏移 4→2px 模拟。
+   底色用 #f7f1e6 (米白 / 跟暖背景调和) 而非纯白，避免在 beij 暖
+   底上显灰。边 / 阴影统一用 #1a120c (跟 overlay 同色) 让按钮像
+   贴在卡片上凿出来的。 */
 .auth-btn {
     width: 100%;
-    height: 44px !important;
-    margin-top: 10px;
+    height: 48px !important;
+    margin-top: 14px;
     border-radius: 10px !important;
-    border: 1px solid transparent !important;
-    background: var(--text, #fafafa) !important;
-    color: var(--bg, #1a1a1a) !important;
-    font-size: 14.5px !important;
-    font-weight: 600;
+    border: 2px solid #1a120c !important;
+    background: #f7f1e6 !important;
+    color: #1a120c !important;
+    font-size: 15px !important;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     cursor: pointer;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 0 #1a120c !important;
     transition:
-        background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-        transform 80ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        color 220ms cubic-bezier(0.4, 0, 0.2, 1),
         opacity 150ms cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 1 !important;
 }
 
+/* ::before = hover 时从左滑入的 Cancri 橙色 fill。
+   用 transform: scaleX(0 → 1) 而不是 width 动画，scaleX 走 GPU 合成层
+   不触发 layout/paint，对低端机也丝滑。 */
+.auth-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(180deg, #d97757 0%, #b25c3e 100%);
+    z-index: -1;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .auth-btn:hover {
-    opacity: 0.88 !important;
+    color: #ffffff !important;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 #1a120c !important;
+}
+.auth-btn:hover::before {
+    transform: scaleX(1);
 }
 
 .auth-btn:active {
-    transform: scale(0.985);
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 0 #1a120c !important;
 }
 
 .auth-btn:disabled {
-    opacity: 0.4 !important;
+    opacity: 0.5 !important;
     cursor: not-allowed;
-    transform: none;
+    transform: none !important;
+    box-shadow: 2px 2px 0 0 #1a120c !important;
+}
+.auth-btn:disabled::before {
+    transform: scaleX(0) !important;
 }
 
 /* .auth-btn-primary intentionally inherits everything from .auth-btn —
-   no override block, lint complains about empty rule. Future variants
-   (Google OAuth, secondary actions, etc.) can sit alongside without
-   needing a placeholder. */
+   future variants (Google OAuth, secondary actions, etc.) can sit
+   alongside without needing a placeholder. */
 
 .auth-divider {
+    /* 2026-05-15：Brutalist divider — 两侧 3px 实色圆角矩形（参考 78.html
+       separator），跟卡片整体语言一致。文字深栗 + 加粗。 */
     display: flex;
     align-items: center;
+    justify-content: center;
     text-align: center;
     margin: 18px 0 10px;
     gap: 10px;
     font-size: 12px;
-    color: var(--text-dim);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-weight: 700;
+    color: #1a120c;
+    letter-spacing: 0.04em;
+    text-transform: none;
 }
 
 .auth-divider::before,
 .auth-divider::after {
     content: "";
     flex: 1;
-    height: 1px;
-    background: var(--line-2, rgba(127, 127, 127, 0.2));
+    max-width: 80px;
+    height: 3px;
+    border-radius: 2px;
+    background: #1a120c;
+}
+
+/* Turnstile loading 文案 #loginTurnstileStatus（cancri_login_captcha.js
+   inline 注入的"正在加载人机验证组件…"）整行隐藏。组件加载完后会自动
+   渲染，loading 文字反而干扰视觉。 */
+#loginTurnstileStatus {
+    display: none !important;
+}
+/* Turnstile 容器自身在 widget 渲染前不要占位，避免空白条 */
+#loginTurnstileContainer {
+    margin: 6px 0 !important;
+}
+#loginTurnstileMount:empty {
+    min-height: 0 !important;
 }
 
 .auth-otp-section {
@@ -715,7 +955,8 @@ html[data-theme="light"] .site-footer-socials > a {
 
 .auth-error {
     font-size: 12.5px;
-    color: #e5556a;
+    font-weight: 600;
+    color: #c0392b;
     min-height: 16px;
     text-align: left;
     margin-top: 6px;
