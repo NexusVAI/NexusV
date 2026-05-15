@@ -1,0 +1,180 @@
+/*
+ * Claude 官方 design tokens（1:1 移植）
+ * 源：Claude 桌面端 1.7196.0 的 window-shared.css
+ * 原始注释：Values taken from claude.ai on 2025-10-17T02:46:12.721Z
+ *
+ * 加载顺序：在 styles/00-tokens.css 之后、styles/02-themes.css 之前
+ * - 不覆盖 02-themes.css 里的 --bg / --text / --line（命名空间分离）
+ * - 主 chat 路径（chat/index.html, chat/claude.html）专用
+ * - 官方 HSL 三元组写法（无 hsl() 包装），便于带 alpha：hsl(var(--bg-100) / 0.5)
+ *
+ * 双 selector 兼容：
+ * - 现有 html[data-theme="light|dark"]（cancri_chat 体系）
+ * - 官方 .darkTheme class（如未来 claude.css 直接借用 Anthropic 写法）
+ */
+
+/* ---------- 全局通用 brand accent（Anthropic 官方在 * 选择器，原样保留）---------- */
+*,
+*::before,
+*::after {
+  --claude-accent-clay: #d97757;
+}
+
+/* ---------- :root / light theme ---------- */
+:root,
+html[data-theme="light"] {
+  /* 品牌强调色 */
+  --accent-brand: 15 63.1% 59.6%;
+  --brand-000: 15 54.2% 51.2%;
+  --brand-100: 15 54.2% 51.2%;
+  --brand-200: 15 63.1% 59.6%;
+  --brand-900: 0 0% 0%;
+
+  /* Pro 紫 */
+  --accent-pro-000: 251 34.2% 33.3%;
+  --accent-pro-100: 251 40% 45.1%;
+  --accent-pro-200: 251 61% 72.2%;
+  --accent-pro-900: 253 33.3% 91.8%;
+
+  /* 一般强调蓝 */
+  --accent-000: 210 73.7% 40.2%;
+  --accent-100: 210 70.9% 51.6%;
+  --accent-200: 210 70.9% 51.6%;
+  --accent-900: 211 72% 90%;
+
+  /* 背景沙色阶 */
+  --bg-000: 0 0% 100%;
+  --bg-100: 48 33.3% 97.1%;
+  --bg-200: 53 28.6% 94.5%;
+  --bg-300: 48 25% 92.2%;
+  --bg-400: 50 20.7% 88.6%;
+  --bg-500: 50 20.7% 88.6%;
+
+  /* 边框 */
+  --border-100: 30 3.3% 11.8%;
+  --border-200: 30 3.3% 11.8%;
+  --border-300: 30 3.3% 11.8%;
+  --border-400: 30 3.3% 11.8%;
+
+  /* 危险红 */
+  --danger-000: 0 58.6% 34.1%;
+  --danger-100: 0 56.2% 45.4%;
+  --danger-200: 0 56.2% 45.4%;
+  --danger-900: 0 50% 95%;
+
+  /* 反色（在彩色按钮上的文字色） */
+  --oncolor-100: 0 0% 100%;
+  --oncolor-200: 60 6.7% 97.1%;
+  --oncolor-300: 60 6.7% 97.1%;
+
+  /* 成功绿 */
+  --success-000: 125 100% 18%;
+  --success-100: 103 72.3% 26.9%;
+  --success-200: 103 72.3% 26.9%;
+  --success-900: 86 45.1% 90%;
+
+  /* 文字层级 */
+  --text-000: 60 2.6% 7.6%;
+  --text-100: 60 2.6% 7.6%;
+  --text-200: 60 2.5% 23.3%;
+  --text-300: 60 2.5% 23.3%;
+  --text-400: 51 3.1% 43.7%;
+  --text-500: 51 3.1% 43.7%;
+}
+
+/* ---------- .darkTheme / dark theme ---------- */
+.darkTheme,
+html[data-theme="dark"] {
+  --accent-brand: 15 63.1% 59.6%;
+  --brand-000: 15 54.2% 51.2%;
+  --brand-100: 15 63.1% 59.6%;
+  --brand-200: 15 63.1% 59.6%;
+  --brand-900: 0 0% 0%;
+
+  --accent-pro-000: 251 84.6% 74.5%;
+  --accent-pro-100: 251 40.2% 54.1%;
+  --accent-pro-200: 251 40% 45.1%;
+  --accent-pro-900: 250 25.3% 19.4%;
+
+  --accent-000: 210 65.5% 67.1%;
+  --accent-100: 210 70.9% 51.6%;
+  --accent-200: 210 70.9% 51.6%;
+  --accent-900: 210 55.9% 24.6%;
+
+  --bg-000: 60 2.1% 18.4%;
+  --bg-100: 60 2.7% 14.5%;
+  --bg-200: 30 3.3% 11.8%;
+  --bg-300: 60 2.6% 7.6%;
+  --bg-400: 0 0% 0%;
+  --bg-500: 0 0% 0%;
+
+  --border-100: 51 16.5% 84.5%;
+  --border-200: 51 16.5% 84.5%;
+  --border-300: 51 16.5% 84.5%;
+  --border-400: 51 16.5% 84.5%;
+
+  --danger-000: 0 98.4% 75.1%;
+  --danger-100: 0 67% 59.6%;
+  --danger-200: 0 67% 59.6%;
+  --danger-900: 0 46.5% 27.8%;
+
+  --oncolor-100: 0 0% 100%;
+  --oncolor-200: 60 6.7% 97.1%;
+  --oncolor-300: 60 6.7% 97.1%;
+
+  --success-000: 97 59.1% 46.1%;
+  --success-100: 97 75% 32.9%;
+  --success-200: 97 75% 32.9%;
+  --success-900: 127 100% 13.9%;
+
+  --text-000: 48 33.3% 97.1%;
+  --text-100: 48 33.3% 97.1%;
+  --text-200: 50 9% 73.7%;
+  --text-300: 50 9% 73.7%;
+  --text-400: 48 4.8% 59.2%;
+  --text-500: 48 4.8% 59.2%;
+}
+
+/* ---------- 全局共用 brand 色（不随主题变） ---------- */
+:root {
+  --white: 0 0% 100%;
+  --black: 0 0% 0%;
+  --kraft: 25 49.7% 66.5%;
+  --book-cloth: 15 52.3% 58%;
+  --manilla: 40 54% 82.9%;
+  --clay: 15 63.1% 59.6%;
+}
+
+/* ---------- Legacy --claude-* 兼容色（hex 写法，cancri_chat 老组件可能直接用）----------
+ * NB: 来自官方注释：Legacy color variables - claude-* needs to be synced with
+ *     updateTitleOverlayColors（Electron 主进程同步窗口标题栏色，对我们不适用）
+ */
+:root,
+html[data-theme="light"] {
+  --claude-foreground-color: black;
+  --claude-background-color: #faf9f5;
+  --claude-secondary-color: #737163;
+  --claude-border: #706b5740;
+  --claude-border-300: #706b5740;
+  --claude-border-300-more: #706b57a6;
+
+  --claude-text-100: #29261b;
+  --claude-text-200: #3d3929;
+  --claude-text-400: #656358;
+  --claude-description-text: #535146;
+}
+
+.darkTheme,
+html[data-theme="dark"] {
+  --claude-foreground-color: white;
+  --claude-background-color: #262624;
+  --claude-secondary-color: #a6a39a;
+  --claude-border: #eaddd81a;
+  --claude-border-300: #6c6a6040;
+  --claude-border-300-more: #6c6a6094;
+  --claude-text-100: #f5f4ef;
+  --claude-text-200: #e5e5e2;
+  --claude-text-400: #b8b5a9;
+  --claude-text-500: #a6a39b;
+  --claude-description-text: #ceccc5;
+}

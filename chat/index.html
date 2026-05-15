@@ -66,6 +66,12 @@
             rel="stylesheet"
             href="./styles/00-tokens.css?v=header-final-0507"
         />
+        <!-- Claude 官方 design tokens（1:1 移植自桌面端 1.7196.0 window-shared.css）。
+             在 00-tokens 之后、02-themes 之前加载，命名空间独立，不覆盖 02-themes 的 --bg/--text/--line。 -->
+        <link
+            rel="stylesheet"
+            href="./styles/01-claude-tokens.css?v=2026-05-15-claude-tokens"
+        />
         <link
             rel="stylesheet"
             href="./styles/02-themes.css?v=header-final-0507"
