@@ -45,18 +45,36 @@
         function isMobile() {
             return window.matchMedia('(max-width: 768px)').matches;
         }
-        btn.addEventListener('click', function (e) {
-            if (!isMobile()) return;  // 桌面端走原逻辑
-            e.stopImmediatePropagation();
-            e.preventDefault();
-            // 关键修复：mobile drawer 永远不允许 rail 模式。
-            // 否则 #mobileMenuBtn 点击只 toggle body.sidebar-open，sidebar 自己
-            // 仍可能在 .collapsed 状态 → 抽屉滑出来但内容是 56px 图标条
-            // （图 10 故障）。打开抽屉时强制去掉 .collapsed，保证完整 240px 内容。
+        // 同步两套 sidebar 语义，避免老/新规则在关闭时冲突：
+        //   - 老 cancri_chat 语义：mobile 下 .collapsed 表示隐藏（默认 add 到 sidebar）
+        //   - 新 claude_ui 语义：body.sidebar-open 表示抽屉打开（drawer 显示）
+        // 单写 body.sidebar-open 关闭时 sidebar 不消失（老 cancri_chat.css mobile
+        // rule 默认 .sidebar { transform: translateX(0) } 胜出）。
+        // 必须打开时去 .collapsed + 加 .sidebar-open；关闭时反向。
+        function openDrawer() {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) sidebar.classList.remove('collapsed');
-            document.body.classList.toggle('sidebar-open');
-        }, true);  // capture-phase 优先于 cancri_chat.js 的 bubbling listener
+            document.body.classList.add('sidebar-open');
+        }
+        function closeDrawer() {
+            const sidebar = document.getElementById('sidebar');
+            document.body.classList.remove('sidebar-open');
+            // 恢复 cancri_chat 老语义：mobile 下 .collapsed = 隐藏。
+            // 这让 cancri_chat.js 的其他逻辑（如 isMobileViewport scrim 判断）
+            // 也能识别"sidebar 已关"状态，保持解耦。
+            if (sidebar) sidebar.classList.add('collapsed');
+        }
+
+        btn.addEventListener('click', function (e) {
+            if (!isMobile()) return;  // 桌面端走原 cancri_chat.js .collapsed 逻辑
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            if (document.body.classList.contains('sidebar-open')) {
+                closeDrawer();
+            } else {
+                openDrawer();
+            }
+        }, true);
         // 点蒙层关闭抽屉
         document.addEventListener('click', function (e) {
             if (!isMobile()) return;
@@ -65,11 +83,15 @@
             if (!sidebar) return;
             if (sidebar.contains(e.target)) return;
             if (btn.contains(e.target)) return;
-            document.body.classList.remove('sidebar-open');
+            closeDrawer();
         });
-        // 屏幕变宽（旋转横屏 / 缩放）时自动清掉 mobile drawer 状态
+        // 屏幕变宽（旋转横屏 / 缩放）时自动清 drawer 状态。
+        // 桌面端不应继承 .collapsed（rail 模式），只保留用户手动切换。
         window.matchMedia('(min-width: 769px)').addEventListener('change', function (e) {
-            if (e.matches) document.body.classList.remove('sidebar-open');
+            if (e.matches) {
+                document.body.classList.remove('sidebar-open');
+                // 桌面端不强制 collapsed，由用户/cancri_chat 自己管。
+            }
         });
     }
 
