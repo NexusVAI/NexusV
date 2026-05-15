@@ -2543,7 +2543,20 @@ async function getLoginCaptchaTokenBestEffort(budgetMs) {
 
 async function sendEmailOtp(email) {
   const client = getSupabaseClient();
-  const { error } = await client.auth.signInWithOtp({ email });
+  // v2026-05-15 修复"发送中..."无限卡死：
+  // 1) 实际把 Turnstile captcha token 传给 Supabase（之前 getLoginCaptchaTokenBestEffort
+  //    定义了但从未调用，等于裸送，Supabase 项目启用 captcha 时直接挂起）。
+  // 2) 给整个调用包 12s timeout，避免 Supabase SDK 在网络抖动时无限等待。
+  const captchaToken = await getLoginCaptchaTokenBestEffort(8000);
+  const opts = { email };
+  if (captchaToken) opts.options = { captchaToken };
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("发送超时，请检查网络后重试")), 12000);
+  });
+  const { error } = await Promise.race([
+    client.auth.signInWithOtp(opts),
+    timeoutPromise,
+  ]);
   if (error) throw error;
 }
 
@@ -4038,7 +4051,11 @@ function applyTheme() {
   if (nextThemeIndex >= 0) {
     themeIndex = nextThemeIndex;
   }
-  root.setAttribute("data-theme", state.theme);
+  // Claude UI 1:1 复刻：视觉永远 dark。state.theme 保留作为用户偏好
+  // （settings 面板的 segmented 按钮状态、appearanceValue label 显示），
+  // 但不写到 DOM 上，避免 [data-theme="light"] 命中 .auth-card / .auth-input
+  // 等老规则导致登录页白底白字（v2026-05-14-claude-ui-b 故障）。
+  root.setAttribute("data-theme", "dark");
   // accentValue=null 表示跟随主题（Claude clay），不写 inline style，
   // 让 cancri_chat.css 中 html[data-theme=...] 里定义的 --accent 生效。
   if (state.accentValue) {

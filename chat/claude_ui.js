@@ -31,6 +31,40 @@
         bindSettingsNav();
         bindHeroGreeting();
         bindChatTitleSync();
+        bindMobileSidebarDrawer();
+    }
+
+    // 10. Mobile sidebar drawer：在 ≤768px 屏幕，点 #mobileMenuBtn 应该
+    //     toggle body.sidebar-open（drawer 滑入），而不是老逻辑的
+    //     sidebar.collapsed（折叠成 56px rail，在 mobile 上看不见）。
+    //     用 capture-phase + stopImmediatePropagation 接管 mobile 点击，
+    //     桌面端走原 cancri_chat.js 的 collapsed 逻辑（不干扰）。
+    function bindMobileSidebarDrawer() {
+        const btn = document.getElementById('mobileMenuBtn');
+        if (!btn) return;
+        function isMobile() {
+            return window.matchMedia('(max-width: 768px)').matches;
+        }
+        btn.addEventListener('click', function (e) {
+            if (!isMobile()) return;  // 桌面端走原逻辑
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            document.body.classList.toggle('sidebar-open');
+        }, true);  // capture-phase 优先于 cancri_chat.js 的 bubbling listener
+        // 点蒙层关闭抽屉
+        document.addEventListener('click', function (e) {
+            if (!isMobile()) return;
+            if (!document.body.classList.contains('sidebar-open')) return;
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            if (sidebar.contains(e.target)) return;
+            if (btn.contains(e.target)) return;
+            document.body.classList.remove('sidebar-open');
+        });
+        // 屏幕变宽（旋转横屏 / 缩放）时自动清掉 mobile drawer 状态
+        window.matchMedia('(min-width: 769px)').addEventListener('change', function (e) {
+            if (e.matches) document.body.classList.remove('sidebar-open');
+        });
     }
 
     // 9. 对话页顶栏标题同步：监听 #homeView 的 .chatting class 与 #chatMessages
@@ -76,11 +110,21 @@
                 attributes: true,
                 attributeFilter: ['class'],
             });
-            // 监听 chatMessages 子节点变化（新消息插入时刷新标题）
-            new MutationObserver(update).observe(chatMessages, {
+            // 关键：只监听顶层 childList（新消息插入/移除时触发），
+            // 不要监听 subtree+characterData——流式输出每字符更新会触发
+            // 上百次回调直接卡死页面（v2026-05-14-claude-ui-b 故障）。
+            // 用 requestAnimationFrame debounce 保险，避免一次插入多个节点重复 update。
+            let scheduled = false;
+            const debouncedUpdate = function () {
+                if (scheduled) return;
+                scheduled = true;
+                requestAnimationFrame(function () {
+                    scheduled = false;
+                    update();
+                });
+            };
+            new MutationObserver(debouncedUpdate).observe(chatMessages, {
                 childList: true,
-                subtree: true,
-                characterData: true,
             });
         }
     }
