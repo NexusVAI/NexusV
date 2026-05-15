@@ -6348,7 +6348,14 @@ function setComposerBusy(isBusy) {
       !homeInput.value.trim() && !pendingAttachments.length;
     sendChatBtn.setAttribute("aria-label", "发送消息");
   }
-  homeInput.disabled = isBusy;
+  // 2026-05-15 fix(M1)：群友反馈"和模型对话后一轮输入框直接点不动，
+  // 没法打字交流了"。根因是 iOS Safari 上 `<textarea disabled>` 切回
+  // disabled=false 后，下一次 tap 可能不能 refocus / 不弹起键盘
+  // （已知 WebKit 行为：disabled 会让元素脱离 hit-test，恢复后焦点状态
+  // 偶发丢失）。改用 readOnly：禁止输入但保留 focus 能力，iOS 软键盘
+  // 不会被卡住。视觉 dim 由 .is-busy class + CSS 处理。
+  homeInput.readOnly = isBusy;
+  homeInput.classList.toggle("is-busy", isBusy);
   if (voiceInputBtn) {
     voiceInputBtn.disabled = isBusy;
   }
