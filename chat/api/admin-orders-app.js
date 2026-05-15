@@ -51,37 +51,144 @@ function fmtScreen(s) {
     return (w && h) ? (w + "\u00d7" + h + ratio + depth) : "—";
 }
 
+// "今天注册" / "3 天" / "2 周" / "5 个月"
+function fmtAgeDays(days) {
+    if (days == null || days < 0) return "—";
+    if (days === 0) return "今天注册";
+    if (days < 7) return days + " 天";
+    if (days < 30) return Math.floor(days / 7) + " 周";
+    if (days < 365) return Math.floor(days / 30) + " 个月";
+    return Math.floor(days / 365) + " 年";
+}
+
+// 字节量级简化
+function fmtTokens(n) {
+    if (n == null) return "—";
+    if (n < 1000) return String(n);
+    if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+}
+
+// 拼 IP 地理位置：优先国家+城市+ISP，缺啥省啥
+function fmtIpGeo(geo) {
+    if (!geo) return null;
+    const parts = [];
+    const country = geo.country_name || geo.country;
+    if (country) parts.push(country);
+    if (geo.region && geo.region !== country) parts.push(geo.region);
+    if (geo.city && geo.city !== geo.region) parts.push(geo.city);
+    const loc = parts.join(" · ");
+    const isp = geo.isp || geo.org;
+    return loc + (isp ? "（" + isp + "）" : "");
+}
+
+// 用户上下文摘要：注册多久 / 历史订单 / 用量 / 是否封禁
+function renderUserContext(o) {
+    const m = o.user_meta;
+    const h = o.order_history;
+    const u = o.recent_usage;
+    const ban = o.ban;
+    const parts = [];
+    if (m) {
+        parts.push(
+            '<span class="ctx-pill" title="账号注册于 ' + esc(m.created_at || "?") + '">' +
+            "🕐 " + esc(fmtAgeDays(m.age_days)) +
+            "</span>"
+        );
+    }
+    if (h && h.total > 1) {
+        // total > 1 说明本订单不是首单，标出来
+        const segs = [];
+        if (h.activated) segs.push(h.activated + " 已激活");
+        if (h.approved) segs.push(h.approved + " 已通过");
+        if (h.rejected) segs.push('<span class="ctx-warn">' + h.rejected + " 被拒</span>");
+        if (h.submitted) segs.push(h.submitted + " 待审");
+        parts.push(
+            '<span class="ctx-pill" title="此 user_id 共 ' + h.total + ' 张订单">📋 历史 ' + segs.join(" / ") +
+            "</span>"
+        );
+    }
+    if (u && u.call_count > 0) {
+        parts.push(
+            '<span class="ctx-pill" title="近 7 天 API 调用">⚡ 7d ' + u.call_count + " 次 · " +
+            esc(fmtTokens((u.tokens_in || 0) + (u.tokens_out || 0))) + " tok</span>"
+        );
+    }
+    if (ban) {
+        const label = ban.active ? "当前已封禁" : "曾被封禁";
+        const cls = ban.active ? "ctx-danger" : "ctx-warn";
+        const reasonStr = ban.reason ? "：" + ban.reason : "";
+        parts.push(
+            '<span class="ctx-pill ' + cls + '" title="' + esc(ban.banned_at) + esc(reasonStr) + '">🚫 ' +
+            esc(label) + "</span>"
+        );
+    }
+    if (parts.length === 0) return "";
+    return '<div class="ctx-row">' + parts.join("") + "</div>";
+}
+
 // 设备指纹块：仅 device 非空时渲染，否则空字符串。
 // "宁可多" 原则：把所有有信号的字段都列出来，多账号判断主要看 suspect.distinct_users + WebRTC leak。
 function renderDeviceBlock(o) {
     const dev = o.device;
     const sus = o.suspect;
-    if (!dev && !sus) {
+    const ipReuse = o.ip_reuse;
+    const ipGeo = o.ip_geo;
+    const dupEmail = o.duplicate_email;
+    const dupQq = o.duplicate_qq;
+
+    // 即使没指纹，只要有重复邮箱/QQ 也要展示风险
+    const hasAnything = dev || sus || ipReuse || ipGeo || dupEmail || dupQq;
+    if (!hasAnything) {
         return '<div class="dev-block dev-empty">设备指纹：暂无（用户从未登录访问过任何挂了 fingerprint.js 的页面）</div>';
     }
 
     const flags = [];
     if (dev && dev.vpn_suspected) flags.push('<span class="dev-flag warn">VPN 嫌疑</span>');
     if (dev && dev.webrtc_leak_detected) flags.push('<span class="dev-flag warn">WebRTC 漏 IP</span>');
+    if (ipGeo && ipGeo.proxy) flags.push('<span class="dev-flag warn">代理 IP</span>');
+    if (ipGeo && ipGeo.hosting) flags.push('<span class="dev-flag warn">机房 IP</span>');
     if (sus && sus.distinct_users >= 2) {
         flags.push('<span class="dev-flag danger">多账号嫌疑：同设备 ' + sus.distinct_users + ' 号</span>');
+    }
+    if (ipReuse && ipReuse.user_count >= 2) {
+        flags.push('<span class="dev-flag warn">同 IP ' + ipReuse.user_count + ' 个账号</span>');
+    }
+    if (dupEmail && dupEmail.count >= 2) {
+        flags.push('<span class="dev-flag danger">同邮箱 ' + dupEmail.count + ' 号</span>');
+    }
+    if (dupQq && dupQq.count >= 2) {
+        flags.push('<span class="dev-flag danger">同 QQ ' + dupQq.count + ' 号</span>');
     }
     const flagsHtml = flags.length ? '<div class="dev-flags">' + flags.join("") + "</div>" : "";
 
     const otherUsers = (sus && Array.isArray(sus.user_ids))
         ? sus.user_ids.filter((u) => u && u !== o.user_id)
         : [];
-    const otherUsersHtml = otherUsers.length
-        ? '<div class="dev-row"><span class="dev-k">同设备其他账号</span><span class="dev-v"><code>'
-            + otherUsers.map((u) => esc(String(u))).join("</code> <code>") + "</code></span></div>"
-        : "";
+    const ipReuseUsers = (ipReuse && Array.isArray(ipReuse.user_ids))
+        ? ipReuse.user_ids.filter((u) => u && u !== o.user_id)
+        : [];
+    const dupEmailUsers = (dupEmail && Array.isArray(dupEmail.user_ids))
+        ? dupEmail.user_ids.filter((u) => u && u !== o.user_id)
+        : [];
+    const dupQqUsers = (dupQq && Array.isArray(dupQq.user_ids))
+        ? dupQq.user_ids.filter((u) => u && u !== o.user_id)
+        : [];
+
+    function userIdsHtml(label, ids) {
+        if (!ids || ids.length === 0) return "";
+        return '<div class="dev-row"><span class="dev-k">' + label + "</span><span class=\"dev-v\"><code>"
+            + ids.map((u) => esc(String(u))).join("</code> <code>") + "</code></span></div>";
+    }
 
     const rows = [];
     if (dev) {
+        const geoLabel = fmtIpGeo(ipGeo);
         rows.push(
-            '<div class="dev-row"><span class="dev-k">真实 IP / 国家</span><span class="dev-v"><code>'
-            + esc(dev.server_ip || "—") + "</code> · "
-            + esc(dev.server_country || "—") + "</span></div>"
+            '<div class="dev-row"><span class="dev-k">真实 IP</span><span class="dev-v"><code>'
+            + esc(dev.server_ip || "—") + "</code>"
+            + (geoLabel ? "<br>" + esc(geoLabel) : (dev.server_country ? " · " + esc(dev.server_country) : ""))
+            + "</span></div>"
         );
         const wrtPub = fmtArr(dev.webrtc_public_ips);
         const wrtLoc = fmtArr(dev.webrtc_local_ips);
@@ -122,12 +229,18 @@ function renderDeviceBlock(o) {
         );
     }
 
+    const otherIdsHtml =
+        userIdsHtml("同设备其他账号", otherUsers) +
+        userIdsHtml("同 IP 其他账号", ipReuseUsers) +
+        userIdsHtml("同邮箱其他账号", dupEmailUsers) +
+        userIdsHtml("同 QQ 其他账号", dupQqUsers);
+
     return (
         '<details class="dev-block"><summary class="dev-summary">'
-        + '<span>设备指纹</span>'
+        + '<span>设备指纹 / 风险信号</span>'
         + flagsHtml
         + "</summary>"
-        + '<div class="dev-detail">' + rows.join("") + otherUsersHtml + "</div>"
+        + '<div class="dev-detail">' + rows.join("") + otherIdsHtml + "</div>"
         + "</details>"
     );
 }
@@ -290,6 +403,7 @@ function renderOrders() {
                     : "") +
                 "</div>" +
                 actions +
+                renderUserContext(o) +
                 renderDeviceBlock(o) +
                 "</div>"
             );
