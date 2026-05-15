@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  2026-05-15 v2: 登录页背景"等高线"纹理（深色版，参考 参考物体/beij.html）。
+  pipeline：
+    1. feTurbulence fractalNoise 生成多倍频地形高度图（noise）
+    2. feGaussianBlur 轻度模糊（使等高线流畅而非粗糙锯齿）
+    3. feDiffuseLighting + feDistantLight 把高度图 3D 化为漫反射光照
+       （surface normal vs 光照方向 = 各像素亮度）→ 输出 0..255 灰度斜坡
+    4. feComponentTransfer discrete 把灰度斜坡量化为 N 个台阶
+       台阶之间的色差边界即为视觉"等高线"
+       tableValues 同时充当调色板（每个 band 一个暖棕→暖白的色值）
+  浏览器加载 SVG 文件作为 image 资源时 filter 只跑一次，结果栅格化进
+  image cache，之后纯 image 不参与每帧 paint/composite，零持续开销。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <filter id="topo" x="0%" y="0%" width="100%" height="100%" filterUnits="userSpaceOnUse">
+      <feTurbulence type="fractalNoise" baseFrequency="0.0045" numOctaves="6" seed="7" result="n"/>
+      <feGaussianBlur in="n" stdDeviation="1.4" result="nb"/>
+      <feDiffuseLighting in="nb" surfaceScale="22" diffuseConstant="1.05" lighting-color="#ffffff" result="lit">
+        <feDistantLight azimuth="135" elevation="55"/>
+      </feDiffuseLighting>
+      <feComponentTransfer in="lit" result="banded">
+        <feFuncR type="discrete" tableValues="0.10 0.20 0.32 0.46 0.62 0.78 0.92"/>
+        <feFuncG type="discrete" tableValues="0.08 0.16 0.26 0.38 0.52 0.66 0.78"/>
+        <feFuncB type="discrete" tableValues="0.05 0.11 0.18 0.28 0.40 0.52 0.62"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="#1a120c"/>
+  <rect width="1600" height="1000" filter="url(#topo)"/>
+</svg>
