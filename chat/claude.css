@@ -104,18 +104,21 @@ html, html[data-theme="dark"], html[data-theme="light"] {
     --c-radius-sm: 10px;
     --c-radius-pill: 999px;
     --c-shadow-pop: 0 10px 38px rgba(0, 0, 0, 0.45);
-    /* 2026-05-15：字体栈对齐 Claude 真机声明（图 1/2/3 DevTools 字体 inspector）。
-       2026-05-15 fonts: 已从 Claude 桌面端 app.asar self-host 4 个 ttf（见上方 §0）。
-         - sans: "Anthropic Sans" 命中 self-host @font-face；system-ui / Segoe UI /
-           Roboto 作 swap fallback（首屏字体下载完成前显示）。
-         - serif: "Anthropic Serif" 同上，Source Serif 4 / Georgia 作 fallback。
-       尾部 CJK fallback 让 Windows/Linux 中文也清晰（Anthropic 自家字体仅含拉丁）。 */
-    --c-font: "Anthropic Sans", system-ui, -apple-system, BlinkMacSystemFont,
-              "Segoe UI", Roboto, Helvetica, Arial,
+    /* 2026-05-15 v4 字体栈对齐：源自 app.asar.extracted/.vite/renderer/main_window/
+       index.html:148 (html font-family) + line 2826 (.font-serif utility)。
+       Claude 真站使用 Tailwind 3.4 默认 sans/serif 栈，差异：
+         - sans 多了 ui-sans-serif（Tailwind 3+ 默认，浏览器系统几何无衬线优先），
+           尾部带 emoji fallback，无 CJK fallback。
+         - serif 是 Anthropic Serif → ui-serif → Georgia → Cambria → Times → serif。
+       我们在 Claude 栈基础上补 CJK fallback（中文用户需要），位置放在 sans-serif
+       generic 之前，确保中文字符命中系统中文字体而非 emoji。 */
+    --c-font: "Anthropic Sans", ui-sans-serif, system-ui,
               "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-              sans-serif;
-    --c-font-serif: "Anthropic Serif", "Source Serif 4", "Source Serif Pro",
-                    "Iowan Old Style", Georgia, "Times New Roman", Times,
+              sans-serif,
+              "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+              "Noto Color Emoji";
+    --c-font-serif: "Anthropic Serif", ui-serif, Georgia, Cambria,
+                    "Times New Roman", Times,
                     "Hiragino Mincho ProN", "Songti SC", "Noto Serif CJK SC",
                     serif;
 }
