@@ -244,7 +244,26 @@ async function doBan() {
     showToast("封禁失败：" + (r.data?.message || r.status), "err");
     return;
   }
-  showToast("已封禁 " + userId.slice(0, 8) + "…", "ok");
+  // 2026-05-16：admin_ban_user 现在会发邮件通知（SMTP），返回 email_notified
+  // 字段。toast 拼一段邮件状态让站长马上看到结果，不用翻 Edge Function 日志。
+  let emailNote = "";
+  if (r.data && r.data.email_notified === true) {
+    emailNote = " · 已发送邮件";
+  } else if (r.data && r.data.email_notified === false) {
+    const reason = r.data.email_skip_reason || "";
+    if (reason === "smtp_not_configured") {
+      emailNote = " · 邮件未发(SMTP 未配置)";
+    } else if (reason === "smtp_send_failed") {
+      emailNote = " · 邮件发送失败";
+    } else if (reason === "no_email_on_record") {
+      emailNote = " · 用户无邮箱";
+    } else if (reason === "skip_email") {
+      emailNote = "";
+    } else {
+      emailNote = " · 邮件未发(" + reason + ")";
+    }
+  }
+  showToast("已封禁 " + userId.slice(0, 8) + "…" + emailNote, "ok");
   $("userIdInput").value = "";
   $("reasonInput").value = "";
   $("notesInput").value = "";
