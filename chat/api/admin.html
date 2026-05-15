@@ -168,6 +168,35 @@
         cursor: not-allowed;
       }
       /* 2026-05-16：审核页 enrichment 视觉 */
+      /* 表格本身设最小宽度：邮箱(240) + 用途(140) + IP(210) + 状态(86)
+         + 时间(130) + 操作(220) + checkbox(32) + 间距 ≈ 1100px，窄屏
+         .table-wrap overflow-x: auto 接管横向滚动，"用途说明"不再被
+         挤成竖排单字。 */
+      .apply-table {
+        min-width: 1100px;
+        width: 100%;
+      }
+      /* 邮箱列内容多行（邮箱 + tier + risk pills + 用户上下文），td 顶
+         对齐让所有列从同一基线起 */
+      .apply-table tbody td {
+        vertical-align: top;
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+      /* 用途说明：允许中文按词拆行，不再被挤成竖排单字 */
+      .apply-table .purpose {
+        word-break: break-word;
+        line-height: 1.5;
+      }
+      /* IP 列 + 地理小字 — 允许换行 */
+      .apply-table .ip {
+        word-break: break-word;
+        line-height: 1.5;
+      }
+      /* 操作列 — 3 个按钮挤一起时允许折行（防止溢出截掉） */
+      .actions {
+        flex-wrap: wrap;
+      }
       .btn-details {
         padding: 6px 10px;
         border: 1px solid var(--border-strong);
@@ -388,18 +417,18 @@
         </div>
 
         <div class="table-wrap" data-sensitive>
-          <table>
+          <table class="apply-table">
             <thead>
               <tr>
                 <th style="width: 32px">
                   <input type="checkbox" id="checkAll" class="row-check" title="全选当前可见" />
                 </th>
-                <th style="width: 200px">邮箱</th>
-                <th>用途说明</th>
-                <th style="width: 130px">IP</th>
-                <th style="width: 92px">状态</th>
-                <th style="width: 138px">提交时间</th>
-                <th style="width: 180px">操作</th>
+                <th style="width: 240px">邮箱</th>
+                <th style="min-width: 140px">用途说明</th>
+                <th style="width: 210px">IP</th>
+                <th style="width: 86px">状态</th>
+                <th style="width: 130px">提交时间</th>
+                <th style="width: 220px">操作</th>
               </tr>
             </thead>
             <tbody id="rows">
@@ -421,7 +450,7 @@
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
       crossorigin="anonymous"
     ></script>
-    <script src="./admin-app.js?v=2026-05-16-enrich"></script>
+    <script src="./admin-app.js?v=2026-05-16-enrich-b"></script>
     <!-- 2026-05-13 审查：原 inline <script>（296-692 行）抽离到 admin-app.js。 -->
   </body>
 </html>
