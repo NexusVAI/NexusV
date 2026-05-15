@@ -135,6 +135,8 @@
   <script src="./cancri_config.js"></script>
   <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
   <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
+  <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+  <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-apply-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
   <script src="./api/api-apply-app.js?v=2026-05-15-csp"></script>

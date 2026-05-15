@@ -727,6 +727,10 @@ function setModelQuotaLock(modelId, untilTs, reason = "quota") {
 }
 
 function getQuotaLockMessage(modelId = currentModel) {
+  const meta = getModelMeta(modelId);
+  if (meta.available === false) {
+    return meta.unavailableMessage || "当前模型暂未开放。";
+  }
   const now = Date.now();
   if (
     usesSharedQuota(modelId) &&
@@ -1165,6 +1169,8 @@ async function bootstrapModelTelemetry() {
 function isModelAvailable(modelId) {
   clearExpiredQuotaLocks();
   if (!isModelEnabled(modelId)) return false;
+  const meta = getModelMeta(modelId);
+  if (meta.available === false) return false;
   const now = Date.now();
 
   if (usesSharedQuota(modelId)) {
@@ -1427,7 +1433,7 @@ const MODEL_PRIORITY = new Map(
 );
 const MODEL_DEPRIORITY = new Map();
 const MODEL_CATALOG = [
-  {"id": "gemini-3.1-pro-preview", "name": "Gemini 3.1 Pro Preview", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
+  {"id": "gemini-3.1-pro", "name": "Gemini 3.1 Pro", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "gemini-3.1-flash-lite-preview", "name": "Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
@@ -1448,10 +1454,11 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "doubao-seedance-2-0-260128", "name": "seedance-2-0-260128", "brand": "Doubao", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "available": false, "unavailableMessage": "模型暂未开放，待群内通知", "freeLimitNote": "模型暂未开放，待群内通知"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "gpt-5.3-codex-spark", "name": "GPT-5.3 Codex Spark", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -1550,6 +1557,8 @@ const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
     multimodal: !!entry.vision,
     imageOnly: entry.kind === "image",
     videoOnly: entry.kind === "video",
+    available: entry.available !== false,
+    unavailableMessage: entry.unavailableMessage || "",
     iconPath: getModelIconPath(entry.brand),
     kind: entry.kind || "chat",
     costTier: entry.costTier || "normal",
@@ -1572,6 +1581,8 @@ function getModelMeta(modelId) {
     multimodal: false,
     imageOnly: false,
     videoOnly: false,
+    available: true,
+    unavailableMessage: "",
     iconPath: "./openai.svg",
     kind: "chat",
     costTier: "normal",
@@ -7056,7 +7067,7 @@ async function generateVideoFromPrompt(
       // 提到顶层，所以这里直接读 taskData.task_status / taskData.video_url。
       const status = String(taskData.task_status || "").toUpperCase();
 
-      if (status === "SUCCEEDED" || status === "SUCCEED") {
+      if (status === "SUCCEEDED" || status === "SUCCEED" || status === "SUCCESS") {
         const videoUrl =
           taskData.video_url ||
           taskData.output_videos?.[0] ||
@@ -9124,14 +9135,22 @@ async function sendMessage(content) {
   const webSearchEnabledForTurn = Boolean(state.webSearchEnabled);
   if ((!query && !attachmentsForSend.length) || state.isStreaming) return;
 
-  stopVoiceRecognition();
-
-  homeView.classList.add("chatting");
-  chatMessages.classList.add("active");
   const turnModelId = currentModel;
   const turnModelMetadata = createModelMetadata(turnModelId);
 
   const turnModelMeta = getModelMeta(turnModelId);
+  const unavailableMessage = !isModelAvailable(turnModelId)
+    ? getQuotaLockMessage(turnModelId)
+    : "";
+  if (unavailableMessage) {
+    showToast(unavailableMessage);
+    return;
+  }
+
+  stopVoiceRecognition();
+
+  homeView.classList.add("chatting");
+  chatMessages.classList.add("active");
   if (turnModelMeta.imageOnly) {
     if (!query && !attachmentsForSend.length) return;
     await sendImageGenerationMessage(
@@ -10242,6 +10261,10 @@ function renderModelDropdownFromCatalog() {
         });
 
         option.classList.toggle("active", model.id === currentModel);
+        if (model.available === false) {
+          option.classList.add("disabled");
+          option.title = model.unavailableMessage || option.title;
+        }
         content.appendChild(option);
       });
   });
@@ -10548,8 +10571,9 @@ if (modelDropdown) {
     const modelId = option.dataset.model;
     if (!isModelAvailable(modelId)) {
       const status = getModelStatus(modelId);
+      const message = getQuotaLockMessage(modelId) || status.error || "额度已用完";
       showToast(
-        `${getModelDisplayName(modelId)} 当前不可用：${status.error || "额度已用完"}`,
+        `${getModelDisplayName(modelId)} 当前不可用：${message}`,
       );
       return;
     }

@@ -429,14 +429,85 @@
         });
     }
 
-    // 5. Plan pill toast
+    // 5. Plan pill toast + 付费用户隐藏升级 UI（2026-05-16）
+    //
+    // 行为：
+    //   - 未登录 / free 用户：保留"免费计划 · 升级"pill，点击弹 toast
+    //   - paid 用户：给 body 加 is-paid-tier class，CSS 隐藏 pill / "升级" nav-tag /
+    //                billing 区"免费计划"文案（替换为剩余天数）
+    //   - 订阅到期：自动回到 free 显示（每页加载时取最新 subscription）
     function bindPlanPill() {
         const pill = document.getElementById('claudePlanPill');
-        if (!pill) return;
-        pill.addEventListener('click', function (e) {
-            e.preventDefault();
-            showToast('升级到 Cancri Pro 以解锁更多模型');
-        });
+        // pill 可能被 paid 路径隐藏，这里点击 handler 仍绑上：从 free 切 paid 不刷新
+        // 页面也不会触发，但反向（paid 过期）仍能在下次刷新自然恢复
+        if (pill) {
+            pill.addEventListener('click', function (e) {
+                e.preventDefault();
+                showToast('升级到 Cancri Pro 以解锁更多模型');
+            });
+        }
+        applyTierUI().catch(function () { /* fail-soft：拿不到 tier 就维持 free 显示 */ });
+    }
+
+    function getCancriAccessToken() {
+        try {
+            const raw = localStorage.getItem('cancri_supabase_auth');
+            if (!raw) return '';
+            const parsed = JSON.parse(raw);
+            return (parsed && parsed.access_token) ? String(parsed.access_token) : '';
+        } catch (e) { return ''; }
+    }
+
+    async function applyTierUI() {
+        const token = getCancriAccessToken();
+        if (!token) return;  // 未登录：保持 free 显示，免发请求
+        const SUPABASE_URL = window.__SUPABASE_URL__ || '';
+        const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+
+        let resp;
+        try {
+            resp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify({ endpoint: 'get_my_subscription', __auth_token: token }),
+            });
+        } catch (e) { return; }
+        if (!resp || !resp.ok) return;
+        const data = await resp.json().catch(function () { return null; });
+        const sub = data && data.subscription;
+        if (!sub) return;
+
+        if (sub.tier === 'paid') {
+            document.body.classList.add('is-paid-tier');
+            updateBillingCopyForPaid(sub);
+        } else {
+            // free（订阅到期或从未付费）：移除 paid class，让 CSS 默认 free 显示生效
+            document.body.classList.remove('is-paid-tier');
+        }
+    }
+
+    // 把 settings 面板里 billing 区的"您当前是免费计划"替换成 paid 状态的文案。
+    // 找不到节点（用户没打开 settings，或 DOM 结构变了）就静默跳过，不抛错。
+    function updateBillingCopyForPaid(sub) {
+        const help = document.querySelector('.claude-settings-section .claude-form-help');
+        if (!help) return;
+        // 仅替换"免费计划"卡片的那段（用 strong 文本特征匹配）
+        const strong = help.querySelector('strong');
+        if (!strong || !/免费计划/.test(strong.textContent || '')) return;
+        const days = (sub.days_remaining > 0)
+            ? sub.days_remaining + ' 天剩余'
+            : '已激活';
+        const exp = sub.expires_at
+            ? new Date(sub.expires_at).toLocaleDateString('zh-CN')
+            : '';
+        help.innerHTML = '您当前是<strong>Cancri Pro</strong>'
+            + (exp ? '。订阅到期 ' + exp : '')
+            + '（<span style="color:var(--text-mute)">' + days + '</span>）';
     }
 
     // 6. 项目页 / 聊天页按钮

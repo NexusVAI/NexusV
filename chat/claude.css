@@ -539,6 +539,13 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     font-weight: 600;
 }
 
+/* 2026-05-16：付费用户（claude_ui.js applyTierUI 给 body 加 .is-paid-tier）
+   隐藏所有"升级"提示。订阅到期后 claude_ui.js 自动移除 class 重新显示。 */
+body.is-paid-tier .claude-plan-pill,
+body.is-paid-tier .claude-nav-tag {
+    display: none !important;
+}
+
 /* header-right 隐藏遗留按钮（公告铃 + 登出 toast 按钮等）。账号头像在 sidebar 底部。
    只保留 share / shrink 等可能用到的元素，将它们样式调淡。 */
 .main-header .header-right {

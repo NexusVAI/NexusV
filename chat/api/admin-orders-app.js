@@ -25,6 +25,121 @@ function esc(s) {
     return d.innerHTML;
 }
 
+// 时间戳格式化（缺省 — 而非空串），用于设备指纹的 first_seen / last_seen
+function fmtTime(iso) {
+    if (!iso) return "—";
+    try {
+        return new Date(iso).toLocaleString("zh-CN", { hour12: false });
+    } catch {
+        return String(iso);
+    }
+}
+
+// 把可能的 jsonb 数组渲染成逗号分隔字符串（处理 string[] / null / 单字符串）
+function fmtArr(v) {
+    if (v == null) return "—";
+    if (Array.isArray(v)) return v.length ? v.map((x) => String(x)).join(", ") : "—";
+    return String(v);
+}
+
+// 渲染 screen JSONB → 形如 "1920×1080@2x · 24bit"
+function fmtScreen(s) {
+    if (!s || typeof s !== "object") return "—";
+    const w = s.w || 0, h = s.h || 0;
+    const ratio = s.ratio ? "@" + Number(s.ratio).toFixed(2).replace(/\.?0+$/, "") + "x" : "";
+    const depth = s.depth ? " · " + s.depth + "bit" : "";
+    return (w && h) ? (w + "\u00d7" + h + ratio + depth) : "—";
+}
+
+// 设备指纹块：仅 device 非空时渲染，否则空字符串。
+// "宁可多" 原则：把所有有信号的字段都列出来，多账号判断主要看 suspect.distinct_users + WebRTC leak。
+function renderDeviceBlock(o) {
+    const dev = o.device;
+    const sus = o.suspect;
+    if (!dev && !sus) {
+        return '<div class="dev-block dev-empty">设备指纹：暂无（用户从未登录访问过任何挂了 fingerprint.js 的页面）</div>';
+    }
+
+    const flags = [];
+    if (dev && dev.vpn_suspected) flags.push('<span class="dev-flag warn">VPN 嫌疑</span>');
+    if (dev && dev.webrtc_leak_detected) flags.push('<span class="dev-flag warn">WebRTC 漏 IP</span>');
+    if (sus && sus.distinct_users >= 2) {
+        flags.push('<span class="dev-flag danger">多账号嫌疑：同设备 ' + sus.distinct_users + ' 号</span>');
+    }
+    const flagsHtml = flags.length ? '<div class="dev-flags">' + flags.join("") + "</div>" : "";
+
+    const otherUsers = (sus && Array.isArray(sus.user_ids))
+        ? sus.user_ids.filter((u) => u && u !== o.user_id)
+        : [];
+    const otherUsersHtml = otherUsers.length
+        ? '<div class="dev-row"><span class="dev-k">同设备其他账号</span><span class="dev-v"><code>'
+            + otherUsers.map((u) => esc(String(u))).join("</code> <code>") + "</code></span></div>"
+        : "";
+
+    const rows = [];
+    if (dev) {
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">真实 IP / 国家</span><span class="dev-v"><code>'
+            + esc(dev.server_ip || "—") + "</code> · "
+            + esc(dev.server_country || "—") + "</span></div>"
+        );
+        const wrtPub = fmtArr(dev.webrtc_public_ips);
+        const wrtLoc = fmtArr(dev.webrtc_local_ips);
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">WebRTC 公网</span><span class="dev-v"><code>'
+            + esc(wrtPub) + "</code></span></div>"
+        );
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">WebRTC 内网</span><span class="dev-v"><code>'
+            + esc(wrtLoc) + "</code></span></div>"
+        );
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">时区 / 语言</span><span class="dev-v">'
+            + esc(dev.timezone || "—") + " · " + esc(fmtArr(dev.languages)) + "</span></div>"
+        );
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">浏览器 UA</span><span class="dev-v ua">'
+            + esc(dev.ua || "—") + "</span></div>"
+        );
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">平台 / 厂商</span><span class="dev-v">'
+            + esc(dev.platform || "—") + " · " + esc(dev.vendor || "—") + "</span></div>"
+        );
+        const hw = (dev.hardware_concurrency != null) ? (dev.hardware_concurrency + " 核") : "—";
+        const mem = (dev.device_memory != null) ? (dev.device_memory + " GB") : "—";
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">硬件</span><span class="dev-v">'
+            + esc(hw) + " · " + esc(mem) + " · " + esc(fmtScreen(dev.screen)) + "</span></div>"
+        );
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">visitor_id</span><span class="dev-v"><code>'
+            + esc(dev.visitor_id || "—") + "</code></span></div>"
+        );
+        rows.push(
+            '<div class="dev-row"><span class="dev-k">指纹时间窗</span><span class="dev-v">首次 '
+            + esc(fmtTime(dev.first_seen)) + " · 最近 " + esc(fmtTime(dev.last_seen))
+            + ' · <span style="color:var(--text-mute)">' + (dev.fingerprint_count || 0) + " 条记录</span></span></div>"
+        );
+    }
+
+    return (
+        '<details class="dev-block"><summary class="dev-summary">'
+        + '<span>设备指纹</span>'
+        + flagsHtml
+        + "</summary>"
+        + '<div class="dev-detail">' + rows.join("") + otherUsersHtml + "</div>"
+        + "</details>"
+    );
+}
+
+// tier badge：与 admin_users / pricing 页保持一致的视觉语言
+function renderTierPill(tier) {
+    if (tier === "paid") {
+        return '<span class="status-pill s-2xx" title="付费档">PAID</span>';
+    }
+    return '<span class="status-pill" style="background:var(--hover);color:var(--text-soft);border:1px solid var(--line)" title="免费档">FREE</span>';
+}
+
 async function getSession() {
     const {
         data: { session },
@@ -160,6 +275,8 @@ function renderOrders() {
                 '<div class="order-meta-block">' +
                 "<span>" +
                 statusPill +
+                " " +
+                renderTierPill(o.tier) +
                 "</span>" +
                 "<span>¥" +
                 esc(o.amount_cny) +
@@ -173,6 +290,7 @@ function renderOrders() {
                     : "") +
                 "</div>" +
                 actions +
+                renderDeviceBlock(o) +
                 "</div>"
             );
         })
