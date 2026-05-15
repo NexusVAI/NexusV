@@ -49,6 +49,12 @@
             if (!isMobile()) return;  // 桌面端走原逻辑
             e.stopImmediatePropagation();
             e.preventDefault();
+            // 关键修复：mobile drawer 永远不允许 rail 模式。
+            // 否则 #mobileMenuBtn 点击只 toggle body.sidebar-open，sidebar 自己
+            // 仍可能在 .collapsed 状态 → 抽屉滑出来但内容是 56px 图标条
+            // （图 10 故障）。打开抽屉时强制去掉 .collapsed，保证完整 240px 内容。
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('collapsed');
             document.body.classList.toggle('sidebar-open');
         }, true);  // capture-phase 优先于 cancri_chat.js 的 bubbling listener
         // 点蒙层关闭抽屉
@@ -136,6 +142,9 @@
         const hero = document.getElementById('heroTitle');
         if (!hero) return;
 
+        // v2026-05-15 改进：只有用户真正设了昵称才显示。
+        // 默认 (邮箱前缀如 "3573799137" / 未设置 / 未登录) 一律显示纯问候，
+        // 避免 hero 出现 "早上好，3573799137" 这种 QQ 号尴尬（群友图 9 反馈）。
         function pickName() {
             const display = document.getElementById('nicknameDisplay');
             let nick = display ? display.textContent.trim() : '';
@@ -143,12 +152,12 @@
                 const accName = document.querySelector('.account-strip .account-name');
                 if (accName) nick = accName.textContent.trim();
             }
-            if (!nick || nick === '未登录' || nick === 'MR' || nick === 'Cancri 用户') {
-                return '克劳姆';
-            }
-            // 邮箱：取 @ 前的本地部分
-            const at = nick.indexOf('@');
-            if (at > 0) nick = nick.slice(0, at);
+            if (!nick) return '';
+            // 占位/默认/邮箱前缀（含 @ / 纯数字 / 未登录态）一律视为"未设置"
+            const placeholders = ['未登录', 'MR', 'Cancri 用户', 'Kraum', '克劳姆'];
+            if (placeholders.indexOf(nick) >= 0) return '';
+            if (nick.indexOf('@') > 0) return '';  // 邮箱直接 fallback
+            if (/^\d{4,}$/.test(nick)) return '';  // 纯数字 QQ 号
             return nick;
         }
 
@@ -158,11 +167,15 @@
             if (h >= 5 && h < 12) greet = '早上好';
             else if (h >= 12 && h < 18) greet = '下午好';
             const nick = pickName();
+            const star = '<span class="hero-star" aria-hidden="true">\u2731</span>';
+            if (!nick) {
+                hero.innerHTML = star + greet;
+                return;
+            }
             const safeNick = nick.replace(/[<>&"']/g, function (c) {
                 return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c];
             });
-            hero.innerHTML = '<span class="hero-star" aria-hidden="true">\u2731</span>'
-                + greet + '，' + safeNick;
+            hero.innerHTML = star + greet + '，' + safeNick;
         }
 
         update();

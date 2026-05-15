@@ -1764,6 +1764,132 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     }
 }
 
+/* ───────────────────────────────────────────────────────────
+   15. 群友反馈批量修复（2026-05-15）
+   - 移除首页底部 4 个 social icons（Claude 真实无此元素）
+   - mobile 隐藏 AI 消息底部 复制/朗读/引用 按钮（Claude mobile 也无）
+   - mobile plan pill 永远隐藏（不仅 chatting 态）
+   - mobile drawer 即使原 sidebar 是 .collapsed 也显示完整内容
+   - serif 字体：chat 消息内容、hero、page-title
+   ─────────────────────────────────────────────────────────── */
+
+/* 隐藏首页底部 4 个 social icons（图 9 显示我们多余） */
+.site-footer-socials,
+.site-footer,
+#siteFooterSocials {
+    display: none !important;
+}
+
+/* mobile 隐藏 AI 消息底部按钮（图 11 显示我们多余）
+   桌面 hover 显示行为保留，groups 用户多用 mobile 浏览 */
+@media (max-width: 768px) {
+    .message-actions,
+    .message.assistant .message-actions {
+        display: none !important;
+    }
+    /* Plan pill mobile 永远隐藏（不仅 chatting 态，因为 home 也不该有） */
+    .claude-plan-pill {
+        display: none !important;
+    }
+}
+
+/* mobile drawer：即使 sidebar.collapsed，drawer 模式下也显示完整内容。
+   claude_ui.js 的 bindMobileSidebarDrawer 会在 click 时 .remove('collapsed')，
+   但万一其他逻辑（如桌面 collapsed 后旋转屏）切到 collapsed，这里 CSS 保险
+   让 drawer 永远 240px 宽 + 完整内容（撤销所有 .collapsed 视觉缩小规则）。 */
+@media (max-width: 768px) {
+    body.sidebar-open .sidebar.collapsed,
+    body.sidebar-open .sidebar {
+        width: 240px !important;
+    }
+    body.sidebar-open .sidebar.collapsed .sidebar-topbar {
+        padding: 16px 16px 8px !important;
+        justify-content: space-between !important;
+    }
+    body.sidebar-open .sidebar.collapsed .sidebar-topbar::before {
+        display: block !important;
+    }
+    body.sidebar-open .sidebar.collapsed .nav-row {
+        width: auto !important;
+        height: 36px !important;
+        margin: 0 !important;
+        padding: 0 10px !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+    }
+    body.sidebar-open .sidebar.collapsed .nav-row .sidebar-label,
+    body.sidebar-open .sidebar.collapsed .nav-row .claude-nav-tag {
+        display: inline !important;
+    }
+    body.sidebar-open .sidebar.collapsed .claude-recent-title,
+    body.sidebar-open .sidebar.collapsed .recent-wrap,
+    body.sidebar-open .sidebar.collapsed #chatHistoryList,
+    body.sidebar-open .sidebar.collapsed #sidebarSearchWrap {
+        display: block !important;
+    }
+    body.sidebar-open .sidebar.collapsed .sidebar-footer,
+    body.sidebar-open .sidebar.collapsed .account-strip-wrap {
+        padding: 8px !important;
+    }
+    body.sidebar-open .sidebar.collapsed .account-strip {
+        width: 100% !important;
+        height: 48px !important;
+        padding: 0 10px !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+    }
+    body.sidebar-open .sidebar.collapsed .account-strip .account-meta,
+    body.sidebar-open .sidebar.collapsed .account-strip .upgrade-btn,
+    body.sidebar-open .sidebar.collapsed .account-strip .account-arrow {
+        display: flex !important;
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   16. SERIF 字体（Claude 真实视觉的核心）
+   Claude 用 Tiempos Text（付费）。我们用系统衬线 fallback：
+   Iowan Old Style → Apple Garamond → Charter → Times New Roman → Georgia
+   仅对：聊天消息正文 / hero 大标题 / 视图大标题
+   sidebar / 设置 UI / composer 输入框 / 按钮 仍 sans-serif（更紧凑）
+   ─────────────────────────────────────────────────────────── */
+.message.assistant .message-content,
+.message.assistant .message-content p,
+.message.assistant .message-content li,
+.message.assistant .message-content blockquote,
+.message.assistant .answer-body,
+.message.assistant .think-body {
+    font-family: var(--c-font-serif) !important;
+    font-size: 16px;
+    line-height: 1.62;
+    letter-spacing: 0.005em;
+}
+/* code / pre / inline code 保持 monospace（不要 serif 化代码块） */
+.message.assistant .message-content code,
+.message.assistant .message-content pre,
+.message.assistant .message-content pre code,
+.message.assistant .message-content kbd {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo,
+                 Consolas, "Liberation Mono", monospace !important;
+}
+/* 用户气泡保持 sans-serif（紧凑感） */
+.message.user .message-content {
+    font-family: var(--c-font) !important;
+}
+/* hero 早就 serif，再次显式 */
+#heroTitle, .hero {
+    font-family: var(--c-font-serif) !important;
+}
+/* Page titles（聊天 / 项目 / 设置）serif */
+.claude-page-title,
+.claude-settings-title,
+.claude-page-header h1,
+#chatsView .claude-page-title,
+#projectsView .claude-page-title,
+#claudeSettingsView .claude-page-title {
+    font-family: var(--c-font-serif) !important;
+}
+/* 设置内容里的大标题区段（"简介" 等）保持 sans-serif，因为图 6 显示是 sans */
+
 /* 更窄的手机（≤420px）进一步压缩 */
 @media (max-width: 420px) {
     .claude-plan-pill {
