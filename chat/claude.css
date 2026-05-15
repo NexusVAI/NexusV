@@ -11,6 +11,41 @@
    ============================================================= */
 
 /* ───────────────────────────────────────────────────────────
+   0. FONTS — Anthropic 官方变量字体（self-host）
+   源：Claude 桌面端 1.7196.0 的 app.asar 各 renderer 窗口 assets 目录
+   variable font，weight 100-900 单一文件；italic 单独 ttf。
+   font-display: swap → 字体到位前先用 system fallback 显示，避免 FOIT。
+   ─────────────────────────────────────────────────────────── */
+@font-face {
+    font-family: "Anthropic Sans";
+    src: url("./fonts/AnthropicSans-Roman-Variable.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Anthropic Sans";
+    src: url("./fonts/AnthropicSans-Italic-Variable.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Anthropic Serif";
+    src: url("./fonts/AnthropicSerif-Roman-Variable.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Anthropic Serif";
+    src: url("./fonts/AnthropicSerif-Italic-Variable.ttf") format("truetype");
+    font-weight: 100 900;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* ───────────────────────────────────────────────────────────
    1. THEME TOKENS
    2026-05-15 v3 fix(C1)：群友反馈"chat 页面也要支持深浅色切换"。
    原版 html, html[data-theme="light"], html[data-theme="dark"] 三选一
@@ -70,14 +105,11 @@ html, html[data-theme="dark"], html[data-theme="light"] {
     --c-radius-pill: 999px;
     --c-shadow-pop: 0 10px 38px rgba(0, 0, 0, 0.45);
     /* 2026-05-15：字体栈对齐 Claude 真机声明（图 1/2/3 DevTools 字体 inspector）。
-       - sans: 严格按 Claude 顺序 "Anthropic Sans" → system-ui → "Segoe UI" → Roboto
-         → Helvetica → Arial → sans-serif。Anthropic Sans 是付费字体我们没法 self-host，
-         浏览器会跳到 system-ui（macOS SF Pro / Windows Segoe UI Variable），跟 Claude
-         在国内用户机器上的真实渲染效果（图 3 Yu Gothic / PingFang SC）一致。
-         尾部补 CJK fallback 让 Windows/Linux 中文也清晰。
-       - serif: "Anthropic Serif" → "Source Serif 4" (Google Fonts 加载) → Georgia
-         链。Source Serif 4 是 Adobe 开源出的，跟 Anthropic Serif 同属 humanist
-         serif 系，视觉最接近的免费替代。 */
+       2026-05-15 fonts: 已从 Claude 桌面端 app.asar self-host 4 个 ttf（见上方 §0）。
+         - sans: "Anthropic Sans" 命中 self-host @font-face；system-ui / Segoe UI /
+           Roboto 作 swap fallback（首屏字体下载完成前显示）。
+         - serif: "Anthropic Serif" 同上，Source Serif 4 / Georgia 作 fallback。
+       尾部 CJK fallback 让 Windows/Linux 中文也清晰（Anthropic 自家字体仅含拉丁）。 */
     --c-font: "Anthropic Sans", system-ui, -apple-system, BlinkMacSystemFont,
               "Segoe UI", Roboto, Helvetica, Arial,
               "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
