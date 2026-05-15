@@ -167,6 +167,126 @@
         opacity: 0.4;
         cursor: not-allowed;
       }
+      /* 2026-05-16：审核页 enrichment 视觉 */
+      .btn-details {
+        padding: 6px 10px;
+        border: 1px solid var(--border-strong);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-mute);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .btn-details:hover {
+        color: var(--text);
+        border-color: var(--text-faint);
+      }
+      .email-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .tier-pill {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 8px;
+        font-size: 10px;
+        font-weight: 700;
+        font-family: var(--font-mono);
+        letter-spacing: 0.3px;
+      }
+      .tier-pill.paid {
+        background: rgba(74, 222, 128, 0.18);
+        color: var(--ok, #4ade80);
+      }
+      .tier-pill.free {
+        background: var(--hover, rgba(0, 0, 0, 0.05));
+        color: var(--text-faint);
+        border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+      }
+      .risk-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 5px;
+      }
+      .risk-pill {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 9px;
+        font-size: 10.5px;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+      .risk-pill.warn {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+      }
+      .risk-pill.danger {
+        background: rgba(248, 113, 113, 0.16);
+        color: #f87171;
+        border: 1px solid rgba(248, 113, 113, 0.45);
+      }
+      .user-ctx {
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--text-mute);
+        line-height: 1.5;
+      }
+      .ctx-warn { color: #f59e0b; }
+      .ip-geo {
+        font-size: 10.5px;
+        color: var(--text-mute);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      /* 详情 sub-row */
+      .detail-row td {
+        padding: 14px 16px !important;
+        background: rgba(0, 0, 0, 0.04);
+        border-bottom: 1px solid var(--border-mute);
+      }
+      .detail-row.detail-empty td {
+        color: var(--text-faint);
+        font-style: italic;
+        font-size: 12.5px;
+      }
+      .detail-grid {
+        display: grid;
+        gap: 6px;
+      }
+      .detail-line {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 12px;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+      .detail-line .detail-k {
+        color: var(--text-faint);
+        font-weight: 500;
+      }
+      .detail-line .detail-v {
+        color: var(--text-soft);
+        word-break: break-all;
+      }
+      .detail-line .detail-v code {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--accent);
+        user-select: all;
+      }
+      .detail-line .detail-ua {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .detail-line .detail-sub {
+        color: var(--text-mute);
+        font-size: 11px;
+      }
     </style>
   </head>
   <body>
@@ -301,7 +421,7 @@
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
       crossorigin="anonymous"
     ></script>
-    <script src="./admin-app.js?v=2026-05-13"></script>
+    <script src="./admin-app.js?v=2026-05-16-enrich"></script>
     <!-- 2026-05-13 审查：原 inline <script>（296-692 行）抽离到 admin-app.js。 -->
   </body>
 </html>
