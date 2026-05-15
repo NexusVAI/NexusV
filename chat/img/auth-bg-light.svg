@@ -1,28 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  2026-05-15: 登录页背景"等高线"纹理（浅色版）。
-  与 auth-bg.svg 同 pipeline（fractalNoise → blur → diffuseLighting →
-  discrete 量化），但 tableValues 调到偏亮的"沙漠/羊皮纸"暖色区间：
-  低 band 约 #b08858（深沙），高 band 约 #faecd0（暖白），所有 band
-  都比浅色主题的 cream 底色（#e8d9b8）稍暗或相近，确保等高线在浅底
-  上仍清晰可辨而不刺眼。seed/baseFrequency/octaves 全部沿用深色版以
-  保持视觉一致：切主题时只是配色翻转，地形纹路完全一样。
+  2026-05-15 v3: 登录页浅色等高线背景，跟 auth-bg.svg 用完全一致的 4 层多频
+  噪声 pipeline（seed/baseFrequency/octaves 全同），切主题时地形纹路完全
+  不变。只两点不同：
+    1. lighting-color 改成深暖棕 #5a3f2a，让 ridge 输出深一点
+    2. brightness slope 从 20 降到 4：浅底上不需要 ridge 全饱和，4 倍即够
+       清晰；slope=20 + 浅底会让 ridge 直接撑爆成纯白，反而看不见。
+  最后同样 luminance → alpha：dim 区透明（露 #e8d9b8 沙底），ridge 顶
+  深暖棕不透明 → 浅底 + 深棕 contour，跟 beij 的视觉风格一致只是色调反相。
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
   <defs>
     <filter id="topo" x="0%" y="0%" width="100%" height="100%" filterUnits="userSpaceOnUse">
-      <feTurbulence type="fractalNoise" baseFrequency="0.0045" numOctaves="6" seed="7" result="n"/>
-      <feGaussianBlur in="n" stdDeviation="1.4" result="nb"/>
-      <feDiffuseLighting in="nb" surfaceScale="22" diffuseConstant="1.05" lighting-color="#ffffff" result="lit">
-        <feDistantLight azimuth="135" elevation="55"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0004" numOctaves="8" seed="4" result="t1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0008" numOctaves="8" seed="4" result="t2"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0001" numOctaves="8" seed="4" result="t3"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0018" numOctaves="8" seed="4" result="t4"/>
+      <feMerge result="merged">
+        <feMergeNode in="t1"/>
+        <feMergeNode in="t3"/>
+        <feMergeNode in="t2"/>
+        <feMergeNode in="t4"/>
+      </feMerge>
+      <feGaussianBlur in="merged" stdDeviation="5" result="b1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0016" numOctaves="8" seed="4" result="t5"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.002" numOctaves="8" seed="4" result="t6"/>
+      <feMerge result="merged2">
+        <feMergeNode in="t5"/>
+        <feMergeNode in="t6"/>
+        <feMergeNode in="b1"/>
+      </feMerge>
+      <feGaussianBlur in="merged2" stdDeviation="5" result="b2"/>
+      <feDiffuseLighting in="b2" surfaceScale="12" diffuseConstant="1" lighting-color="#5a3f2a" result="lit">
+        <feDistantLight azimuth="90" elevation="55"/>
       </feDiffuseLighting>
-      <feComponentTransfer in="lit" result="banded">
-        <feFuncR type="discrete" tableValues="0.70 0.76 0.82 0.86 0.90 0.94 0.98"/>
-        <feFuncG type="discrete" tableValues="0.62 0.68 0.74 0.79 0.84 0.88 0.92"/>
-        <feFuncB type="discrete" tableValues="0.50 0.56 0.62 0.68 0.74 0.80 0.84"/>
+      <feComponentTransfer in="lit" result="bright">
+        <feFuncR type="linear" slope="4" intercept="0"/>
+        <feFuncG type="linear" slope="4" intercept="0"/>
+        <feFuncB type="linear" slope="4" intercept="0"/>
       </feComponentTransfer>
+      <feColorMatrix in="bright" type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0.33 0.59 0.11 0 0" result="alphified"/>
     </filter>
   </defs>
-  <rect width="1600" height="1000" fill="#e8d9b8"/>
   <rect width="1600" height="1000" filter="url(#topo)"/>
 </svg>
