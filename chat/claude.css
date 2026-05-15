@@ -1765,6 +1765,166 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
 }
 
 /* ───────────────────────────────────────────────────────────
+   14b. CLAUDE 1:1 视觉细化（2026-05-15 fixes-c）
+   - Toast 右上角 amber（Claude 错误提示风格）
+   - + 按钮去边框（裸图标）
+   - 模型 dropdown 简化：隐藏适应性思考 / model-tag / subtext
+   - 顶栏 plan pill 视觉对齐（灰底 + amber"升级"）
+   - sidebar 字体行高调整
+   ─────────────────────────────────────────────────────────── */
+
+/* Toast 重做成 Claude amber 样式：右上角，黄色，警告图标
+   Claude 错误提示的标准位置和配色（图 1 右上角）。
+   注意：我们的 toast 是统一组件（所有提示都用一个）。
+   把它统一改成 amber，符合 Claude UI 的 "信息提示=alert风格" 设计。 */
+.toast {
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    bottom: auto !important;
+    background: rgba(60, 47, 14, 0.96) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(251, 191, 36, 0.35) !important;
+    border-radius: 10px !important;
+    padding: 12px 16px 12px 40px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
+    max-width: 340px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fbbf24' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' x2='12' y1='9' y2='13'/%3E%3Cline x1='12' x2='12.01' y1='17' y2='17'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: 12px center !important;
+}
+
+/* + 按钮去边框（composer 左下 attach 按钮）
+   Claude 是裸图标无边框（图 1）。
+   #attachBtn 是 cancri 主入口。.attach-btn 是其样式 class。 */
+#attachBtn,
+.attach-btn,
+#fileUploadBtn,
+.file-upload-btn,
+button.composer-tool-btn {
+    border: 0 !important;
+    background: transparent !important;
+    width: 32px !important;
+    height: 32px !important;
+    color: var(--c-text-soft) !important;
+    transition: background 160ms, color 160ms !important;
+}
+#attachBtn:hover,
+.attach-btn:hover,
+#fileUploadBtn:hover,
+.file-upload-btn:hover,
+button.composer-tool-btn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+    border: 0 !important;
+}
+/* 联网搜索按钮（globe）暂保留功能，但视觉对齐 + 一致 */
+#webSearchToggle {
+    border: 0 !important;
+    background: transparent !important;
+    width: 32px !important;
+    height: 32px !important;
+    color: var(--c-text-soft) !important;
+}
+#webSearchToggle:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+#webSearchToggle.active,
+#webSearchToggle.is-on,
+#webSearchToggle[aria-pressed="true"] {
+    color: var(--c-accent) !important;
+    background: rgba(217, 119, 87, 0.12) !important;
+}
+
+/* 模型 dropdown 简化：去掉视觉噪音，对齐 Claude 图 3 */
+.claude-thinking-toggle {
+    display: none !important;  /* 适应性思考我们不需要 */
+}
+.model-dropdown .model-tag {
+    display: none !important;  /* 多模态 / 图像等 tag 隐藏 */
+}
+.model-dropdown .model-label-subtext {
+    display: none !important;  /* 副标题（canonicalId / lineLabel）隐藏 */
+}
+.model-dropdown .model-option-icon {
+    width: 16px !important;
+    height: 16px !important;
+    opacity: 0.7;
+    margin-right: 6px !important;
+}
+/* dropdown 紧凑 */
+.model-dropdown .model-option {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    min-height: 36px !important;
+}
+.model-dropdown .model-group-header {
+    font-size: 10.5px !important;
+    color: var(--c-text-dim) !important;
+    padding: 8px 12px 4px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600 !important;
+}
+.model-dropdown .model-speed-dot {
+    width: 6px !important;
+    height: 6px !important;
+    margin-right: 4px !important;
+}
+/* 模型分页栏简化 */
+.model-dropdown-footer {
+    border-top: 1px solid var(--c-line) !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+}
+
+/* Plan pill 视觉对齐图 6：灰底 + amber 升级字 + X 关闭按钮
+   保留我们的 cta 文字"升级"加 amber 高亮，匹配 Claude amber 主题 */
+.claude-plan-pill .claude-plan-cta {
+    color: #fbbf24 !important;  /* amber */
+    font-weight: 600;
+}
+
+/* Sidebar 字体细化：行高加大让层级更清晰（图 6 Claude） */
+.nav-row {
+    height: 36px !important;
+    padding: 0 10px !important;
+    gap: 10px !important;
+    font-size: 13.5px !important;
+    color: var(--c-text) !important;
+}
+.nav-row .sidebar-label {
+    color: var(--c-text) !important;  /* 从 soft 改 text，更亮 */
+    font-weight: 450 !important;
+    letter-spacing: 0.005em;
+}
+.nav-row svg {
+    color: var(--c-text-soft) !important;  /* icon 比 label 略 dim */
+    flex-shrink: 0;
+}
+.nav-row:hover {
+    background: var(--c-hover) !important;
+}
+.nav-row.active {
+    background: var(--c-hover-strong) !important;
+}
+.claude-recent-title {
+    color: var(--c-text-dim) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+    padding: 16px 10px 6px !important;
+    text-transform: none;
+}
+
+/* ───────────────────────────────────────────────────────────
    15. 群友反馈批量修复（2026-05-15）
    - 移除首页底部 4 个 social icons（Claude 真实无此元素）
    - mobile 隐藏 AI 消息底部 复制/朗读/引用 按钮（Claude mobile 也无）
