@@ -60,7 +60,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-14d-composer-nowrap" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-15-scrim-no-blur" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -88,13 +88,13 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-05-15-auth-topo-theme-c"
+            href="./styles/cancri_motion.css?v=2026-05-15-auth-card-flip"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-15-fixes-d"
+            href="./claude.css?v=2026-05-15-mobile-theme"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -457,13 +457,9 @@
                             <span class="sidebar-label">代码</span>
                             <span class="claude-nav-tag">升级</span>
                         </a>
-                        <div class="nav-row" id="claudeCustomNavBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                            </svg>
-                            <span class="sidebar-label">自定义</span>
-                        </div>
+                        <!-- 2026-05-15 fix(M3)：自定义 从侧栏移除，迁到 账户头像 popover 里
+                             （见 #accountPopover 中新增的 .popover-item id="claudeCustomPopoverBtn"）。
+                             bindCustomNav 走 data-claude-action="open-settings" 选择器仍能匹配。 -->
                         <a
                             class="nav-row sidebar-api-platform"
                             id="sidebarApiPlatformBtn"
@@ -620,6 +616,15 @@
                                 id="nicknameDisplay"
                                 style="font-size: 12px; color: var(--text-soft)"
                             ></span>
+                        </div>
+                        <!-- 2026-05-15 fix(M3)：自定义 迁入 popover。复用 data-claude-action="open-settings"
+                             让 claude_ui.js bindCustomNav 自动绑定。 -->
+                        <div class="popover-item" id="claudeCustomPopoverBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span>自定义</span>
                         </div>
                         <div class="popover-sep"></div>
                         <div class="popover-item" id="themeShortcutBtn">
@@ -1196,7 +1201,7 @@
                             <img src="../Logo/Cancri.png" alt="" />
                             <span>NexusV</span>
                         </div>
-                        <h1 class="hero" id="heroTitle"><span class="hero-star" aria-hidden="true">✱</span>晚上好，克劳姆</h1>
+                        <h1 class="hero" id="heroTitle">晚上好，克劳姆</h1>
                         <div class="composer-wrap">
                             <div class="composer" data-workbench-composer>
                                 <div
@@ -2602,11 +2607,11 @@
         <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script defer src="./cancri_chat.js?v=2026-05-15-fixes-a"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-15-readonly-busy"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-15-theme-toggle"></script>
+        <script defer src="./claude_ui.js?v=2026-05-15-no-star"></script>
     </body>
 </html>

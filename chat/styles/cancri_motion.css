@@ -513,39 +513,24 @@ html[data-theme="light"] .auth-overlay {
     height: 0;
     pointer-events: none;
 }
-/* 2026-05-15 v2：beij 等高线效果，独立 SVG 文件 + diffuseLighting + discrete
-   量化生成"等高线 banding"。深色版 auth-bg.svg（深栗暖色谱），浅色版
-   auth-bg-light.svg（沙色暖谱），切主题只换 url。
-   把 SVG 封装为外部 image resource：filter 在 image rasterize 阶段跑一次，
-   光栅结果被缓存，之后纯 image 不参与每帧 paint/composite，零持续开销。
-   叠的两层 radial-gradient 用于添加 Cancri 暖色 spotlight；浅色主题下
-   把 spotlight 降到几乎透明，避免在沙底上再叠橙色显脏。 */
+/* 2026-05-15 v3 fix(L1+L3)：群友反馈"那个黄色的发光物去掉"。原版叠了两层
+   radial-gradient（顶部橙色 spotlight + 左下深栗 vignette）来 fake "Cancri
+   暖光环境"，但用户反馈那个发光物太抢眼很难看。直接拿掉，保持纯 beij 风格：
+   solid bg + 等高线 SVG（SVG 自带 luminance-as-alpha，dim 区透明，ridge 顶
+   不透明，自然挂在 bg 上）。
+   切主题只换 svg url + bg 色：dark = #1a120c + auth-bg.svg（暖白 ridge），
+   light = #e8d9b8 + auth-bg-light.svg（深棕 ridge）。 */
 .auth-bg-island {
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(120% 80% at 50% -10%,
-            rgba(217, 119, 87, 0.28) 0%,
-            rgba(201, 110, 74, 0.14) 22%,
-            transparent 55%),
-        radial-gradient(80% 60% at 10% 110%,
-            rgba(20, 12, 8, 0.45) 0%,
-            transparent 50%),
-        url("../img/auth-bg.svg?v=2026-05-15-topo-c") center/cover no-repeat,
-        #14100c;
-    background-blend-mode: normal, normal, multiply, normal;
+        url("../img/auth-bg.svg?v=2026-05-15-beij-port") center/cover no-repeat,
+        #1a120c;
 }
 html[data-theme="light"] .auth-bg-island {
     background:
-        radial-gradient(120% 80% at 50% -10%,
-            rgba(217, 119, 87, 0.10) 0%,
-            transparent 55%),
-        radial-gradient(80% 60% at 10% 110%,
-            rgba(120, 90, 50, 0.12) 0%,
-            transparent 50%),
-        url("../img/auth-bg-light.svg?v=2026-05-15-topo-c") center/cover no-repeat,
+        url("../img/auth-bg-light.svg?v=2026-05-15-beij-port") center/cover no-repeat,
         #e8d9b8;
-    background-blend-mode: normal, normal, multiply, normal;
 }
 .auth-bg-islandt {
     display: none;
@@ -899,6 +884,68 @@ html[data-theme="dark"] .auth-theme-icon-sun {
 }
 .auth-btn:disabled::before {
     transform: scaleX(0) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   2026-05-15 v3 fix(L2)：深色主题反相整张登录卡片。
+   群友反馈"深浅色切换还是不行，只会改背景色但是卡其色的登录卡片
+   不会换"。根因：上版只切了 .auth-overlay 的 bg + 字色，卡片本体
+   .auth-card / .auth-input / .auth-btn 全部 !important 锁死米白底
+   + 深栗边，深浅色都长一样。
+   修复：深色主题下 brutalist 配色完全反相 —
+     - 卡 / 输入 / 按钮 底色 = 深栗系（#1f1410 / #2a1d15）
+     - 边 / 阴影 / 文字 = 暖白 #f5e9d0
+     - hover 时 ::before 仍是 Cancri 橙（品牌 accent 跨主题不变）
+   这样切到 dark：登录卡变成"深底 + 暖白边/字"的 brutalist 镜像，
+   8px offset 阴影语言不变，跟新 beij ridge 背景的暖白色调呼应。
+   ─────────────────────────────────────────────────────────── */
+html[data-theme="dark"] .auth-card {
+    background: #1f1410 !important;
+    border-color: #f5e9d0 !important;
+    box-shadow: 8px 8px 0 0 #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-field-label {
+    color: #f5e9d0;
+}
+html[data-theme="dark"] .auth-input {
+    background: #2a1d15 !important;
+    border-color: #f5e9d0 !important;
+    color: #f5e9d0 !important;
+    box-shadow: 4px 4px 0 0 #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-input::placeholder {
+    color: rgba(245, 233, 208, 0.5);
+}
+html[data-theme="dark"] .auth-input:focus {
+    box-shadow: 6px 6px 0 0 #f5e9d0 !important;
+    border-color: #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-otp-input {
+    color: #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-btn {
+    background: #2a1d15 !important;
+    border-color: #f5e9d0 !important;
+    color: #f5e9d0 !important;
+    box-shadow: 4px 4px 0 0 #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-btn:hover {
+    color: #ffffff !important;
+    box-shadow: 6px 6px 0 0 #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-btn:active {
+    box-shadow: 2px 2px 0 0 #f5e9d0 !important;
+}
+html[data-theme="dark"] .auth-btn:disabled {
+    box-shadow: 2px 2px 0 0 #f5e9d0 !important;
+}
+
+/* OTP/info 提示行（"已发送邮箱验证码" 之类）。
+   原版 cancri_chat.css 给的 color 在浅底上 OK，深底反差差。 */
+html[data-theme="dark"] .auth-info,
+html[data-theme="dark"] .auth-error,
+html[data-theme="dark"] .auth-meta {
+    color: rgba(245, 233, 208, 0.7);
 }
 
 /* .auth-btn-primary intentionally inherits everything from .auth-btn —
