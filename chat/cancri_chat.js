@@ -1432,6 +1432,8 @@ const MODEL_CATALOG = [
   {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-4", "name": "GPT-4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "claude-opus-4-6-thinking", "name": "Claude Opus 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
