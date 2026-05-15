@@ -739,12 +739,12 @@ function getQuotaLockMessage(modelId = currentModel) {
   const status = getModelStatus(modelId);
   if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) {
     if (status.lockReason === "quota") {
-      if (modelId === "claude-opus-4-7") {
+      if (modelId === "claude-opus-4-6-thinking-medium") {
         const remainingSeconds = Math.max(
           1,
           Math.ceil((status.lockedUntil - now) / 1000),
         );
-        return `Claude Opus 4.7 免费共享额度每小时 10 次已用完，约 ${formatCountdownDuration(remainingSeconds * 1000)} 后恢复；付费用户不受此限制。`;
+        return `Claude Opus 4.6 自适应思维 免费共享额度每小时 10 次已用完，约 ${formatCountdownDuration(remainingSeconds * 1000)} 后恢复；付费用户不受此限制。`;
       }
       return "模型额度已超，请切换模型重试。";
     }
@@ -1444,13 +1444,14 @@ const MODEL_CATALOG = [
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
-  {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "freeLimitNote": "免费共享 10/h，付费不限"},
+  {"id": "claude-opus-4-6-thinking-medium", "name": "Claude Opus 4.6 自适应思维", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "freeLimitNote": "免费共享 10/h，付费不限"},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -6164,8 +6165,18 @@ function syncStreamingMarkdownBlock(
 
   blockElement.classList.toggle("is-streaming", Boolean(thinking));
   blockElement.innerHTML = renderMarkdown(nextText);
-  // 渲染数学公式
-  renderMathInElement(blockElement);
+  // 流式输出期间 debounce KaTeX 渲染，避免每帧全量扫描导致卡顿。
+  // 流结束后立即渲染一次。
+  if (!thinking) {
+    renderMathInElement(blockElement);
+  } else {
+    if (!streamState._katexTimer) {
+      streamState._katexTimer = setTimeout(() => {
+        renderMathInElement(blockElement);
+        streamState._katexTimer = null;
+      }, 800);
+    }
+  }
   streamState.text = nextText;
   streamState.ready = true;
   streamState.thinking = thinking;
@@ -7862,7 +7873,8 @@ function updateDuelMessage(
       }
     }
 
-    if (hasAnswer || hasReasoning) renderMathInElement(card);
+    // 流式期间跳过 card 级 KaTeX，syncStreamingMarkdownBlock 内部已 debounce
+    if (!thinking && (hasAnswer || hasReasoning)) renderMathInElement(card);
   }
 
   // Reveal model name
