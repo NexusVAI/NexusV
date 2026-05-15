@@ -1842,6 +1842,147 @@ button.composer-tool-btn:hover {
     background: rgba(217, 119, 87, 0.12) !important;
 }
 
+/* ───────────────────────────────────────────────────────────
+   17. + 按钮自定义菜单（claude_ui.js bindAttachMenu 注入到 body）
+   - 弹在 attachBtn 上方，220px 宽，深色 Claude pop 风格
+   ─────────────────────────────────────────────────────────── */
+.claude-attach-menu {
+    position: fixed;
+    z-index: 1200;
+    min-width: 220px;
+    padding: 6px;
+    background: var(--c-bg-elev-2);
+    border: 1px solid var(--c-line-strong);
+    border-radius: 12px;
+    box-shadow: var(--c-shadow-pop);
+    color: var(--c-text);
+    font-family: var(--c-font);
+    font-size: 13px;
+    line-height: 1.4;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    animation: claude-attach-fade-in 140ms ease-out;
+}
+.claude-attach-menu[hidden] {
+    display: none !important;
+}
+@keyframes claude-attach-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.claude-attach-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--c-text);
+    font: inherit;
+    text-align: left;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 120ms;
+}
+.claude-attach-item:hover {
+    background: var(--c-hover);
+}
+.claude-attach-item svg {
+    flex-shrink: 0;
+    color: var(--c-text-soft);
+}
+.claude-attach-item span:not(.claude-attach-toggle) {
+    flex: 1;
+}
+.claude-attach-sep {
+    height: 1px;
+    background: var(--c-line);
+    margin: 4px 4px;
+}
+/* 网络搜索行右侧 toggle 圆点指示开关状态 */
+.claude-attach-toggle {
+    width: 28px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line-strong);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 140ms, border-color 140ms;
+}
+.claude-attach-toggle::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--c-text-dim);
+    transition: transform 140ms, background 140ms;
+}
+.claude-attach-item.is-on .claude-attach-toggle {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+}
+.claude-attach-item.is-on .claude-attach-toggle::after {
+    transform: translateX(12px);
+    background: #fff;
+}
+/* 网络搜索整合到 + 菜单后，隐藏 composer 上的独立 globe 按钮 */
+#webSearchToggle {
+    display: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   18. 模型 dropdown "更多模型" 折叠（claude_ui.js bindModelMoreMenu）
+   - 默认 dropdown 加 .claude-collapsed-models 类
+   - 只显示 .model-option.active（当前选中）+ "更多模型 →" 行
+   - hover "更多模型" → dropdown 加 .claude-show-extras → 展开全部
+   - 搜索框有内容时也强制 .claude-show-extras（让 cancri filter 正常）
+   ─────────────────────────────────────────────────────────── */
+.model-dropdown.claude-collapsed-models:not(.claude-show-extras) .model-option:not(.active) {
+    display: none !important;
+}
+.model-dropdown.claude-collapsed-models:not(.claude-show-extras) .model-group-header {
+    display: none !important;
+}
+/* 展开时全部 option 都显示，"更多模型" 行隐藏 */
+.model-dropdown.claude-show-extras .claude-more-models-row {
+    display: none !important;
+}
+.model-dropdown.claude-show-extras .model-option {
+    display: flex !important;
+}
+.model-dropdown.claude-show-extras .model-group-header {
+    display: block !important;
+}
+
+.claude-more-models-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    margin: 4px 0 2px;
+    border-top: 1px solid var(--c-line);
+    color: var(--c-text-soft);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 120ms, color 120ms;
+}
+.claude-more-models-row:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+.claude-more-models-row svg {
+    color: inherit;
+    flex-shrink: 0;
+}
+
 /* 模型 dropdown 简化：去掉视觉噪音，对齐 Claude 图 3 */
 .claude-thinking-toggle {
     display: none !important;  /* 适应性思考我们不需要 */

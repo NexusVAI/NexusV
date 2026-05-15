@@ -32,6 +32,8 @@
         bindHeroGreeting();
         bindChatTitleSync();
         bindMobileSidebarDrawer();
+        bindAttachMenu();
+        bindModelMoreMenu();
     }
 
     // 10. Mobile sidebar drawer：在 ≤768px 屏幕，点 #mobileMenuBtn 应该
@@ -430,6 +432,195 @@
                     // 若用户选 light，下一阶段考虑提供 light 配色版本。
                 });
             });
+        }
+    }
+
+    // 11. + 按钮自定义菜单（Claude 风格）：拦截 #attachBtn click，
+    //     弹出小菜单替代直接打开文件选择器。
+    //     菜单项：添加文件或照片 / 网络搜索 toggle / 截图占位。
+    //     模块化解耦：不修改 cancri_chat.js 的事件绑定，用 capture-phase
+    //     拦截，菜单项手动触发 attachmentInput.click() 或 webSearchToggle.click()。
+    function bindAttachMenu() {
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('attachmentInput');
+        const webBtn = document.getElementById('webSearchToggle');
+        if (!attachBtn || !fileInput) return;
+
+        // 一次创建菜单元素，常驻 body。display:none 默认。
+        let menu = document.getElementById('claudeAttachMenu');
+        if (!menu) {
+            menu = document.createElement('div');
+            menu.id = 'claudeAttachMenu';
+            menu.className = 'claude-attach-menu';
+            menu.setAttribute('role', 'menu');
+            menu.hidden = true;
+            menu.innerHTML = ''
+                + '<button type="button" class="claude-attach-item" data-action="file">'
+                +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>'
+                +   '<span>添加文件或照片</span>'
+                + '</button>'
+                + '<button type="button" class="claude-attach-item" data-action="screenshot">'
+                +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/></svg>'
+                +   '<span>截图</span>'
+                + '</button>'
+                + '<div class="claude-attach-sep"></div>'
+                + '<button type="button" class="claude-attach-item" data-action="websearch" id="claudeAttachWebSearch">'
+                +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'
+                +   '<span>网络搜索</span>'
+                +   '<span class="claude-attach-toggle" aria-hidden="true"></span>'
+                + '</button>';
+            document.body.appendChild(menu);
+        }
+        const webSearchItem = menu.querySelector('#claudeAttachWebSearch');
+
+        function syncWebSearchState() {
+            if (!webBtn || !webSearchItem) return;
+            // 与 #webSearchToggle 的 active class / aria-pressed 同步显示开关态
+            const isOn = webBtn.classList.contains('active')
+                || webBtn.classList.contains('is-on')
+                || webBtn.getAttribute('aria-pressed') === 'true';
+            webSearchItem.classList.toggle('is-on', isOn);
+        }
+        syncWebSearchState();
+
+        function positionMenu() {
+            const rect = attachBtn.getBoundingClientRect();
+            // 默认菜单 ~220px 宽 200px 高，弹在按钮上方。
+            menu.style.left = Math.max(8, Math.round(rect.left)) + 'px';
+            menu.style.top = Math.max(8, Math.round(rect.top - menu.offsetHeight - 8)) + 'px';
+        }
+
+        function openMenu() {
+            menu.hidden = false;
+            syncWebSearchState();
+            // 测一次 offsetHeight 才能正确算 top（hidden 时为 0）
+            requestAnimationFrame(positionMenu);
+        }
+        function closeMenu() {
+            menu.hidden = true;
+        }
+
+        // 拦截 attachBtn click（capture phase + stop），阻止 cancri 直接打开文件选择器
+        attachBtn.addEventListener('click', function (e) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            if (menu.hidden) {
+                openMenu();
+            } else {
+                closeMenu();
+            }
+        }, true);
+
+        // 菜单项委托
+        menu.addEventListener('click', function (e) {
+            const item = e.target.closest('.claude-attach-item');
+            if (!item) return;
+            const action = item.dataset.action;
+            if (action === 'file') {
+                fileInput.click();
+                closeMenu();
+            } else if (action === 'screenshot') {
+                showToast('截图功能正在开发中');
+                closeMenu();
+            } else if (action === 'websearch') {
+                // 触发原 #webSearchToggle.click()，保留 cancri 的状态机
+                if (webBtn) webBtn.click();
+                // 同步显示，不关闭菜单（让用户看到 toggle 状态）
+                setTimeout(syncWebSearchState, 50);
+            }
+        });
+
+        // 外部点击关闭
+        document.addEventListener('click', function (e) {
+            if (menu.hidden) return;
+            if (menu.contains(e.target)) return;
+            if (attachBtn.contains(e.target)) return;
+            closeMenu();
+        });
+        // ESC 关闭
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !menu.hidden) closeMenu();
+        });
+        // 滚动 / resize 关闭（避免位置漂移）
+        window.addEventListener('scroll', function () { if (!menu.hidden) closeMenu(); }, true);
+        window.addEventListener('resize', function () { if (!menu.hidden) closeMenu(); });
+    }
+
+    // 12. 模型 dropdown "更多模型" 折叠：默认只显示当前选中模型 +
+    //     一个 "更多模型 →" 行；hover/click 该行后展开全部模型。
+    //     不重写 cancri 的 renderModelDropdownFromCatalog，只在 dropdown
+    //     打开时注入 "更多模型" 行并切换 dropdown 上的 collapse class。
+    //     搜索框有内容时自动展开全部（兼容 cancri 的 filter）。
+    function bindModelMoreMenu() {
+        const dropdown = document.getElementById('modelDropdown');
+        if (!dropdown) return;
+        const content = document.getElementById('modelDropdownContent');
+        const searchInput = document.getElementById('modelSearchInput');
+        if (!content) return;
+
+        // 注入 "更多模型 →" 行（在 modelDropdownContent 之后兄弟位置）
+        let moreRow = dropdown.querySelector('.claude-more-models-row');
+        if (!moreRow) {
+            moreRow = document.createElement('div');
+            moreRow.className = 'claude-more-models-row';
+            moreRow.setAttribute('role', 'menuitem');
+            moreRow.innerHTML = '<span class="claude-more-models-label">更多模型</span>'
+                + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+            // 紧跟 content 之后插入
+            content.parentNode.insertBefore(moreRow, content.nextSibling);
+        }
+
+        // 默认折叠：dropdown 加 class，CSS 控制隐藏非 active 项
+        dropdown.classList.add('claude-collapsed-models');
+
+        function expand() {
+            dropdown.classList.add('claude-show-extras');
+        }
+        function collapse() {
+            dropdown.classList.remove('claude-show-extras');
+        }
+
+        // hover "更多模型" 展开
+        moreRow.addEventListener('mouseenter', expand);
+        // mobile 触摸：点击展开
+        moreRow.addEventListener('click', function (e) {
+            e.stopPropagation();
+            expand();
+        });
+
+        // 鼠标离开整个 dropdown 收起（给用户回去看 active 项的余地）
+        dropdown.addEventListener('mouseleave', collapse);
+
+        // 搜索框有内容时自动展开（让 cancri 的 filter 正常工作）
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                if (searchInput.value.trim()) {
+                    expand();
+                } else {
+                    collapse();
+                }
+            });
+        }
+
+        // dropdown 关闭时重置 collapse 状态
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(function () {
+                if (dropdown.hidden) {
+                    collapse();
+                    if (searchInput) searchInput.value = '';
+                }
+            }).observe(dropdown, { attributes: true, attributeFilter: ['hidden'] });
+        }
+
+        // cancri 每次 openModelDropdown 后会重新渲染 .model-option，重新插入 moreRow
+        // 到末尾确保它在 dropdown 关闭后再打开仍在末尾。
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(function () {
+                if (moreRow.parentNode !== content.parentNode
+                    || moreRow.previousSibling !== content) {
+                    content.parentNode.insertBefore(moreRow, content.nextSibling);
+                }
+            }).observe(content, { childList: true });
         }
     }
 
