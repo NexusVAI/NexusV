@@ -36,6 +36,17 @@
         <link rel="dns-prefetch" href="https://diusqgphvybnzazgopor.supabase.co" />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
+        <!-- 2026-05-15：聊天正文 serif 字体。Anthropic Serif（Claude 自家付费字体）
+             的最佳免费替代是 Adobe 开源的 Source Serif 4。font-display=swap 让
+             文本先用 fallback Georgia 立即可见，woff2 下载好再热切换，避免 FOIT。
+             加载 weight 400 / 500 / 600 covers body / heading / strong。CSP
+             已允许 fonts.googleapis.com (style-src) + fonts.gstatic.com (font-src)。 -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600&display=swap"
+        />
         <script src="./cancri_config.js?v=2026-05-13e"></script>
         <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
         <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
@@ -77,7 +88,7 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-05-14-motion-e-claude-auth"
+            href="./styles/cancri_motion.css?v=2026-05-15-auth-topo-theme-c"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -118,6 +129,15 @@
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
         <div class="auth-overlay" id="authOverlay">
+            <!-- 2026-05-15：登录页背景。
+                 原版用 inline SVG fractalNoise + diffuseLighting filter 渲染
+                 等高线纹理（参考 参考物体/beij.html），但浏览器把 inline
+                 SVG filter 当"活 filter"反复光栅化，主线程卡到点击都没响应。
+                 改成纯 CSS multi-radial-gradient（见 cancri_motion.css 的
+                 .auth-bg-island），零持续开销。 -->
+            <div class="auth-bg" aria-hidden="true">
+                <div class="auth-bg-island"></div>
+            </div>
             <div class="auth-stage">
                 <a
                     class="auth-brand"
@@ -214,6 +234,56 @@
                     >。
                 </p>
             </div>
+            <!-- 2026-05-15：登录页左下角 theme switch。fixed 定位独立于
+                 .auth-stage flow，brutalist 米白圆按钮跟卡片同语言。
+                 click 转发到 sidebar 的 #sidebarThemeToggle（js/ui/theme.js
+                 已绑定），保证切换写入 localStorage 后 chat 页同步生效。
+                 同时给两个 SVG（太阳 / 月亮）做切换显隐，data-theme="light"
+                 显示太阳（点击会切到 dark）；data-theme="dark" 显示月亮。 -->
+            <button
+                class="auth-theme-toggle"
+                id="authThemeToggle"
+                type="button"
+                aria-label="切换到深色模式"
+                title="切换到深色模式"
+            >
+                <svg
+                    class="auth-theme-icon auth-theme-icon-sun"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <path d="M12 2v2"></path>
+                    <path d="M12 20v2"></path>
+                    <path d="m4.93 4.93 1.41 1.41"></path>
+                    <path d="m17.66 17.66 1.41 1.41"></path>
+                    <path d="M2 12h2"></path>
+                    <path d="M20 12h2"></path>
+                    <path d="m6.34 17.66-1.41 1.41"></path>
+                    <path d="m19.07 4.93-1.41 1.41"></path>
+                </svg>
+                <svg
+                    class="auth-theme-icon auth-theme-icon-moon"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                </svg>
+            </button>
         </div>
 
         <div class="app" id="appRoot">
@@ -1457,17 +1527,15 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 简化的底部免责声明（对齐 Claude "Claude是AI的，会犯错"
+                         的最小风格）。原"请勿输入敏感信息..." + "隐私协议"按钮
+                         已删除；隐私协议入口仍可通过设置页 / privacy-policy modal
+                         的 #privacySettingsRow 进入。cancri_chat.js:9784 用 on()
+                         null-safe 注册 click，#privacyPolicyBtn 不存在只会 console.warn。 -->
                     <div class="footer-note">
-                        <span
-                            >请勿在对话中输入身份证号、银行卡号、验证码等敏感信息，详情见隐私协议。</span
+                        <span class="footer-disclaimer"
+                            >Cancri 是 AI 的，会犯错。请仔细核对回复。</span
                         >
-                        <button
-                            class="footer-legal-link"
-                            id="privacyPolicyBtn"
-                            type="button"
-                        >
-                            隐私协议
-                        </button>
                     </div>
                     <!-- Site footer: four social icons.
                          We deliberately do NOT carry the legacy
@@ -2539,6 +2607,6 @@
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-15-fixes-d"></script>
+        <script defer src="./claude_ui.js?v=2026-05-15-theme-toggle"></script>
     </body>
 </html>
