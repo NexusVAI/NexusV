@@ -1,32 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  2026-05-15 v2: 登录页背景"等高线"纹理（深色版，参考 参考物体/beij.html）。
-  pipeline：
-    1. feTurbulence fractalNoise 生成多倍频地形高度图（noise）
-    2. feGaussianBlur 轻度模糊（使等高线流畅而非粗糙锯齿）
-    3. feDiffuseLighting + feDistantLight 把高度图 3D 化为漫反射光照
-       （surface normal vs 光照方向 = 各像素亮度）→ 输出 0..255 灰度斜坡
-    4. feComponentTransfer discrete 把灰度斜坡量化为 N 个台阶
-       台阶之间的色差边界即为视觉"等高线"
-       tableValues 同时充当调色板（每个 band 一个暖棕→暖白的色值）
-  浏览器加载 SVG 文件作为 image 资源时 filter 只跑一次，结果栅格化进
-  image cache，之后纯 image 不参与每帧 paint/composite，零持续开销。
+  2026-05-15 v3: 登录页深色等高线背景，按 参考物体/beij.html 的 pipeline 1:1 重写。
+  beij.html 原版用 4 层 fractalNoise 不同 baseFrequency 多频叠加 → blur → diffuseLighting
+  → CSS filter: brightness(20) 把 dim 区压黑、ridge 顶推到饱和。
+  浏览器外部 image 拿不到 CSS filter，所以 brightness(20) 内联进 SVG：
+    feComponentTransfer slope=20 等价 CSS brightness(20) 在 SVG 链路里做。
+  最后用 feColorMatrix 把 luminance 写进 alpha：dim ≈ alpha 0（透明），
+  ridge 饱和 ≈ alpha 1（不透明），让 SVG 自然挂在 .auth-bg-island 的 #1a120c
+  bg 上方，无需 mix-blend-mode（normal 合成即天然只露 ridge）。
+  filter 只在 image rasterize 阶段跑一次，结果被 cache，零持续开销。
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
   <defs>
     <filter id="topo" x="0%" y="0%" width="100%" height="100%" filterUnits="userSpaceOnUse">
-      <feTurbulence type="fractalNoise" baseFrequency="0.0045" numOctaves="6" seed="7" result="n"/>
-      <feGaussianBlur in="n" stdDeviation="1.4" result="nb"/>
-      <feDiffuseLighting in="nb" surfaceScale="22" diffuseConstant="1.05" lighting-color="#ffffff" result="lit">
-        <feDistantLight azimuth="135" elevation="55"/>
+      <!-- 4 层多频噪声叠加，参考 beij.html 第 6-34 行 -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.0004" numOctaves="8" seed="4" result="t1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0008" numOctaves="8" seed="4" result="t2"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0001" numOctaves="8" seed="4" result="t3"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.0018" numOctaves="8" seed="4" result="t4"/>
+      <feMerge result="merged">
+        <feMergeNode in="t1"/>
+        <feMergeNode in="t3"/>
+        <feMergeNode in="t2"/>
+        <feMergeNode in="t4"/>
+      </feMerge>
+      <feGaussianBlur in="merged" stdDeviation="5" result="b1"/>
+      <!-- 第二轮：再加两层中高频 + blur，让 ridge 更密、更细 -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.0016" numOctaves="8" seed="4" result="t5"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.002" numOctaves="8" seed="4" result="t6"/>
+      <feMerge result="merged2">
+        <feMergeNode in="t5"/>
+        <feMergeNode in="t6"/>
+        <feMergeNode in="b1"/>
+      </feMerge>
+      <feGaussianBlur in="merged2" stdDeviation="5" result="b2"/>
+      <!-- 漫反射光照，warm tan = beij 用的 #d7bb98 -->
+      <feDiffuseLighting in="b2" surfaceScale="12" diffuseConstant="1" lighting-color="#d7bb98" result="lit">
+        <feDistantLight azimuth="90" elevation="55"/>
       </feDiffuseLighting>
-      <feComponentTransfer in="lit" result="banded">
-        <feFuncR type="discrete" tableValues="0.10 0.20 0.32 0.46 0.62 0.78 0.92"/>
-        <feFuncG type="discrete" tableValues="0.08 0.16 0.26 0.38 0.52 0.66 0.78"/>
-        <feFuncB type="discrete" tableValues="0.05 0.11 0.18 0.28 0.40 0.52 0.62"/>
+      <!-- 内联 brightness(20)，等价 CSS filter: brightness(20) -->
+      <feComponentTransfer in="lit" result="bright">
+        <feFuncR type="linear" slope="20" intercept="0"/>
+        <feFuncG type="linear" slope="20" intercept="0"/>
+        <feFuncB type="linear" slope="20" intercept="0"/>
       </feComponentTransfer>
+      <!-- luminance → alpha：dim 像素透明，ridge 顶不透明，自然挂在 bg 上 -->
+      <feColorMatrix in="bright" type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0.33 0.59 0.11 0 0" result="alphified"/>
     </filter>
   </defs>
-  <rect width="1600" height="1000" fill="#1a120c"/>
   <rect width="1600" height="1000" filter="url(#topo)"/>
 </svg>
