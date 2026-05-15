@@ -1744,11 +1744,10 @@ function restoreUiPreferences() {
   try {
     const raw = localStorage.getItem(UI_PREFS_STORAGE_KEY);
     if (!raw) {
-      // No saved preference — follow the browser/OS color scheme
-      const systemDark = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-      ).matches;
-      state.theme = systemDark ? "dark" : "light";
+      // 2026-05-15：首次访问默认浅色（用户偏好）。原跟随 OS 的逻辑
+      // 留作 prefers-color-scheme media listener 用于 hasSavedPref=false
+      // 场景，但默认值改为 'light' 让没保存偏好的用户进来就是白色。
+      state.theme = "light";
       const sysIdx = themeCycle.findIndex((item) => item.value === state.theme);
       if (sysIdx >= 0) themeIndex = sysIdx;
       return;
@@ -4051,11 +4050,11 @@ function applyTheme() {
   if (nextThemeIndex >= 0) {
     themeIndex = nextThemeIndex;
   }
-  // Claude UI 1:1 复刻：视觉永远 dark。state.theme 保留作为用户偏好
-  // （settings 面板的 segmented 按钮状态、appearanceValue label 显示），
-  // 但不写到 DOM 上，避免 [data-theme="light"] 命中 .auth-card / .auth-input
-  // 等老规则导致登录页白底白字（v2026-05-14-claude-ui-b 故障）。
-  root.setAttribute("data-theme", "dark");
+  // 2026-05-15：解开 Claude 复刻时期的 dark hardcode，让 light/dark
+  // 真实生效。登录页字色已在 cancri_motion.css 用 .auth-overlay scope
+  // 锁死暖白系，不再受 [data-theme="light"] 影响；.auth-card / .auth-input
+  // 也写死 brutalist 米白色，独立于 theme。
+  root.setAttribute("data-theme", state.theme === "light" ? "light" : "dark");
   // accentValue=null 表示跟随主题（Claude clay），不写 inline style，
   // 让 cancri_chat.css 中 html[data-theme=...] 里定义的 --accent 生效。
   if (state.accentValue) {

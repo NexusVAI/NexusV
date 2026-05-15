@@ -34,6 +34,31 @@
         bindMobileSidebarDrawer();
         bindAttachMenu();
         bindModelMoreMenu();
+        bindSidebarTooltips();
+        bindAuthThemeToggle();
+    }
+
+    // 13. Sidebar nav-row 自动注入 title 属性：折叠态（.sidebar.collapsed）
+    //     sidebar-label 被 CSS 隐藏，hover 时浏览器需要 title 才能弹原生 tooltip
+    //     显示项名（图 6 Claude 折叠态 hover 显示 "Chats"）。简单方案先用 native
+    //     title；若用户希望 Claude 那种自定义气泡式 tooltip 再升级。
+    //     幂等：已设过 title 不覆盖；MutationObserver 监听 sidebar 子节点新增
+    //     （cancri 动态加 history 行）保证新行也有 title。
+    function bindSidebarTooltips() {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        function applyTitles() {
+            sidebar.querySelectorAll('.nav-row').forEach(function (row) {
+                if (row.title) return;
+                const label = row.querySelector('.sidebar-label');
+                const text = label ? label.textContent.trim() : row.textContent.trim();
+                if (text) row.title = text;
+            });
+        }
+        applyTitles();
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(applyTitles).observe(sidebar, { subtree: true, childList: true });
+        }
     }
 
     // 10. Mobile sidebar drawer：在 ≤768px 屏幕，点 #mobileMenuBtn 应该
@@ -435,16 +460,27 @@
         }
     }
 
-    // 11. + 按钮自定义菜单（Claude 风格）：拦截 #attachBtn click，
-    //     弹出小菜单替代直接打开文件选择器。
-    //     菜单项：添加文件或照片 / 网络搜索 toggle / 截图占位。
+    // 11. + 按钮自定义菜单（Claude 风格）：拦截 composer 里 #plusTrigger 的
+    //     click，弹出小菜单替代 cancri 老的 #plusPopover（"上传图片/上传文件"
+    //     两项挤一起的样子）。
+    //     菜单项：添加文件或照片 / 截图占位 / 网络搜索 toggle。
     //     模块化解耦：不修改 cancri_chat.js 的事件绑定，用 capture-phase
-    //     拦截，菜单项手动触发 attachmentInput.click() 或 webSearchToggle.click()。
+    //     stopImmediatePropagation 抢在 cancri 的 click handler 前面阻止它打开
+    //     plusPopover；菜单项手动触发 #attachmentInput.click() 或 #webSearchToggle.click()。
     function bindAttachMenu() {
-        const attachBtn = document.getElementById('attachBtn');
+        // 真正的触发按钮 = composer 里那个 + button。
+        // 老 #attachBtn 其实是 #plusPopover 内的 "上传图片" 菜单项，不是触发器。
+        const triggerBtn = document.getElementById('plusTrigger');
         const fileInput = document.getElementById('attachmentInput');
         const webBtn = document.getElementById('webSearchToggle');
-        if (!attachBtn || !fileInput) return;
+        const oldPopover = document.getElementById('plusPopover');
+        if (!triggerBtn || !fileInput) return;
+
+        // 永久隐藏 cancri 老 popover —— 用 inline style 避免和 cancri 的
+        // openPopover() 切换 class 起冲突（即使老逻辑 add `.open`，display:none 也覆盖）。
+        if (oldPopover) {
+            oldPopover.style.display = 'none';
+        }
 
         // 一次创建菜单元素，常驻 body。display:none 默认。
         let menu = document.getElementById('claudeAttachMenu');
@@ -484,7 +520,7 @@
         syncWebSearchState();
 
         function positionMenu() {
-            const rect = attachBtn.getBoundingClientRect();
+            const rect = triggerBtn.getBoundingClientRect();
             // 默认菜单 ~220px 宽 200px 高，弹在按钮上方。
             menu.style.left = Math.max(8, Math.round(rect.left)) + 'px';
             menu.style.top = Math.max(8, Math.round(rect.top - menu.offsetHeight - 8)) + 'px';
@@ -500,8 +536,10 @@
             menu.hidden = true;
         }
 
-        // 拦截 attachBtn click（capture phase + stop），阻止 cancri 直接打开文件选择器
-        attachBtn.addEventListener('click', function (e) {
+        // 拦截 plusTrigger click（capture phase + stopImmediatePropagation），
+        // 抢在 cancri_chat.js 里给 #plusTrigger 注册的 bubble-phase listener 前面，
+        // 阻止它调用 openPopover(plusPopover)。
+        triggerBtn.addEventListener('click', function (e) {
             e.stopImmediatePropagation();
             e.preventDefault();
             if (menu.hidden) {
@@ -534,7 +572,7 @@
         document.addEventListener('click', function (e) {
             if (menu.hidden) return;
             if (menu.contains(e.target)) return;
-            if (attachBtn.contains(e.target)) return;
+            if (triggerBtn.contains(e.target)) return;
             closeMenu();
         });
         // ESC 关闭
@@ -546,19 +584,52 @@
         window.addEventListener('resize', function () { if (!menu.hidden) closeMenu(); });
     }
 
-    // 12. 模型 dropdown "更多模型" 折叠：默认只显示当前选中模型 +
-    //     一个 "更多模型 →" 行；hover/click 该行后展开全部模型。
-    //     不重写 cancri 的 renderModelDropdownFromCatalog，只在 dropdown
-    //     打开时注入 "更多模型" 行并切换 dropdown 上的 collapse class。
-    //     搜索框有内容时自动展开全部（兼容 cancri 的 filter）。
+    // 12. 模型 dropdown 折叠 + cascade submenu（PC）/ 全展开（mobile）
+    //     PC（>768px）：主 dropdown 默认折叠只显示 active 模型 + "更多模型 →"
+    //                   行；hover 该行 → 在主 dropdown 右侧弹出 cascade 容器
+    //                   显示其他全部模型。模型点击通过转发到主 dropdown 内
+    //                   同 data-model 的原 option，复用 cancri 的 click 委托。
+    //     Mobile（≤768px）：不折叠，不创建 cascade，主 dropdown 直接显示全部
+    //                       （搜索 + filter + 列表，跟原 cancri 行为一致）。
+    //     模块化解耦：不重写 cancri 的 renderModelDropdownFromCatalog；cascade
+    //     是 body 直接子节点，渲染时 cloneNode 主 dropdown 内的 .model-option
+    //     和 .model-group-header。
     function bindModelMoreMenu() {
         const dropdown = document.getElementById('modelDropdown');
         if (!dropdown) return;
         const content = document.getElementById('modelDropdownContent');
         const searchInput = document.getElementById('modelSearchInput');
+        const modelSelector = document.getElementById('modelSelector');
         if (!content) return;
 
-        // 注入 "更多模型 →" 行（在 modelDropdownContent 之后兄弟位置）
+        const mqDesktop = window.matchMedia('(min-width: 769px)');
+
+        // ── 1. dropdown 自身大小适配（仅桌面）──
+        // 桌面：dropdown 用 position: fixed，cancri 按按钮 getBoundingClientRect().bottom
+        //   设 inline `top`。按钮在 composer 中下，向下展开会顶穿 viewport 底，导致底
+        //   圆角被切。CSS max-height 是死值，这里按 inline top 动态写 max-height。
+        // 移动：claude.css 走 bottom-anchor + max-height:50dvh !important，不需要
+        //   动态算（也避免被 99-polish-fixes 的 top !important 干扰）。
+        function sizeDropdownByViewport() {
+            if (!mqDesktop.matches) return; // mobile 完全交给 CSS
+            const inlineTop = parseFloat(dropdown.style.top || '');
+            if (!Number.isFinite(inlineTop) || inlineTop <= 0) return;
+            const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+            if (!vh) return;
+            const maxH = Math.max(220, Math.round(vh - inlineTop - 24));
+            const want = maxH + 'px';
+            if (dropdown.style.maxHeight === want) return;
+            dropdown.style.maxHeight = want;
+        }
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(sizeDropdownByViewport)
+                .observe(dropdown, { attributes: true, attributeFilter: ['style'] });
+        }
+        window.addEventListener('resize', sizeDropdownByViewport);
+        sizeDropdownByViewport();
+
+        // ── 2. PC 端 cascade submenu ──
+        // 注入 "更多模型 →" 行（cancri 重渲染 content 后会被 observer 重新 append）
         let moreRow = dropdown.querySelector('.claude-more-models-row');
         if (!moreRow) {
             moreRow = document.createElement('div');
@@ -566,54 +637,130 @@
             moreRow.setAttribute('role', 'menuitem');
             moreRow.innerHTML = '<span class="claude-more-models-label">更多模型</span>'
                 + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
-            // 紧跟 content 之后插入
             content.parentNode.insertBefore(moreRow, content.nextSibling);
         }
 
-        // 默认折叠：dropdown 加 class，CSS 控制隐藏非 active 项
-        dropdown.classList.add('claude-collapsed-models');
-
-        function expand() {
-            dropdown.classList.add('claude-show-extras');
+        // cascade 容器（body 直挂，避免被主 dropdown 的 overflow:hidden 裁剪）
+        let cascade = document.getElementById('claudeModelCascade');
+        if (!cascade) {
+            cascade = document.createElement('div');
+            cascade.id = 'claudeModelCascade';
+            cascade.className = 'claude-model-cascade';
+            cascade.hidden = true;
+            document.body.appendChild(cascade);
         }
-        function collapse() {
-            dropdown.classList.remove('claude-show-extras');
+
+        function applyDesktopFolding() {
+            if (mqDesktop.matches) {
+                dropdown.classList.add('claude-collapsed-models');
+                moreRow.style.display = '';
+            } else {
+                // mobile：去折叠，隐藏 moreRow（用户截图就是想看到全部）
+                dropdown.classList.remove('claude-collapsed-models');
+                moreRow.style.display = 'none';
+                hideCascade();
+            }
         }
 
-        // hover "更多模型" 展开
-        moreRow.addEventListener('mouseenter', expand);
-        // mobile 触摸：点击展开
+        function populateCascade() {
+            // 每次重新拷贝，反映当前模型状态（quota 锁、speed dot 等）
+            cascade.innerHTML = '';
+            const items = content.querySelectorAll('.model-group-header, .model-option:not(.active)');
+            items.forEach(function (el) {
+                const clone = el.cloneNode(true);
+                cascade.appendChild(clone);
+            });
+        }
+
+        function positionCascade() {
+            const rect = dropdown.getBoundingClientRect();
+            const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+            const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+            const cw = 280;
+            const gap = 6;
+            // 优先放右边，不够则放左边
+            let left = rect.right + gap;
+            if (left + cw > vw - 12) {
+                left = Math.max(12, rect.left - cw - gap);
+            }
+            const top = Math.max(12, rect.top);
+            cascade.style.left = left + 'px';
+            cascade.style.top = top + 'px';
+            cascade.style.width = cw + 'px';
+            cascade.style.maxHeight = Math.max(220, vh - top - 24) + 'px';
+        }
+
+        function showCascade() {
+            if (!mqDesktop.matches) return;
+            populateCascade();
+            cascade.hidden = false;
+            requestAnimationFrame(positionCascade);
+        }
+        function hideCascade() {
+            cascade.hidden = true;
+        }
+
+        moreRow.addEventListener('mouseenter', showCascade);
+        // 触摸（PC 端 hover-only，但为兼容笔记本触屏保留 click）
         moreRow.addEventListener('click', function (e) {
             e.stopPropagation();
-            expand();
+            showCascade();
         });
 
-        // 鼠标离开整个 dropdown 收起（给用户回去看 active 项的余地）
-        dropdown.addEventListener('mouseleave', collapse);
+        // 鼠标在主 dropdown / cascade 之间穿梭时不要关；离开整个组合区才关
+        dropdown.addEventListener('mouseleave', function (e) {
+            const next = e.relatedTarget;
+            if (next && cascade.contains(next)) return;
+            hideCascade();
+        });
+        cascade.addEventListener('mouseleave', function (e) {
+            const next = e.relatedTarget;
+            if (next && dropdown.contains(next)) return;
+            hideCascade();
+        });
 
-        // 搜索框有内容时自动展开（让 cancri 的 filter 正常工作）
+        // cascade click → 找原 option 触发 click，复用 cancri 的 changeModel 委托
+        cascade.addEventListener('click', function (e) {
+            const opt = e.target.closest('.model-option');
+            if (!opt) return;
+            const modelId = opt.dataset.model;
+            if (!modelId) return;
+            const source = content.querySelector('.model-option[data-model="' + CSS.escape(modelId) + '"]');
+            if (source) {
+                source.click();
+                hideCascade();
+            }
+        });
+
+        // 搜索框有内容：取消折叠让 cancri 的 filter 在主 dropdown 内显示结果
         if (searchInput) {
             searchInput.addEventListener('input', function () {
+                if (!mqDesktop.matches) return;
                 if (searchInput.value.trim()) {
-                    expand();
+                    dropdown.classList.remove('claude-collapsed-models');
+                    hideCascade();
                 } else {
-                    collapse();
+                    dropdown.classList.add('claude-collapsed-models');
                 }
             });
         }
 
-        // dropdown 关闭时重置 collapse 状态
-        if (typeof MutationObserver !== 'undefined') {
+        // 主 dropdown 关闭（modelSelector 失去 .open）时同步关 cascade + 重置搜索
+        if (modelSelector && typeof MutationObserver !== 'undefined') {
             new MutationObserver(function () {
-                if (dropdown.hidden) {
-                    collapse();
+                if (!modelSelector.classList.contains('open')
+                    && !modelSelector.classList.contains('is-open')) {
+                    hideCascade();
                     if (searchInput) searchInput.value = '';
+                    // 关闭后重新加 collapsed class（搜索路径可能去掉过）
+                    if (mqDesktop.matches) {
+                        dropdown.classList.add('claude-collapsed-models');
+                    }
                 }
-            }).observe(dropdown, { attributes: true, attributeFilter: ['hidden'] });
+            }).observe(modelSelector, { attributes: true, attributeFilter: ['class'] });
         }
 
         // cancri 每次 openModelDropdown 后会重新渲染 .model-option，重新插入 moreRow
-        // 到末尾确保它在 dropdown 关闭后再打开仍在末尾。
         if (typeof MutationObserver !== 'undefined') {
             new MutationObserver(function () {
                 if (moreRow.parentNode !== content.parentNode
@@ -622,6 +769,74 @@
                 }
             }).observe(content, { childList: true });
         }
+
+        // 视口尺寸变化：重新决定 mobile / desktop 模式
+        applyDesktopFolding();
+        if (typeof mqDesktop.addEventListener === 'function') {
+            mqDesktop.addEventListener('change', applyDesktopFolding);
+        } else if (typeof mqDesktop.addListener === 'function') {
+            mqDesktop.addListener(applyDesktopFolding);
+        }
+    }
+
+    // 14. 登录页左下角 theme 切换按钮。
+    //     直接操作 root data-theme + 同步 cancri state + 写 localStorage，
+    //     不再绕 sidebarThemeToggle.click()（避免依赖 js/ui/theme.js
+    //     绑定时序 / sidebar element 可见性）。
+    function bindAuthThemeToggle() {
+        const btn = document.getElementById('authThemeToggle');
+        if (!btn) return;
+        const STORAGE_KEY = 'cancri_ui_prefs';
+
+        function getCurrentTheme() {
+            return document.documentElement.getAttribute('data-theme') === 'dark'
+                ? 'dark' : 'light';
+        }
+        function syncIcon() {
+            const isDark = getCurrentTheme() === 'dark';
+            btn.dataset.theme = isDark ? 'dark' : 'light';
+            btn.setAttribute('aria-label', isDark ? '切换到浅色模式' : '切换到深色模式');
+            btn.setAttribute('title', isDark ? '切换到浅色模式' : '切换到深色模式');
+        }
+        function persistTheme(theme) {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                const prefs = raw ? JSON.parse(raw) : {};
+                prefs.theme = theme;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+            } catch (_) { /* localStorage 不可用静默忽略 */ }
+        }
+        function applyTheme(next) {
+            // 1) 同步到 cancri 内部 state，让 cancri.applyTheme() 跟 UI 一致
+            const app = window.CancriApp;
+            if (app && app.state) {
+                app.state.theme = next;
+            }
+            // 2) 调 cancri 内部 applyTheme（会触发 setAttribute + persist + UI 更新）
+            if (app && typeof app.applyTheme === 'function') {
+                app.applyTheme();
+            } else {
+                // cancri 尚未初始化的极端 case：手动设置
+                document.documentElement.setAttribute('data-theme', next);
+                persistTheme(next);
+            }
+            // 3) 同步 sidebar label（js/ui/theme.js 用 MutationObserver
+            //    自动同步，这里冗余调用保证立即生效）
+            const label = document.getElementById('sidebarThemeLabel');
+            if (label) label.textContent = next === 'dark' ? '浅色模式' : '深色模式';
+            syncIcon();
+            showToast(next === 'dark' ? '已切换至深色' : '已切换至浅色');
+        }
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            applyTheme(getCurrentTheme() === 'dark' ? 'light' : 'dark');
+        });
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(syncIcon).observe(document.documentElement, {
+                attributes: true, attributeFilter: ['data-theme']
+            });
+        }
+        syncIcon();
     }
 
     // 公共 toast：使用现有 #toast 元素，没有就 fallback alert

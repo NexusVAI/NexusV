@@ -35,10 +35,29 @@ html, html[data-theme="light"], html[data-theme="dark"] {
     --c-radius-sm: 10px;
     --c-radius-pill: 999px;
     --c-shadow-pop: 0 10px 38px rgba(0, 0, 0, 0.45);
-    --c-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-              "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    --c-font-serif: "Source Serif Pro", "Iowan Old Style", "Times New Roman",
-                    Georgia, serif;
+    /* 2026-05-15：字体栈对齐 Claude 真机声明（图 1/2/3 DevTools 字体 inspector）。
+       - sans: 严格按 Claude 顺序 "Anthropic Sans" → system-ui → "Segoe UI" → Roboto
+         → Helvetica → Arial → sans-serif。Anthropic Sans 是付费字体我们没法 self-host，
+         浏览器会跳到 system-ui（macOS SF Pro / Windows Segoe UI Variable），跟 Claude
+         在国内用户机器上的真实渲染效果（图 3 Yu Gothic / PingFang SC）一致。
+         尾部补 CJK fallback 让 Windows/Linux 中文也清晰。
+       - serif: "Anthropic Serif" → "Source Serif 4" (Google Fonts 加载) → Georgia
+         链。Source Serif 4 是 Adobe 开源出的，跟 Anthropic Serif 同属 humanist
+         serif 系，视觉最接近的免费替代。 */
+    --c-font: "Anthropic Sans", system-ui, -apple-system, BlinkMacSystemFont,
+              "Segoe UI", Roboto, Helvetica, Arial,
+              "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+              sans-serif;
+    --c-font-serif: "Anthropic Serif", "Source Serif 4", "Source Serif Pro",
+                    "Iowan Old Style", Georgia, "Times New Roman", Times,
+                    "Hiragino Mincho ProN", "Songti SC", "Noto Serif CJK SC",
+                    serif;
+}
+
+/* 覆盖 cancri 全局 --font token（cancri_chat.css:18），让所有继承 var(--font)
+   的元素（body / textarea / 各种 UI）都走我们的 Claude-对齐栈。 */
+:root {
+    --font: var(--c-font);
 }
 
 /* 强制使用 dark 主题：claude.html 不允许 light 视觉。
@@ -156,7 +175,7 @@ body {
 .nav-row svg {
     width: 16px !important;
     height: 16px !important;
-    opacity: 0.85;
+    /* opacity 由 §21 强制 1，不再叠加 0.85 衰减 */
 }
 .nav-row:hover {
     background: var(--c-hover) !important;
@@ -167,9 +186,9 @@ body {
     color: var(--c-text) !important;
 }
 
-/* 新聊天第一项 — 跟其它 nav-row 视觉一致，不再特殊 */
+/* 新聊天第一项 — 跟其它 nav-row 视觉一致，不再特殊（不加重 weight） */
 #newChatBtn .sidebar-label {
-    font-weight: 450;
+    font-weight: 400;
     color: var(--c-text);
 }
 
@@ -680,10 +699,31 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     border: 1px solid var(--c-line-strong) !important;
     border-radius: 14px !important;
     box-shadow: var(--c-shadow-pop) !important;
-    padding: 6px !important;
+    /* 顶部 6px 跟搜索栏，底部 8px 跟滚动列表 —— 给最后一项一点缓冲，
+       避免行底直接贴到 dropdown 边框上。 */
+    padding: 6px 6px 8px !important;
     color: var(--c-text);
-    min-width: 320px !important;
-    max-width: 380px !important;
+    /* 收窄整个卡片：原 380 显得宽厚，320 更接近 Claude 视觉。
+       配合 cancri inline `width: 420px`，max-width !important 会赢。 */
+    min-width: 280px !important;
+    max-width: 320px !important;
+    /* 容器自身封顶：兜底 max-height，避免极矮屏（如 350dvh）失控。
+       真实 max-height 由 claude_ui.js 的 sizeDropdownByViewport
+       根据 cancri 算的 inline top 动态写到 inline，确保底圆角始终
+       在 viewport 内。 */
+    max-height: min(70dvh, 520px);
+    /* clip 让内部 overflow 的子元素被外层 14px 圆角裁剪干净，
+       否则滚动 content 的内容会冒到圆角外。
+       注意：不能加 display:flex !important —— cancri 用 display:none↔flex
+       切换 dropdown 开关，强制 flex 会让它永远开着。flex-direction 已由
+       cancri_chat.css:1276 设好。 */
+    overflow: hidden !important;
+}
+/* 列表区填满 dropdown 剩余高度并独立滚动，footer 由 flex 自然排在底。 */
+.model-dropdown .model-dropdown-content {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
 }
 .model-dropdown .model-search-panel {
     padding: 8px !important;
@@ -1009,13 +1049,13 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
 }
 
 /* ───────────────────────────────────────────────────────────
-   10. AUTH OVERLAY — 保留现有登录页样式，只微调到 dark Claude
+   10. AUTH OVERLAY — 旧 dark Claude 复刻规则已废弃。
+   登录页视觉由 cancri_motion.css 的 .auth-overlay / .auth-bg /
+   .auth-card 等接管（brutalist 米白卡 + 深栗 + 等高线）。
+   这里只保留 color 兜底，不要给 .auth-stage 加 background —
+   否则会画出一个深色矩形"外卡片"把 hero+卡片+footer 全包住。
    ─────────────────────────────────────────────────────────── */
-.auth-overlay {
-    background: var(--c-bg) !important;
-}
 .auth-stage {
-    background: var(--c-bg) !important;
     color: var(--c-text);
 }
 
@@ -1694,11 +1734,14 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
         font-size: 13px !important;
     }
 
-    /* composer：发送按钮永远 visible，model selector 压缩 */
+    /* composer：发送按钮永远 visible，model selector 压缩。
+       2026-05-15：原 padding 0 4px 在小屏幕（≈360-420px）下会让最右的
+       send 按钮被推出 viewport。把 wrap padding 从 4 提到 10 + composer
+       内部 padding-inline 12，让 + 按钮和 voice/send 组都从容器边缘内缩。 */
     .composer-wrap {
         width: 100% !important;
         max-width: 100% !important;
-        padding: 0 4px !important;
+        padding: 0 10px !important;
     }
     .composer {
         border-radius: 14px !important;
@@ -1708,6 +1751,8 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
         gap: 6px !important;
         flex-wrap: nowrap !important;
         min-width: 0;
+        /* 给 composer 底部一行加内缩，避免最左 + / 最右 send 按钮顶到边缘 */
+        padding-inline: 4px !important;
     }
     .composer-actions {
         gap: 6px !important;
@@ -1936,29 +1981,27 @@ button.composer-tool-btn:hover {
 }
 
 /* ───────────────────────────────────────────────────────────
-   18. 模型 dropdown "更多模型" 折叠（claude_ui.js bindModelMoreMenu）
-   - 默认 dropdown 加 .claude-collapsed-models 类
-   - 只显示 .model-option.active（当前选中）+ "更多模型 →" 行
-   - hover "更多模型" → dropdown 加 .claude-show-extras → 展开全部
-   - 搜索框有内容时也强制 .claude-show-extras（让 cancri filter 正常）
+   18. 模型 dropdown 折叠 + cascade submenu（claude_ui.js bindModelMoreMenu）
+   PC（>768px）：
+     - 主 dropdown 加 .claude-collapsed-models → 只显示 active 模型
+       + "更多模型 →" 行
+     - hover "更多模型" → body 直挂的 #claudeModelCascade 容器在主 dropdown
+       右侧弹出，显示其他全部模型；click 转发到主 dropdown 的同 data-model
+       原 option，复用 cancri 的 changeModel 委托
+   Mobile（≤768px）：
+     - claude_ui.js 不加折叠 class，moreRow 隐藏 → 直接展示全部
+       （兼容用户给的图 1：搜索 + filter + 完整列表）
    ─────────────────────────────────────────────────────────── */
-.model-dropdown.claude-collapsed-models:not(.claude-show-extras) .model-option:not(.active) {
+
+/* 折叠时主 dropdown 内只留 active option（其它全部隐藏，包括 group-header） */
+.model-dropdown.claude-collapsed-models .model-option:not(.active) {
     display: none !important;
 }
-.model-dropdown.claude-collapsed-models:not(.claude-show-extras) .model-group-header {
+.model-dropdown.claude-collapsed-models .model-group-header {
     display: none !important;
-}
-/* 展开时全部 option 都显示，"更多模型" 行隐藏 */
-.model-dropdown.claude-show-extras .claude-more-models-row {
-    display: none !important;
-}
-.model-dropdown.claude-show-extras .model-option {
-    display: flex !important;
-}
-.model-dropdown.claude-show-extras .model-group-header {
-    display: block !important;
 }
 
+/* "更多模型 →" 行 */
 .claude-more-models-row {
     display: flex;
     align-items: center;
@@ -1981,6 +2024,137 @@ button.composer-tool-btn:hover {
 .claude-more-models-row svg {
     color: inherit;
     flex-shrink: 0;
+}
+
+/* Cascade submenu：直接挂在 body 上，position: fixed，
+   样式跟主 dropdown 同源（深色卡片 + 圆角 + 阴影），列表区可滚动 */
+.claude-model-cascade {
+    position: fixed;
+    z-index: 802;             /* 略高于 .model-dropdown 的 801 */
+    background: var(--c-bg-elev-2);
+    border: 1px solid var(--c-line-strong);
+    border-radius: 14px;
+    box-shadow: var(--c-shadow-pop);
+    padding: 6px;
+    color: var(--c-text);
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* 浮入动画 */
+    animation: claude-cascade-fade-in 140ms ease-out;
+}
+.claude-model-cascade[hidden] {
+    display: none !important;
+}
+@keyframes claude-cascade-fade-in {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+/* cascade 内的 model-option / group-header 复用主 dropdown 的视觉规则
+   （.model-dropdown .model-option / .model-group-header），但 cascade
+   不带 .model-dropdown 类，所以这里显式镜像关键样式 */
+.claude-model-cascade .model-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 1px 0;
+    color: var(--c-text);
+    font-size: 13px;
+    line-height: 1.4;
+    min-height: 36px;
+    cursor: pointer;
+    transition: background 120ms;
+}
+.claude-model-cascade .model-option:hover {
+    background: var(--c-hover);
+}
+.claude-model-cascade .model-group-header {
+    color: var(--c-text-dim);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 12px 4px;
+    background: transparent;
+}
+.claude-model-cascade .model-option-name {
+    color: var(--c-text);
+    font-weight: 500;
+}
+.claude-model-cascade .model-option-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    margin-right: 6px;
+}
+.claude-model-cascade .model-tag,
+.claude-model-cascade .model-label-subtext {
+    display: none;
+}
+.claude-model-cascade .model-speed-dot {
+    width: 6px;
+    height: 6px;
+    margin-right: 4px;
+}
+
+/* Mobile：cascade 永不出现 + 主 dropdown 容器整体收窄 + bottom-anchor
+   保留所有内部 UI（搜索框 / filter chips / group-header / icon / 分页）。
+
+   关键问题：99-polish-fixes.css:480 在 max-width:640 强制
+   `top: calc(var(--header-h) + 10px) !important`，把 dropdown 锚到 viewport
+   顶部；max-height: min(70dvh, 620px) 又让它一路展开到接近底部，textarea
+   在 composer 中央被完全盖住。
+
+   修法：top: auto !important 把锚顶规则撤销 + bottom: 76px !important
+   把 dropdown 改成贴在 modelSelector 按钮上方（76px ≈ composer 工具栏行
+   到 viewport 底的距离）+ 右对齐 + 收窄 + max-height 50dvh。textarea
+   在 composer 上半部分自然不被覆盖。 */
+@media (max-width: 768px) {
+    .claude-model-cascade {
+        display: none !important;
+    }
+    .model-dropdown {
+        top: auto !important;
+        bottom: 76px !important;
+        left: auto !important;
+        right: 12px !important;
+        max-width: 320px !important;
+        min-width: 0 !important;
+        width: auto !important;
+        max-height: 50dvh !important;
+        /* 99-polish-fixes 给 mobile 写了 transform: translateY(-4px) scale(.98)！important，
+           open 时再切到 translateY(0) scale(1) — 我们 bottom-anchor 后这套向上偏移
+           视觉不需要，统一回正。 */
+        transform: none !important;
+    }
+    .model-selector.open .model-dropdown,
+    .model-selector.is-open .model-dropdown {
+        transform: none !important;
+    }
+
+    /* 2026-05-15：修复 mobile "想换模型却切到别的" 的 bug。
+       根因：cancri_chat.css:1425 给每个 .model-option 加 stagger 动画
+       （opacity: 0 + transform: translateY(-6px) + animation-delay
+       min(180ms, i*8ms)）。动画延迟期间元素 opacity:0 视觉不可见，
+       但 hit-area 已就位 → 用户以为某行是 model A，实际点中的是
+       尚未渲染的 model B。
+       移动端禁用 stagger（PC 端保留视觉），加大 hit-area 到 44px
+       符合 iOS HIG / Material 触摸最小尺寸。 */
+    .model-dropdown.animating .model-option {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .model-dropdown .model-option {
+        min-height: 44px !important;
+        padding: 10px 12px !important;
+    }
+    /* "更多模型" 行 mobile 上彻底从布局移除（不只是 display:none），
+       消除 JS bindModelMoreMenu 残留 DOM 在 mobile 触发任何意外路径。 */
+    .claude-more-models-row {
+        display: none !important;
+    }
 }
 
 /* 模型 dropdown 简化：去掉视觉噪音，对齐 Claude 图 3 */
@@ -2047,7 +2221,7 @@ button.composer-tool-btn:hover {
     letter-spacing: 0.005em;
 }
 .nav-row svg {
-    color: var(--c-text-soft) !important;  /* icon 比 label 略 dim */
+    /* color 在 §21 强制纯白 #ffffff，这里只保留布局 */
     flex-shrink: 0;
 }
 .nav-row:hover {
@@ -2212,4 +2386,74 @@ button.composer-tool-btn:hover {
         height: 32px !important;
         padding: 0 !important;
     }
+}
+
+/* ───────────────────────────────────────────────────────────
+   19. 底部免责声明居中（替代 cancri_chat.css:2547 的 space-between）
+   原 .footer-note 是 flex space-between 用来分排 "请勿..." span +
+   "隐私协议" button；现在只剩单 span，居中即可。
+   ─────────────────────────────────────────────────────────── */
+.footer-note {
+    justify-content: center !important;
+    text-align: center;
+}
+.footer-disclaimer {
+    color: var(--c-text-dim);
+    font-size: 12.5px;
+    line-height: 1.5;
+    letter-spacing: 0.005em;
+}
+
+/* ───────────────────────────────────────────────────────────
+   20. + 按钮（#plusTrigger）彻底去框
+   原 cancri component-composer.css 给 .composer-tool-btn 设了
+   `border: 1px solid var(--line) + border-radius: 50%`；
+   cancri_liquid_glass.css 给 [data-glass] 设了 ::after specular ring
+   + ::before refractive surface。claude.css §17 已经 border:0 + bg
+   transparent，但 data-glass 的 ::before / ::after 仍画 ring，看起来
+   像一个深色框。这里彻底关闭 #plusTrigger 的玻璃视觉。
+   ─────────────────────────────────────────────────────────── */
+button#plusTrigger,
+button#plusTrigger[data-glass] {
+    border: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    isolation: auto !important;
+}
+button#plusTrigger[data-glass]::before,
+button#plusTrigger[data-glass]::after {
+    content: none !important;
+    display: none !important;
+}
+button#plusTrigger:hover {
+    background: var(--c-hover) !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   21. Sidebar 视觉对齐 Claude 真机
+   - icon SVG 纯白（#ffffff + opacity: 1）— 用户明确要求"最白"
+   - label 文字不跟着 SVG 变白，保持原 --c-text 的米黄白
+     （rgba(245,240,230,0.96)，在黑底上看略带暖色，比纯白对比柔和）
+   - label weight 400（细笔画），font-smoothing antialiased 让笔画质感清晰
+   注：图 1 Claude DevTools 显示 label color 是 #F8F8F6（冷暖白），
+   但用户希望 label 不要纯白；保留 --c-text 让 label 略带暖色质感。
+   ─────────────────────────────────────────────────────────── */
+.sidebar .nav-row svg {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    /* stroke-width 用 inline 原值（1.9），不再 CSS 覆盖加粗。
+       Claude 真机也是细笔画，加粗反而失真。 */
+}
+.sidebar .nav-row .sidebar-label {
+    font-weight: 400 !important;
+    color: var(--c-text) !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.sidebar .claude-recent-title {
+    /* "近期" 标题字重稍重，跟 nav 区分 */
+    font-weight: 500;
 }
