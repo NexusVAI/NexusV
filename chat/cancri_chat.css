@@ -4301,20 +4301,22 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 
 /* ── SCRIM ───────────────────────────────────────────────── */
+/* 2026-05-15 fix(M2)：群友反馈"每次点侧边栏的每个组件都会有个模糊的遮罩，很烦"。
+   原 backdrop-filter: blur(2px) 在 mobile 上叠加在多个 SVG filter 输出之上时，
+   还会触发整层 paint，肉眼上确实是一层"模糊雾"。改成纯 dim：去 blur，opacity
+   降到 0.55（仅纯色变暗），sidebar/弹窗依然能视觉聚焦但不糊背景。 */
 .scrim {
     position: fixed;
     inset: 0;
     z-index: 100;
     background: var(--scrim);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--transition);
 }
 
 .scrim.show {
-    opacity: 1;
+    opacity: 0.55;
     pointer-events: auto;
 }
 
