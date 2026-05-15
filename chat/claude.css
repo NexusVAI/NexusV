@@ -2506,33 +2506,12 @@ button.composer-tool-btn:hover {
     display: none !important;
 }
 
-/* 2026-05-15 essence: AI 消息底部 action bar（复制/重生成/赞/踩）
-   - cancri_chat.css:3266 默认 opacity:0，hover 才 opacity:1。
-   - Claude 真站 desktop 是常驻显示，不依赖 hover。为遵从期望，
-     桌面覆盖为 opacity:1 + 视觉精修（颜色/间距/字号、hover 轻 bg）。
-   - mobile (≤768px) 仍隐藏，野点屏窄不充后面。 */
-@media (min-width: 769px) {
-    .message.assistant .message-actions {
-        opacity: 1 !important;
-        margin-top: 8px !important;
-        gap: 2px !important;
-    }
-    .message.assistant .message-action-btn {
-        font-size: 12px !important;
-        padding: 4px 6px !important;
-        gap: 4px !important;
-        color: var(--c-text-soft) !important;
-        border-radius: 6px !important;
-    }
-    .message.assistant .message-action-btn:hover {
-        background: var(--c-hover) !important;
-        color: var(--c-text) !important;
-    }
-    .message.assistant .message-action-btn svg {
-        width: 14px !important;
-        height: 14px !important;
-    }
-}
+/* 2026-05-15 v5 撤销：上一版（PR #14 essence pass）我加了 @media (min-width: 769px)
+   把 .message.assistant .message-actions 强制 opacity:1 + 一组视觉精修，理由是
+   "Claude 真站桌面是常驻显示"。但这是我**编的**——审计 app.asar.extracted/.vite/
+   renderer/main_window/ 主 bundle 时找不到 message-actions 组件源码（lazy chunk），
+   没有任何源依据支持"常驻"断言。按无源不抄原则全部撤回，桌面回归 cancri_chat.css:
+   3266 的默认行为（opacity:0，hover opacity:1）。Mobile 隐藏（下方 @media）保留。 */
 @media (max-width: 768px) {
     .message-actions,
     .message.assistant .message-actions {
