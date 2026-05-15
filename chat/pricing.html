@@ -3,9 +3,10 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- 2026-05-15 审查：抽离内联 script 到 ./api/pricing-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+            content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
         <title>付费会员 · Cancri 开放平台</title>
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
@@ -468,160 +469,7 @@
         <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
         <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script>
-            const sb = window.supabase.createClient(
-                window.__SUPABASE_URL__,
-                window.__SUPABASE_ANON_KEY__,
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: false,
-                        storageKey: "cancri_supabase_auth",
-                    },
-                },
-            );
-            const GW =
-                window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
-
-            async function getSession() {
-                const {
-                    data: { session },
-                } = await sb.auth.getSession();
-                return session;
-            }
-
-            function esc(s) {
-                const d = document.createElement("div");
-                d.textContent = String(s == null ? "" : s);
-                return d.innerHTML;
-            }
-
-            async function callGateway(endpoint, payload) {
-                const session = await getSession();
-                if (!session) throw new Error("not_logged_in");
-                const resp = await fetch(GW, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: "Bearer " + session.access_token,
-                    },
-                    body: JSON.stringify({ endpoint, ...payload }),
-                });
-                const data = await resp.json().catch(() => ({}));
-                if (!resp.ok)
-                    throw Object.assign(new Error(data.error || resp.statusText), {
-                        status: resp.status,
-                        body: data,
-                    });
-                return data;
-            }
-
-            function showMsg(el, text, kind) {
-                el.innerHTML =
-                    '<div class="alert alert-' + (kind || "info") + '">' +
-                    text +
-                    "</div>";
-            }
-
-            async function paintTier() {
-                const tierEl = document.getElementById("current-tier");
-                try {
-                    const r = await callGateway("get_my_subscription", {});
-                    const sub = r.subscription || {};
-                    if (sub.tier === "paid") {
-                        const days =
-                            sub.days_remaining > 0
-                                ? sub.days_remaining + " 天剩余"
-                                : "已过期";
-                        const exp = sub.expires_at
-                            ? new Date(sub.expires_at).toLocaleDateString("zh-CN")
-                            : "—";
-                        tierEl.innerHTML =
-                            '<span class="badge-tier paid">PAID</span> ' +
-                            "<span style=\"font-size:13px;color:var(--text-mute)\">到期 " +
-                            esc(exp) +
-                            " · " +
-                            esc(days) +
-                            "</span>";
-                    } else {
-                        tierEl.innerHTML =
-                            '<span class="badge-tier free">FREE</span>';
-                    }
-                } catch (e) {
-                    if (e.message === "not_logged_in") return;
-                    console.error("paintTier:", e);
-                }
-            }
-
-            async function init() {
-                const loading = document.getElementById("order-loading");
-                const gate = document.getElementById("order-login-gate");
-                const form = document.getElementById("order-form-section");
-
-                const {
-                    data: { user },
-                } = await sb.auth.getUser();
-                loading.style.display = "none";
-                if (!user || user.is_anonymous) {
-                    gate.style.display = "block";
-                    return;
-                }
-                form.style.display = "block";
-
-                // Pre-fill email from user account
-                const emailInput = document.getElementById("of-email");
-                if (user.email) emailInput.value = user.email;
-
-                await paintTier();
-            }
-
-            document
-                .getElementById("order-form")
-                .addEventListener("submit", async (e) => {
-                    e.preventDefault();
-                    const btn = document.getElementById("of-submit");
-                    const msg = document.getElementById("order-msg");
-                    btn.disabled = true;
-                    btn.textContent = "提交中…";
-                    msg.innerHTML = "";
-                    try {
-                        const email = document
-                            .getElementById("of-email")
-                            .value.trim();
-                        const qq = document
-                            .getElementById("of-qq")
-                            .value.trim();
-                        const method = document
-                            .getElementById("of-method")
-                            .value;
-                        const r = await callGateway("submit_payment_order", {
-                            email,
-                            qq,
-                            method,
-                        });
-                        showMsg(
-                            msg,
-                            "✅ 订单已提交，订单号 <code>" +
-                                esc(r.order && r.order.id) +
-                                "</code>。请耐心等待管理员审核，审核结果会出现在 <a href=\"./orders.html\">我的订单</a>。",
-                            "ok",
-                        );
-                        document.getElementById("of-qq").value = "";
-                    } catch (err) {
-                        const m =
-                            (err.body &&
-                                (err.body.message || err.body.error)) ||
-                            err.message ||
-                            "提交失败";
-                        showMsg(msg, "❌ " + esc(m), "warn");
-                    } finally {
-                        btn.disabled = false;
-                        btn.textContent = "提交订单";
-                    }
-                });
-
-            init();
-        </script>
+        <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/pricing-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
+        <script src="./api/pricing-app.js?v=2026-05-15-csp"></script>
     </body>
 </html>
