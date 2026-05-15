@@ -25,6 +25,8 @@ let activeIpFilter = "";
 let IP_COUNTS = new Map();
 // Set of selected application ids for batch operations.
 const SELECTED = new Set();
+// 2026-05-16：展开了"详情"sub-row 的申请 id。打开一行不影响其他。
+const EXPANDED = new Set();
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => {
@@ -32,6 +34,106 @@ const esc = (s) => {
   d.textContent = String(s == null ? "" : s);
   return d.innerHTML;
 };
+
+// 2026-05-16：渲染 helpers（与 admin-orders-app.js 风格一致，方便对照阅读）
+function fmtAgeDays(days) {
+  if (days == null || days < 0) return "—";
+  if (days === 0) return "今天注册";
+  if (days < 7) return days + " 天";
+  if (days < 30) return Math.floor(days / 7) + " 周";
+  if (days < 365) return Math.floor(days / 30) + " 个月";
+  return Math.floor(days / 365) + " 年";
+}
+
+function fmtTokens(n) {
+  if (n == null) return "—";
+  if (n < 1000) return String(n);
+  if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+}
+
+function fmtArr(v) {
+  if (v == null) return "—";
+  if (Array.isArray(v)) return v.length ? v.map((x) => String(x)).join(", ") : "—";
+  return String(v);
+}
+
+function fmtScreen(s) {
+  if (!s || typeof s !== "object") return "—";
+  const w = s.w || 0, h = s.h || 0;
+  const ratio = s.ratio ? "@" + Number(s.ratio).toFixed(2).replace(/\.?0+$/, "") + "x" : "";
+  const depth = s.depth ? " · " + s.depth + "bit" : "";
+  return (w && h) ? (w + "\u00d7" + h + ratio + depth) : "—";
+}
+
+function fmtTime(iso) {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleString("zh-CN", { hour12: false }); }
+  catch { return String(iso); }
+}
+
+// 拼地理 "中国 上海 上海 · 中国电信"
+function fmtIpGeo(geo) {
+  if (!geo) return "";
+  const parts = [];
+  const country = geo.country_name || geo.country;
+  if (country) parts.push(country);
+  if (geo.region && geo.region !== country) parts.push(geo.region);
+  if (geo.city && geo.city !== geo.region) parts.push(geo.city);
+  const loc = parts.join(" · ");
+  const isp = geo.isp || geo.org;
+  return loc + (isp ? "（" + isp + "）" : "");
+}
+
+// 风险信号 pills（在邮箱列下显示，吸引管理员注意）。
+// 顺序按严重程度由重到轻：当前封禁 > 多账号 > 重复邮箱 > VPN > 同 IP > 代理 > 机房
+function renderRiskPills(a) {
+  const pills = [];
+  if (a.ban && a.ban.active) pills.push('<span class="risk-pill danger">🚫 当前封禁</span>');
+  else if (a.ban) pills.push('<span class="risk-pill warn">⚠ 曾被封禁</span>');
+  if (a.suspect && a.suspect.distinct_users >= 2) {
+    pills.push('<span class="risk-pill danger" title="同设备 ' + a.suspect.distinct_users + ' 个账号">同设备 ' + a.suspect.distinct_users + '号</span>');
+  }
+  if (a.duplicate_email && a.duplicate_email.count >= 2) {
+    pills.push('<span class="risk-pill danger">同邮箱 ' + a.duplicate_email.count + '号</span>');
+  }
+  if (a.device && a.device.vpn_suspected) pills.push('<span class="risk-pill warn">VPN</span>');
+  if (a.device && a.device.webrtc_leak_detected) pills.push('<span class="risk-pill warn">漏 IP</span>');
+  if (a.ip_reuse && a.ip_reuse.user_count >= 2) {
+    pills.push('<span class="risk-pill warn">同 IP ' + a.ip_reuse.user_count + '号</span>');
+  }
+  if (a.ip_geo && a.ip_geo.proxy) pills.push('<span class="risk-pill warn">代理</span>');
+  if (a.ip_geo && a.ip_geo.hosting) pills.push('<span class="risk-pill warn">机房</span>');
+  if (pills.length === 0) return "";
+  return '<div class="risk-row">' + pills.join("") + "</div>";
+}
+
+// 用户上下文（注册时长 / 历史订单 / 用量），显示在邮箱列底
+function renderUserContext(a) {
+  const m = a.user_meta;
+  const h = a.order_history;
+  const u = a.recent_usage;
+  const parts = [];
+  if (m) parts.push('🕐 ' + esc(fmtAgeDays(m.age_days)));
+  if (h && h.total > 0) {
+    const segs = [];
+    if (h.activated) segs.push(h.activated + "激活");
+    if (h.approved) segs.push(h.approved + "通过");
+    if (h.rejected) segs.push('<span class="ctx-warn">' + h.rejected + "被拒</span>");
+    if (h.submitted) segs.push(h.submitted + "待审");
+    if (segs.length) parts.push("📋 " + segs.join("/"));
+  }
+  if (u && u.call_count > 0) {
+    parts.push("⚡ 7d " + u.call_count + "次");
+  }
+  if (parts.length === 0) return "";
+  return '<div class="user-ctx">' + parts.join(' · ') + '</div>';
+}
+
+function renderTierPill(tier) {
+  if (tier === "paid") return '<span class="tier-pill paid">PAID</span>';
+  return '<span class="tier-pill free">FREE</span>';
+}
 
 function showToast(msg, kind) {
   const t = $("toast");
@@ -180,10 +282,23 @@ function render() {
     refreshBatchBar();
     return;
   }
-  tbody.innerHTML = filtered.map(rowHtml).join("");
-  // Bind action buttons
+  // 每个申请渲染 main row + （展开时）detail sub-row
+  tbody.innerHTML = filtered.map((a) =>
+    rowHtml(a) + (EXPANDED.has(a.id) ? detailRowHtml(a) : "")
+  ).join("");
+  // Bind action buttons (approve / reject / details toggle)
   tbody.querySelectorAll("[data-action]").forEach((btn) => {
-    btn.addEventListener("click", () => decide(btn));
+    const action = btn.dataset.action;
+    if (action === "toggle-details") {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        if (EXPANDED.has(id)) EXPANDED.delete(id);
+        else EXPANDED.add(id);
+        render();  // 简单重渲整张表（≤500 行，性能可接受）
+      });
+    } else {
+      btn.addEventListener("click", () => decide(btn));
+    }
   });
   // Bind row checkboxes
   tbody.querySelectorAll("input.row-check").forEach((cb) => {
@@ -217,19 +332,25 @@ function rowHtml(a) {
   const ip = a.ip || "";
   const ipCount = ip ? IP_COUNTS.get(ip) || 0 : 0;
   const ipDup = ipCount > 1;
-  const ipHtml = ip
+  // IP 列：第一行 IP（含原有同 IP 申请计数）+ 第二行 IP 真实地理（小字）
+  const geoLabel = fmtIpGeo(a.ip_geo);
+  const ipLine = ip
     ? `<a class="ip-link${ipDup ? " ip-dup" : ""}" data-ip="${esc(ip)}" href="#" title="${ipDup ? "该 IP 共 " + ipCount + " 条申请，点击仅看这条 IP" : "点击仅看这条 IP"}">${esc(ip)}${ipDup ? `<span class="ip-count">×${ipCount}</span>` : ""}</a>`
     : `<span style="color:var(--text-faint)">—</span>`;
+  const ipHtml = ipLine + (geoLabel ? `<div class="ip-geo">${esc(geoLabel)}</div>` : "");
   const checked = SELECTED.has(a.id) ? "checked" : "";
   // Only allow checkbox on pending rows (batch ops only target pending).
   const checkboxHtml = isPending
     ? `<input type="checkbox" class="row-check" data-id="${esc(a.id)}" ${checked} />`
     : "";
-  return `<tr data-id="${esc(a.id)}">
+  const detailsBtnLabel = EXPANDED.has(a.id) ? "收起" : "详情";
+  return `<tr class="app-row" data-id="${esc(a.id)}">
     <td>${checkboxHtml}</td>
     <td class="email">
-      ${esc(a.email || "—")}
-      <div class="user-id" style="margin-top:4px">${esc((a.user_id || "").slice(0, 13))}…</div>
+      <div class="email-line">${esc(a.email || "—")} ${renderTierPill(a.tier)}</div>
+      <div class="user-id">${esc((a.user_id || "").slice(0, 13))}…</div>
+      ${renderRiskPills(a)}
+      ${renderUserContext(a)}
     </td>
     <td class="purpose">${esc(a.purpose || "—")}</td>
     <td class="ip">${ipHtml}</td>
@@ -239,9 +360,65 @@ function rowHtml(a) {
       <div class="actions">
         <button class="btn-approve" data-action="approved" data-id="${esc(a.id)}" ${isPending ? "" : "disabled"}>通过</button>
         <button class="btn-reject" data-action="rejected" data-id="${esc(a.id)}" ${isPending ? "" : "disabled"}>拒绝</button>
+        <button class="btn-details" data-action="toggle-details" data-id="${esc(a.id)}">${detailsBtnLabel}</button>
       </div>
     </td>
   </tr>`;
+}
+
+// 展开详情 sub-row：完整设备指纹 + 同 IP / 同邮箱 / 同设备 的其他 user_id
+function detailRowHtml(a) {
+  const dev = a.device;
+  const sus = a.suspect;
+  const ipReuse = a.ip_reuse;
+  const dupEmail = a.duplicate_email;
+  const deviceIpGeo = dev && dev.ip_geo ? dev.ip_geo : null;
+
+  if (!dev && !sus && !ipReuse && !dupEmail) {
+    return `<tr class="detail-row"><td colspan="7" class="detail-empty">
+      暂无设备指纹（用户登录访问任意挂了 fingerprint.js 的页面后才会采集）。当前只有 IP / 邮箱 / 用途等基础信息。
+    </td></tr>`;
+  }
+
+  const rows = [];
+  if (dev) {
+    rows.push(detailLine("真实 IP",
+      `<code>${esc(dev.server_ip || "—")}</code>` +
+      (deviceIpGeo ? `<br><span class="detail-sub">${esc(fmtIpGeo(deviceIpGeo))}</span>` : "")
+    ));
+    rows.push(detailLine("WebRTC 公网", `<code>${esc(fmtArr(dev.webrtc_public_ips))}</code>`));
+    rows.push(detailLine("WebRTC 内网", `<code>${esc(fmtArr(dev.webrtc_local_ips))}</code>`));
+    rows.push(detailLine("时区 / 语言", esc(dev.timezone || "—") + " · " + esc(fmtArr(dev.languages))));
+    rows.push(detailLine("UA", `<span class="detail-ua">${esc(dev.ua || "—")}</span>`));
+    rows.push(detailLine("平台 / 厂商", esc(dev.platform || "—") + " · " + esc(dev.vendor || "—")));
+    const hw = (dev.hardware_concurrency != null) ? (dev.hardware_concurrency + " 核") : "—";
+    const mem = (dev.device_memory != null) ? (dev.device_memory + " GB") : "—";
+    rows.push(detailLine("硬件", esc(hw) + " · " + esc(mem) + " · " + esc(fmtScreen(dev.screen))));
+    rows.push(detailLine("visitor_id", `<code>${esc(dev.visitor_id || "—")}</code>`));
+    rows.push(detailLine("指纹时间窗",
+      "首次 " + esc(fmtTime(dev.first_seen)) + " · 最近 " + esc(fmtTime(dev.last_seen)) +
+      ` · <span class="detail-sub">${dev.fingerprint_count || 0} 条记录</span>`
+    ));
+  }
+
+  // 同设备 / 同 IP / 同邮箱的其他 user_id
+  function listOtherUserIds(label, ids) {
+    if (!ids || !ids.length) return "";
+    const others = ids.filter((u) => u && u !== a.user_id);
+    if (!others.length) return "";
+    return detailLine(label, others.map((u) => `<code>${esc(u)}</code>`).join(" "));
+  }
+  rows.push(listOtherUserIds("同设备其他账号", sus ? sus.user_ids : []));
+  rows.push(listOtherUserIds("同申请 IP 其他账号", ipReuse ? ipReuse.user_ids : []));
+  rows.push(listOtherUserIds("同邮箱其他账号", dupEmail ? dupEmail.user_ids : []));
+
+  return `<tr class="detail-row"><td colspan="7">
+    <div class="detail-grid">${rows.filter(Boolean).join("")}</div>
+  </td></tr>`;
+}
+
+function detailLine(label, valueHtml) {
+  return `<div class="detail-line"><span class="detail-k">${esc(label)}</span><span class="detail-v">${valueHtml}</span></div>`;
 }
 
 function setIpFilter(ip) {
