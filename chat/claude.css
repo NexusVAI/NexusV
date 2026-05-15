@@ -39,7 +39,11 @@ html, html[data-theme="dark"] {
 
 /* Claude.ai 真站点 light mode 取色（图 5 群友给的截图）：
    主区底 #faf9f5（cream），侧栏 #f3f0e8（沙色），用户气泡 #f0ebe2（深沙），
-   字 #2c2825（暖深棕），细线 #00000010 alpha。强调色保持品牌橙不变。 */
+   字 #2c2825（暖深棕），细线 #00000010 alpha。强调色保持品牌橙不变。
+   2026-05-15 fix(C4)：群友图 2 反馈"白色浅色有的东西没变"。把 light mode 的
+   --c-text-soft 从 0.62 提到 0.74、--c-text-dim 从 0.42 提到 0.55，
+   sidebar nav / 副标题 / 历史条目在浅色 cream 底上不再像幽灵字。
+   --c-line / --c-line-strong / --c-hover-strong 同步加深（暖底上太轻看不到边）。 */
 html[data-theme="light"] {
     --c-bg:        #faf9f5;
     --c-bg-side:   #f3f0e8;
@@ -47,12 +51,12 @@ html[data-theme="light"] {
     --c-bg-elev-2: #ffffff;
     --c-bg-elev-3: #f0ebe2;
     --c-text:        #2c2825;
-    --c-text-soft:   rgba(44, 40, 37, 0.62);
-    --c-text-dim:    rgba(44, 40, 37, 0.42);
-    --c-line:        rgba(0, 0, 0, 0.07);
-    --c-line-strong: rgba(0, 0, 0, 0.13);
-    --c-hover:        rgba(0, 0, 0, 0.045);
-    --c-hover-strong: rgba(0, 0, 0, 0.08);
+    --c-text-soft:   rgba(44, 40, 37, 0.74);
+    --c-text-dim:    rgba(44, 40, 37, 0.55);
+    --c-line:        rgba(0, 0, 0, 0.10);
+    --c-line-strong: rgba(0, 0, 0, 0.18);
+    --c-hover:        rgba(0, 0, 0, 0.05);
+    --c-hover-strong: rgba(0, 0, 0, 0.10);
     --c-accent:        #c96e4a;
     --c-accent-hover:  #b25c3e;
     --c-accent-soft:   rgba(201, 110, 74, 0.12);
@@ -716,13 +720,16 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     padding: 0 14px;
     background: var(--c-bg-elev);
     border: 1px solid var(--c-line);
-    border-radius: var(--c-radius-pill);
-    color: var(--c-text-soft);
-    font-size: 13px;
-    font-weight: 500;
+    border-radius: 999px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    /* 2026-05-15 fix(C5)：button 元素不继承 body color，必须显式设。
+       light 模式下不显式给 dark 文字 → user-agent 默认 ButtonText
+       在 cream bg 上偶发显示偏灰，看着像没翻色。 */
+    color: var(--c-text);
     cursor: pointer;
     transition: background 160ms, border-color 160ms, color 160ms, transform 160ms;
     font-family: inherit;
@@ -957,11 +964,21 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     background: transparent !important;
 }
 .chat-messages .message.user-message,
+.chat-messages .message.user,
 .chat-messages .message[data-role="user"] {
     display: flex !important;
     justify-content: flex-end !important;
 }
+/* 2026-05-15 fix(C5)：群友图 2 反馈"白色浅色有的东西没变"。根因：
+   cancri_chat.css:3037 给 .message.user .message-content 写死了
+   `color: white !important`，dark 模式下白字 on 灰底 OK，但 light 模式
+   下白字 on sand 底（#f0ebe2）= 完全不可见。
+   原 claude.css 这条规则误用了 .user-message 选择器（cancri 实际只
+   生成 `.message.user`），所以 override 从来没生效过。
+   修复：补全 .message.user 选择器，强制 color: var(--c-text)，跟随
+   theme 翻深栗 / 暖白。 */
 .chat-messages .message.user-message .message-content,
+.chat-messages .message.user .message-content,
 .chat-messages .message[data-role="user"] .message-content {
     background: var(--c-bg-elev-3) !important;
     color: var(--c-text) !important;
@@ -973,15 +990,17 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     border: 0 !important;
 }
 .chat-messages .message.assistant-message,
+.chat-messages .message.assistant,
 .chat-messages .message[data-role="assistant"] {
     display: block !important;
 }
 .chat-messages .message.assistant-message .message-content,
+.chat-messages .message.assistant .message-content,
 .chat-messages .message[data-role="assistant"] .message-content {
     background: transparent !important;
+    color: var(--c-text) !important;
     border: 0 !important;
     padding: 0 !important;
-    color: var(--c-text) !important;
     font-size: 15px !important;
     line-height: 1.65 !important;
     max-width: 100%;
@@ -1845,17 +1864,64 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
         border-radius: 999px !important;
         margin-right: 0 !important;
     }
-    /* 模型选择器在 mobile 压缩 */
-    #modelSelector .model-selector-current,
-    #modelSelector .model-selector-name {
-        max-width: 90px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    /* 2026-05-15 fix(M8)：群友图 1 反馈"iOS composer 输入框左右的 + 箭头完全错位
+       不在移动框内"。根因：99-polish-fixes.css:864 给 #modelSelector .model-current
+       设了 `width: 100% !important`（为老的 header 双行布局而写）。relocateModelSelector
+       把 #modelSelector 移到 .composer-actions 里之后，model-current 仍按 100% 撑
+       满 model-selector 容器 → 占走 voice-btn / send-btn 的位置，send-btn 被挤
+       到容器右外（视觉上"飞出"composer）。
+       修复：composer-actions 内的 modelSelector 强制 auto 宽 + cap 内部 model-current
+       到内容尺寸 + model-name 限宽 90px ellipsis。原选择器 .model-selector-current
+       /-name 是错的（DOM 实际是 .model-current / .model-name），同步纠正。 */
+    .composer-actions #modelSelector {
+        flex-shrink: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        max-width: 150px !important;
+        margin: 0 !important;
     }
-    #modelSelector {
-        flex-shrink: 1;
-        min-width: 0;
+    .composer-actions #modelSelector .model-current {
+        width: auto !important;
+        max-width: 150px !important;
+        min-width: 0 !important;
+        height: 30px !important;
+        padding: 0 8px !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        border: 0 !important;
+        font-size: 12.5px !important;
+        gap: 4px !important;
+    }
+    .composer-actions #modelSelector .model-name {
+        max-width: 96px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+    /* composer-tools-row 强制不换行 + 三段对齐 — 防止子项掉行 / 溢出 */
+    .composer-tools-row {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        min-width: 0 !important;
+    }
+    .composer-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        min-width: 0 !important;
+        flex-shrink: 0 !important;
+    }
+    /* send / voice 按钮永不被挤压 */
+    .composer-actions .send-btn,
+    .composer-actions .voice-btn,
+    .composer-actions #voiceToastBtn,
+    .composer-actions #sendChatBtn {
+        flex: 0 0 32px !important;
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 999px !important;
     }
 
     /* 模型 dropdown 在 mobile 占满更多宽度 */
@@ -1866,19 +1932,63 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
         max-height: 70vh !important;
     }
 
-    /* 设置全屏 view 在 mobile：左 nav 缩成顶部条 */
-    #claudeSettingsView .claude-settings-shell {
+    /* 2026-05-15 fix(M6)：群友图 4 反馈"背景设定页面完全错位"。
+       根因：HTML 用 .claude-settings-layout（grid 180px+1fr），而原 mobile
+       规则误改了不存在的 .claude-settings-shell；mobile 下还是 grid 双列，
+       180px 列被挤到一半 + 内容列又被压成 ~半屏宽，整页布局碎掉。
+       修复：选择器改对 + 把 grid 翻成 flex-column，左 nav 翻成顶部
+       横向滚动条，同时让 form-row 在 mobile 单列堆叠，让标签 / 控件
+       不再共享同一行被挤压（图 5 Claude 真机的 mobile 也是堆叠的）。 */
+    #claudeSettingsView .claude-settings-page {
+        max-width: 100% !important;
+        padding: 18px 14px 64px !important;
+    }
+    #claudeSettingsView .claude-settings-title {
+        font-size: 24px !important;
+        margin: 0 0 16px !important;
+    }
+    #claudeSettingsView .claude-settings-layout {
+        display: flex !important;
         flex-direction: column !important;
+        gap: 14px !important;
     }
     #claudeSettingsView .claude-settings-nav {
+        position: static !important;
         flex-direction: row !important;
         width: 100% !important;
+        gap: 4px !important;
         overflow-x: auto;
-        border-right: 0 !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 6px !important;
         border-bottom: 1px solid var(--c-line) !important;
     }
-    #claudeSettingsView .claude-settings-nav-btn {
-        flex-shrink: 0;
+    #claudeSettingsView .claude-settings-nav::-webkit-scrollbar {
+        display: none;
+    }
+    #claudeSettingsView .claude-snav-item {
+        flex-shrink: 0 !important;
+        height: 36px !important;
+        padding: 0 14px !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+    }
+    /* form-row 在 mobile 改成"标签在上 / 控件在下"的堆叠布局 */
+    #claudeSettingsView .claude-form-row {
+        grid-template-columns: 1fr !important;
+        gap: 6px !important;
+        padding: 12px 0 !important;
+    }
+    #claudeSettingsView .claude-form-control {
+        justify-self: stretch !important;
+        width: 100% !important;
+    }
+    #claudeSettingsView .claude-form-input,
+    #claudeSettingsView .claude-form-select,
+    #claudeSettingsView .claude-form-textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
     }
 
     /* 搜索 modal 在 mobile 占满 */
