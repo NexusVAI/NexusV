@@ -83,7 +83,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-15-fixes-b"
+            href="./claude.css?v=2026-05-15-fixes-c"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -415,7 +415,7 @@
                             </svg>
                             <span class="sidebar-label">API 平台</span>
                         </a>
-                        <div class="claude-recent-title">运行历史</div>
+                        <div class="claude-recent-title">近期</div>
                         <div class="recent-wrap" id="chatHistoryList">
                             <!-- 聊天记录列表将在这里动态生成 -->
                         </div>
@@ -2539,6 +2539,6 @@
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-15-fixes-b"></script>
+        <script defer src="./claude_ui.js?v=2026-05-15-fixes-c"></script>
     </body>
 </html>
