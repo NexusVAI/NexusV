@@ -319,7 +319,10 @@
     </style>
   </head>
   <body>
-    <div class="container">
+    <!-- admin.html 用 wide container（1400px）容纳 enrichment 后的 1100px 宽表格，
+         避免在大屏（>= 1440px）也出现横向滚动。窄屏 (<1440px) 仍由 .table-wrap
+         的 overflow-x: auto 兜底滚动。 -->
+    <div class="container container--wide">
       <nav class="nav">
         <a href="../api_apply.html">申请 API</a>
         <a href="../api_keys.html">我的 Keys</a>
