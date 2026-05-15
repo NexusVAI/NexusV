@@ -853,7 +853,7 @@ function applyQuotaSnapshotFromHeaders(
         ? modelLimit
         : targetStatus.quotaLimit;
       targetStatus.quotaRemaining = modelRemaining;
-    } else if (responseStatus === 429 || /额度|quota|limit/i.test(errorText)) {
+    } else if (responseStatus === 429) {
       const until = getNextLocalMidnightTimestamp(now);
       targetStatus.lockedUntil = until;
       targetStatus.lockReason = "quota";
@@ -874,7 +874,7 @@ function applyQuotaSnapshotFromHeaders(
       rateLimitInfo.modelId = null;
     }
 
-    if (responseStatus === 429 || /额度|quota|limit/i.test(errorText)) {
+    if (responseStatus === 429) {
       const until = Date.now() + MODEL_LOCK_DURATION_MS;
       targetStatus.lockedUntil = until;
       targetStatus.lockReason = "quota";
