@@ -364,6 +364,13 @@ body {
     background: var(--c-hover) !important;
     color: var(--c-text) !important;
 }
+/* 2026-05-15 essence: light mode 历史/对话 item hover 改为 Claude 暖沙色。
+   默认 var(--c-hover) = rgba(0,0,0,0.05) 冷灯，在 #faf9f5 沙底上看着像灰腰带。
+   Claude 真站 hover 是上一阶 sand（hsl(--bg-200) ≈ #f4f1e7），保持温调。 */
+html[data-theme="light"] .recent-item:hover,
+html[data-theme="light"] .conversation-item:hover {
+    background: hsl(var(--bg-200)) !important;
+}
 .recent-item.active, .conversation-item.active {
     background: var(--c-hover-strong) !important;
     color: var(--c-text) !important;
@@ -490,12 +497,15 @@ body {
 /* 在 chatting 状态显示标题：通过 body.is-chatting class 联动（claude_ui.js 同步） */
 body.is-chatting .claude-chat-title { display: inline-flex !important; }
 
-/* Claude 中央 pill：免费计划 · 升级 */
+/* Claude 右上 pill：免费计划 · 升级。
+   2026-05-15 essence: 从居中改右上角，跟随 Claude 真站 desktop 版顶栏布局
+   “右上 plan pill + 账号头像”。多余的中央位置会掲住 chat-title。 */
 .claude-plan-pill {
     position: absolute !important;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    left: auto !important;
+    right: 16px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
     height: 28px;
     padding: 0 14px;
     display: inline-flex;
@@ -622,6 +632,10 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     width: 100% !important;
     max-width: 720px !important;
 }
+/* 2026-05-15 essence: composer 阴影按主题分支。
+   - dark: 0.18 alpha 黑阴影 OK（深底上可见 elevation）。
+   - light: 调为 0.04+0.06 双层柔和阴影（类 Claude floating composer阶梯感）。
+   - focus-within: 阴影加深、范围拉大（输入完验提示）。 */
 .composer {
     background: var(--c-bg-elev) !important;
     border: 1px solid var(--c-line) !important;
@@ -632,6 +646,16 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
 }
 .composer:focus-within {
     border-color: var(--c-line-strong) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06),
+                0 6px 32px rgba(0, 0, 0, 0.10) !important;
+}
+html[data-theme="light"] .composer {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
+                0 4px 24px rgba(0, 0, 0, 0.05) !important;
+}
+html[data-theme="light"] .composer:focus-within {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06),
+                0 6px 32px rgba(0, 0, 0, 0.08) !important;
 }
 .composer-input {
     background: transparent !important;
@@ -1020,6 +1044,9 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
     font-size: 15px !important;
     line-height: 1.55 !important;
     border: 0 !important;
+    /* 2026-05-15 essence: 去除 cancri_chat.css:3046 的橙色发光阴影。
+       Claude 真站 user bubble 是干净的圆角矩形，底部无 elevation。 */
+    box-shadow: none !important;
 }
 .chat-messages .message.assistant-message,
 .chat-messages .message.assistant,
@@ -2476,8 +2503,33 @@ button.composer-tool-btn:hover {
     display: none !important;
 }
 
-/* mobile 隐藏 AI 消息底部按钮（图 11 显示我们多余）
-   桌面 hover 显示行为保留，groups 用户多用 mobile 浏览 */
+/* 2026-05-15 essence: AI 消息底部 action bar（复制/重生成/赞/踩）
+   - cancri_chat.css:3266 默认 opacity:0，hover 才 opacity:1。
+   - Claude 真站 desktop 是常驻显示，不依赖 hover。为遵从期望，
+     桌面覆盖为 opacity:1 + 视觉精修（颜色/间距/字号、hover 轻 bg）。
+   - mobile (≤768px) 仍隐藏，野点屏窄不充后面。 */
+@media (min-width: 769px) {
+    .message.assistant .message-actions {
+        opacity: 1 !important;
+        margin-top: 8px !important;
+        gap: 2px !important;
+    }
+    .message.assistant .message-action-btn {
+        font-size: 12px !important;
+        padding: 4px 6px !important;
+        gap: 4px !important;
+        color: var(--c-text-soft) !important;
+        border-radius: 6px !important;
+    }
+    .message.assistant .message-action-btn:hover {
+        background: var(--c-hover) !important;
+        color: var(--c-text) !important;
+    }
+    .message.assistant .message-action-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+}
 @media (max-width: 768px) {
     .message-actions,
     .message.assistant .message-actions {
