@@ -36,6 +36,33 @@
         bindModelMoreMenu();
         bindSidebarTooltips();
         bindAuthThemeToggle();
+        bindHomeInputDefensiveFocus();
+    }
+
+    // 15. 群友反馈"对话中点输入框移动端无法触发打字"。
+    //     根因怀疑：cancri_chat.js setComposerBusy(false) 把 homeInput.readOnly = false
+    //     在 iOS Safari 上偶发不彻底（属性留缓存 / hit-test 失效）。
+    //     防御：tap textarea 时显式 removeAttribute('readonly') —— 当 .is-busy class
+    //     不在的情况下（不在 streaming）一律强制清，让 iOS 软键盘可弹起。
+    //     同时观察 .is-busy class 移除事件，作为 readonly 已结束的二次保险。
+    function bindHomeInputDefensiveFocus() {
+        const homeInput = document.getElementById('homeInput');
+        if (!homeInput) return;
+        function clearReadOnlyIfIdle() {
+            if (homeInput.classList.contains('is-busy')) return;  // streaming 中保留 readonly
+            if (homeInput.hasAttribute('readonly')) {
+                homeInput.removeAttribute('readonly');
+            }
+        }
+        // 用户 tap 时：如果不在 streaming，强制清 readonly 让 iOS 弹键盘
+        ['touchstart', 'pointerdown', 'click'].forEach(function (evt) {
+            homeInput.addEventListener(evt, clearReadOnlyIfIdle, { passive: true });
+        });
+        // .is-busy class 切换观察：streaming 结束（remove .is-busy）时同步清 readonly
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(clearReadOnlyIfIdle)
+                .observe(homeInput, { attributes: true, attributeFilter: ['class'] });
+        }
     }
 
     // 13. Sidebar nav-row 自动注入 title 属性：折叠态（.sidebar.collapsed）
@@ -360,12 +387,22 @@
         }
     }
 
-    // 3. "自定义" nav-row → 切到 claudeSettings view（不再用老的 modal）
+    // 3. "自定义" / "个性化" nav-row → 切到 claudeSettings view（不再用老的 settingsModal）
+    //    2026-05-15 fix(M5)：用 capture-phase + stopImmediatePropagation 抢在 cancri_chat.js
+    //    给 #themeShortcutBtn 注册的 bubble-phase listener (line 9786 `openModal("settingsModal")`)
+    //    前面把 click 干掉。否则旧 modal 会先被打开 → 触发 scrim → 用户体感"东西不显示还弄个遮罩"。
+    //    同时显式关 .popover.open（cancri 老逻辑靠 document click 委托关 popover，但我们 stop
+    //    propagation 后那条委托不再触发，需要自己关）。
     function bindCustomNav() {
         document.querySelectorAll('[data-claude-action="open-settings"]').forEach(function (el) {
             el.addEventListener('click', function (e) {
-                e.stopPropagation();
+                e.stopImmediatePropagation();
                 e.preventDefault();
+                // 关闭打开的 popover（如 accountPopover），保持 click "打开 popover → 选项 → 切 view"
+                // 的体感一致（cancri closePopover 走不到了）。
+                document.querySelectorAll('.popover.open').forEach(function (p) {
+                    p.classList.remove('open');
+                });
                 // 走 cancri_chat.js 暴露的 setActiveView（如果存在），否则手动切。
                 if (typeof window.setActiveView === 'function') {
                     window.setActiveView('claudeSettings');
@@ -376,7 +413,7 @@
                     });
                     if (document.body) document.body.dataset.view = 'claudeSettings';
                 }
-            });
+            }, true);  // capture phase
         });
     }
 
@@ -612,12 +649,46 @@
         //   圆角被切。CSS max-height 是死值，这里按 inline top 动态写 max-height。
         // 移动：claude.css 走 bottom-anchor + max-height:50dvh !important，不需要
         //   动态算（也避免被 99-polish-fixes 的 top !important 干扰）。
+        //
+        // 2026-05-15 fix(M7)：群友反馈"PC端点不动这个模型菜单"——根因是 chat 模式
+        // 下 composer 沉底，cancri 算的 inlineTop = rect.bottom + 8 接近 viewport 底，
+        // dropdown 向下展开整体落到屏外。修复：在 chat 模式（body.is-chatting）下，
+        // 检测 spaceBelow < 320 时把 dropdown 翻成 bottom-anchor（向上展开），
+        // 同时清掉 cancri 算的 inline top。这样不动 cancri 逻辑，只在 claude 层做
+        // viewport-aware 翻转。non-chat 模式（home / settings 等）保留向下展开。
         function sizeDropdownByViewport() {
             if (!mqDesktop.matches) return; // mobile 完全交给 CSS
             const inlineTop = parseFloat(dropdown.style.top || '');
             if (!Number.isFinite(inlineTop) || inlineTop <= 0) return;
             const vh = window.innerHeight || document.documentElement.clientHeight || 0;
             if (!vh) return;
+
+            // chat-mode 翻转判定：用户希望对话中输入框居底时菜单向上拉。
+            const triggerEl = modelSelector?.querySelector('.model-current')
+                              || document.getElementById('modelCurrentBtn');
+            const rect = triggerEl ? triggerEl.getBoundingClientRect() : null;
+            const isChatBottom = rect
+                && document.body.classList.contains('is-chatting')
+                && (vh - rect.bottom) < 320;
+
+            if (isChatBottom && rect) {
+                // 翻转到 bottom-anchor：dropdown 底边 8px 上贴 trigger 顶
+                const bottomPx = Math.max(8, Math.round(vh - rect.top + 8));
+                const maxH = Math.max(220, Math.round(rect.top - 24));
+                if (dropdown.style.top !== 'auto') dropdown.style.top = 'auto';
+                if (dropdown.style.bottom !== bottomPx + 'px') {
+                    dropdown.style.bottom = bottomPx + 'px';
+                }
+                if (dropdown.style.maxHeight !== maxH + 'px') {
+                    dropdown.style.maxHeight = maxH + 'px';
+                }
+                return;
+            }
+
+            // 非 chat-mode（或空间足够）：默认向下展开，bottom 留空。
+            if (dropdown.style.bottom) {
+                dropdown.style.bottom = '';
+            }
             const maxH = Math.max(220, Math.round(vh - inlineTop - 24));
             const want = maxH + 'px';
             if (dropdown.style.maxHeight === want) return;
