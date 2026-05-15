@@ -216,15 +216,17 @@
             if (h >= 5 && h < 12) greet = '早上好';
             else if (h >= 12 && h < 18) greet = '下午好';
             const nick = pickName();
-            const star = '<span class="hero-star" aria-hidden="true">\u2731</span>';
+            // 2026-05-15 fix(C3)：去掉 hero 前的 ✱ 星号，跟群友反馈
+            //   "我们站内的欢迎语里的'*'星号去掉" 一致。Claude 真站点用的是
+            //   品牌 sparkle icon，我们没有对应资源，干脆纯文字更干净。
             if (!nick) {
-                hero.innerHTML = star + greet;
+                hero.textContent = greet;
                 return;
             }
             const safeNick = nick.replace(/[<>&"']/g, function (c) {
                 return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c];
             });
-            hero.innerHTML = star + greet + '，' + safeNick;
+            hero.innerHTML = greet + '，' + safeNick;
         }
 
         update();
