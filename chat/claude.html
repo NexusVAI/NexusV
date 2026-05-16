@@ -97,7 +97,7 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-05-16-beij1to1-themefix"
+            href="./styles/cancri_motion.css?v=2026-05-16-claude-clone-v4c"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -138,263 +138,12 @@
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
         <div class="auth-overlay" id="authOverlay">
-            <!-- 2026-05-16 PR ·beij 1:1：用户要求"直接 1:1 放到登录页，
-                 不要做任何更改"，把 参考物体/beij.html 的内容（.island/.islandt
-                 +  inline SVG fractalNoise + diffuseLighting + inline <style>）
-                 完整复制到 .auth-bg 内，零修改。
-                 用户接受 inline SVG filter 的性能代价。
-                 cancri_motion.css 旧的 .auth-bg-island 规则保留，但不再有 element
-                 引用它（dead css，不影响渲染）。 -->
-            <div class="auth-bg" aria-hidden="true">
-                <div class="island"></div>
-                <div class="islandt"></div>
-                <div class="hatch"></div>
-
-                <svg height="0" width="0">
-                  <filter id="octave1">
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0004"
-                      numOctaves="8"
-                      seed="4"
-                      result="o1"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0008"
-                      numOctaves="8"
-                      seed="4"
-                      result="o2"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0001"
-                      numOctaves="8"
-                      seed="4"
-                      result="o3"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0018"
-                      numOctaves="8"
-                      seed="4"
-                      result="o4"
-                    ></feTurbulence>
-
-                    <feMerge result="finalIsland">
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="o3"></feMergeNode>
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="o3"></feMergeNode>
-                    </feMerge>
-
-                    <feGaussianBlur
-                      in="finalIsland"
-                      stdDeviation="5"
-                      result="noiseo"
-                    ></feGaussianBlur>
-
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0008"
-                      numOctaves="8"
-                      seed="4"
-                      result="o1"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0016"
-                      numOctaves="8"
-                      seed="4"
-                      result="o2"
-                    ></feTurbulence>
-
-                    <feMerge result="noiseo">
-                      <feMergeNode in="o2"></feMergeNode>
-                      <feMergeNode in="o4"></feMergeNode>
-                      <feMergeNode in="noiseo"></feMergeNode>
-                    </feMerge>
-
-                    <feGaussianBlur
-                      in="noiseo"
-                      stdDeviation="5"
-                      result="noiseo"
-                    ></feGaussianBlur>
-
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0016"
-                      numOctaves="8"
-                      seed="4"
-                      result="o1"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.002"
-                      numOctaves="8"
-                      seed="4"
-                      result="o2"
-                    ></feTurbulence>
-
-                    <feMerge result="noiseo">
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="noiseo"></feMergeNode>
-                    </feMerge>
-
-                    <feGaussianBlur
-                      in="noiseo"
-                      stdDeviation="5"
-                      result="noiseo"
-                    ></feGaussianBlur>
-
-                    <feDiffuseLighting
-                      in="noiseo"
-                      surfaceScale="12"
-                      diffuseConstant="1"
-                      lighting-color="#d7bb98"
-                      result="lit"
-                    >
-                      <feDistantLight azimuth="90" elevation=""></feDistantLight>
-                    </feDiffuseLighting>
-
-                    <feBlend in="lit" in2="SourceGraphic" mode="normal"></feBlend>
-                  </filter>
-
-                  <filter id="octave2">
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0004"
-                      numOctaves="8"
-                      seed="4"
-                      result="o1"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0008"
-                      numOctaves="8"
-                      seed="4"
-                      result="o2"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0001"
-                      numOctaves="8"
-                      seed="4"
-                      result="o3"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0018"
-                      numOctaves="8"
-                      seed="4"
-                      result="o4"
-                    ></feTurbulence>
-
-                    <feMerge result="finalIsland">
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="o3"></feMergeNode>
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="o3"></feMergeNode>
-                    </feMerge>
-
-                    <feGaussianBlur
-                      in="finalIsland"
-                      stdDeviation="5"
-                      result="noiseo"
-                    ></feGaussianBlur>
-
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0008"
-                      numOctaves="8"
-                      seed="4"
-                      result="o1"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0016"
-                      numOctaves="8"
-                      seed="4"
-                      result="o2"
-                    ></feTurbulence>
-
-                    <feMerge result="noiseo">
-                      <feMergeNode in="o2"></feMergeNode>
-                      <feMergeNode in="o4"></feMergeNode>
-                      <feMergeNode in="noiseo"></feMergeNode>
-                    </feMerge>
-
-                    <feGaussianBlur
-                      in="noiseo"
-                      stdDeviation="5"
-                      result="noiseo"
-                    ></feGaussianBlur>
-
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.0016"
-                      numOctaves="8"
-                      seed="4"
-                      result="o1"
-                    ></feTurbulence>
-                    <feTurbulence
-                      type="fractalNoise"
-                      baseFrequency="0.002"
-                      numOctaves="8"
-                      seed="4"
-                      result="o2"
-                    ></feTurbulence>
-
-                    <feMerge result="noiseo">
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="o1"></feMergeNode>
-                      <feMergeNode in="noiseo"></feMergeNode>
-                    </feMerge>
-
-                    <feGaussianBlur
-                      in="noiseo"
-                      stdDeviation="5"
-                      result="noiseo"
-                    ></feGaussianBlur>
-
-                    <feDiffuseLighting
-                      in="noiseo"
-                      surfaceScale="12"
-                      diffuseConstant="1"
-                      lighting-color="#d1bf96"
-                      result="lit"
-                    >
-                      <feDistantLight azimuth="-90" elevation=""></feDistantLight>
-                    </feDiffuseLighting>
-
-                    <feBlend in="lit" in2="SourceGraphic" mode="normal"></feBlend>
-                  </filter>
-                </svg>
-
-                <style>
-                  .island {
-                    position: absolute;
-                    opacity: 0.65;
-                    width: 100%;
-                    height: 100%;
-                    transform: scale(1);
-                    background: rgb(52, 65, 73);
-                    filter: url(#octave1) brightness(20) contrast(1);
-                  }
-
-                  .islandt {
-                    position: absolute;
-                    opacity: 0.5;
-                    width: 100%;
-                    height: 100%;
-                    transform: scale(1);
-                    /* Add your background pattern here */
-                    background: rgb(52, 65, 73);
-                    filter: url(#octave2) brightness(20) contrast(1);
-                  }
-                </style>
-            </div>
+            <!-- 2026-05-16 minimal redo：登录页改极简风（白底/黑字/灰边/黑按钮），
+                 删掉 island/islandt/hatch/auth-bg-sheen + inline SVG fractalNoise +
+                 inline <style>。auth_bg_bake.js 不再被引用（dead code 文件保留，
+                 cancri_motion.css 内 .island/.islandt/.auth-bg-sheen 规则一并清理）。
+                 .auth-bg 仅作为背景色层，由 cancri_motion.css 控制。 -->
+            <div class="auth-bg" aria-hidden="true"></div>
             <div class="auth-stage">
                 <a
                     class="auth-brand"
@@ -470,27 +219,51 @@
 
                         <div class="auth-error" id="authEmailError"></div>
                     </div>
-                </div>
 
-                <p class="auth-footer-line">
-                    继续即表示同意
-                    <a
-                        href="/about.html#terms"
-                        class="auth-footer-link"
-                        target="_blank"
-                        rel="noopener"
-                        >服务条款</a
-                    >
-                    与
-                    <a
-                        href="/about.html#privacy"
-                        class="auth-footer-link"
-                        target="_blank"
-                        rel="noopener"
-                        >隐私协议</a
-                    >。
-                </p>
+                    <!-- 2026-05-16 claude-clone v4c：footer 从 .auth-card 外面
+                         移进 card 内 .auth-step 后面，跟 Claude 真站 "By continuing..."
+                         在 card 内最底一致。结构改动不影响 cancri_chat.js（不依赖 footer 位置）。 -->
+                    <p class="auth-footer-line">
+                        继续即表示同意
+                        <a
+                            href="../terms.html"
+                            class="auth-footer-link"
+                            target="_blank"
+                            rel="noopener"
+                            >服务条款</a
+                        >
+                        与
+                        <a
+                            href="../privacy.html"
+                            class="auth-footer-link"
+                            target="_blank"
+                            rel="noopener"
+                            >隐私协议</a
+                        >。
+                    </p>
+                </div>
             </div>
+
+            <!-- 2026-05-16 claude-clone v4：右侧 video showcase，1:1 复刻
+                 Claude 真站登录页 (claude.ai) 右侧奶白大圆角卡布局。视频源
+                 用 ../Logo/Nexusai.mp4（项目自有素材，4MB）。
+                 autoplay + loop + muted + playsinline 保证 iOS Safari 也能
+                 静音自播；preload="auto" 让浏览器尽早缓冲。
+                 aria-hidden 是因为视频是装饰性的，不承载关键登录信息。
+                 mobile (<880px) 由 cancri_motion.css 直接 display:none，
+                 .auth-stage 退化为居中单列。 -->
+            <aside class="auth-showcase" aria-hidden="true">
+                <video
+                    class="auth-showcase-video"
+                    src="../Logo/Nexusai.mp4"
+                    autoplay
+                    loop
+                    muted
+                    playsinline
+                    preload="auto"
+                ></video>
+            </aside>
+
             <!-- 2026-05-15：登录页左下角 theme switch。fixed 定位独立于
                  .auth-stage flow，brutalist 米白圆按钮跟卡片同语言。
                  click 转发到 sidebar 的 #sidebarThemeToggle（js/ui/theme.js
@@ -2856,12 +2629,9 @@
         <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <!-- 2026-05-16 PR ·auth-bg-bake：登录页 SVG fractalNoise filter 太重，
-             浏览器每帧持续光栅化导致 "点击都没响应"。本脚本 DOMContentLoaded
-             后用 canvas 烘焦 SVG 成 PNG dataURL，移除 filter 引用，从此渲染
-             0 开销。视觉 100% 不变（fractalNoise seed=4 固定）。
-             defer + 外联，符合 NexusV CSP `script-src 'self'`。 -->
-        <script defer src="./auth_bg_bake.js?v=2026-05-16-bake"></script>
+        <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
+             删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
+             使历史可查，这里不再 include。 -->
         <script defer src="./cancri_chat.js?v=2026-05-15-readonly-busy"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
