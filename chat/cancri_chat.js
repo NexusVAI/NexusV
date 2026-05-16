@@ -2251,6 +2251,13 @@ function getAttachmentUrl(attachment) {
   return String(attachment?.url || attachment?.dataUrl || "").trim();
 }
 
+function extractPublicVideoUrl(value) {
+  const match = String(value || "").match(
+    /https?:\/\/[^\s"'<>]+?\.(?:mp4|mov)(?:[?#][^\s"'<>]*)?/i,
+  );
+  return match ? match[0].replace(/[),.;，。]+$/, "") : "";
+}
+
 function isImageAttachment(attachment) {
   const mime = getAttachmentMime(attachment);
   const name = String(attachment?.name || "");
@@ -2465,6 +2472,7 @@ const FETCH_TIMEOUT_MS = 20000;
 const CHAT_REQUEST_TIMEOUT_MS = 25000;
 const CHAT_TURN_TIMEOUT_MS = 180000;
 const TOOL_CALL_TIMEOUT_MS = 25000;
+const VIDEO_GENERATION_POLL_TIMEOUT_MS = 15 * 60 * 1000;
 
 function getChatRequestTimeoutMs(modelId) {
   // Claude Opus / thinking 等模型经 freeapi.dgbmc.top 中转 + Anthropic 思考，
@@ -7025,7 +7033,7 @@ async function shrinkVideoMediaUrl(url) {
   }
 }
 
-async function buildVideoMediaForModel(modelId, attachments) {
+async function buildVideoMediaForModel(modelId, attachments, prompt = "") {
   const list = Array.isArray(attachments) ? attachments : [];
   const raw = list
     .map((a) => {
@@ -7061,11 +7069,17 @@ async function buildVideoMediaForModel(modelId, attachments) {
 
   if (modelId === "happyhorse-1.0-video-edit") {
     const video = usable.find((u) => isVideoAttachment(u));
+    const publicVideoUrl =
+      video && /^https?:\/\//i.test(video.url)
+        ? video.url
+        : extractPublicVideoUrl(prompt);
     const references = usable
       .filter((u) => isImageAttachment(u))
       .slice(0, 5)
       .map((u) => ({ type: "reference_image", url: u.url }));
-    return video ? [{ type: "video", url: video.url }, ...references] : references;
+    return publicVideoUrl
+      ? [{ type: "video", url: publicVideoUrl }, ...references]
+      : references;
   }
 
   // happyhorse-1.0-t2v 和 wan2.7-t2v 都是文生视频，不需要媒体。
@@ -7080,7 +7094,7 @@ async function generateVideoFromPrompt(
   const value = String(prompt || "").trim();
   if (!value || state.isImageGenerating) return "";
 
-  const media = await buildVideoMediaForModel(modelId, attachments);
+  const media = await buildVideoMediaForModel(modelId, attachments, value);
 
   // Track an abort controller for the whole video flow (submit + poll). The
   // global stop button reads `state.activeRequestController` and can now
@@ -7121,6 +7135,7 @@ async function generateVideoFromPrompt(
     if (!taskId) throw new Error("未返回 task_id。");
 
     setImageGenerationBusy(true, "任务已提交，正在生成视频...");
+    const pollDeadline = Date.now() + VIDEO_GENERATION_POLL_TIMEOUT_MS;
 
     while (true) {
       // Bail early if the user clicked the stop button while we were
@@ -7129,6 +7144,9 @@ async function generateVideoFromPrompt(
       if (controller.signal.aborted) throw createAbortError("已停止生成。");
       await sleep(5000);
       if (controller.signal.aborted) throw createAbortError("已停止生成。");
+      if (Date.now() > pollDeadline) {
+        throw new Error("视频生成等待超时，请稍后重新提交。");
+      }
 
       const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
         method: "POST",
@@ -7176,6 +7194,9 @@ async function generateVideoFromPrompt(
       if (status === "FAILED" || status === "CANCELED") {
         const reason = taskData.message || taskData.code || "";
         throw new Error(reason ? `视频生成失败：${reason}` : "视频生成失败。");
+      }
+      if (status === "UNKNOWN") {
+        throw new Error("视频任务不存在或已过期，请重新提交。");
       }
 
       setImageGenerationBusy(true, `正在生成中... ${status || "PENDING"}`);
@@ -9268,12 +9289,16 @@ async function sendMessage(content) {
     if (needsMedia) {
       const hasUsableMedia =
         turnModelId === "happyhorse-1.0-video-edit"
-          ? attachmentsForSend.some((a) => getAttachmentUrl(a) && isVideoAttachment(a))
+          ? Boolean(extractPublicVideoUrl(query)) ||
+            attachmentsForSend.some((a) => {
+              const url = getAttachmentUrl(a);
+              return url && /^https?:\/\//i.test(url) && isVideoAttachment(a);
+            })
           : attachmentsForSend.some((a) => getAttachmentUrl(a) && isImageAttachment(a));
       if (!hasUsableMedia) {
         showToast(
           turnModelId === "happyhorse-1.0-video-edit"
-            ? "视频编辑需要先上传一个视频，可再附加最多 5 张参考图。"
+            ? "视频编辑需要公网 mp4/mov 链接，请粘贴链接后重试。"
             : turnModelId === "happyhorse-1.0-r2v"
             ? "参考生视频需要至少一张参考图（最多 9 张）。"
             : "该模型为图生视频，请先上传一张参考图。",
