@@ -2856,6 +2856,12 @@
         <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
+        <!-- 2026-05-16 PR ·auth-bg-bake：登录页 SVG fractalNoise filter 太重，
+             浏览器每帧持续光栅化导致 "点击都没响应"。本脚本 DOMContentLoaded
+             后用 canvas 烘焦 SVG 成 PNG dataURL，移除 filter 引用，从此渲染
+             0 开销。视觉 100% 不变（fractalNoise seed=4 固定）。
+             defer + 外联，符合 NexusV CSP `script-src 'self'`。 -->
+        <script defer src="./auth_bg_bake.js?v=2026-05-16-bake"></script>
         <script defer src="./cancri_chat.js?v=2026-05-15-readonly-busy"></script>
         <script type="module" src="./js/main.js?v=workbench-0506"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
