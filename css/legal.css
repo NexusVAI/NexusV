@@ -1,0 +1,193 @@
+/*
+ * 法律文档专用排版（terms.html / privacy.html / 后续任何法律页共用）
+ *
+ * 设计目标：
+ *   - 单列窄版（max-width 760px）符合 readability 经验：65-80 字符/行最佳
+ *   - 章节大字标题 + 段落 1.75 行高，长文阅读不累
+ *   - 复用站点既有 CSS variables（--text-color / --secondary-text / --bg-card），
+ *     深 / 浅 / 暖 三主题切换无需额外 override
+ *   - 顶部 ToC 卡片可点跳锚，长文档导航友好
+ */
+
+.legal-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 112px 24px 88px;
+    box-sizing: border-box;
+}
+
+.legal-header {
+    margin-bottom: 48px;
+}
+
+.legal-category {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    margin-bottom: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.legal-title {
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 16px 0;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+.legal-effective {
+    font-size: 14px;
+    color: var(--secondary-text);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.legal-content {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text-color);
+}
+
+.legal-content h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 56px 0 16px 0;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 88px;
+}
+
+.legal-content h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 28px 0 10px 0;
+    line-height: 1.4;
+}
+
+.legal-content p {
+    margin: 0 0 16px 0;
+    color: var(--secondary-text);
+}
+
+.legal-content ul,
+.legal-content ol {
+    margin: 0 0 20px 0;
+    padding-left: 24px;
+    color: var(--secondary-text);
+}
+
+.legal-content li {
+    margin-bottom: 8px;
+}
+
+.legal-content li > p {
+    margin: 4px 0 0 0;
+}
+
+.legal-content li > ul,
+.legal-content li > ol {
+    margin: 8px 0 8px 0;
+}
+
+.legal-content strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.legal-content em {
+    color: var(--text-color);
+    font-style: italic;
+}
+
+.legal-content a {
+    color: var(--text-color);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+}
+
+.legal-content a:hover {
+    text-decoration-thickness: 2px;
+}
+
+.legal-content code {
+    background-color: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    word-break: break-word;
+}
+
+.legal-toc {
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin: 0 0 48px 0;
+}
+
+.legal-toc-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--secondary-text);
+    margin: 0 0 12px 0;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.legal-toc ol {
+    list-style: decimal;
+    padding-left: 22px;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.legal-toc li {
+    margin-bottom: 6px;
+    line-height: 1.6;
+}
+
+.legal-toc a {
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.legal-toc a:hover {
+    text-decoration: underline;
+}
+
+.legal-footer-note {
+    margin-top: 72px;
+    padding-top: 32px;
+    border-top: 1px solid var(--bg-card);
+    font-size: 13px;
+    color: var(--secondary-text);
+    line-height: 1.7;
+}
+
+.legal-footer-note strong {
+    color: var(--text-color);
+}
+
+@media (max-width: 640px) {
+    .legal-page {
+        padding: 88px 20px 64px;
+    }
+    .legal-title {
+        font-size: 36px;
+    }
+    .legal-content {
+        font-size: 14.5px;
+    }
+    .legal-content h2 {
+        font-size: 22px;
+        margin-top: 48px;
+    }
+    .legal-toc {
+        padding: 20px 22px;
+    }
+}
