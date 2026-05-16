@@ -247,6 +247,7 @@
     var style = document.createElement('style');
     style.id = 'cancri-telemetry-style';
     style.textContent = '' +
+      // ── dark theme（默认） ───────────────────────────────────
       '.cancri-telemetry-banner{position:fixed;right:16px;bottom:16px;z-index:2147483600;' +
       'width:min(360px,calc(100vw - 32px));padding:16px 18px 14px;border-radius:14px;' +
       'background:rgba(20,22,28,0.97);color:#f3f3f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;' +
@@ -258,10 +259,19 @@
       '.cancri-telemetry-banner p{margin:0 0 12px;font-size:12.5px;color:rgba(243,243,245,0.78);}' +
       '.cancri-telemetry-actions{display:flex;gap:8px;justify-content:flex-end;}' +
       '.cancri-telemetry-actions button{padding:7px 14px;font-size:12.5px;font-weight:500;border-radius:8px;cursor:pointer;' +
-      'border:1px solid rgba(255,255,255,0.16);background:transparent;color:#f3f3f5;transition:background .15s ease,border-color .15s ease;font-family:inherit;}' +
+      'border:1px solid rgba(255,255,255,0.16);background:transparent;color:#f3f3f5;transition:background .15s ease,border-color .15s ease,color .15s ease;font-family:inherit;}' +
       '.cancri-telemetry-actions button:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.32);}' +
-      '.cancri-telemetry-actions button.is-primary{background:#6366f1;border-color:#6366f1;color:#fff;}' +
-      '.cancri-telemetry-actions button.is-primary:hover{background:#5457e8;border-color:#5457e8;}' +
+      // 2026-05-16：primary 从紫色 #6366f1 统一到全站 clay orange，跟登录页主按钮 + brand accent 一致
+      '.cancri-telemetry-actions button.is-primary{background:#c96e4a;border-color:#c96e4a;color:#fff;}' +
+      '.cancri-telemetry-actions button.is-primary:hover{background:#d97757;border-color:#d97757;}' +
+      // ── light theme override ────────────────────────────────
+      'html[data-theme="light"] .cancri-telemetry-banner{background:rgba(253,248,236,0.98);color:#1a120c;border-color:rgba(26,18,12,0.10);box-shadow:0 12px 32px rgba(26,18,12,0.18);}' +
+      'html[data-theme="light"] .cancri-telemetry-banner h4{color:#1a120c;}' +
+      'html[data-theme="light"] .cancri-telemetry-banner p{color:rgba(26,18,12,0.68);}' +
+      'html[data-theme="light"] .cancri-telemetry-actions button{border-color:rgba(26,18,12,0.16);color:#1a120c;}' +
+      'html[data-theme="light"] .cancri-telemetry-actions button:hover{background:rgba(26,18,12,0.05);border-color:rgba(26,18,12,0.30);}' +
+      'html[data-theme="light"] .cancri-telemetry-actions button.is-primary{background:#c96e4a;border-color:#c96e4a;color:#fff;}' +
+      'html[data-theme="light"] .cancri-telemetry-actions button.is-primary:hover{background:#b25c3e;border-color:#b25c3e;color:#fff;}' +
       '@media (max-width:480px){.cancri-telemetry-banner{right:12px;left:12px;bottom:12px;width:auto;}}';
     document.head.appendChild(style);
   }
