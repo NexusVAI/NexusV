@@ -3263,3 +3263,42 @@ html[data-theme="dark"] .message.assistant .message-content {
     margin-top: 0.8571429em;
 }
 
+/* ─── §18 · AI 消息 model badge 紧凑尺寸锁定 ──────────────────
+   2026-05-16 PR ·model-badge-tight：用户反馈"对话中的这个模型名显示
+   的这变得好大一个"（参考图 d97edc04...png 红框）。
+
+   根因分析：cancri_chat.js:7561 的 modelBadge 是 `.message-content` 的
+   子元素（DOM 结构：.message.assistant > .message-content > .assistant-model-badge）。
+   cancri_chat.css:5263 默认 .assistant-model-badge { font-size: 12px;
+   padding: 4px 8px; line-height: 1.2 } 计算高度 ≈ 22px 紧凑。
+   §17 prose 1:1 把 .message-content 设为 font-size: 1rem; line-height: 1.75，
+   虽然 badge 自己显式 font-size: 12px，但父行高 1.75 + max-width: 65ch
+   会让 inline-flex 容器视觉撑大。
+
+   修复：用 (0,3,0) 子选择器把 badge 三轴尺寸（font-size / padding /
+   line-height）锁死回 cancri 原值 + height: auto 防其他 cascade 撑高。
+   ─────────────────────────────────────────────────────────── */
+.message.assistant .message-content .assistant-model-badge {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    padding: 4px 8px !important;
+    height: auto !important;
+    /* 不重设其他视觉属性（border / bg / shadow），让 cancri_chat.css:5263
+       的默认值继续生效。仅锁定可能被 prose 父样式间接放大的三轴。 */
+}
+.message.assistant .message-content .assistant-model-name {
+    /* 防 prose 父 max-width: 65ch 让 name span 错误换行 */
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+.message.assistant .message-content .assistant-model-icon {
+    /* 防 prose img 规则 (margin: 2em 0) 命中 model icon 撑高 badge */
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+}
+.message.assistant .message-content .assistant-model-pulse {
+    /* 防 prose 父样式让 pulse 圆点变形 */
+    width: 8px !important;
+    height: 8px !important;
+}
