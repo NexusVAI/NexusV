@@ -50,7 +50,8 @@
         <script src="./cancri_config.js?v=2026-05-13e"></script>
         <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
         <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
-        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+        <!-- 设备 / 浏览器指纹（2026-05-16 上线）：反多账号信号采集。
+             仅登录用户上报，24h 节流。WebRTC IP / canvas / webgl / audio 指纹 → 后端 v_suspect_multi_accounts 视图。 -->
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <!-- supabase-js: 2026-05-13 审查后固定到具体 minor 版本。原 `@2` floating
              tag 会被 jsdelivr 任意 redirect 到当前最新 v2.x，被劫持时无法察觉。
@@ -102,7 +103,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-16-tier"
+            href="./claude.css?v=2026-05-16-anim-primitives"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
