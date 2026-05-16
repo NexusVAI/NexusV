@@ -97,13 +97,13 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-05-16-theme-icon-fix"
+            href="./styles/cancri_motion.css?v=2026-05-16-beij1to1-themefix"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-16-theme-icon-fix"
+            href="./claude.css?v=2026-05-16-beij1to1-themefix"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -138,14 +138,262 @@
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
         <div class="auth-overlay" id="authOverlay">
-            <!-- 2026-05-15：登录页背景。
-                 原版用 inline SVG fractalNoise + diffuseLighting filter 渲染
-                 等高线纹理（参考 参考物体/beij.html），但浏览器把 inline
-                 SVG filter 当"活 filter"反复光栅化，主线程卡到点击都没响应。
-                 改成纯 CSS multi-radial-gradient（见 cancri_motion.css 的
-                 .auth-bg-island），零持续开销。 -->
+            <!-- 2026-05-16 PR ·beij 1:1：用户要求"直接 1:1 放到登录页，
+                 不要做任何更改"，把 参考物体/beij.html 的内容（.island/.islandt
+                 +  inline SVG fractalNoise + diffuseLighting + inline <style>）
+                 完整复制到 .auth-bg 内，零修改。
+                 用户接受 inline SVG filter 的性能代价。
+                 cancri_motion.css 旧的 .auth-bg-island 规则保留，但不再有 element
+                 引用它（dead css，不影响渲染）。 -->
             <div class="auth-bg" aria-hidden="true">
-                <div class="auth-bg-island"></div>
+                <div class="island"></div>
+                <div class="islandt"></div>
+                <div class="hatch"></div>
+
+                <svg height="0" width="0">
+                  <filter id="octave1">
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0004"
+                      numOctaves="8"
+                      seed="4"
+                      result="o1"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0008"
+                      numOctaves="8"
+                      seed="4"
+                      result="o2"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0001"
+                      numOctaves="8"
+                      seed="4"
+                      result="o3"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0018"
+                      numOctaves="8"
+                      seed="4"
+                      result="o4"
+                    ></feTurbulence>
+
+                    <feMerge result="finalIsland">
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="o3"></feMergeNode>
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="o3"></feMergeNode>
+                    </feMerge>
+
+                    <feGaussianBlur
+                      in="finalIsland"
+                      stdDeviation="5"
+                      result="noiseo"
+                    ></feGaussianBlur>
+
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0008"
+                      numOctaves="8"
+                      seed="4"
+                      result="o1"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0016"
+                      numOctaves="8"
+                      seed="4"
+                      result="o2"
+                    ></feTurbulence>
+
+                    <feMerge result="noiseo">
+                      <feMergeNode in="o2"></feMergeNode>
+                      <feMergeNode in="o4"></feMergeNode>
+                      <feMergeNode in="noiseo"></feMergeNode>
+                    </feMerge>
+
+                    <feGaussianBlur
+                      in="noiseo"
+                      stdDeviation="5"
+                      result="noiseo"
+                    ></feGaussianBlur>
+
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0016"
+                      numOctaves="8"
+                      seed="4"
+                      result="o1"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.002"
+                      numOctaves="8"
+                      seed="4"
+                      result="o2"
+                    ></feTurbulence>
+
+                    <feMerge result="noiseo">
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="noiseo"></feMergeNode>
+                    </feMerge>
+
+                    <feGaussianBlur
+                      in="noiseo"
+                      stdDeviation="5"
+                      result="noiseo"
+                    ></feGaussianBlur>
+
+                    <feDiffuseLighting
+                      in="noiseo"
+                      surfaceScale="12"
+                      diffuseConstant="1"
+                      lighting-color="#d7bb98"
+                      result="lit"
+                    >
+                      <feDistantLight azimuth="90" elevation=""></feDistantLight>
+                    </feDiffuseLighting>
+
+                    <feBlend in="lit" in2="SourceGraphic" mode="normal"></feBlend>
+                  </filter>
+
+                  <filter id="octave2">
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0004"
+                      numOctaves="8"
+                      seed="4"
+                      result="o1"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0008"
+                      numOctaves="8"
+                      seed="4"
+                      result="o2"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0001"
+                      numOctaves="8"
+                      seed="4"
+                      result="o3"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0018"
+                      numOctaves="8"
+                      seed="4"
+                      result="o4"
+                    ></feTurbulence>
+
+                    <feMerge result="finalIsland">
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="o3"></feMergeNode>
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="o3"></feMergeNode>
+                    </feMerge>
+
+                    <feGaussianBlur
+                      in="finalIsland"
+                      stdDeviation="5"
+                      result="noiseo"
+                    ></feGaussianBlur>
+
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0008"
+                      numOctaves="8"
+                      seed="4"
+                      result="o1"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0016"
+                      numOctaves="8"
+                      seed="4"
+                      result="o2"
+                    ></feTurbulence>
+
+                    <feMerge result="noiseo">
+                      <feMergeNode in="o2"></feMergeNode>
+                      <feMergeNode in="o4"></feMergeNode>
+                      <feMergeNode in="noiseo"></feMergeNode>
+                    </feMerge>
+
+                    <feGaussianBlur
+                      in="noiseo"
+                      stdDeviation="5"
+                      result="noiseo"
+                    ></feGaussianBlur>
+
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.0016"
+                      numOctaves="8"
+                      seed="4"
+                      result="o1"
+                    ></feTurbulence>
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.002"
+                      numOctaves="8"
+                      seed="4"
+                      result="o2"
+                    ></feTurbulence>
+
+                    <feMerge result="noiseo">
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="o1"></feMergeNode>
+                      <feMergeNode in="noiseo"></feMergeNode>
+                    </feMerge>
+
+                    <feGaussianBlur
+                      in="noiseo"
+                      stdDeviation="5"
+                      result="noiseo"
+                    ></feGaussianBlur>
+
+                    <feDiffuseLighting
+                      in="noiseo"
+                      surfaceScale="12"
+                      diffuseConstant="1"
+                      lighting-color="#d1bf96"
+                      result="lit"
+                    >
+                      <feDistantLight azimuth="-90" elevation=""></feDistantLight>
+                    </feDiffuseLighting>
+
+                    <feBlend in="lit" in2="SourceGraphic" mode="normal"></feBlend>
+                  </filter>
+                </svg>
+
+                <style>
+                  .island {
+                    position: absolute;
+                    opacity: 0.65;
+                    width: 100%;
+                    height: 100%;
+                    transform: scale(1);
+                    background: rgb(52, 65, 73);
+                    filter: url(#octave1) brightness(20) contrast(1);
+                  }
+
+                  .islandt {
+                    position: absolute;
+                    opacity: 0.5;
+                    width: 100%;
+                    height: 100%;
+                    transform: scale(1);
+                    /* Add your background pattern here */
+                    background: rgb(52, 65, 73);
+                    filter: url(#octave2) brightness(20) contrast(1);
+                  }
+                </style>
             </div>
             <div class="auth-stage">
                 <a
