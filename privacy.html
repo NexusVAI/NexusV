@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐私协议 | NexusV</title>
+    <meta name="description" content="NexusV 隐私协议，说明我们收集、使用、共享和保护您个人信息的方式，并明示您的权利与选择。">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="隐私协议 | NexusV">
+    <meta property="og:description" content="NexusV 隐私协议，说明我们收集、使用、共享和保护您个人信息的方式，并明示您的权利与选择。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nexusvai.github.io/NexusV/privacy.html">
+    <meta property="og:image" content="Logo/JJ1.webp">
+    <script>
+        (() => {
+            let theme = 'warm';
+            try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+            if (theme === 'light') document.documentElement.classList.add('light-theme');
+            if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+            if (theme === 'blue') document.documentElement.classList.add('blue-theme');
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="Logo/Cancri.png">
+    <link rel="apple-touch-icon" href="Logo/Cancri.png">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/mobile-menu.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/inter-fonts.css">
+    <link rel="stylesheet" href="css/legal.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/display-fonts.css">
+</head>
+<body>
+    <!-- Shared navbar / footer injected by components.js -->
+
+    <main class="legal-page">
+        <div class="legal-header">
+            <div class="legal-category">法律文档</div>
+            <h1 class="legal-title">隐私协议</h1>
+            <p class="legal-effective">最后更新：2026 年 5 月 16 日 · 生效日期：2026 年 5 月 16 日</p>
+        </div>
+
+        <div class="legal-content">
+            <div class="legal-toc" aria-label="目录">
+                <p class="legal-toc-title">目录</p>
+                <ol>
+                    <li><a href="#p1">协议范围</a></li>
+                    <li><a href="#p2">我们收集的信息</a></li>
+                    <li><a href="#p3">信息的使用方式</a></li>
+                    <li><a href="#p4">第三方共享与披露</a></li>
+                    <li><a href="#p5">数据存储与保留</a></li>
+                    <li><a href="#p6">Cookie 与本地存储</a></li>
+                    <li><a href="#p7">数据安全措施</a></li>
+                    <li><a href="#p8">跨境数据传输</a></li>
+                    <li><a href="#p9">未成年人保护</a></li>
+                    <li><a href="#p10">您的权利与选择</a></li>
+                    <li><a href="#p11">政策修订</a></li>
+                    <li><a href="#p12">联系我们</a></li>
+                </ol>
+            </div>
+
+            <h2 id="p1">1. 协议范围</h2>
+            <p>本《隐私协议》（以下简称"本协议"）适用于您与 NexusV（以下简称"本服务"或"平台"）之间因使用本服务而产生的所有个人信息处理活动。</p>
+            <p>我们重视您的隐私。本协议详细说明：我们会收集您的哪些信息、如何使用、与谁共享、如何保护，以及您对这些信息所享有的权利。<strong>使用本服务即表示您已阅读、理解并同意本协议的全部内容。</strong></p>
+            <p>本协议是 <a href="terms.html">《服务条款》</a> 的组成部分，与之共同构成您与我们之间的完整协议。</p>
+
+            <h2 id="p2">2. 我们收集的信息</h2>
+            <p>我们仅在为您提供服务所必需的范围内收集信息。具体如下：</p>
+
+            <h3>2.1 您主动提供的信息</h3>
+            <ul>
+                <li><strong>账户信息</strong>：邮箱地址（用于一次性验证码登录）；</li>
+                <li><strong>付费订单信息</strong>：如您选择升级付费会员，需在订单提交页填写您用于对单的邮箱与 QQ 号，作为支付备注，便于站主人工核对款项后向您发放激活码；</li>
+                <li><strong>对话内容</strong>：您在对话中输入的文本、上传的图像与文件、所选择的模型与参数；</li>
+                <li><strong>反馈信息</strong>：您主动提交的 bug 报告、功能建议、申诉记录。</li>
+            </ul>
+
+            <h3>2.2 我们自动收集的信息</h3>
+            <ul>
+                <li><strong>使用记录</strong>：每次对话的时间戳、所调用的模型、消耗的 token 数、计费金额（如适用）；</li>
+                <li><strong>设备与网络信息</strong>：IP 地址、User-Agent（含浏览器、操作系统、设备类型）、屏幕分辨率、时区、语言偏好；</li>
+                <li><strong>客户端诊断信息（需您同意）</strong>：首次访问时右下角弹出同意卡片，您选择"同意"后才会启用 <code>telemetry.js</code>。仅在 <code>window.onerror</code> / <code>unhandledrejection</code> 触发时上报，内容仅限于：浏览器 UA、当前 URL、视口尺寸、异常 message + stack、最近 10 条 fetch 请求的 URL + 状态码（不含请求 / 响应主体）、本机生成的匿名 UUID（<code>cancri_anon_id</code>）。<strong>明确不上报</strong>：聊天内容、Cookie、表单值、键盘输入。拒绝 / 同意决策保存于本机后不再骚扰；</li>
+                <li><strong>设备指纹信息（反多账号，仅登录后采集）</strong>：为防止个别用户批量注册查集免费配额、损害其他用户公平使用权，<code>fingerprint.js</code> 在您登录后采集以下信号（同一浏览器 24 小时只上报一次）：WebRTC 本地 IP、Canvas / WebGL / Audio 指纹、navigator 信息、安装字体、屏幕、时区、连接类型。这些信号经 SHA-256 哈希成 <code>visitor_id</code>，后台用于识别同一设备下的多账号可疑使用。<strong>不会</strong>用于跨站追踪或广告推送；</li>
+                <li><strong>人机验证信息</strong>：登录与调用聊天接口时由 Cloudflare Turnstile 提供人机验证 token，用于防止自动化滥用。Turnstile widget 不下发追踪 cookie，不进行跨站追踪。</li>
+            </ul>
+
+            <h3>2.3 我们不收集的信息</h3>
+            <p>我们 <strong>不会</strong> 主动收集以下信息：精确地理位置（GPS）、通讯录、相册、麦克风、摄像头、生物识别信息（指纹、人脸）、身份证号、银行卡号。付款金额由您通过微信 / 支付宝扫码直接转入站主个人账户，<strong>本服务未接入任何第三方支付平台 SDK</strong>，不接触您的支付凭证。</p>
+
+            <h2 id="p3">3. 信息的使用方式</h2>
+            <p>我们将所收集的信息用于以下目的：</p>
+            <ol>
+                <li><strong>身份验证与账户管理</strong>：通过邮箱验证码完成登录，识别您的账户、维护登录态；</li>
+                <li><strong>提供核心服务</strong>：将您的对话内容转发至您所选择的上游模型供应方，并将返回的结果展示给您；</li>
+                <li><strong>配额与计费</strong>：根据您的套餐执行使用配额控制与计费；</li>
+                <li><strong>安全审计与防滥用</strong>：识别异常登录、异常调用、垃圾内容、网络攻击，保障平台与全体用户的安全；</li>
+                <li><strong>服务改进</strong>：通过聚合统计（如各模型的调用占比、平均响应时间）优化产品与基础设施。<strong>用于此目的的数据均已经去标识化处理，无法再关联至特定个人</strong>；</li>
+                <li><strong>客户端故障诊断</strong>：经您同意后，仅在未捕获异常发生时上报错误堆栈用于定位与修复客户端 bug；</li>
+                <li><strong>反多账号识别</strong>：通过设备指纹 <code>visitor_id</code> 识别同一设备下的多账号使用，以防止免费配额被刷取、账号被转售、违规追查后重复注册；</li>
+                <li><strong>履行法律义务</strong>：在中国大陆法律法规明确要求时配合监管查询、协助调查。</li>
+            </ol>
+            <p>我们 <strong>不会</strong> 将您的对话内容用于训练我们自己的模型，也 <strong>不会</strong> 在未经您明确同意的情况下用于商业广告分析或推送。</p>
+
+            <h2 id="p4">4. 第三方共享与披露</h2>
+            <p>除以下情形外，我们 <strong>不会</strong> 将您的个人信息向任何第三方共享、出售或转让：</p>
+
+            <h3>4.1 上游模型供应方</h3>
+            <p>本服务的核心是聚合多家上游模型。<strong>当您选择某一模型并发送对话内容时，对话内容将被实时转发给对应的上游模型供应方</strong>。这些供应方包括但不限于：</p>
+            <ul>
+                <li>阿里云百炼（DashScope）</li>
+                <li>魔搭社区（ModelScope）</li>
+                <li>OpenAI</li>
+                <li>Anthropic</li>
+                <li>DeepSeek</li>
+            </ul>
+            <p>各供应方均有其自有的隐私政策与数据处理实践，您可在选择模型前通过 <a href="api_models.html">模型广场</a> 查询对应供应方的官方政策。本服务对上游供应方的数据处理不承担直接监管责任。</p>
+
+            <h3>4.2 服务运营商</h3>
+            <ul>
+                <li><strong>Supabase</strong>：用于账户认证（OTP 邮箱验证码）、PostgreSQL 数据库存储、Edge Functions 边缘函数计算。Supabase 为独立第三方服务商，其服务器部署位置、数据处理实践遵从其自有隐私政策（<a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>）；</li>
+                <li><strong>Cloudflare</strong>：仅用于 Turnstile 人机验证（防验证码薅、防脚本滥用）。Cloudflare Turnstile widget 不下发 cookie、不进行跨站追踪；</li>
+                <li><strong>jsdelivr CDN</strong>：加载 <code>@supabase/supabase-js</code> 等公开的前端依赖库，仅传送网络请求必要的 IP / UA。本服务不向 CDN 提交任何个人信息；</li>
+                <li><strong>付款收款</strong>：不接入任何第三方支付平台。您通过微信 / 支付宝扫码直接转账至站主个人收款账户，由站主人工对账。您的付款账户信息仅在微信 / 支付宝 与站主账户之间交互，<strong>本服务后端不接收任何支付令牌、不保存银行卡号</strong>。</li>
+            </ul>
+
+            <h3>4.3 法律要求</h3>
+            <p>在中国大陆法律法规明确要求、人民法院或行政机关合法调取、或为保护平台与用户合法权益不得不披露的情形下，我们将依法配合，并尽可能事前告知您（除非法律禁止告知）。</p>
+
+            <h3>4.4 业务变更</h3>
+            <p>如发生合并、收购、资产重组等情形，您的个人信息可能作为业务的一部分被转让。在此情形下，我们将要求受让方继续遵守本协议的承诺，否则需重新征得您的同意。</p>
+
+            <h2 id="p5">5. 数据存储与保留</h2>
+            <p>我们仅在为您提供服务所需的合理期间内保留您的数据，原则如下：</p>
+            <ul>
+                <li><strong>账户信息</strong>：在您账户存活期间保留。您提交注销申请并经核实后，我们将在合理期限内删除您的账户信息；</li>
+                <li><strong>对话历史</strong>：默认保留于 Supabase 数据库，方便您随时回查。<strong>您可在聊天页面主动删除任意对话</strong>（前端通过 chat-history Edge Function 执行服务端删除）；</li>
+                <li><strong>使用与计费记录</strong>：用于配额控制、反滥用审计与付费对账，保留期限不短于法律法规所要求的最低期限；</li>
+                <li><strong>客户端诊断日志（telemetry）</strong>：保留期限以诊断完成、问题修复后清理为度，不长期沉淀；</li>
+                <li><strong>设备指纹（visitor_id）</strong>：保留期限以反多账号识别有效性为度。当您账户注销后，绑定您账号的指纹关联将一并解除；</li>
+                <li><strong>备份数据</strong>：依托 Supabase 自有备份策略，主数据删除后备份将依其滚动覆盖周期同步淘汰。</li>
+            </ul>
+            <p>法律法规明确要求更长保留期的（如付费交易记录），我们将依法保留至要求期满。</p>
+
+            <h2 id="p6">6. Cookie 与本地存储</h2>
+            <p>本服务使用浏览器 <strong>本地存储（localStorage）</strong> 保存以下信息，所有内容仅留在您本机，不会发往第三方分析平台：</p>
+            <ul>
+                <li><strong>登录态</strong>：Supabase 颁发的 access / refresh token（由 supabase-js 客户端管理）；</li>
+                <li><strong>主题与语言偏好</strong>：<code>theme</code>、<code>lang</code>；</li>
+                <li><strong>界面偏好</strong>：侧边栏展开状态、当前选中模型、最近使用模型；</li>
+                <li><strong>遥测同意决策</strong>：<code>cancri_telemetry_consent</code>（值仅为 <code>granted</code> / <code>denied</code>）；</li>
+                <li><strong>匿名标识</strong>：<code>cancri_anon_id</code>（仅在已同意 telemetry 后用于错误聚合）、<code>cancri_visitor_id</code>（已登录后由指纹生成，用于反多账号）；</li>
+                <li><strong>指纹节流标记</strong>：<code>cancri_fp_last_submit</code>（记录上次指纹上报时间，用于实施 24 小时节流，避免重复采集）。</li>
+            </ul>
+            <p>本服务 <strong>不使用</strong> 任何第三方追踪 cookie、<strong>不参与</strong> 跨站点广告追踪。Cloudflare Turnstile 仅在校验请求过程中下发其自有验证 cookie，不用于任何形式的用户画像或跨站追踪。</p>
+            <p>您可随时通过浏览器开发者工具或设置清除本地存储；清除后将退出登录、需重新登录、部分偏好需要重新设置。</p>
+
+            <h2 id="p7">7. 数据安全措施</h2>
+            <p>我们采用业界通行的安全实践保护您的数据：</p>
+            <ul>
+                <li><strong>传输加密</strong>：所有客户端与服务端通信均通过 HTTPS（TLS 1.3）加密；</li>
+                <li><strong>身份鉴权</strong>：基于 Supabase JWT 的无状态鉴权，访问后端 API 必须携带有效 token；</li>
+                <li><strong>OTP 防滥用</strong>：邮箱验证码使用密码学随机生成，单次有效且有时效；登录尝试有频率限制；</li>
+                <li><strong>边缘函数隔离</strong>：核心业务逻辑在 Supabase Edge Functions 中执行，与数据库通过受控接口通信；</li>
+                <li><strong>最小权限原则</strong>：仅在必要范围内授予内部人员访问数据的权限，所有敏感操作均有审计日志。</li>
+            </ul>
+            <p>尽管我们已尽合理的安全努力，但互联网传输不存在绝对安全。<strong>如发生数据泄露事件，我们将在事故发生与确认后及时通过站点公告与注册邮箱通知受影响用户</strong>，并配合您减小损失。</p>
+
+            <h2 id="p8">8. 跨境数据传输</h2>
+            <p>本服务依托 Supabase、Cloudflare、jsdelivr 等全球化基础设施，部分上游模型供应方（如 OpenAI、Anthropic）的服务器位于中国大陆境外。这意味着您在使用本服务时：</p>
+            <ul>
+                <li>您的账户信息、对话历史、使用记录等数据 <strong>可能存储或经由位于中国大陆境外的服务器</strong>，具体地点由相关服务运营商确定；</li>
+                <li>当您选择海外模型供应方（如 OpenAI、Anthropic）时，您的对话内容将被实时转发至对应供应方位于其本国 / 区域的服务器。</li>
+            </ul>
+            <p>使用本服务即表示您 <strong>同意此项必要的跨境数据传输</strong>。我们仅向相关运营商提供为提供本服务所必需的最小数据范围。<strong>如您不接受跨境数据传输，请停止使用本服务，并按本协议第 10 章行使您的删除权。</strong></p>
+
+            <h2 id="p9">9. 未成年人保护</h2>
+            <p>本服务不主动面向 <strong>14 周岁以下的未成年人</strong>。如您未满 14 周岁，请勿注册账户。如您发现 14 岁以下未成年人未经监护人同意使用本服务，请通过本协议末尾的联系方式告知我们，我们将在核实后及时删除相关账户。</p>
+            <p>14 周岁以上但未满 18 周岁的用户，应在监护人陪同下阅读本协议并由监护人同意。</p>
+
+            <h2 id="p10">10. 您的权利与选择</h2>
+            <p>对于您的个人信息，您享有以下权利：</p>
+            <ul>
+                <li><strong>访问权</strong>：通过 <a href="chat/index.html">聊天页面</a> 查看您的所有对话历史，通过设置页查看账户信息与使用记录；</li>
+                <li><strong>更正权</strong>：邮箱地址如需更正，请通过本协议末尾的联系方式申请（需通过原邮箱验证身份）；</li>
+                <li><strong>删除权</strong>：您可在聊天页面主动删除任意单条对话；如需完全注销账户（含全部历史数据），请通过邮件提交注销申请，我们将在核实后的合理期限内处理；</li>
+                <li><strong>数据导出权</strong>：如需导出您的对话历史副本，请通过邮件申请，我们将在核实后的合理期限内提供 JSON 格式数据；</li>
+                <li><strong>撤回同意权</strong>：您可随时撤回对 <code>telemetry</code> 客户端诊断的同意（清除本机 localStorage 中的 <code>cancri_telemetry_consent</code> 项，下次访问时重新弹同意卡片；选择“拒绝”后不再上报）；</li>
+                <li><strong>投诉权</strong>：如您认为我们的数据处理违反法律法规或本协议，您可通过本协议末尾的联系方式向我们投诉，也可向有管辖权的监管部门反映。</li>
+            </ul>
+            <p>行使上述权利原则上免费。如您的请求明显缺乏依据或过于重复，我们可能要求您支付合理的工本费或拒绝处理。</p>
+
+            <h2 id="p11">11. 政策修订</h2>
+            <p>我们可能不时修订本协议。修订后的协议将在本页面公示，并以"最后更新"日期为准。对于影响您重大权益的修订（如收集信息的范围扩大、共享对象新增等），我们将通过登录页公告、应用内通知或注册邮箱等合理方式提前 7 日告知。</p>
+            <p>修订协议生效后，您继续使用本服务即视为接受修订后的协议。若您不同意修订，请停止使用本服务并按本协议第 10 章行使您的删除权。</p>
+
+            <h2 id="p12">12. 联系我们</h2>
+            <p>本服务为个人运营项目，暂未设立专职隐私投诉邮箱，下列渠道为项目公开的唯一联系方式。如您对本协议有疑问、希望行使您的权利、或就个人信息处理事项进行投诉，请通过以下方式联系我们：</p>
+            <ul>
+                <li><strong>项目邮箱</strong>：<a href="mailto:nexusvai@139.com">nexusvai@139.com</a> / <a href="mailto:nexusvai@foxmail.com">nexusvai@foxmail.com</a></li>
+                <li><strong>GitHub Issues</strong>：<a href="https://github.com/NexusVAI" target="_blank" rel="noopener">github.com/NexusVAI</a>（不涉及个人隐私的部分可公开提交，隐私请求请走邮箱）</li>
+                <li><strong>X（推特）</strong>：<a href="https://x.com/NexusVAI" target="_blank" rel="noopener">@NexusVAI</a></li>
+                <li><strong>项目页面</strong>：<a href="https://nexusvai.github.io/NexusV/" target="_blank" rel="noopener">nexusvai.github.io/NexusV</a></li>
+            </ul>
+            <p>我们将在收到您的请求后的合理期限内予以答复。项目为个人运营，响应耗时可能顺延至下一个空闲时段，不会超过法定限期。</p>
+
+            <p class="legal-footer-note">
+                <strong>本协议的中文版本为正式版本。</strong>如本协议被翻译为其他语言并出现歧义，以中文版本为准。
+                <br><br>
+                如对本协议某条款有理解上的争议，应按照公平、合理、保护用户合法权益的原则解释。
+            </p>
+        </div>
+    </main>
+
+    <div data-page-footer></div>
+
+    <script src="js/components.js" defer></script>
+    <script src="js/i18n.js" defer></script>
+    <script src="js/theme.js" defer></script>
+    <script src="js/menu.js" defer></script>
+    <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+    <script src="js/telemetry.js?v=2026-05-14-tel-init" defer></script>
+    <script src="js/search.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script>document.addEventListener('DOMContentLoaded',function(){injectComponents({});});</script>
+</body>
+</html>

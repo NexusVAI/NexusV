@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务条款 | NexusV</title>
+    <meta name="description" content="NexusV 服务条款，明确双方权利义务、服务范围、使用规范、知识产权与免责声明。">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="服务条款 | NexusV">
+    <meta property="og:description" content="NexusV 服务条款，明确双方权利义务、服务范围、使用规范、知识产权与免责声明。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nexusvai.github.io/NexusV/terms.html">
+    <meta property="og:image" content="Logo/JJ1.webp">
+    <script>
+        (() => {
+            let theme = 'warm';
+            try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+            if (theme === 'light') document.documentElement.classList.add('light-theme');
+            if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+            if (theme === 'blue') document.documentElement.classList.add('blue-theme');
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="Logo/Cancri.png">
+    <link rel="apple-touch-icon" href="Logo/Cancri.png">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/navbar.css">
+    <link rel="stylesheet" href="css/mobile-menu.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/inter-fonts.css">
+    <link rel="stylesheet" href="css/legal.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/display-fonts.css">
+</head>
+<body>
+    <!-- Shared navbar / footer injected by components.js -->
+
+    <main class="legal-page">
+        <div class="legal-header">
+            <div class="legal-category">法律文档</div>
+            <h1 class="legal-title">服务条款</h1>
+            <p class="legal-effective">最后更新：2026 年 5 月 16 日 · 生效日期：2026 年 5 月 16 日</p>
+        </div>
+
+        <div class="legal-content">
+            <div class="legal-toc" aria-label="目录">
+                <p class="legal-toc-title">目录</p>
+                <ol>
+                    <li><a href="#s1">接受条款</a></li>
+                    <li><a href="#s2">服务说明</a></li>
+                    <li><a href="#s3">账户与登录</a></li>
+                    <li><a href="#s4">使用规范</a></li>
+                    <li><a href="#s5">内容与知识产权</a></li>
+                    <li><a href="#s6">AI 输出的局限性</a></li>
+                    <li><a href="#s7">付费、订阅与退款</a></li>
+                    <li><a href="#s8">服务变更、暂停与终止</a></li>
+                    <li><a href="#s9">免责与责任限制</a></li>
+                    <li><a href="#s10">适用法律与争议解决</a></li>
+                    <li><a href="#s11">条款修订</a></li>
+                    <li><a href="#s12">联系我们</a></li>
+                </ol>
+            </div>
+
+            <h2 id="s1">1. 接受条款</h2>
+            <p>欢迎使用 NexusV（以下简称"本服务"或"平台"）。本《服务条款》（以下简称"本条款"）是您与 NexusV 团队（以下简称"我们"）之间就您使用本服务所达成的具有法律约束力的协议。</p>
+            <p>当您通过注册账户、登录、访问或以其他任何方式使用本服务时，即视为您已阅读、理解并同意接受本条款的全部内容。<strong>若您不同意本条款的任何部分，请立即停止使用本服务。</strong></p>
+            <p>未满 14 周岁的未成年人使用本服务前，应在监护人陪同下阅读并由监护人同意本条款。</p>
+
+            <h2 id="s2">2. 服务说明</h2>
+            <p>NexusV 是一个聚合主流大语言模型与多模态 AI 模型的对话与生成平台。当前接入的上游模型供应方包括但不限于：阿里云百炼、魔搭社区、OpenAI、Anthropic、DeepSeek 等。</p>
+            <p>本服务的核心功能包括：</p>
+            <ul>
+                <li><strong>对话推理</strong>：通过统一界面与各上游模型对话；</li>
+                <li><strong>多模型切换</strong>：在同一会话中横向比较不同模型的输出；</li>
+                <li><strong>图像生成</strong>：调用支持图像生成的模型创建图像；</li>
+                <li><strong>开放 API</strong>：为开发者提供与 OpenAI 兼容的 API 接口（详见 <a href="api_docs.html">API 文档</a>）。</li>
+            </ul>
+            <p>本服务以"现状"提供，我们尽力保证服务的稳定与可用，但<strong>不承诺服务永远可用、永远准确、永远无故障</strong>。上游模型供应方的可用性、定价与配额变化可能影响本服务。</p>
+            <p><strong>项目性质</strong>：NexusV 为独立维护者运营的非商业项目，代码开源于 <a href="https://github.com/NexusVAI" target="_blank" rel="noopener">github.com/NexusVAI</a>。本服务无正式公司实体、无 SLA 承诺、无 7×24 客服。起源于独立开发者对 AI 工具的探索，以个人名义为社区充当上游 API 与终端用户之间的聚合层。</p>
+
+            <h2 id="s3">3. 账户与登录</h2>
+            <h3>3.1 注册方式</h3>
+            <p>本服务采用邮箱一次性验证码（OTP）登录方式，无需设置密码。您需要提供真实、有效的邮箱地址，并能够接收并使用我们发送的验证码完成登录。</p>
+
+            <h3>3.2 账户责任</h3>
+            <p>您应妥善保管您的邮箱账户及验证码，对通过您账户进行的所有操作承担全部责任。如发现未经授权使用您账户的情况，请立即通过本条款末尾的联系方式告知我们。</p>
+
+            <h3>3.3 一人一号</h3>
+            <p>每位自然人原则上仅可注册一个账户。<strong>禁止</strong>批量注册、买卖、转让或共享账户。一旦发现，我们有权立即冻结相关账户并保留追究责任的权利。</p>
+
+            <h2 id="s4">4. 使用规范</h2>
+            <p>您在使用本服务的过程中，<strong>不得</strong>从事下列任何行为：</p>
+            <ol>
+                <li>违反中华人民共和国法律法规，或违反您所在司法管辖区的法律法规；</li>
+                <li>发布、传播、生成涉及恐怖主义、暴力、色情、赌博、毒品、邪教、民族仇恨、虚假信息等违法或有害内容；</li>
+                <li>侵犯他人著作权、商标权、专利权、肖像权、隐私权、商业秘密等合法权益；</li>
+                <li>通过自动化脚本、爬虫、机器人或任何非正式客户端访问本服务；</li>
+                <li>故意逃避、绕过或干扰本服务的访问控制、配额限制、验证码机制；</li>
+                <li>对本服务实施任何形式的拒绝服务攻击、注入攻击、漏洞探测、逆向工程；</li>
+                <li>以欺骗、伪造、冒用他人身份的方式注册或使用账户；</li>
+                <li>未经授权将本服务的免费配额用于商业转售、二次销售或大规模分发；</li>
+                <li>从事任何可能损害本服务、其他用户或上游模型供应方合法权益的行为。</li>
+            </ol>
+            <p>违反上述规范的，我们有权采取包括但不限于警告、限速、降级、冻结账户、终止服务、追究法律责任在内的任何措施，且无需事先通知。</p>
+
+            <h2 id="s5">5. 内容与知识产权</h2>
+            <h3>5.1 您的输入</h3>
+            <p>您在本服务中发送的任何文本、图像、文件等输入内容（以下简称"输入"）的著作权及其他合法权益归您或原权利人所有。您应确保您的输入合法、不侵犯第三方权利。</p>
+            <p>为完成对话推理，您的输入将被发送至您所选择的上游模型供应方。这意味着：<strong>您一旦发送输入，即授权我们及上游模型供应方在为您提供本服务所必需的范围内处理这些数据。</strong>具体处理细节详见 <a href="privacy.html">《隐私协议》</a>。</p>
+
+            <h3>5.2 模型输出</h3>
+            <p>各上游模型的输出（以下简称"输出"）的权利归属，按各模型供应方的服务协议确定。<strong>NexusV 不主张对输出的任何所有权</strong>。我们仅作为聚合与传输通道，不对输出的内容承担生成主体责任。</p>
+            <p>您在使用、复制、分发输出时，应遵守对应上游模型供应方的协议。常见模型的协议链接可在 <a href="api_models.html">模型广场</a> 查询。</p>
+
+            <h3>5.3 平台知识产权</h3>
+            <p>除您的输入与模型输出外，本服务的网站设计、源代码、界面、品牌标识、域名、文档等的著作权及其他知识产权归 NexusV 团队所有。未经我们书面授权，您不得复制、修改、分发、商业利用。</p>
+
+            <h2 id="s6">6. AI 输出的局限性</h2>
+            <p><strong>请务必注意：AI 模型的输出可能包含错误、虚构、过时或带有偏见的内容。</strong></p>
+            <p>本服务及上游模型供应方<strong>不保证</strong>输出的准确性、真实性、完整性、时效性、合法性或适用性。您应当独立判断输出的可靠性，<strong>并对基于输出所作出的任何决策自行承担风险</strong>。</p>
+            <p>本服务的输出<strong>不构成</strong>医疗、法律、金融、税务、心理咨询等任何专业建议。如您在前述领域有相关需求，请咨询持照执业的专业人士。</p>
+
+            <h2 id="s7">7. 付费、订阅与退款</h2>
+            <h3>7.1 免费与付费机制</h3>
+            <p>本服务为绝大多数用户提供免费配额。如您选择升级至付费会员以获取更高配额，相关价格、规格与有效期以 <a href="chat/pricing.html">套餐页</a> 当时所列为准。充值时间可累加，到期后自动降级回免费档；付费会员不是订阅制，不会自动续费。</p>
+
+            <h3>7.2 付款与激活流程</h3>
+            <p>付费采用<strong>微信 / 支付宝个人收款 + 站主人工审核</strong>的模式，不接入第三方支付平台。完整流程：</p>
+            <ol>
+                <li><strong>扫码付款</strong>：微信或支付宝扫码付费，请在付款备注里填写您的邮箱 + QQ（以便对单）；</li>
+                <li><strong>提交订单</strong>：在 <a href="chat/pricing.html">套餐页</a> 填写同样的邮箱与 QQ 提交订单（需先登录）；</li>
+                <li><strong>站主对账</strong>：站主人工对账，合理期限为 1～24 小时；</li>
+                <li><strong>获取激活码</strong>：核实后激活码显示在 <a href="chat/orders.html">我的订单</a> 页面，<strong>不另行邮件通知</strong>；</li>
+                <li><strong>手动兑换</strong>：您在订单页输入激活码即可升级。</li>
+            </ol>
+
+            <h3>7.3 退款政策</h3>
+            <p><strong>付款金额用于覆盖上游 API 成本，一旦激活恕不退款。</strong>下单前请确认您需要会员特权。如遇下列情形之一可申请退款：（1）付款后未提交订单、未领取激活码；（2）本服务明显故障导致付费会员期不可用且超过订单期间的 50%。退款请通过本条款末尾的邮箱提交。</p>
+
+            <h3>7.4 免费档与付费档</h3>
+            <p>免费用户保留所有模型访问权限，但高峰期可能需要排队。付费会员仅获得更充裕的配额与优先调度，<strong>不限制模型范围</strong>。</p>
+
+            <h2 id="s8">8. 服务变更、暂停与终止</h2>
+            <p>我们保留以下权利，且无需对您承担任何责任：</p>
+            <ul>
+                <li>根据业务需要随时新增、修改、暂停或终止本服务的任何功能；</li>
+                <li>根据上游模型供应方政策的变化调整可用模型清单；</li>
+                <li>根据法律法规、安全审计、防滥用等需要冻结、限制或注销违规账户；</li>
+                <li>因不可抗力、上游故障、网络中断等原因暂停服务。</li>
+            </ul>
+            <p>对于影响用户重大权益的变更，我们将通过登录页公告、应用内通知或注册邮箱等合理方式提前告知。</p>
+
+            <h2 id="s9">9. 免责与责任限制</h2>
+            <p>在适用法律允许的最大范围内：</p>
+            <ul>
+                <li>我们对因您使用或无法使用本服务、或对输出的依赖所引致的任何<strong>直接、间接、附带、特殊、惩罚性或后果性损害</strong>不承担责任，包括但不限于利润损失、数据丢失、商誉损失；</li>
+                <li>我们对<strong>不可抗力</strong>（包括但不限于自然灾害、战争、政府行为、网络管制、上游服务中断、电力故障等）所引致的服务无法履行不承担责任；</li>
+                <li>我们对您从第三方（包括但不限于上游模型供应方、链接所指向的外部网站）获取的信息、产品或服务不承担担保责任。</li>
+            </ul>
+            <p><strong>独立维护说明</strong>：本项目为个人业余时间维护的非营利性质，响应速度、可用性、技术支持频率取决于维护者当前可支配的时间与资源。本服务<strong>不提供任何服务级别协议（SLA）承诺</strong>，故障需要较长时间才能修复是可能发生的。</p>
+            <p>若您在使用本服务过程中遭受第三方索赔或处罚，由您自行承担，与我们无关；若您的违规行为致使我们遭受损失，您应当承担相应赔偿责任。</p>
+
+            <h2 id="s10">10. 适用法律与争议解决</h2>
+            <p>本条款的订立、生效、解释、履行及争议解决均适用<strong>中华人民共和国大陆地区</strong>的法律法规（不含香港特别行政区、澳门特别行政区与台湾地区法律）。</p>
+            <p>因本条款产生的或与本条款有关的任何争议，双方应首先通过友好协商解决。协商不成的，任何一方均可向我们主要营业地有管辖权的人民法院提起诉讼。</p>
+
+            <h2 id="s11">11. 条款修订</h2>
+            <p>我们可能不时修订本条款。修订后的条款将在本页面公示，并以"最后更新"日期为准。对于影响您重大权益的修订，我们将通过登录页公告、应用内通知或注册邮箱等合理方式提前告知。</p>
+            <p>修订条款生效后，您继续使用本服务即视为接受修订后的条款。若您不同意修订，请停止使用本服务。</p>
+
+            <h2 id="s12">12. 联系我们</h2>
+            <p>如您对本条款有任何疑问、意见或建议，欢迎通过以下任一方式联系我们（<strong>推荐优先使用 GitHub Issues，公开透明且便于跟踪处理进度</strong>）：</p>
+            <ul>
+                <li><strong>GitHub Issues</strong>：<a href="https://github.com/NexusVAI" target="_blank" rel="noopener">github.com/NexusVAI</a>（代码仓库 + 问题跟踪）</li>
+                <li><strong>邮箱</strong>：<a href="mailto:nexusvai@139.com">nexusvai@139.com</a> 或 <a href="mailto:nexusvai@foxmail.com">nexusvai@foxmail.com</a>（主题请注明“NexusV — 问题反馈 / 数据请求”）</li>
+                <li><strong>X / Twitter</strong>：<a href="https://x.com/NexusVAI" target="_blank" rel="noopener">@NexusVAI</a>（公告与动态）</li>
+                <li><strong>官网</strong>：<a href="https://nexusvai.github.io/NexusV/" target="_blank" rel="noopener">nexusvai.github.io/NexusV</a></li>
+            </ul>
+            <p><strong>请不要</strong>通过邮件或 Issue 发送 API Key、密码、身份证号等敏感信息。我们将在合理时间内确认收到并尽可能迅速响应。</p>
+
+            <p class="legal-footer-note">
+                <strong>本条款的中文版本为正式版本。</strong>如本条款被翻译为其他语言并出现歧义，以中文版本为准。
+                <br><br>
+                本服务由 NexusV 独立维护者提供，代码开源于 GitHub。本条款不构成劳动合同、雇佣关系或合伙关系，不表示本服务作为商业实体运营。
+            </p>
+        </div>
+    </main>
+
+    <div data-page-footer></div>
+
+    <script src="js/components.js" defer></script>
+    <script src="js/i18n.js" defer></script>
+    <script src="js/theme.js" defer></script>
+    <script src="js/menu.js" defer></script>
+    <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+    <script src="js/telemetry.js?v=2026-05-14-tel-init" defer></script>
+    <script src="js/search.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script>document.addEventListener('DOMContentLoaded',function(){injectComponents({});});</script>
+</body>
+</html>
