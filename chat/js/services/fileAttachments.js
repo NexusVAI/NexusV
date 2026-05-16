@@ -22,13 +22,16 @@ function readFileAsText(file) {
 
 export function isSupportedAttachment(file) {
   if (!file) return false;
-  return String(file.type || '').startsWith('image/') || TEXT_ATTACHMENT_RE.test(String(file.name || ''));
+  const type = String(file.type || '');
+  return type.startsWith('image/') || type.startsWith('video/') || TEXT_ATTACHMENT_RE.test(String(file.name || ''));
 }
 
 export async function filesToAttachments(files, currentAttachments = [], options = {}) {
   const maxCount = options.maxCount || DEFAULT_MAX_ATTACHMENT_COUNT;
   const maxSize = options.maxSize || DEFAULT_MAX_ATTACHMENT_SIZE;
   const onWarning = typeof options.onWarning === 'function' ? options.onWarning : () => {};
+  const allowText = options.allowText !== false;
+  const allowVideo = options.allowVideo === true;
   const remainingSlots = Math.max(0, maxCount - currentAttachments.length);
   const accepted = [];
 
@@ -43,7 +46,12 @@ export async function filesToAttachments(files, currentAttachments = [], options
   }
 
   for (const file of fileList.slice(0, remainingSlots)) {
-    if (!isSupportedAttachment(file)) {
+    const type = String(file.type || '');
+    const isImage = type.startsWith('image/');
+    const isVideo = type.startsWith('video/');
+    const isTextFile = TEXT_ATTACHMENT_RE.test(String(file.name || ''));
+
+    if (!isImage && !(allowVideo && isVideo) && !(allowText && isTextFile)) {
       onWarning(`已忽略不支持的文件：${file.name}`);
       continue;
     }
@@ -53,8 +61,6 @@ export async function filesToAttachments(files, currentAttachments = [], options
       continue;
     }
 
-    const isImage = String(file.type || '').startsWith('image/');
-    const isTextFile = !isImage;
     const attachment = {
       name: file.name,
       type: file.type,
@@ -64,9 +70,10 @@ export async function filesToAttachments(files, currentAttachments = [], options
       textContent: null,
       file,
       isTextFile,
+      isVideo,
     };
 
-    if (isImage) {
+    if (isImage || isVideo) {
       attachment.previewUrl = URL.createObjectURL(file);
       attachment.dataUrl = await readFileAsDataUrl(file).catch(() => '');
     } else {
@@ -86,13 +93,14 @@ export async function filesToAttachments(files, currentAttachments = [], options
 export function attachmentToUserContent(query, attachments = []) {
   const textPart = String(query || '').trim();
   const content = [];
-  const hasImageAttachment = attachments.some(item => !item?.isTextFile);
+  const hasImageAttachment = attachments.some(item => !item?.isTextFile && !item?.isVideo);
 
   attachments.forEach(item => {
     if (item?.isTextFile && item?.textContent) {
       content.push({ type: 'text', text: `\n\n--- 附件：${item.name} ---\n${item.textContent}\n--- 附件结束 ---\n` });
       return;
     }
+    if (item?.isVideo) return;
 
     const url = item?.dataUrl || item?.url;
     if (typeof url !== 'string' || !(url.startsWith('data:') || /^https?:\/\//i.test(url))) return;
