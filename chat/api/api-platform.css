@@ -20,6 +20,33 @@
    .stat-card / .gate was causing visible frame drops on mobile.
    Chat-side small buttons keep it via chat/styles/cancri_liquid_glass.css. */
 
+/* ─── Anthropic Sans 自宿字体 ─────────────────────────────────
+ * 2026-05-16 PR ·api-typography：API 平台原 --sans 栈头部缺 Anthropic Sans，
+ * 用户从 chat 主页（已用 Anthropic Sans）跳到 API 页字体会突然变成
+ * system sans，破坏品牌一致性。
+ *
+ * 修复：在 api-platform.css 顶部直接注册 @font-face × 2（roman + italic）
+ * 引用 chat/fonts/ 下已存在的 .ttf 文件（chat/claude.css:19-32 同款 src）。
+ * 不抽离共享文件保持改动最小封面。
+ *
+ * Instrument Serif 仍走 Google Fonts CDN（page 里 <link>），不动。
+ * --serif 用于 .page-title / .subtitle，是 API 平台编辑感的设计选择，保留。
+ * ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("../fonts/AnthropicSans-Roman-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("../fonts/AnthropicSans-Italic-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* ─── reset & tokens ────────────────────────────────────────── */
 
 *,
@@ -55,7 +82,10 @@
   /* 字体 */
   --serif: "Instrument Serif", "Source Serif Pro", Georgia, "Times New Roman",
     serif;
+  /* 2026-05-16 PR ·api-typography：栈头加 Anthropic Sans / AnthropicSans
+     跟 chat/claude.css --c-font 取齐。@font-face 在文件顶部已注册。 */
   --sans:
+    "Anthropic Sans", "AnthropicSans",
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
     "PingFang SC", "Microsoft YaHei", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -111,7 +141,15 @@ body {
   color: var(--text);
   min-height: 100vh;
   line-height: 1.5;
+  /* 2026-05-16 PR ·api-typography：补齐 chat 主页 (claude.css:184-187) 的
+     渲染 4 行，让 API 页上 Firefox/Safari 上字迹不再偏厚、 ligature/kerning 全开。 */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1,
+    "calt" 1;
 }
 
 a {
