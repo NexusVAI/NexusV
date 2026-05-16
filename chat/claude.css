@@ -219,7 +219,9 @@ body {
 }
 .sidebar-topbar::before {
     content: "Cancri";
-    font-family: var(--c-font-serif);
+    /* 2026-05-16 PR B (全部撤→sans)：原为 `font-family: var(--c-font-serif)`，
+       已撤。跟 Claude 真站 main_window/index.html:148 默认 sans 对齐。
+       品牌 logo 从 serif 变为 sans 详见 PR B 说明。 */
     font-size: 22px;
     font-weight: 500;
     letter-spacing: -0.005em;
@@ -616,7 +618,8 @@ body.is-paid-tier .claude-nav-tag {
 
 /* HERO */
 .hero, #heroTitle {
-    font-family: var(--c-font-serif) !important;
+    /* 2026-05-16 PR B (全部撤→sans)：原为 `font-family: var(--c-font-serif) !important`，
+       已撤。默认继承 body 的 var(--c-font) = Anthropic Sans。 */
     font-size: 30px !important;
     font-weight: 400 !important;
     color: var(--c-text) !important;
@@ -1271,7 +1274,7 @@ html[data-theme="light"] .composer:focus-within {
     padding: 8px 0 24px;
 }
 .claude-page-title {
-    font-family: var(--c-font-serif);
+    /* 2026-05-16 PR B (全部撤→sans)：原为 `font-family: var(--c-font-serif)`，已撤。 */
     font-size: 24px;
     font-weight: 500;
     color: var(--c-text);
@@ -1416,7 +1419,7 @@ html[data-theme="light"] .composer:focus-within {
     color: var(--c-text);
 }
 .claude-settings-title {
-    font-family: var(--c-font-serif);
+    /* 2026-05-16 PR B (全部撤→sans)：原为 `font-family: var(--c-font-serif)`，已撤。 */
     font-size: 26px;
     font-weight: 500;
     color: var(--c-text);
@@ -2583,11 +2586,16 @@ button.composer-tool-btn:hover {
 }
 
 /* ───────────────────────────────────────────────────────────
-   16. SERIF 字体（Claude 真实视觉的核心）
-   Claude 用 Tiempos Text（付费）。我们用系统衬线 fallback：
-   Iowan Old Style → Apple Garamond → Charter → Times New Roman → Georgia
-   仅对：聊天消息正文 / hero 大标题 / 视图大标题
-   sidebar / 设置 UI / composer 输入框 / 按钮 仍 sans-serif（更紧凑）
+   §16. AI 消息正文 typography
+   2026-05-16 PR B（全部撤→sans）：撤销原§16 的全局 serif 强制（5 处：
+   sidebar logo / hero / page-title / settings-title / AI message-content）。
+   - 变更依据：app.asar.extracted/.vite/renderer/main_window/index.html:148
+     `body { font-family: Anthropic Sans, ... }` 默认。serif 仅在 .font-serif
+     utility class 上按需应用（index.html:2826），不是全局。
+   - PR 以前我全局强制 serif 是"我以为该这样"，无源依据。
+   - --c-font-serif token 本身（line 120）与 @font-face（line 33）保留，
+     供后续需要按需用 className serif 的场景。
+   本区现仅保留：AI message size/line-height + code monospace + user bubble sans。
    ─────────────────────────────────────────────────────────── */
 .message.assistant .message-content,
 .message.assistant .message-content p,
@@ -2595,10 +2603,10 @@ button.composer-tool-btn:hover {
 .message.assistant .message-content blockquote,
 .message.assistant .answer-body,
 .message.assistant .think-body {
-    font-family: var(--c-font-serif) !important;
+    /* font-family 不再强制（原 `var(--c-font-serif) !important` 已撤），继承 body Anthropic Sans。
+       letter-spacing 0.005em 原是为 serif 字距微开设的，sans 不需要，一同撤。 */
     font-size: 16px;
     line-height: 1.62;
-    letter-spacing: 0.005em;
 }
 /* code / pre / inline code 保持 monospace（不要 serif 化代码块） */
 .message.assistant .message-content code,
@@ -2608,24 +2616,12 @@ button.composer-tool-btn:hover {
     font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo,
                  Consolas, "Liberation Mono", monospace !important;
 }
-/* 用户气泡保持 sans-serif（紧凑感） */
+/* 用户气泡显式 sans（防防其他规则误覆盖） */
 .message.user .message-content {
     font-family: var(--c-font) !important;
 }
-/* hero 早就 serif，再次显式 */
-#heroTitle, .hero {
-    font-family: var(--c-font-serif) !important;
-}
-/* Page titles（聊天 / 项目 / 设置）serif */
-.claude-page-title,
-.claude-settings-title,
-.claude-page-header h1,
-#chatsView .claude-page-title,
-#projectsView .claude-page-title,
-#claudeSettingsView .claude-page-title {
-    font-family: var(--c-font-serif) !important;
-}
-/* 设置内容里的大标题区段（"简介" 等）保持 sans-serif，因为图 6 显示是 sans */
+/* 原§16 的重复声明块（hero · page-title · settings-title 全块强制 serif）全部删除。
+   这些位置现在走 body 默认 sans，跟 Claude 真站 1:1。 */
 
 /* 更窄的手机（≤420px）进一步压缩 */
 @media (max-width: 420px) {
