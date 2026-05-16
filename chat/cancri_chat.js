@@ -1454,10 +1454,12 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "doubao-seedance-2-0-260128", "name": "seedance-2-0-260128", "brand": "Doubao", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "available": false, "unavailableMessage": "模型暂未开放，待群内通知", "freeLimitNote": "模型暂未开放，待群内通知"},
+  {"id": "doubao-seedance-2-0-260128", "name": "Seedance 2.0（5s 480p）", "brand": "Doubao", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
+  {"id": "veo-3.1-lite-generate-preview", "name": "VEO 3.1 Lite（5s 720p 有声）", "brand": "Google", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.3-codex-spark", "name": "GPT-5.3 Codex Spark", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
@@ -1532,6 +1534,7 @@ const BRAND_ICON_MAP = {
   "InclusionAI": "./antgroup-color.svg",
   "Wan": "./qwen-color.svg",
   "HappyHorse": "./qwen-color.svg",
+  "Stepfun": "./stepfun-color.svg",
 };
 
 function getModelIconPath(brand) {
