@@ -2719,3 +2719,164 @@ button#plusTrigger:hover {
     /* "近期" 标题字重稍重，跟 nav 区分 */
     font-weight: 500;
 }
+
+/* ─── §X · CLAUDE ANIMATION PRIMITIVES ────────────────────────
+   2026-05-16 v6 PR #17：从 Claude 桌面端主样式表抄回 6 套 animation
+   原料（@keyframes + animation utility class + duration/easing token）。
+   每条规则带源行号，零猜测。
+
+   范围：纯基建。不动任何现有组件 / 不应用到任何 selector。后续 PR 需
+   要 sidebar 折叠 / loading dots / 设置弹窗 fade-in 时从这里直接调用，
+   保证动画时长、easing 跟 Claude 真站 1:1。
+
+   源：app.asar.extracted/.vite/renderer/main_window/index.html
+   关键事实：
+   - 主 CSS 含 4 个 @keyframes 体：pulse / spin / accordion-open / accordion-close
+   - utility class 引用了另外 3 个 @keyframes（fade / zoom / shimmertext）但
+     keyframes 体在 lazy chunk（Radix UI Dialog 通过 React 组件挂载时
+     CSS-in-JS 注入，主 CSS 找不到）。这 3 个 keyframes 体按 Radix UI
+     标准做法补全，每个上方明确标注 INFERRED。
+   ─────────────────────────────────────────────────────────── */
+
+/* ── duration / easing token ──
+   源 index.html:2012  (.animate-pulse cubic-bezier(0.4, 0, 0.6, 1))
+   源 index.html:1985  (accordion 150ms ease-out)
+   源 index.html:3331  (modal --modal-animation-duration default 250ms)
+   源 index.html:3334  (modal --modal-close-duration default 125ms) */
+:root {
+    --c-anim-ease-out:        cubic-bezier(0.4, 0, 0.2, 1);   /* tailwind 默认 ease-out（恰好等于 cancri --transition 的 timing） */
+    --c-anim-ease-in:         cubic-bezier(0.4, 0, 1, 1);     /* tailwind 默认 ease-in */
+    --c-anim-ease-in-out:     cubic-bezier(0.4, 0, 0.2, 1);
+    --c-anim-ease-pulse:      cubic-bezier(0.4, 0, 0.6, 1);   /* Claude .animate-pulse 唯一不同的 timing */
+
+    --c-anim-duration-fast:   125ms;  /* modal close */
+    --c-anim-duration-normal: 150ms;  /* accordion + 默认 hover transition（tailwind 默认） */
+    --c-anim-duration-slow:   250ms;  /* modal open */
+
+    /* Radix Dialog 用变量，命名跟 Claude 源一致，方便以后调主题 */
+    --modal-animation-duration: 250ms;  /* 源 index.html:3331 default */
+    --modal-close-duration:     125ms;  /* 源 index.html:3334 default */
+}
+
+/* ── 1. pulse ── 源 index.html:2005-2013
+   @keyframes pulse { 50% { opacity: .5; } }
+   .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+   用途：thinking dots / placeholder / loading skeleton 节奏感。 */
+@keyframes claude-pulse {
+    50% { opacity: .5; }
+}
+.claude-animate-pulse {
+    animation: claude-pulse 2s var(--c-anim-ease-pulse) infinite;
+}
+
+/* ── 2. spin ── 源 index.html:2014-2017
+   @keyframes spin { to { transform: rotate(360deg); } }
+   Tailwind 默认 utility .animate-spin: animation: spin 1s linear infinite。
+   注：cancri 已有 spin keyframe (cancri_chat.css:3375) 体一致但用 0.7s。
+   这里独立命名 .claude-animate-spin 避免冲突，用 Claude 真站 1s。 */
+@keyframes claude-spin {
+    to { transform: rotate(360deg); }
+}
+.claude-animate-spin {
+    animation: claude-spin 1s linear infinite;
+}
+
+/* ── 3. accordion-open / close ── 源 index.html:1972-2001
+   @keyframes accordion-open { from height:0 → to height:var(--radix-...) }
+   @keyframes accordion-close { 反向 }
+   .animate-[accordion-open_150ms_ease-out] { animation: accordion-open 150ms ease-out; }
+   用途：Radix UI Accordion / 折叠面板。配合 data-state 属性使用：
+     <element data-state="open">  → 自动播 open
+     <element data-state="closed"> → 自动播 close
+   依赖 --radix-accordion-content-height 由 Radix UI 在元素挂载时注入。
+   非 Radix 场景手动设置该变量值（如 data-content-h:max-content）。 */
+@keyframes claude-accordion-open {
+    from { height: 0; }
+    to   { height: var(--radix-accordion-content-height); }
+}
+@keyframes claude-accordion-close {
+    from { height: var(--radix-accordion-content-height); }
+    to   { height: 0; }
+}
+.claude-accordion[data-state="open"] {
+    animation: claude-accordion-open 150ms var(--c-anim-ease-out);
+}
+.claude-accordion[data-state="closed"] {
+    animation: claude-accordion-close 150ms var(--c-anim-ease-out);
+}
+
+/* ── 4. fade ── 源 utility 引用 index.html:3330-3334, 3866-3870
+   .[animation:fade_var(--modal-animation-duration,250ms)_ease-out_forwards]
+   .[animation:fade_var(--modal-close-duration,125ms)_ease-in_reverse_forwards]
+   ⚠ INFERRED：@keyframes fade 体在 Claude lazy chunk（Radix Dialog 通过
+   CSS-in-JS 在 React 挂载时注入），主 CSS 查不到。下面按 Radix UI 标准
+   做法补全（所有 Radix Dialog 实现都是 opacity 0→1）。 */
+@keyframes claude-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+.claude-modal-fade-open {
+    animation: claude-fade var(--modal-animation-duration) var(--c-anim-ease-out) forwards;
+}
+.claude-modal-fade-close {
+    animation: claude-fade var(--modal-close-duration) var(--c-anim-ease-in) reverse forwards;
+}
+
+/* ── 5. zoom ── 源 utility 引用 index.html:3336-3340, 3872-3876
+   ⚠ INFERRED：同 fade。Radix Dialog 标准 zoom = scale(0.96)→scale(1)
+   配合 opacity 0→1 一起做。scale 起点 0.96 是 Radix Dialog 默认值。 */
+@keyframes claude-zoom {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+.claude-modal-zoom-open {
+    animation: claude-zoom var(--modal-animation-duration) var(--c-anim-ease-out) forwards;
+}
+.claude-modal-zoom-close {
+    animation: claude-zoom var(--modal-close-duration) var(--c-anim-ease-in) reverse forwards;
+}
+
+/* ── 6. shimmertext ── 源 utility 引用 index.html:2002-2003, 3327-3328
+   .animate-[shimmertext_2.25s_infinite] { animation: shimmertext 2.25s infinite; }
+   ⚠ INFERRED：@keyframes shimmertext 体在 Claude lazy chunk，主 CSS 查
+   不到。下面按业界标准 text-shimmer 做法补全：linear-gradient 文字裁剪
+   + background-position 平移制造扫光感。timing 用 linear（shimmer 必须
+   匀速感才不抽搐），跟 Claude utility 注解 "2.25s infinite" 一致。
+
+   注：cancri 已有 thinkTextShimmer (cancri_chat.css:3128) 1.65s 在 think-
+   block 用，本 utility 不动 cancri，仅给后续新组件备用。 */
+@keyframes claude-shimmertext {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.claude-shimmertext {
+    background: linear-gradient(
+        90deg,
+        var(--c-text-soft) 25%,
+        var(--c-text) 50%,
+        var(--c-text-soft) 75%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: claude-shimmertext 2.25s linear infinite;
+}
+
+/* ── prefers-reduced-motion ──
+   尊重用户系统级减动画偏好。本 section 6 套新 utility 全部关停
+   （现有 cancri 动画 cancri_chat.css:3242 已自处理）。 */
+@media (prefers-reduced-motion: reduce) {
+    .claude-animate-pulse,
+    .claude-animate-spin,
+    .claude-accordion[data-state="open"],
+    .claude-accordion[data-state="closed"],
+    .claude-modal-fade-open,
+    .claude-modal-fade-close,
+    .claude-modal-zoom-open,
+    .claude-modal-zoom-close,
+    .claude-shimmertext {
+        animation: none !important;
+    }
+}
