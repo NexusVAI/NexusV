@@ -2707,15 +2707,18 @@ button#plusTrigger:hover {
 
 /* ───────────────────────────────────────────────────────────
    21. Sidebar 视觉对齐 Claude 真机
-   - icon SVG 纯白（#ffffff + opacity: 1）— 用户明确要求"最白"
-   - label 文字不跟着 SVG 变白，保持原 --c-text 的米黄白
-     （rgba(245,240,230,0.96)，在黑底上看略带暖色，比纯白对比柔和）
+   - icon SVG 跟随主题字色（var(--c-text)）：
+       dark mode = rgba(245,240,230,0.96) 米白
+       light mode = #2c2825 深褐
+   - label 文字也走 var(--c-text)，与 icon 同色，跟 Claude 真机一致
    - label weight 400（细笔画），font-smoothing antialiased 让笔画质感清晰
-   注：图 1 Claude DevTools 显示 label color 是 #F8F8F6（冷暖白），
-   但用户希望 label 不要纯白；保留 --c-text 让 label 略带暖色质感。
+
+   2026-05-16 PR ·theme fix：原版用 `color: #ffffff !important` 全模式强制白，
+   导致 light mode 下 svg 在 #faf9f5 米白底上完全看不见。改成 var(--c-text)
+   跟随主题切换。
    ─────────────────────────────────────────────────────────── */
 .sidebar .nav-row svg {
-    color: #ffffff !important;
+    color: var(--c-text) !important;
     opacity: 1 !important;
     /* stroke-width 用 inline 原值（1.9），不再 CSS 覆盖加粗。
        Claude 真机也是细笔画，加粗反而失真。 */
