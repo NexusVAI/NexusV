@@ -18,6 +18,8 @@
     proxyFetchWithTimeout,
     createChatTurnId,
     parseBackendErrorPayload,
+    friendlyMessageFromBackend,
+    formatSecurityGuardMessage,
     renderMarkdown,
     escapeHtml,
     getModelDisplayName,
@@ -233,9 +235,12 @@
       if (!response.ok) {
         const parsed = parseBackendErrorPayload(text);
         if (parsed.code === 'anonymous_not_allowed') {
-          throw new Error(parsed.message || '请使用邮箱验证码登录后再使用。');
+          // anonymous_not_allowed 后端会提供我们自己写的中文提示，
+          // 但 friendlyMessageFromBackend 会走 formatSecurityGuardMessage
+          // 路径 —— 这里不走那条路是因为 arena 有专门的登录提示。
+          throw new Error(formatSecurityGuardMessage(parsed, '请使用邮箱验证码登录后再使用。'));
         }
-        throw new Error(parsed.message || data.message || data.error || 'Arena request failed: ' + response.status);
+        throw new Error(friendlyMessageFromBackend(parsed, response.status));
       }
     return data;
   }
@@ -281,7 +286,7 @@
     const errorText = response.ok ? '' : await response.text().catch(() => '');
     if (!response.ok) {
       const parsed = parseBackendErrorPayload(errorText);
-      throw new Error(parsed.message || errorText || '模型 ' + slot.toUpperCase() + ' 请求失败');
+      throw new Error(friendlyMessageFromBackend(parsed, response.status));
     }
     if (!response.body) throw new Error('模型 ' + slot.toUpperCase() + ' 没有返回数据流');
 
@@ -393,7 +398,7 @@
     const errorText = response.ok ? '' : await response.text().catch(() => '');
     if (!response.ok) {
       const parsed = parseBackendErrorPayload(errorText);
-      throw new Error(parsed.message || errorText || '单模型请求失败');
+      throw new Error(friendlyMessageFromBackend(parsed, response.status));
     }
     if (!response.body) throw new Error('单模型没有返回数据流');
     const reader = response.body.getReader();

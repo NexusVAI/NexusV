@@ -170,24 +170,88 @@ function getFriendlyHttpStatusMessage(status) {
   }
 }
 
-function parsedFriendlyModelError(message) {
-  const text = String(message || "").replace(/\s+/g, " ").trim();
-  if (!text || text.length > 160) return "";
-  if (
-    /provider|distributor|request\s*id|upstream|api[_-]?key|base[_-]?url|modelscope|dashscope|openrouter|siliconflow|new[_-]?api|chshapi|freeapi|分组|渠道|上游|请求\s*id|request_id|https?:\/\//i.test(
-      text,
-    )
-  ) {
-    return "";
+// ─── Backend error code → user-visible message ───────────────────────
+//
+// We trust ONLY internal error codes — never raw `message` text from the
+// backend. Backend layers (modelscope-proxy / chat-gateway / api-gateway)
+// always emit a stable `code` value alongside the message; we look the
+// code up in this whitelist and substitute our own Chinese template.
+//
+// Why a whitelist (not a blacklist):
+//   • A keyword blacklist (the previous `parsedFriendlyModelError`) is
+//     fragile — every new upstream wording escapes it.
+//   • A code whitelist is robust: any unknown code falls through to the
+//     status-driven fallback (`getFriendlyHttpStatusMessage`), which
+//     never echoes upstream bytes.
+//
+// Codes with `null` value are handled by specialised paths (queue
+// modal / captcha modal / security guard / model lock UI) elsewhere in
+// this file — `friendlyMessageFromBackend` returns `""` for those so
+// the caller knows to dispatch to its specific handler.
+const KNOWN_ERROR_CODE_MESSAGES = {
+  // From modelscope-proxy / chat-gateway / api-gateway sanitized errors
+  model_unavailable: "该模型当前无法使用，请尝试其他模型。",
+  model_quota_exceeded: "该模型今日额度已用完，请稍后或切换其他模型。",
+  model_request_invalid: "请求未被模型接受，请调整内容后重试。",
+  model_temporary_failure: "当前模型服务暂时不可用，请稍后重试。",
+  upstream_timeout: "上游服务响应超时，请稍后重试或切换模型。",
+  upstream_unavailable: "模型服务暂时不可用，请稍后重试。",
+  upstream_parse_failed: "模型服务响应异常，请稍后重试。",
+  upstream_fetch_failed: "上游服务连接失败，请稍后重试。",
+  // Image / video specialised codes
+  image_content_policy:
+    "提示词被内容安全策略拒绝，请修改后重试（避免明确版权角色名 / 真人姓名 / 暴力或不当描述）。",
+  image_request_invalid: "请求参数被模型拒绝，请稍后重试。",
+  image_generation_failed: "图片生成失败，未返回有效图像。",
+  video_generation_failed: "视频生成失败，请稍后重试。",
+  // Routing / configuration errors
+  invalid_model: "所选模型不可用，请重新选择。",
+  invalid_model_for_endpoint: "该模型不支持此操作。",
+  service_not_configured: "服务暂未配置，请稍后再试。",
+  unknown_endpoint: "请求路径无效，请刷新页面重试。",
+  unknown_admin_endpoint: "请求路径无效，请刷新页面重试。",
+  request_too_large: "请求内容过大，请减少内容后重试。",
+  payload_too_large: "请求内容过大，请减少内容后重试。",
+  invalid_session: "登录已失效，请重新登录。",
+  origin_not_allowed: "访问被拒绝，请从官方页面访问。",
+  vip_required: null, // backend supplies a specific Chinese message — keep it
+  video_quota_exhausted: null, // ditto — has a per-week count in message
+  model_temporarily_unavailable: "该模型当前不可用，请稍后或切换其他模型。",
+  // Specialised paths (handled elsewhere — return "" so caller falls through)
+  challenge_required: null, // formatSecurityGuardMessage path
+  access_blocked: null,
+  anonymous_not_allowed: null,
+  captcha_required: null, // showCaptchaModal path
+  model_queue_full: null, // showQueueModal path
+  model_free_hour_limit: null, // applyBackendModelBlock + getQuotaLockMessage path
+  // Internal — should never reach UI but mapped just in case
+  internal_error: "服务出现异常，请稍后重试。",
+  db_error: "数据写入失败，请稍后重试。",
+};
+
+// Resolve the user-visible message for a backend error response. Only
+// reads the `code` field (and falls back to HTTP status). NEVER reads
+// upstream `message` text — every byte returned by this function comes
+// from our own template table. Returns `""` for codes whose meaning is
+// handled by a specialised path elsewhere; the caller must check those
+// codes itself before invoking this.
+function friendlyMessageFromBackend(parsed, status) {
+  const code = String(parsed?.code || "").trim();
+  if (code && Object.prototype.hasOwnProperty.call(KNOWN_ERROR_CODE_MESSAGES, code)) {
+    const tpl = KNOWN_ERROR_CODE_MESSAGES[code];
+    // `null` means "specialised handler owns this code" — caller should
+    // have dispatched already; if it gets here, fall through to status.
+    if (tpl !== null) return tpl;
+    // For codes like vip_required / video_quota_exhausted where backend
+    // supplies a specific Chinese message that we wrote ourselves, prefer
+    // it. We only trust message text when its sibling code is in our
+    // whitelist (i.e. our own backend constructed both fields).
+    const backendMessage = String(parsed?.message || "").trim();
+    if (backendMessage) return backendMessage;
   }
-  if (
-    /额度|频繁|安全验证|暂时不可用|当前模型|切换其他模型|请求未被模型接受|请稍后|请调整内容/.test(
-      text,
-    )
-  ) {
-    return text;
-  }
-  return "";
+  // Unknown / missing code → status-driven fallback. We never display
+  // an unrecognised message string.
+  return getFriendlyHttpStatusMessage(status);
 }
 
 function parseBackendErrorPayload(errorText) {
@@ -4377,11 +4441,11 @@ async function speakTextWithMimo(text) {
             continue;
           }
 
-          // 上游错误帧（被网关 sanitize 过会带 error 字段）→ 抛出。
+          // 上游错误帧（被网关 sanitize 过会带 error 字段）→ 走 code 白名单
+          // 中的中文模板，绝不透传 json.error.message。
           if (json?.error) {
-            throw new Error(
-              json.error.message || json.error.code || "上游返回错误",
-            );
+            const code = String(json.error.code || json.code || "").trim();
+            throw new Error(friendlyMessageFromBackend({ code }, 502));
           }
 
           const audioData = json?.choices?.[0]?.delta?.audio?.data;
@@ -4435,11 +4499,10 @@ async function speakTextWithMimo(text) {
     showToast("开始朗读");
   } catch (error) {
     console.error("TTS 错误:", error);
-    // Surface the real error in the toast so we don't have to dig through
-    // DevTools to know what failed. Cap length to keep the toast readable.
-    const reason = (error && error.message ? error.message : String(error))
-      .toString()
-      .slice(0, 240);
+    // We pass the error through normalizeErrorMessage so any upstream byte
+    // that snuck past the gateway (browser-native fetch errors, edge cases)
+    // collapses into a status/abort template. Never show error.message raw.
+    const reason = normalizeErrorMessage(error, "朗读服务暂时不可用，请稍后重试。");
     showToast(`朗读失败：${reason}（已切换系统语音）`);
     if ("speechSynthesis" in window) {
       speechSynthesis.cancel();
@@ -5112,12 +5175,7 @@ async function arenaMainApi(
         "\u9700\u8981\u5b8c\u6210\u5b89\u5168\u9a8c\u8bc1\u624d\u80fd\u7ee7\u7eed\u3002",
       );
     }
-    throw new Error(
-      parsed.message ||
-        data.message ||
-        data.error ||
-        "\u5bf9\u6218\u8bf7\u6c42\u5931\u8d25",
-    );
+    throw new Error(friendlyMessageFromBackend(parsed, response.status));
   }
   return data;
 }
@@ -5196,11 +5254,7 @@ async function streamMainArenaSlot(
   const errorText = response.ok ? "" : await response.text().catch(() => "");
   if (!response.ok) {
     const parsed = parseBackendErrorPayload(errorText);
-    throw new Error(
-      parsed.message ||
-        errorText ||
-        `\u6a21\u578b ${slot.toUpperCase()} \u8bf7\u6c42\u5931\u8d25`,
-    );
+    throw new Error(friendlyMessageFromBackend(parsed, response.status));
   }
   if (!response.body)
     throw new Error(
@@ -6520,13 +6574,28 @@ function createTimeoutError(timeoutMs, label = "请求") {
   return createAbortError(`${label}超时（>${seconds} 秒），请重试。`);
 }
 
+// `normalizeErrorMessage` extracts a user-presentable string from any
+// `Error` thrown anywhere in the request pipeline. Inputs are usually
+// `Error` instances **we** constructed via `friendlyMessageFromBackend`
+// (in which case `error.message` is already a sanitized template), or
+// browser-native errors (AbortError, TypeError "Failed to fetch", …)
+// which we map to fixed Chinese strings.
+//
+// Why this is keyword-free: the only "matching" we still do is on
+// **browser-internal protocol strings** (`AbortError`, the string
+// `"Failed to fetch"`, the `HTTP \d{3}` pattern emitted by `fetch()` /
+// `XMLHttpRequest`). Those are stable contracts from the runtime, not
+// upstream text. The legacy `額度已用完|quota|limit` keyword classifier
+// was deleted on 2026-05-16 — it was the last place where upstream
+// English/Chinese vocabulary leaked into our error-detection logic.
 function normalizeErrorMessage(error, fallback = "请求失败，请稍后再试。") {
   if (!error) return fallback;
   if (error.name === "AbortError") {
     const abortMsg = (error.message || "").trim();
     // 浏览器原生 abort 文案有 "The operation was aborted." /
     // "The user aborted a request." / "signal is aborted without reason"
-    // 等多种英文形式，统一降级成中文友好文案，避免直接漏给 UI。
+    // 等多种英文形式，统一降级成中文友好文案。这里匹配的是 DOM 标准
+    // AbortError 文案集合，不是上游服务商错误词。
     if (
       !abortMsg ||
       /^(the operation was aborted\.?|the user aborted a request\.?|signal is aborted.*|aborted)$/i.test(
@@ -6539,28 +6608,23 @@ function normalizeErrorMessage(error, fallback = "请求失败，请稍后再试
     return abortMsg;
   }
   const message = error instanceof Error ? error.message : String(error);
-  // 处理浏览器原生 "The user aborted a request" 错误
+  // DOM 原生 "The user aborted a request" — 同样是浏览器规范文案。
   if (/The user aborted a request|aborted a request/i.test(message)) {
     return "请求超时或被取消。Claude Opus 响应较慢，请稍后重试或切换到其他模型。";
   }
-  if (
-    /challenge_required|access_blocked|异常高频|安全验证|停止为此 IP 提供服务/.test(
-      message,
-    )
-  ) {
-    return message.replace(/^Error:\s*/i, "");
-  }
+  // 我们自己用 friendlyMessageFromBackend / formatSecurityGuardMessage 抛出的
+  // 中文模板可以直接展示——不做任何替换，保留原样。判定方式：message 不含
+  // "HTTP xxx" / "Failed to fetch" 这类裸 fetch 协议串。
   if (message.includes("诊断:") || message.includes("后端返回 HTTP")) {
     return fallback;
   }
+  // 裸 fetch 抛出的 HTTP 状态串（如 "HTTP error! status: 503"）→ 映射
+  // 到我们的 status 模板。这是 fetch 协议定义的格式，不是上游词。
   const httpMatch = message.match(
     /\b(?:HTTP(?: error! status)?|status)\s*:?\s*(\d{3})/i,
   );
   if (httpMatch) {
     return getFriendlyHttpStatusMessage(httpMatch[1]);
-  }
-  if (/额度已用完|quota|limit/i.test(message)) {
-    return "当前模型额度已用完，请切换其他模型再试。";
   }
   if (/^failed to fetch$/i.test(message || "")) {
     return "网络请求失败，请检查 Edge Function 是否已部署、CORS 是否生效，或稍后重试。";
@@ -6737,9 +6801,9 @@ async function generateImageFromPrompt(
           parsed.code === "access_blocked" ||
           parsed.code === "anonymous_not_allowed"
             ? formatSecurityGuardMessage(parsed)
-            : parsed.message || detail;
+            : friendlyMessageFromBackend(parsed, response.status);
       }
-      throw new Error(detail || `HTTP error! status: ${response.status}`);
+      throw new Error(detail || friendlyMessageFromBackend({ code: "" }, response.status));
     }
 
     const data = await response.json();
@@ -6752,15 +6816,11 @@ async function generateImageFromPrompt(
           ? `data:image/png;base64,${data.data[0].b64_json}`
           : "");
       if (!imageUrl) {
-        const revised = data?.data?.[0]?.revised_prompt;
-        const detail =
-          data?.error?.message ||
-          data?.message ||
-          (revised
-            ? `提示词可能被过滤（修正后：${String(revised).slice(0, 60)}）`
-            : "") ||
-          "图片生成失败，未返回图片数据。";
-        throw new Error(detail);
+        // 200 OK 但没返回图 → 走 image_generation_failed 模板，不读上游
+        // data.error.message / data.message。revised_prompt 是 OpenAI
+        // Images API 契约内的“安全修正后提示词”字段——但我们也
+        // 不明文透露「原始 prompt 被过滤」这种业务信息，统一“未返回有效图像”。
+        throw new Error(KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
       }
       // 图片工作台已下线 —— 真实图片由调用方（sendImageGenerationMessage）
       // 渲染到聊天气泡里，这里只返回 URL。
@@ -6804,10 +6864,8 @@ async function generateImageFromPrompt(
           parsed.code === "access_blocked" ||
           parsed.code === "anonymous_not_allowed"
             ? formatSecurityGuardMessage(parsed)
-            : parsed.message;
-        throw new Error(
-          detail || `HTTP error! status: ${resultResponse.status}`,
-        );
+            : friendlyMessageFromBackend(parsed, resultResponse.status);
+        throw new Error(detail);
       }
 
       const taskData = await resultResponse.json();
@@ -6844,8 +6902,12 @@ async function generateImageFromPrompt(
       showToast("已停止生成。");
       throw error;
     } else {
-      finalStatusText = `生成失败：${error.message}`;
-      showToast(`图片生成失败：${error.message}`);
+      // 二次过滤：error.message 未必是我们的模板（可能是浏览器原生错
+      // 或极边路径漏出的文本）。normalizeErrorMessage 会拒绝任何
+      // 包含裸 HTTP 状态串的文本，统一返回友好中文。
+      const safe = normalizeErrorMessage(error, KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
+      finalStatusText = `生成失败：${safe}`;
+      showToast(`图片生成失败：${safe}`);
       throw error;
     }
   } finally {
@@ -7125,9 +7187,7 @@ async function generateVideoFromPrompt(
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
       const parsed = parseBackendErrorPayload(errorText);
-      throw new Error(
-        parsed.message || `HTTP error! status: ${response.status}`,
-      );
+      throw new Error(friendlyMessageFromBackend(parsed, response.status));
     }
 
     const data = await response.json();
@@ -7166,9 +7226,7 @@ async function generateVideoFromPrompt(
       if (!resultResponse.ok) {
         const errorText = await resultResponse.text().catch(() => "");
         const parsed = parseBackendErrorPayload(errorText);
-        throw new Error(
-          parsed.message || `HTTP error! status: ${resultResponse.status}`,
-        );
+        throw new Error(friendlyMessageFromBackend(parsed, resultResponse.status));
       }
 
       const taskData = await resultResponse.json();
@@ -7209,8 +7267,10 @@ async function generateVideoFromPrompt(
       finalStatusText = "已停止生成。";
       showToast("已停止生成。");
     } else {
-      finalStatusText = `生成失败：${error.message}`;
-      showToast(`视频生成失败：${error.message}`);
+      // 同 image 路径：error.message 过 normalizeErrorMessage。
+      const safe = normalizeErrorMessage(error, KNOWN_ERROR_CODE_MESSAGES.video_generation_failed);
+      finalStatusText = `生成失败：${safe}`;
+      showToast(`视频生成失败：${safe}`);
     }
     throw error;
   } finally {
@@ -8372,21 +8432,13 @@ async function requestConversationCompression(modelId = currentModel) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");
-    let detail = errorText.trim();
-    if (detail) {
-      try {
-        const parsed = parseBackendErrorPayload(detail);
-        detail =
-          parsed.code === "challenge_required" ||
-          parsed.code === "access_blocked" ||
-          parsed.code === "anonymous_not_allowed"
-            ? formatSecurityGuardMessage(parsed)
-            : parsed.message || detail;
-      } catch (parseError) {
-        // keep raw text
-      }
-    }
-    throw new Error(detail || `上下文压缩失败：HTTP ${response.status}`);
+    const parsed = errorText.trim() ? parseBackendErrorPayload(errorText) : { message: "", code: "" };
+    const detail = parsed.code === "challenge_required" ||
+      parsed.code === "access_blocked" ||
+      parsed.code === "anonymous_not_allowed"
+        ? formatSecurityGuardMessage(parsed)
+        : friendlyMessageFromBackend(parsed, response.status);
+    throw new Error(detail);
   }
 
   const data = await response.json();
@@ -8617,17 +8669,13 @@ async function executeWebSearchToolCall(toolCall, activeTurnId = "") {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      let detail = errorText.trim();
-      if (detail) {
-        const parsed = parseBackendErrorPayload(detail);
-        detail =
-          parsed.code === "challenge_required" ||
-          parsed.code === "access_blocked" ||
-          parsed.code === "anonymous_not_allowed"
-            ? formatSecurityGuardMessage(parsed)
-            : parsed.message || detail;
-      }
-      throw new Error(detail || `联网搜索失败：HTTP ${response.status}`);
+      const parsed = errorText.trim() ? parseBackendErrorPayload(errorText) : { message: "", code: "" };
+      const detail = parsed.code === "challenge_required" ||
+        parsed.code === "access_blocked" ||
+        parsed.code === "anonymous_not_allowed"
+          ? formatSecurityGuardMessage(parsed)
+          : friendlyMessageFromBackend(parsed, response.status);
+      throw new Error(detail);
     }
 
     const data = await response.json();
@@ -8674,17 +8722,13 @@ async function executeFetchWebPageToolCall(toolCall, activeTurnId = "") {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      let detail = errorText.trim();
-      if (detail) {
-        const parsed = parseBackendErrorPayload(detail);
-        detail =
-          parsed.code === "challenge_required" ||
-          parsed.code === "access_blocked" ||
-          parsed.code === "anonymous_not_allowed"
-            ? formatSecurityGuardMessage(parsed)
-            : parsed.message || detail;
-      }
-      throw new Error(detail || `获取网页内容失败：HTTP ${response.status}`);
+      const parsed = errorText.trim() ? parseBackendErrorPayload(errorText) : { message: "", code: "" };
+      const detail = parsed.code === "challenge_required" ||
+        parsed.code === "access_blocked" ||
+        parsed.code === "anonymous_not_allowed"
+          ? formatSecurityGuardMessage(parsed)
+          : friendlyMessageFromBackend(parsed, response.status);
+      throw new Error(detail);
     }
 
     const data = await response.json();
@@ -8943,45 +8987,45 @@ async function streamChatCompletionRound(
   }
 
   if (!response.ok) {
-    let detail = errorText.trim();
-    if (detail) {
-      const parsed = parseBackendErrorPayload(detail);
-      if (parsed.code === "captcha_required") {
-        const solved = await showCaptchaModal(parsed);
-        if (solved)
-          return await streamChatCompletionRound(
-            messages,
-            assistantMessageId,
-            controller,
-            {
-              enableTools,
-              turnId,
-              modelId,
-              priorReasoning,
-              requestKind,
-              webSearchEnabled,
-            },
-          );
-        throw new Error("需要完成安全验证才能继续。");
-      }
-      applyBackendModelBlock(parsed, modelId);
-      detail =
-        parsed.code === "challenge_required" ||
-        parsed.code === "access_blocked" ||
-        parsed.code === "anonymous_not_allowed"
-          ? formatSecurityGuardMessage(parsed)
-          : parsed.message || detail;
+    const detail = errorText.trim();
+    const parsed = detail ? parseBackendErrorPayload(detail) : { message: "", code: "" };
+    if (parsed.code === "captcha_required") {
+      const solved = await showCaptchaModal(parsed);
+      if (solved)
+        return await streamChatCompletionRound(
+          messages,
+          assistantMessageId,
+          controller,
+          {
+            enableTools,
+            turnId,
+            modelId,
+            priorReasoning,
+            requestKind,
+            webSearchEnabled,
+          },
+        );
+      throw new Error("需要完成安全验证才能继续。");
     }
-    // 多模态特定错误提示
+    if (detail) applyBackendModelBlock(parsed, modelId);
+    // Resolve the user-visible message via the code whitelist (never via
+    // raw upstream text). Specialised paths (security guard / queue /
+    // captcha) have already dispatched above; we only reach this fallback
+    // when the error is generic. `friendlyMessageFromBackend` returns a
+    // status-driven template when the code is unknown.
+    let friendly =
+      parsed.code === "challenge_required" ||
+      parsed.code === "access_blocked" ||
+      parsed.code === "anonymous_not_allowed"
+        ? formatSecurityGuardMessage(parsed)
+        : friendlyMessageFromBackend(parsed, response.status);
+    // 多模态特定错误提示 — append-only hint, never replaces the template.
     if (
       response.status === 400 &&
       processedMessages.some((m) => Array.isArray(m.content))
     ) {
-      detail += " (可能是图片格式不支持或图片过大)";
+      friendly += " (可能是图片格式不支持或图片过大)";
     }
-    const friendly =
-      parsedFriendlyModelError(detail) ||
-      getFriendlyHttpStatusMessage(response.status);
     throw new Error(friendly);
   }
 
@@ -10907,6 +10951,8 @@ window.CancriApp = {
   authBody,
   createChatTurnId,
   parseBackendErrorPayload,
+  friendlyMessageFromBackend,
+  formatSecurityGuardMessage,
   renderMarkdown,
   escapeHtml,
   getModelDisplayName,
