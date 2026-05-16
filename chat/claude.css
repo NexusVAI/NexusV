@@ -618,8 +618,14 @@ body.is-paid-tier .claude-nav-tag {
 
 /* HERO */
 .hero, #heroTitle {
-    /* 2026-05-16 PR B (全部撤→sans)：原为 `font-family: var(--c-font-serif) !important`，
-       已撤。默认继承 body 的 var(--c-font) = Anthropic Sans。 */
+    /* 2026-05-16 PR ·“首页不对劲”：恢复 hero serif。
+       PR #24 “全部撤” 是误判——用户提供的 Claude 官网截图
+       清晰显示 hero “Happy Saturday, Kraum” 为 Anthropic Serif（衬线在
+       H/S/K/y 等字符末端明显可见）。该项是 Anthropic Serif 自家字体的
+       核心装饰位置（Anthropic Serif 以 “Books on the table” 品牌理念
+       作为设计领域的价值依托）。sidebar logo / page-title /
+       settings-title / AI message-content 仍保持 sans（PR #24 撤除的其他 4 处是对的）。 */
+    font-family: var(--c-font-serif) !important;
     font-size: 30px !important;
     font-weight: 400 !important;
     color: var(--c-text) !important;
@@ -648,11 +654,14 @@ body.is-paid-tier .claude-nav-tag {
 /* 2026-05-15 essence: composer 阴影按主题分支。
    - dark: 0.18 alpha 黑阴影 OK（深底上可见 elevation）。
    - light: 调为 0.04+0.06 双层柔和阴影（类 Claude floating composer阶梯感）。
-   - focus-within: 阴影加深、范围拉大（输入完验提示）。 */
+   - focus-within: 阴影加深、范围拉大（输入完验提示）。
+   2026-05-16 PR ·“首页不对劲”：border-radius 18px → 24px。
+   依据：Claude Tailwind .rounded-3xl = 1.5rem = 24px（源 index.html:2270）。
+   Claude composer 在首页表现为 rounded-3xl。 */
 .composer {
     background: var(--c-bg-elev) !important;
     border: 1px solid var(--c-line) !important;
-    border-radius: 18px !important;
+    border-radius: 24px !important;
     padding: 14px 14px 8px !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.18) !important;
     transition: border-color 200ms;
@@ -1133,7 +1142,7 @@ html[data-theme="light"] .composer:focus-within {
 }
 #homeView.chatting .composer {
     width: 100% !important;
-    border-radius: 18px !important;
+    border-radius: 24px !important;  /* 2026-05-16 同上：Tailwind .rounded-3xl 对齐 */
 }
 
 /* 对话进行中底部一行小字"Cancri 错错的，会忘错..." */
@@ -2531,6 +2540,17 @@ button.composer-tool-btn:hover {
     .claude-plan-pill {
         display: none !important;
     }
+}
+
+/* 2026-05-16 PR ·“首页不对劲”：隐藏首页底部 “Cancri 是 AI 的，会犯错” disclaimer。
+   依据：Claude 真站 home view 无底部免责声明（用户提供截图作证）。
+   仅保留 #homeView.chatting::after（claude.css:1140）在对话中状态
+   显示“Cancri 可能会出错”，与 Claude 真站 chatting 状态行为一致。
+   index.html:1542 的 .footer-disclaimer span 不动，为了其他 view
+   （如 chats/projects 页）可能还需要。 */
+#homeView .footer-disclaimer,
+#homeView .footer-note {
+    display: none !important;
 }
 
 /* mobile drawer：即使 sidebar.collapsed，drawer 模式下也显示完整内容。
