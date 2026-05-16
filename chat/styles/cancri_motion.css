@@ -748,9 +748,14 @@ html[data-theme="dark"] .auth-theme-icon-sun {
     max-width: 100% !important;
 }
 
-[data-theme="light"] .auth-card {
+/* 2026-05-16 PR ·theme symmetry：原 selector `[data-theme="light"]` (0,2,0)
+   比 `html[data-theme="dark"] .auth-card` (0,2,1) specificity 低 1，
+   理论上同 attribute selector 不冲突但加 html 前缀对称更稳。
+   同时显式锁住 box-shadow 防被旧 cancri_chat.css rule 误覆盖。 */
+html[data-theme="light"] .auth-card {
     background: #f7f1e6 !important;
     border-color: #1a120c !important;
+    box-shadow: 8px 8px 0 0 #1a120c !important;
 }
 
 .auth-step {
@@ -792,8 +797,33 @@ html[data-theme="dark"] .auth-theme-icon-sun {
     outline: none;
 }
 
-[data-theme="light"] .auth-input {
+/* 2026-05-16 PR ·theme symmetry：同上对称化，且显式锁住 light mode
+   字色 + 边色 + 阴影色全套（之前只设 background），防 cascade 紊乱时
+   .auth-input 在 light mode 下被 dark mode 规则部分命中。 */
+html[data-theme="light"] .auth-input {
     background: #fefdf8 !important;
+    border-color: #1a120c !important;
+    color: #1a120c !important;
+    box-shadow: 4px 4px 0 0 #1a120c !important;
+}
+html[data-theme="light"] .auth-input::placeholder {
+    color: rgba(26, 18, 12, 0.45) !important;
+}
+html[data-theme="light"] .auth-input:focus {
+    box-shadow: 6px 6px 0 0 #1a120c !important;
+    border-color: #1a120c !important;
+}
+html[data-theme="light"] .auth-otp-input {
+    color: #1a120c !important;
+}
+html[data-theme="light"] .auth-btn {
+    background: #f7f1e6 !important;
+    border-color: #1a120c !important;
+    color: #1a120c !important;
+    box-shadow: 4px 4px 0 0 #1a120c !important;
+}
+html[data-theme="light"] .auth-field-label {
+    color: #1a120c !important;
 }
 
 .auth-input::placeholder {
