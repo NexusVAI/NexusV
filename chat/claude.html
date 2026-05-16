@@ -63,7 +63,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-15-scrim-no-blur" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-16-happyhorse-video" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -247,20 +247,19 @@
             <!-- 2026-05-16 claude-clone v4：右侧 video showcase，1:1 复刻
                  Claude 真站登录页 (claude.ai) 右侧奶白大圆角卡布局。视频源
                  用 ../Logo/Nexusai.mp4（项目自有素材，4MB）。
-                 autoplay + loop + muted + playsinline 保证 iOS Safari 也能
-                 静音自播；preload="auto" 让浏览器尽早缓冲。
+                 data-src 由 cancri_chat.js 在登录遮罩显示时挂载，登录后卸载，
+                 避免浏览器媒体控件残留。
                  aria-hidden 是因为视频是装饰性的，不承载关键登录信息。
                  mobile (<880px) 由 cancri_motion.css 直接 display:none，
                  .auth-stage 退化为居中单列。 -->
             <aside class="auth-showcase" aria-hidden="true">
                 <video
                     class="auth-showcase-video"
-                    src="../Logo/Nexusai.mp4"
-                    autoplay
+                    data-src="../Logo/Nexusai.mp4"
                     loop
                     muted
                     playsinline
-                    preload="auto"
+                    preload="none"
                 ></video>
             </aside>
 
@@ -1383,7 +1382,7 @@
                             <input
                                 type="file"
                                 id="attachmentInput"
-                                accept="image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv"
+                                accept="image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv"
                                 multiple
                                 hidden
                             />
@@ -2632,8 +2631,8 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-15-readonly-busy"></script>
-        <script type="module" src="./js/main.js?v=workbench-0506"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-16-happyhorse-video"></script>
+        <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->

@@ -2451,7 +2451,8 @@ body[data-view="leaderboard"] #compareModelSelector {
     cursor: pointer;
 }
 
-.attachment-item img {
+.attachment-item img,
+.attachment-item video {
     width: 100%;
     height: 100%;
     object-fit: cover;

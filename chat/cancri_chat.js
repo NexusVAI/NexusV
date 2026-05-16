@@ -1330,7 +1330,10 @@ function getRateLimitRequestModelId(modelId = currentModel) {
 }
 
 function getModelProbeEndpoint(modelId = currentModel) {
-  return getModelMeta(modelId).imageOnly ? "image" : "chat";
+  const meta = getModelMeta(modelId);
+  if (meta.imageOnly) return "image";
+  if (meta.videoOnly) return "video";
+  return "chat";
 }
 
 // 全局错误捕获
@@ -1413,8 +1416,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "wan2.7-r2v": DEFAULT_MODEL_ID,
   "wan2.6-r2v-flash": DEFAULT_MODEL_ID,
   "wan2.6-r2v": DEFAULT_MODEL_ID,
-  "happyhorse-1.0-r2v": DEFAULT_MODEL_ID,
-  "happyhorse-1.0-video-edit": DEFAULT_MODEL_ID,
   // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
   "grok-4.3": DEFAULT_MODEL_ID,
 };
@@ -1456,6 +1457,8 @@ const MODEL_CATALOG = [
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "doubao-seedance-2-0-260128", "name": "Seedance 2.0（5s 480p）", "brand": "Doubao", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
   {"id": "veo-3.1-lite-generate-preview", "name": "VEO 3.1 Lite（5s 720p 有声）", "brand": "Google", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
+  {"id": "happyhorse-1.0-video-edit", "name": "HappyHorse-1.0编辑视频", "brand": "HappyHorse", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
+  {"id": "happyhorse-1.0-r2v", "name": "happyhorse-1.0参考生视频", "brand": "HappyHorse", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
@@ -1533,7 +1536,7 @@ const BRAND_ICON_MAP = {
   "Inclusion AI": "./antgroup-color.svg",
   "InclusionAI": "./antgroup-color.svg",
   "Wan": "./qwen-color.svg",
-  "HappyHorse": "./qwen-color.svg",
+  "HappyHorse": "../Logo/欢乐马.webp",
   "Stepfun": "./stepfun-color.svg",
 };
 
@@ -1700,7 +1703,7 @@ function cleanupAttachments() {
   updateAttachmentPreview?.();
 }
 
-// 当前会话挂起的附件（图片/文本文件）。setComposerBusy / handleHomeSubmit 等
+// 当前会话挂起的附件（图片/视频/文本文件）。setComposerBusy / handleHomeSubmit 等
 // 上传/发送链路都通过这个数组共享状态。
 const pendingAttachments = [];
 
@@ -1883,6 +1886,13 @@ function updateAttachmentPreview() {
       icon.className = "attachment-file-icon";
       icon.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
       item.appendChild(icon);
+    } else if (attachment.isVideo) {
+      const video = document.createElement("video");
+      video.src = attachment.previewUrl || attachment.dataUrl || attachment.url;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      item.appendChild(video);
     } else {
       // 图片文件显示图片预览
       const img = document.createElement("img");
@@ -2213,12 +2223,66 @@ async function shrinkImageForEdit(src, maxEdge = 1536, quality = 0.88) {
   }
 }
 
+function isVideoEditModel(modelId) {
+  return modelId === "happyhorse-1.0-video-edit";
+}
+
+function isReferenceVideoModel(modelId) {
+  return modelId === "happyhorse-1.0-r2v";
+}
+
+function getAttachmentLimitForModel(modelId = currentModel) {
+  if (isReferenceVideoModel(modelId)) return 9;
+  if (isVideoEditModel(modelId)) return 6;
+  return MAX_ATTACHMENT_COUNT;
+}
+
+function getAttachmentAcceptForModel(modelId = currentModel) {
+  if (isVideoEditModel(modelId)) return "image/*,video/*";
+  if (isReferenceVideoModel(modelId)) return "image/*";
+  return "image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+}
+
+function getAttachmentMime(attachment) {
+  return String(attachment?.mimeType || attachment?.mime || attachment?.type || "");
+}
+
+function getAttachmentUrl(attachment) {
+  return String(attachment?.url || attachment?.dataUrl || "").trim();
+}
+
+function isImageAttachment(attachment) {
+  const mime = getAttachmentMime(attachment);
+  const name = String(attachment?.name || "");
+  const url = getAttachmentUrl(attachment);
+  return (
+    /^image\//i.test(mime) ||
+    /^data:image\//i.test(url) ||
+    /\.(png|jpe?g|webp|gif|bmp)$/i.test(name)
+  );
+}
+
+function isVideoAttachment(attachment) {
+  const mime = getAttachmentMime(attachment);
+  const name = String(attachment?.name || "");
+  const url = getAttachmentUrl(attachment);
+  return (
+    /^video\//i.test(mime) ||
+    /^data:video\//i.test(url) ||
+    /\.(mp4|webm|mov|m4v)$/i.test(name)
+  );
+}
+
 async function filesToAttachments(files) {
   const attachmentService = window.NexusWorkbench?.fileAttachments;
+  const maxCount = getAttachmentLimitForModel();
+  const currentMeta = getModelMeta(currentModel);
   if (attachmentService?.filesToAttachments) {
     return attachmentService.filesToAttachments(files, pendingAttachments, {
-      maxCount: MAX_ATTACHMENT_COUNT,
+      maxCount,
       maxSize: MAX_ATTACHMENT_SIZE,
+      allowText: !currentMeta.videoOnly,
+      allowVideo: isVideoEditModel(currentModel),
       onWarning: showToast,
     });
   }
@@ -2227,11 +2291,11 @@ async function filesToAttachments(files) {
   const fileList = Array.from(files || []);
   const remainingSlots = Math.max(
     0,
-    MAX_ATTACHMENT_COUNT - pendingAttachments.length,
+    maxCount - pendingAttachments.length,
   );
 
   if (!remainingSlots) {
-    showToast(`最多只能上传 ${MAX_ATTACHMENT_COUNT} 个文件`);
+    showToast(`最多只能上传 ${maxCount} 个文件`);
     return accepted;
   }
 
@@ -2241,9 +2305,10 @@ async function filesToAttachments(files) {
 
   for (const file of fileList.slice(0, remainingSlots)) {
     const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
     const isTextFile = file.name.match(/\.(pdf|txt|doc|docx|md|json|csv)$/i);
 
-    if (!isImage && !isTextFile) {
+    if (!isImage && !(isVideoEditModel(currentModel) && isVideo) && !(isTextFile && !currentMeta.videoOnly)) {
       showToast(`已忽略不支持的文件：${file.name}`);
       continue;
     }
@@ -2257,7 +2322,7 @@ async function filesToAttachments(files) {
     let dataUrl = null;
     let textContent = null;
 
-    if (isImage) {
+    if (isImage || isVideo) {
       previewUrl = URL.createObjectURL(file);
       dataUrl = await readFileAsDataUrl(file).catch(() => "");
     } else if (isTextFile) {
@@ -2281,6 +2346,7 @@ async function filesToAttachments(files) {
       textContent,
       file,
       isTextFile: !!isTextFile,
+      isVideo: !!isVideo,
     });
   }
 
@@ -2351,7 +2417,7 @@ function attachmentToUserContent(query, attachments) {
 
   const textPart = String(query || "").trim();
   const content = [];
-  const hasImageAttachment = attachments.some((item) => !item?.isTextFile);
+  const hasImageAttachment = attachments.some((item) => !item?.isTextFile && !item?.isVideo);
 
   attachments.forEach((item) => {
     // 处理文本文件：将文件内容注入到对话中
@@ -2360,6 +2426,7 @@ function attachmentToUserContent(query, attachments) {
       content.push({ type: "text", text: fileIntro });
       return;
     }
+    if (item?.isVideo) return;
 
     // 处理图片文件
     const url = item?.dataUrl || item?.url;
@@ -2449,11 +2516,24 @@ function getSupabaseClient() {
 function showAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (overlay) overlay.classList.add("visible");
+  const video = overlay?.querySelector(".auth-showcase-video");
+  if (video instanceof HTMLVideoElement) {
+    const src = video.dataset.src || "";
+    if (src && !video.currentSrc) video.src = src;
+    video.muted = true;
+    video.play?.().catch(() => {});
+  }
 }
 
 function hideAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (overlay) overlay.classList.remove("visible");
+  const video = overlay?.querySelector(".auth-showcase-video");
+  if (video instanceof HTMLVideoElement) {
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+  }
 }
 
 function updateAccountInfo(user) {
@@ -6957,7 +7037,7 @@ async function buildVideoMediaForModel(modelId, attachments) {
       const isHttp = /^https?:\/\//i.test(url);
       const isData = url.startsWith("data:");
       if (!isHttp && !isData) return null;
-      return { url, mime: String(a?.mimeType || a?.type || "") };
+      return { url, mime: getAttachmentMime(a), name: String(a?.name || "") };
     })
     .filter(Boolean);
 
@@ -6974,9 +7054,18 @@ async function buildVideoMediaForModel(modelId, attachments) {
   if (modelId === "happyhorse-1.0-r2v") {
     // 只接受图片参考，最多 9 张。
     return usable
-      .filter((u) => /image|jpeg|png|webp/i.test(u.mime))
+      .filter((u) => isImageAttachment(u))
       .slice(0, 9)
       .map((u) => ({ type: "reference_image", url: u.url }));
+  }
+
+  if (modelId === "happyhorse-1.0-video-edit") {
+    const video = usable.find((u) => isVideoAttachment(u));
+    const references = usable
+      .filter((u) => isImageAttachment(u))
+      .slice(0, 5)
+      .map((u) => ({ type: "reference_image", url: u.url }));
+    return video ? [{ type: "video", url: video.url }, ...references] : references;
   }
 
   // happyhorse-1.0-t2v 和 wan2.7-t2v 都是文生视频，不需要媒体。
@@ -9168,23 +9257,24 @@ async function sendMessage(content) {
 
   if (turnModelMeta.videoOnly) {
     if (!query) return;
-    // i2v / r2v lines require reference media. Pre-validate here so the
+    // i2v / r2v / video-edit lines require media. Pre-validate here so the
     // user sees a friendly toast instead of a cryptic upstream
     // "Field required: input.media" after a half-second proxy round-trip.
     // t2v lines (happyhorse-1.0-t2v / wan2.7-t2v) need no media.
     const needsMedia =
       turnModelId === "happyhorse-1.0-i2v" ||
-      turnModelId === "happyhorse-1.0-r2v";
+      turnModelId === "happyhorse-1.0-r2v" ||
+      turnModelId === "happyhorse-1.0-video-edit";
     if (needsMedia) {
-      const hasUsableMedia = attachmentsForSend.some(
-        (a) =>
-          (a?.dataUrl || a?.url) &&
-          (/^image\//i.test(a?.mime || "") ||
-            /\.(png|jpe?g|webp|gif|bmp)$/i.test(a?.name || "")),
-      );
+      const hasUsableMedia =
+        turnModelId === "happyhorse-1.0-video-edit"
+          ? attachmentsForSend.some((a) => getAttachmentUrl(a) && isVideoAttachment(a))
+          : attachmentsForSend.some((a) => getAttachmentUrl(a) && isImageAttachment(a));
       if (!hasUsableMedia) {
         showToast(
-          turnModelId === "happyhorse-1.0-r2v"
+          turnModelId === "happyhorse-1.0-video-edit"
+            ? "视频编辑需要先上传一个视频，可再附加最多 5 张参考图。"
+            : turnModelId === "happyhorse-1.0-r2v"
             ? "参考生视频需要至少一张参考图（最多 9 张）。"
             : "该模型为图生视频，请先上传一张参考图。",
         );
@@ -10518,11 +10608,20 @@ function isImageOnlyModel(modelId) {
 }
 
 function updateAttachBtnVisibility() {
+  const meta = getModelMeta(currentModel);
   if (attachBtn) {
-    attachBtn.hidden = !(isMultimodal || isImageOnlyModel(currentModel));
+    attachBtn.hidden = !(
+      isMultimodal ||
+      isImageOnlyModel(currentModel) ||
+      isReferenceVideoModel(currentModel) ||
+      isVideoEditModel(currentModel)
+    );
+  }
+  if (attachmentInput) {
+    attachmentInput.accept = getAttachmentAcceptForModel(currentModel);
   }
   if (fileUploadBtn) {
-    fileUploadBtn.hidden = false;
+    fileUploadBtn.hidden = !!meta.videoOnly;
   }
 }
 
