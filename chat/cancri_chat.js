@@ -2734,7 +2734,17 @@ const MAX_TOOL_ROUNDS = 10;
 const TOOL_REMINDER_AT_ROUND = 3;
 const FETCH_TIMEOUT_MS = 20000;
 const CHAT_REQUEST_TIMEOUT_MS = 25000;
-const CHAT_TURN_TIMEOUT_MS = 180000;
+// 2026-05-17 审查：原 CHAT_TURN_TIMEOUT_MS = 180000 是 wall-clock 超时，
+// 包含模型思考 + tool 多轮 + 流式输出全程，导致 Claude Opus thinking
+// 长答 / 多轮 tool 调用经常被砍流（用户感知"输出一半中断"）。改造：
+//   • 30 min 改为绝对安全网（防止前端 controller 真的卡死）
+//   • 真正的「停摆判断」交给 streamChatCompletionRound 里的 idle timer：
+//     STREAM_IDLE_TIMEOUT_MS 内没收到任何 SSE chunk 才视为停摆
+// arena 双模并行 fetch（非流式）依然用 CHAT_TURN_TIMEOUT_MS 当 wall。
+const CHAT_TURN_TIMEOUT_MS = 30 * 60 * 1000;
+// SSE 流式空闲超时：常规模型 1-2s 出 chunk，Claude Opus thinking 可能 60s+
+// 才出第一个 reasoning chunk。90s 窗口对各家上游中转都安全。
+const STREAM_IDLE_TIMEOUT_MS = 90 * 1000;
 const TOOL_CALL_TIMEOUT_MS = 25000;
 const VIDEO_GENERATION_POLL_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -8549,6 +8559,22 @@ function updateAssistantMessage(
   scrollChatToBottom();
 }
 
+// 2026-05-17 审查：从助手消息卡片里读出已经流出来的 reasoning / answer 文本。
+// 给 sendMessage 的 catch 路径用 —— abort / idle timeout 失败时不再用错误文本
+// 直接覆盖（用户视角"输出一半被砍掉变成超时"），改成保留已写内容 + 追加
+// 中断脚注。streamState.text 是 syncStreamingMarkdownBlock 写入的真实最新串。
+function getPartialAssistantContent(messageId) {
+  try {
+    const messageDiv = document.getElementById(messageId);
+    if (!messageDiv || !messageDiv._parts) return { reasoning: "", answer: "" };
+    const reasoning = String(messageDiv._parts.thinkStreamState?.text || "");
+    const answer = String(messageDiv._parts.answerStreamState?.text || "");
+    return { reasoning, answer };
+  } catch (_) {
+    return { reasoning: "", answer: "" };
+  }
+}
+
 function composeReasoningText(previous, current) {
   const left = String(previous || "").trim();
   const right = String(current || "").trim();
@@ -9429,6 +9455,31 @@ async function streamChatCompletionRound(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
 
+  // 2026-05-17：流式空闲计时器。仅当 STREAM_IDLE_TIMEOUT_MS 内没收到任何
+  // SSE chunk 才 abort。每收到一个 chunk reset 一次。这才是 streaming chat
+  // 的标准 "stale connection" 判定（OpenAI / Anthropic 官方 SDK 同款），
+  // 取代之前 180s wall-clock 砍流的死板做法。
+  let streamIdleTimer = null;
+  const armStreamIdle = () => {
+    if (streamIdleTimer) clearTimeout(streamIdleTimer);
+    streamIdleTimer = setTimeout(() => {
+      try {
+        controller.abort(
+          createTimeoutError(STREAM_IDLE_TIMEOUT_MS, "模型流式响应"),
+        );
+      } catch (_) {
+        /* ignore controller-already-aborted */
+      }
+    }, STREAM_IDLE_TIMEOUT_MS);
+  };
+  const clearStreamIdle = () => {
+    if (streamIdleTimer) {
+      clearTimeout(streamIdleTimer);
+      streamIdleTimer = null;
+    }
+  };
+  armStreamIdle();
+
   function applyDelta(parsed) {
     const delta = parsed?.choices?.[0]?.delta || {};
     const reasoning = delta.reasoning_content || "";
@@ -9500,36 +9551,44 @@ async function streamChatCompletionRound(
     }
   }
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // Reset idle timer on every chunk — even keep-alive comments / empty
+      // frames count as "the connection is alive". Only true silence
+      // (no bytes for STREAM_IDLE_TIMEOUT_MS) triggers abort.
+      armStreamIdle();
 
-    streamBuffer += decoder.decode(value, { stream: true });
-    const lines = streamBuffer.split(/\r?\n/);
-    streamBuffer = lines.pop() || "";
+      streamBuffer += decoder.decode(value, { stream: true });
+      const lines = streamBuffer.split(/\r?\n/);
+      streamBuffer = lines.pop() || "";
 
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const payload = line.slice(6).trim();
-      if (!payload || payload === "[DONE]") continue;
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === "[DONE]") continue;
 
-      try {
-        applyDelta(JSON.parse(payload));
-      } catch (parseError) {
-        // ignore malformed stream chunks
+        try {
+          applyDelta(JSON.parse(payload));
+        } catch (parseError) {
+          // ignore malformed stream chunks
+        }
       }
     }
-  }
 
-  if (streamBuffer.trim().startsWith("data: ")) {
-    const payload = streamBuffer.trim().slice(6).trim();
-    if (payload && payload !== "[DONE]") {
-      try {
-        applyDelta(JSON.parse(payload));
-      } catch (parseError) {
-        // ignore malformed tail chunk
+    if (streamBuffer.trim().startsWith("data: ")) {
+      const payload = streamBuffer.trim().slice(6).trim();
+      if (payload && payload !== "[DONE]") {
+        try {
+          applyDelta(JSON.parse(payload));
+        } catch (parseError) {
+          // ignore malformed tail chunk
+        }
       }
     }
+  } finally {
+    clearStreamIdle();
   }
 
   if (!finalAnswer && !reasoningText && toolCalls.length) {
@@ -10086,10 +10145,35 @@ async function sendMessage(content) {
     } else {
       failureAnswer = `抱歉，发送消息时出现错误：${message}`;
     }
-    updateAssistantMessage(assistantMessageId, {
-      answer: failureAnswer,
-      thinking: false,
-    });
+    // 2026-05-17：abort / idle timeout 失败时优先保留已经流出来的 partial 内容，
+    // 把错误降级为脚注 —— 用户不会再遇到"模型刚写了 2000 字突然变成超时"。
+    // 仅对 abort / 超时 / 主动取消 这类「连接级」失败生效，对配额 / 模型不可
+    // 用 / 上下游 5xx 仍然走原来的覆盖逻辑（这些是上层错误，partial 通常是空）。
+    const isStreamCutOff =
+      message.includes("超时") ||
+      message.includes("请求已取消") ||
+      message.includes("已取消") ||
+      /aborted/i.test(message);
+    const partial = isStreamCutOff
+      ? getPartialAssistantContent(assistantMessageId)
+      : { reasoning: "", answer: "" };
+    if (isStreamCutOff && (partial.answer.trim() || partial.reasoning.trim())) {
+      const footer = `\n\n_[输出在此处中断：${message}]_`;
+      const preservedAnswer =
+        (partial.answer || partial.reasoning) + footer;
+      updateAssistantMessage(assistantMessageId, {
+        reasoning: partial.reasoning,
+        answer: preservedAnswer,
+        thinking: false,
+      });
+      // history 里也只记真正写出来的内容 + 脚注，方便上下文继续追问
+      failureAnswer = preservedAnswer;
+    } else {
+      updateAssistantMessage(assistantMessageId, {
+        answer: failureAnswer,
+        thinking: false,
+      });
+    }
     try {
       pushHistory(userHistoryMessage);
       turnMessages.forEach((historyMessage) => pushHistory(historyMessage));
