@@ -789,6 +789,35 @@ td.ip {
   font-weight: 500;
 }
 
+/* 2026-05-17：tier chip — FREE/PAID 标签贴在 key 名后。
+   与聊天页 .claude-tier-chip 风格一致；is-paid 用 accent 实心，is-free 用淡灰描边。 */
+.key-tier-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.key-tier-chip.is-free {
+  background: var(--bg-elev);
+  color: var(--text-mute);
+  border: 1px solid var(--border);
+}
+.key-tier-chip.is-paid {
+  background: var(--accent);
+  color: var(--cream, #f5f4ed);
+  border: 1px solid var(--accent);
+}
+:root[data-theme="light"] .key-tier-chip.is-paid {
+  color: #fffaf2;
+}
+
 .key-prefix {
   font-family: var(--font-mono);
   font-size: 13px;

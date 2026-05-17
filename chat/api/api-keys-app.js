@@ -21,6 +21,11 @@ const sb = window.supabase.createClient(
 );
 const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 let currentKeys = [];
+// 2026-05-17：effective tier 来自 user_subscriptions（cancri_get_user_tier RPC），
+// 不再读 api_keys.tier 列（已废弃 / 不与权威订阅同步）。所有 key 共享同一 user
+// 的 tier，所以一次拉，全部 key 复用。failed → 默认 'free'（保守，告诉用户
+// 升级）。
+let effectiveTier = "free";
 
 async function init() {
     const {
@@ -32,6 +37,25 @@ async function init() {
         return;
     }
     await loadData();
+}
+
+async function fetchEffectiveTier(session) {
+    try {
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({ endpoint: "get_my_subscription" }),
+        });
+        if (!resp.ok) return "free";
+        const data = await resp.json();
+        const sub = data && data.subscription;
+        return sub && sub.tier === "paid" ? "paid" : "free";
+    } catch (e) {
+        return "free";
+    }
 }
 
 async function getSession() {
@@ -47,14 +71,19 @@ async function loadData() {
         document.getElementById("login-section").style.display = "block";
         return;
     }
-    const resp = await fetch(GW, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + session.access_token,
-        },
-        body: JSON.stringify({ endpoint: "api_my_keys" }),
-    });
+    // 并行拉 keys 和 effective tier，省一轮 RTT。两者互不依赖，errors 独立处理。
+    const [resp, tierFromSub] = await Promise.all([
+        fetch(GW, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + session.access_token,
+            },
+            body: JSON.stringify({ endpoint: "api_my_keys" }),
+        }),
+        fetchEffectiveTier(session),
+    ]);
+    effectiveTier = tierFromSub;
     const data = await resp.json();
     const hasApproved =
         data.applications &&
@@ -76,6 +105,13 @@ function renderKeys() {
             '<div class="empty">暂无 Key，请点击上方生成。</div>';
         return;
     }
+    // 2026-05-17：tier chip 用 effectiveTier（来自 user_subscriptions 权威），
+    // 而不是 k.tier（已废弃的 api_keys.tier 列）。所有 key 共享同一 tier。
+    // 文案：FREE 用户显示 (FREE)，PAID 用户显示 (PAID)。前后端字面一致。
+    const tierLabel = effectiveTier === "paid" ? "PAID" : "FREE";
+    const tierClass = effectiveTier === "paid"
+        ? "key-tier-chip is-paid"
+        : "key-tier-chip is-free";
     el.innerHTML = currentKeys
         .map((k) => {
             const lastUsed = k.last_used_at
@@ -84,9 +120,7 @@ function renderKeys() {
             return (
                 '<div class="key-row"><div class="key-info"><div class="key-name">' +
                 esc(k.name) +
-                ' <span class="key-tier">(' +
-                k.tier +
-                ')</span></div><div class="key-prefix">' +
+                ' <span class="' + tierClass + '">' + tierLabel + '</span></div><div class="key-prefix">' +
                 esc(k.key_prefix) +
                 '</div><div class="key-meta">创建：' +
                 new Date(k.created_at).toLocaleDateString("zh-CN") +

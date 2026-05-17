@@ -37,18 +37,19 @@ const HIDE_IDS = new Set([
 ]);
 
 // 2026-05-17 模型广场档位二档化：仅 FREE / PAID。
-// 规则（用户 2026-05-17 09:50 UTC+08 指令字面对应）：
-//   1) brand === "Anthropic" 全部 PAID（覆盖 Claude 全系列变体，包括
-//      未来新增的 Sonnet / Haiku / Opus 子型，无需追加 ID）
-//   2) 下面这份精确 ID 列表 PAID：GPT-5.4 / 5.5 / 5.3-codex、Gemini 3.1
-//      Pro、GLM 5.1、DeepSeek V4 Pro、Qwen 3.6 Max、MiniMax M2.7、Kimi K2.6
-//   3) 其余全部 FREE（包括 OSS、Nemotron、Gemma、Qwen3 子型、Doubao、Step、
-//      DeepSeek V3 系、GLM 4.x、视频生成等）
-// 不修改后端 costTier 字段：聊天页 / 速率表 / 计费仍按真实档位走。
-// 2026-05-17 修：网关 catalog 里 Gemini 3.1 Pro 的实际 id 是
-// "gemini-3.1-pro-preview"（带 -preview 后缀），原来写成 "gemini-3.1-pro"
-// 永远命中不到，导致 Gemini 3.1 Pro 在广场被错显成 FREE。对齐网关 id。
-const PAID_IDS = new Set([
+//
+// 历史：之前这里硬编码了 PAID_IDS Set + brand==="anthropic" 推断。但每次后端
+// 调整 PAID 清单都要前后端两边一起改，容易漂移。
+//
+// 现状：chat-gateway 的 model_public_catalog 端口现在直接返回每条 model 的
+// `gateCostTier: 'free' | 'paid'` + `freeUserBlocked: boolean`（与
+// chat-gateway/modelscope-proxy 的 PAID_MODEL_IDS / FREE_USER_BLOCKED_IDS 同
+// 一权威源）。前端只读这两字段。
+//
+// 兼容回退：万一 catalog 旧版本没返回 gateCostTier（部署时序错乱），就退回到
+// 原来的本地推断（brand==="anthropic" || PAID_IDS Set）。这套兜底以后逐步
+// 删除。
+const FALLBACK_PAID_IDS = new Set([
     "gpt-5.4",
     "gpt-5.5",
     "gpt-5.5-high",
@@ -62,10 +63,15 @@ const PAID_IDS = new Set([
 ]);
 
 function getDisplayTier(m) {
+    // 优先读后端权威字段
+    if (m && (m.gateCostTier === "paid" || m.gateCostTier === "free")) {
+        return m.gateCostTier;
+    }
+    // 兼容回退：旧 catalog 没 gateCostTier，按本地规则推断
     const brand = (m.brand || "").toLowerCase();
     if (brand === "anthropic") return "paid";
     const id = m.id || m.canonicalId || "";
-    if (PAID_IDS.has(id)) return "paid";
+    if (FALLBACK_PAID_IDS.has(id)) return "paid";
     return "free";
 }
 
