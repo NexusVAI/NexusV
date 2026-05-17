@@ -18,6 +18,8 @@ let BANS = [];
 let BANNED_SET = new Set();
 let searchTimer = null;
 let lastQuery = "";
+let banSearchTimer = null;
+let activeBanSearch = "";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => {
@@ -102,13 +104,30 @@ function shortTime(iso) {
   return d.toLocaleString("zh-CN", { hour12: false });
 }
 
+function getFilteredBans() {
+  if (!activeBanSearch) return BANS;
+  const q = activeBanSearch.toLowerCase();
+  return BANS.filter(
+    (b) =>
+      (b.email || "").toLowerCase().includes(q) ||
+      (b.user_id || "").toLowerCase().includes(q) ||
+      (b.reason || "").toLowerCase().includes(q) ||
+      (b.notes || "").toLowerCase().includes(q) ||
+      (b.banned_by_email || "").toLowerCase().includes(q) ||
+      (b.banned_by || "").toLowerCase().includes(q),
+  );
+}
+
 function renderBans() {
   const root = $("bansList");
-  if (!BANS.length) {
-    root.innerHTML = '<div class="empty-bans">暂无封禁记录。</div>';
+  const list = getFilteredBans();
+  if (!list.length) {
+    root.innerHTML = activeBanSearch
+      ? '<div class="empty-bans">没有匹配的封禁记录。</div>'
+      : '<div class="empty-bans">暂无封禁记录。</div>';
     return;
   }
-  root.innerHTML = BANS.map((b) => {
+  root.innerHTML = list.map((b) => {
     const expires = b.expires_at
       ? `到期：${esc(new Date(b.expires_at).toLocaleString("zh-CN", { hour12: false }))}`
       : "永久";
@@ -287,6 +306,13 @@ async function doUnban(userId, btn) {
 $("searchInput").addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(doSearch, 250);
+});
+$("banSearch").addEventListener("input", () => {
+  clearTimeout(banSearchTimer);
+  banSearchTimer = setTimeout(() => {
+    activeBanSearch = $("banSearch").value.trim();
+    renderBans();
+  }, 200);
 });
 $("banBtn").addEventListener("click", doBan);
 $("reload-btn").addEventListener("click", loadBans);
