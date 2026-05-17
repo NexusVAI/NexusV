@@ -1604,7 +1604,17 @@ const BRAND_ICON_MAP = {
   "Stepfun": "./stepfun-color.svg",
 };
 
-function getModelIconPath(brand) {
+// 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
+// 场景：同一品牌下子产品有独立 logo 时（如字节 Doubao 企业，但
+// Seedance 视频模型用「即梦」品牌线 logo）。未来同质需求直接
+// 往这里加 id 即可，不要去改品牌名重辅辅。
+const MODEL_ICON_OVERRIDE = {
+  // Seedance 2.0（豆包视频模型）→ 即梦。用户 2026-05-17 指定。
+  "doubao-seedance-2-0-260128": "./jimeng-color.svg",
+};
+
+function getModelIconPath(brand, modelId) {
+  if (modelId && MODEL_ICON_OVERRIDE[modelId]) return MODEL_ICON_OVERRIDE[modelId];
   return BRAND_ICON_MAP[brand] || "./openai.svg";
 }
 
@@ -1629,7 +1639,7 @@ const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
     videoOnly: entry.kind === "video",
     available: entry.available !== false,
     unavailableMessage: entry.unavailableMessage || "",
-    iconPath: getModelIconPath(entry.brand),
+    iconPath: getModelIconPath(entry.brand, entry.id),
     kind: entry.kind || "chat",
     costTier: entry.costTier || "normal",
   };
