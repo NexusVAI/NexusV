@@ -299,8 +299,34 @@ html[data-theme="light"] .site-footer-socials > a {
 }
 
 /* ── Announcement modal: timeline ─────────────────────────────── */
+/* 2026-05-17：原 max-width 580 + 无 max-height 导致 6 条公告堆完后
+   卡片高度超过 1080P 视口，底部「我知道了」按钮无法点击。
+   修复：① 卡片整体上限 880px × 视口高 - 48px；② 改 flex 列布局让
+   header / 滚动 body / footer 各占其位；③ 桌面端时间线改 2 列网格，
+   高度减半的同时把"卡片横向展示"。 */
 .announcement-modal-content {
-    max-width: 580px;
+    width: min(880px, calc(100vw - 32px));
+    max-width: 880px;
+    max-height: calc(100dvh - 48px);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+}
+
+.announcement-modal-content > .modal-header {
+    flex: 0 0 auto;
+}
+
+.announcement-modal-content > .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.announcement-modal-content > .announcement-modal-footer {
+    flex: 0 0 auto;
 }
 
 .announcement-timeline {
@@ -448,6 +474,35 @@ html[data-theme="light"] .site-footer-socials > a {
         flex: 1;
         text-align: right;
         font-size: 11px;
+    }
+}
+
+/* 2026-05-17：桌面端公告时间线横向 2 栏。
+   用 CSS multi-column 而不是 grid，因为各条公告高度不一（Phase A 含三档
+   卡片 + 长段落，普通条目只 2-3 行），grid 会按最高行拉齐留空白；
+   column 自然按内容流动，2 栏均衡填充。
+   竖线 ::before 在双栏布局里跨不了列，隐藏；每条公告靠自带圆点点位。 */
+@media (min-width: 720px) {
+    .announcement-timeline {
+        column-count: 2;
+        column-gap: 28px;
+        column-fill: balance;
+        padding: 4px 8px 8px 8px;
+    }
+
+    .announcement-timeline::before {
+        display: none;
+    }
+
+    .timeline-item {
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        page-break-inside: avoid;
+        padding-bottom: 14px;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 4px;
     }
 }
 
