@@ -1700,7 +1700,7 @@
                                 <button class="claude-snav-item" type="button" data-snav="privacy">隐私</button>
                                 <button class="claude-snav-item" type="button" data-snav="billing">账单</button>
                                 <button class="claude-snav-item" type="button" data-snav="capability">能力</button>
-                                <button class="claude-snav-item" type="button" data-snav="connectors">连接器</button>
+                                <button class="claude-snav-item" type="button" data-snav="quota">额度</button>
                                 <button class="claude-snav-item" type="button" data-snav="password">Cancri 密码</button>
                             </aside>
                             <div class="claude-settings-content">
@@ -1807,15 +1807,23 @@
                                 </div>
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="billing">
                                     <h2 class="claude-settings-h2">账单</h2>
-                                    <p class="claude-form-help">您当前是<strong>免费计划</strong>。<a href="javascript:void(0)">升级到 Cancri Pro</a></p>
+                                    <!-- 2026-05-17：tier chip 由 claude_ui.js 的 applyTierUI 注入。
+                                         默认 hidden 文案让 PAID 用户首屏不闪「免费计划」。 -->
+                                    <p class="claude-form-help" id="claudeBillingCopy" data-tier-state="loading">
+                                        正在加载订阅状态…
+                                    </p>
                                 </div>
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="capability">
                                     <h2 class="claude-settings-h2">能力</h2>
                                     <p class="claude-form-help">能力开关将在后续版本添加。</p>
                                 </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="connectors">
-                                    <h2 class="claude-settings-h2">连接器</h2>
-                                    <p class="claude-form-help">GitHub / Gmail / Calendar 等连接器将在后续版本添加。</p>
+                                <!-- 2026-05-17：「连接器」改为「额度」。FREE/PAID 用户视图不同，
+                                     由 claude_quota_ui.js 在打开此段时拉 get_quota_status 渲染。 -->
+                                <div class="claude-settings-section claude-snav-target" data-snav-target="quota">
+                                    <h2 class="claude-settings-h2">额度</h2>
+                                    <div id="claudeQuotaPanel" class="claude-quota-panel" data-quota-state="loading">
+                                        <p class="claude-form-help">正在加载额度信息…</p>
+                                    </div>
                                 </div>
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="password">
                                     <h2 class="claude-settings-h2">Cancri 密码</h2>
@@ -2676,11 +2684,13 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-17-chat-nav"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-17-quota-gate"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-16-tier"></script>
+        <script defer src="./claude_ui.js?v=2026-05-17-quota"></script>
+        <!-- 2026-05-17：「额度」面板（替代原「连接器」占位）。FREE 共享池 + 当日 25 次 PAID 试用条形图、PAID 用量明细。 -->
+        <script defer src="./claude_quota_ui.js?v=2026-05-17-init"></script>
     </body>
 </html>

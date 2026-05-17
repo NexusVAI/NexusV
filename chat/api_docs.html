@@ -773,6 +773,7 @@
         <a href="#cli-openclaw">OpenClaw</a>
 
         <h4>规则</h4>
+        <a href="#quota">免费档配额</a>
         <a href="#ratelimit">速率限制</a>
         <a href="#errors">错误码</a>
         <a href="#sdk">SDK 兼容</a>
@@ -1531,6 +1532,155 @@ openclaw agent</pre>
   }
 }</pre>
           </div>
+        </section>
+
+        <section id="quota">
+          <h2>免费档配额机制</h2>
+          <p>
+            Cancri 把模型分成 <b>FREE</b> 与 <b>PAID</b> 两档。FREE 档对所有
+            用户始终免费；PAID 档对 FREE 用户开放有限的免费试用，对 PAID
+            订阅用户不设上限。模型档位见 <a href="./api_models.html">模型广场</a>
+            每张卡片右上的 badge。
+          </p>
+
+          <h3>FREE 用户的 PAID 模型试用规则</h3>
+          <ul>
+            <li>
+              <b>全站共享池：</b> 每月 1 亿 token（按下文折算后的 effective_pool_tokens
+              计），所有 FREE 用户共享。每月 1 号 00:00（UTC+8）自动重置回 1 亿。
+              池内余额耗尽后，<b>当月</b>所有 FREE 用户调 PAID 模型都会被立刻拦截
+              （返回 <code>429 free_pool_exhausted</code>），直到下月初。
+            </li>
+            <li>
+              <b>每日个人限额：</b> 每个 FREE 用户每天最多 25 次 PAID 模型成功调用
+              （UTC+8 自然日，每天 00:00 重置）。上限内由共享池继续扣量；
+              用满会返回 <code>429 daily_paid_limit_reached</code>。
+            </li>
+            <li>
+              <b>失败不计数：</b> 上游错误（HTTP 5xx、上游 unavailable、key 失效、
+              quota 等返回 4xx/5xx 的失败请求）会自动 refund —— 不扣 25 次/日，
+              也不扣共享池。判定基于 HTTP 状态码，不读取上游错误文本。
+            </li>
+            <li>
+              <b>GPT-5.5 系列例外：</b> <code>gpt-5.5</code> / <code>gpt-5.5-high</code>
+              是 Cancri Pro 专属，FREE 用户调用直接返回 <code>403 model_paid_only</code>，
+              <i>不</i>计入共享池与每日 25 次。模型广场会用横杠标识。
+            </li>
+          </ul>
+
+          <h3>token 折算公式</h3>
+          <p>
+            每次成功调用入池的有效 token 数（<code>effective_pool_tokens</code>）按
+            上游返回的真实 usage 字段折算。缓存命中按 <b>10%</b> 计价（与
+            Anthropic / OpenAI prompt caching 主流商家一致）：
+          </p>
+          <div class="code-block">
+            <pre><code>effective_pool_tokens
+  = (prompt_tokens - cached_tokens) × 1.0       // 普通输入（全价）
+  + cached_tokens                  × 0.1       // 缓存命中（10% 折扣）
+  + completion_tokens              × 1.0;      // 输出（全价）</code></pre>
+          </div>
+          <p>
+            上游字段映射：OpenAI 协议读 <code>usage.prompt_tokens</code> /
+            <code>usage.completion_tokens</code> /
+            <code>usage.prompt_tokens_details.cached_tokens</code>；
+            Anthropic 协议读 <code>usage.input_tokens</code> /
+            <code>usage.output_tokens</code> /
+            <code>usage.cache_read_input_tokens</code>（<code>cache_creation_input_tokens</code>
+            按全价计算，因为是首次写入缓存）。流式 SSE 取最后一帧的 usage 字段；
+            若上游未返回 usage（中转商不规范），按已透出的 delta 文本估算
+            <code>output_tokens ≈ chars / 4</code> 兜底入池。
+          </p>
+
+          <h3>PAID 订阅用户</h3>
+          <p>
+            PAID 用户调任何模型都不扣共享池、不计 25 次/日，仅记录用量明细
+            供面板展示。订阅价 ¥9.9/月，详见 <a href="./pricing.html">套餐页</a>。
+          </p>
+
+          <h3>实时查询配额状态</h3>
+          <p>
+            登录用户可通过 chat-gateway 实时查询当前共享池余额、自己当日 PAID 调用余量、
+            订阅状态。这是 <i>内部接口</i>（chat-gateway 上的 JSON-RPC 风格 endpoint），
+            <b>不在公开 /v1/* API 列表内</b>。聊天页 / 设置面板的「额度」段就走这个接口。
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="quota-status">复制</button>
+            <pre><code>POST https://diusqgphvybnzazgopor.supabase.co/functions/v1/chat-gateway
+Content-Type: application/json
+Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
+
+{ "endpoint": "get_quota_status" }</code></pre>
+          </div>
+          <p>响应（FREE 用户）：</p>
+          <div class="code-block">
+            <pre><code>{
+  "ok": true,
+  "tier": "free",
+  "subscription": { "tier": "free", "expires_at": null, "days_remaining": 0 },
+  "free_pool": {
+    "period_start": "2026-04-30T16:00:00Z",   // = 2026-05-01 00:00 UTC+8
+    "period_end":   "2026-05-31T16:00:00Z",
+    "budget":   100000000,
+    "consumed":   8421337,
+    "remaining": 91578663,
+    "percent": 8.42
+  },
+  "daily_paid": {
+    "day": "2026-05-17",
+    "count": 4,
+    "limit": 25,
+    "remaining": 21
+  }
+}</code></pre>
+          </div>
+          <p>响应（PAID 用户）：</p>
+          <div class="code-block">
+            <pre><code>{
+  "ok": true,
+  "tier": "paid",
+  "subscription": {
+    "tier": "paid",
+    "expires_at": "2026-06-14T08:30:00Z",
+    "days_remaining": 28
+  },
+  "free_pool": { /* 仍返回，供前端展示「全站当前状态」 */ },
+  "daily_paid": { /* 全 0，PAID 用户不计 */ }
+}</code></pre>
+          </div>
+
+          <h3>错误码速查（配额相关）</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>HTTP</th>
+                <th>code</th>
+                <th>含义</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>403</td>
+                <td><code>model_paid_only</code></td>
+                <td>该模型仅 Cancri Pro 订阅可用（如 GPT-5.5 系列）</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td><code>free_pool_exhausted</code></td>
+                <td>本月免费共享池已耗尽，下月 1 号 00:00 重置</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td><code>daily_paid_limit_reached</code></td>
+                <td>当日 25 次免费 PAID 试用已用完，明日 00:00 重置</td>
+              </tr>
+              <tr>
+                <td>503</td>
+                <td><code>quota_check_failed</code></td>
+                <td>配额服务暂不可用（DB 异常）。这种情况下 FREE 用户被保守拒绝，请稍后重试</td>
+              </tr>
+            </tbody>
+          </table>
         </section>
 
         <section id="ratelimit">

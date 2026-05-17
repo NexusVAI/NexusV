@@ -691,16 +691,17 @@
       <div id="empty" class="empty" style="display: none">没有匹配的模型</div>
       <div id="grid" class="grid" style="display: none"></div>
 
-      <!-- legend：两档说明。重复使用 .tier badge 同样的外观，保证语义一致。 -->
+      <!-- legend：两档说明。重复使用 .tier badge 同样的外观，保证语义一致。
+           2026-05-17 文案更新：FREE 用户每日 25 次 PAID 试用 + 1亿/月共享池规则。 -->
       <div class="legend">
         <span class="legend-title">档位说明</span>
         <span class="legend-item">
           <span class="tier tier-free">FREE</span>
-          全部免费使用，受免费档限速（10 RPM / 60 RPH / 1000 RPD，并发 2 路）。
+          所有用户免费使用，受免费档限速（10 RPM / 60 RPH / 1000 RPD，并发 2 路）。
         </span>
         <span class="legend-item">
           <span class="tier tier-paid">PAID</span>
-          需付费订阅才能调用，包括 Claude 全系与其他顶级同代。
+          FREE 用户每日 25 次试用 + 全站共享 1亿 token/月；PAID 订阅不限。GPT-5.5 系列仅 PAID 可用。详见 <a href="./api_docs.html#quota" style="color:var(--accent)">配额文档</a>。
         </span>
       </div>
 
@@ -728,6 +729,6 @@
     <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <!-- 2026-05-17 重构：模型广场二档化（FREE/PAID）+ 移除 9 条用户指定模型 +
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。 -->
-    <script src="./api/api-models-app.js?v=2026-05-17-gemini-paid-fix"></script>
+    <script src="./api/api-models-app.js?v=2026-05-17-backend-tier"></script>
   </body>
 </html>

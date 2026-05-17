@@ -429,24 +429,42 @@
         });
     }
 
-    // 5. Plan pill toast + 付费用户隐藏升级 UI（2026-05-16）
+    // 5. Plan pill toast + 付费用户隐藏升级 UI（2026-05-17 修复 PAID-as-FREE bug）
     //
     // 行为：
-    //   - 未登录 / free 用户：保留"免费计划 · 升级"pill，点击弹 toast
-    //   - paid 用户：给 body 加 is-paid-tier class，CSS 隐藏 pill / "升级" nav-tag /
-    //                billing 区"免费计划"文案（替换为剩余天数）
-    //   - 订阅到期：自动回到 free 显示（每页加载时取最新 subscription）
+    //   - 页面加载即给 body 加 `is-tier-loading` class，CSS 隐藏升级 pill + nav-tag，
+    //     billing copy 也显示"加载中…"。这阻止 PAID 用户首屏闪现"免费计划"文案。
+    //   - localStorage 缓存上一次解析的 tier（TTL 5 分钟），下次加载时立刻应用，
+    //     消除"已登录但要等网络"的延迟。
+    //   - 应用最终 tier 后移除 `is-tier-loading`：FREE → 显示升级 pill + FREE 文案；
+    //     PAID → 加 `is-paid-tier` class，CSS 隐藏 pill 并替换 billing copy。
+    //   - 网络失败 + 无缓存：保留 `is-tier-loading`，避免错判 PAID 用户为 FREE。
+    //     失败重试 2 次（指数退避），无效再 fail-soft。
+    //   - 订阅到期：缓存 5 分钟过期后下次刷新拉到 'free'，自动回到 free 显示。
+    var TIER_CACHE_KEY = 'cancri_tier_cache_v1';
+    var TIER_CACHE_TTL_MS = 5 * 60 * 1000;
+    var TIER_FETCH_MAX_ATTEMPTS = 3;
+
     function bindPlanPill() {
         const pill = document.getElementById('claudePlanPill');
-        // pill 可能被 paid 路径隐藏，这里点击 handler 仍绑上：从 free 切 paid 不刷新
-        // 页面也不会触发，但反向（paid 过期）仍能在下次刷新自然恢复
         if (pill) {
             pill.addEventListener('click', function (e) {
                 e.preventDefault();
                 showToast('升级到 Cancri Pro 以解锁更多模型');
             });
         }
-        applyTierUI().catch(function () { /* fail-soft：拿不到 tier 就维持 free 显示 */ });
+        // 进入 loading 态：CSS 在此期间隐藏 pill / nav-tag / 模糊 billing copy
+        document.body.classList.add('is-tier-loading');
+
+        // 先尝试用缓存即时应用（避免首屏闪烁）
+        var cached = readTierCache();
+        if (cached) {
+            applyTierState(cached, /* fromCache */ true);
+        }
+        // 然后异步拉新鲜数据
+        applyTierUI().catch(function () {
+            // fail-soft 已在 applyTierUI 内部处理；这里仅吞错避免冒泡
+        });
     }
 
     function getCancriAccessToken() {
@@ -458,56 +476,132 @@
         } catch (e) { return ''; }
     }
 
-    async function applyTierUI() {
-        const token = getCancriAccessToken();
-        if (!token) return;  // 未登录：保持 free 显示，免发请求
-        const SUPABASE_URL = window.__SUPABASE_URL__ || '';
-        const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
-        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
-
-        let resp;
+    function readTierCache() {
         try {
-            resp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': 'Bearer ' + token,
-                },
-                body: JSON.stringify({ endpoint: 'get_my_subscription', __auth_token: token }),
-            });
-        } catch (e) { return; }
-        if (!resp || !resp.ok) return;
-        const data = await resp.json().catch(function () { return null; });
-        const sub = data && data.subscription;
-        if (!sub) return;
-
-        if (sub.tier === 'paid') {
-            document.body.classList.add('is-paid-tier');
-            updateBillingCopyForPaid(sub);
-        } else {
-            // free（订阅到期或从未付费）：移除 paid class，让 CSS 默认 free 显示生效
-            document.body.classList.remove('is-paid-tier');
-        }
+            var raw = localStorage.getItem(TIER_CACHE_KEY);
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return null;
+            if (typeof parsed.cachedAt !== 'number') return null;
+            if (Date.now() - parsed.cachedAt > TIER_CACHE_TTL_MS) return null;
+            if (!parsed.subscription) return null;
+            return parsed.subscription;
+        } catch (e) { return null; }
     }
 
-    // 把 settings 面板里 billing 区的"您当前是免费计划"替换成 paid 状态的文案。
-    // 找不到节点（用户没打开 settings，或 DOM 结构变了）就静默跳过，不抛错。
-    function updateBillingCopyForPaid(sub) {
-        const help = document.querySelector('.claude-settings-section .claude-form-help');
-        if (!help) return;
-        // 仅替换"免费计划"卡片的那段（用 strong 文本特征匹配）
-        const strong = help.querySelector('strong');
-        if (!strong || !/免费计划/.test(strong.textContent || '')) return;
-        const days = (sub.days_remaining > 0)
-            ? sub.days_remaining + ' 天剩余'
-            : '已激活';
-        const exp = sub.expires_at
-            ? new Date(sub.expires_at).toLocaleDateString('zh-CN')
-            : '';
-        help.innerHTML = '您当前是<strong>Cancri Pro</strong>'
-            + (exp ? '。订阅到期 ' + exp : '')
-            + '（<span style="color:var(--text-mute)">' + days + '</span>）';
+    function writeTierCache(sub) {
+        try {
+            localStorage.setItem(TIER_CACHE_KEY, JSON.stringify({
+                cachedAt: Date.now(),
+                subscription: sub,
+            }));
+        } catch (e) { /* quota full / private mode：忽略 */ }
+    }
+
+    function clearTierCache() {
+        try { localStorage.removeItem(TIER_CACHE_KEY); } catch (e) { /* ignore */ }
+    }
+
+    // 把订阅信息映射到 DOM 状态（class + billing copy）。
+    // fromCache 仅用于日志区分，不影响行为。
+    function applyTierState(sub, fromCache) {
+        document.body.classList.remove('is-tier-loading');
+        if (sub && sub.tier === 'paid') {
+            document.body.classList.add('is-paid-tier');
+            updateBillingCopy(sub);
+        } else {
+            document.body.classList.remove('is-paid-tier');
+            updateBillingCopy(sub || { tier: 'free' });
+        }
+        void fromCache;
+    }
+
+    // 失败时调用：无缓存就维持 loading 态隐藏升级 UI（保守，避免 PAID 用户看 FREE）；
+    // 有缓存就保持缓存结果。
+    function applyTierFallback() {
+        var cached = readTierCache();
+        if (cached) {
+            applyTierState(cached, /* fromCache */ true);
+        }
+        // 无缓存：维持 is-tier-loading，billing copy 保持"加载中"。
+    }
+
+    async function applyTierUI() {
+        const token = getCancriAccessToken();
+        if (!token) {
+            // 未登录：默认 free（不算 fail，因为这是确定结论）
+            clearTierCache();
+            applyTierState({ tier: 'free', days_remaining: 0, expires_at: null }, false);
+            return;
+        }
+        const SUPABASE_URL = window.__SUPABASE_URL__ || '';
+        const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            applyTierFallback();
+            return;
+        }
+
+        var lastErr = null;
+        for (var attempt = 0; attempt < TIER_FETCH_MAX_ATTEMPTS; attempt++) {
+            try {
+                var resp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + token,
+                    },
+                    body: JSON.stringify({ endpoint: 'get_my_subscription', __auth_token: token }),
+                });
+                if (!resp || !resp.ok) {
+                    lastErr = new Error('HTTP ' + (resp && resp.status));
+                } else {
+                    var data = await resp.json().catch(function () { return null; });
+                    var sub = data && data.subscription;
+                    if (sub) {
+                        writeTierCache(sub);
+                        applyTierState(sub, false);
+                        return;
+                    }
+                    lastErr = new Error('missing subscription field');
+                }
+            } catch (e) {
+                lastErr = e;
+            }
+            // 指数退避：300ms / 900ms
+            if (attempt < TIER_FETCH_MAX_ATTEMPTS - 1) {
+                await new Promise(function (r) { setTimeout(r, 300 * Math.pow(3, attempt)); });
+            }
+        }
+        // 全部重试失败 → fail-soft（用缓存或维持 loading）
+        try { console.warn('applyTierUI failed after retries:', lastErr); } catch (e) { /* ignore */ }
+        applyTierFallback();
+    }
+
+    // 把 settings 面板里 billing 区的文案替换成对应 tier 的精确状态。
+    // 现在 HTML 默认是 #claudeBillingCopy data-tier-state="loading" + 占位文案，
+    // 我们根据 sub.tier 写两种文案。
+    function updateBillingCopy(sub) {
+        var copy = document.getElementById('claudeBillingCopy');
+        if (!copy) return;
+        if (sub.tier === 'paid') {
+            var days = (sub.days_remaining > 0)
+                ? sub.days_remaining + ' 天剩余'
+                : '已激活';
+            var exp = sub.expires_at
+                ? new Date(sub.expires_at).toLocaleDateString('zh-CN')
+                : '';
+            copy.setAttribute('data-tier-state', 'paid');
+            copy.innerHTML = '您当前是<strong>Cancri Pro</strong>'
+                + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">PAID</span>'
+                + (exp ? '。订阅到期 ' + exp : '')
+                + '（<span class="claude-billing-days">' + days + '</span>）';
+        } else {
+            copy.setAttribute('data-tier-state', 'free');
+            copy.innerHTML = '您当前是<strong>免费计划</strong>'
+                + '<span class="claude-tier-chip is-free" style="margin-left:8px;vertical-align:middle">FREE</span>'
+                + '。<a href="./pricing.html">升级到 Cancri Pro</a>';
+        }
     }
 
     // 6. 项目页 / 聊天页按钮

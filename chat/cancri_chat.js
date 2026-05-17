@@ -217,6 +217,14 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   vip_required: null, // backend supplies a specific Chinese message — keep it
   video_quota_exhausted: null, // ditto — has a per-week count in message
   model_temporarily_unavailable: "该模型当前不可用，请稍后或切换其他模型。",
+  // 2026-05-17 配额闸门 codes（与 chat-gateway enforceQuotaGate 字面同步）：
+  // backend 给的 message 本身已经写得很完整（含重置时间、升级链接提示），
+  // 这里用 null 让 friendlyMessageFromBackend 直接采纳 backend 的 message。
+  // 注意：null 模式仅对我们自己后端构造的字面量 message 安全（不会透传上游）。
+  model_paid_only: null,
+  free_pool_exhausted: null,
+  daily_paid_limit_reached: null,
+  quota_check_failed: null,
   // Specialised paths (handled elsewhere — return "" so caller falls through)
   challenge_required: null, // formatSecurityGuardMessage path
   access_blocked: null,
@@ -235,8 +243,22 @@ const KNOWN_ERROR_CODE_MESSAGES = {
 // from our own template table. Returns `""` for codes whose meaning is
 // handled by a specialised path elsewhere; the caller must check those
 // codes itself before invoking this.
+// 2026-05-17：配额闸门相关 code → 收到就强制刷新 quotaState，让模型选择器
+// 立刻反映新状态（无需等 30s TTL）。这是 fire-and-forget，不阻塞错误处理。
+const QUOTA_REFRESH_TRIGGER_CODES = new Set([
+  "free_pool_exhausted",
+  "daily_paid_limit_reached",
+  "model_paid_only",
+]);
+
 function friendlyMessageFromBackend(parsed, status) {
   const code = String(parsed?.code || "").trim();
+  // 2026-05-17：trigger quota refresh side-effect 在解析阶段做，
+  // 不依赖具体错误显示分支。
+  if (code && QUOTA_REFRESH_TRIGGER_CODES.has(code) &&
+      typeof invalidateQuotaState === "function") {
+    try { invalidateQuotaState(); } catch (e) { /* ignore */ }
+  }
   if (code && Object.prototype.hasOwnProperty.call(KNOWN_ERROR_CODE_MESSAGES, code)) {
     const tpl = KNOWN_ERROR_CODE_MESSAGES[code];
     // `null` means "specialised handler owns this code" — caller should
@@ -1230,12 +1252,163 @@ async function bootstrapModelTelemetry() {
   }, 5 * 60 * 1000);
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// FREE/PAID 配额闸门状态（2026-05-17）
+//
+// 与 chat-gateway.ts 的 PAID_MODEL_IDS / FREE_USER_BLOCKED_IDS 一对一对齐
+// （后端是单一权威源，前端这份是渲染 UI 的副本，必须保持手工同步）。
+//
+// quotaState 由 refreshQuotaState() 异步拉取，缓存 30 秒。模型选择器
+// renderModelDropdownFromCatalog 渲染时读 quotaState 决定每条 PAID 选项
+// 是否横杠 disabled。click handler 也会读 quotaState 提前 toast。
+//
+// 真正的执法在后端（chat-gateway enforceQuotaGate），前端这份是给用户
+// 立刻看见的反馈，避免「点了发现被挡」的迷惑。
+// ════════════════════════════════════════════════════════════════════════
+
+const PAID_GATE_IDS = new Set([
+  "gpt-5.4",
+  "gpt-5.5",
+  "gpt-5.5-high",
+  "gpt-5.3-codex",
+  "gemini-3.1-pro-preview",
+  "glm-5.1",
+  "deepseek-v4-pro",
+  "qwen3.6-max-preview",
+  "minimax-m2.7",
+  "kimi-k2.6",
+]);
+const FREE_USER_BLOCKED_GATE_IDS = new Set(["gpt-5.5", "gpt-5.5-high"]);
+
+let quotaState = {
+  fetchedAt: 0,
+  tier: "free",
+  freePoolRemaining: null,    // null = 未知（不强制阻挡）
+  dailyPaidRemaining: null,   // null = 未知（不强制阻挡）
+};
+let quotaStateFetchInflight = null;
+const QUOTA_STATE_TTL_MS = 30 * 1000;
+
+function isPaidGateModel(modelId) {
+  if (PAID_GATE_IDS.has(modelId)) return true;
+  const meta = getModelMeta(modelId);
+  if (meta && (meta.brand || "").toLowerCase() === "anthropic") return true;
+  return false;
+}
+
+function isFreeUserBlockedGateModel(modelId) {
+  return FREE_USER_BLOCKED_GATE_IDS.has(modelId);
+}
+
+// 返回 null 表示通过；否则返回原因 code：
+//   • 'paid_only'      FREE 用户调 GPT-5.5 系列（硬挡，不论池/日配额）
+//   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何 PAID 模型）
+//   • 'daily_limit'    当日 25 次 PAID 试用用完
+function getQuotaBlockReason(modelId) {
+  if (quotaState.tier === "paid") return null;            // PAID 用户全通
+  if (isFreeUserBlockedGateModel(modelId)) return "paid_only";
+  if (!isPaidGateModel(modelId)) return null;             // FREE 用户调 FREE 模型 OK
+  // FREE 用户 + PAID 模型：看池 + 日配额
+  if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
+  if (quotaState.dailyPaidRemaining !== null && quotaState.dailyPaidRemaining <= 0) return "daily_limit";
+  return null;
+}
+
+function getQuotaBlockMessage(modelId) {
+  switch (getQuotaBlockReason(modelId)) {
+    case "paid_only":
+      return "该模型仅向 Cancri Pro 订阅用户开放，请升级或选择其他模型。";
+    case "pool_exhausted":
+      return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即解锁。";
+    case "daily_limit":
+      return "您今日 25 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 不受限。";
+    default:
+      return "";
+  }
+}
+
+function getCancriAccessTokenForQuota() {
+  try {
+    const raw = localStorage.getItem("cancri_supabase_auth");
+    if (!raw) return "";
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.access_token ? String(parsed.access_token) : "";
+  } catch (e) {
+    return "";
+  }
+}
+
+// 拉 quota 状态；带 30s 缓存 + inflight 去重。
+// 失败时不抛错，调用方拿到的是 stale state（fail-soft）。
+async function refreshQuotaState(force) {
+  if (!force && quotaState.fetchedAt && Date.now() - quotaState.fetchedAt < QUOTA_STATE_TTL_MS) {
+    return quotaState;
+  }
+  if (quotaStateFetchInflight) return quotaStateFetchInflight;
+  const token = getCancriAccessTokenForQuota();
+  const SUPABASE_URL = window.__SUPABASE_URL__ || "";
+  const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
+  if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    // 未登录 / 配置缺失：默认 FREE，池/日均未知（→ 不挡）。
+    // 用户真正发起调用时后端会再 enforce 一次。
+    return quotaState;
+  }
+  quotaStateFetchInflight = fetch(SUPABASE_URL + "/functions/v1/chat-gateway", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: "Bearer " + token,
+    },
+    body: JSON.stringify({ endpoint: "get_quota_status", __auth_token: token }),
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (data && data.ok) {
+        quotaState.tier = data.tier === "paid" ? "paid" : "free";
+        quotaState.freePoolRemaining = data.free_pool
+          ? Number(data.free_pool.remaining)
+          : null;
+        quotaState.dailyPaidRemaining = data.daily_paid
+          ? Number(data.daily_paid.remaining)
+          : null;
+        quotaState.fetchedAt = Date.now();
+      }
+      quotaStateFetchInflight = null;
+      // 数据变了 → 触发 dropdown 重渲染让 UI 反映新状态
+      try {
+        if (typeof updateModelDropdownIndicators === "function") {
+          updateModelDropdownIndicators();
+        }
+      } catch (e) {
+        /* ignore */
+      }
+      return quotaState;
+    })
+    .catch((e) => {
+      quotaStateFetchInflight = null;
+      return quotaState;
+    });
+  return quotaStateFetchInflight;
+}
+
+// 后端返回 free_pool_exhausted / daily_paid_limit_reached / model_paid_only
+// 错误时，调这个让前端立刻看到新状态（不必等 30s TTL）。
+function invalidateQuotaState() {
+  quotaState.fetchedAt = 0;
+  return refreshQuotaState(true);
+}
+
 function isModelAvailable(modelId) {
   clearExpiredQuotaLocks();
   if (!isModelEnabled(modelId)) return false;
   const meta = getModelMeta(modelId);
   if (meta.available === false) return false;
   const now = Date.now();
+
+  // 2026-05-17 配额闸门：FREE 用户调 PAID 模型时，提前在前端阻断
+  // （后端仍会 enforce 一次，前端这层是 UX）。
+  if (getQuotaBlockReason(modelId)) return false;
 
   if (usesSharedQuota(modelId)) {
     if (
@@ -1367,15 +1540,28 @@ function updateModelDropdownIndicators() {
       speedDot.title = `速度较慢 (${Math.round(status.speedMs)}ms)`;
     else speedDot.title = "速度未测试";
 
-    // 禁用状态
+    // 禁用状态（含 quota 闸门 + 既有 lockedUntil）
+    // quota-blocked 类专门给 PAID-as-FREE 阻挡：CSS 给"横杠 + 灰"样式，区别于
+    // 仅 disabled（无横杠，只是按钮被点击不响应）。
+    const quotaReason = getQuotaBlockReason(modelId);
     if (!isModelAvailable(modelId)) {
       opt.classList.add("disabled");
-      opt.title =
-        getQuotaLockMessage(modelId) ||
-        status.error ||
-        "该模型当前不可用（额度已用完或请求失败）";
+      if (quotaReason) {
+        opt.classList.add("quota-blocked");
+        opt.dataset.quotaReason = quotaReason;
+        opt.title = getQuotaBlockMessage(modelId);
+      } else {
+        opt.classList.remove("quota-blocked");
+        delete opt.dataset.quotaReason;
+        opt.title =
+          getQuotaLockMessage(modelId) ||
+          status.error ||
+          "该模型当前不可用（额度已用完或请求失败）";
+      }
     } else {
       opt.classList.remove("disabled");
+      opt.classList.remove("quota-blocked");
+      delete opt.dataset.quotaReason;
       opt.title =
         status.error && status.error !== "额度已用完" ? status.error : "";
     }
@@ -10937,6 +11123,12 @@ if (compareModelCurrentBtn) {
 }
 renderModelDropdownFromCatalog();
 
+// 2026-05-17：登录态下首次进入聊天页时拉一次配额状态，让 PAID 模型 disabled
+// 状态在用户打开 dropdown 之前就准备好（避免「先看到 enabled、点了又被挡」的
+// 闪烁）。fire-and-forget；fetch 完成后 refreshQuotaState 内部会自动触发
+// updateModelDropdownIndicators 重渲染。
+try { refreshQuotaState(false); } catch (e) { /* ignore */ }
+
 if (modelDropdown) {
   // 事件委托：监听容器上的点击，动态创建的 .model-option 也能响应
   modelDropdown.addEventListener("click", (e) => {
@@ -10944,11 +11136,16 @@ if (modelDropdown) {
     if (!option || !modelDropdown.contains(option)) return;
     const modelId = option.dataset.model;
     if (!isModelAvailable(modelId)) {
-      const status = getModelStatus(modelId);
-      const message = getQuotaLockMessage(modelId) || status.error || "额度已用完";
-      showToast(
-        `${getModelDisplayName(modelId)} 当前不可用：${message}`,
-      );
+      // 2026-05-17：quota 闸门挡的 toast 单独给精确文案（不混进通用 quota lock 消息），
+      // 方便用户立刻知道是「升级解锁」还是「等明天/下月」。
+      const quotaMsg = getQuotaBlockMessage(modelId);
+      if (quotaMsg) {
+        showToast(`${getModelDisplayName(modelId)}：${quotaMsg}`);
+      } else {
+        const status = getModelStatus(modelId);
+        const message = getQuotaLockMessage(modelId) || status.error || "额度已用完";
+        showToast(`${getModelDisplayName(modelId)} 当前不可用：${message}`);
+      }
       return;
     }
     if (modelSelectTarget === "compare") setCompareModel(modelId);

@@ -548,6 +548,46 @@ body.is-paid-tier .claude-nav-tag {
     display: none !important;
 }
 
+/* 2026-05-17：tier 加载中状态 — 阻止 PAID 用户首屏闪现"免费计划"。
+   page load 即给 body 加 is-tier-loading，applyTierUI 拿到 tier 后移除。
+   网络失败 + 无缓存时保留此 class（保守，避免错判 PAID 为 FREE）。 */
+body.is-tier-loading .claude-plan-pill,
+body.is-tier-loading .claude-nav-tag {
+    display: none !important;
+}
+/* billing copy 在加载态显示占位文案；ready 后 claude_ui.js updateBillingCopy 填充 */
+#claudeBillingCopy[data-tier-state="loading"] {
+    color: var(--c-text-mute, rgba(255, 255, 255, 0.45));
+    font-style: italic;
+}
+
+/* tier chip — 与模型广场 .tier badge 同款。billing copy 和将来其他位置复用 */
+.claude-tier-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+.claude-tier-chip.is-free {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--c-text-mute, rgba(255, 255, 255, 0.6));
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12));
+}
+.claude-tier-chip.is-paid {
+    background: var(--c-accent, #c96442);
+    color: #fffaf2;
+    border: 1px solid var(--c-accent, #c96442);
+}
+.claude-billing-days {
+    color: var(--c-text-mute, rgba(255, 255, 255, 0.55));
+    font-variant-numeric: tabular-nums;
+}
+
 /* header-right 隐藏遗留按钮（公告铃 + 登出 toast 按钮等）。账号头像在 sidebar 底部。
    只保留 share / shrink 等可能用到的元素，将它们样式调淡。 */
 .main-header .header-right {
