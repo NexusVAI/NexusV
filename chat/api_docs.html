@@ -8,11 +8,15 @@
     <title>API 文档 · Cancri 开放平台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+    <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
+    <link rel="preload" as="image" href="../Logo/Cancri.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-16-typography" />
     <script src="./api/api-platform.js?v=20260513"></script>
+    <!-- Cancri 双主题 logo 同步 -->
+    <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
     <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
     <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
     <style>
@@ -342,10 +346,16 @@
   <body>
     <header class="topbar">
       <div class="topbar__inner">
-        <a class="brand" href="./api/">
-          <span class="brand__mark">N</span>
-          <span class="brand__sep">／</span>
-          <span class="brand__product">Open&nbsp;Platform</span>
+        <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+          <img
+            class="brand__logo cancri-logo"
+            src="../Logo/Cancri1.jpg"
+            data-dark-src="../Logo/Cancri1.jpg"
+            data-light-src="../Logo/Cancri.png"
+            alt="Cancri"
+            width="28"
+            height="28"
+          />
         </a>
         <nav class="topnav" aria-label="开放平台导航">
           <a href="./api/">概览</a>

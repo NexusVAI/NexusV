@@ -16,13 +16,16 @@
         <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
         <!-- Logo 同时被 sidebar-topbar、登录页 .auth-brand、PWA install
              prompt、模态框 hero 重复使用 6+ 次。fetchpriority=high 让浏览器
-             把这一张 PNG 排到 HTTP 队列最前，首屏 LCP 候选元素更快出现。 -->
+             把品牌图排到 HTTP 队列最前，首屏 LCP 候选元素更快出现。
+             黑白两张都预热：默认 dark 主题使用白 Cancri1.jpg，用户手动切为
+             light 后 cancri_logo_theme.js 会交换 src 为黑 Cancri.png。 -->
         <link
             rel="preload"
             as="image"
-            href="../Logo/Cancri.png"
+            href="../Logo/Cancri1.jpg"
             fetchpriority="high"
         />
+        <link rel="preload" as="image" href="../Logo/Cancri.png" />
         <!-- Preconnect to the three remote origins this page hits during the
              first 500ms: supabase (auth + every API call), jsdelivr (CDN for
              supabase-js bundle), challenges.cloudflare.com (Turnstile CAPTCHA).
@@ -148,16 +151,17 @@
                 <a
                     class="auth-brand"
                     href="/"
-                    aria-label="NexusV"
+                    aria-label="Cancri"
                 >
                     <img
-                        src="../Logo/Cancri.png"
-                        alt=""
+                        src="../Logo/Cancri1.jpg"
+                        data-dark-src="../Logo/Cancri1.jpg"
+                        data-light-src="../Logo/Cancri.png"
+                        alt="Cancri"
                         width="22"
                         height="22"
-                        class="auth-brand-mark"
+                        class="auth-brand-mark cancri-logo"
                     />
-                    <span class="auth-brand-name">NexusV</span>
                 </a>
 
                 <div class="auth-hero">
@@ -322,16 +326,17 @@
                         class="brand-mark sidebar-brand"
                         id="brandHomeBtn"
                         href="javascript:void(0)"
-                        aria-label="NexusV · 回到首页"
+                        aria-label="Cancri · 回到首页"
                     >
                         <img
-                            src="../Logo/Cancri.png"
-                            alt=""
+                            src="../Logo/Cancri1.jpg"
+                            data-dark-src="../Logo/Cancri1.jpg"
+                            data-light-src="../Logo/Cancri.png"
+                            alt="Cancri"
                             width="20"
                             height="20"
-                            class="sidebar-brand-logo"
+                            class="sidebar-brand-logo cancri-logo"
                         />
-                        <span class="sidebar-brand-name">NexusV</span>
                     </a>
                     <button
                         class="sidebar-toggle"
@@ -1225,9 +1230,14 @@
                 <section class="view active" id="homeView">
                     <div class="chat-messages" id="chatMessages"></div>
                     <div class="home-center" id="homeCenter">
-                        <div class="mobile-home-brand" aria-label="NexusV">
-                            <img src="../Logo/Cancri.png" alt="" />
-                            <span>NexusV</span>
+                        <div class="mobile-home-brand" aria-label="Cancri">
+                            <img
+                                src="../Logo/Cancri1.jpg"
+                                data-dark-src="../Logo/Cancri1.jpg"
+                                data-light-src="../Logo/Cancri.png"
+                                alt="Cancri"
+                                class="cancri-logo"
+                            />
                         </div>
                         <h1 class="hero" id="heroTitle">晚上好，克劳姆</h1>
                         <div class="composer-wrap">
@@ -2657,6 +2667,9 @@
         <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
+        <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
+             所有 img.cancri-logo 的 src，主题切换时黑白 logo 同步反转。 -->
+        <script defer src="./cancri_logo_theme.js?v=2026-05-17-logo-theme"></script>
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
