@@ -1,2683 +1,1023 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="dark">
-    <head>
-        <meta charset="UTF-8" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, viewport-fit=cover"
-        />
-        <meta
-            http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
-        />
-        <title>Cancri</title>
-        <!-- Browser tab icon. -->
-        <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
-        <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
-        <!-- Logo 同时被 sidebar-topbar、登录页 .auth-brand、PWA install
-             prompt、模态框 hero 重复使用 6+ 次。fetchpriority=high 让浏览器
-             把品牌图排到 HTTP 队列最前，首屏 LCP 候选元素更快出现。
-             黑白两张都预热：默认 dark 主题使用白 Cancri1.jpg，用户手动切为
-             light 后 cancri_logo_theme.js 会交换 src 为黑 Cancri.png。 -->
-        <link
-            rel="preload"
-            as="image"
-            href="../Logo/Cancri1.jpg"
-            fetchpriority="high"
-        />
-        <link rel="preload" as="image" href="../Logo/Cancri.png" />
-        <!-- Preconnect to the three remote origins this page hits during the
-             first 500ms: supabase (auth + every API call), jsdelivr (CDN for
-             supabase-js bundle), challenges.cloudflare.com (Turnstile CAPTCHA).
-             dns-prefetch is the universal fallback for browsers that don't
-             honour preconnect (older Safari / Firefox). Crossorigin is
-             required for preconnect to a CORS origin; without it the warm
-             connection is dropped and re-opened cold. -->
-        <link rel="preconnect" href="https://diusqgphvybnzazgopor.supabase.co" crossorigin />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-        <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
-        <link rel="dns-prefetch" href="https://diusqgphvybnzazgopor.supabase.co" />
-        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-        <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
-        <!-- 2026-05-15：聊天正文 serif 字体。Anthropic Serif（Claude 自家付费字体）
-             的最佳免费替代是 Adobe 开源的 Source Serif 4。font-display=swap 让
-             文本先用 fallback Georgia 立即可见，woff2 下载好再热切换，避免 FOIT。
-             加载 weight 400 / 500 / 600 covers body / heading / strong。CSP
-             已允许 fonts.googleapis.com (style-src) + fonts.gstatic.com (font-src)。 -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600&display=swap"
-        />
-        <script src="./cancri_config.js?v=2026-05-13e"></script>
-        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
-        <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
-        <!-- 设备 / 浏览器指纹（2026-05-16 上线）：反多账号信号采集。
-             仅登录用户上报，24h 节流。WebRTC IP / canvas / webgl / audio 指纹 → 后端 v_suspect_multi_accounts 视图。 -->
-        <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
-        <!-- supabase-js: 2026-05-13 审查后固定到具体 minor 版本。原 `@2` floating
-             tag 会被 jsdelivr 任意 redirect 到当前最新 v2.x，被劫持时无法察觉。
-             TODO: 添加 SRI integrity hash 完成防劫持：
-               curl -sL https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js \
-                 | openssl dgst -sha384 -binary | openssl base64 -A
-             把结果加成 integrity="sha384-XXX" -->
-        <script
-            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
-            crossorigin="anonymous"
-        ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-16-happyhorse-video" />
-        <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
-        <link
-            rel="stylesheet"
-            href="./styles/00-tokens.css?v=header-final-0507"
-        />
-        <!-- Claude 官方 design tokens（1:1 移植自桌面端 1.7196.0 window-shared.css）。
-             在 00-tokens 之后、02-themes 之前加载，命名空间独立，不覆盖 02-themes 的 --bg/--text/--line。 -->
-        <link
-            rel="stylesheet"
-            href="./styles/01-claude-tokens.css?v=2026-05-15-claude-tokens"
-        />
-        <link
-            rel="stylesheet"
-            href="./styles/02-themes.css?v=header-final-0507"
-        />
-        <link
-            rel="stylesheet"
-            href="./styles/component-composer.css?v=header-final-0507"
-        />
-        <link
-            rel="stylesheet"
-            href="./styles/layout-sidebar.css?v=header-final-0507"
-        />
-        <link
-            rel="stylesheet"
-            href="./styles/99-polish-fixes.css?v=2026-05-14d-user-newlines"
-        />
-        <link
-            rel="stylesheet"
-            href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b"
-        />
-        <link
-            rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-05-16-claude-clone-v4c"
-        />
-        <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
-             放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
-        <link
-            rel="stylesheet"
-            href="./claude.css?v=2026-05-16-beij1to1-themefix"
-        />
-        <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
-             defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
-             里仅在用户发消息后调用，且自身有本地实现兜底（见 cancri_chat.js
-             L5989），所以 KaTeX 延迟加载是安全的。 -->
-        <link rel="stylesheet" href="./katex/katex.min.css" />
-        <script defer src="./katex/katex.min.js"></script>
-        <script defer src="./katex/contrib/auto-render.min.js"></script>
-        <script defer src="./cancri_katex_fallback.js?v=0504"></script>
-        <!-- Cloudflare Turnstile: explicit rendering mode.
-             We have TWO independent widgets on this page (chat anti-bot &
-             login OTP captcha), so per Cloudflare's official guidance we use
-             `?render=explicit` to disable implicit auto-scanning and rely
-             purely on programmatic `turnstile.render()` calls wrapped in
-             `turnstile.ready()`. Without this flag, implicit scanning races
-             with explicit renders and one of the widgets silently fails to
-             call its callback. -->
-        <script
-            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-            defer
-        ></script>
-    </head>
-    <body>
-        <!-- ── Login stage (未登录时覆盖整个页面) ───────────────────
-             重设计自 Claude (claude.ai) 的登录页：暗底全屏 +
-             左上角 brand + 中央衬线大标题 + 副标题 + 单列卡片。
-             保留原 OTP 流程（邮箱 → 8 位验证码），所有 element ID 与
-             cancri_chat.js 的事件绑定保持一致：authEmailInput /
-             authSendOtpBtn / authOtpSection / authOtpInput /
-             authVerifyOtpBtn / authEmailError / authStepEmail.
-             视觉层面新增的元素只有 .auth-stage / .auth-brand /
-             .auth-hero / .auth-divider / .auth-footer-line，没有
-             绑事件。 -->
-        <div class="auth-overlay" id="authOverlay">
-            <!-- 2026-05-16 minimal redo：登录页改极简风（白底/黑字/灰边/黑按钮），
-                 删掉 island/islandt/hatch/auth-bg-sheen + inline SVG fractalNoise +
-                 inline <style>。auth_bg_bake.js 不再被引用（dead code 文件保留，
-                 cancri_motion.css 内 .island/.islandt/.auth-bg-sheen 规则一并清理）。
-                 .auth-bg 仅作为背景色层，由 cancri_motion.css 控制。 -->
-            <div class="auth-bg" aria-hidden="true"></div>
-            <div class="auth-stage">
-                <a
-                    class="auth-brand"
-                    href="/"
-                    aria-label="Cancri"
-                >
-                    <img
-                        src="../Logo/Cancri1.jpg"
-                        data-dark-src="../Logo/Cancri1.jpg"
-                        data-light-src="../Logo/Cancri.png"
-                        alt="Cancri"
-                        width="22"
-                        height="22"
-                        class="auth-brand-mark cancri-logo"
-                    />
-                </a>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>Cancri 开放平台 · Open Platform</title>
+  <meta
+    name="description"
+    content="一个端点，多种协议，一把密钥。Cancri 开放平台把 OpenAI、Anthropic 与 Codex 三套原生协议归一化到同一个 API 网关。"
+  />
 
-                <div class="auth-hero">
-                    <h1 class="auth-hero-title">免费聚合，<br />一键起飞。</h1>
-                    <p class="auth-hero-subtitle">
-                        20+ 主流大模型同台 · 永久免费 · 无需信用卡
-                    </p>
-                </div>
+  <!-- 浏览器 tab favicon。dark 主题用白 logo（Cancri1.jpg）作为 source；
+       浏览器 tab 实际只取一张静态 icon，无法跟随站内主题切换，所以
+       favicon 固定用黑色 PNG 让它在浏览器默认浅色 tab 栏可见。 -->
+  <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+  <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+  <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high" />
+  <link rel="preload" as="image" href="../../Logo/Cancri.png" />
 
-                <div class="auth-card">
-                    <div class="auth-step" id="authStepEmail">
-                        <label class="auth-field-label" for="authEmailInput"
-                            >邮箱地址</label
-                        >
-                        <input
-                            type="email"
-                            id="authEmailInput"
-                            class="auth-input"
-                            placeholder="you@example.com"
-                            autocomplete="email"
-                            required
-                        />
-                        <button
-                            class="auth-btn auth-btn-primary"
-                            id="authSendOtpBtn"
-                            type="button"
-                        >
-                            继续
-                        </button>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
 
-                        <div
-                            class="auth-otp-section"
-                            id="authOtpSection"
-                            style="display: none"
-                        >
-                            <div class="auth-divider">
-                                <span>已发送邮箱验证码</span>
-                            </div>
-                            <label class="auth-field-label" for="authOtpInput"
-                                >8 位验证码</label
-                            >
-                            <input
-                                type="text"
-                                id="authOtpInput"
-                                class="auth-input auth-otp-input"
-                                placeholder="••••••••"
-                                maxlength="8"
-                                inputmode="numeric"
-                                autocomplete="one-time-code"
-                            />
-                            <button
-                                class="auth-btn auth-btn-primary"
-                                id="authVerifyOtpBtn"
-                                type="button"
-                            >
-                                验证登录
-                            </button>
-                        </div>
+  <link rel="stylesheet" href="./api-platform.css?v=2026-05-16-typography" />
+  <script src="./api-platform.js?v=20260513"></script>
+  <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
+       img.cancri-logo 的 src（黑/白），实现主题切换时 logo 跟随翻转。 -->
+  <script src="../cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+  <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+  <script src="../../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
+  <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+  <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
 
-                        <div class="auth-error" id="authEmailError"></div>
-                    </div>
+  <style>
+    /* design tokens、reset、topbar、品牌、顶部导航、主题切换、site-footer
+     * 全部从共享样式表 ./api-platform.css 引入，本页只保留门户特有的
+     * 视觉组件（hero / chapter / proto / code-tabs / entry-grid 等）。
+     */
+    :root {
+      --radius: 14px;
+    }
 
-                    <!-- 2026-05-16 claude-clone v4c：footer 从 .auth-card 外面
-                         移进 card 内 .auth-step 后面，跟 Claude 真站 "By continuing..."
-                         在 card 内最底一致。结构改动不影响 cancri_chat.js（不依赖 footer 位置）。 -->
-                    <p class="auth-footer-line">
-                        继续即表示同意
-                        <a
-                            href="../terms.html"
-                            class="auth-footer-link"
-                            target="_blank"
-                            rel="noopener"
-                            >服务条款</a
-                        >
-                        与
-                        <a
-                            href="../privacy.html"
-                            class="auth-footer-link"
-                            target="_blank"
-                            rel="noopener"
-                            >隐私协议</a
-                        >。
-                    </p>
-                </div>
+    /* 段落用更舒展的行距，与 chapter / hero 配合 */
+    body {
+      line-height: 1.55;
+    }
+
+    /* 门户首页让 active 的导航项保留下划线感 — 共享 .topnav a.is-active 已带 clay 下划线 */
+
+    /* ─── HERO ────────────────────────────────────────────── */
+    .hero {
+      padding: 120px 28px 96px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      /* 一抹极弱的暖光，不是渐变流体，是纸边晕染感 */
+      content: "";
+      position: absolute;
+      top: -30%;
+      right: -10%;
+      width: 60%;
+      height: 80%;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(217, 119, 87, 0.08),
+        transparent 60%
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HERO 装饰层：斜向滚动的生态 logo 条带 ──────────────────
+       4 行平行条，相邻行方向相反、速度错开 → 视觉上不齐步。
+       整体 rotate(-22deg) 给一个温和的斜角，与 ::before 暖光
+       呼应。z-index 0 在 ::before 之上、hero__inner（z=1）之下，
+       不会遮挡标题 / 按钮。pointer-events: none 让鼠标穿透。
+       径向 mask 让中心稍亮、四周淡出，避免条带在文字处过抢戏。
+       6 个 svg × 2 段拼接实现 0→-50% 的无缝 marquee。 */
+    .hero__marquee {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      /* 不那么重的中心遮蕂，让斜向条带在整个 hero 中都能见，
+         仅在四周接在 hero 边界处淡出。 */
+      -webkit-mask-image: radial-gradient(ellipse 105% 95% at 50% 50%, #000 60%, transparent 100%);
+      mask-image: radial-gradient(ellipse 105% 95% at 50% 50%, #000 60%, transparent 100%);
+    }
+    .hero__marquee-rotor {
+      position: absolute;
+      /* 旋转后边角会露白，inset 给负值让它溢出再被父级 overflow 裁掉 */
+      inset: -25%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 32px;
+      transform: rotate(-22deg);
+      transform-origin: center center;
+    }
+    .marquee-row {
+      display: flex;
+      overflow: hidden;
+      width: 100%;
+      /* 行内左右淡出，避免硬切 */
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%);
+    }
+    .marquee-row__track {
+      display: flex;
+      align-items: center;
+      gap: 44px;
+      flex-shrink: 0;
+      will-change: transform;
+    }
+    .marquee-row[data-dir="left"] .marquee-row__track {
+      animation: hero-marquee-left var(--speed, 38s) linear infinite;
+    }
+    .marquee-row[data-dir="right"] .marquee-row__track {
+      animation: hero-marquee-right var(--speed, 38s) linear infinite;
+    }
+    .marquee-row__track img {
+      width: 46px;
+      height: 46px;
+      object-fit: contain;
+      flex-shrink: 0;
+      opacity: 0.72;
+      filter: saturate(0.95);
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    :root[data-theme="light"] .marquee-row__track img {
+      opacity: 0.55;
+    }
+    @keyframes hero-marquee-left {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @keyframes hero-marquee-right {
+      from { transform: translateX(-50%); }
+      to   { transform: translateX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .marquee-row__track { animation: none; }
+    }
+    @media (max-width: 720px) {
+      .hero__marquee-rotor { gap: 24px; }
+      .marquee-row__track { gap: 38px; }
+      .marquee-row__track img { width: 34px; height: 34px; }
+    }
+
+    .hero__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .hero__eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 36px;
+    }
+    .hero__eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--clay);
+    }
+    .hero__h1 {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: clamp(46px, 7.6vw, 104px);
+      line-height: 1;
+      letter-spacing: -0.025em;
+      color: var(--cream);
+      max-width: 16ch;
+    }
+    .hero__h1 em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .hero__lede {
+      font-family: var(--serif);
+      font-size: clamp(19px, 2vw, 23px);
+      font-weight: 400;
+      color: var(--ink-2);
+      max-width: 56ch;
+      line-height: 1.5;
+      margin-top: 32px;
+    }
+    .hero__lede code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      padding: 1px 6px;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--ink);
+    }
+    .hero__cta {
+      display: flex;
+      gap: 12px;
+      margin-top: 44px;
+      flex-wrap: wrap;
+    }
+
+    /* 门户 hero 用的大尺寸 pill 按钮（区别于共享 .btn-primary 的 13px 标准尺寸） */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition:
+        background 0.18s,
+        color 0.18s,
+        border-color 0.18s,
+        transform 0.18s;
+      font-family: inherit;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn--primary {
+      background: var(--cream);
+      color: var(--cream-on);
+    }
+    .btn--primary:hover {
+      filter: brightness(1.04);
+      transform: translateY(-1px);
+    }
+    .btn--ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line-2);
+    }
+    .btn--ghost:hover {
+      border-color: var(--ink-2);
+    }
+    .btn .arrow {
+      display: inline-block;
+      transition: transform 0.18s;
+    }
+    .btn:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    /* base URL 复制条 */
+    .endpoint-strip {
+      margin-top: 56px;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 9px 9px 9px 16px;
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink-2);
+      background: var(--bg-1);
+      max-width: 100%;
+    }
+    .endpoint-strip__label {
+      color: var(--ink-3);
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .endpoint-strip__url {
+      color: var(--ink);
+      font-family: inherit;
+      user-select: all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .endpoint-strip__copy {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--line-2);
+      border-radius: 7px;
+      color: var(--ink-2);
+      font-family: inherit;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
+    }
+    .endpoint-strip__copy:hover {
+      color: var(--ink);
+      border-color: var(--ink-3);
+    }
+    .endpoint-strip__copy.is-ok {
+      color: var(--clay);
+      border-color: var(--clay);
+    }
+
+    /* ─── 章节通用 ────────────────────────────────────────── */
+    section.chapter {
+      padding: 88px 28px;
+      border-top: 1px solid var(--line);
+    }
+    .chapter__inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 40px;
+    }
+    .chapter__head {
+      position: sticky;
+      top: 88px;
+      align-self: start;
+    }
+    .chapter__num {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--clay);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .chapter__title {
+      font-family: var(--serif);
+      font-size: clamp(30px, 4vw, 44px);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--cream);
+    }
+    .chapter__title em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .chapter__sub {
+      font-family: var(--serif);
+      font-size: 17px;
+      color: var(--ink-2);
+      max-width: 50ch;
+      margin-top: 14px;
+      line-height: 1.55;
+    }
+
+    /* ─── 协议表 ──────────────────────────────────────────── */
+    .proto-list {
+      border-top: 1px solid var(--line);
+    }
+    .proto-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr 1.4fr;
+      gap: 28px;
+      padding: 30px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: baseline;
+    }
+    .proto-row__path {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--cream);
+      word-break: break-all;
+    }
+    .proto-row__name {
+      font-family: var(--serif);
+      font-size: 24px;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .proto-row__name em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .proto-row__desc {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      line-height: 1.6;
+    }
+
+    /* ─── 代码 tabs ───────────────────────────────────────── */
+    .code-tabs {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-1);
+    }
+    .code-tabs__head {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 0 6px;
+      background: var(--bg);
+    }
+    .code-tabs__btn {
+      background: transparent;
+      border: none;
+      padding: 14px 18px;
+      color: var(--ink-3);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      margin-bottom: -1px;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
+    }
+    .code-tabs__btn:hover {
+      color: var(--ink-2);
+    }
+    .code-tabs__btn.is-active {
+      color: var(--clay);
+      border-bottom-color: var(--clay);
+    }
+    .code-tabs__body {
+      padding: 22px 24px;
+      max-height: 460px;
+      overflow: auto;
+    }
+    .code-tabs__pre {
+      display: none;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.75;
+      white-space: pre;
+      tab-size: 2;
+    }
+    .code-tabs__pre.is-active {
+      display: block;
+    }
+    .c-key {
+      color: #d6a78a;
+    }
+    .c-str {
+      color: #c4a47b;
+    }
+    .c-cmt {
+      color: var(--ink-3);
+      font-style: italic;
+    }
+    .c-fn {
+      color: var(--clay);
+    }
+
+    /* ─── 入口 4 卡 ───────────────────────────────────────── */
+    .entry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .entry-card {
+      display: block;
+      padding: 36px 32px 64px;
+      background: var(--bg);
+      transition: background 0.2s;
+      position: relative;
+      min-height: 220px;
+    }
+    .entry-card:hover {
+      background: var(--bg-1);
+    }
+    .entry-card__num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      letter-spacing: 0.16em;
+    }
+    .entry-card__name {
+      font-family: var(--serif);
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      margin-top: 14px;
+      color: var(--cream);
+      line-height: 1.05;
+    }
+    .entry-card__name em {
+      font-style: italic;
+      color: var(--clay);
+    }
+    .entry-card__desc {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      margin-top: 12px;
+      max-width: 32ch;
+      line-height: 1.6;
+    }
+    .entry-card__arrow {
+      position: absolute;
+      bottom: 28px;
+      right: 28px;
+      color: var(--ink-3);
+      font-family: var(--mono);
+      transition:
+        transform 0.2s,
+        color 0.2s;
+    }
+    .entry-card:hover .entry-card__arrow {
+      color: var(--clay);
+      transform: translateX(4px);
+    }
+
+    /* footer / 响应式 chrome 部分迁移到共享样式表，本页仅保留门户特有的响应式 */
+    @media (max-width: 860px) {
+      .chapter__inner {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+      .chapter__head {
+        position: static;
+      }
+    }
+    @media (max-width: 720px) {
+      .hero {
+        padding: 72px 22px 60px;
+      }
+      section.chapter {
+        padding: 56px 22px;
+      }
+      .proto-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 22px 0;
+      }
+      .entry-grid {
+        grid-template-columns: 1fr;
+      }
+      .endpoint-strip {
+        flex-wrap: wrap;
+      }
+      .endpoint-strip__url {
+        white-space: normal;
+        word-break: break-all;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="./" aria-label="Cancri 开放平台">
+        <img
+          class="brand__logo cancri-logo"
+          src="../../Logo/Cancri1.jpg"
+          data-dark-src="../../Logo/Cancri1.jpg"
+          data-light-src="../../Logo/Cancri.png"
+          alt="Cancri"
+          width="28"
+          height="28"
+        />
+      </a>
+      <nav class="topnav" aria-label="开放平台导航">
+        <a href="./" class="is-active">概览</a>
+        <a href="../api_apply.html">申请</a>
+        <a href="../api_keys.html">Keys</a>
+        <a href="../api_models.html">模型</a>
+        <a href="../api_docs.html">文档</a>
+        <a href="../pricing.html">套餐</a>
+        <a href="../orders.html">我的订单</a>
+        <a href="../" class="topnav__back">← 返回聊天</a>
+      </nav>
+      <button
+        class="theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="切换深色 / 浅色主题"
+        title="切换主题"
+      >
+        <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+        <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <!-- 装饰层：斜向滚动的生态合作伙伴 logo 条带。aria-hidden
+           不参与无障碍朗读；prefers-reduced-motion 自动停止动画。
+           每行 14 个 svg × 2 段拼接，确保 0→-50% 无缝循环。 -->
+      <div class="hero__marquee" aria-hidden="true">
+        <div class="hero__marquee-rotor">
+          <div class="marquee-row" data-dir="left" style="--speed: 52s">
+            <div class="marquee-row__track">
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
             </div>
-
-            <!-- 2026-05-16 claude-clone v4：右侧 video showcase，1:1 复刻
-                 Claude 真站登录页 (claude.ai) 右侧奶白大圆角卡布局。视频源
-                 用 ../Logo/Nexusai.mp4（项目自有素材，4MB）。
-                 data-src 由 cancri_chat.js 在登录遮罩显示时挂载，登录后卸载，
-                 避免浏览器媒体控件残留。
-                 aria-hidden 是因为视频是装饰性的，不承载关键登录信息。
-                 mobile (<880px) 由 cancri_motion.css 直接 display:none，
-                 .auth-stage 退化为居中单列。 -->
-            <aside class="auth-showcase" aria-hidden="true">
-                <video
-                    class="auth-showcase-video"
-                    data-src="../Logo/Nexusai.mp4"
-                    loop
-                    muted
-                    playsinline
-                    preload="none"
-                ></video>
-            </aside>
-
-            <!-- 2026-05-15：登录页左下角 theme switch。fixed 定位独立于
-                 .auth-stage flow，brutalist 米白圆按钮跟卡片同语言。
-                 click 转发到 sidebar 的 #sidebarThemeToggle（js/ui/theme.js
-                 已绑定），保证切换写入 localStorage 后 chat 页同步生效。
-                 同时给两个 SVG（太阳 / 月亮）做切换显隐，data-theme="light"
-                 显示太阳（点击会切到 dark）；data-theme="dark" 显示月亮。 -->
-            <button
-                class="auth-theme-toggle"
-                id="authThemeToggle"
-                type="button"
-                aria-label="切换到深色模式"
-                title="切换到深色模式"
-            >
-                <svg
-                    class="auth-theme-icon auth-theme-icon-sun"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <circle cx="12" cy="12" r="4"></circle>
-                    <path d="M12 2v2"></path>
-                    <path d="M12 20v2"></path>
-                    <path d="m4.93 4.93 1.41 1.41"></path>
-                    <path d="m17.66 17.66 1.41 1.41"></path>
-                    <path d="M2 12h2"></path>
-                    <path d="M20 12h2"></path>
-                    <path d="m6.34 17.66-1.41 1.41"></path>
-                    <path d="m19.07 4.93-1.41 1.41"></path>
-                </svg>
-                <svg
-                    class="auth-theme-icon auth-theme-icon-moon"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-                </svg>
-            </button>
+          </div>
+          <div class="marquee-row" data-dir="right" style="--speed: 44s">
+            <div class="marquee-row__track">
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+            </div>
+          </div>
+          <div class="marquee-row" data-dir="left" style="--speed: 62s">
+            <div class="marquee-row__track">
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+            </div>
+          </div>
+          <div class="marquee-row" data-dir="right" style="--speed: 48s">
+            <div class="marquee-row__track">
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+            </div>
+          </div>
         </div>
-
-        <div class="app" id="appRoot">
-            <aside class="sidebar" id="sidebar">
-                <div class="sidebar-topbar">
-                    <a
-                        class="brand-mark sidebar-brand"
-                        id="brandHomeBtn"
-                        href="javascript:void(0)"
-                        aria-label="Cancri · 回到首页"
-                    >
-                        <img
-                            src="../Logo/Cancri1.jpg"
-                            data-dark-src="../Logo/Cancri1.jpg"
-                            data-light-src="../Logo/Cancri.png"
-                            alt="Cancri"
-                            width="20"
-                            height="20"
-                            class="sidebar-brand-logo cancri-logo"
-                        />
-                    </a>
-                    <button
-                        class="sidebar-toggle"
-                        id="sidebarToggle"
-                        aria-label="切换侧边栏"
-                    >
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <rect
-                                x="4"
-                                y="4.5"
-                                width="16"
-                                height="15"
-                                rx="3"
-                            ></rect>
-                            <path d="M10 4.5v15"></path>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="sidebar-body">
-                    <div class="nav-group">
-                        <div
-                            class="nav-row active"
-                            data-view-target="home"
-                            id="newChatBtn"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <path d="M12 5v14M5 12h14"></path>
-                            </svg>
-                            <span class="sidebar-label">新聊天</span>
-                        </div>
-                        <div
-                            class="nav-row"
-                            id="arenaLeaderboardNavBtn"
-                            data-view-target="leaderboard"
-                            hidden
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <path d="M8 21h8"></path>
-                                <path d="M12 17v4"></path>
-                                <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path>
-                                <path d="M5 5H3v3a4 4 0 0 0 4 4"></path>
-                                <path d="M19 5h2v3a4 4 0 0 1-4 4"></path>
-                            </svg>
-                            <span class="sidebar-label">排行榜</span>
-                        </div>
-                        <div
-                            class="sidebar-leaderboard-panel"
-                            id="sidebarLeaderboardPanel"
-                            hidden
-                        >
-                            <div id="sidebarLeaderboardList">
-                                暂无排行榜数据。
-                            </div>
-                        </div>
-                        <div class="nav-row" id="sidebarSearchBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <circle cx="11" cy="11" r="7"></circle>
-                                <path d="m20 20-3.5-3.5"></path>
-                            </svg>
-                            <span class="sidebar-label">搜索</span>
-                        </div>
-                        <div
-                            class="sidebar-search-wrap"
-                            id="sidebarSearchWrap"
-                            hidden
-                        >
-                            <input
-                                id="chatHistorySearchInput"
-                                type="search"
-                                placeholder="搜索对话"
-                                autocomplete="off"
-                            />
-                        </div>
-                        <!-- Claude 风格新加 nav-rows：聊天 / 项目 / 文物 / 自定义。
-                             点击通过 data-view-target 触发 cancri_chat.js 的
-                             setActiveView，对应 view 在主区 .main 下定义。 -->
-                        <div class="nav-row" id="claudeChatsNavBtn" data-view-target="claudeChats">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                            </svg>
-                            <span class="sidebar-label">聊天</span>
-                        </div>
-                        <div class="nav-row" id="claudeProjectsNavBtn" data-view-target="claudeProjects">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-                                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                            </svg>
-                            <span class="sidebar-label">项目</span>
-                        </div>
-                        <a
-                            class="nav-row"
-                            id="claudeArtifactsNavBtn"
-                            href="https://www.nexusvai.xyz/chat/api/"
-                            target="_blank"
-                            rel="noopener"
-                            style="text-decoration: none; color: inherit"
-                        >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                                <rect x="14" y="14" width="7" height="7" rx="1"/>
-                            </svg>
-                            <span class="sidebar-label">开放平台</span>
-                        </a>
-                        <!-- Cancri Code entry. PC-only: hidden on screens
-                             ≤ 640px via cancri_motion.css since the IDE-style
-                             UI inside /chat/code/ isn't usable on small
-                             touch screens. The per-user daily-message quota
-                             (free=50, paid=150) is enforced inside the
-                             Cancri Code app itself (via the chat-gateway
-                             counter), not displayed in this sidebar. -->
-                        <a
-                            class="nav-row sidebar-cancri-code"
-                            id="sidebarCancriCodeBtn"
-                            href="./code/"
-                            style="text-decoration: none; color: inherit"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <polyline points="16 18 22 12 16 6"></polyline>
-                                <polyline points="8 6 2 12 8 18"></polyline>
-                            </svg>
-                            <span class="sidebar-label">代码</span>
-                            <span class="claude-nav-tag">升级</span>
-                        </a>
-                        <!-- 2026-05-15 fix(M3)：自定义 从侧栏移除，迁到 账户头像 popover 里
-                             （见 #accountPopover 中新增的 .popover-item id="claudeCustomPopoverBtn"）。
-                             bindCustomNav 走 data-claude-action="open-settings" 选择器仍能匹配。 -->
-                        <a
-                            class="nav-row sidebar-api-platform"
-                            id="sidebarApiPlatformBtn"
-                            href="./api/"
-                            style="text-decoration: none; color: inherit"
-                            hidden
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <path
-                                    d="M16 18l6-6-6-6M8 6l-6 6 6 6M14 4l-4 16"
-                                ></path>
-                            </svg>
-                            <span class="sidebar-label">API 平台</span>
-                        </a>
-                        <div class="claude-recent-title">近期</div>
-                        <div class="recent-wrap" id="chatHistoryList">
-                            <!-- 聊天记录列表将在这里动态生成 -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sidebar-footer">
-                    <!-- ── 站主赞助卡片 ── -->
-                    <div class="sidebar-promo-card" id="donationPromoCard">
-                        <!-- 折叠头：始终可见，点击切换展开/收起 -->
-                        <button
-                            class="sidebar-promo-header"
-                            id="donationPromoToggle"
-                            type="button"
-                            aria-expanded="true"
-                        >
-                            <span class="sidebar-promo-heart">❤</span>
-                            <span class="sidebar-promo-header-title"
-                                >站主不易！</span
-                            >
-                            <svg
-                                class="sidebar-promo-chevron"
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2.4"
-                            >
-                                <path d="m18 15-6-6-6 6"></path>
-                            </svg>
-                        </button>
-                        <!-- 可折叠内容区 -->
-                        <div
-                            class="sidebar-promo-content"
-                            id="donationPromoContent"
-                        >
-                            <img
-                                src="../Logo/1107.jpg"
-                                alt="微信收款码"
-                                class="sidebar-promo-img" loading="lazy" decoding="async"
-                            />
-                            <div class="sidebar-promo-desc-wrap">
-                                <span class="sidebar-promo-desc"
-                                    >多多益善，每一分都是更新下去的动力</span
-                                >
-                            </div>
-                        </div>
-                    </div>
-                    <div class="sidebar-footer-actions">
-                        <button
-                            class="sidebar-footer-btn"
-                            id="sidebarThemeToggle"
-                            type="button"
-                        >
-                            <svg
-                                class="sidebar-footer-icon theme-icon-light"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <circle cx="12" cy="12" r="4"></circle>
-                                <path
-                                    d="M12 2v2.2M12 19.8V22M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2 12h2.2M19.8 12H22M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"
-                                ></path>
-                            </svg>
-                            <svg
-                                class="sidebar-footer-icon theme-icon-dark"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M20 14.7A7.4 7.4 0 0 1 9.3 4a8.2 8.2 0 1 0 10.7 10.7Z"
-                                ></path>
-                            </svg>
-                            <span
-                                class="sidebar-footer-text"
-                                id="sidebarThemeLabel"
-                                >深色模式</span
-                            >
-                        </button>
-                    </div>
-                    <div class="account-strip" id="accountTrigger">
-                        <div class="avatar">MR</div>
-                        <div class="account-meta">
-                            <div class="account-name">未登录</div>
-                            <div class="account-plan">请先登录</div>
-                        </div>
-                        <button class="upgrade-btn" id="donateBtn">账户</button>
-                        <svg
-                            class="account-arrow"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <path d="m9 6 6 6-6 6"></path>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="popover account-popover" id="accountPopover">
-                    <div class="popover-inner">
-                        <div class="popover-item" id="nicknameEditBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                                ></path>
-                                <path
-                                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                                ></path>
-                            </svg>
-                            <span>昵称</span>
-                            <span class="grow"></span>
-                            <span
-                                id="nicknameDisplay"
-                                style="font-size: 12px; color: var(--text-soft)"
-                            ></span>
-                        </div>
-                        <!-- 2026-05-15 fix(M3)：自定义 迁入 popover。复用 data-claude-action="open-settings"
-                             让 claude_ui.js bindCustomNav 自动绑定。 -->
-                        <div class="popover-item" id="claudeCustomPopoverBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                            <span>自定义</span>
-                        </div>
-                        <div class="popover-sep"></div>
-                        <!-- 2026-05-15 fix(M5)：群友反馈"自定义和设置重复，且个性化点了没反应"。
-                             根因：
-                               - #settingsBtn 和 #themeShortcutBtn 两个项都开同一个老 settingsModal，
-                                 mobile 下渲染破损 + scrim 遮罩黑屏，体感"无反应"。
-                               - #claudeCustomPopoverBtn (自定义) 已经迁到新 claudeSettingsView。
-                             修复：
-                               - 删除 #settingsBtn (设置) 整项 — 跟自定义功能完全重复。
-                               - 给 #themeShortcutBtn (个性化) 加 data-claude-action="open-settings"
-                                 让 claude_ui.js bindCustomNav 接管，open 新的 claudeSettingsView，
-                                 不再走老 modal，scrim 也不会再出。 -->
-                        <div class="popover-item" id="themeShortcutBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path d="M12 2v4"></path>
-                                <path d="m6.3 6.3 2.8 2.8"></path>
-                                <path d="M2 12h4"></path>
-                                <path d="m6.3 17.7 2.8-2.8"></path>
-                                <path d="M12 18v4"></path>
-                                <path d="m17.7 17.7-2.8-2.8"></path>
-                                <path d="M18 12h4"></path>
-                                <path d="m17.7 6.3-2.8 2.8"></path>
-                                <circle cx="12" cy="12" r="3.2"></circle>
-                            </svg>
-                            <span>个性化</span>
-                        </div>
-                        <div class="popover-sep"></div>
-                        <div class="popover-item" id="exportBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                                ></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span>导出对话</span>
-                        </div>
-                        <div
-                            class="popover-item"
-                            id="clearBtn"
-                            style="color: var(--danger)"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-                                ></path>
-                            </svg>
-                            <span>清空对话</span>
-                        </div>
-                        <div class="popover-item" id="upgradeBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-                                ></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                            <span>加入社区</span>
-                        </div>
-                        <div class="popover-sep"></div>
-                        <div class="popover-item" id="helpToastBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <circle cx="12" cy="12" r="9"></circle>
-                                <path
-                                    d="M9.1 9a3 3 0 1 1 5.7 1.3c-.5 1.1-1.8 1.5-2.3 2.7"
-                                ></path>
-                                <path d="M12 17h.01"></path>
-                            </svg>
-                            <span>帮助</span>
-                            <span class="grow"></span>
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path d="m9 6 6 6-6 6"></path>
-                            </svg>
-                        </div>
-                        <div class="popover-item" id="logoutToastBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"
-                                ></path>
-                                <path d="m10 17 5-5-5-5"></path>
-                                <path d="M15 12H3"></path>
-                            </svg>
-                            <span>退出登录</span>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            <main class="main">
-                <div class="main-header">
-                    <!-- Claude 风格中央 pill：免费计划 · 升级 -->
-                    <a class="claude-plan-pill" id="claudePlanPill" href="javascript:void(0)" aria-label="升级到付费计划">
-                        <span class="claude-plan-label">免费计划</span>
-                        <span class="claude-plan-divider" aria-hidden="true">·</span>
-                        <span class="claude-plan-cta">升级</span>
-                    </a>
-                    <div class="header-left">
-                        <!-- Claude 风格当前聊天标题：仅 chatting 状态显示，by claude.css。
-                             文本由 claude_ui.js 的 bindChatTitleSync 同步。 -->
-                        <button class="claude-chat-title" id="claudeChatTitle" type="button">
-                            <span class="claude-chat-title-text">新聊天</span>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg>
-                        </button>
-                        <button
-                            class="mobile-menu-btn"
-                            id="mobileMenuBtn"
-                            aria-label="切换侧边栏"
-                        >
-                            <svg
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path d="M4 6h16M4 12h16M4 18h16"></path>
-                            </svg>
-                        </button>
-                        <!-- main-header 不再展示 NexusV brand。
-                             brand 已迁移到 sidebar-topbar 左上角 (L143)，
-                             跟 Claude / Linear 一致：sidebar 顶部承担产品
-                             身份，main-header 只放当前模式 / 模型选择器。
-                             保留一个隐藏 anchor 仅为兼容老脚本（如有
-                             getElementById("brandHomeBtnTop") 残留），
-                             不可见也不可点。 -->
-                        <a
-                            class="app-brand"
-                            id="brandHomeBtnTop"
-                            href="javascript:void(0)"
-                            aria-label="回到首页"
-                            hidden
-                        ></a>
-                        <div class="arena-top-mode" id="topArenaModeSelector" hidden>
-                            <button
-                                class="arena-mode-current"
-                                id="topArenaModeBtn"
-                                type="button"
-                            >
-                                <svg
-                                    class="arena-mode-icon"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                >
-                                    <circle cx="12" cy="12" r="9"></circle>
-                                </svg>
-                                <span id="topArenaModeLabel">匿名对战</span>
-                                <svg
-                                    width="12"
-                                    height="12"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2.2"
-                                >
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                            <div
-                                class="arena-mode-dropdown"
-                                id="topArenaModeDropdown"
-                            >
-                                <button
-                                    class="arena-mode-option active"
-                                    data-mode="anonymous"
-                                    type="button"
-                                >
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <path
-                                            d="M14.5 17.5L3 6V3h3l11.5 11.5"
-                                        ></path>
-                                        <path d="M13 19l6-6"></path>
-                                        <path d="m16 16 4 4"></path>
-                                        <path d="m19 19 2 2"></path>
-                                        <path d="M9 4.5L3 6v3l6.5-4.5"></path>
-                                        <path d="M5 9l4 4"></path>
-                                        <path d="m7 7 3 3"></path>
-                                        <path d="M9 4 7 2l-3 3 2 2 4-3Z"></path>
-                                    </svg>
-                                    <span
-                                        ><strong>匿名对战</strong
-                                        ><small
-                                            >两个匿名模型同题回答</small
-                                        ></span
-                                    >
-                                </button>
-                                <button
-                                    class="arena-mode-option"
-                                    data-mode="side_by_side"
-                                    type="button"
-                                >
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <circle cx="8" cy="12" r="4.5"></circle>
-                                        <circle
-                                            cx="16"
-                                            cy="12"
-                                            r="4.5"
-                                        ></circle>
-                                    </svg>
-                                    <span
-                                        ><strong>双模型对话</strong
-                                        ><small
-                                            >比较你选择的两个模型</small
-                                        ></span
-                                    >
-                                </button>
-                                <button
-                                    class="arena-mode-option"
-                                    data-mode="single"
-                                    type="button"
-                                >
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <circle cx="12" cy="12" r="8"></circle>
-                                        <path d="M12 8v4l3 3"></path>
-                                    </svg>
-                                    <span
-                                        ><strong>单模型</strong
-                                        ><small
-                                            >一次只和一个模型聊天</small
-                                        ></span
-                                    >
-                                </button>
-                            </div>
-                        </div>
-                        <div class="model-selector" id="modelSelector">
-                            <button class="model-current" id="modelCurrentBtn">
-                                <span class="model-name" id="currentModelName"
-                                    >DeepSeek-V4-Flash</span
-                                >
-                                <svg
-                                    width="12"
-                                    height="12"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2.2"
-                                >
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                            <div class="model-dropdown" id="modelDropdown">
-                                <div class="model-search-panel">
-                                    <input
-                                        id="modelSearchInput"
-                                        type="search"
-                                        placeholder="搜索模型"
-                                        autocomplete="off"
-                                    />
-                                    <div
-                                        class="model-filter-row"
-                                        id="modelFilterRow"
-                                    >
-                                        <button
-                                            class="model-filter-chip active"
-                                            data-filter="all"
-                                            type="button"
-                                        >
-                                            文本
-                                        </button>
-                                        <button
-                                            class="model-filter-chip"
-                                            data-filter="code"
-                                            type="button"
-                                        >
-                                            代码
-                                        </button>
-                                        <button
-                                            class="model-filter-chip"
-                                            data-filter="image"
-                                            type="button"
-                                        >
-                                            图像
-                                        </button>
-                                        <button
-                                            class="model-filter-chip"
-                                            data-filter="search"
-                                            type="button"
-                                        >
-                                            搜索
-                                        </button>
-                                    </div>
-                                </div>
-                                <div
-                                    class="model-dropdown-content"
-                                    id="modelDropdownContent"
-                                ></div>
-                                <!-- Claude 风格"适应性思考"开关：在分页 footer 之前。
-                                     纯视觉占位，未联动后端逻辑（用户切换无实际效果）。 -->
-                                <div class="claude-thinking-toggle">
-                                    <div class="claude-thinking-meta">
-                                        <span class="claude-thinking-title">适应性思考</span>
-                                        <span class="claude-thinking-desc">思考更长以解决任务</span>
-                                    </div>
-                                    <label class="claude-switch">
-                                        <input type="checkbox" id="claudeAdaptiveThinking"/>
-                                        <span class="claude-switch-track"></span>
-                                    </label>
-                                </div>
-                                <!-- 分页控件 -->
-                                <div class="model-dropdown-footer">
-                                    <button
-                                        class="model-page-btn"
-                                        id="modelPagePrev"
-                                        aria-label="上一页"
-                                    >
-                                        <svg
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path d="m15 18-6-6 6-6"></path>
-                                        </svg>
-                                    </button>
-                                    <span
-                                        class="model-page-info"
-                                        id="modelPageInfo"
-                                        >1 / 3</span
-                                    >
-                                    <button
-                                        class="model-page-btn"
-                                        id="modelPageNext"
-                                        aria-label="下一页"
-                                    >
-                                        <svg
-                                            width="16"
-                                            height="16"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path d="m9 18 6-6-6-6"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div
-                            class="model-selector compare-model-selector"
-                            id="compareModelSelector"
-                            hidden
-                        >
-                            <button
-                                class="model-current"
-                                id="compareModelCurrentBtn"
-                                type="button"
-                            >
-                                <span class="model-name" id="compareModelName"
-                                    >模型 B</span
-                                >
-                                <svg
-                                    width="12"
-                                    height="12"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2.2"
-                                >
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        <div
-                            class="context-meter hidden"
-                            id="contextMeter"
-                            tabindex="0"
-                            aria-label="上下文额度"
-                        >
-                            <div class="context-meter-ring">
-                                <div
-                                    class="context-meter-inner"
-                                    id="contextMeterValue"
-                                >
-                                    0
-                                </div>
-                            </div>
-                            <div
-                                class="context-meter-popover"
-                                id="contextMeterPopover"
-                            >
-                                <div class="context-meter-title">
-                                    上下文额度
-                                </div>
-                                <div
-                                    class="context-meter-text"
-                                    id="contextMeterText"
-                                >
-                                    当前会话上下文约使用 0 / 128K tokens。
-                                </div>
-                                <div class="context-meter-subtext">
-                                    悬停可查看详情，超限后会自动压缩为摘要并开启新对话继续。
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.header-left -->
-                    <div class="header-right">
-                        <!-- Broadcast / system announcement bell. Replaces
-                             the previous full-width carousel banner. Clicking
-                             opens #announcementModal (timeline-style list of
-                             site updates). Wired up in cancri_chat.js. -->
-                        <button
-                            class="icon-btn header-broadcast-btn"
-                            id="openAnnouncementBtn"
-                            type="button"
-                            aria-label="系统公告"
-                            title="系统公告"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-                                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-                            </svg>
-                            <span class="header-broadcast-dot" id="headerBroadcastDot" aria-hidden="true"></span>
-                        </button>
-                        <button
-                            class="icon-btn"
-                            id="teamToastBtn"
-                            aria-label="添加成员"
-                            style="display: none"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
-                                ></path>
-                                <circle cx="9.5" cy="7" r="3"></circle>
-                                <path d="M19 8v6"></path>
-                                <path d="M16 11h6"></path>
-                            </svg>
-                        </button>
-                        <button
-                            class="icon-btn"
-                            id="tempChatBtn"
-                            aria-label="临时聊天"
-                            style="display: none"
-                        >
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <circle
-                                    cx="12"
-                                    cy="12"
-                                    r="8.6"
-                                    stroke-dasharray="2 2"
-                                ></circle>
-                            </svg>
-                        </button>
-                    </div>
-                    <button
-                        class="top-pill"
-                        id="legacyUpgradePill"
-                        style="display: none"
-                    >
-                        Plus
-                    </button>
-                    <div class="header-actions" style="display: none"></div>
-                </div>
-
-                <!-- (legacy top-bar carousel removed; system announcements
-                     now live in #announcementModal, opened via the
-                     broadcast bell in the header-right of .main-header) -->
-
-                <section class="view active" id="homeView">
-                    <div class="chat-messages" id="chatMessages"></div>
-                    <div class="home-center" id="homeCenter">
-                        <div class="mobile-home-brand" aria-label="Cancri">
-                            <img
-                                src="../Logo/Cancri1.jpg"
-                                data-dark-src="../Logo/Cancri1.jpg"
-                                data-light-src="../Logo/Cancri.png"
-                                alt="Cancri"
-                                class="cancri-logo"
-                            />
-                        </div>
-                        <h1 class="hero" id="heroTitle">晚上好，克劳姆</h1>
-                        <div class="composer-wrap">
-                            <div class="composer" data-workbench-composer>
-                                <div
-                                    class="attachment-preview"
-                                    id="attachmentPreview"
-                                    hidden
-                                ></div>
-                                <textarea
-                                    class="composer-input"
-                                    id="homeInput"
-                                    rows="1"
-                                    placeholder="今天我能帮你什么？"
-                                ></textarea>
-                                <div class="composer-bottom">
-                                    <div
-                                        class="composer-status"
-                                        aria-live="polite"
-                                    >
-                                        <span
-                                            class="tool-pill"
-                                            id="attachmentStatusPill"
-                                            hidden
-                                        ></span>
-                                    </div>
-                                    <div class="composer-tools-row">
-                                        <div
-                                            class="composer-tools"
-                                            aria-label="本轮工具"
-                                        >
-                                            <button
-                                                class="composer-tool-btn"
-                                                id="plusTrigger"
-                                                type="button"
-                                                data-glass="button"
-                                                aria-label="添加附件或创建内容"
-                                                title="添加附件"
-                                            >
-                                                <svg
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="1.9"
-                                                >
-                                                    <path
-                                                        d="M12 5v14M5 12h14"
-                                                    ></path>
-                                                </svg>
-                                            </button>
-                                            <button
-                                                class="composer-tool-btn web-search-toggle"
-                                                id="webSearchToggle"
-                                                type="button"
-                                                data-glass="button"
-                                                aria-label="本轮允许联网搜索"
-                                                aria-pressed="false"
-                                                title="本轮联网搜索"
-                                            >
-                                                <svg
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="1.8"
-                                                >
-                                                    <circle
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="8.5"
-                                                    ></circle>
-                                                    <path
-                                                        d="M3.8 12h16.4"
-                                                    ></path>
-                                                    <path
-                                                        d="M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5"
-                                                    ></path>
-                                                    <path
-                                                        d="M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"
-                                                    ></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        <div class="composer-actions">
-                                            <button
-                                                class="voice-btn"
-                                                id="voiceToastBtn"
-                                                data-glass="button"
-                                                aria-label="语音输入"
-                                                title="语音输入"
-                                            >
-                                                <svg
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="1.8"
-                                                >
-                                                    <rect
-                                                        x="9"
-                                                        y="2"
-                                                        width="6"
-                                                        height="12"
-                                                        rx="3"
-                                                    ></rect>
-                                                    <path
-                                                        d="M5 10a7 7 0 0 0 14 0"
-                                                    ></path>
-                                                    <path d="M12 18v4"></path>
-                                                    <path d="M8 22h8"></path>
-                                                </svg>
-                                            </button>
-                                            <button
-                                                class="send-btn"
-                                                id="sendChatBtn"
-                                                data-glass="button"
-                                                aria-label="发送消息"
-                                                disabled
-                                            >
-                                                <svg
-                                                    class="send-icon-arrow"
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2.2"
-                                                >
-                                                    <path d="M12 19V5"></path>
-                                                    <path
-                                                        d="m5 12 7-7 7 7"
-                                                    ></path>
-                                                </svg>
-                                                <svg
-                                                    class="send-icon-stop"
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="currentColor"
-                                                    stroke="none"
-                                                >
-                                                    <rect
-                                                        x="7"
-                                                        y="7"
-                                                        width="10"
-                                                        height="10"
-                                                        rx="1.5"
-                                                    ></rect>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <input
-                                type="file"
-                                id="attachmentInput"
-                                accept="image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv"
-                                multiple
-                                hidden
-                            />
-                            <input
-                                type="file"
-                                id="fileInput"
-                                accept=".txt,.md,.json,.csv,.pdf,.doc,.docx"
-                                multiple
-                                hidden
-                            />
-                        </div>
-                        <!-- Claude-style suggestion pills（功能提示 chip）。
-                             点击会向 #homeInput 注入对应 prompt 模板（cancri_chat.js
-                             里通过 data-prompt-template 监听）。 -->
-                        <div class="claude-suggest-row" role="list">
-                            <button class="claude-suggest" type="button" data-prompt-template="帮我写一段 ">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-                                <span>写</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="教我学习 ">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                                <span>学习</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="帮我写代码 ">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                                <span>代码</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="给我一个生活建议：">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
-                                <span>生活提示</span>
-                            </button>
-                            <button class="claude-suggest" type="button" data-prompt-template="帮我处理今天的 Gmail：">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
-                                <span>来自 Gmail</span>
-                            </button>
-                        </div>
-                        <div
-                            class="token-expiry-note"
-                            id="tokenExpiryNote"
-                            aria-live="polite"
-                        >
-                            开站纪念日 2026-04-28
-                        </div>
-                        <!-- Model brand marquee. The track is duplicated 3×
-                             so the CSS scroll animation reaches a seamless
-                             loop point. 20 unique brands × 3 = 60 imgs.
-                             All <img> are lazy-loaded so initial paint
-                             stays cheap; the marquee resumes once images
-                             enter the viewport. -->
-                        <div class="model-icons-scroll">
-                            <div class="model-icons-track">
-                                <img src="./openai.svg" alt="OpenAI" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./claude-color.svg" alt="Claude" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./gemini-color.svg" alt="Gemini" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./grok.svg" alt="Grok" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./meta-color.svg" alt="Meta" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./mistral-color.svg" alt="Mistral" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./nvidia-color.svg" alt="NVIDIA" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./deepseek-color (1).svg" alt="DeepSeek" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./qwen-color.svg" alt="Qwen" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./minimax-color.svg" alt="MiniMax" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./moonshot.svg" alt="Moonshot Kimi" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./zhipu-color.svg" alt="Zhipu GLM" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./doubao-color.svg" alt="Doubao" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./yuanbao-color.svg" alt="Yuanbao" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./stepfun-color.svg" alt="StepFun" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./spark-color.svg" alt="Spark" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./kling-color.svg" alt="Kling" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./antgroup-color.svg" alt="AntGroup Ling" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./xiaomimimo-color.svg" alt="Xiaomi MiMo" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./sensenova-color.svg" alt="SenseNova" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./openai.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./claude-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./gemini-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./grok.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./meta-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./mistral-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./nvidia-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./deepseek-color (1).svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./qwen-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./minimax-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./moonshot.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./zhipu-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./doubao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./yuanbao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./stepfun-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./spark-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./kling-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./antgroup-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./xiaomimimo-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./sensenova-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./openai.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./claude-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./gemini-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./grok.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./meta-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./mistral-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./nvidia-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./deepseek-color (1).svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./qwen-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./minimax-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./moonshot.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./zhipu-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./doubao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./yuanbao-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./stepfun-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./spark-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./kling-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./antgroup-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./xiaomimimo-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                                <img src="./sensenova-color.svg" alt="" aria-hidden="true" class="model-icon" loading="lazy" decoding="async" />
-                            </div>
-                            <div class="model-icons-text">
-                                支持全球 20+ 大模型 免费调用
-                            </div>
-                        </div>
-
-                        <div class="popover plus-popover" id="plusPopover">
-                            <div class="popover-inner">
-                                <button
-                                    class="popover-item upload-menu-item"
-                                    id="attachBtn"
-                                    type="button"
-                                >
-                                    <svg
-                                        width="18"
-                                        height="18"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <rect
-                                            x="4"
-                                            y="4"
-                                            width="16"
-                                            height="16"
-                                            rx="3"
-                                        ></rect>
-                                        <circle cx="9" cy="9" r="1.6"></circle>
-                                        <path d="m20 15-4.8-4.8L6 19"></path>
-                                    </svg>
-                                    <span>上传图片</span>
-                                </button>
-                                <button
-                                    class="popover-item upload-menu-item"
-                                    id="fileUploadBtn"
-                                    type="button"
-                                >
-                                    <svg
-                                        width="18"
-                                        height="18"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <path
-                                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                                        ></path>
-                                        <path d="M14 2v6h6"></path>
-                                        <path d="M12 18v-6"></path>
-                                        <path d="m9 15 3 3 3-3"></path>
-                                    </svg>
-                                    <span>上传文件</span>
-                                    <small>txt / md / json / csv 最稳</small>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 简化的底部免责声明（对齐 Claude "Claude是AI的，会犯错"
-                         的最小风格）。原"请勿输入敏感信息..." + "隐私协议"按钮
-                         已删除；隐私协议入口仍可通过设置页 / privacy-policy modal
-                         的 #privacySettingsRow 进入。cancri_chat.js:9784 用 on()
-                         null-safe 注册 click，#privacyPolicyBtn 不存在只会 console.warn。 -->
-                    <div class="footer-note">
-                        <span class="footer-disclaimer"
-                            >Cancri 是 AI 的，会犯错。请仔细核对回复。</span
-                        >
-                    </div>
-                    <!-- Site footer: four social icons.
-                         We deliberately do NOT carry the legacy
-                         `.nexusv-footer` class — that would drag in the
-                         opacity:0 + IntersectionObserver fade-in pattern
-                         from cancri_chat.js (L99..L102 / L9546 / L10599+)
-                         and the giant 72px "NEXUSV" glitch styling. With
-                         this class absent, the JS lookup returns null and
-                         falls through its null-checks gracefully, leaving
-                         our quiet 4-icon footer rendered directly by CSS
-                         in cancri_motion.css. -->
-                    <nav
-                        class="site-footer-socials"
-                        role="navigation"
-                        aria-label="社交链接"
-                    >
-                        <a
-                            href="https://github.com/NexusVAI"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="GitHub"
-                            title="GitHub"
-                        >
-                            <img
-                                src="./github.svg"
-                                alt=""
-                                width="20"
-                                height="20"
-                                loading="lazy"
-                                decoding="async"
-                            />
-                        </a>
-                        <a
-                            href="https://huggingface.co/xingy555888"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="HuggingFace"
-                            title="HuggingFace"
-                        >
-                            <img
-                                src="./huggingface-color.svg"
-                                alt=""
-                                width="22"
-                                height="22"
-                                loading="lazy"
-                                decoding="async"
-                            />
-                        </a>
-                        <a
-                            href="https://space.bilibili.com/3691002594331274?spm_id_from=333.1007.0.0"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Bilibili"
-                            title="Bilibili"
-                        >
-                            <img
-                                src="./bilibili-color.svg"
-                                alt=""
-                                width="20"
-                                height="20"
-                                loading="lazy"
-                                decoding="async"
-                            />
-                        </a>
-                        <a
-                            href="https://x.com/NexusVAI"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="X (Twitter)"
-                            title="X"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                width="18"
-                                height="18"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-                                />
-                            </svg>
-                        </a>
-                    </nav>
-                </section>
-
-                <!-- ─────── Claude 风格聊天列表页 (data-view-target="claudeChats") ─────── -->
-                <section class="view" id="claudeChatsView">
-                    <div class="claude-page">
-                        <div class="claude-page-header">
-                            <h1 class="claude-page-title">聊天</h1>
-                            <div class="claude-page-actions">
-                                <button class="claude-secondary-btn" type="button" id="claudeSelectChatsBtn">选择聊天</button>
-                                <button class="claude-primary-btn" type="button" id="claudeNewChatFromListBtn">新聊天</button>
-                            </div>
-                        </div>
-                        <div class="claude-page-search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                            <input type="search" placeholder="搜索聊天..." id="claudeChatsSearchInput" autocomplete="off"/>
-                        </div>
-                        <div class="claude-chats-list" id="claudeChatsList">
-                            <div class="claude-empty-hint">暂无聊天记录。点击右上角"新聊天"开始。</div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ─────── Claude 风格设置全屏 view (data-view-target="claudeSettings") ─────── -->
-                <section class="view" id="claudeSettingsView">
-                    <div class="claude-settings-page">
-                        <h1 class="claude-settings-title">背景设定</h1>
-                        <div class="claude-settings-layout">
-                            <aside class="claude-settings-nav">
-                                <button class="claude-snav-item active" type="button" data-snav="overview">概述</button>
-                                <button class="claude-snav-item" type="button" data-snav="account">账号</button>
-                                <button class="claude-snav-item" type="button" data-snav="privacy">隐私</button>
-                                <button class="claude-snav-item" type="button" data-snav="billing">账单</button>
-                                <button class="claude-snav-item" type="button" data-snav="capability">能力</button>
-                                <button class="claude-snav-item" type="button" data-snav="connectors">连接器</button>
-                                <button class="claude-snav-item" type="button" data-snav="password">Cancri 密码</button>
-                            </aside>
-                            <div class="claude-settings-content">
-                                <!-- 概述 section -->
-                                <div class="claude-settings-section claude-snav-target active" data-snav-target="overview">
-                                    <h2 class="claude-settings-h2">简介</h2>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">头像</span>
-                                        <div class="claude-form-control">
-                                            <div class="claude-avatar-circle">K</div>
-                                        </div>
-                                    </div>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">全名</span>
-                                        <div class="claude-form-control">
-                                            <input class="claude-form-input" type="text" value="Kraum" id="claudeFormFullName"/>
-                                        </div>
-                                    </div>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">Cancri 该怎么称呼你？</span>
-                                        <div class="claude-form-control">
-                                            <input class="claude-form-input" type="text" value="Kraum" id="claudeFormNickname"/>
-                                        </div>
-                                    </div>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">什么是您喜欢的作品？</span>
-                                        <div class="claude-form-control">
-                                            <select class="claude-form-select" id="claudeFormProfession">
-                                                <option>其他</option>
-                                                <option>软件工程</option>
-                                                <option>设计</option>
-                                                <option>研究</option>
-                                                <option>写作</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="claude-form-row claude-form-row-stack">
-                                        <span class="claude-form-label">给 Cancri 的说明</span>
-                                        <div class="claude-form-help">Cancri 会在 Project 和 Cawork 中根据 Anthropic 的隐私原则应注重这些内容。<a href="javascript:void(0)">了解更多</a></div>
-                                        <textarea class="claude-form-textarea" id="claudeFormSystemPrompt" rows="4" placeholder="例如，您可解释您的研究"></textarea>
-                                    </div>
-
-                                    <h2 class="claude-settings-h2 claude-settings-h2-mt">偏好</h2>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">外观</span>
-                                        <div class="claude-form-control">
-                                            <div class="claude-segmented" role="group" aria-label="主题">
-                                                <button class="claude-seg-btn" type="button" data-theme="system" title="跟随系统">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
-                                                </button>
-                                                <button class="claude-seg-btn" type="button" data-theme="light" title="浅色">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-                                                </button>
-                                                <button class="claude-seg-btn active" type="button" data-theme="dark" title="深色">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">聊天字体</span>
-                                        <div class="claude-form-control">
-                                            <select class="claude-form-select" id="claudeFormFont">
-                                                <option>人形衬线体</option>
-                                                <option>系统默认</option>
-                                                <option>等宽</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">配音</span>
-                                        <div class="claude-form-control">
-                                            <select class="claude-form-select" id="claudeFormVoice">
-                                                <option>菜油味十足</option>
-                                                <option>沉稳清晰</option>
-                                                <option>柔和女声</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <h2 class="claude-settings-h2 claude-settings-h2-mt">通知</h2>
-                                    <div class="claude-form-row">
-                                        <div class="claude-form-stacked">
-                                            <span class="claude-form-label-strong">响应补全</span>
-                                            <span class="claude-form-help">在 Cancri 响应完成后，通过浏览器收到通知。</span>
-                                        </div>
-                                        <div class="claude-form-control">
-                                            <label class="claude-switch">
-                                                <input type="checkbox" id="claudeFormNotify"/>
-                                                <span class="claude-switch-track"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 其他 section: 占位（点对应左 nav 时切换显示） -->
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="account">
-                                    <h2 class="claude-settings-h2">账号</h2>
-                                    <p class="claude-form-help">账号设置内容将在后续版本添加。</p>
-                                </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="privacy">
-                                    <h2 class="claude-settings-h2">隐私</h2>
-                                    <p class="claude-form-help">隐私设置内容将在后续版本添加。</p>
-                                </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="billing">
-                                    <h2 class="claude-settings-h2">账单</h2>
-                                    <p class="claude-form-help">您当前是<strong>免费计划</strong>。<a href="javascript:void(0)">升级到 Cancri Pro</a></p>
-                                </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="capability">
-                                    <h2 class="claude-settings-h2">能力</h2>
-                                    <p class="claude-form-help">能力开关将在后续版本添加。</p>
-                                </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="connectors">
-                                    <h2 class="claude-settings-h2">连接器</h2>
-                                    <p class="claude-form-help">GitHub / Gmail / Calendar 等连接器将在后续版本添加。</p>
-                                </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="password">
-                                    <h2 class="claude-settings-h2">Cancri 密码</h2>
-                                    <p class="claude-form-help">密码与多因素认证设置将在后续版本添加。</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ─────── Claude 风格项目页 (data-view-target="claudeProjects") ─────── -->
-                <section class="view" id="claudeProjectsView">
-                    <div class="claude-page">
-                        <div class="claude-page-header">
-                            <h1 class="claude-page-title">项目</h1>
-                            <div class="claude-page-actions">
-                                <div class="claude-sort-pill">排序 <span class="claude-sort-current">活动</span>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg>
-                                </div>
-                                <button class="claude-primary-btn" type="button" id="claudeNewProjectBtn">+ 新项目</button>
-                            </div>
-                        </div>
-                        <div class="claude-page-search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                            <input type="search" placeholder="搜索项目..." id="claudeProjectsSearchInput" autocomplete="off"/>
-                        </div>
-                        <div class="claude-projects-empty">
-                            <div class="claude-projects-empty-icon" aria-hidden="true">
-                                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-                                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-                                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-                                    <path d="M14 19c2 0 4-1 5-3"/>
-                                    <path d="M19 14v6"/>
-                                </svg>
-                            </div>
-                            <div class="claude-projects-empty-title">想开始一个项目吗？</div>
-                            <div class="claude-projects-empty-desc">上传材料，设置自定义说明，并存一个专同的项目对话。</div>
-                            <button class="claude-primary-btn" type="button" id="claudeProjectsEmptyNewBtn">+ 新项目</button>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="view" id="leaderboardView" hidden>
-                    <div class="leaderboard-page">
-                        <aside class="leaderboard-side">
-                            <div class="leaderboard-side-section">
-                                <div class="leaderboard-side-title">
-                                    查看方式
-                                </div>
-                                <div class="leaderboard-segment">
-                                    <button class="active" type="button">
-                                        ☰ 排名
-                                    </button>
-                                    <button type="button">⌁ 帕累托</button>
-                                </div>
-                            </div>
-                            <div class="leaderboard-side-section">
-                                <div class="leaderboard-side-title">分类</div>
-                                <div class="leaderboard-category active">
-                                    🏆 综合排行
-                                </div>
-                            </div>
-                        </aside>
-                        <section class="leaderboard-main">
-                            <div class="leaderboard-hero">
-                                <div>
-                                    <h1>竞技场排行榜</h1>
-                                    <p>
-                                        AI
-                                        模型在开放问答、数学、编程、创意写作等任务中的综合
-                                        Elo 排名。
-                                    </p>
-                                    <p class="leaderboard-trust-note">
-                                        仅匿名模式且通过风控的投票计入公开榜。
-                                    </p>
-                                    <div class="leaderboard-meta">
-                                        <span>◷ 实时更新</span>
-                                        <span id="mainLeaderboardVoteCount"
-                                            >加载中</span
-                                        >
-                                        <span id="mainLeaderboardModelCount"
-                                            >加载中</span
-                                        >
-                                        <span id="mainLeaderboardUpdatedAt"
-                                            >最近更新加载中</span
-                                        >
-                                    </div>
-                                </div>
-                                <button
-                                    class="leaderboard-start-btn"
-                                    type="button"
-                                    id="leaderboardStartVotingBtn"
-                                >
-                                    开始投票
-                                </button>
-                            </div>
-                            <div class="leaderboard-toolbar">
-                                <button type="button">☷ 隐藏筛选</button>
-                                <span></span>
-                                <button class="active" type="button">
-                                    模型
-                                </button>
-                                <button type="button">⌕</button>
-                            </div>
-                            <div
-                                class="leaderboard-table"
-                                id="mainLeaderboardList"
-                            >
-                                排行榜加载中…
-                            </div>
-                        </section>
-                    </div>
-                </section>
-
-                <section class="view" id="arenaView" hidden>
-                    <div class="arena-page">
-                        <div class="arena-hero">
-                            <div class="arena-kicker">
-                                NexusVArena Workbench
-                            </div>
-                            <h1>匿名模型竞技场</h1>
-                            <p>
-                                用同一个问题并排比较模型回答，匿名投票结果才会进入公开榜。
-                            </p>
-                            <div class="arena-security">
-                                <strong>公开榜规则</strong
-                                ><span
-                                    >仅匿名模式、完整双回答、通过风控的投票计入
-                                    Elo。</span
-                                >
-                            </div>
-                        </div>
-                        <div class="arena-modebar">
-                            <label>
-                                <span>模式</span>
-                                <select id="arenaModeSelect">
-                                    <option value="anonymous">匿名对战</option>
-                                    <option value="side_by_side">
-                                        双模型对话
-                                    </option>
-                                    <option value="single">单模型</option>
-                                </select>
-                            </label>
-                            <div
-                                class="arena-model-pickers"
-                                id="arenaModelPickers"
-                            >
-                                <label>
-                                    <span>模型 A</span>
-                                    <input
-                                        id="arenaModelSearchA"
-                                        list="arenaModelOptions"
-                                        placeholder="选择模型 A"
-                                        autocomplete="off"
-                                    />
-                                </label>
-                                <label id="arenaModelPickerB">
-                                    <span>模型 B</span>
-                                    <input
-                                        id="arenaModelSearchB"
-                                        list="arenaModelOptions"
-                                        placeholder="选择模型 B"
-                                        autocomplete="off"
-                                    />
-                                </label>
-                                <datalist id="arenaModelOptions"></datalist>
-                            </div>
-                        </div>
-                        <div class="arena-compose">
-                            <textarea
-                                id="arenaPromptInput"
-                                rows="4"
-                                placeholder="输入对战题目"
-                            ></textarea>
-                            <button id="arenaStartBtn" type="button">
-                                开始对战
-                            </button>
-                        </div>
-                        <div class="arena-status" id="arenaStatus">
-                            等待题目。
-                        </div>
-                        <div class="arena-battle">
-                            <article class="arena-card" data-slot="a">
-                                <div class="arena-card-head">
-                                    <span class="arena-slot">A</span>
-                                    <strong
-                                        class="arena-model-name"
-                                        id="arenaModelA"
-                                        >投票后揭晓</strong
-                                    >
-                                </div>
-                                <div
-                                    class="arena-answer md-content"
-                                    id="arenaAnswerA"
-                                >
-                                    等待模型 A。
-                                </div>
-                            </article>
-                            <article class="arena-card" data-slot="b">
-                                <div class="arena-card-head">
-                                    <span class="arena-slot">B</span>
-                                    <strong
-                                        class="arena-model-name"
-                                        id="arenaModelB"
-                                        >投票后揭晓</strong
-                                    >
-                                </div>
-                                <div
-                                    class="arena-answer md-content"
-                                    id="arenaAnswerB"
-                                >
-                                    等待模型 B。
-                                </div>
-                            </article>
-                        </div>
-                        <div class="arena-vote-row" id="arenaVoteRow" hidden>
-                            <button
-                                class="arena-vote-btn"
-                                data-winner="a"
-                                type="button"
-                            >
-                                A 更好
-                            </button>
-                            <button
-                                class="arena-vote-btn"
-                                data-winner="tie"
-                                type="button"
-                            >
-                                平局
-                            </button>
-                            <button
-                                class="arena-vote-btn danger"
-                                data-winner="bad"
-                                type="button"
-                            >
-                                都不好
-                            </button>
-                            <button
-                                class="arena-vote-btn"
-                                data-winner="b"
-                                type="button"
-                            >
-                                B 更好
-                            </button>
-                        </div>
-                        <div class="arena-leaderboard">
-                            <div class="arena-section-title">Arena 实时榜</div>
-                            <div
-                                class="arena-leaderboard-list"
-                                id="arenaLeaderboardList"
-                            >
-                                排行榜加载中...
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-            </main>
+      </div>
+      <!-- 2026-05-17：自适应填充 marquee track。原 HTML 每段 14 svg × 2 段，
+           在大屏上 track 宽度 < 2× row 可见宽 → translateX(-50%) 出现右侧
+           露白 → 看起来「瞬间跳」。这里按实际 row 宽度动态复制原始 14 svg，
+           且每次成对追加（确保 track 段数始终为偶数，2 段拼接的接续点恰好
+           落在周期起点），直到 track.scrollWidth ≥ 2.2× row.width，
+           保证跨屏幕完美无缝。 -->
+      <script>
+        (function () {
+          const BASE_LEN = 14;
+          function fill() {
+            const rows = document.querySelectorAll(".hero__marquee .marquee-row");
+            rows.forEach(function (row) {
+              const track = row.querySelector(".marquee-row__track");
+              if (!track) return;
+              // 只取前 14 个作为「原始周期」复制份。HTML 里每行写了 28 个
+              // （14×2 拼接）作为默认填充，以防 JS 失败时仍有基本效果。
+              const base = Array.from(track.children).slice(0, BASE_LEN);
+              if (base.length === 0) return;
+              // 用 offsetWidth 拿 layout 宽度，避免父级 rotate(22deg) 让
+              // getBoundingClientRect 返回缩水的投影宽度而填不够。
+              const rowWidth = row.offsetWidth || row.getBoundingClientRect().width || 0;
+              let safety = 0;
+              // 每次追加 2 × base（即一对完整周期），让 track 总段数永远
+              // 为偶数。translateX(-50%) 把 track 走过整段数的一半，正好
+              // 落到下一周期起点 → 数学上完美无缝。
+              while (track.scrollWidth < rowWidth * 2.2 && safety < 12) {
+                for (let i = 0; i < 2; i++) {
+                  base.forEach(function (node) {
+                    track.appendChild(node.cloneNode(true));
+                  });
+                }
+                safety += 1;
+              }
+            });
+          }
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", fill, { once: true });
+          } else {
+            fill();
+          }
+          // 窗口变大时补填（不缩减）；反复调用安全，带 safety 限。
+          let resizeTimer = null;
+          window.addEventListener("resize", function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(fill, 200);
+          });
+        })();
+      </script>
+      <div class="hero__inner">
+        <div class="hero__eyebrow">Cancri Open Platform</div>
+        <h1 class="hero__h1">
+          一个端点，<br />
+          多种<em>协议</em>，<br />
+          一把密钥。
+        </h1>
+        <p class="hero__lede">
+          Cancri 开放平台把 OpenAI、Anthropic 与 Codex 三套原生协议归一化到同一个
+          API 网关。在你的代码里，<code>import</code> 不变，把
+          <code>base_url</code> 替换即可。
+        </p>
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="../api_apply.html"
+            >申请密钥<span class="arrow">→</span></a
+          >
+          <a class="btn btn--ghost" href="../api_docs.html">阅读文档</a>
         </div>
-
-        <div class="scrim" id="scrim"></div>
-
-        <!-- ─────── Claude 风格搜索弹窗（点 sidebar "搜索" 触发） ─────── -->
-        <div class="claude-search-modal" id="claudeSearchModal" aria-hidden="true">
-            <div class="claude-search-card">
-                <div class="claude-search-input-wrap">
-                    <svg class="claude-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                    <input type="search" id="claudeSearchInput" placeholder="搜索聊天和项目" autocomplete="off"/>
-                    <button class="claude-search-close" type="button" id="claudeSearchCloseBtn" aria-label="关闭">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                    </button>
-                </div>
-                <div class="claude-search-results" id="claudeSearchResults">
-                    <!-- 结果将由 claude_ui.js 填充 -->
-                </div>
-            </div>
+        <div class="endpoint-strip" aria-label="API base URL">
+          <span class="endpoint-strip__label">Base&nbsp;URL</span>
+          <span class="endpoint-strip__url" id="endpoint-url"
+            >https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</span
+          >
+          <button
+            class="endpoint-strip__copy"
+            id="endpoint-copy"
+            type="button"
+            aria-label="复制 base URL"
+          >
+            复制
+          </button>
         </div>
+      </div>
+    </section>
 
-        <div class="modal large" id="settingsModal" aria-hidden="true">
-            <div class="modal-header">
-                <button
-                    class="modal-close"
-                    data-close-modal="settingsModal"
-                    aria-label="关闭设置"
-                >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M18 6 6 18M6 6l12 12"></path>
-                    </svg>
-                </button>
-                <div
-                    class="modal-title"
-                    style="margin-right: auto; padding-left: 10px"
-                >
-                    设置
-                </div>
-            </div>
-            <div class="settings-layout">
-                <div class="settings-nav">
-                    <div
-                        class="settings-nav-item active"
-                        data-settings-panel="generalPanel"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <path
-                                d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"
-                            ></path>
-                            <path
-                                d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"
-                            ></path>
-                        </svg>
-                        <span>常规</span>
-                    </div>
-                    <div
-                        class="settings-nav-item"
-                        data-settings-panel="accountPanel"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <circle cx="12" cy="8" r="4"></circle>
-                            <path d="M4 20a8 8 0 1 1 16 0"></path></svg
-                        ><span>账户</span>
-                    </div>
-                </div>
-
-                <div class="settings-content">
-                    <div class="settings-scroll">
-                        <div class="settings-panel active" id="generalPanel">
-                            <h3 class="settings-heading">常规</h3>
-                            <div class="list-row" id="appearanceRow">
-                                <div class="list-label">外观</div>
-                                <div class="list-value">
-                                    <span id="appearanceValue">深色</span
-                                    ><svg
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <path d="m6 9 6 6 6-6"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="list-row" id="accentRow">
-                                <div class="list-label">重点色</div>
-                                <div class="list-value">
-                                    <span class="dot" id="accentDot"></span
-                                    ><span id="accentValue">默认</span
-                                    ><svg
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <path d="m6 9 6 6 6-6"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="list-row" id="apiPlatformRow" role="button" tabindex="0">
-                                <div class="list-label">API 平台</div>
-                                <div class="list-value">
-                                    <span>打开</span><svg
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                    >
-                                        <path d="m9 6 6 6-6 6"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-panel" id="accountPanel">
-                            <h3 class="settings-heading">账户</h3>
-                            <div class="list-row">
-                                <div class="list-label">邮箱</div>
-                                <div class="list-value">未登录</div>
-                            </div>
-                            <div class="list-row" id="nicknameSettingsRow">
-                                <div class="list-label">昵称</div>
-                                <div class="list-value">
-                                    点击左下账户菜单设置
-                                </div>
-                            </div>
-                            <div class="list-row" id="privacySettingsRow">
-                                <div class="list-label">隐私协议</div>
-                                <div class="list-value">查看</div>
-                            </div>
-                            <div class="list-row" id="settingsLogoutRow">
-                                <div class="list-label">退出登录</div>
-                                <div class="badge">退出</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- 01 — Protocols -->
+    <section class="chapter">
+      <div class="chapter__inner">
+        <div class="chapter__head">
+          <div class="chapter__num">01 — Protocols</div>
+          <h2 class="chapter__title">三套原生协议，<em>一把</em>密钥。</h2>
+          <p class="chapter__sub">
+            不需要为不同模型提供商分别申请帐号、维护多份配额；一次申请，三处可用。
+          </p>
         </div>
-
-        <div class="modal small" id="tempChatModal" aria-hidden="true">
-            <div class="modal-header">
-                <div class="modal-title">临时聊天</div>
-                <button
-                    class="modal-close"
-                    data-close-modal="tempChatModal"
-                    aria-label="关闭临时聊天"
-                >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M18 6 6 18M6 6l12 12"></path>
-                    </svg>
-                </button>
+        <div class="chapter__body">
+          <div class="proto-list">
+            <div class="proto-row">
+              <div class="proto-row__path">/v1/chat/completions</div>
+              <div class="proto-row__name">OpenAI&nbsp;<em>系</em></div>
+              <div class="proto-row__desc">
+                openai-python / openai-node SDK 直连可用，零代码改动。
+              </div>
             </div>
-            <div class="modal-body">
-                <div class="temp-card">
-                    <div class="temp-item">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="8.5"
-                                stroke-dasharray="3 2"
-                            ></circle>
-                        </svg>
-                        <div>
-                            <h4>不包含在历史记录中</h4>
-                            <p>
-                                临时聊天不会出现在你的历史记录中。为了安全考虑，我们可能会保留对话记录最多30天。
-                            </p>
-                        </div>
-                    </div>
-                    <div class="temp-item">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <path d="M4 12h4l2-6 4 12 2-6h4"></path>
-                        </svg>
-                        <div>
-                            <h4>不会用于模型训练</h4>
-                            <p>临时聊天不会被用来改进我们的模型。</p>
-                        </div>
-                    </div>
-                    <div class="temp-item">
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <rect
-                                x="6"
-                                y="4"
-                                width="12"
-                                height="16"
-                                rx="2"
-                            ></rect>
-                        </svg>
-                        <div>
-                            <h4>记忆关闭</h4>
-                            <p>
-                                使用临时聊天时，Cancri
-                                不会使用或更新记忆。系统仍然会遵循你的自定义指令。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="primary-btn" id="continueTempChatBtn">
-                        继续
-                    </button>
-                </div>
+            <div class="proto-row">
+              <div class="proto-row__path">/v1/messages</div>
+              <div class="proto-row__name">Anthropic&nbsp;<em>系</em></div>
+              <div class="proto-row__desc">
+                原生 Claude Messages 协议，支持 Claude Code 等官方工具链。
+              </div>
             </div>
+            <div class="proto-row">
+              <div class="proto-row__path">/v1/responses</div>
+              <div class="proto-row__name">Codex&nbsp;<em>系</em></div>
+              <div class="proto-row__desc">
+                兼容 OpenAI Codex CLI 的 responses 端点，支持工具调用与 reasoning。
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <div class="modal medium" id="projectModal" aria-hidden="true">
-            <div class="modal-header" style="padding-bottom: 0">
-                <div class="modal-title">创建项目</div>
-                <div style="display: flex; align-items: center; gap: 8px">
-                    <button
-                        class="plain-icon"
-                        id="projectSettingToastBtn"
-                        aria-label="项目设置"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <path
-                                d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z"
-                            ></path>
-                            <path
-                                d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.8 1.8 0 0 0 15 19.4a1.8 1.8 0 0 0-1.54.9l-.03.08a2 2 0 1 1-3.68 0l-.03-.08A1.8 1.8 0 0 0 8.2 19.4a1.8 1.8 0 0 0-1.98.36l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 3.75 15a1.8 1.8 0 0 0-.9-1.54l-.08-.03a2 2 0 1 1 0-3.68l.08-.03A1.8 1.8 0 0 0 3.75 8.2a1.8 1.8 0 0 0-.36-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.8 1.8 0 0 0 8.2 3.75a1.8 1.8 0 0 0 1.54-.9l.03-.08a2 2 0 1 1 3.68 0l.03.08A1.8 1.8 0 0 0 15 3.75c.73 0 1.42-.29 1.94-.81l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.8 1.8 0 0 0 19.4 8.2c0 .62.31 1.21.9 1.54l.08.03a2 2 0 1 1 0 3.68l-.08.03c-.59.33-.9.92-.9 1.54Z"
-                            ></path>
-                        </svg>
-                    </button>
-                    <button
-                        class="modal-close"
-                        data-close-modal="projectModal"
-                        aria-label="关闭创建项目"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path d="M18 6 6 18M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label" for="projectNameInput"
-                        >项目名称</label
-                    >
-                    <input
-                        class="form-input"
-                        id="projectNameInput"
-                        placeholder="哥本哈根之旅"
-                    />
-                </div>
-                <div class="hint-box">
-                    <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                    >
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 8v4"></path>
-                        <path d="M12 16h.01"></path>
-                    </svg>
-                    <div>
-                        项目功能可将聊天、文件和自定义指令集中保存，以便用于持续进行的工作，或者单纯用于整理内容，让一切更井然有序。
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="muted-btn" id="createProjectConfirmBtn">
-                        创建项目
-                    </button>
-                </div>
-            </div>
+    <!-- 02 — Quickstart -->
+    <section class="chapter">
+      <div class="chapter__inner">
+        <div class="chapter__head">
+          <div class="chapter__num">02 — Quickstart</div>
+          <h2 class="chapter__title">三十秒，<em>跑起来</em>。</h2>
+          <p class="chapter__sub">
+            把 base URL 换成 Cancri，import 不变。下面是最小可运行示例。
+          </p>
         </div>
-
-        <div class="modal large" id="privacyPolicyModal" aria-hidden="true">
-            <div class="modal-header">
-                <div class="modal-title">隐私协议</div>
-                <button
-                    class="modal-close"
-                    data-close-modal="privacyPolicyModal"
-                    aria-label="关闭隐私协议"
-                >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M18 6 6 18M6 6l12 12"></path>
-                    </svg>
-                </button>
+        <div class="chapter__body">
+          <div class="code-tabs">
+            <div class="code-tabs__head" role="tablist">
+              <button class="code-tabs__btn is-active" data-tab="curl" type="button">
+                curl
+              </button>
+              <button class="code-tabs__btn" data-tab="python" type="button">
+                python
+              </button>
+              <button class="code-tabs__btn" data-tab="node" type="button">
+                node
+              </button>
             </div>
-            <div class="modal-body">
-                <div class="privacy-policy-content">
-                    <div class="privacy-policy-note">
-                        更新日期：2026年4月30日。本协议适用于 Cancri
-                        在中国大陆地区提供的聊天、图片生成、文件处理、搜索与历史记录相关功能。
-                    </div>
+            <div class="code-tabs__body">
+<pre class="code-tabs__pre is-active" data-tab="curl"><span class="c-cmt"># 兼容 OpenAI 协议</span>
+curl <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1/chat/completions"</span> \
+  -H <span class="c-str">"Authorization: Bearer $CANCRI_KEY"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{
+    "model": "gpt-5.4-mini",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'</span></pre>
 
-                    <section class="privacy-policy-section">
-                        <h4>一、我们收集的信息</h4>
-                        <p>
-                            为提供基础功能、改进体验和保障安全，我们可能收集你主动输入的聊天内容、上传的图片或文件、搜索关键词、反馈内容，以及与服务相关的设备信息、浏览器信息、IP
-                            地址、访问时间、错误日志、Cookie
-                            和本地存储中的偏好设置。
-                        </p>
-                    </section>
+<pre class="code-tabs__pre" data-tab="python"><span class="c-key">from</span> openai <span class="c-key">import</span> OpenAI
 
-                    <section class="privacy-policy-section">
-                        <h4>二、我们如何使用信息</h4>
-                        <ul class="privacy-policy-list">
-                            <li>
-                                向你提供聊天、图片生成、文件分析、联网搜索和历史记录等功能。
-                            </li>
-                            <li>
-                                保存你的主题、语言、模型选择与会话状态等本地偏好。
-                            </li>
-                            <li>
-                                进行故障排查、性能优化、风控检测与滥用防护。
-                            </li>
-                            <li>
-                                在你发起请求时，将必要内容发送给对应的模型服务、搜索服务或存储服务完成处理。
-                            </li>
-                        </ul>
-                    </section>
+client = <span class="c-fn">OpenAI</span>(
+    api_key=<span class="c-str">"sk-cancri-..."</span>,
+    base_url=<span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1"</span>,
+)
 
-                    <section class="privacy-policy-section">
-                        <h4>三、信息共享与委托处理</h4>
-                        <p>
-                            为了实现具体功能，你的请求内容可能会被发送至第三方模型服务商、搜索服务商、云基础设施或托管服务商进行处理。我们仅在实现服务所必需的范围内共享必要信息，不会向无关第三方出售个人信息。
-                        </p>
-                    </section>
+resp = client.chat.completions.<span class="c-fn">create</span>(
+    model=<span class="c-str">"gpt-5.4-mini"</span>,
+    messages=[{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Hello"</span>}],
+)
+<span class="c-fn">print</span>(resp.choices[<span class="c-str">0</span>].message.content)</pre>
 
-                    <section class="privacy-policy-section">
-                        <h4>四、信息存储与保护</h4>
-                        <p>
-                            我们会采取合理的技术与管理措施保护信息安全，并尽量减少数据收集范围。你的本地偏好通常保存在浏览器本地存储中；聊天历史可能会按账号或会话进行保存。若你清空对话或要求删除，我们会在可行范围内处理相关记录。
-                        </p>
-                    </section>
+<pre class="code-tabs__pre" data-tab="node"><span class="c-key">import</span> OpenAI <span class="c-key">from</span> <span class="c-str">"openai"</span>;
 
-                    <section class="privacy-policy-section">
-                        <h4>五、你的权利</h4>
-                        <ul class="privacy-policy-list">
-                            <li>你可以查看、复制、清空或删除本地会话内容。</li>
-                            <li>
-                                你可以撤回已授予的部分授权，并关闭不必要的权限。
-                            </li>
-                            <li>
-                                如需查阅、更正、删除个人信息，或对本协议有疑问，可通过站内反馈或社区渠道联系我们。
-                            </li>
-                        </ul>
-                    </section>
+<span class="c-key">const</span> client = <span class="c-key">new</span> <span class="c-fn">OpenAI</span>({
+  apiKey: process.env.<span class="c-str">CANCRI_KEY</span>,
+  baseURL: <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1"</span>,
+});
 
-                    <section class="privacy-policy-section">
-                        <h4>六、未成年人保护</h4>
-                        <p>
-                            如你是未成年人，请在监护人的陪同或授权下使用本服务，并避免提交身份证号、银行卡号、验证码、密钥等敏感信息。
-                        </p>
-                    </section>
-
-                    <section class="privacy-policy-section">
-                        <h4>七、协议更新</h4>
-                        <p>
-                            我们可能会根据产品变化、法律法规或监管要求更新本协议。更新后会在此页面公布，继续使用即表示你接受更新后的内容。
-                        </p>
-                    </section>
-                </div>
+<span class="c-key">const</span> resp = <span class="c-key">await</span> client.chat.completions.<span class="c-fn">create</span>({
+  model: <span class="c-str">"gpt-5.4-mini"</span>,
+  messages: [{ role: <span class="c-str">"user"</span>, content: <span class="c-str">"Hello"</span> }],
+});
+console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>].message.content);</pre>
             </div>
+          </div>
         </div>
+      </div>
+    </section>
 
-        <div class="toast" id="toast"></div>
-
-        <div class="page-watermark" id="pageWatermark" aria-hidden="true">
-            <div class="page-watermark-grid" id="pageWatermarkGrid"></div>
+    <!-- 03 — Console -->
+    <section class="chapter">
+      <div class="chapter__inner">
+        <div class="chapter__head">
+          <div class="chapter__num">03 — Console</div>
+          <h2 class="chapter__title">从这里<em>开始</em>。</h2>
+          <p class="chapter__sub">
+            四个入口，覆盖从首次申请到日常运维的完整链路。
+          </p>
         </div>
-
-        <div
-            class="custom-context-menu"
-            id="customContextMenu"
-            aria-hidden="true"
-        >
-            <button
-                class="context-menu-btn"
-                type="button"
-                data-menu-action="copy"
-            >
-                复制
-            </button>
-            <button
-                class="context-menu-btn"
-                type="button"
-                data-menu-action="paste"
-            >
-                粘贴
-            </button>
+        <div class="chapter__body">
+          <div class="entry-grid">
+            <a class="entry-card" href="../api_apply.html">
+              <div class="entry-card__num">3.1</div>
+              <div class="entry-card__name">申请&nbsp;<em>API</em></div>
+              <div class="entry-card__desc">
+                首次使用？提交申请进入白名单，通常 24 小时内审核完成。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+            <a class="entry-card" href="../api_keys.html">
+              <div class="entry-card__num">3.2</div>
+              <div class="entry-card__name">我的&nbsp;<em>Keys</em></div>
+              <div class="entry-card__desc">
+                创建、查看、撤销密钥；掌握每一把密钥的用量曲线。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+            <a class="entry-card" href="../api_models.html">
+              <div class="entry-card__num">3.3</div>
+              <div class="entry-card__name">模型&nbsp;<em>广场</em></div>
+              <div class="entry-card__desc">
+                浏览所有可调用模型，按品牌筛选，查看上下文长度与 FREE / PAID 档位。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+            <a class="entry-card" href="../api_docs.html">
+              <div class="entry-card__num">3.4</div>
+              <div class="entry-card__name">开发者&nbsp;<em>文档</em></div>
+              <div class="entry-card__desc">
+                端点参考、鉴权约定与 SDK 集成指南。
+              </div>
+              <div class="entry-card__arrow">→</div>
+            </a>
+          </div>
         </div>
+      </div>
+    </section>
+  </main>
 
-        <!-- 系统公告：时间线样式（参考 Claude Console 系统公告风格）。
-             条目按时间倒序，每条带圆点 + 日期 + 内容。新条目就在上面加
-             一个 .timeline-item，无需改任何 JS。 -->
-        <div class="modal medium" id="announcementModal" aria-hidden="true">
-            <div class="modal-content announcement-modal-content">
-                <div class="modal-header">
-                    <div class="modal-title">系统公告</div>
-                    <button
-                        class="modal-close"
-                        data-close-modal="announcementModal"
-                        aria-label="关闭公告"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path d="M18 6 6 18M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <ol class="announcement-timeline" id="announcementTimeline">
-                        <li class="timeline-item timeline-item--latest">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">未授权账号批量封禁</div>
-                                <p class="timeline-body">
-                                    2026 年 5 月 16 日，系统对所有未加入官方 QQ 群的注册账号执行了永久封禁处理，共计
-                                    <strong>1438</strong> 个账号。封禁原因是这些账号未在授权用户名单内。
-                                    如您认为被误封，请发送邮件至
-                                    <a href="mailto:nexusvai@qq.com" class="timeline-link">nexusvai@qq.com</a>
-                                    并附上注册邮箱与申诉理由。
-                                    <strong>QQ 交流群：</strong
-                                    ><a
-                                        href="https://qm.qq.com/q/1083892008"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="timeline-link"
-                                        >1083892008</a
-                                    >，加群可避免后续清理。
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-16">2026-05-16</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">API 平台已上线</div>
-                                <p class="timeline-body">
-                                    在线注册即可领取永久免费 API key，支持
-                                    OpenAI 兼容协议。
-                                    <a href="./api/" class="timeline-link">前往 API 平台 →</a>
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-14">2026-05-14</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">服务状态实时监控</div>
-                                <p class="timeline-body">
-                                    可随时查看各模型线路的健康状况和延迟数据。
-                                    <a
-                                        href="https://nexusvai.github.io/ChatAI-status/"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="timeline-link"
-                                        >前往 status 页面 →</a
-                                    >
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-12">2026-05-12</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">风控策略升级</div>
-                                <p class="timeline-body">
-                                    针对高频自动化请求（固定间隔轮询、硬编码重试等）启用滥用防护，
-                                    异常请求段已封禁。风控以行为特征为核心，正常用户不受影响。
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-10">2026-05-10</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">站内模型永久免费</div>
-                                <p class="timeline-body">
-                                    20+ 主流大模型免费调用，无 token 限额，登录即用。
-                                    <strong>QQ 交流群：</strong
-                                    ><a
-                                        href="https://qm.qq.com/q/1083892008"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="timeline-link"
-                                        >1083892008</a
-                                    >
-                                </p>
-                                <time class="timeline-date" datetime="2026-04-28">2026-04-28</time>
-                            </div>
-                        </li>
-                    </ol>
-                </div>
-                <div class="modal-footer announcement-modal-footer">
-                    <label class="announcement-dismiss">
-                        <input type="checkbox" id="dismissNoticeCheckbox" />
-                        <span>下次不再自动弹出</span>
-                    </label>
-                    <button class="primary-btn" id="closeAnnouncementBtn" type="button">
-                        我知道了
-                    </button>
-                </div>
-            </div>
-        </div>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__sig">Built with care · Cancri</div>
+      <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+    </div>
+  </footer>
 
-        <!-- defer = 浏览器并行下载所有 script 但严格按 source order 串行执行，
-             和「6 个 body-bottom 裸 script」最终行为完全一致（启动期不会
-             阻塞 HTML parse；执行顺序保持 cancri_liquid_glass → orb_loader
-             → login_captcha → cancri_chat → main.js → announcement → arena）。
-             收益：把过去「下载 1 个 → 下载 2 个 → ...」的串行链改成并行
-             下载，首屏可交互平均提速 200-400ms（移动端 3G/4G 收益更大）。
-             type="module" 的 main.js 默认 defer，无需重复加。 -->
-        <script defer src="./cancri_liquid_glass.js?v=2026-05-14-lg-b"></script>
-        <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
-        <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
-             所有 img.cancri-logo 的 src，主题切换时黑白 logo 同步反转。 -->
-        <script defer src="./cancri_logo_theme.js?v=2026-05-17-logo-theme"></script>
-        <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
-             删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
-             使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-16-happyhorse-video-urlfix"></script>
-        <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
-        <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
-        <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
-        <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-16-tier"></script>
-    </body>
+  <script>
+    // 复制 base URL
+    (function () {
+      var btn = document.getElementById("endpoint-copy");
+      var url = document.getElementById("endpoint-url");
+      if (!btn || !url) return;
+      btn.addEventListener("click", async function () {
+        try {
+          await navigator.clipboard.writeText(
+            (url.textContent || "").trim()
+          );
+          btn.textContent = "已复制 ✓";
+          btn.classList.add("is-ok");
+        } catch (e) {
+          btn.textContent = "复制失败";
+        }
+        setTimeout(function () {
+          btn.textContent = "复制";
+          btn.classList.remove("is-ok");
+        }, 1400);
+      });
+    })();
+
+    // code tabs
+    (function () {
+      var btns = document.querySelectorAll(".code-tabs__btn");
+      var pres = document.querySelectorAll(".code-tabs__pre");
+      btns.forEach(function (b) {
+        b.addEventListener("click", function () {
+          var t = b.dataset.tab;
+          btns.forEach(function (x) {
+            x.classList.toggle("is-active", x === b);
+          });
+          pres.forEach(function (p) {
+            p.classList.toggle("is-active", p.dataset.tab === t);
+          });
+        });
+      });
+    })();
+  </script>
+</body>
 </html>

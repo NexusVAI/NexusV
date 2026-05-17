@@ -1,0 +1,1274 @@
+/*
+ * Cancri API 平台共享样式
+ *
+ * 适用页面：
+ *   chat/api_apply.html      （申请 API）
+ *   chat/api_keys.html       （我的 Keys）
+ *   chat/api_models.html     （模型广场）
+ *   chat/api_docs.html       （API 文档）
+ *   chat/api/admin.html      （管理员审核）
+ *   chat/api/admin_lines.html（管理员模型线路）
+ *   chat/api/admin_usage.html（管理员调用日志）
+ *
+ * 设计目标：与主 ChatAI 暗色风格一致，统一间距 / 字体 / 配色 / 状态颜色。
+ * 仅引入页面共有的视觉语言；页面专有样式（如 admin 表格列宽、模型卡片等）
+ * 仍保留在各自的 <style> 中。
+ */
+
+/* Liquid Glass helper removed from admin pages 2026-05-14: the SVG
+   displacement filter chained inside backdrop-filter on .nav /
+   .stat-card / .gate was causing visible frame drops on mobile.
+   Chat-side small buttons keep it via chat/styles/cancri_liquid_glass.css. */
+
+/* ─── Anthropic Sans 自宿字体 ─────────────────────────────────
+ * 2026-05-16 PR ·api-typography：API 平台原 --sans 栈头部缺 Anthropic Sans，
+ * 用户从 chat 主页（已用 Anthropic Sans）跳到 API 页字体会突然变成
+ * system sans，破坏品牌一致性。
+ *
+ * 修复：在 api-platform.css 顶部直接注册 @font-face × 2（roman + italic）
+ * 引用 chat/fonts/ 下已存在的 .ttf 文件（chat/claude.css:19-32 同款 src）。
+ * 不抽离共享文件保持改动最小封面。
+ *
+ * Instrument Serif 仍走 Google Fonts CDN（page 里 <link>），不动。
+ * --serif 用于 .page-title / .subtitle，是 API 平台编辑感的设计选择，保留。
+ * ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("../fonts/AnthropicSans-Roman-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anthropic Sans";
+  src: url("../fonts/AnthropicSans-Italic-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ─── reset & tokens ────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* ── Clay palette (Anthropic-inspired, dark default) ── */
+  --bg: #0a0a0a;
+  --bg-1: #111111;
+  --bg-2: #161616;
+  --line: #1f1f1f;
+  --line-2: #2a2a2a;
+
+  --ink: #ededec;
+  --ink-2: #a3a3a0;
+  --ink-3: #6f6f6c;
+
+  --cream: #f5f4ed;
+  --cream-on: #1c1c1a;
+  --clay: #d97757;
+  --clay-2: #b85a3e;
+
+  /* 状态色 (semantic, theme-stable) */
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --err: #f87171;
+
+  /* 字体 */
+  --serif: "Instrument Serif", "Source Serif Pro", Georgia, "Times New Roman",
+    serif;
+  /* 2026-05-16 PR ·api-typography：栈头加 Anthropic Sans / AnthropicSans
+     跟 chat/claude.css --c-font 取齐。@font-face 在文件顶部已注册。 */
+  --sans:
+    "Anthropic Sans", "AnthropicSans",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* 投影 */
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* ── Legacy aliases (so existing pages render with the new palette
+   *    without per-page rewrites) ── */
+  --bg-elev: var(--bg-1);
+  --bg-card: var(--bg-1);
+  --bg-input: var(--bg-2);
+  --border: var(--line);
+  --border-strong: var(--line-2);
+  --border-mute: var(--line);
+  --text: var(--ink);
+  --text-mute: var(--ink-2);
+  --text-faint: var(--ink-3);
+  --accent: var(--clay);
+  --accent-strong: var(--clay);
+  --accent-strong-hover: var(--clay-2);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+}
+
+/* ── Light theme override ────────────────────────────────────
+ * 触发：在 <html data-theme="light"> 时启用。
+ * 设计参考 Anthropic 浅色页：暖白 + 深棕字 + 同款 Clay 强调。 */
+:root[data-theme="light"] {
+  --bg: #faf9f5;
+  --bg-1: #f3f1ea;
+  --bg-2: #e9e6dc;
+  --line: #e3dfd2;
+  --line-2: #cfcabd;
+
+  --ink: #1f1f1c;
+  --ink-2: #585854;
+  --ink-3: #8a8a85;
+
+  --cream: #1c1c1a;
+  --cream-on: #f5f4ed;
+  --clay: #c45a32;
+  --clay-2: #a14722;
+
+  --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* ─── base ─────────────────────────────────────────────────── */
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  /* 2026-05-16 PR ·api-typography：补齐 chat 主页 (claude.css:184-187) 的
+     渲染 4 行，让 API 页上 Firefox/Safari 上字迹不再偏厚、 ligature/kerning 全开。 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1,
+    "calt" 1;
+}
+
+a {
+  color: var(--accent);
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+/* ─── layout ───────────────────────────────────────────────── */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 20px 48px;
+}
+
+.container--narrow {
+  max-width: 640px;
+}
+
+.container--wide {
+  max-width: 1400px;
+}
+
+/* ─── nav ──────────────────────────────────────────────────── */
+
+.nav,
+.nav-bar {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+}
+
+.nav a,
+.nav-bar a {
+  padding: 7px 13px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 13px;
+  border-radius: 8px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.nav a:hover,
+.nav-bar a:hover {
+  background: var(--bg-1);
+  color: var(--ink);
+}
+
+.nav a.active,
+.nav-bar a.active {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--clay);
+  border-radius: 0;
+}
+
+.nav .spacer,
+.nav-bar .spacer {
+  flex: 1;
+}
+
+.nav .badge-admin,
+.nav-bar .badge-admin {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--err);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* ─── header ───────────────────────────────────────────────── */
+
+header h1,
+.page-title {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  line-height: 1.1;
+}
+
+header p,
+.subtitle {
+  font-family: var(--serif);
+  color: var(--text-mute);
+  font-size: 16px;
+  margin-top: 6px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* ─── card ─────────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: var(--text-mute);
+}
+
+/* ─── gate ─────────────────────────────────────────────────── */
+
+.gate {
+  max-width: 520px;
+  margin: 80px auto 0;
+  padding: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.gate h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.gate p {
+  color: var(--text-mute);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.gate.deny {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.gate.deny h2 {
+  color: var(--err);
+}
+
+/* ─── form ─────────────────────────────────────────────────── */
+
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-mute);
+  margin-bottom: 6px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--border-strong);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.input-row input {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+
+.search-box:focus {
+  border-color: var(--accent);
+}
+
+input::placeholder,
+textarea::placeholder,
+.search-box::placeholder {
+  color: var(--text-faint);
+}
+
+/* ─── buttons ──────────────────────────────────────────────── */
+
+button {
+  font-family: inherit;
+}
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s,
+    transform 0.18s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--cream);
+  color: var(--cream-on);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+
+.btn-secondary:hover {
+  border-color: var(--ink-2);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--err);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.btn-danger:hover {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  background: var(--bg-1);
+  color: var(--text-faint);
+  border-color: var(--line);
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.reload-btn {
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  font-size: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.reload-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* ─── filter group ─────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.filter-btn {
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-mute);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.filter-btn:hover {
+  color: var(--text);
+}
+
+.filter-btn.active {
+  background: var(--bg-elev);
+  color: var(--text);
+}
+
+.filter-btn .count {
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+/* ─── messages ─────────────────────────────────────────────── */
+
+.msg {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+
+.msg.ok {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: var(--ok);
+}
+
+.msg.err {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--err);
+}
+
+/* ─── table ────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  background: var(--bg-elev);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+td.email {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+td.purpose {
+  max-width: 380px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-mute);
+}
+
+td.created,
+td.user-id,
+td.ip {
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+td.user-id {
+  font-size: 11px;
+}
+
+td.ip {
+  font-size: 11.5px;
+}
+
+/* 简易表格（用户端用量等） */
+.usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.usage-table th {
+  text-align: left;
+  color: var(--text-mute);
+  font-weight: normal;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.usage-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-mute);
+}
+
+/* ─── status badges ────────────────────────────────────────── */
+
+.status,
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--warn);
+}
+
+.status-approved {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--ok);
+}
+
+.status-rejected {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--err);
+}
+
+/* ─── stats ────────────────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.stat-card .label {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-card .value {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.stat-card.pending .value {
+  color: var(--warn);
+}
+
+.stat-card.approved .value {
+  color: var(--ok);
+}
+
+.stat-card.rejected .value {
+  color: var(--err);
+}
+
+/* ─── empty / loading ──────────────────────────────────────── */
+
+.empty,
+.loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-mute);
+  font-size: 13px;
+}
+
+.empty--inline {
+  padding: 12px 0;
+  text-align: left;
+  color: var(--text-faint);
+}
+
+/* ─── toast ────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: var(--shadow-toast);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.18s,
+    transform 0.18s;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.toast.ok {
+  border-color: rgba(74, 222, 128, 0.4);
+  color: var(--ok);
+}
+
+.toast.err {
+  border-color: rgba(248, 113, 113, 0.4);
+  color: var(--err);
+}
+
+/* ─── doc link ─────────────────────────────────────────────── */
+
+.doc-link {
+  display: block;
+  margin-top: 16px;
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.doc-link:hover {
+  text-decoration: underline;
+}
+
+/* ─── api keys ─────────────────────────────────────────────── */
+
+.key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-mute);
+  gap: 12px;
+}
+
+.key-row:last-child {
+  border-bottom: none;
+}
+
+.key-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.key-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.key-prefix {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.key-meta {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.key-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.key-actions .btn,
+.key-actions .btn-primary,
+.key-actions .btn-secondary,
+.key-actions .btn-danger {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.new-key-reveal {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+  display: none;
+}
+
+.new-key-reveal code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ok);
+  word-break: break-all;
+}
+
+.new-key-reveal .warn {
+  color: var(--warn);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* ─── small inline status (apply page) ─────────────────────── */
+
+.status-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* ─── nav-bar variant: 顶栏粘性（用户端） ──────────────────── */
+
+.nav-bar--sticky {
+  position: sticky;
+  top: 0;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+}
+
+/* ─── donation banner (shared) ─────────────────────────────
+ * 站主赞助横幅。用于 API 申请、模型广场两页（也可加到其它 API
+ * 页面），保持视觉一致。配色：暖橙 (#fb923c)，与 --accent 蓝、
+ * --warn 黄、--err 红都拉开距离。整体逻辑：
+ *   - 默认展开；用户点 header 折叠，状态写入 localStorage
+ *     key 'nexusv_promo_donation_v2'，与主聊天侧边栏共享。
+ *   - 折叠态保留单行 header，"❤ 站主不易…" 仍可见。
+ *   - 内容横向布局（左二维码 + 右文案），首屏占用约 130px。
+ *   - 移动端 (<=520px) 自动改为竖排居中。
+ */
+.cancri-promo-banner {
+  background: linear-gradient(
+    135deg,
+    rgba(251, 146, 60, 0.07),
+    rgba(234, 88, 12, 0.03)
+  );
+  border: 1px solid rgba(251, 146, 60, 0.22);
+  border-radius: 12px;
+  margin: 0 0 18px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+.cancri-promo-banner:hover {
+  border-color: rgba(251, 146, 60, 0.36);
+}
+.cancri-promo-banner__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.cancri-promo-banner__head:hover {
+  background: rgba(251, 146, 60, 0.05);
+}
+.cancri-promo-banner__heart {
+  font-size: 14px;
+  color: #fb923c;
+  flex-shrink: 0;
+  line-height: 1;
+  animation: cancriPromoBeat 1.6s ease-in-out infinite;
+}
+@keyframes cancriPromoBeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.18); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.10); }
+  70% { transform: scale(1); }
+}
+.cancri-promo-banner__title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.cancri-promo-banner__hint {
+  flex: 1;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cancri-promo-banner__chevron {
+  flex-shrink: 0;
+  color: var(--text-mute);
+  transition: transform 0.25s ease;
+}
+.cancri-promo-banner.is-collapsed .cancri-promo-banner__chevron {
+  transform: rotate(180deg);
+}
+.cancri-promo-banner__body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 4px 16px 16px;
+  max-height: 320px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.2s ease,
+    padding 0.3s ease;
+}
+.cancri-promo-banner.is-collapsed .cancri-promo-banner__body {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.cancri-promo-banner__qr {
+  width: 110px;
+  height: 110px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: block;
+}
+.cancri-promo-banner__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cancri-promo-banner__lead {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.55;
+}
+.cancri-promo-banner__sub {
+  font-size: 12px;
+  color: var(--text-mute);
+  line-height: 1.6;
+}
+@media (max-width: 520px) {
+  .cancri-promo-banner__body {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+  .cancri-promo-banner__hint {
+    display: none;
+  }
+}
+
+/* ─── responsive ───────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .container,
+  .container--narrow,
+  .container--wide {
+    padding: 16px 14px 48px;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  header h1,
+  .page-title {
+    font-size: 20px;
+  }
+
+  .key-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .key-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .nav-bar a,
+  .nav a {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+}
+
+/* ─── 统一开放平台 Chrome ────────────────────────────────────
+ * 顶栏 / 品牌标识 / 导航 / 主题切换 / 站点页脚。
+ * 这一组类名独立于旧 .nav-bar 体系，所有 4 个旧 API 页 + 门户
+ * 都通过统一 HTML 结构使用同一套 chrome；
+ *   <header class="topbar">…</header>
+ *   <main class="page-shell">…</main>
+ *   <footer class="site-footer">…</footer>
+ * 改这一节 = 全平台同步升级。
+ * ──────────────────────────────────────────────────────────── */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+@supports not (background: color-mix(in srgb, white, black)) {
+  /* fallback for older browsers without color-mix */
+  .topbar {
+    background: rgba(10, 10, 10, 0.78);
+  }
+  :root[data-theme="light"] .topbar {
+    background: rgba(250, 249, 245, 0.85);
+  }
+}
+
+.topbar__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+/* Cancri 立方体 logo（黑白双主题）。固定高度让它和原 brand__mark 字标
+ * 视觉占位一致；data-theme 切换由 cancri_logo_theme.js 通过 src 替换
+ * 实时驱动，所以这里不需要写任何 dark/light 选择器。 */
+.brand__logo {
+  height: 28px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.brand__mark {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--clay);
+  letter-spacing: -0.01em;
+}
+.brand__sep {
+  color: var(--ink-3);
+  font-size: 16px;
+  line-height: 1;
+}
+.brand__product {
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+}
+.topnav a {
+  padding: 7px 13px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-radius: 8px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.topnav a:hover {
+  color: var(--ink);
+  background: var(--bg-1);
+}
+.topnav a.is-active {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: inset 0 -1px 0 var(--clay);
+  border-radius: 0;
+}
+.topnav__back {
+  color: var(--ink-3) !important;
+  margin-left: 8px;
+  padding-left: 14px !important;
+  border-left: 1px solid var(--line);
+  border-radius: 0 !important;
+}
+.topnav__back:hover {
+  color: var(--ink-2) !important;
+  background: transparent !important;
+}
+
+/* 主题切换按钮 — 顶栏右侧的小图标按钮 */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 6px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+  font-family: inherit;
+}
+.theme-toggle:hover {
+  color: var(--ink);
+  border-color: var(--ink-3);
+  background: var(--bg-1);
+}
+.theme-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+/* 暗色显示 sun（点击切到浅色），浅色显示 moon（点击切回深色） */
+:root[data-theme="light"] .theme-toggle__sun {
+  display: none;
+}
+:root:not([data-theme="light"]) .theme-toggle__moon {
+  display: none;
+}
+
+/* 主体容器（适配在 topbar 之下） */
+.page-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 28px 64px;
+}
+.page-shell--narrow {
+  max-width: 640px;
+}
+.page-shell--wide {
+  max-width: 1400px;
+}
+
+/* 站点页脚 — 与门户保持一致 */
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 40px 28px 64px;
+  color: var(--ink-3);
+  font-size: 12px;
+  margin-top: 48px;
+}
+.site-footer__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: baseline;
+}
+.site-footer__sig {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.site-footer__sig::before {
+  content: "§ ";
+  color: var(--clay);
+  font-style: normal;
+}
+
+@media (max-width: 720px) {
+  .topbar__inner {
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .topnav {
+    flex-wrap: wrap;
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .topnav a {
+    padding: 6px 10px;
+    font-size: 12.5px;
+  }
+  .topnav__back {
+    margin-left: auto;
+  }
+  .page-shell {
+    padding: 22px 18px 56px;
+  }
+  .site-footer {
+    padding: 32px 18px 48px;
+  }
+}
+
+/* ::selection 配色（开放平台所有页面统一） */
+::selection {
+  background: var(--clay);
+  color: var(--cream-on);
+}
+
+/* Auto-applied Liquid Glass on admin surfaces was removed 2026-05-14
+   after profiling: 5+ full-width .nav / .stat-card backdrop-filter
+   regions, each chaining the SVG displacement filter, caused noticeable
+   frame drops on mobile and added ~80-120ms of paint per dashboard
+   render. The admin look is intentionally industrial, not glassy. */
