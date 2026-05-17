@@ -10,6 +10,14 @@
     content="一个端点，多种协议，一把密钥。Cancri 开放平台把 OpenAI、Anthropic 与 Codex 三套原生协议归一化到同一个 API 网关。"
   />
 
+  <!-- 浏览器 tab favicon。dark 主题用白 logo（Cancri1.jpg）作为 source；
+       浏览器 tab 实际只取一张静态 icon，无法跟随站内主题切换，所以
+       favicon 固定用黑色 PNG 让它在浏览器默认浅色 tab 栏可见。 -->
+  <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+  <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+  <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high" />
+  <link rel="preload" as="image" href="../../Logo/Cancri.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -19,6 +27,9 @@
 
   <link rel="stylesheet" href="./api-platform.css?v=2026-05-16-typography" />
   <script src="./api-platform.js?v=20260513"></script>
+  <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
+       img.cancri-logo 的 src（黑/白），实现主题切换时 logo 跟随翻转。 -->
+  <script src="../cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
   <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
   <script src="../../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
   <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
@@ -467,10 +478,16 @@
 <body>
   <header class="topbar">
     <div class="topbar__inner">
-      <a class="brand" href="./">
-        <span class="brand__mark">N</span>
-        <span class="brand__sep">／</span>
-        <span class="brand__product">Open&nbsp;Platform</span>
+      <a class="brand" href="./" aria-label="Cancri 开放平台">
+        <img
+          class="brand__logo cancri-logo"
+          src="../../Logo/Cancri1.jpg"
+          data-dark-src="../../Logo/Cancri1.jpg"
+          data-light-src="../../Logo/Cancri.png"
+          alt="Cancri"
+          width="28"
+          height="28"
+        />
       </a>
       <nav class="topnav" aria-label="开放平台导航">
         <a href="./" class="is-active">概览</a>

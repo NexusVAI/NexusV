@@ -1079,9 +1079,21 @@ td.ip {
 
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   flex-shrink: 0;
+}
+/* Cancri 立方体 logo（黑白双主题）。固定高度让它和原 brand__mark 字标
+ * 视觉占位一致；data-theme 切换由 cancri_logo_theme.js 通过 src 替换
+ * 实时驱动，所以这里不需要写任何 dark/light 选择器。 */
+.brand__logo {
+  height: 28px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .brand__mark {
   font-family: var(--serif);
