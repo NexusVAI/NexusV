@@ -55,6 +55,7 @@ const FALLBACK_PAID_IDS = new Set([
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.3-codex",
+    "gemini-3.1-pro",
     "gemini-3.1-pro-preview",
     "glm-5.1",
     "deepseek-v4-pro",
@@ -62,6 +63,21 @@ const FALLBACK_PAID_IDS = new Set([
     "minimax-m2.7",
     "kimi-k2.6",
 ]);
+
+// 2026-05-18 添加倍率列：与 chat-gateway MODEL_COST_MULTIPLIER 同步。
+// 按列示例在模型卡片上额外渲染一个徽章，让用户一眼看到计费倍率。
+const COST_TIER_MULTIPLIER = {
+    free: 0.5,
+    cheap: 1,
+    normal: 3,
+    expensive: 10,
+    vip: 30,
+};
+
+function getCostMultiplier(m) {
+    const tier = (m && m.costTier) || "normal";
+    return COST_TIER_MULTIPLIER[tier] ?? 1;
+}
 
 function getDisplayTier(m) {
     // 优先读后端权威字段
@@ -326,6 +342,16 @@ function card(m) {
     const proPlusBadge = isProPlusOnly
         ? '<span class="tier" style="background:rgba(96,165,250,.18);color:#60a5fa;margin-left:4px" title="该模型仅 Pro+ 以上订阅可用">PRO+</span>'
         : "";
+    // 2026-05-18 计费倍率徽章：显示 0.5× / 1× / 3× / 10× / 30×。
+    // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=3,
+    // expensive=10, vip=30。样式跟 PRO+ 徽章同样位置，但颜色用 amber/clay。
+    const mult = getCostMultiplier(m);
+    const multiplierBadge = `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d;margin-left:4px" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
+    // 2026-05-18 FREE 不可用提示：GPT-5.5 系列 / gemini-3.1-pro / gpt-5.4-mini
+    // 对 FREE 用户硬挡。freeUserBlocked 字段来自 chat-gateway model_public_catalog。
+    const freeBlockedBadge = m && m.freeUserBlocked
+        ? '<span class="tier" style="background:rgba(232,90,90,.16);color:#e85a5a;margin-left:4px" title="FREE 用户禁止调用该模型">FREE 不可用</span>'
+        : "";
     const inputK = m.maxInputTokens
         ? m.maxInputTokens >= 1000
             ? Math.round(m.maxInputTokens / 1000) + "K"
@@ -347,7 +373,7 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="tier ${tierClass}">${tierLabel}</span>${proPlusBadge}
+            <span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${freeBlockedBadge}
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
