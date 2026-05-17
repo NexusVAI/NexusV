@@ -887,7 +887,7 @@ curl <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1/cha
   -H <span class="c-str">"Authorization: Bearer $CANCRI_KEY"</span> \
   -H <span class="c-str">"Content-Type: application/json"</span> \
   -d <span class="c-str">'{
-    "model": "gpt-4o-mini",
+    "model": "gpt-5.4-mini",
     "messages": [{"role": "user", "content": "Hello"}]
   }'</span></pre>
 
@@ -899,7 +899,7 @@ client = <span class="c-fn">OpenAI</span>(
 )
 
 resp = client.chat.completions.<span class="c-fn">create</span>(
-    model=<span class="c-str">"gpt-4o-mini"</span>,
+    model=<span class="c-str">"gpt-5.4-mini"</span>,
     messages=[{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Hello"</span>}],
 )
 <span class="c-fn">print</span>(resp.choices[<span class="c-str">0</span>].message.content)</pre>
@@ -912,7 +912,7 @@ resp = client.chat.completions.<span class="c-fn">create</span>(
 });
 
 <span class="c-key">const</span> resp = <span class="c-key">await</span> client.chat.completions.<span class="c-fn">create</span>({
-  model: <span class="c-str">"gpt-4o-mini"</span>,
+  model: <span class="c-str">"gpt-5.4-mini"</span>,
   messages: [{ role: <span class="c-str">"user"</span>, content: <span class="c-str">"Hello"</span> }],
 });
 console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>].message.content);</pre>
@@ -954,7 +954,7 @@ console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>]
               <div class="entry-card__num">3.3</div>
               <div class="entry-card__name">模型&nbsp;<em>广场</em></div>
               <div class="entry-card__desc">
-                浏览所有可调用模型、命名约定与每千 Token 价格。
+                浏览所有可调用模型，按品牌筛选，查看上下文长度与 FREE / PAID 档位。
               </div>
               <div class="entry-card__arrow">→</div>
             </a>

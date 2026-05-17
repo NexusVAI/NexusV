@@ -45,12 +45,15 @@ const HIDE_IDS = new Set([
 //   3) 其余全部 FREE（包括 OSS、Nemotron、Gemma、Qwen3 子型、Doubao、Step、
 //      DeepSeek V3 系、GLM 4.x、视频生成等）
 // 不修改后端 costTier 字段：聊天页 / 速率表 / 计费仍按真实档位走。
+// 2026-05-17 修：网关 catalog 里 Gemini 3.1 Pro 的实际 id 是
+// "gemini-3.1-pro-preview"（带 -preview 后缀），原来写成 "gemini-3.1-pro"
+// 永远命中不到，导致 Gemini 3.1 Pro 在广场被错显成 FREE。对齐网关 id。
 const PAID_IDS = new Set([
     "gpt-5.4",
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.3-codex",
-    "gemini-3.1-pro",
+    "gemini-3.1-pro-preview",
     "glm-5.1",
     "deepseek-v4-pro",
     "qwen3.6-max-preview",
