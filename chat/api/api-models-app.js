@@ -340,17 +340,17 @@ function card(m) {
     // 需要 Pro+ 以上订阅。在 PAID badge 旁多挂一个 PRO+ 标识，让用户一眼看出。
     const isProPlusOnly = m.costTier === "vip";
     const proPlusBadge = isProPlusOnly
-        ? '<span class="tier" style="background:rgba(96,165,250,.18);color:#60a5fa;margin-left:4px" title="该模型仅 Pro+ 以上订阅可用">PRO+</span>'
+        ? '<span class="tier" style="background:rgba(96,165,250,.18);color:#60a5fa" title="该模型仅 Pro+ 以上订阅可用">PRO+</span>'
         : "";
     // 2026-05-18 计费倍率徽章：显示 0.5× / 1× / 3× / 10× / 30×。
     // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=3,
     // expensive=10, vip=30。样式跟 PRO+ 徽章同样位置，但颜色用 amber/clay。
     const mult = getCostMultiplier(m);
-    const multiplierBadge = `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d;margin-left:4px" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
+    const multiplierBadge = `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
     // 2026-05-18 FREE 不可用提示：GPT-5.5 系列 / gemini-3.1-pro / gpt-5.4-mini
     // 对 FREE 用户硬挡。freeUserBlocked 字段来自 chat-gateway model_public_catalog。
     const freeBlockedBadge = m && m.freeUserBlocked
-        ? '<span class="tier" style="background:rgba(232,90,90,.16);color:#e85a5a;margin-left:4px" title="FREE 用户禁止调用该模型">FREE 不可用</span>'
+        ? '<span class="tier" style="background:rgba(232,90,90,.16);color:#e85a5a" title="FREE 用户禁止调用该模型">FREE 不可用</span>'
         : "";
     const inputK = m.maxInputTokens
         ? m.maxInputTokens >= 1000
@@ -373,7 +373,7 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${freeBlockedBadge}
+            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${freeBlockedBadge}</span>
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
