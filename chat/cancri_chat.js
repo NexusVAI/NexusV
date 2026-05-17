@@ -221,7 +221,7 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   // backend 给的 message 本身已经写得很完整（含重置时间、升级链接提示），
   // 这里用 null 让 friendlyMessageFromBackend 直接采纳 backend 的 message。
   // 注意：null 模式仅对我们自己后端构造的字面量 message 安全（不会透传上游）。
-  model_paid_only: null,
+  // 2026-05-18 清理：废弃的 model_paid_only 已从后端移除（统一为 model_pro_required）。
   free_pool_exhausted: null,
   daily_paid_limit_reached: null,
   quota_check_failed: null,
@@ -252,7 +252,6 @@ const KNOWN_ERROR_CODE_MESSAGES = {
 const QUOTA_REFRESH_TRIGGER_CODES = new Set([
   "free_pool_exhausted",
   "daily_paid_limit_reached",
-  "model_paid_only",
   // 2026-05-17 Phase A 新增
   "monthly_quota_exhausted",
   "model_pro_plus_required",
@@ -1280,6 +1279,7 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.5",
   "gpt-5.5-high",
   "gpt-5.3-codex",
+  "gemini-3.1-pro",
   "gemini-3.1-pro-preview",
   "glm-5.1",
   "deepseek-v4-pro",
@@ -1287,11 +1287,24 @@ const PAID_GATE_IDS = new Set([
   "minimax-m2.7",
   "kimi-k2.6",
 ]);
-const FREE_USER_BLOCKED_GATE_IDS = new Set(["gpt-5.4-mini", "gpt-5.5", "gpt-5.5-high"]);
+// 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
+// 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
+// 后端 chat-gateway / api-gateway / modelscope-proxy 三处也已同步。
+const FREE_USER_BLOCKED_GATE_IDS = new Set([
+  "gpt-5.4-mini",
+  "gpt-5.5",
+  "gpt-5.5-high",
+  "gemini-3.1-pro",
+]);
 
 let quotaState = {
   fetchedAt: 0,
   tier: "free",
+  // 2026-05-18：存 plan_code + is_grandfathered，让前端能区分
+  // Pro / Pro+ / Pro Max，避免 Pro 用户看到 vip 模型为可点、点了才 403。
+  // backend cancri_get_quota_status_v2 返回二者，refreshQuotaState 吃进。
+  planCode: null,             // 'pro' | 'pro_plus' | 'pro_max' | null
+  isGrandfathered: false,     // Phase A 老用户豁免 vip 模型
   freePoolRemaining: null,    // null = 未知（不强制阻挡）
   dailyPaidRemaining: null,   // null = 未知（不强制阻挡）
 };
@@ -1309,13 +1322,30 @@ function isFreeUserBlockedGateModel(modelId) {
   return FREE_USER_BLOCKED_GATE_IDS.has(modelId);
 }
 
+// 2026-05-18：Pro+ 以上专属模型检测——与 chat-gateway isProPlusRequiredModel 同步。
+// 直接看 MODEL_CATALOG 上的 costTier === 'vip'（Claude Opus / Gemini 3.1 Pro / 全部视频模型）。
+function isProPlusGateModel(modelId) {
+  const meta = getModelMeta(modelId);
+  return Boolean(meta && meta.costTier === "vip");
+}
+
 // 返回 null 表示通过；否则返回原因 code：
-//   • 'paid_only'      FREE 用户调 GPT-5.5 系列（硬挡，不论池/日配额）
+//   • 'pro_only'       FREE 用户调 GPT-5.5 系列 / GPT-5.4 Mini（硬挡，不论池/日配额）
+//   • 'pro_plus_only'  FREE 或 Pro（非 grandfather）调 vip 模型（Opus / Gemini Pro / 视频）
 //   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何 PAID 模型）
 //   • 'daily_limit'    当日 15 次 PAID 试用用完（2026-05-17 Phase A：25 → 15）
 function getQuotaBlockReason(modelId) {
-  if (quotaState.tier === "paid") return null;            // PAID 用户全通
-  if (isFreeUserBlockedGateModel(modelId)) return "paid_only";
+  // 2026-05-18 vip 档位闸门：与 chat-gateway cancri_consume_paid_quota_v2 同步。
+  // FREE / Pro（非 grandfather）调 vip 模型 → 后端返 5/403，前端也锁死。
+  // Pro+ / Pro Max / grandfather Pro 豁免。
+  if (isProPlusGateModel(modelId)) {
+    const planCode = quotaState.planCode;
+    const isProPlusOrAbove = planCode === "pro_plus" || planCode === "pro_max";
+    const isGrandfatheredPro = planCode === "pro" && quotaState.isGrandfathered;
+    if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
+  }
+  if (quotaState.tier === "paid") return null;            // PAID 用户全通（除上面 vip 闸门）
+  if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   if (!isPaidGateModel(modelId)) return null;             // FREE 用户调 FREE 模型 OK
   // FREE 用户 + PAID 模型：看池 + 日配额
   if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
@@ -1325,8 +1355,10 @@ function getQuotaBlockReason(modelId) {
 
 function getQuotaBlockMessage(modelId) {
   switch (getQuotaBlockReason(modelId)) {
-    case "paid_only":
-      return "该模型仅向 Cancri Pro 订阅用户开放，请升级或选择其他模型。";
+    case "pro_only":
+      return "该模型仅向 Cancri Pro 及以上订阅用户开放，请升级或选择其他模型。";
+    case "pro_plus_only":
+      return "该模型仅向 Cancri Pro+ 及以上订阅用户开放（Claude Opus / Gemini 3.1 Pro / 视频生成），请升级或选择其他模型。";
     case "pool_exhausted":
       return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
     case "daily_limit":
@@ -1375,6 +1407,13 @@ async function refreshQuotaState(force) {
     .then((data) => {
       if (data && data.ok) {
         quotaState.tier = data.tier === "paid" ? "paid" : "free";
+        // 2026-05-18：吃 plan_code + is_grandfathered，让 vip 档位闸门能区分 Pro/Pro+/Pro Max。
+        // backend cancri_get_quota_status_v2 返回这两个字段。
+        const rawPlan = typeof data.plan_code === "string" ? data.plan_code : null;
+        quotaState.planCode = rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max"
+          ? rawPlan
+          : null;
+        quotaState.isGrandfathered = Boolean(data.is_grandfathered);
         quotaState.freePoolRemaining = data.free_pool
           ? Number(data.free_pool.remaining)
           : null;
@@ -1401,8 +1440,9 @@ async function refreshQuotaState(force) {
   return quotaStateFetchInflight;
 }
 
-// 后端返回 free_pool_exhausted / daily_paid_limit_reached / model_paid_only
-// 错误时，调这个让前端立刻看到新状态（不必等 30s TTL）。
+// 后端返回 free_pool_exhausted / daily_paid_limit_reached / monthly_quota_exhausted /
+// model_pro_required / model_pro_plus_required 错误时，调这个让前端立刻看到新状态
+// （不必等 30s TTL）。
 function invalidateQuotaState() {
   quotaState.fetchedAt = 0;
   return refreshQuotaState(true);
@@ -1639,7 +1679,7 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gemma-4-31b-it": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "image-fast": DEFAULT_MODEL_ID,
-  "gpt-image-2-api456": DEFAULT_MODEL_ID,
+  "gpt-image-2-api456": "gpt-image-2",
   "wan2.7-image-pro": DEFAULT_MODEL_ID,
   "sensenova-u1-fast": DEFAULT_MODEL_ID,
   "wan2.5-t2i-preview": DEFAULT_MODEL_ID,
@@ -1703,11 +1743,12 @@ const MODEL_CATALOG = [
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-6-thinking", "name": "Claude Opus 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
+  {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-sonnet-4-6-thinking", "name": "Claude Sonnet 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
-  {"id": "gpt-image-2", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
+  {"id": "gpt-image-2", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "factorypub"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "claude-opus-4-6-thinking-medium", "name": "Claude Opus 4.6 自适应思维", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "freeLimitNote": "免费共享 10/h，付费不限"},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
@@ -1823,7 +1864,7 @@ const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
     canonicalId: entry.id,
     displayName: entry.name,
     brand: entry.brand,
-    lineLabel: "",
+    lineLabel: entry.lineLabel || "",
     tags,
     multimodal: !!entry.vision,
     imageOnly: entry.kind === "image",

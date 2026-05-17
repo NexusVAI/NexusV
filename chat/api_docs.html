@@ -1565,8 +1565,9 @@ openclaw agent</pre>
               也不扣共享池。判定基于 HTTP 状态码，不读取上游错误文本。
             </li>
             <li>
-              <b>GPT-5.5 系列例外：</b> <code>gpt-5.5</code> / <code>gpt-5.5-high</code>
-              是 Pro 以上专属，FREE 用户调用直接返回 <code>403 model_paid_only</code>，
+              <b>GPT-5.5 / GPT-5.4 Mini 例外：</b> <code>gpt-5.5</code> /
+              <code>gpt-5.5-high</code> / <code>gpt-5.4-mini</code> 是 Pro 以上专属，
+              FREE 用户调用直接返回 <code>403 model_pro_required</code>，
               <i>不</i>计入共享池与每日 15 次。
             </li>
             <li>
@@ -1614,8 +1615,8 @@ openclaw agent</pre>
               <tr><td><code>free</code></td><td>0.5×</td><td>GLM Flash、DeepSeek V3.1 等国产 FREE</td></tr>
               <tr><td><code>cheap</code></td><td>1×</td><td>Qwen3 系列、轻量模型</td></tr>
               <tr><td><code>normal</code></td><td>3×</td><td>GPT-4 类标准模型、Doubao、Kimi、Haiku</td></tr>
-              <tr><td><code>expensive</code></td><td>10×</td><td>GPT-5.4、Grok-4.20、Sonnet 系列</td></tr>
-              <tr><td><code>vip</code></td><td>30×</td><td>Claude Opus 全系、GPT-5.5、视频生成（Pro+ 起）</td></tr>
+              <tr><td><code>expensive</code></td><td>10×</td><td>GPT-5.2 / GPT-5.3 Codex / GPT-5.4 / GPT-5.4 Mini / GPT-5.5 / GPT-5.5 High、Grok 4.20、Claude Sonnet 4.6 系列、Mistral Large</td></tr>
+              <tr><td><code>vip</code></td><td>30×</td><td>Claude Opus 全系、Gemini 3.1 Pro、视频生成全系（Pro+ 起）</td></tr>
             </tbody>
           </table>
 
@@ -1759,13 +1760,13 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <tbody>
               <tr>
                 <td>403</td>
-                <td><code>model_paid_only</code></td>
-                <td>该模型仅 Pro 以上可用（如 GPT-5.5 系列），FREE 调用被挡</td>
+                <td><code>model_pro_required</code></td>
+                <td>该模型仅 Pro 以上可用（GPT-5.5 / GPT-5.5 High / GPT-5.4 Mini），FREE 调用直接挡，<b>不</b>计入共享池与每日 15 次</td>
               </tr>
               <tr>
                 <td>403</td>
                 <td><code>model_pro_plus_required</code></td>
-                <td>该模型仅 Pro+ 以上可用（Claude Opus / 视频生成等 vip 模型），FREE 与 Pro 都被挡（Phase A 老用户 <code>is_grandfathered=true</code> 在本订阅周期内豁免）</td>
+                <td>该模型仅 Pro+ 以上可用（Claude Opus 全系 / Gemini 3.1 Pro / 视频生成等 vip 模型），FREE 与 Pro 都被挡（Phase A 老用户 <code>is_grandfathered=true</code> 在本订阅周期内豁免）</td>
               </tr>
               <tr>
                 <td>429</td>
@@ -2040,7 +2041,16 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <code>Retry-After</code> 后退避，或直接换一个模型。
           </p>
 
-          <p>所有错误响应都符合 OpenAI 的错误格式：</p>
+          <p>
+            错误响应格式按调用端点协议返回，<b>客户端只需按本来 SDK 的错误处理流程即可</b>：
+          </p>
+          <ul>
+            <li><b>OpenAI 协议路由</b>（<code>/v1/chat/completions</code> / <code>/v1/responses</code>）
+              走 OpenAI shape：<code>{ "error": { "message", "type", "code" } }</code></li>
+            <li><b>Anthropic 协议路由</b>（<code>/v1/messages</code>）走 Anthropic shape：
+              <code>{ "type": "error", "error": { "type", "message", "code" } }</code>
+              —— Claude SDK / Claude Code / OpenClaw 期望此形态，原生 SDK 无需特殊处理</li>
+          </ul>
           <div class="code-block">
             <pre class="lang active">{
   <span class="s">"error"</span>: {

@@ -104,8 +104,8 @@
       "status": "operational"
     },
     {
-      "name": "GPT-5.5",
-      "description": "新 · TokenFlux",
+      "name": "GPT-5.5 High",
+      "description": "高质量·线路一 (freemodel.dev)",
       "status": "operational"
     },
     {
@@ -250,7 +250,7 @@
     },
     {
       "name": "GPT-5.5",
-      "description": "线路二 (pwcen)",
+      "description": "主线·new.pwcen.cn",
       "status": "operational"
     },
     {
