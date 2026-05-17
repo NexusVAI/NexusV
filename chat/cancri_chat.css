@@ -6499,3 +6499,127 @@ html[data-theme="blue"] {
         justify-content: flex-end;
     }
 }
+
+/* ── CHAT TURN NAVIGATOR (右侧用户提问跳转条) ─────────────────
+   在聊天态显示一列用户提问摘要，点击平滑滚动到对应轮次。
+   只在 #homeView.chatting 时可见，且窄屏（<1180px）隐藏避免遮挡。 */
+#homeView {
+    position: relative;
+}
+
+.chat-nav {
+    position: absolute;
+    top: 28px;
+    right: 16px;
+    bottom: 240px;
+    width: 220px;
+    pointer-events: none;
+    z-index: 5;
+    display: none;
+}
+
+#homeView.chatting .chat-nav:not([hidden]) {
+    display: block;
+}
+
+.chat-nav-list {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 12px 4px 12px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-2) transparent;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 28px,
+        #000 calc(100% - 28px),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 28px,
+        #000 calc(100% - 28px),
+        transparent 100%
+    );
+}
+
+.chat-nav-list::-webkit-scrollbar {
+    width: 4px;
+}
+.chat-nav-list::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 999px;
+}
+.chat-nav-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 5px 10px 5px 8px;
+    border-radius: 999px;
+    background: transparent;
+    border: 0;
+    color: var(--text-2, #888);
+    font-family: inherit;
+    font-size: 12.5px;
+    line-height: 1.35;
+    text-align: right;
+    cursor: pointer;
+    transition:
+        color 0.18s ease,
+        background-color 0.18s ease;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.chat-nav-item-text {
+    max-width: 168px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-nav-item-tick {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.35;
+    transition:
+        width 0.18s ease,
+        opacity 0.18s ease;
+}
+
+.chat-nav-item:hover {
+    color: var(--text);
+    background: var(--bg-2, rgba(127, 127, 127, 0.08));
+}
+.chat-nav-item:hover .chat-nav-item-tick {
+    opacity: 0.7;
+    width: 14px;
+}
+
+.chat-nav-item.is-active {
+    color: var(--text);
+    font-weight: 600;
+}
+.chat-nav-item.is-active .chat-nav-item-tick {
+    width: 18px;
+    opacity: 1;
+}
+
+@media (max-width: 1180px) {
+    .chat-nav {
+        display: none !important;
+    }
+}

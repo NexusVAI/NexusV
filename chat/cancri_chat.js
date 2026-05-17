@@ -3378,6 +3378,18 @@ async function loadChat(chatId) {
       renderMessages();
       updateContextMeter();
       setComposerBusy(false);
+
+      // 进入对话后强制定位到最新一轮：scrollChatToBottom 在容器从
+      // display:none 切换出来的瞬间 clientHeight 仍为 0，会被它的
+      // 120px 阈值挡掉；这里用双 rAF 等布局完成后再硬性归位。
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        });
+      });
+
       showToast("已加载聊天记录");
     }
   } catch (error) {
@@ -3396,6 +3408,7 @@ function newChat() {
   homeView.classList.remove("chatting");
   updateContextMeter();
   updateHomeHeroText();
+  updateChatNav();
   showToast("已创建新对话");
 }
 
@@ -3461,6 +3474,139 @@ function renderMessages() {
       updateAssistantMessage(id, { answer: content, thinking: false });
     }
   });
+
+  updateChatNav();
+}
+
+// ── 右侧"对话跳转"导航 ────────────────────────────────────────
+//
+// 在聊天态显示一列用户提问摘要（截断 ~18 字），点击平滑滚动到对应轮次。
+// 使用 IntersectionObserver 把当前可见的提问同步为 active 高亮，
+// 仿照文档/笔记类产品的右侧 outline 体验。
+let chatNavObserver = null;
+let chatNavLastActiveIndex = null;
+
+function getUserMessageSnippet(domNode, fallbackContent) {
+  const fromDataset = (domNode?.dataset?.userText || "").trim();
+  if (fromDataset) return fromDataset;
+  if (Array.isArray(fallbackContent)) {
+    return extractUserMessageParts(fallbackContent).text;
+  }
+  return String(fallbackContent || "").trim();
+}
+
+function updateChatNav() {
+  const navEl = document.getElementById("chatNav");
+  const listEl = document.getElementById("chatNavList");
+  if (!navEl || !listEl || !chatMessages) return;
+
+  const userBubbles = Array.from(
+    chatMessages.querySelectorAll(".message.user"),
+  );
+
+  if (!userBubbles.length || !homeView?.classList.contains("chatting")) {
+    navEl.hidden = true;
+    listEl.innerHTML = "";
+    if (chatNavObserver) {
+      chatNavObserver.disconnect();
+      chatNavObserver = null;
+    }
+    chatNavLastActiveIndex = null;
+    return;
+  }
+
+  listEl.innerHTML = "";
+  userBubbles.forEach((bubble, ord) => {
+    const idx = Number(bubble.dataset.messageIndex);
+    const histMsg =
+      Number.isFinite(idx) && idx >= 0 ? conversationHistory[idx] : null;
+    const text = getUserMessageSnippet(bubble, histMsg?.content);
+    const display = text
+      ? text.length > 18
+        ? text.slice(0, 18) + "…"
+        : text
+      : `第 ${ord + 1} 轮`;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chat-nav-item";
+    btn.dataset.messageIndex = String(idx);
+    btn.title = text || `第 ${ord + 1} 轮`;
+
+    const textSpan = document.createElement("span");
+    textSpan.className = "chat-nav-item-text";
+    textSpan.textContent = display;
+
+    const tick = document.createElement("span");
+    tick.className = "chat-nav-item-tick";
+    tick.setAttribute("aria-hidden", "true");
+
+    btn.appendChild(textSpan);
+    btn.appendChild(tick);
+    btn.addEventListener("click", () => scrollChatToUserMessage(idx));
+    listEl.appendChild(btn);
+  });
+
+  navEl.hidden = false;
+  setupChatNavObserver(userBubbles);
+}
+
+function scrollChatToUserMessage(messageIndex) {
+  if (!chatMessages) return;
+  const target = chatMessages.querySelector(
+    `.message.user[data-message-index="${messageIndex}"]`,
+  );
+  if (!target) return;
+  const containerRect = chatMessages.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const offset =
+    targetRect.top - containerRect.top + chatMessages.scrollTop - 24;
+  chatMessages.scrollTo({ top: Math.max(offset, 0), behavior: "smooth" });
+  setActiveChatNavIndex(messageIndex);
+}
+
+function setActiveChatNavIndex(messageIndex) {
+  if (chatNavLastActiveIndex === messageIndex) return;
+  chatNavLastActiveIndex = messageIndex;
+  const listEl = document.getElementById("chatNavList");
+  if (!listEl) return;
+  let activeEl = null;
+  listEl.querySelectorAll(".chat-nav-item").forEach((item) => {
+    const idx = Number(item.dataset.messageIndex);
+    const isActive = idx === messageIndex;
+    item.classList.toggle("is-active", isActive);
+    if (isActive) activeEl = item;
+  });
+  if (activeEl) {
+    activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+}
+
+function setupChatNavObserver(bubbles) {
+  if (!chatMessages || !("IntersectionObserver" in window)) return;
+  if (chatNavObserver) {
+    chatNavObserver.disconnect();
+  }
+  chatNavObserver = new IntersectionObserver(
+    (entries) => {
+      // 取所有此刻仍在 root 视口"甜区"内的提问，挑 index 最小（最靠上）的
+      // 一条作为 active，避免多个交叠时来回闪烁。
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .map((e) => Number(e.target.dataset.messageIndex))
+        .filter((n) => Number.isFinite(n));
+      if (!visible.length) return;
+      visible.sort((a, b) => a - b);
+      setActiveChatNavIndex(visible[0]);
+    },
+    {
+      root: chatMessages,
+      // 顶部 10%、底部 60% 留作"非 active"区域，剩 30% 顶部带为高亮触发区。
+      rootMargin: "-10% 0px -60% 0px",
+      threshold: 0,
+    },
+  );
+  bubbles.forEach((b) => chatNavObserver.observe(b));
 }
 
 function renderRestoredDuelMessage(answerA, answerB, metadata) {
@@ -7597,6 +7743,7 @@ function createUserMessage(content, attachments = [], messageIndex = null) {
   messageDiv.appendChild(bubble);
   chatMessages.appendChild(messageDiv);
   scrollChatToBottom(false);
+  updateChatNav();
 }
 
 // Roll the conversation back to *before* the user message at `messageIndex`.
