@@ -341,6 +341,385 @@
           margin-right: 8px;
         }
       }
+
+      /* ====================================================================
+       * Docs 工具栏 / 搜索 / 右侧 outline / 底部 pager
+       * 2026-05-17 重构：参考 KIMI / Anthropic / Stripe docs 三栏布局，
+       * 主区域顶部加搜索框 + 复制 MD + 分享，layout 改三栏（toc / main /
+       * outline），section 之间加大留白并显示分隔线，最底加 prev/next。
+       * ==================================================================== */
+
+      .layout {
+        grid-template-columns: 220px minmax(0, 1fr) 200px;
+      }
+
+      /* main 顶部工具栏 */
+      .docs-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 28px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .docs-search-trigger {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        border-radius: 10px;
+        color: var(--text-mute);
+        font: inherit;
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+        text-align: left;
+      }
+      .docs-search-trigger:hover {
+        border-color: var(--text-faint);
+        background: var(--bg-elev);
+      }
+      .docs-search-trigger svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .docs-search-trigger > span:first-of-type {
+        flex: 1;
+      }
+      .docs-search-kbd {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11px;
+        color: var(--text-faint);
+      }
+      .docs-search-kbd kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg-elev);
+        font: inherit;
+        line-height: 1;
+        color: var(--text-mute);
+      }
+      .docs-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        border-radius: 8px;
+        color: var(--text-mute);
+        font: inherit;
+        font-size: 12.5px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .docs-action-btn:hover {
+        color: var(--text);
+        border-color: var(--text-faint);
+        background: var(--bg-elev);
+      }
+      .docs-action-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .docs-action-btn.is-flashed {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.32);
+      }
+
+      /* 右侧 outline */
+      .docs-outline {
+        position: sticky;
+        top: 76px;
+        align-self: start;
+        max-height: calc(100vh - 96px);
+        overflow-y: auto;
+        font-size: 12.5px;
+        padding-top: 4px;
+      }
+      .docs-outline h4 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .docs-outline ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 12.5px;
+      }
+      .docs-outline li {
+        margin: 0;
+      }
+      .docs-outline a {
+        display: block;
+        padding: 4px 10px;
+        color: var(--text-mute);
+        text-decoration: none;
+        border-left: 2px solid transparent;
+        line-height: 1.45;
+        transition: color 0.12s, border-color 0.12s;
+      }
+      .docs-outline a:hover {
+        color: var(--text);
+      }
+      .docs-outline a.is-active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+      }
+      .docs-outline a.lvl-3 {
+        padding-left: 22px;
+        font-size: 12px;
+        color: var(--text-faint);
+      }
+      .docs-outline a.lvl-3.is-active {
+        color: var(--accent);
+      }
+
+      /* section 之间的视觉分隔 — 让文档不挤在一起 */
+      main > section {
+        padding-top: 8px;
+        padding-bottom: 32px;
+        margin-bottom: 8px;
+      }
+      main > section + section {
+        border-top: 1px solid var(--border);
+        padding-top: 36px;
+      }
+
+      /* 底部上一节 / 下一节 */
+      .docs-pager {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 48px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+      }
+      .docs-pager a {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 14px 18px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-card);
+        color: var(--text-mute);
+        text-decoration: none;
+        transition: border-color 0.15s, color 0.15s;
+      }
+      .docs-pager a:hover {
+        color: var(--text);
+        border-color: var(--text-faint);
+      }
+      .docs-pager-label {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .docs-pager-title {
+        font-size: 14.5px;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .docs-pager .docs-pager-next {
+        text-align: right;
+      }
+      .docs-pager a[aria-disabled="true"] {
+        visibility: hidden;
+      }
+
+      /* 搜索 modal */
+      .docs-search-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 88px 16px 16px;
+        pointer-events: none;
+      }
+      .docs-search-modal[hidden] {
+        display: none;
+      }
+      .docs-search-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(8, 8, 8, 0.55);
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+        pointer-events: auto;
+      }
+      .docs-search-panel {
+        position: relative;
+        width: min(640px, 100%);
+        max-height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        pointer-events: auto;
+      }
+      .docs-search-input-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .docs-search-input-row svg {
+        flex-shrink: 0;
+        opacity: 0.65;
+        color: var(--text-mute);
+      }
+      .docs-search-input {
+        flex: 1;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        font: inherit;
+        font-size: 15px;
+        color: var(--text);
+      }
+      .docs-search-input::placeholder {
+        color: var(--text-faint);
+      }
+      .docs-search-results {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px;
+      }
+      .docs-search-results:empty::after {
+        content: "输入关键词以搜索文档…";
+        display: block;
+        padding: 28px 14px;
+        text-align: center;
+        color: var(--text-faint);
+        font-size: 13px;
+      }
+      .docs-search-results .is-empty {
+        padding: 24px 14px;
+        text-align: center;
+        color: var(--text-faint);
+        font-size: 13px;
+      }
+      .docs-search-result {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        color: var(--text);
+        cursor: pointer;
+        line-height: 1.45;
+      }
+      .docs-search-result + .docs-search-result {
+        margin-top: 2px;
+      }
+      .docs-search-result:hover,
+      .docs-search-result.is-active {
+        background: var(--bg-card);
+      }
+      .docs-search-result-crumbs {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .docs-search-result-title {
+        font-size: 14px;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .docs-search-result-excerpt {
+        font-size: 12.5px;
+        color: var(--text-mute);
+      }
+      .docs-search-result mark {
+        background: rgba(244, 168, 119, 0.32);
+        color: inherit;
+        padding: 0 1px;
+        border-radius: 2px;
+      }
+      .docs-search-footer {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 16px;
+        border-top: 1px solid var(--border);
+        font-size: 11.5px;
+        color: var(--text-faint);
+      }
+      .docs-search-footer kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        margin: 0 2px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg-card);
+        font: inherit;
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        color: var(--text-mute);
+        line-height: 1;
+      }
+
+      /* 三栏 → 两栏 / 一栏 的响应式 */
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 200px minmax(0, 1fr);
+        }
+        .docs-outline {
+          display: none;
+        }
+      }
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .docs-toolbar {
+          flex-wrap: wrap;
+        }
+        .docs-search-trigger {
+          flex-basis: 100%;
+          order: 1;
+        }
+        .docs-action-btn {
+          flex: 1;
+        }
+        .docs-pager {
+          grid-template-columns: 1fr;
+        }
+        .docs-search-modal {
+          padding-top: 24px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -401,6 +780,39 @@
       </aside>
 
       <main>
+        <!-- 顶部工具栏：搜索 / 复制 Markdown / 分享。
+             搜索索引在 api-docs-app.js 初始化时从 main 下面所有
+             section h2/h3/p 文本构建；Cmd+K / Ctrl+K 全局快捷。 -->
+        <div class="docs-toolbar">
+          <button class="docs-search-trigger" type="button" id="docsSearchTrigger" aria-label="搜索文档">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>搜索文档…</span>
+            <span class="docs-search-kbd" aria-hidden="true">
+              <kbd id="docsSearchModKey">Ctrl</kbd><kbd>K</kbd>
+            </span>
+          </button>
+          <button class="docs-action-btn" type="button" id="docsCopyMdBtn" aria-label="复制本页为 Markdown">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="docsCopyMdLabel">复制 Markdown</span>
+          </button>
+          <button class="docs-action-btn" type="button" id="docsShareBtn" aria-label="分享文档">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span id="docsShareLabel">分享</span>
+          </button>
+        </div>
+
         <h1>Cancri API 文档</h1>
         <p>
           OpenAI / Anthropic 双协议兼容的统一模型 API。一个 Key，OpenAI SDK、
@@ -1487,24 +1899,6 @@ openclaw agent</pre>
             生成时只显示一次，无法找回。到
             <a href="./api_keys.html">Keys 管理页</a> 撤销旧 Key，重新生成。
           </p>
-          <h3>能在 TRAE IDE 里用吗？</h3>
-          <p>
-            <b>暂时不行。</b> 字节跳动的 TRAE IDE 目前在「自定义模型」里只允许填
-            Model ID 和 API Key 两个字段，<b>不开放 Base URL 设置</b>，所以 TRAE 的请求只能
-            发到官方 <code>api.openai.com</code>，没办法指过来 Cancri。这是 TRAE 自身的能力
-            缺失，跟踪官方 issue
-            <a href="https://github.com/Trae-AI/Trae/issues/1206" target="_blank" rel="noopener">#1206</a>
-            /
-            <a href="https://github.com/Trae-AI/Trae/issues/963" target="_blank" rel="noopener">#963</a>。
-            等 TRAE 加上 base_url 字段后，配置方法跟
-            <a href="#cli-opencode">OpenCode</a> 完全一致。
-          </p>
-          <p>
-            急用的话可以参考开源项目
-            <a href="https://github.com/arch3rPro/Trae-Proxy" target="_blank" rel="noopener">arch3rPro/Trae-Proxy</a>，
-            它通过本地 hosts 重定向 + 自签证书把 OpenAI 域名劫持到自定义后端。<b>需要管理员权限</b>，
-            折腾门槛较高，不推荐普通用户。
-          </p>
           <h3>计费怎么算？</h3>
           <p>
             目前不按 token 计费，按账户档位限速：<b>Free 档免费</b>，
@@ -1519,7 +1913,28 @@ openclaw agent</pre>
             生产关键路径请自行做故障转移。
           </p>
         </section>
+
+        <!-- prev/next 底部导航：api-docs-app.js 会根据当前滚动位置
+             自动填充上一节 / 下一节的 anchor。 -->
+        <nav class="docs-pager" id="docsPager" aria-label="文档节点导航" hidden>
+          <a class="docs-pager-prev" href="#" aria-disabled="true">
+            <span class="docs-pager-label">上一节</span>
+            <span class="docs-pager-title"></span>
+          </a>
+          <a class="docs-pager-next" href="#" aria-disabled="true">
+            <span class="docs-pager-label">下一节</span>
+            <span class="docs-pager-title"></span>
+          </a>
+        </nav>
       </main>
+
+      <!-- 右侧「在此页面」Outline：api-docs-app.js 扫描 main 里所有
+           h2/h3 生成错运列表，滚动时 IntersectionObserver 高亮当前可见
+           章节。< 1100px 隐藏。 -->
+      <aside class="docs-outline" aria-label="在此页面">
+        <h4>在此页面</h4>
+        <ul id="docsOnPageOutline"></ul>
+      </aside>
     </div>
 
     <footer class="site-footer">
@@ -1529,7 +1944,36 @@ openclaw agent</pre>
       </div>
     </footer>
 
-    <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-docs-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-    <script src="./api/api-docs-app.js?v=2026-05-15-csp"></script>
+    <!-- Cmd+K / Ctrl+K 搜索 modal。顶部工具栏的「搜索文档」按钮也点这里。
+         hidden 默认收收起；api-docs-app.js 负责开关、键盘导航、高亮、跳转。 -->
+    <div class="docs-search-modal" id="docsSearchModal" hidden role="dialog" aria-modal="true" aria-label="搜索文档">
+      <div class="docs-search-backdrop" id="docsSearchBackdrop"></div>
+      <div class="docs-search-panel">
+        <div class="docs-search-input-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="search"
+            class="docs-search-input"
+            id="docsSearchInput"
+            placeholder="搜索文档标题、正文与错误码…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="docs-search-results" id="docsSearchResults" role="listbox"></div>
+        <div class="docs-search-footer">
+          <span><kbd>↑</kbd><kbd>↓</kbd> 导航</span>
+          <span><kbd>⏎</kbd> 跳转</span>
+          <span><kbd>Esc</kbd> 关闭</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2026-05-17 重构：补 search modal + Cmd/Ctrl+K + 复制 Markdown + 分享 +
+         右侧 outline + 底部 prev/next 全栈逻辑。原 tabs / copy / toc 保留。 -->
+    <script src="./api/api-docs-app.js?v=2026-05-17-toolbar"></script>
   </body>
 </html>
