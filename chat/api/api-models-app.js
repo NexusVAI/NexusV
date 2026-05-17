@@ -319,6 +319,12 @@ function card(m) {
     const displayTier = m._displayTier || getDisplayTier(m);
     const tierClass = "tier-" + displayTier;
     const tierLabel = displayTier === "paid" ? "PAID" : "FREE";
+    // 2026-05-17 Phase A：vip 模型（costTier === 'vip'）= Claude Opus 系列，
+    // 需要 Pro+ 以上订阅。在 PAID badge 旁多挂一个 PRO+ 标识，让用户一眼看出。
+    const isProPlusOnly = m.costTier === "vip";
+    const proPlusBadge = isProPlusOnly
+        ? '<span class="tier" style="background:rgba(96,165,250,.18);color:#60a5fa;margin-left:4px" title="该模型仅 Pro+ 以上订阅可用">PRO+</span>'
+        : "";
     const inputK = m.maxInputTokens
         ? m.maxInputTokens >= 1000
             ? Math.round(m.maxInputTokens / 1000) + "K"
@@ -340,7 +346,7 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="tier ${tierClass}">${tierLabel}</span>
+            <span class="tier ${tierClass}">${tierLabel}</span>${proPlusBadge}
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}

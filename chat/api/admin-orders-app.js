@@ -245,12 +245,41 @@ function renderDeviceBlock(o) {
     );
 }
 
-// tier badge：与 admin_users / pricing 页保持一致的视觉语言
-function renderTierPill(tier) {
+// tier badge：与 admin_users / pricing 页保持一致的视觉语言。
+// 2026-05-17 Phase A：tier 仍是 'free'/'paid'，但若 plan_code 已知则显示档位（PRO / PRO+ / PRO MAX）。
+function renderTierPill(tier, planCode) {
     if (tier === "paid") {
-        return '<span class="status-pill s-2xx" title="付费档">PAID</span>';
+        const label = planCode === "pro_max" ? "PRO MAX"
+                    : planCode === "pro_plus" ? "PRO+"
+                    : planCode === "pro" ? "PRO"
+                    : "PAID";
+        return '<span class="status-pill s-2xx" title="付费档 ' + esc(planCode || "") + '">' + esc(label) + '</span>';
     }
     return '<span class="status-pill" style="background:var(--hover);color:var(--text-soft);border:1px solid var(--line)" title="免费档">FREE</span>';
+}
+
+// 2026-05-17 Phase A：订单类型 / 规格徽章。订阅显示档位，加油包显示规格。
+function renderOrderKindCell(o) {
+    const kind = o.order_kind || "subscription";
+    if (kind === "topup") {
+        const sku = o.topup_sku || "";
+        const tokens = Number(o.topup_tokens || 0);
+        const tokensLabel = tokens >= 100000000 ? (tokens / 100000000).toFixed(2).replace(/\.?0+$/, "") + " 亿"
+                          : tokens >= 10000 ? Math.round(tokens / 10000) + " 万"
+                          : tokens.toLocaleString();
+        return '<span class="status-pill" style="background:rgba(168,85,247,.18);color:#a855f7" title="加油包 ' + esc(sku) + '">加油包 ' + esc(tokensLabel) + '</span>';
+    }
+    const plan = o.plan_code || "pro";
+    const label = plan === "pro_max" ? "Pro Max"
+                : plan === "pro_plus" ? "Pro+"
+                : "Pro";
+    const color = plan === "pro_max" ? "#a855f7"
+                : plan === "pro_plus" ? "#60a5fa"
+                : "#f59e0b";
+    const bg = plan === "pro_max" ? "rgba(168,85,247,.18)"
+             : plan === "pro_plus" ? "rgba(96,165,250,.18)"
+             : "rgba(245,158,11,.18)";
+    return '<span class="status-pill" style="background:' + bg + ';color:' + color + '" title="订阅 ' + esc(plan) + '">订阅 ' + esc(label) + '</span>';
 }
 
 async function getSession() {
@@ -389,8 +418,9 @@ function renderOrders() {
                 "<span>" +
                 statusPill +
                 " " +
-                renderTierPill(o.tier) +
+                renderTierPill(o.tier, o.plan_code) +
                 "</span>" +
+                "<span>" + renderOrderKindCell(o) + "</span>" +
                 "<span>¥" +
                 esc(o.amount_cny) +
                 " · " +
