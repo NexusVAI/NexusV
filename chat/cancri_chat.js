@@ -2709,6 +2709,43 @@ async function getLoginCaptchaTokenBestEffort(budgetMs) {
   });
 }
 
+// Supabase Auth 错误本地化。原则：绝不展示上游英文 message（避免出现
+// "Error sending confirmation email" / "Email rate limit exceeded" 等
+// 用户看不懂且暴露后端栈的英文文案）。判定方式：
+//   1. message 含 CJK 字符 → 是我们自己抛的中文文案，直接放行；
+//   2. 否则按 error.code / error.status 走中文模板表；
+//   3. 任何无法识别的情况 fallback 到中文兜底文案。
+// 这是 keyword-free 风格：不匹配上游英文词，只读结构化的 code/status。
+function localizeAuthError(err, fallback = "操作失败，请稍后重试。") {
+  if (!err) return fallback;
+  const rawMessage = String(err.message || err.error_description || "").trim();
+  // 我们自己 throw 的中文 Error（如 sendEmailOtp 的 "发送超时..."）直接展示。
+  if (rawMessage && /[\u4e00-\u9fa5]/.test(rawMessage)) return rawMessage;
+  const code = String(err.code || err.error_code || "").trim();
+  const status = Number(err.status) || 0;
+  const codeMap = {
+    over_email_send_rate_limit: "邮件发送过于频繁，请几分钟后再试。",
+    over_request_rate_limit: "请求过于频繁，请稍后再试。",
+    email_address_invalid: "邮箱地址无效，请检查后重试。",
+    email_address_not_authorized: "该邮箱不在允许列表内。",
+    email_provider_disabled: "邮箱登录暂时关闭。",
+    captcha_failed: "人机验证未通过，请刷新页面后重试。",
+    otp_expired: "验证码已过期，请重新获取。",
+    otp_disabled: "验证码登录暂未开放。",
+    invalid_credentials: "验证码错误，请检查后重试。",
+    signup_disabled: "注册已暂停。",
+    user_banned: "该账号已被封禁。",
+    user_not_found: "账号不存在，请检查邮箱后重试。",
+    request_timeout: "请求超时，请稍后再试。",
+  };
+  if (code && codeMap[code]) return codeMap[code];
+  if (status === 429) return "请求过于频繁，请稍后再试。";
+  if (status === 422 || status === 400) return "请求参数有误，请检查后重试。";
+  if (status === 401 || status === 403) return "登录验证未通过，请稍后再试。";
+  if (status >= 500) return "邮件服务暂时不可用，请稍后再试。";
+  return fallback;
+}
+
 async function sendEmailOtp(email) {
   const client = getSupabaseClient();
   // v2026-05-15 修复"发送中..."无限卡死：
@@ -2812,7 +2849,7 @@ function initAuthOverlay() {
         if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
         if (emailError) emailError.style.color = "#4ade80";
       } catch (err) {
-        if (emailError) emailError.textContent = err.message || "发送失败，请重试";
+        if (emailError) emailError.textContent = localizeAuthError(err, "发送失败，请重试。");
         if (emailError) emailError.style.color = "";
       } finally {
         sendOtpBtn.disabled = false;
@@ -2837,7 +2874,7 @@ function initAuthOverlay() {
       try {
         await verifyEmailOtp(email, code);
       } catch (err) {
-        if (emailError) emailError.textContent = err.message || "验证失败，请重试";
+        if (emailError) emailError.textContent = localizeAuthError(err, "验证失败，请重试。");
       } finally {
         verifyOtpBtn.disabled = false;
         verifyOtpBtn.textContent = "验证登录";
