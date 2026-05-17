@@ -2606,6 +2606,15 @@ function hideAuthOverlay() {
     video.removeAttribute("src");
     video.load();
   }
+  // 2026-05-17 排查残留：登录成功后销毁 Turnstile widget + 清状态。否则
+  // CF challenges.cloudflare.com iframe 会留在隐藏的 #authOverlay 里继续
+  // 后台运行（轮询、心跳、cookie），同时 cancri_login_captcha.js 闭包里的
+  // state.waiters 队列上还可能挂着 45s 超时定时器。suspend() 一并清理。
+  // 下次登出后 onAuthStateChange("SIGNED_OUT") → showAuthOverlay()，用户
+  // 再次点"发送验证码"时 getToken() 会重新 renderWidget() 挂一个干净 widget。
+  if (window.NexusLoginCaptcha?.suspend) {
+    try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
+  }
 }
 
 function updateAccountInfo(user) {

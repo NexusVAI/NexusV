@@ -427,9 +427,46 @@
     });
   }
 
+  // ---------------------------------------------------------------------
+  // Public: suspend (called by hideAuthOverlay after a successful login)
+  // ---------------------------------------------------------------------
+  // 2026-05-17 排查残留：登录成功后，CF Turnstile iframe + 内部轮询定时器
+  // 仍在 #loginTurnstileContainer 里活着，浏览器后台一直跟 challenges.
+  // cloudflare.com 通讯。下面的 suspend() 在 hideAuthOverlay() 里被调，把
+  // widget 彻底从 DOM 移除、清掉所有 state（widgetId / pendingToken /
+  // waiters / container / statusEl）+ 失败掉所有等待中的 token Promise。
+  // 下次登出后 showAuthOverlay → 用户点"发送验证码" → getToken() 自动
+  // 调 renderWidget() 重新挂一个干净 widget。idempotent：重复调安全。
+  function suspend() {
+    try {
+      if (
+        state.widgetId !== null
+        && typeof window !== "undefined"
+        && window.turnstile
+        && typeof window.turnstile.remove === "function"
+      ) {
+        window.turnstile.remove(state.widgetId);
+      }
+    } catch (_e) {}
+    failAllWaiters("人机验证已挂起。");
+    if (state.container) {
+      try { state.container.innerHTML = ""; } catch (_e) {}
+    }
+    state.widgetId = null;
+    state.container = null;
+    state.statusEl = null;
+    state.pendingToken = null;
+    state.tokenIssuedAt = 0;
+    state.rendering = false;
+    state.lastError = null;
+    // apiReady / apiCheckFailed 保持原值：这俩反映的是 turnstile 全局 SDK
+    // 是否可达，跟 widget 实例无关，下次登录还能复用同一份判断。
+  }
+
   window.NexusLoginCaptcha = {
     prerender: prerender,
     getToken: getToken,
+    suspend: suspend,
     _state: state,            // for console debugging
     _setStatus: setStatus,    // for console debugging
   };
