@@ -387,7 +387,7 @@
                 <header>
                     <h1>付费订单审核</h1>
                     <p>
-                        审核 ¥9.9/月会员订单。审核通过会自动生成激活码，请把激活码记下来给用户。
+                        审核三档订阅（Pro ¥9.9 / Pro+ ¥29 / Pro Max ¥99）与加油包订单。审核通过会自动生成激活码，请把激活码记下来给用户。
                     </p>
                 </header>
 
@@ -413,7 +413,7 @@
                 <div class="grant-panel">
                     <div class="grant-panel-title">指定邮箱赠送激活码</div>
                     <p class="grant-panel-hint">
-                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），系统会立即生成一个一次性激活码。把激活码发给对方，他们在「我的订单」页粘贴即可激活 30 天会员。激活码激活后自动作废，不可重复使用。
+                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用。
                     </p>
                     <div class="grant-form">
                         <input
@@ -423,6 +423,14 @@
                             autocomplete="off"
                             maxlength="200"
                         />
+                        <select id="grantSku" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); font-size:13.5px;">
+                            <option value="plan:pro">订阅 · Pro（¥9.9 / 2000 万 token / 30 天）</option>
+                            <option value="plan:pro_plus">订阅 · Pro+（¥29 / 8000 万 token / 30 天）</option>
+                            <option value="plan:pro_max">订阅 · Pro Max（¥99 / 3 亿 token / 30 天）</option>
+                            <option value="topup:topup_small">加油包 · 1500 万 token（¥10）</option>
+                            <option value="topup:topup_medium">加油包 · 9000 万 token（¥50）</option>
+                            <option value="topup:topup_large">加油包 · 4 亿 token（¥200）</option>
+                        </select>
                         <textarea
                             id="grantNote"
                             placeholder="备注（可选 · 仅站主可见，比如 '送 abc 一个月'）"

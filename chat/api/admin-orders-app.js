@@ -564,6 +564,7 @@ document
 function wireGrantPanel() {
     const btn = document.getElementById("grantBtn");
     const emailInput = document.getElementById("grantEmail");
+    const skuSelect = document.getElementById("grantSku");
     const noteInput = document.getElementById("grantNote");
     const resultBox = document.getElementById("grantResult");
     if (!btn || !emailInput || !noteInput || !resultBox) return;
@@ -583,10 +584,19 @@ function wireGrantPanel() {
         resultBox.classList.remove("show");
         resultBox.innerHTML = "";
         try {
-            const r = await callGateway("admin_grant_activation_code", {
-                email,
-                admin_note: note,
-            });
+            // 2026-05-17 Phase A：解析 grantSku 选择器
+            //   "plan:pro" / "plan:pro_plus" / "plan:pro_max"
+            //   "topup:topup_small" / "topup:topup_medium" / "topup:topup_large"
+            // 后端 admin_grant_activation_code 接受 plan_code 或 topup_sku，互斥。
+            const skuRaw = (skuSelect && skuSelect.value) || "plan:pro";
+            const [kind, slug] = String(skuRaw).split(":");
+            const grantPayload = { email, admin_note: note };
+            if (kind === "topup") {
+                grantPayload.topup_sku = slug;
+            } else {
+                grantPayload.plan_code = slug || "pro";
+            }
+            const r = await callGateway("admin_grant_activation_code", grantPayload);
             const code = r.activation_code || "";
             // Show the code inline (user-select:all on the box) and try to
             // auto-copy. Auto-copy can fail in some browsers if the click
