@@ -351,8 +351,9 @@
         <div class="panel">
           <div class="panel-head">
             当前封禁
-            <span class="hint">按封禁时间倒序，最多 500 条</span>
+            <span class="hint">按封禁时间倒序</span>
             <span class="spacer" style="flex: 1"></span>
+            <input id="banSearch" type="search" placeholder="搜邮箱 / user_id / 原因…" autocomplete="off" style="padding:5px 10px;font-size:12.5px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;color:var(--text);width:200px" />
             <button class="reload-btn" id="reload-btn">↻ 刷新</button>
           </div>
           <div id="bansList"></div>
