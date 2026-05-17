@@ -555,9 +555,12 @@ body.is-tier-loading .claude-plan-pill,
 body.is-tier-loading .claude-nav-tag {
     display: none !important;
 }
-/* billing copy 在加载态显示占位文案；ready 后 claude_ui.js updateBillingCopy 填充 */
+/* billing copy 在加载态显示占位文案；ready 后 claude_ui.js updateBillingCopy 填充。
+   2026-05-17 修浅色模式不可读：原 --c-text-mute 在 chat/styles/02-themes.css
+   里没有定义，永远走白色 fallback → 浅色底白字隐身。改用主题变量 --text-soft，
+   两种模式下都保证 ≥AA 对比度。 */
 #claudeBillingCopy[data-tier-state="loading"] {
-    color: var(--c-text-mute, rgba(255, 255, 255, 0.45));
+    color: var(--text-soft, rgba(15, 23, 42, 0.64));
     font-style: italic;
 }
 
@@ -574,9 +577,11 @@ body.is-tier-loading .claude-nav-tag {
     line-height: 1.4;
 }
 .claude-tier-chip.is-free {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--c-text-mute, rgba(255, 255, 255, 0.6));
-    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.12));
+    /* 2026-05-17 同款修：未定义的 --c-text-mute / --c-border 改主题变量。
+       背景用浅 hover 色，双模式都不刺眼。 */
+    background: var(--hover, rgba(255, 255, 255, 0.08));
+    color: var(--text-soft, rgba(15, 23, 42, 0.64));
+    border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
 }
 .claude-tier-chip.is-paid {
     background: var(--c-accent, #c96442);
@@ -584,7 +589,8 @@ body.is-tier-loading .claude-nav-tag {
     border: 1px solid var(--c-accent, #c96442);
 }
 .claude-billing-days {
-    color: var(--c-text-mute, rgba(255, 255, 255, 0.55));
+    /* 2026-05-17 同款修：未定义的 --c-text-mute → --text-soft（主题感知） */
+    color: var(--text-soft, rgba(15, 23, 42, 0.64));
     font-variant-numeric: tabular-nums;
 }
 
