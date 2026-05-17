@@ -107,14 +107,18 @@ function normalizeBrandKey(brand) {
 
 function brandLogoHtml(brand) {
     const key = normalizeBrandKey(brand);
-    // 别名归一：inclusionai 处理为 yuanbao（蚂蚁集团 Inclusion AI 背靠元宝），
-    // happyhorse / cancri 等未收陆品牌 → 走 fallback letter。
-    const aliasResolved = key === "inclusionai" ? "yuanbao" : key;
-    const url = BRAND_LOGO[aliasResolved];
+    // 2026-05-17 别名归一：
+    //   - inclusionai → antgroup：Inclusion AI 是蚂蚁集团的开源 AI 团队，
+    //     用 antgroup-color.svg 表达母实体归属，与公司认知一致。
+    //   - 之前误用 yuanbao（Ant Ling/百灵 logo）已纠正。
+    // 未来如果拿到专属 Inclusion AI / Ling logo，在 BRAND_LOGO 直接加
+    // inclusionai / ling key 覆盖此别名即可。
+    const ALIAS = { inclusionai: "antgroup" };
+    const url = BRAND_LOGO[ALIAS[key] || key];
     if (url) {
         return `<span class="card-logo" aria-hidden="true"><img src="${url}" alt="" loading="lazy" decoding="async" /></span>`;
     }
-    // fallback：品牌首字母圈。采用 cream 色背、clay 色字，忝忝合主调。
+    // fallback：品牌首字母圈。采用 cream 色背、clay 色字，跟主调一致。
     const initial = (String(brand || "?").trim()[0] || "?").toUpperCase();
     return `<span class="card-logo card-logo--fallback" aria-hidden="true">${esc(
         initial,
