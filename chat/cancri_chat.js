@@ -1340,9 +1340,12 @@ function getQuotaBlockReason(modelId) {
   // Pro+ / Pro Max / grandfather Pro 豁免。
   if (isProPlusGateModel(modelId)) {
     const planCode = quotaState.planCode;
-    const isProPlusOrAbove = planCode === "pro_plus" || planCode === "pro_max";
-    const isGrandfatheredPro = planCode === "pro" && quotaState.isGrandfathered;
-    if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
+    // planCode 未加载完（null）时不挡——后端是权威源，前端只是预判。
+    if (planCode !== null) {
+      const isProPlusOrAbove = planCode === "pro_plus" || planCode === "pro_max";
+      const isGrandfatheredPro = planCode === "pro" && quotaState.isGrandfathered;
+      if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
+    }
   }
   if (quotaState.tier === "paid") return null;            // PAID 用户全通（除上面 vip 闸门）
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";

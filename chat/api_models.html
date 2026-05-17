@@ -313,6 +313,16 @@
         min-width: 0;
         flex: 1;
       }
+      /* badge 子容器：多个 badge（PAID/30×/PRO+/FREE不可用）打包在一起，
+         换行时整体换行而非散成竖列。 */
+      .card-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+        align-items: center;
+        flex-shrink: 0;
+      }
       .card-name {
         font-family: var(--c-serif);
         font-weight: 400;
@@ -719,7 +729,7 @@
     <footer class="site-footer">
       <div class="site-footer__inner">
         <div class="site-footer__sig">Built with care · Cancri</div>
-        <div>&copy; 2025 NexusV / Cancri Open Platform</div>
+        <div>&copy; 2026 NexusV / Cancri Open Platform</div>
       </div>
     </footer>
 
