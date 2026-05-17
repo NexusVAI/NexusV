@@ -888,8 +888,9 @@
             ><span style="color: var(--text-faint)">48 个十六进制字符</span>
           </div>
           <p style="color: var(--text-faint); font-size: 12.5px; margin-top: -4px">
-            前缀 <code>cancri_sk_</code>（10 字符）+ 24 字节随机熵的十六进制（48 字符）= <b>总长度恒为 58 字符</b>。
-            做 Key 长度校验的客户端按这个写。
+            前缀 <code>cancri_sk_</code>（10 字符）+ 36 字节随机熵的 base64url 编码（48 字符）= <b>总长度恒为 58 字符</b>。
+            后半部分字符集为 <code>A-Z a-z 0-9 - _</code>（不含 <code>+</code> / <code>=</code> 填充符）。
+            做 Key 正则校验的客户端推荐用 <code>/^cancri_sk_[A-Za-z0-9_-]{48}$/</code>。
           </p>
           <ol>
             <li>到 <a href="./api_apply.html">申请页</a> 提交申请</li>
@@ -977,7 +978,7 @@ r = client.chat.completions.create(
       <span class="s">"id"</span>: <span class="s">"deepseek-v4-pro"</span>,
       <span class="s">"object"</span>: <span class="s">"model"</span>,
       <span class="s">"created"</span>: <span class="n">1740000000</span>,
-      <span class="s">"owned_by"</span>: <span class="s">"cancri"</span>
+      <span class="s">"owned_by"</span>: <span class="s">"DeepSeek"</span>
     }
     <span class="c">// ... 更多模型</span>
   ]
@@ -1494,7 +1495,7 @@ claude</pre>
         <span class="s">"gpt-5.3-codex"</span>: {},
         <span class="s">"claude-sonnet-4-6"</span>: {},
         <span class="s">"deepseek-v4-pro"</span>: {},
-        <span class="s">"gemini-3.1-pro"</span>: {}
+        <span class="s">"gemini-3.1-pro-preview"</span>: {}
       }
     }
   }
@@ -1754,28 +1755,31 @@ openclaw agent</pre>
                 <td>
                   模型服务异常。<b>所有 5xx 统一映射为 <code>upstream_error</code></b>，
                   客户端只用一个分支即可处理所有此类故障。<code>503</code>
-                  会带 <code>Retry-After</code>，表示该模型被临时熔断（1 小时滑动窗口连续失败）；
+                  会带 <code>Retry-After</code>，表示该模型被临时熔断（10 分钟窗口内 3 次失败触发 60 分钟冷却）；
                   改用其他模型即可，无需等待。
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <h3>模型健康度自动隐藏</h3>
+          <h3>模型健康度自动熔断</h3>
           <p>
-            为了不让调用方在临时不可用的模型上浪费重试额度，后端会以 1 小时为
-            滑动窗口记录每个模型的调用成功率：
+            为了不让调用方在临时不可用的模型上浪费重试额度，后端在
+            <b>10 分钟的滑动窗口</b>内计每个模型的不可用信号（1 次任意 2xx
+            会重置计数）：
           </p>
           <ul>
-            <li>调用 ≥ 3 次 且 成功率 &lt; 30% → <b>临时从模型列表隐藏</b>（再调用返回
-              <code>404 model_not_found</code>）</li>
-            <li>1 小时后如果指标恢复 → <b>自动重新出现在列表里</b>，无需人工介入</li>
-            <li>持续故障 → 继续按滑动窗口隐藏</li>
+            <li>累计 ≥ 3 次不可用返回 → <b>该模型被熔断 60 分钟</b>，期间调用返回
+              <code>503 model_temporarily_unavailable</code>（带 <code>Retry-After</code> 头）</li>
+            <li>60 分钟冷却后自动解锁，无需人工介入；下次调用成功则立即清除计数</li>
+            <li>被熔断的模型 <b>仍然出现在 <code>/v1/models</code> 列表里</b>，只是调用会
+              被拒；列表本身不会隐藏</li>
+            <li>极端信号（如 401/402 上游 Key 死亡）会写入 DB 以 24 小时为周期硬禁用，
+              需管理员到 <code>admin_lines.html</code> 手动重新启用</li>
           </ul>
           <p>
-            如果你之前能调通的模型突然 <code>404</code>，请到
-            <a href="./api_models.html">模型广场</a>
-            确认它是否还在列表里。不在 → 等 1 小时后重试，或先换其他模型。
+            拿到 <code>503 upstream_error</code> 不要在同模型上原地重试。看
+            <code>Retry-After</code> 后退避，或直接换一个模型。
           </p>
 
           <p>所有错误响应都符合 OpenAI 的错误格式：</p>
