@@ -383,6 +383,74 @@ html[data-theme="light"] .site-footer-socials > a {
     margin-top: 4px;
 }
 
+/* 2026-05-17 Phase A：横向三档 grid，紧凑公告内容用 */
+.timeline-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.timeline-tier-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--border, rgba(127, 127, 127, 0.22));
+    border-radius: 8px;
+    background: rgba(127, 127, 127, 0.04);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.timeline-tier-card--highlight {
+    border-color: var(--accent, #cc7755);
+    background: rgba(204, 119, 85, 0.06);
+}
+
+.timeline-tier-card b {
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.timeline-tier-price {
+    color: var(--accent, #cc7755);
+    font-weight: 600;
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.timeline-tier-quota {
+    color: var(--text-soft);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+@media (max-width: 540px) {
+    .timeline-tier-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .timeline-tier-card {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 8px;
+        padding: 6px 10px;
+    }
+    .timeline-tier-card b {
+        flex: 0 0 56px;
+    }
+    .timeline-tier-price {
+        flex: 0 0 auto;
+    }
+    .timeline-tier-quota {
+        flex: 1;
+        text-align: right;
+        font-size: 11px;
+    }
+}
+
 .announcement-modal-footer {
     display: flex;
     align-items: center;
