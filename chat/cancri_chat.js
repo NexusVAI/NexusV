@@ -225,6 +225,10 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   free_pool_exhausted: null,
   daily_paid_limit_reached: null,
   quota_check_failed: null,
+  // 2026-05-17 Phase A 新增：三档订阅相关错误
+  monthly_quota_exhausted: null,      // paid 用户月度+加油包都耗尽
+  model_pro_plus_required: null,      // 调 vip 模型但 plan < pro_plus
+  model_pro_required: null,           // free 调 GPT-5.5 系列（freeUserBlocked）
   // Specialised paths (handled elsewhere — return "" so caller falls through)
   challenge_required: null, // formatSecurityGuardMessage path
   access_blocked: null,
@@ -249,6 +253,10 @@ const QUOTA_REFRESH_TRIGGER_CODES = new Set([
   "free_pool_exhausted",
   "daily_paid_limit_reached",
   "model_paid_only",
+  // 2026-05-17 Phase A 新增
+  "monthly_quota_exhausted",
+  "model_pro_plus_required",
+  "model_pro_required",
 ]);
 
 function friendlyMessageFromBackend(parsed, status) {

@@ -49,13 +49,23 @@
                 text-transform: uppercase;
                 letter-spacing: 0.04em;
             }
-            .badge-tier.paid {
-                background: rgba(245, 158, 11, 0.18);
-                color: #f59e0b;
-            }
             .badge-tier.free {
                 background: rgba(148, 163, 184, 0.18);
                 color: var(--text-mute);
+            }
+            /* 2026-05-17 Phase A：三档 plan_code 颜色（与 pricing.html 一致） */
+            .badge-tier.paid,
+            .badge-tier.pro {
+                background: rgba(245, 158, 11, 0.18);
+                color: #f59e0b;
+            }
+            .badge-tier.pro_plus {
+                background: rgba(96, 165, 250, 0.18);
+                color: #60a5fa;
+            }
+            .badge-tier.pro_max {
+                background: rgba(168, 85, 247, 0.18);
+                color: #a855f7;
             }
             .sub-meta h3 {
                 margin: 0 0 4px 0;
@@ -67,6 +77,61 @@
                 margin: 0;
                 font-size: 13px;
                 color: var(--text-mute);
+            }
+            /* 2026-05-17 Phase A：月度配额 + 加油包余额面板 */
+            .quota-panel {
+                margin-top: 18px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+            @media (max-width: 720px) {
+                .quota-panel { grid-template-columns: 1fr; }
+            }
+            .quota-box {
+                padding: 14px 16px;
+                border: 1px solid var(--border-mute);
+                border-radius: 10px;
+                background: var(--surface);
+            }
+            .quota-box__head {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+            .quota-box__title {
+                font-size: 12.5px;
+                color: var(--text-mute);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                font-weight: 500;
+            }
+            .quota-box__value {
+                font-family: var(--font-mono);
+                font-size: 13.5px;
+                color: var(--text);
+                font-weight: 600;
+            }
+            .quota-bar {
+                height: 8px;
+                background: rgba(148, 163, 184, 0.18);
+                border-radius: 4px;
+                overflow: hidden;
+                margin-bottom: 6px;
+            }
+            .quota-bar__fill {
+                height: 100%;
+                background: var(--accent);
+                transition: width 0.3s;
+            }
+            .quota-bar__fill.warn { background: #f59e0b; }
+            .quota-bar__fill.danger { background: #ef4444; }
+            .quota-box__hint {
+                font-size: 11.5px;
+                color: var(--text-faint);
+                margin: 0;
             }
             .activate-form {
                 display: flex;
@@ -253,11 +318,35 @@
                         <span id="sub-badge" class="badge-tier free">FREE</span>
                         <div class="sub-meta">
                             <h3 id="sub-title">免费档</h3>
-                            <p id="sub-desc">高峰期可能要排队，单模型最多 3 个免费用户同时使用。</p>
+                            <p id="sub-desc">高峰期可能要排队，每日 PAID 模型试用 15 次。</p>
                         </div>
-                        <a class="btn btn-primary" href="./pricing.html">
-                            升级到 paid →
+                        <a class="btn btn-primary" id="upgrade-btn" href="./pricing.html">
+                            升级套餐 →
                         </a>
+                    </div>
+
+                    <!-- 2026-05-17 Phase A：月度配额 + 加油包余额面板 -->
+                    <div class="quota-panel" id="quota-panel">
+                        <div class="quota-box" id="quota-monthly">
+                            <div class="quota-box__head">
+                                <span class="quota-box__title">本月套餐配额</span>
+                                <span class="quota-box__value" id="quota-monthly-text">—</span>
+                            </div>
+                            <div class="quota-bar">
+                                <div class="quota-bar__fill" id="quota-monthly-fill" style="width:0%"></div>
+                            </div>
+                            <p class="quota-box__hint" id="quota-monthly-hint">每月 UTC+8 1 号 00:00 自动重置。</p>
+                        </div>
+                        <div class="quota-box" id="quota-topup">
+                            <div class="quota-box__head">
+                                <span class="quota-box__title">加油包余额</span>
+                                <span class="quota-box__value" id="quota-topup-text">—</span>
+                            </div>
+                            <p class="quota-box__hint">永不过期，月度配额耗尽后自动启用。</p>
+                            <a class="btn btn-secondary" href="./pricing.html" style="margin-top: 8px; font-size: 12px; padding: 6px 12px">
+                                购买加油包 →
+                            </a>
+                        </div>
                     </div>
 
                     <div style="margin-top: 18px">
@@ -290,6 +379,7 @@
                             <thead>
                                 <tr>
                                     <th>提交时间</th>
+                                    <th>类型 / 规格</th>
                                     <th>金额</th>
                                     <th>状态</th>
                                     <th>激活码</th>
@@ -317,6 +407,6 @@
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/orders-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/orders-app.js?v=2026-05-15-csp"></script>
+        <script src="./api/orders-app.js?v=2026-05-17-phase-a"></script>
     </body>
 </html>
