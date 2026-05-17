@@ -168,6 +168,12 @@ async function load() {
     }
 }
 
+// 2026-05-17 stats 重构后 HTML 只有 4 块：total / ct-free / ct-paid / ct-thinking。
+// 老版本还有 ct-multi（多模态），重写 HTML 时把那块换成了「支持思考」。如果
+// 这里继续写 $("ct-multi").textContent，第一次 load 会因为 null.textContent
+// 直接抛 "Cannot set properties of null"，updateStats 中断 → render 也不会跑
+// → 页面看似一片空白；用户再点 filter 触发的 render 跳过 updateStats，所以
+// 又能渲染。删 ct-multi 这一行即彻底修复。
 function updateStats() {
     $("total").textContent = MODELS.length;
     $("ct-free").textContent = MODELS.filter(
@@ -176,7 +182,6 @@ function updateStats() {
     $("ct-paid").textContent = MODELS.filter(
         (m) => m._displayTier === "paid",
     ).length;
-    $("ct-multi").textContent = MODELS.filter((m) => m.multimodal).length;
     $("ct-thinking").textContent = MODELS.filter(
         (m) => m.enableThinking,
     ).length;
