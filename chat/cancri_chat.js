@@ -1276,6 +1276,7 @@ async function bootstrapModelTelemetry() {
 
 const PAID_GATE_IDS = new Set([
   "gpt-5.4",
+  "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
   "gpt-5.3-codex",
@@ -1286,7 +1287,7 @@ const PAID_GATE_IDS = new Set([
   "minimax-m2.7",
   "kimi-k2.6",
 ]);
-const FREE_USER_BLOCKED_GATE_IDS = new Set(["gpt-5.5", "gpt-5.5-high"]);
+const FREE_USER_BLOCKED_GATE_IDS = new Set(["gpt-5.4-mini", "gpt-5.5", "gpt-5.5-high"]);
 
 let quotaState = {
   fetchedAt: 0,
@@ -1695,7 +1696,7 @@ const MODEL_CATALOG = [
   {"id": "gemini-3.1-pro", "name": "Gemini 3.1 Pro", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "gemini-3.1-flash-lite-preview", "name": "Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-4", "name": "GPT-4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
