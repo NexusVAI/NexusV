@@ -51,6 +51,7 @@ const HIDE_IDS = new Set([
 // 删除。
 const FALLBACK_PAID_IDS = new Set([
     "gpt-5.4",
+    "gpt-5.4-mini",
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.3-codex",
