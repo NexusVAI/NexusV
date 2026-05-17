@@ -901,6 +901,21 @@
             document.body.appendChild(cascade);
         }
 
+        // 2026-05-18 v2：透明 hover-bridge，覆盖主菜单与子菜单之间的几何缝隙。
+        // 仅靠 gap=-2 + 220ms hover-intent 在实测中仍然「敏感肌」——鼠标轨迹中
+        // 任何超出主菜单右沿但还没进 cascade 左沿的瞬间，mouseleave.relatedTarget
+        // 既非 dropdown 也非 cascade（是 body / null），即便不立刻关也心理不安。
+        // 经典级联菜单做法：在两菜单之间挂一块无形元素吃掉缝隙的 mouse 事件，
+        // 使 dropdown→bridge→cascade 三段连续命中各自 DOM，永远不进「真空」。
+        let bridge = document.getElementById('claudeModelCascadeBridge');
+        if (!bridge) {
+            bridge = document.createElement('div');
+            bridge.id = 'claudeModelCascadeBridge';
+            bridge.className = 'claude-model-cascade-bridge';
+            bridge.hidden = true;
+            document.body.appendChild(bridge);
+        }
+
         function applyDesktopFolding() {
             if (mqDesktop.matches) {
                 dropdown.classList.add('claude-collapsed-models');
@@ -928,27 +943,80 @@
             const vw = window.innerWidth || document.documentElement.clientWidth || 0;
             const vh = window.innerHeight || document.documentElement.clientHeight || 0;
             const cw = 280;
-            const gap = 6;
+            // 2026-05-18 v2：恢复 8px 视觉间距，hover 连续性由透明 bridge 元素负责。
+            // bridge 跨度从 dropdown.right - 4（多吃 4px 重叠到主菜单内）一路到
+            // cascade.left + 4（多吃 4px 重叠到子菜单内），完全包住缝隙；
+            // 鼠标 dropdown→bridge→cascade 三段过渡时 mouseleave.relatedTarget
+            // 始终是 bridge / cascade / dropdown 三者之一，永不触发盲区关闭。
+            const gap = 8;
             // 优先放右边，不够则放左边
+            let placedRight = true;
             let left = rect.right + gap;
             if (left + cw > vw - 12) {
                 left = Math.max(12, rect.left - cw - gap);
+                placedRight = false;
             }
             const top = Math.max(12, rect.top);
+            const maxH = Math.max(220, vh - top - 24);
             cascade.style.left = left + 'px';
             cascade.style.top = top + 'px';
             cascade.style.width = cw + 'px';
-            cascade.style.maxHeight = Math.max(220, vh - top - 24) + 'px';
+            cascade.style.maxHeight = maxH + 'px';
+
+            // bridge：占据主菜单与 cascade 之间整个空间 + 双侧各 4px 重叠余量。
+            // placedRight=true 时 bridge 在 dropdown 右；false 时在 dropdown 左。
+            // 高度跟随 cascade（未渲染时用 maxH 兜底，避免首帧抖动）。
+            const bridgeOverlap = 4;
+            let bridgeLeft, bridgeWidth;
+            if (placedRight) {
+                bridgeLeft = rect.right - bridgeOverlap;
+                bridgeWidth = (left + bridgeOverlap) - bridgeLeft;
+            } else {
+                bridgeLeft = (left + cw) - bridgeOverlap;
+                bridgeWidth = (rect.left + bridgeOverlap) - bridgeLeft;
+            }
+            bridge.style.left = bridgeLeft + 'px';
+            bridge.style.top = top + 'px';
+            bridge.style.width = Math.max(0, bridgeWidth) + 'px';
+            bridge.style.height = maxH + 'px';
+        }
+
+        // 2026-05-18：hover-intent 延迟关闭，避免鼠标在主菜单/子菜单之间
+        // 任何短暂的非两者元素（边缘像素、子像素抖动、滚动条）触发即时关闭。
+        // 220ms 是用户能感知到响应又足够跨越间隙的折中值。
+        let cascadeHideTimer = null;
+        function cancelCascadeHide() {
+            if (cascadeHideTimer) {
+                clearTimeout(cascadeHideTimer);
+                cascadeHideTimer = null;
+            }
+        }
+        function scheduleCascadeHide() {
+            cancelCascadeHide();
+            cascadeHideTimer = setTimeout(function () {
+                cascadeHideTimer = null;
+                cascade.hidden = true;
+                bridge.hidden = true;
+            }, 220);
         }
 
         function showCascade() {
             if (!mqDesktop.matches) return;
+            cancelCascadeHide();
             populateCascade();
             cascade.hidden = false;
+            bridge.hidden = false;
             requestAnimationFrame(positionCascade);
         }
         function hideCascade() {
+            cancelCascadeHide();
             cascade.hidden = true;
+            bridge.hidden = true;
+        }
+
+        // 三个友好元素：cursor 在 dropdown / cascade / bridge 任一内都视作"还在菜单系统里"
+        function isFriendly(el) {
+            return !!(el && (dropdown.contains(el) || cascade.contains(el) || el === bridge));
         }
 
         moreRow.addEventListener('mouseenter', showCascade);
@@ -958,30 +1026,50 @@
             showCascade();
         });
 
-        // 鼠标在主 dropdown / cascade 之间穿梭时不要关；离开整个组合区才关
+        // 鼠标在主 dropdown / bridge / cascade 之间穿梭时不要关；离开整个组合区才（延迟）关
         dropdown.addEventListener('mouseleave', function (e) {
-            const next = e.relatedTarget;
-            if (next && cascade.contains(next)) return;
-            hideCascade();
+            if (isFriendly(e.relatedTarget)) return;
+            scheduleCascadeHide();
         });
+        dropdown.addEventListener('mouseenter', cancelCascadeHide);
         cascade.addEventListener('mouseleave', function (e) {
-            const next = e.relatedTarget;
-            if (next && dropdown.contains(next)) return;
-            hideCascade();
+            if (isFriendly(e.relatedTarget)) return;
+            scheduleCascadeHide();
+        });
+        cascade.addEventListener('mouseenter', cancelCascadeHide);
+        bridge.addEventListener('mouseenter', cancelCascadeHide);
+        bridge.addEventListener('mouseleave', function (e) {
+            if (isFriendly(e.relatedTarget)) return;
+            scheduleCascadeHide();
+        });
+        // bridge 上任何 click / mousedown 都不能冒泡到 document：
+        // cancri_chat.js 的 closeModelDropdownOutside 注册在 document.click，
+        // 看到 e.target 不在 modelSelector 里就立即 closeModelDropdown，触发
+        // claude_ui.js 的 modelSelector class MutationObserver → hideCascade。
+        // 这就是触屏笔记本/重按 touchpad 在缝隙处碰一下菜单立刻消失的根因。
+        ['click', 'mousedown'].forEach(function (evt) {
+            bridge.addEventListener(evt, function (e) { e.stopPropagation(); });
         });
 
         // cascade click → 找原 option 触发 click，复用 cancri 的 changeModel 委托
         cascade.addEventListener('click', function (e) {
             const opt = e.target.closest('.model-option');
-            if (!opt) return;
-            const modelId = opt.dataset.model;
-            if (!modelId) return;
-            const source = content.querySelector('.model-option[data-model="' + CSS.escape(modelId) + '"]');
-            if (source) {
-                source.click();
-                hideCascade();
+            if (opt) {
+                const modelId = opt.dataset.model;
+                if (modelId) {
+                    const source = content.querySelector('.model-option[data-model="' + CSS.escape(modelId) + '"]');
+                    if (source) {
+                        source.click();
+                        hideCascade();
+                    }
+                }
             }
+            // 同上 bridge：阻断冒泡到 document，cancri 的 outside-click 不能误关。
+            // 模型选项的 source.click() 是合成事件单独冒泡，正常走 modelSelector
+            // 内部链路（target 在 modelSelector 里），cancri 自己会 closeModelDropdown。
+            e.stopPropagation();
         });
+        cascade.addEventListener('mousedown', function (e) { e.stopPropagation(); });
 
         // 搜索框有内容：取消折叠让 cancri 的 filter 在主 dropdown 内显示结果
         if (searchInput) {

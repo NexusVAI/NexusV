@@ -2352,6 +2352,20 @@ button.composer-tool-btn:hover {
 .claude-model-cascade[hidden] {
     display: none !important;
 }
+
+/* 2026-05-18 v2：透明 hover-bridge，覆盖主菜单与 cascade 之间的几何缝隙。
+   z-index 高于 cascade(802) 与 dropdown(801) 一档，确保鼠标进入缝隙区
+   时优先命中 bridge 触发 mouseenter（cancelCascadeHide），不会落进 body
+   触发 mouseleave 盲区。透明背景 + 无边框，视觉零存在感。 */
+.claude-model-cascade-bridge {
+    position: fixed;
+    z-index: 803;
+    background: transparent;
+    pointer-events: auto;
+}
+.claude-model-cascade-bridge[hidden] {
+    display: none !important;
+}
 @keyframes claude-cascade-fade-in {
     from { opacity: 0; transform: translateX(-4px); }
     to   { opacity: 1; transform: translateX(0); }
@@ -2418,7 +2432,8 @@ button.composer-tool-btn:hover {
    到 viewport 底的距离）+ 右对齐 + 收窄 + max-height 50dvh。textarea
    在 composer 上半部分自然不被覆盖。 */
 @media (max-width: 768px) {
-    .claude-model-cascade {
+    .claude-model-cascade,
+    .claude-model-cascade-bridge {
         display: none !important;
     }
     .model-dropdown {
