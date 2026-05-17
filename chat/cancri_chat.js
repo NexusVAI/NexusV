@@ -1311,7 +1311,7 @@ function isFreeUserBlockedGateModel(modelId) {
 // 返回 null 表示通过；否则返回原因 code：
 //   • 'paid_only'      FREE 用户调 GPT-5.5 系列（硬挡，不论池/日配额）
 //   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何 PAID 模型）
-//   • 'daily_limit'    当日 25 次 PAID 试用用完
+//   • 'daily_limit'    当日 15 次 PAID 试用用完（2026-05-17 Phase A：25 → 15）
 function getQuotaBlockReason(modelId) {
   if (quotaState.tier === "paid") return null;            // PAID 用户全通
   if (isFreeUserBlockedGateModel(modelId)) return "paid_only";
@@ -1327,9 +1327,9 @@ function getQuotaBlockMessage(modelId) {
     case "paid_only":
       return "该模型仅向 Cancri Pro 订阅用户开放，请升级或选择其他模型。";
     case "pool_exhausted":
-      return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即解锁。";
+      return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
     case "daily_limit":
-      return "您今日 25 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 不受限。";
+      return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
     default:
       return "";
   }
@@ -11299,7 +11299,8 @@ const announcementModal = document.getElementById("announcementModal");
 const closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 const openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
-const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0514_timeline_v1";
+// 2026-05-17 Phase A grandfather：升一版 key，所有用户重新看到公告红点。
+const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0517_phase_a_v1";
 
 function openAnnouncementModal() {
   if (!announcementModal) return;

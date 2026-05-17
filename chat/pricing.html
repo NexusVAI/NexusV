@@ -495,7 +495,7 @@
                     <div class="plan-tier__quota">月度配额 2000 万 token</div>
                     <ul class="plan-tier__features">
                         <li>解锁非 Opus 全模型（GPT-5.4、Sonnet、Grok-4.20、Kimi 等）</li>
-                        <li>每日 PAID 模型 100 次额度</li>
+                        <li>月度配额内不限次调用，月初 UTC+8 00:00 重置</li>
                         <li>免并发排队，付费用户优先直通</li>
                         <li>到期可叠加续费 30 天</li>
                     </ul>
@@ -516,7 +516,7 @@
                     <div class="plan-tier__quota">月度配额 8000 万 token</div>
                     <ul class="plan-tier__features">
                         <li><strong>解锁 Claude Opus 全系</strong>（4.5 / 4.6 / 4.6 Thinking）</li>
-                        <li>每日 PAID 模型 300 次额度</li>
+                        <li>月度配额内不限次调用，月初 UTC+8 00:00 重置</li>
                         <li>含 Pro 所有特权 + 模型选择器优先标识</li>
                         <li>到期可叠加续费 30 天</li>
                     </ul>
@@ -535,8 +535,8 @@
                     </div>
                     <div class="plan-tier__quota">月度配额 3 亿 token</div>
                     <ul class="plan-tier__features">
-                        <li>解锁全部模型，包含图像 / 视频生成优先</li>
-                        <li>每日 PAID 模型次数不限</li>
+                        <li>解锁全部模型，包含图像 / 视频生成（vip 级模型）</li>
+                        <li>月度配额内不限次调用，月初 UTC+8 00:00 重置</li>
                         <li>含 Pro+ 所有特权</li>
                         <li>对重度开发 / 内容创作友好</li>
                     </ul>
@@ -744,8 +744,14 @@
                 <h2>常见问题</h2>
                 <p class="doc-card-text">
                     <strong>现有 ¥9.9 用户会被影响吗？</strong>
-                    不会。到期日完全不变，从今天起按 Pro 档位（月 2000 万 token）计费。
-                    日常对话用不完。重度跑 Opus 用户原本就被免费补贴最多，本次升级后请考虑 Pro+。
+                    到期日完全不变。从今天起按 Pro 档位（月 2000 万 token）计费，且
+                    <strong>本订阅周期内继续可调 Claude Opus 全系</strong>（Phase A 老用户福利，30× 权重照常生效，月度配额受 2000 万限制）。
+                    续费时根据用量自行选择档位（Pro 续费 / Pro+ 升级 / Pro Max 重度），<strong>续费后老用户福利失效</strong>，按所选新档位的明码规则计费。
+                </p>
+                <p class="doc-card-text">
+                    <strong>为什么要分档？</strong>
+                    站开了几天烧了 10 亿+ token，订阅转化不足 10%，再不分档单位经济撑不下去。
+                    Opus 系列上游成本是普通模型的几十倍，必须靠 Pro+ 档位的对等收入覆盖。这是为了能继续做下去，请各位理解。
                 </p>
                 <p class="doc-card-text">
                     <strong>加油包真的永不过期？</strong>

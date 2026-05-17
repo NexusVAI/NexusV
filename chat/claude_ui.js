@@ -581,6 +581,10 @@
     // 把 settings 面板里 billing 区的文案替换成对应 tier 的精确状态。
     // 现在 HTML 默认是 #claudeBillingCopy data-tier-state="loading" + 占位文案，
     // 我们根据 sub.tier 写两种文案。
+    // 2026-05-17 Phase A: plan_code 直接显示为档位标签
+    var PLAN_LABEL_FOR_BILLING = { pro: 'Pro', pro_plus: 'Pro+', pro_max: 'Pro Max' };
+    var PLAN_CHIP_FOR_BILLING = { pro: 'PRO', pro_plus: 'PRO+', pro_max: 'PRO MAX' };
+
     function updateBillingCopy(sub) {
         var copy = document.getElementById('claudeBillingCopy');
         if (!copy) return;
@@ -591,16 +595,25 @@
             var exp = sub.expires_at
                 ? new Date(sub.expires_at).toLocaleDateString('zh-CN')
                 : '';
+            var plan = sub.plan_code || 'pro';
+            var planLabel = PLAN_LABEL_FOR_BILLING[plan] || 'Pro';
+            var planChip = PLAN_CHIP_FOR_BILLING[plan] || 'PAID';
+            // 2026-05-17 Phase A grandfather：方案 F 标志，仅 Pro 档显示
+            var isGrandfathered = Boolean(sub.is_grandfathered) && plan === 'pro';
+            var grandfatherChip = isGrandfathered
+                ? '<span class="claude-tier-chip is-grandfather" style="margin-left:6px;vertical-align:middle" title="Phase A 老用户福利：本订阅周期内可调 Claude Opus 全系">老用户 · Opus 可调</span>'
+                : '';
             copy.setAttribute('data-tier-state', 'paid');
-            copy.innerHTML = '您当前是<strong>Cancri Pro</strong>'
-                + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">PAID</span>'
+            copy.innerHTML = '您当前是<strong>Cancri ' + planLabel + '</strong>'
+                + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">' + planChip + '</span>'
+                + grandfatherChip
                 + (exp ? '。订阅到期 ' + exp : '')
                 + '（<span class="claude-billing-days">' + days + '</span>）';
         } else {
             copy.setAttribute('data-tier-state', 'free');
             copy.innerHTML = '您当前是<strong>免费计划</strong>'
                 + '<span class="claude-tier-chip is-free" style="margin-left:8px;vertical-align:middle">FREE</span>'
-                + '。<a href="./pricing.html">升级到 Cancri Pro</a>';
+                + '。<a href="./pricing.html">升级到付费档位</a>';
         }
     }
 

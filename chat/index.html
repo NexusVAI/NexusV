@@ -2577,6 +2577,26 @@
                         <li class="timeline-item timeline-item--latest">
                             <div class="timeline-dot"></div>
                             <div class="timeline-content">
+                                <div class="timeline-title">Phase A：三档订阅上线 + 老用户 Opus 福利</div>
+                                <p class="timeline-body">
+                                    站点开了几天烧了 10 亿+ token，订阅转化不足 10%，再不分档单位经济撑不住。
+                                    从今天起 ¥9.9 套餐拆为
+                                    <strong>Pro（¥9.9 / 2000 万 token）</strong>、
+                                    <strong>Pro+（¥29 / 8000 万 token + Claude Opus 全系）</strong>、
+                                    <strong>Pro Max（¥99 / 3 亿 token + 视频图像）</strong>
+                                    三档。Claude Opus 系列升级到 Pro+ 专属。
+                                    <br/><br/>
+                                    <strong>现有 ¥9.9 老用户福利</strong>：在本订阅周期内可继续调用 Claude Opus 全系（30× 权重照常生效，月度 2000 万 token 配额不变），到期不延续。续费时根据用量自行选择档位。
+                                    <br/><br/>
+                                    加油包 <strong>¥10 起永不过期</strong>，付费 / 免费用户都能买，可在月度配额用完后补足。详见
+                                    <a href="./pricing.html" class="timeline-link">套餐页 →</a>
+                                </p>
+                                <time class="timeline-date" datetime="2026-05-17">2026-05-17</time>
+                            </div>
+                        </li>
+                        <li class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
                                 <div class="timeline-title">未授权账号批量封禁</div>
                                 <p class="timeline-body">
                                     2026 年 5 月 16 日，系统对所有未加入官方 QQ 群的注册账号执行了永久封禁处理，共计
@@ -2684,13 +2704,14 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-17-quota-gate"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-17-grandfather"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-17-quota"></script>
-        <!-- 2026-05-17：「额度」面板（替代原「连接器」占位）。FREE 共享池 + 当日 25 次 PAID 试用条形图、PAID 用量明细。 -->
-        <script defer src="./claude_quota_ui.js?v=2026-05-17-init"></script>
+        <script defer src="./claude_ui.js?v=2026-05-17-grandfather"></script>
+        <!-- 2026-05-17 Phase A：「额度」面板（替代原「连接器」占位）。
+             FREE 共享池 + 当日 15 次 PAID 试用 + 三档订阅月度配额进度 + 加油包余额。 -->
+        <script defer src="./claude_quota_ui.js?v=2026-05-17-grandfather"></script>
     </body>
 </html>

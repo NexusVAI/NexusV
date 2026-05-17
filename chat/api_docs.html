@@ -1535,38 +1535,89 @@ openclaw agent</pre>
         </section>
 
         <section id="quota">
-          <h2>免费档配额机制</h2>
+          <h2>配额机制（2026-05-17 Phase A）</h2>
           <p>
-            Cancri 把模型分成 <b>FREE</b> 与 <b>PAID</b> 两档。FREE 档对所有
-            用户始终免费；PAID 档对 FREE 用户开放有限的免费试用，对 PAID
-            订阅用户不设上限。模型档位见 <a href="./api_models.html">模型广场</a>
-            每张卡片右上的 badge。
+            Cancri 把模型分成 <b>FREE</b> 与 <b>PAID</b> 两档（见 <a href="./api_models.html">模型广场</a>
+            每张卡片右上的 badge）。FREE 档对所有用户始终免费；PAID 档对 FREE 用户
+            开放有限的免费试用，对 PAID 订阅用户按月度配额计费。订阅分三档：
+            <b>Pro</b>（¥9.9 / 月 / 2000 万 token）、
+            <b>Pro+</b>（¥29 / 月 / 8000 万 token，解锁 Claude Opus 全系）、
+            <b>Pro Max</b>（¥99 / 月 / 3 亿 token，全模型 + 视频图像）。
+            另外有<b>加油包</b>（¥10 / ¥50 / ¥200，永不过期）可在月度配额耗尽后接续使用。
           </p>
 
           <h3>FREE 用户的 PAID 模型试用规则</h3>
           <ul>
             <li>
-              <b>全站共享池：</b> 每月 1 亿 token（按下文折算后的 effective_pool_tokens
+              <b>全站共享池：</b> 每月 1 亿 token（按下文折算后的 <code>effective_pool_tokens</code>
               计），所有 FREE 用户共享。每月 1 号 00:00（UTC+8）自动重置回 1 亿。
               池内余额耗尽后，<b>当月</b>所有 FREE 用户调 PAID 模型都会被立刻拦截
               （返回 <code>429 free_pool_exhausted</code>），直到下月初。
             </li>
             <li>
-              <b>每日个人限额：</b> 每个 FREE 用户每天最多 25 次 PAID 模型成功调用
+              <b>每日个人限额：</b> 每个 FREE 用户每天最多 <b>15 次</b> PAID 模型成功调用
               （UTC+8 自然日，每天 00:00 重置）。上限内由共享池继续扣量；
               用满会返回 <code>429 daily_paid_limit_reached</code>。
             </li>
             <li>
               <b>失败不计数：</b> 上游错误（HTTP 5xx、上游 unavailable、key 失效、
-              quota 等返回 4xx/5xx 的失败请求）会自动 refund —— 不扣 25 次/日，
+              quota 等返回 4xx/5xx 的失败请求）会自动 refund —— 不扣 15 次/日，
               也不扣共享池。判定基于 HTTP 状态码，不读取上游错误文本。
             </li>
             <li>
               <b>GPT-5.5 系列例外：</b> <code>gpt-5.5</code> / <code>gpt-5.5-high</code>
-              是 Cancri Pro 专属，FREE 用户调用直接返回 <code>403 model_paid_only</code>，
-              <i>不</i>计入共享池与每日 25 次。模型广场会用横杠标识。
+              是 Pro 以上专属，FREE 用户调用直接返回 <code>403 model_paid_only</code>，
+              <i>不</i>计入共享池与每日 15 次。
+            </li>
+            <li>
+              <b>Claude Opus 系列例外：</b> <code>claude-opus-4-5</code> /
+              <code>claude-opus-4-6</code> / <code>claude-opus-4-6-thinking</code> 等
+              <code>vip</code> 级模型仅 Pro+ 以上可用，FREE 与 Pro 调用都返回
+              <code>403 model_pro_plus_required</code>。<br/>
+              <b>2026-05-17 Phase A 老用户豁免：</b> 在 2026-05-17 之前订阅的 Pro 用户，
+              <code>get_quota_status</code> 返回的 <code>is_grandfathered=true</code>，
+              在本订阅周期内可继续调用 Claude Opus 全系（权重 30× 仍生效），到期/续费后自动失效。
             </li>
           </ul>
+
+          <h3>PAID 订阅用户的月度配额</h3>
+          <ul>
+            <li>
+              <b>plan_code 决定额度：</b> Pro = 2000 万 token / 月；Pro+ = 8000 万 / 月；
+              Pro Max = 3 亿 / 月。每次成功调用扣除
+              <code>effective_pool_tokens × 模型权重</code>（见下方权重表）。
+            </li>
+            <li>
+              <b>月度自动重置：</b> 月初 UTC+8 00:00 触发懒重置（消费时由
+              <code>cancri_consume_paid_quota_v2</code> 检测并归零）。升档时
+              <code>monthly_consumed</code> 不重置（防月中升级白嫖）。
+            </li>
+            <li>
+              <b>加油包接续：</b> 月度配额耗尽后自动从加油包余额扣减；都为 0 时返回
+              <code>429 monthly_quota_exhausted</code>。
+            </li>
+            <li>
+              <b>失败不扣：</b> 同 FREE 用户一样，上游 4xx/5xx 自动 refund 到原桶。
+            </li>
+          </ul>
+
+          <h3>模型权重表</h3>
+          <p>
+            权重直接挂在 <code>SERVER_MODEL_REGISTRY[id].costTier</code> 上，
+            扣的是 <code>effective_pool_tokens × multiplier</code>：
+          </p>
+          <table>
+            <thead>
+              <tr><th>costTier</th><th>权重</th><th>典型模型</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>free</code></td><td>0.5×</td><td>GLM Flash、DeepSeek V3.1 等国产 FREE</td></tr>
+              <tr><td><code>cheap</code></td><td>1×</td><td>Qwen3 系列、轻量模型</td></tr>
+              <tr><td><code>normal</code></td><td>3×</td><td>GPT-4 类标准模型、Doubao、Kimi、Haiku</td></tr>
+              <tr><td><code>expensive</code></td><td>10×</td><td>GPT-5.4、Grok-4.20、Sonnet 系列</td></tr>
+              <tr><td><code>vip</code></td><td>30×</td><td>Claude Opus 全系、GPT-5.5、视频生成（Pro+ 起）</td></tr>
+            </tbody>
+          </table>
 
           <h3>token 折算公式</h3>
           <p>
@@ -1578,7 +1629,9 @@ openclaw agent</pre>
             <pre><code>effective_pool_tokens
   = (prompt_tokens - cached_tokens) × 1.0       // 普通输入（全价）
   + cached_tokens                  × 0.1       // 缓存命中（10% 折扣）
-  + completion_tokens              × 1.0;      // 输出（全价）</code></pre>
+  + completion_tokens              × 1.0;      // 输出（全价）
+
+# 最终扣减 = effective_pool_tokens × 模型权重</code></pre>
           </div>
           <p>
             上游字段映射：OpenAI 协议读 <code>usage.prompt_tokens</code> /
@@ -1592,17 +1645,12 @@ openclaw agent</pre>
             <code>output_tokens ≈ chars / 4</code> 兜底入池。
           </p>
 
-          <h3>PAID 订阅用户</h3>
-          <p>
-            PAID 用户调任何模型都不扣共享池、不计 25 次/日，仅记录用量明细
-            供面板展示。订阅价 ¥9.9/月，详见 <a href="./pricing.html">套餐页</a>。
-          </p>
-
           <h3>实时查询配额状态</h3>
           <p>
-            登录用户可通过 chat-gateway 实时查询当前共享池余额、自己当日 PAID 调用余量、
-            订阅状态。这是 <i>内部接口</i>（chat-gateway 上的 JSON-RPC 风格 endpoint），
-            <b>不在公开 /v1/* API 列表内</b>。聊天页 / 设置面板的「额度」段就走这个接口。
+            登录用户可通过 chat-gateway 实时查询当前订阅档位、月度配额、加油包余额、
+            共享池余额、当日 PAID 调用余量。这是 <i>内部接口</i>（chat-gateway 上的
+            JSON-RPC 风格 endpoint），<b>不在公开 /v1/* API 列表内</b>。聊天页 /
+            设置面板的「额度」段就走这个接口。
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="quota-status">复制</button>
@@ -1617,7 +1665,17 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <pre><code>{
   "ok": true,
   "tier": "free",
-  "subscription": { "tier": "free", "expires_at": null, "days_remaining": 0 },
+  "plan_code": null,
+  "expires_at": null,
+  "days_remaining": 0,
+  "monthly_quota": 0,
+  "monthly_consumed": 0,
+  "monthly_remaining": 0,
+  "monthly_percent": 0,
+  "topup_balance": 0,
+  "topup_total_purchased": 0,
+  "topup_total_consumed": 0,
+  "is_grandfathered": false,
   "free_pool": {
     "period_start": "2026-04-30T16:00:00Z",   // = 2026-05-01 00:00 UTC+8
     "period_end":   "2026-05-31T16:00:00Z",
@@ -1628,26 +1686,66 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
   },
   "daily_paid": {
     "day": "2026-05-17",
-    "count": 4,
-    "limit": 25,
-    "remaining": 21
-  }
+    "used": 4,
+    "limit": 15,
+    "remaining": 11
+  },
+  "subscription": { "tier": "free", "plan_code": null,
+                    "expires_at": null, "days_remaining": 0 }
 }</code></pre>
           </div>
-          <p>响应（PAID 用户）：</p>
+          <p>响应（PAID 用户 — Pro+ 为例）：</p>
           <div class="code-block">
             <pre><code>{
   "ok": true,
   "tier": "paid",
-  "subscription": {
-    "tier": "paid",
-    "expires_at": "2026-06-14T08:30:00Z",
-    "days_remaining": 28
-  },
-  "free_pool": { /* 仍返回，供前端展示「全站当前状态」 */ },
-  "daily_paid": { /* 全 0，PAID 用户不计 */ }
+  "plan_code": "pro_plus",
+  "expires_at": "2026-06-14T08:30:00Z",
+  "days_remaining": 28,
+  "monthly_quota": 80000000,
+  "monthly_consumed": 12340000,
+  "monthly_remaining": 67660000,
+  "monthly_percent": 15.43,
+  "topup_balance": 15000000,
+  "topup_total_purchased": 15000000,
+  "topup_total_consumed": 0,
+  "is_grandfathered": false,
+  "free_pool":  { /* 仍返回，前端可忽略 */ },
+  "daily_paid": { /* 全 0，PAID 用户不走此闸 */ },
+  "subscription": { "tier": "paid", "plan_code": "pro_plus",
+                    "expires_at": "...", "days_remaining": 28,
+                    "is_grandfathered": false }
 }</code></pre>
           </div>
+          <p>响应（Phase A 老用户 — Pro 但保留 Opus 访问）：</p>
+          <div class="code-block">
+            <pre><code>{
+  "ok": true,
+  "tier": "paid",
+  "plan_code": "pro",
+  "expires_at": "2026-06-08T08:30:00Z",
+  "days_remaining": 22,
+  "monthly_quota": 20000000,
+  "monthly_consumed": 5430000,
+  "monthly_remaining": 14570000,
+  "monthly_percent": 27.15,
+  "topup_balance": 0,
+  "topup_total_purchased": 0,
+  "topup_total_consumed": 0,
+  "is_grandfathered": true,         // ← 关键：Phase A 老用户福利
+  "free_pool":  { /* 仍返回 */ },
+  "daily_paid": { /* 全 0 */ },
+  "subscription": { "tier": "paid", "plan_code": "pro",
+                    "expires_at": "...", "days_remaining": 22,
+                    "is_grandfathered": true }
+}</code></pre>
+          </div>
+          <p>
+            前端通过 <code>is_grandfathered === true</code> 即可判定要不要画「老用户 · Opus 可调」徽章。
+            后端 <code>cancri_consume_paid_quota_v2</code> 在 vip-gate 处自动豁免，不需要前端额外传参。
+            续费时（<code>cancri_activate_paid_code_v2</code>）通过 trigger 自动清除 <code>is_grandfathered</code>，
+            用户改吃所选新档位的明码规则。
+          </p>
 
           <h3>错误码速查（配额相关）</h3>
           <table>
@@ -1662,22 +1760,32 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               <tr>
                 <td>403</td>
                 <td><code>model_paid_only</code></td>
-                <td>该模型仅 Cancri Pro 订阅可用（如 GPT-5.5 系列）</td>
+                <td>该模型仅 Pro 以上可用（如 GPT-5.5 系列），FREE 调用被挡</td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td><code>model_pro_plus_required</code></td>
+                <td>该模型仅 Pro+ 以上可用（Claude Opus / 视频生成等 vip 模型），FREE 与 Pro 都被挡（Phase A 老用户 <code>is_grandfathered=true</code> 在本订阅周期内豁免）</td>
               </tr>
               <tr>
                 <td>429</td>
                 <td><code>free_pool_exhausted</code></td>
-                <td>本月免费共享池已耗尽，下月 1 号 00:00 重置</td>
+                <td>本月免费共享池已耗尽，下月 1 号 00:00（UTC+8）重置</td>
               </tr>
               <tr>
                 <td>429</td>
                 <td><code>daily_paid_limit_reached</code></td>
-                <td>当日 25 次免费 PAID 试用已用完，明日 00:00 重置</td>
+                <td>FREE 用户当日 15 次免费 PAID 试用已用完，明日 00:00（UTC+8）重置</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td><code>monthly_quota_exhausted</code></td>
+                <td>PAID 用户本月套餐配额 + 加油包余额都耗尽，下月 1 号 00:00 重置（加油包不重置）</td>
               </tr>
               <tr>
                 <td>503</td>
                 <td><code>quota_check_failed</code></td>
-                <td>配额服务暂不可用（DB 异常）。这种情况下 FREE 用户被保守拒绝，请稍后重试</td>
+                <td>配额服务暂不可用（DB 异常）。这种情况下用户被保守拒绝，请稍后重试</td>
               </tr>
             </tbody>
           </table>
@@ -1695,7 +1803,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               <tr>
                 <th>防线</th>
                 <th>Free</th>
-                <th>Paid（<a href="./pricing.html">¥9.9 / 月</a>）</th>
+                <th>Paid（<a href="./pricing.html">¥9.9 / ¥29 / ¥99 三档</a>）</th>
                 <th>拦什么</th>
               </tr>
             </thead>
@@ -2032,8 +2140,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </p>
           <h3>怎么升到 Paid 档？现有 Key 还能用吗？</h3>
           <p>
-            到 <a href="./pricing.html">套餐页</a>扫码付款 ¥9.9 / 月并提交订单，站主人工
-            对账后会给一个一次性激活码，在
+            到 <a href="./pricing.html">套餐页</a>扫码付款（Pro ¥9.9 / Pro+ ¥29 / Pro Max ¥99 / 月，
+            或¥10 起的加油包）并提交订单，站主人工对账后会给一个一次性激活码，在
             <a href="./orders.html">我的订单</a>里兑换即可立即生效。
             <b>升档不影响现有 Key</b>——同一把 Key 在 Free 和 Paid 下用法完全一致，
             限流阈值会自动按你当前档位生效。Paid 到期后会自动降回 Free，
@@ -2055,14 +2163,16 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </p>
           <h3>计费怎么算？</h3>
           <p>
-            目前不按 token 计费，按账户档位限速：<b>Free 档免费</b>，
-            <b>Paid 档 ¥9.9 / 月</b>包月解锁更高配额并跳过模型排队（见
-            <a href="./pricing.html">套餐页</a>）。
-            按 token 的细粒度计费暂未上线，未来若引入会提前通知，且会保留至少一个免费档。
+            后台实计费按 <code>effective_pool_tokens × 模型权重</code> 扣减（见上面「模型权重表」）：
+            <b>Free 档免费</b>使用全站 1亿/月共享池 + 个人每日 15 次 PAID 试用；
+            <b>Pro ¥9.9 / 月</b> 个人月度配额 2000 万 token，
+            <b>Pro+ ¥29 / 月</b> 8000 万 token + Claude Opus，
+            <b>Pro Max ¥99 / 月</b> 3 亿 token + 视频图像优先，加油包 ¥10 起永不过期，见
+            <a href="./pricing.html">套餐页</a>。
           </p>
           <h3>有 SLA 吗？</h3>
           <p>
-            <b>没有</b>。Cancri 是个人维护的非营利项目，¥9.9 / 月用于覆盖运营成本。
+            <b>没有</b>。Cancri 是个人维护的非营利项目，订阅费用于覆盖运营成本。
             服务尽力保证可用，但不承诺 SLA、不承诺特定模型永远在线、不承诺响应延迟。
             生产关键路径请自行做故障转移。
           </p>
