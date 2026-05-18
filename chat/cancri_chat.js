@@ -751,11 +751,24 @@ function applyBackendModelBlock(payload, modelId = currentModel) {
   )
     return false;
   const retryAfter = Number(payload.retryAfter || payload.retry_after_seconds);
+  // 2026-05-18 修复：`model_temporary_failure` 是 modelscope-proxy
+  // `classifyByStatus` 对 5xx / 408 / 504 / 网络超时这类**瞬时**故障的默认归
+  // 类（单条上游 503 就触发）。之前不论 code 一律 fallback 到 1 小时锁，
+  // 导致 freeapi.dgbmc.top 之类的中转商打个嗝（例如 claude-opus-4-6 在
+  // 09:58 UTC 收到一次 503）就把模型锁 1h、用户必须等到下小时才能再用，
+  // 明显错配——上游通常几十秒内自愈。这里给瞬时码一个短窗口（默认 60s，
+  // 上游可通过 retry_after_seconds 覆盖）防快速点击重发；其它 code
+  // （401/403 → key 死、429 → 配额满、free_hour_limit → 风控）保持原 1h
+  // 锁，避免反复打已坏的上游。
+  const isTransient = payload.code === "model_temporary_failure";
+  const transientFallbackMs = 60 * 1000;
   const until =
     Date.now() +
     (Number.isFinite(retryAfter) && retryAfter > 0
       ? retryAfter * 1000
-      : MODEL_LOCK_DURATION_MS);
+      : isTransient
+        ? transientFallbackMs
+        : MODEL_LOCK_DURATION_MS);
   const reason =
     payload.code === "model_quota_exceeded" ||
     payload.code === "model_free_hour_limit"
