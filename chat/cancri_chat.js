@@ -3732,40 +3732,51 @@ async function renderChatHistoryList() {
       return;
     }
 
+    function appendChatHistoryItem(chat) {
+      const isPinned = pinned.includes(chat.id);
+      const item = document.createElement("div");
+      item.className =
+        "recent-item" + (isPinned ? " recent-item-pinned" : "");
+
+      const titleSpan = document.createElement("span");
+      titleSpan.className = "recent-item-title";
+      titleSpan.textContent = chat.title || "新对话";
+      titleSpan.title = chat.title || "新对话";
+
+      const actionsBtn = document.createElement("button");
+      actionsBtn.className = "recent-item-actions";
+      actionsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>`;
+      actionsBtn.title = "更多操作";
+      actionsBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
+      });
+
+      item.appendChild(titleSpan);
+      item.appendChild(actionsBtn);
+      item.addEventListener("click", () => loadChat(chat.id));
+      listContainer.appendChild(item);
+    }
+
+    const pinnedGroup = sorted.filter((chat) => pinned.includes(chat.id));
+    if (pinnedGroup.length) {
+      const section = document.createElement("div");
+      section.className = "section-title history-date-title history-pinned-title";
+      section.textContent = "置顶";
+      listContainer.appendChild(section);
+      pinnedGroup.forEach(appendChatHistoryItem);
+    }
+
     ["Today", "Yesterday", "Older"].forEach((bucket) => {
       const group = sorted.filter(
-        (chat) => getChatHistoryBucket(chat) === bucket,
+        (chat) => !pinned.includes(chat.id) && getChatHistoryBucket(chat) === bucket,
       );
       if (!group.length) return;
       const section = document.createElement("div");
       section.className = "section-title history-date-title";
       section.textContent = bucket;
       listContainer.appendChild(section);
-      group.forEach((chat) => {
-        const isPinned = pinned.includes(chat.id);
-        const item = document.createElement("div");
-        item.className =
-          "recent-item" + (isPinned ? " recent-item-pinned" : "");
-
-        const titleSpan = document.createElement("span");
-        titleSpan.className = "recent-item-title";
-        titleSpan.textContent = chat.title || "新对话";
-        titleSpan.title = chat.title || "新对话";
-
-        const actionsBtn = document.createElement("button");
-        actionsBtn.className = "recent-item-actions";
-        actionsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>`;
-        actionsBtn.title = "更多操作";
-        actionsBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
-        });
-
-        item.appendChild(titleSpan);
-        item.appendChild(actionsBtn);
-        item.addEventListener("click", () => loadChat(chat.id));
-        listContainer.appendChild(item);
-      });
+      group.forEach(appendChatHistoryItem);
     });
   } catch (error) {
     console.error("加载聊天记录列表失败:", error);
@@ -5220,6 +5231,11 @@ function applyTheme() {
 
 function showToast(message) {
   toast.textContent = message;
+  const isWarning = /失败|错误|异常|封禁|过期|请|无法|警告|限制|拒绝|不可用/.test(
+    String(message || ""),
+  );
+  toast.classList.toggle("is-warning", isWarning);
+  toast.classList.toggle("is-info", !isWarning);
   toast.classList.add("show");
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
@@ -9325,17 +9341,20 @@ function assistantHistoryMessage(content, metadata) {
 
 async function saveOrUpdateChatHistory() {
   try {
-    let saved = false;
+    let savedChat = null;
     if (currentChatId) {
-      saved = Boolean(
-        await updateChatHistory(currentChatId, conversationHistory),
-      );
+      savedChat = await updateChatHistory(currentChatId, conversationHistory);
     } else if (conversationHistory.length > 0) {
-      saved = Boolean(await saveChatHistory(conversationHistory));
+      savedChat = await saveChatHistory(conversationHistory);
     }
-    if (saved) {
+    if (savedChat) {
       // 刷新聊天记录列表
       renderChatHistoryList();
+      window.dispatchEvent(
+        new CustomEvent("cancri:chat-history-saved", {
+          detail: { chat: savedChat, chatId: savedChat.id || currentChatId },
+        }),
+      );
     }
   } catch (error) {
     console.error("自动保存聊天记录失败:", error);
@@ -12370,6 +12389,15 @@ window.CancriApp = {
   renderMarkdown,
   escapeHtml,
   getModelDisplayName,
+  loadChatHistoryList,
+  loadChat,
+  sendMessage,
+  renderChatHistoryList,
+  newChat,
+  openModal,
+  closeModal,
+  getChatHistoryList: () => [...chatHistoryList],
+  getCurrentChatId: () => currentChatId,
   getLeaderboardRowMeta,
   showToast,
   setActiveView,
