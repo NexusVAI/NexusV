@@ -857,6 +857,12 @@ function getQuotaLockMessage(modelId = currentModel) {
   if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) {
     if (status.lockReason === "quota") {
       if (modelId === "claude-opus-4-6-thinking-medium") {
+        if (quotaState.tier !== "free") {
+          targetStatus.lockedUntil = null;
+          targetStatus.lockReason = null;
+          targetStatus.error = null;
+          return "";
+        }
         const remainingSeconds = Math.max(
           1,
           Math.ceil((status.lockedUntil - now) / 1000),
@@ -949,10 +955,14 @@ function applyQuotaSnapshotFromHeaders(
 
     if (Number.isFinite(modelRemaining)) {
       if (modelRemaining <= 0) {
-        const until = getNextLocalMidnightTimestamp(now);
-        targetStatus.lockedUntil = until;
-        targetStatus.lockReason = "quota";
-        targetStatus.error = "额度已用完";
+        if (targetModelId === "claude-opus-4-6-thinking-medium" && quotaState.tier !== "free") {
+          // paid users bypass upstream per-model rate limits
+        } else {
+          const until = getNextLocalMidnightTimestamp(now);
+          targetStatus.lockedUntil = until;
+          targetStatus.lockReason = "quota";
+          targetStatus.error = "额度已用完";
+        }
       } else if (
         Number.isFinite(targetStatus.lockedUntil) &&
         targetStatus.lockedUntil > now &&
@@ -967,10 +977,14 @@ function applyQuotaSnapshotFromHeaders(
         : targetStatus.quotaLimit;
       targetStatus.quotaRemaining = modelRemaining;
     } else if (responseStatus === 429) {
-      const until = getNextLocalMidnightTimestamp(now);
-      targetStatus.lockedUntil = until;
-      targetStatus.lockReason = "quota";
-      targetStatus.error = "额度已用完";
+      if (targetModelId === "claude-opus-4-6-thinking-medium" && quotaState.tier !== "free") {
+        // paid users bypass upstream per-model rate limits
+      } else {
+        const until = getNextLocalMidnightTimestamp(now);
+        targetStatus.lockedUntil = until;
+        targetStatus.lockReason = "quota";
+        targetStatus.error = "额度已用完";
+      }
     } else if (responseStatus === 401 || responseStatus === 409) {
       targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
     } else if (
