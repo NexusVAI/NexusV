@@ -871,9 +871,9 @@ function getQuotaLockMessage(modelId = currentModel) {
     if (status.lockReason === "quota") {
       if (modelId === "claude-opus-4-6-thinking-medium") {
         if (quotaState.tier !== "free") {
-          targetStatus.lockedUntil = null;
-          targetStatus.lockReason = null;
-          targetStatus.error = null;
+          status.lockedUntil = null;
+          status.lockReason = null;
+          status.error = null;
           return "";
         }
         const remainingSeconds = Math.max(
