@@ -1821,8 +1821,11 @@ html[data-theme="light"] .composer:focus-within {
        Claude UI mobile drawer 打开走 body.sidebar-open class。
        兼容老逻辑：.is-mobile-open 也接受。 */
     .sidebar.is-mobile-open,
+    .sidebar.is-mobile-open.collapsed,
+    .sidebar.is-mobile-open[data-collapsed="true"],
     body.sidebar-open .sidebar {
         transform: translateX(0) !important;
+        pointer-events: auto !important;
     }
     /* mobile drawer 打开时的暗色蒙层。2026-05-15 fix(M2)：
        原 rgba(0,0,0,0.5) 太重 + 跟 cancri_chat .scrim 叠加导致两层 dim，
@@ -1910,9 +1913,12 @@ html[data-theme="light"] .composer:focus-within {
     .claude-suggest-row {
         overflow-x: auto;
         flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
         scrollbar-width: none;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 4px;
+        max-width: calc(100vw - 24px) !important;
+        box-sizing: border-box;
     }
     .claude-suggest-row::-webkit-scrollbar { display: none; }
     .claude-suggest {
@@ -2618,50 +2624,108 @@ button.composer-tool-btn:hover {
    但万一其他逻辑（如桌面 collapsed 后旋转屏）切到 collapsed，这里 CSS 保险
    让 drawer 永远 240px 宽 + 完整内容（撤销所有 .collapsed 视觉缩小规则）。 */
 @media (max-width: 768px) {
+    .sidebar.is-mobile-open.collapsed,
     body.sidebar-open .sidebar.collapsed,
+    .sidebar.is-mobile-open,
     body.sidebar-open .sidebar {
         width: 240px !important;
     }
+    .sidebar.is-mobile-open.collapsed .sidebar-topbar,
     body.sidebar-open .sidebar.collapsed .sidebar-topbar {
         padding: 16px 16px 8px !important;
         justify-content: space-between !important;
     }
+    .sidebar.is-mobile-open.collapsed .sidebar-topbar::before,
     body.sidebar-open .sidebar.collapsed .sidebar-topbar::before {
         display: block !important;
     }
+    .sidebar.is-mobile-open.collapsed .nav-row,
     body.sidebar-open .sidebar.collapsed .nav-row {
         width: auto !important;
         height: 36px !important;
+        min-height: 36px !important;
+        max-height: none !important;
         margin: 0 !important;
         padding: 0 10px !important;
         justify-content: flex-start !important;
         gap: 10px !important;
+        display: flex !important;
+        position: static !important;
     }
+    .sidebar.is-mobile-open.collapsed .nav-row svg,
+    body.sidebar-open .sidebar.collapsed .nav-row svg {
+        position: static !important;
+        transform: none !important;
+        margin: 0 !important;
+    }
+    .sidebar.is-mobile-open.collapsed .nav-row .sidebar-label,
+    .sidebar.is-mobile-open.collapsed .nav-row .claude-nav-tag,
     body.sidebar-open .sidebar.collapsed .nav-row .sidebar-label,
     body.sidebar-open .sidebar.collapsed .nav-row .claude-nav-tag {
         display: inline !important;
+        opacity: 1 !important;
+        width: auto !important;
+        max-width: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
+        pointer-events: auto !important;
     }
+    .sidebar.is-mobile-open.collapsed .claude-recent-title,
+    .sidebar.is-mobile-open.collapsed .recent-wrap,
+    .sidebar.is-mobile-open.collapsed #chatHistoryList,
+    .sidebar.is-mobile-open.collapsed #sidebarSearchWrap,
     body.sidebar-open .sidebar.collapsed .claude-recent-title,
     body.sidebar-open .sidebar.collapsed .recent-wrap,
     body.sidebar-open .sidebar.collapsed #chatHistoryList,
     body.sidebar-open .sidebar.collapsed #sidebarSearchWrap {
         display: block !important;
+        opacity: 1 !important;
+        width: auto !important;
+        max-width: none !important;
+        overflow: visible !important;
+        transform: none !important;
+        pointer-events: auto !important;
     }
+    .sidebar.is-mobile-open.collapsed .sidebar-footer,
+    .sidebar.is-mobile-open.collapsed .account-strip-wrap,
     body.sidebar-open .sidebar.collapsed .sidebar-footer,
     body.sidebar-open .sidebar.collapsed .account-strip-wrap {
         padding: 8px !important;
     }
+    .sidebar.is-mobile-open.collapsed .account-strip,
     body.sidebar-open .sidebar.collapsed .account-strip {
         width: 100% !important;
         height: 48px !important;
+        max-height: none !important;
         padding: 0 10px !important;
         justify-content: flex-start !important;
         gap: 10px !important;
+        display: flex !important;
+        position: static !important;
     }
+    .sidebar.is-mobile-open.collapsed .account-strip .avatar,
+    body.sidebar-open .sidebar.collapsed .account-strip .avatar {
+        position: static !important;
+        transform: none !important;
+        margin: 0 !important;
+    }
+    .sidebar.is-mobile-open.collapsed .account-strip .account-meta,
+    .sidebar.is-mobile-open.collapsed .account-strip .upgrade-btn,
+    .sidebar.is-mobile-open.collapsed .account-strip .account-arrow,
     body.sidebar-open .sidebar.collapsed .account-strip .account-meta,
     body.sidebar-open .sidebar.collapsed .account-strip .upgrade-btn,
     body.sidebar-open .sidebar.collapsed .account-strip .account-arrow {
         display: flex !important;
+        opacity: 1 !important;
+        width: auto !important;
+        max-width: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
+        pointer-events: auto !important;
     }
 }
 
