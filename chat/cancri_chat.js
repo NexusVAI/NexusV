@@ -2979,10 +2979,38 @@ function getSupabaseClient() {
   return supabaseClient;
 }
 
+// 2026-05-18 fix(图 5)：登录视频残留触发 Chrome Global Media Controls
+// （顶部"实时字幕 / 窗口画中画 / X"工具条）。原 hideAuthOverlay 只 pause +
+// removeAttribute('src') + load()，video 元素仍挂在 DOM 中、MediaSession
+// 仍记录其元数据，Chrome 会保持 1~5s 控件可见甚至更久（取决于浏览器版本）。
+// 修：登录成功后整体移除 .auth-showcase-video DOM 节点；下次 showAuthOverlay
+// 若节点缺失就按规格重建（loop / muted / playsinline / preload="none" +
+// disablePictureInPicture / disableRemotePlayback）。彻底切断 MediaSession。
+function _ensureAuthShowcaseVideo(overlay) {
+  if (!overlay) return null;
+  let video = overlay.querySelector(".auth-showcase-video");
+  if (video instanceof HTMLVideoElement) return video;
+  const showcase = overlay.querySelector(".auth-showcase");
+  if (!showcase) return null;
+  video = document.createElement("video");
+  video.className = "auth-showcase-video";
+  video.dataset.src = "../Logo/Nexusai.mp4";
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "none";
+  video.disablePictureInPicture = true;
+  // disableRemotePlayback 是 HTMLMediaElement 标准属性（Chrome 49+ / Safari 13.1+），
+  // 部分老 Firefox 不识别但不报错。set 后浏览器不会把元素加入 Cast / AirPlay 列表。
+  try { video.disableRemotePlayback = true; } catch (_e) {}
+  showcase.appendChild(video);
+  return video;
+}
+
 function showAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (overlay) overlay.classList.add("visible");
-  const video = overlay?.querySelector(".auth-showcase-video");
+  const video = _ensureAuthShowcaseVideo(overlay);
   if (video instanceof HTMLVideoElement) {
     const src = video.dataset.src || "";
     if (src && !video.currentSrc) video.src = src;
@@ -2996,9 +3024,12 @@ function hideAuthOverlay() {
   if (overlay) overlay.classList.remove("visible");
   const video = overlay?.querySelector(".auth-showcase-video");
   if (video instanceof HTMLVideoElement) {
-    video.pause();
+    try { video.pause(); } catch (_e) {}
     video.removeAttribute("src");
-    video.load();
+    try { video.load(); } catch (_e) {}
+    // 整体移除节点而非只清 src。MediaSession 元数据随节点消亡而解除，
+    // Chrome Global Media Controls 立即收起。下次 showAuthOverlay 会 ensure 重建。
+    video.remove();
   }
   // 2026-05-17 排查残留：登录成功后销毁 Turnstile widget + 清状态。否则
   // CF challenges.cloudflare.com iframe 会留在隐藏的 #authOverlay 里继续

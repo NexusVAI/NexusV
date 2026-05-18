@@ -106,7 +106,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-18-cascade-bridge"
+            href="./claude.css?v=2026-05-18-mobile-ui-batch"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -257,6 +257,13 @@
                  mobile (<880px) 由 cancri_motion.css 直接 display:none，
                  .auth-stage 退化为居中单列。 -->
             <aside class="auth-showcase" aria-hidden="true">
+                <!-- 2026-05-18 fix(图 5)：登录视频在 hideAuthOverlay 后
+                     Chrome Global Media Controls 残留显示"实时字幕 / 窗口
+                     画中画 / X"工具条。补 disablepictureinpicture +
+                     disableremoteplayback 抑制 PiP / Cast 入口；
+                     另在 cancri_chat.js hideAuthOverlay 里把 video 节点
+                     从 DOM 移除 + showAuthOverlay 按需重建，彻底切断
+                     MediaSession。 -->
                 <video
                     class="auth-showcase-video"
                     data-src="../Logo/Nexusai.mp4"
@@ -264,6 +271,8 @@
                     muted
                     playsinline
                     preload="none"
+                    disablepictureinpicture
+                    disableremoteplayback
                 ></video>
             </aside>
 
@@ -2617,7 +2626,7 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-18-transient-lock"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-18-auth-video-cleanup"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>

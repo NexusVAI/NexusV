@@ -2091,8 +2091,16 @@ html[data-theme="light"] .composer:focus-within {
         font-size: 14px !important;
         white-space: nowrap;
     }
-    /* form-row 在 mobile 改成"标签在上 / 控件在下"的堆叠布局 */
+    /* form-row 在 mobile 改成"标签在上 / 控件在下"的堆叠布局。
+       2026-05-18 fix：原本只声明 grid-template-columns 但缺 display:grid，
+       .claude-form-row 在 1527 默认 display:flex，导致 grid-template-columns
+       完全无效。最直接症状：通知 section 的 .claude-form-stacked + .claude-form-control
+       仍按 flex 行排，而 .claude-form-control 被 width:100% 抢走整行宽度，
+       .claude-form-stacked 被挤到 min-width:0 ≈ 单字符宽，文字纵向逐字换行
+       （图 4 "响 应 补 全" 一字一行）。补 display:grid 让 grid 生效，
+       两子项自动单列堆叠，配合下面 .claude-form-control width:100% 拉满即可。 */
     #claudeSettingsView .claude-form-row {
+        display: grid !important;
         grid-template-columns: 1fr !important;
         gap: 6px !important;
         padding: 12px 0 !important;
@@ -3413,4 +3421,156 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     /* 防 prose 父样式让 pulse 圆点变形 */
     width: 8px !important;
     height: 8px !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §22. 2026-05-18 移动端 / 中等宽度 UI 修复批
+   用户反馈（5 张截图）：
+     [图 1] 移动端 main-header 上"6 ↓ ≡ 0"挤在中间，汉堡按钮在中间不在
+            左侧；"已加载聊天记录"toast 把右上角铃铛盖住
+     [图 2] 打开侧边栏时上面那条 main-header 浮在 sidebar 之上，
+            盖住 sidebar topbar（"Cancri"+ 关闭按钮）
+     [图 4] 设置页"通知 / 响应补全"那一行文字逐字竖排（"响 应 补 全"）
+            ←上面 §11.65 mobile 块里 grid-template-columns 无 display:grid，已修
+     [图 5] 登录页 mp4 视频残留触发 Chrome Global Media Controls
+     [图 6] 中等宽度（~1024px）设置页内容靠右，左右留白不对称
+
+   原则：
+   - 不重构现有 §14 mobile 块（已存在，避免冲突），追加规则用 (0,2,0)+
+     高 specificity 覆盖。
+   - 移动端去 backdrop-filter（GPU 合成层昂贵 → 滚动卡顿）、去厚阴影。
+   - 安全区（iOS home indicator / Android 手势条）走 env(safe-area-inset-*)。
+   ─────────────────────────────────────────────────────────── */
+
+/* §22.1 ─ 移动端 main-header 布局重排
+   原 DOM 顺序：claude-chat-title → mobile-menu-btn → model-selector
+   视觉顺序应该是：≡（汉堡，最左）→ 标题 / 模型选择器（右侧）→ 公告铃（最右）
+   修法：用 flex order 把 #mobileMenuBtn 推到 -1（最前），同时 .header-left
+   改 justify-content: flex-start（之前 §14 没显式声明，继承 cancri_chat.css
+   的 center），并给汉堡按钮加 margin-right 跟其他元素拉开。 */
+@media (max-width: 768px) {
+    .main-header .header-left {
+        justify-content: flex-start !important;
+    }
+    .main-header #mobileMenuBtn,
+    .main-header .header-left > #mobileMenuBtn {
+        order: -1 !important;
+        margin-right: 4px;
+    }
+    /* chat-title 移到汉堡按钮右侧。order: 0 是默认值，显式写出方便阅读。
+       hide 状态由 body.is-chatting 控制（§4 已就位），不动。 */
+    .main-header .claude-chat-title {
+        order: 0 !important;
+    }
+    /* 模型选择器 / 上下文 ring 排在标题之后 */
+    .main-header .model-selector,
+    .main-header #compareModelSelector,
+    .main-header #contextMeter {
+        order: 1 !important;
+    }
+}
+
+/* §22.2 ─ 移动端 toast 不再覆盖右上角铃铛
+   原 §14b 的 .toast { top: 16px; right: 16px } 在 PC 顶栏右侧足够空间，
+   但 mobile 顶栏高度 50-60px、右上 16px 处正是 .header-right 公告铃位，
+   叠层后铃铛被 amber toast 盖住（图 1）。
+   方案 A（采用）：mobile 把 toast 推到顶栏下方（top: 70px），保留右上角
+   语义不变。toast 1.4s 后自动消散，70px 偏移不影响下方对话流。
+   备选 B：toast 改 bottom-right。被否，因为 composer 工具行也在 bottom-right。 */
+@media (max-width: 768px) {
+    .toast {
+        top: 70px !important;
+        right: 12px !important;
+        left: 12px !important;
+        max-width: none !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+    }
+}
+
+/* §22.3 ─ 移动端侧栏 drawer z-index 高于 main-header
+   图 2 显示打开抽屉后 main-header 仍浮在抽屉顶部（盖住 sidebar topbar）。
+   根因：cancri_chat.css L928 .main-header { z-index: 10 } + 父 .main
+   作为 flex 兄弟在 stacking context 中（无 z-index）排在后面，
+   实际渲染顺序让 .main-header 浮在 fixed .sidebar 上。
+   修：把抽屉态侧栏 z-index 拉到 200（保险 > main-header 10、>= scrim 99）。
+   同时给 main-header 显式 z-index: 5（mobile 抽屉打开时）让它在抽屉下方。 */
+@media (max-width: 768px) {
+    .sidebar:not(.collapsed),
+    body.sidebar-open .sidebar,
+    .sidebar.is-mobile-open {
+        z-index: 200 !important;
+    }
+    /* scrim/遮罩抬到 sidebar 之下、header 之上 */
+    body.sidebar-open::after {
+        z-index: 150 !important;
+    }
+}
+
+/* §22.4 ─ 移动端去 backdrop-filter / 厚阴影，降卡顿
+   用户："动画还很卡"。手机 GPU 合成 backdrop-filter:blur 是已知昂贵操作，
+   配合滚动会触发逐帧 raster。
+   触及组件：
+   - .main-header（cancri_chat.css L939 backdrop-filter: blur(12px)）
+   - .toast（§14b backdrop-filter: blur(8px)）
+   - composer / popover / liquid-glass 卡片若有也一并去
+   保留视觉层级靠 border + 实色 background 而不靠 blur。 */
+@media (max-width: 768px) {
+    .main-header {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        background: var(--c-bg) !important;
+    }
+    .toast {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    /* 侧栏抽屉的阴影也压一压（6px 0 32px rgba(0,0,0,.45) 在 light 主题
+       会让 hi-DPI 屏上看到一圈灰雾） */
+    .sidebar {
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18) !important;
+    }
+}
+
+/* §22.5 ─ 安全区适配（iOS home indicator / Android 手势条 / 地址栏）
+   用户："移动端都看不全底下的来自Gmail，写这些"——底部 disclaimer 被
+   系统手势条/地址栏盖住。
+   修：composer 容器 + #homeView.chatting::after disclaimer 都加
+   env(safe-area-inset-bottom)。 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 768px) {
+        #homeView.chatting::after {
+            padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+        }
+        .composer,
+        #homeView .composer-wrap,
+        .composer-wrap {
+            padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+        }
+    }
+}
+
+/* §22.6 ─ 中等宽度（769~1100px）设置页布局调整
+   图 6：~1024 视口下，.claude-settings-page max-width: 920 + padding 32px
+   填满主区，但 nav 180 + gap 36 + content 1fr 让右侧表单占据大部分宽度，
+   视觉上"靠右"。改：在 769~1100px 把 nav 列收窄到 144px，把 max-width
+   收到 780px，并强制 margin: 0 auto 真正居中。 */
+@media (min-width: 769px) and (max-width: 1100px) {
+    #claudeSettingsView .claude-settings-page {
+        max-width: 780px !important;
+        margin: 0 auto !important;
+        padding: 28px 24px 80px !important;
+    }
+    #claudeSettingsView .claude-settings-layout {
+        grid-template-columns: 144px 1fr !important;
+        gap: 28px !important;
+    }
+}
+
+/* §22.7 ─ chat-messages 区域底部留空给 safe-area + composer 阴影
+   不影响 PC，只在 mobile：让滚动到底时最后一条消息上沿露出，不会被 composer
+   阴影/工具行盖住。 */
+@media (max-width: 768px) {
+    .chat-messages {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    }
 }
