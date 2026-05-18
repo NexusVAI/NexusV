@@ -21,6 +21,8 @@
 
     function init() {
         relocateModelSelector();
+        requestAnimationFrame(relocateModelSelector);
+        setTimeout(relocateModelSelector, 250);
         bindSuggestPills();
         bindSearchModal();
         bindCustomNav();
@@ -28,6 +30,8 @@
         bindPlanPill();
         bindProjectButtons();
         bindChatsButtons();
+        bindChatsPageList();
+        bindProjectsPage();
         bindSettingsNav();
         bindHeroGreeting();
         bindChatTitleSync();
@@ -97,6 +101,7 @@
         const btn = document.getElementById('mobileMenuBtn');
         const sidebarToggle = document.getElementById('sidebarToggle');
         if (!btn) return;
+        let closeAnimationTimer = null;
         function isMobile() {
             return window.matchMedia('(max-width: 768px)').matches;
         }
@@ -111,15 +116,16 @@
         function syncMobileSidebarState(sidebar, open) {
             if (!sidebar) return;
             sidebar.classList.toggle('is-mobile-open', open);
+            sidebar.classList.toggle('is-mobile-closing', false);
             sidebar.dataset.open = String(open);
-            sidebar.dataset.collapsed = 'false';
+            sidebar.dataset.collapsed = String(!open);
             setToggleExpanded(open);
         }
         function isDrawerOpen() {
             const sidebar = sidebarEl();
             return document.body.classList.contains('sidebar-open') ||
                 Boolean(sidebar && sidebar.classList.contains('is-mobile-open')) ||
-                Boolean(sidebar && !sidebar.classList.contains('collapsed'));
+                Boolean(sidebar && sidebar.dataset.open === 'true');
         }
         // 同步两套 sidebar 语义，避免老/新规则在关闭时冲突：
         //   - 老 cancri_chat 语义：mobile 下 .collapsed 表示隐藏（默认 add 到 sidebar）
@@ -129,18 +135,28 @@
         // 必须打开时去 .collapsed + 加 .sidebar-open；关闭时反向。
         function openDrawer() {
             const sidebar = sidebarEl();
-            if (sidebar) sidebar.classList.remove('collapsed');
+            if (closeAnimationTimer) {
+                clearTimeout(closeAnimationTimer);
+                closeAnimationTimer = null;
+            }
+            if (sidebar) sidebar.classList.remove('collapsed', 'is-mobile-closing');
             document.body.classList.add('sidebar-open');
             syncMobileSidebarState(sidebar, true);
         }
         function closeDrawer() {
             const sidebar = sidebarEl();
+            if (closeAnimationTimer) {
+                clearTimeout(closeAnimationTimer);
+                closeAnimationTimer = null;
+            }
             document.body.classList.remove('sidebar-open');
-            // 恢复 cancri_chat 老语义：mobile 下 .collapsed = 隐藏。
-            // 这让 cancri_chat.js 的其他逻辑（如 isMobileViewport scrim 判断）
-            // 也能识别"sidebar 已关"状态，保持解耦。
-            if (sidebar) sidebar.classList.add('collapsed');
             syncMobileSidebarState(sidebar, false);
+            if (sidebar) sidebar.classList.add('collapsed', 'is-mobile-closing');
+            closeAnimationTimer = setTimeout(function () {
+                const latest = sidebarEl();
+                if (latest) latest.classList.remove('is-mobile-closing');
+                closeAnimationTimer = null;
+            }, 220);
         }
 
         [btn, sidebarToggle].forEach(function (toggle) {
@@ -174,6 +190,7 @@
                 const sidebar = sidebarEl();
                 if (sidebar) {
                     sidebar.classList.remove('is-mobile-open');
+                    sidebar.classList.remove('is-mobile-closing');
                     sidebar.dataset.open = 'false';
                 }
                 setToggleExpanded(false);
@@ -312,12 +329,19 @@
     //    modelDropdown 的位置是 inline style 动态计算，跟着按钮位置走。
     function relocateModelSelector() {
         const modelSelector = document.getElementById('modelSelector');
-        const composerActions = document.querySelector('.composer-actions');
-        const voiceBtn = document.getElementById('voiceToastBtn');
-        if (!modelSelector || !composerActions || !voiceBtn) return;
-        // 已经在 composer-actions 里就跳过（防止 DOMContentLoaded 重复触发）
-        if (composerActions.contains(modelSelector)) return;
-        composerActions.insertBefore(modelSelector, voiceBtn);
+        const projectActions = document.querySelector('#claudeProjectDetailView.active .claude-project-composer-actions');
+        const composerActions = projectActions || document.querySelector('#homeView .composer-actions') || document.querySelector('.composer-actions');
+        const voiceBtn = projectActions ? document.getElementById('claudeProjectVoiceBtn') : document.getElementById('voiceToastBtn');
+        if (!modelSelector || !composerActions) return;
+        if (composerActions.contains(modelSelector)) {
+            modelSelector.classList.add('claude-model-selector-inline');
+            return;
+        }
+        if (voiceBtn) {
+            composerActions.insertBefore(modelSelector, voiceBtn);
+        } else {
+            composerActions.appendChild(modelSelector);
+        }
         modelSelector.classList.add('claude-model-selector-inline');
     }
 
@@ -666,6 +690,7 @@
         if (newBtn) {
             newBtn.addEventListener('click', function (e) {
                 e.preventDefault();
+                try { localStorage.removeItem('cancri_claude_active_project_id'); } catch (_) {}
                 // 复用现有 newChatBtn 的流程
                 const newChatBtn = document.getElementById('newChatBtn');
                 if (newChatBtn) newChatBtn.click();
@@ -678,6 +703,813 @@
                 showToast('多选功能正在开发中');
             });
         }
+    }
+
+    function bindChatsPageList() {
+        const list = document.getElementById('claudeChatsList');
+        const search = document.getElementById('claudeChatsSearchInput');
+        if (!list) return;
+        let renderToken = 0;
+
+        function app() {
+            return window.CancriApp || null;
+        }
+        function titleOf(chat) {
+            return String(chat && (chat.title || chat.name) || '新对话').trim() || '新对话';
+        }
+        function timeOf(chat) {
+            const raw = chat && (chat.updated_at || chat.created_at || chat.updatedAt || chat.createdAt);
+            if (!raw) return '';
+            const date = new Date(raw);
+            if (!Number.isFinite(date.getTime())) return '';
+            return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+        function showEmpty(text) {
+            list.innerHTML = '';
+            const empty = document.createElement('div');
+            empty.className = 'claude-empty-hint';
+            empty.textContent = text;
+            list.appendChild(empty);
+        }
+        function renderRows(chats) {
+            const q = (search ? search.value : '').trim().toLowerCase();
+            const rows = (Array.isArray(chats) ? chats : [])
+                .filter(function (chat) { return !q || titleOf(chat).toLowerCase().indexOf(q) !== -1; })
+                .sort(function (a, b) {
+                    return new Date(b.updated_at || b.created_at || 0).getTime()
+                        - new Date(a.updated_at || a.created_at || 0).getTime();
+                });
+            list.innerHTML = '';
+            if (!rows.length) {
+                showEmpty(q ? '没有匹配的聊天记录' : '暂无聊天记录。点击右上角"新聊天"开始。');
+                return;
+            }
+            rows.forEach(function (chat) {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'claude-chat-row';
+                row.dataset.chatId = chat.id || '';
+                const main = document.createElement('span');
+                main.className = 'claude-chat-row-main';
+                const title = document.createElement('span');
+                title.className = 'claude-chat-row-title';
+                title.textContent = titleOf(chat);
+                const meta = document.createElement('span');
+                meta.className = 'claude-chat-row-meta';
+                meta.textContent = chat.model || '';
+                main.appendChild(title);
+                if (meta.textContent) main.appendChild(meta);
+                const time = document.createElement('span');
+                time.className = 'claude-chat-row-time';
+                time.textContent = timeOf(chat);
+                row.appendChild(main);
+                row.appendChild(time);
+                row.addEventListener('click', function () {
+                    const api = app();
+                    if (api && typeof api.loadChat === 'function' && chat.id) api.loadChat(chat.id);
+                });
+                list.appendChild(row);
+            });
+        }
+        async function render() {
+            const token = ++renderToken;
+            showEmpty('正在加载聊天记录…');
+            const api = app();
+            let chats = [];
+            try {
+                if (api && typeof api.loadChatHistoryList === 'function') chats = await api.loadChatHistoryList();
+                else if (api && typeof api.getChatHistoryList === 'function') chats = api.getChatHistoryList();
+            } catch (_) {
+                if (api && typeof api.getChatHistoryList === 'function') chats = api.getChatHistoryList();
+            }
+            if (token !== renderToken) return;
+            renderRows(chats);
+        }
+
+        search?.addEventListener('input', render);
+        window.addEventListener('cancri:chat-history-saved', render);
+        window.addEventListener('cancri:viewchange', function (e) {
+            if (e.detail && e.detail.view === 'claudeChats') render();
+        });
+        if (document.body.dataset.view === 'claudeChats') render();
+    }
+
+    function bindProjectsPage() {
+        const PROJECTS_KEY = 'cancri_claude_projects_v1';
+        const ACTIVE_PROJECT_KEY = 'cancri_claude_active_project_id';
+        const PROJECT_COLORS = [
+            { key: 'neutral', value: '#f4f4f5' },
+            { key: 'red', value: '#ff6467' },
+            { key: 'orange', value: '#ff914d' },
+            { key: 'yellow', value: '#ffd84d' },
+            { key: 'green', value: '#45d483' },
+            { key: 'blue', value: '#3aa0ff' },
+            { key: 'purple', value: '#a970ff' },
+            { key: 'pink', value: '#ff86bd' },
+        ];
+        const PROJECT_ICONS = {
+            folder: '<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h4l2 2h7A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5Z"/>',
+            dollar: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.2c-.6-.7-1.7-1.1-3-1.1-1.8 0-3 .8-3 2s1.2 1.8 3 2 3 .8 3 2-1.2 2-3 2c-1.5 0-2.7-.5-3.4-1.4"/>',
+            monitor: '<rect x="4" y="5" width="16" height="11" rx="1.8"/><path d="M8 20h8M12 16v4"/>',
+            cap: '<path d="m3 9 9-5 9 5-9 5Z"/><path d="M7 11.5v4c2.8 2 7.2 2 10 0v-4"/>',
+            pen: '<path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10Z"/><path d="m14.5 6.5 3 3"/>',
+            tag: '<path d="M20 13.5 13.5 20 4 10.5V4h6.5L20 13.5Z"/><circle cx="8.5" cy="8.5" r="1.3"/>',
+            braces: '<path d="M8 4c-2 1-2 3-2 5 0 1.5-.8 2.4-2 3 1.2.6 2 1.5 2 3 0 2 0 4 2 5"/><path d="M16 4c2 1 2 3 2 5 0 1.5.8 2.4 2 3-1.2.6-2 1.5-2 3 0 2 0 4-2 5"/>',
+            terminal: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="m8 10 3 2-3 2M13 15h3"/>',
+            music: '<path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>',
+            trash: '<path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/>',
+            wand: '<path d="m4 20 12-12M14 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1ZM19 13l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6Z"/>',
+            palette: '<path d="M12 4a8 8 0 0 0 0 16h1.2a1.8 1.8 0 0 0 1.3-3.1 1.8 1.8 0 0 1 1.3-3.1H18a3 3 0 0 0 3-3C21 7 17 4 12 4Z"/><circle cx="8" cy="10" r="1"/><circle cx="11" cy="8" r="1"/><circle cx="14" cy="9" r="1"/>',
+            stethoscope: '<path d="M6 4v5a4 4 0 0 0 8 0V4"/><path d="M14 9a5 5 0 0 0 5 5v1a4 4 0 0 1-8 0v-1"/><circle cx="19" cy="14" r="1.5"/>',
+            spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/>',
+            leaf: '<path d="M20 4c-9 0-14 4-14 10a6 6 0 0 0 10 4c3-3 4-8 4-14Z"/><path d="M6 20c2-5 6-8 11-10"/>',
+            briefcase: '<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M9 7V5h6v2M3 12h18"/>',
+            chart: '<path d="M4 19V5M9 19v-8M14 19V8M19 19v-5"/>',
+            bot: '<rect x="6" y="7" width="12" height="10" rx="3"/><path d="M12 7V4M8.5 12h.01M15.5 12h.01M10 17l-1.5 3M14 17l1.5 3"/>',
+            dumbbell: '<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',
+            notebook: '<path d="M7 4h11v16H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/><path d="M8 4v16M11 8h4M11 12h4"/>',
+            scale: '<path d="M12 4v16M5 7h14M7 7l-3 6h6ZM17 7l-3 6h6ZM8 20h8"/>',
+            globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>',
+            wrench: '<path d="M14 6a5 5 0 0 0 6 6L10 22l-4-4 10-10a5 5 0 0 0-2-2Z"/>',
+            paw: '<circle cx="7" cy="9" r="1.5"/><circle cx="12" cy="6.5" r="1.5"/><circle cx="17" cy="9" r="1.5"/><path d="M7.5 17c1.2-3.2 7.8-3.2 9 0 .6 1.7-.6 3-2.4 2.5A7 7 0 0 0 12 19a7 7 0 0 0-2.1.5c-1.8.5-3-1-2.4-2.5Z"/>',
+            flask: '<path d="M9 3h6M10 3v5l-5 9a3 3 0 0 0 2.6 4h8.8A3 3 0 0 0 19 17l-5-9V3"/><path d="M8 15h8"/>',
+            brain: '<path d="M9 5a3 3 0 0 0-3 3 3 3 0 0 0-1 5 3 3 0 0 0 4 4V5ZM15 5a3 3 0 0 1 3 3 3 3 0 0 1 1 5 3 3 0 0 1-4 4V5Z"/><path d="M9 9H7M15 9h2M9 14H7M15 14h2"/>',
+            heart: '<path d="M20 8.5c0 5-8 10.5-8 10.5S4 13.5 4 8.5A4.2 4.2 0 0 1 12 6a4.2 4.2 0 0 1 8 2.5Z"/>',
+            gift: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M4 13h16M12 9v11M12 9H8.5A2.5 2.5 0 1 1 12 5.5ZM12 9h3.5A2.5 2.5 0 1 0 12 5.5Z"/>',
+        };
+        const page = document.getElementById('claudeProjectsView');
+        const empty = page ? page.querySelector('.claude-projects-empty') : null;
+        const search = document.getElementById('claudeProjectsSearchInput');
+        const nameInput = document.getElementById('projectNameInput');
+        const confirmBtn = document.getElementById('createProjectConfirmBtn');
+        if (!page) return;
+
+        let selectedIcon = 'folder';
+        let selectedColor = 'neutral';
+        let detailProjectId = '';
+        let detailTab = 'chats';
+
+        let list = document.getElementById('claudeProjectsList');
+        if (!list) {
+            list = document.createElement('div');
+            list.id = 'claudeProjectsList';
+            list.className = 'claude-projects-list';
+            if (empty && empty.parentNode) empty.parentNode.insertBefore(list, empty);
+        }
+
+        function app() {
+            return window.CancriApp || null;
+        }
+        function iconSvg(key) {
+            const paths = PROJECT_ICONS[key] || PROJECT_ICONS.folder;
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+        }
+        function colorValue(key) {
+            const found = PROJECT_COLORS.find(function (item) { return item.key === key; });
+            return found ? found.value : PROJECT_COLORS[0].value;
+        }
+        function setView(view) {
+            const api = app();
+            if (api && typeof api.setActiveView === 'function') {
+                api.setActiveView(view);
+                return;
+            }
+            document.body.dataset.view = view;
+            document.querySelectorAll('.main > .view').forEach(function (v) {
+                v.classList.toggle('active', v.id === view + 'View');
+            });
+            window.dispatchEvent(new CustomEvent('cancri:viewchange', { detail: { view: view } }));
+        }
+        function normalizeProject(project) {
+            const p = project && typeof project === 'object' ? project : {};
+            return {
+                id: p.id || '',
+                name: String(p.name || '未命名项目').trim() || '未命名项目',
+                icon: p.icon && PROJECT_ICONS[p.icon] ? p.icon : 'folder',
+                color: p.color || 'neutral',
+                createdAt: p.createdAt || new Date().toISOString(),
+                updatedAt: p.updatedAt || p.createdAt || new Date().toISOString(),
+                chatIds: Array.isArray(p.chatIds) ? p.chatIds : [],
+                sources: Array.isArray(p.sources) ? p.sources : [],
+            };
+        }
+        function readProjects() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]');
+                return Array.isArray(parsed) ? parsed.map(normalizeProject).filter(function (p) { return p.id; }) : [];
+            } catch (_) {
+                return [];
+            }
+        }
+        function writeProjects(projects) {
+            localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+            renderProjects();
+            renderSidebarProjects();
+            renderProjectDetail();
+        }
+        function activeProjectId() {
+            try { return localStorage.getItem(ACTIVE_PROJECT_KEY) || ''; } catch (_) { return ''; }
+        }
+        function setActiveProject(id) {
+            try {
+                if (id) localStorage.setItem(ACTIVE_PROJECT_KEY, id);
+                else localStorage.removeItem(ACTIVE_PROJECT_KEY);
+            } catch (_) {}
+            renderSidebarProjects();
+        }
+        function chatTitle(chat) {
+            return String(chat && chat.title || '新对话').trim() || '新对话';
+        }
+        function chatDate(chat) {
+            const raw = chat && (chat.updatedAt || chat.createdAt || chat.timestamp);
+            const d = raw ? new Date(raw) : null;
+            if (!d || Number.isNaN(d.getTime())) return '';
+            return String(d.getMonth() + 1) + '月' + String(d.getDate()) + '日';
+        }
+        function enhanceProjectModal() {
+            if (!nameInput || nameInput.dataset.claudeProjectEnhanced === 'true') return;
+            nameInput.dataset.claudeProjectEnhanced = 'true';
+            const modal = document.getElementById('projectModal');
+            if (modal && !modal.querySelector('.claude-project-modal-card')) {
+                const header = Array.prototype.find.call(modal.children, function (el) {
+                    return el.classList && el.classList.contains('modal-header');
+                });
+                const body = Array.prototype.find.call(modal.children, function (el) {
+                    return el.classList && el.classList.contains('modal-body');
+                });
+                if (header && body) {
+                    const card = document.createElement('div');
+                    card.className = 'claude-project-modal-card';
+                    modal.insertBefore(card, header);
+                    card.appendChild(header);
+                    card.appendChild(body);
+                }
+            }
+            const formGroup = nameInput.closest('.form-group') || nameInput.parentElement;
+            const wrap = document.createElement('div');
+            wrap.className = 'claude-project-name-wrap';
+            const iconBtn = document.createElement('button');
+            iconBtn.type = 'button';
+            iconBtn.id = 'projectIconPickerBtn';
+            iconBtn.className = 'claude-project-icon-trigger';
+            iconBtn.setAttribute('aria-label', '选择项目图标和颜色');
+            nameInput.parentNode.insertBefore(wrap, nameInput);
+            wrap.appendChild(iconBtn);
+            wrap.appendChild(nameInput);
+            const picker = document.createElement('div');
+            picker.className = 'claude-project-picker';
+            picker.id = 'projectIconColorPicker';
+            picker.hidden = true;
+            formGroup.appendChild(picker);
+            function renderTrigger() {
+                iconBtn.style.setProperty('--project-color', colorValue(selectedColor));
+                iconBtn.innerHTML = iconSvg(selectedIcon);
+            }
+            function renderPicker() {
+                picker.innerHTML =
+                    '<div class="claude-project-color-row">' +
+                    PROJECT_COLORS.map(function (color) {
+                        return '<button type="button" class="claude-project-color-dot' + (color.key === selectedColor ? ' active' : '') + '" data-color="' + color.key + '" style="--project-color:' + color.value + '" aria-label="选择颜色"></button>';
+                    }).join('') +
+                    '</div><div class="claude-project-icon-grid">' +
+                    Object.keys(PROJECT_ICONS).map(function (key) {
+                        return '<button type="button" class="claude-project-icon-choice' + (key === selectedIcon ? ' active' : '') + '" data-icon="' + key + '" aria-label="选择图标">' + iconSvg(key) + '</button>';
+                    }).join('') +
+                    '</div><button type="button" class="claude-project-picker-done">完成</button>';
+            }
+            function syncConfirm() {
+                const hasName = Boolean(nameInput.value.trim());
+                if (confirmBtn) {
+                    confirmBtn.disabled = !hasName;
+                    confirmBtn.classList.toggle('claude-project-create-ready', hasName);
+                }
+            }
+            function showPicker() {
+                renderPicker();
+                picker.hidden = false;
+            }
+            function hidePicker() {
+                picker.hidden = true;
+            }
+            iconBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (picker.hidden) showPicker();
+                else hidePicker();
+            });
+            document.getElementById('projectSettingToastBtn')?.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (picker.hidden) showPicker();
+                else hidePicker();
+            }, true);
+            picker.addEventListener('click', function (e) {
+                const colorBtn = e.target.closest('[data-color]');
+                const iconChoice = e.target.closest('[data-icon]');
+                if (colorBtn) selectedColor = colorBtn.getAttribute('data-color') || selectedColor;
+                if (iconChoice) selectedIcon = iconChoice.getAttribute('data-icon') || selectedIcon;
+                if (e.target.closest('.claude-project-picker-done')) hidePicker();
+                renderTrigger();
+                renderPicker();
+            });
+            nameInput.addEventListener('input', syncConfirm);
+            nameInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && nameInput.value.trim()) {
+                    e.preventDefault();
+                    confirmBtn?.click();
+                }
+            });
+            document.addEventListener('pointerdown', function (e) {
+                if (picker.hidden) return;
+                if (picker.contains(e.target) || iconBtn.contains(e.target)) return;
+                hidePicker();
+            }, true);
+            renderTrigger();
+            syncConfirm();
+        }
+        function openProjectModal() {
+            enhanceProjectModal();
+            const api = app();
+            if (api && typeof api.openModal === 'function') {
+                api.openModal('projectModal');
+            } else {
+                const modal = document.getElementById('projectModal');
+                const scrim = document.getElementById('scrim');
+                if (modal) {
+                    modal.classList.add('open');
+                    modal.setAttribute('aria-hidden', 'false');
+                }
+                if (scrim) scrim.classList.add('show');
+            }
+            if (nameInput) {
+                nameInput.value = '';
+                selectedIcon = 'folder';
+                selectedColor = 'neutral';
+                if (confirmBtn) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.classList.remove('claude-project-create-ready');
+                }
+                const trigger = document.getElementById('projectIconPickerBtn');
+                if (trigger) {
+                    trigger.style.setProperty('--project-color', colorValue(selectedColor));
+                    trigger.innerHTML = iconSvg(selectedIcon);
+                }
+                const picker = document.getElementById('projectIconColorPicker');
+                if (picker) picker.hidden = true;
+                requestAnimationFrame(function () { nameInput.focus(); });
+            }
+        }
+        function closeProjectModal() {
+            const api = app();
+            if (api && typeof api.closeModal === 'function') {
+                api.closeModal();
+            } else {
+                const modal = document.getElementById('projectModal');
+                const scrim = document.getElementById('scrim');
+                if (modal) {
+                    modal.classList.remove('open');
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+                if (scrim) scrim.classList.remove('show');
+            }
+        }
+        function ensureDetailView() {
+            let view = document.getElementById('claudeProjectDetailView');
+            if (view) return view;
+            view = document.createElement('section');
+            view.className = 'view';
+            view.id = 'claudeProjectDetailView';
+            view.innerHTML =
+                '<div class="claude-project-detail-page">' +
+                    '<div class="claude-project-detail-shell">' +
+                        '<header class="claude-project-detail-header">' +
+                            '<div class="claude-project-detail-icon" id="claudeProjectDetailIcon"></div>' +
+                            '<h1 id="claudeProjectDetailTitle"></h1>' +
+                        '</header>' +
+                        '<div class="composer-wrap claude-project-composer-wrap">' +
+                            '<div class="composer claude-project-composer">' +
+                                '<textarea class="composer-input" id="claudeProjectPromptInput" rows="1" placeholder="向这个项目中的聊天提问"></textarea>' +
+                                '<div class="composer-bottom">' +
+                                    '<div class="composer-status"><span id="claudeProjectComposerStatus">项目内聊天 · 来源按需读取</span></div>' +
+                                    '<div class="composer-tools-row">' +
+                                        '<div class="composer-tools" aria-label="项目工具">' +
+                                            '<button type="button" class="composer-tool-btn" id="claudeProjectNewChatBtn" aria-label="新项目聊天">+</button>' +
+                                            '<button type="button" class="composer-tool-btn claude-project-source-shortcut" id="claudeProjectSourcesShortcut">来源</button>' +
+                                        '</div>' +
+                                        '<div class="composer-actions claude-project-composer-actions">' +
+                                            '<button type="button" class="voice-btn" id="claudeProjectVoiceBtn" aria-label="语音输入" title="语音输入">' + iconSvg('music') + '</button>' +
+                                            '<button type="button" class="send-btn" id="claudeProjectPromptSubmit" aria-label="发送项目消息">' + iconSvg('spark') + '</button>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="claude-project-tabs">' +
+                            '<button type="button" class="active" data-project-tab="chats">聊天</button>' +
+                            '<button type="button" data-project-tab="sources">来源</button>' +
+                        '</div>' +
+                        '<div class="claude-project-detail-list" id="claudeProjectDetailList"></div>' +
+                    '</div>' +
+                '</div>';
+            const main = document.querySelector('.main');
+            if (main) main.appendChild(view);
+            const input = view.querySelector('#claudeProjectPromptInput');
+            const sourceInput = document.createElement('input');
+            sourceInput.type = 'file';
+            sourceInput.id = 'claudeProjectSourceFileInput';
+            sourceInput.multiple = true;
+            sourceInput.hidden = true;
+            view.appendChild(sourceInput);
+            view.querySelector('#claudeProjectNewChatBtn')?.addEventListener('click', function () {
+                if (detailProjectId) beginProjectChat(detailProjectId, '', false);
+            });
+            view.querySelector('#claudeProjectSourcesShortcut')?.addEventListener('click', function () {
+                detailTab = 'sources';
+                renderProjectDetail();
+            });
+            view.querySelector('#claudeProjectPromptSubmit')?.addEventListener('click', function () {
+                const value = input ? input.value.trim() : '';
+                if (detailProjectId && value) beginProjectChat(detailProjectId, value, true);
+            });
+            input?.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                    const value = input.value.trim();
+                    if (value && detailProjectId) {
+                        e.preventDefault();
+                        beginProjectChat(detailProjectId, value, true);
+                    }
+                }
+            });
+            view.querySelectorAll('[data-project-tab]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    detailTab = btn.getAttribute('data-project-tab') || 'chats';
+                    renderProjectDetail();
+                });
+            });
+            sourceInput.addEventListener('change', function () {
+                if (!detailProjectId || !sourceInput.files || !sourceInput.files.length) return;
+                addProjectSources(detailProjectId, Array.from(sourceInput.files));
+                sourceInput.value = '';
+            });
+            return view;
+        }
+        function ensureSidebarProjectsList() {
+            let section = document.getElementById('claudeSidebarProjectsSection');
+            if (section) return document.getElementById('claudeSidebarProjectsList');
+            const recentTitle = document.querySelector('.claude-recent-title');
+            if (!recentTitle || !recentTitle.parentNode) return null;
+            section = document.createElement('div');
+            section.id = 'claudeSidebarProjectsSection';
+            section.className = 'claude-sidebar-projects';
+            section.innerHTML = '<div class="claude-sidebar-projects-title">项目</div><div id="claudeSidebarProjectsList" class="claude-sidebar-projects-list"></div>';
+            recentTitle.parentNode.insertBefore(section, recentTitle);
+            return document.getElementById('claudeSidebarProjectsList');
+        }
+        function touchProject(projects, id) {
+            const p = projects.find(function (item) { return item.id === id; });
+            if (p) p.updatedAt = new Date().toISOString();
+            return projects;
+        }
+        function createProject(name) {
+            const now = new Date().toISOString();
+            const project = {
+                id: 'project_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+                name: name,
+                icon: selectedIcon,
+                color: selectedColor,
+                createdAt: now,
+                updatedAt: now,
+                chatIds: [],
+                sources: [],
+            };
+            writeProjects([project].concat(readProjects()));
+            return project;
+        }
+        function formatBytes(size) {
+            const n = Number(size) || 0;
+            if (n < 1024) return n + ' B';
+            if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+            return (n / 1024 / 1024).toFixed(1) + ' MB';
+        }
+        function addProjectSources(projectId, files) {
+            const projects = readProjects();
+            const project = projects.find(function (p) { return p.id === projectId; });
+            if (!project) return;
+            project.sources = Array.isArray(project.sources) ? project.sources : [];
+            files.forEach(function (file) {
+                project.sources.unshift({
+                    id: 'source_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
+                    name: file.name,
+                    type: file.type || 'application/octet-stream',
+                    size: file.size || 0,
+                    updatedAt: new Date().toISOString(),
+                    status: 'indexed',
+                });
+            });
+            project.updatedAt = new Date().toISOString();
+            writeProjects(projects);
+            detailTab = 'sources';
+            renderProjectDetail();
+            const api = app();
+            if (api && typeof api.showToast === 'function') api.showToast('来源已添加，AI 将按需读取引用。');
+        }
+        function removeProjectSource(projectId, sourceId) {
+            const projects = readProjects();
+            const project = projects.find(function (p) { return p.id === projectId; });
+            if (!project) return;
+            project.sources = (project.sources || []).filter(function (source) { return source.id !== sourceId; });
+            project.updatedAt = new Date().toISOString();
+            writeProjects(projects);
+            renderProjectDetail();
+        }
+        function beginProjectChat(projectId, prompt, autoSend) {
+            setActiveProject(projectId);
+            detailProjectId = projectId;
+            writeProjects(touchProject(readProjects(), projectId));
+            const api = app();
+            setView('home');
+            if (api && typeof api.newChat === 'function') api.newChat();
+            const input = document.getElementById('homeInput');
+            if (input) {
+                requestAnimationFrame(function () {
+                    input.value = prompt || '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                    if (autoSend && prompt) {
+                        document.getElementById('sendChatBtn')?.click();
+                    }
+                });
+            }
+        }
+        function loadProjectChat(projectId, chatId) {
+            setActiveProject(projectId);
+            const api = app();
+            if (api && typeof api.loadChat === 'function') api.loadChat(chatId);
+        }
+        function openProject(projectId) {
+            const project = readProjects().find(function (p) { return p.id === projectId; });
+            if (!project) return;
+            detailProjectId = projectId;
+            detailTab = 'chats';
+            setActiveProject(projectId);
+            writeProjects(touchProject(readProjects(), projectId));
+            ensureDetailView();
+            setView('claudeProjectDetail');
+            requestAnimationFrame(relocateModelSelector);
+            renderProjectDetail();
+            renderSidebarProjects();
+        }
+        function attachSavedChat(chatId) {
+            const id = activeProjectId();
+            if (!id || !chatId) return;
+            const projects = readProjects();
+            const project = projects.find(function (p) { return p.id === id; });
+            if (!project) return;
+            project.chatIds = Array.isArray(project.chatIds) ? project.chatIds : [];
+            if (project.chatIds.indexOf(chatId) === -1) project.chatIds.unshift(chatId);
+            project.updatedAt = new Date().toISOString();
+            writeProjects(projects);
+        }
+        function renderSidebarProjects() {
+            const sidebarList = ensureSidebarProjectsList();
+            const section = document.getElementById('claudeSidebarProjectsSection');
+            if (!sidebarList || !section) return;
+            const projects = readProjects().sort(function (a, b) { return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); });
+            section.hidden = projects.length === 0;
+            sidebarList.innerHTML = '';
+            projects.slice(0, 8).forEach(function (project) {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'nav-row claude-sidebar-project-row';
+                row.classList.toggle('active', document.body.dataset.view === 'claudeProjectDetail' && project.id === detailProjectId);
+                row.style.setProperty('--project-color', colorValue(project.color));
+                const rowIcon = document.createElement('span');
+                rowIcon.className = 'claude-sidebar-project-icon';
+                rowIcon.innerHTML = iconSvg(project.icon);
+                const rowLabel = document.createElement('span');
+                rowLabel.className = 'sidebar-label';
+                rowLabel.textContent = project.name;
+                const rowMore = document.createElement('span');
+                rowMore.className = 'claude-sidebar-project-more';
+                rowMore.textContent = '...';
+                row.appendChild(rowIcon);
+                row.appendChild(rowLabel);
+                row.appendChild(rowMore);
+                row.addEventListener('click', function () { openProject(project.id); });
+                sidebarList.appendChild(row);
+            });
+        }
+        function renderProjectDetail() {
+            const view = ensureDetailView();
+            if (!view || !detailProjectId) return;
+            const project = readProjects().find(function (p) { return p.id === detailProjectId; });
+            if (!project) return;
+            const icon = document.getElementById('claudeProjectDetailIcon');
+            const title = document.getElementById('claudeProjectDetailTitle');
+            const detailList = document.getElementById('claudeProjectDetailList');
+            const input = document.getElementById('claudeProjectPromptInput');
+            if (icon) {
+                icon.style.setProperty('--project-color', colorValue(project.color));
+                icon.innerHTML = iconSvg(project.icon);
+            }
+            if (title) title.textContent = project.name;
+            if (input) input.placeholder = '向“' + project.name + '”中的聊天提问';
+            requestAnimationFrame(relocateModelSelector);
+            view.querySelectorAll('[data-project-tab]').forEach(function (btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-project-tab') === detailTab);
+            });
+            if (!detailList) return;
+            detailList.innerHTML = '';
+            if (detailTab === 'sources') {
+                const panel = document.createElement('div');
+                panel.className = 'claude-project-sources-panel';
+                const upload = document.createElement('button');
+                upload.type = 'button';
+                upload.className = 'claude-project-source-upload';
+                upload.innerHTML = '<span>' + iconSvg('folder') + '</span><strong>上传来源</strong><small>文件会作为项目知识源索引，AI 按需读取，不随每条消息重复发送全文。</small>';
+                upload.addEventListener('click', function () {
+                    document.getElementById('claudeProjectSourceFileInput')?.click();
+                });
+                panel.appendChild(upload);
+                const sources = Array.isArray(project.sources) ? project.sources : [];
+                if (!sources.length) {
+                    const emptySources = document.createElement('div');
+                    emptySources.className = 'claude-project-detail-empty';
+                    emptySources.textContent = '还没有添加来源。';
+                    panel.appendChild(emptySources);
+                } else {
+                    const sourceList = document.createElement('div');
+                    sourceList.className = 'claude-project-source-list';
+                    sources.forEach(function (source) {
+                        const row = document.createElement('div');
+                        row.className = 'claude-project-source-row';
+                        const sourceIcon = document.createElement('span');
+                        sourceIcon.className = 'claude-project-source-icon';
+                        sourceIcon.innerHTML = iconSvg('notebook');
+                        const copy = document.createElement('div');
+                        copy.className = 'claude-project-source-copy';
+                        const name = document.createElement('strong');
+                        name.textContent = source.name || '未命名来源';
+                        const meta = document.createElement('small');
+                        meta.textContent = formatBytes(source.size) + ' · 按需读取';
+                        copy.appendChild(name);
+                        copy.appendChild(meta);
+                        const remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.textContent = '移除';
+                        remove.addEventListener('click', function () { removeProjectSource(project.id, source.id); });
+                        row.appendChild(sourceIcon);
+                        row.appendChild(copy);
+                        row.appendChild(remove);
+                        sourceList.appendChild(row);
+                    });
+                    panel.appendChild(sourceList);
+                }
+                detailList.appendChild(panel);
+                return;
+            }
+            const api = app();
+            const chats = api && typeof api.getChatHistoryList === 'function' ? api.getChatHistoryList() : [];
+            const chatById = new Map((Array.isArray(chats) ? chats : []).map(function (chat) { return [chat.id, chat]; }));
+            const ids = Array.isArray(project.chatIds) ? project.chatIds : [];
+            if (!ids.length) {
+                const emptyChats = document.createElement('div');
+                emptyChats.className = 'claude-project-detail-empty';
+                emptyChats.textContent = '还没有项目聊天。';
+                detailList.appendChild(emptyChats);
+                return;
+            }
+            ids.forEach(function (chatId) {
+                const chat = chatById.get(chatId);
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'claude-project-detail-row';
+                const name = document.createElement('span');
+                name.textContent = chatTitle(chat);
+                const time = document.createElement('time');
+                time.textContent = chatDate(chat);
+                row.appendChild(name);
+                row.appendChild(time);
+                row.addEventListener('click', function () { loadProjectChat(project.id, chatId); });
+                detailList.appendChild(row);
+            });
+        }
+        function renderProjects() {
+            const q = (search ? search.value : '').trim().toLowerCase();
+            const projects = readProjects()
+                .filter(function (project) { return !q || project.name.toLowerCase().indexOf(q) !== -1; })
+                .sort(function (a, b) { return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); });
+            const api = app();
+            const chats = api && typeof api.getChatHistoryList === 'function' ? api.getChatHistoryList() : [];
+            const chatById = new Map((Array.isArray(chats) ? chats : []).map(function (chat) { return [chat.id, chat]; }));
+            list.innerHTML = '';
+            if (empty) empty.hidden = projects.length > 0 || Boolean(q);
+            if (!projects.length) {
+                if (q) {
+                    const noMatch = document.createElement('div');
+                    noMatch.className = 'claude-empty-hint';
+                    noMatch.textContent = '没有匹配的项目';
+                    list.appendChild(noMatch);
+                }
+                return;
+            }
+            projects.forEach(function (project) {
+                const card = document.createElement('article');
+                card.className = 'claude-project-card';
+                card.tabIndex = 0;
+                card.style.setProperty('--project-color', colorValue(project.color));
+                const head = document.createElement('div');
+                head.className = 'claude-project-card-head';
+                const projectIcon = document.createElement('div');
+                projectIcon.className = 'claude-project-card-icon';
+                projectIcon.innerHTML = iconSvg(project.icon);
+                const titleWrap = document.createElement('div');
+                titleWrap.className = 'claude-project-card-copy';
+                const title = document.createElement('h2');
+                title.className = 'claude-project-card-title';
+                title.textContent = project.name;
+                const meta = document.createElement('div');
+                meta.className = 'claude-project-card-meta';
+                const count = Array.isArray(project.chatIds) ? project.chatIds.length : 0;
+                meta.textContent = count ? count + ' 个项目对话' : '还没有项目对话';
+                titleWrap.appendChild(title);
+                titleWrap.appendChild(meta);
+                const newBtn = document.createElement('button');
+                newBtn.type = 'button';
+                newBtn.className = 'claude-secondary-btn claude-project-new-chat';
+                newBtn.textContent = '+ 新聊天';
+                newBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    beginProjectChat(project.id, '', false);
+                });
+                head.appendChild(projectIcon);
+                head.appendChild(titleWrap);
+                head.appendChild(newBtn);
+                card.appendChild(head);
+                const chatList = document.createElement('div');
+                chatList.className = 'claude-project-chat-list';
+                (project.chatIds || []).slice(0, 4).forEach(function (chatId) {
+                    const chat = chatById.get(chatId);
+                    const row = document.createElement('button');
+                    row.type = 'button';
+                    row.className = 'claude-project-chat-row';
+                    row.textContent = chatTitle(chat);
+                    row.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        loadProjectChat(project.id, chatId);
+                    });
+                    chatList.appendChild(row);
+                });
+                if (chatList.childNodes.length) card.appendChild(chatList);
+                card.addEventListener('click', function () { openProject(project.id); });
+                card.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openProject(project.id);
+                    }
+                });
+                list.appendChild(card);
+            });
+        }
+
+        ['claudeNewProjectBtn', 'claudeProjectsEmptyNewBtn'].forEach(function (id) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                openProjectModal();
+            }, true);
+        });
+        confirmBtn?.addEventListener('click', function (e) {
+            const name = (nameInput ? nameInput.value : '').trim();
+            if (!name) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            const project = createProject(name);
+            closeProjectModal();
+            openProject(project.id);
+        }, true);
+        document.getElementById('newChatBtn')?.addEventListener('click', function () {
+            setActiveProject('');
+            renderSidebarProjects();
+        }, true);
+        search?.addEventListener('input', renderProjects);
+        window.addEventListener('cancri:viewchange', function (e) {
+            if (e.detail && e.detail.view === 'claudeProjects') renderProjects();
+            renderSidebarProjects();
+            if (e.detail && e.detail.view === 'claudeProjectDetail') renderProjectDetail();
+            requestAnimationFrame(relocateModelSelector);
+        });
+        window.addEventListener('cancri:chat-history-saved', function (e) {
+            const chatId = e.detail && e.detail.chatId;
+            attachSavedChat(chatId);
+        });
+        enhanceProjectModal();
+        ensureDetailView();
+        setTimeout(renderProjects, 0);
+        setTimeout(renderSidebarProjects, 0);
     }
 
     // 7. 设置全屏 view 内的左 nav 切换 + "概述" 表单真实落地
@@ -937,13 +1769,25 @@
         }
 
         function openMenu() {
+            clearTimeout(closeMenu._timer);
             menu.hidden = false;
+            menu.classList.remove('is-closing');
             syncWebSearchState();
             // 测一次 offsetHeight 才能正确算 top（hidden 时为 0）
-            requestAnimationFrame(positionMenu);
+            requestAnimationFrame(function () {
+                positionMenu();
+                menu.classList.add('is-open');
+            });
         }
         function closeMenu() {
-            menu.hidden = true;
+            if (menu.hidden) return;
+            menu.classList.remove('is-open');
+            menu.classList.add('is-closing');
+            clearTimeout(closeMenu._timer);
+            closeMenu._timer = setTimeout(function () {
+                menu.hidden = true;
+                menu.classList.remove('is-closing');
+            }, 140);
         }
 
         // 拦截 plusTrigger click（capture phase + stopImmediatePropagation），
@@ -963,6 +1807,7 @@
         menu.addEventListener('click', function (e) {
             const item = e.target.closest('.claude-attach-item');
             if (!item) return;
+            e.stopPropagation();
             const action = item.dataset.action;
             if (action === 'file') {
                 fileInput.click();
@@ -972,7 +1817,13 @@
                 closeMenu();
             } else if (action === 'websearch') {
                 // 触发原 #webSearchToggle.click()，保留 cancri 的状态机
-                if (webBtn) webBtn.click();
+                if (webBtn) {
+                    webBtn.dispatchEvent(new MouseEvent('click', {
+                        bubbles: false,
+                        cancelable: true,
+                        view: window
+                    }));
+                }
                 // 同步显示，不关闭菜单（让用户看到 toggle 状态）
                 setTimeout(syncWebSearchState, 50);
             }
@@ -990,8 +1841,8 @@
             if (e.key === 'Escape' && !menu.hidden) closeMenu();
         });
         // 滚动 / resize 关闭（避免位置漂移）
-        window.addEventListener('scroll', function () { if (!menu.hidden) closeMenu(); }, true);
-        window.addEventListener('resize', function () { if (!menu.hidden) closeMenu(); });
+        window.addEventListener('scroll', function () { if (!menu.hidden) positionMenu(); }, true);
+        window.addEventListener('resize', function () { if (!menu.hidden) positionMenu(); });
     }
 
     // 12. 模型 dropdown 折叠 + cascade submenu（PC）/ 全展开（mobile）
@@ -1173,6 +2024,9 @@
             bridge.style.width = Math.max(0, bridgeWidth) + 'px';
             bridge.style.height = maxH + 'px';
         }
+        window.addEventListener('resize', function () {
+            if (!cascade.hidden) requestAnimationFrame(positionCascade);
+        });
 
         // 2026-05-18：hover-intent 延迟关闭，避免鼠标在主菜单/子菜单之间
         // 任何短暂的非两者元素（边缘像素、子像素抖动、滚动条）触发即时关闭。
@@ -1376,6 +2230,9 @@
         const toast = document.getElementById('toast');
         if (!toast) { alert(msg); return; }
         toast.textContent = msg;
+        const isWarning = /失败|错误|异常|封禁|过期|请|无法|警告|限制|拒绝|不可用/.test(String(msg || ''));
+        toast.classList.toggle('is-warning', isWarning);
+        toast.classList.toggle('is-info', !isWarning);
         toast.classList.add('show');
         clearTimeout(showToast._timer);
         showToast._timer = setTimeout(function () {
