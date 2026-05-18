@@ -1297,12 +1297,17 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gemini-3.1-pro",
 ]);
 
+// 2026-05-18 fix：tier 默认 null（未知），而不是 "free"。
+// 之前默认 "free" + planCode null 的组合让首次进入聊天页时（refreshQuotaState
+// 网络请求未返回）`getQuotaBlockReason` 直接把 FREE_USER_BLOCKED_GATE_IDS
+// （GPT-5.5 / GPT-5.5 High / GPT-5.4 Mini / Gemini 3.1 Pro）对所有用户横杠，
+// 包括 ProMax —— 显示「需要 Pro 以上」误导。刷新一次后看不到只是因为后续
+// 网络/缓存快了，并非真正修复。
+// 现在：tier=null 时 getQuotaBlockReason 不走 FREE 阻挡分支（后端权威源
+// 说了算）；tier 已知 free 才横杠 PAID 模型。
 let quotaState = {
   fetchedAt: 0,
-  tier: "free",
-  // 2026-05-18：存 plan_code + is_grandfathered，让前端能区分
-  // Pro / Pro+ / Pro Max，避免 Pro 用户看到 vip 模型为可点、点了才 403。
-  // backend cancri_get_quota_status_v2 返回二者，refreshQuotaState 吃进。
+  tier: null,                 // null = 未知（不阻挡）；"free" / "paid" = 已知
   planCode: null,             // 'pro' | 'pro_plus' | 'pro_max' | null
   isGrandfathered: false,     // Phase A 老用户豁免 vip 模型
   freePoolRemaining: null,    // null = 未知（不强制阻挡）
@@ -1310,6 +1315,35 @@ let quotaState = {
 };
 let quotaStateFetchInflight = null;
 const QUOTA_STATE_TTL_MS = 30 * 1000;
+
+// 2026-05-18：从 claude_ui.js 维护的 cancri_tier_cache_v1（5 分钟 TTL）
+// 同步 seed quotaState。让第二次起进入页面的 FREE 用户立刻看到 PAID 模型
+// 横杠样式，不出现「先 enabled 闪一下、再变 disabled」的抖动；
+// 而 ProMax / Pro+ 等也立刻看到全部可用，不会出现误锁。
+// 网络仍会异步刷新 quotaState（refreshQuotaState），cache miss 时维持 null。
+function seedQuotaStateFromTierCache() {
+  try {
+    const raw = localStorage.getItem("cancri_tier_cache_v1");
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return;
+    if (typeof parsed.cachedAt !== "number") return;
+    if (Date.now() - parsed.cachedAt > 5 * 60 * 1000) return;
+    const sub = parsed.subscription;
+    if (!sub || typeof sub !== "object") return;
+    quotaState.tier = sub.tier === "paid" ? "paid" : "free";
+    const rawPlan = typeof sub.plan_code === "string" ? sub.plan_code : null;
+    quotaState.planCode =
+      rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max"
+        ? rawPlan
+        : null;
+    quotaState.isGrandfathered = Boolean(sub.is_grandfathered);
+    // 注意：不 set fetchedAt —— 让 refreshQuotaState 仍走网络拉新鲜的池/日剩余配额。
+  } catch (e) {
+    /* ignore */
+  }
+}
+seedQuotaStateFromTierCache();
 
 function isPaidGateModel(modelId) {
   if (PAID_GATE_IDS.has(modelId)) return true;
@@ -1347,10 +1381,16 @@ function getQuotaBlockReason(modelId) {
       if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
     }
   }
-  if (quotaState.tier === "paid") return null;            // PAID 用户全通（除上面 vip 闸门）
+  // 2026-05-18 fix：只有当 tier 已知为 "free" 时才横杠 PAID 模型。
+  // tier === null（quotaState 未拉取完成且 cancri_tier_cache_v1 也无缓存）
+  //   → 不阻挡，避免 ProMax 用户首次进页面把 gpt-5.5 / gpt-5.5-high / gpt-5.4-mini /
+  //     gemini-3.1-pro 错误地显示成「需要 Pro 以上」。
+  // tier === "paid" → 全通（vip 闸门在上面已处理）。
+  // 后端 chat-gateway enforceQuotaGate 仍会真正执法，前端这层是 UX 预判。
+  if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   if (!isPaidGateModel(modelId)) return null;             // FREE 用户调 FREE 模型 OK
-  // FREE 用户 + PAID 模型：看池 + 日配额
+  // FREE 用户 + PAID 模型：看池 + 日配额（今日 PAID 试用还在则不挡）
   if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
   if (quotaState.dailyPaidRemaining !== null && quotaState.dailyPaidRemaining <= 0) return "daily_limit";
   return null;
@@ -1393,8 +1433,9 @@ async function refreshQuotaState(force) {
   const SUPABASE_URL = window.__SUPABASE_URL__ || "";
   const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
   if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    // 未登录 / 配置缺失：默认 FREE，池/日均未知（→ 不挡）。
-    // 用户真正发起调用时后端会再 enforce 一次。
+    // 未登录 / 配置缺失：tier 保持 null（未知，前端不阻挡）。
+    // 用户真正发起调用时后端会 enforce；登录后再次进入页面会有 token，
+    // 这条分支只影响未登录时打开 chat 看到的 dropdown 视觉态。
     return quotaState;
   }
   quotaStateFetchInflight = fetch(SUPABASE_URL + "/functions/v1/chat-gateway", {
