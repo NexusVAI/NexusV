@@ -390,7 +390,10 @@ function initActiveNavItem() {
         var href = item.getAttribute('href');
         if (href) {
             try {
-                var targetPath = new URL(href, window.location.href).pathname.replace(/\/$/, '/index.html');
+                var url = new URL(href, window.location.href);
+                var targetPath = url.pathname.replace(/\/$/, '/index.html');
+                // 纯锚点跳转（同页面 + hash）不算 current-page
+                if (targetPath === currentPath && url.hash && url.hash !== '#') return;
                 if (targetPath === currentPath) {
                     item.classList.add('current-page');
                 }
