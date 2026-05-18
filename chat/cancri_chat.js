@@ -4357,6 +4357,355 @@ const FETCH_WEB_PAGE_TOOL_DEFINITION = {
   },
 };
 
+// 2026-05-18 新增：开放平台站内工具。和 get_article_list / get_article_content
+// 一样属于「常驻可用」工具（不受 webSearchEnabled 开关影响），让 AI 无需联网
+// 即可直接回答关于 Cancri 开放平台的问题（模型/套餐/API 端点/CLI 接入/配额/
+// 错误码/常见问答）。数据源是本文件下方的 PLATFORM_KNOWLEDGE_BASE 常量 + 现
+// 有 MODEL_CATALOG —— 与 chat/api_docs.html、chat/pricing.html、chat/api_models.html
+// 等开放平台页面手工保持一致，**单一事实源由作者维护，AI 不发明字段**。
+const PLATFORM_TOOL_DEFINITIONS = [
+  {
+    type: "function",
+    function: {
+      name: "get_platform_info",
+      description:
+        "查询 NexusV / Cancri 开放平台的内置信息。当用户询问以下任意话题时，**优先于 web_search 使用本工具**：\n" +
+        "• 平台支持哪些模型、模型定价档位、能否做视觉/思考/工具调用\n" +
+        "• Pro / Pro+ / Pro Max 月度套餐价格与额度、加油包\n" +
+        "• 三个 API 端点的协议差异（OpenAI Chat / Anthropic Messages / OpenAI Responses）\n" +
+        "• Claude Code / Codex CLI / OpenCode / OpenClaw 如何配置接入\n" +
+        "• 免费用户的配额规则、速率限制、错误码含义、常见问答\n" +
+        "用 topic 参数选择具体话题，可选 keyword 进一步过滤（如 \"GPT-5.5\"、\"Claude Opus\"、\"Pro+\"、\"Codex\"）。",
+      parameters: {
+        type: "object",
+        properties: {
+          topic: {
+            type: "string",
+            enum: [
+              "overview",
+              "models",
+              "pricing",
+              "endpoints",
+              "cli",
+              "quota",
+              "ratelimit",
+              "errors",
+              "sdk",
+              "faq",
+            ],
+            description:
+              "查询主题：overview=平台总览；models=模型列表与定价档；pricing=订阅套餐与加油包；endpoints=API 端点；cli=CLI 工具接入；quota=配额规则；ratelimit=速率限制；errors=错误码；sdk=SDK 兼容；faq=常见问答。",
+          },
+          keyword: {
+            type: "string",
+            description: "可选关键词，用于在主题内进一步筛选。",
+          },
+        },
+        required: ["topic"],
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
+const PLATFORM_KNOWLEDGE_BASE = {
+  meta: {
+    name: "NexusV / Cancri 开放平台",
+    base_url:
+      "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway",
+    docs_url: "https://www.nexusvai.xyz/chat/api_docs.html",
+    models_url: "https://www.nexusvai.xyz/chat/api_models.html",
+    pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
+    apply_url: "https://www.nexusvai.xyz/chat/api_apply.html",
+    keys_url: "https://www.nexusvai.xyz/chat/api_keys.html",
+    key_format: "cancri_sk_xxx",
+    protocols: [
+      "OpenAI Chat Completions",
+      "OpenAI Responses",
+      "Anthropic Messages",
+    ],
+    summary:
+      "OpenAI / Anthropic 双协议兼容的统一模型 API。一个 cancri_sk_ Key 可访问全部 GPT-5.x / Claude 4.x / Gemini 3.1 / DeepSeek / GLM / Doubao / Kimi / Grok 等模型。",
+  },
+  pricing: {
+    plans: [
+      {
+        code: "free",
+        name: "免费档",
+        monthly_cny: 0,
+        monthly_tokens_label:
+          "FREE 模型不限量；PAID 模型每月共享池 1 亿 token（按权重折算），每个用户每天 15 次成功调用",
+        excluded: ["Claude Opus 全系", "Gemini 3.1 Pro", "视频生成"],
+      },
+      {
+        code: "pro",
+        name: "Pro",
+        monthly_cny: 9.9,
+        monthly_tokens: 20000000,
+        note: "Claude Opus 全系仅 Pro+ 及以上开放（2026-05-17 之前订阅的 Pro 用户在本订阅周期内豁免）",
+      },
+      {
+        code: "pro_plus",
+        name: "Pro+",
+        monthly_cny: 29,
+        monthly_tokens: 80000000,
+        note: "解锁 Claude Opus 全系、Gemini 3.1 Pro；视频生成仍需 Pro Max",
+      },
+      {
+        code: "pro_max",
+        name: "Pro Max",
+        monthly_cny: 99,
+        monthly_tokens: 300000000,
+        note: "全模型 + 视频图像生成",
+      },
+    ],
+    addons: [
+      {
+        name: "加油包 ¥10",
+        price_cny: 10,
+        tokens: 30000000,
+        note: "永不过期，月度配额耗尽后自动接续扣减",
+      },
+      { name: "加油包 ¥50", price_cny: 50, tokens: 180000000, note: "永不过期" },
+      {
+        name: "加油包 ¥200",
+        price_cny: 200,
+        tokens: 800000000,
+        note: "永不过期",
+      },
+    ],
+    weight_table: [
+      {
+        cost_tier: "free",
+        multiplier: 0.5,
+        examples: "GLM 5.1 / DeepSeek V3.1 / Gemini 3.1 Flash Lite",
+      },
+      {
+        cost_tier: "cheap",
+        multiplier: 1,
+        examples: "GPT-4 / Step 3.5 Flash / Qwen3 系列",
+      },
+      {
+        cost_tier: "normal",
+        multiplier: 3,
+        examples:
+          "Claude Haiku 4.5 / DeepSeek V3 / Kimi K2.6 / Doubao 1.5 Pro / GLM-4.5",
+      },
+      {
+        cost_tier: "expensive",
+        multiplier: 10,
+        examples:
+          "GPT-5.2 / GPT-5.3 Codex / GPT-5.4 / GPT-5.5 / Claude Sonnet 4.6 系列 / Grok 4.20",
+      },
+      {
+        cost_tier: "vip",
+        multiplier: 30,
+        examples:
+          "Claude Opus 4.6 全系 / Gemini 3.1 Pro / 视频生成（Seedance / VEO 等）",
+      },
+    ],
+    token_formula:
+      "effective_pool_tokens = (prompt - cached)*1.0 + cached*0.1 + completion*1.0；扣减 = effective_pool_tokens × 模型权重 multiplier。缓存命中按 10% 计价（与 Anthropic / OpenAI prompt caching 一致）。",
+  },
+  endpoints: [
+    {
+      path: "/v1/chat/completions",
+      method: "POST",
+      protocol: "OpenAI Chat Completions",
+      clients: "openai SDK / LangChain / LiteLLM / OpenCode 等",
+      streaming: true,
+    },
+    {
+      path: "/v1/messages",
+      method: "POST",
+      protocol: "Anthropic Messages",
+      clients: "Claude Code / @anthropic-ai/sdk / OpenClaw",
+      streaming: true,
+    },
+    {
+      path: "/v1/messages/count_tokens",
+      method: "POST",
+      protocol: "Anthropic Token Counting",
+      clients: "Claude Code 内部调用（决定 auto-compact 时机）",
+      streaming: false,
+      free_no_quota: true,
+      note: "2026-05-18 上线，返回 { input_tokens: <int> }；不计入速率限制 / 配额。",
+    },
+    {
+      path: "/v1/responses",
+      method: "POST",
+      protocol: "OpenAI Responses",
+      clients: "Codex CLI（默认协议）",
+      streaming: true,
+    },
+    {
+      path: "/v1/models",
+      method: "GET",
+      protocol:
+        "OpenAI 或 Anthropic 双格式（按 anthropic-version 请求头自动切换）",
+      clients: "所有 SDK 启动时探测 model catalog",
+      streaming: false,
+    },
+  ],
+  cli: [
+    {
+      name: "Codex CLI",
+      site: "https://github.com/openai/codex",
+      config_path: "~/.codex/config.toml",
+      base_url:
+        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1",
+      wire_api: "responses（默认）或 chat（兼容性更好）",
+      env_key: "CANCRI_API_KEY",
+      recommended_models: ["gpt-5.3-codex", "gpt-5.4"],
+    },
+    {
+      name: "Claude Code",
+      site: "https://github.com/anthropics/claude-code",
+      env_ANTHROPIC_BASE_URL:
+        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway",
+      env_ANTHROPIC_API_KEY: "cancri_sk_...（推荐，走 x-api-key 头）",
+      env_ANTHROPIC_AUTH_TOKEN_note:
+        "ANTHROPIC_API_KEY 比 ANTHROPIC_AUTH_TOKEN 稳，避开 anthropics/claude-code#39013 的 Authorization 头偶尔不发送的 bug",
+      recommended_models: [
+        "claude-sonnet-4-6",
+        "claude-opus-4-6",
+        "claude-haiku-4-5-20251001",
+      ],
+    },
+    {
+      name: "OpenCode",
+      site: "https://github.com/sst/opencode",
+      config_path: "~/.config/opencode/opencode.json",
+      base_url:
+        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1",
+      provider_npm: "@ai-sdk/openai-compatible",
+    },
+    {
+      name: "OpenClaw",
+      site: "https://github.com/openclaw/openclaw",
+      env_ANTHROPIC_BASE_URL:
+        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway",
+      env_ANTHROPIC_AUTH_TOKEN: "cancri_sk_...",
+    },
+  ],
+  quota: [
+    {
+      code: "model_pro_required",
+      http: 403,
+      when: "FREE 用户调用 Pro 专属模型（如 GPT-5.5 / GPT-5.5 High / GPT-5.4 Mini）",
+    },
+    {
+      code: "model_pro_plus_required",
+      http: 403,
+      when: "FREE 或 Pro 用户调用 Pro+ 专属模型（Claude Opus 全系 / Gemini 3.1 Pro）",
+    },
+    {
+      code: "daily_paid_limit_reached",
+      http: 429,
+      when: "FREE 用户当日 15 次 PAID 模型调用额度用满（UTC+8 自然日重置）",
+    },
+    {
+      code: "free_pool_exhausted",
+      http: 429,
+      when: "FREE 全站共享池（1 亿 token / 月）耗尽，当月所有 FREE 用户都会被拦截",
+    },
+    {
+      code: "monthly_quota_exhausted",
+      http: 429,
+      when: "PAID 用户当月配额 + 加油包都耗尽",
+    },
+    {
+      code: "model_queue_full",
+      http: 429,
+      when: "FREE 用户撞上同模型并发上限（每模型 3 槽位 / 用户）",
+    },
+  ],
+  ratelimit: [
+    {
+      tier: "free",
+      per_minute: 60,
+      per_hour: 600,
+      per_day: 1000,
+      concurrent: 3,
+    },
+    {
+      tier: "paid",
+      per_minute: 200,
+      per_hour: 4000,
+      per_day: 50000,
+      concurrent: 10,
+    },
+  ],
+  errors: [
+    { http: 400, code: "payload_too_large", when: "请求体超过 1 MB 上限" },
+    {
+      http: 400,
+      code: null,
+      when: "JSON 解析失败 / model 字段缺失 / 字段格式不对",
+    },
+    {
+      http: 401,
+      code: "invalid_api_key",
+      when: "API Key 不存在 / 已撤销 / 不以 cancri_sk_ 开头",
+    },
+    { http: 403, code: "account_suspended", when: "账号被管理员封禁" },
+    {
+      http: 404,
+      code: "model_not_found",
+      when: "model 字段在 catalog 中不存在或拼写错误",
+    },
+    {
+      http: 429,
+      code: "rate_limit_exceeded",
+      when: "撞上 60/min / 600/hour / 1000/day 任一窗口",
+    },
+    { http: 429, code: "concurrent_limit_exceeded", when: "撞上并发槽位上限" },
+    {
+      http: 503,
+      code: "api_paused",
+      when: "维护中（极少触发，/v1/models 仍开放）",
+    },
+    {
+      http: 504,
+      code: "upstream_timeout",
+      when: "上游模型 90 秒内未返回首字",
+    },
+  ],
+  sdk: {
+    compatible: [
+      "openai (Python / Node)",
+      "@anthropic-ai/sdk",
+      "LangChain",
+      "LiteLLM",
+      "Vercel AI SDK",
+      "OpenCode (@ai-sdk/openai-compatible)",
+    ],
+    note: "无 SDK 限制；任何遵守 OpenAI Chat Completions 或 Anthropic Messages 协议的 SDK 都可直连。流式 SSE / 工具调用 / 多模态 image 块全部支持。",
+  },
+  faq: [
+    {
+      q: "三个 API 端点我该用哪个？",
+      a: "openai SDK / LangChain / OpenCode → /v1/chat/completions；Codex CLI → /v1/responses；Claude Code / @anthropic-ai/sdk → /v1/messages。模型 ID 跨端点通用，扣量也一致。",
+    },
+    {
+      q: "FREE 用户调付费模型扣什么？",
+      a: "扣全站共享池（1 亿 token / 月，所有 FREE 用户共享）+ 每日 15 次个人额度。两道关卡按模型 multiplier 折算 effective_pool_tokens 后扣减；失败（HTTP 4xx/5xx）自动 refund。",
+    },
+    {
+      q: "如何拿到 Pro 套餐？",
+      a: "聊天页右上角「升级」入口，或访问 https://www.nexusvai.xyz/chat/pricing.html 直接选 Pro / Pro+ / Pro Max 月度订阅。",
+    },
+    {
+      q: "Key 怎么撤销？",
+      a: "https://www.nexusvai.xyz/chat/api_keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。",
+    },
+    {
+      q: "为什么 Claude Code 连不上？",
+      a: "1) 确认 ANTHROPIC_BASE_URL 指向 .../functions/v1/api-gateway（不带 /v1 后缀）；2) 推荐用 ANTHROPIC_API_KEY 而不是 ANTHROPIC_AUTH_TOKEN（后者有上游 bug claude-code#39013）；3) 2026-05-18 起 /v1/messages/count_tokens 端点已上线，老版本 hang 问题已修复。",
+    },
+  ],
+};
+
 // Token expiration settings
 const TOKEN_START_DATE = new Date("2026-04-28T22:52:10+08:00");
 const TOKEN_END_DATE = new Date("2026-05-28T22:52:10+08:00");
@@ -6956,8 +7305,9 @@ function syncStreamingMarkdownBlock(
 function getToolDefinitionsForCurrentTurn({
   webSearch = state.webSearchEnabled,
 } = {}) {
+  let tools;
   if (window.NexusWorkbench?.getTools) {
-    return window.NexusWorkbench.getTools(
+    tools = window.NexusWorkbench.getTools(
       {
         articleSearch: true,
         webSearch,
@@ -6968,13 +7318,16 @@ function getToolDefinitionsForCurrentTurn({
         fetchWebPageTool: FETCH_WEB_PAGE_TOOL_DEFINITION,
       },
     );
+    if (!Array.isArray(tools)) tools = [];
+  } else {
+    tools = [...ARTICLE_TOOL_DEFINITIONS];
+    if (webSearch) {
+      tools.push(WEB_SEARCH_TOOL_DEFINITION, FETCH_WEB_PAGE_TOOL_DEFINITION);
+    }
   }
-
-  const tools = [...ARTICLE_TOOL_DEFINITIONS];
-  if (webSearch) {
-    tools.push(WEB_SEARCH_TOOL_DEFINITION, FETCH_WEB_PAGE_TOOL_DEFINITION);
-  }
-  return tools;
+  // 2026-05-18：开放平台工具常驻可用（不受 webSearchEnabled 影响），追加在
+  // NexusWorkbench 自己挑过的工具集之后，避免干扰 Workbench 的过滤决策。
+  return [...tools, ...PLATFORM_TOOL_DEFINITIONS];
 }
 
 function getHomeDisplayName() {
@@ -8651,6 +9004,7 @@ function updateDuelMessage(
           args.search_query ||
           args.query ||
           args.keyword ||
+          args.topic ||
           args.article_id ||
           args.articleId ||
           args.article_title ||
@@ -9525,8 +9879,186 @@ async function executeArticleToolCall(toolCall, activeTurnId = "") {
     case "fetch_web_page": {
       return executeFetchWebPageToolCall(toolCall, activeTurnId);
     }
+    case "get_platform_info":
+    case "platform_info":
+    case "get_pricing":
+    case "get_open_platform": {
+      return executePlatformInfoToolCall(toolCall);
+    }
     default:
       return JSON.stringify({ error: `不支持的工具：${name}` }, null, 2);
+  }
+}
+
+// 2026-05-18：开放平台工具实现。读 PLATFORM_KNOWLEDGE_BASE + MODEL_CATALOG，
+// 按 topic 返回结构化 JSON。**绝不调用上游或 web search**，纯本地数据。
+function normalizePlatformKeyword(input) {
+  return String(input || "").toLowerCase().trim();
+}
+
+const PLATFORM_COST_MULTIPLIERS = {
+  free: 0.5,
+  cheap: 1,
+  normal: 3,
+  expensive: 10,
+  vip: 30,
+};
+
+function listPlatformModels(keyword) {
+  const list = Array.isArray(MODEL_CATALOG) ? MODEL_CATALOG : [];
+  const norm = normalizePlatformKeyword(keyword);
+  const filtered = norm
+    ? list.filter((m) => {
+        const blob = [m.id, m.name, m.brand, m.kind, m.costTier]
+          .join(" ")
+          .toLowerCase();
+        return blob.includes(norm);
+      })
+    : list;
+  return filtered.map((m) => {
+    const tier = String(m.costTier || "normal").toLowerCase();
+    return {
+      id: m.id,
+      name: m.name,
+      brand: m.brand,
+      kind: m.kind,
+      cost_tier: tier,
+      pool_multiplier: PLATFORM_COST_MULTIPLIERS[tier] ?? 3,
+      capabilities: [
+        m.vision ? "vision" : null,
+        m.thinking ? "thinking" : null,
+        m.tools ? "tools" : null,
+      ].filter(Boolean),
+      free_limit_note: m.freeLimitNote || null,
+    };
+  });
+}
+
+async function executePlatformInfoToolCall(toolCall) {
+  const args = parseToolArguments(toolCall?.arguments);
+  const topicRaw = String(args.topic || args.section || "").trim();
+  const topic = topicRaw.toLowerCase();
+  const keyword = String(args.keyword || args.query || "").trim();
+  const norm = normalizePlatformKeyword(keyword);
+  const kb = PLATFORM_KNOWLEDGE_BASE;
+
+  switch (topic) {
+    case "overview":
+    case "":
+      return JSON.stringify({ ...kb.meta }, null, 2);
+    case "models": {
+      const models = listPlatformModels(keyword);
+      return JSON.stringify(
+        {
+          keyword,
+          count: models.length,
+          models,
+          docs_url: kb.meta.models_url,
+          multiplier_legend: PLATFORM_COST_MULTIPLIERS,
+        },
+        null,
+        2,
+      );
+    }
+    case "pricing": {
+      let plans = kb.pricing.plans;
+      if (norm) {
+        plans = plans.filter((p) =>
+          `${p.code} ${p.name}`.toLowerCase().includes(norm),
+        );
+      }
+      return JSON.stringify(
+        {
+          keyword,
+          plans,
+          addons: kb.pricing.addons,
+          weight_table: kb.pricing.weight_table,
+          token_formula: kb.pricing.token_formula,
+          docs_url: kb.meta.pricing_url,
+        },
+        null,
+        2,
+      );
+    }
+    case "endpoints": {
+      const items = norm
+        ? kb.endpoints.filter((e) =>
+            `${e.path} ${e.protocol} ${e.clients}`.toLowerCase().includes(norm),
+          )
+        : kb.endpoints;
+      return JSON.stringify(
+        {
+          keyword,
+          base_url: kb.meta.base_url,
+          endpoints: items,
+          docs_url: kb.meta.docs_url + "?page=endpoints",
+        },
+        null,
+        2,
+      );
+    }
+    case "cli": {
+      const items = norm
+        ? kb.cli.filter((c) => c.name.toLowerCase().includes(norm))
+        : kb.cli;
+      return JSON.stringify(
+        { keyword, clis: items, docs_url: kb.meta.docs_url + "?page=cli" },
+        null,
+        2,
+      );
+    }
+    case "quota":
+      return JSON.stringify(
+        { codes: kb.quota, docs_url: kb.meta.docs_url + "?page=rules" },
+        null,
+        2,
+      );
+    case "ratelimit":
+      return JSON.stringify(
+        { tiers: kb.ratelimit, docs_url: kb.meta.docs_url + "?page=rules" },
+        null,
+        2,
+      );
+    case "errors": {
+      const items = norm
+        ? kb.errors.filter((e) =>
+            `${e.code || ""} ${e.when || ""}`.toLowerCase().includes(norm),
+          )
+        : kb.errors;
+      return JSON.stringify(
+        { keyword, codes: items, docs_url: kb.meta.docs_url + "?page=rules" },
+        null,
+        2,
+      );
+    }
+    case "sdk":
+      return JSON.stringify(
+        { ...kb.sdk, docs_url: kb.meta.docs_url + "?page=rules" },
+        null,
+        2,
+      );
+    case "faq": {
+      const items = norm
+        ? kb.faq.filter((f) =>
+            `${f.q} ${f.a}`.toLowerCase().includes(norm),
+          )
+        : kb.faq;
+      return JSON.stringify(
+        { keyword, items, docs_url: kb.meta.docs_url + "?page=rules" },
+        null,
+        2,
+      );
+    }
+    default:
+      return JSON.stringify(
+        {
+          error:
+            "无效的 topic，支持：overview / models / pricing / endpoints / cli / quota / ratelimit / errors / sdk / faq",
+          received: topicRaw,
+        },
+        null,
+        2,
+      );
   }
 }
 
@@ -9882,6 +10414,11 @@ const TOOL_DISPLAY_NAMES = {
   search_articles: "获取站内文章列表",
   read_article: "获取文章内容",
   web_search: "联网搜索",
+  fetch_web_page: "获取网页内容",
+  get_platform_info: "查询开放平台信息",
+  platform_info: "查询开放平台信息",
+  get_pricing: "查询开放平台信息",
+  get_open_platform: "查询开放平台信息",
 };
 
 function addToolCallUI(messageId, toolCall) {
@@ -9918,6 +10455,7 @@ function addToolCallUI(messageId, toolCall) {
     args.search_query ||
     args.query ||
     args.keyword ||
+    args.topic ||
     args.article_id ||
     args.articleId ||
     args.article_title ||
