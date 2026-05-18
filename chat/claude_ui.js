@@ -95,9 +95,31 @@
     //     桌面端走原 cancri_chat.js 的 collapsed 逻辑（不干扰）。
     function bindMobileSidebarDrawer() {
         const btn = document.getElementById('mobileMenuBtn');
+        const sidebarToggle = document.getElementById('sidebarToggle');
         if (!btn) return;
         function isMobile() {
             return window.matchMedia('(max-width: 768px)').matches;
+        }
+        function sidebarEl() {
+            return document.getElementById('sidebar');
+        }
+        function setToggleExpanded(open) {
+            [btn, sidebarToggle].forEach(function (toggle) {
+                if (toggle) toggle.setAttribute('aria-expanded', String(open));
+            });
+        }
+        function syncMobileSidebarState(sidebar, open) {
+            if (!sidebar) return;
+            sidebar.classList.toggle('is-mobile-open', open);
+            sidebar.dataset.open = String(open);
+            sidebar.dataset.collapsed = 'false';
+            setToggleExpanded(open);
+        }
+        function isDrawerOpen() {
+            const sidebar = sidebarEl();
+            return document.body.classList.contains('sidebar-open') ||
+                Boolean(sidebar && sidebar.classList.contains('is-mobile-open')) ||
+                Boolean(sidebar && !sidebar.classList.contains('collapsed'));
         }
         // 同步两套 sidebar 语义，避免老/新规则在关闭时冲突：
         //   - 老 cancri_chat 语义：mobile 下 .collapsed 表示隐藏（默认 add 到 sidebar）
@@ -106,37 +128,42 @@
         // rule 默认 .sidebar { transform: translateX(0) } 胜出）。
         // 必须打开时去 .collapsed + 加 .sidebar-open；关闭时反向。
         function openDrawer() {
-            const sidebar = document.getElementById('sidebar');
+            const sidebar = sidebarEl();
             if (sidebar) sidebar.classList.remove('collapsed');
             document.body.classList.add('sidebar-open');
+            syncMobileSidebarState(sidebar, true);
         }
         function closeDrawer() {
-            const sidebar = document.getElementById('sidebar');
+            const sidebar = sidebarEl();
             document.body.classList.remove('sidebar-open');
             // 恢复 cancri_chat 老语义：mobile 下 .collapsed = 隐藏。
             // 这让 cancri_chat.js 的其他逻辑（如 isMobileViewport scrim 判断）
             // 也能识别"sidebar 已关"状态，保持解耦。
             if (sidebar) sidebar.classList.add('collapsed');
+            syncMobileSidebarState(sidebar, false);
         }
 
-        btn.addEventListener('click', function (e) {
-            if (!isMobile()) return;  // 桌面端走原 cancri_chat.js .collapsed 逻辑
-            e.stopImmediatePropagation();
-            e.preventDefault();
-            if (document.body.classList.contains('sidebar-open')) {
-                closeDrawer();
-            } else {
-                openDrawer();
-            }
-        }, true);
+        [btn, sidebarToggle].forEach(function (toggle) {
+            if (!toggle) return;
+            toggle.addEventListener('click', function (e) {
+                if (!isMobile()) return;  // 桌面端走原 cancri_chat.js .collapsed 逻辑
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                if (isDrawerOpen()) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
+            }, true);
+        });
         // 点蒙层关闭抽屉
         document.addEventListener('click', function (e) {
             if (!isMobile()) return;
-            if (!document.body.classList.contains('sidebar-open')) return;
-            const sidebar = document.getElementById('sidebar');
+            if (!isDrawerOpen()) return;
+            const sidebar = sidebarEl();
             if (!sidebar) return;
             if (sidebar.contains(e.target)) return;
-            if (btn.contains(e.target)) return;
+            if ([btn, sidebarToggle].some(function (toggle) { return toggle && toggle.contains(e.target); })) return;
             closeDrawer();
         });
         // 屏幕变宽（旋转横屏 / 缩放）时自动清 drawer 状态。
@@ -144,6 +171,12 @@
         window.matchMedia('(min-width: 769px)').addEventListener('change', function (e) {
             if (e.matches) {
                 document.body.classList.remove('sidebar-open');
+                const sidebar = sidebarEl();
+                if (sidebar) {
+                    sidebar.classList.remove('is-mobile-open');
+                    sidebar.dataset.open = 'false';
+                }
+                setToggleExpanded(false);
                 // 桌面端不强制 collapsed，由用户/cancri_chat 自己管。
             }
         });
