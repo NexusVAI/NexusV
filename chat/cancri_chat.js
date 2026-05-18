@@ -106,7 +106,7 @@ const accountPopover = document.getElementById("accountPopover");
 const settingsModal = document.getElementById("settingsModal");
 const tempChatModal = document.getElementById("tempChatModal");
 const projectModal = document.getElementById("projectModal");
-const privacyPolicyModal = document.getElementById("privacyPolicyModal");
+const privacyPolicyModal = document.getElementById("privacyPolicyModal"); // removed — now links to ../privacy.html
 const appearanceValue = document.getElementById("appearanceValue");
 const contrastValue = document.getElementById("contrastValue");
 const accentValueEl = document.getElementById("accentValue");
@@ -10507,6 +10507,7 @@ function openModal(id) {
 function closeModal() {
   [settingsModal, tempChatModal, projectModal, privacyPolicyModal].forEach(
     (m) => {
+      if (!m) return;
       m.classList.remove("open");
       m.setAttribute("aria-hidden", "true");
     },
@@ -10779,8 +10780,8 @@ on("themeShortcutBtn", "click", () => openModal("settingsModal"));
 on("tempChatBtn", "click", () => openModal("tempChatModal"));
 on("projectBtn", "click", () => openModal("projectModal"));
 on("createProjectFromPlus", "click", () => openModal("projectModal"));
-on("privacyPolicyBtn", "click", () => openModal("privacyPolicyModal"));
-on("privacySettingsRow", "click", () => openModal("privacyPolicyModal"));
+on("privacyPolicyBtn", "click", () => window.open("../privacy.html", "_blank"));
+on("privacySettingsRow", "click", (e) => { e.preventDefault(); window.open("../privacy.html", "_blank"); });
 
 navRows.forEach((row) => {
   row.addEventListener("click", () => {
