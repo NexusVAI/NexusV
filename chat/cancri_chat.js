@@ -4992,10 +4992,12 @@ async function speakTextWithMimo(text) {
   showToast("正在生成语音...");
 
   try {
+    const session = await ensureAuthSession();
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: "POST",
       headers: await proxyHeaders(),
       body: JSON.stringify({
+        __auth_token: session.access_token,
         endpoint: "chat",
         model: "mimo-v2.5-tts",
         messages: [
