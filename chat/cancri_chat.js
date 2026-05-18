@@ -1760,7 +1760,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gpt-oss-120b-futureppo": DEFAULT_MODEL_ID,
   "grok-code-fast-1": DEFAULT_MODEL_ID,
   "gemini-3.0-flash-high": DEFAULT_MODEL_ID,
-  "gemini-3-flash-preview": DEFAULT_MODEL_ID,
   "kimi-k2-instruct": DEFAULT_MODEL_ID,
   "minimax-m2.5-alt": DEFAULT_MODEL_ID,
   "glm-5.1-futureppo": DEFAULT_MODEL_ID,
@@ -1769,7 +1768,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "ling-2.6-1t-alt": DEFAULT_MODEL_ID,
   "spark-x2": DEFAULT_MODEL_ID,
   "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
-  "gemma-4-31b-it": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "image-fast": DEFAULT_MODEL_ID,
   "gpt-image-2-api456": "gpt-image-2",
@@ -1789,7 +1787,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   // 2026-05-10 管理员页熔断后下架的模型 → 默认
   "claude-sonnet-4-5": DEFAULT_MODEL_ID,
   "gemini-3-flash-alt": DEFAULT_MODEL_ID,
-  "gemini-3.1-pro": DEFAULT_MODEL_ID,
   "glm-4.7-siliconflow": DEFAULT_MODEL_ID,
   "qwen3.6-plus": DEFAULT_MODEL_ID,
   "qwen3.6-plus-2026-04-02-dashscope": DEFAULT_MODEL_ID,
