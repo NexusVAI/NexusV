@@ -1710,37 +1710,38 @@
                                     <div class="claude-form-row">
                                         <span class="claude-form-label">头像</span>
                                         <div class="claude-form-control">
-                                            <div class="claude-avatar-circle">K</div>
+                                            <div class="claude-avatar-circle" id="claudeFormAvatar">K</div>
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
                                         <span class="claude-form-label">全名</span>
                                         <div class="claude-form-control">
-                                            <input class="claude-form-input" type="text" value="Kraum" id="claudeFormFullName"/>
+                                            <input class="claude-form-input" type="text" id="claudeFormFullName" placeholder="未设置" autocomplete="name"/>
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
                                         <span class="claude-form-label">Cancri 该怎么称呼你？</span>
                                         <div class="claude-form-control">
-                                            <input class="claude-form-input" type="text" value="Kraum" id="claudeFormNickname"/>
+                                            <input class="claude-form-input" type="text" id="claudeFormNickname" placeholder="未设置" autocomplete="nickname"/>
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
                                         <span class="claude-form-label">什么是您喜欢的作品？</span>
                                         <div class="claude-form-control">
                                             <select class="claude-form-select" id="claudeFormProfession">
-                                                <option>其他</option>
-                                                <option>软件工程</option>
-                                                <option>设计</option>
-                                                <option>研究</option>
-                                                <option>写作</option>
+                                                <option value="">其他</option>
+                                                <option value="软件工程">软件工程</option>
+                                                <option value="设计">设计</option>
+                                                <option value="研究">研究</option>
+                                                <option value="写作">写作</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="claude-form-row claude-form-row-stack">
                                         <span class="claude-form-label">给 Cancri 的说明</span>
-                                        <div class="claude-form-help">Cancri 会在 Project 和 Cawork 中根据 Anthropic 的隐私原则应注重这些内容。<a href="javascript:void(0)">了解更多</a></div>
-                                        <textarea class="claude-form-textarea" id="claudeFormSystemPrompt" rows="4" placeholder="例如，您可解释您的研究"></textarea>
+                                        <div class="claude-form-help">这些信息将在每次新对话开始时附加到模型上下文中，帮助 Cancri 更好理解您的偏好。<a href="../privacy.html" target="_blank" rel="noopener">了解更多</a></div>
+                                        <textarea class="claude-form-textarea" id="claudeFormSystemPrompt" rows="4" maxlength="100" placeholder="例如，请用简洁中文回答；我是医学研究生，喜欢列点。"></textarea>
+                                        <div class="claude-form-help" style="margin-top:6px;text-align:right;"><span id="claudeFormSystemPromptCount">0</span> / 100</div>
                                     </div>
 
                                     <h2 class="claude-settings-h2 claude-settings-h2-mt">偏好</h2>
@@ -1764,9 +1765,9 @@
                                         <span class="claude-form-label">聊天字体</span>
                                         <div class="claude-form-control">
                                             <select class="claude-form-select" id="claudeFormFont">
-                                                <option>人形衬线体</option>
-                                                <option>系统默认</option>
-                                                <option>等宽</option>
+                                                <option value="serif">人形衬线体</option>
+                                                <option value="sans">系统默认</option>
+                                                <option value="mono">等宽</option>
                                             </select>
                                         </div>
                                     </div>
@@ -1774,9 +1775,9 @@
                                         <span class="claude-form-label">配音</span>
                                         <div class="claude-form-control">
                                             <select class="claude-form-select" id="claudeFormVoice">
-                                                <option>菜油味十足</option>
-                                                <option>沉稳清晰</option>
-                                                <option>柔和女声</option>
+                                                <option value="oily">菜油味十足</option>
+                                                <option value="steady">沉稳清晰</option>
+                                                <option value="soft">柔和女声</option>
                                             </select>
                                         </div>
                                     </div>

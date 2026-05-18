@@ -18,6 +18,10 @@ if (savedArenaMode !== initialArenaMode) {
 
 const state = {
   theme: "light",
+  // 2026-05-18：themeMode 是用户在设置里选的"原始意图"（system/light/dark），
+  // theme 是经 prefers-color-scheme 解析后的"实际生效值"（light/dark）。
+  // 跟随系统时 themeMode='system'，theme 跟着 OS 实时同步。
+  themeMode: "light",
   contrast: "系统",
   // accentValue=null 意味着“跟随主题”：applyTheme 不写 inline style，
   // 让 CSS 中按主题定义的 --accent 生效。
@@ -25,6 +29,21 @@ const state = {
   accentValue: null,
   language: "自动检测",
   speech: "自动检测",
+  // 2026-05-18：聊天字体偏好。serif=Anthropic Serif（人形衬线体），
+  // sans=Anthropic Sans（系统默认，对齐 Claude 真站），mono=等宽。
+  // applyTheme 写到 root.dataset.chatFont，CSS 用 [data-chat-font="..."] 切换。
+  chatFont: "sans",
+  // 2026-05-18：朗读配音偏好，3 档预设映射 user prompt + voice id。
+  voicePreset: "steady",
+  // 2026-05-18：用户的全名（AI 上下文中以"对方真实姓名"出现），最长 60。
+  fullName: "",
+  // 2026-05-18：用户的职业 / 兴趣领域（设置面板"什么是您喜欢的作品？"）。
+  // 与 fullName 一起注入 system message，让 AI 调整答复领域语气。空串不注入。
+  profession: "",
+  // 2026-05-18：用户的"给 Cancri 的说明"自定义指令，最长 100 字。
+  // 业内做法（ChatGPT Custom Instructions / Claude Profile）：每轮新对话
+  // 注入 system message。空串则不注入。
+  customInstructions: "",
   currentView: "home",
   modal: null,
   popover: null,
@@ -2110,26 +2129,47 @@ const accentCycle = [
 ];
 let accentIndex = 0;
 
+// 2026-05-18：把 themeMode（system/light/dark）解析成实际生效的 light/dark。
+// "system" 模式下读 prefers-color-scheme: dark 的 matchMedia 结果，其余直接返回。
+function resolveEffectiveTheme(mode) {
+  if (mode === "system") {
+    return window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return mode === "dark" ? "dark" : "light";
+}
+
+const VALID_CHAT_FONTS = new Set(["serif", "sans", "mono"]);
+const VALID_VOICE_PRESETS = new Set(["oily", "steady", "soft"]);
+
 function restoreUiPreferences() {
   try {
     const raw = localStorage.getItem(UI_PREFS_STORAGE_KEY);
     if (!raw) {
-      // 2026-05-15：首次访问默认浅色（用户偏好）。原跟随 OS 的逻辑
-      // 留作 prefers-color-scheme media listener 用于 hasSavedPref=false
-      // 场景，但默认值改为 'light' 让没保存偏好的用户进来就是白色。
-      state.theme = "light";
+      // 2026-05-18：首次访问默认跟随系统（用户在新设置面板里期望的"system"档）。
+      // resolveEffectiveTheme 把 'system' 解析成 light/dark，CSS 仍只看 data-theme。
+      state.themeMode = "system";
+      state.theme = resolveEffectiveTheme("system");
       const sysIdx = themeCycle.findIndex((item) => item.value === state.theme);
       if (sysIdx >= 0) themeIndex = sysIdx;
       return;
     }
     const prefs = JSON.parse(raw);
-    const nextThemeIndex = themeCycle.findIndex(
-      (item) => item.value === prefs.theme,
-    );
-    if (nextThemeIndex >= 0) {
-      themeIndex = nextThemeIndex;
-      state.theme = themeCycle[nextThemeIndex].value;
+    // themeMode 是新字段（2026-05-18），向后兼容老 prefs.theme=light/dark 直接迁移：
+    // 老用户一打开就把他们当年的选择当作新 themeMode（system/light/dark 的子集）。
+    const rawMode = String(prefs.themeMode || prefs.theme || "system");
+    if (rawMode === "system" || rawMode === "light" || rawMode === "dark") {
+      state.themeMode = rawMode;
+    } else {
+      state.themeMode = "system";
     }
+    state.theme = resolveEffectiveTheme(state.themeMode);
+    const nextThemeIndex = themeCycle.findIndex(
+      (item) => item.value === state.theme,
+    );
+    if (nextThemeIndex >= 0) themeIndex = nextThemeIndex;
     const nextContrastIndex = contrastCycle.indexOf(prefs.contrast);
     if (nextContrastIndex >= 0) {
       contrastIndex = nextContrastIndex;
@@ -2155,6 +2195,22 @@ function restoreUiPreferences() {
         state.accentValue = accentCycle[nextAccentIndex].value;
       }
     }
+    // 2026-05-18 新增字段
+    if (typeof prefs.chatFont === "string" && VALID_CHAT_FONTS.has(prefs.chatFont)) {
+      state.chatFont = prefs.chatFont;
+    }
+    if (typeof prefs.voicePreset === "string" && VALID_VOICE_PRESETS.has(prefs.voicePreset)) {
+      state.voicePreset = prefs.voicePreset;
+    }
+    if (typeof prefs.customInstructions === "string") {
+      state.customInstructions = prefs.customInstructions.slice(0, 100);
+    }
+    if (typeof prefs.fullName === "string") {
+      state.fullName = prefs.fullName.slice(0, 60);
+    }
+    if (typeof prefs.profession === "string") {
+      state.profession = prefs.profession.slice(0, 30);
+    }
   } catch (error) {
     console.warn("恢复主题偏好失败:", error);
   }
@@ -2165,10 +2221,17 @@ function persistUiPreferences() {
     localStorage.setItem(
       UI_PREFS_STORAGE_KEY,
       JSON.stringify({
+        // 老字段保留：theme 是经解析后的 light/dark，sidebar 切换按钮会读它判定 icon。
         theme: state.theme,
+        themeMode: state.themeMode,
         contrast: state.contrast,
         accentName: state.accentName,
         accentValue: state.accentValue,
+        chatFont: state.chatFont,
+        voicePreset: state.voicePreset,
+        customInstructions: state.customInstructions,
+        fullName: state.fullName,
+        profession: state.profession,
       }),
     );
   } catch (error) {
@@ -4701,6 +4764,9 @@ const speechCycle = ["自动检测", "普通话", "English", "粤语"];
 let speechIndex = 0;
 
 function applyTheme() {
+  // 2026-05-18：state.theme 已经是 effective light/dark（resolveEffectiveTheme 处理过）。
+  // themeMode='system' 时由 prefers-color-scheme listener / settings 段切换时调用方
+  // 重新计算 state.theme 再调 applyTheme()。
   const nextThemeIndex = themeCycle.findIndex(
     (item) => item.value === state.theme,
   );
@@ -4712,6 +4778,10 @@ function applyTheme() {
   // 锁死暖白系，不再受 [data-theme="light"] 影响；.auth-card / .auth-input
   // 也写死 brutalist 米白色，独立于 theme。
   root.setAttribute("data-theme", state.theme === "light" ? "light" : "dark");
+  // 2026-05-18：聊天字体偏好。CSS 通过 html[data-chat-font="serif|sans|mono"]
+  // 覆盖 `.message .message-content` 的 font-family。data-chat-font 永远存在
+  // （不会缺省），即便用户没显式选过也会写入默认 sans。
+  root.setAttribute("data-chat-font", state.chatFont || "sans");
   // accentValue=null 表示跟随主题（Claude clay），不写 inline style，
   // 让 cancri_chat.css 中 html[data-theme=...] 里定义的 --accent 生效。
   if (state.accentValue) {
@@ -4821,17 +4891,49 @@ async function readClipboardText() {
 
 // MiMo TTS 朗读功能，不在模型菜单展示。
 //
-// 上游契约（api.xiaomimimo.com/v1/chat/completions, model=mimo-v2.5-tts）：
+// 2026-05-18 v2：经 chat-gateway 走后端代理，不在前端嵌 api key。
+// chat-gateway 有 TTS short-circuit（modelId === "mimo-v2.5-tts" 直转 modelscope-proxy，
+// 不走配额闸 / queue / system prompt 注入），modelscope-proxy 在 provider==="mimo"
+// + isMimoTtsModel 分支里把 url 改成 MIMO_TTS_BASE_URL（默认 api.xiaomimimo.com/v1）
+// 并把鉴权从 Authorization: Bearer 切到 api-key（key.md 契约）。
+//
+// 上游契约（model=mimo-v2.5-tts）：
 //   • messages[0] role=user      → 朗读风格描述（语速 / 情绪 / 音色提示）
 //   • messages[1] role=assistant → 实际要朗读的文本（被合成为语音）
-//   • audio.format=pcm16, audio.voice=Chloe
-//   • stream=true（**必须**，非流式不返回音频）
+//   • audio.format=pcm16, audio.voice ∈ {冰糖,茉莉,苏打,白桦,Mia,Chloe,Milo,Dean}
+//   • stream=true（**必须**，非流式 OpenAI 兼容字段不返回 delta.audio.data）
 //
 // 流式响应每个 SSE 块的 `delta.audio.data` 是 base64 编码的 PCM16LE
 // 24kHz 单声道片段。我们把所有片段拼接成完整 PCM，再用 Web Audio
-// API 直接 createBuffer/start 播放（跳过 WAV 容器解析，浏览器兼容性
-// 最稳）。chat-gateway 的 RAW_PASSTHROUGH_MODELS 让请求体直通到上
-// 游，不会被注入系统提示词。
+// API 直接 createBuffer/start 播放（跳过 WAV 容器解析，浏览器兼容性最稳）。
+//
+// 三档预设（state.voicePreset）：
+//   • oily   "菜油味十足" → 苏打（男）+ 东北话油腻大叔风
+//   • steady "沉稳清晰"   → 白桦（男）+ 标准播音腔
+//   • soft   "柔和女声"   → 茉莉（女）+ 温柔耳语风
+
+const VOICE_PRESETS = {
+  oily: {
+    voice: "苏打",
+    style:
+      "用东北话味十足的中年男声朗读：声音粗犷略带烟酒嗓，自带磁性与江湖气，语速从容不紧不慢，咬字带北方喉音和卷舌韵味，像一个走南闯北、阅历很深的老炮儿在跟你唠嗑。",
+  },
+  steady: {
+    voice: "白桦",
+    style:
+      "用沉稳醇厚的成熟男声朗读：节奏从容，咬字清晰，气息平稳，带着可靠的播音腔；语调平缓但富有质感，听感专业、不浮夸。",
+  },
+  soft: {
+    voice: "茉莉",
+    style:
+      "用温柔亲切的年轻女声朗读：气息轻柔，语速舒缓，尾音微微上扬，像在耳边轻声细语；情绪温暖、不急不躁，让人感到放松。",
+  },
+};
+function resolveVoicePreset() {
+  const key = String(state.voicePreset || "steady");
+  return VOICE_PRESETS[key] || VOICE_PRESETS.steady;
+}
+
 // Module-scope AudioContext, lazily constructed inside the click-handler
 // path so the user-gesture is fresh when we eventually call .start().
 let __mimoAudioCtx = null;
@@ -4844,11 +4946,34 @@ function getMimoAudioContext() {
   return __mimoAudioCtx;
 }
 
+// 当前正在播放的 BufferSource。新一轮 speak 触发前先 stop 上一轮，避免叠音。
+let __mimoCurrentSource = null;
+function stopCurrentMimoPlayback() {
+  if (__mimoCurrentSource) {
+    try {
+      __mimoCurrentSource.stop();
+    } catch {
+      /* 节点已经自然结束 / 已 stop 过，吞掉即可 */
+    }
+    __mimoCurrentSource = null;
+  }
+  if ("speechSynthesis" in window) {
+    try {
+      speechSynthesis.cancel();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 async function speakTextWithMimo(text) {
   if (!text || text.trim().length === 0) {
     showToast("没有可朗读的内容");
     return;
   }
+
+  // 中断上一轮播放（点同一条消息的朗读按钮第二次 = 切换到刚启动的这一轮）。
+  stopCurrentMimoPlayback();
 
   // Pre-warm the AudioContext while we still hold a fresh user gesture
   // (the click event). If we wait until after the network round-trip,
@@ -4862,34 +4987,31 @@ async function speakTextWithMimo(text) {
     }
   }
 
+  const preset = resolveVoicePreset();
   showToast("正在生成语音...");
 
   try {
-    const response = await proxyFetch(EDGE_FUNCTION_URL, {
+    const response = await fetch(EDGE_FUNCTION_URL, {
       method: "POST",
       headers: await proxyHeaders(),
       body: JSON.stringify({
         endpoint: "chat",
         model: "mimo-v2.5-tts",
         messages: [
-          {
-            role: "user",
-            content:
-              "Speak in a natural, warm Chinese voice with steady pacing and clear articulation.",
-          },
+          { role: "user", content: preset.style },
           { role: "assistant", content: text.slice(0, 2000) },
         ],
         audio: {
           format: "pcm16",
-          voice: "Chloe",
+          voice: preset.voice,
         },
         stream: true,
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      // 上游错误体不直接外泄，按 status 走通用模板。
+      throw new Error(`HTTP ${response.status}`);
     }
 
     if (!response.body) {
@@ -4929,11 +5051,9 @@ async function speakTextWithMimo(text) {
             continue;
           }
 
-          // 上游错误帧（被网关 sanitize 过会带 error 字段）→ 走 code 白名单
-          // 中的中文模板，绝不透传 json.error.message。
           if (json?.error) {
-            const code = String(json.error.code || json.code || "").trim();
-            throw new Error(friendlyMessageFromBackend({ code }, 502));
+            // 上游错误字段值不外泄，统一中文模板。
+            throw new Error("朗读服务暂时不可用，请稍后重试。");
           }
 
           const audioData = json?.choices?.[0]?.delta?.audio?.data;
@@ -4983,6 +5103,10 @@ async function speakTextWithMimo(text) {
     const source = audioCtx.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(audioCtx.destination);
+    source.onended = () => {
+      if (__mimoCurrentSource === source) __mimoCurrentSource = null;
+    };
+    __mimoCurrentSource = source;
     source.start();
     showToast("开始朗读");
   } catch (error) {
@@ -8872,6 +8996,33 @@ function toApiMessage(message, modelId) {
   return apiMessage;
 }
 
+// 2026-05-18：拼装"给 Cancri 的说明" + 个人资料 system message。
+// 业内做法对齐 ChatGPT Custom Instructions / Claude Profile：每轮新对话 / 新请求
+// 把这段拼接好的 system message 放在最前。空字段全跳过 → 整段返回 ""，
+// 调用方据此决定是否注入。
+function buildCustomInstructionsSystemContent() {
+  const lines = [];
+  const fullName = String(state.fullName || "").trim();
+  const nickname = String(getNickname() || "").trim();
+  const profession = String(state.profession || "").trim();
+  const instructions = String(state.customInstructions || "").trim();
+
+  if (fullName) lines.push(`- 用户的全名：${fullName}`);
+  if (nickname && nickname !== fullName) {
+    lines.push(`- 用户希望 Cancri 称呼自己为：${nickname}`);
+  }
+  if (profession) lines.push(`- 用户的领域 / 兴趣：${profession}`);
+  if (instructions) {
+    lines.push(`- 用户给 Cancri 的自定义说明（请在合理范围内遵守）：${instructions}`);
+  }
+  if (!lines.length) return "";
+  return [
+    "以下是用户在设置中提供的个人资料与偏好（Cancri Custom Instructions），请在本次对话中合理参考：",
+    ...lines,
+    "如果上述偏好与具体请求或安全准则冲突，应以请求 / 安全准则为准。",
+  ].join("\n");
+}
+
 async function buildApiMessages(
   query,
   extraSystemContent = "",
@@ -8880,7 +9031,25 @@ async function buildApiMessages(
 ) {
   void extraSystemContent;
   const messages = [];
+
+  // 2026-05-18：custom-instructions system message 永远放最前面，每次重建（不进
+  // conversationHistory，避免被 chat-history persist / 清理误污染）。空内容跳过。
+  const customInstructionsContent = buildCustomInstructionsSystemContent();
+  if (customInstructionsContent) {
+    messages.push({ role: "system", content: customInstructionsContent });
+  }
+
   conversationHistory.forEach((message) => {
+    // 老历史（旧版本可能曾经写入过 system 残片）—— 跳过头部已注入过的同款 system
+    // 段，防止复用旧会话时双注入。
+    if (
+      messages.length === 1 &&
+      message?.role === "system" &&
+      typeof message.content === "string" &&
+      message.content.startsWith("以下是用户在设置中提供的个人资料与偏好")
+    ) {
+      return;
+    }
     messages.push(toApiMessage(message, modelId));
   });
   messages.push({
@@ -10361,9 +10530,61 @@ function updateNexusvFooterVisibility() {
 }
 
 function cycleAppearance() {
+  // 2026-05-18：sidebar 上的两态切换按钮（浅色/深色），不走 system 模式。
+  // 用户点这个按钮等于显式定调 → themeMode 写实际选中的 light/dark。
   themeIndex = (themeIndex + 1) % themeCycle.length;
   state.theme = themeCycle[themeIndex].value;
+  state.themeMode = state.theme;
   applyTheme();
+}
+
+// 2026-05-18：3 按钮主题选择（system/light/dark）的入口。
+function setThemeMode(mode) {
+  const next = mode === "system" || mode === "light" || mode === "dark"
+    ? mode
+    : "system";
+  state.themeMode = next;
+  state.theme = resolveEffectiveTheme(next);
+  applyTheme();
+  if (typeof updateThemeSwitcherActive === "function") {
+    updateThemeSwitcherActive();
+  }
+}
+
+// 2026-05-18：聊天字体选择（serif/sans/mono）的入口。
+function setChatFont(font) {
+  if (!VALID_CHAT_FONTS.has(font)) return;
+  state.chatFont = font;
+  applyTheme();
+}
+
+// 2026-05-18：朗读配音预设（oily/steady/soft）的入口。
+function setVoicePreset(preset) {
+  if (!VALID_VOICE_PRESETS.has(preset)) return;
+  state.voicePreset = preset;
+  persistUiPreferences();
+}
+
+// 2026-05-18：自定义指令（"给 Cancri 的说明"），最多 100 字。
+// buildApiMessages 在每轮新请求时把它注入 system message。
+function setCustomInstructions(text) {
+  const trimmed = String(text || "").slice(0, 100);
+  state.customInstructions = trimmed;
+  persistUiPreferences();
+}
+
+// 2026-05-18：用户全名。AI 上下文中以"对方真实姓名"出现，最多 60 字。
+function setFullName(name) {
+  const trimmed = String(name || "").trim().slice(0, 60);
+  state.fullName = trimmed;
+  persistUiPreferences();
+}
+
+// 2026-05-18：职业 / 兴趣领域，与 fullName 一起入 system message。
+function setProfession(value) {
+  const trimmed = String(value || "").trim().slice(0, 30);
+  state.profession = trimmed;
+  persistUiPreferences();
 }
 
 function cycleContrast() {
@@ -11449,12 +11670,13 @@ initQueryFromUrl();
 // 加载并渲染聊天记录列表
 renderChatHistoryList();
 
-// 跟随系统深色/浅色主题（仅当用户未手动设置偏好时生效）
+// 2026-05-18：跟随系统深色/浅色主题。当用户在设置里把"外观"显式选成"跟随系统"
+// （state.themeMode === "system"）时，OS 切换深色 → 站内立即跟切。如果用户
+// 手动选了"浅色"或"深色"，则忽略 OS 变化（尊重显式偏好）。
 window
   .matchMedia("(prefers-color-scheme: dark)")
   .addEventListener("change", (e) => {
-    const hasSavedPref = Boolean(localStorage.getItem(UI_PREFS_STORAGE_KEY));
-    if (!hasSavedPref) {
+    if (state.themeMode === "system") {
       state.theme = e.matches ? "dark" : "light";
       applyTheme();
       updateThemeSwitcherActive();
@@ -11535,6 +11757,17 @@ window.CancriApp = {
   showToast,
   setActiveView,
   applyTheme,
+  // 2026-05-18：暴露给 claude_ui.js 的"概述"设置面板使用。
+  setThemeMode,
+  setChatFont,
+  setVoicePreset,
+  setCustomInstructions,
+  setFullName,
+  setProfession,
+  getNickname,
+  setNickname,
+  refreshNicknameUI,
+  speakTextWithMimo,
   getModelRequestOptions,
   mergeToolCallDeltas,
   syncStreamingMarkdownBlock,

@@ -647,7 +647,8 @@
         }
     }
 
-    // 7. 设置全屏 view 内的左 nav 切换 + 三按钮主题切换
+    // 7. 设置全屏 view 内的左 nav 切换 + "概述" 表单真实落地
+    //    （主题、字体、配音、给 Cancri 的说明、全名、昵称、职业、头像）
     function bindSettingsNav() {
         // 左二级 nav 切换
         const navItems = document.querySelectorAll('.claude-snav-item[data-snav]');
@@ -660,20 +661,179 @@
                     targets.forEach(function (t) {
                         t.classList.toggle('active', t.getAttribute('data-snav-target') === key);
                     });
+                    // 切回"概述"时刷新一次表单显示，避免外面改了昵称 / 主题没同步进来。
+                    if (key === 'overview') populateOverviewForm();
                 });
             });
         }
 
-        // 三按钮主题 segmented：纯视觉 active 切换（真实主题切换交给 cancri_chat.js）
+        const app = window.CancriApp;
         const segBtns = document.querySelectorAll('.claude-segmented .claude-seg-btn[data-theme]');
+        const fontSel = document.getElementById('claudeFormFont');
+        const voiceSel = document.getElementById('claudeFormVoice');
+        const fullNameInput = document.getElementById('claudeFormFullName');
+        const nicknameInput = document.getElementById('claudeFormNickname');
+        const professionSel = document.getElementById('claudeFormProfession');
+        const sysPromptArea = document.getElementById('claudeFormSystemPrompt');
+        const sysPromptCount = document.getElementById('claudeFormSystemPromptCount');
+        const avatarEl = document.getElementById('claudeFormAvatar');
+
+        // ─── 工具：取首字母初始作为头像兜底 ───
+        function pickAvatarInitial() {
+            const fullName = (app && app.state && app.state.fullName) || '';
+            const nickname = (app && typeof app.getNickname === 'function')
+                ? app.getNickname() : '';
+            const accountName = document.querySelector('.account-strip .account-name');
+            const accountText = accountName ? accountName.textContent.trim() : '';
+            const candidate = (fullName || nickname || accountText || 'C').trim();
+            if (!candidate) return 'C';
+            // 中文取第一个字、英文取首字母大写。
+            const ch = candidate.charAt(0);
+            return /[a-zA-Z]/.test(ch) ? ch.toUpperCase() : ch;
+        }
+
+        function refreshAvatar() {
+            if (avatarEl) avatarEl.textContent = pickAvatarInitial();
+            // 同步顶层 .account-strip .avatar（cancri_chat.js 也写它，但用户改了
+            // 全名 / 昵称之后那边不主动刷新，这里兜底）。
+            const stripAvatar = document.querySelector('.account-strip .avatar');
+            if (stripAvatar) {
+                // 不动后台头像图（如果是 <img>）；只接管纯文字 initials 那种。
+                if (!stripAvatar.querySelector('img')) {
+                    stripAvatar.textContent = pickAvatarInitial();
+                }
+            }
+        }
+
+        // ─── 工具：把当前 state 写入表单控件 ───
+        function populateOverviewForm() {
+            if (!app) return;
+            const st = app.state || {};
+
+            // 主题 segmented：当前 themeMode（system/light/dark）激活对应按钮
+            if (segBtns.length) {
+                const currentMode = st.themeMode || 'system';
+                segBtns.forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-theme') === currentMode);
+                });
+            }
+            if (fontSel) fontSel.value = st.chatFont || 'sans';
+            if (voiceSel) voiceSel.value = st.voicePreset || 'steady';
+            if (fullNameInput) fullNameInput.value = st.fullName || '';
+            if (nicknameInput && typeof app.getNickname === 'function') {
+                nicknameInput.value = app.getNickname() || '';
+            }
+            if (professionSel) professionSel.value = st.profession || '';
+            if (sysPromptArea) {
+                sysPromptArea.value = st.customInstructions || '';
+                if (sysPromptCount) {
+                    sysPromptCount.textContent = String((st.customInstructions || '').length);
+                }
+            }
+            refreshAvatar();
+        }
+
+        // 三按钮主题 segmented：真实切换 system / light / dark
         if (segBtns.length) {
             segBtns.forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     segBtns.forEach(function (b) { b.classList.toggle('active', b === btn); });
-                    // 注意：这里不真正改 data-theme，因为整个 Claude UI 锁 dark。
-                    // 若用户选 light，下一阶段考虑提供 light 配色版本。
+                    const mode = btn.getAttribute('data-theme');
+                    if (app && typeof app.setThemeMode === 'function') {
+                        app.setThemeMode(mode);
+                    }
                 });
             });
+        }
+
+        // 聊天字体
+        if (fontSel) {
+            fontSel.addEventListener('change', function () {
+                if (app && typeof app.setChatFont === 'function') {
+                    app.setChatFont(fontSel.value);
+                }
+            });
+        }
+
+        // 配音
+        if (voiceSel) {
+            voiceSel.addEventListener('change', function () {
+                if (app && typeof app.setVoicePreset === 'function') {
+                    app.setVoicePreset(voiceSel.value);
+                }
+            });
+        }
+
+        // 全名
+        if (fullNameInput) {
+            fullNameInput.addEventListener('change', function () {
+                if (app && typeof app.setFullName === 'function') {
+                    app.setFullName(fullNameInput.value);
+                }
+                refreshAvatar();
+            });
+            fullNameInput.addEventListener('blur', function () {
+                if (app && typeof app.setFullName === 'function') {
+                    app.setFullName(fullNameInput.value);
+                }
+                refreshAvatar();
+            });
+        }
+
+        // 昵称（同步到 cancri_nickname localStorage 与 .account-strip .account-name）
+        if (nicknameInput) {
+            nicknameInput.addEventListener('change', function () {
+                if (app && typeof app.setNickname === 'function') {
+                    app.setNickname(nicknameInput.value.trim());
+                }
+                if (app && typeof app.refreshNicknameUI === 'function') {
+                    app.refreshNicknameUI();
+                }
+                refreshAvatar();
+            });
+            nicknameInput.addEventListener('blur', function () {
+                if (app && typeof app.setNickname === 'function') {
+                    app.setNickname(nicknameInput.value.trim());
+                }
+                if (app && typeof app.refreshNicknameUI === 'function') {
+                    app.refreshNicknameUI();
+                }
+                refreshAvatar();
+            });
+        }
+
+        // 职业
+        if (professionSel) {
+            professionSel.addEventListener('change', function () {
+                if (app && typeof app.setProfession === 'function') {
+                    app.setProfession(professionSel.value);
+                }
+            });
+        }
+
+        // 给 Cancri 的说明（业内做法：随时持久化 + 实时 counter）
+        if (sysPromptArea) {
+            sysPromptArea.addEventListener('input', function () {
+                const v = sysPromptArea.value.slice(0, 100);
+                if (sysPromptArea.value !== v) sysPromptArea.value = v; // 防 IME 跨过 100
+                if (sysPromptCount) sysPromptCount.textContent = String(v.length);
+                if (app && typeof app.setCustomInstructions === 'function') {
+                    app.setCustomInstructions(v);
+                }
+            });
+        }
+
+        // 初始化一次：state 在 cancri_chat.js 顶层已 restore + applyTheme，
+        // 这时表单第一次显示时填进去。
+        populateOverviewForm();
+
+        // 当 #claudeSettingsView 变成可见 view 时（cancri 切 view 用 hidden 属性 / class），
+        // 再 populate 一次保证表单显示当前 state。MutationObserver 监听 class / hidden。
+        const settingsView = document.getElementById('claudeSettingsView');
+        if (settingsView && typeof MutationObserver !== 'undefined') {
+            new MutationObserver(function () {
+                if (!settingsView.hasAttribute('hidden')) populateOverviewForm();
+            }).observe(settingsView, { attributes: true, attributeFilter: ['hidden', 'class'] });
         }
     }
 

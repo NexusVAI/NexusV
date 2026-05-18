@@ -3194,6 +3194,57 @@ html[data-theme="dark"] .message.assistant .message-content {
     padding-inline-start: 0.375em;
 }
 
+/* ─────────────────────────────────────────────────────────── §17 聊天字体偏好（2026-05-18 新增）
+   设置面板"聊天字体"select 通过 cancri_chat.js applyTheme() 写到 html[data-chat-font]。
+   作用域只覆盖 `.message .message-content` 文本块（assistant + user），不动
+   pre/code/kbd（始终保持 monospace）。
+   ─ serif → Anthropic Serif（人形衬线体）
+   ─ sans  → Anthropic Sans（系统默认；不写也是这个，规则空）
+   ─ mono  → ui-monospace 等宽
+   优先级要高于 §16 里 `.message.user .message-content { font-family: var(--c-font) !important; }`，
+   所以这里也用 !important，scope 一样精确。
+   ─────────────────────────────────────────────────────────── */
+html[data-chat-font="serif"] .message.user .message-content,
+html[data-chat-font="serif"] .message.assistant .message-content,
+html[data-chat-font="serif"] .message.assistant .message-content p,
+html[data-chat-font="serif"] .message.assistant .message-content li,
+html[data-chat-font="serif"] .message.assistant .message-content blockquote,
+html[data-chat-font="serif"] .message.assistant .answer-body,
+html[data-chat-font="serif"] .message.assistant .think-body {
+    font-family: var(--c-font-serif) !important;
+}
+
+html[data-chat-font="sans"] .message.user .message-content,
+html[data-chat-font="sans"] .message.assistant .message-content,
+html[data-chat-font="sans"] .message.assistant .message-content p,
+html[data-chat-font="sans"] .message.assistant .message-content li,
+html[data-chat-font="sans"] .message.assistant .message-content blockquote,
+html[data-chat-font="sans"] .message.assistant .answer-body,
+html[data-chat-font="sans"] .message.assistant .think-body {
+    font-family: var(--c-font) !important;
+}
+
+html[data-chat-font="mono"] .message.user .message-content,
+html[data-chat-font="mono"] .message.assistant .message-content,
+html[data-chat-font="mono"] .message.assistant .message-content p,
+html[data-chat-font="mono"] .message.assistant .message-content li,
+html[data-chat-font="mono"] .message.assistant .message-content blockquote,
+html[data-chat-font="mono"] .message.assistant .answer-body,
+html[data-chat-font="mono"] .message.assistant .think-body {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo,
+                 Consolas, "Liberation Mono", monospace !important;
+}
+
+/* code/pre/kbd 永远 monospace，不被 chat-font="serif|sans" 拖走。
+   §16 里这条规则已经存在（.message.assistant .message-content pre 等强制 monospace），
+   这里再写一遍 user 气泡里的 inline `code`，因为用户没显式写过这条。 */
+.message.user .message-content code,
+.message.user .message-content pre,
+.message.user .message-content kbd {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo,
+                 Consolas, "Liberation Mono", monospace !important;
+}
+
 /* code（源 :1079-1089）注：::before/::after content:none reset Tailwind 默认反引号 */
 .message.assistant .message-content code {
     color: var(--tw-prose-code);
