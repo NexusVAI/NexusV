@@ -871,9 +871,9 @@ function getQuotaLockMessage(modelId = currentModel) {
     if (status.lockReason === "quota") {
       if (modelId === "claude-opus-4-6-thinking-medium") {
         if (quotaState.tier !== "free") {
-          targetStatus.lockedUntil = null;
-          targetStatus.lockReason = null;
-          targetStatus.error = null;
+          status.lockedUntil = null;
+          status.lockReason = null;
+          status.error = null;
           return "";
         }
         const remainingSeconds = Math.max(
@@ -1854,6 +1854,10 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-xhigh", "name": "GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  // clawto 公益 GPT-5.5
+  {"id": "gpt-5.5-a", "name": "【福利A】GPT-5.5纯血", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.5-b", "name": "【福利B】GPT-5.5纯血", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.5-c", "name": "【福利C】GPT-5.5纯血", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   // Google AI Studio free models
   {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
@@ -1932,6 +1936,7 @@ const BRAND_ICON_MAP = {
   "Wan": "./qwen-color.svg",
   "HappyHorse": "../Logo/欢乐马.webp",
   "Stepfun": "./stepfun-color.svg",
+  "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
