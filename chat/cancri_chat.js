@@ -1298,6 +1298,7 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
+  "gpt-5.5-xhigh",
   "gpt-5.3-codex",
   "gemini-3.1-pro",
   "gemini-3.1-pro-preview",
@@ -1314,6 +1315,7 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
+  "gpt-5.5-xhigh",
   "gemini-3.1-pro",
 ]);
 
@@ -1824,6 +1826,7 @@ const MODEL_CATALOG = [
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.5-xhigh", "name": "GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
