@@ -40,9 +40,10 @@ const state = {
   // 2026-05-18：用户的职业 / 兴趣领域（设置面板"什么是您喜欢的作品？"）。
   // 与 fullName 一起注入 system message，让 AI 调整答复领域语气。空串不注入。
   profession: "",
-  // 2026-05-18：用户的"给 Cancri 的说明"自定义指令，最长 100 字。
-  // 业内做法（ChatGPT Custom Instructions / Claude Profile）：每轮新对话
-  // 注入 system message。空串则不注入。
+  // 2026-05-18 v2：用户的"给 Cancri 的说明"自定义指令，最长 100 字。
+  // 与 fullName / nickname / profession 一起经 buildCustomInstructionsSystemContent
+  // 拼成偏好块，streamChatCompletionRound 在请求体顶层加 `cancri_custom_instructions`，
+  // 由 chat-gateway 服务端拼成第二条 system message。空串则不注入。
   customInstructions: "",
   currentView: "home",
   modal: null,
@@ -9032,18 +9033,18 @@ async function buildApiMessages(
   void extraSystemContent;
   const messages = [];
 
-  // 2026-05-18：custom-instructions system message 永远放最前面，每次重建（不进
-  // conversationHistory，避免被 chat-history persist / 清理误污染）。空内容跳过。
-  const customInstructionsContent = buildCustomInstructionsSystemContent();
-  if (customInstructionsContent) {
-    messages.push({ role: "system", content: customInstructionsContent });
-  }
-
+  // 2026-05-18 v2：用户偏好（"给 Cancri 的说明" / 全名 / 职业）**不能**作为
+  // 客户端 system message 直接 push 到 messages —— chat-gateway 的
+  // `sanitizeClientMessages` 出于 prompt-injection 防护会把所有客户端
+  // role==='system' 一律过滤，那条路下用户偏好永远到不了模型。改成
+  // streamChatCompletionRound 在请求体顶层加 `cancri_custom_instructions`，
+  // chat-gateway `buildChatGatewayPayload` 服务端拼成第二条 system message。
   conversationHistory.forEach((message) => {
-    // 老历史（旧版本可能曾经写入过 system 残片）—— 跳过头部已注入过的同款 system
-    // 段，防止复用旧会话时双注入。
+    // 兼容老历史：旧版本（v1）可能往 conversationHistory 里写过用户偏好的
+    // system 残片。新版本不再 push 该消息，但已存在的会话记录里可能还有。
+    // 凡识别到带"以下是用户在设置中提供的个人资料与偏好"前缀的 system 段
+    // 一律过滤，避免双注入或暴露过时偏好。
     if (
-      messages.length === 1 &&
       message?.role === "system" &&
       typeof message.content === "string" &&
       message.content.startsWith("以下是用户在设置中提供的个人资料与偏好")
@@ -9581,6 +9582,14 @@ async function streamChatCompletionRound(
     temperature: 0.6,
     ...getModelRequestOptions(modelId),
   };
+
+  // 2026-05-18 v2：用户偏好（"给 Cancri 的说明" / 全名 / 昵称 / 职业）走顶层
+  // `cancri_custom_instructions` 字段，由 chat-gateway 服务端拼成第二条
+  // system message。详见 buildApiMessages 注释。空内容跳过。
+  const customInstructionsContent = buildCustomInstructionsSystemContent();
+  if (customInstructionsContent) {
+    requestBody.cancri_custom_instructions = customInstructionsContent;
+  }
 
   requestBody.web_search_enabled = Boolean(webSearchEnabled);
 
@@ -10566,7 +10575,9 @@ function setVoicePreset(preset) {
 }
 
 // 2026-05-18：自定义指令（"给 Cancri 的说明"），最多 100 字。
-// buildApiMessages 在每轮新请求时把它注入 system message。
+// streamChatCompletionRound 在每轮请求体里加顶层 `cancri_custom_instructions`
+// 字段；chat-gateway 服务端读出来拼成第二条 system message（client 直推
+// system role 会被 sanitizeClientMessages 过滤掉）。
 function setCustomInstructions(text) {
   const trimmed = String(text || "").slice(0, 100);
   state.customInstructions = trimmed;
