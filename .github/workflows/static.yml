@@ -97,6 +97,8 @@ jobs:
               "index.html",
               "turnstile_check.html",
               "image.html",
+              "orders.html",
+              "pricing.html",
               "cancri_config.js",
               "cancri_chat.css",
               "cancri_chat.js",

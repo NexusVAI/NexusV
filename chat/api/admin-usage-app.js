@@ -66,9 +66,9 @@ async function init() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
+        apikey: window.__SUPABASE_ANON_KEY__,
       },
-      body: JSON.stringify({ endpoint: "admin_check" }),
+      body: JSON.stringify({ endpoint: "admin_check", __auth_token: session.access_token }),
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok || !data?.is_admin) {
@@ -93,12 +93,13 @@ async function loadUsage() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
+        apikey: window.__SUPABASE_ANON_KEY__,
       },
       body: JSON.stringify({
         endpoint: "admin_list_api_usage",
         since_ms: activeWindowMs,
         limit: 1000,
+        __auth_token: session.access_token,
       }),
     });
     if (resp.status === 403) {

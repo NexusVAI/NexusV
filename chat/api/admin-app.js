@@ -117,9 +117,9 @@ async function init() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
+        apikey: window.__SUPABASE_ANON_KEY__,
       },
-      body: JSON.stringify({ endpoint: "admin_check" }),
+      body: JSON.stringify({ endpoint: "admin_check", __auth_token: session.access_token }),
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok || !data?.is_admin) {
@@ -140,10 +140,11 @@ async function loadApps() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
+        apikey: window.__SUPABASE_ANON_KEY__,
       },
       body: JSON.stringify({
         endpoint: "admin_list_api_applications",
+        __auth_token: session.access_token,
       }),
     });
     if (resp.status === 403) {
@@ -410,12 +411,13 @@ async function batchDecide(newStatus) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
+        apikey: window.__SUPABASE_ANON_KEY__,
       },
       body: JSON.stringify({
         endpoint: "admin_batch_review_api_applications",
         application_ids: pendingIds,
         status: newStatus,
+        __auth_token: session.access_token,
       }),
     });
     const data = await resp.json();
@@ -453,12 +455,13 @@ async function decide(btn) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
+        apikey: window.__SUPABASE_ANON_KEY__,
       },
       body: JSON.stringify({
         endpoint: "admin_review_api_application",
         application_id: id,
         status: action,
+        __auth_token: session.access_token,
       }),
     });
     const data = await resp.json();

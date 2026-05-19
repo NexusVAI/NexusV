@@ -54,9 +54,9 @@ async function callGateway(endpoint, payload) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer " + session.access_token,
+            apikey: window.__SUPABASE_ANON_KEY__,
         },
-        body: JSON.stringify({ endpoint, ...payload }),
+        body: JSON.stringify({ endpoint, ...(payload || {}), __auth_token: session.access_token }),
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok)
