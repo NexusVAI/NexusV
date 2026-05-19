@@ -17,6 +17,8 @@ const GW = window.__SUPABASE_URL__ + '/functions/v1/windsurf-shop';
 let cachedOrders = [];
 let cachedProduct = null;
 let currentFilter = '';
+let adminPassword = '';
+let actionsBound = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -55,11 +57,17 @@ async function callGW(endpoint, payload) {
   const resp = await fetch(GW, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: window.__SUPABASE_ANON_KEY__ },
-    body: JSON.stringify({ endpoint, ...(payload || {}), __auth_token: session.access_token }),
+    body: JSON.stringify({ endpoint, ...(payload || {}), __auth_token: session.access_token, admin_password: adminPassword }),
   });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) throw new Error(data.message || data.error || 'request_failed');
   return data;
+}
+
+function showOnly(id) {
+  ['loading', 'loginGate', 'denyGate', 'passwordGate', 'mainContent'].forEach(name => {
+    $(name).style.display = name === id ? 'block' : 'none';
+  });
 }
 
 // ─── Stats ───
@@ -233,33 +241,61 @@ async function loadOrders() {
 }
 
 // ─── Init ───
-async function init() {
-  const session = await getSession();
-  $('loading').style.display = 'none';
-
-  if (!session || !session.user || session.user.is_anonymous) {
-    $('loginGate').style.display = 'block';
-    return;
+async function enterAdminPanel() {
+  showOnly('mainContent');
+  if (!actionsBound) {
+    bindProductActions();
+    bindFilters();
+    bindOrderActions();
+    $('refreshBtn').addEventListener('click', loadOrders);
+    actionsBound = true;
   }
-
-  try {
-    const r = await callGW('admin_check', {});
-    if (!r.is_admin) {
-      $('denyGate').style.display = 'block';
-      return;
-    }
-  } catch {
-    $('denyGate').style.display = 'block';
-    return;
-  }
-
-  $('mainContent').style.display = 'block';
-  bindProductActions();
-  bindFilters();
-  bindOrderActions();
-  $('refreshBtn').addEventListener('click', loadOrders);
   await loadProduct();
   await loadOrders();
+}
+
+function bindPasswordGate() {
+  $('unlockAdminBtn').addEventListener('click', async () => {
+    const input = $('adminPasswordInput');
+    const btn = $('unlockAdminBtn');
+    const password = input.value.trim();
+    if (!password) {
+      showToast('请输入管理员密码');
+      return;
+    }
+
+    adminPassword = password;
+    btn.disabled = true;
+    btn.textContent = '验证中...';
+    try {
+      const r = await callGW('admin_check', {});
+      if (!r.is_admin) throw new Error(r.message || '验证失败');
+      input.value = '';
+      await enterAdminPanel();
+    } catch (err) {
+      adminPassword = '';
+      showToast('验证失败: ' + (err.message || ''));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '验证进入';
+    }
+  });
+  $('adminPasswordInput').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') $('unlockAdminBtn').click();
+  });
+}
+
+async function init() {
+  const session = await getSession();
+
+  if (!session || !session.user || session.user.is_anonymous) {
+    showOnly('loginGate');
+    return;
+  }
+
+  bindPasswordGate();
+  showOnly('passwordGate');
+  $('adminPasswordInput').focus();
 }
 
 init();
