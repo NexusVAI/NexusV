@@ -45,9 +45,9 @@ async function fetchEffectiveTier(session) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: "Bearer " + session.access_token,
+                apikey: window.__SUPABASE_ANON_KEY__,
             },
-            body: JSON.stringify({ endpoint: "get_my_subscription" }),
+            body: JSON.stringify({ endpoint: "get_my_subscription", __auth_token: session.access_token }),
         });
         if (!resp.ok) return "free";
         const data = await resp.json();
@@ -77,9 +77,9 @@ async function loadData() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: "Bearer " + session.access_token,
+                apikey: window.__SUPABASE_ANON_KEY__,
             },
-            body: JSON.stringify({ endpoint: "api_my_keys" }),
+            body: JSON.stringify({ endpoint: "api_my_keys", __auth_token: session.access_token }),
         }),
         fetchEffectiveTier(session),
     ]);
@@ -151,11 +151,12 @@ async function deleteKey(keyId, keyPrefix) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: "Bearer " + session.access_token,
+                apikey: window.__SUPABASE_ANON_KEY__,
             },
             body: JSON.stringify({
                 endpoint: "api_delete_key",
                 key_id: keyId,
+                __auth_token: session.access_token,
             }),
         });
         const data = await resp.json();
@@ -177,9 +178,9 @@ async function loadUsage() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: "Bearer " + session.access_token,
+                apikey: window.__SUPABASE_ANON_KEY__,
             },
-            body: JSON.stringify({ endpoint: "api_my_usage" }),
+            body: JSON.stringify({ endpoint: "api_my_usage", __auth_token: session.access_token }),
         });
         if (!resp.ok) return;
         const data = await resp.json();
@@ -317,11 +318,12 @@ async function generateKey(ev) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: "Bearer " + session.access_token,
+                apikey: window.__SUPABASE_ANON_KEY__,
             },
             body: JSON.stringify({
                 endpoint: "api_generate_key",
                 name,
+                __auth_token: session.access_token,
             }),
         });
         const data = await resp.json();
