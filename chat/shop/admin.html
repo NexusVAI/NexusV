@@ -54,10 +54,23 @@
     .container { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
 
     #loading { text-align: center; padding: 80px 0; color: var(--ink-2); }
-    #loginGate, #denyGate {
+    #loginGate, #denyGate, #passwordGate {
       display: none; text-align: center; padding: 80px 20px; color: var(--ink-2);
     }
     #mainContent { display: none; }
+    .admin-password-card {
+      max-width: 360px; margin: 0 auto; padding: 24px;
+      background: var(--bg-1); border: 1px solid var(--line);
+      border-radius: var(--radius); text-align: left;
+    }
+    .admin-password-card h2 { color: var(--ink); font-size: 16px; margin-bottom: 8px; }
+    .admin-password-card p { font-size: 13px; margin-bottom: 14px; }
+    .admin-password-card input {
+      width: 100%; padding: 10px 12px; margin-bottom: 12px;
+      background: var(--bg-2); border: 1px solid var(--line-2);
+      border-radius: 8px; color: var(--ink); outline: none;
+    }
+    .admin-password-card input:focus { border-color: var(--clay); }
 
     /* ─── Stats ─── */
     .stats-bar {
@@ -191,6 +204,14 @@
     <div id="denyGate">
       <p>您没有管理员权限。</p>
     </div>
+    <div id="passwordGate">
+      <div class="admin-password-card">
+        <h2>管理员二次验证</h2>
+        <p>请输入管理员操作密码后继续。</p>
+        <input type="password" id="adminPasswordInput" autocomplete="current-password" placeholder="管理员密码" />
+        <button class="refresh-btn" id="unlockAdminBtn">验证进入</button>
+      </div>
+    </div>
 
     <div id="mainContent">
       <div class="product-panel">
@@ -237,6 +258,6 @@
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
     crossorigin="anonymous"
   ></script>
-  <script src="./shop-admin-app.js?v=2026-05-19-shop-product"></script>
+  <script src="./shop-admin-app.js?v=2026-05-19-shop-admin-password"></script>
 </body>
 </html>
