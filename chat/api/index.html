@@ -313,6 +313,171 @@
       border-color: var(--clay);
     }
 
+    .api-glass-ask {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .api-glass-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: min(680px, 100%);
+      min-height: 86px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      overflow: hidden;
+      color: rgba(255, 250, 245, 0.96);
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.045);
+      box-shadow:
+        0 18px 48px rgba(0, 0, 0, 0.22),
+        0 42px 90px rgba(0, 0, 0, 0.16);
+      transform: translateZ(0);
+      transition:
+        transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 180ms ease;
+    }
+    .api-glass-pill:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow:
+        0 22px 56px rgba(0, 0, 0, 0.26),
+        0 50px 110px rgba(0, 0, 0, 0.18);
+    }
+    .api-glass-pill:active {
+      transform: translateY(0) scale(0.985);
+    }
+    .api-glass-pill__warp,
+    .api-glass-pill__rim,
+    .api-glass-pill__shine {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+    .api-glass-pill__warp {
+      -webkit-backdrop-filter:
+        url(#api-liquid-glass-filter)
+        blur(5px)
+        saturate(150%)
+        brightness(1.08);
+      backdrop-filter:
+        url(#api-liquid-glass-filter)
+        blur(5px)
+        saturate(150%)
+        brightness(1.08);
+    }
+    .api-glass-pill__rim {
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+    }
+    .api-glass-pill__shine {
+      background:
+        radial-gradient(circle at 22% 0%, rgba(255, 255, 255, 0.38), transparent 38%),
+        linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.16) 42%, rgba(255, 255, 255, 0.34) 50%, transparent 58%);
+      mix-blend-mode: screen;
+      opacity: 0.72;
+    }
+    .api-glass-pill__content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+      width: 100%;
+      padding: 18px 28px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+    }
+    .api-glass-pill__badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 250, 245, 0.82);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      white-space: nowrap;
+    }
+    .api-glass-pill__main {
+      min-width: 0;
+    }
+    .api-glass-pill__prompt {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--serif);
+      font-size: clamp(20px, 2.35vw, 29px);
+      line-height: 1.08;
+      letter-spacing: -0.018em;
+    }
+    .api-glass-pill__variants {
+      display: block;
+      margin-top: 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      color: rgba(255, 250, 245, 0.64);
+    }
+    .api-glass-pill__arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font-family: var(--mono);
+      font-size: 18px;
+      transition: transform 180ms ease;
+    }
+    .api-glass-pill:hover .api-glass-pill__arrow {
+      transform: translateX(3px);
+    }
+    :root[data-theme="light"] .api-glass-pill {
+      color: rgba(34, 29, 25, 0.92);
+      background: rgba(255, 255, 255, 0.28);
+      box-shadow:
+        0 16px 42px rgba(82, 55, 38, 0.16),
+        0 40px 86px rgba(82, 55, 38, 0.12);
+    }
+    :root[data-theme="light"] .api-glass-pill__badge,
+    :root[data-theme="light"] .api-glass-pill__arrow {
+      color: rgba(34, 29, 25, 0.72);
+      background: rgba(255, 255, 255, 0.38);
+      border-color: rgba(34, 29, 25, 0.1);
+    }
+    :root[data-theme="light"] .api-glass-pill__variants {
+      color: rgba(34, 29, 25, 0.58);
+    }
+    :root[data-theme="light"] .api-glass-pill__rim {
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        inset 0 -1px 0 rgba(34, 29, 25, 0.08);
+    }
+    @supports not (backdrop-filter: url(#x)) {
+      .api-glass-pill__warp {
+        -webkit-backdrop-filter: blur(18px) saturate(165%);
+        backdrop-filter: blur(18px) saturate(165%);
+      }
+    }
+
     /* ─── 章节通用 ────────────────────────────────────────── */
     section.chapter {
       padding: 88px 28px;
@@ -553,6 +718,23 @@
         white-space: normal;
         word-break: break-all;
       }
+      .api-glass-pill {
+        min-height: 112px;
+        border-radius: 34px;
+      }
+      .api-glass-pill__content {
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        padding: 18px 20px;
+      }
+      .api-glass-pill__badge {
+        grid-column: 1 / -1;
+        justify-self: start;
+      }
+      .api-glass-pill__prompt,
+      .api-glass-pill__variants {
+        white-space: normal;
+      }
     }
   </style>
 </head>
@@ -600,6 +782,17 @@
   </header>
 
   <main>
+    <svg class="api-liquid-glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="api-liquid-glass-filter" x="-12%" y="-28%" width="124%" height="156%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.035" numOctaves="2" seed="17" result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="1.6" result="softNoise" />
+          <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="30" xChannelSelector="R" yChannelSelector="G" result="warped" />
+          <feGaussianBlur in="warped" stdDeviation="0.35" />
+        </filter>
+      </defs>
+    </svg>
+
     <!-- HERO -->
     <section class="hero">
       <!-- 装饰层：斜向滚动的生态合作伙伴 logo 条带。aria-hidden
@@ -816,6 +1009,25 @@
           >
             复制
           </button>
+        </div>
+        <div class="api-glass-ask">
+          <a
+            class="api-glass-pill"
+            href="../?q=%E4%BD%BF%E7%94%A8%E7%AB%99%E5%86%85%E5%B7%A5%E5%85%B7%E5%91%8A%E8%AF%89%E6%88%91%E7%AB%99%E5%86%85%E7%9A%84%20API%20%E5%A4%9A%E5%B0%91%E9%92%B1%EF%BC%9F"
+            aria-label="跳转到聊天页并询问 Cancri API 价格"
+          >
+            <span class="api-glass-pill__warp"></span>
+            <span class="api-glass-pill__rim"></span>
+            <span class="api-glass-pill__shine"></span>
+            <span class="api-glass-pill__content">
+              <span class="api-glass-pill__badge">Ask Cancri</span>
+              <span class="api-glass-pill__main">
+                <span class="api-glass-pill__prompt">使用站内工具告诉我站内的 API 多少钱？</span>
+                <span class="api-glass-pill__variants">也可以问：套餐怎么选 · 免费额度怎么算 · 调用价格贵不贵</span>
+              </span>
+              <span class="api-glass-pill__arrow" aria-hidden="true">→</span>
+            </span>
+          </a>
         </div>
       </div>
     </section>
