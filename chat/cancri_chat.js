@@ -1774,6 +1774,8 @@ const MODEL_SELECTION_MIGRATIONS = {
   "ling-2.6-1t-alt": DEFAULT_MODEL_ID,
   "spark-x2": DEFAULT_MODEL_ID,
   "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
+  "gpt-5.5-b": DEFAULT_MODEL_ID,
+  "gpt-5.5-c": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "image-fast": DEFAULT_MODEL_ID,
   "wan2.7-image-pro": DEFAULT_MODEL_ID,
@@ -1855,9 +1857,6 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-xhigh", "name": "GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  // clawto 公益 GPT-5.5
-  {"id": "gpt-5.5-b", "name": "【福利B】GPT-5.5纯血", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "gpt-5.5-c", "name": "【福利C】GPT-5.5纯血", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   // Google AI Studio free models
   {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
