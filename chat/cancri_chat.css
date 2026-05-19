@@ -661,6 +661,14 @@ svg {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.recent-model-icon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    object-fit: contain;
+    display: block;
+    border-radius: 4px;
+}
 .recent-item-actions {
     width: 22px;
     height: 22px;
