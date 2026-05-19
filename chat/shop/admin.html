@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>管理员 · Windsurf Pro Shop</title>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+  />
+  <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    @font-face {
+      font-family: "Anthropic Sans";
+      src: url("../fonts/AnthropicSans-Roman-Variable.ttf") format("truetype");
+      font-weight: 100 900; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: "Anthropic Sans";
+      src: url("../fonts/AnthropicSans-Italic-Variable.ttf") format("truetype");
+      font-weight: 100 900; font-style: italic; font-display: swap;
+    }
+
+    :root {
+      --bg: #0a0a0a; --bg-1: #111111; --bg-2: #161616;
+      --line: #1f1f1f; --line-2: #2a2a2a;
+      --ink: #ededec; --ink-2: #a3a3a0; --ink-3: #6f6f6c;
+      --clay: #d97757; --clay-2: #b85a3e;
+      --ok: #4ade80; --warn: #fbbf24; --err: #f87171;
+      --sans: "Anthropic Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --radius: 14px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--ink);
+      min-height: 100vh; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--clay); text-decoration: none; }
+
+    .topnav {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px; border-bottom: 1px solid var(--line);
+      max-width: 900px; margin: 0 auto;
+    }
+    .topnav .brand { font-weight: 600; font-size: 15px; color: var(--ink); }
+    .topnav a { font-size: 13px; color: var(--ink-2); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
+
+    #loading { text-align: center; padding: 80px 0; color: var(--ink-2); }
+    #loginGate, #denyGate {
+      display: none; text-align: center; padding: 80px 20px; color: var(--ink-2);
+    }
+    #mainContent { display: none; }
+
+    /* ─── Stats ─── */
+    .stats-bar {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .stat-card {
+      flex: 1; min-width: 120px; padding: 14px 16px;
+      background: var(--bg-1); border: 1px solid var(--line);
+      border-radius: 10px; text-align: center;
+    }
+    .stat-card .num { font-size: 1.6rem; font-weight: 700; font-family: var(--mono); }
+    .stat-card .label { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+    .stat-card.pending .num { color: var(--warn); }
+    .stat-card.approved .num { color: var(--ok); }
+    .stat-card.rejected .num { color: var(--err); }
+
+    .product-panel {
+      margin-bottom: 20px; padding: 18px;
+      background: var(--bg-1); border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .product-panel h2 { font-size: 15px; margin-bottom: 12px; }
+    .product-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px; margin-bottom: 14px;
+    }
+    .product-metric {
+      padding: 12px; border-radius: 10px;
+      background: var(--bg-2); border: 1px solid var(--line-2);
+    }
+    .product-metric .label { font-size: 11px; color: var(--ink-3); margin-bottom: 4px; }
+    .product-metric .value { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+    .stock-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .stock-form input[type="number"] {
+      width: 140px; padding: 8px 10px;
+      background: var(--bg-2); border: 1px solid var(--line-2);
+      border-radius: 8px; color: var(--ink); font-family: var(--mono);
+      outline: none;
+    }
+    .stock-form label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+    .stock-form input[type="number"]:focus { border-color: var(--clay); }
+
+    /* ─── Filters ─── */
+    .filter-bar {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line-2);
+      background: transparent; color: var(--ink-2); font-size: 12px;
+      font-family: var(--sans); cursor: pointer; transition: all 0.2s;
+    }
+    .filter-btn.active { background: var(--clay); color: #fff; border-color: var(--clay); }
+    .filter-btn:hover { border-color: var(--clay); }
+
+    /* ─── Order cards ─── */
+    .order-card {
+      background: var(--bg-1); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+    }
+    .order-header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+    }
+    .order-id { font-family: var(--mono); font-weight: 600; color: var(--clay); font-size: 14px; }
+    .status-pill {
+      display: inline-block; padding: 2px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; font-family: var(--mono);
+    }
+    .status-pill.pending { background: rgba(251,191,36,0.12); color: var(--warn); }
+    .status-pill.approved { background: rgba(74,222,128,0.12); color: var(--ok); }
+    .status-pill.rejected { background: rgba(248,113,113,0.12); color: var(--err); }
+
+    .order-details {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 12px;
+    }
+    .order-details strong { color: var(--ink); }
+
+    .order-actions {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .order-actions input {
+      flex: 1; min-width: 140px; padding: 7px 10px;
+      background: var(--bg-2); border: 1px solid var(--line-2);
+      border-radius: 6px; color: var(--ink); font-size: 12px; font-family: var(--sans);
+      outline: none;
+    }
+    .order-actions input:focus { border-color: var(--clay); }
+
+    .btn-sm {
+      padding: 6px 14px; border-radius: 6px; font-size: 11.5px;
+      font-weight: 600; cursor: pointer; border: none; font-family: var(--sans);
+      transition: opacity 0.2s;
+    }
+    .btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-sm.approve { background: rgba(74,222,128,0.18); color: var(--ok); }
+    .btn-sm.approve:hover { background: rgba(74,222,128,0.3); }
+    .btn-sm.reject { background: rgba(248,113,113,0.18); color: var(--err); }
+    .btn-sm.reject:hover { background: rgba(248,113,113,0.3); }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      padding: 10px 20px; border-radius: 10px; background: var(--bg-2);
+      border: 1px solid var(--line-2); color: var(--ink); font-size: 13px;
+      opacity: 0; transition: all 0.3s; z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    .empty { text-align: center; padding: 40px; color: var(--ink-3); font-size: 14px; }
+    .refresh-btn {
+      padding: 8px 16px; border-radius: 8px; background: var(--bg-2);
+      border: 1px solid var(--line-2); color: var(--ink-2); font-size: 12px;
+      font-family: var(--sans); cursor: pointer;
+    }
+    .refresh-btn:hover { border-color: var(--clay); color: var(--ink); }
+  </style>
+</head>
+<body>
+  <nav class="topnav">
+    <span class="brand">Windsurf Pro Shop · 管理</span>
+    <a href="./">店铺首页</a>
+    <a href="../api/admin.html">主站管理</a>
+  </nav>
+
+  <div class="container">
+    <div id="loading">检查权限中...</div>
+    <div id="loginGate">
+      <p>请先在 <a href="../">主站</a> 登录管理员账号。</p>
+    </div>
+    <div id="denyGate">
+      <p>您没有管理员权限。</p>
+    </div>
+
+    <div id="mainContent">
+      <div class="product-panel">
+        <h2>商品库存</h2>
+        <div class="product-grid">
+          <div class="product-metric"><div class="label">商品</div><div class="value" id="productTitle">-</div></div>
+          <div class="product-metric"><div class="label">单价</div><div class="value" id="productPrice">-</div></div>
+          <div class="product-metric"><div class="label">库存</div><div class="value" id="productStock">-</div></div>
+          <div class="product-metric"><div class="label">状态</div><div class="value" id="productActive">-</div></div>
+        </div>
+        <div class="stock-form">
+          <input type="number" id="stockInput" min="0" max="999" step="1" placeholder="库存数量" />
+          <label><input type="checkbox" id="activeInput" /> 上架销售</label>
+          <button class="refresh-btn" id="saveStockBtn">保存库存</button>
+          <button class="refresh-btn" id="refreshProductBtn">刷新库存</button>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-card pending"><div class="num" id="statPending">0</div><div class="label">待审核</div></div>
+        <div class="stat-card approved"><div class="num" id="statApproved">0</div><div class="label">已发货</div></div>
+        <div class="stat-card rejected"><div class="num" id="statRejected">0</div><div class="label">已拒绝</div></div>
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">总计</div></div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="">全部</button>
+          <button class="filter-btn" data-filter="pending">待审核</button>
+          <button class="filter-btn" data-filter="approved">已发货</button>
+          <button class="filter-btn" data-filter="rejected">已拒绝</button>
+        </div>
+        <button class="refresh-btn" id="refreshBtn">刷新</button>
+      </div>
+
+      <div id="orderList"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../cancri_config.js?v=2026-05-19-shop-product"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="./shop-admin-app.js?v=2026-05-19-shop-product"></script>
+</body>
+</html>
