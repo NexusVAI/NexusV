@@ -55,6 +55,11 @@ const state = {
   recentProjectName: "",
   arenaMode: initialArenaMode,
   webSearchEnabled: false,
+  sharedConversation: false,
+  autoScrollLocked: false,
+  upwardScrollIntentCount: 0,
+  lastUpwardScrollAt: 0,
+  touchStartY: null,
 };
 
 const root = document.documentElement;
@@ -63,6 +68,7 @@ const scrim = document.getElementById("scrim");
 const toast = document.getElementById("toast");
 const pageWatermarkGrid = document.getElementById("pageWatermarkGrid");
 const customContextMenu = document.getElementById("customContextMenu");
+const headerRight = document.querySelector(".header-right");
 const homeView = document.getElementById("homeView");
 const leaderboardView = document.getElementById("leaderboardView");
 const heroTitle = document.getElementById("heroTitle");
@@ -121,6 +127,7 @@ const rateLimitUpdateTime = document.getElementById("rateLimitUpdateTime");
 const userRateLimit = document.getElementById("userRateLimit");
 const modelRateLimit = document.getElementById("modelRateLimit");
 const nexusvFooter = document.querySelector(".nexusv-footer");
+let chatShareBtn = null;
 
 const navRows = Array.from(
   document.querySelectorAll(".nav-row[data-view-target]"),
@@ -1444,6 +1451,7 @@ function getQuotaBlockReason(modelId) {
   // 后端 chat-gateway enforceQuotaGate 仍会真正执法，前端这层是 UX 预判。
   if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
+  // 池耗尽 → 所有模型都不让用（含 free 模型），与后端 cancri_consume_paid_quota_v2 对齐
   if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
   if (!isPaidGateModel(modelId)) return null;
   // FREE 用户 + PAID 模型：看当日 PAID 试用次数（FREE 模型不占 15 次）
@@ -3249,11 +3257,15 @@ function initAuthOverlay() {
         hideAuthOverlay();
         authSessionPromise = Promise.resolve(data.session);
         authInitialized = true;
+      } else if (hasSharedConversationHash()) {
+        hideAuthOverlay();
+        authInitialized = true;
       } else {
         showAuthOverlay();
       }
     } catch {
-      showAuthOverlay();
+      if (hasSharedConversationHash()) hideAuthOverlay();
+      else showAuthOverlay();
     }
   })();
 
@@ -3803,6 +3815,7 @@ async function renderChatHistoryList() {
 
 // 加载特定聊天记录
 async function loadChat(chatId) {
+  exitSharedConversationMode();
   try {
     const chat = await loadChatHistory(chatId);
     if (chat && chat.messages) {
@@ -3843,12 +3856,14 @@ async function loadChat(chatId) {
 
 // 新建聊天
 function newChat() {
+  exitSharedConversationMode();
   currentChatId = null;
   conversationHistory = [];
   chatMessages.innerHTML = "";
   homeCenter.style.display = "flex";
   chatMessages.classList.remove("active");
   homeView.classList.remove("chatting");
+  updateChatShareButtonVisibility();
   updateContextMeter();
   updateHomeHeroText();
   updateChatNav();
@@ -3860,8 +3875,10 @@ function renderMessages() {
   if (!chatMessages) return;
   chatMessages.innerHTML = "";
 
+  let lastUserMessageIndex = -1;
   conversationHistory.forEach((message, i) => {
     if (message.role === "user") {
+      lastUserMessageIndex = i;
       // Pass i so the undo button on this bubble knows exactly which slot of
       // conversationHistory it represents (for rollback truncation).
       createUserMessage(message.content, [], i);
@@ -3878,6 +3895,14 @@ function renderMessages() {
         const answerA = duelMatch[1].trim();
         const answerB = duelMatch[2].trim();
         renderRestoredDuelMessage(answerA, answerB, metadata);
+        return;
+      }
+
+      if (metadata?.errorCard) {
+        const id = createAssistantMessage(metadata);
+        renderAssistantErrorCard(id, content || getSafeModelErrorText(metadata.modelId || currentModel), {
+          retryUserIndex: lastUserMessageIndex,
+        });
         return;
       }
 
@@ -3919,6 +3944,7 @@ function renderMessages() {
   });
 
   updateChatNav();
+  updateChatShareButtonVisibility();
 }
 
 // ── 右侧"对话跳转"导航 ────────────────────────────────────────
@@ -4196,6 +4222,148 @@ function createRestoredVideoElement(videoUrl) {
   wrapper.appendChild(video);
   wrapper.appendChild(dlBtn);
   return wrapper;
+}
+
+
+function hasSharedConversationHash() {
+  return new URLSearchParams(window.location.hash.slice(1)).has("share");
+}
+
+function exitSharedConversationMode() {
+  if (!state.sharedConversation) return;
+  state.sharedConversation = false;
+  delete document.body.dataset.sharedConversation;
+  updateComposerPlaceholder();
+  setComposerBusy(false);
+  if (window.location.hash.startsWith("#share=")) {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }
+}
+
+function encodeUtf8Base64(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.slice(i, i + 0x8000));
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function decodeUtf8Base64(value) {
+  const padded = String(value || "").replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(String(value || "").length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function getShareableContent(content) {
+  if (!Array.isArray(content)) return String(content || "");
+  return content
+    .map((part) => {
+      if (part?.type === "text") return { type: "text", text: String(part.text || "") };
+      const url = part?.image_url?.url || "";
+      if (part?.type === "image_url" && /^https?:\/\//i.test(url)) {
+        return { type: "image_url", image_url: { url, detail: "auto" } };
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function buildConversationSharePayload() {
+  return {
+    v: 1,
+    title: generateChatTitle(conversationHistory),
+    model: currentModel,
+    messages: conversationHistory.map((message) => ({
+      role: message.role,
+      content: getShareableContent(message.content),
+      metadata: message.role === "assistant"
+        ? normalizeAssistantMetadata(message.metadata || message.modelMetadata || null)
+        : undefined,
+    })),
+  };
+}
+
+async function shareCurrentConversation() {
+  if (!conversationHistory.length) {
+    showToast("当前没有可分享的对话");
+    return;
+  }
+  const encoded = encodeUtf8Base64(JSON.stringify(buildConversationSharePayload()));
+  const url = `${window.location.origin}${window.location.pathname}#share=${encoded}`;
+  if (url.length > 60000) {
+    showToast("对话太长，无法生成链接，请先导出 Markdown");
+    return;
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Cancri 对话分享", url });
+      return;
+    } catch (_) {}
+  }
+  const ok = await writeTextToClipboard(url);
+  showToast(ok ? "分享链接已复制" : "复制失败，请手动复制地址栏链接");
+}
+
+function initChatShareButton() {
+  if (chatShareBtn || !headerRight) return;
+  chatShareBtn = document.createElement("button");
+  chatShareBtn.type = "button";
+  chatShareBtn.className = "icon-btn chat-share-btn";
+  chatShareBtn.hidden = true;
+  chatShareBtn.title = "分享此对话";
+  chatShareBtn.setAttribute("aria-label", "分享此对话");
+  chatShareBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="18" cy="5" r="3"></circle>
+      <circle cx="6" cy="12" r="3"></circle>
+      <circle cx="18" cy="19" r="3"></circle>
+      <path d="M8.6 10.6 15.4 6.4"></path>
+      <path d="M8.6 13.4 15.4 17.6"></path>
+    </svg>
+  `;
+  chatShareBtn.addEventListener("click", shareCurrentConversation);
+  headerRight.insertBefore(chatShareBtn, headerRight.firstElementChild);
+}
+
+function updateChatShareButtonVisibility() {
+  if (!chatShareBtn) return;
+  const visible =
+    state.currentView === "home" &&
+    homeView?.classList.contains("chatting") &&
+    conversationHistory.length > 0;
+  chatShareBtn.hidden = !visible;
+}
+
+function initSharedConversationFromHash() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const raw = params.get("share");
+  if (!raw) return false;
+  try {
+    const payload = JSON.parse(decodeUtf8Base64(raw));
+    const messages = Array.isArray(payload.messages) ? payload.messages : [];
+    state.sharedConversation = true;
+    document.body.dataset.sharedConversation = "true";
+    currentChatId = null;
+    conversationHistory = messages.map(sanitizeHistoryMessage);
+    setActiveView("home");
+    homeView?.classList.add("chatting");
+    chatMessages?.classList.add("active");
+    if (contextMeter) contextMeter.classList.add("hidden");
+    hideAuthOverlay();
+    renderMessages();
+    updateContextMeter();
+    setComposerBusy(false);
+    requestAnimationFrame(() => scrollChatToBottom(false, true));
+    showToast("已打开分享对话");
+    return true;
+  } catch (error) {
+    console.error("解析分享链接失败:", error);
+    showToast("分享链接无效或已损坏");
+    return false;
+  }
 }
 
 async function saveChatHistory(messages) {
@@ -5696,6 +5864,7 @@ function setActiveView(view) {
   if (view === "home") {
     updateHomeHeroText();
   }
+  updateChatShareButtonVisibility();
   if (view === "leaderboard") {
     loadMainLeaderboard();
   }
@@ -7553,14 +7722,43 @@ function updateComposerPlaceholder() {
   homeInput.placeholder = "有问题，尽管问";
 }
 
-function scrollChatToBottom(smooth = true) {
+function isChatNearBottom(threshold = 120) {
   if (!chatMessages) return;
+  const distanceFromBottom =
+    chatMessages.scrollHeight -
+    chatMessages.scrollTop -
+    chatMessages.clientHeight;
+  return distanceFromBottom <= threshold;
+}
+
+function resetChatAutoScrollLock() {
+  state.autoScrollLocked = false;
+  state.upwardScrollIntentCount = 0;
+  state.lastUpwardScrollAt = 0;
+}
+
+function noteUpwardScrollIntent() {
+  if (!chatMessages || !state.isStreaming) return;
+  const now = Date.now();
+  state.upwardScrollIntentCount =
+    now - state.lastUpwardScrollAt < 1400
+      ? state.upwardScrollIntentCount + 1
+      : 1;
+  state.lastUpwardScrollAt = now;
+  if (state.upwardScrollIntentCount >= 2) {
+    state.autoScrollLocked = true;
+  }
+}
+
+function scrollChatToBottom(smooth = true, force = false) {
+  if (!chatMessages) return;
+  if (!force && state.autoScrollLocked) return;
   const threshold = 120;
   const distanceFromBottom =
     chatMessages.scrollHeight -
     chatMessages.scrollTop -
     chatMessages.clientHeight;
-  if (distanceFromBottom > threshold) return;
+  if (!force && distanceFromBottom > threshold) return;
   if (smooth) {
     chatMessages.scrollTo({
       top: chatMessages.scrollHeight,
@@ -7573,6 +7771,7 @@ function scrollChatToBottom(smooth = true) {
 
 function setComposerBusy(isBusy) {
   state.isStreaming = isBusy;
+  if (isBusy) resetChatAutoScrollLock();
   if (isBusy) {
     sendChatBtn.classList.add("is-streaming");
     sendChatBtn.disabled = false;
@@ -7589,7 +7788,12 @@ function setComposerBusy(isBusy) {
   // （已知 WebKit 行为：disabled 会让元素脱离 hit-test，恢复后焦点状态
   // 偶发丢失）。改用 readOnly：禁止输入但保留 focus 能力，iOS 软键盘
   // 不会被卡住。视觉 dim 由 .is-busy class + CSS 处理。
-  homeInput.readOnly = isBusy;
+  homeInput.readOnly = state.sharedConversation || isBusy;
+  if (state.sharedConversation) {
+    homeInput.placeholder = "这是分享的只读对话";
+    sendChatBtn.disabled = true;
+    sendChatBtn.setAttribute("aria-label", "分享对话为只读");
+  }
   homeInput.classList.toggle("is-busy", isBusy);
   if (voiceInputBtn) {
     voiceInputBtn.disabled = isBusy;
@@ -7991,11 +8195,13 @@ async function sendImageGenerationMessage(
   metadata,
   attachments = [],
 ) {
-  createUserMessage(query, attachments);
+  const turnUserIndex = conversationHistory.length;
+  createUserMessage(query, attachments, turnUserIndex);
   homeInput.value = "";
   autoResizeComposerInput();
 
   const assistantMessageId = createAssistantMessage(metadata);
+  tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
   updateAssistantMessage(assistantMessageId, {
     answer: "",
     thinking: false,
@@ -8103,14 +8309,12 @@ async function sendImageGenerationMessage(
       );
       await finalizeConversationTurn();
     } else {
-      updateAssistantMessage(assistantMessageId, {
-        answer: "图片生成失败，未返回图片地址。",
-        thinking: false,
+      const safeErrorText = getSafeModelErrorText(modelId);
+      renderAssistantErrorCard(assistantMessageId, safeErrorText, {
+        retryUserIndex: turnUserIndex,
       });
       pushHistory("user", query);
-      pushHistory(
-        assistantHistoryMessage("图片生成失败，未返回图片地址。", metadata),
-      );
+      pushHistory(assistantErrorHistoryMessage(metadata, modelId));
     }
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -8121,13 +8325,12 @@ async function sendImageGenerationMessage(
       pushHistory("user", query);
       pushHistory(assistantHistoryMessage("已停止生成。", metadata));
     } else {
-      const message = normalizeErrorMessage(error, "图片生成失败，请稍后重试。");
-      updateAssistantMessage(assistantMessageId, {
-        answer: `图片生成失败：${message}`,
-        thinking: false,
+      const safeErrorText = getSafeModelErrorText(modelId);
+      renderAssistantErrorCard(assistantMessageId, safeErrorText, {
+        retryUserIndex: turnUserIndex,
       });
       pushHistory("user", query);
-      pushHistory(assistantHistoryMessage(`图片生成失败：${message}`, metadata));
+      pushHistory(assistantErrorHistoryMessage(metadata, modelId));
     }
   } finally {
     // 任何退出路径（成功 / 失败 / 中止）都把还活着的占位动画关掉，
@@ -8353,11 +8556,13 @@ async function sendVideoGenerationMessage(
   metadata,
   attachments = [],
 ) {
-  createUserMessage(query, attachments);
+  const turnUserIndex = conversationHistory.length;
+  createUserMessage(query, attachments, turnUserIndex);
   homeInput.value = "";
   autoResizeComposerInput();
 
   const assistantMessageId = createAssistantMessage(metadata);
+  tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
   updateAssistantMessage(assistantMessageId, {
     answer: "",
     thinking: false,
@@ -8457,14 +8662,12 @@ async function sendVideoGenerationMessage(
       );
       await finalizeConversationTurn();
     } else {
-      updateAssistantMessage(assistantMessageId, {
-        answer: "视频生成失败，未返回视频地址。",
-        thinking: false,
+      const safeErrorText = getSafeModelErrorText(modelId);
+      renderAssistantErrorCard(assistantMessageId, safeErrorText, {
+        retryUserIndex: turnUserIndex,
       });
       pushHistory("user", query);
-      pushHistory(
-        assistantHistoryMessage("视频生成失败，未返回视频地址。", metadata),
-      );
+      pushHistory(assistantErrorHistoryMessage(metadata, modelId));
     }
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -8475,13 +8678,12 @@ async function sendVideoGenerationMessage(
       pushHistory("user", query);
       pushHistory(assistantHistoryMessage("已停止生成。", metadata));
     } else {
-      const message = normalizeErrorMessage(error, "视频生成失败，请稍后重试。");
-      updateAssistantMessage(assistantMessageId, {
-        answer: `视频生成失败：${message}`,
-        thinking: false,
+      const safeErrorText = getSafeModelErrorText(modelId);
+      renderAssistantErrorCard(assistantMessageId, safeErrorText, {
+        retryUserIndex: turnUserIndex,
       });
       pushHistory("user", query);
-      pushHistory(assistantHistoryMessage(`视频生成失败：${message}`, metadata));
+      pushHistory(assistantErrorHistoryMessage(metadata, modelId));
     }
   } finally {
     // 任何退出路径（成功 / 失败 / 中止）都要把还活着的占位动画关掉，
@@ -8623,6 +8825,10 @@ function createUserMessage(content, attachments = [], messageIndex = null) {
 //   4. Re-render the chat. If history is now empty, return to the home
 //      hero state instead of leaving an empty chat shell.
 function undoUserMessage(messageIndex) {
+  if (state.sharedConversation) {
+    showToast("分享对话为只读");
+    return;
+  }
   if (!Number.isFinite(messageIndex) || messageIndex < 0) return;
 
   // Abort any active request so its finally-block doesn't push assistant
@@ -8696,6 +8902,8 @@ function normalizeAssistantMetadata(metadata) {
     modelName:
       base.modelName || getModelDisplayName(base.modelId) || "未知模型",
     iconPath: base.iconPath || getModelIconPath(base.modelId),
+    errorCard: Boolean(base.errorCard),
+    retryable: Boolean(base.retryable),
   };
 }
 
@@ -8710,6 +8918,9 @@ function sanitizeHistoryMessage(message) {
     );
   } else {
     delete sanitized.metadata;
+  }
+  if (sanitized.metadata?.errorCard) {
+    sanitized.content = getSafeModelErrorText(sanitized.metadata.modelId || currentModel);
   }
   delete sanitized.modelMetadata;
   delete sanitized.provider;
@@ -9152,6 +9363,7 @@ function updateAssistantMessage(
     thinkBody,
     answerBody,
     toolCallsContainer,
+    messageActions,
     thinkStreamState,
     answerStreamState,
   } = messageDiv._parts;
@@ -9159,6 +9371,10 @@ function updateAssistantMessage(
   const answerText = String(answer ?? "");
   const hasReasoning = Boolean(reasoningText.trim());
   const hasAnswer = Boolean(answerText.trim());
+
+  messageDiv.classList.remove("is-error");
+  answerBody.classList.remove("assistant-error-card");
+  if (messageActions) messageActions.hidden = false;
 
   thinkBlock.hidden = !hasReasoning && !thinking;
   if (thinking && !thinkStreamState.wasThinking) {
@@ -9222,6 +9438,112 @@ function updateAssistantMessage(
   }
 
   scrollChatToBottom();
+}
+
+
+function tagAssistantRetryUserIndex(messageId, userIndex) {
+  const messageDiv = document.getElementById(messageId);
+  if (!messageDiv || !Number.isFinite(userIndex)) return;
+  messageDiv.dataset.retryUserIndex = String(userIndex);
+}
+
+function getAssistantRetryUserIndex(messageDiv) {
+  const stored = Number(messageDiv?.dataset?.retryUserIndex);
+  if (Number.isFinite(stored) && stored >= 0) return stored;
+  let node = messageDiv?.previousElementSibling;
+  while (node) {
+    if (node.classList?.contains("message") && node.classList.contains("user")) {
+      const idx = Number(node.dataset.messageIndex);
+      if (Number.isFinite(idx) && idx >= 0) return idx;
+    }
+    node = node.previousElementSibling;
+  }
+  for (let i = conversationHistory.length - 1; i >= 0; i -= 1) {
+    if (conversationHistory[i]?.role === "user") return i;
+  }
+  return -1;
+}
+
+async function retryAssistantError(messageDiv) {
+  if (state.isStreaming || state.sharedConversation) return;
+  const userIndex = getAssistantRetryUserIndex(messageDiv);
+  if (!Number.isFinite(userIndex) || userIndex < 0) {
+    showToast("找不到可重试的上一条消息");
+    return;
+  }
+  const histMsg = conversationHistory[userIndex];
+  const fallbackText = chatMessages
+    ?.querySelector(`.message.user[data-message-index="${userIndex}"]`)
+    ?.dataset?.userText || "";
+  const parts = histMsg?.role === "user"
+    ? extractUserMessageParts(histMsg.content)
+    : { text: fallbackText, attachments: [] };
+  conversationHistory.length = userIndex;
+  clearPendingAttachments();
+  if (Array.isArray(parts.attachments) && parts.attachments.length) {
+    pendingAttachments.push(...parts.attachments);
+    updateAttachmentPreview();
+  }
+  renderMessages();
+  homeView?.classList.add("chatting");
+  chatMessages?.classList.add("active");
+  resetChatAutoScrollLock();
+  if (homeInput) {
+    homeInput.value = "";
+    autoResizeComposerInput();
+  }
+  await saveOrUpdateChatHistory().catch(() => {});
+  await sendMessage(parts.text || "");
+}
+
+function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {}) {
+  const messageDiv = document.getElementById(messageId);
+  if (!messageDiv || !messageDiv._parts) return;
+  const { thinkBlock, answerBody, toolCallsContainer, messageActions } = messageDiv._parts;
+  if (Number.isFinite(retryUserIndex)) {
+    tagAssistantRetryUserIndex(messageId, retryUserIndex);
+  }
+  messageDiv.classList.add("is-error");
+  if (thinkBlock) thinkBlock.hidden = true;
+  if (toolCallsContainer) toolCallsContainer.innerHTML = "";
+  if (messageActions) messageActions.hidden = true;
+  answerBody.innerHTML = "";
+  answerBody.classList.add("assistant-error-card");
+
+  const title = document.createElement("div");
+  title.className = "assistant-error-title";
+  title.textContent = "模型回复失败";
+
+  const body = document.createElement("div");
+  body.className = "assistant-error-text";
+  body.textContent = text || getSafeModelErrorText();
+
+  const footer = document.createElement("div");
+  footer.className = "assistant-error-footer";
+
+  const support = document.createElement("a");
+  support.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Cancri 模型回复失败")}`;
+  support.textContent = "联系支持";
+
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "assistant-error-retry";
+  retryBtn.title = "重新发送上一条消息";
+  retryBtn.setAttribute("aria-label", "重新发送上一条消息");
+  retryBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path>
+    </svg>
+  `;
+  retryBtn.addEventListener("click", () => retryAssistantError(messageDiv));
+
+  footer.appendChild(support);
+  footer.appendChild(retryBtn);
+  answerBody.appendChild(title);
+  answerBody.appendChild(body);
+  answerBody.appendChild(footer);
+  scrollChatToBottom(true);
 }
 
 // 2026-05-17 审查：从助手消息卡片里读出已经流出来的 reasoning / answer 文本。
@@ -9320,6 +9642,7 @@ function exportChatToMarkdown() {
 }
 
 function clearConversation() {
+  exitSharedConversationMode();
   stopVoiceRecognition();
   if (state.activeRequestController) {
     state.activeRequestController.abort(createAbortError("已切换会话。"));
@@ -9356,6 +9679,28 @@ function assistantHistoryMessage(content, metadata) {
   };
 }
 
+const SUPPORT_EMAIL = "3573799137@qq.com";
+
+function createModelErrorMetadata(metadata) {
+  return {
+    ...normalizeAssistantMetadata(metadata),
+    errorCard: true,
+    retryable: true,
+  };
+}
+
+function getSafeModelErrorText(modelId = currentModel) {
+  const modelName = getModelDisplayName(modelId || currentModel);
+  return `${modelName} 这次没有成功完成回复。我们已经隐藏了上游原始错误，避免展示不必要的技术细节或敏感信息。你可以点右侧按钮重新发送，稍后再试，或联系支持邮箱协助排查。`;
+}
+
+function assistantErrorHistoryMessage(metadata, modelId = currentModel) {
+  return assistantHistoryMessage(
+    getSafeModelErrorText(modelId),
+    createModelErrorMetadata(metadata),
+  );
+}
+
 async function saveOrUpdateChatHistory() {
   try {
     let savedChat = null;
@@ -9380,6 +9725,7 @@ async function saveOrUpdateChatHistory() {
 
 async function finalizeConversationTurn() {
   await saveOrUpdateChatHistory();
+  updateChatShareButtonVisibility();
   clearPendingAttachments();
 }
 
@@ -10721,9 +11067,10 @@ async function sendMessage(content) {
   const userContent = attachmentsForSend.length
     ? attachmentToUserContent(effectiveQuery, attachmentsForSend)
     : effectiveQuery;
+  const turnUserIndex = conversationHistory.length;
   const userHistoryMessage = { role: "user", content: userContent };
 
-  createUserMessage(query || effectiveQuery, attachmentsForSend);
+  createUserMessage(query || effectiveQuery, attachmentsForSend, turnUserIndex);
   homeInput.value = "";
   autoResizeComposerInput();
 
@@ -10786,15 +11133,12 @@ async function sendMessage(content) {
         ? "当前模型额度已用完，请切换其他模型再试。"
         : "当前模型暂时不可用，请切换其他模型再试。");
     const assistantMessageId = createAssistantMessage(turnModelMetadata);
-    const detailedUnavailableMessage = `${unavailableMessage}${formatModelUnavailableDebug(turnModelId, currentStatus)}`;
-    updateAssistantMessage(assistantMessageId, {
-      answer: detailedUnavailableMessage,
-      thinking: false,
+    const safeErrorText = getSafeModelErrorText(turnModelId);
+    renderAssistantErrorCard(assistantMessageId, safeErrorText, {
+      retryUserIndex: turnUserIndex,
     });
     pushHistory(userHistoryMessage);
-    pushHistory(
-      assistantHistoryMessage(detailedUnavailableMessage, turnModelMetadata),
-    );
+    pushHistory(assistantErrorHistoryMessage(turnModelMetadata, turnModelId));
     await finalizeConversationTurn();
     if (webSearchEnabledForTurn) setWebSearchEnabled(false);
     return;
@@ -10813,6 +11157,7 @@ async function sendMessage(content) {
   }
 
   const assistantMessageId = createAssistantMessage(turnModelMetadata);
+  tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
   const controller = new AbortController();
   const clearTurnTimeout = startAbortTimer(
     controller,
@@ -11033,56 +11378,31 @@ async function sendMessage(content) {
       setComposerBusy(false);
       return;
     }
-    let failureAnswer = "";
-    if (
-      message.includes("额度已用完") ||
-      message.includes("切换其他模型再试") ||
-      message.includes("切换模型重试") ||
-      message.includes("模型额度已超") ||
-      message.includes("暂时无法访问") ||
-      message.includes("有点忙") ||
-      message.startsWith("当前模型") ||
-      message.includes("请换个模型再试") ||
-      message.includes("请求已取消") ||
-      message.includes("超时")
-    ) {
-      failureAnswer = message;
-    } else {
-      failureAnswer = `抱歉，发送消息时出现错误：${message}`;
-    }
-    // 2026-05-17：abort / idle timeout 失败时优先保留已经流出来的 partial 内容，
-    // 把错误降级为脚注 —— 用户不会再遇到"模型刚写了 2000 字突然变成超时"。
-    // 仅对 abort / 超时 / 主动取消 这类「连接级」失败生效，对配额 / 模型不可
-    // 用 / 上下游 5xx 仍然走原来的覆盖逻辑（这些是上层错误，partial 通常是空）。
-    const isStreamCutOff =
-      message.includes("超时") ||
-      message.includes("请求已取消") ||
-      message.includes("已取消") ||
-      /aborted/i.test(message);
-    const partial = isStreamCutOff
-      ? getPartialAssistantContent(assistantMessageId)
-      : { reasoning: "", answer: "" };
-    if (isStreamCutOff && (partial.answer.trim() || partial.reasoning.trim())) {
-      const footer = `\n\n_[输出在此处中断：${message}]_`;
-      const preservedAnswer =
-        (partial.answer || partial.reasoning) + footer;
-      updateAssistantMessage(assistantMessageId, {
-        reasoning: partial.reasoning,
-        answer: preservedAnswer,
-        thinking: false,
-      });
-      // history 里也只记真正写出来的内容 + 脚注，方便上下文继续追问
-      failureAnswer = preservedAnswer;
-    } else {
+    const isUserStopped =
+      message.includes("已停止生成") ||
+      message.includes("已撤回输入") ||
+      message.includes("已切换会话");
+    const failureAnswer = isUserStopped
+      ? "已停止生成。"
+      : getSafeModelErrorText(turnModelId);
+    if (isUserStopped) {
       updateAssistantMessage(assistantMessageId, {
         answer: failureAnswer,
         thinking: false,
+      });
+    } else {
+      renderAssistantErrorCard(assistantMessageId, failureAnswer, {
+        retryUserIndex: turnUserIndex,
       });
     }
     try {
       pushHistory(userHistoryMessage);
       turnMessages.forEach((historyMessage) => pushHistory(historyMessage));
-      pushHistory(assistantHistoryMessage(failureAnswer, turnModelMetadata));
+      pushHistory(
+        isUserStopped
+          ? assistantHistoryMessage(failureAnswer, turnModelMetadata)
+          : assistantErrorHistoryMessage(turnModelMetadata, turnModelId),
+      );
       await finalizeConversationTurn();
     } catch (saveError) {
       console.error("保存失败回合失败:", saveError);
@@ -11108,6 +11428,10 @@ function buildVideoGenerationPrompt(query) {
 }
 
 async function handleHomeSubmit() {
+  if (state.sharedConversation) {
+    showToast("分享对话为只读");
+    return;
+  }
   const query = String(homeInput?.value || "").trim();
   if ((!query && !pendingAttachments.length) || state.isStreaming) return;
 
@@ -11593,6 +11917,27 @@ homeInput.addEventListener("keydown", (e) => {
     }
   }
 });
+
+
+if (chatMessages) {
+  chatMessages.addEventListener("wheel", (event) => {
+    if (event.deltaY < 0) noteUpwardScrollIntent();
+    else if (isChatNearBottom(48)) resetChatAutoScrollLock();
+  }, { passive: true });
+  chatMessages.addEventListener("touchstart", (event) => {
+    state.touchStartY = event.touches?.[0]?.clientY ?? null;
+  }, { passive: true });
+  chatMessages.addEventListener("touchmove", (event) => {
+    const y = event.touches?.[0]?.clientY;
+    if (Number.isFinite(y) && Number.isFinite(state.touchStartY) && y - state.touchStartY > 16) {
+      noteUpwardScrollIntent();
+      state.touchStartY = y;
+    }
+  }, { passive: true });
+  chatMessages.addEventListener("scroll", () => {
+    if (isChatNearBottom(48)) resetChatAutoScrollLock();
+  }, { passive: true });
+}
 
 sendChatBtn.addEventListener("click", () => {
   if (state.isStreaming) {
@@ -12301,6 +12646,7 @@ refreshNicknameUI();
 setComposerBusy(false);
 updateTokenExpiryNote();
 setInterval(updateTokenExpiryNote, 1000);
+initChatShareButton();
 initAuthOverlay();
 bootstrapModelTelemetry();
 
@@ -12318,7 +12664,8 @@ if (nexusvFooter && typeof IntersectionObserver !== "undefined") {
   updateNexusvFooterVisibility();
 }
 
-initQueryFromUrl();
+if (!initSharedConversationFromHash()) initQueryFromUrl();
+updateChatShareButtonVisibility();
 
 // 加载并渲染聊天记录列表
 renderChatHistoryList();
