@@ -9,21 +9,22 @@
 </p>
 
 <p align="center">
-  <a href="https://nexusvai.github.io/NexusV/">官网</a> ·
-  <a href="https://nexusvai.github.io/NexusV/chat/">对话</a> ·
-  <a href="https://nexusvai.github.io/NexusV/chat/api_docs.html">API 文档</a> ·
-  <a href="https://nexusvai.github.io/NexusV/api_models.html">模型广场</a>
+  <a href="https://www.nexusvai.xyz">官网</a> ·
+  <a href="https://www.nexusvai.xyz/chat/">对话</a> ·
+  <a href="https://www.nexusvai.xyz/chat/api_docs.html">API 文档</a> ·
+  <a href="https://www.nexusvai.xyz/chat/api_models.html">模型广场</a>
 </p>
 
----
 
+---
+[![Star History Chart](https://api.star-history.com/chart?repos=NexusVAI/NexusV&type=date&legend=top-left)](https://www.star-history.com/?repos=NexusVAI%2FNexusV&type=date&legend=top-left)
 ## 简介
 
 NexusV 是一个非商业开源项目，旨在为用户提供统一的多模型 AI 对话体验。通过一个简洁的 Web 界面，您可以同时访问来自不同供应商的数十个大语言模型，在同一会话中切换模型、横向比较输出质量。
 
 **当前接入的上游模型供应方：**
 
-OpenAI · Anthropic · DeepSeek · 阿里云百炼 · 魔搭社区 · 智谱 · MiniMax · 月之暗面 · Mistral · Grok · Google Gemini · 火山引擎（豆包） · 阶跃星辰 · 商汤 · 以及更多第三方中转服务
+阿里云百炼 · 魔搭社区 · 智谱  · 月之暗面 · Mistral · Google Gemini · 星火 · 商汤 · 以及更多第三方中转服务
 
 ## 功能特性
 
@@ -71,7 +72,7 @@ OpenAI · Anthropic · DeepSeek · 阿里云百炼 · 魔搭社区 · 智谱 · 
 
 ### 使用对话
 
-1. 访问 [nexusvai.github.io/NexusV/chat/](https://nexusvai.github.io/NexusV/chat/)
+1. 访问 [https://www.nexusvai.xyz/chat/](https://www.nexusvai.xyz/chat/)
 2. 使用邮箱验证码登录（无需密码）
 3. 在模型选择器中选择模型，开始对话
 
@@ -87,7 +88,7 @@ curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/c
   }'
 ```
 
-API Key 在 [API 管理页](https://nexusvai.github.io/NexusV/chat/api_keys.html) 生成，完整文档见 [API Docs](https://nexusvai.github.io/NexusV/chat/api_docs.html)。
+API Key 在 [API 管理页](https://www.nexusvai.xyz/chat/api_keys.html) 生成，完整文档见 [API Docs](https://www.nexusvai.xyz/chat/api_docs.html)。
 
 ## 项目结构
 
@@ -107,7 +108,7 @@ API Key 在 [API 管理页](https://nexusvai.github.io/NexusV/chat/api_keys.html
 │   ├── components.js       # 共享组件注入
 │   └── theme.js            # 主题切换
 ├── css/                    # 样式
-│   └── 后端/               # ⚠️ 实际是后端代码
+│   └── 后端/               # 不公开
 │       └── supabase/
 │           └── functions/  # Edge Functions 源码
 ├── Logo/                   # 品牌素材
@@ -130,8 +131,6 @@ open index.html
 python -m http.server 8080
 ```
 
-后端 Edge Functions 的开发与部署参见 [Management API Guide](docs/supabase-management-api-guide.md)。
-
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request。请通过 [GitHub Issues](https://github.com/NexusVAI/NexusV/issues) 报告 bug 或提出功能建议。
@@ -143,7 +142,7 @@ python -m http.server 8080
 | GitHub | [github.com/NexusVAI](https://github.com/NexusVAI) |
 | 邮箱 | nexusvai@139.com / nexusvai@foxmail.com |
 | X / Twitter | [@NexusVAI](https://x.com/NexusVAI) |
-| 官网 | [nexusvai.github.io/NexusV](https://nexusvai.github.io/NexusV/) |
+| 官网 | [https://www.nexusvai.xyz/](https://www.nexusvai.xyz/) |
 
 ## Star History
 
