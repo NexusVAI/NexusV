@@ -2921,7 +2921,7 @@ const MAX_TOOL_ROUNDS = 10;
 // 鼓励模型尽快基于已有工具结果给出最终答案，但仍保留继续调用工具的能力。
 const TOOL_REMINDER_AT_ROUND = 3;
 const FETCH_TIMEOUT_MS = 20000;
-const CHAT_REQUEST_TIMEOUT_MS = 25000;
+const CHAT_REQUEST_TIMEOUT_MS = 115000;
 // 2026-05-17 审查：原 CHAT_TURN_TIMEOUT_MS = 180000 是 wall-clock 超时，
 // 包含模型思考 + tool 多轮 + 流式输出全程，导致 Claude Opus thinking
 // 长答 / 多轮 tool 调用经常被砍流（用户感知"输出一半中断"）。改造：
@@ -2931,8 +2931,8 @@ const CHAT_REQUEST_TIMEOUT_MS = 25000;
 // arena 双模并行 fetch（非流式）依然用 CHAT_TURN_TIMEOUT_MS 当 wall。
 const CHAT_TURN_TIMEOUT_MS = 30 * 60 * 1000;
 // SSE 流式空闲超时：常规模型 1-2s 出 chunk，Claude Opus thinking 可能 60s+
-// 才出第一个 reasoning chunk。90s 窗口对各家上游中转都安全。
-const STREAM_IDLE_TIMEOUT_MS = 90 * 1000;
+// 才出第一个 reasoning chunk。110s 窗口对各家上游中转都安全。
+const STREAM_IDLE_TIMEOUT_MS = 110 * 1000;
 const TOOL_CALL_TIMEOUT_MS = 25000;
 const VIDEO_GENERATION_POLL_TIMEOUT_MS = 15 * 60 * 1000;
 
