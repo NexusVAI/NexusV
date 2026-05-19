@@ -1140,16 +1140,16 @@ html[data-theme="light"] .composer:focus-within {
     background: linear-gradient(135deg, rgba(255, 241, 242, 0.98), rgba(254, 226, 226, 0.94)) !important;
     border: 1px solid rgba(239, 68, 68, 0.34) !important;
     border-radius: 18px !important;
-    box-shadow: 0 18px 44px rgba(239, 68, 68, 0.16) !important;
+    box-shadow: none !important;
     color: #7f1d1d !important;
     max-width: min(720px, 92%) !important;
-    padding: 14px 18px !important;
+    padding: 12px 16px !important;
 }
 
 html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-content {
     background: linear-gradient(135deg, rgba(69, 10, 10, 0.82), rgba(127, 29, 29, 0.54)) !important;
     border-color: rgba(248, 113, 113, 0.38) !important;
-    box-shadow: 0 18px 44px rgba(248, 113, 113, 0.13) !important;
+    box-shadow: none !important;
     color: #fecaca !important;
 }
 
@@ -3488,7 +3488,7 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 .message.assistant .message-content .assistant-model-badge {
     font-size: 12px !important;
     line-height: 1.2 !important;
-    padding: 4px 8px !important;
+    padding: 3px 7px !important;
     height: auto !important;
     /* 不重设其他视觉属性（border / bg / shadow），让 cancri_chat.css:5263
        的默认值继续生效。仅锁定可能被 prose 父样式间接放大的三轴。 */
@@ -3505,9 +3505,8 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     margin: 0 !important;
 }
 .message.assistant .message-content .assistant-model-pulse {
-    /* 防 prose 父样式让 pulse 圆点变形 */
-    width: 8px !important;
-    height: 8px !important;
+    display: none !important;
+    animation: none !important;
 }
 
 /* ───────────────────────────────────────────────────────────
