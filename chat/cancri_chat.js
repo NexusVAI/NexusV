@@ -1421,7 +1421,7 @@ function isProPlusGateModel(modelId) {
 // 返回 null 表示通过；否则返回原因 code：
 //   • 'pro_only'       FREE 用户调 GPT-5.5 系列 / GPT-5.4 Mini（硬挡，不论池/日配额）
 //   • 'pro_plus_only'  FREE 或 Pro（非 grandfather）调 vip 模型（Opus / Gemini Pro / 视频）
-//   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何 PAID 模型）
+//   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何模型）
 //   • 'daily_limit'    当日 15 次 PAID 试用用完（2026-05-17 Phase A：25 → 15）
 function getQuotaBlockReason(modelId) {
   // 2026-05-18 vip 档位闸门：与 chat-gateway cancri_consume_paid_quota_v2 同步。
@@ -1444,9 +1444,9 @@ function getQuotaBlockReason(modelId) {
   // 后端 chat-gateway enforceQuotaGate 仍会真正执法，前端这层是 UX 预判。
   if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
-  if (!isPaidGateModel(modelId)) return null;             // FREE 用户调 FREE 模型 OK
-  // FREE 用户 + PAID 模型：看池 + 日配额（今日 PAID 试用还在则不挡）
   if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
+  if (!isPaidGateModel(modelId)) return null;
+  // FREE 用户 + PAID 模型：看当日 PAID 试用次数（FREE 模型不占 15 次）
   if (quotaState.dailyPaidRemaining !== null && quotaState.dailyPaidRemaining <= 0) return "daily_limit";
   return null;
 }
