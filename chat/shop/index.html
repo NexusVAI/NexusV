@@ -195,6 +195,96 @@
     }
     .guarantee-card strong { color: var(--warn); }
 
+    .promo-section {
+      margin: 0 0 36px;
+      padding: 24px;
+      background:
+        linear-gradient(135deg, rgba(91, 140, 255, 0.10), rgba(217, 119, 87, 0.05)),
+        var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 4px);
+    }
+    .promo-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .promo-head h2 {
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+    .promo-head p {
+      color: var(--ink-3);
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+    .promo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+    }
+    .promo-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 154px;
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--line-2);
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .promo-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(217, 119, 87, 0.35);
+      background: rgba(255,255,255,0.045);
+    }
+    .promo-tag {
+      width: fit-content;
+      margin-bottom: 10px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: rgba(217, 119, 87, 0.10);
+      color: var(--clay);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .promo-card h3 {
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-size: 15px;
+    }
+    .promo-card p {
+      flex: 1;
+      color: var(--ink-3);
+      font-size: 12.5px;
+      line-height: 1.65;
+    }
+    .promo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 14px;
+      color: var(--clay);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .promo-link::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+    .promo-card:hover .promo-link::after { transform: translateX(3px); }
+    @media (max-width: 560px) {
+      .promo-head {
+        display: block;
+      }
+      .promo-section {
+        padding: 20px;
+      }
+    }
+
     /* ─── Steps ─── */
     .steps {
       display: grid;
@@ -495,6 +585,35 @@
         <strong>质保说明：</strong>质保首登，不包含买家登录后自行改密、绑定、风控、多人共享或二次转卖导致的问题。
       </div>
     </div>
+
+    <section class="promo-section" aria-label="NexusV 推荐服务">
+      <div class="promo-head">
+        <div>
+          <h2>更多 NexusV 服务</h2>
+          <p>除了 Windsurf 账号，也可以直接使用我们的 API、在线 Chat 服务和 GTA5 AI NPC 模组。</p>
+        </div>
+      </div>
+      <div class="promo-grid">
+        <a class="promo-card" href="../api_apply.html">
+          <span class="promo-tag">API</span>
+          <h3>NexusV API 接入</h3>
+          <p>面向开发者和自动化工作流，统一接入多模型能力，适合站点、机器人和内部工具。</p>
+          <span class="promo-link">申请 API</span>
+        </a>
+        <a class="promo-card" href="../">
+          <span class="promo-tag">CHAT</span>
+          <h3>在线 AI Chat 网站</h3>
+          <p>无需部署，打开即用。支持多模型对话、创作、代码和日常生产力场景。</p>
+          <span class="promo-link">进入 Chat</span>
+        </a>
+        <a class="promo-card" href="../../article.html?id=news3">
+          <span class="promo-tag">GTA5 MOD</span>
+          <h3>GTA5 AI NPC 模组</h3>
+          <p>让洛圣都 NPC 拥有 AI 对话与互动能力，支持本地模型和云端接口配置。</p>
+          <span class="promo-link">查看模组</span>
+        </a>
+      </div>
+    </section>
 
     <!-- Steps -->
     <div class="steps">
