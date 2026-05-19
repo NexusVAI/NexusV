@@ -26,7 +26,7 @@ const esc = (s) => {
 // UI 隐藏。下面 9 条来自用户 2026-05-17 09:50 UTC+08 指令。
 const HIDE_IDS = new Set([
     "grok-imagine-image-lite",
-    "gpt-image-2",
+    "gpt-image-2-all",
     "tongyi-xiaomi-analysis-pro",
     "gui-plus",
     "mistral-medium-3-5",

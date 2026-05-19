@@ -25,62 +25,7 @@ function esc(s) {
     return d.innerHTML;
 }
 
-// 时间戳格式化（缺省 — 而非空串），用于设备指纹的 first_seen / last_seen
-function fmtTime(iso) {
-    if (!iso) return "—";
-    try {
-        return new Date(iso).toLocaleString("zh-CN", { hour12: false });
-    } catch {
-        return String(iso);
-    }
-}
-
-// 把可能的 jsonb 数组渲染成逗号分隔字符串（处理 string[] / null / 单字符串）
-function fmtArr(v) {
-    if (v == null) return "—";
-    if (Array.isArray(v)) return v.length ? v.map((x) => String(x)).join(", ") : "—";
-    return String(v);
-}
-
-// 渲染 screen JSONB → 形如 "1920×1080@2x · 24bit"
-function fmtScreen(s) {
-    if (!s || typeof s !== "object") return "—";
-    const w = s.w || 0, h = s.h || 0;
-    const ratio = s.ratio ? "@" + Number(s.ratio).toFixed(2).replace(/\.?0+$/, "") + "x" : "";
-    const depth = s.depth ? " · " + s.depth + "bit" : "";
-    return (w && h) ? (w + "\u00d7" + h + ratio + depth) : "—";
-}
-
-// "今天注册" / "3 天" / "2 周" / "5 个月"
-function fmtAgeDays(days) {
-    if (days == null || days < 0) return "—";
-    if (days === 0) return "今天注册";
-    if (days < 7) return days + " 天";
-    if (days < 30) return Math.floor(days / 7) + " 周";
-    if (days < 365) return Math.floor(days / 30) + " 个月";
-    return Math.floor(days / 365) + " 年";
-}
-
-// 字节量级简化
-function fmtTokens(n) {
-    if (n == null) return "—";
-    if (n < 1000) return String(n);
-    if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
-    return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
-}
-
-// 拼 IP 地理位置：优先国家+城市+ISP，缺啥省啥
-function fmtIpGeo(geo) {
-    if (!geo) return null;
-    const parts = [];
-    const country = geo.country_name || geo.country;
-    if (country) parts.push(country);
-    if (geo.region && geo.region !== country) parts.push(geo.region);
-    if (geo.city && geo.city !== geo.region) parts.push(geo.city);
-    const loc = parts.join(" · ");
-    const isp = geo.isp || geo.org;
-    return loc + (isp ? "（" + isp + "）" : "");
-}
+const { fmtTime, fmtArr, fmtScreen, fmtAgeDays, fmtTokens, fmtIpGeo } = window.AdminFormatters;
 
 // 用户上下文摘要：注册多久 / 历史订单 / 用量 / 是否封禁
 function renderUserContext(o) {

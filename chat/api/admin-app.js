@@ -35,55 +35,7 @@ const esc = (s) => {
   return d.innerHTML;
 };
 
-// 2026-05-16：渲染 helpers（与 admin-orders-app.js 风格一致，方便对照阅读）
-function fmtAgeDays(days) {
-  if (days == null || days < 0) return "—";
-  if (days === 0) return "今天注册";
-  if (days < 7) return days + " 天";
-  if (days < 30) return Math.floor(days / 7) + " 周";
-  if (days < 365) return Math.floor(days / 30) + " 个月";
-  return Math.floor(days / 365) + " 年";
-}
-
-function fmtTokens(n) {
-  if (n == null) return "—";
-  if (n < 1000) return String(n);
-  if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
-  return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
-}
-
-function fmtArr(v) {
-  if (v == null) return "—";
-  if (Array.isArray(v)) return v.length ? v.map((x) => String(x)).join(", ") : "—";
-  return String(v);
-}
-
-function fmtScreen(s) {
-  if (!s || typeof s !== "object") return "—";
-  const w = s.w || 0, h = s.h || 0;
-  const ratio = s.ratio ? "@" + Number(s.ratio).toFixed(2).replace(/\.?0+$/, "") + "x" : "";
-  const depth = s.depth ? " · " + s.depth + "bit" : "";
-  return (w && h) ? (w + "\u00d7" + h + ratio + depth) : "—";
-}
-
-function fmtTime(iso) {
-  if (!iso) return "—";
-  try { return new Date(iso).toLocaleString("zh-CN", { hour12: false }); }
-  catch { return String(iso); }
-}
-
-// 拼地理 "中国 上海 上海 · 中国电信"
-function fmtIpGeo(geo) {
-  if (!geo) return "";
-  const parts = [];
-  const country = geo.country_name || geo.country;
-  if (country) parts.push(country);
-  if (geo.region && geo.region !== country) parts.push(geo.region);
-  if (geo.city && geo.city !== geo.region) parts.push(geo.city);
-  const loc = parts.join(" · ");
-  const isp = geo.isp || geo.org;
-  return loc + (isp ? "（" + isp + "）" : "");
-}
+const { fmtAgeDays, fmtTokens, fmtArr, fmtScreen, fmtTime, fmtIpGeo } = window.AdminFormatters;
 
 // 风险信号 pills（在邮箱列下显示，吸引管理员注意）。
 // 顺序按严重程度由重到轻：当前封禁 > 多账号 > 重复邮箱 > VPN > 同 IP > 代理 > 机房
