@@ -34,7 +34,7 @@ jobs:
       - name: Inject runtime config
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://diusqgphvybnzazgopor.supabase.co' }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY' }}
         run: |
           python - <<'PY'
           import json
