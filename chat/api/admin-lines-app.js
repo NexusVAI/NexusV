@@ -46,9 +46,9 @@ async function callGW(payload, session) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer " + session.access_token,
+      apikey: window.__SUPABASE_ANON_KEY__,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, __auth_token: session.access_token }),
   });
   const data = await resp.json().catch(() => ({}));
   return { ok: resp.ok, status: resp.status, data };
