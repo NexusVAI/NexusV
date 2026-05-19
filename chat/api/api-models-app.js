@@ -158,7 +158,6 @@ async function load() {
             headers: {
                 "Content-Type": "application/json",
                 apikey: ANON,
-                Authorization: "Bearer " + ANON,
             },
             body: JSON.stringify({ endpoint: "model_public_catalog" }),
         });
