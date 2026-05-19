@@ -3742,6 +3742,18 @@ async function renderChatHistoryList() {
       item.className =
         "recent-item" + (isPinned ? " recent-item-pinned" : "");
 
+      const modelId = String(chat.model || "").trim();
+      const modelMeta = modelId ? getModelMeta(modelId) : null;
+      const modelIcon = document.createElement("img");
+      modelIcon.className = "recent-model-icon";
+      modelIcon.src = modelMeta?.iconPath || "./openai.svg";
+      modelIcon.alt = "";
+      modelIcon.loading = "lazy";
+      modelIcon.decoding = "async";
+      modelIcon.title = modelId
+        ? `${modelMeta?.displayName || modelId} · ${modelMeta?.brand || "AI"}`
+        : "未知模型";
+
       const titleSpan = document.createElement("span");
       titleSpan.className = "recent-item-title";
       titleSpan.textContent = chat.title || "新对话";
@@ -3756,6 +3768,7 @@ async function renderChatHistoryList() {
         showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
       });
 
+      item.appendChild(modelIcon);
       item.appendChild(titleSpan);
       item.appendChild(actionsBtn);
       item.addEventListener("click", () => loadChat(chat.id));
