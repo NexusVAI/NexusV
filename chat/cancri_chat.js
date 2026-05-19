@@ -1332,7 +1332,6 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
-  "gpt-5.5-xhigh",
   "gpt-5.3-codex",
   "gpt-5.2",
   "grok-4.20-0309",
@@ -1355,7 +1354,6 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
-  "gpt-5.5-xhigh",
   "gemini-3.1-pro",
   "gpt-image-2-all",
 ]);
@@ -1454,7 +1452,7 @@ function getQuotaBlockReason(modelId) {
   if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）
-  if (modelId === "gpt-5.5-welfare") return null;
+  if (modelId === "gpt-5.5-welfare" || modelId === "gpt-5.5-xhigh") return null;
   // 池耗尽 → 所有模型都不让用（含 free 模型），与后端 cancri_consume_paid_quota_v2 对齐
   if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
   if (!isPaidGateModel(modelId)) return null;
@@ -1869,8 +1867,8 @@ const MODEL_CATALOG = [
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "gpt-5.5-xhigh", "name": "GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "gpt-5.5-welfare", "name": "【福利】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.5-xhigh", "name": "【福利B】GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.5-welfare", "name": "【福利A】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   // Google AI Studio free models
   {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
