@@ -1373,6 +1373,11 @@ let quotaState = {
   isGrandfathered: false,     // Phase A 老用户豁免 vip 模型
   freePoolRemaining: null,    // null = 未知（不强制阻挡）
   dailyPaidRemaining: null,   // null = 未知（不强制阻挡）
+  // 2026-05-19：加油包余额。后端 cancri_consume_paid_quota_v2 FREE 分支
+  // 在 free_pool / 当日 15 次试用耗尽后会回退 topup 桶（同日 SQL 修复），
+  // 所以前端 pool_exhausted / daily_limit 预阻挡也必须放行 topup>0 的用户，
+  // 否则 chat 页 UI 上还是横杠所有模型。null = 未知（不阻挡）。
+  topupBalance: null,
 };
 let quotaStateFetchInflight = null;
 const QUOTA_STATE_TTL_MS = 30 * 1000;
@@ -1453,11 +1458,28 @@ function getQuotaBlockReason(modelId) {
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）
   if (modelId === "gpt-5.5-welfare" || modelId === "gpt-5.5-xhigh") return null;
+  // 2026-05-19：FREE 用户买了加油包后，后端 cancri_consume_paid_quota_v2
+  // 会在 free_pool / 当日 15 次耗尽时回退 user_topup_credits。前端预阻挡
+  // 必须同步放行，否则 chat 页 UI 把所有模型横杠用户根本点不动 send。
+  // 注意 model-tier 闸门（pro_only / pro_plus_only）已在上面处理过——
+  // 加油包不解锁档位，只补 token 配额。
+  const hasTopup =
+    quotaState.topupBalance !== null && quotaState.topupBalance > 0;
   // 池耗尽 → 所有模型都不让用（含 free 模型），与后端 cancri_consume_paid_quota_v2 对齐
-  if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
+  if (
+    !hasTopup &&
+    quotaState.freePoolRemaining !== null &&
+    quotaState.freePoolRemaining <= 0
+  )
+    return "pool_exhausted";
   if (!isPaidGateModel(modelId)) return null;
   // FREE 用户 + PAID 模型：看当日 PAID 试用次数（FREE 模型不占 15 次）
-  if (quotaState.dailyPaidRemaining !== null && quotaState.dailyPaidRemaining <= 0) return "daily_limit";
+  if (
+    !hasTopup &&
+    quotaState.dailyPaidRemaining !== null &&
+    quotaState.dailyPaidRemaining <= 0
+  )
+    return "daily_limit";
   return null;
 }
 
@@ -1529,6 +1551,13 @@ async function refreshQuotaState(force) {
         quotaState.dailyPaidRemaining = data.daily_paid
           ? Number(data.daily_paid.remaining)
           : null;
+        // 2026-05-19：cancri_get_quota_status_v2 顶层返 topup_balance，
+        // FREE 分支配额耗尽时后端会回退到 topup 桶，前端预阻挡也同步放行。
+        quotaState.topupBalance =
+          typeof data.topup_balance === "number" ||
+          typeof data.topup_balance === "string"
+            ? Number(data.topup_balance) || 0
+            : null;
         quotaState.fetchedAt = Date.now();
       }
       quotaStateFetchInflight = null;
