@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>查询订单 · Windsurf Pro Shop</title>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+  />
+  <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    @font-face {
+      font-family: "Anthropic Sans";
+      src: url("../fonts/AnthropicSans-Roman-Variable.ttf") format("truetype");
+      font-weight: 100 900; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: "Anthropic Sans";
+      src: url("../fonts/AnthropicSans-Italic-Variable.ttf") format("truetype");
+      font-weight: 100 900; font-style: italic; font-display: swap;
+    }
+
+    :root {
+      --bg: #0a0a0a; --bg-1: #111111; --bg-2: #161616;
+      --line: #1f1f1f; --line-2: #2a2a2a;
+      --ink: #ededec; --ink-2: #a3a3a0; --ink-3: #6f6f6c;
+      --clay: #d97757; --clay-2: #b85a3e;
+      --ok: #4ade80; --warn: #fbbf24; --err: #f87171;
+      --sans: "Anthropic Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --serif: "Instrument Serif", Georgia, serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+      --radius: 14px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--sans); background: var(--bg); color: var(--ink);
+      min-height: 100vh; line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--clay); text-decoration: none; }
+
+    .topnav {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px; border-bottom: 1px solid var(--line);
+      max-width: 520px; margin: 0 auto;
+    }
+    .topnav .brand { font-weight: 600; font-size: 15px; color: var(--ink); }
+    .topnav a { font-size: 13px; color: var(--ink-2); }
+
+    .container { max-width: 520px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    h1 {
+      font-family: var(--serif); font-size: 1.8rem; font-weight: 400;
+      text-align: center; margin-bottom: 32px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-size: 13px; font-weight: 500;
+      color: var(--ink-2); margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%; padding: 10px 14px; background: var(--bg-2);
+      border: 1px solid var(--line-2); border-radius: 8px;
+      color: var(--ink); font-size: 14px; font-family: var(--sans); outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--clay); }
+
+    .btn-primary {
+      display: block; width: 100%; padding: 12px; background: var(--clay);
+      color: #fff; border: none; border-radius: 10px; font-size: 15px;
+      font-weight: 600; font-family: var(--sans); cursor: pointer;
+      transition: background 0.2s; margin-top: 20px;
+    }
+    .btn-primary:hover { background: var(--clay-2); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .result-card {
+      display: none; margin-top: 24px; padding: 24px;
+      border-radius: var(--radius); font-size: 14px;
+    }
+    .result-card.show { display: block; }
+    .result-card.pending {
+      background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+    .result-card.approved {
+      background: rgba(74, 222, 128, 0.06); border: 1px solid rgba(74, 222, 128, 0.25);
+    }
+    .result-card.rejected {
+      background: rgba(248, 113, 113, 0.06); border: 1px solid rgba(248, 113, 113, 0.25);
+    }
+    .result-card h3 { margin-bottom: 12px; font-size: 15px; }
+    .result-card.pending h3 { color: var(--warn); }
+    .result-card.approved h3 { color: var(--ok); }
+    .result-card.rejected h3 { color: var(--err); }
+    .cred-row {
+      display: flex; justify-content: space-between; padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .cred-row:last-child { border-bottom: none; }
+    .cred-label { color: var(--ink-2); }
+    .cred-value {
+      font-family: var(--mono); font-weight: 600;
+      -webkit-user-select: all; user-select: all;
+    }
+    .meta-text { margin-top: 10px; font-size: 12px; color: var(--ink-3); }
+
+    .history-list { margin-top: 48px; }
+    .history-list h2 { font-size: 14px; color: var(--ink-2); margin-bottom: 12px; }
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: var(--bg-1); border: 1px solid var(--line);
+      border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+      transition: border-color 0.2s; font-size: 13px;
+    }
+    .history-item:hover { border-color: var(--clay); }
+    .history-item .oid { font-family: var(--mono); color: var(--clay); }
+    .history-item .ts { color: var(--ink-3); font-size: 11px; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      padding: 10px 20px; border-radius: 10px; background: var(--bg-2);
+      border: 1px solid var(--line-2); color: var(--ink); font-size: 13px;
+      opacity: 0; transition: all 0.3s; z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.error { border-color: rgba(248,113,113,0.4); color: var(--err); }
+  </style>
+</head>
+<body>
+  <nav class="topnav">
+    <span class="brand">Windsurf Pro Shop</span>
+    <a href="./">购买账号</a>
+    <a href="../">返回主站</a>
+  </nav>
+
+  <div class="container">
+    <h1>查询 Windsurf $200 Pro 账号订单</h1>
+
+    <div class="form-group">
+      <label for="queryOrderId">订单号</label>
+      <input type="text" id="queryOrderId" placeholder="WS-XXXXXXXX" />
+    </div>
+    <div class="form-group">
+      <label for="queryToken">查询密钥</label>
+      <input type="text" id="queryToken" placeholder="提交订单时获得的密钥" />
+    </div>
+    <button class="btn-primary" id="queryBtn">查询订单</button>
+
+    <div class="result-card" id="resultCard"></div>
+
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../cancri_config.js?v=2026-05-19-shop-product"></script>
+  <script src="./shop-order-app.js?v=2026-05-19-shop-product"></script>
+</body>
+</html>
