@@ -1345,6 +1345,8 @@ const PAID_GATE_IDS = new Set([
   "minimax-m2.7",
   "kimi-k2.6",
   "gpt-image-2-all",
+  "claude-haiku-4-5-20251001",
+  "claude-haiku-4-5-20251001-thinking",
 ]);
 // 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
 // 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
@@ -1451,6 +1453,8 @@ function getQuotaBlockReason(modelId) {
   // 后端 chat-gateway enforceQuotaGate 仍会真正执法，前端这层是 UX 预判。
   if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
+  // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）
+  if (modelId === "gpt-5.5-welfare") return null;
   // 池耗尽 → 所有模型都不让用（含 free 模型），与后端 cancri_consume_paid_quota_v2 对齐
   if (quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
   if (!isPaidGateModel(modelId)) return null;
@@ -1786,6 +1790,8 @@ const MODEL_SELECTION_MIGRATIONS = {
   "gpt-5.5-c": DEFAULT_MODEL_ID,
   "claude-opus-4-5": DEFAULT_MODEL_ID,
   "claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
+  "claude-opus-4-6-thinking": DEFAULT_MODEL_ID,
+  "claude-sonnet-4-6-thinking": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "image-fast": DEFAULT_MODEL_ID,
   "wan2.7-image-pro": DEFAULT_MODEL_ID,
@@ -1847,11 +1853,9 @@ const MODEL_CATALOG = [
   {"id": "gpt-4", "name": "GPT-4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "claude-opus-4-6-thinking", "name": "Claude Opus 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "claude-sonnet-4-6-thinking", "name": "Claude Sonnet 4.6 (Thinking)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
@@ -1866,6 +1870,7 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-xhigh", "name": "GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.5-welfare", "name": "【福利】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   // Google AI Studio free models
   {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
