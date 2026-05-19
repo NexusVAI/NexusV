@@ -1135,6 +1135,29 @@ html[data-theme="light"] .composer:focus-within {
     border: 0 !important;
     padding: 0 !important;
 }
+
+.chat-messages .message.assistant.is-error .message-content {
+    background: linear-gradient(135deg, rgba(255, 241, 242, 0.98), rgba(254, 226, 226, 0.94)) !important;
+    border: 1px solid rgba(239, 68, 68, 0.34) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 18px 44px rgba(239, 68, 68, 0.16) !important;
+    color: #7f1d1d !important;
+    max-width: min(720px, 92%) !important;
+    padding: 14px 18px !important;
+}
+
+html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-content {
+    background: linear-gradient(135deg, rgba(69, 10, 10, 0.82), rgba(127, 29, 29, 0.54)) !important;
+    border-color: rgba(248, 113, 113, 0.38) !important;
+    box-shadow: 0 18px 44px rgba(248, 113, 113, 0.13) !important;
+    color: #fecaca !important;
+}
+
+.chat-messages .message.assistant.is-error .message-actions {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
 /* code/pre 容器样式块已移至 §17 (line ~3140+)，让 Claude .prose 1:1 统一接管。
    pre overflow-x: auto 在 §17 line 3178 已包含。 */
 

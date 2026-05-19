@@ -1784,6 +1784,8 @@ const MODEL_SELECTION_MIGRATIONS = {
   "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
   "gpt-5.5-b": DEFAULT_MODEL_ID,
   "gpt-5.5-c": DEFAULT_MODEL_ID,
+  "claude-opus-4-5": DEFAULT_MODEL_ID,
+  "claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
   "image-precise": DEFAULT_MODEL_ID,
   "image-fast": DEFAULT_MODEL_ID,
   "wan2.7-image-pro": DEFAULT_MODEL_ID,
@@ -1854,7 +1856,6 @@ const MODEL_CATALOG = [
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
-  {"id": "claude-opus-4-6-thinking-medium", "name": "Claude Opus 4.6 自适应思维", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "freeLimitNote": "免费共享 10/h，付费不限"},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
@@ -9506,7 +9507,12 @@ function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {
   messageDiv.classList.add("is-error");
   if (thinkBlock) thinkBlock.hidden = true;
   if (toolCallsContainer) toolCallsContainer.innerHTML = "";
-  if (messageActions) messageActions.hidden = true;
+  if (messageActions) {
+    messageActions.hidden = true;
+    messageActions.setAttribute("aria-hidden", "true");
+    messageActions.innerHTML = "";
+    messageActions.remove();
+  }
   answerBody.innerHTML = "";
   answerBody.classList.add("assistant-error-card");
 
@@ -9535,11 +9541,12 @@ function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {
       <path d="M12 20h9"></path>
       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path>
     </svg>
+    <span>重新发送</span>
   `;
   retryBtn.addEventListener("click", () => retryAssistantError(messageDiv));
 
-  footer.appendChild(support);
   footer.appendChild(retryBtn);
+  footer.appendChild(support);
   answerBody.appendChild(title);
   answerBody.appendChild(body);
   answerBody.appendChild(footer);
@@ -9691,7 +9698,7 @@ function createModelErrorMetadata(metadata) {
 
 function getSafeModelErrorText(modelId = currentModel) {
   const modelName = getModelDisplayName(modelId || currentModel);
-  return `${modelName} 这次没有成功完成回复。我们已经隐藏了上游原始错误，避免展示不必要的技术细节或敏感信息。你可以点右侧按钮重新发送，稍后再试，或联系支持邮箱协助排查。`;
+  return `${modelName} 这次暂时未能完成回复。你可以重新发送，稍后再试，或联系支持邮箱协助排查。`;
 }
 
 function assistantErrorHistoryMessage(metadata, modelId = currentModel) {
