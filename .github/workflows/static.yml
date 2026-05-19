@@ -1,0 +1,190 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main", "master"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Inject runtime config
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://diusqgphvybnzazgopor.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          supabase_url = os.environ.get("SUPABASE_URL", "").strip() or "https://diusqgphvybnzazgopor.supabase.co"
+          supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+          if not supabase_url:
+              print("::error::GitHub Secret SUPABASE_URL is missing")
+              sys.exit(1)
+          if not supabase_anon_key:
+              print("::error::GitHub Secret SUPABASE_ANON_KEY is missing")
+              sys.exit(1)
+
+          target = Path("chat/cancri_config.js")
+          config = target.read_text(encoding="utf-8")
+          config, url_count = re.subn(
+              r"window\.__SUPABASE_URL__\s*=\s*[^;]+;",
+              f"window.__SUPABASE_URL__ = {json.dumps(supabase_url)};",
+              config,
+              count=1,
+          )
+          config, key_count = re.subn(
+              r"window\.__SUPABASE_ANON_KEY__\s*=\s*[^;]+;",
+              f"window.__SUPABASE_ANON_KEY__ = {json.dumps(supabase_anon_key)};",
+              config,
+              count=1,
+          )
+          if url_count != 1:
+              print("::error::SUPABASE_URL assignment was not replaced")
+              sys.exit(1)
+          if key_count != 1:
+              print("::error::SUPABASE_ANON_KEY assignment was not replaced")
+              sys.exit(1)
+          target.write_text(config, encoding="utf-8")
+          PY
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Build Pages artifact
+        run: |
+          set -euo pipefail
+          rm -rf pages-dist
+          mkdir -p pages-dist/css pages-dist/js pages-dist/chat "pages-dist/chat AI"
+
+          cp -a index.html about.html article.html pages-dist/
+          cp -a Logo pages-dist/Logo
+          find css -maxdepth 1 -type f -print0 | xargs -0 -I{} cp "{}" pages-dist/css/
+          cp -a js/. pages-dist/js/
+
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          src = Path("chat")
+          dst = Path("pages-dist/chat")
+          for name in [
+              "index.html",
+              "turnstile_check.html",
+              "image.html",
+              "orders.html",
+              "pricing.html",
+              "cancri_config.js",
+              "cancri_chat.css",
+              "cancri_chat.js",
+              "cancri_login_captcha.js",
+              "cancri_announcement.js",
+              "cancri_arena.css",
+              "cancri_arena.js",
+              "cancri_katex_fallback.js",
+              "cancri_orb_loader.js",
+              # 2026-05-18: Claude 1:1 复刻交互层 + 额度面板 + logo 主题切换。
+              # 这三个文件是 index.html 直接 <script>/<link> 引用的，过去
+              # 漏在白名单外，导致所有相关修改（cascade hover bridge / quota
+              # 面板 / 黑白 logo 主题同步）都不会随 GHA 部署到 GitHub Pages。
+              "claude_ui.js",
+              "claude.css",
+              "claude_quota_ui.js",
+              "cancri_logo_theme.js",
+              # API portal landing pages (live at /chat/api_*.html)
+              "api_apply.html",
+              "api_docs.html",
+              "api_keys.html",
+              "api_models.html",
+          ]:
+              candidate = src / name
+              if candidate.exists():
+                  shutil.copy2(candidate, dst / name)
+          for svg in src.glob("*.svg"):
+              shutil.copy2(svg, dst / svg.name)
+          for folder in ["styles", "js"]:
+              folder_src = src / folder
+              if folder_src.exists():
+                  shutil.copytree(folder_src, dst / folder, dirs_exist_ok=True)
+          # chat/api/ — admin panel pages + portal landing + shared chrome.
+          # The admin_* pages are only useful to ADMIN_USER_IDS but the
+          # access check is server-side (chat-gateway admin_check), so it's
+          # safe to ship the static HTML to all visitors.
+          api_src = src / "api"
+          if api_src.exists():
+              shutil.copytree(api_src, dst / "api", dirs_exist_ok=True)
+          katex = src / "katex"
+          if katex.exists():
+              shutil.copytree(katex, dst / "katex", dirs_exist_ok=True)
+          shop_src = src / "shop"
+          if shop_src.exists():
+              shutil.copytree(shop_src, dst / "shop", dirs_exist_ok=True)
+
+          # Backward-compat redirect stub: old /chat%20AI/cancri_chat_ui_v_3.html
+          # bookmarks and pre-existing magic-link emails still resolve.
+          # Renders an HTML page that immediately forwards to /chat/ + same
+          # query string, with both <meta refresh> and JS for robustness.
+          legacy = Path("pages-dist/chat AI")
+          legacy.mkdir(parents=True, exist_ok=True)
+          (legacy / "cancri_chat_ui_v_3.html").write_text(
+              "<!doctype html><html lang=\"zh-CN\"><head>"
+              "<meta charset=\"utf-8\">"
+              "<title>Redirecting…</title>"
+              "<meta http-equiv=\"refresh\" content=\"0;url=/chat/\">"
+              "<script>location.replace('/chat/' + location.search + location.hash);</script>"
+              "</head><body>Redirecting to <a href=\"/chat/\">/chat/</a></body></html>\n",
+              encoding="utf-8",
+          )
+          PY
+
+          # Secret-leak guard: catch ACTUAL values, not name references.
+          # `modelscope-proxy/chat-history/web-search` are valid Edge Function
+          # names that appear in code comments + cancri_chat.js error paths;
+          # they are NOT secrets. We only fail the build if the artifact
+          # contains real PROXY_AUTH_TOKEN value patterns or raw API keys.
+          if grep -R -n -E '(PROXY_AUTH_TOKEN\s*[:=]\s*["'"'"']ms?-[A-Za-z0-9_-]{8})|(__PROXY_TOKEN__\s*=\s*["'"'"'][^"'"'"']{4,})|x-proxy-token:\s*[A-Za-z0-9]' pages-dist; then
+            echo "::error::Pages artifact contains real proxy/auth secret values"
+            exit 1
+          fi
+          # Hardcoded API key formats from any provider (cancri_sk_*, ms-*, sk-*, fe_oa_*).
+          # Looking for the FORMAT of a real secret being shipped, not just name occurrences.
+          if grep -R -n -E '(cancri_sk_[a-f0-9]{32,})|(["'"'"'](ms|sk-or-v1)-[A-Za-z0-9_-]{16,})|(fe_oa_[a-f0-9]{16,})' pages-dist; then
+            echo "::error::Pages artifact contains a hard-coded API key value"
+            exit 1
+          fi
+          if find pages-dist \( -path '*/supabase/*' -o -path '*/后端/*' -o -path '*/备份/*' -o -path '*/.github/*' -o -path '*/supabase-cli/*' \) -print -quit | grep -q .; then
+            echo "::error::Pages artifact contains private deployment or backup paths"
+            exit 1
+          fi
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-dist
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
