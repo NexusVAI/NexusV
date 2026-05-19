@@ -1327,6 +1327,9 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.5-high",
   "gpt-5.5-xhigh",
   "gpt-5.3-codex",
+  "gpt-5.2",
+  "grok-4.20-0309",
+  "mistral-large-2512",
   "gemini-3.1-pro",
   "gemini-3.1-pro-preview",
   "glm-5.1",
@@ -1334,6 +1337,7 @@ const PAID_GATE_IDS = new Set([
   "qwen3.6-max-preview",
   "minimax-m2.7",
   "kimi-k2.6",
+  "gpt-image-2-all",
 ]);
 // 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
 // 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
@@ -1344,6 +1348,7 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-5.5-high",
   "gpt-5.5-xhigh",
   "gemini-3.1-pro",
+  "gpt-image-2-all",
 ]);
 
 // 2026-05-18 fix：tier 默认 null（未知），而不是 "free"。
@@ -1397,6 +1402,7 @@ seedQuotaStateFromTierCache();
 function isPaidGateModel(modelId) {
   if (PAID_GATE_IDS.has(modelId)) return true;
   const meta = getModelMeta(modelId);
+  if (meta && (meta.costTier === "expensive" || meta.costTier === "vip")) return true;
   if (meta && (meta.brand || "").toLowerCase() === "anthropic") return true;
   return false;
 }
@@ -1772,7 +1778,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "image-fast": DEFAULT_MODEL_ID,
   "gpt-image-2-api456": "gpt-image-2",
   "wan2.7-image-pro": DEFAULT_MODEL_ID,
-  "sensenova-u1-fast": DEFAULT_MODEL_ID,
   "wan2.5-t2i-preview": DEFAULT_MODEL_ID,
   "wan2.6-t2i": DEFAULT_MODEL_ID,
   "z-image-turbo": DEFAULT_MODEL_ID,
@@ -1839,6 +1844,7 @@ const MODEL_CATALOG = [
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "factorypub"},
+  {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "claude-opus-4-6-thinking-medium", "name": "Claude Opus 4.6 自适应思维", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "freeLimitNote": "免费共享 10/h，付费不限"},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
@@ -1897,7 +1903,7 @@ const MODEL_CATALOG = [
   {"id": "qwen-coder-turbo", "name": "Qwen Coder Turbo", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-coder-flash-2025-07-28", "name": "Qwen3 Coder Flash (0728)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen3.6-35b-a3b", "name": "Qwen 3.6 35B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "sensenova-6.7-flash-lite", "name": "SenseNova 6.7 Flash Lite", "brand": "SenseNova", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "sensenova-6.7-flash-lite", "name": "SenseNova 6.7 Flash Lite", "brand": "SenseNova", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "glm-4.7", "name": "GLM 4.7", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:nvidia/nemotron-3-super-120b-a12b", "name": "Nemotron 3 Super 120B", "brand": "NVIDIA", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -7753,7 +7759,7 @@ async function generateImageFromPrompt(
   // and polls /task until SUCCEED/FAILED. 当前下拉里唯一的图像模型是
   // grok-imagine-image-lite，走 OpenAI-style 同步返回。
   const isOpenAIImage =
-    imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2";
+    imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2" || imageModel === "gpt-image-2-all";
   // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
   const imageSize = "1024x1024";
 
@@ -7776,7 +7782,7 @@ async function generateImageFromPrompt(
 
   // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
   // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-  const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2"]);
+  const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2", "gpt-image-2-all"]);
   if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
     setImageGenerationBusy(false);
     showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
