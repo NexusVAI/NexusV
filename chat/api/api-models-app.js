@@ -175,7 +175,11 @@ async function load() {
             if (!byCanonical.has(cid)) {
                 byCanonical.set(cid, { ...m, id: cid, _lineCount: 1 });
             } else {
-                byCanonical.get(cid)._lineCount += 1;
+                const existing = byCanonical.get(cid);
+                existing._lineCount += 1;
+                if (existing.available === false && m.available !== false) {
+                    byCanonical.set(cid, { ...existing, ...m, id: cid, _lineCount: existing._lineCount });
+                }
             }
         }
         // 黑名单过滤后再写入 MODELS，让 stats / 过滤 / 渲染统一基于已清洗的列表
@@ -323,6 +327,7 @@ function render() {
 }
 
 function card(m) {
+    const disabled = m.available === false || m.disabled === true;
     const caps = [];
     if (m.chat) caps.push("聊天");
     if (m.image) caps.push("图像");
@@ -351,6 +356,9 @@ function card(m) {
     const freeBlockedBadge = m && m.freeUserBlocked
         ? '<span class="tier" style="background:rgba(232,90,90,.16);color:#e85a5a" title="FREE 用户禁止调用该模型">FREE 不可用</span>'
         : "";
+    const disabledBadge = disabled
+        ? '<span class="tier tier-disabled" title="该模型线路当前不可用">不可用</span>'
+        : "";
     const inputK = m.maxInputTokens
         ? m.maxInputTokens >= 1000
             ? Math.round(m.maxInputTokens / 1000) + "K"
@@ -364,7 +372,8 @@ function card(m) {
     // 2026-05-17 head 改版：左边 logo + 右边 （名称 / brand 子标题 / id）
     // brand 从 .meta badge 升级为名称下面的 sub-title，逻辑上与 logo 互补，
     // 避免 brand badge 与 logo 重复。
-    return `<div class="card" data-tier="${displayTier}">
+    const unavailableMessage = m.unavailableMessage || "该模型线路当前不可用，请稍后重试或切换其他模型。";
+    return `<div class="card${disabled ? " is-disabled" : ""}" data-tier="${displayTier}"${disabled ? ` title="${esc(unavailableMessage)}"` : ""}>
           <div class="card-head">
             ${brandLogoHtml(m.brand)}
             <div class="card-head-text">
@@ -372,10 +381,11 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${freeBlockedBadge}</span>
+            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${freeBlockedBadge}${disabledBadge}</span>
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
+            ${disabled ? `<span class="badge badge-disabled">${esc(unavailableMessage)}</span>` : ""}
             ${caps.map((c) => `<span class="badge cap">${c}</span>`).join("")}
           </div>
           <div class="specs">
