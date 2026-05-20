@@ -4209,6 +4209,10 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     max-width: none;
     min-height: 118px;
     border-radius: 24px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
 }
 
 .claude-project-composer.is-drag-over {
@@ -4220,19 +4224,72 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 #claudeProjectPromptInput {
     min-height: 54px;
     max-height: 180px;
+    flex: 0 1 auto !important;
+}
+
+.claude-project-composer .composer-bottom {
+    width: 100%;
+    min-width: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding-top: 0 !important;
+    margin-top: auto !important;
 }
 
 .claude-project-composer .composer-status {
     color: var(--c-text-dim);
     font-size: 12px;
+    width: 100%;
+    min-width: 0;
+    display: block !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .claude-project-composer .composer-tools-row {
+    width: 100%;
+    min-width: 0;
     align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+.claude-project-composer .composer-tools {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.claude-project-composer .claude-project-composer-actions {
+    min-width: 0;
+    flex: 0 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .claude-project-composer-actions #modelSelector {
     display: inline-flex !important;
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: 190px;
+}
+
+.claude-project-composer-actions #modelSelector .model-current {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 190px !important;
+}
+
+.claude-project-composer-actions #modelSelector .model-name {
+    min-width: 0;
+    max-width: 116px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .claude-project-source-shortcut {

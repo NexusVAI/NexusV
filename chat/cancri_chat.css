@@ -1259,33 +1259,22 @@ svg {
 }
 
 .model-current::before {
-    content: "";
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid rgba(17, 17, 17, 0.12);
-    background: transparent;
-    flex: 0 0 auto;
+    content: none;
+    display: none;
 }
 
 .model-current::after {
-    content: "";
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #111111;
-    flex: 0 0 auto;
-    margin-left: -17px;
-    margin-right: 5px;
-    animation: model-breath-dot 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    content: none;
+    display: none;
 }
 
-html[data-theme="dark"] .model-current::before {
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-html[data-theme="dark"] .model-current::after {
-    background: #ffffff;
+.model-current-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    object-fit: contain;
+    display: block;
+    border-radius: 5px;
 }
 
 @keyframes model-breath-dot {

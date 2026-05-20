@@ -257,7 +257,7 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   daily_paid_limit_reached: null,
   quota_check_failed: null,
   // 2026-05-17 Phase A 新增：三档订阅相关错误
-  monthly_quota_exhausted: null,      // paid 用户月度+加油包都耗尽
+  monthly_quota_exhausted: null,      // paid 用户周期配额+加油包都耗尽
   model_pro_plus_required: null,      // 调 vip 模型但 plan < pro_plus
   model_pro_required: null,           // free 调 GPT-5.5 系列（freeUserBlocked）
   // Specialised paths (handled elsewhere — return "" so caller falls through)
@@ -2054,6 +2054,28 @@ function getModelMeta(modelId) {
 
 function getModelDisplayName(modelId) {
   return getModelMeta(modelId).displayName || modelId;
+}
+
+function updateModelButtonIcon(button, modelId) {
+  if (!button) return;
+  const meta = getModelMeta(modelId);
+  let icon = button.querySelector(".model-current-icon");
+  if (!icon) {
+    icon = document.createElement("img");
+    icon.className = "model-current-icon";
+    icon.alt = "";
+    icon.loading = "lazy";
+    icon.decoding = "async";
+    const name = button.querySelector(".model-name");
+    button.insertBefore(icon, name || button.firstChild);
+  }
+  icon.src = meta.iconPath || "./openai.svg";
+  icon.title = meta.displayName || modelId || "模型";
+}
+
+function updateModelSelectorIcons() {
+  updateModelButtonIcon(modelCurrentBtn, currentModel);
+  updateModelButtonIcon(compareModelCurrentBtn, compareModel);
 }
 
 function getModelBrandName(modelId) {
@@ -5083,7 +5105,7 @@ const PLATFORM_KNOWLEDGE_BASE = {
     {
       code: "monthly_quota_exhausted",
       http: 429,
-      when: "PAID 用户当月配额 + 加油包都耗尽",
+      when: "PAID 用户本周期配额 + 加油包都耗尽",
     },
     {
       code: "model_queue_full",
@@ -6110,6 +6132,7 @@ function syncTopArenaMode() {
       state.arenaMode !== "side_by_side" || state.currentView === "leaderboard";
   if (compareModelName)
     compareModelName.textContent = getModelDisplayName(compareModel);
+  updateModelSelectorIcons();
   if (homeInput) {
     if (state.arenaMode === "anonymous")
       homeInput.placeholder = "向两个匿名模型发起同一个问题";
@@ -12703,6 +12726,7 @@ function setCompareModel(modelId) {
   localStorage.setItem("cancri_compare_model", modelId);
   if (compareModelName)
     compareModelName.textContent = getModelDisplayName(modelId);
+  updateModelSelectorIcons();
   closeModelDropdown();
   showToast(
     `\u6a21\u578b B \u5df2\u5207\u6362\u81f3 ${getModelDisplayName(modelId)}`,
@@ -12723,6 +12747,7 @@ function setModel(modelId) {
   if (currentModelName) {
     currentModelName.textContent = getModelDisplayName(modelId);
   }
+  updateModelSelectorIcons();
   updateModelSelectorActive();
   modelDropdown?.querySelectorAll(".model-option").forEach((opt) => {
     opt.classList.toggle("active", opt.dataset.model === modelId);
@@ -12923,6 +12948,7 @@ if (currentModelName) {
 if (compareModelName) {
   compareModelName.textContent = getModelDisplayName(compareModel);
 }
+updateModelSelectorIcons();
 updateModelSelectorActive();
 syncTopArenaMode();
 setActiveView("home");

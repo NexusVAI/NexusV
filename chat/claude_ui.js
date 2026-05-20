@@ -1124,7 +1124,7 @@
                             '<h1 id="claudeProjectDetailTitle"></h1>' +
                         '</header>' +
                         '<div class="composer-wrap claude-project-composer-wrap">' +
-                            '<div class="composer claude-project-composer">' +
+                            '<div class="composer claude-project-composer" data-workbench-composer>' +
                                 '<textarea class="composer-input" id="claudeProjectPromptInput" rows="1" placeholder="向这个项目中的聊天提问"></textarea>' +
                                 '<div class="composer-bottom">' +
                                     '<div class="composer-status"><span id="claudeProjectComposerStatus">项目内聊天 · 来源按需读取</span></div>' +

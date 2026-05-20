@@ -1678,12 +1678,11 @@ openclaw agent</pre>
               <code>effective_pool_tokens × 模型权重</code>（见下方权重表）。
             </li>
             <li>
-              <b>月度自动重置：</b> 月初 UTC+8 00:00 触发懒重置（消费时由
-              <code>cancri_consume_paid_quota_v2</code> 检测并归零）。升档时
-              <code>monthly_consumed</code> 不重置（防月中升级白嫖）。
+              <b>订阅周期自动重置：</b> 付费订阅按激活后的每 30 天周期懒重置（消费或查询额度时由
+              <code>cancri_consume_paid_quota_v2</code> / <code>cancri_get_quota_status_v2</code> 检测并归零）。周期内续费只延长有效期，不会立刻清零，避免通过反复续费刷配额。
             </li>
             <li>
-              <b>加油包接续：</b> 月度配额耗尽后自动从加油包余额扣减；都为 0 时返回
+              <b>加油包接续：</b> 本周期套餐配额耗尽后自动从加油包余额扣减；都为 0 时返回
               <code>429 monthly_quota_exhausted</code>。
             </li>
             <li>
@@ -1737,7 +1736,7 @@ openclaw agent</pre>
 
           <h3>实时查询配额状态</h3>
           <p>
-            登录用户可通过 chat-gateway 实时查询当前订阅档位、月度配额、加油包余额、
+            登录用户可通过 chat-gateway 实时查询当前订阅档位、订阅周期配额、加油包余额、
             共享池余额、当日 PAID 调用余量。这是 <i>内部接口</i>（chat-gateway 上的
             JSON-RPC 风格 endpoint），<b>不在公开 /v1/* API 列表内</b>。聊天页 /
             设置面板的「额度」段就走这个接口。
@@ -1870,7 +1869,12 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               <tr>
                 <td>429</td>
                 <td><code>monthly_quota_exhausted</code></td>
-                <td>PAID 用户本月套餐配额 + 加油包余额都耗尽，下月 1 号 00:00 重置（加油包不重置）</td>
+                <td>PAID 用户本周期套餐配额 + 加油包余额都耗尽；订阅配额在当前 30 天周期结束后重置（加油包不重置）</td>
+              </tr>
+              <tr>
+                <td>400</td>
+                <td><code>subscription_plan_downgrade_not_allowed</code></td>
+                <td>当前订阅仍在有效期内时，不能用低档套餐延长高档权益；请购买当前或更高档套餐，或等当前订阅到期后再购买低档套餐</td>
               </tr>
               <tr>
                 <td>503</td>
@@ -2239,7 +2243,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </p>
           <h3>怎么升到 Paid 档？现有 Key 还能用吗？</h3>
           <p>
-            到 <a href="./pricing.html">套餐页</a>扫码付款（Pro ¥9.9 / Pro+ ¥29 / Pro Max ¥99 / 月，
+            到 <a href="./pricing.html">套餐页</a>扫码付款（Pro ¥9.9 / Pro+ ¥29 / Pro Max ¥99 / 30 天订阅周期，
             或¥10 起的加油包）并提交订单，站主人工对账后会给一个一次性激活码，在
             <a href="./orders.html">我的订单</a>里兑换即可立即生效。
             <b>升档不影响现有 Key</b>——同一把 Key 在 Free 和 Paid 下用法完全一致，
@@ -2264,9 +2268,9 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <p>
             后台实计费按 <code>effective_pool_tokens × 模型权重</code> 扣减（见上面「模型权重表」）：
             <b>Free 档免费</b>使用全站 1亿/月共享池 + 个人每日 15 次 PAID 试用；
-            <b>Pro ¥9.9 / 月</b> 个人月度配额 2000 万 token，
-            <b>Pro+ ¥29 / 月</b> 8000 万 token + Claude Opus，
-            <b>Pro Max ¥99 / 月</b> 3 亿 token + 视频图像优先，加油包 ¥10 起永不过期，见
+            <b>Pro ¥9.9 / 30 天订阅周期</b> 个人周期配额 2000 万 token，
+            <b>Pro+ ¥29 / 30 天订阅周期</b> 8000 万 token + Claude Opus，
+            <b>Pro Max ¥99 / 30 天订阅周期</b> 3 亿 token + 视频图像优先，加油包 ¥10 起永不过期，见
             <a href="./pricing.html">套餐页</a>。
           </p>
           <h3>有 SLA 吗？</h3>

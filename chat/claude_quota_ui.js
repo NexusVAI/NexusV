@@ -342,8 +342,8 @@
       : '';
 
     var subscriptionNote = showGrandfatherChip
-      ? 'PAID 订阅扣的是月度配额（按上游真实 token × 模型权重折算），月初 UTC+8 00:00 自动重置。<b>您是 Phase A 老用户</b>，在本订阅周期内可继续调用 Claude Opus 全系（30× 权重照常生效），到期不延续。续费请前往 <a href="./pricing.html">套餐页</a>。'
-      : 'PAID 订阅扣的是月度配额（按上游真实 token × 模型权重折算），月初 UTC+8 00:00 自动重置。Pro+ 以上可调 Claude Opus 系列。续费请前往 <a href="./pricing.html">套餐页</a>。';
+      ? 'PAID 订阅扣的是周期配额（按上游真实 token × 模型权重折算），每 30 天订阅周期自动重置。<b>您是 Phase A 老用户</b>，在本订阅周期内可继续调用 Claude Opus 全系（30× 权重照常生效），到期不延续。续费请前往 <a href="./pricing.html">套餐页</a>。'
+      : 'PAID 订阅扣的是周期配额（按上游真实 token × 模型权重折算），每 30 天订阅周期自动重置。Pro+ 以上可调 Claude Opus 系列。续费请前往 <a href="./pricing.html">套餐页</a>。';
 
     return [
       '<div class="claude-quota-card">',
@@ -361,8 +361,8 @@
 
       '<div class="claude-quota-card">',
       '  <div class="claude-quota-card-head">',
-      '    <span class="claude-quota-card-title">本月配额</span>',
-      '    <span class="claude-quota-card-sub">月初 UTC+8 00:00 重置</span>',
+      '    <span class="claude-quota-card-title">本周期配额</span>',
+      '    <span class="claude-quota-card-sub">每 30 天订阅周期重置</span>',
       '  </div>',
       '  <div class="claude-quota-bar"><div class="claude-quota-bar-fill ' + monthlyBarClass + '" style="width:' + monthlyPercent.toFixed(2) + '%"></div></div>',
       '  <div class="claude-quota-stat">',
