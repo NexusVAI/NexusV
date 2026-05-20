@@ -4211,6 +4211,12 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     border-radius: 24px;
 }
 
+.claude-project-composer.is-drag-over {
+    border-color: color-mix(in srgb, var(--accent) 58%, var(--c-line)) !important;
+    background: color-mix(in srgb, var(--accent) 6%, var(--composer-bg)) !important;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 13%, transparent) !important;
+}
+
 #claudeProjectPromptInput {
     min-height: 54px;
     max-height: 180px;
@@ -4233,6 +4239,12 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     width: auto !important;
     padding: 0 10px !important;
     font-size: 12px !important;
+}
+
+.claude-project-web-search.is-active {
+    background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
+    color: var(--accent) !important;
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--c-line)) !important;
 }
 
 #claudeProjectVoiceBtn svg,

@@ -78,15 +78,50 @@
     function bindSidebarTooltips() {
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
+        let card = document.getElementById('claudeSidebarTooltipCard');
+        if (!card) {
+            card = document.createElement('div');
+            card.id = 'claudeSidebarTooltipCard';
+            card.className = 'claude-sidebar-tooltip-card';
+            card.hidden = true;
+            document.body.appendChild(card);
+        }
         function applyTitles() {
             sidebar.querySelectorAll('.nav-row').forEach(function (row) {
-                if (row.title) return;
                 const label = row.querySelector('.sidebar-label');
                 const text = label ? label.textContent.trim() : row.textContent.trim();
-                if (text) row.title = text;
+                if (text) {
+                    row.setAttribute('data-sidebar-tooltip', text);
+                    row.removeAttribute('title');
+                }
             });
         }
+        function hideCard() {
+            card.hidden = true;
+        }
+        function showCard(row) {
+            const text = row.getAttribute('data-sidebar-tooltip') || '';
+            if (!text || window.matchMedia('(max-width: 768px)').matches) {
+                hideCard();
+                return;
+            }
+            const rect = row.getBoundingClientRect();
+            card.textContent = text;
+            card.hidden = false;
+            const top = Math.max(8, Math.min(window.innerHeight - card.offsetHeight - 8, rect.top + rect.height / 2 - card.offsetHeight / 2));
+            card.style.left = Math.round(rect.right + 10) + 'px';
+            card.style.top = Math.round(top) + 'px';
+        }
         applyTitles();
+        sidebar.addEventListener('pointerover', function (event) {
+            const row = event.target.closest('.nav-row');
+            if (row && sidebar.contains(row)) showCard(row);
+        });
+        sidebar.addEventListener('pointerout', function (event) {
+            if (!event.relatedTarget || !sidebar.contains(event.relatedTarget)) hideCard();
+        });
+        window.addEventListener('scroll', hideCard, true);
+        window.addEventListener('resize', hideCard);
         if (typeof MutationObserver !== 'undefined') {
             new MutationObserver(applyTitles).observe(sidebar, { subtree: true, childList: true });
         }
@@ -830,6 +865,8 @@
             notebook: '<path d="M7 4h11v16H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/><path d="M8 4v16M11 8h4M11 12h4"/>',
             scale: '<path d="M12 4v16M5 7h14M7 7l-3 6h6ZM17 7l-3 6h6ZM8 20h8"/>',
             globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>',
+            mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 18v4"/><path d="M8 22h8"/>',
+            arrowUp: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
             wrench: '<path d="M14 6a5 5 0 0 0 6 6L10 22l-4-4 10-10a5 5 0 0 0-2-2Z"/>',
             paw: '<circle cx="7" cy="9" r="1.5"/><circle cx="12" cy="6.5" r="1.5"/><circle cx="17" cy="9" r="1.5"/><path d="M7.5 17c1.2-3.2 7.8-3.2 9 0 .6 1.7-.6 3-2.4 2.5A7 7 0 0 0 12 19a7 7 0 0 0-2.1.5c-1.8.5-3-1-2.4-2.5Z"/>',
             flask: '<path d="M9 3h6M10 3v5l-5 9a3 3 0 0 0 2.6 4h8.8A3 3 0 0 0 19 17l-5-9V3"/><path d="M8 15h8"/>',
@@ -1093,12 +1130,13 @@
                                     '<div class="composer-status"><span id="claudeProjectComposerStatus">项目内聊天 · 来源按需读取</span></div>' +
                                     '<div class="composer-tools-row">' +
                                         '<div class="composer-tools" aria-label="项目工具">' +
-                                            '<button type="button" class="composer-tool-btn" id="claudeProjectNewChatBtn" aria-label="新项目聊天">+</button>' +
+                                            '<button type="button" class="composer-tool-btn" id="claudeProjectSourceAddBtn" aria-label="添加项目来源">+</button>' +
+                                            '<button type="button" class="composer-tool-btn claude-project-web-search" id="claudeProjectWebSearchBtn" aria-label="本轮允许联网搜索">' + iconSvg('globe') + '</button>' +
                                             '<button type="button" class="composer-tool-btn claude-project-source-shortcut" id="claudeProjectSourcesShortcut">来源</button>' +
                                         '</div>' +
                                         '<div class="composer-actions claude-project-composer-actions">' +
-                                            '<button type="button" class="voice-btn" id="claudeProjectVoiceBtn" aria-label="语音输入" title="语音输入">' + iconSvg('music') + '</button>' +
-                                            '<button type="button" class="send-btn" id="claudeProjectPromptSubmit" aria-label="发送项目消息">' + iconSvg('spark') + '</button>' +
+                                            '<button type="button" class="voice-btn" id="claudeProjectVoiceBtn" aria-label="语音输入" title="语音输入">' + iconSvg('mic') + '</button>' +
+                                            '<button type="button" class="send-btn" id="claudeProjectPromptSubmit" aria-label="发送项目消息">' + iconSvg('arrowUp') + '</button>' +
                                         '</div>' +
                                     '</div>' +
                                 '</div>' +
@@ -1120,8 +1158,15 @@
             sourceInput.multiple = true;
             sourceInput.hidden = true;
             view.appendChild(sourceInput);
-            view.querySelector('#claudeProjectNewChatBtn')?.addEventListener('click', function () {
-                if (detailProjectId) beginProjectChat(detailProjectId, '', false);
+            view.querySelector('#claudeProjectSourceAddBtn')?.addEventListener('click', function () {
+                document.getElementById('claudeProjectSourceFileInput')?.click();
+            });
+            view.querySelector('#claudeProjectWebSearchBtn')?.addEventListener('click', function () {
+                const api = app();
+                const next = !(api && api.state && api.state.webSearchEnabled);
+                if (api && typeof api.setWebSearchEnabled === 'function') api.setWebSearchEnabled(next);
+                this.classList.toggle('is-active', next);
+                this.setAttribute('aria-pressed', String(next));
             });
             view.querySelector('#claudeProjectSourcesShortcut')?.addEventListener('click', function () {
                 detailTab = 'sources';
@@ -1151,6 +1196,7 @@
                 addProjectSources(detailProjectId, Array.from(sourceInput.files));
                 sourceInput.value = '';
             });
+            bindProjectSourceDrop(view);
             return view;
         }
         function ensureSidebarProjectsList() {
@@ -1191,27 +1237,82 @@
             if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
             return (n / 1024 / 1024).toFixed(1) + ' MB';
         }
-        function addProjectSources(projectId, files) {
+        function readProjectSourceText(file) {
+            return new Promise(function (resolve) {
+                const reader = new FileReader();
+                reader.onload = function () { resolve(String(reader.result || '')); };
+                reader.onerror = function () { resolve(''); };
+                reader.readAsText(file);
+            });
+        }
+        async function reserveProjectSourceUsage(files) {
+            const api = app();
+            if (!api || typeof api.reserveFileUploadUsage !== 'function') return true;
+            return await api.reserveFileUploadUsage(files.length);
+        }
+        async function addProjectSources(projectId, files) {
             const projects = readProjects();
             const project = projects.find(function (p) { return p.id === projectId; });
             if (!project) return;
+            const fileList = Array.from(files || []).filter(Boolean);
+            if (!fileList.length) return;
+            const allowed = await reserveProjectSourceUsage(fileList);
+            if (!allowed) return;
             project.sources = Array.isArray(project.sources) ? project.sources : [];
-            files.forEach(function (file) {
+            for (const file of fileList) {
+                const rawText = await readProjectSourceText(file);
+                const text = rawText.replace(/\u0000/g, '').trim();
                 project.sources.unshift({
                     id: 'source_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
                     name: file.name,
                     type: file.type || 'application/octet-stream',
                     size: file.size || 0,
+                    content: text.slice(0, 32000),
+                    truncated: text.length > 32000,
                     updatedAt: new Date().toISOString(),
-                    status: 'indexed',
+                    status: text ? 'indexed' : 'metadata_only',
                 });
-            });
+            }
             project.updatedAt = new Date().toISOString();
             writeProjects(projects);
             detailTab = 'sources';
             renderProjectDetail();
             const api = app();
-            if (api && typeof api.showToast === 'function') api.showToast('来源已添加，AI 将按需读取引用。');
+            if (api && typeof api.showToast === 'function') api.showToast('来源已添加，AI 会在项目聊天中读取可解析文本。');
+        }
+        function bindProjectSourceDrop(view) {
+            const composer = view.querySelector('.claude-project-composer');
+            if (!composer) return;
+            let depth = 0;
+            function hasFiles(e) {
+                return Array.prototype.slice.call(e.dataTransfer?.types || []).indexOf('Files') !== -1;
+            }
+            function setActive(active) {
+                composer.classList.toggle('is-drag-over', Boolean(active));
+            }
+            composer.addEventListener('dragenter', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                depth += 1;
+                setActive(true);
+            });
+            composer.addEventListener('dragover', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                setActive(true);
+            });
+            composer.addEventListener('dragleave', function (e) {
+                if (!hasFiles(e)) return;
+                depth = Math.max(0, depth - 1);
+                if (!depth) setActive(false);
+            });
+            composer.addEventListener('drop', function (e) {
+                if (!hasFiles(e)) return;
+                e.preventDefault();
+                depth = 0;
+                setActive(false);
+                if (detailProjectId) addProjectSources(detailProjectId, Array.from(e.dataTransfer.files || []));
+            });
         }
         function removeProjectSource(projectId, sourceId) {
             const projects = readProjects();
@@ -1351,7 +1452,7 @@
                         const name = document.createElement('strong');
                         name.textContent = source.name || '未命名来源';
                         const meta = document.createElement('small');
-                        meta.textContent = formatBytes(source.size) + ' · 按需读取';
+                        meta.textContent = formatBytes(source.size) + (source.content ? ' · 已读取文本' : ' · 仅保存元数据');
                         copy.appendChild(name);
                         copy.appendChild(meta);
                         const remove = document.createElement('button');
@@ -2249,6 +2350,13 @@
             var slot = parseInt(btn.getAttribute('data-slot'), 10);
             if (!isNaN(slot) && window.CancriApp && typeof window.CancriApp.deleteUserMemory === 'function') {
                 window.CancriApp.deleteUserMemory(slot);
+            }
+        });
+        memoriesContainer.addEventListener('change', function (e) {
+            var toggle = e.target.closest('[data-action="toggle-memory-generation"]');
+            if (!toggle) return;
+            if (window.CancriApp && typeof window.CancriApp.setMemoryGenerationEnabled === 'function') {
+                window.CancriApp.setMemoryGenerationEnabled(Boolean(toggle.checked));
             }
         });
     }

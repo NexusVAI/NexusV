@@ -1258,6 +1258,47 @@ svg {
         border-color var(--transition);
 }
 
+.model-current::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(17, 17, 17, 0.12);
+    background: transparent;
+    flex: 0 0 auto;
+}
+
+.model-current::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #111111;
+    flex: 0 0 auto;
+    margin-left: -17px;
+    margin-right: 5px;
+    animation: model-breath-dot 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+html[data-theme="dark"] .model-current::before {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+html[data-theme="dark"] .model-current::after {
+    background: #ffffff;
+}
+
+@keyframes model-breath-dot {
+    0%, 100% {
+        transform: scale(0.76);
+        opacity: 0.78;
+    }
+    50% {
+        transform: scale(1.08);
+        opacity: 1;
+    }
+}
+
 .model-current:hover {
     background: var(--hover-strong);
     border-color: var(--line-2);
