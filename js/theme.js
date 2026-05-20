@@ -28,7 +28,7 @@ function setTheme(theme) {
     } else if (theme === 'blue') {
         root.classList.add('blue-theme');
         if (body) body.classList.add('blue-theme');
-        if (sunIcon) sunIcon.style.display = 'block';
+        if (blueIcon) blueIcon.style.display = 'block';
     } else {
         // dark theme (default)
         if (moonIcon) moonIcon.style.display = 'block';
