@@ -292,6 +292,18 @@
         transform: translateY(-1px);
         box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
       }
+      .card.is-disabled {
+        opacity: 0.58;
+        border-color: color-mix(in srgb, var(--err) 35%, var(--border));
+      }
+      .card.is-disabled:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      .card.is-disabled .card-name,
+      .card.is-disabled .card-id {
+        text-decoration: line-through;
+      }
       /* PAID 卡片左侧描边一道 clay，让付费档在卡海里被一眼挑出 */
       .card[data-tier="paid"]::before {
         content: "";
@@ -402,6 +414,11 @@
       :root[data-theme="light"] .tier-paid {
         color: #fffaf2;
       }
+      .tier-disabled {
+        background: color-mix(in srgb, var(--err) 14%, transparent);
+        color: var(--err);
+        border: 1px solid color-mix(in srgb, var(--err) 36%, transparent);
+      }
 
       /* ── meta badges ──────────────────────────────────────────── */
       .meta {
@@ -426,6 +443,11 @@
         color: var(--accent);
         border-color: color-mix(in srgb, var(--accent) 30%, transparent);
         background: color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+      .badge-disabled {
+        color: var(--err);
+        border-color: color-mix(in srgb, var(--err) 35%, transparent);
+        background: color-mix(in srgb, var(--err) 8%, transparent);
       }
 
       /* ── specs：极简两栏，输入 / 输出 ─────────────────────────── */
@@ -740,6 +762,6 @@
     <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <!-- 2026-05-17 重构：模型广场二档化（FREE/PAID）+ 移除 9 条用户指定模型 +
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。 -->
-    <script src="./api/api-models-app.js?v=2026-05-17-phase-a"></script>
+    <script src="./api/api-models-app.js?v=2026-05-20-disabled-lines"></script>
   </body>
 </html>
