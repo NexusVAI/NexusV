@@ -35,6 +35,12 @@ html[data-theme="dark"] [data-workbench-composer] {
   box-shadow: 0 18px 48px rgba(15,23,42,.13), 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
 }
 
+[data-workbench-composer].is-drag-over {
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--composer-bg));
+  box-shadow: 0 18px 48px rgba(15,23,42,.13), 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
 [data-workbench-composer] .composer-input {
   width: 100%;
   min-height: 46px;
