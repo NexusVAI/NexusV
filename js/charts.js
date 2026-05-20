@@ -245,6 +245,19 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeChartModal();
     });
+    // Bind close button (replaces former inline onclick="closeChartModal()" in article.html).
+    function bindModalCloseBtn() {
+        var closeBtn = document.querySelector('.chart-modal-close');
+        if (closeBtn && closeBtn.dataset.bound !== '1') {
+            closeBtn.dataset.bound = '1';
+            closeBtn.addEventListener('click', closeChartModal);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindModalCloseBtn);
+    } else {
+        bindModalCloseBtn();
+    }
 
     // Init on DOM ready
     if (document.readyState === 'loading') {
