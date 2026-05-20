@@ -60,6 +60,9 @@ const state = {
   upwardScrollIntentCount: 0,
   lastUpwardScrollAt: 0,
   touchStartY: null,
+  // 2026-05-20：用户记忆（由 gpt-5-mini 凌晨自动总结），最多5条，每条≤100字。
+  // 在 chat 请求时与 customInstructions 一起注入 system message。
+  userMemories: [],
 };
 
 const root = document.documentElement;
@@ -2954,6 +2957,7 @@ const SUPABASE_URL =
   `${window.location.origin}/api/supabase`;
 const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
+const USER_MEMORY_URL = `${SUPABASE_URL}/functions/v1/user-memory`;
 const MAX_REPEATED_TOOL_CALLS = 3;
 // 单次回答中允许的最多工具调用轮次。达到上限后下一轮强制禁用 tools，
 // 让模型必须基于已有结果用纯自然语言给出最终答复（防止无限多轮 tool 调用）。
@@ -4527,6 +4531,66 @@ async function deleteChatHistory(chatId) {
   } catch (error) {
     console.error("删除聊天记录失败:", error);
     return { success: false, message: error.message || "删除聊天记录失败" };
+  }
+}
+
+// 2026-05-20：获取用户记忆（从 user-memory edge function）
+async function fetchUserMemories() {
+  try {
+    const session = await ensureAuthSession();
+    const response = await fetch(USER_MEMORY_URL, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) return;
+    const json = await response.json();
+    if (Array.isArray(json.memories)) {
+      state.userMemories = json.memories
+        .filter((m) => m && typeof m.content === "string" && m.content.trim())
+        .map((m) => ({ slot: m.slot_index, content: m.content.trim() }));
+      renderMemoriesInSettings();
+    }
+  } catch (e) {
+    console.warn("[memory] 获取记忆失败:", e);
+  }
+}
+
+// 2026-05-20：在设置面板渲染记忆列表
+function renderMemoriesInSettings() {
+  const container = document.getElementById("claudeMemoriesContainer");
+  if (!container) return;
+  if (!state.userMemories || state.userMemories.length === 0) {
+    container.innerHTML = '<p class="claude-form-help" style="margin:0;">暂无记忆。系统会在每天凌晨自动总结您的对话内容。</p>';
+    return;
+  }
+  container.innerHTML = state.userMemories.map((m) =>
+    `<div class="memory-item" data-slot="${m.slot}">` +
+    `<span class="memory-text">${escapeHtml(m.content)}</span>` +
+    `<button class="memory-delete-btn" data-action="delete-memory" data-slot="${m.slot}" title="删除此记忆">&times;</button>` +
+    `</div>`
+  ).join("");
+}
+
+// 2026-05-20：删除单条记忆
+async function deleteUserMemory(slot) {
+  try {
+    const session = await ensureAuthSession();
+    await fetch(USER_MEMORY_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: "delete_memory", slot }),
+    });
+    state.userMemories = state.userMemories.filter((m) => m.slot !== slot);
+    renderMemoriesInSettings();
+    showToast("记忆已删除");
+  } catch (e) {
+    showToast("删除记忆失败");
   }
 }
 
@@ -9858,6 +9922,11 @@ function buildCustomInstructionsSystemContent() {
   if (instructions) {
     lines.push(`- 用户给 Cancri 的自定义说明（请在合理范围内遵守）：${instructions}`);
   }
+  // 2026-05-20：注入用户记忆
+  if (state.userMemories && state.userMemories.length > 0) {
+    const memoryText = state.userMemories.map((m) => m.content).join("；");
+    lines.push(`- 用户的历史记忆（系统自动总结的重要信息）：${memoryText}`);
+  }
   if (!lines.length) return "";
   return [
     "以下是用户在设置中提供的个人资料与偏好（Cancri Custom Instructions），请在本次对话中合理参考：",
@@ -12709,6 +12778,9 @@ updateChatShareButtonVisibility();
 // 加载并渲染聊天记录列表
 renderChatHistoryList();
 
+// 2026-05-20：加载用户记忆
+fetchUserMemories();
+
 // 2026-05-18：跟随系统深色/浅色主题。当用户在设置里把"外观"显式选成"跟随系统"
 // （state.themeMode === "system"）时，OS 切换深色 → 站内立即跟切。如果用户
 // 手动选了"浅色"或"深色"，则忽略 OS 变化（尊重显式偏好）。
@@ -12821,6 +12893,10 @@ window.CancriApp = {
   syncStreamingMarkdownBlock,
   TOOL_DISPLAY_NAMES,
   parseToolArguments,
+  // 2026-05-20：记忆功能
+  fetchUserMemories,
+  deleteUserMemory,
+  renderMemoriesInSettings,
 };
 
 // 侧边栏主题切换按钮由 js/ui/theme.js 统一处理，此处不再重复绑定
