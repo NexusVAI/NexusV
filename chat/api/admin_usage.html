@@ -232,6 +232,11 @@
             <button class="filter-btn" data-window="2592000000">30 天</button>
           </div>
           <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; color: var(--text-soft); padding: 6px 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; margin-left: 8px; user-select: none;">
+            <input type="checkbox" id="liveToggle" style="cursor: pointer; width: 14px; height: 14px; accent-color: var(--ok);" />
+            实时刷新 (Live)
+            <span id="liveIndicator" style="display: inline-block; width: 8px; height: 8px; background: #9ca3af; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s;"></span>
+          </label>
         </div>
 
         <div class="stats" id="stats" style="display: none">
@@ -330,6 +335,6 @@
       crossorigin="anonymous"
     ></script>
     <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-usage-app.js。 -->
-    <script src="./admin-usage-app.js?v=2026-05-19-permission-init"></script>
+    <script src="./admin-usage-app.js?v=2026-05-20-live-refresh"></script>
   </body>
 </html>
