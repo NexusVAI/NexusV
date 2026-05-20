@@ -138,7 +138,7 @@ function renderSubscription(sub) {
             (percent >= 90 ? " danger" : percent >= 75 ? " warn" : "");
         quotaMonthlyHint.textContent = percent >= 90
             ? "配额即将耗尽，可购买加油包或升级到更高档位。"
-            : "每月 UTC+8 1 号 00:00 自动重置。";
+            : "每 30 天订阅周期自动重置。";
         if (monthlyBox) monthlyBox.style.display = "";
     } else {
         // free 用户：隐藏月度配额块（free 用户用的是全站共享池，不是个人月度）
