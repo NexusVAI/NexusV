@@ -146,7 +146,7 @@ const MAX_ATTACHMENT_COUNT = 4;
 const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
 const UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
 const MODEL_TELEMETRY_STORAGE_KEY = "cancri_model_telemetry";
-const MODEL_TELEMETRY_CACHE_VERSION = 6;
+const MODEL_TELEMETRY_CACHE_VERSION = 7;
 
 // 共享额度信息
 let rateLimitInfo = {
@@ -259,6 +259,7 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   // 2026-05-17 Phase A 新增：三档订阅相关错误
   monthly_quota_exhausted: null,      // paid 用户周期配额+加油包都耗尽
   model_pro_plus_required: null,      // 调 vip 模型但 plan < pro_plus
+  model_pro_max_required: null,       // 调 Pro Max 专属模型但 plan < pro_max
   model_pro_required: null,           // free 调 GPT-5.5 系列（freeUserBlocked）
   // Specialised paths (handled elsewhere — return "" so caller falls through)
   challenge_required: null, // formatSecurityGuardMessage path
@@ -286,6 +287,7 @@ const QUOTA_REFRESH_TRIGGER_CODES = new Set([
   // 2026-05-17 Phase A 新增
   "monthly_quota_exhausted",
   "model_pro_plus_required",
+  "model_pro_max_required",
   "model_pro_required",
 ]);
 
@@ -1339,6 +1341,7 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.3-codex",
   "gpt-5.2",
   "grok-4.20-0309",
+  "grok-4.3",
   "mistral-large-2512",
   "gemini-3.1-pro",
   "gemini-3.1-pro-preview",
@@ -1348,6 +1351,7 @@ const PAID_GATE_IDS = new Set([
   "minimax-m2.7",
   "kimi-k2.6",
   "gpt-image-2-all",
+  "gpt-image-2-pro",
   "claude-haiku-4-5-20251001",
   "claude-haiku-4-5-20251001-thinking",
 ]);
@@ -1358,8 +1362,14 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
+  "grok-4.3",
   "gemini-3.1-pro",
   "gpt-image-2-all",
+  "gpt-image-2-pro",
+]);
+
+const PRO_MAX_GATE_IDS = new Set([
+  "gpt-image-2-pro",
 ]);
 
 // 2026-05-18 fix：tier 默认 null（未知），而不是 "free"。
@@ -1434,12 +1444,21 @@ function isProPlusGateModel(modelId) {
   return Boolean(meta && meta.costTier === "vip");
 }
 
+function isProMaxGateModel(modelId) {
+  const meta = getModelMeta(modelId);
+  return Boolean((meta && meta.proMaxOnly === true) || PRO_MAX_GATE_IDS.has(modelId));
+}
+
 // 返回 null 表示通过；否则返回原因 code：
 //   • 'pro_only'       FREE 用户调 GPT-5.5 系列 / GPT-5.4 Mini（硬挡，不论池/日配额）
 //   • 'pro_plus_only'  FREE 或 Pro（非 grandfather）调 vip 模型（Opus / Gemini Pro / 视频）
 //   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何模型）
 //   • 'daily_limit'    当日 15 次 PAID 试用用完（2026-05-17 Phase A：25 → 15）
 function getQuotaBlockReason(modelId) {
+  if (isProMaxGateModel(modelId)) {
+    const planCode = quotaState.planCode;
+    if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
+  }
   // 2026-05-18 vip 档位闸门：与 chat-gateway cancri_consume_paid_quota_v2 同步。
   // FREE / Pro（非 grandfather）调 vip 模型 → 后端返 5/403，前端也锁死。
   // Pro+ / Pro Max / grandfather Pro 豁免。
@@ -1493,6 +1512,8 @@ function getQuotaBlockMessage(modelId) {
       return "该模型仅向 Cancri Pro 及以上订阅用户开放，请升级或选择其他模型。";
     case "pro_plus_only":
       return "该模型仅向 Cancri Pro+ 及以上订阅用户开放（Claude Opus / Gemini 3.1 Pro / 视频生成），请升级或选择其他模型。";
+    case "pro_max_only":
+      return "该模型仅向 Cancri Pro Max 订阅用户开放，请升级或选择其他模型。";
     case "pool_exhausted":
       return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
     case "daily_limit":
@@ -1563,6 +1584,9 @@ async function refreshQuotaState(force) {
             ? Number(data.topup_balance) || 0
             : null;
         quotaState.fetchedAt = Date.now();
+        if (clearTopupBackedQuotaLocks()) {
+          persistModelTelemetryCache();
+        }
       }
       quotaStateFetchInflight = null;
       // 数据变了 → 触发 dropdown 重渲染让 UI 反映新状态
@@ -1588,6 +1612,54 @@ async function refreshQuotaState(force) {
 function invalidateQuotaState() {
   quotaState.fetchedAt = 0;
   return refreshQuotaState(true);
+}
+
+function clearTopupBackedQuotaLocks() {
+  if (quotaState.tier !== "free" || !(quotaState.topupBalance > 0)) return false;
+  const now = Date.now();
+  let changed = false;
+
+  if (
+    Number.isFinite(rateLimitInfo.userLockedUntil) &&
+    rateLimitInfo.userLockedUntil > now &&
+    rateLimitInfo.userLockReason === "quota"
+  ) {
+    rateLimitInfo.userLockedUntil = null;
+    rateLimitInfo.userLockReason = null;
+    changed = true;
+  }
+  if (rateLimitInfo.userRemaining !== null && rateLimitInfo.userRemaining <= 0) {
+    rateLimitInfo.userRemaining = null;
+    changed = true;
+  }
+  if (rateLimitInfo.modelRemaining !== null && rateLimitInfo.modelRemaining <= 0) {
+    rateLimitInfo.modelLimit = null;
+    rateLimitInfo.modelRemaining = null;
+    rateLimitInfo.modelId = null;
+    changed = true;
+  }
+
+  for (const [modelId, status] of modelStatus.entries()) {
+    if (!usesSharedQuota(modelId)) continue;
+    let next = status;
+    if (
+      Number.isFinite(next.lockedUntil) &&
+      next.lockedUntil > now &&
+      next.lockReason === "quota"
+    ) {
+      next = { ...next, lockedUntil: null, lockReason: null };
+      if (next.error === "额度已用完") next.error = null;
+    }
+    if (next.quotaRemaining !== null && next.quotaRemaining <= 0) {
+      next = { ...next, quotaLimit: null, quotaRemaining: null };
+    }
+    if (next !== status) {
+      modelStatus.set(modelId, normalizeModelStatusSnapshot(next));
+      changed = true;
+    }
+  }
+
+  return changed;
 }
 
 function isModelAvailable(modelId) {
@@ -1859,7 +1931,6 @@ const MODEL_SELECTION_MIGRATIONS = {
   "wan2.6-r2v-flash": DEFAULT_MODEL_ID,
   "wan2.6-r2v": DEFAULT_MODEL_ID,
   // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
-  "grok-4.3": DEFAULT_MODEL_ID,
 };
 // 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则
 // 排序时会被忽略，等于排在最后。
@@ -1888,8 +1959,10 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
+  {"id": "grok-4.3", "name": "Grok-4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
+  {"id": "gpt-image-2-pro", "name": "GPT-image-2-Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
@@ -2024,6 +2097,7 @@ const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
     iconPath: getModelIconPath(entry.brand, entry.id),
     kind: entry.kind || "chat",
     costTier: entry.costTier || "normal",
+    proMaxOnly: entry.proMaxOnly === true,
   };
   MODEL_META_MAP.set(entry.id, meta);
   MODEL_IDS[entry.id] = entry.id;
@@ -8206,7 +8280,7 @@ async function generateImageFromPrompt(
   // and polls /task until SUCCEED/FAILED. 当前下拉里唯一的图像模型是
   // grok-imagine-image-lite，走 OpenAI-style 同步返回。
   const isOpenAIImage =
-    imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2-all";
+    imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2-pro";
   // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
   const imageSize = "1024x1024";
 
@@ -8229,7 +8303,7 @@ async function generateImageFromPrompt(
 
   // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
   // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-  const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2-all"]);
+  const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2-all", "gpt-image-2-pro"]);
   if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
     setImageGenerationBusy(false);
     showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
