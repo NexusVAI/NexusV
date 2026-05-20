@@ -348,6 +348,68 @@
           </div>
         </div>
 
+        <div class="panel" id="quotaPanel" style="display: none; border-color: rgba(96, 165, 250, 0.4);">
+          <div class="panel-head" style="background: rgba(96, 165, 250, 0.05); border-bottom: 1px solid rgba(96, 165, 250, 0.15);">
+            ⚡ 成员额度与订阅控制面板 (Quota & Subscription Control)
+            <span class="hint" id="quotaPanelUserEmail" style="color: var(--accent); font-weight: 600;">已选择用户</span>
+          </div>
+          <div class="panel-body">
+            <div class="stats" style="margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">订阅规格 (Plan)</div>
+                <div class="value" id="quota-plan" style="font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">月配额 (Monthly Quota)</div>
+                <div class="value" id="quota-monthly" style="font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">月已用量 (Consumed)</div>
+                <div class="value" id="quota-consumed" style="font-size: 16px; font-weight: 700; color: var(--err); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">加油包余额 (Topup Balance)</div>
+                <div class="value" id="quota-topup" style="font-size: 16px; font-weight: 700; color: var(--ok); margin-top: 4px;">—</div>
+              </div>
+            </div>
+
+            <div style="font-size: 12.5px; color: var(--text-mute); margin-bottom: 12px; line-height: 1.5;" id="quota-expires-line">
+              📅 到期时间: <strong id="quota-expires" style="font-family: var(--font-mono); font-size: 12px;">—</strong>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1.2fr 1fr; gap: 14px; border-top: 1px solid var(--border); padding-top: 14px;">
+              <div>
+                <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">1. 快捷赠送/更新订阅 (Add/Upgrade Subscription)</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); color: var(--accent);" id="btnGrant30Pro">Pro +30天</button>
+                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); color: #f59e0b;" id="btnGrant30ProPlus">Pro+ +30天</button>
+                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); color: #a855f7;" id="btnGrant30ProMax">ProMax +30天</button>
+                </div>
+              </div>
+              <div>
+                <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">2. 月度额度管理 (Monthly Reset)</h4>
+                <div>
+                  <button class="btn-ban" style="padding: 6px 14px; font-size: 11.5px; font-weight: 600; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); color: var(--err);" id="btnResetConsumption">一键清零本月已用量 (Reset Consumed)</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">3. 加油包额度充值 (Topup Credits Adjustment)</h4>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup10">加 10M tokens</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup50">加 50M tokens</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup100">加 100M tokens</button>
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                  <span style="font-size: 11.5px; color: var(--text-mute);">自定义 (Tokens):</span>
+                  <input type="number" id="customTopupInput" placeholder="例如：20000000" style="width: 140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
+                  <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomTopup">执行</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="panel-head">
             当前封禁
@@ -371,6 +433,6 @@
       crossorigin="anonymous"
     ></script>
     <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-users-app.js。 -->
-    <script src="./admin-users-app.js?v=2026-05-19-permission-init"></script>
+    <script src="./admin-users-app.js?v=2026-05-20-quota-panel"></script>
   </body>
 </html>
