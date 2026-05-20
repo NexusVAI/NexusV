@@ -189,7 +189,7 @@ async function doSearch() {
       const anonPill = m.is_anonymous
         ? '<span class="pill anon">匿名</span>'
         : "";
-      return `<div class="match-row${isBanned ? " banned" : ""}" data-uid="${esc(m.user_id)}">
+      return `<div class="match-row${isBanned ? " banned" : ""}" data-uid="${esc(m.user_id)}" data-email="${esc(m.email || '')}">
         <div class="email">${esc(m.email || "(无邮箱)")}</div>
         ${anonPill}
         ${banPill}
@@ -205,6 +205,8 @@ async function doSearch() {
         .querySelectorAll(".match-row")
         .forEach((r) => r.classList.remove("selected"));
       row.classList.add("selected");
+      // Load selected user's quota details into the Control Panel
+      loadUserQuota(row.dataset.uid, row.dataset.email || row.dataset.uid);
     });
   });
 }
@@ -316,5 +318,128 @@ $("banSearch").addEventListener("input", () => {
 });
 $("banBtn").addEventListener("click", doBan);
 $("reload-btn").addEventListener("click", loadBans);
+
+// ─── Quota Control Panel Logic ───
+let selectedQuotaUserId = "";
+let selectedQuotaUserEmail = "";
+
+async function loadUserQuota(userId, email) {
+  selectedQuotaUserId = userId;
+  selectedQuotaUserEmail = email || userId;
+
+  $("quotaPanel").style.display = "block";
+  $("quotaPanelUserEmail").textContent = selectedQuotaUserEmail;
+
+  $("quota-plan").textContent = "加载中…";
+  $("quota-monthly").textContent = "加载中…";
+  $("quota-consumed").textContent = "加载中…";
+  $("quota-topup").textContent = "加载中…";
+  $("quota-expires").textContent = "加载中…";
+
+  const session = await getSession();
+  const r = await callGW({ endpoint: "admin_get_user_quota", user_id: userId }, session);
+  if (!r.ok) {
+    showToast("获取额度信息失败：" + (r.data?.message || r.status), "err");
+    $("quota-plan").textContent = "错误";
+    $("quota-monthly").textContent = "错误";
+    $("quota-consumed").textContent = "错误";
+    $("quota-topup").textContent = "错误";
+    $("quota-expires").textContent = "错误";
+    return;
+  }
+
+  const sub = r.data.subscription;
+  const topup = r.data.topup;
+  const fmtTokens = window.AdminFormatters ? window.AdminFormatters.fmtTokens : (n) => String(n);
+
+  if (sub) {
+    const plans = { pro: "PRO", pro_plus: "PRO+", pro_max: "PRO MAX" };
+    $("quota-plan").textContent = plans[sub.plan_code] || String(sub.plan_code).toUpperCase();
+    $("quota-monthly").textContent = fmtTokens(sub.monthly_quota);
+    $("quota-consumed").textContent = fmtTokens(sub.monthly_consumed);
+    $("quota-expires").textContent = new Date(sub.expires_at).toLocaleString("zh-CN", { hour12: false });
+  } else {
+    $("quota-plan").textContent = "FREE";
+    $("quota-monthly").textContent = "—";
+    $("quota-consumed").textContent = "—";
+    $("quota-expires").textContent = "无有效订阅";
+  }
+
+  $("quota-topup").textContent = topup ? fmtTokens(topup.balance_tokens) : "0";
+}
+
+async function grantSubscription(userId, days, planCode) {
+  const plans = { pro: "PRO", pro_plus: "PRO+", pro_max: "PRO MAX" };
+  if (!confirm(`确认赠送用户 ${selectedQuotaUserEmail} ${days}天 ${plans[planCode]} 订阅？`)) return;
+
+  const session = await getSession();
+  const r = await callGW({
+    endpoint: "admin_grant_subscription",
+    user_id: userId,
+    days: days,
+    plan_code: planCode
+  }, session);
+
+  if (r.ok) {
+    showToast("订阅赠送成功！", "ok");
+    await loadUserQuota(userId, selectedQuotaUserEmail);
+  } else {
+    showToast("赠送失败：" + (r.data?.message || r.status), "err");
+  }
+}
+
+async function resetConsumption(userId) {
+  if (!confirm(`确认清零用户 ${selectedQuotaUserEmail} 本月的已用额度？`)) return;
+
+  const session = await getSession();
+  const r = await callGW({
+    endpoint: "admin_reset_user_consumption",
+    user_id: userId
+  }, session);
+
+  if (r.ok) {
+    showToast("本月已用额度已成功归零！", "ok");
+    await loadUserQuota(userId, selectedQuotaUserEmail);
+  } else {
+    showToast("清空失败：" + (r.data?.message || r.status), "err");
+  }
+}
+
+async function adjustTopup(userId, delta) {
+  const actionText = delta > 0 ? `增加 ${delta}` : `扣除 ${Math.abs(delta)}`;
+  if (!confirm(`确认向用户 ${selectedQuotaUserEmail} ${actionText} tokens 加油包？`)) return;
+
+  const session = await getSession();
+  const r = await callGW({
+    endpoint: "admin_adjust_user_topup",
+    user_id: userId,
+    delta_tokens: delta
+  }, session);
+
+  if (r.ok) {
+    showToast("加油包余额调整成功！", "ok");
+    await loadUserQuota(userId, selectedQuotaUserEmail);
+  } else {
+    showToast("调整失败：" + (r.data?.message || r.status), "err");
+  }
+}
+
+// Bind Quota Control Panel Button Clicks
+$("btnGrant30Pro").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro"));
+$("btnGrant30ProPlus").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro_plus"));
+$("btnGrant30ProMax").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro_max"));
+$("btnResetConsumption").addEventListener("click", () => resetConsumption(selectedQuotaUserId));
+$("btnTopup10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 10000000));
+$("btnTopup50").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 50000000));
+$("btnTopup100").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 100000000));
+$("btnCustomTopup").addEventListener("click", () => {
+  const val = parseInt($("customTopupInput").value, 10);
+  if (isNaN(val) || val === 0) {
+    showToast("请输入合法的自定义充值 tokens 量！", "err");
+    return;
+  }
+  adjustTopup(selectedQuotaUserId, val);
+  $("customTopupInput").value = "";
+});
 
 init();
