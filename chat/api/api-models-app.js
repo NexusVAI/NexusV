@@ -55,6 +55,11 @@ const FALLBACK_PAID_IDS = new Set([
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.3-codex",
+    "gpt-5.2",
+    "grok-4.20-0309",
+    "grok-4.3",
+    "gpt-image-2-all",
+    "gpt-image-2-pro",
     "gemini-3.1-pro",
     "gemini-3.1-pro-preview",
     "glm-5.1",
@@ -346,6 +351,9 @@ function card(m) {
     const proPlusBadge = isProPlusOnly
         ? '<span class="tier" style="background:rgba(96,165,250,.18);color:#60a5fa" title="该模型仅 Pro+ 以上订阅可用">PRO+</span>'
         : "";
+    const proMaxBadge = m && m.proMaxOnly
+        ? '<span class="tier" style="background:rgba(168,85,247,.18);color:#a855f7" title="该模型仅 Pro Max 订阅可用">PRO MAX</span>'
+        : "";
     // 2026-05-18 计费倍率徽章：显示 0.5× / 1× / 3× / 10× / 30×。
     // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=3,
     // expensive=10, vip=30。样式跟 PRO+ 徽章同样位置，但颜色用 amber/clay。
@@ -381,7 +389,7 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${freeBlockedBadge}${disabledBadge}</span>
+            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${disabledBadge}</span>
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
