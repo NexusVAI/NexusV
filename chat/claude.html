@@ -106,7 +106,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-19-error-card-compact"
+            href="./claude.css?v=2026-05-20-user-memory"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -1798,6 +1798,15 @@
                                             </label>
                                         </div>
                                     </div>
+
+                                    <h2 class="claude-settings-h2 claude-settings-h2-mt">记忆</h2>
+                                    <div class="claude-form-row claude-form-row-stack">
+                                        <span class="claude-form-label">Cancri 的记忆</span>
+                                        <div class="claude-form-help">系统每天凌晨自动总结您的对话要点，帮助 Cancri 在后续对话中记住重要信息。最多保留 5 条记忆。</div>
+                                        <div id="claudeMemoriesContainer" class="memories-container">
+                                            <p class="claude-form-help" style="margin:0;">加载中…</p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- 其他 section: 占位（点对应左 nav 时切换显示） -->
@@ -2620,12 +2629,12 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-19-topup-fallback"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-20-user-memory"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-18-projects-replica"></script>
+        <script defer src="./claude_ui.js?v=2026-05-20-user-memory"></script>
         <!-- 2026-05-17 Phase A：「额度」面板（替代原「连接器」占位）。
              FREE 共享池 + 当日 15 次 PAID 试用 + 三档订阅月度配额进度 + 加油包余额。 -->
         <script defer src="./claude_quota_ui.js?v=2026-05-17-grandfather"></script>

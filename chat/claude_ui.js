@@ -2239,4 +2239,17 @@
             toast.classList.remove('show');
         }, 2000);
     }
+
+    // 2026-05-20：记忆删除按钮事件委托
+    var memoriesContainer = document.getElementById('claudeMemoriesContainer');
+    if (memoriesContainer) {
+        memoriesContainer.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-action="delete-memory"]');
+            if (!btn) return;
+            var slot = parseInt(btn.getAttribute('data-slot'), 10);
+            if (!isNaN(slot) && window.CancriChat && typeof window.CancriChat.deleteUserMemory === 'function') {
+                window.CancriChat.deleteUserMemory(slot);
+            }
+        });
+    }
 })();

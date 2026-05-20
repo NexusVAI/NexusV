@@ -4682,3 +4682,48 @@ html[data-chat-font="mono"] .message.assistant .think-body {
         display: none !important;
     }
 }
+
+/* 2026-05-20：用户记忆样式 */
+.memories-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+.memory-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--c-surface, rgba(128,128,128,0.06));
+    border: 1px solid var(--c-line, rgba(128,128,128,0.12));
+}
+.memory-text {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--c-text);
+    word-break: break-word;
+}
+.memory-delete-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: none;
+    color: var(--c-text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: opacity 0.15s, background 0.15s;
+}
+.memory-delete-btn:hover {
+    opacity: 1;
+    background: rgba(255,59,48,0.1);
+    color: #ff3b30;
+}
