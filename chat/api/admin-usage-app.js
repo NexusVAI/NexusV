@@ -84,9 +84,15 @@ async function init() {
   await loadUsage();
 }
 
-async function loadUsage() {
-  $("loading").style.display = "block";
-  $("loading").textContent = "加载中…";
+let isFetching = false;
+
+async function loadUsage(isSilent = false) {
+  if (isFetching) return;
+  isFetching = true;
+  if (!isSilent) {
+    $("loading").style.display = "block";
+    $("loading").textContent = "加载中…";
+  }
   try {
     const session = await getSession();
     const resp = await fetch(GW, {
@@ -103,7 +109,7 @@ async function loadUsage() {
       }),
     });
     if (resp.status === 403) {
-      $("loading").style.display = "none";
+      if (!isSilent) $("loading").style.display = "none";
       $("deny-gate").style.display = "block";
       return;
     }
@@ -111,13 +117,17 @@ async function loadUsage() {
     const data = await resp.json();
     USAGE = Array.isArray(data.usage) ? data.usage : [];
     STATS = data.stats || null;
-    $("loading").style.display = "none";
-    $("main").style.display = "block";
+    if (!isSilent) {
+      $("loading").style.display = "none";
+      $("main").style.display = "block";
+    }
     renderStats();
     render();
   } catch (e) {
-    $("loading").style.display = "none";
+    if (!isSilent) $("loading").style.display = "none";
     showToast("加载失败：" + (e.message || e), "err");
+  } finally {
+    isFetching = false;
   }
 }
 
@@ -327,6 +337,44 @@ $("reload-btn").addEventListener("click", () => loadUsage());
 $("search").addEventListener("input", (e) => {
   activeSearch = e.target.value.trim();
   render();
+});
+
+// Live Refresh Logic
+let liveIntervalId = null;
+$("liveToggle").addEventListener("change", (e) => {
+  const ind = $("liveIndicator");
+  if (e.target.checked) {
+    ind.style.backgroundColor = "#22c55e";
+    ind.style.boxShadow = "0 0 8px #22c55e";
+    ind.style.animation = "live-pulse 1.5s infinite alternate";
+    
+    // Create pulse style if not exists
+    if (!document.getElementById("live-pulse-style")) {
+      const style = document.createElement("style");
+      style.id = "live-pulse-style";
+      style.textContent = `
+        @keyframes live-pulse {
+          0% { opacity: 0.4; }
+          100% { opacity: 1; transform: scale(1.1); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Run immediately and set interval (refresh every 5 seconds)
+    loadUsage(true);
+    liveIntervalId = setInterval(() => {
+      loadUsage(true);
+    }, 5000);
+  } else {
+    ind.style.backgroundColor = "#9ca3af";
+    ind.style.boxShadow = "none";
+    ind.style.animation = "none";
+    if (liveIntervalId) {
+      clearInterval(liveIntervalId);
+      liveIntervalId = null;
+    }
+  }
 });
 
 init();
