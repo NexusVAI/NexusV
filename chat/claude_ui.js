@@ -2247,8 +2247,8 @@
             var btn = e.target.closest('[data-action="delete-memory"]');
             if (!btn) return;
             var slot = parseInt(btn.getAttribute('data-slot'), 10);
-            if (!isNaN(slot) && window.CancriChat && typeof window.CancriChat.deleteUserMemory === 'function') {
-                window.CancriChat.deleteUserMemory(slot);
+            if (!isNaN(slot) && window.CancriApp && typeof window.CancriApp.deleteUserMemory === 'function') {
+                window.CancriApp.deleteUserMemory(slot);
             }
         });
     }
