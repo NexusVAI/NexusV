@@ -43,10 +43,10 @@
 .mobile-drawer {
     display: none;
     position: fixed;
-    top: 50px;
+    top: 54px;
     left: 0;
     width: 100%;
-    height: calc(100vh - 50px);
+    height: calc(100vh - 54px);
     background: var(--nav-bg);
     z-index: 997;
     overflow-y: auto;

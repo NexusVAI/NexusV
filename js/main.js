@@ -63,6 +63,17 @@ function isIndexPage() {
     return Boolean(document.querySelector('.hero-card, .scrollable-list, .news-grid-2-col'));
 }
 
+function bindImageFallbacks() {
+    document.addEventListener('error', (event) => {
+        const target = event.target;
+        if (!target || target.tagName !== 'IMG') return;
+        const fallback = target.getAttribute('data-fallback-src');
+        if (!fallback || target.dataset.fallbackApplied === '1') return;
+        target.dataset.fallbackApplied = '1';
+        target.src = fallback;
+    }, true);
+}
+
 function bindGlobalToggles() {
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle && themeToggle.dataset.bound !== '1') {
@@ -121,6 +132,7 @@ function bootstrapApp() {
     if (window.initTheme) window.initTheme();
     if (window.initLanguage) window.initLanguage();
 
+    bindImageFallbacks();
     bindGlobalToggles();
 
     if (window.initMegaMenu) window.initMegaMenu();

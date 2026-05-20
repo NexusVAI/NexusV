@@ -416,7 +416,7 @@
 /* Mega Menu */
 .mega-menu-container {
     position: fixed;
-    top: 50px;
+    top: 54px;
     left: 0;
     width: 100%;
     background-color: var(--nav-bg);
