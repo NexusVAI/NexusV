@@ -4753,7 +4753,11 @@ async function fetchUserMemories() {
         "Content-Type": "application/json",
       },
     });
-    if (!response.ok) return;
+    if (!response.ok) {
+      console.warn("[memory] API 响应非 OK:", response.status);
+      renderMemoriesInSettings();
+      return;
+    }
     const json = await response.json();
     if (typeof json.memory_enabled === "boolean") {
       state.userMemoryEnabled = json.memory_enabled;
@@ -4762,10 +4766,11 @@ async function fetchUserMemories() {
       state.userMemories = json.memories
         .filter((m) => m && typeof m.content === "string" && m.content.trim())
         .map((m) => ({ slot: m.slot_index, content: m.content.trim() }));
-      renderMemoriesInSettings();
     }
+    renderMemoriesInSettings();
   } catch (e) {
     console.warn("[memory] 获取记忆失败:", e);
+    renderMemoriesInSettings();
   }
 }
 
