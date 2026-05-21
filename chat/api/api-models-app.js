@@ -129,6 +129,9 @@ const BRAND_LOGO = {
     xiaomimimo: "./xiaomimimo-color.svg",
     microsoft: "./microsoft-color.svg",
     ibm: "./ibm.svg",
+    cohere: "./cohere-color.svg",
+    swissai: "./huggingface-color.svg",
+    utterproject: "./huggingface-color.svg",
 };
 
 function normalizeBrandKey(brand) {
