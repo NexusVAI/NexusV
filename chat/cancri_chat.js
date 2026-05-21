@@ -12638,9 +12638,18 @@ document.getElementById("upgradeBtn").addEventListener("click", () => {
 });
 const clearBtnEl = document.getElementById("clearBtn");
 if (clearBtnEl)
-  clearBtnEl.addEventListener("click", () => {
+  clearBtnEl.addEventListener("click", async () => {
     closePopover();
-    clearConversation();
+    if (window.confirm("确定要清空您的所有会话记录吗？此操作无法撤销。")) {
+      const result = await deleteChatHistory("all");
+      if (result.success) {
+        newChat();
+        renderChatHistoryList();
+        showToast("所有会话记录已清空");
+      } else {
+        showToast(result.message || "清空失败，请重试");
+      }
+    }
   });
 const exportBtnEl = document.getElementById("exportBtn");
 if (exportBtnEl)
@@ -12670,10 +12679,7 @@ if (leaderboardSegmentButtons.length >= 2) {
   );
 }
 document.getElementById("helpToastBtn").addEventListener("click", () => {
-  window.open(
-    "https://nexusvai.github.io/NexusV/article.html?id=hero",
-    "_blank",
-  );
+  window.open("./api_docs.html", "_blank");
 });
 document.getElementById("nicknameEditBtn").addEventListener("click", () => {
   closePopover();
@@ -13564,10 +13570,19 @@ if (!initSharedConversationFromHash()) initQueryFromUrl();
 updateChatShareButtonVisibility();
 
 // 加载并渲染聊天记录列表
-renderChatHistoryList();
+if (!hasSharedConversationHash()) {
+  renderChatHistoryList();
+} else {
+  const listContainer = document.getElementById("chatHistoryList");
+  if (listContainer) {
+    listContainer.innerHTML = '<div class="recent-placeholder">登录后即可同步历史记录</div>';
+  }
+}
 
 // 2026-05-20：加载用户记忆
-fetchUserMemories();
+if (!hasSharedConversationHash()) {
+  fetchUserMemories();
+}
 
 // 2026-05-18：跟随系统深色/浅色主题。当用户在设置里把"外观"显式选成"跟随系统"
 // （state.themeMode === "system"）时，OS 切换深色 → 站内立即跟切。如果用户
