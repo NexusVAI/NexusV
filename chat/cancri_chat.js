@@ -2063,6 +2063,21 @@ const MODEL_CATALOG = [
   {"id": "or:qwen/qwen3-coder", "name": "Qwen3 Coder (OR)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:qwen/qwen3-next-80b-a3b-instruct", "name": "Qwen3 Next 80B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "or:meta-llama/llama-3.3-70b-instruct", "name": "Llama 3.3 70B Instruct", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  // Cloudflare Workers AI — free tier
+  {"id": "cf:phi-2", "name": "Phi-2", "brand": "Microsoft", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:gemma-2b-it", "name": "Gemma 2B IT", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:gemma-7b-it", "name": "Gemma 7B IT", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:llama-2-7b-chat", "name": "Llama 2 7B Chat", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:mistral-7b-instruct-v02", "name": "Mistral 7B v0.2", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:hermes-2-pro-mistral-7b", "name": "Hermes 2 Pro Mistral 7B", "brand": "HuggingFace", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:llama-3.2-1b-instruct", "name": "Llama 3.2 1B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:llama-3.2-3b-instruct", "name": "Llama 3.2 3B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:granite-4.0-h-micro", "name": "Granite 4.0 H Micro", "brand": "IBM", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:qwen3-30b-a3b", "name": "Qwen3 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:flux-2-dev", "name": "FLUX.2 Dev", "brand": "FLUX", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:flux-2-klein-4b", "name": "FLUX.2 Klein 4B", "brand": "FLUX", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:flux-2-klein-9b", "name": "FLUX.2 Klein 9B", "brand": "FLUX", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
 ];
 
 // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
@@ -2087,6 +2102,10 @@ const BRAND_ICON_MAP = {
   "HappyHorse": "../Logo/欢乐马.webp",
   "Stepfun": "./stepfun-color.svg",
   "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
+  "Microsoft": "./microsoft-color.svg",
+  "IBM": "./openai.svg",
+  "HuggingFace": "./huggingface-color.svg",
+  "FLUX": "./flux.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
