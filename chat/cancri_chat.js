@@ -2018,7 +2018,7 @@ const MODEL_CATALOG = [
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "deepseek-v3.2-exp", "name": "DeepSeek V3.2 Exp", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "deepseek-r1-0528", "name": "DeepSeek R1 0528", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
@@ -2069,15 +2069,11 @@ const MODEL_CATALOG = [
   {"id": "cf:gemma-7b-it", "name": "Gemma 7B IT", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:llama-2-7b-chat", "name": "Llama 2 7B Chat", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:mistral-7b-instruct-v02", "name": "Mistral 7B v0.2", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
-  {"id": "cf:hermes-2-pro-mistral-7b", "name": "Hermes 2 Pro Mistral 7B", "brand": "HuggingFace", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  {"id": "cf:hermes-2-pro-mistral-7b", "name": "Hermes 2 Pro Mistral 7B", "brand": "Mistral", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:llama-3.2-1b-instruct", "name": "Llama 3.2 1B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:llama-3.2-3b-instruct", "name": "Llama 3.2 3B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:granite-4.0-h-micro", "name": "Granite 4.0 H Micro", "brand": "IBM", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:qwen3-30b-a3b", "name": "Qwen3 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
-  {"id": "cf:glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
-  {"id": "cf:flux-2-dev", "name": "FLUX.2 Dev", "brand": "FLUX", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
-  {"id": "cf:flux-2-klein-4b", "name": "FLUX.2 Klein 4B", "brand": "FLUX", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
-  {"id": "cf:flux-2-klein-9b", "name": "FLUX.2 Klein 9B", "brand": "FLUX", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
 ];
 
 // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
@@ -2104,8 +2100,6 @@ const BRAND_ICON_MAP = {
   "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
   "Microsoft": "./microsoft-color.svg",
   "IBM": "./openai.svg",
-  "HuggingFace": "./huggingface-color.svg",
-  "FLUX": "./flux.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。

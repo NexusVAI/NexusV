@@ -129,7 +129,6 @@ const BRAND_LOGO = {
     xiaomimimo: "./xiaomimimo-color.svg",
     microsoft: "./microsoft-color.svg",
     ibm: "./openai.svg",
-    flux: "./flux.svg",
 };
 
 function normalizeBrandKey(brand) {
