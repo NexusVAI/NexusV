@@ -624,21 +624,21 @@ html[data-theme="light"] .site-footer-socials > a {
 .auth-overlay {
     /* 2026-05-16 claude-clone v4c: bg 调更黑 #0e0e0e，跟 Claude 真站
        图 2 深黑背景 #0f0e0f 对齐。 */
-    background: #0e0e0e;
+    background: hsl(var(--bg-100));
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
-    padding: 24px;
+    padding: 16px;
     overflow: hidden;
     position: fixed;
     inset: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
-    gap: 24px;
+    gap: 16px;
 }
 
 html[data-theme="light"] .auth-overlay {
-    background: #fafaf9;
+    background: hsl(var(--bg-100));
 }
 
 /* 2026-05-16 claude-clone v4 修透明 bug：cancri_chat.css L6229
@@ -647,7 +647,7 @@ html[data-theme="light"] .auth-overlay {
    导致 dark mode 剧本 overlay 半透明、后面 sidebar/chat 透出。
    这里用 html[data-theme="dark"] (0,2,1) 高 specificity 覆盖。 */
 html[data-theme="dark"] .auth-overlay {
-    background: #0e0e0e;
+    background: hsl(var(--bg-300));
 }
 
 .auth-bg {
@@ -663,20 +663,22 @@ html[data-theme="dark"] .auth-overlay {
     grid-column: 2;
     position: relative;
     z-index: 1;
-    background: #faf7ee;
-    border-radius: 28px;
+    background: hsl(var(--bg-200));
+    border: 1px solid hsl(var(--border-300) / 0.18);
+    border-radius: 16px;
     overflow: hidden;
     align-self: stretch;
     /* GPU 合成层提升，避免 video 重绘时回流左列 stage */
     transform: translateZ(0);
     will-change: transform;
+    box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
 }
 
 html[data-theme="light"] .auth-showcase {
     /* light 模式 overlay 本身就是奶白底 (#fafaf9)，右卡为了视觉分层
        改用稍深一档的暖灰（参考 chat/api 平台 light mode --bg-1）。 */
-    background: #f3f1ea;
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    background: hsl(var(--bg-200));
+    box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
 }
 
 .auth-showcase-video {
@@ -716,15 +718,17 @@ html[data-theme="light"] .auth-showcase {
 /* ── auth-stage：居中单列堆栈（hero + card + footer） ────────── */
 .auth-stage {
     width: 100%;
-    max-width: 360px;
+    max-width: 768px;
     margin: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 0;
     position: relative;
     z-index: 1;
-    padding: 80px 24px 48px;
+    min-height: calc(100vh - 32px);
+    padding: 72px 32px 32px;
     background: transparent !important;
     text-align: center;
 }
@@ -744,11 +748,11 @@ html[data-theme="light"] .auth-showcase {
     z-index: 3;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     text-decoration: none;
-    color: #f5f0e6;
-    padding: 6px 10px;
-    border-radius: 6px;
+    color: hsl(var(--text-000));
+    padding: 0;
+    border-radius: 0;
     margin: 0;
     transition: opacity 150ms ease;
 }
@@ -757,13 +761,13 @@ html[data-theme="light"] .auth-showcase {
 }
 
 html[data-theme="light"] .auth-brand {
-    color: #1a1a1a;
+    color: hsl(var(--text-000));
 }
 
 .auth-brand-mark {
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
     object-fit: cover;
     display: block;
 }
@@ -775,9 +779,9 @@ html[data-theme="light"] .auth-brand {
         "Anthropic Sans", "AnthropicSans",
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    letter-spacing: 0;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
 }
 
 @media (max-width: 520px) {
@@ -790,7 +794,7 @@ html[data-theme="light"] .auth-brand {
 /* ── Hero（衬线大字 + 暖橙副标题，居中）────────────── */
 .auth-hero {
     text-align: center;
-    margin: 0 0 28px;
+    margin: 0 0 32px;
     padding: 0;
 }
 
@@ -801,12 +805,12 @@ html[data-theme="light"] .auth-brand {
         "Anthropic Serif", "AnthropicSerif",
         "Source Serif 4", "Source Serif Pro", "Noto Serif SC",
         "Source Han Serif SC", "Songti SC", Georgia, serif;
-    font-size: 44px;
+    font-size: clamp(44px, 5.8vw, 56px);
     font-weight: 400;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
-    margin: 0 0 16px;
-    color: #f5f0e6;
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    margin: 0 0 18px;
+    color: hsl(var(--text-100));
 }
 
 .auth-hero-subtitle {
@@ -814,20 +818,20 @@ html[data-theme="light"] .auth-brand {
         "Anthropic Sans", "AnthropicSans",
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.45;
-    color: #c8965f;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: hsl(var(--text-100));
     margin: 0 auto;
-    max-width: 320px;
-    letter-spacing: 0.01em;
+    max-width: 420px;
+    letter-spacing: -0.01em;
 }
 
 html[data-theme="light"] .auth-hero-title {
-    color: #1a1a1a;
+    color: hsl(var(--text-100));
 }
 html[data-theme="light"] .auth-hero-subtitle {
-    color: #b8753a;
+    color: hsl(var(--text-100));
 }
 
 @media (max-width: 520px) {
@@ -841,28 +845,41 @@ html[data-theme="light"] .auth-hero-subtitle {
    跟 Claude 真站 card 更软、边梦更强的视觉对齐。 */
 .auth-card {
     width: 100%;
-    padding: 20px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    box-shadow: none;
+    max-width: 448px;
+    min-width: min(100%, 320px);
+    padding: 28px;
+    border-radius: 32px;
+    background: hsl(var(--bg-100));
+    border: 1px solid hsl(var(--border-300) / 0.14);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.04);
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    max-width: 100%;
 }
 
 html[data-theme="light"] .auth-card {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.10);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.14);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.04);
 }
 
 .auth-step {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
     width: 100%;
+}
+
+.auth-email-divider {
+    color: hsl(var(--text-300));
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: center;
+    text-transform: uppercase;
 }
 
 /* Claude 风格直接用 input placeholder 代 label，所以 label 隐藏。
@@ -882,52 +899,52 @@ html[data-theme="light"] .auth-card {
 /* ── Input（卡内深灰底圆角，placeholder 居中）────────── */
 .auth-input {
     width: 100%;
-    height: 40px;
-    padding: 0 12px;
-    font-size: 14px;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 16px;
     font-weight: 400;
     font-family:
         "Anthropic Sans", "AnthropicSans",
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "PingFang SC", "Microsoft YaHei", sans-serif;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #f5f0e6;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9.6px;
+    background: hsl(var(--bg-000));
+    color: hsl(var(--text-000));
+    border: 1px solid hsl(var(--border-300) / 0.30);
     box-shadow: none;
     box-sizing: border-box;
     outline: none;
-    text-align: center;
+    text-align: left;
     transition:
         border-color 150ms ease,
         background-color 150ms ease;
 }
 .auth-input::placeholder {
-    color: rgba(245, 240, 230, 0.45);
-    text-align: center;
+    color: hsl(var(--text-400));
+    text-align: left;
 }
 .auth-input:hover {
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: hsl(var(--border-300) / 0.48);
 }
 .auth-input:focus {
-    border-color: rgba(245, 240, 230, 0.40);
-    background: rgba(255, 255, 255, 0.08);
+    border-color: hsl(var(--text-000) / 0.55);
+    background: hsl(var(--bg-000));
 }
 
 html[data-theme="light"] .auth-input {
-    background: #ffffff;
-    color: #1a1a1a;
-    border-color: rgba(0, 0, 0, 0.14);
+    background: hsl(var(--bg-000));
+    color: hsl(var(--text-000));
+    border-color: hsl(var(--border-300) / 0.30);
 }
 html[data-theme="light"] .auth-input::placeholder {
-    color: rgba(26, 26, 26, 0.40);
+    color: hsl(var(--text-400));
 }
 html[data-theme="light"] .auth-input:hover {
-    border-color: rgba(0, 0, 0, 0.28);
+    border-color: hsl(var(--border-300) / 0.48);
 }
 html[data-theme="light"] .auth-input:focus {
-    border-color: #1a1a1a;
-    background: #ffffff;
+    border-color: hsl(var(--text-000) / 0.55);
+    background: hsl(var(--bg-000));
 }
 
 .auth-otp-input {
@@ -941,15 +958,15 @@ html[data-theme="light"] .auth-input:focus {
 /* ── Button（白底深字 primary，参照 Claude "Continue with email"）── */
 .auth-btn {
     width: 100%;
-    height: 40px;
-    margin-top: 4px;
-    padding: 0 14px;
-    border-radius: 8px;
-    border: 1px solid #f5f0e6;
-    background: #f5f0e6;
-    color: #1a1a1a;
-    font-size: 14px;
-    font-weight: 500;
+    height: 44px;
+    margin-top: 0;
+    padding: 0 20px;
+    border-radius: 9.6px;
+    border: 1px solid transparent;
+    background: hsl(var(--text-000));
+    color: hsl(var(--bg-000));
+    font-size: 16px;
+    font-weight: 700;
     letter-spacing: 0;
     font-family:
         "Anthropic Sans", "AnthropicSans",
@@ -957,50 +974,47 @@ html[data-theme="light"] .auth-input:focus {
         "PingFang SC", "Microsoft YaHei", sans-serif;
     cursor: pointer;
     box-shadow: none;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     transition:
         background-color 150ms ease,
         border-color 150ms ease,
         opacity 150ms ease;
 }
 .auth-btn:hover {
-    background: #ffffff;
-    border-color: #ffffff;
+    background: hsl(var(--text-000));
+    border-color: transparent;
 }
 .auth-btn:active {
-    background: #e5e0d6;
-    border-color: #e5e0d6;
+    transform: scale(0.98);
 }
 .auth-btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(245, 240, 230, 0.30);
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.20);
 }
 .auth-btn:disabled {
-    background: rgba(245, 240, 230, 0.30);
-    border-color: rgba(245, 240, 230, 0.30);
-    color: rgba(26, 26, 26, 0.55);
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
 html[data-theme="light"] .auth-btn {
-    background: #1a1a1a;
-    border-color: #1a1a1a;
-    color: #ffffff;
+    background: hsl(var(--text-000));
+    border-color: transparent;
+    color: hsl(var(--bg-000));
 }
 html[data-theme="light"] .auth-btn:hover {
-    background: #2c2c30;
-    border-color: #2c2c30;
+    background: hsl(var(--text-000));
+    border-color: transparent;
 }
 html[data-theme="light"] .auth-btn:active {
-    background: #404048;
-    border-color: #404048;
+    transform: scale(0.98);
 }
 html[data-theme="light"] .auth-btn:focus-visible {
-    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.20);
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.20);
 }
 html[data-theme="light"] .auth-btn:disabled {
-    background: rgba(26, 26, 26, 0.30);
-    border-color: rgba(26, 26, 26, 0.30);
-    color: rgba(255, 255, 255, 0.70);
+    opacity: 0.5;
 }
 
 /* .auth-btn-primary 沿用 .auth-btn 全部样式 */
@@ -1025,21 +1039,21 @@ html[data-theme="light"] .auth-btn:disabled {
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(245, 240, 230, 0.40);
+    color: hsl(var(--text-300));
 }
 .auth-divider::before,
 .auth-divider::after {
     content: "";
     flex: 1;
     height: 1px;
-    background: rgba(245, 240, 230, 0.10);
+    background: hsl(var(--border-300) / 0.16);
 }
 html[data-theme="light"] .auth-divider {
-    color: rgba(26, 26, 26, 0.40);
+    color: hsl(var(--text-300));
 }
 html[data-theme="light"] .auth-divider::before,
 html[data-theme="light"] .auth-divider::after {
-    background: rgba(26, 26, 26, 0.10);
+    background: hsl(var(--border-300) / 0.16);
 }
 
 .auth-error {
@@ -1079,27 +1093,27 @@ html[data-theme="light"] .auth-error {
     text-align: center;
     margin: 8px 0 0;
     line-height: 1.5;
-    color: rgba(245, 240, 230, 0.45);
+    color: hsl(var(--text-400));
     max-width: 100%;
 }
 .auth-footer-link {
-    color: rgba(245, 240, 230, 0.60);
+    color: hsl(var(--text-300));
     text-decoration: underline;
     text-underline-offset: 2px;
     text-decoration-thickness: 1px;
     transition: color 120ms ease;
 }
 .auth-footer-link:hover {
-    color: #f5f0e6;
+    color: hsl(var(--text-000));
 }
 html[data-theme="light"] .auth-footer-line {
-    color: rgba(26, 26, 26, 0.45);
+    color: hsl(var(--text-400));
 }
 html[data-theme="light"] .auth-footer-link {
-    color: rgba(26, 26, 26, 0.65);
+    color: hsl(var(--text-300));
 }
 html[data-theme="light"] .auth-footer-link:hover {
-    color: #1a1a1a;
+    color: hsl(var(--text-000));
 }
 
 /* ── Theme toggle（右下角小方按钮）──────────────────── */
@@ -1112,9 +1126,9 @@ html[data-theme="light"] .auth-footer-link:hover {
     height: 32px;
     padding: 0;
     border-radius: 6px;
-    border: 1px solid rgba(245, 240, 230, 0.12);
-    background: rgba(245, 240, 230, 0.04);
-    color: rgba(245, 240, 230, 0.60);
+    border: 1px solid hsl(var(--border-300) / 0.16);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-400));
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -1125,24 +1139,24 @@ html[data-theme="light"] .auth-footer-link:hover {
         color 150ms ease;
 }
 .auth-theme-toggle:hover {
-    background: rgba(245, 240, 230, 0.08);
-    border-color: rgba(245, 240, 230, 0.24);
-    color: #f5f0e6;
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.28);
+    color: hsl(var(--text-000));
 }
 .auth-theme-toggle:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(245, 240, 230, 0.20);
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.14);
 }
 
 html[data-theme="light"] .auth-theme-toggle {
-    border-color: rgba(26, 26, 26, 0.12);
-    background: #ffffff;
-    color: rgba(26, 26, 26, 0.60);
+    border-color: hsl(var(--border-300) / 0.16);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-400));
 }
 html[data-theme="light"] .auth-theme-toggle:hover {
-    background: #f5f5f5;
-    border-color: rgba(26, 26, 26, 0.24);
-    color: #1a1a1a;
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.28);
+    color: hsl(var(--text-000));
 }
 
 .auth-theme-icon {
