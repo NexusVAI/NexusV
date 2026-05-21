@@ -1301,3 +1301,330 @@ td.ip {
    regions, each chaining the SVG displacement filter, caused noticeable
    frame drops on mobile and added ~80-120ms of paint per dashboard
    render. The admin look is intentionally industrial, not glassy. */
+
+:root {
+  --bg: #262624;
+  --bg-1: #30302e;
+  --bg-2: #3a3935;
+  --line: #eaddd81a;
+  --line-2: #6c6a6094;
+  --ink: #f5f4ef;
+  --ink-2: #e5e5e2;
+  --ink-3: #a6a39b;
+  --cream: #f5f4ed;
+  --cream-on: #1f1f1c;
+  --clay: #d97757;
+  --clay-2: #c96e4a;
+  --shadow-toast: 0 16px 44px rgba(0, 0, 0, 0.32);
+  --shadow-card: 0 14px 40px rgba(0, 0, 0, 0.14);
+  --bg-elev: var(--bg-1);
+  --bg-card: var(--bg-1);
+  --bg-input: var(--bg-2);
+  --border: var(--line);
+  --border-strong: var(--line-2);
+  --border-mute: var(--line);
+  --text: var(--ink);
+  --text-mute: var(--ink-2);
+  --text-faint: var(--ink-3);
+  --accent: var(--clay);
+  --accent-strong: var(--clay);
+  --accent-strong-hover: var(--clay-2);
+  --surface: var(--bg-1);
+  --surface-elevated: var(--bg-2);
+}
+
+:root[data-theme="light"] {
+  --bg: #faf9f5;
+  --bg-1: #f4f1e7;
+  --bg-2: #eee9df;
+  --line: #706b5740;
+  --line-2: #706b57a6;
+  --ink: #29261b;
+  --ink-2: #3d3929;
+  --ink-3: #656358;
+  --cream: #2c2825;
+  --cream-on: #fffaf2;
+  --clay: #c96e4a;
+  --clay-2: #b25c3e;
+  --shadow-toast: 0 14px 36px rgba(82, 55, 38, 0.14);
+  --shadow-card: 0 14px 40px rgba(82, 55, 38, 0.08);
+}
+
+body {
+  background:
+    radial-gradient(circle at 80% -10%, rgba(217, 119, 87, 0.09), transparent 32rem),
+    var(--bg);
+}
+
+.topbar,
+.nav-bar--sticky {
+  background: rgba(38, 38, 36, 0.9);
+  border-bottom-color: var(--line);
+}
+
+:root[data-theme="light"] .topbar,
+:root[data-theme="light"] .nav-bar--sticky {
+  background: rgba(250, 249, 245, 0.9);
+}
+
+.topbar__inner,
+.page-shell,
+.site-footer__inner,
+.container,
+.container--narrow,
+.container--wide {
+  max-width: min(1180px, calc(100vw - 32px));
+}
+
+.container--wide,
+.page-shell--wide {
+  max-width: min(1400px, calc(100vw - 32px));
+}
+
+.container--narrow,
+.page-shell--narrow {
+  max-width: min(680px, calc(100vw - 32px));
+}
+
+.brand__mark,
+header h1,
+.page-title,
+.hero__h1,
+.chapter__title,
+.plan-tier__name,
+.plan-tier__price,
+.topup-card__amount {
+  letter-spacing: -0.025em;
+}
+
+.nav a,
+.nav-bar a,
+.topnav a,
+.theme-toggle,
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.reload-btn,
+.filter-btn,
+.endpoint-strip__copy,
+.plan-tier,
+.topup-card,
+.card,
+.stat-card,
+.gate,
+.order-card,
+.selected-summary,
+.status-box,
+.key-row,
+.model-card,
+.doc-section,
+table {
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.nav a:hover,
+.nav-bar a:hover,
+.topnav a:hover,
+.theme-toggle:hover,
+.filter-btn:hover,
+.reload-btn:hover,
+.endpoint-strip__copy:hover {
+  transform: translateY(-1px);
+}
+
+.btn:hover,
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-danger:hover,
+.plan-tier:hover,
+.topup-card:hover,
+.card:hover,
+.stat-card:hover,
+.model-card:hover {
+  transform: translateY(-1px);
+}
+
+.card,
+.stat-card,
+.gate,
+.order-card,
+.selected-summary,
+.status-box,
+.plan-tier,
+.topup-card,
+.model-card,
+.doc-section,
+table {
+  background: var(--bg-card);
+  border-color: var(--line);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .gate,
+:root[data-theme="light"] .order-card,
+:root[data-theme="light"] .selected-summary,
+:root[data-theme="light"] .status-box,
+:root[data-theme="light"] .plan-tier,
+:root[data-theme="light"] .topup-card,
+:root[data-theme="light"] .model-card,
+:root[data-theme="light"] .doc-section,
+:root[data-theme="light"] table {
+  background: #fffdf8;
+  box-shadow: var(--shadow-card);
+}
+
+.plan-tier.is-recommended {
+  border-color: var(--clay);
+  box-shadow:
+    0 0 0 1px rgba(217, 119, 87, 0.52),
+    var(--shadow-card);
+}
+
+.btn-primary,
+.plan-tier__ribbon {
+  background: var(--cream);
+  color: var(--cream-on);
+}
+
+:root[data-theme="light"] .btn-primary,
+:root[data-theme="light"] .plan-tier__ribbon {
+  background: var(--ink);
+  color: #fffaf2;
+}
+
+.btn-primary:hover {
+  filter: none;
+  background: #fff8ec;
+}
+
+:root[data-theme="light"] .btn-primary:hover {
+  background: #3a332e;
+}
+
+.btn-secondary,
+.reload-btn,
+.endpoint-strip__copy,
+.theme-toggle {
+  background: transparent;
+  border-color: var(--line-2);
+}
+
+.btn-secondary:hover,
+.reload-btn:hover,
+.endpoint-strip__copy:hover,
+.theme-toggle:hover {
+  border-color: var(--line-2);
+  background: var(--bg-1);
+}
+
+.badge-tier,
+.key-tier-chip,
+.claude-tier-chip {
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+}
+
+.badge-tier.free,
+.key-tier-chip.is-free,
+.claude-tier-chip.is-free {
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+}
+
+.badge-tier.pro,
+.badge-tier.pro_plus,
+.badge-tier.pro_max,
+.key-tier-chip.is-paid,
+.claude-tier-chip.is-paid {
+  background: var(--clay);
+  border-color: var(--clay);
+  color: #fffaf2;
+}
+
+.toast {
+  border-radius: 12px;
+  background: var(--bg-card);
+  border-color: var(--line-2);
+}
+
+.search-box,
+input,
+textarea,
+select {
+  background: var(--bg-input);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.search-box:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--clay);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.16);
+}
+
+pre,
+code {
+  border-radius: 7px;
+}
+
+@media (max-width: 720px) {
+  body {
+    background: var(--bg);
+  }
+
+  .topbar__inner,
+  .page-shell,
+  .site-footer__inner,
+  .container,
+  .container--narrow,
+  .container--wide {
+    max-width: none;
+  }
+
+  .topnav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topnav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav,
+  .nav-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar,
+  .nav-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .plan-grid,
+  .topup-grid,
+  .stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    min-height: 38px;
+  }
+}
