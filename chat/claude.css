@@ -957,6 +957,11 @@ html[data-theme="light"] .composer:focus-within {
 }
 .composer-input::placeholder {
     color: var(--c-text-dim) !important;
+    transition: opacity 0.5s ease-in-out !important;
+    opacity: 1 !important;
+}
+.composer-input.placeholder-faded::placeholder {
+    opacity: 0 !important;
 }
 
 /* composer 底部一行：左下 + 按钮、右下 模型名 + 麦克风 + 发送 */

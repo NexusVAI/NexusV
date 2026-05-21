@@ -8220,41 +8220,149 @@ function getDefaultHomeHeroText() {
     return `晚上好，\n${name}`;
   }
 
-  if (weekday === 0 || weekday === 6) {
-    return pickHomeText([
-      `周末的${name}，想整点什么？`,
-      `${name}，周末也来搞点新东西？`,
-      `${name} 来了！周末想玩点什么？`,
-    ]);
-  }
-
+  // 1. 深夜 (0:00 - 4:59) - 不分工作日和周末，全部突出深夜温馨氛围
   if (hour < 5) {
     return pickHomeText([
-      `还没睡觉的${name}，想做点什么？`,
-      `夜深了，${name}，还在忙什么？`,
+      `这是深夜的${name}，怎么还没睡呀，还在忙什么？`,
+      `夜深了，${name}。今天写代码辛苦了，要早点休息哦。`,
+      `还没睡觉的${name}，深夜是灵感最澎湃的时候吗？`,
+      `夜深人静，适合静下心来。${name}，今晚我们来聊点什么？`,
+      `黑夜里的守护者，${name}，今天也是超棒的一天，别太累着自己。`
     ]);
   }
 
+  // 2. 周一特供 (Monday Blues)
+  if (weekday === 1) {
+    if (hour < 11) {
+      return pickHomeText([
+        `周一不快乐！${name}，今天也要打起精神来呀~`,
+        `新的一周开始啦！${name}，这周打算整点什么大动作？`,
+        `周一早安，${name}！今天喝咖啡了吗？`,
+        `又是奋斗的星期一，${name}，今天先从哪个难题开始？`
+      ]);
+    }
+    if (hour < 14) {
+      return pickHomeText([
+        `周一中午好，${name}。午饭吃了吗？稍微午休一下吧~`,
+        `${name}，周一的中午，适合来点新想法，碰撞一下火花？`
+      ]);
+    }
+    if (hour < 18) {
+      return pickHomeText([
+        `周一下午好，${name}！熬过了最痛苦的上午，下午继续加油！`,
+        `${name}，周一的下午感觉如何？来理一理工作思路吧。`,
+        `下午茶时间，${name}。周一下午稍微站起来活动一下，喝杯水？`
+      ]);
+    }
+    return pickHomeText([
+      `忙碌的周一终于过完了，晚上好，${name}~`,
+      `周一的晚上，${name}，今天辛苦啦，晚上来放松聊聊？`,
+      `晚上好，${name}！周一最艰难的部分已经过去，今晚我们搞点轻松的。`
+    ]);
+  }
+
+  // 3. 周五特供 (Friday Joy)
+  if (weekday === 5) {
+    if (hour < 11) {
+      return pickHomeText([
+        `周五早安，${name}！今天上完班就是周末啦，坚持就是胜利！`,
+        `早安！${name}，今天是本周最后一个工作日，开心起来！`,
+        `${name}，早！周五啦，今天的日常任务打算怎么收尾？`
+      ]);
+    }
+    if (hour < 14) {
+      return pickHomeText([
+        `周五中午好，${name}。今天中午多吃点，准备迎接美好的周末！`,
+        `${name}，周五午安！午休时间，畅想一下周末的计划吧。`
+      ]);
+    }
+    if (hour < 18) {
+      return pickHomeText([
+        `周五下午啦！${name}，再坚持一下，马上就周末放假啦！`,
+        `周五下午好，${name}！今天的工作准备收尾了吗？`,
+        `摸鱼时间到？${name}，周五下午先简单推进点什么，准备迎接假期！`,
+        `周五的下午，${name}，阳光正好，心情是不是已经飞到周末去了？`
+      ]);
+    }
+    return pickHomeText([
+      `周五晚上好！${name}，周末时间到，好好放松犒劳自己！`,
+      `终于到周五晚上啦！${name}，今晚打算怎么度过周末前夜？`,
+      `Happy Friday! ${name}，今晚不加班，尽情享受自由时光吧！`
+    ]);
+  }
+
+  // 4. 周六/周日特供 (Weekend Mode)
+  if (weekday === 0 || weekday === 6) {
+    if (hour < 11) {
+      return pickHomeText([
+        `周末快乐！${name}，今天不卷工作，玩点好玩的吧~`,
+        `周末早安！${name}，今天打算怎么安排惬意的一天？`,
+        `享受周末！${name}，今天有什么想探索的新点子吗？`,
+        `早安，放假中的${name}！睡饱了感觉怎么样？`
+      ]);
+    }
+    if (hour < 14) {
+      return pickHomeText([
+        `周末午安，${name}。今天外面天气怎么样？`,
+        `惬意的周末中午，${name}，要不要来闲聊一会儿？`,
+        `${name}，午安！周末睡个懒觉起来，吃顿丰盛的午餐吧。`
+      ]);
+    }
+    if (hour < 18) {
+      return pickHomeText([
+        `周末下午好，${name}。今天过得舒服吗？`,
+        `暖洋洋的周末午后，${name}，想写点自己喜欢的代码吗？`,
+        `惬意的周末时光，${name}，喝杯茶/咖啡，听首好歌吧。`
+      ]);
+    }
+    // 晚上
+    if (weekday === 0) { // 周日晚上
+      return pickHomeText([
+        `周日晚上好，${name}。明天又是崭新的一周，今晚早点休息哦~`,
+        `周日晚上，${name}，是在为明天做准备，还是在享受最后的周末时光？`,
+        `${name}，周末快结束啦，今晚来充充电，轻松聊点什么。`
+      ]);
+    } else { // 周六晚上
+      return pickHomeText([
+        `周六的晚上，${name}，今晚是属于自己的自由时间！`,
+        `周六晚上好，${name}！今天玩得开心吗？明天还可以继续嗨！`,
+        `周六的夜色正美，${name}，今晚有什么好玩的夜生活计划吗？`
+      ]);
+    }
+  }
+
+  // 5. 常规工作日 (Tue, Wed, Thu)
   if (hour < 11) {
     return pickHomeText([
-      `早上好，${name}`,
-      `${name}，早安，今天先做哪件事？`,
-      `${name} 来了！`,
+      `早安，${name}！今天也是充满干劲的一天！`,
+      `${name}，早！今天有什么计划要和我一起完成吗？`,
+      `早，${name}！今天也来杯咖啡，开启元气满满的一天吧。`,
+      `新的一天，${name}，准备好迎接新的挑战了吗？`
     ]);
   }
 
   if (hour < 14) {
-    return pickHomeText([`中午好，${name}`, `${name}，午安，来点新想法？`]);
+    return pickHomeText([
+      `中午好，${name}。午饭吃饱了吗？稍微午休一下吧~`,
+      `${name}，午安，来点新想法，科学摸鱼碰撞一下火花？`,
+      `午休时刻，${name}，让大脑放空十几分钟吧。`
+    ]);
   }
 
   if (hour < 18) {
-    return pickHomeText([`下午好，${name}`, `${name}，下午先推进点什么？`]);
+    return pickHomeText([
+      `下午好，${name}。写累了的话，起来活动一下，喝杯水吧？`,
+      `下午先推进点什么？${name}，我们一起来看看。`,
+      `下午好，${name}。来杯下午茶，清醒一下脑子？`,
+      `下午的漫长时刻，${name}，让我来帮你写几段干净的代码。`
+    ]);
   }
 
   return pickHomeText([
-    `晚上好，${name}`,
-    `${name}，今晚想聊点什么？`,
-    `${name}，来继续开工？`,
+    `晚上好，${name}。今天忙了一天，今晚我们来点轻松的探讨吧。`,
+    `${name}，晚上好！今晚是要写一会儿自己喜欢的私活，还是单纯闲聊？`,
+    `晚上好，${name}！夜色很美，适合静静思考，有什么想聊的？`,
+    `${name}，今晚想聊点什么？随时准备着。`
   ]);
 }
 
@@ -8265,18 +8373,67 @@ function updateHomeHeroText() {
     : getDefaultHomeHeroText();
 }
 
+let placeholderIntervalId = null;
+const CHAT_PLACEHOLDER_TEMPLATES = [
+  "有问题，尽管问",
+  "问我想法，写段代码，或者纯粹聊聊",
+  "输入你的灵感，让我们一起实现它",
+  "有什么我能帮你的吗？不管是写文章还是找 Bug",
+  "今天想聊点什么？试着让我帮你写个小工具",
+  "有什么难题？让我来为你排忧解难",
+  "脑海中有个点子？写下来，我们一起聊聊",
+  "任何困惑，或者想听个故事？尽管说吧"
+];
+let currentPlaceholderIndex = 0;
+
 function updateComposerPlaceholder() {
   if (!homeInput) return;
   const meta = getModelMeta(currentModel);
-  if (meta.imageOnly) {
-    homeInput.placeholder = "描述你想生成的图片";
+
+  // 如果是图片或视频模型，清除 Carousel，设置静态 placeholder 并直接显示
+  if (meta.imageOnly || meta.videoOnly) {
+    if (placeholderIntervalId) {
+      clearInterval(placeholderIntervalId);
+      placeholderIntervalId = null;
+    }
+    homeInput.classList.remove("placeholder-faded");
+    if (meta.imageOnly) {
+      homeInput.placeholder = "描述你想生成的图片";
+    } else {
+      homeInput.placeholder = "描述你想生成的视频";
+    }
     return;
   }
-  if (meta.videoOnly) {
-    homeInput.placeholder = "描述你想生成的视频";
-    return;
+
+  // 否则是正常聊天模型，如果已经有 Carousel 在运行，我们只是更新当前的 placeholder (不覆盖)，避免突然打断 rotation
+  // 否则，启动 Carousel!
+  if (!placeholderIntervalId) {
+    // 首次载入或重切回聊天模型
+    homeInput.classList.remove("placeholder-faded");
+    homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[currentPlaceholderIndex];
+    
+    placeholderIntervalId = setInterval(() => {
+      if (!homeInput) return;
+      // 如果当前不是聊天模型，就不跑了
+      const currentMeta = getModelMeta(currentModel);
+      if (currentMeta.imageOnly || currentMeta.videoOnly) {
+        clearInterval(placeholderIntervalId);
+        placeholderIntervalId = null;
+        return;
+      }
+      
+      // 开始渐出
+      homeInput.classList.add("placeholder-faded");
+      
+      setTimeout(() => {
+        if (!homeInput) return;
+        currentPlaceholderIndex = (currentPlaceholderIndex + 1) % CHAT_PLACEHOLDER_TEMPLATES.length;
+        homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[currentPlaceholderIndex];
+        // 开始渐入
+        homeInput.classList.remove("placeholder-faded");
+      }, 500); // 对齐 CSS 0.5s 渐出动画
+    }, 8000); // 每 8 秒更换一次
   }
-  homeInput.placeholder = "有问题，尽管问";
 }
 
 function isChatNearBottom(threshold = 120) {
