@@ -127,6 +127,9 @@ const BRAND_LOGO = {
     yuanbao: "./yuanbao-color.svg",
     kling: "./kling-color.svg",
     xiaomimimo: "./xiaomimimo-color.svg",
+    microsoft: "./microsoft-color.svg",
+    ibm: "./openai.svg",
+    flux: "./flux.svg",
 };
 
 function normalizeBrandKey(brand) {
