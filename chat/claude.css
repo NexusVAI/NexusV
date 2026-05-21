@@ -60,16 +60,16 @@ html, html[data-theme="dark"] {
     --c-bg-elev:   #30302e;     /* 输入框、卡片浮起背景 */
     --c-bg-elev-2: #30302e;     /* popover / dropdown 卡片 */
     --c-bg-elev-3: #3a3935;     /* user message bubble */
-    --c-text:        #f5f4ef;
-    --c-text-soft:   #e5e5e2;
-    --c-text-dim:    #a6a39b;
-    --c-line:        #eaddd81a;
-    --c-line-strong: #6c6a6094;
+    --c-text:        #faf9f5;
+    --c-text-soft:   #c2c0b8;
+    --c-text-dim:    #9b9890;
+    --c-line:        rgba(226, 223, 213, 0.15);
+    --c-line-strong: rgba(226, 223, 213, 0.30);
     --c-hover:        #30302e;
-    --c-hover-strong: #383732;
-    --c-accent:        #d97757;
-    --c-accent-hover:  #d97757;
-    --c-accent-soft:   rgba(217, 119, 87, 0.16);
+    --c-hover-strong: #141413;
+    --c-accent:        hsl(15 63.1% 59.6%);
+    --c-accent-hover:  hsl(15 63.1% 59.6%);
+    --c-accent-soft:   hsl(15 63.1% 59.6% / 0.16);
 }
 
 /* Claude.ai 真站点 light mode 取色（图 5 群友给的截图）：
@@ -84,24 +84,24 @@ html[data-theme="light"] {
     --c-bg-side:   #faf9f5;
     --c-bg-elev:   #ffffff;
     --c-bg-elev-2: #ffffff;
-    --c-bg-elev-3: #f4f1e7;
-    --c-text:        #29261b;
-    --c-text-soft:   #3d3929;
-    --c-text-dim:    #656358;
-    --c-line:        #706b5740;
-    --c-line-strong: #706b57a6;
-    --c-hover:        #f4f1e7;
-    --c-hover-strong: #eee9df;
-    --c-accent:        #c96e4a;
-    --c-accent-hover:  #b25c3e;
-    --c-accent-soft:   rgba(201, 110, 74, 0.12);
+    --c-bg-elev-3: #eeece4;
+    --c-text:        #141413;
+    --c-text-soft:   #3d3d3a;
+    --c-text-dim:    #73726c;
+    --c-line:        rgba(31, 30, 28, 0.15);
+    --c-line-strong: rgba(31, 30, 28, 0.30);
+    --c-hover:        #f4f3ed;
+    --c-hover-strong: #eeece4;
+    --c-accent:        hsl(15 54.2% 51.2%);
+    --c-accent-hover:  hsl(15 54.2% 45.2%);
+    --c-accent-soft:   hsl(15 54.2% 51.2% / 0.12);
 }
 
 html, html[data-theme="dark"], html[data-theme="light"] {
     --c-sidebar-w: 18rem;
     --workbench-sidebar-width: 18rem;
     --workbench-rail-width: 3.5rem;
-    --c-main-col: 760px;
+    --c-main-col: 48rem;
     --c-radius:    16px;
     --c-radius-sm: 10px;
     --c-radius-pill: 999px;
@@ -893,7 +893,7 @@ body.is-tier-loading .claude-nav-tag {
 /* COMPOSER 主体 */
 .composer-wrap {
     width: 100% !important;
-    max-width: 720px !important;
+    max-width: var(--c-main-col) !important;
 }
 /* 2026-05-15 essence: composer 阴影按主题分支。
    - dark: 0.18 alpha 黑阴影 OK（深底上可见 elevation）。
@@ -904,33 +904,52 @@ body.is-tier-loading .claude-nav-tag {
    Claude composer 在首页表现为 rounded-3xl。 */
 .composer {
     background: var(--c-bg-elev) !important;
-    border: 1px solid var(--c-line) !important;
-    border-radius: 24px !important;
-    padding: 14px 14px 8px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.18) !important;
-    transition: border-color 200ms;
+    border: 1px solid transparent !important;
+    border-radius: 20px !important;
+    padding: 14px !important;
+    min-height: 104px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 0.5px var(--c-line) !important;
+    transition: box-shadow 200ms, background-color 160ms;
+}
+.composer:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 0.5px var(--c-line-strong) !important;
 }
 .composer:focus-within {
-    border-color: var(--c-line-strong) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06),
-                0 6px 32px rgba(0, 0, 0, 0.10) !important;
+    border-color: transparent !important;
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.26),
+        0 0 0 0.5px var(--c-line-strong) !important;
 }
 html[data-theme="light"] .composer {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
-                0 4px 24px rgba(0, 0, 0, 0.05) !important;
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.035),
+        0 0 0 0.5px var(--c-line) !important;
+}
+html[data-theme="light"] .composer:hover {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.035),
+        0 0 0 0.5px var(--c-line-strong) !important;
 }
 html[data-theme="light"] .composer:focus-within {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06),
-                0 6px 32px rgba(0, 0, 0, 0.08) !important;
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.075),
+        0 0 0 0.5px var(--c-line-strong) !important;
 }
 .composer-input {
     background: transparent !important;
     border: 0 !important;
     color: var(--c-text) !important;
-    font-size: 15px !important;
+    font-size: 16px !important;
     line-height: 1.55 !important;
-    padding: 6px 4px !important;
-    min-height: 28px !important;
+    padding: 6px 6px 4px !important;
+    min-height: 48px !important;
     max-height: 320px !important;
     resize: none !important;
     width: 100%;
@@ -946,7 +965,7 @@ html[data-theme="light"] .composer:focus-within {
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px;
-    padding-top: 8px !important;
+    padding-top: 0 !important;
     margin-top: 0 !important;
     border-top: 0 !important;
 }
@@ -1035,29 +1054,29 @@ html[data-theme="light"] .composer:focus-within {
     gap: 8px;
     margin-top: 16px;
     width: 100%;
-    max-width: 720px;
+    max-width: var(--c-main-col);
 }
 .claude-suggest {
     height: 32px;
-    padding: 0 14px;
-    background: var(--c-bg-elev);
+    padding: 0 10px;
+    background: var(--c-bg);
     border: 1px solid var(--c-line);
-    border-radius: 999px;
+    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     /* 2026-05-15 fix(C5)：button 元素不继承 body color，必须显式设。
        light 模式下不显式给 dark 文字 → user-agent 默认 ButtonText
        在 cream bg 上偶发显示偏灰，看着像没翻色。 */
-    color: var(--c-text);
+    color: var(--c-text-soft);
     cursor: pointer;
     transition: background 160ms, border-color 160ms, color 160ms, transform 160ms;
     font-family: inherit;
 }
 .claude-suggest:hover {
-    background: var(--c-bg-elev-2);
+    background: var(--c-hover-strong);
     border-color: var(--c-line-strong);
     color: var(--c-text);
 }
@@ -1065,7 +1084,7 @@ html[data-theme="light"] .composer:focus-within {
     transform: scale(0.98);
 }
 .claude-suggest svg {
-    color: var(--c-accent);
+    color: var(--c-text-dim);
     flex-shrink: 0;
 }
 
@@ -1335,9 +1354,9 @@ html[data-theme="light"] .composer:focus-within {
 }
 
 .chat-messages .message.assistant.is-error .message-content {
-    background: linear-gradient(135deg, rgba(255, 241, 242, 0.98), rgba(254, 226, 226, 0.94)) !important;
+    background: #fff1f2 !important;
     border: 1px solid rgba(239, 68, 68, 0.34) !important;
-    border-radius: 18px !important;
+    border-radius: 14px !important;
     box-shadow: none !important;
     color: #7f1d1d !important;
     max-width: min(720px, 92%) !important;
@@ -1345,7 +1364,7 @@ html[data-theme="light"] .composer:focus-within {
 }
 
 html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-content {
-    background: linear-gradient(135deg, rgba(69, 10, 10, 0.82), rgba(127, 29, 29, 0.54)) !important;
+    background: #451a1a !important;
     border-color: rgba(248, 113, 113, 0.38) !important;
     box-shadow: none !important;
     color: #fecaca !important;
@@ -1355,6 +1374,44 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
     display: none !important;
     opacity: 0 !important;
     pointer-events: none !important;
+}
+
+.message.assistant .message-actions {
+    gap: 4px !important;
+    margin-top: 8px !important;
+}
+
+.message.assistant .message-action-btn {
+    height: 28px !important;
+    padding: 0 8px !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: var(--c-text-dim) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+.message.assistant .message-action-btn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+
+.chat-messages .message.assistant.is-error .assistant-error-title {
+    color: #b91c1c !important;
+}
+
+.chat-messages .message.assistant.is-error .assistant-error-text,
+.chat-messages .message.assistant.is-error .assistant-error-api-hint {
+    color: #7f1d1d !important;
+}
+
+html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-error-title {
+    color: #fecaca !important;
+}
+
+html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-error-text,
+html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-error-api-hint {
+    color: #fecaca !important;
 }
 /* code/pre 容器样式块已移至 §17 (line ~3140+)，让 Claude .prose 1:1 统一接管。
    pre overflow-x: auto 在 §17 line 3178 已包含。 */
@@ -1400,7 +1457,7 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
 }
 #homeView.chatting .composer {
     width: 100% !important;
-    border-radius: 24px !important;  /* 2026-05-16 同上：Tailwind .rounded-3xl 对齐 */
+    border-radius: 20px !important;  /* 2026-05-16 同上：Tailwind .rounded-3xl 对齐 */
 }
 
 /* 对话进行中底部一行小字"Cancri 错错的，会忘错..." */
@@ -2145,8 +2202,8 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
     .claude-suggest {
         flex-shrink: 0;
         height: 32px !important;
-        padding: 0 12px !important;
-        font-size: 13px !important;
+        padding: 0 10px !important;
+        font-size: 14px !important;
     }
 
     /* composer：发送按钮永远 visible，model selector 压缩。
@@ -2169,7 +2226,8 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
     .composer {
         width: 100% !important;
         max-width: 100% !important;
-        border-radius: 14px !important;
+        min-height: 104px !important;
+        border-radius: 20px !important;
         box-sizing: border-box;
         overflow: visible !important;
     }

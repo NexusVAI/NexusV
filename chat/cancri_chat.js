@@ -197,7 +197,7 @@ function getFriendlyHttpStatusMessage(status) {
     case 429:
       return "当前模型额度已用完，请切换其他模型再试。";
     default:
-      return "当前模型暂时不可用，请切换其他模型再试。";
+      return "Cancri API 暂时无法完成这次请求，请稍后重试或切换模型。";
   }
 }
 
@@ -222,13 +222,13 @@ function getFriendlyHttpStatusMessage(status) {
 const KNOWN_ERROR_CODE_MESSAGES = {
   // From modelscope-proxy / chat-gateway / api-gateway sanitized errors
   model_unavailable: "该模型当前无法使用，请尝试其他模型。",
-  model_quota_exceeded: "该模型上游额度或线路限流已触发，不是您的额度包余额用完；请切换模型或稍后重试。",
+  model_quota_exceeded: "该模型当前请求较多，请切换模型或稍后重试。",
   model_request_invalid: "请求未被模型接受，请调整内容后重试。",
   model_temporary_failure: "当前模型服务暂时不可用，请稍后重试。",
-  upstream_timeout: "上游服务响应超时，请稍后重试或切换模型。",
+  upstream_timeout: "Cancri API 响应超时，请稍后重试或切换模型。",
   upstream_unavailable: "模型服务暂时不可用，请稍后重试。",
   upstream_parse_failed: "模型服务响应异常，请稍后重试。",
-  upstream_fetch_failed: "上游服务连接失败，请稍后重试。",
+  upstream_fetch_failed: "Cancri API 连接失败，请稍后重试。",
   // Image / video specialised codes
   image_content_policy:
     "提示词被内容安全策略拒绝，请修改后重试（避免明确版权角色名 / 真人姓名 / 暴力或不当描述）。",
@@ -872,7 +872,7 @@ function setModelQuotaLock(modelId, untilTs, reason = "quota") {
   status.lockReason = reason || null;
   status.error =
     reason === "provider_quota"
-      ? "上游额度或线路限流"
+      ? "模型线路繁忙"
       : reason === "quota"
         ? "额度已用完"
         : reason || null;
@@ -897,7 +897,7 @@ function getQuotaLockMessage(modelId = currentModel) {
   const status = getModelStatus(modelId);
   if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) {
     if (status.lockReason === "provider_quota") {
-      return "该模型上游额度或线路限流已触发，不是您的额度包余额用完；请切换模型或稍后重试。";
+      return "该模型当前请求较多，请切换模型或稍后重试。";
     }
     if (status.lockReason === "quota") {
       if (modelId === "claude-opus-4-6-thinking-medium") {
@@ -1016,7 +1016,7 @@ function applyQuotaSnapshotFromHeaders(
             : getNextLocalMidnightTimestamp(now);
           targetStatus.lockedUntil = until;
           targetStatus.lockReason = isProviderQuotaError ? "provider_quota" : "quota";
-          targetStatus.error = isProviderQuotaError ? "上游额度或线路限流" : "额度已用完";
+          targetStatus.error = isProviderQuotaError ? "模型线路繁忙" : "额度已用完";
         }
       } else if (
         Number.isFinite(targetStatus.lockedUntil) &&
@@ -1040,7 +1040,7 @@ function applyQuotaSnapshotFromHeaders(
           : getNextLocalMidnightTimestamp(now);
         targetStatus.lockedUntil = until;
         targetStatus.lockReason = isProviderQuotaError ? "provider_quota" : "quota";
-        targetStatus.error = isProviderQuotaError ? "上游额度或线路限流" : "额度已用完";
+        targetStatus.error = isProviderQuotaError ? "模型线路繁忙" : "额度已用完";
       }
     } else if (responseStatus === 401 || responseStatus === 409) {
       targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
@@ -1062,7 +1062,7 @@ function applyQuotaSnapshotFromHeaders(
       const until = Date.now() + MODEL_LOCK_DURATION_MS;
       targetStatus.lockedUntil = until;
       targetStatus.lockReason = isProviderQuotaError ? "provider_quota" : "quota";
-      targetStatus.error = isProviderQuotaError ? "上游额度或线路限流" : "额度已用完";
+      targetStatus.error = isProviderQuotaError ? "模型线路繁忙" : "额度已用完";
     } else if (responseStatus === 401 || responseStatus === 409) {
       targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
     } else if (
@@ -1465,6 +1465,8 @@ const PAID_GATE_IDS = new Set([
   "gemini-3.1-pro-preview",
   "glm-5.1",
   "deepseek-v4-pro",
+  "qwen3.7-max",
+  "qwen3.7-max-2026-05-20",
   "qwen3.6-max-preview",
   "minimax-m2.7",
   "kimi-k2.6",
@@ -1481,6 +1483,8 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-5.5",
   "gpt-5.5-high",
   "grok-4.3",
+  "qwen3.7-max",
+  "qwen3.7-max-2026-05-20",
   "gemini-3.1-pro",
   "gpt-image-2-all",
   "gpt-image-2-pro",
@@ -2069,6 +2073,8 @@ const MODEL_PRIORITY_IDS = [
   "claude-opus-4-6",
   "deepseek-v4-pro",
   "kimi-k2.6",
+  "qwen3.7-max",
+  "qwen3.7-max-2026-05-20",
   "qwen3-max",
   "glm-5.1",
 ];
@@ -2124,6 +2130,8 @@ const MODEL_CATALOG = [
   {"id": "deepseek-r1", "name": "DeepSeek R1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "deepseek-v3.1", "name": "DeepSeek V3.1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "deepseek-v3.2", "name": "DeepSeek V3.2", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3.7-max", "name": "Qwen 3.7 Max", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+  {"id": "qwen3.7-max-2026-05-20", "name": "Qwen 3.7 Max (0520)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "qwen3.6-flash", "name": "Qwen 3.6 Flash", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen3.5-flash-2026-02-23", "name": "Qwen 3.5 Flash (0223)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen3.5-plus-2026-04-20", "name": "Qwen 3.5 Plus (0420)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
@@ -5477,7 +5485,7 @@ const PLATFORM_KNOWLEDGE_BASE = {
     {
       http: 504,
       code: "upstream_timeout",
-      when: "上游模型 90 秒内未返回首字",
+      when: "Cancri API 90 秒内未返回首字",
     },
   ],
   sdk: {
@@ -6078,17 +6086,17 @@ async function readClipboardText() {
 
 const VOICE_PRESETS = {
   oily: {
-    voice: "苏打",
+    voice: "Cherry",
     style:
       "用东北话味十足的中年男声朗读：声音粗犷略带烟酒嗓，自带磁性与江湖气，语速从容不紧不慢，咬字带北方喉音和卷舌韵味，像一个走南闯北、阅历很深的老炮儿在跟你唠嗑。",
   },
   steady: {
-    voice: "白桦",
+    voice: "Cherry",
     style:
       "用沉稳醇厚的成熟男声朗读：节奏从容，咬字清晰，气息平稳，带着可靠的播音腔；语调平缓但富有质感，听感专业、不浮夸。",
   },
   soft: {
-    voice: "茉莉",
+    voice: "Cherry",
     style:
       "用温柔亲切的年轻女声朗读：气息轻柔，语速舒缓，尾音微微上扬，像在耳边轻声细语；情绪温暖、不急不躁，让人感到放松。",
   },
@@ -6162,7 +6170,7 @@ async function speakTextWithMimo(text) {
       body: JSON.stringify({
         __auth_token: session.access_token,
         endpoint: "chat",
-        model: "mimo-v2.5-tts",
+        model: "qwen3-tts-instruct-flash-realtime",
         messages: [
           { role: "user", content: preset.style },
           { role: "assistant", content: text.slice(0, 2000) },
@@ -9565,6 +9573,20 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
           </svg>
           <span>引用</span>
         </button>
+        <button class="message-action-btn" data-action="like" title="赞">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 10v12"></path>
+            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3.28a2 2 0 0 0 1.7-.94L13 2a2.38 2.38 0 0 1 2 3.88Z"></path>
+          </svg>
+          <span>赞</span>
+        </button>
+        <button class="message-action-btn" data-action="dislike" title="踩">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 14V2"></path>
+            <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3.28a2 2 0 0 0-1.7.94L11 22a2.38 2.38 0 0 1-2-3.88Z"></path>
+          </svg>
+          <span>踩</span>
+        </button>
       `;
 
   thinkBlock.appendChild(thinkHeader);
@@ -9615,6 +9637,18 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
         return;
       }
       await speakTextWithMimo(text);
+    });
+
+  messageActions
+    .querySelector('[data-action="like"]')
+    .addEventListener("click", () => {
+      showToast("感谢反馈");
+    });
+
+  messageActions
+    .querySelector('[data-action="dislike"]')
+    .addEventListener("click", () => {
+      showToast("已记录反馈");
     });
 
   thinkHeader.addEventListener("click", () => {
@@ -10105,11 +10139,16 @@ function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {
 
   const title = document.createElement("div");
   title.className = "assistant-error-title";
-  title.textContent = "模型回复失败";
+  title.textContent = "Cancri API 请求失败";
 
   const body = document.createElement("div");
   body.className = "assistant-error-text";
   body.textContent = text || getSafeModelErrorText();
+
+  const apiHint = document.createElement("div");
+  apiHint.className = "assistant-error-api-hint";
+  apiHint.textContent =
+    "API 提示：本次错误已由 Cancri 统一处理。请稍后重试或切换模型；页面不会展示第三方返回内容。";
 
   const footer = document.createElement("div");
   footer.className = "assistant-error-footer";
@@ -10136,6 +10175,7 @@ function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {
   footer.appendChild(support);
   answerBody.appendChild(title);
   answerBody.appendChild(body);
+  answerBody.appendChild(apiHint);
   answerBody.appendChild(footer);
   scrollChatToBottom(true);
 }

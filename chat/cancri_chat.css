@@ -6734,8 +6734,9 @@ html[data-theme="blue"] {
 
 
 .message.assistant.is-error .message-content {
-    background: linear-gradient(135deg, rgba(255, 241, 242, 0.98), rgba(254, 226, 226, 0.94));
+    background: #fff1f2;
     border-color: rgba(239, 68, 68, 0.34);
+    border-radius: 14px;
     box-shadow: none;
 }
 
@@ -6763,6 +6764,13 @@ html[data-theme="blue"] {
     color: #7f1d1d;
     font-size: clamp(12px, 1.18vw, 13px);
     line-height: 1.55;
+}
+
+.assistant-error-api-hint {
+    color: #7f1d1d;
+    font-size: clamp(12px, 1.18vw, 13px);
+    line-height: 1.5;
+    opacity: 0.9;
 }
 
 .assistant-error-footer {

@@ -31,30 +31,39 @@
     }
 
     function init() {
-        relocateModelSelector();
-        requestAnimationFrame(relocateModelSelector);
-        setTimeout(relocateModelSelector, 250);
-        bindSuggestPills();
-        bindSearchModal();
-        bindCustomNav();
-        bindArtifactsNav();
-        bindPlanPill();
-        bindAccountPlanSync();
-        bindGettingStartedChecklist();
-        bindImportMemoryShortcut();
-        bindProjectButtons();
-        bindChatsButtons();
-        bindChatsPageList();
-        bindProjectsPage();
-        bindSettingsNav();
-        bindHeroGreeting();
-        bindChatTitleSync();
-        bindMobileSidebarDrawer();
-        bindAttachMenu();
-        bindModelMoreMenu();
-        bindSidebarTooltips();
-        bindAuthThemeToggle();
-        bindHomeInputDefensiveFocus();
+        [
+            relocateModelSelector,
+            function () { requestAnimationFrame(relocateModelSelector); },
+            function () { setTimeout(relocateModelSelector, 250); },
+            bindSuggestPills,
+            bindSearchModal,
+            bindCustomNav,
+            bindArtifactsNav,
+            bindPlanPill,
+            bindAccountPlanSync,
+            bindGettingStartedChecklist,
+            bindImportMemoryShortcut,
+            bindImportMemoryDelegation,
+            bindProjectButtons,
+            bindChatsButtons,
+            bindChatsPageList,
+            bindProjectsPage,
+            bindSettingsNav,
+            bindHeroGreeting,
+            bindChatTitleSync,
+            bindMobileSidebarDrawer,
+            bindAttachMenu,
+            bindModelMoreMenu,
+            bindSidebarTooltips,
+            bindAuthThemeToggle,
+            bindHomeInputDefensiveFocus
+        ].forEach(function (step) {
+            try {
+                step();
+            } catch (e) {
+                console.error('[claude_ui] init step failed:', e);
+            }
+        });
     }
 
     // 15. 群友反馈"对话中点输入框移动端无法触发打字"。
@@ -1136,10 +1145,23 @@
     function bindImportMemoryShortcut() {
         var btn = document.getElementById('claudeImportMemoryBtn');
         if (!btn) return;
+        if (btn.dataset.memoryImportBound === '1') return;
+        btn.dataset.memoryImportBound = '1';
         btn.addEventListener('click', function (e) {
             e.preventDefault();
             openMemoryImportModal();
         });
+    }
+
+    function bindImportMemoryDelegation() {
+        if (document.documentElement.dataset.memoryImportDelegationBound === '1') return;
+        document.documentElement.dataset.memoryImportDelegationBound = '1';
+        document.addEventListener('click', function (e) {
+            var target = e.target && e.target.closest ? e.target.closest('#claudeImportMemoryBtn') : null;
+            if (!target) return;
+            e.preventDefault();
+            openMemoryImportModal();
+        }, true);
     }
 
     // 6. 项目页 / 聊天页按钮
