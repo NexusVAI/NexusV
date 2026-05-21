@@ -40,7 +40,7 @@
         <div class="legal-header">
             <div class="legal-category">法律文档</div>
             <h1 class="legal-title">隐私协议</h1>
-            <p class="legal-effective">最后更新：2026 年 5 月 16 日 · 生效日期：2026 年 5 月 16 日</p>
+            <p class="legal-effective">最后更新：2026 年 5 月 22 日 · 生效日期：2026 年 5 月 22 日</p>
         </div>
 
         <div class="legal-content">
@@ -154,8 +154,12 @@
                 <li><strong>匿名标识</strong>：<code>cancri_anon_id</code>（仅在已同意 telemetry 后用于错误聚合）、<code>cancri_visitor_id</code>（已登录后由指纹生成，用于反多账号）；</li>
                 <li><strong>指纹节流标记</strong>：<code>cancri_fp_last_submit</code>（记录上次指纹上报时间，用于实施 24 小时节流，避免重复采集）。</li>
             </ul>
+            <p>此外，本服务还使用浏览器 <strong>会话存储（sessionStorage）</strong> 暂存以下信息（关闭浏览器标签页即清空，<strong>不</strong>跨标签页或会话保留）：</p>
+            <ul>
+                <li><strong>最近一次生成的 API Key</strong>：<code>cancri_recent_api_key</code>。当您在 <a href="chat/api_keys.html">Keys 页</a> 生成一把完整 Key 后，浏览器会把该 Key 暂存到当前标签页的 sessionStorage，仅供同会话内 <a href="chat/api_models.html">模型广场</a> 抽屉里的「调用代码」示例自动填入，便于您直接复制使用。<strong>此 Key 不会被任何脚本上传到服务端，不会写入 localStorage，关闭浏览器或标签页后即被自动清空</strong>；您也可在 Keys 页主动撤销 Key，本服务会同步清除此暂存。</li>
+            </ul>
             <p>本服务 <strong>不使用</strong> 任何第三方追踪 cookie、<strong>不参与</strong> 跨站点广告追踪。Cloudflare Turnstile 仅在校验请求过程中下发其自有验证 cookie，不用于任何形式的用户画像或跨站追踪。</p>
-            <p>您可随时通过浏览器开发者工具或设置清除本地存储；清除后将退出登录、需重新登录、部分偏好需要重新设置。</p>
+            <p>您可随时通过浏览器开发者工具或设置清除本地存储与会话存储；清除后将退出登录、需重新登录、部分偏好需要重新设置。</p>
 
             <h2 id="p7">7. 数据安全措施</h2>
             <p>我们采用业界通行的安全实践保护您的数据：</p>

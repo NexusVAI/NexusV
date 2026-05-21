@@ -40,7 +40,7 @@
         <div class="legal-header">
             <div class="legal-category">法律文档</div>
             <h1 class="legal-title">服务条款</h1>
-            <p class="legal-effective">最后更新：2026 年 5 月 16 日 · 生效日期：2026 年 5 月 16 日</p>
+            <p class="legal-effective">最后更新：2026 年 5 月 22 日 · 生效日期：2026 年 5 月 22 日</p>
         </div>
 
         <div class="legal-content">
@@ -123,7 +123,12 @@
 
             <h2 id="s7">7. 付费、订阅与退款</h2>
             <h3>7.1 免费与付费机制</h3>
-            <p>本服务为绝大多数用户提供免费配额。如您选择升级至付费会员以获取更高配额，相关价格、规格与有效期以 <a href="chat/pricing.html">套餐页</a> 当时所列为准。充值时间可累加（最长预付 90 天），到期后自动降级回免费档；付费会员不是订阅制，不会自动续费。</p>
+            <p>本服务对所有注册用户开放免费档配额。如需更充裕的额度或访问 vip 级模型，可升级至付费会员；价格、规格与有效期以 <a href="chat/pricing.html">套餐页</a> 当时所列为准。当前付费会员形态为：</p>
+            <ul>
+                <li><strong>三档月度订阅</strong>：Pro（¥9.9 / 月）、Pro+（¥29 / 月）、Pro Max（¥99 / 月），按激活后每 30 天为一个订阅周期，周期内累计 token 配额；</li>
+                <li><strong>加油包</strong>：¥10 起，永不过期，可在订阅周期月度配额耗尽后接续使用，订阅过期后仍可继续消耗。</li>
+            </ul>
+            <p>同档或更高档订阅可叠加续费（最长预付 90 天）；订阅到期后自动降级回免费档，<strong>付费会员为一次性激活，不会自动续费</strong>。配额、模型范围与速率上限的具体数值以 <a href="chat/pricing.html">套餐页</a>、<a href="chat/api_models.html">模型广场</a> 与 <a href="chat/api_docs.html">API 文档</a> 当时所列为准。</p>
 
             <h3>7.2 付款与激活流程</h3>
             <p>付费采用<strong>微信 / 支付宝个人收款 + 站主人工审核</strong>的模式，不接入第三方支付平台。完整流程：</p>
@@ -138,8 +143,30 @@
             <h3>7.3 退款政策</h3>
             <p><strong>付款金额用于覆盖上游 API 成本，一旦激活恕不退款。</strong>下单前请确认您需要会员特权。如遇下列情形之一可申请退款：（1）付款后未提交订单、未领取激活码；（2）本服务明显故障导致付费会员期不可用且超过订单期间的 50%。退款请通过本条款末尾的邮箱提交。</p>
 
-            <h3>7.4 免费档与付费档</h3>
-            <p>免费用户保留所有模型访问权限，但高峰期可能需要排队。付费会员仅获得更充裕的配额与优先调度，<strong>不限制模型范围</strong>。</p>
+            <h3>7.4 免费档与付费档的差异</h3>
+            <p>免费档与付费档在<strong>模型访问范围</strong>、<strong>token 配额</strong>与<strong>速率限制</strong>上均存在差异，<strong>并非</strong>仅仅是配额多寡或排队优先级。简要对比如下（详细数值请以站内文档为准）：</p>
+
+            <p><strong>7.4.1 模型访问范围</strong></p>
+            <ul>
+                <li><strong>免费档</strong>：可调用绝大多数 FREE 标记模型 + 在每月共享池与每日个人额度内试用部分 PAID 模型。下列模型对免费用户<strong>完全不开放</strong>，调用会被服务端直接拒绝：
+                    <ul>
+                        <li>GPT-5.5 / GPT-5.5 High / GPT-5.4 Mini（仅 Pro 及以上可用，错误码 <code>model_pro_required</code>）；</li>
+                        <li>Claude Opus 全系（4.5 / 4.6 / 4.6 Thinking）、Gemini 3.1 Pro、视频与图像生成等 vip 级模型（仅 Pro+ / Pro Max 可用，错误码 <code>model_pro_plus_required</code>）；</li>
+                        <li>上述清单可能随上游可用性与平台运营情况调整，最终以 <a href="chat/api_models.html">模型广场</a> 当时所列为准。</li>
+                    </ul>
+                </li>
+                <li><strong>Pro</strong>：解锁非 Opus 全模型（GPT-5.4、Claude Sonnet 4.6、Grok-4.20、Kimi 等），月度 2000 万 token 配额；</li>
+                <li><strong>Pro+</strong>：在 Pro 基础上进一步解锁 Claude Opus 全系，月度 8000 万 token 配额；</li>
+                <li><strong>Pro Max</strong>：解锁全部模型，含图像与视频生成等 vip 级模型，月度 3 亿 token 配额。</li>
+            </ul>
+
+            <p><strong>7.4.2 配额与速率</strong></p>
+            <ul>
+                <li><strong>免费档</strong>：所有免费用户共享每月 1 亿 token 池（次月 1 号 00:00 UTC+8 重置），且每个免费用户每自然日（UTC+8）最多 15 次成功 PAID 模型调用；速率上限 10 次 / 分钟、60 次 / 小时、1000 次 / 天，最多 2 路并发；当某模型 free 通道已被 3 名免费用户占用时，第 4 名起会进入排队（<code>model_queue_full</code>）；</li>
+                <li><strong>付费档</strong>：按所选档位享月度 token 配额，配额耗尽后自动从加油包余额扣减；速率上限提升至 60 次 / 分钟、600 次 / 小时、50000 次 / 天，并发不限，不参与 free 通道排队。</li>
+            </ul>
+
+            <p><strong>提示</strong>：模型可用性与计费细节最终以服务端实时返回为准。具体错误码、配额折算公式与权重表见 <a href="chat/api_docs.html">API 文档</a>。</p>
 
             <h2 id="s8">8. 服务变更、暂停与终止</h2>
             <p>我们保留以下权利，且无需对您承担任何责任：</p>
