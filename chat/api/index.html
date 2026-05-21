@@ -25,7 +25,7 @@
     rel="stylesheet"
   />
 
-  <link rel="stylesheet" href="./api-platform.css?v=2026-05-21-claude-official-colors" />
+  <link rel="stylesheet" href="./api-platform.css?v=2026-05-22-docs-single-page" />
   <script src="./api-platform.js?v=20260513"></script>
   <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
        img.cancri-logo 的 src（黑/白），实现主题切换时 logo 跟随翻转。 -->
@@ -57,22 +57,9 @@
       position: relative;
       overflow: hidden;
     }
-    .hero::before {
-      /* 一抹极弱的暖光，不是渐变流体，是纸边晕染感 */
-      content: "";
-      position: absolute;
-      top: -30%;
-      right: -10%;
-      width: 60%;
-      height: 80%;
-      background: radial-gradient(
-        ellipse at center,
-        rgba(217, 119, 87, 0.08),
-        transparent 60%
-      );
-      pointer-events: none;
-      z-index: 0;
-    }
+    /* 2026-05-22：用户反馈 API 页橙色暖光在深浅色下都不需要，
+       原 .hero::before 的橙色 radial-gradient 已删除。hero 区现完全靠
+       下方的 .hero__marquee 装饰层来传达品牌感，不再叠加全局光晕。 */
 
     /* ── HERO 装饰层：斜向滚动的生态 logo 条带 ──────────────────
        4 行平行条，相邻行方向相反、速度错开 → 视觉上不齐步。

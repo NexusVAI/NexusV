@@ -389,7 +389,8 @@ function card(m) {
     // brand 从 .meta badge 升级为名称下面的 sub-title，逻辑上与 logo 互补，
     // 避免 brand badge 与 logo 重复。
     const unavailableMessage = m.unavailableMessage || "该模型线路当前不可用，请稍后重试或切换其他模型。";
-    return `<div class="card${disabled ? " is-disabled" : ""}" data-tier="${displayTier}"${disabled ? ` title="${esc(unavailableMessage)}"` : ""}>
+    // 2026-05-22 增 data-model-id：抽屉点击委托靠它从 MODELS 反查模型对象。
+    return `<div class="card${disabled ? " is-disabled" : ""}" data-tier="${displayTier}" data-model-id="${esc(m.id)}" tabindex="0" role="button" aria-label="${esc(m.displayName || m.id)} — 查看详情"${disabled ? ` title="${esc(unavailableMessage)}"` : ""}>
           <div class="card-head">
             ${brandLogoHtml(m.brand)}
             <div class="card-head-text">
@@ -478,5 +479,417 @@ if (brandFilterEl) {
         } catch (_) {}
     });
 })();
+
+// ── 模型卡片右侧抽屉 (2026-05-22 新增) ────────────────────────────────────
+// 点击卡片任意非 .copy-btn 区域 → openDrawer(model)；展示：
+//   1) 模型 head + tier/multiplier badges
+//   2) 倍率与档位说明（基于 m.costTier 推断）
+//   3) 近期状态：聚合 chat-gateway model_health 的成功率 / 平均延迟 / 24h
+//      hourly 列；用 SVG bar sparkline 渲染请求量
+//   4) 调用代码：curl / Node.js / Python，自动从 sessionStorage('cancri_recent_api_key')
+//      读最近一次在 Keys 页生成的 Key（仅当前会话有效），未有则用占位符
+//      cancri_sk_YOUR_KEY，并在底部提示用户去 Keys 页生成。
+// ─────────────────────────────────────────────────────────────────────
+
+const SESSION_KEY_NAME = "cancri_recent_api_key";
+const KEY_PAGE_URL = "./api_keys.html";
+const API_BASE_URL =
+    (window.__SUPABASE_URL__ || "") + "/functions/v1/api-gateway";
+
+const COST_TIER_EXPLAIN = {
+    free: "FREE 档：所有用户免费调用，受免费档限速 (10 RPM / 60 RPH / 1000 RPD，并发 2)。",
+    cheap: "Cheap：1× 倍率。轻量、低成本模型；价格友好。",
+    normal: "Normal：3× 倍率。GPT-4 类标准模型 / Doubao / Kimi / Haiku 等。",
+    expensive:
+        "Expensive：10× 倍率。GPT-5.x 系列、Grok 4.20、Claude Sonnet 4.6、Mistral Large 等旗舰。",
+    vip: "VIP：30× 倍率。Claude Opus 全系 / Gemini 3.1 Pro / 视频生成等顶配（仅 Pro+ 起可用）。",
+};
+
+const drawer = document.getElementById("modelDrawer");
+const drawerBackdrop = document.getElementById("modelDrawerBackdrop");
+const drawerClose = document.getElementById("modelDrawerClose");
+const drawerCodeTabs = document.getElementById("drawerCodeTabs");
+const drawerCodeEl = document.getElementById("drawerCode");
+const drawerCodeCopyBtn = document.getElementById("drawerCodeCopy");
+const drawerSpark = document.getElementById("drawerSpark");
+
+let drawerActiveModel = null;
+let drawerActiveLang = "curl";
+let modelHealthMap = null;
+let modelHealthFetchPromise = null;
+let drawerCloseTimer = null;
+
+function getCachedApiKey() {
+    try {
+        const raw = sessionStorage.getItem(SESSION_KEY_NAME);
+        if (!raw) return null;
+        // 只接受合法 cancri_sk_ + 48 字 base64url。防止用户随手往
+        // sessionStorage 塞了不合法字符串导致代码示例破损。
+        return /^cancri_sk_[A-Za-z0-9_-]{48}$/.test(raw) ? raw : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function openDrawer(model) {
+    if (!drawer) return;
+    drawerActiveModel = model;
+    if (drawerCloseTimer) {
+        clearTimeout(drawerCloseTimer);
+        drawerCloseTimer = null;
+    }
+    drawer.hidden = false;
+    drawer.setAttribute("aria-hidden", "false");
+    // requestAnimationFrame 让 transition 从 hidden→visible 生效
+    requestAnimationFrame(() => drawer.classList.add("is-open"));
+    document.body.style.overflow = "hidden";
+    populateDrawer(model);
+    fetchModelHealthOnce()
+        .then(() => renderDrawerStatus(model))
+        .catch(() => renderDrawerStatusError());
+}
+
+function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove("is-open");
+    drawer.setAttribute("aria-hidden", "true");
+    drawerCloseTimer = setTimeout(() => {
+        drawer.hidden = true;
+        drawerCloseTimer = null;
+    }, 280);
+    document.body.style.overflow = "";
+    drawerActiveModel = null;
+}
+
+function populateDrawer(m) {
+    // Header
+    const logoHost = document.getElementById("modelDrawerLogo");
+    if (logoHost) logoHost.innerHTML = brandLogoHtml(m.brand);
+    const nameEl = document.getElementById("modelDrawerName");
+    if (nameEl) nameEl.textContent = m.displayName || m.id;
+    const brandEl = document.getElementById("modelDrawerBrand");
+    if (brandEl) brandEl.textContent = m.brand || "";
+    const idEl = document.getElementById("modelDrawerId");
+    if (idEl) idEl.textContent = m.id;
+
+    // Badges
+    const tier = m._displayTier || getDisplayTier(m);
+    const mult = getCostMultiplier(m);
+    const tierLabel = tier === "paid" ? "PAID" : "FREE";
+    const badges = [
+        `<span class="tier tier-${tier}">${tierLabel}</span>`,
+        `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后入桶">${mult}×</span>`,
+    ];
+    if (m.costTier === "vip") {
+        badges.push(
+            '<span class="tier" style="background:rgba(96,165,250,.18);color:#60a5fa" title="该模型仅 Pro+ 以上订阅可用">PRO+</span>',
+        );
+    }
+    if (m && m.proMaxOnly) {
+        badges.push(
+            '<span class="tier" style="background:rgba(168,85,247,.18);color:#a855f7" title="该模型仅 Pro Max 订阅可用">PRO MAX</span>',
+        );
+    }
+    if (m && m.freeUserBlocked) {
+        badges.push(
+            '<span class="tier" style="background:rgba(232,90,90,.16);color:#e85a5a" title="FREE 用户禁止调用该模型">FREE 不可用</span>',
+        );
+    }
+    if (m.available === false || m.disabled === true) {
+        badges.push(
+            '<span class="tier tier-disabled" title="该模型线路当前不可用">不可用</span>',
+        );
+    }
+    const badgeHost = document.getElementById("modelDrawerBadges");
+    if (badgeHost) badgeHost.innerHTML = badges.join("");
+
+    // Pricing / multiplier
+    const multNumEl = document.getElementById("drawerMultNum");
+    if (multNumEl) multNumEl.textContent = mult + "×";
+    const tierLabelEl = document.getElementById("drawerTierLabel");
+    if (tierLabelEl) {
+        tierLabelEl.innerHTML = `<span class="tier tier-${tier}">${tierLabel}</span> · costTier <code>${esc(m.costTier || "normal")}</code>`;
+    }
+    const explainEl = document.getElementById("drawerPricingExplain");
+    if (explainEl) {
+        const baseExplain = COST_TIER_EXPLAIN[m.costTier || "normal"] || "";
+        explainEl.innerHTML =
+            esc(baseExplain) +
+            ` 每次成功调用扣减 <code>effective_pool_tokens × ${mult}</code>。`;
+    }
+
+    // Status placeholder（fetch 完成后会被覆盖）
+    const setStat = (id, text, state) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        if (state) el.dataset.state = state;
+        else el.removeAttribute("data-state");
+    };
+    setStat("dsSuccessRate", "—");
+    setStat("dsLatency", "—");
+    setStat("dsRequests", "—");
+    if (drawerSpark) drawerSpark.innerHTML = "";
+    const hint = document.getElementById("drawerStatusHint");
+    if (hint) {
+        hint.textContent = "数据加载中…";
+        hint.classList.remove("drawer-status-hint--err");
+    }
+
+    // Code tab：每次打开抽屉默认回到 curl，避免上一次 model 选 py 的状态泄露
+    drawerActiveLang = "curl";
+    if (drawerCodeTabs) {
+        drawerCodeTabs.querySelectorAll(".drawer-code-tab").forEach((t) =>
+            t.classList.toggle("is-active", t.dataset.lang === "curl"),
+        );
+    }
+    renderDrawerCode(m);
+}
+
+function renderDrawerCode(m) {
+    if (!drawerCodeEl) return;
+    const id = m.id;
+    const apiKey = getCachedApiKey() || "cancri_sk_YOUR_KEY";
+    let code = "";
+    if (drawerActiveLang === "curl") {
+        code = `curl ${API_BASE_URL}/v1/chat/completions \\
+  -H "Authorization: Bearer ${apiKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "${id}",
+    "messages": [{"role":"user","content":"你好"}]
+  }'`;
+    } else if (drawerActiveLang === "js") {
+        code = `// npm i openai
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: "${apiKey}",
+  baseURL: "${API_BASE_URL}/v1",
+});
+
+const r = await client.chat.completions.create({
+  model: "${id}",
+  messages: [{ role: "user", content: "你好" }],
+});
+console.log(r.choices[0].message.content);`;
+    } else if (drawerActiveLang === "py") {
+        code = `# pip install openai
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="${apiKey}",
+    base_url="${API_BASE_URL}/v1",
+)
+
+r = client.chat.completions.create(
+    model="${id}",
+    messages=[{"role": "user", "content": "你好"}],
+)
+print(r.choices[0].message.content)`;
+    }
+    drawerCodeEl.textContent = code;
+
+    const hintEl = document.getElementById("drawerCodeHint");
+    if (hintEl) {
+        if (getCachedApiKey()) {
+            hintEl.innerHTML = `代码已自动填入本会话生成的 Key。关闭浏览器后此 Key 会被清空，需要再次到 <a href="${KEY_PAGE_URL}">Keys 页</a> 重新生成。`;
+        } else {
+            hintEl.innerHTML = `代码中 <code>cancri_sk_YOUR_KEY</code> 为占位符。请到 <a href="${KEY_PAGE_URL}">Keys 页</a> 生成新 Key 后回到本页，会话内即可自动填入完整 Key。`;
+        }
+    }
+}
+
+async function fetchModelHealthOnce() {
+    if (modelHealthMap) return;
+    if (modelHealthFetchPromise) return modelHealthFetchPromise;
+    modelHealthFetchPromise = (async () => {
+        const r = await fetch(GW, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: ANON },
+            body: JSON.stringify({ endpoint: "model_health", window_days: 1 }),
+        });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const data = await r.json();
+        modelHealthMap = new Map();
+        for (const m of data.models || []) {
+            modelHealthMap.set(m.model_id, m);
+        }
+    })();
+    return modelHealthFetchPromise;
+}
+
+function renderDrawerStatus(model) {
+    if (!modelHealthMap) return;
+    if (!drawerActiveModel || drawerActiveModel.id !== model.id) return;
+    const h = modelHealthMap.get(model.id);
+    const setStat = (id, text, state) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        if (state) el.dataset.state = state;
+        else el.removeAttribute("data-state");
+    };
+
+    if (!h) {
+        setStat("dsSuccessRate", "—");
+        setStat("dsLatency", "—");
+        setStat("dsRequests", "0");
+        const hint = document.getElementById("drawerStatusHint");
+        if (hint) {
+            hint.textContent = "近 24 小时无调用数据。";
+            hint.classList.remove("drawer-status-hint--err");
+        }
+        if (drawerSpark) renderSparkline([]);
+        return;
+    }
+
+    const sr = Number.isFinite(h.success_rate) ? h.success_rate : null;
+    if (sr !== null) {
+        setStat(
+            "dsSuccessRate",
+            sr + "%",
+            sr >= 95 ? "good" : sr >= 80 ? "warn" : "bad",
+        );
+    } else {
+        setStat("dsSuccessRate", "—");
+    }
+
+    const lat = Number.isFinite(h.avg_latency_ms) ? h.avg_latency_ms : null;
+    if (lat !== null) {
+        const text = lat < 1000 ? lat + " ms" : (lat / 1000).toFixed(1) + " s";
+        setStat(
+            "dsLatency",
+            text,
+            lat < 2000 ? "good" : lat < 5000 ? "warn" : "bad",
+        );
+    } else {
+        setStat("dsLatency", "—");
+    }
+
+    setStat("dsRequests", (h.total_requests || 0).toLocaleString());
+
+    const hint = document.getElementById("drawerStatusHint");
+    if (hint) {
+        const status = h.status || "unknown";
+        hint.classList.remove("drawer-status-hint--err");
+        if (status === "operational") {
+            hint.textContent = `近 24 小时共 ${h.total_requests || 0} 次请求，状态正常。`;
+        } else if (status === "degraded") {
+            hint.textContent = `近 24 小时部分降级（成功率 ${sr ?? "?"}%），建议优先选其他模型。`;
+            hint.classList.add("drawer-status-hint--err");
+        } else if (status === "down") {
+            hint.textContent = `近 24 小时不可用（成功率 ${sr ?? "?"}%），暂时跳过此模型。`;
+            hint.classList.add("drawer-status-hint--err");
+        } else {
+            hint.textContent = "近 24 小时数据样本较少，状态未知。";
+        }
+    }
+
+    renderSparkline(h.hourly || []);
+}
+
+function renderSparkline(hourly) {
+    if (!drawerSpark) return;
+    const W = 320;
+    const H = 60;
+    if (!hourly.length || hourly.every((h) => !h.total)) {
+        drawerSpark.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="11" opacity="0.55">暂无 24h 调用样本</text>`;
+        return;
+    }
+    const maxTotal = Math.max(1, ...hourly.map((h) => h.total));
+    const slot = (W - 4) / hourly.length;
+    let svg = "";
+    hourly.forEach((h, i) => {
+        const ratio = h.total / maxTotal;
+        const barH = ratio * (H - 8);
+        const x = 2 + i * slot;
+        const y = H - 4 - barH;
+        const w = Math.max(1, slot - 2);
+        const sr = Number.isFinite(h.success_rate) ? h.success_rate : null;
+        const isDown = h.total > 0 && sr !== null && sr < 50;
+        const cls = isDown
+            ? "drawer-spark-bar drawer-spark-bar--down"
+            : "drawer-spark-bar";
+        svg += `<rect class="${cls}" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${Math.max(0.5, barH).toFixed(2)}" rx="0.8"></rect>`;
+    });
+    drawerSpark.innerHTML = svg;
+}
+
+function renderDrawerStatusError() {
+    const hint = document.getElementById("drawerStatusHint");
+    if (hint) {
+        hint.textContent = "状态数据获取失败，请稍后重试。";
+        hint.classList.add("drawer-status-hint--err");
+    }
+}
+
+if (drawer) {
+    drawerClose && drawerClose.addEventListener("click", closeDrawer);
+    drawerBackdrop && drawerBackdrop.addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !drawer.hidden) closeDrawer();
+    });
+
+    if (drawerCodeTabs) {
+        drawerCodeTabs.addEventListener("click", (e) => {
+            const btn = e.target.closest(".drawer-code-tab");
+            if (!btn) return;
+            drawerActiveLang = btn.dataset.lang;
+            drawerCodeTabs.querySelectorAll(".drawer-code-tab").forEach((t) =>
+                t.classList.toggle("is-active", t === btn),
+            );
+            if (drawerActiveModel) renderDrawerCode(drawerActiveModel);
+        });
+    }
+    if (drawerCodeCopyBtn && drawerCodeEl) {
+        let copyTimer = null;
+        drawerCodeCopyBtn.addEventListener("click", () => {
+            const text = drawerCodeEl.textContent;
+            if (!text) return;
+            navigator.clipboard
+                .writeText(text)
+                .then(() => {
+                    if (copyTimer) clearTimeout(copyTimer);
+                    drawerCodeCopyBtn.textContent = "已复制";
+                    drawerCodeCopyBtn.classList.add("is-copied");
+                    copyTimer = setTimeout(() => {
+                        drawerCodeCopyBtn.textContent = "复制";
+                        drawerCodeCopyBtn.classList.remove("is-copied");
+                        copyTimer = null;
+                    }, 1200);
+                })
+                .catch(() => {});
+        });
+    }
+}
+
+// 卡片点击委托：用 #grid 一个 listener 处理所有 card；render() 重置
+// innerHTML 时不会丢监听，因为 #grid 本身从不被替换。
+const gridEl = $("grid");
+if (gridEl && drawer) {
+    gridEl.addEventListener("click", (e) => {
+        const card = e.target.closest(".card");
+        if (!card) return;
+        // 复制按钮的点击有自己的处理（写剪贴板），不开抽屉
+        if (e.target.closest(".copy-btn")) return;
+        const modelId = card.dataset.modelId;
+        if (!modelId) return;
+        const m = MODELS.find((x) => x.id === modelId);
+        if (!m) return;
+        openDrawer(m);
+    });
+    // 键盘可达：Enter / Space 也能打开抽屉
+    gridEl.addEventListener("keydown", (e) => {
+        const card = e.target.closest(".card");
+        if (!card) return;
+        if (e.key !== "Enter" && e.key !== " ") return;
+        if (e.target.closest(".copy-btn")) return;
+        e.preventDefault();
+        const modelId = card.dataset.modelId;
+        const m = MODELS.find((x) => x.id === modelId);
+        if (m) openDrawer(m);
+    });
+}
 
 load();

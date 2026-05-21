@@ -2,76 +2,26 @@
 // api_docs.html 的 CSP 删除 'unsafe-inline'。沿用 chat/api/admin-*-app.js
 // 同款做法：inline <script> -> 外联 .js + CSP <meta> 删 script-src 'unsafe-inline'。
 //
-// 2026-05-17 重构：在原 tabs / copy / toc scroll-spy 基础上追加 6 块新能力：
+// 2026-05-17 重构：在原 tabs / copy / toc scroll-spy 基础上追加 6 块能力。
+// 2026-05-22 取消多页化（?page=overview/endpoints/cli/clients/rules）：
+//   多页方案使部分 toc 链接因 hidden 失活、prev/next 跨页时丢 hash 不滚动、
+//   URL state 与 history 出现不一致。统一回归单页长文档，仅保留：
 //   1. 顶部搜索按钮 + Cmd/Ctrl+K 全局快捷键，弹出文档搜索 modal
-//   2. 搜索 index 构建：扫 main 下所有 section h2/h3/p/li/td 文本，建一份纯
-//      内存索引；输入实时分词命中、↑↓ 键盘选择、Enter 跳转、Esc 关闭
-//   3. 复制本页为 Markdown：递归把 main 内容 (h1-h3 / p / ul / ol / table /
-//      pre / code / a / b) 序列化为 GitHub Flavored Markdown 后写剪贴板
-//   4. 分享：优先 navigator.share；不支持则把当前 URL（带页内 anchor）写剪贴板
-//   5. 右侧「在此页面」outline：扫 h2/h3 自动生成，IntersectionObserver 高亮
-//   6. 底部上一节 / 下一节 prev/next 导航，跟随当前滚动到的 section 自动填
+//   2. 搜索 index 构建（扫整个 main，不再过滤 .docs-page）
+//   3. 复制本页为 Markdown
+//   4. 分享
+//   5. 右侧「在此页面」outline
+//   6. 底部 prev/next（在同一文档内相邻 section 之间跳转，不再跨页）
 
 const $ = (id) => document.getElementById(id);
 
-// ─── 0. Page-level pagination (2026-05-18) ─────────────────────────────────
-const DOCS_PAGES = ["overview", "endpoints", "cli", "clients", "rules"];
-const DEFAULT_DOC_PAGE = "overview";
-
-function getActiveDocPage() {
-    const p = new URLSearchParams(location.search).get("page") || DEFAULT_DOC_PAGE;
-    return DOCS_PAGES.includes(p) ? p : DEFAULT_DOC_PAGE;
-}
+// ─── 0. Visible-section helper ──────────────────────────────────────────
+// 2026-05-22 单页后只看 main 直属 section[id]。这样 .faq-item 内嵌的
+// section/article 等元素不会污染 toc / outline / pager 集合；当前文档
+// 共 22 条顶层 section 进入滚动响应周期。
 function getVisibleSections() {
-    return document.querySelectorAll(
-        "main .docs-page:not([hidden]) section[id]",
-    );
+    return document.querySelectorAll("main > section[id]");
 }
-function applyDocPage(page, opts = {}) {
-    document.querySelectorAll(".docs-page").forEach((el) => {
-        el.hidden = el.dataset.docPage !== page;
-    });
-    document.querySelectorAll("aside.toc [data-doc-page]").forEach((el) => {
-        if (el.classList.contains("docs-page-link")) {
-            el.classList.toggle("is-active", el.dataset.docPage === page);
-        } else {
-            el.hidden = el.dataset.docPage !== page;
-        }
-    });
-    document
-        .querySelectorAll(".docs-page-tabs .docs-page-link")
-        .forEach((el) => {
-            el.classList.toggle("is-active", el.dataset.docPage === page);
-        });
-    document.dispatchEvent(
-        new CustomEvent("docpagechange", { detail: { page } }),
-    );
-    if (opts.scroll !== false) window.scrollTo({ top: 0, behavior: "auto" });
-}
-function setActiveDocPage(page, opts = {}) {
-    if (!DOCS_PAGES.includes(page)) return;
-    const params = new URLSearchParams(location.search);
-    params.set("page", page);
-    const hash = opts.hash || "";
-    history.pushState(
-        { docPage: page },
-        "",
-        location.pathname + "?" + params.toString() + hash,
-    );
-    applyDocPage(page, opts);
-}
-document.querySelectorAll(".docs-page-link").forEach((link) => {
-    link.addEventListener("click", (e) => {
-        e.preventDefault();
-        setActiveDocPage(link.dataset.docPage);
-    });
-});
-window.addEventListener("popstate", () => {
-    applyDocPage(getActiveDocPage(), { scroll: false });
-});
-// Initial paint — must run BEFORE the modules below capture section lists,
-// so they see the correct hidden state on first load.
-applyDocPage(getActiveDocPage(), { scroll: false });
 
 // ─── 1. Tabbed code blocks ────────────────────────────────────────────
 document.querySelectorAll(".code-tab").forEach((btn) => {
@@ -144,6 +94,7 @@ function observeSections() {
     sections.forEach((s) => tocObserver.observe(s));
 }
 observeSections();
+// 单页化后 DOM 不再随页面切换重构，section 集合在初始化后就是最终态。
 
 // ─── 4. 右侧 outline（在此页面） ────────────────────────────────────────────
 // 扫 main 下所有 h2/h3 自动生成。h2 是节点标题（lvl-2，与 toc 一一对应），
@@ -169,12 +120,10 @@ if (outlineHost) {
         { rootMargin: "-15% 0px -75% 0px" },
     );
     rebuildOutline();
-    document.addEventListener("docpagechange", rebuildOutline);
 }
 function rebuildOutline() {
     if (!outlineHost) return;
-    // 重置观察器 + 清空之前的 outline DOM。仅给当前可见 .docs-page 内的
-    // h2/h3 生成右侧「在此页面」列表。
+    // 2026-05-22 单页化后仅扫一次 main 下的 h2/h3。不再跨页重建。
     outlineHeadings.forEach((x) => {
         if (outlineObserver) outlineObserver.unobserve(x.el);
         delete x.el._outlineLink;
@@ -183,9 +132,7 @@ function rebuildOutline() {
     outlineHost.innerHTML = "";
     const fragment = document.createDocumentFragment();
     document
-        .querySelectorAll(
-            "main .docs-page:not([hidden]) h2, main .docs-page:not([hidden]) h3",
-        )
+        .querySelectorAll("main h2, main h3")
         .forEach((h) => {
             if (!h.id) h.id = autoSlug(h.textContent, outlineHeadings.length);
             const li = document.createElement("li");
@@ -212,8 +159,8 @@ function autoSlug(text, idx) {
 }
 
 // ─── 5. 底部 prev/next 导航 ────────────────────────────────────────
-// 跟随当前可见 section 实时更新。位于页边界时 prev/next 跳到相邻页，与
-// Kimi 页间跨页导航一致。
+// 2026-05-22 单页化后仅在同一文档相邻 section 之间跳转。文档第 1 / 末 section
+// 时，对侧链接 visibility:hidden（aria-disabled="true"）。
 const pager = document.getElementById("docsPager");
 let pagerObserver = null;
 if (pager) {
@@ -232,17 +179,10 @@ if (pager) {
     );
     function updatePager(currentIdx) {
         const list = Array.from(sections);
-        const prev = list[currentIdx - 1];
-        const next = list[currentIdx + 1];
-        const activePage = getActiveDocPage();
-        const pageIdx = DOCS_PAGES.indexOf(activePage);
-        const prevPage = pageIdx > 0 ? DOCS_PAGES[pageIdx - 1] : null;
-        const nextPage =
-            pageIdx < DOCS_PAGES.length - 1 ? DOCS_PAGES[pageIdx + 1] : null;
-        setPagerLink(prevLink, prev, prevPage, "prev");
-        setPagerLink(nextLink, next, nextPage, "next");
+        setPagerLink(prevLink, list[currentIdx - 1]);
+        setPagerLink(nextLink, list[currentIdx + 1]);
     }
-    function setPagerLink(linkEl, section, fallbackPage, dir) {
+    function setPagerLink(linkEl, section) {
         if (!linkEl) return;
         const titleEl = linkEl.querySelector(".docs-pager-title");
         linkEl.onclick = null;
@@ -254,48 +194,13 @@ if (pager) {
                 titleEl.textContent = h2 ? h2.textContent.trim() : section.id;
             return;
         }
-        if (fallbackPage) {
-            // 跨页：点击时切换到相邻页。标题用那页的首/末 section h2。
-            const sib = document.querySelector(
-                `.docs-page[data-doc-page="${fallbackPage}"]`,
-            );
-            const sibSections = sib
-                ? sib.querySelectorAll("section[id]")
-                : [];
-            const target =
-                dir === "prev"
-                    ? sibSections[sibSections.length - 1]
-                    : sibSections[0];
-            const h2 = target ? target.querySelector("h2") : null;
-            linkEl.removeAttribute("aria-disabled");
-            linkEl.href =
-                "?page=" + fallbackPage + (target ? "#" + target.id : "");
-            if (titleEl)
-                titleEl.textContent = h2 ? h2.textContent.trim() : fallbackPage;
-            linkEl.onclick = (ev) => {
-                ev.preventDefault();
-                setActiveDocPage(fallbackPage, {
-                    hash: target ? "#" + target.id : "",
-                });
-            };
-            return;
-        }
         linkEl.setAttribute("aria-disabled", "true");
         linkEl.href = "#";
         if (titleEl) titleEl.textContent = "";
     }
-    function rebuildPager() {
-        // sections 会在 observeSections() 中重新赋值，这里需要重新观察新
-        // 可见集 + 重置 prev/next 初始指针为首个 section。
-        sections.forEach((s) => pagerObserver.observe(s));
-        if (sections.length > 0) updatePager(0);
-    }
+    sections.forEach((s) => pagerObserver.observe(s));
+    if (sections.length > 0) updatePager(0);
     pager.hidden = false;
-    rebuildPager();
-    document.addEventListener("docpagechange", () => {
-        observeSections();
-        rebuildPager();
-    });
 }
 
 // ─── 6. 搜索：index 构建 + Cmd/Ctrl+K modal + 键盘导航 ──────────────────────
@@ -460,26 +365,10 @@ function buildResultNode(entry, tokens, isFirst) {
         const target = document.getElementById(entry.id);
         if (!target) return;
         closeSearch();
-        // 2026-05-18：如果搜索命中的 entry 在另一页，先 setActiveDocPage 再滚。
-        const ancestor = target.closest(".docs-page");
-        const targetPage = ancestor && ancestor.dataset.docPage;
-        const needPageSwitch =
-            targetPage && targetPage !== getActiveDocPage();
-        if (needPageSwitch) {
-            setActiveDocPage(targetPage, {
-                hash: "#" + entry.id,
-                scroll: false,
-            });
-        }
-        // requestAnimationFrame：等 modal/page 切换后再滚动。
+        // 2026-05-22 单页化后直接滚动到 anchor，不再有跨页切换。
         requestAnimationFrame(() => {
-            target.scrollIntoView({
-                behavior: needPageSwitch ? "auto" : "smooth",
-                block: "start",
-            });
-            if (!needPageSwitch) {
-                history.replaceState(null, "", "#" + entry.id);
-            }
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+            history.replaceState(null, "", "#" + entry.id);
         });
     });
     if (entry.crumbs) {

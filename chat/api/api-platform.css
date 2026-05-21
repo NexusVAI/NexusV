@@ -1351,9 +1351,10 @@ td.ip {
 }
 
 body {
-  background:
-    radial-gradient(circle at 80% -10%, rgba(217, 119, 87, 0.09), transparent 32rem),
-    var(--bg);
+  /* 2026-05-22：用户反馈 API 页右上的橙色暖光渐变在深 / 浅主题下都显得多余，
+     去除整层 radial-gradient，仅保留纯色 --bg。如未来要加品牌氛围，
+     建议放到独立装饰层 (e.g. .hero::before)，不要回到全局 body 背景。 */
+  background: var(--bg);
 }
 
 .topbar,

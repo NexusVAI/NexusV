@@ -161,6 +161,12 @@ async function deleteKey(keyId, keyPrefix) {
         });
         const data = await resp.json();
         if (resp.ok && data.ok) {
+            // 2026-05-22：撤销任意一把 Key 时，保守清掉 sessionStorage 里
+            // 缓存的 cancri_recent_api_key（我们只能拿到 prefix，无法确定
+            // 缓存的那把是不是这一把；清空避免代码示例里仍透出已撤销的 Key）。
+            try {
+                sessionStorage.removeItem("cancri_recent_api_key");
+            } catch (_) {}
             showMsg("Key 已撤销。", false);
             await loadData();
         } else {
@@ -332,7 +338,16 @@ async function generateKey(ev) {
                 data.key;
             document.getElementById("new-key-box").style.display =
                 "block";
-            showMsg("Key 生成成功！", false);
+            // 2026-05-22：把刚生成的完整 Key 存入 sessionStorage（仅当前会话）。
+            // 模型广场抽屉里的「调用代码」会读取此 Key 直接填入示例。
+            // 关闭浏览器/标签页后会被自动清空，避免 Key 在磁盘里长期残留。
+            // 用户在 Keys 页主动撤销该 Key 时也会清除（见 deleteKey 内部清理）。
+            try {
+                sessionStorage.setItem("cancri_recent_api_key", data.key);
+            } catch (_) {
+                // sessionStorage 不可用（如隐私模式）也不影响主流程
+            }
+            showMsg("Key 生成成功！本会话内已自动同步到模型广场代码示例。", false);
             await loadData();
         } else {
             showMsg(data.error || "生成失败", true);
