@@ -2099,7 +2099,7 @@ const BRAND_ICON_MAP = {
   "Stepfun": "./stepfun-color.svg",
   "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
   "Microsoft": "./microsoft-color.svg",
-  "IBM": "./openai.svg",
+  "IBM": "./ibm.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。

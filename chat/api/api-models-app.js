@@ -128,7 +128,7 @@ const BRAND_LOGO = {
     kling: "./kling-color.svg",
     xiaomimimo: "./xiaomimimo-color.svg",
     microsoft: "./microsoft-color.svg",
-    ibm: "./openai.svg",
+    ibm: "./ibm.svg",
 };
 
 function normalizeBrandKey(brand) {
@@ -319,16 +319,19 @@ function render() {
     $("grid")
         .querySelectorAll("[data-copy]")
         .forEach((el) => {
+            let copyTimer = null;
             el.addEventListener("click", () => {
                 navigator.clipboard.writeText(el.dataset.copy).then(() => {
+                    if (copyTimer) clearTimeout(copyTimer);
                     const orig = el.textContent;
                     el.textContent = "已复制";
                     el.classList.add("copied");
-                    setTimeout(() => {
+                    copyTimer = setTimeout(() => {
                         el.textContent = orig;
                         el.classList.remove("copied");
+                        copyTimer = null;
                     }, 1200);
-                });
+                }).catch(() => {});
             });
         });
 }
