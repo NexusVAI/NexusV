@@ -2173,6 +2173,25 @@ const MODEL_CATALOG = [
   {"id": "cf:llama-3.2-3b-instruct", "name": "Llama 3.2 3B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:granite-4.0-h-micro", "name": "Granite 4.0 H Micro", "brand": "IBM", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
   {"id": "cf:qwen3-30b-a3b", "name": "Qwen3 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
+  // HuggingFace Router — free serverless
+  {"id": "hf:qwen3.5-9b", "name": "Qwen 3.5 9B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:gemma-3-27b", "name": "Gemma 3 27B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:llama-3.1-8b", "name": "Llama 3.1 8B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:glm-5", "name": "GLM 5", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:qwen3-coder-30b", "name": "Qwen3 Coder 30B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:qwen3.5-35b", "name": "Qwen 3.5 35B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:qwen3.5-122b", "name": "Qwen 3.5 122B A10B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:command-a-plus", "name": "Command A Plus", "brand": "Cohere", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:qwen3-4b-thinking", "name": "Qwen3 4B Thinking", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:deepseek-r1-distill-1.5b", "name": "DeepSeek R1 Distill 1.5B", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:qwen3.5-27b", "name": "Qwen 3.5 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:glm-5.1-fp8", "name": "GLM 5.1 FP8", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:qwen3-8b", "name": "Qwen3 8B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:apertus-8b", "name": "Apertus 8B", "brand": "Swiss AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:eurollm-22b", "name": "EuroLLM 22B", "brand": "utter-project", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:tiny-aya-earth", "name": "Tiny Aya Earth", "brand": "Cohere", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  {"id": "hf:llama-3.2-1b", "name": "Llama 3.2 1B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
 ];
 
 // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
@@ -2199,6 +2218,9 @@ const BRAND_ICON_MAP = {
   "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
   "Microsoft": "./microsoft-color.svg",
   "IBM": "./ibm.svg",
+  "Cohere": "./cohere-color.svg",
+  "Swiss AI": "./huggingface-color.svg",
+  "utter-project": "./huggingface-color.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
