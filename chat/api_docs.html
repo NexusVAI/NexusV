@@ -821,6 +821,7 @@
         <a class="docs-page-link" data-doc-page="overview" href="?page=overview">概览</a>
         <a class="docs-page-link" data-doc-page="endpoints" href="?page=endpoints">API 端点</a>
         <a class="docs-page-link" data-doc-page="cli" href="?page=cli">CLI 工具</a>
+        <a class="docs-page-link" data-doc-page="clients" href="?page=clients">主流客户端</a>
         <a class="docs-page-link" data-doc-page="rules" href="?page=rules">规则与参考</a>
 
         <h4 data-doc-page="overview">开始</h4>
@@ -839,6 +840,13 @@
         <a href="#cli-claude" data-doc-page="cli">Claude Code</a>
         <a href="#cli-opencode" data-doc-page="cli">OpenCode</a>
         <a href="#cli-openclaw" data-doc-page="cli">OpenClaw</a>
+
+        <h4 data-doc-page="clients">主流客户端</h4>
+        <a href="#client-cherry" data-doc-page="clients">Cherry Studio</a>
+        <a href="#client-sillytavern" data-doc-page="clients">SillyTavern (酒馆)</a>
+        <a href="#client-ccswitch" data-doc-page="clients">CC Switch</a>
+        <a href="#client-chatbox" data-doc-page="clients">Chatbox</a>
+        <a href="#client-lobechat" data-doc-page="clients">LobeChat</a>
 
         <h4 data-doc-page="rules">规则与参考</h4>
         <a href="#quota" data-doc-page="rules">免费档配额</a>
@@ -887,6 +895,7 @@
           <a class="docs-page-link" data-doc-page="overview" href="?page=overview">概览</a>
           <a class="docs-page-link" data-doc-page="endpoints" href="?page=endpoints">API 端点</a>
           <a class="docs-page-link" data-doc-page="cli" href="?page=cli">CLI 工具</a>
+          <a class="docs-page-link" data-doc-page="clients" href="?page=clients">主流客户端</a>
           <a class="docs-page-link" data-doc-page="rules" href="?page=rules">规则与参考</a>
         </nav>
 
@@ -1621,6 +1630,149 @@ openclaw agent</pre>
         </section>
 
         </div><!-- /.docs-page cli -->
+
+        <div class="docs-page" data-doc-page="clients" hidden>
+          <p class="docs-intro">
+            Cancri API 完美兼容 OpenAI 及 Anthropic 协议，因此可以直接接入市面上几乎所有主流的 AI 桌面、移动或网页端第三方客户端。通过一个 <code>cancri_sk_</code> 密钥，你便能把诸如 GPT-5、Claude-Opus、DeepSeek-V4、Gemini-3.1 等顶级模型悉数接入你钟爱的日常工具中。
+          </p>
+
+          <section id="client-cherry">
+            <h2>Cherry Studio 接入指南</h2>
+            <p>
+              Cherry Studio 是一款优雅、强大的跨平台桌面级 AI 客户端，支持多模型对比、RAG 本地知识库等丰富功能。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>打开 Cherry Studio，点击左下角的 <strong>设置 (Gear 图标)</strong>。</li>
+              <li>在左侧菜单选择 <strong>模型服务商</strong>。</li>
+              <li>点击下方的 <strong>添加自定义服务商</strong>，或在内置服务商列表中选择 <strong>OpenAI (Custom)</strong> 并启用。</li>
+              <li>在参数输入框中填入以下信息：
+                <ul>
+                  <li><strong>服务商名称：</strong> <code>Cancri</code></li>
+                  <li><strong>API Key (密钥)：</strong> 填入你的 <code>cancri_sk_YOUR_KEY</code></li>
+                  <li><strong>API 地址 (Endpoint)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code> (注意：末尾必须带上 <code>/v1</code>)</li>
+                </ul>
+              </li>
+              <li>点击 <strong>管理模型</strong> 或 <strong>刷新模型</strong> 按钮，Cherry Studio 将自动访问 <code>/v1/models</code> 并获取全量支持的模型列表，无需手动一个个输入！</li>
+              <li>配置完成后，在对话窗口顶部选择对应的 Cancri 模型（如 <code>gpt-5.4</code> 或 <code>claude-sonnet-4-6</code>）即可开始聊天！</li>
+            </ol>
+          </section>
+
+          <section id="client-sillytavern">
+            <h2>SillyTavern (酒馆) 接入指南</h2>
+            <p>
+              SillyTavern（俗称酒馆）是面向深度提示词工程、虚拟角色扮演以及小说创作爱好者的顶级高级前端客户端。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>启动 SillyTavern 并打开网页端。点击顶部导航栏 of <strong>API 连接 (插头图标)</strong>。</li>
+              <li>在 <strong>API</strong> 下拉菜单中选择 <strong>Chat Completion</strong>。</li>
+              <li>在 <strong>Chat Completion Source (服务商)</strong> 菜单中选择 <strong>Custom (OpenAI-compatible)</strong>。</li>
+              <li>在下方输入框中配置：
+                <ul>
+                  <li><strong>API Key：</strong> 填入你的 <code>cancri_sk_YOUR_KEY</code></li>
+                  <li><strong>Custom Endpoint (逆向API地址/基址)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code> (注意结尾必须带 <code>/v1</code> 且不能多出额外的斜杠)</li>
+                </ul>
+              </li>
+              <li>点击右侧的 <strong>Connect (连接)</strong> 按钮。</li>
+              <li>当状态指示灯变为 <strong>绿色 (已连接)</strong> 时，在 <strong>Model</strong> 下拉列表中选择你想调用的具体模型 ID（例如 <code>gpt-5.4</code>, <code>claude-opus-4-6</code>, <code>deepseek-v4-pro</code>, <code>gemini-3.1-pro</code> ）。</li>
+              <li>建议在 SillyTavern 的上下文与 Prompt 格式中配置适配你所用模型的 Pre-sets，以获得最佳演绎效果。</li>
+            </ol>
+          </section>
+
+          <section id="client-ccswitch">
+            <h2>CC Switch 接入指南</h2>
+            <p>
+              CC Switch 是一款在开发者间大火的、专注于统一管理 AI 编程 CLI 工具（如 Claude Code, Codex, OpenCode, OpenClaw 等）的系统级多合一客户端托盘。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>打开 CC Switch 桌面客户端面板。</li>
+              <li>切到 <strong>Settings (设置) -> Providers (服务商)</strong> 页面。</li>
+              <li>点击 <strong>Add Custom Provider (添加自定义服务商)</strong>。</li>
+              <li>填入配置信息：
+                <ul>
+                  <li><strong>Provider Name (名称)：</strong> <code>Cancri</code></li>
+                  <li><strong>Base URL (地址)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code></li>
+                  <li><strong>API Key：</strong> <code>cancri_sk_YOUR_KEY</code></li>
+                </ul>
+              </li>
+              <li>点击 <strong>Test Connection (连接测试)</strong>。CC Switch 会调用 <code>/v1/models</code> 自行拉取可用的模型。</li>
+              <li>在路由 takeover 功能中，你可以一键将 Claude Code 或 Codex 的路由劫持/转发给 Cancri，从此命令行里的 AI 编程工具直接免代理运行！</li>
+            </ol>
+          </section>
+
+          <section id="client-chatbox">
+            <h2>Chatbox 接入指南</h2>
+            <p>
+              Chatbox 是一款开源、极简且多端同步的 AI 跨平台客户端，支持 Mac, Windows, iOS 与 Android。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>启动 Chatbox，点击左下角的 <strong>设置 (Gear)</strong>。</li>
+              <li>在 <strong>模型提供方</strong> 下拉框中，选择 <strong>OpenAI 兼容 (OpenAI Compatible)</strong>。</li>
+              <li>配置对应字段：
+                <ul>
+                  <li><strong>API 密钥 (API Key)：</strong> 你的 <code>cancri_sk_YOUR_KEY</code></li>
+                  <li><strong>API 域名 (API Host/Base URL)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code></li>
+                </ul>
+              </li>
+              <li>在 <strong>模型 (Model)</strong> 输入框中填入你想默认调用的模型 ID，或者点击刷新加载列表。</li>
+              <li>保存并返回主页，即可无缝发起流畅多端会话。</li>
+            </ol>
+          </section>
+
+          <section id="client-lobechat">
+            <h2>LobeChat 接入指南</h2>
+            <p>
+              LobeChat 是一款现代、高颜值的开源 AI 前端框架，内置插件系统，支持语音、视觉与大模型自定义。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>打开 LobeChat，点击左下角的 <strong>头像 -> 设置 (Settings)</strong>。</li>
+              <li>选择 <strong>语言模型 (Language Model)</strong> 标签。</li>
+              <li>向下滚动，找到 <strong>OpenAI</strong> 条目并点击展开，或者使用 <strong>自定义 OpenAI (Custom OpenAI)</strong> 模块：
+                <ul>
+                  <li>将开关切换为 <strong>开启 (Enabled)</strong>。</li>
+                  <li><strong>API 密钥 (API Key)：</strong> 输入你的 <code>cancri_sk_YOUR_KEY</code></li>
+                  <li><strong>接口代理地址 (Base URL)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code></li>
+                </ul>
+              </li>
+              <li>LobeChat 将通过内置机制验证并展现所有支持的模型列表。直接选中你常挂载的模型即可开始沉浸式对话。</li>
+            </ol>
+          </section>
+
+          <section id="client-faq">
+            <h2>常见问题与解答 (Q&A)</h2>
+            <div class="faq-item">
+              <h4>Q: 报错 503 Service Unavailable 并带代码 "api_paused" 是怎么回事？</h4>
+              <p>
+                A: 这是站内的<b>API维护闸门限制</b>。当平台准备上线全新的 ¥9.9/月 付费订阅配额时，系统会暂停纯公网非网页端 API 的写入操作以防恶意攻击，而 <code>/v1/models</code> 路由保持开放发现。如果是平台管理员或内部进行测试，只需在 Supabase 控制面板将 Secret 环境变量 <code>API_PAUSED_UNTIL_PAID</code> 设为 <code>false</code> 即可秒级解除此 503 限制，重新开放全站 API 接口。
+              </p>
+            </div>
+            <div class="faq-item">
+              <h4>Q: Paid（付费）账户和 Free（免费）账户的 API 限制有何不同？</h4>
+              <p>
+                A: 网站上的公共文档默认展示的是免费档防刷限制，实际上后台针对付费/VIP用户的限流极其宽裕，具有极其显著的体验优势：
+                <br>
+                • <b>并发数：</b> 免费用户单 Key 限 2 并发；<b>付费用户和 VIP 用户无并发数限制 (maxConcurrent=0，允许任意多路多线程并行)</b>。<br>
+                • <b>频次限制：</b> 免费用户 10 次/分、1000 次/天；<b>付费用户放宽到 60 次/分、600 次/小时、50000 次/天</b>，完美承载各种高频编程辅助 (如 Aider, Claude Code) 与高频测试场景。
+              </p>
+            </div>
+            <div class="faq-item">
+              <h4>Q: 报错 404 model_not_found 如何解决？</h4>
+              <p>
+                A: 请确保你在客户端内填写的模型 ID 拼写完全正确，且存在于 <code>/v1/models</code> 返回的列表中（例如 <code>gpt-5.4</code>, <code>claude-opus-4-6</code> ）。一些第三方软件会私自转换模型名字，请在模型设置中手动输入完全一致的 Cancri Canonical ID。
+              </p>
+            </div>
+            <div class="faq-item">
+              <h4>Q: API 支持图片和视频生成吗？</h4>
+              <p>
+                A: 根据平台规范，图像生成 (<code>/v1/images/generations</code>) 和视频生成 (<code>/v1/videos/generations</code>) 由于接口防刷和异步长轮询特性，<b>不对公网 API Key 开放</b>，仅在 Cancri 官方网页版前端可流畅调用和合成。
+              </p>
+            </div>
+          </section>
+        </div><!-- /.docs-page clients -->
 
         <div class="docs-page" data-doc-page="rules" hidden>
         <section id="quota">
