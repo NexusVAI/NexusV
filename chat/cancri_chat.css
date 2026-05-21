@@ -3306,9 +3306,56 @@ body[data-view="leaderboard"] #compareModelSelector {
     }
 }
 
+/* ── 助手"生成中"白色脉冲圆球 ───────────────────────────────
+   规则：
+   - 仅当 .message.assistant 或 .duel-card 处于 .is-generating 状态时显示
+   - 一旦有 reasoning/answer 内容流入，或 thinking=false，JS 会移除该状态，
+     球随即消失
+   球的颜色绑定到 var(--text)：暗色主题下接近纯白，亮色主题下变深，
+   都能在对应背景上保证对比度。
+   2026-05-21 spec 对齐：圆球 12×12，纯 scale 脉冲（1 → 1.25 → 1），
+   1.25s ease-in-out infinite，无 opacity 变化，无 box-shadow，
+   开启 GPU 合成（translateZ + backface-visibility + will-change）。 */
+.generating-indicator {
+    display: none;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 24px;
+    padding: 6px 0 4px;
+}
+
+.message.assistant.is-generating .generating-indicator,
+.duel-card.is-generating .generating-indicator {
+    display: flex;
+}
+
+.generating-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+    animation: generatingDotPulse 1.25s ease-in-out infinite;
+}
+
+@keyframes generatingDotPulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.25);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .think-body .stream-fragment,
     .answer-body .stream-fragment {
+        animation: none;
+    }
+    .generating-dot {
         animation: none;
     }
 }

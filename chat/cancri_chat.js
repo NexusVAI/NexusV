@@ -4280,6 +4280,8 @@ function renderMessages() {
         const imageUrl = imageMatch[1];
         const id = createAssistantMessage(metadata);
         const messageDiv = document.getElementById(id);
+        // 历史回放：图片/视频消息已是终态，移除脉冲圆球占位
+        messageDiv?.classList.remove("is-generating");
         const answerBody = messageDiv?.querySelector(".answer-body");
         if (answerBody) {
           answerBody.innerHTML = "";
@@ -4296,6 +4298,7 @@ function renderMessages() {
         const videoUrl = videoMatch[1];
         const id = createAssistantMessage(metadata);
         const messageDiv = document.getElementById(id);
+        messageDiv?.classList.remove("is-generating");
         const answerBody = messageDiv?.querySelector(".answer-body");
         if (answerBody) {
           answerBody.innerHTML = "";
@@ -9476,7 +9479,11 @@ function sanitizeHistoryMessage(message) {
 function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
   const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const messageDiv = document.createElement("div");
-  messageDiv.className = "message assistant";
+  // 2026-05-21 ChatGPT-style "generating" indicator：助手消息被创建时默认
+  // 处于 is-generating 状态，bubble 内会渲染一个白色脉冲圆球。一旦收到
+  // 任意 reasoning / answer 内容，或 thinking=false（流式结束 / 错误收尾），
+  // updateAssistantMessage / renderAssistantErrorCard 会移除该状态，球随之消失。
+  messageDiv.className = "message assistant is-generating";
   messageDiv.id = messageId;
   const modelMetadata = normalizeAssistantMetadata(metadata);
 
@@ -9486,6 +9493,13 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
 
   const bubble = document.createElement("div");
   bubble.className = "message-content md-content";
+
+  const generatingIndicator = document.createElement("div");
+  generatingIndicator.className = "generating-indicator";
+  generatingIndicator.setAttribute("aria-hidden", "true");
+  const generatingDot = document.createElement("span");
+  generatingDot.className = "generating-dot";
+  generatingIndicator.appendChild(generatingDot);
 
   const modelBadge = document.createElement("div");
   modelBadge.className = "assistant-model-badge";
@@ -9556,6 +9570,7 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
   thinkBlock.appendChild(thinkHeader);
   thinkBlock.appendChild(thinkBody);
   bubble.appendChild(modelBadge);
+  bubble.appendChild(generatingIndicator);
   bubble.appendChild(thinkBlock);
   bubble.appendChild(toolCallsContainer);
   bubble.appendChild(answerBody);
@@ -9651,7 +9666,9 @@ function createDuelAssistantMessage({
 
   const makeCard = (slot, modelId) => {
     const card = document.createElement("article");
-    card.className = "duel-card";
+    // 2026-05-21：duel 卡片同样默认 is-generating，待对应 slot 收到任意
+    // reasoning/answer 或 thinking=false 时由 updateDuelMessage 移除。
+    card.className = "duel-card is-generating";
     card.dataset.duelSlot = slot;
     const title = anonymous
       ? `模型 ${slot.toUpperCase()}`
@@ -9660,6 +9677,13 @@ function createDuelAssistantMessage({
     const head = document.createElement("div");
     head.className = "duel-card-head";
     head.innerHTML = `<span>${escapeHtml(title)}</span><small>${anonymous ? "投票后揭晓" : escapeHtml(modelId)}</small>`;
+
+    const generatingIndicator = document.createElement("div");
+    generatingIndicator.className = "generating-indicator";
+    generatingIndicator.setAttribute("aria-hidden", "true");
+    const generatingDot = document.createElement("span");
+    generatingDot.className = "generating-dot";
+    generatingIndicator.appendChild(generatingDot);
 
     const thinkBlock = document.createElement("div");
     thinkBlock.className = "think-block";
@@ -9692,6 +9716,7 @@ function createDuelAssistantMessage({
     answerBody.innerHTML = '<span class="typing-indicator">正在生成…</span>';
 
     card.appendChild(head);
+    card.appendChild(generatingIndicator);
     card.appendChild(thinkBlock);
     card.appendChild(toolCallsContainer);
     card.appendChild(answerBody);
@@ -9747,6 +9772,9 @@ function updateDuelMessage(
       wrapper.querySelector(`[data-duel-answer="${slot}"]`);
     if (!target) return;
     const value = textOrData.trim();
+    // 2026-05-21：legacy 路径只要落到这里说明已经有内容或停止 loading，
+    // 移除该 slot 的脉冲圆球。
+    if (value || !loading) card.classList.remove("is-generating");
     target.innerHTML = value
       ? renderMarkdown(value)
       : `<span class="typing-indicator">${loading ? "正在生成…" : "暂无内容"}</span>`;
@@ -9770,6 +9798,12 @@ function updateDuelMessage(
   const answerText = String(answer || "").trim();
   const hasReasoning = Boolean(reasoningText);
   const hasAnswer = Boolean(answerText);
+
+  // 2026-05-21：与单模型路径一致，任何 reasoning/answer 流入或流式结束
+  // 都让该 slot 的脉冲圆球消失。
+  if (hasReasoning || hasAnswer || !thinking) {
+    card.classList.remove("is-generating");
+  }
 
   if (parts) {
     const {
@@ -9919,6 +9953,12 @@ function updateAssistantMessage(
   const hasAnswer = Boolean(answerText.trim());
 
   messageDiv.classList.remove("is-error");
+  // 2026-05-21：白色脉冲圆球只在"刚创建、还没收到任何 reasoning/answer"
+  // 阶段显示。一旦有任何内容流入，或流式结束（thinking=false），就移除
+  // .is-generating 让球消失。
+  if (hasReasoning || hasAnswer || !thinking) {
+    messageDiv.classList.remove("is-generating");
+  }
   answerBody.classList.remove("assistant-error-card");
   if (messageActions) messageActions.hidden = false;
 
@@ -10050,6 +10090,8 @@ function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {
     tagAssistantRetryUserIndex(messageId, retryUserIndex);
   }
   messageDiv.classList.add("is-error");
+  // 错误卡 = 流式收尾的另一种终态，白色脉冲圆球必须消失。
+  messageDiv.classList.remove("is-generating");
   if (thinkBlock) thinkBlock.hidden = true;
   if (toolCallsContainer) toolCallsContainer.innerHTML = "";
   if (messageActions) {
