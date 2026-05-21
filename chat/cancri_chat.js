@@ -222,7 +222,7 @@ function getFriendlyHttpStatusMessage(status) {
 const KNOWN_ERROR_CODE_MESSAGES = {
   // From modelscope-proxy / chat-gateway / api-gateway sanitized errors
   model_unavailable: "该模型当前无法使用，请尝试其他模型。",
-  model_quota_exceeded: "该模型今日额度已用完，请稍后或切换其他模型。",
+  model_quota_exceeded: "该模型上游额度或线路限流已触发，不是您的额度包余额用完；请切换模型或稍后重试。",
   model_request_invalid: "请求未被模型接受，请调整内容后重试。",
   model_temporary_failure: "当前模型服务暂时不可用，请稍后重试。",
   upstream_timeout: "上游服务响应超时，请稍后重试或切换模型。",
@@ -289,6 +289,15 @@ const QUOTA_REFRESH_TRIGGER_CODES = new Set([
   "model_pro_plus_required",
   "model_pro_max_required",
   "model_pro_required",
+]);
+const USER_QUOTA_ERROR_CODES = new Set([
+  "free_pool_exhausted",
+  "daily_paid_limit_reached",
+  "monthly_quota_exhausted",
+]);
+const PROVIDER_QUOTA_ERROR_CODES = new Set([
+  "model_quota_exceeded",
+  "model_free_hour_limit",
 ]);
 
 function friendlyMessageFromBackend(parsed, status) {
@@ -783,9 +792,10 @@ function applyBackendModelBlock(payload, modelId = currentModel) {
         ? transientFallbackMs
         : MODEL_LOCK_DURATION_MS);
   const reason =
-    payload.code === "model_quota_exceeded" ||
-    payload.code === "model_free_hour_limit"
-      ? "quota"
+    payload.code === "model_quota_exceeded"
+      ? "provider_quota"
+      : payload.code === "model_free_hour_limit"
+        ? "quota"
       : "unavailable";
   setModelQuotaLock(modelId, until, reason);
   updateModelDropdownIndicators();
@@ -860,7 +870,12 @@ function setModelQuotaLock(modelId, untilTs, reason = "quota") {
   const status = getModelStatus(modelId);
   status.lockedUntil = Number.isFinite(untilTs) ? untilTs : null;
   status.lockReason = reason || null;
-  status.error = reason === "quota" ? "额度已用完" : reason || null;
+  status.error =
+    reason === "provider_quota"
+      ? "上游额度或线路限流"
+      : reason === "quota"
+        ? "额度已用完"
+        : reason || null;
   status.lastChecked = Date.now();
   modelStatus.set(modelId, normalizeModelStatusSnapshot(status));
 }
@@ -881,6 +896,9 @@ function getQuotaLockMessage(modelId = currentModel) {
 
   const status = getModelStatus(modelId);
   if (Number.isFinite(status.lockedUntil) && status.lockedUntil > now) {
+    if (status.lockReason === "provider_quota") {
+      return "该模型上游额度或线路限流已触发，不是您的额度包余额用完；请切换模型或稍后重试。";
+    }
     if (status.lockReason === "quota") {
       if (modelId === "claude-opus-4-6-thinking-medium") {
         if (quotaState.tier !== "free") {
@@ -919,6 +937,13 @@ function applyQuotaSnapshotFromHeaders(
   const targetModelId = modelId || currentModel;
   const targetStatus = getModelStatus(targetModelId);
   const isScopeModel = usesSharedQuota(targetModelId);
+  const backendCode = responseStatus >= 400 ? getBackendErrorCode(errorText) : "";
+  const isProviderQuotaError = PROVIDER_QUOTA_ERROR_CODES.has(backendCode);
+  const isUserQuotaError = USER_QUOTA_ERROR_CODES.has(backendCode);
+  const hasTopupBalance = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
+  const shouldApplyQuotaLock =
+    responseStatus === 429 &&
+    (!backendCode || isProviderQuotaError || isUserQuotaError);
 
   const userLimit = parseHeaderInteger(
     headers.get("x-cancri-user-limit") || headers.get("X-Cancri-User-Limit"),
@@ -955,20 +980,22 @@ function applyQuotaSnapshotFromHeaders(
   if (isScopeModel) {
     if (Number.isFinite(userRemaining)) {
       if (userRemaining <= 0) {
-        const until = getNextLocalMidnightTimestamp(now);
-        setUserQuotaLock(until, "quota");
-        for (const scopeModelId of Object.keys(MODEL_IDS).filter(
-          usesSharedQuota,
-        )) {
-          const scopeStatus = getModelStatus(scopeModelId);
-          scopeStatus.lockedUntil = until;
-          scopeStatus.lockReason = "quota";
-          scopeStatus.error = "额度已用完";
-          scopeStatus.lastChecked = now;
-          modelStatus.set(
-            scopeModelId,
-            normalizeModelStatusSnapshot(scopeStatus),
-          );
+        if (!hasTopupBalance) {
+          const until = getNextLocalMidnightTimestamp(now);
+          setUserQuotaLock(until, "quota");
+          for (const scopeModelId of Object.keys(MODEL_IDS).filter(
+            usesSharedQuota,
+          )) {
+            const scopeStatus = getModelStatus(scopeModelId);
+            scopeStatus.lockedUntil = until;
+            scopeStatus.lockReason = "quota";
+            scopeStatus.error = "额度已用完";
+            scopeStatus.lastChecked = now;
+            modelStatus.set(
+              scopeModelId,
+              normalizeModelStatusSnapshot(scopeStatus),
+            );
+          }
         }
       } else if (
         Number.isFinite(rateLimitInfo.userLockedUntil) &&
@@ -984,10 +1011,12 @@ function applyQuotaSnapshotFromHeaders(
         if (targetModelId === "claude-opus-4-6-thinking-medium" && quotaState.tier !== "free") {
           // paid users bypass upstream per-model rate limits
         } else {
-          const until = getNextLocalMidnightTimestamp(now);
+          const until = isProviderQuotaError
+            ? Date.now() + MODEL_LOCK_DURATION_MS
+            : getNextLocalMidnightTimestamp(now);
           targetStatus.lockedUntil = until;
-          targetStatus.lockReason = "quota";
-          targetStatus.error = "额度已用完";
+          targetStatus.lockReason = isProviderQuotaError ? "provider_quota" : "quota";
+          targetStatus.error = isProviderQuotaError ? "上游额度或线路限流" : "额度已用完";
         }
       } else if (
         Number.isFinite(targetStatus.lockedUntil) &&
@@ -1002,14 +1031,16 @@ function applyQuotaSnapshotFromHeaders(
         ? modelLimit
         : targetStatus.quotaLimit;
       targetStatus.quotaRemaining = modelRemaining;
-    } else if (responseStatus === 429) {
+    } else if (shouldApplyQuotaLock) {
       if (targetModelId === "claude-opus-4-6-thinking-medium" && quotaState.tier !== "free") {
         // paid users bypass upstream per-model rate limits
       } else {
-        const until = getNextLocalMidnightTimestamp(now);
+        const until = isProviderQuotaError
+          ? Date.now() + MODEL_LOCK_DURATION_MS
+          : getNextLocalMidnightTimestamp(now);
         targetStatus.lockedUntil = until;
-        targetStatus.lockReason = "quota";
-        targetStatus.error = "额度已用完";
+        targetStatus.lockReason = isProviderQuotaError ? "provider_quota" : "quota";
+        targetStatus.error = isProviderQuotaError ? "上游额度或线路限流" : "额度已用完";
       }
     } else if (responseStatus === 401 || responseStatus === 409) {
       targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
@@ -1027,11 +1058,11 @@ function applyQuotaSnapshotFromHeaders(
       rateLimitInfo.modelId = null;
     }
 
-    if (responseStatus === 429) {
+    if (shouldApplyQuotaLock) {
       const until = Date.now() + MODEL_LOCK_DURATION_MS;
       targetStatus.lockedUntil = until;
-      targetStatus.lockReason = "quota";
-      targetStatus.error = "额度已用完";
+      targetStatus.lockReason = isProviderQuotaError ? "provider_quota" : "quota";
+      targetStatus.error = isProviderQuotaError ? "上游额度或线路限流" : "额度已用完";
     } else if (responseStatus === 401 || responseStatus === 409) {
       targetStatus.error = getFriendlyHttpStatusMessage(responseStatus);
     } else if (
@@ -1615,7 +1646,7 @@ function invalidateQuotaState() {
 }
 
 function clearTopupBackedQuotaLocks() {
-  if (quotaState.tier !== "free" || !(quotaState.topupBalance > 0)) return false;
+  if (!(quotaState.topupBalance > 0)) return false;
   const now = Date.now();
   let changed = false;
 
@@ -11003,8 +11034,14 @@ async function streamChatCompletionRound(
           "Claude Opus 4.7 免费共享额度每小时 10 次已用完，请稍后再试。",
       );
     }
+    if (parsedLimit.code === "model_quota_exceeded") {
+      applyBackendModelBlock(parsedLimit, modelId);
+    }
+    const backendMessage = friendlyMessageFromBackend(parsedLimit, response.status);
     throw new Error(
-      getQuotaLockMessage(modelId) || "模型额度已超，请切换模型重试。",
+      backendMessage ||
+        getQuotaLockMessage(modelId) ||
+        "模型额度已超，请切换模型重试。",
     );
   }
 
