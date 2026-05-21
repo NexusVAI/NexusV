@@ -15,7 +15,7 @@
 const $ = (id) => document.getElementById(id);
 
 // ─── 0. Page-level pagination (2026-05-18) ─────────────────────────────────
-const DOCS_PAGES = ["overview", "endpoints", "cli", "rules"];
+const DOCS_PAGES = ["overview", "endpoints", "cli", "clients", "rules"];
 const DEFAULT_DOC_PAGE = "overview";
 
 function getActiveDocPage() {
