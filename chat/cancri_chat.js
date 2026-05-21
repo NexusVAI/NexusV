@@ -1122,6 +1122,7 @@ function normalizeModelStatusSnapshot(status = {}) {
     error,
     lockedUntil,
     lockReason,
+    _health: status._health && typeof status._health === "object" ? status._health : null,
   };
 }
 
@@ -1267,6 +1268,86 @@ async function refreshIndependentModelPing() {
   return;
 }
 
+// ── 服务端健康数据 → modelStatus 映射 ──────────────────────────────────
+// 从 chat-gateway 的 model_health 端点拉取真实请求统计（成功率、平均延迟），
+// 映射到 modelStatus Map，替代已禁用的批量 ping。数据来自服务端
+// model_health_logs 表的 fire-and-forget 写入，覆盖所有用户的聚合统计。
+const HEALTH_STATUS_REFRESH_MS = 30 * 60 * 1000; // 30 分钟刷新一次
+let lastHealthStatusFetchedAt = 0;
+
+async function fetchModelHealthStatus() {
+  try {
+    const resp = await fetch(EDGE_FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ endpoint: "model_health", window_days: 1 }),
+    });
+    if (!resp.ok) return;
+    const data = await resp.json().catch(() => null);
+    if (!data || !Array.isArray(data.models)) return;
+
+    const now = Date.now();
+    let changed = false;
+
+    for (const m of data.models) {
+      const modelId = m.model_id || m.canonicalId || "";
+      if (!modelId) continue;
+
+      const status = m.status || "unknown";
+      const successRate = Number.isFinite(m.success_rate) ? m.success_rate : null;
+      const avgLatency = Number.isFinite(m.avg_latency_ms) ? m.avg_latency_ms : null;
+
+      // 映射 health status → speedLevel
+      let speedLevel = "unknown";
+      if (status === "operational") speedLevel = "fast";
+      else if (status === "degraded") speedLevel = "medium";
+      else if (status === "down") speedLevel = "slow";
+
+      const existing = modelStatus.get(modelId);
+      // 只在 health 数据比现有数据更新时覆盖
+      if (existing && existing.lastChecked > now - 60_000 && existing.speedLevel !== "unknown") {
+        // 现有数据是最近的 ping 或聊天请求，保留
+        continue;
+      }
+
+      const error = status === "down"
+        ? `服务端检测: ${successRate !== null ? successRate + "%成功率" : "高失败率"}`
+        : status === "degraded"
+          ? `服务端检测: ${successRate !== null ? successRate + "%成功率" : "部分降级"}`
+          : null;
+
+      modelStatus.set(modelId, {
+        ...(existing || {}),
+        speedMs: avgLatency,
+        speedLevel,
+        lastChecked: now,
+        error: error || (existing?.error || null),
+        // 保留已有的 quota/lock 状态
+        quotaRemaining: existing?.quotaRemaining ?? null,
+        quotaLimit: existing?.quotaLimit ?? null,
+        lockedUntil: existing?.lockedUntil ?? null,
+        lockReason: existing?.lockReason ?? null,
+        // 新增: 附加 health 原始数据供 tooltip 使用
+        _health: {
+          successRate,
+          avgLatency,
+          totalRequests: m.total_requests || 0,
+          status,
+        },
+      });
+      changed = true;
+    }
+
+    if (changed) {
+      lastHealthStatusFetchedAt = now;
+      updateModelDropdownIndicators();
+      persistModelTelemetryCache();
+    }
+  } catch (_e) {
+    // 静默失败，下次刷新再试
+  }
+}
+
 // 后台 chat-gateway 维护一张 model_line_disabled，凡是上游被自动 / 手动
 // 标死的线路都在里面。前端打开页面时拉一次，然后每 5 分钟刷一次：
 //   1. 新增的 disabled 模型 → 加 24h "unavailable" 本地锁，下拉框变灰；
@@ -1340,6 +1421,7 @@ async function bootstrapModelTelemetry() {
     refreshSharedQuota(),
     refreshIndependentModelPing(),
     refreshDisabledModelLines(),
+    fetchModelHealthStatus(),
   ]);
   autoSwitchIfCurrentModelUnavailable();
   scheduleIndependentModelPingRefresh(INDEPENDENT_MODEL_PING_INTERVAL_MS);
@@ -1348,6 +1430,11 @@ async function bootstrapModelTelemetry() {
   setInterval(() => {
     refreshDisabledModelLines().catch(() => {});
   }, 5 * 60 * 1000);
+  // 每 30 分钟从服务端拉取模型健康数据（成功率/延迟/状态），
+  // 替代已禁用的批量 ping，数据来源是 model_health_logs 聚合统计。
+  setInterval(() => {
+    fetchModelHealthStatus().catch(() => {});
+  }, HEALTH_STATUS_REFRESH_MS);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -1826,7 +1913,19 @@ function updateModelDropdownIndicators() {
     }
     speedDot.className =
       "model-speed-dot speed-" + (status.speedLevel || "unknown");
-    if (status.speedLevel === "fast")
+    // 优先展示服务端健康数据（成功率 + 延迟），无数据时回退到 ping 延迟
+    const h = status._health;
+    if (h && h.successRate !== null) {
+      const latency = h.avgLatency !== null ? ` · ${Math.round(h.avgLatency)}ms` : "";
+      const reqs = h.totalRequests > 0 ? ` · ${h.totalRequests}次请求` : "";
+      if (status.speedLevel === "fast")
+        speedDot.title = `正常 ${h.successRate}%${latency}${reqs}`;
+      else if (status.speedLevel === "medium")
+        speedDot.title = `降级 ${h.successRate}%${latency}${reqs}`;
+      else if (status.speedLevel === "slow")
+        speedDot.title = `异常 ${h.successRate}%${latency}${reqs}`;
+      else speedDot.title = `服务端数据 ${h.successRate}%${latency}`;
+    } else if (status.speedLevel === "fast")
       speedDot.title = `速度快 (${Math.round(status.speedMs)}ms)`;
     else if (status.speedLevel === "medium")
       speedDot.title = `速度中等 (${Math.round(status.speedMs)}ms)`;
