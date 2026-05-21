@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-21-claude-official-colors" />
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-docs-single-page" />
     <script src="./api/api-platform.js?v=20260513"></script>
     <!-- Cancri 双主题 logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -720,64 +720,13 @@
           padding-top: 24px;
         }
       }
-      /* 2026-05-18 pagination: split a previously-single long page into 4
-         logical pages (overview / endpoints / cli / rules) navigable by the
-         sidebar's top group. Borrows from Kimi's docs pattern: each page
-         click feels like a fresh document, the right rail shows that page's
-         outline only, and the bottom pager walks across page boundaries. */
-      aside.toc h4.docs-page-nav-head {
-        margin-top: 0;
-        color: var(--text);
-      }
-      aside.toc a.docs-page-link {
-        font-weight: 500;
-        color: var(--text);
-        padding: 7px 10px;
-      }
-      aside.toc a.docs-page-link.is-active {
-        background: var(--bg-card);
-        color: var(--accent);
-        border-left-color: var(--accent);
-        font-weight: 600;
-      }
-      .docs-page[hidden] {
-        display: none;
-      }
-      /* 顶部页面标签条：当 sidebar 在桌面端 sticky 显示时这条隐藏；mobile 下
-         （sidebar 折叠到顶部）改用这条做主页面切换。 */
-      .docs-page-tabs {
-        display: none;
-        gap: 8px;
-        overflow-x: auto;
-        margin: 0 0 16px;
-        padding: 4px 0 8px;
-        border-bottom: 1px solid var(--border);
-      }
-      .docs-page-tabs a {
-        flex: 0 0 auto;
-        padding: 6px 12px;
-        font-size: 13px;
-        color: var(--text-mute);
-        text-decoration: none;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: transparent;
-        transition: all 0.15s;
-      }
-      .docs-page-tabs a:hover {
-        color: var(--text);
-        border-color: var(--text-mute);
-      }
-      .docs-page-tabs a.is-active {
-        color: var(--accent);
-        border-color: var(--accent);
-        background: var(--bg-card);
-      }
-      @media (max-width: 800px) {
-        .docs-page-tabs {
-          display: flex;
-        }
-      }
+      /* 2026-05-22：取消旧版 ?page=overview/endpoints/cli/clients/rules 多页分割。
+         多页方案的 .docs-page[hidden] 切换 + cross-page pager + mobile 顶部 tabs
+         在用户实际使用中暴露多个交互问题（部分 toc 链接不可点、prev/next 跨页
+         不滚动、URL state 与 history 行为脱节）。统一回归单页长文档：sidebar
+         展示全部分组锚点，prev/next 仅相邻 section，scroll-spy 串起整页。
+         旧的 .docs-page-link / .docs-page-tabs / .docs-page[hidden] 样式已删除，
+         api-docs-app.js 也对应删去 multi-page 逻辑。 */
     </style>
   </head>
   <body>
@@ -813,47 +762,40 @@
 
     <div class="layout">
       <aside class="toc">
-        <!-- 2026-05-18 pagination: top group switches between 4 logical pages;
-             middle/bottom groups are filtered by JS to only show the active
-             page's sub-anchors. Each page link uses ?page=X query param so
-             deep-links and browser back/forward still work. -->
-        <h4 class="docs-page-nav-head">页面</h4>
-        <a class="docs-page-link" data-doc-page="overview" href="?page=overview">概览</a>
-        <a class="docs-page-link" data-doc-page="endpoints" href="?page=endpoints">API 端点</a>
-        <a class="docs-page-link" data-doc-page="cli" href="?page=cli">CLI 工具</a>
-        <a class="docs-page-link" data-doc-page="clients" href="?page=clients">主流客户端</a>
-        <a class="docs-page-link" data-doc-page="rules" href="?page=rules">规则与参考</a>
+        <!-- 2026-05-22：取消多页 ?page= 切换。sidebar 现在是一棵静态分组目录树，
+             所有锚点对所有人始终可点。scroll-spy 由 api-docs-app.js 给当前
+             section 的链接打 .active 状态。 -->
+        <h4>开始</h4>
+        <a href="#intro">概述</a>
+        <a href="#auth">认证</a>
+        <a href="#quickstart">快速开始</a>
 
-        <h4 data-doc-page="overview">开始</h4>
-        <a href="#intro" data-doc-page="overview">概述</a>
-        <a href="#auth" data-doc-page="overview">认证</a>
-        <a href="#quickstart" data-doc-page="overview">快速开始</a>
+        <h4>API 端点</h4>
+        <a href="#models">列出模型</a>
+        <a href="#chat">Chat Completions</a>
+        <a href="#messages">Messages（Anthropic）</a>
+        <a href="#responses">Responses（Codex）</a>
 
-        <h4 data-doc-page="endpoints">API 端点</h4>
-        <a href="#models" data-doc-page="endpoints">列出模型</a>
-        <a href="#chat" data-doc-page="endpoints">Chat Completions</a>
-        <a href="#messages" data-doc-page="endpoints">Messages（Anthropic）</a>
-        <a href="#responses" data-doc-page="endpoints">Responses（Codex）</a>
+        <h4>CLI 工具</h4>
+        <a href="#cli-codex">Codex CLI</a>
+        <a href="#cli-claude">Claude Code</a>
+        <a href="#cli-opencode">OpenCode</a>
+        <a href="#cli-openclaw">OpenClaw</a>
 
-        <h4 data-doc-page="cli">CLI 工具</h4>
-        <a href="#cli-codex" data-doc-page="cli">Codex CLI</a>
-        <a href="#cli-claude" data-doc-page="cli">Claude Code</a>
-        <a href="#cli-opencode" data-doc-page="cli">OpenCode</a>
-        <a href="#cli-openclaw" data-doc-page="cli">OpenClaw</a>
+        <h4>主流客户端</h4>
+        <a href="#client-cherry">Cherry Studio</a>
+        <a href="#client-sillytavern">SillyTavern (酒馆)</a>
+        <a href="#client-ccswitch">CC Switch</a>
+        <a href="#client-chatbox">Chatbox</a>
+        <a href="#client-lobechat">LobeChat</a>
+        <a href="#client-faq">客户端 FAQ</a>
 
-        <h4 data-doc-page="clients">主流客户端</h4>
-        <a href="#client-cherry" data-doc-page="clients">Cherry Studio</a>
-        <a href="#client-sillytavern" data-doc-page="clients">SillyTavern (酒馆)</a>
-        <a href="#client-ccswitch" data-doc-page="clients">CC Switch</a>
-        <a href="#client-chatbox" data-doc-page="clients">Chatbox</a>
-        <a href="#client-lobechat" data-doc-page="clients">LobeChat</a>
-
-        <h4 data-doc-page="rules">规则与参考</h4>
-        <a href="#quota" data-doc-page="rules">免费档配额</a>
-        <a href="#ratelimit" data-doc-page="rules">速率限制</a>
-        <a href="#errors" data-doc-page="rules">错误码</a>
-        <a href="#sdk" data-doc-page="rules">SDK 兼容</a>
-        <a href="#faq" data-doc-page="rules">常见问题</a>
+        <h4>规则与参考</h4>
+        <a href="#quota">免费档配额</a>
+        <a href="#ratelimit">速率限制</a>
+        <a href="#errors">错误码</a>
+        <a href="#sdk">SDK 兼容</a>
+        <a href="#faq">常见问题</a>
       </aside>
 
       <main>
@@ -890,14 +832,9 @@
           </button>
         </div>
 
-        <!-- Mobile-only page tabs (sidebar is desktop-only at this width). -->
-        <nav class="docs-page-tabs" aria-label="文档页面切换">
-          <a class="docs-page-link" data-doc-page="overview" href="?page=overview">概览</a>
-          <a class="docs-page-link" data-doc-page="endpoints" href="?page=endpoints">API 端点</a>
-          <a class="docs-page-link" data-doc-page="cli" href="?page=cli">CLI 工具</a>
-          <a class="docs-page-link" data-doc-page="clients" href="?page=clients">主流客户端</a>
-          <a class="docs-page-link" data-doc-page="rules" href="?page=rules">规则与参考</a>
-        </nav>
+        <!-- 2026-05-22：单页化后不再需要 mobile 顶部的页面切换 tabs。
+             移动端 sidebar 折叠到主区上方（CSS 见 .layout @media），
+             直接当 inline TOC 使用。 -->
 
         <h1>Cancri API 文档</h1>
         <p>
@@ -905,10 +842,6 @@
           Anthropic SDK、Codex CLI、Claude Code、OpenCode、OpenClaw 都能直接接入。
         </p>
 
-        <!-- 2026-05-18 pagination: each .docs-page is one logical page that
-             JS toggles via the ?page= query param. Sub-anchors (#intro etc.)
-             still work as in-page navigation within the active page. -->
-        <div class="docs-page" data-doc-page="overview">
         <section id="intro">
           <h2>概述</h2>
           <p>
@@ -1042,9 +975,6 @@ r = client.chat.completions.create(
           </div>
         </section>
 
-        </div><!-- /.docs-page overview -->
-
-        <div class="docs-page" data-doc-page="endpoints" hidden>
         <section id="models">
           <h2>列出模型</h2>
           <div class="endpoint">
@@ -1517,9 +1447,6 @@ console.log(r.output[<span class="n">0</span>].content[<span class="n">0</span>]
           </div>
         </section>
 
-        </div><!-- /.docs-page endpoints -->
-
-        <div class="docs-page" data-doc-page="cli" hidden>
         <section id="cli-codex">
           <h2>Codex CLI 接入</h2>
           <p>
@@ -1629,14 +1556,11 @@ openclaw agent</pre>
           </div>
         </section>
 
-        </div><!-- /.docs-page cli -->
+        <p class="docs-intro">
+          Cancri API 完美兼容 OpenAI 及 Anthropic 协议，因此可以直接接入市面上几乎所有主流的 AI 桌面、移动或网页端第三方客户端。通过一个 <code>cancri_sk_</code> 密钥，你便能把诸如 GPT-5、Claude-Opus、DeepSeek-V4、Gemini-3.1 等顶级模型悉数接入你钟爱的日常工具中。
+        </p>
 
-        <div class="docs-page" data-doc-page="clients" hidden>
-          <p class="docs-intro">
-            Cancri API 完美兼容 OpenAI 及 Anthropic 协议，因此可以直接接入市面上几乎所有主流的 AI 桌面、移动或网页端第三方客户端。通过一个 <code>cancri_sk_</code> 密钥，你便能把诸如 GPT-5、Claude-Opus、DeepSeek-V4、Gemini-3.1 等顶级模型悉数接入你钟爱的日常工具中。
-          </p>
-
-          <section id="client-cherry">
+        <section id="client-cherry">
             <h2>Cherry Studio 接入指南</h2>
             <p>
               Cherry Studio 是一款优雅、强大的跨平台桌面级 AI 客户端，支持多模型对比、RAG 本地知识库等丰富功能。
@@ -1772,9 +1696,7 @@ openclaw agent</pre>
               </p>
             </div>
           </section>
-        </div><!-- /.docs-page clients -->
 
-        <div class="docs-page" data-doc-page="rules" hidden>
         <section id="quota">
           <h2>配额机制（2026-05-17 Phase A）</h2>
           <p>
@@ -2361,7 +2283,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </div>
         </section>
 
-        <section id="faq" data-doc-last="rules">
+        <section id="faq">
           <h2>常见问题</h2>
           <h3>三个端点我该用哪个？</h3>
           <ul>
@@ -2433,8 +2355,6 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </p>
         </section>
 
-        </div><!-- /.docs-page rules -->
-
         <!-- prev/next 底部导航：api-docs-app.js 会根据当前滚动位置
              自动填充上一节 / 下一节的 anchor。 -->
         <nav class="docs-pager" id="docsPager" aria-label="文档节点导航" hidden>
@@ -2495,7 +2415,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
 
     <!-- 2026-05-17 重构：补 search modal + Cmd/Ctrl+K + 复制 Markdown + 分享 +
          右侧 outline + 底部 prev/next 全栈逻辑。原 tabs / copy / toc 保留。
-         2026-05-18 追加 Kimi-风多页化（?page=overview/endpoints/cli/rules）。 -->
-    <script src="./api/api-docs-app.js?v=2026-05-18-pagination"></script>
+         2026-05-22：取消 Kimi-风多页化（?page=...），统一为单页长文档；
+         api-docs-app.js 移除了 multi-page applyDocPage / setActiveDocPage / popstate 等逻辑。 -->
+    <script src="./api/api-docs-app.js?v=2026-05-22-single-page"></script>
   </body>
 </html>

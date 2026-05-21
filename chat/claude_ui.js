@@ -56,7 +56,9 @@
             bindModelMoreMenu,
             bindSidebarTooltips,
             bindAuthThemeToggle,
-            bindHomeInputDefensiveFocus
+            bindHomeInputDefensiveFocus,
+            bindSettingsModalClose,
+            bindPageDragOverlay
         ].forEach(function (step) {
             try {
                 step();
@@ -518,6 +520,12 @@
                 document.querySelectorAll('.popover.open').forEach(function (p) {
                     p.classList.remove('open');
                 });
+                // 2026-05-22：设置改成弹窗后，记录"打开前的 view"，关闭弹窗时回到原 view。
+                // 不再像之前那样把整页切到 settings → home（信息量丢失）。
+                var prevView = (document.body && document.body.dataset.view) || 'home';
+                if (prevView !== 'claudeSettings') {
+                    window.__claudeSettingsPrevView = prevView;
+                }
                 // 走 cancri_chat.js 暴露的 setActiveView（如果存在），否则手动切。
                 if (typeof window.setActiveView === 'function') {
                     window.setActiveView('claudeSettings');
@@ -2794,6 +2802,155 @@
         showToast._timer = setTimeout(function () {
             toast.classList.remove('show');
         }, 2000);
+    }
+
+    // 2026-05-22 §23.6：设置弹窗关闭交互。
+    //   原 #claudeSettingsView 是占据主区的全屏 view；CSS §23.6 把它转成 fixed
+    //   居中 modal。这里补三种关闭路径：
+    //   1) 点 .claude-settings-title 右侧的 ::after X 伪元素（命中 padding 区）
+    //   2) 点 modal 外的 backdrop（即 #claudeSettingsView 自身，非 .claude-settings-page）
+    //   3) ESC 键（仅当 settings view 处于 active 态）
+    //   关闭时回到 window.__claudeSettingsPrevView（bindCustomNav 记录），缺省 'home'。
+    function bindSettingsModalClose() {
+        var view = document.getElementById('claudeSettingsView');
+        if (!view) return;
+        function closeSettings() {
+            if (!view.classList.contains('active')) return;
+            var target = window.__claudeSettingsPrevView || 'home';
+            if (target === 'claudeSettings') target = 'home';
+            if (typeof window.setActiveView === 'function') {
+                window.setActiveView(target);
+            } else {
+                document.querySelectorAll('.main > .view').forEach(function (v) {
+                    v.classList.toggle('active', v.id === (target + 'View'));
+                });
+                if (document.body) document.body.dataset.view = target;
+            }
+        }
+        // 关闭按钮命中区 = .claude-settings-title 的右侧 ~28px 内（::after 伪元素位置）。
+        // 用 click 委托：只要点 title 元素本身（非内部输入），且命中点 x 在右侧 36px 内即关。
+        var title = view.querySelector('.claude-settings-title');
+        if (title) {
+            title.addEventListener('click', function (e) {
+                if (e.target !== title) return;  // 跳过 title 内可能的子节点（目前无）
+                var rect = title.getBoundingClientRect();
+                if (e.clientX >= rect.right - 44) {
+                    e.preventDefault();
+                    closeSettings();
+                }
+            });
+            title.style.cursor = 'default';
+        }
+        // 点 backdrop 关闭：mousedown + click 都在 view 自身（非 .claude-settings-page）触发
+        view.addEventListener('mousedown', function (e) {
+            if (e.target === view) {
+                view.dataset.backdropDown = '1';
+            } else {
+                view.dataset.backdropDown = '';
+            }
+        });
+        view.addEventListener('click', function (e) {
+            if (e.target === view && view.dataset.backdropDown === '1') {
+                e.preventDefault();
+                closeSettings();
+            }
+            view.dataset.backdropDown = '';
+        });
+        // ESC 关闭
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            if (!view.classList.contains('active')) return;
+            // 不要抢走其他 modal（如 search modal）的 ESC：仅当当前 dataset.view 是 claudeSettings
+            if (document.body && document.body.dataset.view === 'claudeSettings') {
+                e.preventDefault();
+                closeSettings();
+            }
+        });
+    }
+
+    // 2026-05-22 §23.3：全站文件拖入提示层。
+    //   - cancri_chat.js bindComposerDragAndDrop 只在 composer 元素监听 drag 事件，
+    //     用户从外部拖入时只有命中 composer 才有视觉反馈。
+    //   - 新方案：在 window 级监听 dragenter/over/leave/drop，激活全屏 .page-drop-overlay
+    //     给出"放手就上传"提示。drop 事件由 composer 自身的 listener 处理（实际接收文件），
+    //     这里的 overlay 仅做视觉提示，不抢走文件。
+    //   - 项目详情页 #claudeProjectDetailView 也走这个 overlay：用户拖入会高亮全屏，
+    //     drop 落到 .claude-project-composer 时由 bindProjectSourceDrop 处理。
+    //   - 不在登录页 / shop / api 子页激活：判断当前 path 必须是 chat/index|claude.html。
+    function bindPageDragOverlay() {
+        if (document.getElementById('pageDropOverlay')) return;
+        // 只在 chat 主页生效，子页面（API / 商店 / 登录）不需要这个提示
+        var path = (location.pathname || '').toLowerCase();
+        if (path.indexOf('/chat/api/') !== -1 || path.indexOf('/chat/code/') !== -1 || path.indexOf('/chat/shop/') !== -1) {
+            return;
+        }
+        var overlay = document.createElement('div');
+        overlay.id = 'pageDropOverlay';
+        overlay.className = 'page-drop-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.innerHTML =
+            '<div class="page-drop-card">' +
+                '<div class="page-drop-icon">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+                        '<polyline points="14 2 14 8 20 8"/>' +
+                        '<line x1="12" y1="13" x2="12" y2="19"/>' +
+                        '<line x1="9" y1="16" x2="15" y2="16"/>' +
+                    '</svg>' +
+                '</div>' +
+                '<div class="page-drop-title">拖放文件到这里</div>' +
+                '<div class="page-drop-sub">松开即可添加到当前对话</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+
+        var depth = 0;
+        function hasFiles(e) {
+            var types = (e.dataTransfer && e.dataTransfer.types) || [];
+            for (var i = 0; i < types.length; i++) {
+                if (types[i] === 'Files') return true;
+            }
+            return false;
+        }
+        function setActive(active) {
+            overlay.classList.toggle('is-active', Boolean(active));
+            overlay.setAttribute('aria-hidden', active ? 'false' : 'true');
+        }
+        window.addEventListener('dragenter', function (e) {
+            if (!hasFiles(e)) return;
+            depth += 1;
+            setActive(true);
+        });
+        window.addEventListener('dragover', function (e) {
+            if (!hasFiles(e)) return;
+            // 阻止浏览器在 viewport 默认打开拖入文件（替换页面）；composer 自身的 drop
+            // listener 仍会接收 drop 事件并处理上传。
+            e.preventDefault();
+        });
+        window.addEventListener('dragleave', function (e) {
+            if (!hasFiles(e)) return;
+            depth = Math.max(0, depth - 1);
+            // 鼠标离开 viewport 时 e.relatedTarget 通常为 null
+            if (depth === 0 || !e.relatedTarget) {
+                depth = 0;
+                setActive(false);
+            }
+        });
+        window.addEventListener('drop', function (e) {
+            // 即使没命中 composer 也要关掉提示，否则一直挂着
+            depth = 0;
+            setActive(false);
+            // 不命中 composer 时的兜底：阻止浏览器默认（用其他页面替换当前页）
+            if (hasFiles(e) && e.target && !e.target.closest('[data-workbench-composer], .claude-project-composer, input[type="file"]')) {
+                e.preventDefault();
+            }
+        });
+        // 兜底：拖动卡死时（dragleave 没触发的边界情况），ESC 一键关
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && overlay.classList.contains('is-active')) {
+                depth = 0;
+                setActive(false);
+            }
+        });
     }
 
     // 2026-05-20：记忆删除按钮事件委托

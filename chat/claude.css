@@ -5220,3 +5220,501 @@ html[data-chat-font="mono"] .message.assistant .think-body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ───────────────────────────────────────────────────────────
+   §23. 2026-05-22 群友反馈批量修复（claude-22-pack）
+   - sidebar 折叠态隐藏「项目」section（图 2 用户红框圈出）
+   - 项目详情页对话框（composer）重做，不再像图 1 那么挤
+   - 全站文件拖入页面提示层（图 3 Drop files here 同款）
+   - 阴影统一调淡（弹窗 / 卡片 / sidebar drawer）
+   - mobile 1:1 复刻参考站：composer/sidebar/header
+   - 设置页（背景设定）改为弹出式 dialog，不再独占主区
+   ─────────────────────────────────────────────────────────── */
+
+/* §23.1 sidebar 折叠态（桌面）隐藏「项目」section
+   --------------------------------------------------
+   - 折叠态侧栏只剩 56px rail，图 2 显示"项目"分组的小图标 + 标题
+     仍渲染，列表挤在 rail 里很丑。把 .claude-sidebar-projects 整
+     段（含 title + project rows）在 .sidebar.collapsed 下隐藏。
+   - mobile drawer 打开时仍以 .collapsed + .is-mobile-open 共存的
+     方式呈现，drawer 模式仍要展示项目列表，所以排除 mobile drawer。 */
+.sidebar.collapsed .claude-sidebar-projects,
+.sidebar[data-collapsed="true"] .claude-sidebar-projects {
+    display: none !important;
+}
+@media (max-width: 768px) {
+    .sidebar.is-mobile-open.collapsed .claude-sidebar-projects,
+    body.sidebar-open .sidebar.collapsed .claude-sidebar-projects {
+        display: block !important;
+    }
+}
+
+/* §23.2 项目详情页对话框重塑
+   --------------------------------------------------
+   原版（图 1）：
+     - 标题 "1" 缩成 18px 居中靠上，下方 composer 占满
+     - composer 多了一行 "项目内聊天 · 来源按需读取" 状态副标题
+     - tabs 紧贴 composer 下面，整体上挤、视觉密度怪
+   重塑：
+     - shell 加大宽度感（最大 880px，padding 上紧下松）
+     - header 标题加大到 28px / 字重 600
+     - composer status 副标题去掉文字，改成 caret 提示位
+     - composer 圆角 + 弱阴影对齐主页 .composer 风格
+     - tabs 改成 segmented underline，更像 Claude 真站
+     - chat list 行高加大到 56px，hover 加左色条 */
+.claude-project-detail-page {
+    padding: 56px 24px 96px !important;
+}
+.claude-project-detail-shell {
+    width: min(880px, 100%) !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.claude-project-detail-header {
+    margin-bottom: 22px !important;
+    align-items: center;
+    gap: 10px !important;
+}
+.claude-project-detail-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--project-color, var(--c-text-soft)) 10%, transparent);
+}
+.claude-project-detail-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+}
+.claude-project-detail-header h1 {
+    font-size: 26px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--c-text) !important;
+}
+.claude-project-composer-wrap {
+    margin: 0 0 24px !important;
+}
+.claude-project-composer {
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    border-radius: 20px !important;
+    padding: 14px 14px 10px !important;
+    min-height: 132px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05) !important;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+html[data-theme="dark"] .claude-project-composer {
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18) !important;
+}
+.claude-project-composer:focus-within {
+    border-color: var(--c-line-strong) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07) !important;
+}
+html[data-theme="dark"] .claude-project-composer:focus-within {
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.28) !important;
+}
+.claude-project-composer .composer-status {
+    display: none !important;
+}
+.claude-project-composer #claudeProjectPromptInput {
+    min-height: 60px !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    padding: 4px 4px 0 !important;
+}
+.claude-project-tabs {
+    border-bottom: 1px solid var(--c-line) !important;
+    gap: 4px !important;
+    margin: 8px 0 14px !important;
+    padding-bottom: 0 !important;
+}
+.claude-project-tabs button {
+    height: 38px !important;
+    padding: 0 14px !important;
+    border-radius: 0 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--c-text-dim) !important;
+    background: transparent !important;
+    border-bottom: 2px solid transparent !important;
+    margin-bottom: -1px;
+    transition: color 140ms ease, border-color 140ms ease;
+}
+.claude-project-tabs button:hover {
+    color: var(--c-text-soft) !important;
+}
+.claude-project-tabs button.active {
+    color: var(--c-text) !important;
+    background: transparent !important;
+    border-bottom-color: var(--c-text) !important;
+}
+.claude-project-detail-row {
+    height: 56px !important;
+    padding: 0 14px !important;
+    border-bottom: 1px solid var(--c-line) !important;
+    border-radius: 12px !important;
+    border-bottom-color: transparent !important;
+    position: relative;
+}
+.claude-project-detail-list {
+    gap: 2px !important;
+}
+.claude-project-detail-row:hover {
+    background: var(--c-hover) !important;
+}
+.claude-project-detail-row span {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+.claude-project-detail-row time {
+    font-size: 12px !important;
+}
+@media (max-width: 768px) {
+    .claude-project-detail-page {
+        padding: 56px 14px 80px !important;
+    }
+    .claude-project-detail-header h1 {
+        font-size: 22px !important;
+    }
+    .claude-project-composer {
+        padding: 12px 12px 8px !important;
+        min-height: 116px !important;
+    }
+    .claude-project-tabs button {
+        height: 36px !important;
+        padding: 0 12px !important;
+    }
+}
+
+/* §23.3 全站文件拖入页面提示层（Drop files here 同款）
+   --------------------------------------------------
+   - 用户拖文件进 viewport 时显示 fixed 全屏遮罩 + 中央卡片
+   - 卡片含 + 文件图标 + "拖放文件到这里以添加到对话" 文案
+   - cancri_chat.js bindComposerDragAndDrop 当前只在 composer 元素
+     检测拖入。新逻辑见 cancri_chat.js 末尾追加的 bindPageDragOverlay：
+     在 window 级监听 dragenter/over/leave/drop，激活 .page-drop-overlay。
+   - composer 内部的 .is-drag-over 视觉态保留（用户精确拖到输入框上时
+     卡片会同步亮起，体感更直观）。 */
+.page-drop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 18, 0.42);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 160ms ease, visibility 160ms ease;
+}
+html[data-theme="light"] .page-drop-overlay {
+    background: rgba(31, 30, 28, 0.36);
+}
+.page-drop-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+.page-drop-card {
+    pointer-events: none;
+    width: min(360px, calc(100vw - 48px));
+    padding: 28px 24px 24px;
+    border-radius: 18px;
+    background: var(--c-bg-elev);
+    border: 1.5px dashed var(--c-line-strong);
+    text-align: center;
+    color: var(--c-text);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+    transform: translateY(8px) scale(0.98);
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.page-drop-overlay.is-active .page-drop-card {
+    transform: translateY(0) scale(1);
+}
+.page-drop-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 14px;
+    background: var(--c-bg-elev-2);
+    border: 1.5px dashed var(--c-line-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-soft);
+}
+.page-drop-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.6;
+}
+.page-drop-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+}
+.page-drop-sub {
+    font-size: 12.5px;
+    color: var(--c-text-dim);
+    line-height: 1.5;
+}
+
+/* §23.4 阴影调淡
+   --------------------------------------------------
+   群友反馈"部分地方阴影调小一点，不要太重"。
+   - --c-shadow-pop 从 0 10px 38px / 0.45 → 0 8px 24px / 0.32（dark）
+     light 模式下原 base 也偏重，此处提供 light 覆盖。
+   - composer hover/focus shadow 已在 §3 定义，这里不二次改。
+   - sidebar drawer mobile box-shadow 从 6px 0 32px / 0.45 → 4px 0 20px / 0.28
+   - workbench composer (data-workbench-composer) 全局阴影减半。 */
+html, html[data-theme="dark"] {
+    --c-shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+html[data-theme="light"] {
+    --c-shadow-pop: 0 6px 20px rgba(31, 30, 28, 0.10);
+}
+@media (max-width: 768px) {
+    .sidebar {
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.28) !important;
+    }
+}
+[data-workbench-composer] {
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07) !important;
+}
+html[data-theme="dark"] [data-workbench-composer] {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
+}
+[data-workbench-composer]:focus-within {
+    box-shadow:
+        0 6px 20px rgba(15, 23, 42, 0.07),
+        0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent) !important;
+}
+html[data-theme="dark"] [data-workbench-composer]:focus-within {
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.22),
+        0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent) !important;
+}
+
+/* §23.5 mobile UI 1:1 复刻参考（00:41:49.html / 00:42:18.html）
+   --------------------------------------------------
+   参考站点 mobile 视觉关键参数：
+     - 主区背景与 sidebar 背景一致（无双底色）
+     - composer 圆角 24px，padding 14px，hero/title 28px
+     - send-btn 36×36（不是我们 32×32）
+     - hero 居中区 vertical 偏上 ~28%（而不是中点）
+     - sidebar drawer 宽 280px，左对齐，圆角 0
+   差异修复，不动全局变量，仅 mobile media。 */
+@media (max-width: 768px) {
+    /* hero 抬高 vertical 重心，参考站 mobile 首屏问候在上 1/3 */
+    #homeView:not(.chatting) .home-center,
+    #homeView:not(.chatting) #homeCenter {
+        justify-content: flex-start !important;
+        padding-top: clamp(48px, 12vh, 96px) !important;
+    }
+    /* composer 圆角对齐参考 24px */
+    .composer {
+        border-radius: 24px !important;
+        padding: 14px !important;
+    }
+    /* send-btn 在 mobile 仍 36×36（参考站尺寸），原规则改成 32×32 看起来太
+       小且与 voice-btn 对不齐。.composer-actions 内 voice + send 一起放大。 */
+    .composer-actions .send-btn,
+    .composer-actions #sendChatBtn,
+    .composer-right .send-btn {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .composer-actions .voice-btn,
+    .composer-actions #voiceToastBtn {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    /* drawer 宽 280px，圆角 0（参考真站 mobile drawer）。原 §15a 取 18rem
+       (~288px) 接近，统一到 280px。 */
+    .sidebar.is-mobile-open,
+    body.sidebar-open .sidebar,
+    .sidebar.is-mobile-open.collapsed,
+    body.sidebar-open .sidebar.collapsed {
+        width: min(280px, calc(100vw - 48px)) !important;
+        max-width: 280px !important;
+        border-radius: 0 !important;
+    }
+    /* sidebar topbar 在 mobile 抽屉里 padding 收紧 */
+    .sidebar .sidebar-topbar {
+        padding: 14px 14px 6px !important;
+    }
+    /* main-header 高度 + padding 微调 */
+    .main-header {
+        padding: 8px 12px !important;
+        min-height: 52px !important;
+    }
+    /* 项目列表卡片在 mobile：单列堆叠（默认是 2 列网格） */
+    .claude-projects-list {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    /* 项目详情 chat 列表更紧凑 */
+    .claude-project-detail-row {
+        height: 52px !important;
+        padding: 0 12px !important;
+    }
+}
+
+/* §23.6 设置页（背景设定）改为居中弹窗
+   --------------------------------------------------
+   原版：#claudeSettingsView 用 .view 占满 .main 主区，跟其他全屏页
+     一样切换。群友反馈"别人现在是弹出式窗口了"。
+   参考 Claude 真站（00:42:18.html）：
+     - 居中 modal，max-w 960px，h calc(100vh - 2rem)
+     - 背景 backdrop-blur-[2px] + 半透明黑底
+     - 顶部 sticky header（标题 + 关闭按钮 + tabs）
+     - 内容区独立滚动
+   实现：
+     - #claudeSettingsView.active 变 fixed 全屏 + flex center，加 ::before 做
+       backdrop。.claude-settings-page 变 modal 卡片。
+     - .claude-settings-title 加关闭按钮（::after 伪元素 + JS 绑定 ESC/外部
+       click）。详见 claude_ui.js 末尾追加的 bindSettingsModalClose。 */
+#claudeSettingsView.active {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1300 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+    background: rgba(20, 20, 18, 0.36);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    overflow: hidden !important;
+    animation: claude-settings-modal-fade 180ms ease-out;
+}
+html[data-theme="light"] #claudeSettingsView.active {
+    background: rgba(31, 30, 28, 0.32);
+}
+@keyframes claude-settings-modal-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+#claudeSettingsView.active .claude-settings-page {
+    width: min(960px, calc(100vw - 32px));
+    height: calc(100vh - 32px);
+    max-height: 720px;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: claude-settings-modal-pop 200ms cubic-bezier(0.32, 0.72, 0.4, 1);
+}
+@keyframes claude-settings-modal-pop {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+}
+#claudeSettingsView.active .claude-settings-title {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 18px 24px 14px !important;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.005em !important;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-bg-elev);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+#claudeSettingsView.active .claude-settings-title::after {
+    content: "";
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+    border-radius: 8px;
+    color: var(--c-text-soft);
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease;
+    pointer-events: auto;
+}
+#claudeSettingsView.active .claude-settings-title:hover::after {
+    background-color: var(--c-hover);
+    color: var(--c-text);
+}
+#claudeSettingsView.active .claude-settings-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: 200px 1fr !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+    overflow: hidden !important;
+}
+#claudeSettingsView.active .claude-settings-nav {
+    height: 100% !important;
+    border-right: 1px solid var(--c-line);
+    padding: 14px 12px !important;
+    overflow-y: auto;
+    background: transparent;
+    position: static !important;
+}
+#claudeSettingsView.active .claude-settings-content {
+    height: 100% !important;
+    overflow-y: auto;
+    padding: 24px 28px 32px !important;
+}
+@media (max-width: 768px) {
+    #claudeSettingsView.active {
+        padding: 8px !important;
+        align-items: stretch !important;
+    }
+    #claudeSettingsView.active .claude-settings-page {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: none !important;
+        border-radius: 14px !important;
+    }
+    #claudeSettingsView.active .claude-settings-layout {
+        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    #claudeSettingsView.active .claude-settings-nav {
+        border-right: 0 !important;
+        border-bottom: 1px solid var(--c-line);
+        padding: 8px 12px !important;
+        flex-direction: row !important;
+        gap: 4px !important;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+    #claudeSettingsView.active .claude-settings-nav::-webkit-scrollbar {
+        display: none;
+    }
+    #claudeSettingsView.active .claude-snav-item {
+        flex-shrink: 0;
+        height: 34px;
+        padding: 0 12px;
+        font-size: 13.5px;
+        white-space: nowrap;
+    }
+    #claudeSettingsView.active .claude-settings-content {
+        padding: 18px 16px 28px !important;
+    }
+    #claudeSettingsView.active .claude-settings-title {
+        padding: 14px 18px 12px !important;
+        font-size: 16px !important;
+    }
+}

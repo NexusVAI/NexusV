@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-21-claude-official-colors" />
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-docs-single-page" />
     <script src="./api/api-platform.js?v=20260513"></script>
     <!-- Cancri 双主题 logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -545,6 +545,355 @@
         gap: 8px;
       }
 
+      /* ── 模型卡片右侧抽屉 (2026-05-22 新增) ───────────────────────
+         点击卡片任意位置（不含 .copy-btn）后从右侧滑入。包含：
+           1) 模型 head：logo / name / brand / id + tier/multiplier badges
+           2) 定价倍率：大字号显示 multiplier × + 解释
+           3) 近期状态：成功率 / 平均延迟 / 请求数 + 24h sparkline（来自
+              chat-gateway model_health 端点）
+           4) 调用代码：curl / Node.js / Python tab + 复制；自动从
+              sessionStorage('cancri_recent_api_key') 读取最近一次在 Keys
+              页生成的完整 Key（仅当前会话有效），未有则留 cancri_sk_YOUR_KEY
+              占位符。 */
+      .model-drawer[hidden] { display: none; }
+      .model-drawer {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: block;
+        pointer-events: none;
+      }
+      .model-drawer__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(8, 8, 8, 0.42);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        transition: opacity 0.22s ease;
+        pointer-events: auto;
+      }
+      .model-drawer.is-open .model-drawer__backdrop { opacity: 1; }
+      .model-drawer__panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: min(560px, calc(100vw - 24px));
+        background: var(--bg);
+        border-left: 1px solid var(--border);
+        box-shadow: -28px 0 80px rgba(0, 0, 0, 0.32);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transform: translateX(102%);
+        transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
+        pointer-events: auto;
+        font-family: var(--sans);
+      }
+      :root[data-theme="light"] .model-drawer__panel {
+        box-shadow: -22px 0 60px rgba(82, 55, 38, 0.18);
+        background: #fffdf8;
+      }
+      .model-drawer.is-open .model-drawer__panel { transform: translateX(0); }
+
+      .model-drawer__head {
+        position: relative;
+        padding: 22px 22px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: var(--bg-card);
+      }
+      .model-drawer__close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        color: var(--text-mute);
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s, background 0.15s, border-color 0.15s;
+      }
+      .model-drawer__close:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+        background: var(--bg-card);
+      }
+      .model-drawer__close svg { width: 14px; height: 14px; }
+
+      .model-drawer__head-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-right: 40px;
+      }
+      .model-drawer__head-row .card-logo {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+      }
+      .model-drawer__head-row .card-logo img {
+        width: 28px;
+        height: 28px;
+      }
+      .model-drawer__head-text {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .model-drawer__head-text h3 {
+        margin: 0;
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 22px;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        color: var(--text);
+      }
+      .model-drawer__head-text p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.3;
+      }
+      .model-drawer__head-text code {
+        margin-top: 2px;
+        font-family: var(--mono, ui-monospace, "SF Mono", Consolas, monospace);
+        font-size: 11.5px;
+        color: var(--text-faint);
+        word-break: break-all;
+        background: transparent;
+        padding: 0;
+      }
+      .model-drawer__badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .model-drawer__body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 18px 22px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .drawer-section h4 {
+        margin: 0 0 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      /* 定价 */
+      .drawer-pricing {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
+      .drawer-pricing-num {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 36px;
+        line-height: 1;
+        color: var(--accent);
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        flex-shrink: 0;
+      }
+      .drawer-pricing-text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .drawer-pricing-tier {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .drawer-pricing-explain {
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.5;
+      }
+      .drawer-pricing-explain code {
+        font-family: var(--mono, ui-monospace, monospace);
+        font-size: 11.5px;
+        background: var(--bg-elev);
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: var(--accent);
+      }
+
+      /* 状态 */
+      .drawer-status-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .drawer-stat {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .drawer-stat-num {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 22px;
+        line-height: 1;
+        color: var(--text);
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+      }
+      .drawer-stat-num[data-state="good"] { color: var(--ok); }
+      .drawer-stat-num[data-state="warn"] { color: var(--warn); }
+      .drawer-stat-num[data-state="bad"] { color: var(--err); }
+      .drawer-stat-label {
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .drawer-spark {
+        width: 100%;
+        height: 64px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px;
+        display: block;
+      }
+      .drawer-spark-bar { fill: var(--accent); }
+      .drawer-spark-bar--down { fill: var(--err); opacity: 0.7; }
+      .drawer-status-hint {
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.5;
+        margin-top: 8px;
+      }
+      .drawer-status-hint--err {
+        color: var(--err);
+      }
+
+      /* 调用代码 */
+      .drawer-code-tabs {
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+      .drawer-code-tab {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        color: var(--text-mute);
+        padding: 6px 12px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .drawer-code-tab:hover { color: var(--text); }
+      .drawer-code-tab.is-active {
+        background: var(--bg-card);
+        color: var(--text);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+      }
+      .drawer-code-wrap {
+        position: relative;
+        background: #0d0d0d;
+        border: 1px solid #1f1f1f;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      :root[data-theme="light"] .drawer-code-wrap {
+        background: #1c1c1a;
+        border-color: #2a2a26;
+      }
+      .drawer-code {
+        margin: 0;
+        padding: 14px 16px 14px 16px;
+        font-family: var(--mono, ui-monospace, "SF Mono", Consolas, monospace);
+        font-size: 12.5px;
+        line-height: 1.65;
+        color: #e3e2dc;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .drawer-code-copy {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #e3e2dc;
+        font-size: 11.5px;
+        font-family: inherit;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .drawer-code-copy:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      .drawer-code-copy.is-copied {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.4);
+      }
+      .drawer-code-hint {
+        margin: 8px 0 0;
+        font-size: 11.5px;
+        color: var(--text-faint);
+        line-height: 1.55;
+      }
+      .drawer-code-hint a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .drawer-code-hint a:hover { text-decoration: underline; }
+
+      @media (max-width: 720px) {
+        .model-drawer__panel { width: 100vw; border-left: none; }
+        .model-drawer__head { padding: 18px 18px 14px; }
+        .model-drawer__body { padding: 14px 18px 24px; }
+        .drawer-status-grid { grid-template-columns: 1fr 1fr; }
+      }
+
+      /* 让卡片整体可点（提示性指针），但 .copy-btn 内仍按按钮反馈处理 */
+      .grid .card { cursor: pointer; }
+      .grid .card.is-disabled { cursor: not-allowed; }
+      .grid .card .copy-btn { cursor: copy; }
+
       /* ── footer note：API 调用提示 ────────────────────────────── */
       .footer-note {
         margin-top: 24px;
@@ -748,6 +1097,85 @@
 
     </main>
 
+    <!-- 模型卡片右侧抽屉 (2026-05-22 新增)
+         点击模型卡片任意非按钮区域时由 api-models-app.js 的 openDrawer()
+         填入数据并把 .is-open 加到 .model-drawer 上。fade in / slide in
+         由 CSS transition 处理。 -->
+    <aside class="model-drawer" id="modelDrawer" hidden aria-hidden="true">
+      <div class="model-drawer__backdrop" id="modelDrawerBackdrop"></div>
+      <div class="model-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="modelDrawerName">
+        <header class="model-drawer__head">
+          <button
+            class="model-drawer__close"
+            type="button"
+            id="modelDrawerClose"
+            aria-label="关闭"
+            title="关闭 (Esc)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+              <path d="M6 6 L18 18 M6 18 L18 6"></path>
+            </svg>
+          </button>
+          <div class="model-drawer__head-row">
+            <div class="model-drawer__logo" id="modelDrawerLogo"></div>
+            <div class="model-drawer__head-text">
+              <h3 id="modelDrawerName">—</h3>
+              <p id="modelDrawerBrand"></p>
+              <code id="modelDrawerId"></code>
+            </div>
+          </div>
+          <div class="model-drawer__badges" id="modelDrawerBadges"></div>
+        </header>
+
+        <div class="model-drawer__body">
+          <section class="drawer-section">
+            <h4>定价 / 倍率</h4>
+            <div class="drawer-pricing">
+              <div class="drawer-pricing-num" id="drawerMultNum">—</div>
+              <div class="drawer-pricing-text">
+                <div class="drawer-pricing-tier" id="drawerTierLabel"></div>
+                <div class="drawer-pricing-explain" id="drawerPricingExplain"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="drawer-section">
+            <h4>近期状态 (24h)</h4>
+            <div class="drawer-status-grid">
+              <div class="drawer-stat">
+                <div class="drawer-stat-num" id="dsSuccessRate">—</div>
+                <div class="drawer-stat-label">成功率</div>
+              </div>
+              <div class="drawer-stat">
+                <div class="drawer-stat-num" id="dsLatency">—</div>
+                <div class="drawer-stat-label">平均延迟</div>
+              </div>
+              <div class="drawer-stat">
+                <div class="drawer-stat-num" id="dsRequests">—</div>
+                <div class="drawer-stat-label">请求数</div>
+              </div>
+            </div>
+            <svg class="drawer-spark" id="drawerSpark" viewBox="0 0 320 60" preserveAspectRatio="none" aria-label="近 24 小时请求量"></svg>
+            <div class="drawer-status-hint" id="drawerStatusHint">数据加载中…</div>
+          </section>
+
+          <section class="drawer-section">
+            <h4>调用代码</h4>
+            <div class="drawer-code-tabs" id="drawerCodeTabs" role="tablist">
+              <button class="drawer-code-tab is-active" type="button" data-lang="curl" role="tab">curl</button>
+              <button class="drawer-code-tab" type="button" data-lang="js" role="tab">Node.js</button>
+              <button class="drawer-code-tab" type="button" data-lang="py" role="tab">Python</button>
+            </div>
+            <div class="drawer-code-wrap">
+              <pre class="drawer-code" id="drawerCode"></pre>
+              <button class="drawer-code-copy" type="button" id="drawerCodeCopy">复制</button>
+            </div>
+            <p class="drawer-code-hint" id="drawerCodeHint"></p>
+          </section>
+        </div>
+      </div>
+    </aside>
+
     <footer class="site-footer">
       <div class="site-footer__inner">
         <div class="site-footer__sig">Built with care · Cancri</div>
@@ -761,7 +1189,9 @@
     <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
     <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <!-- 2026-05-17 重构：模型广场二档化（FREE/PAID）+ 移除 9 条用户指定模型 +
-         Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。 -->
-    <script src="./api/api-models-app.js?v=2026-05-20-gemai-models"></script>
+         Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。
+         2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态 +
+         调用代码区，sessionStorage 自动填入用户最近 Key）。 -->
+    <script src="./api/api-models-app.js?v=2026-05-22-drawer"></script>
   </body>
 </html>
