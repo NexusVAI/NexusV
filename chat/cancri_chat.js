@@ -11084,6 +11084,24 @@ async function executePlatformInfoToolCall(toolCall) {
   }
 }
 
+// 重复输出检测：检查文本末尾是否存在明显的退化重复模式。
+// 检测 1-4 字符的短模式在末尾 200 字符中是否占据了 >80% 的空间。
+// 设计为不过敏：正常文本偶尔重复不会触发，只有模型卡在循环时才中断。
+function isDegenerateRepetition(text) {
+  const tail = text.slice(-200);
+  for (let len = 1; len <= 4; len++) {
+    const pattern = tail.slice(0, len);
+    if (len >= 2 && /^(\s|\n)+$/.test(pattern)) continue;
+    let count = 0;
+    for (let i = 0; i + len <= tail.length; i += len) {
+      if (tail.slice(i, i + len) === pattern) count++;
+      else break;
+    }
+    if (count * len >= tail.length * 0.8 && count >= 8) return true;
+  }
+  return false;
+}
+
 async function streamChatCompletionRound(
   messages,
   assistantMessageId,
@@ -11103,6 +11121,7 @@ async function streamChatCompletionRound(
   let streamBuffer = "";
   let doneReasoning = false;
   const toolCalls = [];
+  let _repCheckCounter = 0;
 
   let response = null;
   const activeModelId =
@@ -11399,6 +11418,15 @@ async function streamChatCompletionRound(
           applyDelta(JSON.parse(payload));
         } catch (parseError) {
           // ignore malformed stream chunks
+        }
+      }
+
+      // 重复输出检测：每 8 个 chunk 检查一次，>200 字符后才启用
+      if (finalAnswer.length > 200 && ++_repCheckCounter % 8 === 0) {
+        if (isDegenerateRepetition(finalAnswer)) {
+          finalAnswer += "\n\n⚠️ 检测到模型输出异常重复，已自动中断。请换个问法重试。";
+          try { await reader.cancel(); } catch (_e) {}
+          break;
         }
       }
     }
