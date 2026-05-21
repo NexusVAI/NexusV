@@ -106,7 +106,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-05-20-project-composer-model-icons"
+            href="./claude.css?v=2026-05-21-memory-import"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -615,6 +615,40 @@
                                 >深色模式</span
                             >
                         </button>
+                    </div>
+                    <div class="claude-onboarding-card" id="claudeOnboardingCard" aria-label="试试基础">
+                        <button class="claude-onboarding-close" id="claudeOnboardingCloseBtn" type="button" aria-label="关闭试试基础">
+                            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M13.147 6.146a.5.5 0 0 1 .707.707L10.707 10l3.146 3.146a.5.5 0 0 1-.628.772l-.079-.065L10 10.707l-3.147 3.146a.5.5 0 0 1-.707-.707L9.293 10 6.146 6.853l-.064-.078a.5.5 0 0 1 .693-.693l.078.064L10 9.293z"></path>
+                            </svg>
+                        </button>
+                        <div class="claude-onboarding-head">
+                            <h2 class="claude-onboarding-title">试试基础</h2>
+                            <span class="claude-onboarding-progress" id="claudeOnboardingProgress">3步中0步完成</span>
+                        </div>
+                        <div class="claude-onboarding-list">
+                            <button class="claude-onboarding-task" type="button" data-onboarding-id="importMemory" data-onboarding-action="import-memory">
+                                <span class="claude-onboarding-check" aria-hidden="true"></span>
+                                <span class="claude-onboarding-copy">
+                                    <span class="claude-onboarding-task-title">带来来自其他人工智能的历史</span>
+                                    <span class="claude-onboarding-task-subtitle">所以你不是从零开始</span>
+                                </span>
+                            </button>
+                            <button class="claude-onboarding-task" type="button" data-onboarding-id="community" data-onboarding-action="open-community">
+                                <span class="claude-onboarding-check" aria-hidden="true"></span>
+                                <span class="claude-onboarding-copy">
+                                    <span class="claude-onboarding-task-title">加入最棒的社区</span>
+                                    <span class="claude-onboarding-task-subtitle">当你困惑时，社区会给出最好的答案</span>
+                                </span>
+                            </button>
+                            <button class="claude-onboarding-task" type="button" data-onboarding-id="cancriCode" data-onboarding-action="open-cancri-code">
+                                <span class="claude-onboarding-check" aria-hidden="true"></span>
+                                <span class="claude-onboarding-copy">
+                                    <span class="claude-onboarding-task-title">下载 Cancri-code</span>
+                                    <span class="claude-onboarding-task-subtitle">把任务交接，用 Cancri 编程，更多地在桌面上完成（Bata）</span>
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     <div class="account-strip" id="accountTrigger">
                         <div class="avatar">MR</div>
@@ -1803,6 +1837,13 @@
                                     <div class="claude-form-row claude-form-row-stack">
                                         <span class="claude-form-label">Cancri 的记忆</span>
                                         <div class="claude-form-help">系统每天凌晨自动总结您的对话要点，帮助 Cancri 在后续对话中记住重要信息。最多保留 5 条记忆。</div>
+                                        <div class="memory-import-row" id="claudeMemoryImportRow">
+                                            <div class="memory-import-copy">
+                                                <span class="claude-form-label-strong">导入记忆</span>
+                                                <span class="claude-form-help">从其他 AI 的历史中整理长期偏好后，可在这里继续接入到 Cancri 的记忆区。</span>
+                                            </div>
+                                            <button class="claude-secondary-btn" id="claudeImportMemoryBtn" type="button">导入记忆</button>
+                                        </div>
                                         <div id="claudeMemoriesContainer" class="memories-container">
                                             <p class="claude-form-help" style="margin:0;">加载中…</p>
                                         </div>
@@ -2629,12 +2670,12 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./cancri_chat.js?v=2026-05-21-topup-quota-lock"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-21-memory-import"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-05-20-project-composer-model-icons"></script>
+        <script defer src="./claude_ui.js?v=2026-05-21-memory-import"></script>
         <!-- 2026-05-17 Phase A：「额度」面板（替代原「连接器」占位）。
              FREE 共享池 + 当日 15 次 PAID 试用 + 三档订阅月度配额进度 + 加油包余额。 -->
         <script defer src="./claude_quota_ui.js?v=2026-05-17-grandfather"></script>

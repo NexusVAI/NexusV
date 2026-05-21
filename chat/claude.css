@@ -55,19 +55,19 @@
    等所有读 var(--c-*) 的元素都自动跟随。
    ─────────────────────────────────────────────────────────── */
 html, html[data-theme="dark"] {
-    --c-bg:        #1a1a1a;     /* 主区背景（中央列） */
-    --c-bg-side:   #1c1c1c;     /* 侧栏背景（更暗一点） */
-    --c-bg-elev:   #262624;     /* 输入框、卡片浮起背景 */
-    --c-bg-elev-2: #2d2d2b;     /* popover / dropdown 卡片 */
-    --c-bg-elev-3: #353532;     /* user message bubble */
-    --c-text:        rgba(245, 240, 230, 0.96);
-    --c-text-soft:   rgba(245, 240, 230, 0.62);
-    --c-text-dim:    rgba(245, 240, 230, 0.42);
-    --c-line:        rgba(255, 255, 255, 0.07);
-    --c-line-strong: rgba(255, 255, 255, 0.13);
-    --c-hover:        rgba(255, 255, 255, 0.05);
-    --c-hover-strong: rgba(255, 255, 255, 0.09);
-    --c-accent:        #c96e4a;
+    --c-bg:        #262624;     /* 主区背景（中央列） */
+    --c-bg-side:   #262624;     /* 侧栏背景（更暗一点） */
+    --c-bg-elev:   #30302e;     /* 输入框、卡片浮起背景 */
+    --c-bg-elev-2: #30302e;     /* popover / dropdown 卡片 */
+    --c-bg-elev-3: #3a3935;     /* user message bubble */
+    --c-text:        #f5f4ef;
+    --c-text-soft:   #e5e5e2;
+    --c-text-dim:    #a6a39b;
+    --c-line:        #eaddd81a;
+    --c-line-strong: #6c6a6094;
+    --c-hover:        #30302e;
+    --c-hover-strong: #383732;
+    --c-accent:        #d97757;
     --c-accent-hover:  #d97757;
     --c-accent-soft:   rgba(217, 119, 87, 0.16);
 }
@@ -81,24 +81,26 @@ html, html[data-theme="dark"] {
    --c-line / --c-line-strong / --c-hover-strong 同步加深（暖底上太轻看不到边）。 */
 html[data-theme="light"] {
     --c-bg:        #faf9f5;
-    --c-bg-side:   #f3f0e8;
+    --c-bg-side:   #faf9f5;
     --c-bg-elev:   #ffffff;
     --c-bg-elev-2: #ffffff;
-    --c-bg-elev-3: #f0ebe2;
-    --c-text:        #2c2825;
-    --c-text-soft:   rgba(44, 40, 37, 0.74);
-    --c-text-dim:    rgba(44, 40, 37, 0.55);
-    --c-line:        rgba(0, 0, 0, 0.10);
-    --c-line-strong: rgba(0, 0, 0, 0.18);
-    --c-hover:        rgba(0, 0, 0, 0.05);
-    --c-hover-strong: rgba(0, 0, 0, 0.10);
+    --c-bg-elev-3: #f4f1e7;
+    --c-text:        #29261b;
+    --c-text-soft:   #3d3929;
+    --c-text-dim:    #656358;
+    --c-line:        #706b5740;
+    --c-line-strong: #706b57a6;
+    --c-hover:        #f4f1e7;
+    --c-hover-strong: #eee9df;
     --c-accent:        #c96e4a;
     --c-accent-hover:  #b25c3e;
     --c-accent-soft:   rgba(201, 110, 74, 0.12);
 }
 
 html, html[data-theme="dark"], html[data-theme="light"] {
-    --c-sidebar-w: 240px;
+    --c-sidebar-w: 18rem;
+    --workbench-sidebar-width: 18rem;
+    --workbench-rail-width: 3.5rem;
     --c-main-col: 760px;
     --c-radius:    16px;
     --c-radius-sm: 10px;
@@ -267,6 +269,59 @@ body {
     height: 16px !important;
     /* opacity 由 §21 强制 1，不再叠加 0.85 衰减 */
 }
+.nav-row .claude-nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+    flex: 0 0 20px;
+    color: hsl(var(--text-100));
+    overflow: visible;
+    transition: filter 200ms ease;
+}
+html[data-theme="light"] .nav-row .claude-nav-icon {
+    color: #121212;
+}
+html[data-theme="light"] .nav-row:has(.claude-nav-icon) {
+    color: #373734 !important;
+}
+html[data-theme="dark"] .nav-row:has(.claude-nav-icon) {
+    color: hsl(var(--text-100)) !important;
+}
+.nav-row .claude-nav-icon g,
+.nav-row .claude-nav-icon path {
+    transition: transform 200ms ease-out;
+}
+.nav-row:hover .claude-nav-chats-back {
+    transform: translate(-0.54px, -0.16px);
+}
+.nav-row:hover .claude-nav-chats-front {
+    transform: translate(0.54px, 0.24px);
+}
+.nav-row:hover .claude-nav-project-body {
+    transform: translateY(0.36px);
+}
+.nav-row:hover .claude-nav-project-tab {
+    transform: translateY(-0.34px);
+}
+.nav-row:hover .claude-nav-project-lid {
+    transform: translateY(-0.44px);
+}
+.claude-nav-artifacts-flag {
+    transform-origin: 14px 6.5px;
+    transform-box: view-box;
+}
+.claude-nav-artifacts-star {
+    transform-origin: 6px 14px;
+    transform-box: view-box;
+}
+.nav-row:hover .claude-nav-artifacts-flag {
+    transform: rotate(-90deg);
+}
+.nav-row:hover .claude-nav-artifacts-star {
+    transform: rotate(120deg);
+}
+.nav-row:active .claude-nav-icon--new-chat {
+    transform: scale(0.94);
+}
 .nav-row:hover {
     background: var(--c-hover) !important;
     color: var(--c-text) !important;
@@ -424,6 +479,147 @@ html[data-theme="light"] .conversation-item:hover {
     font-size: 11px !important;
     color: var(--c-text-dim) !important;
     line-height: 1.3 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.claude-onboarding-card {
+    position: relative;
+    margin: 0 0 8px;
+    padding: 10px 8px 8px;
+    border: 1px solid var(--c-line);
+    border-radius: 12px;
+    background: var(--c-bg-elev);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        max-height 260ms ease,
+        margin 260ms ease,
+        padding 260ms ease,
+        border-color 260ms ease;
+}
+.claude-onboarding-card[hidden] {
+    display: none !important;
+}
+.claude-onboarding-card.is-fading {
+    opacity: 0;
+    transform: translateY(6px);
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-color: transparent;
+    pointer-events: none;
+}
+.claude-onboarding-close {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--c-text-dim);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+.claude-onboarding-close:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+.claude-onboarding-head {
+    padding: 0 24px 6px 2px;
+}
+.claude-onboarding-title {
+    margin: 0;
+    color: var(--c-text-soft);
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 500;
+}
+.claude-onboarding-progress {
+    display: block;
+    margin-top: 2px;
+    color: var(--c-text-dim);
+    font-size: 11px;
+    line-height: 1.3;
+}
+.claude-onboarding-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.claude-onboarding-task {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 7px 6px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-text);
+    text-align: left;
+    cursor: pointer;
+}
+.claude-onboarding-task:hover {
+    background: var(--c-hover);
+}
+.claude-onboarding-check {
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    border-radius: 999px;
+    border: 1px solid var(--c-line-strong);
+    flex: 0 0 16px;
+    display: grid;
+    place-items: center;
+}
+.claude-onboarding-check::after {
+    content: "";
+    width: 7px;
+    height: 4px;
+    border-left: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg) translateY(-1px);
+    opacity: 0;
+}
+.claude-onboarding-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.claude-onboarding-task-title {
+    color: var(--c-text);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
+.claude-onboarding-task-subtitle {
+    color: var(--c-text-dim);
+    font-size: 11.5px;
+    line-height: 1.35;
+}
+.claude-onboarding-task.is-complete .claude-onboarding-check {
+    border-color: var(--c-text-dim);
+    color: var(--c-text-dim);
+}
+.claude-onboarding-task.is-complete .claude-onboarding-check::after {
+    opacity: 1;
+}
+.claude-onboarding-task.is-complete .claude-onboarding-task-title,
+.claude-onboarding-task.is-complete .claude-onboarding-task-subtitle {
+    color: var(--c-text-dim);
+    text-decoration: line-through;
+}
+.sidebar.collapsed .claude-onboarding-card,
+.sidebar[data-collapsed="true"] .claude-onboarding-card {
+    display: none !important;
 }
 
 /* sidebar 底部"账户/升级"按钮 */
@@ -544,6 +740,7 @@ body.is-chatting .claude-chat-title { display: inline-flex !important; }
 /* 2026-05-16：付费用户（claude_ui.js applyTierUI 给 body 加 .is-paid-tier）
    隐藏所有"升级"提示。订阅到期后 claude_ui.js 自动移除 class 重新显示。 */
 body.is-paid-tier .claude-plan-pill,
+body.is-paid-tier #donateBtn,
 body.is-paid-tier .claude-nav-tag {
     display: none !important;
 }
@@ -552,6 +749,7 @@ body.is-paid-tier .claude-nav-tag {
    page load 即给 body 加 is-tier-loading，applyTierUI 拿到 tier 后移除。
    网络失败 + 无缓存时保留此 class（保守，避免错判 PAID 为 FREE）。 */
 body.is-tier-loading .claude-plan-pill,
+body.is-tier-loading #donateBtn,
 body.is-tier-loading .claude-nav-tag {
     display: none !important;
 }
@@ -1834,7 +2032,7 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
         top: 0 !important;
         left: 0 !important;
         bottom: 0 !important;
-        height: 100vh !important;
+        height: 100dvh !important;
         z-index: 100 !important;
         transform: translateX(-100%);
         transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -2651,7 +2849,8 @@ button.composer-tool-btn:hover {
     body.sidebar-open .sidebar.collapsed,
     .sidebar.is-mobile-open,
     body.sidebar-open .sidebar {
-        width: 240px !important;
+        width: min(18rem, calc(100vw - 0.5rem)) !important;
+        max-width: 18rem !important;
     }
     .sidebar.is-mobile-open.collapsed .sidebar-topbar,
     body.sidebar-open .sidebar.collapsed .sidebar-topbar {
@@ -4591,8 +4790,8 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     .sidebar.collapsed,
     body.sidebar-open .sidebar,
     .sidebar.is-mobile-open {
-        width: 240px !important;
-        max-width: min(86vw, 300px) !important;
+        width: min(18rem, calc(100vw - 0.5rem)) !important;
+        max-width: 18rem !important;
         transition: transform 180ms cubic-bezier(0.32, 0.72, 0, 1) !important;
         will-change: transform;
     }
@@ -4717,13 +4916,10 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 #sidebarLeaderboardPanel,
 #sidebarCancriCodeBtn,
 .sidebar-cancri-code,
-#sidebarApiPlatformBtn,
-.sidebar .claude-nav-tag {
+#sidebarApiPlatformBtn {
     display: none !important;
 }
 
-#claudePlanPill,
-.claude-plan-pill,
 #legacyUpgradePill,
 .top-pill#legacyUpgradePill {
     display: none !important;
@@ -4795,4 +4991,169 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     opacity: 1;
     background: rgba(255,59,48,0.1);
     color: #ff3b30;
+}
+.memory-import-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--c-bg-elev);
+    border: 1px solid var(--c-line);
+}
+.memory-import-row.is-highlighted {
+    border-color: var(--c-line-strong);
+    box-shadow: 0 0 0 3px rgba(204, 119, 85, 0.12);
+}
+.memory-import-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.memory-import-copy .claude-form-help {
+    margin: 0;
+}
+
+.memory-import-modal[hidden] {
+    display: none;
+}
+.memory-import-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.memory-import-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.34);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+.memory-import-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(680px, calc(100vw - 32px));
+    max-height: min(760px, calc(100vh - 32px));
+    overflow: auto;
+    border-radius: 18px;
+    background: var(--c-bg-elev);
+    color: var(--c-text);
+    border: 1px solid var(--c-line);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+    padding: 18px;
+}
+.memory-import-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.memory-import-head h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    line-height: 1.25;
+}
+.memory-import-head p,
+.memory-import-preview p {
+    margin: 0;
+    color: var(--c-text-dim);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.memory-import-x {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid var(--c-line);
+    background: var(--c-bg);
+    color: var(--c-text);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+}
+.memory-import-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.memory-import-field,
+.memory-import-file {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--c-text);
+    font-size: 13px;
+}
+.memory-import-field select,
+.memory-import-field textarea,
+.memory-import-file input {
+    width: 100%;
+    border: 1px solid var(--c-line);
+    border-radius: 10px;
+    background: var(--c-bg);
+    color: var(--c-text);
+    padding: 10px 11px;
+    font: inherit;
+}
+.memory-import-field textarea {
+    resize: vertical;
+    min-height: 150px;
+    line-height: 1.5;
+}
+.memory-import-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 12px 0;
+}
+.memory-import-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+}
+.memory-import-candidate {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px;
+    border: 1px solid var(--c-line);
+    border-radius: 12px;
+    background: var(--c-bg);
+}
+.memory-import-check {
+    margin-top: 9px;
+}
+.memory-import-candidate-text {
+    width: 100%;
+    resize: vertical;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--c-text);
+    font: inherit;
+    line-height: 1.45;
+}
+@media (max-width: 640px) {
+    .memory-import-modal {
+        align-items: flex-end;
+        padding: 10px;
+    }
+    .memory-import-dialog {
+        width: 100%;
+        max-height: calc(100vh - 20px);
+        border-radius: 18px 18px 14px 14px;
+    }
+    .memory-import-grid {
+        grid-template-columns: 1fr;
+    }
 }

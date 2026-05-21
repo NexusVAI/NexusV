@@ -3143,6 +3143,7 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
 const USER_MEMORY_URL = `${SUPABASE_URL}/functions/v1/user-memory`;
+const MEMORY_IMPORT_TEXT_LIMIT = 12000;
 const CLAUDE_PROJECTS_STORAGE_KEY = "cancri_claude_projects_v1";
 const CLAUDE_ACTIVE_PROJECT_STORAGE_KEY = "cancri_claude_active_project_id";
 const PROJECT_CONTEXT_SOURCE_LIMIT = 6;
@@ -3233,7 +3234,7 @@ function _ensureAuthShowcaseVideo(overlay) {
   if (!showcase) return null;
   video = document.createElement("video");
   video.className = "auth-showcase-video";
-  video.dataset.src = "../Logo/Nexusai.mp4";
+  video.dataset.src = "./cowork-login-hero-light.webm";
   video.loop = true;
   video.muted = true;
   video.playsInline = true;
@@ -3530,7 +3531,7 @@ function initAuthOverlay() {
         if (emailError) emailError.style.color = "";
       } finally {
         sendOtpBtn.disabled = false;
-        sendOtpBtn.textContent = "发送验证码";
+        sendOtpBtn.textContent = "Continue with email";
       }
     });
   }
@@ -4832,6 +4833,74 @@ async function deleteUserMemory(slot) {
   } catch (e) {
     showToast("删除记忆失败");
   }
+}
+
+async function previewImportedMemories({ text = "", source = "" } = {}) {
+  const cleanedText = String(text || "").replace(/\s+/g, " ").trim().slice(0, MEMORY_IMPORT_TEXT_LIMIT);
+  if (cleanedText.length < 20) {
+    throw new Error("导入内容太短，请粘贴更多历史文本。");
+  }
+  const session = await ensureAuthSession();
+  const response = await fetch(USER_MEMORY_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "preview_import_memories",
+      source: String(source || "").slice(0, 40),
+      text: cleanedText,
+    }),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(json.message || json.error || "解析导入记忆失败");
+  }
+  return Array.isArray(json.memories)
+    ? json.memories
+        .filter((m) => m && typeof m.content === "string" && m.content.trim())
+        .map((m, index) => ({
+          slot: Number.isInteger(Number(m.slot)) ? Number(m.slot) : index,
+          content: m.content.trim().slice(0, 100),
+        }))
+    : [];
+}
+
+async function importUserMemories(memories = []) {
+  const selected = (Array.isArray(memories) ? memories : [])
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object") return item.content;
+      return "";
+    })
+    .map((content) => String(content || "").replace(/\s+/g, " ").trim().slice(0, 100))
+    .filter(Boolean)
+    .slice(0, 5);
+  if (selected.length === 0) {
+    throw new Error("请选择至少一条记忆。");
+  }
+  const session = await ensureAuthSession();
+  const response = await fetch(USER_MEMORY_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "import_memories",
+      memories: selected,
+    }),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(json.message || json.error || "导入记忆失败");
+  }
+  if (typeof json.memory_enabled === "boolean") {
+    state.userMemoryEnabled = json.memory_enabled;
+  }
+  await fetchUserMemories();
+  return json;
 }
 
 function generateChatTitle(messages) {
@@ -13211,6 +13280,8 @@ window.CancriApp = {
   fetchUserMemories,
   deleteUserMemory,
   setMemoryGenerationEnabled,
+  previewImportedMemories,
+  importUserMemories,
   renderMemoriesInSettings,
   handleSelectedAttachmentFiles,
   reserveFileUploadUsage,

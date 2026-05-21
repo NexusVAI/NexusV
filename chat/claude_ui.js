@@ -12,6 +12,17 @@
 (function () {
     'use strict';
 
+    var ONBOARDING_DISMISSED_KEY = 'cancri_getting_started_dismissed_v1';
+    var ONBOARDING_COMPLETED_KEY = 'cancri_getting_started_completed_v1';
+    var ONBOARDING_TASK_IDS = ['importMemory', 'community', 'cancriCode'];
+    var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
+    var CANCRI_CODE_URL = 'https://github.com/NexusVAI/CancriCode';
+    var MEMORY_IMPORT_TEXT_LIMIT = 12000;
+    var memoryImportCandidates = [];
+    var latestTierSubscription = null;
+    var accountPlanObserverMuted = false;
+    var accountPlanRefreshTimer = 0;
+
     // 等待 DOM ready，避免脚本在 cancri_chat.js 初始化前 query 不到 DOM。
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });
@@ -28,6 +39,9 @@
         bindCustomNav();
         bindArtifactsNav();
         bindPlanPill();
+        bindAccountPlanSync();
+        bindGettingStartedChecklist();
+        bindImportMemoryShortcut();
         bindProjectButtons();
         bindChatsButtons();
         bindChatsPageList();
@@ -541,9 +555,25 @@
         const pill = document.getElementById('claudePlanPill');
         if (pill) {
             pill.addEventListener('click', function (e) {
-                e.preventDefault();
-                showToast('升级到 Cancri Pro 以解锁更多模型');
+                if (
+                    document.body.classList.contains('is-paid-tier') ||
+                    document.body.classList.contains('is-tier-loading')
+                ) {
+                    e.preventDefault();
+                }
             });
+        }
+        var sidebarUpgrade = document.getElementById('donateBtn');
+        if (sidebarUpgrade) {
+            sidebarUpgrade.addEventListener('click', function (e) {
+                if (
+                    document.body.classList.contains('is-paid-tier') ||
+                    document.body.classList.contains('is-tier-loading')
+                ) return;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                window.location.href = './pricing.html';
+            }, true);
         }
         // 进入 loading 态：CSS 在此期间隐藏 pill / nav-tag / 模糊 billing copy
         document.body.classList.add('is-tier-loading');
@@ -597,6 +627,7 @@
     // 把订阅信息映射到 DOM 状态（class + billing copy）。
     // fromCache 仅用于日志区分，不影响行为。
     function applyTierState(sub, fromCache) {
+        latestTierSubscription = sub || null;
         document.body.classList.remove('is-tier-loading');
         if (sub && sub.tier === 'paid') {
             document.body.classList.add('is-paid-tier');
@@ -605,6 +636,7 @@
             document.body.classList.remove('is-paid-tier');
             updateBillingCopy(sub || { tier: 'free' });
         }
+        updateAccountPlanText(sub || { tier: 'free' });
         void fromCache;
     }
 
@@ -707,6 +739,407 @@
                 + '<span class="claude-tier-chip is-free" style="margin-left:8px;vertical-align:middle">FREE</span>'
                 + '。<a href="./pricing.html">升级到付费档位</a>';
         }
+    }
+
+    function bindAccountPlanSync() {
+        updateAccountPlanText(latestTierSubscription || readTierCache() || { tier: getCancriAccessToken() ? 'free' : 'signed_out' });
+        var strip = document.getElementById('accountTrigger');
+        if (strip && typeof MutationObserver !== 'undefined') {
+            new MutationObserver(function () {
+                if (accountPlanObserverMuted) return;
+                clearTimeout(accountPlanRefreshTimer);
+                accountPlanRefreshTimer = setTimeout(function () {
+                    updateAccountPlanText(latestTierSubscription || readTierCache() || { tier: getCancriAccessToken() ? 'free' : 'signed_out' });
+                    if (getCancriAccessToken()) {
+                        applyTierUI().catch(function () {});
+                    }
+                }, 80);
+            }).observe(strip, { childList: true, subtree: true, characterData: true });
+        }
+    }
+
+    function updateAccountPlanText(sub) {
+        var planEl = document.querySelector('.account-strip .account-plan');
+        if (!planEl) return;
+        var token = getCancriAccessToken();
+        var text = '请先登录';
+        if (token) {
+            if (sub && sub.tier === 'paid') {
+                var plan = sub.plan_code || 'pro';
+                var label = PLAN_LABEL_FOR_BILLING[plan] || 'Pro';
+                var days = Number(sub.days_remaining || 0);
+                text = days > 0 ? 'Cancri ' + label + ' · ' + days + ' 天剩余' : 'Cancri ' + label;
+            } else {
+                text = '免费计划';
+            }
+        }
+        accountPlanObserverMuted = true;
+        planEl.textContent = text;
+        setTimeout(function () { accountPlanObserverMuted = false; }, 0);
+    }
+
+    function readOnboardingCompleted() {
+        try {
+            var raw = localStorage.getItem(ONBOARDING_COMPLETED_KEY);
+            var parsed = raw ? JSON.parse(raw) : {};
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function writeOnboardingCompleted(done) {
+        try { localStorage.setItem(ONBOARDING_COMPLETED_KEY, JSON.stringify(done || {})); } catch (e) {}
+    }
+
+    function isOnboardingDismissed() {
+        try { return localStorage.getItem(ONBOARDING_DISMISSED_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    function dismissOnboarding(card) {
+        if (!card) return;
+        try { localStorage.setItem(ONBOARDING_DISMISSED_KEY, '1'); } catch (e) {}
+        card.classList.add('is-fading');
+        setTimeout(function () { card.hidden = true; }, 260);
+    }
+
+    function renderOnboardingState(card, done) {
+        if (!card) return;
+        var count = 0;
+        ONBOARDING_TASK_IDS.forEach(function (id) {
+            var isDone = Boolean(done[id]);
+            if (isDone) count++;
+            var task = card.querySelector('[data-onboarding-id="' + id + '"]');
+            if (task) task.classList.toggle('is-complete', isDone);
+        });
+        var progress = document.getElementById('claudeOnboardingProgress');
+        if (progress) progress.textContent = '3步中' + count + '步完成';
+        if (count >= ONBOARDING_TASK_IDS.length) dismissOnboarding(card);
+    }
+
+    function completeOnboardingTask(id, card) {
+        var done = readOnboardingCompleted();
+        done[id] = true;
+        writeOnboardingCompleted(done);
+        renderOnboardingState(card, done);
+    }
+
+    function openImportMemorySettings() {
+        var api = cancriApp();
+        if (api && typeof api.setActiveView === 'function') {
+            api.setActiveView('claudeSettings');
+        } else if (typeof window.setActiveView === 'function') {
+            window.setActiveView('claudeSettings');
+        } else {
+            document.querySelectorAll('.main > .view').forEach(function (view) {
+                view.classList.toggle('active', view.id === 'claudeSettingsView');
+            });
+            if (document.body) document.body.dataset.view = 'claudeSettings';
+        }
+        var overviewBtn = document.querySelector('.claude-snav-item[data-snav="overview"]');
+        if (overviewBtn) overviewBtn.click();
+        setTimeout(function () {
+            var row = document.getElementById('claudeMemoryImportRow');
+            if (!row) return;
+            row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            row.classList.add('is-highlighted');
+            setTimeout(function () { row.classList.remove('is-highlighted'); }, 1500);
+        }, 60);
+    }
+
+    function cancriApp() {
+        return window.CancriApp || null;
+    }
+
+    function escapeText(value) {
+        const api = cancriApp();
+        if (api && typeof api.escapeHtml === 'function') return api.escapeHtml(value);
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function trimImportText(value) {
+        return String(value || '').replace(/\s+/g, ' ').trim().slice(0, MEMORY_IMPORT_TEXT_LIMIT);
+    }
+
+    function appendImportText(parts, text) {
+        const value = String(text || '').replace(/\s+/g, ' ').trim();
+        if (value.length < 2) return;
+        if (/^[a-f0-9-]{16,}$/i.test(value)) return;
+        parts.push(value);
+    }
+
+    function walkImportJson(value, parts, depth) {
+        if (parts.join('\n').length > MEMORY_IMPORT_TEXT_LIMIT || depth > 9) return;
+        if (typeof value === 'string') {
+            appendImportText(parts, value);
+            return;
+        }
+        if (!value || typeof value !== 'object') return;
+        if (Array.isArray(value)) {
+            value.forEach(function (item) { walkImportJson(item, parts, depth + 1); });
+            return;
+        }
+        const obj = value;
+        const role = obj.role || obj.sender || obj.author?.role || obj.from || obj.type || '';
+        const prefix = role ? '[' + String(role).slice(0, 16) + '] ' : '';
+        if (typeof obj.text === 'string') appendImportText(parts, prefix + obj.text);
+        if (typeof obj.content === 'string') appendImportText(parts, prefix + obj.content);
+        if (Array.isArray(obj.parts)) {
+            obj.parts.forEach(function (part) {
+                if (typeof part === 'string') appendImportText(parts, prefix + part);
+                else walkImportJson(part, parts, depth + 1);
+            });
+        }
+        if (obj.content && typeof obj.content === 'object') walkImportJson(obj.content, parts, depth + 1);
+        if (obj.message && typeof obj.message === 'object') walkImportJson(obj.message, parts, depth + 1);
+        ['messages', 'chat_messages', 'mapping', 'conversations', 'items', 'children'].forEach(function (key) {
+            if (obj[key]) walkImportJson(obj[key], parts, depth + 1);
+        });
+        Object.keys(obj).forEach(function (key) {
+            if (/^(id|uuid|created|created_at|updated_at|timestamp|create_time|update_time|model|metadata)$/i.test(key)) return;
+            if (/^(text|content|parts|message|messages|chat_messages|mapping|conversations|items|children|role|sender|author|from|type)$/i.test(key)) return;
+            walkImportJson(obj[key], parts, depth + 1);
+        });
+    }
+
+    function htmlToImportText(raw) {
+        try {
+            const doc = new DOMParser().parseFromString(raw, 'text/html');
+            doc.querySelectorAll('script,style,svg,template,noscript,iframe').forEach(function (el) { el.remove(); });
+            return trimImportText(doc.body ? doc.body.textContent : doc.documentElement.textContent);
+        } catch (e) {
+            return trimImportText(raw);
+        }
+    }
+
+    function normalizeImportSourceText(raw) {
+        const text = String(raw || '').trim();
+        if (!text) return '';
+        if (/^\s*(<!doctype html|<html|<body|<div)\b/i.test(text)) return htmlToImportText(text);
+        try {
+            const parsed = JSON.parse(text);
+            const parts = [];
+            walkImportJson(parsed, parts, 0);
+            const structured = trimImportText(parts.join('\n'));
+            if (structured.length >= 20) return structured;
+        } catch (e) {}
+        return trimImportText(text);
+    }
+
+    function readTextFile(file) {
+        return new Promise(function (resolve, reject) {
+            const reader = new FileReader();
+            reader.onload = function () { resolve(String(reader.result || '')); };
+            reader.onerror = function () { reject(reader.error || new Error('file_read_failed')); };
+            reader.readAsText(file);
+        });
+    }
+
+    function ensureMemoryImportModal() {
+        let modal = document.getElementById('claudeMemoryImportModal');
+        if (modal) return modal;
+        modal = document.createElement('div');
+        modal.id = 'claudeMemoryImportModal';
+        modal.className = 'memory-import-modal';
+        modal.hidden = true;
+        modal.innerHTML =
+            '<div class="memory-import-backdrop" data-memory-import-close></div>' +
+            '<div class="memory-import-dialog" role="dialog" aria-modal="true" aria-labelledby="memoryImportTitle">' +
+            '<div class="memory-import-head">' +
+            '<div><h2 id="memoryImportTitle">导入其他 AI 记忆</h2><p>粘贴 ChatGPT、Claude、Gemini 等历史，Cancri 会先提炼长期偏好，确认后再写入记忆区。</p></div>' +
+            '<button class="memory-import-x" type="button" data-memory-import-close aria-label="关闭导入记忆">×</button>' +
+            '</div>' +
+            '<div class="memory-import-grid">' +
+            '<label class="memory-import-field"><span>来源</span><select id="memoryImportSource"><option value="ChatGPT">ChatGPT</option><option value="Claude">Claude</option><option value="Gemini">Gemini</option><option value="Kimi">Kimi</option><option value="其他 AI">其他 AI</option></select></label>' +
+            '<label class="memory-import-file"><span>上传导出文件</span><input id="memoryImportFile" type="file" accept=".json,.txt,.md,.html,.htm,application/json,text/plain,text/markdown,text/html"></label>' +
+            '</div>' +
+            '<label class="memory-import-field memory-import-text-field"><span>历史文本或导出 JSON</span><textarea id="memoryImportText" rows="8" placeholder="粘贴其他 AI 的聊天历史、偏好说明，或上传 conversations.json / html / txt。"></textarea></label>' +
+            '<div class="memory-import-actions"><button class="claude-secondary-btn" type="button" id="memoryImportPreviewBtn">解析记忆</button><button class="claude-primary-btn" type="button" id="memoryImportSaveBtn" disabled>导入选中</button></div>' +
+            '<div id="memoryImportPreview" class="memory-import-preview"><p>解析后会在这里显示最多 5 条候选记忆，可编辑、取消勾选后再导入。</p></div>' +
+            '</div>';
+        document.body.appendChild(modal);
+
+        modal.querySelectorAll('[data-memory-import-close]').forEach(function (el) {
+            el.addEventListener('click', closeMemoryImportModal);
+        });
+        const fileInput = modal.querySelector('#memoryImportFile');
+        const textarea = modal.querySelector('#memoryImportText');
+        const previewBtn = modal.querySelector('#memoryImportPreviewBtn');
+        const saveBtn = modal.querySelector('#memoryImportSaveBtn');
+        if (fileInput && textarea) {
+            fileInput.addEventListener('change', async function () {
+                const file = fileInput.files && fileInput.files[0];
+                if (!file) return;
+                try {
+                    const raw = await readTextFile(file);
+                    textarea.value = normalizeImportSourceText(raw);
+                    showToast('已读取导出文件，可点击解析记忆');
+                } catch (e) {
+                    showToast('读取导出文件失败');
+                }
+            });
+        }
+        if (previewBtn) previewBtn.addEventListener('click', runMemoryImportPreview);
+        if (saveBtn) saveBtn.addEventListener('click', saveSelectedImportedMemories);
+        modal.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeMemoryImportModal();
+        });
+        return modal;
+    }
+
+    function openMemoryImportModal() {
+        const modal = ensureMemoryImportModal();
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        const textarea = modal.querySelector('#memoryImportText');
+        setTimeout(function () { if (textarea) textarea.focus(); }, 40);
+    }
+
+    function closeMemoryImportModal() {
+        const modal = document.getElementById('claudeMemoryImportModal');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+    }
+
+    function renderMemoryImportCandidates(candidates) {
+        const modal = ensureMemoryImportModal();
+        const preview = modal.querySelector('#memoryImportPreview');
+        const saveBtn = modal.querySelector('#memoryImportSaveBtn');
+        memoryImportCandidates = Array.isArray(candidates) ? candidates : [];
+        if (!preview || !saveBtn) return;
+        if (!memoryImportCandidates.length) {
+            preview.innerHTML = '<p>没有提炼出适合长期保存的记忆。可以粘贴更多历史，或删掉无关页面内容后再试。</p>';
+            saveBtn.disabled = true;
+            return;
+        }
+        preview.innerHTML = memoryImportCandidates.map(function (item, index) {
+            const content = String(item.content || '').slice(0, 100);
+            return '<label class="memory-import-candidate">' +
+                '<input class="memory-import-check" type="checkbox" checked data-index="' + index + '">' +
+                '<textarea class="memory-import-candidate-text" maxlength="100" rows="2">' + escapeText(content) + '</textarea>' +
+                '</label>';
+        }).join('');
+        saveBtn.disabled = false;
+    }
+
+    async function runMemoryImportPreview() {
+        const modal = ensureMemoryImportModal();
+        const textarea = modal.querySelector('#memoryImportText');
+        const source = modal.querySelector('#memoryImportSource');
+        const preview = modal.querySelector('#memoryImportPreview');
+        const previewBtn = modal.querySelector('#memoryImportPreviewBtn');
+        const saveBtn = modal.querySelector('#memoryImportSaveBtn');
+        const api = cancriApp();
+        if (!api || typeof api.previewImportedMemories !== 'function') {
+            showToast('记忆导入模块未加载，请刷新页面后重试');
+            return;
+        }
+        const text = normalizeImportSourceText(textarea ? textarea.value : '');
+        if (textarea) textarea.value = text;
+        if (text.length < 20) {
+            showToast('导入内容太短，请粘贴更多历史文本');
+            return;
+        }
+        if (preview) preview.innerHTML = '<p>正在解析长期偏好…</p>';
+        if (previewBtn) previewBtn.disabled = true;
+        if (saveBtn) saveBtn.disabled = true;
+        try {
+            const candidates = await api.previewImportedMemories({
+                text: text,
+                source: source ? source.value : '其他 AI'
+            });
+            renderMemoryImportCandidates(candidates);
+            showToast(candidates.length ? '已生成候选记忆，请确认后导入' : '未找到可导入的长期记忆');
+        } catch (e) {
+            if (preview) preview.innerHTML = '<p>解析失败，请稍后重试。</p>';
+            showToast(e && e.message ? e.message : '解析导入记忆失败');
+        } finally {
+            if (previewBtn) previewBtn.disabled = false;
+        }
+    }
+
+    async function saveSelectedImportedMemories() {
+        const modal = ensureMemoryImportModal();
+        const api = cancriApp();
+        if (!api || typeof api.importUserMemories !== 'function') {
+            showToast('记忆导入模块未加载，请刷新页面后重试');
+            return;
+        }
+        const selected = Array.from(modal.querySelectorAll('.memory-import-candidate')).map(function (row) {
+            const check = row.querySelector('.memory-import-check');
+            const text = row.querySelector('.memory-import-candidate-text');
+            if (!check || !check.checked || !text) return '';
+            return String(text.value || '').replace(/\s+/g, ' ').trim().slice(0, 100);
+        }).filter(Boolean);
+        if (!selected.length) {
+            showToast('请选择至少一条记忆');
+            return;
+        }
+        const saveBtn = modal.querySelector('#memoryImportSaveBtn');
+        if (saveBtn) saveBtn.disabled = true;
+        try {
+            const result = await api.importUserMemories(selected);
+            const saved = Number(result && result.saved) || 0;
+            showToast(saved > 0 ? '已导入 ' + saved + ' 条记忆' : '记忆槽已满或内容重复');
+            if (saved > 0) closeMemoryImportModal();
+        } catch (e) {
+            showToast(e && e.message ? e.message : '导入记忆失败');
+        } finally {
+            if (saveBtn) saveBtn.disabled = false;
+        }
+    }
+
+    function runOnboardingAction(action) {
+        if (action === 'import-memory') {
+            openImportMemorySettings();
+            setTimeout(openMemoryImportModal, 140);
+        } else if (action === 'open-community') {
+            window.open(COMMUNITY_URL, '_blank', 'noopener');
+        } else if (action === 'open-cancri-code') {
+            window.open(CANCRI_CODE_URL, '_blank', 'noopener');
+        }
+    }
+
+    function bindGettingStartedChecklist() {
+        var card = document.getElementById('claudeOnboardingCard');
+        if (!card) return;
+        if (isOnboardingDismissed()) {
+            card.hidden = true;
+            return;
+        }
+        renderOnboardingState(card, readOnboardingCompleted());
+        var close = document.getElementById('claudeOnboardingCloseBtn');
+        if (close) {
+            close.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dismissOnboarding(card);
+            });
+        }
+        card.querySelectorAll('[data-onboarding-id][data-onboarding-action]').forEach(function (task) {
+            task.addEventListener('click', function (e) {
+                e.preventDefault();
+                var id = task.getAttribute('data-onboarding-id');
+                var action = task.getAttribute('data-onboarding-action');
+                completeOnboardingTask(id, card);
+                runOnboardingAction(action);
+            });
+        });
+    }
+
+    function bindImportMemoryShortcut() {
+        var btn = document.getElementById('claudeImportMemoryBtn');
+        if (!btn) return;
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            openMemoryImportModal();
+        });
     }
 
     // 6. 项目页 / 聊天页按钮
