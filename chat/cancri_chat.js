@@ -10148,7 +10148,7 @@ function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {
   const apiHint = document.createElement("div");
   apiHint.className = "assistant-error-api-hint";
   apiHint.textContent =
-    "API 提示：本次错误已由 Cancri 统一处理。请稍后重试或切换模型；页面不会展示第三方返回内容。";
+    "API 提示：本次错误已由 Cancri 统一处理。请稍后重试或切换模型";
 
   const footer = document.createElement("div");
   footer.className = "assistant-error-footer";
