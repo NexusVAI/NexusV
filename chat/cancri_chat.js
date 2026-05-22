@@ -8211,13 +8211,17 @@ function getDefaultHomeHeroText() {
   const weekday = now.getDay();
   const name = getHomeDisplayName();
   const emailLikeName = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name);
+  const numericQQName = /^\d{4,}$/.test(name);
 
-  if (emailLikeName) {
-    if (hour < 5) return `夜深了，\n${name}`;
-    if (hour < 11) return `早上好，\n${name}`;
-    if (hour < 14) return `中午好，\n${name}`;
-    if (hour < 18) return `下午好，\n${name}`;
-    return `晚上好，\n${name}`;
+  // 2026-05-22 真 Claude 对齐：邮箱 / 纯 QQ 号 / 占位「用户」 不该出现在 hero。
+  // Real Claude 没设昵称时只显示纯问候语「下午好」，没有 ", \n3573799137@qq.com"
+  // 这种尴尬。这里直接退化为纯问候 + 跨小时刷新。
+  if (emailLikeName || numericQQName || name === "用户") {
+    if (hour < 5) return "夜深了";
+    if (hour < 11) return "早上好";
+    if (hour < 14) return "中午好";
+    if (hour < 18) return "下午好";
+    return "晚上好";
   }
 
   // 1. 深夜 (0:00 - 4:59) - 不分工作日和周末，全部突出深夜温馨氛围
@@ -8368,7 +8372,10 @@ function getDefaultHomeHeroText() {
 
 function updateHomeHeroText() {
   if (!heroTitle) return;
-  heroTitle.textContent = state.recentProjectName
+  // 2026-05-22 §23.4：hero 包含 .hero-icon 32px 品牌图标 + .hero-text 文案。
+  // 写入 .hero-text 而不是覆盖整个 h1，否则装饰图标会被清掉。
+  const target = heroTitle.querySelector(".hero-text") || heroTitle;
+  target.textContent = state.recentProjectName
     ? `继续处理「${state.recentProjectName}」？`
     : getDefaultHomeHeroText();
 }

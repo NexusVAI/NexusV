@@ -58,7 +58,8 @@
             bindAuthThemeToggle,
             bindHomeInputDefensiveFocus,
             bindSettingsModalClose,
-            bindPageDragOverlay
+            bindPageDragOverlay,
+            bindRecentHeaderToggle
         ].forEach(function (step) {
             try {
                 step();
@@ -353,17 +354,19 @@
             if (h >= 5 && h < 12) greet = '早上好';
             else if (h >= 12 && h < 18) greet = '下午好';
             const nick = pickName();
-            // 2026-05-15 fix(C3)：去掉 hero 前的 ✱ 星号，跟群友反馈
-            //   "我们站内的欢迎语里的'*'星号去掉" 一致。Claude 真站点用的是
-            //   品牌 sparkle icon，我们没有对应资源，干脆纯文字更干净。
+            // 2026-05-22 §23.4：hero 现在内含 .hero-icon 32px 品牌图标 + .hero-text 文案，
+            //   写入 .hero-text 而不是整个 hero，保留装饰图标。如果 .hero-text 不存在
+            //   （老结构兼容）则退回原行为。
+            const textSlot = hero.querySelector('.hero-text');
+            const target = textSlot || hero;
             if (!nick) {
-                hero.textContent = greet;
+                target.textContent = greet;
                 return;
             }
             const safeNick = nick.replace(/[<>&"']/g, function (c) {
                 return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c];
             });
-            hero.innerHTML = greet + '，' + safeNick;
+            target.innerHTML = greet + '，' + safeNick;
         }
 
         update();
@@ -2969,6 +2972,41 @@
             if (!toggle) return;
             if (window.CancriApp && typeof window.CancriApp.setMemoryGenerationEnabled === 'function') {
                 window.CancriApp.setMemoryGenerationEnabled(Boolean(toggle.checked));
+            }
+        });
+    }
+
+    // 2026-05-22 §23.2：「最近」分节标题点击折叠 / 展开聊天列表。
+    //   - 点击 #claudeRecentTitle 切换 .claude-recent-header 的 data-collapsed
+    //   - data-collapsed=true 时 CSS（§23.2）隐藏后面的 #chatHistoryList
+    //   - 同步更新「藏起来 / 展开」hint 文案 + aria-expanded
+    //   - localStorage('cancri_recent_collapsed') 持久化
+    function bindRecentHeaderToggle() {
+        var header = document.querySelector('.claude-recent-header');
+        var title = document.getElementById('claudeRecentTitle');
+        var hint = header && header.querySelector('.claude-recent-collapse-hint');
+        if (!header || !title) return;
+        var KEY = 'cancri_recent_collapsed';
+        function applyState(collapsed) {
+            header.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
+            title.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            if (hint) hint.textContent = collapsed ? '展开' : '藏起来';
+        }
+        try {
+            applyState(localStorage.getItem(KEY) === 'true');
+        } catch (_) {
+            applyState(false);
+        }
+        title.addEventListener('click', function (e) {
+            e.preventDefault();
+            var next = header.getAttribute('data-collapsed') !== 'true';
+            applyState(next);
+            try { localStorage.setItem(KEY, next ? 'true' : 'false'); } catch (_) { /* 无 localStorage */ }
+        });
+        title.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                title.click();
             }
         });
     }

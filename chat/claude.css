@@ -4975,10 +4975,11 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     }
 }
 
+/* 2026-05-22 §23 真 Claude 对齐：把 #sidebarCancriCodeBtn 从强制隐藏列表里移除。
+   真 Claude 侧栏「聊天/项目/文物/代码(升级)/自定义」5 项里「代码」必须显示。
+   leaderboard 与 api-platform 入口仍隐藏（前者占位、后者用 hidden 属性已隐藏）。 */
 #arenaLeaderboardNavBtn,
 #sidebarLeaderboardPanel,
-#sidebarCancriCodeBtn,
-.sidebar-cancri-code,
 #sidebarApiPlatformBtn {
     display: none !important;
 }
@@ -5716,5 +5717,652 @@ html[data-theme="light"] #claudeSettingsView.active {
     #claudeSettingsView.active .claude-settings-title {
         padding: 14px 18px 12px !important;
         font-size: 16px !important;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   §23 真 Claude.ai 对齐补丁（2026-05-22 claude-real-align）
+   依据 https://claude.ai/new 实拍快照（2026-05-21 11:17:23）：
+   - 侧栏「新聊天/搜索」hover 显示 Ctrl+⇧+O / Ctrl+K
+   - 「最近」分节标题 hover 显示「藏起来」+ 3-dot 选项菜单
+   - 账户按钮右侧「获取应用和扩展」入口配 animate-ping 红点
+   - Hero 左侧 32px 品牌装饰图标，与 h1 同行
+   - 「使用隐身」始终可见（覆盖 §11 的 display:none 强制）
+   - 聊天列表项 hover 时长标题在右侧渐隐，给 hover 出现的删除按钮腾空间
+   - 「代码」入口轻度灰化 + 圆形 outline 升级 badge（替换原红色 tag）
+   - 删除首页 5-chip 下方装饰（token-expiry-note / model-icons-scroll）
+   - 侧栏「+ 新聊天」/「自定义」hover 微动画 (rotate-3 + scale-110)
+   ───────────────────────────────────────────────────────────────────── */
+
+/* §23.1 ─ 键盘快捷键 hint：默认透明，nav-row hover 时显示 */
+.nav-row .nav-kbd-hint {
+    margin-left: auto;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--c-text-dim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease-out;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.nav-row:hover .nav-kbd-hint,
+.nav-row:focus-within .nav-kbd-hint {
+    opacity: 0.75;
+}
+/* sidebar collapsed 状态全部隐 */
+.sidebar.collapsed .nav-kbd-hint {
+    display: none !important;
+}
+
+/* §23.2 ─「最近」分节标题：flex 容器 + hover 折叠/选项 */
+.claude-recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 0 8px 4px 10px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.claude-recent-header .claude-recent-title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--c-text-soft);
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    line-height: 1.4;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.claude-recent-header .claude-recent-title:hover .claude-recent-title-label {
+    color: var(--c-text);
+}
+.claude-recent-title-label {
+    transition: color 150ms;
+}
+.claude-recent-collapse-hint {
+    font-size: 11px;
+    color: var(--c-text-dim);
+    opacity: 0;
+    transition: opacity 150ms;
+    pointer-events: none;
+}
+.claude-recent-header:hover .claude-recent-collapse-hint,
+.claude-recent-header:focus-within .claude-recent-collapse-hint {
+    opacity: 0.7;
+}
+/* 折叠态：列表整体收起 */
+.claude-recent-header[data-collapsed="true"] + .recent-wrap {
+    display: none;
+}
+.claude-recent-options-btn {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--c-text-dim);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 150ms, color 150ms, opacity 150ms;
+    opacity: 0;
+}
+.claude-recent-header:hover .claude-recent-options-btn,
+.claude-recent-header:focus-within .claude-recent-options-btn {
+    opacity: 1;
+}
+.claude-recent-options-btn:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+/* 折叠 sidebar 时不显示 header */
+.sidebar.collapsed .claude-recent-header {
+    display: none !important;
+}
+/* 旧的 .claude-recent-title 单独写法（无 .claude-recent-header 容器）保留兼容 */
+.recent-wrap + .claude-recent-title:not(.claude-recent-header *) {
+    color: var(--c-text-soft);
+}
+
+/* §23.3 ─ 账户按钮右侧「获取应用和扩展」入口 + animate-ping 红点 */
+.account-download-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    color: var(--c-text-dim);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: background 160ms, border-color 160ms, color 160ms;
+}
+.account-download-btn:hover {
+    background: var(--c-hover);
+    border-color: var(--c-line);
+    color: var(--c-text);
+}
+.account-download-pulse {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    pointer-events: none;
+}
+.account-download-pulse-ring,
+.account-download-pulse-dot {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: #d97757;
+}
+.account-download-pulse-ring {
+    opacity: 0.55;
+    animation: claude-account-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes claude-account-ping {
+    0% { transform: scale(1); opacity: 0.55; }
+    75%, 100% { transform: scale(2.1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .account-download-pulse-ring { animation: none; }
+}
+/* sidebar 收起时下载按钮隐藏 */
+.sidebar.collapsed .account-download-btn { display: none !important; }
+
+/* §23.4 ─ Hero 左侧 32px 品牌装饰图标（替换原 .hero-star 字符） */
+.hero .hero-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    line-height: 1;
+}
+.hero .hero-icon-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
+    /* 真 Claude 用 Anthropic 暖橙 #d97757 调染。Cancri logo 已是品牌色，
+       这里只在 light 主题下淡淡上一点 accent 色调，不破坏 logo 本色。 */
+    filter: none;
+}
+.hero .hero-text {
+    display: inline-block;
+    /* 跟随真 Claude 的 max-w-2xl 视觉宽度限制，超长用户名不会撑开 hero。 */
+    max-width: 70vw;
+    overflow-wrap: break-word;
+}
+/* 字号改为 clamp，跟随真 Claude 30→40px scale */
+.hero,
+#heroTitle {
+    font-size: clamp(1.875rem, 1.2rem + 2vw, 2.5rem) !important;
+    line-height: 1.5 !important;
+    color: var(--c-text-soft) !important;
+}
+/* mobile 缩到 24-28px */
+@media (max-width: 640px) {
+    .hero .hero-icon,
+    .hero .hero-icon-img {
+        width: 26px !important;
+        height: 26px !important;
+    }
+    .hero,
+    #heroTitle {
+        font-size: clamp(20px, 6vw, 28px) !important;
+    }
+}
+
+/* §23.5 ─「使用隐身」按钮始终可见（覆盖原 inline display:none） */
+.icon-btn.temp-chat-btn,
+#tempChatBtn.temp-chat-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    color: var(--c-text-dim) !important;
+    background: transparent !important;
+    border: 0 !important;
+    cursor: pointer;
+    transition: background 160ms, color 160ms;
+}
+.icon-btn.temp-chat-btn:hover,
+#tempChatBtn.temp-chat-btn:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+
+/* §23.6 ─ 聊天列表项 hover 时标题在右侧渐隐，给「⋯」按钮腾空间 */
+.recent-wrap .recent-item .recent-item-title {
+    transition: -webkit-mask-image 200ms ease-out, mask-image 200ms ease-out;
+}
+.recent-wrap .recent-item:hover .recent-item-title,
+.recent-wrap .recent-item:focus-within .recent-item-title {
+    -webkit-mask-image: linear-gradient(to right, #000 70%, transparent 95%);
+    mask-image: linear-gradient(to right, #000 70%, transparent 95%);
+}
+
+/* §23.7 ─「代码」入口轻度灰化 + 圆形 outline 升级 badge */
+#sidebarCancriCodeBtn {
+    color: var(--c-text-dim) !important;
+}
+#sidebarCancriCodeBtn:hover {
+    color: var(--c-text) !important;
+}
+#sidebarCancriCodeBtn .claude-nav-tag,
+#sidebarCancriCodeBtn .nav-kbd-hint {
+    margin-left: auto;
+    padding: 1px 8px !important;
+    font-size: 10.5px !important;
+    line-height: 1.4 !important;
+    color: var(--c-text-soft) !important;
+    background: transparent !important;
+    border: 1px solid var(--c-line-strong) !important;
+    border-radius: 999px !important;
+    text-transform: none !important;
+    flex-shrink: 0;
+}
+#sidebarCancriCodeBtn:hover .claude-nav-tag {
+    color: var(--c-text) !important;
+    border-color: var(--c-text-soft) !important;
+}
+
+/* §23.8 ─ 删除首页 5-chip 下方装饰（防御性 CSS，HTML 已 hidden） */
+#tokenExpiryNote,
+.token-expiry-note,
+#homeView .model-icons-scroll {
+    display: none !important;
+}
+
+/* §23.9 ─ 侧栏「新聊天 / 自定义」hover 微动画
+   真 Claude 在新聊天的 + 圆环图标上加了 group-hover:-rotate-3 group-hover:scale-110 */
+#newChatBtn .claude-nav-icon--new-chat,
+#claudeCustomNavBtn .claude-nav-icon--customize {
+    transition: transform 220ms cubic-bezier(0.165, 0.85, 0.45, 1);
+    transform-origin: center center;
+}
+#newChatBtn:hover .claude-nav-icon--new-chat,
+#claudeCustomNavBtn:hover .claude-nav-icon--customize {
+    transform: rotate(-3deg) scale(1.1);
+}
+#newChatBtn:active .claude-nav-icon--new-chat,
+#claudeCustomNavBtn:active .claude-nav-icon--customize {
+    transform: rotate(6deg) scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+    #newChatBtn .claude-nav-icon--new-chat,
+    #claudeCustomNavBtn .claude-nav-icon--customize {
+        transition: none;
+    }
+    #newChatBtn:hover .claude-nav-icon--new-chat,
+    #claudeCustomNavBtn:hover .claude-nav-icon--customize {
+        transform: none;
+    }
+}
+
+/* §23.10 ─ Composer 内部 model-selector 在所有屏幕都生效（之前只 mobile） */
+.composer-actions #modelSelector,
+.composer-actions .claude-model-selector-inline {
+    flex-shrink: 1;
+    min-width: 0;
+    width: auto !important;
+    margin-right: auto; /* 推到 voice/send 按钮的左侧 */
+}
+.composer-actions #modelSelector .model-current {
+    width: auto !important;
+    height: 32px;
+    padding: 0 10px !important;
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--c-text-soft) !important;
+    font-size: 13.5px !important;
+    border-radius: 8px !important;
+    transition: background 160ms;
+}
+.composer-actions #modelSelector .model-current:hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.composer-actions #modelSelector .model-name {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 让 composer-actions 整体右对齐：model-selector 推到左、voice + send 在右 */
+.composer-tools-row .composer-actions {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 4px;
+}
+/* model-selector 在 composer-actions 内时占左侧空间 */
+.composer-tools-row .composer-actions #modelSelector {
+    margin-right: auto;
+    order: -1;
+}
+
+/* §23.11 ─ main-header 残留 model-selector 占位（若 JS 没运行时的兜底） */
+.main-header .header-left > #modelSelector:not([id="modelSelector"]) {
+    display: none !important;
+}
+
+/* §23.12 ─ light 主题更精确的 token：使用真 Claude 的暖米色系
+   真 Claude data-theme=claude data-mode=light 的 bg-bg-100 = hsl(60,11%,95%) ≈ #faf9f5 */
+html[data-theme="light"] .composer {
+    background: #ffffff !important;
+}
+html[data-theme="light"] body,
+html[data-theme="light"] .app {
+    background: #faf9f5;
+}
+
+/* §23.13 ─「免费计划 · 升级」pill 移动到主区顶部居中浮动
+   真 Claude `<div class="ml-0.5 inline-flex ... rounded-lg h-8 bg-bg-300">` 在 main
+   的 absolute inset-x-0 top-0 容器里，居中显示。Cancri 之前 absolute right:16px
+   被 header-right 按钮挤掉。改为 fixed top center 浮动。 */
+.claude-plan-pill {
+    position: fixed !important;
+    top: 12px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    border-radius: 8px !important;
+    color: var(--c-text-soft) !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    z-index: 50 !important;
+    pointer-events: auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.claude-plan-pill:hover {
+    background: var(--c-bg-elev-2) !important;
+    border-color: var(--c-line-strong) !important;
+}
+.claude-plan-pill .claude-plan-divider {
+    width: 3px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 50%;
+    opacity: 0.4;
+    font-size: 0;
+    color: transparent !important;
+}
+.claude-plan-pill .claude-plan-cta {
+    color: var(--c-text-soft) !important;
+    font-weight: 400 !important;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+}
+.claude-plan-pill:hover .claude-plan-cta {
+    text-decoration-color: currentColor;
+}
+/* mobile 下 pill 缩进避免被汉堡 / 隐身按钮挡 */
+@media (max-width: 640px) {
+    .claude-plan-pill {
+        top: 6px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+    }
+}
+
+/* §23.14 ─ Composer 内的 #modelSelector 简化为真 Claude 纯文字风格
+   真 Claude `aria-label="型号：十四行诗4.6"` 按钮：纯文字「Sonnet 4.6 ▼」+ ghost
+   hover bg。Cancri 默认 .model-current 含 brand logo + 复杂样式，在 composer-actions
+   语境下要剥光只剩文字 + chevron。 */
+.composer-actions #modelSelector .model-current {
+    gap: 4px !important;
+}
+.composer-actions #modelSelector .model-current-icon {
+    display: none !important;
+}
+.composer-actions #modelSelector .model-current .model-name {
+    font-weight: 500 !important;
+    font-size: 13.5px !important;
+    color: inherit !important;
+}
+/* 主区 main-header 的 plan-pill 容器 .header-right 不要争 absolute 空间 */
+.main-header > .claude-plan-pill {
+    position: fixed !important;
+}
+
+/* §23.15 ─ 发送按钮 ghost 化（textarea 空时低调）
+   真 Claude 没有显式发送按钮（Enter 键），Cancri 必须保留 send 但弱化样式。
+   有内容时才显式高亮（cancri_chat.js 已用 disabled 属性切换）。 */
+.composer-actions .send-btn:disabled {
+    background: transparent !important;
+    color: var(--c-text-dim) !important;
+    border: 1px solid var(--c-line) !important;
+    box-shadow: none !important;
+    opacity: 0.6;
+}
+/* .composer-actions .send-btn:not(:disabled) 不写规则，让 cancri 原 brand 橙色高亮生效 */
+
+/* §23.16 ─ Hero 装饰图标在 light 主题下染暖橙色，更接近 Anthropic accent-brand
+   Cancri logo 是黑色，在 light 米色背景上对比度 OK 但不及 Claude 的橙色 logo
+   抢眼。用 mix-blend-mode + accent 滤镜模拟橙色调染（保留 logo 形状）。 */
+html[data-theme="light"] .hero .hero-icon-img {
+    /* 用 sepia + saturate + hue-rotate 把黑色 logo 调成 Claude 橙 #d97757
+       视觉范围：黑 → 暖橙。不破坏暗色主题 logo 的反相显示（cancri_logo_theme
+       在 dark 下会换成白 logo，此 filter 仅作用 light）。 */
+    filter: brightness(0) saturate(100%) invert(54%) sepia(38%) saturate(672%) hue-rotate(338deg) brightness(91%) contrast(91%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   §24 真 Claude 移动端 + 项目页 + 临时聊天 修补（2026-05-22 mobile-pass）
+   截图诊断：
+     - 项目 composer 同时存在「+ / 🌐 / 来源」三按钮，用户标注「应该就一个加号」
+     - #tempChatModal 在 .modal.small 体系下没有居中白卡片，标题+内容铺满黑底
+     - 移动端模型下拉 #modelDropdown 占满全屏 + 翻页，体验崩
+     - 移动端设置页内容顶部出现大段空白（active section 渲染时 flex 把 h2 推下去）
+   ─────────────────────────────────────────────────────────────────────── */
+
+/* §24.1 ─ 项目 composer 收敛为单一「+」按钮
+   #claudeProjectWebSearchBtn (globe) + #claudeProjectSourcesShortcut (文字"来源")
+   功能与「+」(添加来源) 重复且视觉拥挤，按用户要求隐藏，只留 + 即可 */
+.claude-project-composer-actions ~ .composer-tools-row #claudeProjectWebSearchBtn,
+.claude-project-composer .composer-tools #claudeProjectWebSearchBtn,
+.claude-project-composer .composer-tools #claudeProjectSourcesShortcut {
+    display: none !important;
+}
+
+/* §24.2 ─「临时聊天」modal 卡片化
+   .modal.small 默认 background:transparent，header/body 是直接子元素，没卡片背景。
+   补一层视觉容器：固定居中 + 白底 + 圆角 + 阴影，并加 backdrop。 */
+#tempChatModal.modal.small.open {
+    background: rgba(0, 0, 0, 0.42) !important;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    padding: 24px 16px !important;
+}
+#tempChatModal.modal.small.open > .modal-header,
+#tempChatModal.modal.small.open > .modal-body {
+    width: min(440px, calc(100vw - 32px)) !important;
+    max-width: 440px !important;
+    background: var(--c-bg-elev) !important;
+    color: var(--c-text) !important;
+    border-left: 1px solid var(--c-line);
+    border-right: 1px solid var(--c-line);
+}
+#tempChatModal.modal.small.open > .modal-header {
+    border-top: 1px solid var(--c-line);
+    border-radius: 16px 16px 0 0 !important;
+    padding: 18px 22px 12px !important;
+}
+#tempChatModal.modal.small.open > .modal-body {
+    border-bottom: 1px solid var(--c-line);
+    border-radius: 0 0 16px 16px !important;
+    padding: 8px 22px 22px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+#tempChatModal .temp-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 4px;
+}
+#tempChatModal .temp-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+#tempChatModal .temp-item > svg {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    color: var(--c-text-soft);
+    margin-top: 2px;
+}
+#tempChatModal .temp-item h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-text);
+}
+#tempChatModal .temp-item p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--c-text-soft);
+}
+#tempChatModal .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+#tempChatModal .modal-actions .primary-btn {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 8px;
+    background: var(--accent, #c96442);
+    color: #fff;
+    border: 0;
+    font-weight: 500;
+    cursor: pointer;
+}
+#tempChatModal .modal-actions .primary-btn:hover {
+    opacity: 0.92;
+}
+
+/* §24.3 ─ 移动端模型下拉收纳为底部抽屉（bottom-sheet）
+   原 #modelDropdown 在移动端 inline style 计算出来的 left/top 经常飘到屏幕外，
+   或撑满全屏不带 close。改成 fixed 底部上滑卡片：60vh 高 + 顶部小拖把。 */
+@media (max-width: 640px) {
+    #modelDropdown.show,
+    .model-dropdown.show {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        max-height: 72vh !important;
+        height: 72vh !important;
+        border-radius: 18px 18px 0 0 !important;
+        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.18) !important;
+        animation: claudeBottomSheetIn 220ms cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    /* 顶部加一道短横（视觉的拖把） */
+    #modelDropdown.show::before,
+    .model-dropdown.show::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        margin: 8px auto 4px;
+        border-radius: 2px;
+        background: var(--c-line-strong, #d6d3cc);
+        flex: 0 0 auto;
+    }
+    /* 内容区可滚 */
+    #modelDropdown.show .model-dropdown-content,
+    .model-dropdown.show .model-dropdown-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+@keyframes claudeBottomSheetIn {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+/* §24.4 ─ 移动端设置页内容顶部空白消除
+   截图 1 显示 tabs 下方有 ~400px 空白才到「头像/3」。根因：active section
+   有 min-height 或 .claude-settings-content flex:1 让首个 h2 被挤到中线。
+   显式把 active section 推到内容顶 + h2 顶部 margin 归零。 */
+@media (max-width: 768px) {
+    #claudeSettingsView .claude-settings-content {
+        display: block !important;
+        align-content: flex-start !important;
+    }
+    #claudeSettingsView .claude-snav-target.active {
+        display: block !important;
+        margin-top: 0 !important;
+    }
+    #claudeSettingsView .claude-snav-target.active > .claude-settings-h2:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    /* 头像行的 36×36 圆 + 标签 stack 在窄屏更紧凑 */
+    #claudeSettingsView .claude-form-row:first-child {
+        padding-top: 6px !important;
+    }
+}
+
+/* §24.5 ─ 移动端 hero 邮箱兜底：即使 cancri_chat.js 走到 emailLikeName 分支
+   也保证字号/换行不撑爆 hero（防御层）。 */
+@media (max-width: 640px) {
+    .hero {
+        font-size: clamp(26px, 6.4vw, 34px) !important;
+        line-height: 1.18 !important;
+    }
+    .hero .hero-icon-img {
+        width: 26px !important;
+        height: 26px !important;
+    }
+    .hero .hero-icon {
+        width: 26px !important;
+        height: 26px !important;
+    }
+    /* plan-pill 在 mobile 顶部留 8px，避免遮汉堡 */
+    .claude-plan-pill {
+        top: 8px !important;
+        height: 28px !important;
+        font-size: 12px !important;
+        padding: 0 10px !important;
     }
 }
