@@ -17,8 +17,8 @@
 // ────────── 2026-05-22 限时倍率 5 折促销 ──────────
 // 必须与后端 chat-gateway.ts / api-gateway.ts 的 PROMO_MULTIPLIER_DISCOUNT_*
 // 三个常量完全同步。窗口（UTC+8）：05-22 20:30 → 05-24 00:00。
-const PROMO_START_MS = 1779711000000; // 2026-05-22T12:30:00Z
-const PROMO_END_MS = 1779840000000;   // 2026-05-23T16:00:00Z
+const PROMO_START_MS = 1779453000000; // 2026-05-22T12:30:00Z = 2026-05-22 20:30 UTC+8
+const PROMO_END_MS = 1779552000000;   // 2026-05-23T16:00:00Z = 2026-05-24 00:00 UTC+8
 const PROMO_DISCOUNT = 0.5;
 
 function isPromoActive(now) {
