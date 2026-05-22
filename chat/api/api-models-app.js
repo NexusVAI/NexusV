@@ -84,6 +84,28 @@ function getCostMultiplier(m) {
     return COST_TIER_MULTIPLIER[tier] ?? 1;
 }
 
+// 2026-05-22 限时倍率 5 折促销（与 chat-gateway / api-gateway / pricing-app.js
+// 三个 PROMO_* 常量同窗口）。窗口（UTC+8）：05-22 20:30 → 05-24 00:00。
+const PROMO_START_MS = 1779711000000;
+const PROMO_END_MS = 1779840000000;
+const PROMO_DISCOUNT = 0.5;
+
+function getPromoDiscount() {
+    const now = Date.now();
+    if (now >= PROMO_START_MS && now < PROMO_END_MS) return PROMO_DISCOUNT;
+    return 1;
+}
+
+function isPromoActive() {
+    return getPromoDiscount() < 1;
+}
+
+function fmtMult(n) {
+    if (n === Math.round(n)) return n + "×";
+    // 0.25 / 0.5 / 1.5 / 5 / 15 都能精确表达
+    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
+}
+
 function getDisplayTier(m) {
     // 优先读后端权威字段
     if (m && (m.gateCostTier === "paid" || m.gateCostTier === "free")) {
@@ -365,8 +387,13 @@ function card(m) {
     // 2026-05-18 计费倍率徽章：显示 0.5× / 1× / 3× / 10× / 30×。
     // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=3,
     // expensive=10, vip=30。样式跟 PRO+ 徽章同样位置，但颜色用 amber/clay。
+    // 2026-05-22 限时 5 折促销期间：徽章变红，显示折后倍率，title 标明原价。
     const mult = getCostMultiplier(m);
-    const multiplierBadge = `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
+    const promoActive = isPromoActive();
+    const effMult = mult * getPromoDiscount();
+    const multiplierBadge = promoActive
+        ? `<span class="tier" style="background:rgba(239,68,68,.18);color:#ef4444;font-weight:700" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(effMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(effMult)} <span style="opacity:.65;font-size:10px">(原 ${fmtMult(mult)})</span></span>`
+        : `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
     // 2026-05-18 FREE 不可用提示：GPT-5.5 系列 / gemini-3.1-pro / gpt-5.4-mini
     // 对 FREE 用户硬挡。freeUserBlocked 字段来自 chat-gateway model_public_catalog。
     const freeBlockedBadge = m && m.freeUserBlocked
@@ -575,10 +602,15 @@ function populateDrawer(m) {
     // Badges
     const tier = m._displayTier || getDisplayTier(m);
     const mult = getCostMultiplier(m);
+    const drawerPromoActive = isPromoActive();
+    const drawerEffMult = mult * getPromoDiscount();
     const tierLabel = tier === "paid" ? "PAID" : "FREE";
+    const multBadge = drawerPromoActive
+        ? `<span class="tier" style="background:rgba(239,68,68,.18);color:#ef4444;font-weight:700" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(drawerEffMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(drawerEffMult)} <span style="opacity:.65;font-size:10px">(原 ${fmtMult(mult)})</span></span>`
+        : `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后入桶">${mult}×</span>`;
     const badges = [
         `<span class="tier tier-${tier}">${tierLabel}</span>`,
-        `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后入桶">${mult}×</span>`,
+        multBadge,
     ];
     if (m.costTier === "vip") {
         badges.push(
@@ -605,17 +637,31 @@ function populateDrawer(m) {
 
     // Pricing / multiplier
     const multNumEl = document.getElementById("drawerMultNum");
-    if (multNumEl) multNumEl.textContent = mult + "×";
+    if (multNumEl) {
+        if (drawerPromoActive) {
+            multNumEl.innerHTML =
+                `<span style="color:#ef4444">${fmtMult(drawerEffMult)}</span>` +
+                ` <span style="font-size:.45em;color:var(--text-faint);text-decoration:line-through;font-weight:400">${fmtMult(mult)}</span>`;
+        } else {
+            multNumEl.textContent = mult + "×";
+        }
+    }
     const tierLabelEl = document.getElementById("drawerTierLabel");
     if (tierLabelEl) {
-        tierLabelEl.innerHTML = `<span class="tier tier-${tier}">${tierLabel}</span> · costTier <code>${esc(m.costTier || "normal")}</code>`;
+        const promoTag = drawerPromoActive
+            ? ' · <span style="color:#ef4444;font-weight:700">限时 5 折</span>'
+            : "";
+        tierLabelEl.innerHTML = `<span class="tier tier-${tier}">${tierLabel}</span> · costTier <code>${esc(m.costTier || "normal")}</code>${promoTag}`;
     }
     const explainEl = document.getElementById("drawerPricingExplain");
     if (explainEl) {
         const baseExplain = COST_TIER_EXPLAIN[m.costTier || "normal"] || "";
+        const formula = drawerPromoActive
+            ? `<code>effective_pool_tokens × <s>${mult}</s> ${fmtMult(drawerEffMult)}</code>（5 折促销窗口截止 05-24 00:00 UTC+8）`
+            : `<code>effective_pool_tokens × ${mult}</code>`;
         explainEl.innerHTML =
             esc(baseExplain) +
-            ` 每次成功调用扣减 <code>effective_pool_tokens × ${mult}</code>。`;
+            ` 每次成功调用扣减 ${formula}。`;
     }
 
     // Status placeholder（fetch 完成后会被覆盖）
