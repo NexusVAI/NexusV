@@ -86,8 +86,8 @@ function getCostMultiplier(m) {
 
 // 2026-05-22 限时倍率 5 折促销（与 chat-gateway / api-gateway / pricing-app.js
 // 三个 PROMO_* 常量同窗口）。窗口（UTC+8）：05-22 20:30 → 05-24 00:00。
-const PROMO_START_MS = 1779711000000;
-const PROMO_END_MS = 1779840000000;
+const PROMO_START_MS = 1779453000000; // 2026-05-22T12:30:00Z = 2026-05-22 20:30 UTC+8
+const PROMO_END_MS = 1779552000000;   // 2026-05-23T16:00:00Z = 2026-05-24 00:00 UTC+8
 const PROMO_DISCOUNT = 0.5;
 
 function getPromoDiscount() {
