@@ -20,7 +20,7 @@
             rel="stylesheet"
         />
         <script src="./api/_anti-debug.js"></script>
-        <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-promo-claude" />
+        <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-promo-fix-ts" />
         <script src="./api/api-platform.js?v=20260513"></script>
         <!-- Cancri 双主题 logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -426,6 +426,11 @@
                 align-items: center;
                 gap: 14px;
                 flex-wrap: wrap;
+            }
+            /* display:flex 会盖掉浏览器默认 [hidden] { display: none }，
+               所以显式声明一下，确保窗口外（或 JS 关掉后）真的隐藏。 */
+            .promo-banner[hidden] {
+                display: none !important;
             }
             .promo-banner__icon {
                 color: var(--accent);
@@ -952,6 +957,6 @@
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
-        <script src="./api/pricing-app.js?v=2026-05-22-promo-claude"></script>
+        <script src="./api/pricing-app.js?v=2026-05-22-promo-fix-ts"></script>
     </body>
 </html>
