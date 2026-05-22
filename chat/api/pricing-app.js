@@ -7,7 +7,91 @@
 //     决定真实金额，前端传的 amount 一律忽略（防篡改）
 //   • 当前订阅 badge 渲染 plan_code（PRO / PRO+ / PRO MAX）和月配额进度
 //
+// 2026-05-22 限时倍率 5 折促销：
+//   • 顶部红色横幅 + 倒计时（与 chat-gateway / api-gateway PROMO_* 常量同窗口）
+//   • multiplier-info 卡内 5 个 [data-promo-mult] span 自动渲染折后倍率
+//   • 窗口外横幅 hidden 不显示，折后倍率回退为原倍率
+//
 // 沿用 admin-*-app.js 同款做法：全部 addEventListener，无 inline onclick。
+
+// ────────── 2026-05-22 限时倍率 5 折促销 ──────────
+// 必须与后端 chat-gateway.ts / api-gateway.ts 的 PROMO_MULTIPLIER_DISCOUNT_*
+// 三个常量完全同步。窗口（UTC+8）：05-22 20:30 → 05-24 00:00。
+const PROMO_START_MS = 1779711000000; // 2026-05-22T12:30:00Z
+const PROMO_END_MS = 1779840000000;   // 2026-05-23T16:00:00Z
+const PROMO_DISCOUNT = 0.5;
+
+function isPromoActive(now) {
+    return now >= PROMO_START_MS && now < PROMO_END_MS;
+}
+
+function formatHMS(ms) {
+    if (ms < 0) ms = 0;
+    const total = Math.floor(ms / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const pad = (n) => (n < 10 ? "0" + n : "" + n);
+    return pad(h) + ":" + pad(m) + ":" + pad(s);
+}
+
+function formatMultDisplay(n) {
+    if (n === Math.round(n)) return n + "x";
+    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "x";
+}
+
+function renderPromoMultipliers() {
+    // 把 multiplier-info 卡内所有带 data-promo-mult 的 span，
+    // 改成「<strike>原倍率</strike> 限时 <promo-now>折后</promo-now>」。
+    const nodes = document.querySelectorAll("#multiplier-info [data-promo-mult]");
+    nodes.forEach((node) => {
+        const base = parseFloat(node.getAttribute("data-promo-mult"));
+        if (!Number.isFinite(base) || base <= 0) return;
+        const now = base * PROMO_DISCOUNT;
+        const code = node.querySelector("code");
+        if (!code) return;
+        // 用 textContent 拼出原文 "<原>x"，再覆盖整个 code innerHTML，
+        // 防止重复渲染时叠加多层 strike + now。
+        code.innerHTML =
+            '<span class="promo-strike">' + formatMultDisplay(base) + "</span>" +
+            '<span class="promo-now">限时 ' + formatMultDisplay(now) + "</span>";
+    });
+}
+
+function startPromoBanner() {
+    const banner = document.getElementById("promo-banner");
+    if (!banner) return;
+    const countdown = document.getElementById("promo-countdown");
+    const closeBtn = document.getElementById("promo-banner-close");
+    const tick = () => {
+        const now = Date.now();
+        if (!isPromoActive(now)) {
+            banner.hidden = true;
+            return false;
+        }
+        banner.hidden = false;
+        if (countdown) countdown.textContent = formatHMS(PROMO_END_MS - now);
+        return true;
+    };
+    if (!tick()) return;
+    renderPromoMultipliers();
+    const handle = setInterval(() => {
+        if (!tick()) clearInterval(handle);
+    }, 1000);
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            banner.hidden = true;
+            clearInterval(handle);
+        });
+    }
+}
+
+// 横幅与 supabase 登录无关，DOM 就绪后立即启动。
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startPromoBanner);
+} else {
+    startPromoBanner();
+}
 
 const sb = window.supabase.createClient(
     window.__SUPABASE_URL__,
