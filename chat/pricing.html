@@ -20,7 +20,7 @@
             rel="stylesheet"
         />
         <script src="./api/_anti-debug.js"></script>
-        <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-promo-banner" />
+        <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-promo-claude" />
         <script src="./api/api-platform.js?v=20260513"></script>
         <!-- Cancri 双主题 logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -410,28 +410,26 @@
 
             /* ────────── 2026-05-22 限时倍率 5 折促销横幅 ────────── */
             /* 窗口（UTC+8）：05-22 20:30 → 05-24 00:00。倒计时由
-               pricing-app.js 维护；过期后 #promo-banner 自动 display:none。 */
+               pricing-app.js 维护；过期后 #promo-banner 自动 hidden。
+               2026-05-22 v2：去掉红色辉光 + 脉冲动画，改成 Claude 风克制
+               accent 色 + 1px 边框，与 plan-tier 卡片同视觉语言。 */
             .promo-banner {
                 position: relative;
                 margin: 0 0 20px;
-                padding: 14px 56px 14px 18px;
-                border-radius: 12px;
-                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-                color: #fff;
-                box-shadow: 0 6px 22px rgba(220, 38, 38, 0.32);
-                border: 1px solid rgba(255, 255, 255, 0.18);
+                padding: 12px 48px 12px 16px;
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--text);
+                border: 1px solid var(--border-strong);
+                border-left: 3px solid var(--accent);
                 display: flex;
                 align-items: center;
                 gap: 14px;
                 flex-wrap: wrap;
-                animation: promo-pulse 3.4s ease-in-out infinite;
-            }
-            @keyframes promo-pulse {
-                0%, 100% { box-shadow: 0 6px 22px rgba(220, 38, 38, 0.32); }
-                50%      { box-shadow: 0 6px 28px rgba(220, 38, 38, 0.55); }
             }
             .promo-banner__icon {
-                font-size: 22px;
+                color: var(--accent);
+                font-size: 16px;
                 line-height: 1;
                 flex-shrink: 0;
             }
@@ -442,94 +440,96 @@
             .promo-banner__title {
                 margin: 0;
                 font-family: var(--serif);
-                font-size: 19px;
+                font-size: 16px;
                 font-weight: 600;
-                letter-spacing: 0.01em;
-                line-height: 1.25;
+                color: var(--text);
+                line-height: 1.3;
             }
             .promo-banner__sub {
-                margin: 4px 0 0;
-                font-size: 13px;
-                line-height: 1.5;
-                opacity: 0.92;
+                margin: 2px 0 0;
+                font-size: 12.5px;
+                line-height: 1.55;
+                color: var(--text-mute);
             }
             .promo-banner__sub strong {
-                color: #fff;
-                background: rgba(255, 255, 255, 0.18);
-                padding: 1px 8px;
-                border-radius: 4px;
+                color: var(--accent);
                 font-family: var(--font-mono);
                 font-weight: 600;
+                background: none;
+                padding: 0;
             }
             .promo-banner__countdown {
                 flex: 0 0 auto;
                 display: inline-flex;
                 align-items: center;
                 gap: 8px;
-                font-family: var(--font-mono);
-                font-size: 14px;
-                font-weight: 600;
-                padding: 8px 14px;
-                border-radius: 8px;
-                background: rgba(0, 0, 0, 0.28);
-                border: 1px solid rgba(255, 255, 255, 0.22);
+                padding: 4px 10px;
+                border-radius: 6px;
+                background: var(--bg);
+                border: 1px solid var(--border-mute);
             }
             .promo-banner__countdown small {
                 display: block;
-                font-size: 10px;
+                font-size: 9.5px;
                 font-weight: 500;
                 font-family: var(--font-sans);
-                opacity: 0.75;
-                letter-spacing: 0.05em;
+                color: var(--text-faint);
+                letter-spacing: 0.06em;
                 text-transform: uppercase;
-                margin-bottom: 2px;
+                margin-bottom: 1px;
             }
             .promo-banner__time {
                 font-family: var(--font-mono);
-                font-size: 17px;
+                font-size: 14px;
+                font-weight: 600;
                 font-variant-numeric: tabular-nums;
-                letter-spacing: 0.04em;
+                color: var(--accent);
+                letter-spacing: 0.02em;
             }
             .promo-banner__close {
                 position: absolute;
-                top: 8px;
+                top: 50%;
                 right: 10px;
-                width: 28px;
-                height: 28px;
+                transform: translateY(-50%);
+                width: 24px;
+                height: 24px;
                 border: none;
-                background: rgba(255, 255, 255, 0.12);
-                color: #fff;
-                border-radius: 6px;
+                background: transparent;
+                color: var(--text-mute);
+                border-radius: 4px;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 13px;
                 line-height: 1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: background 0.16s;
+                transition: color 0.15s, background 0.15s;
             }
             .promo-banner__close:hover {
-                background: rgba(255, 255, 255, 0.22);
+                color: var(--text);
+                background: var(--border-mute);
             }
             @media (max-width: 720px) {
-                .promo-banner { padding-right: 18px; }
-                .promo-banner__close { position: static; margin-left: auto; }
+                .promo-banner { padding: 12px 16px; }
+                .promo-banner__close {
+                    position: static;
+                    transform: none;
+                    margin-left: auto;
+                }
                 .promo-banner__countdown { width: 100%; justify-content: center; }
             }
 
-            /* 倍率说明卡：限时折后倍率高亮 */
+            /* 倍率说明卡：限时折后倍率高亮（克制：accent 色，无背景） */
             .multiplier-info .promo-strike {
                 color: var(--text-faint);
                 text-decoration: line-through;
                 margin-right: 4px;
+                opacity: 0.7;
             }
             .multiplier-info .promo-now {
-                color: #ef4444;
-                font-weight: 700;
+                color: var(--accent);
+                font-weight: 600;
                 font-family: var(--font-mono);
-                background: rgba(239, 68, 68, 0.12);
-                padding: 1px 6px;
-                border-radius: 4px;
                 font-size: 12px;
             }
         </style>
@@ -599,7 +599,7 @@
         <main class="page-shell">
             <!-- 2026-05-22 限时倍率 5 折促销横幅。窗口（UTC+8）：
                  05-22 20:30 → 05-24 00:00。pricing-app.js 在窗口外把整个
-                 banner 隐藏，过期则不再渲染倒计时；用户也能手动 × 关闭。 -->
+                 banner 隐藏；用户也能手动 × 关闭（仅本会话）。 -->
             <div
                 class="promo-banner"
                 id="promo-banner"
@@ -607,11 +607,10 @@
                 aria-live="polite"
                 hidden
             >
-                <span class="promo-banner__icon" aria-hidden="true">🔥</span>
                 <div class="promo-banner__body">
-                    <p class="promo-banner__title">限时倍率 5 折 · 今晚冲订阅</p>
+                    <p class="promo-banner__title">限时倍率 5 折</p>
                     <p class="promo-banner__sub">
-                        所有付费模型 token 倍率 <strong>× 0.5</strong>，订阅配额翻倍耐用 · 加油包同样享折扣 · 仅限本窗口内调用计入折扣。
+                        所有付费模型 token 倍率 <strong>× 0.5</strong> · 订阅配额翻倍耐用 · 加油包同样享折扣。
                     </p>
                 </div>
                 <div class="promo-banner__countdown" aria-live="off">
@@ -953,6 +952,6 @@
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
-        <script src="./api/pricing-app.js?v=2026-05-22-promo-banner"></script>
+        <script src="./api/pricing-app.js?v=2026-05-22-promo-claude"></script>
     </body>
 </html>
