@@ -392,7 +392,7 @@ function card(m) {
     const promoActive = isPromoActive();
     const effMult = mult * getPromoDiscount();
     const multiplierBadge = promoActive
-        ? `<span class="tier" style="background:rgba(239,68,68,.18);color:#ef4444;font-weight:700" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(effMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(effMult)} <span style="opacity:.65;font-size:10px">(原 ${fmtMult(mult)})</span></span>`
+        ? `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d;font-weight:600" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(effMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(effMult)} <span style="opacity:.55;font-size:10px;text-decoration:line-through">${fmtMult(mult)}</span></span>`
         : `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
     // 2026-05-18 FREE 不可用提示：GPT-5.5 系列 / gemini-3.1-pro / gpt-5.4-mini
     // 对 FREE 用户硬挡。freeUserBlocked 字段来自 chat-gateway model_public_catalog。
@@ -606,7 +606,7 @@ function populateDrawer(m) {
     const drawerEffMult = mult * getPromoDiscount();
     const tierLabel = tier === "paid" ? "PAID" : "FREE";
     const multBadge = drawerPromoActive
-        ? `<span class="tier" style="background:rgba(239,68,68,.18);color:#ef4444;font-weight:700" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(drawerEffMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(drawerEffMult)} <span style="opacity:.65;font-size:10px">(原 ${fmtMult(mult)})</span></span>`
+        ? `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d;font-weight:600" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(drawerEffMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(drawerEffMult)} <span style="opacity:.55;font-size:10px;text-decoration:line-through">${fmtMult(mult)}</span></span>`
         : `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后入桶">${mult}×</span>`;
     const badges = [
         `<span class="tier tier-${tier}">${tierLabel}</span>`,
@@ -640,7 +640,7 @@ function populateDrawer(m) {
     if (multNumEl) {
         if (drawerPromoActive) {
             multNumEl.innerHTML =
-                `<span style="color:#ef4444">${fmtMult(drawerEffMult)}</span>` +
+                `<span style="color:var(--accent)">${fmtMult(drawerEffMult)}</span>` +
                 ` <span style="font-size:.45em;color:var(--text-faint);text-decoration:line-through;font-weight:400">${fmtMult(mult)}</span>`;
         } else {
             multNumEl.textContent = mult + "×";
@@ -649,7 +649,7 @@ function populateDrawer(m) {
     const tierLabelEl = document.getElementById("drawerTierLabel");
     if (tierLabelEl) {
         const promoTag = drawerPromoActive
-            ? ' · <span style="color:#ef4444;font-weight:700">限时 5 折</span>'
+            ? ' · <span style="color:var(--accent);font-weight:600">限时 5 折</span>'
             : "";
         tierLabelEl.innerHTML = `<span class="tier tier-${tier}">${tierLabel}</span> · costTier <code>${esc(m.costTier || "normal")}</code>${promoTag}`;
     }
