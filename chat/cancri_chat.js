@@ -1467,7 +1467,17 @@ const PAID_GATE_IDS = new Set([
   "deepseek-v4-pro",
   "qwen3.7-max",
   "qwen3.7-max-2026-05-20",
-  "qwen3.6-max-preview",
+  // 2026-05-23 批次：10 个百炼 PAID 模型（pro 用户专属）
+  "qwen3.5-omni-plus-2026-03-15",
+  "qwen3-coder-480b-a35b-instruct",
+  "qwen-plus-2025-12-01",
+  "qwen3-max-2025-09-23",
+  "qwen-flash-2025-07-28",
+  "qwen3.5-122b-a10b",
+  "qwen3-235b-a22b-instruct-2507",
+  "qwen3.5-flash",
+  "qwen3-coder-flash",
+  "qwen3-coder-plus-2025-09-23",
   "minimax-m2.7",
   "kimi-k2.6",
   "gpt-image-2-all",
@@ -2003,10 +2013,17 @@ function on(id, event, handler) {
 
 // 历史 localStorage 里残留的旧 ID → 当前默认模型。这里只列**目录已不再注册**的
 // ID；catalog 仍存在的 ID 绝对不要写在这里，否则会把老用户的有效选择重置掉。
-// 2026-05-13 审查：移除 claude-opus-4-5 / claude-haiku-4-5-20251001 / gpt-5.4 /
-// gpt-5.3-codex / glm-4.7 / qwen3.6-plus-2026-04-02 / qwen3.6-max-preview，
-// 这 7 个 ID 仍在 MODEL_CATALOG 中。
+// 2026-05-23：阿里云百炼 8 个免费额度耗尽 / 已下线的模型 ID 加入迁移表，避免老
+// 用户 localStorage 选中这些 ID 后 chat 直接报 invalid_model。
 const MODEL_SELECTION_MIGRATIONS = {
+  "deepseek-v3.2": DEFAULT_MODEL_ID,
+  "deepseek-v3.2-exp": DEFAULT_MODEL_ID,
+  "qwen3.6-flash": DEFAULT_MODEL_ID,
+  "qwen3.6-flash-2026-04-16": DEFAULT_MODEL_ID,
+  "qwen3.6-max-preview": DEFAULT_MODEL_ID,
+  "qwen3.6-plus-2026-04-02": DEFAULT_MODEL_ID,
+  "kimi-k2.5": DEFAULT_MODEL_ID,
+  "glm-4.6": DEFAULT_MODEL_ID,
   "deepseek-v4-flash-alt": DEFAULT_MODEL_ID,
   "kimi-k2.6-futureppo": DEFAULT_MODEL_ID,
   "deepseek-v4-pro-futureppo": DEFAULT_MODEL_ID,
@@ -2125,39 +2142,56 @@ const MODEL_CATALOG = [
   {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "deepseek-v3.2-exp", "name": "DeepSeek V3.2 Exp", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "deepseek-r1-0528", "name": "DeepSeek R1 0528", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "deepseek-r1", "name": "DeepSeek R1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "deepseek-v3.1", "name": "DeepSeek V3.1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "deepseek-v3.2", "name": "DeepSeek V3.2", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3.7-max", "name": "Qwen 3.7 Max", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "qwen3.7-max-2026-05-20", "name": "Qwen 3.7 Max (0520)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-  {"id": "qwen3.6-flash", "name": "Qwen 3.6 Flash", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen3.5-flash-2026-02-23", "name": "Qwen 3.5 Flash (0223)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen3.5-plus-2026-04-20", "name": "Qwen 3.5 Plus (0420)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3.5-plus-2026-02-15", "name": "Qwen 3.5 Plus (0215)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen3.6-max-preview", "name": "Qwen 3.6 Max Preview", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "qwen3.5-397b-a17b", "name": "Qwen 3.5 397B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-  {"id": "qwen3.6-plus-2026-04-02", "name": "Qwen 3.6 Plus (0402)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3.5-plus", "name": "Qwen 3.5 Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "qwen3.6-flash-2026-04-16", "name": "Qwen 3.6 Flash (0416)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen-max", "name": "Qwen Max", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-max-preview", "name": "Qwen 3 Max Preview", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "MiniMax-M2.1", "name": "MiniMax M2.1", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-max", "name": "Qwen 3 Max", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen-vl-max", "name": "Qwen VL Max", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "kimi-k2.5", "name": "Kimi K2.5", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "kimi-k2-thinking", "name": "Kimi K2 Thinking", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "Moonshot-Kimi-K2-Instruct", "name": "Moonshot Kimi K2 Instruct", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "glm-4.5-air", "name": "GLM 4.5 Air", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "glm-4.5", "name": "GLM 4.5", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "glm-4.6", "name": "GLM 4.6", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-coder-plus-2025-07-22", "name": "Qwen3 Coder Plus (0722)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-coder-next", "name": "Qwen3 Coder Next", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen-coder-plus", "name": "Qwen Coder Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen-coder-turbo", "name": "Qwen Coder Turbo", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "qwen3-coder-flash-2025-07-28", "name": "Qwen3 Coder Flash (0728)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "qwen3.6-35b-a3b", "name": "Qwen 3.6 35B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  // ─── 2026-05-23 批次：23 个百炼新模型（10 PAID + 13 FREE）──────────────
+  // qwen3.5-omni-plus 是全模态（文+图+视频+音频），站内开了视频上传按钮。
+  {"id": "qwen3.5-omni-plus-2026-03-15", "name": "Qwen3.5 Omni Plus（视频/音频/图像）", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3-coder-480b-a35b-instruct", "name": "Qwen3 Coder 480B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3.5-35b-a3b", "name": "Qwen 3.5 35B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-32b", "name": "Qwen3 32B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3.5-27b", "name": "Qwen 3.5 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-8b", "name": "Qwen3 8B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "deepseek-r1-distill-qwen-32b", "name": "DeepSeek R1 Distill Qwen 32B", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen-math-plus-0919", "name": "Qwen Math Plus (0919)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "qwen-plus-2025-12-01", "name": "Qwen Plus (2025-12-01)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3-max-2025-09-23", "name": "Qwen3 Max (2025-09-23)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen-vl-plus", "name": "Qwen VL Plus", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "qwen-flash-2025-07-28", "name": "Qwen Flash (2025-07-28)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3.5-122b-a10b", "name": "Qwen 3.5 122B A10B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+  {"id": "qwen3-235b-a22b-instruct-2507", "name": "Qwen3 235B A22B (2507)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3.5-flash", "name": "Qwen 3.5 Flash", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-vl-8b-thinking", "name": "Qwen3 VL 8B Thinking", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-30b-a3b", "name": "Qwen3 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-vl-8b-instruct", "name": "Qwen3 VL 8B Instruct", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-next-80b-a3b-instruct", "name": "Qwen3 Next 80B Instruct", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3-coder-flash", "name": "Qwen3 Coder Flash", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-coder-plus-2025-09-23", "name": "Qwen3 Coder Plus (2025-09-23)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "qwen3.6-27b", "name": "Qwen 3.6 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+  {"id": "qwen3-next-80b-a3b-thinking", "name": "Qwen3 Next 80B Thinking", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "sensenova-6.7-flash-lite", "name": "SenseNova 6.7 Flash Lite", "brand": "SenseNova", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "glm-4.7", "name": "GLM 4.7", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -3001,6 +3035,13 @@ function isReferenceVideoModel(modelId) {
   return modelId === "happyhorse-1.0-r2v";
 }
 
+// 2026-05-23：百炼 Qwen Omni 系列支持 chat-completions 风格的视频输入
+// （content 块 {type:"video_url", video_url:{url}}）。目前只有 qwen3.5-omni-plus
+// 注册到了站内；未来上 qwen3-omni-flash / qwen3.5-omni-flash 时也在这里加。
+function isOmniVideoModel(modelId) {
+  return modelId === "qwen3.5-omni-plus-2026-03-15";
+}
+
 function getAttachmentLimitForModel(modelId = currentModel) {
   if (isReferenceVideoModel(modelId)) return 9;
   if (isVideoEditModel(modelId)) return 6;
@@ -3010,6 +3051,7 @@ function getAttachmentLimitForModel(modelId = currentModel) {
 function getAttachmentAcceptForModel(modelId = currentModel) {
   if (isVideoEditModel(modelId)) return "image/*,video/*";
   if (isReferenceVideoModel(modelId)) return "image/*";
+  if (isOmniVideoModel(modelId)) return "image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
   return "image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
 }
 
@@ -3059,7 +3101,7 @@ async function filesToAttachments(files) {
       maxCount,
       maxSize: MAX_ATTACHMENT_SIZE,
       allowText: !currentMeta.videoOnly,
-      allowVideo: isVideoEditModel(currentModel),
+      allowVideo: isVideoEditModel(currentModel) || isOmniVideoModel(currentModel),
       onWarning: showToast,
     });
   }
@@ -3085,7 +3127,7 @@ async function filesToAttachments(files) {
     const isVideo = file.type.startsWith("video/");
     const isTextFile = file.name.match(/\.(pdf|txt|doc|docx|md|json|csv)$/i);
 
-    if (!isImage && !(isVideoEditModel(currentModel) && isVideo) && !(isTextFile && !currentMeta.videoOnly)) {
+    if (!isImage && !((isVideoEditModel(currentModel) || isOmniVideoModel(currentModel)) && isVideo) && !(isTextFile && !currentMeta.videoOnly)) {
       showToast(`已忽略不支持的文件：${file.name}`);
       continue;
     }
@@ -3239,15 +3281,17 @@ function extractUserMessageParts(content) {
   };
 }
 
-function attachmentToUserContent(query, attachments) {
+function attachmentToUserContent(query, attachments, options = {}) {
+  const omniVideo = options?.omniVideo === true || isOmniVideoModel(currentModel);
   const attachmentService = window.NexusWorkbench?.fileAttachments;
   if (attachmentService?.attachmentToUserContent) {
-    return attachmentService.attachmentToUserContent(query, attachments);
+    return attachmentService.attachmentToUserContent(query, attachments, { omniVideo });
   }
 
   const textPart = String(query || "").trim();
   const content = [];
   const hasImageAttachment = attachments.some((item) => !item?.isTextFile && !item?.isVideo);
+  const hasVideoAttachment = omniVideo && attachments.some((item) => item?.isVideo);
 
   attachments.forEach((item) => {
     // 处理文本文件：将文件内容注入到对话中
@@ -3256,7 +3300,17 @@ function attachmentToUserContent(query, attachments) {
       content.push({ type: "text", text: fileIntro });
       return;
     }
-    if (item?.isVideo) return;
+    if (item?.isVideo) {
+      if (!omniVideo) return;
+      const vurl = item?.url || item?.dataUrl;
+      if (!isRenderableAttachmentUrl(vurl)) return;
+      // 百炼 Omni 多模态文档：{type:"video_url", video_url:{url}}
+      content.push({
+        type: "video_url",
+        video_url: { url: vurl },
+      });
+      return;
+    }
 
     // 处理图片文件
     const url = item?.dataUrl || item?.url;
@@ -3269,6 +3323,11 @@ function attachmentToUserContent(query, attachments) {
 
   if (textPart) {
     content.push({ type: "text", text: textPart });
+  } else if (hasVideoAttachment) {
+    content.push({
+      type: "text",
+      text: "请先仔细观看我上传的视频，再结合问题回答。",
+    });
   } else if (hasImageAttachment) {
     content.push({
       type: "text",
