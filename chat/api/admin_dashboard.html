@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <!-- 2026-05-23 新建：管理员仪表盘 - 大盘 + 圆环 + 折线 + Top10 单页。
+         CSP 严格：无 inline script，纯 inline SVG 渲染图表（不引 Chart.js）。 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>管理员 · 仪表盘 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+    <script src="./_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api-platform.css?v=2026-05-22-docs-single-page" />
+    <style>
+      /* 大盘 grid */
+      .dash-grid {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .dash-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .dash-card {
+        padding: 14px 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        position: relative;
+      }
+      .dash-card__label {
+        font-size: 11.5px;
+        color: var(--text-mute);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+      .dash-card__value {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+      }
+      .dash-card__sub {
+        font-size: 11px;
+        color: var(--text-faint);
+        margin-top: 4px;
+      }
+      .dash-card.accent .dash-card__value { color: var(--accent); }
+      .dash-card.success .dash-card__value { color: var(--ok); }
+      .dash-card.warn .dash-card__value { color: #f59e0b; }
+      .dash-card.danger .dash-card__value { color: var(--err); }
+
+      .dash-two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .dash-three-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+      .dash-panel {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .dash-panel h3 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        color: var(--text-soft);
+        font-weight: 600;
+      }
+      .dash-panel__hint {
+        font-size: 11px;
+        color: var(--text-faint);
+        margin-bottom: 8px;
+      }
+
+      /* 订阅圆环 */
+      .donut-wrap {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .donut-svg {
+        width: 140px;
+        height: 140px;
+        flex-shrink: 0;
+      }
+      .donut-center {
+        font-size: 22px;
+        font-weight: 700;
+        fill: var(--text);
+      }
+      .donut-center-sub {
+        font-size: 10px;
+        fill: var(--text-mute);
+      }
+      .donut-legend {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .donut-legend__item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .donut-legend__dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .donut-legend__name {
+        flex: 1;
+        color: var(--text);
+      }
+      .donut-legend__val {
+        color: var(--text-mute);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* 模型 Top 10 横向条形 */
+      .topbar-row { margin-bottom: 7px; }
+      .topbar-row__top {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11.5px;
+        margin-bottom: 2px;
+      }
+      .topbar-row__name {
+        font-family: ui-monospace, "SF Mono", monospace;
+        color: var(--text);
+      }
+      .topbar-row__stat { color: var(--text-mute); }
+      .topbar-row__track {
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .topbar-row__fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), #a855f7);
+      }
+
+      /* 7d 折线图 */
+      .trend-svg {
+        width: 100%;
+        height: 180px;
+        display: block;
+      }
+      .trend-axis {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--text-faint);
+        margin-top: 4px;
+      }
+
+      .dash-nav-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .dash-nav-card {
+        text-decoration: none;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        color: var(--text);
+        transition: transform 0.15s, border-color 0.15s;
+      }
+      .dash-nav-card:hover {
+        transform: translateY(-1px);
+        border-color: var(--accent);
+      }
+      .dash-nav-card__title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .dash-nav-card__desc {
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .dash-nav-card__badge {
+        display: inline-block;
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 8px;
+        margin-left: 6px;
+        background: var(--err);
+        color: white;
+        font-weight: 700;
+      }
+
+      @media (max-width: 900px) {
+        .dash-two-col, .dash-three-col { grid-template-columns: 1fr; }
+        .donut-wrap { flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="./admin_dashboard.html" class="active">仪表盘</a>
+        <a href="./admin_users.html">用户</a>
+        <a href="./admin_orders.html">订单</a>
+        <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
+        <a href="./admin.html">API 申请</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号。</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>这个页面仅站点管理员可见。</p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>仪表盘</h1>
+          <p>站点运营关键指标 · 每 30 秒自动刷新 · <span id="last-updated" style="color:var(--text-faint)">—</span></p>
+        </header>
+
+        <!-- 顶部 8 张数据卡 -->
+        <div class="dash-cards" id="dash-cards">
+          <div class="dash-card accent">
+            <div class="dash-card__label">用户总数</div>
+            <div class="dash-card__value" id="m-users-total">—</div>
+            <div class="dash-card__sub" id="m-users-sub">含匿名 —</div>
+          </div>
+          <div class="dash-card success">
+            <div class="dash-card__label">今日活跃</div>
+            <div class="dash-card__value" id="m-active-today">—</div>
+            <div class="dash-card__sub">UTC+8 自然日</div>
+          </div>
+          <div class="dash-card accent">
+            <div class="dash-card__label">24h 调用</div>
+            <div class="dash-card__value" id="m-calls-24h">—</div>
+            <div class="dash-card__sub" id="m-calls-users">— 个独立用户</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card__label">24h Tokens</div>
+            <div class="dash-card__value" id="m-tokens-24h">—</div>
+            <div class="dash-card__sub" id="m-tokens-sub">↓— ↑—</div>
+          </div>
+          <div class="dash-card danger">
+            <div class="dash-card__label">错误请求 24h</div>
+            <div class="dash-card__value" id="m-err-24h">—</div>
+            <div class="dash-card__sub" id="m-err-rate">—%</div>
+          </div>
+          <div class="dash-card warn">
+            <div class="dash-card__label">待审订单</div>
+            <div class="dash-card__value" id="m-orders-pending">—</div>
+            <div class="dash-card__sub" id="m-orders-24h">24h 通过 —</div>
+          </div>
+          <div class="dash-card warn">
+            <div class="dash-card__label">待审 API 申请</div>
+            <div class="dash-card__value" id="m-apps-pending">—</div>
+            <div class="dash-card__sub" id="m-apps-total">历史共 —</div>
+          </div>
+          <div class="dash-card danger">
+            <div class="dash-card__label">活跃封禁</div>
+            <div class="dash-card__value" id="m-bans-active">—</div>
+            <div class="dash-card__sub" id="m-bans-total">历史共 —</div>
+          </div>
+        </div>
+
+        <!-- 第二行：订阅圆环 + 模型 Top10 -->
+        <div class="dash-two-col" style="margin-bottom: 12px;">
+          <div class="dash-panel">
+            <h3>📊 订阅分布</h3>
+            <div class="dash-panel__hint" id="sub-hint">活跃付费订阅 — 个</div>
+            <div class="donut-wrap">
+              <svg class="donut-svg" id="sub-donut" viewBox="0 0 140 140" aria-hidden="true"></svg>
+              <div class="donut-legend" id="sub-legend"></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <h3>🔥 模型 Top 10 · 24h</h3>
+            <div class="dash-panel__hint">按调用次数排序</div>
+            <div id="top-models"></div>
+          </div>
+        </div>
+
+        <!-- 第三行：7 天调用趋势折线 -->
+        <div class="dash-panel" style="margin-bottom: 12px;">
+          <h3>📈 7 天调用趋势 (UTC+8)</h3>
+          <div class="dash-panel__hint">蓝线 = 调用次数 · 紫线 = tokens (右轴)</div>
+          <svg class="trend-svg" id="trend-svg" viewBox="0 0 800 180" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div class="trend-axis" id="trend-axis"></div>
+        </div>
+
+        <!-- 快捷导航 -->
+        <div class="dash-panel">
+          <h3>🧭 快捷操作</h3>
+          <div class="dash-nav-row">
+            <a class="dash-nav-card" href="./admin_users.html">
+              <div class="dash-nav-card__title">用户管理</div>
+              <div class="dash-nav-card__desc">搜索 · 封禁 · 增减 PRO · 调用日志</div>
+            </a>
+            <a class="dash-nav-card" href="./admin_orders.html">
+              <div class="dash-nav-card__title">订单审核 <span class="dash-nav-card__badge" id="nav-orders-badge" style="display:none">0</span></div>
+              <div class="dash-nav-card__desc">支付订单 · 邮箱赠码</div>
+            </a>
+            <a class="dash-nav-card" href="./admin.html">
+              <div class="dash-nav-card__title">API 申请 <span class="dash-nav-card__badge" id="nav-apps-badge" style="display:none">0</span></div>
+              <div class="dash-nav-card__desc">通过 / 拒绝申请</div>
+            </a>
+            <a class="dash-nav-card" href="./admin_usage.html">
+              <div class="dash-nav-card__title">调用日志</div>
+              <div class="dash-nav-card__desc">全站 API 调用追踪</div>
+            </a>
+            <a class="dash-nav-card" href="./admin_lines.html">
+              <div class="dash-nav-card__title">线路管理</div>
+              <div class="dash-nav-card__desc">禁用 / 启用模型线路</div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
+    <script src="./admin-dashboard-app.js?v=2026-05-23-v1"></script>
+  </body>
+</html>

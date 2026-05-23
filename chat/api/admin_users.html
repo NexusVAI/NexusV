@@ -234,15 +234,12 @@
   <body>
     <div class="container">
       <nav class="nav">
-        <a href="../api_apply.html">申请 API</a>
-        <a href="../api_keys.html">我的 Keys</a>
-        <a href="../api_models.html">模型广场</a>
-        <a href="../api_docs.html">文档</a>
-        <a href="./admin.html">审核</a>
+        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin_users.html" class="active">用户</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_usage.html">调用日志</a>
         <a href="./admin_lines.html">线路</a>
-        <a href="./admin_users.html" class="active">用户</a>
+        <a href="./admin.html">API 申请</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../" style="color: var(--text-faint)"
@@ -398,13 +395,99 @@
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup10">加 10M tokens</button>
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup50">加 50M tokens</button>
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup100">加 100M tokens</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopupMinus10">-10M tokens</button>
                 <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-                  <span style="font-size: 11.5px; color: var(--text-mute);">自定义 (Tokens):</span>
+                  <span style="font-size: 11.5px; color: var(--text-mute);">自定义 (Tokens，可负):</span>
                   <input type="number" id="customTopupInput" placeholder="例如：20000000" style="width: 140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
                   <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomTopup">执行</button>
                 </div>
               </div>
             </div>
+
+            <!-- 2026-05-23：新增"精细调整 PRO 天数"区块（支持 +/-N 天 + 转档） -->
+            <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">4. 精细调整 PRO 天数 (Fine-tune Subscription Days)</h4>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; margin-bottom: 8px;">
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays7">+7 天</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays15">+15 天</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays7">-7 天</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays15">-15 天</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.15);" id="btnReduceDays30">-30 天</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%;">
+                <span style="font-size: 11.5px; color: var(--text-mute);">自定义天数（-365 到 +365，非零）:</span>
+                <input type="number" id="customDaysInput" placeholder="例如：30 或 -7" style="width: 100px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
+                <span style="font-size: 11.5px; color: var(--text-mute);">档位:</span>
+                <select id="customDaysPlan" style="padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+                  <option value="">保持当前</option>
+                  <option value="pro">Pro</option>
+                  <option value="pro_plus">Pro+</option>
+                  <option value="pro_max">Pro Max</option>
+                </select>
+                <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomDays">执行</button>
+              </div>
+              <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
+                提示：正数加天、负数减天；减天减到 ≤ 当前时间会直接删订阅回到 FREE。90 天 horizon 上限仍生效（加天超过 NOW+90d 不允许）。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2026-05-23：单用户调用日志 + 聚合面板（选定用户后下方展开） -->
+        <div class="panel" id="usagePanel" style="display: none; border-color: rgba(168, 85, 247, 0.4);">
+          <div class="panel-head" style="background: rgba(168, 85, 247, 0.05); border-bottom: 1px solid rgba(168, 85, 247, 0.15);">
+            📊 调用日志与统计
+            <span class="hint" id="usagePanelUserEmail" style="color: #a855f7; font-weight: 600;">已选择用户</span>
+            <span class="spacer" style="flex: 1"></span>
+            <select id="usageWindowSelect" style="padding: 4px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+              <option value="86400000">最近 1 天</option>
+              <option value="604800000" selected>最近 7 天</option>
+              <option value="2592000000">最近 30 天</option>
+              <option value="7776000000">最近 90 天</option>
+            </select>
+            <button class="reload-btn" id="usageReloadBtn">↻ 刷新</button>
+          </div>
+          <div class="panel-body">
+            <div class="stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px;">
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">总调用数</div>
+                <div class="value" id="usage-total-calls" style="font-size: 18px; font-weight: 700; color: var(--accent); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">输入 tokens</div>
+                <div class="value" id="usage-total-in" style="font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">输出 tokens</div>
+                <div class="value" id="usage-total-out" style="font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">错误请求</div>
+                <div class="value" id="usage-errors" style="font-size: 18px; font-weight: 700; color: var(--err); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">用过模型</div>
+                <div class="value" id="usage-uniq-models" style="font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
+              </div>
+              <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">用过 IP</div>
+                <div class="value" id="usage-uniq-ips" style="font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div style="background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                <h4 style="font-size: 12.5px; font-weight: 600; margin: 0 0 8px; color: var(--text-soft);">按模型 Top 10</h4>
+                <div id="usage-by-model" style="font-size: 12px;"></div>
+              </div>
+              <div style="background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                <h4 style="font-size: 12.5px; font-weight: 600; margin: 0 0 8px; color: var(--text-soft);">按天 (UTC+8)</h4>
+                <div id="usage-by-day" style="font-size: 12px;"></div>
+              </div>
+            </div>
+
+            <h4 style="font-size: 12.5px; font-weight: 600; margin: 6px 0 8px; color: var(--text-soft);">最近调用明细 (最多 200 条)</h4>
+            <div id="usage-detail" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elev); font-size: 12px;"></div>
           </div>
         </div>
 
@@ -431,6 +514,6 @@
       crossorigin="anonymous"
     ></script>
     <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-users-app.js。 -->
-    <script src="./admin-users-app.js?v=2026-05-20-quota-panel"></script>
+    <script src="./admin-users-app.js?v=2026-05-23-days-usage"></script>
   </body>
 </html>

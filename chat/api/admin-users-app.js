@@ -329,6 +329,10 @@ async function loadUserQuota(userId, email) {
 
   $("quotaPanel").style.display = "block";
   $("quotaPanelUserEmail").textContent = selectedQuotaUserEmail;
+  // 2026-05-23：选中用户后顺带加载调用日志面板
+  $("usagePanel").style.display = "block";
+  $("usagePanelUserEmail").textContent = selectedQuotaUserEmail;
+  loadUserUsage(userId);
 
   $("quota-plan").textContent = "加载中…";
   $("quota-monthly").textContent = "加载中…";
@@ -432,6 +436,7 @@ $("btnResetConsumption").addEventListener("click", () => resetConsumption(select
 $("btnTopup10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 10000000));
 $("btnTopup50").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 50000000));
 $("btnTopup100").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 100000000));
+$("btnTopupMinus10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, -10000000));
 $("btnCustomTopup").addEventListener("click", () => {
   const val = parseInt($("customTopupInput").value, 10);
   if (isNaN(val) || val === 0) {
@@ -440,6 +445,165 @@ $("btnCustomTopup").addEventListener("click", () => {
   }
   adjustTopup(selectedQuotaUserId, val);
   $("customTopupInput").value = "";
+});
+
+// ─── 2026-05-23：精细调整 PRO 天数（增/减/转档） ───
+async function adjustSubscriptionDays(userId, days, planCode) {
+  if (!userId) {
+    showToast("请先在搜索结果中选择用户", "err");
+    return;
+  }
+  const action = days > 0 ? `增加 ${days}` : `减少 ${Math.abs(days)}`;
+  const planLabel = planCode ? `（同时设为 ${planCode.toUpperCase().replace("_", " ")}）` : "";
+  if (!confirm(`确认对用户 ${selectedQuotaUserEmail} ${action} 天 PRO 订阅${planLabel}？`)) return;
+  const session = await getSession();
+  const payload = { endpoint: "admin_adjust_subscription_days", user_id: userId, days };
+  if (planCode) payload.plan_code = planCode;
+  const r = await callGW(payload, session);
+  if (r.ok) {
+    const data = r.data || {};
+    if (data.action === "expired") {
+      showToast("订阅已减到过期，用户已回到 FREE。", "ok");
+    } else {
+      showToast(`订阅调整成功！(${data.action} ${data.days_applied} 天，到期 ${data.expires_at ? new Date(data.expires_at).toLocaleDateString("zh-CN") : "—"})`, "ok");
+    }
+    await loadUserQuota(userId, selectedQuotaUserEmail);
+  } else {
+    showToast("调整失败：" + (r.data?.message || r.status), "err");
+  }
+}
+
+$("btnAddDays7").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, 7, ""));
+$("btnAddDays15").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, 15, ""));
+$("btnReduceDays7").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, -7, ""));
+$("btnReduceDays15").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, -15, ""));
+$("btnReduceDays30").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, -30, ""));
+$("btnCustomDays").addEventListener("click", () => {
+  const val = parseInt($("customDaysInput").value, 10);
+  if (isNaN(val) || val === 0 || val < -365 || val > 365) {
+    showToast("天数必须是 -365 到 +365 之间的非零整数！", "err");
+    return;
+  }
+  const planCode = $("customDaysPlan").value;
+  adjustSubscriptionDays(selectedQuotaUserId, val, planCode);
+  $("customDaysInput").value = "";
+});
+
+// ─── 2026-05-23：单用户调用日志 + 聚合 ───
+const fmtN = (n) => (n == null ? "—" : Number(n).toLocaleString("en-US"));
+const fmtTime = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString("zh-CN", { hour12: false });
+};
+
+async function loadUserUsage(userId) {
+  if (!userId) return;
+  const sinceMs = Number($("usageWindowSelect").value) || 7 * 86400_000;
+  $("usage-total-calls").textContent = "…";
+  $("usage-total-in").textContent = "…";
+  $("usage-total-out").textContent = "…";
+  $("usage-errors").textContent = "…";
+  $("usage-uniq-models").textContent = "…";
+  $("usage-uniq-ips").textContent = "…";
+  $("usage-by-model").innerHTML = '<div style="color:var(--text-mute);padding:6px;">加载中…</div>';
+  $("usage-by-day").innerHTML = '<div style="color:var(--text-mute);padding:6px;">加载中…</div>';
+  $("usage-detail").innerHTML = '<div style="color:var(--text-mute);padding:14px;text-align:center;">加载中…</div>';
+
+  const session = await getSession();
+  const r = await callGW({ endpoint: "admin_get_user_usage", user_id: userId, since_ms: sinceMs, limit: 200 }, session);
+  if (!r.ok) {
+    showToast("获取调用日志失败：" + (r.data?.message || r.status), "err");
+    $("usage-by-model").innerHTML = '<div style="color:var(--err);padding:6px;">加载失败</div>';
+    $("usage-by-day").innerHTML = '<div style="color:var(--err);padding:6px;">加载失败</div>';
+    $("usage-detail").innerHTML = '<div style="color:var(--err);padding:14px;text-align:center;">加载失败</div>';
+    return;
+  }
+  const data = r.data || {};
+  const stats = data.stats || {};
+  $("usage-total-calls").textContent = fmtN(stats.total_calls);
+  $("usage-total-in").textContent = fmtN(stats.total_tokens_in);
+  $("usage-total-out").textContent = fmtN(stats.total_tokens_out);
+  $("usage-errors").textContent = fmtN(stats.error_calls);
+  $("usage-uniq-models").textContent = fmtN(stats.unique_models);
+  $("usage-uniq-ips").textContent = fmtN(stats.unique_ips);
+
+  // by_model top 10：横向条形图（百分比 width）
+  const byModel = Array.isArray(data.by_model) ? data.by_model.slice(0, 10) : [];
+  const maxModelCount = byModel.reduce((m, r) => Math.max(m, r.count), 0) || 1;
+  if (byModel.length === 0) {
+    $("usage-by-model").innerHTML = '<div style="color:var(--text-mute);padding:6px;">无数据</div>';
+  } else {
+    $("usage-by-model").innerHTML = byModel.map((m) => {
+      const pct = Math.round((m.count / maxModelCount) * 100);
+      return `<div style="margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:2px;">
+          <span style="color:var(--text);font-family:ui-monospace,monospace;">${esc(m.model)}</span>
+          <span style="color:var(--text-mute);">${fmtN(m.count)} 次 · ↓${fmtN(m.tokens_in)} ↑${fmtN(m.tokens_out)}${m.error_calls > 0 ? ` · <span style="color:var(--err);">${m.error_calls} 错</span>` : ""}</span>
+        </div>
+        <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),#a855f7);"></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // by_day：每天一行迷你柱状图
+  const byDay = Array.isArray(data.by_day) ? data.by_day : [];
+  const maxDayCount = byDay.reduce((m, r) => Math.max(m, r.count), 0) || 1;
+  if (byDay.length === 0) {
+    $("usage-by-day").innerHTML = '<div style="color:var(--text-mute);padding:6px;">无数据</div>';
+  } else {
+    $("usage-by-day").innerHTML = byDay.map((d) => {
+      const pct = Math.round((d.count / maxDayCount) * 100);
+      return `<div style="margin-bottom:5px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:2px;">
+          <span style="color:var(--text);font-family:ui-monospace,monospace;">${esc(d.day_utc8)}</span>
+          <span style="color:var(--text-mute);">${fmtN(d.count)} 次 · ${fmtN(d.tokens_in + d.tokens_out)} tok</span>
+        </div>
+        <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#22c55e,#4ade80);"></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // detail rows
+  const usage = Array.isArray(data.usage) ? data.usage : [];
+  if (usage.length === 0) {
+    $("usage-detail").innerHTML = '<div style="color:var(--text-mute);padding:14px;text-align:center;">该窗口内无调用记录</div>';
+  } else {
+    $("usage-detail").innerHTML = usage.map((u) => {
+      const sc = u.status_code || 0;
+      const scColor = sc >= 500 ? "var(--err)" : sc >= 400 ? "#f59e0b" : "var(--ok)";
+      const totalTok = (u.tokens_in || 0) + (u.tokens_out || 0);
+      return `<div style="padding:7px 11px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 90px 70px 130px;gap:8px;align-items:center;font-size:11.5px;">
+        <div style="font-family:ui-monospace,monospace;">
+          <div style="color:var(--text);">${esc(u.model || "—")}</div>
+          <div style="color:var(--text-faint);font-size:10.5px;">${esc(u.key_prefix || "—")} · ${esc(u.ip || "—")}</div>
+        </div>
+        <div style="font-family:ui-monospace,monospace;text-align:right;">
+          ${fmtN(totalTok)}
+          <div style="font-size:10px;color:var(--text-faint);">↓${fmtN(u.tokens_in)} ↑${fmtN(u.tokens_out)}</div>
+        </div>
+        <div style="text-align:center;">
+          <span style="display:inline-block;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.08);color:${scColor};font-weight:600;font-size:10.5px;">${sc}</span>
+        </div>
+        <div style="color:var(--text-mute);font-size:10.5px;text-align:right;">${esc(fmtTime(u.created_at))}</div>
+      </div>`;
+    }).join("");
+  }
+
+  if (data.aggregation_capped) {
+    showToast("窗口内调用极多，聚合数据已截断到最近 5000 条。", "err");
+  }
+}
+
+$("usageWindowSelect").addEventListener("change", () => {
+  if (selectedQuotaUserId) loadUserUsage(selectedQuotaUserId);
+});
+$("usageReloadBtn").addEventListener("click", () => {
+  if (selectedQuotaUserId) loadUserUsage(selectedQuotaUserId);
 });
 
 init();
