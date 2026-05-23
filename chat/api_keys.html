@@ -118,6 +118,187 @@
             .usage-chart-bar.is-empty {
                 background: var(--border-mute);
             }
+            /* 2026-05-23：高级限额与 Key 详情面板 */
+            .advanced-config {
+                margin-top: 12px;
+                padding: 10px 12px;
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+            .advanced-config__summary {
+                cursor: pointer;
+                font-size: 12.5px;
+                color: var(--text-mute);
+                font-weight: 500;
+                outline: none;
+            }
+            .advanced-config[open] .advanced-config__summary {
+                color: var(--text);
+                margin-bottom: 10px;
+            }
+            .advanced-config__body { padding-top: 6px; }
+            .advanced-config__hint {
+                font-size: 11px;
+                color: var(--text-faint);
+                margin-top: 8px;
+                line-height: 1.5;
+            }
+            .config-row, .config-grid { margin-bottom: 10px; }
+            .config-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 10px;
+            }
+            .config-label {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                font-size: 11.5px;
+                color: var(--text-mute);
+            }
+            .config-label input,
+            .config-label select {
+                padding: 7px 9px;
+                font-size: 12.5px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-family: inherit;
+            }
+            .config-label select[multiple] {
+                font-family: var(--font-mono);
+                min-height: 110px;
+            }
+            /* Key 卡片：用量条 + 详情按钮 */
+            .key-usage-bars {
+                display: grid;
+                gap: 6px;
+                margin: 8px 0 2px;
+            }
+            .key-usage-bar {
+                font-size: 11px;
+                color: var(--text-mute);
+            }
+            .key-usage-bar__label {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 2px;
+            }
+            .key-usage-bar__track {
+                height: 5px;
+                background: var(--border-mute);
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .key-usage-bar__fill {
+                height: 100%;
+                background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+                transition: width 0.3s;
+            }
+            .key-usage-bar__fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+            .key-usage-bar__fill.danger { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+            .key-detail-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+            }
+            .key-detail-stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .key-detail-stats .stat-card {
+                padding: 10px;
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+            .key-detail-stats .label {
+                font-size: 11px;
+                color: var(--text-faint);
+            }
+            .key-detail-stats .value {
+                font-size: 18px;
+                font-weight: 700;
+                margin-top: 4px;
+                color: var(--accent);
+            }
+            .key-detail-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .key-detail-panel-card {
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 12px;
+            }
+            .key-detail-panel-card h3 {
+                font-size: 12.5px;
+                margin: 0 0 8px;
+                color: var(--text-soft);
+            }
+            .kd-bar { margin-bottom: 6px; }
+            .kd-bar__top {
+                display: flex;
+                justify-content: space-between;
+                font-size: 11.5px;
+                margin-bottom: 2px;
+            }
+            .kd-bar__name {
+                font-family: var(--font-mono);
+                color: var(--text);
+            }
+            .kd-bar__stat { color: var(--text-mute); }
+            .kd-bar__track {
+                height: 5px;
+                background: var(--border-mute);
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .kd-bar__fill { height: 100%; }
+            .kd-bar__fill.model { background: linear-gradient(90deg, var(--accent), #a855f7); }
+            .kd-bar__fill.day { background: linear-gradient(90deg, #22c55e, #4ade80); }
+            .key-detail-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-top: 8px;
+            }
+            .kd-detail-list {
+                max-height: 320px;
+                overflow-y: auto;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--bg-elev);
+                font-size: 11.5px;
+            }
+            .kd-detail-row {
+                padding: 7px 11px;
+                border-bottom: 1px solid var(--border);
+                display: grid;
+                grid-template-columns: 1fr 90px 60px 130px;
+                gap: 8px;
+                align-items: center;
+            }
+            .kd-detail-row:last-child { border-bottom: none; }
+            .kd-detail-row .model { font-family: var(--font-mono); color: var(--text); }
+            .kd-detail-row .tok { font-family: var(--font-mono); text-align: right; }
+            .kd-detail-row .sc { text-align: center; font-weight: 600; }
+            .kd-detail-row .sc.ok { color: var(--ok); }
+            .kd-detail-row .sc.err { color: var(--err); }
+            .kd-detail-row .sc.warn { color: #f59e0b; }
+            .kd-detail-row .when { color: var(--text-mute); text-align: right; font-size: 11px; }
+            @media (max-width: 720px) {
+                .key-detail-grid { grid-template-columns: 1fr; }
+                .kd-detail-row { grid-template-columns: 1fr; row-gap: 2px; }
+            }
         </style>
     </head>
     <body>
@@ -201,6 +382,37 @@
                             生成
                         </button>
                     </div>
+
+                    <!-- 2026-05-23 新增：高级限额配置（折叠） -->
+                    <details class="advanced-config" id="adv-config">
+                        <summary class="advanced-config__summary">高级限额（可选）— 模型白名单 / Token 上限 / 调用次数上限 / RPM</summary>
+                        <div class="advanced-config__body">
+                            <div class="config-row">
+                                <label class="config-label">
+                                    <span>模型白名单（留空 = 所有模型，多选用 Ctrl/Cmd 点击）</span>
+                                    <select id="adv-models" multiple size="6"></select>
+                                </label>
+                            </div>
+                            <div class="config-grid">
+                                <label class="config-label">
+                                    <span>总 token 上限（留空 = 不限）</span>
+                                    <input type="number" id="adv-max-tokens" min="0" placeholder="例如：1000000" />
+                                </label>
+                                <label class="config-label">
+                                    <span>总调用次数上限（留空 = 不限）</span>
+                                    <input type="number" id="adv-max-requests" min="0" placeholder="例如：10000" />
+                                </label>
+                                <label class="config-label">
+                                    <span>RPM (每分钟调用上限，不超过档位上限)</span>
+                                    <input type="number" id="adv-rpm" min="1" max="600" placeholder="留空 = 用档位默认" />
+                                </label>
+                            </div>
+                            <div class="advanced-config__hint">
+                                这些限制只对此 Key 生效；生成后可在「我的 Keys」里编辑或重置已用计数。
+                            </div>
+                        </div>
+                    </details>
+
                     <div class="new-key-reveal" id="new-key-box" data-sensitive>
                         <div>你的新 API Key：</div>
                         <code id="new-key-value"></code>
@@ -222,6 +434,72 @@
                 <div class="card" data-sensitive>
                     <h2>我的 Keys</h2>
                     <div id="keys-list"><div class="empty">暂无 Key</div></div>
+                </div>
+
+                <!-- Key 详情面板（隐藏，选中 key 后弹出） -->
+                <div class="card" id="key-detail-panel" style="display:none">
+                    <div class="key-detail-head">
+                        <h2 id="key-detail-title">Key 详情</h2>
+                        <button id="key-detail-close" class="btn btn-secondary">关闭</button>
+                    </div>
+                    <div class="key-detail-stats">
+                        <div class="stat-card">
+                            <div class="label">总调用</div>
+                            <div class="value" id="kd-calls">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">输入 tokens</div>
+                            <div class="value" id="kd-tin">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">输出 tokens</div>
+                            <div class="value" id="kd-tout">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">错误请求</div>
+                            <div class="value" id="kd-err">—</div>
+                        </div>
+                    </div>
+                    <div class="key-detail-grid">
+                        <div class="key-detail-panel-card">
+                            <h3>按模型</h3>
+                            <div id="kd-by-model"></div>
+                        </div>
+                        <div class="key-detail-panel-card">
+                            <h3>按天 (UTC+8)</h3>
+                            <div id="kd-by-day"></div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 18px 0 10px; font-size: 14px;">编辑限额</h3>
+                    <div class="config-row">
+                        <label class="config-label">
+                            <span>模型白名单（留空 = 所有）</span>
+                            <select id="kd-edit-models" multiple size="6"></select>
+                        </label>
+                    </div>
+                    <div class="config-grid">
+                        <label class="config-label">
+                            <span>总 token 上限</span>
+                            <input type="number" id="kd-edit-max-tokens" min="0" />
+                        </label>
+                        <label class="config-label">
+                            <span>总调用次数上限</span>
+                            <input type="number" id="kd-edit-max-requests" min="0" />
+                        </label>
+                        <label class="config-label">
+                            <span>RPM</span>
+                            <input type="number" id="kd-edit-rpm" min="1" max="600" />
+                        </label>
+                    </div>
+                    <div class="key-detail-actions">
+                        <button id="kd-save" class="btn btn-primary">保存限额</button>
+                        <button id="kd-reset-usage" class="btn btn-secondary">重置已用计数</button>
+                        <div class="msg" id="kd-msg"></div>
+                    </div>
+
+                    <h3 style="margin: 18px 0 10px; font-size: 14px;">最近 100 条调用</h3>
+                    <div id="kd-detail-list" class="kd-detail-list"></div>
                 </div>
 
                 <!-- Usage -->
@@ -281,6 +559,6 @@
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/api-keys-app.js?v=2026-05-22-session-key-cache"></script>
+        <script src="./api/api-keys-app.js?v=2026-05-23-advanced-limits"></script>
     </body>
 </html>
