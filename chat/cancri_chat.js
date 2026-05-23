@@ -266,6 +266,13 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   access_blocked: null,
   anonymous_not_allowed: null,
   captcha_required: null, // showCaptchaModal path
+  // 2026-05-24: 自研嫌疑检测 CAPTCHA。code 由 chat-gateway.enforceSuspicionGate
+  // 发出，payload.captcha 含 {challenge_id, question, attempts_remaining,
+  // expires_at, image_url}。前端用 showSuspicionCaptchaModal 渲染（带 AQYZ.jpg
+  // 头像 + 算术题 + 倒计时 + 3 次机会）。null 让 dispatch 走 modal 分支。
+  suspicion_captcha_required: null,
+  welfare_concurrent_limit: null, // 福利模型并发上限提示走 toast，不要 throw
+  welfare_global_rpm_exceeded: null,
   model_queue_full: null, // showQueueModal path
   model_free_hour_limit: null, // applyBackendModelBlock + getQuotaLockMessage path
   // Internal — should never reach UI but mapped just in case
@@ -380,7 +387,10 @@ function formatSecurityGuardMessage(
     return message || "请使用邮箱验证码登录后再使用。";
   }
   if (code === "access_blocked") {
-    return message || "检测到异常高频请求，已暂时停止为此 IP 提供服务。";
+    // 2026-05-24: 永封后追加申诉入口提示。后端 message 形如「您的账户因违反使用条款已被封禁」，
+    // 在末尾追加 appeal.html 入口，让用户能立刻找到自助解封通道。
+    const baseMsg = message || "检测到异常高频请求，已暂时停止为此 IP 提供服务。";
+    return baseMsg + " 如有异议，请前往「./appeal.html」提交申诉，管理员审核后会通过邮件通知您。";
   }
   if (code === "captcha_required") {
     return "__CAPTCHA_REQUIRED__";
@@ -523,6 +533,181 @@ function tryTurnstileChallenge(payload) {
 // 外层 streamChatCompletionRound 用同一 queueSessionId 重新发起请求 → 排完直接续上。
 // 用户点取消 → resolve(false)，外层走"已取消"分支。
 // modelId 在卡片里直接显示让用户知道在等哪个模型。
+// 2026-05-24: 嫌疑 CAPTCHA modal — 算术题 + AQYZ.jpg 头像。
+//
+// 触发条件：chat-gateway.enforceSuspicionGate 返回 429 + code='suspicion_captcha_required'，
+//          payload.captcha = {challenge_id, question, attempts_remaining, expires_at, image_url}。
+// 用户答题流程：
+//   1. 渲染 modal，倒计时 5min，输入答案 → 点击「验证」
+//   2. POST chat-gateway endpoint='captcha_verify' + {challenge_id, answer}
+//   3. 后端 RPC captcha_verify_v1 返回 {ok, status, attempts_remaining, banned}
+//      - status=passed → 关闭 modal，retry 原 chat 请求
+//      - status=wrong + attempts_remaining > 0 → 显示「答错 X/3」，允许再试
+//      - status=wrong + attempts_remaining = 0（即将变 failed）→ 显示「最后一次」
+//      - status=failed / expired + banned=true → 显示永封提示 + 跳转 appeal.html
+// 返回 Promise<boolean>：true=通过，false=失败/取消（外层应抛错或跳 appeal）。
+function showSuspicionCaptchaModal(captchaPayload) {
+  return new Promise((resolve) => {
+    const captcha = captchaPayload && captchaPayload.captcha
+      ? captchaPayload.captcha
+      : captchaPayload || {};
+    const challengeId = captcha.challenge_id || captcha.challengeId || "";
+    const initialQuestion = captcha.question || "";
+    const initialAttempts = Number(captcha.attempts_remaining ?? captcha.attemptsRemaining ?? 3);
+    const expiresAt = captcha.expires_at || captcha.expiresAt || null;
+    const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/AQYZ.jpg";
+
+    if (!challengeId || !initialQuestion) {
+      // 后端坏数据 — 直接放行避免卡死用户
+      resolve(true);
+      return;
+    }
+
+    // 关掉任何旧 modal
+    const old = document.getElementById("suspicionCaptchaModal");
+    if (old) old.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "suspicionCaptchaModal";
+    modal.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);";
+    modal.innerHTML = `
+      <div style="background:var(--bg,#1f1f1d);color:var(--text,#f5f4ed);width:min(420px,92vw);border-radius:14px;border:1px solid var(--border,#3a3a37);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;font-family:inherit;">
+        <div style="padding:20px 24px 0 24px;display:flex;align-items:center;gap:14px;">
+          <img src="${imageUrl}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:600;line-height:1.2;">人机校验</div>
+            <div id="suspCaptchaSub" style="font-size:12px;opacity:.7;margin-top:2px;">检测到请求频率异常，请完成以下题目继续使用</div>
+          </div>
+        </div>
+        <div style="padding:18px 24px 8px 24px;">
+          <div id="suspCaptchaQuestion" style="font-size:24px;font-weight:600;text-align:center;letter-spacing:1px;margin:10px 0 14px;user-select:none;">${escapeHtml(initialQuestion)}</div>
+          <input id="suspCaptchaInput" type="text" inputmode="numeric" autocomplete="off" placeholder="请输入答案"
+            style="width:100%;padding:10px 14px;border:1px solid var(--border,#3a3a37);border-radius:10px;font-size:18px;text-align:center;background:rgba(255,255,255,.04);color:inherit;outline:none;box-sizing:border-box;" />
+          <div id="suspCaptchaError" style="color:#ef4444;margin-top:8px;font-size:13px;min-height:18px;text-align:center;"></div>
+          <div id="suspCaptchaMeta" style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;opacity:.75;">
+            <span id="suspCaptchaAttempts">剩余 ${initialAttempts} 次机会</span>
+            <span id="suspCaptchaCountdown"></span>
+          </div>
+        </div>
+        <div style="padding:14px 24px 20px 24px;display:flex;gap:10px;">
+          <button id="suspCaptchaSubmit" type="button"
+            style="flex:1;padding:10px;border-radius:10px;border:none;background:var(--accent,#d97757);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">验证</button>
+        </div>
+        <div style="padding:0 24px 16px 24px;font-size:11px;opacity:.55;line-height:1.5;">
+          连续答错 3 次或 5 分钟内未完成 → 账户将被永久封禁。
+          如已被误判，请到 <a href="./appeal.html" target="_blank" style="color:var(--accent,#d97757);">申诉页</a> 提交解封申请。
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const input = modal.querySelector("#suspCaptchaInput");
+    const submitBtn = modal.querySelector("#suspCaptchaSubmit");
+    const errorEl = modal.querySelector("#suspCaptchaError");
+    const attemptsEl = modal.querySelector("#suspCaptchaAttempts");
+    const countdownEl = modal.querySelector("#suspCaptchaCountdown");
+    const questionEl = modal.querySelector("#suspCaptchaQuestion");
+
+    let busy = false;
+    let countdownTimer = null;
+    let expiresTs = expiresAt ? new Date(expiresAt).getTime() : (Date.now() + 5 * 60 * 1000);
+
+    function cleanup() {
+      if (countdownTimer) clearInterval(countdownTimer);
+      modal.remove();
+    }
+
+    function renderCountdown() {
+      const remainMs = expiresTs - Date.now();
+      if (remainMs <= 0) {
+        countdownEl.textContent = "已超时";
+        countdownEl.style.color = "#ef4444";
+        return false;
+      }
+      const m = Math.floor(remainMs / 60000);
+      const s = Math.floor((remainMs % 60000) / 1000);
+      countdownEl.textContent = `剩余 ${m}:${s.toString().padStart(2, "0")}`;
+      return true;
+    }
+    renderCountdown();
+    countdownTimer = setInterval(() => {
+      if (!renderCountdown()) {
+        clearInterval(countdownTimer);
+        errorEl.textContent = "已超时，账户已被自动封禁。";
+        submitBtn.disabled = true;
+        setTimeout(() => {
+          cleanup();
+          window.location.href = "./appeal.html?reason=captcha_timeout";
+          resolve(false);
+        }, 1500);
+      }
+    }, 1000);
+
+    setTimeout(() => { try { input.focus(); } catch (_e) {} }, 50);
+
+    async function doVerify() {
+      if (busy) return;
+      const answer = String(input.value || "").trim();
+      if (!answer) { errorEl.textContent = "请输入答案"; return; }
+      busy = true;
+      errorEl.textContent = "";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "验证中...";
+
+      try {
+        const accessToken = getCancriAccessTokenForQuota();
+        if (!accessToken) {
+          errorEl.textContent = "登录已过期，请刷新页面重新登录。";
+          busy = false; submitBtn.disabled = false; submitBtn.textContent = "验证";
+          return;
+        }
+        const resp = await fetch(EDGE_FUNCTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            endpoint: "captcha_verify",
+            __auth_token: accessToken,
+            challenge_id: challengeId,
+            answer,
+          }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (data.ok && data.status === "passed") {
+          cleanup();
+          resolve(true);
+          return;
+        }
+        if (data.banned) {
+          cleanup();
+          window.location.href = "./appeal.html?reason=" + encodeURIComponent(data.status || "captcha_failed");
+          resolve(false);
+          return;
+        }
+        // wrong
+        const remaining = Number(data.attempts_remaining ?? data.attemptsRemaining ?? 0);
+        errorEl.textContent = remaining > 0
+          ? `答案错误，还剩 ${remaining} 次机会`
+          : "答案错误";
+        attemptsEl.textContent = `剩余 ${remaining} 次机会`;
+        input.value = "";
+        input.focus();
+      } catch (e) {
+        errorEl.textContent = "网络异常，请重试。";
+      } finally {
+        busy = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = "验证";
+      }
+    }
+
+    submitBtn.addEventListener("click", doVerify);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") doVerify(); });
+  });
+}
+
 function showQueueModal(modelId, initialPosition, queueSessionId) {
   return new Promise((resolve) => {
     const existing = document.getElementById("queueCard");
@@ -1611,8 +1796,16 @@ function getQuotaBlockReason(modelId) {
   // 后端 chat-gateway enforceQuotaGate 仍会真正执法，前端这层是 UX 预判。
   if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
-  // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）
-  if (modelId === "gpt-5.5-welfare" || modelId === "gpt-5.5-xhigh") return null;
+  // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
+  // 2026-05-24: 加 claude-opus-4-6-thinking-welfare（monkeyapi 上游）。
+  // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
+  if (
+    modelId === "gpt-5.5-welfare" ||
+    modelId === "gpt-5.5-xhigh" ||
+    modelId === "gemini-3.5-flash-welfare" ||
+    modelId === "gemini-3.1-flash-lite-welfare" ||
+    modelId === "claude-opus-4-6-thinking-welfare"
+  ) return null;
   // 2026-05-19：FREE 用户买了加油包后，后端 cancri_consume_paid_quota_v2
   // 会在 free_pool / 当日 15 次耗尽时回退 user_topup_credits。前端预阻挡
   // 必须同步放行，否则 chat 页 UI 把所有模型横杠用户根本点不动 send。
@@ -2109,6 +2302,8 @@ const MODEL_CATALOG = [
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
+  // 2026-05-24: 限量福利档（monkeyapi 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
+  {"id": "claude-opus-4-6-thinking-welfare", "name": "【限量福利】Claude Opus 4.6 思考", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
@@ -11546,6 +11741,17 @@ async function streamChatCompletionRound(
   if (response.status === 429) {
     let parsed429 = null;
     try { parsed429 = JSON.parse(errorText); } catch {}
+    // 2026-05-24: 嫌疑检测 CAPTCHA — 弹模态算术题，通过后 retry。
+    if (parsed429?.code === "suspicion_captcha_required") {
+      const passed = await showSuspicionCaptchaModal(parsed429);
+      if (passed) {
+        return await streamChatCompletionRound(messages, assistantMessageId, controller, {
+          enableTools, turnId, modelId, priorReasoning, requestKind, webSearchEnabled,
+          queueSessionIdOverride: queueSessionId,
+        });
+      }
+      throw new Error("人机校验未通过，无法继续发送。");
+    }
     if (parsed429?.code === "model_queue_full") {
       const queuePosition = Number(parsed429.queuePosition) || 1;
       const joined = await showQueueModal(modelId, queuePosition, queueSessionId);

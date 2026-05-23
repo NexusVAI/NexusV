@@ -414,6 +414,23 @@
       :root[data-theme="light"] .tier-paid {
         color: #fffaf2;
       }
+      /* 2026-05-24: 福利档 badge — clay/amber 描边色，区分 FREE（中性）
+         和 PAID（实心 accent）。welfare 模型免费，但有 per-user 并发 1 +
+         全局 100 RPM 上限；视觉上是「限量」语义。 */
+      .tier-welfare {
+        background: color-mix(in srgb, #d4a04d 16%, transparent);
+        color: #d4a04d;
+        border: 1px solid color-mix(in srgb, #d4a04d 40%, transparent);
+      }
+      .card[data-tier="welfare"]::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: #d4a04d;
+      }
       .tier-disabled {
         background: color-mix(in srgb, var(--err) 14%, transparent);
         color: var(--err);
@@ -1059,6 +1076,7 @@
         <div class="filter-group" id="tierFilter" role="group" aria-label="档位筛选">
           <button class="filter-btn active" type="button" data-tier="all">全部</button>
           <button class="filter-btn" type="button" data-tier="free">FREE</button>
+          <button class="filter-btn" type="button" data-tier="welfare">福利</button>
           <button class="filter-btn" type="button" data-tier="paid">PAID</button>
         </div>
       </div>
@@ -1080,6 +1098,10 @@
         <span class="legend-item">
           <span class="tier tier-free">FREE</span>
           所有用户免费使用，受免费档限速（10 RPM / 60 RPH / 1000 RPD，并发 2 路）。
+        </span>
+        <span class="legend-item">
+          <span class="tier tier-welfare">福利</span>
+          限量福利档：所有用户免费使用，但每用户同时只能跑 1 个福利请求（付费用户绕过），且全站每分钟合计 100 次。超限时返回 429 + Retry-After，下一分钟自动恢复。
         </span>
         <span class="legend-item">
           <span class="tier tier-paid">PAID</span>
