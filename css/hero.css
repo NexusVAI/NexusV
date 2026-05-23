@@ -24,12 +24,13 @@
 }
 
 .ai-hero-title {
-    font-size: 32px;
-    font-weight: 600;
+    font-size: var(--type-h2-size, clamp(2rem, 4vw, 3rem));
+    line-height: var(--type-h2-line, 1.16);
+    letter-spacing: var(--type-h2-track, -0.02em);
+    font-weight: 500;
     color: var(--text-color);
     margin: 0 0 32px 0;
     text-align: center;
-    letter-spacing: -0.02em;
 }
 
 .ai-composer-wrap {
@@ -45,13 +46,13 @@
     border: 1px solid var(--border-color);
     border-radius: 28px;
     padding: 6px 6px 6px 20px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .ai-composer:focus-within {
-    border-color: var(--border-light);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-color: var(--text-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .ai-composer-input {
@@ -269,22 +270,25 @@
 }
 
 .card-title {
-    font-size: 17px;
+    font-size: var(--type-h4-size, 1.0625rem);
+    line-height: var(--type-h4-line, 1.35);
+    letter-spacing: var(--type-h4-track, -0.01em);
     font-weight: 600;
-    line-height: 1.35;
     margin: 0 0 8px 0;
     color: var(--text-color);
-    letter-spacing: -0.01em;
 }
 
 .hero-card .card-title {
-    font-size: 34px;
-    font-weight: 600;
-    line-height: 1.18;
+    font-size: var(--type-h2-size, clamp(2rem, 3.5vw, 3rem));
+    line-height: var(--type-h2-line, 1.16);
+    letter-spacing: var(--type-h2-track, -0.02em);
+    font-weight: 500;
 }
 
 .card-meta {
-    font-size: 12px;
+    font-size: var(--type-p2-size, 0.875rem);
+    line-height: var(--type-p2-line, 1.4);
+    letter-spacing: var(--type-p2-track, -0.01em);
     font-weight: 400;
     color: var(--secondary-text);
     margin: 0;
