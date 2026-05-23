@@ -64,7 +64,17 @@ const FALLBACK_PAID_IDS = new Set([
     "gemini-3.1-pro-preview",
     "glm-5.1",
     "deepseek-v4-pro",
-    "qwen3.6-max-preview",
+    // 2026-05-23 批次：10 个百炼 PAID 模型
+    "qwen3.5-omni-plus-2026-03-15",
+    "qwen3-coder-480b-a35b-instruct",
+    "qwen-plus-2025-12-01",
+    "qwen3-max-2025-09-23",
+    "qwen-flash-2025-07-28",
+    "qwen3.5-122b-a10b",
+    "qwen3-235b-a22b-instruct-2507",
+    "qwen3.5-flash",
+    "qwen3-coder-flash",
+    "qwen3-coder-plus-2025-09-23",
     "minimax-m2.7",
     "kimi-k2.6",
 ]);
