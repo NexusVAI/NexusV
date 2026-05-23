@@ -116,7 +116,31 @@ function fmtMult(n) {
     return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
 }
 
+// 2026-05-24: 限量福利档（welfare）— 独立于 FREE / PAID 的第三类。
+// 所有用户免费使用，但有「每用户并发 1 + 全局 100 RPM」的硬上限；
+// 付费用户绕过限流。视觉上用 clay/amber 区别 FREE（中性）和 PAID（实心）。
+const WELFARE_IDS = new Set([
+    "gpt-5.5-welfare",
+    "gpt-5.5-xhigh",
+    "gemini-3.5-flash-welfare",
+    "gemini-3.1-flash-lite-welfare",
+    "claude-opus-4-6-thinking-welfare",
+]);
+
+function isWelfareModel(m) {
+    if (!m) return false;
+    const id = m.id || m.canonicalId || "";
+    if (WELFARE_IDS.has(id)) return true;
+    // 兜底：displayName 以「【福利」/ 「【限量福利」开头也算 welfare，
+    // 让后端新加 welfare 模型不必同时改前端常量。
+    const name = String(m.displayName || m.name || "");
+    if (/^【(限量)?福利/.test(name)) return true;
+    return false;
+}
+
 function getDisplayTier(m) {
+    // 福利档优先（高于后端 gateCostTier 的 free / paid 判定）
+    if (isWelfareModel(m)) return "welfare";
     // 优先读后端权威字段
     if (m && (m.gateCostTier === "paid" || m.gateCostTier === "free")) {
         return m.gateCostTier;
@@ -384,7 +408,10 @@ function card(m) {
     // -expensive / -vip 在 api_models.html 重写后也被删。
     const displayTier = m._displayTier || getDisplayTier(m);
     const tierClass = "tier-" + displayTier;
-    const tierLabel = displayTier === "paid" ? "PAID" : "FREE";
+    // 2026-05-24: 福利档 = "福利" 标签，区别于 FREE / PAID。
+    const tierLabel = displayTier === "paid" ? "PAID"
+        : displayTier === "welfare" ? "福利"
+        : "FREE";
     // 2026-05-17 Phase A：vip 模型（costTier === 'vip'）= Claude Opus 系列，
     // 需要 Pro+ 以上订阅。在 PAID badge 旁多挂一个 PRO+ 标识，让用户一眼看出。
     const isProPlusOnly = m.costTier === "vip";
