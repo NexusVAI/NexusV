@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 Cancri Code 桌面端</title>
+  <meta name="referrer" content="no-referrer" />
+  <!--
+    Sprint 2 / 2.2：桌面端登录回调页。
+    URL 参数：
+      ?cb=<URL编码的桌面端回调地址，如 http://127.0.0.1:23456/cb>
+      &state=<32 字符 hex，桌面端生成、防 CSRF/replay>
+    流程：
+      1. 加载时检查 supabase session：
+         a) 已登录 → 直接 redirect 到 cb，带上 access_token / refresh_token / expires_in / user_email / user_id / state
+         b) 未登录 → 渲染 OTP 表单
+      2. 输邮箱 → signInWithOtp → 等待验证码
+      3. 输验证码 → verifyOtp → 拿 session → redirect 到 cb（同上）
+      4. cb 收到后桌面端会写 auth.json 然后我们这页面会被浏览器自动关闭
+    注意：
+      - 不依赖 cancri_chat.js（避免拉 26000 行只为登录）
+      - 桌面端不受 QQ/Foxmail 邮箱限制（后端 chat-gateway 已据 X-Cancri-Desktop:1 跳过）
+  -->
+  <script src="./cancri_config.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+    crossorigin="anonymous"
+  ></script>
+  <style>
+    :root {
+      --bg: #1a1a18;
+      --card: #262624;
+      --line: #3a3a36;
+      --text: #f4f3ee;
+      --muted: #8a867d;
+      --accent: #d97757;
+      --accent-hover: #cc785c;
+      --danger: #c85a5a;
+      --success: #8fa680;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .stage {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 28px 26px 24px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+    .subtitle {
+      margin: 0 0 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 14px 0 6px;
+    }
+    input {
+      width: 100%;
+      background: #1f1f1d;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 9px 11px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus {
+      border-color: var(--accent);
+    }
+    input:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:disabled {
+      background: #4a4a45;
+      cursor: not-allowed;
+    }
+    .msg {
+      margin-top: 12px;
+      min-height: 18px;
+      font-size: 12.5px;
+    }
+    .msg.error { color: var(--danger); }
+    .msg.ok { color: var(--success); }
+    .msg.muted { color: var(--muted); }
+    .footer-hint {
+      margin-top: 18px;
+      font-size: 11.5px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .footer-hint code {
+      font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+      font-size: 11px;
+      color: #c3bfb5;
+    }
+    .step-back {
+      margin-top: 6px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+    .step-back:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="card" id="card">
+      <h1>登录 Cancri Code</h1>
+      <p class="subtitle" id="subtitle">桌面端会在登录成功后自动接收凭证。</p>
+
+      <!-- 加载阶段 -->
+      <div id="loadingStage">
+        <p class="msg muted">正在检查登录状态…</p>
+      </div>
+
+      <!-- 邮箱输入阶段 -->
+      <div id="emailStage" class="hidden">
+        <label for="emailInput">邮箱</label>
+        <input id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
+        <button id="sendBtn" type="button">发送验证码</button>
+        <div id="emailMsg" class="msg"></div>
+      </div>
+
+      <!-- 验证码输入阶段 -->
+      <div id="otpStage" class="hidden">
+        <label for="otpInput">邮箱验证码（6 位）</label>
+        <input id="otpInput" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" />
+        <button id="verifyBtn" type="button">验证登录</button>
+        <button id="backBtn" class="step-back" type="button">返回上一步</button>
+        <div id="otpMsg" class="msg"></div>
+      </div>
+
+      <!-- 完成阶段 -->
+      <div id="doneStage" class="hidden">
+        <p class="msg ok" id="doneMsg">登录成功，正在返回桌面端…</p>
+      </div>
+
+      <!-- 错误阶段（缺 cb / state 等） -->
+      <div id="badStage" class="hidden">
+        <p class="msg error" id="badMsg">无效的回调参数。请回到 Cancri Code 桌面端重新点登录。</p>
+      </div>
+
+      <p class="footer-hint">
+        本页面只用于 Cancri Code 桌面端登录。<br>
+        网页端登录请回到 <code>nexusvai.xyz/chat</code>。
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // ── URL 参数 ──────────────────────────────────────
+      const params = new URLSearchParams(location.search);
+      const cb = params.get("cb") || "";
+      const state = params.get("state") || "";
+
+      // 保护：cb 必须是 http://127.0.0.1:<port>/cb 或 http://localhost:<port>/cb
+      // 防止恶意页面构造 cb=https://evil/... 然后骗用户在桌面端点开。
+      function isValidCb(url) {
+        try {
+          const u = new URL(url);
+          if (u.protocol !== "http:") return false;
+          if (u.hostname !== "127.0.0.1" && u.hostname !== "localhost") return false;
+          if (u.pathname !== "/cb") return false;
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      const valid = cb && state && isValidCb(cb);
+
+      const el = (id) => document.getElementById(id);
+      function showStage(id) {
+        ["loadingStage", "emailStage", "otpStage", "doneStage", "badStage"].forEach((s) => {
+          el(s).classList.toggle("hidden", s !== id);
+        });
+      }
+
+      if (!valid) {
+        showStage("badStage");
+        return;
+      }
+
+      // ── Supabase client ────────────────────────────────
+      const SUPABASE_URL = window.__SUPABASE_URL__ || "";
+      const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        el("badMsg").textContent = "Supabase 配置未加载，请刷新页面重试。";
+        showStage("badStage");
+        return;
+      }
+      if (!window.supabase || !window.supabase.createClient) {
+        el("badMsg").textContent = "Supabase Auth SDK 加载失败，请检查网络后刷新。";
+        showStage("badStage");
+        return;
+      }
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      });
+
+      // ── 跳回桌面端 ────────────────────────────────────
+      function redirectToDesktop(session) {
+        const url = new URL(cb);
+        url.searchParams.set("access_token", session.access_token);
+        url.searchParams.set("refresh_token", session.refresh_token);
+        url.searchParams.set("expires_in", String(session.expires_in || 3600));
+        if (session.user) {
+          url.searchParams.set("user_email", session.user.email || "");
+          url.searchParams.set("user_id", session.user.id || "");
+        }
+        url.searchParams.set("state", state);
+
+        showStage("doneStage");
+        // 直接 location.href 触发 GET，桌面端 server 接收后会回 200 自闭合页。
+        // 注意：这里先 location.href 跳，再 setTimeout 关 window，用户会先看到桌面端的"登录成功"提示。
+        location.href = url.toString();
+      }
+
+      function localizeAuthError(err, fallback) {
+        const msg = err && (err.message || err.error_description || err.error) || "";
+        const code = (err && (err.code || err.error)) || "";
+        if (code === "over_email_send_rate_limit") return "邮件发送过于频繁，请等几分钟后再试。";
+        if (code === "otp_expired") return "验证码已过期，请重新获取。";
+        if (code === "invalid_credentials") return "验证码错误，请检查后重试。";
+        if (/timeout/i.test(msg)) return "请求超时，请检查网络。";
+        return fallback || msg || "未知错误";
+      }
+
+      // ── 检查现有 session ──────────────────────────────
+      (async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data && data.session && data.session.access_token) {
+            redirectToDesktop(data.session);
+            return;
+          }
+        } catch (err) {
+          console.warn("[desktop-login] getSession failed:", err);
+        }
+        showStage("emailStage");
+      })();
+
+      // ── 邮箱阶段：发 OTP ─────────────────────────────
+      const emailInput = el("emailInput");
+      const sendBtn = el("sendBtn");
+      const emailMsg = el("emailMsg");
+
+      async function sendOtp() {
+        const email = emailInput.value.trim();
+        if (!email || !email.includes("@")) {
+          emailMsg.textContent = "请输入有效邮箱。";
+          emailMsg.className = "msg error";
+          return;
+        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = "发送中…";
+        emailMsg.textContent = "";
+        try {
+          // 12s timeout 防 SDK hang
+          const timeout = new Promise((_, rej) =>
+            setTimeout(() => rej(new Error("发送超时，请检查网络后重试")), 12000),
+          );
+          const { error } = await Promise.race([
+            supabase.auth.signInWithOtp({ email }),
+            timeout,
+          ]);
+          if (error) throw error;
+          emailMsg.textContent = "验证码已发到邮箱，请查收。";
+          emailMsg.className = "msg ok";
+          showStage("otpStage");
+          el("otpInput").focus();
+        } catch (err) {
+          emailMsg.textContent = localizeAuthError(err, "发送失败，请重试。");
+          emailMsg.className = "msg error";
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.textContent = "发送验证码";
+        }
+      }
+
+      sendBtn.addEventListener("click", sendOtp);
+      emailInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendOtp();
+      });
+
+      // ── OTP 阶段：验证 + 跳回 ─────────────────────────
+      const otpInput = el("otpInput");
+      const verifyBtn = el("verifyBtn");
+      const backBtn = el("backBtn");
+      const otpMsg = el("otpMsg");
+
+      async function verifyOtp() {
+        const email = emailInput.value.trim();
+        const code = otpInput.value.trim();
+        if (!code || code.length < 6) {
+          otpMsg.textContent = "请输入完整的 6 位验证码。";
+          otpMsg.className = "msg error";
+          return;
+        }
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = "验证中…";
+        otpMsg.textContent = "";
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token: code,
+            type: "email",
+          });
+          if (error) throw error;
+          if (!data || !data.session || !data.session.access_token) {
+            throw new Error("验证返回无 session，请重试。");
+          }
+          redirectToDesktop(data.session);
+        } catch (err) {
+          otpMsg.textContent = localizeAuthError(err, "验证失败，请重试。");
+          otpMsg.className = "msg error";
+        } finally {
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "验证登录";
+        }
+      }
+
+      verifyBtn.addEventListener("click", verifyOtp);
+      otpInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") verifyOtp();
+      });
+      backBtn.addEventListener("click", () => {
+        showStage("emailStage");
+        emailMsg.textContent = "";
+        emailMsg.className = "msg";
+      });
+    })();
+  </script>
+</body>
+</html>
