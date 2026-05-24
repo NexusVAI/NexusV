@@ -178,8 +178,11 @@
 
       <!-- 验证码输入阶段 -->
       <div id="otpStage" class="hidden">
-        <label for="otpInput">邮箱验证码（6 位）</label>
-        <input id="otpInput" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" />
+        <label for="otpInput">邮箱验证码</label>
+        <!-- Supabase 项目当前 OTP 长度为 8 位（GoTrue 配置 GOTRUE_MAILER_OTP_LENGTH）；
+             保留 maxlength=8 上限，placeholder 8 个点提示用户。后端从 6 改回也不影响：
+             verifyOtp 阶段下限只校 6，6/7/8 位都接受。 -->
+        <input id="otpInput" type="text" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="••••••••" />
         <button id="verifyBtn" type="button">验证登录</button>
         <button id="backBtn" class="step-back" type="button">返回上一步</button>
         <div id="otpMsg" class="msg"></div>
@@ -391,8 +394,9 @@
       async function verifyOtp() {
         const email = emailInput.value.trim();
         const code = otpInput.value.trim();
+        // 下限 6 位（Supabase 历史最短）；上限交给 input maxlength 防多打。
         if (!code || code.length < 6) {
-          otpMsg.textContent = "请输入完整的 6 位验证码。";
+          otpMsg.textContent = "请输入完整的验证码。";
           otpMsg.className = "msg error";
           return;
         }
