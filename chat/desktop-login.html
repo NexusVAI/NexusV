@@ -26,6 +26,15 @@
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
     crossorigin="anonymous"
   ></script>
+  <!--
+    Cloudflare Turnstile (Supabase Auth captcha) — 与 chat/index.html 完全一致。
+    不带 captchaToken 调 signInWithOtp 会被 Supabase 静默挂起，邮件不发。
+  -->
+  <script
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+    defer
+  ></script>
+  <script defer src="./cancri_login_captcha.js"></script>
   <style>
     :root {
       --bg: #1a1a18;
@@ -159,11 +168,11 @@
         <p class="msg muted">正在检查登录状态…</p>
       </div>
 
-      <!-- 邮箱输入阶段 -->
-      <div id="emailStage" class="hidden">
+      <!-- 邮箱输入阶段（id=authStepEmail / authSendOtpBtn 与 cancri_login_captcha.js 对接，让 Turnstile widget 插到这里） -->
+      <div id="authStepEmail" class="hidden">
         <label for="emailInput">邮箱</label>
         <input id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
-        <button id="sendBtn" type="button">发送验证码</button>
+        <button id="authSendOtpBtn" type="button">发送验证码</button>
         <div id="emailMsg" class="msg"></div>
       </div>
 
@@ -220,9 +229,13 @@
 
       const el = (id) => document.getElementById(id);
       function showStage(id) {
-        ["loadingStage", "emailStage", "otpStage", "doneStage", "badStage"].forEach((s) => {
+        ["loadingStage", "authStepEmail", "otpStage", "doneStage", "badStage"].forEach((s) => {
           el(s).classList.toggle("hidden", s !== id);
         });
+        // 进邮箱 stage 时预加载 Turnstile widget，减少 sendOtp 点击等待
+        if (id === "authStepEmail" && window.NexusLoginCaptcha) {
+          try { window.NexusLoginCaptcha.prerender(); } catch (e) { console.warn("[desktop-login] prerender:", e); }
+        }
       }
 
       if (!valid) {
@@ -290,13 +303,39 @@
         } catch (err) {
           console.warn("[desktop-login] getSession failed:", err);
         }
-        showStage("emailStage");
+        showStage("authStepEmail");
       })();
 
-      // ── 邮箱阶段：发 OTP ─────────────────────────────
+      // ── 邮箱阶段：发 OTP（带 Turnstile captchaToken）───────────────
       const emailInput = el("emailInput");
-      const sendBtn = el("sendBtn");
+      const sendBtn = el("authSendOtpBtn");
       const emailMsg = el("emailMsg");
+
+      /**
+       * best-effort 拿 Turnstile token：45s 预算内拿到就传给 Supabase，拿不到则裸送。
+       * 与 cancri_chat.js 的 getLoginCaptchaTokenBestEffort 策略一致。
+       * Supabase 项目启用 captcha 时如果裸送，会回 captcha_failed 而不是静默挂起，
+       * 用户至少能看到明确错误（比"发送中..."无限转好）。
+       */
+      async function getCaptchaTokenBestEffort(budgetMs) {
+        return new Promise((resolve) => {
+          let settled = false;
+          const finish = (val) => { if (!settled) { settled = true; resolve(val); } };
+          const t = setTimeout(() => finish(""), budgetMs);
+          if (!window.NexusLoginCaptcha) {
+            clearTimeout(t);
+            return finish("");
+          }
+          window.NexusLoginCaptcha.getToken().then(
+            (tok) => { clearTimeout(t); finish(tok || ""); },
+            (err) => {
+              clearTimeout(t);
+              console.info("[desktop-login] captcha unavailable:", err && err.message);
+              finish("");
+            },
+          );
+        });
+      }
 
       async function sendOtp() {
         const email = emailInput.value.trim();
@@ -306,15 +345,22 @@
           return;
         }
         sendBtn.disabled = true;
+        sendBtn.textContent = "验证中…";
+        emailMsg.textContent = "正在完成人机验证…";
+        emailMsg.className = "msg muted";
+        const captchaToken = await getCaptchaTokenBestEffort(45000);
         sendBtn.textContent = "发送中…";
         emailMsg.textContent = "";
+        emailMsg.className = "msg";
         try {
           // 12s timeout 防 SDK hang
           const timeout = new Promise((_, rej) =>
             setTimeout(() => rej(new Error("发送超时，请检查网络后重试")), 12000),
           );
+          const opts = { email };
+          if (captchaToken) opts.options = { captchaToken };
           const { error } = await Promise.race([
-            supabase.auth.signInWithOtp({ email }),
+            supabase.auth.signInWithOtp(opts),
             timeout,
           ]);
           if (error) throw error;
@@ -378,7 +424,7 @@
         if (e.key === "Enter") verifyOtp();
       });
       backBtn.addEventListener("click", () => {
-        showStage("emailStage");
+        showStage("authStepEmail");
         emailMsg.textContent = "";
         emailMsg.className = "msg";
       });
