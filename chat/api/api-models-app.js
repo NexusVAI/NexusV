@@ -126,6 +126,10 @@ const WELFARE_IDS = new Set([
     "gemini-3.1-flash-lite-welfare",
     "gpt-5.4-mini-welfare",
     "claude-haiku-4-5-20251001-welfare",
+    "baichuan-m2-welfare",
+    "baichuan4-air-welfare",
+    "baichuan3-turbo-welfare",
+    "baichuan2-turbo-welfare",
 ]);
 
 function isWelfareModel(m) {
