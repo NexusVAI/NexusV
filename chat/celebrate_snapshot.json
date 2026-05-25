@@ -1,0 +1,12 @@
+{
+  "_comment": "Cancri 满月庆典 · 静态快照兜底。5/28 23:59 cron 会用满月当晚 live 数据覆盖。当前为 D-4 修复重复计算后的真实生产快照。",
+  "users": 2424,
+  "conversations": 5361,
+  "tokens": 283856360,
+  "models": 91,
+  "founders": 0,
+  "approved_stories": 0,
+  "snapshot_at": "2026-05-25T12:48:57+08:00",
+  "source": "snapshot",
+  "schema_version": 1
+}

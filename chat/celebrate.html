@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="description" content="Cancri / NexusVAI 满月庆典 · 命运的齿轮已经悄悄转动 · 2026-04-29 → 2026-05-29" />
+        <meta property="og:title" content="Cancri 满月 · 命运的齿轮已经悄悄转动" />
+        <meta property="og:description" content="从一个内嵌网页的小助手，到你信赖的模型枢纽。Cancri / NexusVAI 满月纪念。" />
+        <meta property="og:image" content="../Logo/Cancri1.jpg" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.nexusvai.xyz/chat/celebrate.html" />
+
+        <title>Cancri 满月 · 命运的齿轮已经悄悄转动</title>
+
+        <link rel="icon" type="image/png" href="../Logo/Cancri1.jpg" />
+
+        <!-- 预连接 -->
+        <link rel="preconnect" href="https://diusqgphvybnzazgopor.supabase.co" />
+        <link rel="dns-prefetch" href="https://diusqgphvybnzazgopor.supabase.co" />
+
+        <!-- 字体 -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+
+        <!-- 复用主站 design tokens -->
+        <link rel="stylesheet" href="./styles/01-claude-tokens.css?v=2026-05-25-celebrate" />
+        <link rel="stylesheet" href="./styles/02-themes.css?v=2026-05-25-celebrate" />
+        <link rel="stylesheet" href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b" />
+
+        <!-- 庆典专用样式 -->
+        <link rel="stylesheet" href="./celebrate.css?v=2026-05-25-footer" />
+
+        <!-- 全站 supabase 配置（与主站共享：__SUPABASE_URL__ / __SUPABASE_ANON_KEY__） -->
+        <script src="./cancri_config.js?v=2026-05-26-signin"></script>
+
+        <!-- supabase-js UMD：固定到主站同版本，共享 storageKey=cancri_supabase_auth 后即可读已登录 session -->
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+            defer
+        ></script>
+    </head>
+    <body class="celebrate-body" data-celebrate-page="root">
+        <!-- ============ Top Nav (mega menu + 移动端汉堡) ============ -->
+        <header class="celebrate-nav" role="banner">
+            <a class="celebrate-nav-brand" href="./index.html" aria-label="返回 Cancri 主站">
+                <img src="../Logo/Cancri1.jpg" alt="" class="celebrate-nav-logo" />
+                <span class="celebrate-nav-title">Cancri</span>
+            </a>
+            <nav class="celebrate-nav-links" aria-label="庆典导航">
+                <div class="celebrate-nav-group" data-celebrate-menu="benefits">
+                    <button class="celebrate-nav-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                        <span>福利</span>
+                        <svg class="celebrate-nav-caret" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                            <path d="M2 4 L5 7 L8 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <div class="celebrate-mega-panel" role="menu">
+                        <a href="#signin" role="menuitem">
+                            <span class="celebrate-mega-title">满月签到</span>
+                            <span class="celebrate-mega-desc">三天三礼 · 每日 50 万 token</span>
+                        </a>
+                        <a href="#benefits" role="menuitem">
+                            <span class="celebrate-mega-title">满月大礼</span>
+                            <span class="celebrate-mega-desc">8 重福利 · 必送 / 抽奖 / 折扣</span>
+                        </a>
+                        <a href="#moonday" role="menuitem">
+                            <span class="celebrate-mega-title">满月日炸场</span>
+                            <span class="celebrate-mega-desc">5/29 限定 · 国产模型免扣 token</span>
+                        </a>
+                        <a href="#poster" role="menuitem">
+                            <span class="celebrate-mega-title">我的海报</span>
+                            <span class="celebrate-mega-desc">导出你的专属满月卡</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="celebrate-nav-group" data-celebrate-menu="chronicle">
+                    <button class="celebrate-nav-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                        <span>编年史</span>
+                        <svg class="celebrate-nav-caret" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                            <path d="M2 4 L5 7 L8 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <div class="celebrate-mega-panel" role="menu">
+                        <a href="#timeline" role="menuitem">
+                            <span class="celebrate-mega-title">编年史 · 30 天</span>
+                            <span class="celebrate-mega-desc">命运齿轮悄悄转动 → 满月</span>
+                        </a>
+                        <a href="#wall" role="menuitem">
+                            <span class="celebrate-mega-title">故事墙</span>
+                            <span class="celebrate-mega-desc">每一位用户的满月留言</span>
+                        </a>
+                        <a href="#thanks" role="menuitem">
+                            <span class="celebrate-mega-title">致谢</span>
+                            <span class="celebrate-mega-desc">这 30 天感谢每一位陪伴</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            <div class="celebrate-nav-actions">
+                <a class="celebrate-nav-cta" href="./index.html">进入工作台</a>
+                <button class="celebrate-nav-hamburger" type="button" aria-label="菜单" aria-expanded="false" aria-controls="celebrateMobileDrawer">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ============ 移动端抽屉菜单（汉堡按钮触发） ============ -->
+        <div class="celebrate-mobile-drawer" id="celebrateMobileDrawer" aria-hidden="true">
+            <nav class="celebrate-mobile-drawer-nav" aria-label="移动端菜单">
+                <div class="celebrate-mobile-group">
+                    <button class="celebrate-mobile-group-summary" type="button" aria-expanded="true">
+                        <span>福利</span>
+                        <span class="celebrate-mobile-group-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="celebrate-mobile-group-content">
+                        <div class="celebrate-mobile-group-inner">
+                            <a href="#signin">满月签到 · 三天三礼</a>
+                            <a href="#benefits">满月大礼 · 8 重福利</a>
+                            <a href="#moonday">满月日炸场</a>
+                            <a href="#poster">我的海报</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="celebrate-mobile-group">
+                    <button class="celebrate-mobile-group-summary" type="button" aria-expanded="false">
+                        <span>编年史</span>
+                        <span class="celebrate-mobile-group-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="celebrate-mobile-group-content">
+                        <div class="celebrate-mobile-group-inner">
+                            <a href="#timeline">编年史 · 30 天</a>
+                            <a href="#wall">故事墙</a>
+                            <a href="#thanks">致谢</a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            <div class="celebrate-mobile-drawer-cta">
+                <a href="./index.html">进入工作台 →</a>
+            </div>
+        </div>
+
+        <!-- ============ Hero wrap (video bg covers hero + trust + entries, mask fades to white) ============ -->
+        <div class="celebrate-hero-wrap" id="hero">
+            <!-- 背景视频：自动播放、循环、静音；底部 mask 渐隐 -->
+            <div class="celebrate-hero-video" aria-hidden="true">
+                <video autoplay loop muted playsinline preload="auto">
+                    <source src="../Logo/1mo.Cancri.mp4" type="video/mp4" />
+                </video>
+            </div>
+
+            <!-- Hero 主区：72×72 静态图标 + 单行标题 + 一行 subtitle + 单按钮 -->
+            <section class="celebrate-hero" aria-labelledby="celebrateHeroTitle">
+                <div class="celebrate-hero-icon" aria-hidden="true">
+                    <img src="../Logo/Cancri1.jpg" alt="" />
+                </div>
+
+                <h1 class="celebrate-hero-title" id="celebrateHeroTitle">Cancri</h1>
+
+                <p class="celebrate-hero-subtitle">你的 AI 工作助手 · 满月第 30 天</p>
+
+                <div class="celebrate-hero-actions">
+                    <a class="celebrate-btn celebrate-btn--primary celebrate-btn--lg" href="#signin">今日满月签到</a>
+                </div>
+            </section>
+
+            <!-- Trust strip：90+ 模型品牌 logo 无缝横向滚动 -->
+            <section class="celebrate-trust" aria-label="接入的模型品牌">
+                <p class="celebrate-trust-text">深受信赖 · 已接入 <strong>90+</strong> 主流大模型</p>
+                <div class="celebrate-trust-marquee" aria-hidden="true">
+                    <div class="celebrate-trust-track">
+                        <img class="celebrate-trust-logo" src="./openai.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./claude-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./gemini-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./deepseek-color (1).svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./qwen-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./zhipu-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./minimax-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./moonshot.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./doubao-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./stepfun-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./meta-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./mistral-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./grok.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./spark-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./sensenova-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./yuanbao-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./huggingface-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./nvidia-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./cohere-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./microsoft-color.svg" alt="" />
+                        <!-- 复一份，滚到终点后 seamless 接回起点 -->
+                        <img class="celebrate-trust-logo" src="./openai.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./claude-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./gemini-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./deepseek-color (1).svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./qwen-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./zhipu-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./minimax-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./moonshot.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./doubao-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./stepfun-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./meta-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./mistral-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./grok.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./spark-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./sensenova-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./yuanbao-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./huggingface-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./nvidia-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./cohere-color.svg" alt="" />
+                        <img class="celebrate-trust-logo" src="./microsoft-color.svg" alt="" />
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-card 快速入口：开始进入 mask 渐隐区 -->
+            <section class="celebrate-entries" aria-label="快速入口">
+                <h2 class="celebrate-entries-title">使用 Cancri 的方式</h2>
+                <div class="celebrate-entries-grid">
+                    <a class="celebrate-entry-card" href="#signin">
+                        <span class="celebrate-entry-body">
+                            <span class="celebrate-entry-title">满月签到 · 三天三礼</span>
+                            <span class="celebrate-entry-desc">5/29 - 5/31 每天 1 次，首签送 24h Pro</span>
+                        </span>
+                        <span class="celebrate-entry-arrow" aria-hidden="true">→</span>
+                    </a>
+                    <a class="celebrate-entry-card" href="./index.html">
+                        <span class="celebrate-entry-body">
+                            <span class="celebrate-entry-title">进入工作台</span>
+                            <span class="celebrate-entry-desc">找回 30 天的对话、模型偏好、加油包</span>
+                        </span>
+                        <span class="celebrate-entry-arrow" aria-hidden="true">→</span>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <!-- ============ Countdown strip（hero 之外，独立 mono 细带） ============ -->
+        <aside class="celebrate-countdown-strip" aria-label="距满月时刻倒计时">
+            <span class="celebrate-countdown-strip-hint" id="celebrateCountdownHint">距 5/29 00:00 满月还有</span>
+            <div class="celebrate-countdown" id="celebrateCountdown" data-state="waiting">
+                <span class="celebrate-countdown-num" data-countdown-num="days">--</span><span class="celebrate-countdown-unit">d</span>
+                <span class="celebrate-countdown-num" data-countdown-num="hours">--</span><span class="celebrate-countdown-unit">h</span>
+                <span class="celebrate-countdown-num" data-countdown-num="minutes">--</span><span class="celebrate-countdown-unit">m</span>
+                <span class="celebrate-countdown-num" data-countdown-num="seconds">--</span><span class="celebrate-countdown-unit">s</span>
+            </div>
+            <a class="celebrate-countdown-strip-qq" id="celebrateQqCta" href="https://qm.qq.com/q/pDe9aWd3Ms" target="_blank" rel="noopener noreferrer" data-celebrate-qq-cta="hero">加入 QQ 群 →</a>
+        </aside>
+
+        <!-- ============ 编年史 · 横向粘性滚动（放在内容开头） ============ -->
+        <section class="celebrate-timeline-scroll" id="timeline" aria-labelledby="timelineTitle">
+            <div class="celebrate-timeline-pin">
+                <div class="celebrate-timeline-pin-head">
+                    <span class="celebrate-eyebrow">chronicle · 30 days</span>
+                    <h2 class="celebrate-section-title" id="timelineTitle">编年史 · <i>30 天</i></h2>
+                    <p class="celebrate-timeline-pin-sub">
+                        从内嵌小助手到模型枢纽，每一个重要节点 ·
+                        <span class="celebrate-timeline-sub-desktop">向下滚动即横向播放。</span>
+                        <span class="celebrate-timeline-sub-mobile" aria-hidden="true">← 横向滑动查看完整 30 天 →</span>
+                    </p>
+                </div>
+                <div class="celebrate-timeline-track-wrap" data-timeline-wrap>
+                    <ol class="celebrate-timeline-track" data-timeline-track>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-04-28 · D0</span>
+                            <h3 class="celebrate-timeline-card-title">命运齿轮悄悄转动</h3>
+                            <p class="celebrate-timeline-card-body">项目立项的那一晚，最初只是一个内嵌在网页里的小助手。没有名字，没有 logo，只有一个想法：让每个人都能调用最好的模型。</p>
+                        </li>
+                        <li class="celebrate-timeline-card celebrate-timeline-card--milestone">
+                            <span class="celebrate-timeline-card-date">2026-04-29 · D1</span>
+                            <h3 class="celebrate-timeline-card-title">Cancri / NexusVAI 正式发布</h3>
+                            <p class="celebrate-timeline-card-body">第一行公开可访问的代码上线。20+ 主流大模型免费调用，无 token 限额，登录即用。</p>
+                        </li>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-05-10 · D12</span>
+                            <h3 class="celebrate-timeline-card-title">风控策略升级</h3>
+                            <p class="celebrate-timeline-card-body">针对高频自动化请求启用滥用防护，以行为特征为核心，正常用户不受影响。</p>
+                        </li>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-05-12 · D14</span>
+                            <h3 class="celebrate-timeline-card-title">服务状态实时监控</h3>
+                            <p class="celebrate-timeline-card-body">可随时查看各模型线路的健康状况和延迟数据。<a class="celebrate-timeline-card-link" href="https://nexusvai.github.io/ChatAI-status/" target="_blank" rel="noopener">前往 status →</a></p>
+                        </li>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-05-14 · D16</span>
+                            <h3 class="celebrate-timeline-card-title">API 平台开放</h3>
+                            <p class="celebrate-timeline-card-body">在线注册即可领取永久免费 API key，支持 OpenAI 兼容协议。<a class="celebrate-timeline-card-link" href="./api/">前往 API 平台 →</a></p>
+                        </li>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-05-16 · D18</span>
+                            <h3 class="celebrate-timeline-card-title">未授权账号清理 · 指纹采集上线</h3>
+                            <p class="celebrate-timeline-card-body">1438 个未授权账号被永久封禁；同期设备 / 浏览器指纹用于反多账号识别。</p>
+                        </li>
+                        <li class="celebrate-timeline-card celebrate-timeline-card--milestone">
+                            <span class="celebrate-timeline-card-date">2026-05-17 · D19</span>
+                            <h3 class="celebrate-timeline-card-title">三档订阅 · Pro / Pro+ / Pro Max</h3>
+                            <p class="celebrate-timeline-card-body">¥9.9 套餐拆三档，Claude Opus 升级到 Pro+ 专属。5/17 前付费用户老福利不变。<a class="celebrate-timeline-card-link" href="./pricing.html">套餐页 →</a></p>
+                        </li>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-05-22 · D24</span>
+                            <h3 class="celebrate-timeline-card-title">Claude 1:1 复刻完成</h3>
+                            <p class="celebrate-timeline-card-body">登录页、工作台、设置面板全部对齐 Claude 官方视觉；同时保留 Cancri 自有的液态玻璃质感。</p>
+                        </li>
+                        <li class="celebrate-timeline-card">
+                            <span class="celebrate-timeline-card-date">2026-05-24 · D26</span>
+                            <h3 class="celebrate-timeline-card-title">风险登录二次验证</h3>
+                            <p class="celebrate-timeline-card-body">异常登录触发 Turnstile 二次校验 + 申诉通道；安全与体验同步加固。</p>
+                        </li>
+                        <li class="celebrate-timeline-card celebrate-timeline-card--moon">
+                            <span class="celebrate-timeline-card-date">2026-05-29 · D30</span>
+                            <h3 class="celebrate-timeline-card-title">满月 · 与你同行的第 30 天</h3>
+                            <p class="celebrate-timeline-card-body"><strong>今天就是满月。</strong>感谢每一位陪我们走过这 30 天的朋友。前面还有更长的路，我们一起走。</p>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        
+        <!-- ============ Countup 数字看板 ============ -->
+        <section class="celebrate-section celebrate-countup-section" aria-labelledby="countupTitle">
+            <div class="celebrate-section-header">
+                <h2 class="celebrate-section-title" id="countupTitle">我们一起走过 30 天</h2>
+                <p class="celebrate-section-sub">数据每小时刷新一次；如服务异常，将显示 5/28 23:59 的快照。</p>
+            </div>
+
+            <div class="celebrate-countup-grid" id="countupGrid" data-snapshot-source="loading">
+                <div class="celebrate-countup-card">
+                    <span class="celebrate-countup-num" data-countup-key="users">—</span>
+                    <span class="celebrate-countup-label">注册用户</span>
+                </div>
+                <div class="celebrate-countup-card">
+                    <span class="celebrate-countup-num" data-countup-key="conversations">—</span>
+                    <span class="celebrate-countup-label">总对话</span>
+                </div>
+                <div class="celebrate-countup-card">
+                    <span class="celebrate-countup-num" data-countup-key="tokens">—</span>
+                    <span class="celebrate-countup-label">总 token</span>
+                </div>
+                <div class="celebrate-countup-card">
+                    <span class="celebrate-countup-num" data-countup-key="models">—</span>
+                    <span class="celebrate-countup-label">接入模型</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 满月签到 · Codex split-feature（左文字 / 右视觉） ============ -->
+        <section class="celebrate-split-feature" id="signin" aria-labelledby="signinTitle">
+            <div class="celebrate-split-content">
+                <span class="celebrate-eyebrow">moon-day signin · day 30</span>
+                <h2 class="celebrate-section-title" id="signinTitle">三天三礼，<i>每天都有惊喜</i></h2>
+                <p class="celebrate-section-sub">
+                    5/29 - 5/31 每天 1 次。首签自动送 <strong>24h Pro 体验</strong>，连签 3 天再加 <strong>200 万 token</strong>。
+                </p>
+
+                <div class="celebrate-signin-stage" id="signinStage" data-state="loading">
+                    <div class="celebrate-signin-banner" id="signinBanner">
+                        <span class="celebrate-signin-banner-text" id="signinBannerText">加载中…</span>
+                    </div>
+
+                    <div class="celebrate-signin-cta-block">
+                        <button class="celebrate-signin-btn" id="signinBtn" type="button" data-state="idle" disabled>
+                            <span class="celebrate-signin-btn-text">今日签到</span>
+                        </button>
+                        <p class="celebrate-signin-btn-hint" id="signinBtnHint">5/29 开启第一次签到</p>
+                    </div>
+
+                    <p class="celebrate-signin-foot">
+                        每日奖励 <strong>50 万 token</strong>，自动写入「设置 → 额度」。破 500 人全员加赠 <strong>100 万 token</strong>。
+                    </p>
+                </div>
+            </div>
+
+            <div class="celebrate-split-visual celebrate-split-visual--signin">
+                <!-- 右侧视觉面板：3 个统计 + 进度条 + 3 天日历 -->
+                <div class="celebrate-signin-stats">
+                    <div class="celebrate-signin-stat">
+                        <span class="celebrate-signin-stat-label">我的连签</span>
+                        <span class="celebrate-signin-stat-val" id="signinStreak">0</span>
+                        <span class="celebrate-signin-stat-unit">天</span>
+                    </div>
+                    <div class="celebrate-signin-stat">
+                        <span class="celebrate-signin-stat-label">今日签到</span>
+                        <span class="celebrate-signin-stat-val" id="signinTotalToday">0</span>
+                        <span class="celebrate-signin-stat-unit">人</span>
+                    </div>
+                    <div class="celebrate-signin-stat">
+                        <span class="celebrate-signin-stat-label">解锁目标</span>
+                        <span class="celebrate-signin-stat-val" id="signinTarget">500</span>
+                        <span class="celebrate-signin-stat-unit">人</span>
+                    </div>
+                </div>
+
+                <div class="celebrate-signin-progress" aria-label="全站签到进度">
+                    <div class="celebrate-signin-progress-track">
+                        <div class="celebrate-signin-progress-fill" id="signinProgressFill" style="width: 0%"></div>
+                    </div>
+                    <p class="celebrate-signin-progress-text" id="signinProgressText">
+                        全员加赠尚未解锁
+                    </p>
+                </div>
+
+                <div class="celebrate-signin-calendar" aria-label="我的签到日历">
+                    <div class="celebrate-signin-calendar-cell" data-date="2026-05-29">
+                        <span class="celebrate-signin-cell-day">29</span>
+                        <span class="celebrate-signin-cell-tag">五月</span>
+                    </div>
+                    <div class="celebrate-signin-calendar-cell" data-date="2026-05-30">
+                        <span class="celebrate-signin-cell-day">30</span>
+                        <span class="celebrate-signin-cell-tag">五月</span>
+                    </div>
+                    <div class="celebrate-signin-calendar-cell" data-date="2026-05-31">
+                        <span class="celebrate-signin-cell-day">31</span>
+                        <span class="celebrate-signin-cell-tag">五月</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 满月大礼 · 福利 ============ -->
+        <section class="celebrate-section celebrate-benefits-section" id="benefits" aria-labelledby="benefitsTitle">
+            <div class="celebrate-section-header">
+                <h2 class="celebrate-section-title" id="benefitsTitle">满月大礼 · 8 重福利</h2>
+                <p class="celebrate-section-sub">必送 · 互动 · 折扣 · 当日炸场。每一份都不需要你额外付费。</p>
+            </div>
+
+            <div class="celebrate-benefits-grid">
+                <!-- A1 满月加油包 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">必送 · auto</span>
+                    <h3 class="celebrate-benefit-title">满月加油包</h3>
+                    <p class="celebrate-benefit-desc">5/29 00:00 全员自动到账，无需领取。永不过期。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>FREE 用户 <strong>+2M</strong> token</li>
+                        <li>PRO 用户 <strong>+5M</strong> token</li>
+                        <li>PRO+ 用户 <strong>+12M</strong> token</li>
+                        <li>PRO MAX 用户 <strong>+30M</strong> token</li>
+                    </ul>
+                    <div class="celebrate-benefit-cta celebrate-benefit-cta--auto">自动到账</div>
+                </article>
+
+                <!-- A2 创世满月徽章 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">稀缺 · 1 day only</span>
+                    <h3 class="celebrate-benefit-title">创世满月徽章</h3>
+                    <p class="celebrate-benefit-desc">仅 5/29 0:00 - 23:59 登录可领，过期永久关闭。挂在你的 profile 和故事墙昵称旁。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>账户永久徽章</li>
+                        <li>故事墙昵称前缀</li>
+                        <li>专属公告页致敬</li>
+                    </ul>
+                    <button class="celebrate-benefit-cta celebrate-benefit-cta--claim" type="button" data-action="claim-badge" disabled>
+                        5/29 开启领取
+                    </button>
+                </article>
+
+                <!-- B1 满月转盘 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">每日 · 7 days</span>
+                    <h3 class="celebrate-benefit-title">满月转盘</h3>
+                    <p class="celebrate-benefit-desc">5/29 - 6/4 共 7 天，每天 1 次抽奖。最大奖 Pro 周卡。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>1M / 5M / 10M token 加油包</li>
+                        <li>Pro 周卡（7 天）</li>
+                        <li>Opus 调用券</li>
+                        <li>概率公示，公平随机</li>
+                    </ul>
+                    <button class="celebrate-benefit-cta celebrate-benefit-cta--claim" type="button" data-action="open-wheel" disabled>
+                        5/29 开启抽奖
+                    </button>
+                </article>
+
+                <!-- B2 邀请奖 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">即刻 · referral</span>
+                    <h3 class="celebrate-benefit-title">邀请共庆</h3>
+                    <p class="celebrate-benefit-desc">5/25 - 5/31，邀请新朋友加入 Cancri，你们都有奖。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>邀请人 <strong>+1M</strong> token</li>
+                        <li>被邀请人 <strong>+500K</strong> token</li>
+                        <li>上限 20 人</li>
+                        <li>新人活跃 3 天后结算</li>
+                    </ul>
+                    <button class="celebrate-benefit-cta celebrate-benefit-cta--claim" type="button" data-action="open-invite">
+                        生成我的邀请链接
+                    </button>
+                </article>
+
+                <!-- C 折扣 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">限时 · 3 days</span>
+                    <h3 class="celebrate-benefit-title">订阅满月特惠</h3>
+                    <p class="celebrate-benefit-desc">5/29 - 5/31 三天限定，新老用户同享，每账号限用 1 次。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>Pro 首月 <strong>¥9.9 → ¥4.9</strong> 5 折</li>
+                        <li>Pro+ 首月 <strong>¥29 → ¥23</strong> 8 折</li>
+                        <li>Pro Max 首月 <strong>¥99 → ¥79</strong> 8 折</li>
+                    </ul>
+                    <a class="celebrate-benefit-cta celebrate-benefit-cta--link" href="./api/index.html?campaign=moon2026">前往套餐页 →</a>
+                </article>
+
+                <!-- C2 24h Pro 体验卡 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">首签 · 24h trial</span>
+                    <h3 class="celebrate-benefit-title">24h Pro 体验卡</h3>
+                    <p class="celebrate-benefit-desc">满月签到首签自动到账，1 天内享受 Pro 额度与模型。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>Pro 月额度 <strong>2000 万 token</strong></li>
+                        <li>解锁 Claude Sonnet / GPT-5.4 等 Pro 模型</li>
+                        <li>有效期 <strong>24 小时</strong>，到期自动失效</li>
+                        <li>已是 Pro+/Pro Max 的同学可延长 1 天额度期</li>
+                    </ul>
+                    <a class="celebrate-benefit-cta celebrate-benefit-cta--link" href="#signin">前往签到 →</a>
+                </article>
+
+                <!-- C3 充返加油包 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">超值 · top-up</span>
+                    <h3 class="celebrate-benefit-title">充返加油包</h3>
+                    <p class="celebrate-benefit-desc">5/29 - 5/31 三天，充值加油包激活时自动加赠 token。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>¥10 加油包激活 <strong>+100 万</strong> token</li>
+                        <li>¥50 加油包激活 <strong>+500 万</strong> token</li>
+                        <li>¥200 加油包激活 <strong>+1500 万</strong> token</li>
+                        <li>与加油包同账户、永不过期</li>
+                    </ul>
+                    <a class="celebrate-benefit-cta celebrate-benefit-cta--link" href="./api/index.html?campaign=moon2026_topup">前往充值页 →</a>
+                </article>
+
+                <!-- D 满月日炸场 -->
+                <article class="celebrate-benefit-card">
+                    <span class="celebrate-benefit-eyebrow">仅当日 · may 29</span>
+                    <h3 class="celebrate-benefit-title">满月日炸场</h3>
+                    <p class="celebrate-benefit-desc">5/29 00:00 - 23:59 限定，错过等下个满月。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li>DeepSeek / Qwen / GLM 等 <strong>全员免扣 token</strong></li>
+                        <li>每账号上限 100 万 token / 当日</li>
+                        <li>免费用户当日可调 <strong>Claude Opus 5 次</strong></li>
+                        <li>不含 GPT / Gemini Pro 系</li>
+                    </ul>
+                    <div class="celebrate-benefit-cta celebrate-benefit-cta--auto">5/29 自动生效</div>
+                </article>
+            </div>
+
+            <p class="celebrate-benefits-note">
+                所有福利通过现有加油包 / 订阅系统发放，写入流水可在「设置 → 额度」查看。
+                Cancri 反对一切刷量行为，邀请奖配合设备指纹去重，恶意刷奖账号将被永久回收。
+            </p>
+        </section>
+
+        <!-- ============ 满月日炸场 · Codex split-feature 反位（左视觉 / 右文字） ============ -->
+        <section class="celebrate-split-feature celebrate-split-feature--reverse" id="moonday" aria-labelledby="moondayTitle">
+            <div class="celebrate-split-content">
+                <span class="celebrate-eyebrow">moon-day · may 29</span>
+                <h2 class="celebrate-section-title" id="moondayTitle">满月当日，<i>整天炸场</i></h2>
+                <p class="celebrate-section-sub">5/29 00:00 至 23:59 三大现场特权，错过等下一个满月。</p>
+
+                <ul class="celebrate-moonday-list">
+                    <li class="celebrate-moonday-item">
+                        <span class="celebrate-moonday-num">01</span>
+                        <div class="celebrate-moonday-item-body">
+                            <h3 class="celebrate-moonday-item-title">国产模型全员免扣 token</h3>
+                            <p class="celebrate-moonday-item-desc">DeepSeek / Qwen / GLM 等当日不扣额度。每账号上限 100 万 token。</p>
+                        </div>
+                        <span class="celebrate-moonday-meta">仅 5/29 全天</span>
+                    </li>
+                    <li class="celebrate-moonday-item">
+                        <span class="celebrate-moonday-num">02</span>
+                        <div class="celebrate-moonday-item-body">
+                            <h3 class="celebrate-moonday-item-title">免费用户可调 Claude Opus 5 次</h3>
+                            <p class="celebrate-moonday-item-desc">不需要任何订阅，登录即可。顶级模型的天花板人人过一手。</p>
+                        </div>
+                        <span class="celebrate-moonday-meta">仅 5/29 全天</span>
+                    </li>
+                    <li class="celebrate-moonday-item">
+                        <span class="celebrate-moonday-num">03</span>
+                        <div class="celebrate-moonday-item-body">
+                            <h3 class="celebrate-moonday-item-title">23:30 全员加赠结算</h3>
+                            <p class="celebrate-moonday-item-desc">签到破 500 人，夜里 23:30 全员自动加赠 100 万 token。</p>
+                        </div>
+                        <span class="celebrate-moonday-meta">23:30 自动</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="celebrate-split-visual celebrate-split-visual--moonday">
+                <div class="celebrate-moonday-display">
+                    <span class="celebrate-moonday-display-eyebrow">may 29 · 2026</span>
+                    <span class="celebrate-moonday-display-big">满<i>月</i></span>
+                    <span class="celebrate-moonday-display-time">00:00 — 23:59</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 故事墙 ============ -->
+        <section class="celebrate-section celebrate-wall-section" id="wall" aria-labelledby="wallTitle">
+            <div class="celebrate-section-header">
+                <h2 class="celebrate-section-title" id="wallTitle">故事墙</h2>
+                <p class="celebrate-section-sub">写一句你和 Cancri 的故事 · 审核通过后将在公开墙展示。</p>
+            </div>
+
+            <div class="celebrate-wall-composer">
+                <textarea
+                    class="celebrate-wall-input"
+                    id="wallInput"
+                    maxlength="300"
+                    rows="3"
+                    placeholder="比如：「凌晨三点写论文，是 Cancri 帮我顶住的。」"
+                ></textarea>
+                <div class="celebrate-wall-composer-foot">
+                    <span class="celebrate-wall-count"><span id="wallCharCount">0</span> / 300</span>
+                    <button class="celebrate-btn celebrate-btn--primary celebrate-btn--sm" id="wallSubmitBtn" type="button">
+                        提交故事
+                    </button>
+                </div>
+                <p class="celebrate-wall-policy">
+                    需登录后提交 · 每天 1 条 · 含敏感内容将被拒绝 · 审核通过后公开展示
+                </p>
+            </div>
+
+            <div class="celebrate-wall-grid" id="wallGrid" data-source="loading">
+                <!-- 故事卡片由 celebrate.js 渲染。占位骨架可在 CSS 控制 -->
+                <div class="celebrate-wall-empty">正在加载故事…</div>
+            </div>
+        </section>
+
+        <!-- ============ 我的海报 · Codex split-feature（左文字 / 右画布） ============ -->
+        <section class="celebrate-split-feature" id="poster" aria-labelledby="posterTitle">
+            <div class="celebrate-split-content">
+                <span class="celebrate-eyebrow">my poster · downloadable</span>
+                <h2 class="celebrate-section-title" id="posterTitle">我的<i>满月海报</i></h2>
+                <p class="celebrate-section-sub">
+                    登录后生成你的专属满月卡，包含对话数、模型偏好与满月徽章。可下载、可分享。
+                </p>
+                <div class="celebrate-poster-actions">
+                    <button class="celebrate-btn celebrate-btn--primary" id="posterRefreshBtn" type="button">刷新数据</button>
+                    <button class="celebrate-btn celebrate-btn--ghost" id="posterDownloadBtn" type="button">下载海报</button>
+                </div>
+                <p class="celebrate-poster-hint" id="posterHint">未登录将生成「游客版」。登录后包含你的对话数、模型偏好与满月徽章。</p>
+            </div>
+
+            <div class="celebrate-split-visual celebrate-split-visual--poster">
+                <canvas class="celebrate-poster-canvas" id="posterCanvas" width="720" height="1080" aria-label="满月海报预览"></canvas>
+            </div>
+        </section>
+
+        <!-- ============ 致谢 ============ -->
+        <section class="celebrate-section celebrate-thanks-section" id="thanks" aria-labelledby="thanksTitle">
+            <div class="celebrate-section-header">
+                <h2 class="celebrate-section-title" id="thanksTitle">致谢 · 站在巨人的肩膀上</h2>
+                <p class="celebrate-section-sub">Cancri 不是凭空出现的。我们感谢这些开源项目和它们的维护者。</p>
+            </div>
+
+            <div class="celebrate-thanks-grid">
+                <div class="celebrate-thanks-block">
+                    <h3>模型与协议</h3>
+                    <ul>
+                        <li>OpenAI · Anthropic · Google · DeepSeek · Qwen · GLM · MiniMax · Moonshot · Doubao · 阶跃 · 智谱 · 商汤</li>
+                    </ul>
+                </div>
+                <div class="celebrate-thanks-block">
+                    <h3>基础设施</h3>
+                    <ul>
+                        <li>Supabase · PostgreSQL · Cloudflare · GitHub Pages · Turnstile</li>
+                    </ul>
+                </div>
+                <div class="celebrate-thanks-block">
+                    <h3>前端依赖</h3>
+                    <ul>
+                        <li>KaTeX · highlight.js · Inter · JetBrains Mono · Lucide</li>
+                    </ul>
+                </div>
+                <div class="celebrate-thanks-block">
+                    <h3>社区</h3>
+                    <ul>
+                        <li><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener">QQ 群 1083892008</a></li>
+                        <li><a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub @NexusVAI</a></li>
+                        <li><a href="mailto:nexusvai@qq.com">nexusvai@qq.com</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <p class="celebrate-thanks-signoff">
+                <em>"Assembled from the best, owned by you."</em>
+                — Cancri / NexusVAI，2026 年 5 月 29 日
+            </p>
+        </section>
+
+        <!-- ============ Final CTA (dark) ============ -->
+        <section class="celebrate-final" aria-labelledby="finalCtaTitle">
+            <div class="celebrate-final-bg" aria-hidden="true"></div>
+            <div class="celebrate-final-content">
+                <h2 class="celebrate-final-title" id="finalCtaTitle">
+                    今天就是满月，立即签到
+                </h2>
+                <p class="celebrate-final-sub">
+                    5/29 - 5/31 每天 1 次签到，首签自动送 24h Pro 体验，连签 3 天再加 200 万 token。
+                </p>
+                <div class="celebrate-final-actions">
+                    <a class="celebrate-btn celebrate-btn--primary celebrate-btn--lg" href="#signin">前往满月签到</a>
+                    <a class="celebrate-btn celebrate-btn--ghost celebrate-btn--lg" href="./index.html">进入工作台</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ Footer ============ -->
+        <footer class="celebrate-footer">
+            <div class="celebrate-footer-social" aria-label="社交账号">
+                <a href="https://x.com/NexusVAI" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                </a>
+                <a href="https://space.bilibili.com/3691002594331274" target="_blank" rel="noopener noreferrer" aria-label="Bilibili">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 10a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-6" />
+                        <path d="M8 3l2 3" />
+                        <path d="M16 3l-2 3" />
+                        <path d="M9 13v-2" />
+                        <path d="M15 11v2" />
+                    </svg>
+                </a>
+                <a href="https://huggingface.co/xingy555888" target="_blank" rel="noopener noreferrer" aria-label="Hugging Face">
+                    <img src="./huggingface-color.svg" alt="" width="22" height="22" loading="lazy" />
+                </a>
+                <a href="https://github.com/NexusVAI" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                    </svg>
+                </a>
+            </div>
+            <p>© 2026 Cancri / NexusVAI · 满月快乐</p>
+            <p>
+                <a href="./index.html">主站</a> ·
+                <a href="./api/">API</a> ·
+                <a href="./pricing.html">套餐</a> ·
+                <a href="https://nexusvai.github.io/ChatAI-status/" target="_blank" rel="noopener">状态</a>
+            </p>
+        </footer>
+
+        <!-- 庆典脚本 -->
+        <script defer src="./celebrate.js?v=2026-05-25-drawer-anim"></script>
+        <script defer src="./celebrate_poster.js?v=2026-05-25-topmodels"></script>
+        <script defer src="./celebrate_scroll.js?v=2026-05-25-sticky"></script>
+    </body>
+</html>
