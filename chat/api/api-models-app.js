@@ -124,7 +124,8 @@ const WELFARE_IDS = new Set([
     "gpt-5.5-xhigh",
     "gemini-3.5-flash-welfare",
     "gemini-3.1-flash-lite-welfare",
-    "claude-opus-4-6-thinking-welfare",
+    "gpt-5.4-mini-welfare",
+    "claude-haiku-4-5-20251001-welfare",
 ]);
 
 function isWelfareModel(m) {
