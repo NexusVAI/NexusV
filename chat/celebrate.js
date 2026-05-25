@@ -319,6 +319,10 @@
                         input.value = "";
                         if (counter) counter.textContent = "0";
                         showToast("提交成功，等待审核通过后将出现在故事墙");
+                        // 提交后通知 v2 刷一下（如果该用户的故事已被自动 approve，便能立刻显示）
+                        if (typeof window.__cancriWallV2Reload === "function") {
+                            setTimeout(window.__cancriWallV2Reload, 800);
+                        }
                     })
                     .catch(function (err) {
                         var msg = err && err.message ? err.message : "提交失败，请稍后再试";
@@ -346,6 +350,8 @@
     }
 
     function loadWallStories(grid) {
+        // 2026-05-28 v2 接管：若 celebrate_wall_v2.js 已就绪，则跳过这里的渲染。
+        if (window.__CANCRI_WALL_V2__) return;
         fetch(SUPABASE_BASE + "/celebrate-stats", {
             method: "POST",
             headers: {

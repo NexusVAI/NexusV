@@ -4,6 +4,8 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#000000" />
+        <!-- 2026-05-28 P2 加固：CSP（与 admin_stories.html 同口径，连 supabase + jsdelivr/fonts） -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self'; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
         <meta name="description" content="Cancri / NexusVAI 满月庆典 · 命运的齿轮已经悄悄转动 · 2026-04-29 → 2026-05-29" />
         <meta property="og:title" content="Cancri 满月 · 命运的齿轮已经悄悄转动" />
         <meta property="og:description" content="从一个内嵌网页的小助手，到你信赖的模型枢纽。Cancri / NexusVAI 满月纪念。" />
@@ -30,7 +32,7 @@
         <link rel="stylesheet" href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b" />
 
         <!-- 庆典专用样式 -->
-        <link rel="stylesheet" href="./celebrate.css?v=2026-05-25-footer" />
+        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-wall-v2" />
 
         <!-- 全站 supabase 配置（与主站共享：__SUPABASE_URL__ / __SUPABASE_ANON_KEY__） -->
         <script src="./cancri_config.js?v=2026-05-26-signin"></script>
@@ -745,7 +747,9 @@
         </footer>
 
         <!-- 庆典脚本 -->
-        <script defer src="./celebrate.js?v=2026-05-25-drawer-anim"></script>
+        <!-- v2 wall：必须在 celebrate.js 之前加载，以便 sentinel window.__CANCRI_WALL_V2__ 先设置 -->
+        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-wall-v2"></script>
+        <script defer src="./celebrate.js?v=2026-05-28-wall-v2"></script>
         <script defer src="./celebrate_poster.js?v=2026-05-25-topmodels"></script>
         <script defer src="./celebrate_scroll.js?v=2026-05-25-sticky"></script>
     </body>

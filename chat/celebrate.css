@@ -3158,3 +3158,213 @@ html[data-theme="dark"] .celebrate-wall-card-badge {
   }
 }
 
+/* ============================================================
+ * 2026-05-28 故事墙 v2 互动样式（点赞 / 评论 / 浏览 / 展开更多）
+ * ============================================================ */
+.celebrate-wall-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--cel-border, rgba(255, 255, 255, 0.08));
+  flex-wrap: wrap;
+}
+
+.celebrate-wall-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cel-text-dim, rgba(255, 255, 255, 0.6));
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.celebrate-wall-act:hover:not(:disabled):not(.celebrate-wall-act--readonly) {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--cel-text, rgba(255, 255, 255, 0.92));
+}
+
+.celebrate-wall-act:active:not(.celebrate-wall-act--readonly) {
+  transform: scale(0.96);
+}
+
+.celebrate-wall-act.is-liked {
+  color: #ff5577;
+}
+
+.celebrate-wall-act.is-liked:hover {
+  color: #ff3355;
+  background: rgba(255, 85, 119, 0.08);
+}
+
+.celebrate-wall-act--readonly {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.celebrate-wall-act-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.celebrate-wall-act-num {
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+}
+
+.celebrate-wall-comments {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cel-border, rgba(255, 255, 255, 0.06));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.celebrate-wall-comments[hidden] {
+  display: none;
+}
+
+.celebrate-wall-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.celebrate-wall-comment-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  line-height: 1.5;
+  flex-wrap: wrap;
+}
+
+.celebrate-wall-comment-name {
+  color: var(--cel-accent, #fce28a);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.celebrate-wall-comment-text {
+  color: var(--cel-text, rgba(255, 255, 255, 0.85));
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.celebrate-wall-comment-empty {
+  color: var(--cel-text-faint, rgba(255, 255, 255, 0.45));
+  font-size: 12.5px;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.celebrate-wall-comment-composer {
+  display: flex;
+  gap: 8px;
+}
+
+.celebrate-wall-comment-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--cel-border, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--cel-text, rgba(255, 255, 255, 0.92));
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.celebrate-wall-comment-input:focus {
+  border-color: var(--cel-accent, #fce28a);
+}
+
+.celebrate-wall-comment-submit {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--cel-accent, #fce28a);
+  color: #1a0a2e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.celebrate-wall-comment-submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.celebrate-wall-comment-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.celebrate-wall-load-more {
+  display: block;
+  margin: 24px auto 0;
+  padding: 10px 24px;
+  border: 1px solid var(--cel-border, rgba(255, 255, 255, 0.16));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cel-text, rgba(255, 255, 255, 0.92));
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.celebrate-wall-load-more:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--cel-accent, #fce28a);
+}
+
+.celebrate-wall-load-more:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.celebrate-wall-sentry {
+  height: 1px;
+  margin-top: 12px;
+}
+
+.celebrate-wall-end-hint {
+  text-align: center;
+  margin-top: 20px;
+  color: var(--cel-text-faint, rgba(255, 255, 255, 0.4));
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 720px) {
+  .celebrate-wall-card-actions {
+    gap: 10px;
+  }
+  .celebrate-wall-act {
+    padding: 4px 8px;
+    font-size: 12.5px;
+  }
+  .celebrate-wall-comments-list {
+    max-height: 200px;
+  }
+}
