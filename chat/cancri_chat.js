@@ -1797,14 +1797,15 @@ function getQuotaBlockReason(modelId) {
   if (quotaState.tier !== "free") return null;
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
-  // 2026-05-24: 加 claude-opus-4-6-thinking-welfare（monkeyapi 上游）。
+  // 2026-05-25: 替换 claude-opus-4-6-thinking-welfare 为 gpt-5.4-mini-welfare + claude-haiku-4-5-20251001-welfare。
   // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
   if (
     modelId === "gpt-5.5-welfare" ||
     modelId === "gpt-5.5-xhigh" ||
     modelId === "gemini-3.5-flash-welfare" ||
     modelId === "gemini-3.1-flash-lite-welfare" ||
-    modelId === "claude-opus-4-6-thinking-welfare"
+    modelId === "gpt-5.4-mini-welfare" ||
+    modelId === "claude-haiku-4-5-20251001-welfare"
   ) return null;
   // 2026-05-19：FREE 用户买了加油包后，后端 cancri_consume_paid_quota_v2
   // 会在 free_pool / 当日 15 次耗尽时回退 user_topup_credits。前端预阻挡
@@ -2302,11 +2303,13 @@ const MODEL_CATALOG = [
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
-  // 2026-05-24: 限量福利档（monkeyapi 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
-  {"id": "claude-opus-4-6-thinking-welfare", "name": "【限量福利】Claude Opus 4.6 思考", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
+  // 2026-05-25: 福利档 GPT-5.4 Mini（togoapi.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
+  {"id": "gpt-5.4-mini-welfare", "name": "【福利】GPT-5.4Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
+  // 2026-05-25: grok-4.20-0309-non-reasoning（dgbmc 上游，复用现有 key）
+  {"id": "grok-4.20-0309-non-reasoning", "name": "Grok4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "grok-4.3", "name": "Grok-4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
@@ -2319,6 +2322,8 @@ const MODEL_CATALOG = [
   {"id": "veo-3.1-lite-generate-preview", "name": "VEO 3.1 Lite（5s 720p 有声）", "brand": "Google", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
+  // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
+  {"id": "claude-haiku-4-5-20251001-welfare", "name": "【福利】Claude-HaiKu-4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-xhigh", "name": "【福利B】GPT-5.5-XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
