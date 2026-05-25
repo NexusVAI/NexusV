@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>管理员 · 满月故事审核 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+    <script src="./_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api-platform.css?v=2026-05-26-stories" />
+    <style>
+      .story-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        margin-bottom: 14px;
+        padding: 16px 18px;
+        display: grid;
+        gap: 12px;
+      }
+      .story-card.approved { border-left-color: #22c55e; opacity: 0.85; }
+      .story-card.featured { border-left-color: #d4a04d; background: linear-gradient(135deg, rgba(212, 160, 77, 0.06), var(--bg-card)); }
+      .story-card.rejected { border-left-color: var(--err); opacity: 0.7; }
+      .sc-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+      .sc-id {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .sc-time { font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+      .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+      .pill.pending { background: rgba(212, 160, 77, 0.16); color: #d4a04d; }
+      .pill.approved { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
+      .pill.featured { background: rgba(212, 160, 77, 0.22); color: #d4a04d; border: 1px solid rgba(212, 160, 77, 0.4); }
+      .pill.rejected { background: rgba(232, 90, 90, 0.16); color: var(--err); }
+      .sc-author {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .sc-name { font-weight: 600; }
+      .sc-uid {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 10px;
+        color: var(--text-faint);
+      }
+      .sc-content {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: var(--text);
+      }
+      .sc-reject-reason {
+        color: var(--err);
+        font-size: 12px;
+        padding: 6px 10px;
+        background: rgba(232, 90, 90, 0.08);
+        border-radius: 6px;
+      }
+      .sc-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn-approve, .btn-feature, .btn-reject, .btn-delete {
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .btn-approve { background: rgba(34, 197, 94, 0.18); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
+      .btn-feature { background: rgba(212, 160, 77, 0.18); color: #d4a04d; border-color: rgba(212, 160, 77, 0.35); }
+      .btn-reject { background: rgba(232, 90, 90, 0.18); color: var(--err); border-color: rgba(232, 90, 90, 0.3); }
+      .btn-delete { background: transparent; color: var(--text-mute); border-color: var(--border); }
+      .btn-approve:hover, .btn-feature:hover, .btn-reject:hover { opacity: 0.85; }
+      .btn-delete:hover { color: var(--err); border-color: var(--err); }
+      .btn-approve:disabled, .btn-feature:disabled, .btn-reject:disabled, .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+      .empty { text-align: center; padding: 40px; color: var(--text-mute); background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
+      .empty.err { color: var(--err); }
+      .toast {
+        position: fixed; right: 24px; bottom: 24px;
+        background: var(--bg-card); color: var(--text);
+        border: 1px solid var(--border); border-radius: 8px;
+        padding: 10px 16px; font-size: 13px;
+        opacity: 0; transform: translateY(8px);
+        transition: opacity 0.2s, transform 0.2s;
+        pointer-events: none; z-index: 1000;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      .toast.ok { border-color: rgba(34, 197, 94, 0.4); }
+      .toast.err { border-color: rgba(232, 90, 90, 0.4); }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin.html">审核</a>
+        <a href="./admin_orders.html">订单</a>
+        <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
+        <a href="./admin_users.html">用户</a>
+        <a href="./admin_appeals.html">申诉</a>
+        <a href="./admin_stories.html" class="active">满月故事</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>这个页面仅站点管理员可见。</p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>满月故事审核</h1>
+          <p>
+            活动期间用户在 <code>celebrate.html</code> 提交的故事在这里审核。
+            通过 = 上故事墙；精选 = 上故事墙 + 1M token 加油包（手动发）；驳回 = 不上墙，写驳回原因；删除 = 物理删除。
+          </p>
+        </header>
+
+        <div class="toolbar">
+          <div class="filter-group" id="statusFilter">
+            <button class="filter-btn active" data-filter="pending">待审核</button>
+            <button class="filter-btn" data-filter="approved">已通过</button>
+            <button class="filter-btn" data-filter="featured">精选</button>
+            <button class="filter-btn" data-filter="rejected">已驳回</button>
+            <button class="filter-btn" data-filter="all">全部</button>
+          </div>
+          <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+        </div>
+
+        <div id="list"></div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="./admin-stories-app.js?v=2026-05-26"></script>
+  </body>
+</html>
