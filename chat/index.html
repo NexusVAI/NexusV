@@ -226,6 +226,26 @@
                         </div>
 
                         <div class="auth-error" id="authEmailError"></div>
+
+                        <!-- 2026-05-25 §12 满月邀请：URL ?invite=<uuid> 自动填充
+                             该输入框；用户也可手动粘贴朋友给的邀请码或完整邀请链接。
+                             有值时 #authInviteHintBox 显示绿色「你受邀注册，登录后获 500K token」。 -->
+                        <div class="auth-invite-section" id="authInviteSection">
+                            <div class="auth-invite-hint" id="authInviteHintBox" hidden></div>
+                            <details class="auth-invite-details" id="authInviteDetails">
+                                <summary class="auth-invite-summary">有邀请码？</summary>
+                                <label class="auth-field-label" for="authInviteInput">邀请码 / 邀请链接</label>
+                                <input
+                                    type="text"
+                                    id="authInviteInput"
+                                    class="auth-input auth-invite-input"
+                                    placeholder="粘贴邀请码（36 位 UUID）或完整邀请链接"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                />
+                                <p class="auth-invite-tip">登录后你将获得 500K token 奖励，邀请人获得 1M token（双方满 3 天活跃后自动到账）。</p>
+                            </details>
+                        </div>
                     </div>
 
                     <!-- 2026-05-16 claude-clone v4c：footer 从 .auth-card 外面
@@ -2200,6 +2220,25 @@
                             <path d="M4 20a8 8 0 1 1 16 0"></path></svg
                         ><span>账户</span>
                     </div>
+                    <!-- 2026-05-25 §12 满月邀请：第 3 个 tab 入口 -->
+                    <div
+                        class="settings-nav-item"
+                        data-settings-panel="invitePanel"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M19 8v6M22 11h-6"></path>
+                        </svg>
+                        <span>邀请</span>
+                    </div>
                 </div>
 
                 <div class="settings-content">
@@ -2275,6 +2314,87 @@
                             <div class="list-row" id="settingsLogoutRow">
                                 <div class="list-label">退出登录</div>
                                 <div class="badge">退出</div>
+                            </div>
+                        </div>
+
+                        <!-- 2026-05-25 §12 满月邀请 panel
+                             首次切到此 tab 时由 cancri_chat.js 拉 celebrate-signin?action=get_invite
+                             并填充链接 / 3 数字卡 / 流水。失败 → 显示 #inviteEmptyState；
+                             未登录（拿不到 token）→ 显示 #inviteLoginPrompt。 -->
+                        <div class="settings-panel" id="invitePanel">
+                            <h3 class="settings-heading">满月邀请</h3>
+
+                            <div id="inviteLoginPrompt" class="invite-empty" hidden>
+                                请先登录后再生成专属邀请链接。
+                            </div>
+
+                            <div id="inviteContent" class="invite-content" hidden>
+                                <!-- 邀请链接 -->
+                                <div class="invite-link-row">
+                                    <label class="invite-field-label" for="inviteLinkInput">你的专属邀请链接</label>
+                                    <div class="invite-link-input-wrap">
+                                        <input
+                                            type="text"
+                                            id="inviteLinkInput"
+                                            class="invite-link-input"
+                                            readonly
+                                            placeholder="加载中..."
+                                        />
+                                        <button
+                                            type="button"
+                                            class="invite-copy-btn"
+                                            id="inviteCopyBtn"
+                                            aria-label="复制邀请链接"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                            </svg>
+                                            <span>复制</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 3 数字卡片 -->
+                                <div class="invite-stats">
+                                    <div class="invite-stat">
+                                        <div class="invite-stat-value" id="inviteStatTotal">0</div>
+                                        <div class="invite-stat-label">已邀人数</div>
+                                    </div>
+                                    <div class="invite-stat">
+                                        <div class="invite-stat-value" id="inviteStatQualified">0</div>
+                                        <div class="invite-stat-label">合格 / 已结算</div>
+                                    </div>
+                                    <div class="invite-stat">
+                                        <div class="invite-stat-value" id="inviteStatTokens">0</div>
+                                        <div class="invite-stat-label">累计到账 token</div>
+                                    </div>
+                                </div>
+
+                                <!-- 流水列表 -->
+                                <div class="invite-flow-section">
+                                    <div class="invite-flow-title">自动到账流水</div>
+                                    <div class="invite-flow-list" id="inviteFlowList">
+                                        <div class="invite-flow-empty">暂无到账记录。被邀请人需 ≥3 天活跃后，每小时自动结算。</div>
+                                    </div>
+                                </div>
+
+                                <!-- 规则说明 -->
+                                <div class="invite-rules">
+                                    <div class="invite-rules-title">规则</div>
+                                    <ul>
+                                        <li>邀请人 +1,000,000 token / 被邀请人 +500,000 token（每人每次结算）</li>
+                                        <li>每位邀请人最多结算 <strong>20</strong> 位被邀请人</li>
+                                        <li>被邀请人需在被邀请后累计 ≥<strong>3</strong> 天对话活跃，系统每小时自动结算</li>
+                                        <li>奖励直接到账 <strong>充值余额</strong>（与购买的加油包共用），可在订阅页查询</li>
+                                        <li>同 IP / 同设备指纹会被去重，刷单的邀请会被驳回（status=rejected）</li>
+                                        <li>活动有效期：<strong>5/25 – 5/31</strong>，请抓紧分享</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div id="inviteErrorState" class="invite-empty" hidden>
+                                加载邀请信息失败，请稍后重试。
                             </div>
                         </div>
                     </div>

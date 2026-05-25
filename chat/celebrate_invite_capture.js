@@ -1,14 +1,17 @@
 /* ============================================================
  * Cancri 满月庆典 · 邀请关系捕获
  * 2026-05-26 · D-2
+ * 2026-05-25 §12 patch: 加登录卡邀请码输入框联动 + 视觉提示条
  *
  * 行为：
  *   主站 chat/index.html 加载时检查 URL ?invite=<inviter_user_id>
  *   流程：
  *     1) 拿到 invite 参数 → 缓存到 localStorage（保留 30 天，应对登录跳转丢参数）
- *     2) 用户登录后 → POST celebrate-signin?action=invite_register
- *     3) 后端检查 invite_active_window / 防自邀 / DB UNIQUE 兜底
- *     4) 成功一次后清除 localStorage 缓存（避免重复请求）
+ *     2) 同时填充 #authInviteInput + 显示 #authInviteHintBox（让用户看到"邀请关系已捕获"）
+ *     3) 用户也可在登录卡片手动粘贴 UUID / 完整邀请链接 → input 事件→saveStored
+ *     4) 用户登录后 → POST celebrate-signin?action=invite_register
+ *     5) 后端检查 invite_active_window / 防自邀 / DB UNIQUE 兜底
+ *     6) 成功一次后清除 localStorage 缓存（避免重复请求）
  * ============================================================ */
 (function () {
     "use strict";
@@ -16,7 +19,32 @@
     var STORAGE_KEY = "cancri_invite_capture_v1";
     var SIGNIN_URL = "https://diusqgphvybnzazgopor.supabase.co/functions/v1/celebrate-signin";
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    var UUID_ANYWHERE_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
     var MAX_AGE_MS = 30 * 24 * 3600 * 1000; // 30 天
+
+    // 从任意字符串中抽取 UUID：支持纯 UUID / 完整 URL / "?invite=xxx" 片段
+    function parseInviteFromAny(raw) {
+        if (!raw || typeof raw !== "string") return null;
+        var s = raw.trim();
+        if (!s) return null;
+        if (UUID_RE.test(s)) return s.toLowerCase();
+        // 尝试从 URL 抽 invite query
+        try {
+            // 兼容用户只粘贴 "?invite=xxx" 这种片段
+            if (s.indexOf("?") === 0) {
+                var p = new URLSearchParams(s);
+                var q = p.get("invite");
+                if (q && UUID_RE.test(q)) return q.toLowerCase();
+            }
+            var url = new URL(s, "https://www.nexusvai.xyz");
+            var q2 = url.searchParams.get("invite");
+            if (q2 && UUID_RE.test(q2)) return q2.toLowerCase();
+        } catch (_) {}
+        // 兜底：字符串中任意位置出现 UUID 也接受
+        var m = s.match(UUID_ANYWHERE_RE);
+        if (m && m[0]) return m[0].toLowerCase();
+        return null;
+    }
 
     function captureFromUrl() {
         try {
@@ -143,10 +171,66 @@
         }).catch(function () {});
     }
 
+    // 在登录卡片显示「邀请关系已捕获」提示条，并展开 details 让用户看到 UUID
+    function showAuthInviteHint(inviterId) {
+        var box = document.getElementById("authInviteHintBox");
+        var details = document.getElementById("authInviteDetails");
+        var input = document.getElementById("authInviteInput");
+        if (input && !input.value) input.value = inviterId;
+        if (box) {
+            // 仅显示前 8 位避免冗长，强调"将获得 500K token"
+            var masked = String(inviterId || "").slice(0, 8) + "···";
+            box.textContent = "✓ 已捕获邀请关系（" + masked + "），登录后将自动获得 500K token 奖励。";
+            box.hidden = false;
+        }
+        if (details && !details.open) details.open = true;
+    }
+
+    // 监听登录卡片 #authInviteInput 用户输入：实时解析并存 localStorage
+    function bindAuthInviteInput() {
+        var input = document.getElementById("authInviteInput");
+        if (!input) return;
+        // 已有 stored 时回填到 input，方便用户确认
+        if (!input.value) {
+            var stored = loadStored();
+            if (stored && stored.inviter_id) {
+                input.value = stored.inviter_id;
+                showAuthInviteHint(stored.inviter_id);
+            }
+        }
+        var debounceTimer = null;
+        input.addEventListener("input", function () {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () {
+                var raw = input.value || "";
+                var inviterId = parseInviteFromAny(raw);
+                if (inviterId) {
+                    saveStored(inviterId);
+                    showAuthInviteHint(inviterId);
+                } else {
+                    // 无法解析：清掉之前的提示条（但保留 localStorage，避免用户误删）
+                    var box = document.getElementById("authInviteHintBox");
+                    if (box && raw.trim()) {
+                        box.textContent = "⚠ 邀请码格式无效，请粘贴 36 位 UUID 或完整邀请链接。";
+                        box.hidden = false;
+                    } else if (box) {
+                        box.hidden = true;
+                    }
+                }
+            }, 250);
+        });
+    }
+
     function init() {
-        // 1) URL 优先：当前进来就带 invite，先存
+        // 1) URL 优先：当前进来就带 invite，先存 + 同时显示提示条
         var fromUrl = captureFromUrl();
-        if (fromUrl) saveStored(fromUrl);
+        if (fromUrl) {
+            saveStored(fromUrl);
+            showAuthInviteHint(fromUrl);
+        }
+
+        // 1b) 登录卡片输入框联动（用户手动粘贴 / 提示条显示）
+        bindAuthInviteInput();
 
         // 2) 等 supabase-js 就绪后尝试 register
         var attempts = 0;

@@ -6857,3 +6857,312 @@ body[data-shared-conversation="true"] .input-icon {
         display: none;
     }
 }
+
+/* ============================================================
+ * 2026-05-25 §12 满月邀请：登录页 + 设置面板邀请 tab
+ * 设计：与现有 list-row / settings-panel 体系一致；
+ *   - 登录页 .auth-invite-section 用 <details> 折叠，默认收起
+ *   - 设置面板邀请 panel：链接行 + 3 数字卡 + 流水 + 规则
+ *   - 复用 var(--line) / var(--text) / var(--hover) 等 token
+ * ============================================================ */
+/* ── 登录页：邀请码区块 ── */
+.auth-invite-section {
+    margin-top: 14px;
+}
+
+.auth-invite-hint {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #16a34a;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+[data-theme="dark"] .auth-invite-hint {
+    background: rgba(34, 197, 94, 0.16);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #4ade80;
+}
+
+.auth-invite-details {
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    border-radius: 10px;
+    padding: 0;
+    background: transparent;
+}
+
+.auth-invite-summary {
+    cursor: pointer;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-soft, #5e5e5e);
+    -webkit-user-select: none;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.auth-invite-summary::-webkit-details-marker {
+    display: none;
+}
+
+.auth-invite-summary::before {
+    content: "▸";
+    font-size: 10px;
+    transition: transform 0.18s ease;
+    color: var(--text-soft, #5e5e5e);
+}
+
+.auth-invite-details[open] > .auth-invite-summary::before {
+    transform: rotate(90deg);
+}
+
+.auth-invite-details[open] {
+    padding: 0 12px 12px;
+}
+
+.auth-invite-details[open] > .auth-invite-summary {
+    padding: 10px 0 8px;
+}
+
+.auth-invite-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.2px;
+}
+
+.auth-invite-tip {
+    margin: 8px 0 0;
+    font-size: 11.5px;
+    color: var(--text-soft, #5e5e5e);
+    line-height: 1.55;
+}
+
+/* ── 设置面板：邀请 panel ── */
+#invitePanel .invite-empty {
+    padding: 14px 16px;
+    text-align: center;
+    color: var(--text-soft, #5e5e5e);
+    font-size: 13px;
+    border: 1px dashed var(--line, rgba(0, 0, 0, 0.12));
+    border-radius: 10px;
+}
+
+#invitePanel .invite-content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+#invitePanel .invite-link-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#invitePanel .invite-field-label {
+    font-size: 12.5px;
+    color: var(--text-soft, #5e5e5e);
+    font-weight: 500;
+}
+
+#invitePanel .invite-link-input-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+#invitePanel .invite-link-input {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+    border-radius: 8px;
+    background: var(--input-bg, transparent);
+    color: var(--text, #1a1a1a);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    outline: none;
+}
+
+#invitePanel .invite-link-input:focus {
+    border-color: var(--accent, #4d6bfe);
+}
+
+#invitePanel .invite-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+    border-radius: 8px;
+    background: var(--surface, #f8f8f7);
+    color: var(--text, #1a1a1a);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#invitePanel .invite-copy-btn:hover {
+    background: var(--hover, rgba(0, 0, 0, 0.04));
+    border-color: var(--text-soft, rgba(0, 0, 0, 0.2));
+}
+
+#invitePanel .invite-copy-btn.is-copied {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #16a34a;
+}
+
+#invitePanel .invite-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+#invitePanel .invite-stat {
+    padding: 14px 12px;
+    background: var(--surface, #f8f8f7);
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    border-radius: 10px;
+    text-align: center;
+}
+
+#invitePanel .invite-stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text, #1a1a1a);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+#invitePanel .invite-stat-label {
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--text-soft, #5e5e5e);
+    line-height: 1.3;
+}
+
+#invitePanel .invite-flow-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#invitePanel .invite-flow-title {
+    font-size: 12.5px;
+    color: var(--text-soft, #5e5e5e);
+    font-weight: 500;
+}
+
+#invitePanel .invite-flow-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+#invitePanel .invite-flow-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+    font-size: 12.5px;
+}
+
+#invitePanel .invite-flow-row:last-child {
+    border-bottom: none;
+}
+
+#invitePanel .invite-flow-side {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+#invitePanel .invite-flow-side[data-side="inviter"] {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+}
+
+#invitePanel .invite-flow-side[data-side="invitee"] {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+
+#invitePanel .invite-flow-meta {
+    color: var(--text-soft, #5e5e5e);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px;
+}
+
+#invitePanel .invite-flow-tokens {
+    font-weight: 600;
+    color: #16a34a;
+    font-variant-numeric: tabular-nums;
+}
+
+#invitePanel .invite-flow-empty {
+    padding: 18px 16px;
+    text-align: center;
+    color: var(--text-soft, #5e5e5e);
+    font-size: 12.5px;
+}
+
+#invitePanel .invite-rules {
+    padding: 14px 16px;
+    background: var(--surface, #f8f8f7);
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: var(--text-soft, #5e5e5e);
+    line-height: 1.6;
+}
+
+#invitePanel .invite-rules-title {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text, #1a1a1a);
+}
+
+#invitePanel .invite-rules ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+#invitePanel .invite-rules li {
+    margin-bottom: 3px;
+}
+
+@media (max-width: 640px) {
+    #invitePanel .invite-stats {
+        grid-template-columns: 1fr;
+    }
+    #invitePanel .invite-stat-value {
+        font-size: 20px;
+    }
+    #invitePanel .invite-link-input-wrap {
+        flex-direction: column;
+    }
+    #invitePanel .invite-copy-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

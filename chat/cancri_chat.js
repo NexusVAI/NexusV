@@ -12759,6 +12759,187 @@ function activateSettingsPanel(panelId) {
   settingPanels.forEach((panel) =>
     panel.classList.toggle("active", panel.id === panelId),
   );
+  // 2026-05-25 §12：邀请 tab 首次切入时拉一次数据
+  if (panelId === "invitePanel") {
+    void fetchAndRenderInvitePanel();
+  }
+}
+
+/* ============================================================
+ * 2026-05-25 §12 满月邀请：设置面板邀请 tab 渲染
+ *
+ * 行为：用户切到"邀请"tab 时调用 celebrate-signin?action=get_invite，
+ * 填充链接 / 3 数字卡 / 流水。未登录 → 显示登录占位。
+ *
+ * 失败模式：
+ *   • 拿不到 access_token → 显示 #inviteLoginPrompt
+ *   • fetch 失败 / 非 200 → 显示 #inviteErrorState
+ *   • 后端返回但 grants=[] → 流水显示 .invite-flow-empty 占位
+ * ============================================================ */
+const INVITE_SIGNIN_URL_PATH = "/functions/v1/celebrate-signin";
+
+async function fetchAndRenderInvitePanel() {
+  const loginPrompt = document.getElementById("inviteLoginPrompt");
+  const content = document.getElementById("inviteContent");
+  const errorState = document.getElementById("inviteErrorState");
+  if (!loginPrompt || !content || !errorState) return;
+
+  // 初始：隐藏所有，等响应再决定
+  loginPrompt.hidden = true;
+  errorState.hidden = true;
+  content.hidden = true;
+
+  let token = null;
+  try {
+    const client = getSupabaseClient();
+    const { data } = await client.auth.getSession();
+    token = data?.session?.access_token || null;
+  } catch (_e) {
+    // 拿不到 session，按未登录处理
+  }
+  if (!token) {
+    loginPrompt.hidden = false;
+    return;
+  }
+
+  const baseUrl = (window.__SUPABASE_URL__ || "").trim();
+  const anon = (window.__SUPABASE_ANON_KEY__ || "").trim();
+  if (!baseUrl || !anon) {
+    errorState.hidden = false;
+    return;
+  }
+
+  try {
+    const res = await fetch(baseUrl + INVITE_SIGNIN_URL_PATH, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+        apikey: anon,
+      },
+      body: JSON.stringify({ action: "get_invite" }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok || !json?.invite) {
+      console.warn("[invite-panel] get_invite failed", res.status, json);
+      errorState.hidden = false;
+      return;
+    }
+    renderInvitePanel(json.invite);
+    content.hidden = false;
+  } catch (e) {
+    console.warn("[invite-panel] fetch exception", e);
+    errorState.hidden = false;
+  }
+}
+
+function renderInvitePanel(invite) {
+  const linkInput = document.getElementById("inviteLinkInput");
+  const statTotal = document.getElementById("inviteStatTotal");
+  const statQualified = document.getElementById("inviteStatQualified");
+  const statTokens = document.getElementById("inviteStatTokens");
+  const flowList = document.getElementById("inviteFlowList");
+
+  if (linkInput) linkInput.value = String(invite.invite_url || "");
+  const s = invite.summary || { total: 0, qualified: 0, paid: 0 };
+  if (statTotal) statTotal.textContent = String(s.total || 0);
+  if (statQualified) statQualified.textContent = String(s.qualified || 0);
+  if (statTokens) {
+    const tokens = Number(invite.total_tokens_received || 0);
+    statTokens.textContent = formatInviteTokens(tokens);
+  }
+  if (flowList) {
+    const grants = Array.isArray(invite.grants) ? invite.grants : [];
+    if (!grants.length) {
+      flowList.innerHTML =
+        '<div class="invite-flow-empty">暂无到账记录。被邀请人需 ≥3 天活跃后，每小时自动结算。</div>';
+    } else {
+      flowList.innerHTML = grants
+        .map((g) => {
+          const side = g.side === "inviter" ? "inviter" : "invitee";
+          const label = side === "inviter" ? "我邀请的" : "受邀奖励";
+          const peer = String(g.peer_id_masked || "—");
+          const tokens = Number(g.delta_tokens || 0);
+          const at = g.granted_at
+            ? new Date(g.granted_at).toLocaleString("zh-CN", { hour12: false })
+            : "—";
+          return (
+            '<div class="invite-flow-row">' +
+            '<span class="invite-flow-side" data-side="' + side + '">' + label + "</span>" +
+            '<span class="invite-flow-meta">' +
+              escapeInviteHtml(peer) + " · " + escapeInviteHtml(at) +
+            "</span>" +
+            '<span class="invite-flow-tokens">+' + formatInviteTokens(tokens) + "</span>" +
+            "</div>"
+          );
+        })
+        .join("");
+    }
+  }
+}
+
+function formatInviteTokens(n) {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1) + "M";
+  if (n >= 1_000) return Math.round(n / 1000) + "K";
+  return String(n);
+}
+
+function escapeInviteHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// 复制按钮绑定：DOMContentLoaded 后调一次即可（按钮始终存在）
+function bindInviteCopyBtn() {
+  const btn = document.getElementById("inviteCopyBtn");
+  const input = document.getElementById("inviteLinkInput");
+  if (!btn || !input) return;
+  btn.addEventListener("click", async () => {
+    const url = input.value || "";
+    if (!url) {
+      showToast("邀请链接尚未加载");
+      return;
+    }
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      }
+    } catch (_e) {
+      ok = false;
+    }
+    if (!ok) {
+      try {
+        input.select();
+        ok = document.execCommand("copy");
+        input.blur();
+      } catch (_e) {}
+    }
+    if (ok) {
+      btn.classList.add("is-copied");
+      const span = btn.querySelector("span");
+      const old = span ? span.textContent : null;
+      if (span) span.textContent = "已复制";
+      showToast("邀请链接已复制");
+      setTimeout(() => {
+        btn.classList.remove("is-copied");
+        if (span && old != null) span.textContent = old;
+      }, 1800);
+    } else {
+      showToast("复制失败，请手动选中链接复制");
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bindInviteCopyBtn, { once: true });
+} else {
+  bindInviteCopyBtn();
 }
 
 document.getElementById("sidebarToggle").addEventListener("click", (e) => {
