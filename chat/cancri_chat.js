@@ -1805,7 +1805,11 @@ function getQuotaBlockReason(modelId) {
     modelId === "gemini-3.5-flash-welfare" ||
     modelId === "gemini-3.1-flash-lite-welfare" ||
     modelId === "gpt-5.4-mini-welfare" ||
-    modelId === "claude-haiku-4-5-20251001-welfare"
+    modelId === "claude-haiku-4-5-20251001-welfare" ||
+    modelId === "baichuan-m2-welfare" ||
+    modelId === "baichuan4-air-welfare" ||
+    modelId === "baichuan3-turbo-welfare" ||
+    modelId === "baichuan2-turbo-welfare"
   ) return null;
   // 2026-05-19：FREE 用户买了加油包后，后端 cancri_consume_paid_quota_v2
   // 会在 free_pool / 当日 15 次耗尽时回退 user_topup_credits。前端预阻挡
@@ -2303,6 +2307,17 @@ const MODEL_CATALOG = [
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
+  // 2026-05-25: claude-opus-4-5 重新上线（supxh.xin 上游，Pro+ 专享）。
+  {"id": "claude-opus-4-5", "name": "Claude-Opus-4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
+  // 2026-05-26: 百川官方 API（baichuan-ai.com）8 模型。
+  {"id": "baichuan-m3", "name": "Baichuan-M3", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "cheap"},
+  {"id": "baichuan4", "name": "Baichuan4", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "baichuan4-turbo", "name": "Baichuan4-Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "baichuan3-turbo-128k", "name": "Baichuan3-Turbo-128k", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "cheap"},
+  {"id": "baichuan-m2-welfare", "name": "【福利】Baichuan-M2", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
+  {"id": "baichuan4-air-welfare", "name": "【福利】Baichuan4-Air", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "baichuan3-turbo-welfare", "name": "【福利】Baichuan3-Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "baichuan2-turbo-welfare", "name": "【福利】Baichuan2-Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   // 2026-05-25: 福利档 GPT-5.4 Mini（togoapi.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
   {"id": "gpt-5.4-mini-welfare", "name": "【福利】GPT-5.4Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
