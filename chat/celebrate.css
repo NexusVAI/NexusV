@@ -3649,3 +3649,203 @@ html[data-theme="light"] .celebrate-chronicle-modal-panel {
     display: none;
   }
 }
+
+/* ============================================================
+ * 2026-05-28 Phase 5：故事墙图片上传 UI + polaroid 卡片样式
+ * ============================================================ */
+
+/* ---- composer 上传区 ---- */
+.celebrate-wall-uploads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.celebrate-wall-uploads-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.celebrate-wall-upload-thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+}
+.celebrate-wall-upload-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.celebrate-wall-upload-remove {
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.celebrate-wall-upload-remove:hover {
+  background: rgba(232, 90, 90, 0.85);
+}
+
+.celebrate-wall-uploads-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  font-family: var(--cel-font-sans);
+  font-size: 13px;
+  color: var(--cel-text-soft, rgba(255, 255, 255, 0.78));
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.celebrate-wall-uploads-add:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+.celebrate-wall-uploads-add.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.celebrate-wall-uploads-add > span:first-child {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 300;
+  color: var(--cel-text, rgba(255, 255, 255, 0.95));
+}
+.celebrate-wall-uploads-add-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+.celebrate-wall-uploads-add-label small {
+  font-size: 10.5px;
+  color: var(--cel-text-dim, rgba(255, 255, 255, 0.45));
+  font-family: var(--cel-font-mono);
+  letter-spacing: 0.04em;
+}
+
+html[data-theme="light"] .celebrate-wall-uploads-add {
+  border-color: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.02);
+  color: #4a4738;
+}
+html[data-theme="light"] .celebrate-wall-uploads-add:hover {
+  border-color: rgba(0, 0, 0, 0.4);
+}
+html[data-theme="light"] .celebrate-wall-upload-thumb {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* ---- 故事卡里的 polaroid 照片堆（左上图钉） ---- */
+.celebrate-wall-card-photos {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: -6px -4px 12px;
+  padding: 8px 4px 12px;
+  /* 给图钉/旋转留余地 */
+  min-height: 130px;
+  perspective: 800px;
+}
+
+.celebrate-wall-card-photo {
+  position: relative;
+  display: block;
+  background: #fdfcf6;
+  padding: 8px 8px 28px;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.12),
+    0 8px 18px rgba(0, 0, 0, 0.28);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  text-decoration: none;
+  flex: 0 0 auto;
+  /* 默认尺寸：用户卡内 96-110px 宽 */
+  width: 110px;
+  border-radius: 2px;
+  cursor: zoom-in;
+}
+.celebrate-wall-card-photo img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+  background: #1a1a1a;
+}
+
+/* 3 张时不同旋转角度营造拼贴感 */
+.celebrate-wall-card-photo--0 { transform: rotate(-3deg) translateZ(0); z-index: 1; }
+.celebrate-wall-card-photo--1 { transform: rotate(2.5deg) translateZ(0); margin-top: 6px; z-index: 2; }
+.celebrate-wall-card-photo--2 { transform: rotate(-1.5deg) translateZ(0); z-index: 3; }
+
+.celebrate-wall-card-photo:hover {
+  transform: rotate(0deg) translateY(-4px) scale(1.04);
+  box-shadow:
+    0 4px 4px rgba(0, 0, 0, 0.16),
+    0 18px 36px rgba(0, 0, 0, 0.36);
+  z-index: 10;
+}
+
+/* 左上图钉 */
+.celebrate-wall-card-pin {
+  position: absolute;
+  top: -6px;
+  left: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 35%, #ff8585 0%, #e34646 50%, #9c1818 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 3px 5px rgba(0, 0, 0, 0.5);
+  /* 立体感：小高光 */
+}
+.celebrate-wall-card-pin::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* featured 卡片：图钉换金色 */
+.celebrate-wall-card--featured .celebrate-wall-card-pin {
+  background:
+    radial-gradient(circle at 35% 35%, #ffe28a 0%, #d4a04d 55%, #7a5510 100%);
+}
+
+@media (max-width: 720px) {
+  .celebrate-wall-card-photos {
+    gap: 10px;
+    min-height: 108px;
+  }
+  .celebrate-wall-card-photo {
+    width: 92px;
+    padding: 6px 6px 22px;
+  }
+  .celebrate-wall-card-photo img { height: 92px; }
+}

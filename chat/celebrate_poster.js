@@ -271,28 +271,30 @@
 
     function drawQrBadge(ctx, W, H, qrImg) {
         if (!qrImg) return;
-        var size = Math.min(88, W * 0.13);
-        var pad = 8;
-        var x = W - size - 30;
-        var y = H - size - 30;
+        // QR 放海报「左下角」，与上面 chips 不冲突
+        // 尺寸控制在 < 10% 画布宽，padding 6，设计为不起眼但可扫
+        var size = Math.max(56, Math.min(72, Math.round(W * 0.085)));
+        var pad = 6;
+        var x = 30 + pad;
+        var y = H - size - 30 - pad;
 
-        // 白底圆角卡
         ctx.save();
+        // 白底圆角卡
         ctx.fillStyle = "rgba(255,255,255,0.96)";
         if (ctx.roundRect) {
             ctx.beginPath();
-            ctx.roundRect(x - pad, y - pad, size + pad * 2, size + pad * 2, 12);
+            ctx.roundRect(x - pad, y - pad, size + pad * 2, size + pad * 2, 10);
             ctx.fill();
         } else {
             ctx.fillRect(x - pad, y - pad, size + pad * 2, size + pad * 2);
         }
         ctx.drawImage(qrImg, x, y, size, size);
 
-        // 角落小字
+        // 角落小字（靠 QR 右侧）
         ctx.fillStyle = "rgba(20,20,20,0.55)";
         ctx.font = "500 9.5px 'JetBrains Mono', monospace";
-        ctx.textAlign = "right";
-        ctx.fillText("scan to open", W - 30, y - 14);
+        ctx.textAlign = "left";
+        ctx.fillText("scan to open", x + size + pad + 6, y + size - 4);
         ctx.restore();
     }
 
@@ -524,12 +526,20 @@
 
     function downloadCanvas(canvas, filename) {
         try {
+            var dataUrl = canvas.toDataURL("image/png");
+            // 防抱：空画布或头部过短表明渲染未完成
+            if (!dataUrl || dataUrl.length < 5000) {
+                console.warn("[celebrate-poster] canvas 似乎未完整渲染，len=" + (dataUrl ? dataUrl.length : 0));
+                alert("海报还没画完，请稍后重试。");
+                return;
+            }
             var link = document.createElement("a");
             link.download = filename || "cancri-moon-" + Date.now() + ".png";
-            link.href = canvas.toDataURL("image/png");
+            link.href = dataUrl;
             link.click();
         } catch (e) {
             console.warn("[celebrate-poster] download failed:", e);
+            alert("下载失败：" + (e && e.message ? e.message : e));
         }
     }
 
@@ -542,15 +552,27 @@
         var lastData = null;
         var lastAvatarImg = null;
         var qrImg = null;
+        var hasDrawn = false;
+
+        function safeDraw(label, opts) {
+            try {
+                drawPoster(canvas, opts);
+                hasDrawn = true;
+                console.log("[celebrate-poster] drew: " + label + "  hasUser=" + Boolean(opts && opts.data) + "  hasAvatar=" + Boolean(opts && opts.avatarImg) + "  hasQR=" + Boolean(opts && opts.qrImg));
+            } catch (e) {
+                console.error("[celebrate-poster] drawPoster threw at " + label + ":", e);
+            }
+        }
+
+        // 立即绘制游客版（无 QR）——保证 hasDrawn=true
+        safeDraw("initial-guest", { qrImg: null });
 
         // 预加载 QR；不阻塞首屏
         preloadImage(QR_PATH, 4000).then(function (img) {
             qrImg = img;
-            drawPoster(canvas, { data: lastData, avatarImg: lastAvatarImg, qrImg: qrImg });
+            if (!img) console.warn("[celebrate-poster] QR 预加载失败（timeout / 404），海报将不含二维码");
+            safeDraw("after-qr", { data: lastData, avatarImg: lastAvatarImg, qrImg: qrImg });
         });
-
-        // 立即绘制游客版（无 QR）
-        drawPoster(canvas, { qrImg: qrImg });
 
         var attempts = 0;
         function tryFetch() {
@@ -560,7 +582,7 @@
                     lastData = data;
                     return preloadImage(data.avatar_url, 3000).then(function (img) {
                         lastAvatarImg = img;
-                        drawPoster(canvas, { data: data, avatarImg: img, qrImg: qrImg });
+                        safeDraw("after-user-data", { data: data, avatarImg: img, qrImg: qrImg });
                     });
                 });
                 return;
@@ -578,7 +600,7 @@
                     if (data) lastData = data;
                     return preloadImage(lastData && lastData.avatar_url, 3000).then(function (img) {
                         lastAvatarImg = img;
-                        drawPoster(canvas, { data: lastData, avatarImg: img, qrImg: qrImg });
+                        safeDraw("refresh", { data: lastData, avatarImg: img, qrImg: qrImg });
                     });
                 }).then(function () {
                     refreshBtn.disabled = false;
@@ -588,13 +610,17 @@
         }
         if (downloadBtn) {
             downloadBtn.addEventListener("click", function () {
+                if (!hasDrawn) {
+                    alert("海报还在绘制中，请稍后重试。");
+                    return;
+                }
                 downloadCanvas(canvas);
             });
         }
 
         // 主题切换重绘
         var observer = new MutationObserver(function () {
-            drawPoster(canvas, { data: lastData, avatarImg: lastAvatarImg, qrImg: qrImg });
+            safeDraw("theme-change", { data: lastData, avatarImg: lastAvatarImg, qrImg: qrImg });
         });
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     }

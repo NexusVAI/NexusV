@@ -314,12 +314,23 @@
                     showToast("至少 4 个字哦");
                     return;
                 }
-                submitStory(content)
+                // 2026-05-28 Phase 5：先拿已上传图片 URL，再提交
+                var uploadsApi = window.__CELEBRATE_UPLOADS__;
+                var collectImages = uploadsApi
+                    ? uploadsApi.collect()
+                    : Promise.resolve([]);
+                submitBtn.disabled = true;
+                var origText = submitBtn.textContent;
+                submitBtn.textContent = "提交中…";
+                collectImages
+                    .then(function (urls) {
+                        return submitStory(content, urls || []);
+                    })
                     .then(function () {
                         input.value = "";
                         if (counter) counter.textContent = "0";
+                        if (uploadsApi) uploadsApi.reset();
                         showToast("提交成功，等待审核通过后将出现在故事墙");
-                        // 提交后通知 v2 刷一下（如果该用户的故事已被自动 approve，便能立刻显示）
                         if (typeof window.__cancriWallV2Reload === "function") {
                             setTimeout(window.__cancriWallV2Reload, 800);
                         }
@@ -327,6 +338,10 @@
                     .catch(function (err) {
                         var msg = err && err.message ? err.message : "提交失败，请稍后再试";
                         showToast(msg);
+                    })
+                    .then(function () {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = origText || "提交故事";
                     });
             });
         }
@@ -359,12 +374,21 @@
         }
     }
 
-    function submitStory(content) {
+    function submitStory(content, imageUrls) {
         // 走 celebrate-signin?action=wall_submit（需登录 JWT）
-        return callSigninAction("wall_submit", { content: content }).then(function (resp) {
+        var extras = { content: content };
+        if (Array.isArray(imageUrls) && imageUrls.length) {
+            extras.image_urls = imageUrls.slice(0, 3);
+        }
+        var fp = window.__CANCRI_FINGERPRINT__ ||
+            (window.localStorage && localStorage.getItem("cancri_fp_visitor_id"));
+        if (fp) extras.fingerprint = fp;
+        return callSigninAction("wall_submit", extras).then(function (resp) {
             var wall = resp && resp.wall;
             if (!wall) throw new Error("提交失败，请稍后再试");
             if (wall.ok) return wall;
+            if (wall.reason === "banned") throw new Error("你已被禁言");
+            if (wall.reason === "too_many_images") throw new Error("最多 3 张图片");
             if (wall.reason === "already_today") throw new Error("今天已经提交过一条啦");
             if (wall.reason === "too_short") throw new Error("至少 4 个字哦");
             if (wall.reason === "too_long") throw new Error("最多 300 字");

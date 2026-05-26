@@ -219,12 +219,27 @@
     }
 
     function buildCard(s) {
-        // s: { id, content, user_name, featured, like_count, comment_count, view_count, my_liked }
+        // s: { id, content, user_name, featured, image_urls, like_count, comment_count, view_count, my_liked }
         var featuredClass = s.featured ? " celebrate-wall-card--featured" : "";
         var badge = s.featured ? '<span class="celebrate-wall-card-badge">精选</span>' : "";
         var likedClass = s.my_liked ? " is-liked" : "";
+        // 2026-05-28 Phase 5：polaroid 图片堆（左上图钉）
+        var imgs = Array.isArray(s.image_urls) ? s.image_urls.slice(0, 3) : [];
+        var photosHtml = "";
+        if (imgs.length) {
+            photosHtml = '<div class="celebrate-wall-card-photos" data-count="' + imgs.length + '">' +
+                imgs.map(function (u, i) {
+                    return '<a class="celebrate-wall-card-photo celebrate-wall-card-photo--' + i +
+                        '" href="' + escapeHtml(u) + '" target="_blank" rel="noopener noreferrer">' +
+                        '<span class="celebrate-wall-card-pin" aria-hidden="true"></span>' +
+                        '<img src="' + escapeHtml(u) + '" alt="故事图片 ' + (i + 1) + '" loading="lazy" />' +
+                        '</a>';
+                }).join("") +
+              '</div>';
+        }
         return (
             '<article class="celebrate-wall-card' + featuredClass + '" data-story-id="' + s.id + '">' +
+              photosHtml +
               '<p class="celebrate-wall-card-quote">' + escapeHtml(s.content) + '</p>' +
               '<div class="celebrate-wall-card-meta">' +
                 '<span class="celebrate-wall-card-name">' + escapeHtml(s.user_name || "匿名") + '</span>' +

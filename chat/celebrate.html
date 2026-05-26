@@ -32,7 +32,7 @@
         <link rel="stylesheet" href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b" />
 
         <!-- 庆典专用样式 -->
-        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-phase4" />
+        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-phase5" />
 
         <!-- 全站 supabase 配置（与主站共享：__SUPABASE_URL__ / __SUPABASE_ANON_KEY__） -->
         <script src="./cancri_config.js?v=2026-05-26-signin"></script>
@@ -571,6 +571,23 @@
                     rows="3"
                     placeholder="比如：「凌晨三点写论文，是 Cancri 帮我顶住的。」"
                 ></textarea>
+
+                <!-- 2026-05-28 Phase 5：图片上传（最多 3 张，前端压缩 ≤500KB） -->
+                <div class="celebrate-wall-uploads" id="wallUploads">
+                    <div class="celebrate-wall-uploads-thumbs" id="wallUploadsThumbs"></div>
+                    <label class="celebrate-wall-uploads-add" id="wallUploadsAdd" tabindex="0">
+                        <input
+                            type="file"
+                            id="wallUploadsInput"
+                            accept="image/jpeg,image/png,image/webp"
+                            multiple
+                            hidden
+                        />
+                        <span aria-hidden="true">+</span>
+                        <span class="celebrate-wall-uploads-add-label">添加图片<small>最多 3 张 · 自动压缩</small></span>
+                    </label>
+                </div>
+
                 <div class="celebrate-wall-composer-foot">
                     <span class="celebrate-wall-count"><span id="wallCharCount">0</span> / 300</span>
                     <div class="celebrate-wall-composer-actions">
@@ -583,7 +600,7 @@
                     </div>
                 </div>
                 <p class="celebrate-wall-policy">
-                    需登录后提交 · 每天 1 条 · 含敏感内容将被拒绝 · 审核通过后公开展示
+                    需登录后提交 · 每天 1 条 · 图片 ≤ 3 张 · 含敏感内容将被拒绝 · 审核通过后公开展示
                 </p>
             </div>
 
@@ -727,10 +744,11 @@
 
         <!-- 庆典脚本 -->
         <!-- v2 wall：必须在 celebrate.js 之前加载，以便 sentinel window.__CANCRI_WALL_V2__ 先设置 -->
-        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-phase4"></script>
-        <script defer src="./celebrate.js?v=2026-05-28-phase4"></script>
-        <script defer src="./celebrate_chronicle.js?v=2026-05-28-phase4"></script>
-        <script defer src="./celebrate_poster.js?v=2026-05-28-phase4"></script>
-        <script defer src="./celebrate_scroll.js?v=2026-05-28-phase4"></script>
+        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-phase5"></script>
+        <script defer src="./celebrate_uploads.js?v=2026-05-28-phase5"></script>
+        <script defer src="./celebrate.js?v=2026-05-28-phase5"></script>
+        <script defer src="./celebrate_chronicle.js?v=2026-05-28-phase5"></script>
+        <script defer src="./celebrate_poster.js?v=2026-05-28-phase5"></script>
+        <script defer src="./celebrate_scroll.js?v=2026-05-28-phase5"></script>
     </body>
 </html>
