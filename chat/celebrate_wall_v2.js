@@ -332,6 +332,10 @@
             if (icon) icon.textContent = liked ? "♥" : "♡";
             var num = btn.querySelector('[data-num="like"]');
             if (num) num.textContent = formatNum(count);
+            // Phase 5b：点赞抽奖结果
+            if (liked && resp.lottery && typeof window.celebrateShowLottery === "function") {
+                window.celebrateShowLottery(resp.lottery, "like");
+            }
         }).catch(function (err) {
             btn.dataset.locking = "false";
             toast((err && err.message) || "点赞失败");

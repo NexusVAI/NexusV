@@ -443,6 +443,10 @@
                 var like = resp.like || {};
                 if (!like.ok) { toast(like.reason || "操作失败"); return; }
                 syncLikeUI(id, Boolean(like.liked), Number(like.count || 0));
+                // Phase 5b：点赞抽奖结果
+                if (like.liked && resp.lottery && typeof window.celebrateShowLottery === "function") {
+                    window.celebrateShowLottery(resp.lottery, "like");
+                }
             }).catch(function (err) {
                 btn.dataset.locking = "false";
                 toast((err && err.message) || "点赞失败");
@@ -472,7 +476,12 @@
                         updateStatNum(id, "comment", item.comment_count);
                     }
                     loadComments(id);
-                    toast("评论成功");
+                    // Phase 5b：评论抽奖结果（中奖弹大卡片）
+                    if (resp.lottery && typeof window.celebrateShowLottery === "function") {
+                        window.celebrateShowLottery(resp.lottery, "chronicle_comment");
+                    } else {
+                        toast("评论成功");
+                    }
                 }).catch(function (err) {
                     submit.disabled = false; submit.textContent = "发送";
                     toast((err && err.message) || "评论失败");
