@@ -125,7 +125,7 @@
         flex-wrap: wrap;
         align-items: center;
       }
-      .btn-approve, .btn-feature, .btn-reject, .btn-delete, .btn-ban, .btn-unban {
+      .btn-approve, .btn-feature, .btn-reject, .btn-delete, .btn-ban, .btn-unban, .btn-unfeature {
         padding: 6px 14px;
         border-radius: 6px;
         font-size: 13px;
@@ -140,6 +140,8 @@
       .btn-delete { background: transparent; color: var(--text-mute); border-color: var(--border); }
       .btn-ban { background: rgba(232, 90, 90, 0.12); color: var(--err); border-color: rgba(232, 90, 90, 0.45); }
       .btn-unban { background: rgba(34, 197, 94, 0.12); color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+      .btn-unfeature { background: transparent; color: var(--text-mute); border-color: rgba(212, 160, 77, 0.4); }
+      .comment-card.is-featured { box-shadow: 0 0 0 1px rgba(212, 160, 77, 0.45), 0 4px 16px rgba(212, 160, 77, 0.12); }
       .btn-approve:hover, .btn-feature:hover, .btn-reject:hover, .btn-ban:hover, .btn-unban:hover { opacity: 0.85; }
       .btn-delete:hover { color: var(--err); border-color: var(--err); }
       button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -312,6 +314,6 @@
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
       crossorigin="anonymous"
     ></script>
-    <script src="./admin-stories-app.js?v=2026-05-28-phase5b"></script>
+    <script src="./admin-stories-app.js?v=2026-05-28-phase5c-rewards"></script>
   </body>
 </html>

@@ -308,12 +308,27 @@ function renderComments(list) {
         ? '<span class="pill scope chronicle">编年史</span>'
         : '<span class="pill scope">故事墙</span>';
       const banned = c.is_banned ? '<span class="pill banned">已禁言</span>' : "";
+      const featured = c.is_featured ? '<span class="pill featured">⭐ 精选</span>' : "";
       const author = c.display_name || "匿名同行者";
+      const isWall = c.scope === "wall";
+      const authorFeatLimit = Number(c.author_featured_count || 0) >= 1 && !c.is_featured;
+      // 仅 wall 评论支持「精选」；已精选 → 取消；该作者已经有过 1 条精选 → 禁用
+      let featureBtn = "";
+      if (isWall) {
+        if (c.is_featured) {
+          featureBtn = '<button class="btn-unfeature" data-act="unfeature">取消精选</button>';
+        } else if (authorFeatLimit) {
+          featureBtn = '<button class="btn-feature" data-act="feature" disabled title="该作者已有 1 条评论被精选">精选 ⭐</button>';
+        } else {
+          featureBtn = '<button class="btn-feature" data-act="feature">精选 ⭐</button>';
+        }
+      }
       return `
-      <div class="comment-card ${scopeClass}" data-comment-id="${c.id}" data-scope="${c.scope}">
+      <div class="comment-card ${scopeClass}${c.is_featured ? " is-featured" : ""}" data-comment-id="${c.id}" data-scope="${c.scope}">
         <div class="sc-head">
           <div class="sc-author">
             ${scopePill}
+            ${featured}
             ${banned}
             <span class="sc-name">${escHtml(author)}</span>
             <span class="sc-uid">→ ${escHtml(c.parent_excerpt || "")}…</span>
@@ -326,6 +341,7 @@ function renderComments(list) {
         ${metaRowHtml(c)}
         <div class="sc-content">${escHtml(c.content)}</div>
         <div class="sc-actions">
+          ${featureBtn}
           <button class="btn-delete" data-act="delete">删除</button>
           <button class="btn-ban" data-act="ban" ${c.is_banned ? "disabled" : ""}>禁言作者</button>
         </div>
@@ -369,6 +385,61 @@ async function actComment(id, scope, decision, card) {
       email: c.email,
       defaultScope: scope === "chronicle" ? "chronicle_comment" : "wall",
     });
+    return;
+  }
+  if (decision === "feature") {
+    const c = state.cache.comments.find((x) => x.id === id);
+    if (!c) return;
+    const ok = confirm(
+      `精选这条评论？\n\n` +
+      `作者：${c.email || "(无邮箱)"} (UID ${shortId(c.user_id)})\n` +
+      `内容：${(c.content || "").slice(0, 60)}${c.content && c.content.length > 60 ? "…" : ""}\n` +
+      `─────────────────\n` +
+      `奖励：Pro 30 天激活码 + 1000 万 token\n` +
+      `每个作者最多 1 条被精选。本动作会自动生成激活码（用户可在订单页激活）。`,
+    );
+    if (!ok) return;
+    const buttons = card.querySelectorAll("button");
+    buttons.forEach((b) => (b.disabled = true));
+    try {
+      const data = await callGw("admin_feature_wall_comment", { comment_id: id });
+      const r = data.result || {};
+      if (r.ok === false) {
+        toast(`精选失败：${r.message || r.reason}`, "err");
+        buttons.forEach((b) => (b.disabled = false));
+        return;
+      }
+      // 成功：显著提示激活码
+      const codeMsg =
+        `✓ 已精选！\n\n` +
+        `激活码：${r.activation_code}\n` +
+        `（已点击复制按钮自动复制，发给作者）\n\n` +
+        `Token：+${Number(r.tokens_granted || 0).toLocaleString()}\n` +
+        `Pro 天数：${r.pro_days || 30}`;
+      if (r.activation_code) {
+        try { await navigator.clipboard.writeText(r.activation_code); } catch (_) {}
+      }
+      alert(codeMsg);
+      toast("已精选 · 激活码已复制", "ok");
+      await reload();
+    } catch (e) {
+      toast(e.message || "精选失败", "err");
+      buttons.forEach((b) => (b.disabled = false));
+    }
+    return;
+  }
+  if (decision === "unfeature") {
+    if (!confirm(`取消精选 #${id}？已发出的 token 和 Pro 激活码不会撤回。`)) return;
+    const buttons = card.querySelectorAll("button");
+    buttons.forEach((b) => (b.disabled = true));
+    try {
+      await callGw("admin_unfeature_wall_comment", { comment_id: id });
+      toast(`#${id} 已取消精选`, "ok");
+      await reload();
+    } catch (e) {
+      toast(e.message || "失败", "err");
+      buttons.forEach((b) => (b.disabled = false));
+    }
   }
 }
 
