@@ -81,91 +81,98 @@
         var s = document.createElement("style");
         s.id = "cancri-welcome-modal-styles";
         s.textContent = [
-            // 遮罩
+            // 遮罩（中性深底，无紫色调）
             ".cwm-overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;",
-            "padding:16px;background:rgba(20,16,32,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);",
+            "padding:16px;background:rgba(15,15,15,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);",
             "opacity:0;transition:opacity .25s ease}",
             ".cwm-overlay.cwm-open{opacity:1}",
-            // 卡片
+            // 卡片（Claude 沙底 + hairline + 极轻中性阴影；去掉顶部彩虹条）
             ".cwm-card{position:relative;width:100%;max-width:860px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;",
-            "background:#fdfcf9;color:#1a1814;border-radius:18px;",
-            "box-shadow:0 24px 80px rgba(40,16,80,.32),0 4px 12px rgba(0,0,0,.08);",
-            "border:1px solid rgba(180,160,210,.28);transform:translateY(8px) scale(.98);transition:transform .28s cubic-bezier(.2,.7,.3,1)}",
+            "background:#faf9f5;color:#29261b;border-radius:16px;",
+            "box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 32px rgba(0,0,0,.10);",
+            "border:1px solid rgba(112,107,87,.18);transform:translateY(8px) scale(.985);transition:transform .28s cubic-bezier(.2,.7,.3,1)}",
             ".cwm-overlay.cwm-open .cwm-card{transform:translateY(0) scale(1)}",
-            // 顶部装饰条（庆典色，细而克制）
-            ".cwm-card::before{content:\"\";position:absolute;left:0;right:0;top:0;height:3px;",
-            "background:linear-gradient(90deg,#7c4dff 0%,#b76eff 35%,#fcc964 70%,#ffd478 100%)}",
             // 关闭按钮
             ".cwm-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;",
-            "border-radius:8px;color:#6b6353;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;",
+            "border-radius:8px;color:#656358;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;",
             "transition:background .15s,color .15s}",
-            ".cwm-close:hover{background:rgba(0,0,0,.05);color:#1a1814}",
+            ".cwm-close:hover{background:rgba(0,0,0,.04);color:#29261b}",
             // 头部
             ".cwm-header{padding:28px 32px 8px 32px}",
+            // eyebrow：紫色 → Claude 中性灰 + clay dot
             ".cwm-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;",
-            "letter-spacing:.08em;text-transform:uppercase;color:#7c4dff;margin-bottom:8px}",
-            ".cwm-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#7c4dff;box-shadow:0 0 0 4px rgba(124,77,255,.15)}",
-            ".cwm-title{margin:0;font-size:24px;line-height:1.25;font-weight:700;color:#1a1814;",
+            "letter-spacing:.08em;text-transform:uppercase;color:#656358;margin-bottom:8px}",
+            ".cwm-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#d97757}",
+            ".cwm-title{margin:0;font-size:24px;line-height:1.25;font-weight:700;color:#29261b;",
             "font-family:'Source Serif 4','Source Serif Pro',ui-serif,Georgia,serif;letter-spacing:-.005em}",
-            ".cwm-subtitle{margin:8px 0 0 0;font-size:14px;line-height:1.55;color:#5a5346}",
-            ".cwm-subtitle strong{color:#1a1814;font-weight:600}",
+            ".cwm-subtitle{margin:8px 0 0 0;font-size:14px;line-height:1.55;color:#535146}",
+            ".cwm-subtitle strong{color:#29261b;font-weight:600}",
             // 卡片网格（可滚动）
             ".cwm-body{padding:18px 32px 4px 32px;overflow-y:auto;flex:1;min-height:0}",
             ".cwm-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}",
             "@media (max-width:880px){.cwm-grid{grid-template-columns:repeat(2,1fr)}}",
             "@media (max-width:480px){.cwm-grid{grid-template-columns:1fr}}",
+            // tile：完全去紫，hover 仅做 hairline 加深 + 极轻位移
             ".cwm-tile{display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:12px;",
-            "background:#fff;border:1px solid #ece7dc;transition:transform .15s,box-shadow .15s,border-color .15s}",
-            ".cwm-tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(40,16,80,.08);border-color:#d9c8f5}",
-            ".cwm-tile.cwm-tile--hi{background:linear-gradient(180deg,#fff8e8 0%,#fffdf6 100%);border-color:#f0d99a}",
-            ".cwm-tile.cwm-tile--hi:hover{border-color:#e6bf68}",
+            "background:#fff;border:1px solid rgba(112,107,87,.18);transition:transform .15s,border-color .15s}",
+            ".cwm-tile:hover{transform:translateY(-1px);border-color:rgba(112,107,87,.42)}",
+            // highlight tile：去淡黄渐变与金边，统一中性，仅靠 hairline 加深暗示
+            ".cwm-tile.cwm-tile--hi{background:#fff;border-color:rgba(112,107,87,.42)}",
+            ".cwm-tile.cwm-tile--hi:hover{border-color:#29261b}",
             ".cwm-tile-imgwrap{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:8px;background:#f1ece1}",
             ".cwm-tile-img{width:100%;height:100%;object-fit:cover;display:block}",
+            // badge：去阴影
             ".cwm-tile-badge{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;",
-            "background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:13px;",
-            "box-shadow:0 1px 4px rgba(0,0,0,.12)}",
-            ".cwm-tile-title{font-size:13px;font-weight:600;color:#1a1814;line-height:1.35;margin-top:2px;letter-spacing:-.005em}",
-            ".cwm-tile-desc{font-size:11.5px;line-height:1.5;color:#6b6353}",
-            // 底部按钮组
+            "background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;font-size:13px}",
+            ".cwm-tile-title{font-size:13px;font-weight:600;color:#29261b;line-height:1.35;margin-top:2px;letter-spacing:-.005em}",
+            ".cwm-tile-desc{font-size:11.5px;line-height:1.5;color:#656358}",
+            // 底部按钮组：去渐变背景
             ".cwm-footer{padding:18px 32px 24px 32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;",
-            "border-top:1px solid #f0ece2;background:linear-gradient(180deg,#fdfcf9 0%,#fbf8f0 100%)}",
-            ".cwm-foot-hint{font-size:12px;color:#8a8273;flex:1;min-width:200px}",
-            ".cwm-foot-hint strong{color:#7c4dff;font-weight:600}",
+            "border-top:1px solid rgba(112,107,87,.18);background:#faf9f5}",
+            ".cwm-foot-hint{font-size:12px;color:#656358;flex:1;min-width:200px}",
+            ".cwm-foot-hint strong{color:#29261b;font-weight:600}",
             ".cwm-actions{display:flex;gap:8px;flex-wrap:wrap}",
             ".cwm-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 16px;",
             "border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;",
             "transition:transform .12s,background .15s,border-color .15s,color .15s;font-family:inherit}",
             ".cwm-btn:active{transform:translateY(1px)}",
-            ".cwm-btn--ghost{background:transparent;color:#5a5346;border-color:#e0d9c8}",
-            ".cwm-btn--ghost:hover{background:#f5f0e4;color:#1a1814}",
-            ".cwm-btn--secondary{background:#fff;color:#1a1814;border-color:#d9c8f5}",
-            ".cwm-btn--secondary:hover{background:#f6f0ff;border-color:#b694f0}",
-            ".cwm-btn--primary{background:linear-gradient(180deg,#7c4dff 0%,#5d2fdb 100%);color:#fff;",
-            "box-shadow:0 1px 3px rgba(60,30,160,.3),inset 0 1px 0 rgba(255,255,255,.18)}",
-            ".cwm-btn--primary:hover{filter:brightness(1.06)}",
-            ".cwm-btn--primary:disabled{opacity:.6;cursor:wait;filter:none}",
-            ".cwm-btn-spin{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.45);",
+            // ghost / secondary：纯中性 hairline
+            ".cwm-btn--ghost{background:transparent;color:#535146;border-color:rgba(112,107,87,.32)}",
+            ".cwm-btn--ghost:hover{background:rgba(0,0,0,.04);color:#29261b}",
+            ".cwm-btn--secondary{background:#fff;color:#29261b;border-color:rgba(112,107,87,.32)}",
+            ".cwm-btn--secondary:hover{background:#f3efe6;border-color:rgba(112,107,87,.6)}",
+            // primary：紫色渐变 → Claude 黑实心按钮
+            ".cwm-btn--primary{background:#29261b;color:#faf9f5;border-color:#29261b}",
+            ".cwm-btn--primary:hover{background:#000;border-color:#000}",
+            ".cwm-btn--primary:disabled{opacity:.55;cursor:wait}",
+            ".cwm-btn-spin{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.4);",
             "border-top-color:#fff;animation:cwm-spin 0.8s linear infinite}",
             "@keyframes cwm-spin{to{transform:rotate(360deg)}}",
-            // dark theme 适配
-            "html[data-theme=\"dark\"] .cwm-card{background:#1c1a1f;color:#ece8df;border-color:rgba(255,255,255,.08)}",
-            "html[data-theme=\"dark\"] .cwm-title{color:#fce28a}",
-            "html[data-theme=\"dark\"] .cwm-subtitle{color:#bfb6a5}",
-            "html[data-theme=\"dark\"] .cwm-subtitle strong{color:#ece8df}",
-            "html[data-theme=\"dark\"] .cwm-tile{background:#252128;border-color:rgba(255,255,255,.06)}",
-            "html[data-theme=\"dark\"] .cwm-tile:hover{border-color:rgba(183,110,255,.4)}",
-            "html[data-theme=\"dark\"] .cwm-tile.cwm-tile--hi{background:linear-gradient(180deg,#2a2218 0%,#1f1c1f 100%);border-color:rgba(252,201,100,.25)}",
-            "html[data-theme=\"dark\"] .cwm-tile-imgwrap{background:#1a1820}",
-            "html[data-theme=\"dark\"] .cwm-tile-title{color:#ece8df}",
-            "html[data-theme=\"dark\"] .cwm-tile-desc{color:#9b9384}",
-            "html[data-theme=\"dark\"] .cwm-footer{background:linear-gradient(180deg,#1c1a1f 0%,#1a181d 100%);border-top-color:rgba(255,255,255,.06)}",
-            "html[data-theme=\"dark\"] .cwm-btn--ghost{color:#bfb6a5;border-color:rgba(255,255,255,.1)}",
-            "html[data-theme=\"dark\"] .cwm-btn--ghost:hover{background:rgba(255,255,255,.05);color:#ece8df}",
-            "html[data-theme=\"dark\"] .cwm-btn--secondary{background:#252128;color:#ece8df;border-color:rgba(183,110,255,.3)}",
-            "html[data-theme=\"dark\"] .cwm-btn--secondary:hover{background:#2a2530;border-color:rgba(183,110,255,.55)}",
-            "html[data-theme=\"dark\"] .cwm-close{color:#9b9384}",
-            "html[data-theme=\"dark\"] .cwm-close:hover{background:rgba(255,255,255,.06);color:#ece8df}",
-            "html[data-theme=\"dark\"] .cwm-foot-hint{color:#8a8273}"
+            // dark theme（Claude 暗调，全程中性，无紫）
+            "html[data-theme=\"dark\"] .cwm-card{background:#262624;color:#f5f4ef;border-color:rgba(234,221,216,.10);",
+            "box-shadow:0 1px 2px rgba(0,0,0,.32),0 16px 40px rgba(0,0,0,.5)}",
+            "html[data-theme=\"dark\"] .cwm-title{color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-eyebrow{color:#a6a39a}",
+            "html[data-theme=\"dark\"] .cwm-subtitle{color:#ceccc5}",
+            "html[data-theme=\"dark\"] .cwm-subtitle strong{color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-tile{background:#2f2f2d;border-color:rgba(234,221,216,.10)}",
+            "html[data-theme=\"dark\"] .cwm-tile:hover{border-color:rgba(234,221,216,.28)}",
+            "html[data-theme=\"dark\"] .cwm-tile.cwm-tile--hi{background:#2f2f2d;border-color:rgba(234,221,216,.28)}",
+            "html[data-theme=\"dark\"] .cwm-tile.cwm-tile--hi:hover{border-color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-tile-imgwrap{background:#1f1f1d}",
+            "html[data-theme=\"dark\"] .cwm-tile-title{color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-tile-desc{color:#a6a39a}",
+            "html[data-theme=\"dark\"] .cwm-footer{background:#262624;border-top-color:rgba(234,221,216,.10)}",
+            "html[data-theme=\"dark\"] .cwm-btn--ghost{color:#ceccc5;border-color:rgba(234,221,216,.18)}",
+            "html[data-theme=\"dark\"] .cwm-btn--ghost:hover{background:rgba(255,255,255,.04);color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-btn--secondary{background:#2f2f2d;color:#f5f4ef;border-color:rgba(234,221,216,.18)}",
+            "html[data-theme=\"dark\"] .cwm-btn--secondary:hover{background:#3a3a37;border-color:rgba(234,221,216,.36)}",
+            "html[data-theme=\"dark\"] .cwm-btn--primary{background:#f5f4ef;color:#1a1814;border-color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-btn--primary:hover{background:#fff;border-color:#fff}",
+            "html[data-theme=\"dark\"] .cwm-btn--primary .cwm-btn-spin{border-color:rgba(26,24,20,.35);border-top-color:#1a1814}",
+            "html[data-theme=\"dark\"] .cwm-close{color:#a6a39a}",
+            "html[data-theme=\"dark\"] .cwm-close:hover{background:rgba(255,255,255,.05);color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .cwm-foot-hint{color:#a6a39a}"
         ].join("");
         document.head.appendChild(s);
     }
@@ -309,8 +316,8 @@
         } catch (_) {}
         var n = document.createElement("div");
         n.textContent = msg;
-        n.style.cssText = "position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#1a1814;color:#fce28a;" +
-            "padding:10px 18px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);" +
+        n.style.cssText = "position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#29261b;color:#faf9f5;" +
+            "padding:10px 18px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.18);" +
             "opacity:0;transition:opacity .2s";
         document.body.appendChild(n);
         requestAnimationFrame(function () { n.style.opacity = "1"; });

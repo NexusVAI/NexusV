@@ -2730,24 +2730,71 @@ html[data-theme="dark"] .celebrate-wall-card-badge {
 }
 
 /* ------------------------------------------------------------
- * 14. Thanks (4-column grid)
+ * 14. Thanks（与 poster split-feature 镜像：左图 / 右内容）
+ *      右栏内卡片走 2x2，避免被压扁；图片栏纯净无暗罩
  * ------------------------------------------------------------ */
+.celebrate-thanks-section {
+  /* 让右侧内容区比 poster 的画布稍宽，给 2x2 卡片留够呼吸空间 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+}
+
+@media (max-width: 800px) {
+  .celebrate-thanks-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 图片视觉栏：不复用 poster 的暗罩，保持图片本色 */
+.celebrate-split-visual--thanks {
+  padding: 0;
+  background: transparent;
+  border-radius: var(--cel-radius-xl);
+  overflow: hidden;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  align-self: center;
+}
+
+.celebrate-split-visual--thanks::before {
+  content: none;
+}
+
+.celebrate-thanks-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+@media (max-width: 800px) {
+  .celebrate-split-visual--thanks {
+    aspect-ratio: 4 / 3;
+    max-height: 360px;
+  }
+}
+
+/* 右栏内容容器：让 grid / signoff 占满栅宽 */
+.celebrate-thanks-content {
+  width: 100%;
+}
+
+.celebrate-thanks-content > .celebrate-thanks-grid,
+.celebrate-thanks-content > .celebrate-thanks-signoff {
+  align-self: stretch;
+  width: 100%;
+}
+
 .celebrate-thanks-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--cel-space-md);
-  margin-bottom: var(--cel-space-2xl);
+  margin: var(--cel-space-md) 0 var(--cel-space-xl);
 }
 
-@media (min-width: 720px) {
+@media (min-width: 640px) {
   .celebrate-thanks-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1000px) {
-  .celebrate-thanks-grid {
-    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -2789,13 +2836,13 @@ html[data-theme="dark"] .celebrate-wall-card-badge {
 }
 
 .celebrate-thanks-signoff {
-  text-align: center;
+  text-align: left;
   font-family: var(--cel-font-sans);
-  font-size: 16px;
+  font-size: 15px;
   color: var(--cel-text-soft);
-  line-height: 1.8;
-  max-width: 640px;
-  margin: 0 auto;
+  line-height: 1.75;
+  max-width: none;
+  margin: 0;
 }
 
 .celebrate-thanks-signoff em {
@@ -2806,6 +2853,12 @@ html[data-theme="dark"] .celebrate-wall-card-badge {
   color: var(--cel-text);
   display: block;
   margin-bottom: 6px;
+}
+
+@media (max-width: 800px) {
+  .celebrate-thanks-signoff {
+    text-align: center;
+  }
 }
 
 /* ------------------------------------------------------------

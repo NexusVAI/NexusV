@@ -29,50 +29,54 @@
         var s = document.createElement("style");
         s.id = "hero-easter-egg-styles";
         s.textContent = [
-            // hero icon 提示交互
+            // hero icon 提示交互（去紫色，hover 仅极轻的中性 drop-shadow）
             ".hero-icon{cursor:pointer;transition:transform .18s ease,filter .18s ease;border-radius:8px}",
-            ".hero-icon:hover{transform:scale(1.08) rotate(-3deg);filter:drop-shadow(0 2px 8px rgba(252,201,100,.45))}",
-            ".hero-icon:active{transform:scale(.96)}",
-            // overlay
+            ".hero-icon:hover{transform:scale(1.06) rotate(-2deg);filter:drop-shadow(0 1px 4px rgba(0,0,0,.18))}",
+            ".hero-icon:active{transform:scale(.97)}",
+            // overlay（中性深底，不带紫色调）
             ".hee-overlay{position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;",
-            "padding:16px;background:rgba(20,16,32,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);",
+            "padding:16px;background:rgba(15,15,15,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);",
             "opacity:0;transition:opacity .22s ease}",
             ".hee-overlay.hee-open{opacity:1}",
-            // card
-            ".hee-card{position:relative;width:100%;max-width:420px;background:#fdfcf9;border-radius:18px;overflow:hidden;",
-            "box-shadow:0 24px 60px rgba(40,16,80,.32),0 4px 12px rgba(0,0,0,.08);",
-            "border:1px solid rgba(180,160,210,.22);",
-            "transform:translateY(10px) scale(.96);transition:transform .26s cubic-bezier(.2,.7,.3,1)}",
+            // card（Claude 沙底 + hairline border + 极轻中性阴影）
+            ".hee-card{position:relative;width:100%;max-width:420px;background:#faf9f5;border-radius:16px;overflow:hidden;",
+            "box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.08);",
+            "border:1px solid rgba(112,107,87,.18);",
+            "transform:translateY(8px) scale(.98);transition:transform .26s cubic-bezier(.2,.7,.3,1)}",
             ".hee-overlay.hee-open .hee-card{transform:translateY(0) scale(1)}",
-            // close
+            // close（极简方钮，无阴影）
             ".hee-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border:none;border-radius:8px;",
-            "background:rgba(255,255,255,.85);color:#1a1814;cursor:pointer;display:flex;align-items:center;justify-content:center;",
-            "box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:2;transition:background .15s,transform .15s}",
-            ".hee-close:hover{background:#fff;transform:scale(1.06)}",
+            "background:rgba(255,255,255,.78);color:#29261b;cursor:pointer;display:flex;align-items:center;justify-content:center;",
+            "z-index:2;transition:background .15s,transform .15s}",
+            ".hee-close:hover{background:#fff;transform:scale(1.04)}",
             // poster
-            ".hee-poster{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;background:#1a1814}",
+            ".hee-poster{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;background:#262624}",
             // body
             ".hee-body{padding:20px 22px 22px 22px}",
+            // eyebrow：紫色 → Claude clay，光晕也去掉
             ".hee-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;",
-            "color:#7c4dff;font-weight:600;margin-bottom:10px}",
-            ".hee-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#fcc964;box-shadow:0 0 0 4px rgba(252,201,100,.18)}",
-            ".hee-title{margin:0 0 10px 0;font-size:18px;font-weight:700;line-height:1.3;color:#1a1814;",
+            "color:#656358;font-weight:600;margin-bottom:10px}",
+            ".hee-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#d97757}",
+            ".hee-title{margin:0 0 10px 0;font-size:18px;font-weight:700;line-height:1.3;color:#29261b;",
             "font-family:'Source Serif 4','Source Serif Pro',ui-serif,Georgia,serif;letter-spacing:-.005em}",
-            ".hee-body p{margin:0 0 10px 0;font-size:13.5px;line-height:1.65;color:#4a4338}",
+            ".hee-body p{margin:0 0 10px 0;font-size:13.5px;line-height:1.65;color:#3d3929}",
             ".hee-body p:last-child{margin-bottom:0}",
-            ".hee-body strong{color:#1a1814;font-weight:600}",
-            ".hee-signoff{margin-top:16px !important;padding-top:14px;border-top:1px solid #ece7dc;",
-            "font-size:13px !important;color:#5a5346 !important;font-style:italic}",
-            ".hee-sign-name{display:inline-block;margin-top:4px;font-style:normal;color:#7c4dff;font-weight:600;letter-spacing:.01em}",
-            // dark theme
-            "html[data-theme=\"dark\"] .hee-card{background:#1c1a1f;border-color:rgba(255,255,255,.08)}",
-            "html[data-theme=\"dark\"] .hee-title{color:#fce28a}",
-            "html[data-theme=\"dark\"] .hee-body p{color:#bfb6a5}",
-            "html[data-theme=\"dark\"] .hee-body strong{color:#ece8df}",
-            "html[data-theme=\"dark\"] .hee-signoff{border-top-color:rgba(255,255,255,.08);color:#9b9384 !important}",
-            "html[data-theme=\"dark\"] .hee-sign-name{color:#b76eff}",
-            "html[data-theme=\"dark\"] .hee-close{background:rgba(40,36,46,.92);color:#ece8df}",
-            "html[data-theme=\"dark\"] .hee-close:hover{background:#2a2530}"
+            ".hee-body strong{color:#29261b;font-weight:600}",
+            ".hee-signoff{margin-top:16px !important;padding-top:14px;border-top:1px solid rgba(112,107,87,.22);",
+            "font-size:13px !important;color:#656358 !important;font-style:italic}",
+            // 落款：去紫色，沿用正文色 + 中性强调
+            ".hee-sign-name{display:inline-block;margin-top:4px;font-style:normal;color:#29261b;font-weight:600;letter-spacing:.01em}",
+            // dark theme（Claude 暗调）
+            "html[data-theme=\"dark\"] .hee-card{background:#262624;border-color:rgba(234,221,216,.10);",
+            "box-shadow:0 1px 2px rgba(0,0,0,.32),0 12px 32px rgba(0,0,0,.45)}",
+            "html[data-theme=\"dark\"] .hee-title{color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .hee-eyebrow{color:#a6a39a}",
+            "html[data-theme=\"dark\"] .hee-body p{color:#ceccc5}",
+            "html[data-theme=\"dark\"] .hee-body strong{color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .hee-signoff{border-top-color:rgba(234,221,216,.10);color:#a6a39a !important}",
+            "html[data-theme=\"dark\"] .hee-sign-name{color:#f5f4ef}",
+            "html[data-theme=\"dark\"] .hee-close{background:rgba(38,38,36,.85);color:#e5e5e2}",
+            "html[data-theme=\"dark\"] .hee-close:hover{background:#2f2f2d}"
         ].join("");
         document.head.appendChild(s);
     }

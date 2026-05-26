@@ -32,7 +32,7 @@
         <link rel="stylesheet" href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b" />
 
         <!-- 庆典专用样式 -->
-        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-phase5d" />
+        <link rel="stylesheet" href="./celebrate.css?v=2026-05-29-thanks-split" />
 
         <!-- 全站 supabase 配置（与主站共享：__SUPABASE_URL__ / __SUPABASE_ANON_KEY__） -->
         <script src="./cancri_config.js?v=2026-05-26-signin"></script>
@@ -643,46 +643,57 @@
             </div>
         </section>
 
-        <!-- ============ 致谢 ============ -->
-        <section class="celebrate-section celebrate-thanks-section" id="thanks" aria-labelledby="thanksTitle">
-            <div class="celebrate-section-header">
-                <h2 class="celebrate-section-title" id="thanksTitle">致谢 · 站在巨人的肩膀上</h2>
+        <!-- ============ 致谢 · split-feature（左图 / 右文，与上方海报区镜像） ============ -->
+        <section class="celebrate-split-feature celebrate-split-feature--reverse celebrate-thanks-section" id="thanks" aria-labelledby="thanksTitle">
+            <div class="celebrate-split-visual celebrate-split-visual--thanks">
+                <img
+                    class="celebrate-thanks-image"
+                    src="../Logo/Cancri0526.png"
+                    alt="Cancri 满月"
+                    loading="lazy"
+                    decoding="async"
+                />
+            </div>
+
+            <div class="celebrate-split-content celebrate-thanks-content">
+                <span class="celebrate-eyebrow">thanks · standing on giants</span>
+                <h2 class="celebrate-section-title" id="thanksTitle">致谢 · 站在<i>巨人的肩膀</i>上</h2>
                 <p class="celebrate-section-sub">Cancri 不是凭空出现的。我们感谢这些开源项目和它们的维护者。</p>
-            </div>
 
-            <div class="celebrate-thanks-grid">
-                <div class="celebrate-thanks-block">
-                    <h3>模型与协议</h3>
-                    <ul>
-                        <li>OpenAI · Anthropic · Google · DeepSeek · Qwen · GLM · MiniMax · Moonshot · Doubao · 阶跃 · 智谱 · 商汤</li>
-                    </ul>
+                <div class="celebrate-thanks-grid">
+                    <div class="celebrate-thanks-block">
+                        <h3>模型与协议</h3>
+                        <ul>
+                            <li>OpenAI · Anthropic · Google · DeepSeek · Qwen · GLM · MiniMax · Moonshot · Doubao · 阶跃 · 智谱 · 商汤</li>
+                        </ul>
+                    </div>
+                    <div class="celebrate-thanks-block">
+                        <h3>基础设施</h3>
+                        <ul>
+                            <li>Supabase · PostgreSQL · Cloudflare · GitHub Pages · Turnstile</li>
+                        </ul>
+                    </div>
+                    <div class="celebrate-thanks-block">
+                        <h3>前端依赖</h3>
+                        <ul>
+                            <li>KaTeX · highlight.js · Inter · JetBrains Mono · Lucide</li>
+                        </ul>
+                    </div>
+                    <div class="celebrate-thanks-block">
+                        <h3>社区</h3>
+                        <ul>
+                            <li><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener">QQ 群 1083892008</a></li>
+                            <li><a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub @NexusVAI</a></li>
+                            <li><a href="mailto:nexusvai@qq.com">nexusvai@qq.com</a></li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="celebrate-thanks-block">
-                    <h3>基础设施</h3>
-                    <ul>
-                        <li>Supabase · PostgreSQL · Cloudflare · GitHub Pages · Turnstile</li>
-                    </ul>
-                </div>
-                <div class="celebrate-thanks-block">
-                    <h3>前端依赖</h3>
-                    <ul>
-                        <li>KaTeX · highlight.js · Inter · JetBrains Mono · Lucide</li>
-                    </ul>
-                </div>
-                <div class="celebrate-thanks-block">
-                    <h3>社区</h3>
-                    <ul>
-                        <li><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener">QQ 群 1083892008</a></li>
-                        <li><a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub @NexusVAI</a></li>
-                        <li><a href="mailto:nexusvai@qq.com">nexusvai@qq.com</a></li>
-                    </ul>
-                </div>
-            </div>
 
-            <p class="celebrate-thanks-signoff">
-                <em>"Assembled from the best, owned by you."</em>
-                — Cancri / NexusVAI，2026 年 5 月 29 日
-            </p>
+                <p class="celebrate-thanks-signoff">
+                    <em>"Assembled from the best, owned by you."</em>
+                    — Cancri / NexusVAI，2026 年 5 月 29 日
+                </p>
+            </div>
         </section>
 
         <!-- ============ Final CTA (dark) ============ -->
