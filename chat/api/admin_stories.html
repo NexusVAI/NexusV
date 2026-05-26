@@ -183,6 +183,24 @@
         border-bottom-color: var(--accent, #d4a04d);
       }
 
+      /* 数量徽章：tab/filter 文字后面 */
+      .count-badge {
+        display: inline-block;
+        min-width: 18px;
+        padding: 1px 6px;
+        margin-left: 4px;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-mute);
+        line-height: 1.3;
+      }
+      .filter-btn.active .count-badge {
+        background: rgba(212, 160, 77, 0.25);
+        color: #d4a04d;
+      }
+
       .empty { text-align: center; padding: 40px; color: var(--text-mute); background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
       .empty.err { color: var(--err); }
       .toast {
@@ -249,11 +267,12 @@
         <!-- 故事 toolbar -->
         <div class="toolbar" id="storiesToolbar">
           <div class="filter-group" id="statusFilter">
-            <button class="filter-btn active" data-filter="pending">待审核</button>
-            <button class="filter-btn" data-filter="approved">已通过</button>
-            <button class="filter-btn" data-filter="featured">精选</button>
-            <button class="filter-btn" data-filter="rejected">已驳回</button>
-            <button class="filter-btn" data-filter="all">全部</button>
+            <!-- 默认进入「全部」，避免"通过后什么都看不到"的错觉 -->
+            <button class="filter-btn" data-filter="pending">待审核 <span class="count-badge" data-count-for="pending">·</span></button>
+            <button class="filter-btn" data-filter="approved">已通过 <span class="count-badge" data-count-for="approved">·</span></button>
+            <button class="filter-btn" data-filter="featured">精选 <span class="count-badge" data-count-for="featured">·</span></button>
+            <button class="filter-btn" data-filter="rejected">已驳回 <span class="count-badge" data-count-for="rejected">·</span></button>
+            <button class="filter-btn active" data-filter="all">全部 <span class="count-badge" data-count-for="all">·</span></button>
           </div>
           <button class="reload-btn" id="reload-btn">↻ 刷新</button>
         </div>
@@ -293,6 +312,6 @@
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
       crossorigin="anonymous"
     ></script>
-    <script src="./admin-stories-app.js?v=2026-05-28-phase5"></script>
+    <script src="./admin-stories-app.js?v=2026-05-28-phase5b"></script>
   </body>
 </html>

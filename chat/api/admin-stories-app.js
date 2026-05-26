@@ -24,10 +24,13 @@ const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 
 const state = {
   view: "stories",
-  storyFilter: "pending",
+  // 默认显示「全部」，避免"通过后什么都看不到"的错觉
+  storyFilter: "all",
   commentScope: "wall",
   selected: new Set(), // 选中的 story id（批量操作）
   cache: { stories: [], comments: [], bans: [] },
+  // 各 status 的数量，用于在 tab 上显示徽章
+  storyCounts: { pending: 0, approved: 0, featured: 0, rejected: 0, all: 0 },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -249,9 +252,17 @@ async function actStory(id, decision, card) {
       decision,
       reject_reason: rejectReason,
     });
-    if (data.deleted) toast(`#${id} 已删除`, "ok");
-    else if (data.ok && data.story) toast(`#${id} → ${data.story.status}`, "ok");
-    else toast("处理成功", "ok");
+    if (data.deleted) {
+      toast(`#${id} 已删除`, "ok");
+    } else if (data.ok && data.story) {
+      // 提示用户故事去了哪个 tab；如果当前 filter 不是 'all'，会"消失"
+      const labelMap = { approved: "已通过", featured: "精选", rejected: "已驳回", pending: "待审核" };
+      const nextLabel = labelMap[data.story.status] || data.story.status;
+      const isHidden = state.storyFilter !== "all" && state.storyFilter !== data.story.status;
+      toast(`#${id} → 「${nextLabel}」${isHidden ? "（切到「" + nextLabel + "」或「全部」可查看）" : ""}`, "ok");
+    } else {
+      toast("处理成功", "ok");
+    }
     await reload();
   } catch (e) {
     toast(e.message || "处理失败", "err");
@@ -466,15 +477,39 @@ function openManualBanDialog() {
   openBanDialog({ user_id: uid || null, fingerprint: fp });
 }
 
+// 统计 + 更新 tab 徽章
+function updateStoryCounts(allStories) {
+  const c = { pending: 0, approved: 0, featured: 0, rejected: 0, all: 0 };
+  for (const s of allStories) {
+    c.all += 1;
+    if (c[s.status] !== undefined) c[s.status] += 1;
+  }
+  state.storyCounts = c;
+  document.querySelectorAll(".count-badge[data-count-for]").forEach((el) => {
+    const key = el.getAttribute("data-count-for");
+    el.textContent = String(c[key] != null ? c[key] : 0);
+  });
+}
+
+// 按 state.storyFilter 本地 filter，避免每次切 tab 都打一次后端
+function applyStoryFilter() {
+  const f = state.storyFilter;
+  const stories = state.cache.stories || [];
+  if (f === "all") return stories;
+  return stories.filter((s) => s.status === f);
+}
+
 // ─── reload 派发 ───
 async function reload() {
   const listEl = $("list");
   listEl.innerHTML = '<div class="empty">加载中…</div>';
   try {
     if (state.view === "stories") {
-      const data = await callGw("admin_list_wall_stories", { status: state.storyFilter });
+      // Phase 5b：一次拉全部，本地 filter；这样切 tab 秒变，并且 count 总是准的
+      const data = await callGw("admin_list_wall_stories", { status: "all" });
       state.cache.stories = data.stories || [];
-      renderStories(state.cache.stories);
+      updateStoryCounts(state.cache.stories);
+      renderStories(applyStoryFilter());
       refreshBulkBar();
     } else if (state.view === "comments") {
       const data = await callGw("admin_list_wall_comments", { scope: state.commentScope });
@@ -519,14 +554,19 @@ async function bootstrap() {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
   });
 
-  // stories filter
+  // stories filter：切 tab 只做本地 re-render，已经 cache 在 state.cache.stories
   document.querySelectorAll("#statusFilter .filter-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#statusFilter .filter-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       state.storyFilter = btn.getAttribute("data-filter");
       state.selected.clear();
-      reload();
+      if (state.view === "stories" && state.cache.stories.length >= 0) {
+        renderStories(applyStoryFilter());
+        refreshBulkBar();
+      } else {
+        reload();
+      }
     });
   });
 
