@@ -3368,3 +3368,336 @@ html[data-theme="dark"] .celebrate-wall-card-badge {
     max-height: 200px;
   }
 }
+
+/* ============================================================
+ * 2026-05-28 Phase 4：编年史互动 + QR badge + composer 双按钮
+ * ============================================================ */
+
+/* 故事墙 composer 双按钮（分享海报 + 提交故事） */
+.celebrate-wall-composer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- 编年史卡片底部 stats 栏 ---------- */
+.celebrate-timeline-card {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.celebrate-timeline-card:hover,
+.celebrate-timeline-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32);
+  outline: none;
+}
+.celebrate-timeline-card:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55), 0 16px 38px rgba(0, 0, 0, 0.32);
+}
+
+.celebrate-timeline-card--skeleton {
+  cursor: default;
+  background-color: rgba(40, 40, 50, 0.6) !important;
+  background-image: none !important;
+}
+.celebrate-timeline-card--skeleton:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.celebrate-chronicle-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  font-family: var(--cel-font-mono);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.celebrate-chronicle-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease;
+}
+.celebrate-chronicle-stat.is-liked {
+  color: #ff7a92;
+}
+.celebrate-chronicle-stat-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.celebrate-chronicle-stat-num {
+  font-size: 12.5px;
+}
+
+.celebrate-chronicle-expand-hint {
+  margin-left: auto;
+  font-family: var(--cel-font-sans);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ---------- 编年史详情 modal ---------- */
+html.celebrate-chronicle-modal-open {
+  overflow: hidden;
+}
+
+.celebrate-chronicle-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 36px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.celebrate-chronicle-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.celebrate-chronicle-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 8, 12, 0.78);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.celebrate-chronicle-modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(880px, 100%);
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: var(--cel-bg, #15151c);
+  color: var(--cel-text, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  transform: translateY(16px) scale(0.985);
+  transition: transform 0.22s ease;
+}
+html[data-theme="light"] .celebrate-chronicle-modal-panel {
+  background: #faf9f5;
+  color: #29261b;
+}
+.celebrate-chronicle-modal.is-open .celebrate-chronicle-modal-panel {
+  transform: translateY(0) scale(1);
+}
+
+.celebrate-chronicle-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.36);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.celebrate-chronicle-modal-close:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: scale(1.05);
+}
+
+/* 顶图：占 modal 40% 高度（≥420px：用 vh 兜底，但有 max-height） */
+.celebrate-chronicle-modal-cover {
+  height: clamp(220px, 38vh, 360px);
+  background-size: cover;
+  background-position: center;
+  background-color: #1a1a1a;
+  position: relative;
+}
+.celebrate-chronicle-modal-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.05) 40%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  pointer-events: none;
+}
+
+.celebrate-chronicle-modal-content {
+  padding: clamp(20px, 3vw, 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: thin;
+}
+.celebrate-chronicle-modal-content::-webkit-scrollbar { width: 6px; }
+.celebrate-chronicle-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.35);
+  border-radius: 999px;
+}
+
+.celebrate-chronicle-modal-eyebrow {
+  font-family: var(--cel-font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: var(--cel-text-dim, rgba(255, 255, 255, 0.55));
+  text-transform: uppercase;
+}
+
+.celebrate-chronicle-modal-title {
+  font-family: var(--cel-font-serif);
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 500;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--cel-text, rgba(255, 255, 255, 0.96));
+}
+
+.celebrate-chronicle-modal-summary {
+  font-family: var(--cel-font-sans);
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--cel-text-soft, rgba(255, 255, 255, 0.78));
+  margin: 0;
+}
+
+.celebrate-chronicle-modal-body {
+  font-family: var(--cel-font-sans);
+  font-size: 15px;
+  line-height: 1.78;
+  color: var(--cel-text, rgba(255, 255, 255, 0.88));
+}
+.celebrate-chronicle-modal-body p {
+  margin: 0 0 12px;
+}
+.celebrate-chronicle-modal-body p:last-child {
+  margin-bottom: 0;
+}
+.celebrate-chronicle-modal-body strong {
+  color: var(--cel-text, rgba(255, 255, 255, 1));
+  font-weight: 600;
+}
+
+.celebrate-chronicle-modal-link {
+  align-self: flex-start;
+  font-family: var(--cel-font-sans);
+  font-size: 13.5px;
+  color: var(--cel-text-soft, rgba(255, 255, 255, 0.88));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  text-decoration: none;
+  padding-bottom: 1px;
+  transition: border-color 0.15s ease;
+}
+.celebrate-chronicle-modal-link:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.9);
+}
+
+.celebrate-chronicle-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+}
+
+.celebrate-chronicle-modal-comments {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.celebrate-chronicle-modal-comments .celebrate-wall-comments-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* ---------- 左下角 QR badge ---------- */
+.celebrate-qr-badge {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 800;
+  border-radius: 14px;
+  padding: 7px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  -webkit-backdrop-filter: saturate(140%);
+  backdrop-filter: saturate(140%);
+}
+.celebrate-qr-badge:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+}
+.celebrate-qr-badge-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #16161a;
+  font-family: var(--cel-font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+.celebrate-qr-badge-link img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.celebrate-qr-badge-text {
+  padding-right: 8px;
+  font-weight: 600;
+  color: #29261b;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .celebrate-qr-badge {
+    left: 12px;
+    bottom: 12px;
+    padding: 5px;
+  }
+  .celebrate-qr-badge-link img {
+    width: 44px;
+    height: 44px;
+  }
+  .celebrate-qr-badge-text { display: none; }
+  .celebrate-chronicle-modal-panel {
+    max-height: calc(100vh - 24px);
+  }
+  .celebrate-chronicle-modal-cover {
+    height: clamp(180px, 32vh, 280px);
+  }
+  .celebrate-chronicle-stats {
+    gap: 10px;
+    font-size: 12px;
+  }
+  .celebrate-chronicle-expand-hint {
+    display: none;
+  }
+}

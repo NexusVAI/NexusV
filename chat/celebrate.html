@@ -32,7 +32,7 @@
         <link rel="stylesheet" href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b" />
 
         <!-- 庆典专用样式 -->
-        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-wall-v2" />
+        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-phase4" />
 
         <!-- 全站 supabase 配置（与主站共享：__SUPABASE_URL__ / __SUPABASE_ANON_KEY__） -->
         <script src="./cancri_config.js?v=2026-05-26-signin"></script>
@@ -268,56 +268,12 @@
                     </p>
                 </div>
                 <div class="celebrate-timeline-track-wrap" data-timeline-wrap>
-                    <ol class="celebrate-timeline-track" data-timeline-track>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-04-28 · D0</span>
-                            <h3 class="celebrate-timeline-card-title">命运齿轮悄悄转动</h3>
-                            <p class="celebrate-timeline-card-body">项目立项的那一晚，最初只是一个内嵌在网页里的小助手。没有名字，没有 logo，只有一个想法：让每个人都能调用最好的模型。</p>
-                        </li>
-                        <li class="celebrate-timeline-card celebrate-timeline-card--milestone">
-                            <span class="celebrate-timeline-card-date">2026-04-29 · D1</span>
-                            <h3 class="celebrate-timeline-card-title">Cancri / NexusVAI 正式发布</h3>
-                            <p class="celebrate-timeline-card-body">第一行公开可访问的代码上线。20+ 主流大模型免费调用，无 token 限额，登录即用。</p>
-                        </li>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-05-10 · D12</span>
-                            <h3 class="celebrate-timeline-card-title">风控策略升级</h3>
-                            <p class="celebrate-timeline-card-body">针对高频自动化请求启用滥用防护，以行为特征为核心，正常用户不受影响。</p>
-                        </li>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-05-12 · D14</span>
-                            <h3 class="celebrate-timeline-card-title">服务状态实时监控</h3>
-                            <p class="celebrate-timeline-card-body">可随时查看各模型线路的健康状况和延迟数据。<a class="celebrate-timeline-card-link" href="https://nexusvai.github.io/ChatAI-status/" target="_blank" rel="noopener">前往 status →</a></p>
-                        </li>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-05-14 · D16</span>
-                            <h3 class="celebrate-timeline-card-title">API 平台开放</h3>
-                            <p class="celebrate-timeline-card-body">在线注册即可领取永久免费 API key，支持 OpenAI 兼容协议。<a class="celebrate-timeline-card-link" href="./api/">前往 API 平台 →</a></p>
-                        </li>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-05-16 · D18</span>
-                            <h3 class="celebrate-timeline-card-title">未授权账号清理 · 指纹采集上线</h3>
-                            <p class="celebrate-timeline-card-body">1438 个未授权账号被永久封禁；同期设备 / 浏览器指纹用于反多账号识别。</p>
-                        </li>
-                        <li class="celebrate-timeline-card celebrate-timeline-card--milestone">
-                            <span class="celebrate-timeline-card-date">2026-05-17 · D19</span>
-                            <h3 class="celebrate-timeline-card-title">三档订阅 · Pro / Pro+ / Pro Max</h3>
-                            <p class="celebrate-timeline-card-body">¥9.9 套餐拆三档，Claude Opus 升级到 Pro+ 专属。5/17 前付费用户老福利不变。<a class="celebrate-timeline-card-link" href="./pricing.html">套餐页 →</a></p>
-                        </li>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-05-22 · D24</span>
-                            <h3 class="celebrate-timeline-card-title">Claude 1:1 复刻完成</h3>
-                            <p class="celebrate-timeline-card-body">登录页、工作台、设置面板全部对齐 Claude 官方视觉；同时保留 Cancri 自有的液态玻璃质感。</p>
-                        </li>
-                        <li class="celebrate-timeline-card">
-                            <span class="celebrate-timeline-card-date">2026-05-24 · D26</span>
-                            <h3 class="celebrate-timeline-card-title">风险登录二次验证</h3>
-                            <p class="celebrate-timeline-card-body">异常登录触发 Turnstile 二次校验 + 申诉通道；安全与体验同步加固。</p>
-                        </li>
-                        <li class="celebrate-timeline-card celebrate-timeline-card--moon">
-                            <span class="celebrate-timeline-card-date">2026-05-29 · D30</span>
-                            <h3 class="celebrate-timeline-card-title">满月 · 与你同行的第 30 天</h3>
-                            <p class="celebrate-timeline-card-body"><strong>今天就是满月。</strong>感谢每一位陪我们走过这 30 天的朋友。前面还有更长的路，我们一起走。</p>
+                    <!-- 2026-05-28 Phase 4：卡片由 celebrate_chronicle.js 从 celebrate-stats?action=chronicle_list 动态渲染 -->
+                    <ol id="celebrateChronicleTrack" class="celebrate-timeline-track" data-timeline-track data-source="loading">
+                        <li class="celebrate-timeline-card celebrate-timeline-card--skeleton" aria-hidden="true">
+                            <span class="celebrate-timeline-card-date">加载中…</span>
+                            <h3 class="celebrate-timeline-card-title">正在取回这 30 天的记忆</h3>
+                            <p class="celebrate-timeline-card-body">编年史卡片加载中。如果广告拦截了可能会隔很久才出现，或者干脆不出现。</p>
                         </li>
                     </ol>
                 </div>
@@ -617,9 +573,14 @@
                 ></textarea>
                 <div class="celebrate-wall-composer-foot">
                     <span class="celebrate-wall-count"><span id="wallCharCount">0</span> / 300</span>
-                    <button class="celebrate-btn celebrate-btn--primary celebrate-btn--sm" id="wallSubmitBtn" type="button">
-                        提交故事
-                    </button>
+                    <div class="celebrate-wall-composer-actions">
+                        <button class="celebrate-btn celebrate-btn--ghost celebrate-btn--sm" id="wallSharePosterBtn" type="button" title="下载一张你的专属满月海报，分享到你想分享的地方">
+                            分享我的海报
+                        </button>
+                        <button class="celebrate-btn celebrate-btn--primary celebrate-btn--sm" id="wallSubmitBtn" type="button">
+                            提交故事
+                        </button>
+                    </div>
                 </div>
                 <p class="celebrate-wall-policy">
                     需登录后提交 · 每天 1 条 · 含敏感内容将被拒绝 · 审核通过后公开展示
@@ -746,11 +707,38 @@
             </p>
         </footer>
 
+        <!-- ============ 左下角 嵌入 QR 二维码 ============ -->
+        <aside class="celebrate-qr-badge" id="celebrateQrBadge" aria-label="扫码到 nexusvai.xyz">
+            <a class="celebrate-qr-badge-link" href="https://www.nexusvai.xyz/chat/celebrate.html" aria-label="返回 Cancri">
+                <img src="../Logo/2WM1.png" alt="扫码访问 Cancri" loading="lazy" />
+                <span class="celebrate-qr-badge-text">扫码进入</span>
+            </a>
+        </aside>
+
+        <!-- ============ 编年史详情 modal ============ -->
+        <div class="celebrate-chronicle-modal" id="celebrateChronicleModal" hidden role="dialog" aria-modal="true" aria-labelledby="chronicleModalTitle">
+            <div class="celebrate-chronicle-modal-backdrop" data-chronicle-close></div>
+            <div class="celebrate-chronicle-modal-panel" role="document">
+                <button class="celebrate-chronicle-modal-close" type="button" data-chronicle-close aria-label="关闭">×</button>
+                <div class="celebrate-chronicle-modal-cover" id="chronicleModalCover" aria-hidden="true"></div>
+                <div class="celebrate-chronicle-modal-content">
+                    <span class="celebrate-chronicle-modal-eyebrow" id="chronicleModalEyebrow">2026-04-28 · D0</span>
+                    <h3 class="celebrate-chronicle-modal-title" id="chronicleModalTitle">标题</h3>
+                    <p class="celebrate-chronicle-modal-summary" id="chronicleModalSummary">摘要</p>
+                    <div class="celebrate-chronicle-modal-body" id="chronicleModalBody">正文</div>
+                    <a class="celebrate-chronicle-modal-link" id="chronicleModalLink" href="#" hidden></a>
+                    <div class="celebrate-chronicle-modal-actions" id="chronicleModalActions"></div>
+                    <div class="celebrate-chronicle-modal-comments" id="chronicleModalComments"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- 庆典脚本 -->
         <!-- v2 wall：必须在 celebrate.js 之前加载，以便 sentinel window.__CANCRI_WALL_V2__ 先设置 -->
-        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-wall-v2"></script>
-        <script defer src="./celebrate.js?v=2026-05-28-wall-v2"></script>
-        <script defer src="./celebrate_poster.js?v=2026-05-25-topmodels"></script>
-        <script defer src="./celebrate_scroll.js?v=2026-05-25-sticky"></script>
+        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-phase4"></script>
+        <script defer src="./celebrate.js?v=2026-05-28-phase4"></script>
+        <script defer src="./celebrate_chronicle.js?v=2026-05-28-phase4"></script>
+        <script defer src="./celebrate_poster.js?v=2026-05-28-phase4"></script>
+        <script defer src="./celebrate_scroll.js?v=2026-05-28-phase4"></script>
     </body>
 </html>

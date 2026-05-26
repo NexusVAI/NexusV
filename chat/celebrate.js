@@ -334,6 +334,29 @@
         if (grid) {
             loadWallStories(grid);
         }
+
+        // 2026-05-28 Phase 4：故事墙「分享我的海报」快捷按钮
+        // 行为：滚到 #poster 区域 → 触发同款下载按钮 click（如果 canvas 已就绪）
+        var shareBtn = $("#wallSharePosterBtn");
+        if (shareBtn) {
+            shareBtn.addEventListener("click", function () {
+                var posterSection = document.getElementById("poster");
+                if (posterSection) {
+                    posterSection.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+                // 给海报一个聚焦动画 + 触发下载
+                var downloadBtn = document.getElementById("posterDownloadBtn");
+                if (!downloadBtn) {
+                    showToast("海报区域还在初始化，请稍后再试");
+                    return;
+                }
+                // 等滚动稳定后再触发下载，避免 mobile 体验割裂
+                setTimeout(function () {
+                    downloadBtn.click();
+                    showToast("正在导出你的满月海报…");
+                }, 600);
+            });
+        }
     }
 
     function submitStory(content) {
