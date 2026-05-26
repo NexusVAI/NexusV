@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>管理员 · 满月故事审核 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+    <script src="./_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api-platform.css?v=2026-05-28-stories-p5" />
+    <style>
+      /* ---- 通用卡片 ---- */
+      .story-card, .comment-card, .ban-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        margin-bottom: 14px;
+        padding: 16px 18px;
+        display: grid;
+        gap: 12px;
+      }
+      .story-card.approved { border-left-color: #22c55e; opacity: 0.92; }
+      .story-card.featured { border-left-color: #d4a04d; background: linear-gradient(135deg, rgba(212, 160, 77, 0.06), var(--bg-card)); }
+      .story-card.rejected { border-left-color: var(--err); opacity: 0.78; }
+      .ban-card { border-left-color: rgba(232, 90, 90, 0.5); }
+      .comment-card.scope-chronicle { border-left-color: #8a7ce4; }
+      .comment-card.scope-wall { border-left-color: #4ea1d3; }
+
+      .sc-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .sc-id {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .sc-time { font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+      .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+      .pill.pending { background: rgba(212, 160, 77, 0.16); color: #d4a04d; }
+      .pill.approved { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
+      .pill.featured { background: rgba(212, 160, 77, 0.22); color: #d4a04d; border: 1px solid rgba(212, 160, 77, 0.4); }
+      .pill.rejected { background: rgba(232, 90, 90, 0.16); color: var(--err); }
+      .pill.banned { background: rgba(232, 90, 90, 0.22); color: var(--err); border: 1px solid rgba(232, 90, 90, 0.4); }
+      .pill.scope { background: rgba(78, 161, 211, 0.18); color: #4ea1d3; }
+      .pill.scope.chronicle { background: rgba(138, 124, 228, 0.22); color: #8a7ce4; }
+
+      .sc-author { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+      .sc-name { font-weight: 600; }
+      .sc-uid, .sc-email, .sc-fp, .sc-ip {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 10.5px;
+        color: var(--text-faint);
+        word-break: break-all;
+      }
+      .sc-email { color: var(--text-mute); }
+
+      /* 元数据栏：IP / FP / 用户 ID 一行展示 */
+      .sc-meta-row {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        font-size: 11px;
+        color: var(--text-mute);
+        padding: 6px 10px;
+        background: var(--bg-elev);
+        border-radius: 6px;
+      }
+      .sc-meta-row span code {
+        color: var(--text);
+        font-size: 11px;
+        padding: 0 4px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 3px;
+      }
+      .sc-meta-row .copy-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        padding: 1px 6px;
+        font-size: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .sc-meta-row .copy-btn:hover { color: var(--text); border-color: var(--text-mute); }
+
+      .sc-content {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: var(--text);
+      }
+
+      /* 图片缩略图 */
+      .sc-images {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .sc-images a {
+        display: block;
+        width: 84px;
+        height: 84px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .sc-images img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+      .sc-reject-reason {
+        color: var(--err);
+        font-size: 12px;
+        padding: 6px 10px;
+        background: rgba(232, 90, 90, 0.08);
+        border-radius: 6px;
+      }
+      .sc-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .btn-approve, .btn-feature, .btn-reject, .btn-delete, .btn-ban, .btn-unban {
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .btn-approve { background: rgba(34, 197, 94, 0.18); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
+      .btn-feature { background: rgba(212, 160, 77, 0.18); color: #d4a04d; border-color: rgba(212, 160, 77, 0.35); }
+      .btn-reject { background: rgba(232, 90, 90, 0.18); color: var(--err); border-color: rgba(232, 90, 90, 0.3); }
+      .btn-delete { background: transparent; color: var(--text-mute); border-color: var(--border); }
+      .btn-ban { background: rgba(232, 90, 90, 0.12); color: var(--err); border-color: rgba(232, 90, 90, 0.45); }
+      .btn-unban { background: rgba(34, 197, 94, 0.12); color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+      .btn-approve:hover, .btn-feature:hover, .btn-reject:hover, .btn-ban:hover, .btn-unban:hover { opacity: 0.85; }
+      .btn-delete:hover { color: var(--err); border-color: var(--err); }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      /* 批量操作栏 */
+      .bulk-bar {
+        position: sticky;
+        top: 0;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        z-index: 50;
+      }
+      .bulk-bar.is-hidden { display: none; }
+      .sc-select { width: 18px; height: 18px; cursor: pointer; }
+
+      /* tabs */
+      .view-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .view-tabs button {
+        background: transparent;
+        border: none;
+        padding: 10px 18px;
+        cursor: pointer;
+        color: var(--text-mute);
+        font-size: 14px;
+        border-bottom: 2px solid transparent;
+      }
+      .view-tabs button.active {
+        color: var(--text);
+        border-bottom-color: var(--accent, #d4a04d);
+      }
+
+      /* 数量徽章：tab/filter 文字后面 */
+      .count-badge {
+        display: inline-block;
+        min-width: 18px;
+        padding: 1px 6px;
+        margin-left: 4px;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-mute);
+        line-height: 1.3;
+      }
+      .filter-btn.active .count-badge {
+        background: rgba(212, 160, 77, 0.25);
+        color: #d4a04d;
+      }
+
+      .empty { text-align: center; padding: 40px; color: var(--text-mute); background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; }
+      .empty.err { color: var(--err); }
+      .toast {
+        position: fixed; right: 24px; bottom: 24px;
+        background: var(--bg-card); color: var(--text);
+        border: 1px solid var(--border); border-radius: 8px;
+        padding: 10px 16px; font-size: 13px;
+        opacity: 0; transform: translateY(8px);
+        transition: opacity 0.2s, transform 0.2s;
+        pointer-events: none; z-index: 1000;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      .toast.ok { border-color: rgba(34, 197, 94, 0.4); }
+      .toast.err { border-color: rgba(232, 90, 90, 0.4); }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin.html">审核</a>
+        <a href="./admin_orders.html">订单</a>
+        <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
+        <a href="./admin_users.html">用户</a>
+        <a href="./admin_appeals.html">申诉</a>
+        <a href="./admin_stories.html" class="active">满月故事</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>这个页面仅站点管理员可见。</p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>满月内容管理</h1>
+          <p>
+            管理 <code>celebrate.html</code> 的故事墙、编年史评论与禁言名单。
+            通过 = 上故事墙；精选 = 上故事墙 + 1M token；驳回 = 写理由不上墙；
+            删除 = 物理删除；禁言 = 拉黑 user_id 或指纹，全局或单 scope。
+          </p>
+        </header>
+
+        <!-- 视图切换：故事 / 评论 / 禁言 -->
+        <div class="view-tabs" id="viewTabs">
+          <button data-view="stories" class="active">故事</button>
+          <button data-view="comments">评论</button>
+          <button data-view="bans">禁言名单</button>
+        </div>
+
+        <!-- 故事 toolbar -->
+        <div class="toolbar" id="storiesToolbar">
+          <div class="filter-group" id="statusFilter">
+            <!-- 默认进入「全部」，避免"通过后什么都看不到"的错觉 -->
+            <button class="filter-btn" data-filter="pending">待审核 <span class="count-badge" data-count-for="pending">·</span></button>
+            <button class="filter-btn" data-filter="approved">已通过 <span class="count-badge" data-count-for="approved">·</span></button>
+            <button class="filter-btn" data-filter="featured">精选 <span class="count-badge" data-count-for="featured">·</span></button>
+            <button class="filter-btn" data-filter="rejected">已驳回 <span class="count-badge" data-count-for="rejected">·</span></button>
+            <button class="filter-btn active" data-filter="all">全部 <span class="count-badge" data-count-for="all">·</span></button>
+          </div>
+          <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+        </div>
+
+        <!-- 评论 toolbar -->
+        <div class="toolbar" id="commentsToolbar" style="display:none">
+          <div class="filter-group" id="commentScopeFilter">
+            <button class="filter-btn active" data-scope="wall">故事墙</button>
+            <button class="filter-btn" data-scope="chronicle">编年史</button>
+          </div>
+          <button class="reload-btn" id="comments-reload-btn">↻ 刷新</button>
+        </div>
+
+        <!-- 禁言 toolbar -->
+        <div class="toolbar" id="bansToolbar" style="display:none">
+          <button class="reload-btn" id="bans-reload-btn">↻ 刷新</button>
+          <button class="filter-btn" id="add-ban-btn">+ 手动禁言</button>
+        </div>
+
+        <!-- 批量操作栏（仅故事 view 显示） -->
+        <div class="bulk-bar is-hidden" id="bulkBar">
+          <span id="bulkCount">已选 0 条</span>
+          <button class="btn-approve" data-bulk="approve">批量通过</button>
+          <button class="btn-reject" data-bulk="reject">批量驳回</button>
+          <button class="btn-delete" data-bulk="delete">批量删除</button>
+          <button class="btn-unban" id="bulkClearBtn" type="button">取消选择</button>
+        </div>
+
+        <div id="list"></div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="./admin-stories-app.js?v=2026-05-28-phase5b"></script>
+  </body>
+</html>
