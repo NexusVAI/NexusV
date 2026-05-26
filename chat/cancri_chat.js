@@ -13277,6 +13277,43 @@ function bindComposerDragAndDrop() {
 
 bindComposerDragAndDrop();
 
+// 2026-05-26：输入框直接粘贴图片 / 视频（与拖拽走同一条 ingest 路径）。
+// 触发：在 #homeInput 内 Ctrl+V / Cmd+V，clipboard 含 image/* 或 video/* file。
+// 行为：截屏、QQ/微信截图、浏览器右键复制图片、Finder/资源管理器复制文件都生效。
+// 只对包含文件的粘贴 preventDefault；纯文本走浏览器原生粘贴，避免破坏文字编辑体验。
+function bindComposerPaste() {
+  if (!homeInput) return;
+  homeInput.addEventListener("paste", async (event) => {
+    const cd = event.clipboardData;
+    if (!cd) return;
+    const items = Array.from(cd.items || []);
+    const fileItems = items.filter((it) => {
+      if (it.kind !== "file") return false;
+      const t = String(it.type || "");
+      return t.startsWith("image/") || t.startsWith("video/");
+    });
+    if (!fileItems.length) return; // 纯文本粘贴：让浏览器原生处理
+    event.preventDefault();
+    const files = fileItems.map((it) => it.getAsFile()).filter(Boolean);
+    if (files.length) {
+      await handleSelectedAttachmentFiles(files);
+    }
+    // 同时把纯文本部分塞进 textarea，保留原生粘贴的字符插入行为
+    const text = cd.getData("text/plain");
+    if (text) {
+      const start = homeInput.selectionStart || 0;
+      const end = homeInput.selectionEnd || 0;
+      const before = homeInput.value.slice(0, start);
+      const after = homeInput.value.slice(end);
+      homeInput.value = before + text + after;
+      const pos = start + text.length;
+      homeInput.selectionStart = homeInput.selectionEnd = pos;
+      homeInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+}
+bindComposerPaste();
+
 homeInput.addEventListener("keydown", (e) => {
   const isMobile = window.matchMedia("(max-width: 640px)").matches;
   if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {

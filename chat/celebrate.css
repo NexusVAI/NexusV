@@ -345,6 +345,17 @@ p {
   transform: translateX(-50%) translateY(0);
 }
 
+/* 点击 panel 内子项后由 JS 临时打上 data-celebrate-closing，强制收起，
+   避免鼠标仍在 group 区域里 hover 又把 panel 顶回来。300ms 后由 JS 摘除。 */
+.celebrate-nav-group[data-celebrate-closing] .celebrate-mega-panel,
+.celebrate-nav-group[data-celebrate-closing]:hover .celebrate-mega-panel,
+.celebrate-nav-group[data-celebrate-closing]:focus-within .celebrate-mega-panel {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateX(-50%) translateY(-4px) !important;
+}
+
 .celebrate-mega-panel a {
   display: flex;
   flex-direction: column;
@@ -1162,6 +1173,17 @@ html[data-theme="dark"] .celebrate-countdown[data-state="ended"] {
   letter-spacing: -0.04em;
   color: var(--cel-text);
   font-variant-numeric: tabular-nums;
+  display: inline-block;
+}
+
+/* 实时刷新闪动：数字变化时一闪即灭，给 hint 用户 "刚刚更新了" 的微反馈 */
+@keyframes celebrateCountupFlash {
+  0%   { color: var(--cel-text); }
+  35%  { color: var(--cel-accent, #ffd166); }
+  100% { color: var(--cel-text); }
+}
+.celebrate-countup-flash {
+  animation: celebrateCountupFlash 700ms ease-out;
 }
 
 .celebrate-countup-label {
@@ -1639,6 +1661,19 @@ html[data-theme="dark"] .celebrate-timeline-link {
 .celebrate-benefit-card:hover {
   border-color: var(--cel-border-strong);
   background: var(--cel-bg-soft);
+}
+
+/* 第九重「互动三件套」高亮：暖色描边 + 角标，让用户一眼识别新加入的福利 */
+.celebrate-benefit-card--feature {
+  border-color: color-mix(in srgb, var(--cel-accent, #ffd166) 55%, var(--cel-border));
+  background: color-mix(in srgb, var(--cel-accent, #ffd166) 4%, transparent);
+}
+.celebrate-benefit-card--feature:hover {
+  border-color: var(--cel-accent, #ffd166);
+  background: color-mix(in srgb, var(--cel-accent, #ffd166) 7%, transparent);
+}
+.celebrate-benefit-card--feature .celebrate-benefit-eyebrow {
+  color: color-mix(in srgb, var(--cel-accent, #ffd166) 85%, var(--cel-text-dim));
 }
 
 /* 上嵌 eyebrow：代替之前浮动的 badge，极小 mono 大写 */
@@ -2294,14 +2329,20 @@ html[data-theme="dark"] .celebrate-timeline-link {
 .celebrate-timeline-card--milestone::after { content: "milestone"; }
 .celebrate-timeline-card--moon::after { content: "moonday"; }
 
-/* 7 张照片循环到 10 个卡（含新增 NESYUDX / NJeys） */
-.celebrate-timeline-card:nth-child(7n + 1) { background-image: url("../Logo/neys.png"); }
-.celebrate-timeline-card:nth-child(7n + 2) { background-image: url("../Logo/neyyys.png"); }
-.celebrate-timeline-card:nth-child(7n + 3) { background-image: url("../Logo/neyssa.png"); }
-.celebrate-timeline-card:nth-child(7n + 4) { background-image: url("../Logo/neyyyss.png"); }
-.celebrate-timeline-card:nth-child(7n + 5) { background-image: url("../Logo/neysyss.png"); }
-.celebrate-timeline-card:nth-child(7n + 6) { background-image: url("../Logo/NESYUDX.png"); }
-.celebrate-timeline-card:nth-child(7n + 7) { background-image: url("../Logo/NJeys.png"); }
+/* 11 张照片循环到 18+ 个卡（2026-05-26 新增 4 张穿插，降低重复感）
+   原 7 张 + 新 4 张（neyswawea / neyysawaw / neyyswa / neyyysw）穿插排列，
+   保证相邻两张不重复，整体周期为 11。 */
+.celebrate-timeline-card:nth-child(11n + 1)  { background-image: url("../Logo/neys.png"); }
+.celebrate-timeline-card:nth-child(11n + 2)  { background-image: url("../Logo/neyswawea.png"); }
+.celebrate-timeline-card:nth-child(11n + 3)  { background-image: url("../Logo/neyyys.png"); }
+.celebrate-timeline-card:nth-child(11n + 4)  { background-image: url("../Logo/neyysawaw.png"); }
+.celebrate-timeline-card:nth-child(11n + 5)  { background-image: url("../Logo/neyssa.png"); }
+.celebrate-timeline-card:nth-child(11n + 6)  { background-image: url("../Logo/neyyswa.png"); }
+.celebrate-timeline-card:nth-child(11n + 7)  { background-image: url("../Logo/neyyyss.png"); }
+.celebrate-timeline-card:nth-child(11n + 8)  { background-image: url("../Logo/neyyysw.png"); }
+.celebrate-timeline-card:nth-child(11n + 9)  { background-image: url("../Logo/neysyss.png"); }
+.celebrate-timeline-card:nth-child(11n + 10) { background-image: url("../Logo/NESYUDX.png"); }
+.celebrate-timeline-card:nth-child(11n + 11) { background-image: url("../Logo/NJeys.png"); }
 
 .celebrate-timeline-card-date {
   font-family: var(--cel-font-mono);

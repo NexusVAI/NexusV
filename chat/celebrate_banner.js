@@ -77,7 +77,7 @@
             subHtml = "签到、转盘、加油包、套餐折扣已就位 · 点击查看准备好的福利 →";
         } else if (phase === "main") {
             titleHtml = "<strong>" + icon + " Cancri 满月庆典进行中</strong> 5/29 - 5/31 限定";
-            subHtml = "8 重福利全员到账 · 套餐 5 折起 · 充返加油包 · 满月签到送 24h Pro · 创世徽章今日可领";
+            subHtml = "九重福利全员到账 · 套餐 5 折起 · 充返加油包 · 满月签到送 24h Pro · 编年史评论 / 留言精选送 token";
         } else {
             titleHtml = "<strong>🌖 满月余晖</strong> 转盘 / 加油包仍在领取中";
             subHtml = "转盘每天 1 次（至 6/4） · 故事墙开放至 6/4 · 点击查看活动收尾";

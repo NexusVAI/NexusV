@@ -128,17 +128,39 @@
     }
 
     // ---------- 3. 数字看板 ----------
+    // 实时刷新策略：首屏用 1.6s 长动画，之后每 30 秒静默刷新一次。
+    // 后端 celebrate-stats 已带 5min CDN 缓存，前端每 30s 一次大概率命中
+    // CDN，对源站零额外压力；命中真值变更时数字会有一次短动画过渡。
+    var COUNTUP_REFRESH_INTERVAL_MS = 30 * 1000;
+    var _countupTimer = null;
+    var _countupLast = {};
+
     function initCountup() {
         var grid = $("#countupGrid");
         if (!grid) return;
 
-        fetchStats()
-            .then(function (data) {
-                renderCountup(grid, data);
-            })
-            .catch(function () {
-                renderCountup(grid, FALLBACK_SNAPSHOT);
-            });
+        function refresh(isFirst) {
+            fetchStats()
+                .then(function (data) {
+                    renderCountup(grid, data, isFirst);
+                })
+                .catch(function () {
+                    if (isFirst) renderCountup(grid, FALLBACK_SNAPSHOT, true);
+                });
+        }
+
+        refresh(true);
+
+        // 页面隐藏时停刷新，省电省流量；切回前台立刻补一次
+        if (_countupTimer) clearInterval(_countupTimer);
+        _countupTimer = setInterval(function () {
+            if (document.hidden) return;
+            refresh(false);
+        }, COUNTUP_REFRESH_INTERVAL_MS);
+
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) refresh(false);
+        });
     }
 
     function fetchStats() {
@@ -183,19 +205,31 @@
         });
     }
 
-    function renderCountup(grid, data) {
+    function renderCountup(grid, data, isFirst) {
         grid.setAttribute("data-snapshot-source", data.source || "unknown");
         var keys = ["users", "conversations", "tokens", "models"];
         keys.forEach(function (k) {
             var el = grid.querySelector('[data-countup-key="' + k + '"]');
             if (!el) return;
             var target = Number(data[k] || 0);
-            animateCountup(el, target, 1600);
+            var prev = _countupLast[k];
+            if (isFirst) {
+                animateCountup(el, 0, target, 1600);
+            } else if (prev != null && prev !== target) {
+                // 数值有变化：从旧值短动画过渡到新值，并加一闪 highlight
+                animateCountup(el, prev, target, 700);
+                el.classList.remove("celebrate-countup-flash");
+                void el.offsetWidth;
+                el.classList.add("celebrate-countup-flash");
+            } else if (prev == null) {
+                // 后续刷新但没有 prev（首次失败 fallback 后第二次成功）：直接 set
+                el.textContent = formatBigNumber(target);
+            }
+            _countupLast[k] = target;
         });
     }
 
-    function animateCountup(el, target, duration) {
-        var start = 0;
+    function animateCountup(el, start, target, duration) {
         var t0 = performance.now();
         function step(now) {
             var t = clamp((now - t0) / duration, 0, 1);
@@ -909,6 +943,62 @@
         });
     }
 
+    // ---------- Hero CTA：时段感知 ----------
+    // 5/29 - 5/31 签到期：「今日满月签到」 → #signin
+    // 其余时间（pre / post）：「查看活动内容」 → #benefits
+    function initHeroCta() {
+        var cta = $("#heroPrimaryCta");
+        if (!cta) return;
+        var defaultText = cta.getAttribute("data-default-text") || "今日满月签到";
+        var fallbackText = cta.getAttribute("data-fallback-text") || "查看活动内容";
+        var fallbackHref = cta.getAttribute("data-fallback-href") || "#benefits";
+        var SIGNIN_END_UTC = Date.UTC(2026, 4, 31, 16, 0, 0); // 6/1 00:00 UTC+8 = 5/31 16:00 UTC
+        var now = Date.now();
+        var inSigninWindow = now >= MOON_TS_UTC && now < SIGNIN_END_UTC;
+        if (!inSigninWindow) {
+            cta.textContent = fallbackText;
+            cta.setAttribute("href", fallbackHref);
+        } else {
+            cta.textContent = defaultText;
+            cta.setAttribute("href", "#signin");
+        }
+    }
+
+    // ---------- 桌面端 mega panel 点击兜底 ----------
+    // 现象：panel 通过 :hover/:focus-within 显示，子项 <a href="#signin">
+    // 点击时由于浏览器原生锚点跳转 + sticky timeline 占据巨大高度，
+    // 偶发"看起来没反应"（实际跳了但被 timeline 横向动画掩盖 / 或 panel
+    // 在 click 瞬间因 mouseleave 关闭导致 click 取消）。
+    // 修法：用 click 事件代理强制接管：preventDefault → 关 panel → scrollIntoView
+    // 同步更新 history.hash，行为对齐原生但稳定可见。
+    function initDesktopMegaMenu() {
+        document.querySelectorAll(".celebrate-mega-panel").forEach(function (panel) {
+            panel.addEventListener("click", function (e) {
+                var a = e.target.closest && e.target.closest('a[href^="#"]');
+                if (!a) return;
+                var href = a.getAttribute("href");
+                if (!href || href === "#") return;
+                var id = href.slice(1);
+                var target = document.getElementById(id);
+                if (!target) return;
+                e.preventDefault();
+                // 立刻收起 panel：把 group 置 blur 并临时移除 hover 触发
+                var group = a.closest(".celebrate-nav-group");
+                if (group) {
+                    group.setAttribute("data-celebrate-closing", "1");
+                    setTimeout(function () {
+                        group.removeAttribute("data-celebrate-closing");
+                    }, 300);
+                }
+                if (document.activeElement && document.activeElement.blur) {
+                    document.activeElement.blur();
+                }
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+                try { history.pushState(null, "", href); } catch (_) {}
+            });
+        });
+    }
+
     // ---------- Boot ----------
     function boot() {
         initTheme();
@@ -918,6 +1008,8 @@
         initWall();
         initSignin();
         initMobileDrawer();
+        initHeroCta();
+        initDesktopMegaMenu();
 
         // 5/29 之前福利按钮 disabled 状态保持；倒计时归零会触发 enableMoonDayBenefits
         var nowReady = Date.now() >= MOON_TS_UTC;

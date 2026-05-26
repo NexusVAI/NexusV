@@ -32,7 +32,7 @@
         <link rel="stylesheet" href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b" />
 
         <!-- 庆典专用样式 -->
-        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-phase5" />
+        <link rel="stylesheet" href="./celebrate.css?v=2026-05-28-phase5d" />
 
         <!-- 全站 supabase 配置（与主站共享：__SUPABASE_URL__ / __SUPABASE_ANON_KEY__） -->
         <script src="./cancri_config.js?v=2026-05-26-signin"></script>
@@ -66,7 +66,7 @@
                         </a>
                         <a href="#benefits" role="menuitem">
                             <span class="celebrate-mega-title">满月大礼</span>
-                            <span class="celebrate-mega-desc">8 重福利 · 必送 / 抽奖 / 折扣</span>
+                            <span class="celebrate-mega-desc">九重福利 · 必送 / 抽奖 / 互动 / 折扣</span>
                         </a>
                         <a href="#moonday" role="menuitem">
                             <span class="celebrate-mega-title">满月日炸场</span>
@@ -122,7 +122,7 @@
                     <div class="celebrate-mobile-group-content">
                         <div class="celebrate-mobile-group-inner">
                             <a href="#signin">满月签到 · 三天三礼</a>
-                            <a href="#benefits">满月大礼 · 8 重福利</a>
+                            <a href="#benefits">满月大礼 · 九重福利</a>
                             <a href="#moonday">满月日炸场</a>
                             <a href="#poster">我的海报</a>
                         </div>
@@ -164,10 +164,10 @@
 
                 <h1 class="celebrate-hero-title" id="celebrateHeroTitle">Cancri</h1>
 
-                <p class="celebrate-hero-subtitle">你的 AI 工作助手 · 满月第 30 天</p>
+                <p class="celebrate-hero-subtitle">你的 AI 工作助手</p>
 
                 <div class="celebrate-hero-actions">
-                    <a class="celebrate-btn celebrate-btn--primary celebrate-btn--lg" href="#signin">今日满月签到</a>
+                    <a class="celebrate-btn celebrate-btn--primary celebrate-btn--lg" id="heroPrimaryCta" href="#signin" data-default-text="今日满月签到" data-fallback-text="查看活动内容" data-fallback-href="#benefits">今日满月签到</a>
                 </div>
             </section>
 
@@ -268,12 +268,11 @@
                     </p>
                 </div>
                 <div class="celebrate-timeline-track-wrap" data-timeline-wrap>
-                    <!-- 2026-05-28 Phase 4：卡片由 celebrate_chronicle.js 从 celebrate-stats?action=chronicle_list 动态渲染 -->
                     <ol id="celebrateChronicleTrack" class="celebrate-timeline-track" data-timeline-track data-source="loading">
                         <li class="celebrate-timeline-card celebrate-timeline-card--skeleton" aria-hidden="true">
                             <span class="celebrate-timeline-card-date">加载中…</span>
                             <h3 class="celebrate-timeline-card-title">正在取回这 30 天的记忆</h3>
-                            <p class="celebrate-timeline-card-body">编年史卡片加载中。如果广告拦截了可能会隔很久才出现，或者干脆不出现。</p>
+                            <p class="celebrate-timeline-card-body">稍等片刻就能看到完整的编年史。若长时间未出现，可能是网络或广告拦截器影响，刷新试试。</p>
                         </li>
                     </ol>
                 </div>
@@ -384,7 +383,7 @@
         <!-- ============ 满月大礼 · 福利 ============ -->
         <section class="celebrate-section celebrate-benefits-section" id="benefits" aria-labelledby="benefitsTitle">
             <div class="celebrate-section-header">
-                <h2 class="celebrate-section-title" id="benefitsTitle">满月大礼 · 8 重福利</h2>
+                <h2 class="celebrate-section-title" id="benefitsTitle">满月大礼 · 九重福利</h2>
                 <p class="celebrate-section-sub">必送 · 互动 · 折扣 · 当日炸场。每一份都不需要你额外付费。</p>
             </div>
 
@@ -503,6 +502,20 @@
                         <li>不含 GPT / Gemini Pro 系</li>
                     </ul>
                     <div class="celebrate-benefit-cta celebrate-benefit-cta--auto">5/29 自动生效</div>
+                </article>
+
+                <!-- E 互动三件套 -->
+                <article class="celebrate-benefit-card celebrate-benefit-card--feature">
+                    <span class="celebrate-benefit-eyebrow">第九重 · interact</span>
+                    <h3 class="celebrate-benefit-title">互动三件套</h3>
+                    <p class="celebrate-benefit-desc">参与编年史 / 故事墙，留下你的痕迹，token 与 Pro 卡随机回赠。</p>
+                    <ul class="celebrate-benefit-list">
+                        <li><strong>编年史评论</strong>·每人 1 次抽奖：100 万 / 500 万 / 1000 万 token（70 / 25 / 5）</li>
+                        <li><strong>留言精选</strong>·被官方精选：Pro 30 天 + 1000 万 token，每人最多 1 次</li>
+                        <li><strong>点赞抽奖</strong>·每日 5 次 / 每内容 1 次：10 万 / 100 万 token（80 / 18 / 2）</li>
+                        <li>概率服务端判定，公示透明，无任何门槛</li>
+                    </ul>
+                    <a class="celebrate-benefit-cta celebrate-benefit-cta--link" href="#wall">前往故事墙 →</a>
                 </article>
             </div>
 
@@ -749,13 +762,12 @@
 
         <!-- 庆典脚本 -->
         <!-- Phase 5b 抽奖弹窗：必须先于 wall/chronicle 加载，以便 window.celebrateShowLottery 可用 -->
-        <script defer src="./celebrate_lottery.js?v=2026-05-28-phase5b"></script>
-        <!-- v2 wall：必须在 celebrate.js 之前加载，以便 sentinel window.__CANCRI_WALL_V2__ 先设置 -->
-        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-phase5b"></script>
-        <script defer src="./celebrate_uploads.js?v=2026-05-28-phase5"></script>
-        <script defer src="./celebrate.js?v=2026-05-28-phase5"></script>
-        <script defer src="./celebrate_chronicle.js?v=2026-05-28-phase5b"></script>
-        <script defer src="./celebrate_poster.js?v=2026-05-28-phase5"></script>
-        <script defer src="./celebrate_scroll.js?v=2026-05-28-phase5"></script>
+        <script defer src="./celebrate_lottery.js?v=2026-05-28-phase5d"></script>
+        <script defer src="./celebrate_wall_v2.js?v=2026-05-28-phase5d"></script>
+        <script defer src="./celebrate_uploads.js?v=2026-05-28-phase5d"></script>
+        <script defer src="./celebrate.js?v=2026-05-28-phase5d"></script>
+        <script defer src="./celebrate_chronicle.js?v=2026-05-28-phase5d"></script>
+        <script defer src="./celebrate_poster.js?v=2026-05-28-phase5d"></script>
+        <script defer src="./celebrate_scroll.js?v=2026-05-28-phase5d"></script>
     </body>
 </html>
