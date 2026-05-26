@@ -2777,7 +2777,15 @@
              5/28 起预热倒计时 → 5/29-5/31 主活动 → 6/1-6/4 长尾 → 6/5 自动隐藏。
              纯客户端时间判断，0 网络请求；用户可 × 关闭（本会话），URL ?nomoon=1 永久关。 -->
         <script defer src="./celebrate_banner.js?v=2026-05-26-banner"></script>
-        <script defer src="./cancri_chat.js?v=2026-05-24-suspicion-captcha"></script>
+        <!-- 2026-05-26 满月庆典欢迎弹窗：所有用户首次进站统一弹一次九重福利导览。
+             看过后写 localStorage cancri_welcome_modal_v1_seen 不再触发；
+             URL ?nowelcome=1 永久跳过。已登录可一键复制专属邀请链接。 -->
+        <script defer src="./celebrate_welcome_modal.js?v=2026-05-26-welcome"></script>
+        <!-- 2026-05-26 hero Logo 小彩蛋：点击首页问候语左侧的 32px 装饰图标 →
+             弹出 1Mth.png 满月海报 + 一段真挚的感谢寄语。无 localStorage 记忆，
+             随时可触发。 -->
+        <script defer src="./hero_easter_egg.js?v=2026-05-26-egg"></script>
+        <script defer src="./cancri_chat.js?v=2026-05-26-opus47-max"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=announcement-module-0504"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
