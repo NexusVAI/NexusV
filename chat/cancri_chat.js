@@ -2306,7 +2306,7 @@ const MODEL_CATALOG = [
   {"id": "gpt-4", "name": "GPT-4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
+  {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 20.0},
   // 2026-05-25: claude-opus-4-5 重新上线（supxh.xin 上游，Pro+ 专享）。
   {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   // 2026-05-26: 百川官方 API（baichuan-ai.com）8 模型。
@@ -2320,14 +2320,14 @@ const MODEL_CATALOG = [
   {"id": "baichuan2-turbo-welfare", "name": "【福利】Baichuan 2 Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   // 2026-05-25: 福利档 GPT-5.4 Mini（togoapi.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
   {"id": "gpt-5.4-mini-welfare", "name": "【福利】GPT 5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "claude-opus-4-7", "name": "Claude Opus 4.7 XHigh", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
+  {"id": "claude-opus-4-7", "name": "Claude Opus 4.7 XHigh", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
   // 2026-05-26: Claude Opus 4.7 Max — aspirin 上游独立 key，Pro+ 专属（costTier: vip）。
-  {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip"},
-  {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
+  {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
+  {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+  {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   // 2026-05-25: grok-4.20-0309-non-reasoning（dgbmc 上游，复用现有 key）
   {"id": "grok-4.20-0309-non-reasoning", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
+  {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
@@ -2342,7 +2342,7 @@ const MODEL_CATALOG = [
   // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
   {"id": "claude-haiku-4-5-20251001-welfare", "name": "【福利】Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
   {"id": "gpt-5.5-xhigh", "name": "【福利B】GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gpt-5.5-welfare", "name": "【福利A】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-3.5-flash-welfare", "name": "【福利】Gemini 3.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
@@ -5589,13 +5589,13 @@ const PLATFORM_KNOWLEDGE_BASE = {
         cost_tier: "expensive",
         multiplier: 10,
         examples:
-          "GPT-5.2 / GPT-5.3 Codex / GPT-5.4 / GPT-5.5 / Claude Sonnet 4.6 系列 / Grok 4.20",
+          "GPT-5.2 / GPT-5.3 Codex / GPT-5.4 / GPT-5.5 / GPT-5.5 High (12x) / Mistral Large (Claude Sonnet 4.6 特惠降为 5x，Grok 4.20 特惠降为 3x！)",
       },
       {
         cost_tier: "vip",
         multiplier: 30,
         examples:
-          "Claude Opus 4.6 全系 / Gemini 3.1 Pro / 视频生成（Seedance / VEO 等）",
+          "Gemini 3.1 Pro / 视频生成等 (Claude Opus 4.6 已降至 20x，4.7 XHigh 调为 40x，4.7 Max 调为 60x)",
       },
     ],
     token_formula:
@@ -11490,7 +11490,7 @@ function listPlatformModels(keyword) {
       brand: m.brand,
       kind: m.kind,
       cost_tier: tier,
-      pool_multiplier: PLATFORM_COST_MULTIPLIERS[tier] ?? 3,
+      pool_multiplier: typeof m.customMultiplier === "number" ? m.customMultiplier : (PLATFORM_COST_MULTIPLIERS[tier] ?? 3),
       capabilities: [
         m.vision ? "vision" : null,
         m.thinking ? "thinking" : null,
