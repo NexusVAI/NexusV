@@ -90,6 +90,9 @@ const COST_TIER_MULTIPLIER = {
 };
 
 function getCostMultiplier(m) {
+    if (m && typeof m.customMultiplier === "number") {
+        return m.customMultiplier;
+    }
     const tier = (m && m.costTier) || "normal";
     return COST_TIER_MULTIPLIER[tier] ?? 1;
 }
@@ -234,6 +237,9 @@ async function load() {
         });
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         const data = await resp.json();
+        if (data && data.multiplier_legend) {
+            Object.assign(COST_TIER_MULTIPLIER, data.multiplier_legend);
+        }
         // Aggregate raw entries by canonicalId so this page never exposes
         // upstream-leaking ids (e.g. -iamhc / -api456 / -chunxue). Mirrors
         // the same dedup api-gateway does for /v1/models. The user-facing
@@ -570,8 +576,8 @@ const COST_TIER_EXPLAIN = {
     cheap: "Cheap：1× 倍率。轻量、低成本模型；价格友好。",
     normal: "Normal：3× 倍率。GPT-4 类标准模型 / Doubao / Kimi / Haiku 等。",
     expensive:
-        "Expensive：10× 倍率。GPT-5.x 系列、Grok 4.20、Claude Sonnet 4.6、Mistral Large 等旗舰。",
-    vip: "VIP：30× 倍率。Claude Opus 全系 / Gemini 3.1 Pro / 视频生成等顶配（仅 Pro+ 起可用）。",
+        "Expensive：10× 倍率。GPT-5.x 系列、Mistral Large 等前沿旗舰模型。",
+    vip: "VIP：30× 倍率。Claude Opus 4.5 / Gemini 3.1 Pro / 视频生成等顶配（仅 Pro+ 起可用）。",
 };
 
 const drawer = document.getElementById("modelDrawer");
@@ -697,7 +703,15 @@ function populateDrawer(m) {
     }
     const explainEl = document.getElementById("drawerPricingExplain");
     if (explainEl) {
-        const baseExplain = COST_TIER_EXPLAIN[m.costTier || "normal"] || "";
+        let baseExplain = COST_TIER_EXPLAIN[m.costTier || "normal"] || "";
+        if (m && typeof m.customMultiplier === "number") {
+            const defMult = COST_TIER_MULTIPLIER[m.costTier || "normal"] ?? 1;
+            if (m.customMultiplier < defMult) {
+                baseExplain += ` (已为您特惠降费：该模型原定为 ${defMult}x 倍率，当前特殊降为 ${m.customMultiplier}x 倍率，高频聊天或 IDE 开发极其经用划算！)`;
+            } else if (m.customMultiplier > defMult) {
+                baseExplain += ` (自定义计费调整：为了对齐昂贵的上游进货成本，该模型特殊调整为 ${m.customMultiplier}x 倍率。)`;
+            }
+        }
         const formula = drawerPromoActive
             ? `<code>effective_pool_tokens × <s>${mult}</s> ${fmtMult(drawerEffMult)}</code>（5 折促销窗口截止 05-24 00:00 UTC+8）`
             : `<code>effective_pool_tokens × ${mult}</code>`;
