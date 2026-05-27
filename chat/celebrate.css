@@ -1743,6 +1743,64 @@ html[data-theme="dark"] .celebrate-timeline-link {
   font-weight: 600;
 }
 
+/* 嵌入式补充小段：邀请榜 Top 3 加冕奖等公示，Codex 风浅灰底 hairline 边 */
+.celebrate-benefit-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: -6px 0 var(--cel-space-lg);
+  padding: 12px 14px;
+  border: 1px solid var(--cel-border);
+  border-radius: 10px;
+  background: var(--cel-bg-soft);
+}
+
+.celebrate-benefit-aside-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--cel-text);
+  letter-spacing: 0.01em;
+}
+
+.celebrate-benefit-aside-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.celebrate-benefit-aside-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--cel-text-dim);
+}
+
+.celebrate-benefit-aside-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 8px;
+  height: 1px;
+  background: var(--cel-border-strong);
+}
+
+.celebrate-benefit-aside-list strong {
+  color: var(--cel-text);
+  font-weight: 600;
+}
+
+.celebrate-benefit-aside-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--cel-text-dim);
+  opacity: 0.85;
+}
+
 .celebrate-benefit-cta {
   display: inline-flex;
   align-items: center;

@@ -33,18 +33,24 @@
   }
 
   // ─── 中奖大弹窗 ───
+  function esc(s) {
+    if (s == null) return "";
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
   function showJackpot(opts) {
     injectStyles();
     var overlay = document.createElement("div");
     overlay.className = "celebrate-lottery-overlay";
     overlay.innerHTML =
       '<div class="celebrate-lottery-card" role="dialog" aria-modal="true" aria-label="中奖通知">' +
-      '<span class="celebrate-lottery-emoji">' + opts.emoji + "</span>" +
-      '<h3 class="celebrate-lottery-title">' + opts.title + "</h3>" +
-      '<div class="celebrate-lottery-amount">' + opts.amount +
-      (opts.sub ? '<small>' + opts.sub + '</small>' : "") +
+      '<span class="celebrate-lottery-emoji">' + esc(opts.emoji) + "</span>" +
+      '<h3 class="celebrate-lottery-title">' + esc(opts.title) + "</h3>" +
+      '<div class="celebrate-lottery-amount">' + esc(opts.amount) +
+      (opts.sub ? '<small>' + esc(opts.sub) + '</small>' : "") +
       "</div>" +
-      '<p class="celebrate-lottery-sub">' + (opts.note || "") + "</p>" +
+      '<p class="celebrate-lottery-sub">' + esc(opts.note) + "</p>" +
       '<button class="celebrate-lottery-btn" type="button">收下</button>' +
       "</div>";
     document.body.appendChild(overlay);
