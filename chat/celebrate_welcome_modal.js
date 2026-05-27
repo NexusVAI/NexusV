@@ -54,7 +54,7 @@
         {
             img: LOGO_BASE + "neyyysw.png",
             title: "邀请好友 · 双方各得 Token",
-            desc: "把专属邀请链接发给朋友，被邀请人活跃后双方都拿 Token，无上限。",
+            desc: "把专属邀请链接发给朋友，被邀请人活跃后双方都拿 Token，最多结算 50 人。",
             badge: "🔗",
             highlight: true
         }

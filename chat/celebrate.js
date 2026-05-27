@@ -324,6 +324,99 @@
         }
     }
 
+    function initInviteZone() {
+        var list = $("#inviteLeaderboardList");
+        var status = $("#inviteLeaderboardStatus");
+        var lotteryState = $("#inviteLotteryState");
+        var winners = $("#inviteLotteryWinners");
+        var pool = $("#inviteLotteryPool");
+        if (!list) return;
+
+        fetch(SUPABASE_BASE + "/celebrate-stats", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                apikey: window.__SUPABASE_ANON_KEY__ || ""
+            },
+            body: JSON.stringify({ action: "invite_leaderboard" })
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error("invite-leaderboard:" + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                renderInviteZone(data || {});
+            })
+            .catch(function () {
+                if (status) status.textContent = "暂不可用";
+                list.innerHTML = '<li class="celebrate-invite-empty">排行榜暂时加载失败，请稍后刷新。</li>';
+                if (winners) winners.innerHTML = '<div class="celebrate-invite-empty">开奖结果暂时加载失败。</div>';
+            });
+
+        function renderInviteZone(data) {
+            var items = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+            if (status) status.textContent = items.length ? "实时 Top " + items.length : "暂无数据";
+            if (!items.length) {
+                list.innerHTML = '<li class="celebrate-invite-empty">暂时还没有合格邀请，前十会在这里实时更新。</li>';
+            } else {
+                list.innerHTML = items.map(function (item, idx) {
+                    var rank = Number(item.rank || idx + 1);
+                    var name = item.display_name || item.inviter_masked || ("邀请人 #" + rank);
+                    var count = Number(item.qualified_count || 0);
+                    var first = item.first_qualified_at ? "首个合格 " + formatShortDate(item.first_qualified_at) : "等待更多有效邀请";
+                    return '<li class="celebrate-invite-row">' +
+                        '<span class="celebrate-invite-rank">' + rank + '</span>' +
+                        '<span class="celebrate-invite-user">' +
+                        '<span class="celebrate-invite-name">' + escapeHtml(name) + '</span>' +
+                        '<span class="celebrate-invite-meta">' + escapeHtml(first) + '</span>' +
+                        '</span>' +
+                        '<span class="celebrate-invite-count">' + count + ' 人</span>' +
+                        '</li>';
+                }).join("");
+            }
+
+            var winnerItems = Array.isArray(data.winners) ? data.winners : [];
+            if (lotteryState) lotteryState.textContent = winnerItems.length ? "已开奖" : "待开奖";
+            if (winners) {
+                if (!winnerItems.length) {
+                    winners.innerHTML = '<div class="celebrate-invite-empty">5/29 00:00 自动开奖后在这里公示。</div>';
+                } else {
+                    winners.innerHTML = winnerItems.map(function (item) {
+                        var rank = Number(item.prize_rank || item.rank || 0);
+                        var name = item.display_name || item.winner_masked || "中奖用户";
+                        var label = item.prize_label || ("第 " + rank + " 名奖");
+                        var tokens = Number(item.tokens || 0);
+                        var proDays = Number(item.pro_days || 0);
+                        return '<div class="celebrate-invite-winner">' +
+                            '<span class="celebrate-invite-rank">' + rank + '</span>' +
+                            '<span class="celebrate-invite-user">' +
+                            '<span class="celebrate-invite-name">' + escapeHtml(name) + '</span>' +
+                            '<span class="celebrate-invite-meta">' + escapeHtml(label) + '</span>' +
+                            '</span>' +
+                            '<span class="celebrate-invite-winner-award">' + formatTokenPrize(tokens) + '<br>Pro ' + proDays + ' 天</span>' +
+                            '</div>';
+                    }).join("");
+                }
+            }
+            if (pool && data.pool_size != null) {
+                pool.textContent = "入围池：" + Number(data.pool_size || 0) + " 人。若有效邀请人数不足 10，则按实际入围人数抽取。";
+            }
+        }
+    }
+
+    function formatShortDate(value) {
+        var d = new Date(value);
+        if (isNaN(d.getTime())) return String(value || "");
+        return String(d.getMonth() + 1).padStart(2, "0") + "/" + String(d.getDate()).padStart(2, "0");
+    }
+
+    function formatTokenPrize(tokens) {
+        if (!tokens) return "0 token";
+        if (tokens >= 10000) return Math.round(tokens / 10000) + " 万 token";
+        return tokens.toLocaleString("zh-CN") + " token";
+    }
+
     // ---------- 5. 故事墙 ----------
     function initWall() {
         var input = $("#wallInput");
@@ -1005,6 +1098,7 @@
         initCountdown();
         initCountup();
         initInviteCta();
+        initInviteZone();
         initWall();
         initSignin();
         initMobileDrawer();

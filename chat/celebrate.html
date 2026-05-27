@@ -102,6 +102,7 @@
                 </div>
             </nav>
             <div class="celebrate-nav-actions">
+                <a class="celebrate-nav-invite" href="#invite-zone">邀请专区</a>
                 <a class="celebrate-nav-cta" href="./index.html">进入工作台</a>
                 <button class="celebrate-nav-hamburger" type="button" aria-label="菜单" aria-expanded="false" aria-controls="celebrateMobileDrawer">
                     <span></span>
@@ -123,6 +124,7 @@
                         <div class="celebrate-mobile-group-inner">
                             <a href="#signin">满月签到 · 三天三礼</a>
                             <a href="#benefits">满月大礼 · 九重福利</a>
+                            <a href="#invite-zone">邀请专区 · 排行抽奖</a>
                             <a href="#moonday">满月日炸场</a>
                             <a href="#poster">我的海报</a>
                         </div>
@@ -441,18 +443,10 @@
                     <ul class="celebrate-benefit-list">
                         <li>邀请人 <strong>+1M</strong> token</li>
                         <li>被邀请人 <strong>+500K</strong> token</li>
-                        <li>上限 20 人</li>
+                        <li>上限 50 人</li>
                         <li>新人活跃 3 天后结算</li>
+                        <li>排行前 10 入围满月抽奖</li>
                     </ul>
-                    <div class="celebrate-benefit-aside" aria-label="邀请榜 Top 3 加冕奖">
-                        <span class="celebrate-benefit-aside-title">🏆 邀请榜 Top 3 加冕奖（5/31 23:30 自动结算）</span>
-                        <ul class="celebrate-benefit-aside-list">
-                            <li><strong>冠军</strong> · 1000 万 token + Pro 365 天体验</li>
-                            <li><strong>亚军</strong> · 500 万 token + Pro 180 天体验</li>
-                            <li><strong>季军</strong> · 300 万 token + Pro 30 天体验</li>
-                        </ul>
-                        <span class="celebrate-benefit-aside-note">仅统计 5/25-5/31 期间被邀请人活跃 ≥ 3 天的合格邀请数。同设备 / 同指纹的重复邀请已自动去重。</span>
-                    </div>
                     <button class="celebrate-benefit-cta celebrate-benefit-cta--claim" type="button" data-action="open-invite">
                         生成我的邀请链接
                     </button>
@@ -532,6 +526,78 @@
                 所有福利通过现有加油包 / 订阅系统发放，写入流水可在「设置 → 额度」查看。
                 Cancri 反对一切刷量行为，邀请奖配合设备指纹去重，恶意刷奖账号将被永久回收。
             </p>
+        </section>
+
+        <!-- ============ 邀请专区 ============ -->
+        <section class="celebrate-section celebrate-invite-zone" id="invite-zone" aria-labelledby="inviteZoneTitle">
+            <div class="celebrate-section-header">
+                <h2 class="celebrate-section-title" id="inviteZoneTitle">邀请专区</h2>
+                <p class="celebrate-section-sub">5/25 - 5/31 邀请新朋友加入 Cancri，双方拿 token；5/29 00:00 排行前 10 自动进入抽奖。</p>
+            </div>
+
+            <div class="celebrate-invite-hero">
+                <div class="celebrate-invite-copy">
+                    <span class="celebrate-eyebrow">referral leaderboard · top 10 lottery</span>
+                    <h3 class="celebrate-invite-title">真实邀请越多，入围概率越稳。</h3>
+                    <p class="celebrate-invite-desc">每位邀请人最多结算 50 位有效新人；新人累计活跃 ≥ 3 天后自动结算。榜单只统计合格邀请，重复设备 / 指纹 / 异常邀请会被剔除。</p>
+                    <div class="celebrate-invite-actions">
+                        <button class="celebrate-benefit-cta celebrate-benefit-cta--claim" type="button" data-action="open-invite">复制我的邀请链接</button>
+                        <a class="celebrate-benefit-cta celebrate-benefit-cta--link" href="./index.html">去设置页查看我的邀请 →</a>
+                    </div>
+                </div>
+                <div class="celebrate-invite-rules" aria-label="邀请抽奖规则">
+                    <div class="celebrate-invite-rule">
+                        <span>邀请人奖励</span>
+                        <strong>+1M token</strong>
+                    </div>
+                    <div class="celebrate-invite-rule">
+                        <span>被邀请人奖励</span>
+                        <strong>+500K token</strong>
+                    </div>
+                    <div class="celebrate-invite-rule">
+                        <span>结算上限</span>
+                        <strong>50 人</strong>
+                    </div>
+                    <div class="celebrate-invite-rule">
+                        <span>抽奖时间</span>
+                        <strong>5/29 00:00</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="celebrate-invite-grid">
+                <article class="celebrate-invite-panel celebrate-invite-panel--leaderboard">
+                    <div class="celebrate-invite-panel-head">
+                        <div>
+                            <span class="celebrate-eyebrow">live ranking</span>
+                            <h3>邀请排行 Top 10</h3>
+                        </div>
+                        <span class="celebrate-invite-status" id="inviteLeaderboardStatus">加载中…</span>
+                    </div>
+                    <ol class="celebrate-invite-leaderboard" id="inviteLeaderboardList">
+                        <li class="celebrate-invite-empty">正在读取排行榜。</li>
+                    </ol>
+                </article>
+
+                <article class="celebrate-invite-panel">
+                    <div class="celebrate-invite-panel-head">
+                        <div>
+                            <span class="celebrate-eyebrow">lottery prizes</span>
+                            <h3>前十抽奖奖品</h3>
+                        </div>
+                        <span class="celebrate-invite-status" id="inviteLotteryState">待开奖</span>
+                    </div>
+                    <div class="celebrate-invite-prizes">
+                        <div class="celebrate-invite-prize"><span>一等奖</span><strong>800 万 token + Pro 90 天</strong></div>
+                        <div class="celebrate-invite-prize"><span>二等奖</span><strong>500 万 token + Pro 30 天</strong></div>
+                        <div class="celebrate-invite-prize"><span>三等奖</span><strong>300 万 token + Pro 14 天</strong></div>
+                    </div>
+                    <div class="celebrate-invite-winners" id="inviteLotteryWinners">
+                        <div class="celebrate-invite-empty">5/29 00:00 自动开奖后在这里公示。</div>
+                    </div>
+                    <p class="celebrate-invite-footnote" id="inviteLotteryPool">入围池：排行前 10。若有效邀请人数不足 10，则按实际入围人数抽取。</p>
+                </article>
+            </div>
         </section>
 
         <!-- ============ 满月日炸场 · Codex split-feature 反位（左视觉 / 右文字） ============ -->
