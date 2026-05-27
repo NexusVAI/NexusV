@@ -1801,7 +1801,6 @@ function getQuotaBlockReason(modelId) {
   // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
   if (
     modelId === "gpt-5.5-welfare" ||
-    modelId === "gpt-5.5-xhigh" ||
     modelId === "gemini-3.5-flash-welfare" ||
     modelId === "gemini-3.1-flash-lite-welfare" ||
     modelId === "gpt-5.4-mini-welfare" ||
@@ -2323,11 +2322,17 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7 XHigh", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
   // 2026-05-26: Claude Opus 4.7 Max — aspirin 上游独立 key，Pro+ 专属（costTier: vip）。
   {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
+  // 2026-05-27：Claude Opus 4.7 Max Fast — ai.linguangchat.com，120x 倍率。
+  {"id": "claude-opus-4-7-max-fast", "name": "Claude Opus 4.7 Max Fast", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 120.0},
+  // 2026-05-27：MiMo 聊天模型全线免费福利。
+  {"id": "mimo-v2.5-pro", "name": "【福利】MiMo 2.5 Pro", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "mimo-v2.5", "name": "【福利】MiMo 2.5", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "mimo-v2-pro", "name": "【福利】MiMo V2 Pro", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   // 2026-05-25: grok-4.20-0309-non-reasoning（dgbmc 上游，复用现有 key）
   {"id": "grok-4.20-0309-non-reasoning", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
+  {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
@@ -2343,7 +2348,7 @@ const MODEL_CATALOG = [
   {"id": "claude-haiku-4-5-20251001-welfare", "name": "【福利】Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
-  {"id": "gpt-5.5-xhigh", "name": "【福利B】GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
   {"id": "gpt-5.5-welfare", "name": "【福利A】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-3.5-flash-welfare", "name": "【福利】Gemini 3.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-3.1-flash-lite-welfare", "name": "【福利】Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
