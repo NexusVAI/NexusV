@@ -12781,15 +12781,14 @@ function activateSettingsPanel(panelId) {
 const INVITE_SIGNIN_URL_PATH = "/functions/v1/celebrate-signin";
 
 async function fetchAndRenderInvitePanel() {
-  const loginPrompt = document.getElementById("inviteLoginPrompt");
-  const content = document.getElementById("inviteContent");
-  const errorState = document.getElementById("inviteErrorState");
-  if (!loginPrompt || !content || !errorState) return;
+  const targets = getInvitePanelTargets();
+  if (!targets.length) return;
 
-  // 初始：隐藏所有，等响应再决定
-  loginPrompt.hidden = true;
-  errorState.hidden = true;
-  content.hidden = true;
+  targets.forEach((target) => {
+    target.loginPrompt.hidden = true;
+    target.errorState.hidden = true;
+    target.content.hidden = true;
+  });
 
   let token = null;
   try {
@@ -12800,14 +12799,18 @@ async function fetchAndRenderInvitePanel() {
     // 拿不到 session，按未登录处理
   }
   if (!token) {
-    loginPrompt.hidden = false;
+    targets.forEach((target) => {
+      target.loginPrompt.hidden = false;
+    });
     return;
   }
 
   const baseUrl = (window.__SUPABASE_URL__ || "").trim();
   const anon = (window.__SUPABASE_ANON_KEY__ || "").trim();
   if (!baseUrl || !anon) {
-    errorState.hidden = false;
+    targets.forEach((target) => {
+      target.errorState.hidden = false;
+    });
     return;
   }
 
@@ -12824,25 +12827,62 @@ async function fetchAndRenderInvitePanel() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json?.ok || !json?.invite) {
       console.warn("[invite-panel] get_invite failed", res.status, json);
-      errorState.hidden = false;
+      targets.forEach((target) => {
+        target.errorState.hidden = false;
+      });
       return;
     }
-    renderInvitePanel(json.invite);
-    content.hidden = false;
+    targets.forEach((target) => {
+      renderInvitePanel(json.invite, target);
+      target.content.hidden = false;
+    });
   } catch (e) {
     console.warn("[invite-panel] fetch exception", e);
-    errorState.hidden = false;
+    targets.forEach((target) => {
+      target.errorState.hidden = false;
+    });
   }
 }
 
-function renderInvitePanel(invite) {
-  const linkInput = document.getElementById("inviteLinkInput");
-  const statTotal = document.getElementById("inviteStatTotal");
-  const statQualified = document.getElementById("inviteStatQualified");
-  const statTokens = document.getElementById("inviteStatTokens");
-  const flowList = document.getElementById("inviteFlowList");
+function getInvitePanelTargets() {
+  return [
+    {
+      loginPrompt: document.getElementById("inviteLoginPrompt"),
+      content: document.getElementById("inviteContent"),
+      errorState: document.getElementById("inviteErrorState"),
+      linkInput: document.getElementById("inviteLinkInput"),
+      uuidInput: document.getElementById("inviteUuidInput"),
+      statTotal: document.getElementById("inviteStatTotal"),
+      statQualified: document.getElementById("inviteStatQualified"),
+      statTokens: document.getElementById("inviteStatTokens"),
+      flowList: document.getElementById("inviteFlowList"),
+    },
+    {
+      loginPrompt: document.getElementById("claudeInviteLoginPrompt"),
+      content: document.getElementById("claudeInviteContent"),
+      errorState: document.getElementById("claudeInviteErrorState"),
+      linkInput: document.getElementById("claudeInviteLinkInput"),
+      uuidInput: document.getElementById("claudeInviteUuidInput"),
+      statTotal: document.getElementById("claudeInviteStatTotal"),
+      statQualified: document.getElementById("claudeInviteStatQualified"),
+      statTokens: document.getElementById("claudeInviteStatTokens"),
+      flowList: document.getElementById("claudeInviteFlowList"),
+    },
+  ].filter((target) => target.loginPrompt && target.content && target.errorState);
+}
+
+window.fetchAndRenderInvitePanel = fetchAndRenderInvitePanel;
+
+function renderInvitePanel(invite, target) {
+  const linkInput = target.linkInput;
+  const uuidInput = target.uuidInput;
+  const statTotal = target.statTotal;
+  const statQualified = target.statQualified;
+  const statTokens = target.statTokens;
+  const flowList = target.flowList;
 
   if (linkInput) linkInput.value = String(invite.invite_url || "");
+  if (uuidInput) uuidInput.value = extractInviteUuid(invite);
   const s = invite.summary || { total: 0, qualified: 0, paid: 0 };
   if (statTotal) statTotal.textContent = String(s.total || 0);
   if (statQualified) statQualified.textContent = String(s.qualified || 0);
@@ -12880,6 +12920,13 @@ function renderInvitePanel(invite) {
   }
 }
 
+function extractInviteUuid(invite) {
+  if (invite && invite.inviter_id) return String(invite.inviter_id);
+  const url = String((invite && invite.invite_url) || "");
+  const match = url.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+  return match ? match[0] : "";
+}
+
 function formatInviteTokens(n) {
   if (!Number.isFinite(n) || n <= 0) return "0";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1) + "M";
@@ -12897,44 +12944,47 @@ function escapeInviteHtml(s) {
 
 // 复制按钮绑定：DOMContentLoaded 后调一次即可（按钮始终存在）
 function bindInviteCopyBtn() {
-  const btn = document.getElementById("inviteCopyBtn");
-  const input = document.getElementById("inviteLinkInput");
-  if (!btn || !input) return;
-  btn.addEventListener("click", async () => {
-    const url = input.value || "";
-    if (!url) {
-      showToast("邀请链接尚未加载");
-      return;
-    }
-    let ok = false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-        ok = true;
+  document.querySelectorAll("[data-invite-copy-target]").forEach((btn) => {
+    if (btn.dataset.inviteCopyWired === "true") return;
+    btn.dataset.inviteCopyWired = "true";
+    btn.addEventListener("click", async () => {
+      const input = document.getElementById(btn.dataset.inviteCopyTarget || "");
+      const label = btn.dataset.inviteCopyLabel || "内容";
+      const value = input ? input.value || "" : "";
+      if (!value) {
+        showToast(label + "尚未加载");
+        return;
       }
-    } catch (_e) {
-      ok = false;
-    }
-    if (!ok) {
+      let ok = false;
       try {
-        input.select();
-        ok = document.execCommand("copy");
-        input.blur();
-      } catch (_e) {}
-    }
-    if (ok) {
-      btn.classList.add("is-copied");
-      const span = btn.querySelector("span");
-      const old = span ? span.textContent : null;
-      if (span) span.textContent = "已复制";
-      showToast("邀请链接已复制");
-      setTimeout(() => {
-        btn.classList.remove("is-copied");
-        if (span && old != null) span.textContent = old;
-      }, 1800);
-    } else {
-      showToast("复制失败，请手动选中链接复制");
-    }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(value);
+          ok = true;
+        }
+      } catch (_e) {
+        ok = false;
+      }
+      if (!ok && input) {
+        try {
+          input.select();
+          ok = document.execCommand("copy");
+          input.blur();
+        } catch (_e) {}
+      }
+      if (ok) {
+        btn.classList.add("is-copied");
+        const span = btn.querySelector("span");
+        const old = span ? span.textContent : null;
+        if (span) span.textContent = "已复制";
+        showToast(label + "已复制");
+        setTimeout(() => {
+          btn.classList.remove("is-copied");
+          if (span && old != null) span.textContent = old;
+        }, 1800);
+      } else {
+        showToast("复制失败，请手动选中" + label + "复制");
+      }
+    });
   });
 }
 

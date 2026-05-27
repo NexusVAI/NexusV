@@ -6946,7 +6946,7 @@ body[data-shared-conversation="true"] .input-icon {
 }
 
 /* ── 设置面板：邀请 panel ── */
-#invitePanel .invite-empty {
+.invite-settings-panel .invite-empty {
     padding: 14px 16px;
     text-align: center;
     color: var(--text-soft, #5e5e5e);
@@ -6955,19 +6955,19 @@ body[data-shared-conversation="true"] .input-icon {
     border-radius: 10px;
 }
 
-#invitePanel .invite-content {
+.invite-settings-panel .invite-content {
     display: flex;
     flex-direction: column;
     gap: 18px;
 }
 
-#invitePanel .invite-link-row {
+.invite-settings-panel .invite-link-row {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
-#invitePanel .invite-field-label {
+.invite-settings-panel .invite-field-label {
     font-size: 12.5px;
     color: var(--text-soft, #5e5e5e);
     font-weight: 500;
@@ -6979,7 +6979,13 @@ body[data-shared-conversation="true"] .input-icon {
     gap: 8px;
 }
 
-#invitePanel .invite-link-input {
+.invite-settings-panel .invite-link-input-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.invite-settings-panel .invite-link-input {
     flex: 1;
     min-width: 0;
     height: 36px;
@@ -6993,7 +6999,7 @@ body[data-shared-conversation="true"] .input-icon {
     outline: none;
 }
 
-#invitePanel .invite-link-input:focus {
+.invite-settings-panel .invite-link-input:focus {
     border-color: var(--accent, #4d6bfe);
 }
 
@@ -7013,12 +7019,28 @@ body[data-shared-conversation="true"] .input-icon {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-#invitePanel .invite-copy-btn:hover {
+.invite-settings-panel .invite-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+    border-radius: 8px;
+    background: var(--surface, #f8f8f7);
+    color: var(--text, #1a1a1a);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.invite-settings-panel .invite-copy-btn:hover {
     background: var(--hover, rgba(0, 0, 0, 0.04));
     border-color: var(--text-soft, rgba(0, 0, 0, 0.2));
 }
 
-#invitePanel .invite-copy-btn.is-copied {
+.invite-settings-panel .invite-copy-btn.is-copied {
     background: rgba(34, 197, 94, 0.12);
     border-color: rgba(34, 197, 94, 0.45);
     color: #16a34a;
@@ -7030,7 +7052,13 @@ body[data-shared-conversation="true"] .input-icon {
     gap: 10px;
 }
 
-#invitePanel .invite-stat {
+.invite-settings-panel .invite-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.invite-settings-panel .invite-stat {
     padding: 14px 12px;
     background: var(--surface, #f8f8f7);
     border: 1px solid var(--line, rgba(0, 0, 0, 0.06));
@@ -7046,26 +7074,34 @@ body[data-shared-conversation="true"] .input-icon {
     line-height: 1.2;
 }
 
-#invitePanel .invite-stat-label {
+.invite-settings-panel .invite-stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text, #1a1a1a);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.invite-settings-panel .invite-stat-label {
     margin-top: 4px;
     font-size: 11.5px;
     color: var(--text-soft, #5e5e5e);
     line-height: 1.3;
 }
 
-#invitePanel .invite-flow-section {
+.invite-settings-panel .invite-flow-section {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-#invitePanel .invite-flow-title {
+.invite-settings-panel .invite-flow-title {
     font-size: 12.5px;
     color: var(--text-soft, #5e5e5e);
     font-weight: 500;
 }
 
-#invitePanel .invite-flow-list {
+.invite-settings-panel .invite-flow-list {
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -7076,7 +7112,7 @@ body[data-shared-conversation="true"] .input-icon {
     overflow-y: auto;
 }
 
-#invitePanel .invite-flow-row {
+.invite-settings-panel .invite-flow-row {
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: 10px;
@@ -7086,11 +7122,11 @@ body[data-shared-conversation="true"] .input-icon {
     font-size: 12.5px;
 }
 
-#invitePanel .invite-flow-row:last-child {
+.invite-settings-panel .invite-flow-row:last-child {
     border-bottom: none;
 }
 
-#invitePanel .invite-flow-side {
+.invite-settings-panel .invite-flow-side {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 999px;
@@ -7098,36 +7134,36 @@ body[data-shared-conversation="true"] .input-icon {
     font-weight: 500;
 }
 
-#invitePanel .invite-flow-side[data-side="inviter"] {
+.invite-settings-panel .invite-flow-side[data-side="inviter"] {
     background: rgba(99, 102, 241, 0.12);
     color: #4f46e5;
 }
 
-#invitePanel .invite-flow-side[data-side="invitee"] {
+.invite-settings-panel .invite-flow-side[data-side="invitee"] {
     background: rgba(34, 197, 94, 0.12);
     color: #16a34a;
 }
 
-#invitePanel .invite-flow-meta {
+.invite-settings-panel .invite-flow-meta {
     color: var(--text-soft, #5e5e5e);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     font-size: 11.5px;
 }
 
-#invitePanel .invite-flow-tokens {
+.invite-settings-panel .invite-flow-tokens {
     font-weight: 600;
     color: #16a34a;
     font-variant-numeric: tabular-nums;
 }
 
-#invitePanel .invite-flow-empty {
+.invite-settings-panel .invite-flow-empty {
     padding: 18px 16px;
     text-align: center;
     color: var(--text-soft, #5e5e5e);
     font-size: 12.5px;
 }
 
-#invitePanel .invite-rules {
+.invite-settings-panel .invite-rules {
     padding: 14px 16px;
     background: var(--surface, #f8f8f7);
     border-radius: 10px;
@@ -7136,32 +7172,32 @@ body[data-shared-conversation="true"] .input-icon {
     line-height: 1.6;
 }
 
-#invitePanel .invite-rules-title {
+.invite-settings-panel .invite-rules-title {
     margin-bottom: 6px;
     font-weight: 600;
     color: var(--text, #1a1a1a);
 }
 
-#invitePanel .invite-rules ul {
+.invite-settings-panel .invite-rules ul {
     margin: 0;
     padding-left: 20px;
 }
 
-#invitePanel .invite-rules li {
+.invite-settings-panel .invite-rules li {
     margin-bottom: 3px;
 }
 
 @media (max-width: 640px) {
-    #invitePanel .invite-stats {
+    .invite-settings-panel .invite-stats {
         grid-template-columns: 1fr;
     }
-    #invitePanel .invite-stat-value {
+    .invite-settings-panel .invite-stat-value {
         font-size: 20px;
     }
-    #invitePanel .invite-link-input-wrap {
+    .invite-settings-panel .invite-link-input-wrap {
         flex-direction: column;
     }
-    #invitePanel .invite-copy-btn {
+    .invite-settings-panel .invite-copy-btn {
         width: 100%;
         justify-content: center;
     }

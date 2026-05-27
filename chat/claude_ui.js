@@ -2095,6 +2095,9 @@
                     });
                     // 切回"概述"时刷新一次表单显示，避免外面改了昵称 / 主题没同步进来。
                     if (key === 'overview') populateOverviewForm();
+                    if (key === 'invite' && typeof window.fetchAndRenderInvitePanel === 'function') {
+                        window.fetchAndRenderInvitePanel();
+                    }
                 });
             });
         }
