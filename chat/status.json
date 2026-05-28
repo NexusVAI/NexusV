@@ -5,8 +5,8 @@
   "services": [
     {
       "name": "DeepSeek-V4-Flash",
-      "description": "闪电 · 快速 · 线路一",
-      "status": "degraded"
+      "description": "闪电 · 快速 · SenseNova线路",
+      "status": "operational"
     },
     {
       "name": "DeepSeek-V4-Pro",
@@ -89,11 +89,6 @@
       "status": "operational"
     },
     {
-      "name": "Kimi K2.5",
-      "description": "多模态 · 复杂任务处理",
-      "status": "operational"
-    },
-    {
       "name": "Kimi K2.6",
       "description": "多模态 · 官方API",
       "status": "operational"
@@ -129,11 +124,6 @@
       "status": "down"
     },
     {
-      "name": "qwen3.6-max-preview",
-      "description": "预览",
-      "status": "operational"
-    },
-    {
       "name": "MiniMax-M2.5",
       "description": "新 · 性价比之选 快速",
       "status": "operational"
@@ -142,26 +132,6 @@
       "name": "DeepSeek-R1",
       "description": "强推理 · 百炼",
       "status": "operational"
-    },
-    {
-      "name": "Qwen3.6-Flash",
-      "description": "多模态 · 快速 · 百炼",
-      "status": "operational"
-    },
-    {
-      "name": "Kimi K2.5",
-      "description": "多模态 · 线路二 · 百炼",
-      "status": "operational"
-    },
-    {
-      "name": "DeepSeek-V3.2",
-      "description": "百炼 · 稳定",
-      "status": "operational"
-    },
-    {
-      "name": "DeepSeek-V3.2-Exp",
-      "description": "实验版 · 百炼",
-      "status": "down"
     },
     {
       "name": "GLM-4.5-Air",
@@ -194,11 +164,6 @@
       "status": "down"
     },
     {
-      "name": "Qwen3.6-Plus",
-      "description": "多模态 · 2026-04-02 · 线路三 · 百炼",
-      "status": "operational"
-    },
-    {
       "name": "DeepSeek-R1-0528",
       "description": "强推理 · 线路三 · 百炼",
       "status": "operational"
@@ -206,6 +171,16 @@
     {
       "name": "MiMo-2.5-Pro",
       "description": "小米 · 长程任务第一",
+      "status": "operational"
+    },
+    {
+      "name": "MiMo-2.5",
+      "description": "小米 · 均衡之选",
+      "status": "operational"
+    },
+    {
+      "name": "MiMo-V2-Pro",
+      "description": "小米 · 旗舰",
       "status": "operational"
     },
     {
@@ -226,6 +201,11 @@
     {
       "name": "SenseNova U1 Fast",
       "description": "图像生成",
+      "status": "operational"
+    },
+    {
+      "name": "Claude Opus 4.7 Max Fast",
+      "description": "旗舰 · 线路一 (linguangchat)",
       "status": "operational"
     },
     {

@@ -2486,6 +2486,7 @@ const BRAND_ICON_MAP = {
   "Swiss AI": "./huggingface-color.svg",
   "utter-project": "./huggingface-color.svg",
   "Baichuan": "./baichuan-color.svg",
+  "小米 MiMo": "./xiaomimimo-color.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
