@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- 2026-05-17 Phase A 改版：三档订阅 + 加油包 + 模型倍率。脚本仍走外联 pricing-app.js。 -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+        />
+        <title>套餐订阅 · NexusV / Cancri</title>
+        <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+        <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+        <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
+        <link rel="preload" as="image" href="../Logo/Cancri.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <script src="./api/_anti-debug.js"></script>
+        <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-promo-fix-ts" />
+        <script src="./api/api-platform.js?v=20260513"></script>
+        <!-- Cancri 双主题 logo 同步 -->
+        <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+        <style>
+            /* ────────── 三档订阅卡 ────────── */
+            .plan-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 18px;
+                margin-bottom: 28px;
+            }
+            @media (max-width: 880px) {
+                .plan-grid { grid-template-columns: 1fr; }
+            }
+            .plan-tier {
+                position: relative;
+                padding: 22px 22px 20px;
+                border: 1px solid var(--border-strong);
+                border-radius: 14px;
+                background: var(--surface-elevated, var(--surface));
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                transition: border-color 0.18s, transform 0.18s;
+            }
+            .plan-tier:hover {
+                border-color: var(--accent);
+                transform: translateY(-2px);
+            }
+            .plan-tier.is-recommended {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 1px var(--accent);
+            }
+            .plan-tier__ribbon {
+                position: absolute;
+                top: -10px;
+                right: 16px;
+                background: var(--accent);
+                color: #fff;
+                font-size: 11px;
+                font-family: var(--font-mono);
+                font-weight: 600;
+                padding: 3px 10px;
+                border-radius: 10px;
+                letter-spacing: 0.04em;
+            }
+            .plan-tier__head {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+            }
+            .plan-tier__name {
+                font-family: var(--serif);
+                font-size: 22px;
+                color: var(--text);
+                margin: 0;
+            }
+            .plan-tier__name small {
+                display: block;
+                font-family: var(--font-sans);
+                font-size: 11px;
+                color: var(--text-faint);
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                margin-top: 2px;
+                font-weight: 500;
+            }
+            .plan-tier__price {
+                font-family: var(--serif);
+                font-size: 34px;
+                line-height: 1;
+                color: var(--text);
+            }
+            .plan-tier__price .currency {
+                font-size: 0.5em;
+                color: var(--text-mute);
+                margin-right: 2px;
+                vertical-align: top;
+            }
+            .plan-tier__price .period {
+                font-size: 0.35em;
+                color: var(--text-mute);
+                font-family: var(--font-sans);
+                margin-left: 4px;
+            }
+            .plan-tier__quota {
+                font-size: 13.5px;
+                color: var(--accent);
+                font-family: var(--font-mono);
+                margin: -4px 0 4px;
+            }
+            .plan-tier__features {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                gap: 8px;
+                flex: 1;
+            }
+            .plan-tier__features li {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                font-size: 13.5px;
+                color: var(--text);
+                line-height: 1.5;
+            }
+            .plan-tier__features li::before {
+                content: "✓";
+                color: var(--accent);
+                font-weight: 700;
+                line-height: 1.4;
+                flex-shrink: 0;
+            }
+            .plan-tier__cta {
+                width: 100%;
+                padding: 10px;
+                font-size: 14px;
+                font-weight: 600;
+            }
+
+            /* ────────── 加油包行 ────────── */
+            .topup-section { margin-bottom: 28px; }
+            .topup-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+            }
+            @media (max-width: 720px) {
+                .topup-grid { grid-template-columns: 1fr; }
+            }
+            .topup-card {
+                padding: 16px 18px;
+                border: 1px solid var(--border-strong);
+                border-radius: 12px;
+                background: var(--surface);
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                transition: border-color 0.18s;
+            }
+            .topup-card:hover { border-color: var(--accent); }
+            .topup-card__head {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+            }
+            .topup-card__amount {
+                font-family: var(--serif);
+                font-size: 22px;
+                color: var(--text);
+            }
+            .topup-card__amount .currency {
+                font-size: 0.6em;
+                color: var(--text-mute);
+                margin-right: 2px;
+            }
+            .topup-card__tokens {
+                font-family: var(--font-mono);
+                font-size: 12.5px;
+                color: var(--accent);
+            }
+            .topup-card__hint {
+                font-size: 12.5px;
+                color: var(--text-mute);
+                line-height: 1.55;
+                margin: 0;
+            }
+            .topup-card__cta {
+                width: 100%;
+                padding: 8px;
+                font-size: 13.5px;
+            }
+
+            /* ────────── 模型倍率说明小卡 ────────── */
+            .multiplier-info {
+                background: var(--surface);
+                border: 1px solid var(--border-mute);
+                border-radius: 10px;
+                padding: 14px 16px;
+                margin-top: 8px;
+                font-size: 12.5px;
+                color: var(--text-mute);
+                line-height: 1.7;
+            }
+            .multiplier-info strong { color: var(--text); }
+            .multiplier-info code {
+                font-family: var(--font-mono);
+                background: var(--surface-elevated, var(--bg));
+                color: var(--accent);
+                padding: 1px 6px;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+
+            /* ────────── 订单区（沿用） ────────── */
+            .order-card {
+                display: grid;
+                grid-template-columns: 1.3fr 1fr;
+                gap: 28px;
+            }
+            @media (max-width: 720px) {
+                .order-card { grid-template-columns: 1fr; }
+            }
+            .selected-summary {
+                padding: 14px 16px;
+                border: 1px solid var(--border-strong);
+                border-radius: 10px;
+                background: var(--surface);
+                margin-bottom: 14px;
+            }
+            .selected-summary__row {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 8px;
+                font-size: 13.5px;
+            }
+            .selected-summary__row + .selected-summary__row { margin-top: 6px; }
+            .selected-summary__label { color: var(--text-mute); }
+            .selected-summary__value {
+                font-family: var(--font-mono);
+                color: var(--accent);
+                font-weight: 600;
+            }
+            .selected-summary__big {
+                font-family: var(--serif);
+                font-size: 18px;
+                color: var(--text);
+            }
+            .qr-card {
+                padding: 22px 20px;
+                border: 1px solid var(--border-strong);
+                border-radius: 14px;
+                background: var(--surface-elevated, var(--surface));
+                text-align: center;
+            }
+            .qr-card img {
+                max-width: 240px;
+                width: 100%;
+                height: auto;
+                border-radius: 10px;
+                margin-bottom: 12px;
+                background: white;
+                padding: 6px;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .qr-card h3 {
+                margin: 0 0 6px 0;
+                font-family: var(--serif);
+                font-size: 17px;
+                color: var(--text);
+            }
+            .qr-note {
+                font-size: 12.5px;
+                color: var(--text-mute);
+                margin: 0;
+                line-height: 1.65;
+            }
+            .qr-note code {
+                color: var(--accent);
+                font-family: var(--font-mono);
+            }
+            .order-form { display: grid; gap: 14px; }
+            .form-row { display: grid; gap: 6px; }
+            .form-row label {
+                font-size: 12.5px;
+                color: var(--text-mute);
+                font-weight: 500;
+            }
+            .form-row input,
+            .form-row select {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--border-strong);
+                border-radius: 8px;
+                background: var(--surface);
+                color: var(--text);
+                font-size: 14px;
+                font-family: inherit;
+            }
+            .form-row .hint {
+                font-size: 11.5px;
+                color: var(--text-faint);
+            }
+
+            /* ────────── 通用 alert + tier badge（沿用） ────────── */
+            .alert {
+                padding: 10px 14px;
+                border-radius: 8px;
+                font-size: 13px;
+                line-height: 1.55;
+            }
+            .alert-info {
+                background: rgba(96, 165, 250, 0.1);
+                border: 1px solid rgba(96, 165, 250, 0.3);
+                color: var(--text);
+            }
+            .alert-warn {
+                background: rgba(248, 113, 113, 0.1);
+                border: 1px solid rgba(248, 113, 113, 0.3);
+                color: var(--text);
+            }
+            .alert-ok {
+                background: rgba(74, 222, 128, 0.1);
+                border: 1px solid rgba(74, 222, 128, 0.3);
+                color: var(--text);
+            }
+            .badge-tier {
+                display: inline-block;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-family: var(--font-mono);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+            .badge-tier.free {
+                background: rgba(148, 163, 184, 0.18);
+                color: var(--text-mute);
+            }
+            .badge-tier.pro {
+                background: rgba(245, 158, 11, 0.18);
+                color: #f59e0b;
+            }
+            .badge-tier.pro_plus {
+                background: rgba(96, 165, 250, 0.18);
+                color: #60a5fa;
+            }
+            .badge-tier.pro_max {
+                background: rgba(168, 85, 247, 0.18);
+                color: #a855f7;
+            }
+
+            /* ────────── 步骤 + FAQ 沿用 ────────── */
+            .step-list {
+                counter-reset: step;
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                gap: 18px;
+            }
+            .step-list li {
+                counter-increment: step;
+                display: grid;
+                grid-template-columns: 36px 1fr;
+                gap: 14px;
+                align-items: start;
+            }
+            .step-list li::before {
+                content: counter(step);
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: var(--font-mono);
+                font-weight: 600;
+                font-size: 14px;
+            }
+            .step-list h4 {
+                margin: 0 0 4px 0;
+                font-size: 15px;
+                color: var(--text);
+            }
+            .step-list p {
+                margin: 0;
+                font-size: 13.5px;
+                color: var(--text-mute);
+                line-height: 1.6;
+            }
+            .step-list code {
+                color: var(--accent);
+                font-family: var(--font-mono);
+                background: var(--surface);
+                padding: 1px 6px;
+                border-radius: 4px;
+                font-size: 12.5px;
+            }
+
+            /* ────────── 2026-05-22 限时倍率 5 折促销横幅 ────────── */
+            /* 窗口（UTC+8）：05-22 20:30 → 05-24 00:00。倒计时由
+               pricing-app.js 维护；过期后 #promo-banner 自动 hidden。
+               2026-05-22 v2：去掉红色辉光 + 脉冲动画，改成 Claude 风克制
+               accent 色 + 1px 边框，与 plan-tier 卡片同视觉语言。 */
+            .promo-banner {
+                position: relative;
+                margin: 0 0 20px;
+                padding: 12px 48px 12px 16px;
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--text);
+                border: 1px solid var(--border-strong);
+                border-left: 3px solid var(--accent);
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                flex-wrap: wrap;
+            }
+            /* display:flex 会盖掉浏览器默认 [hidden] { display: none }，
+               所以显式声明一下，确保窗口外（或 JS 关掉后）真的隐藏。 */
+            .promo-banner[hidden] {
+                display: none !important;
+            }
+            .promo-banner__icon {
+                color: var(--accent);
+                font-size: 16px;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            .promo-banner__body {
+                flex: 1 1 240px;
+                min-width: 0;
+            }
+            .promo-banner__title {
+                margin: 0;
+                font-family: var(--serif);
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text);
+                line-height: 1.3;
+            }
+            .promo-banner__sub {
+                margin: 2px 0 0;
+                font-size: 12.5px;
+                line-height: 1.55;
+                color: var(--text-mute);
+            }
+            .promo-banner__sub strong {
+                color: var(--accent);
+                font-family: var(--font-mono);
+                font-weight: 600;
+                background: none;
+                padding: 0;
+            }
+            .promo-banner__countdown {
+                flex: 0 0 auto;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 4px 10px;
+                border-radius: 6px;
+                background: var(--bg);
+                border: 1px solid var(--border-mute);
+            }
+            .promo-banner__countdown small {
+                display: block;
+                font-size: 9.5px;
+                font-weight: 500;
+                font-family: var(--font-sans);
+                color: var(--text-faint);
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                margin-bottom: 1px;
+            }
+            .promo-banner__time {
+                font-family: var(--font-mono);
+                font-size: 14px;
+                font-weight: 600;
+                font-variant-numeric: tabular-nums;
+                color: var(--accent);
+                letter-spacing: 0.02em;
+            }
+            .promo-banner__close {
+                position: absolute;
+                top: 50%;
+                right: 10px;
+                transform: translateY(-50%);
+                width: 24px;
+                height: 24px;
+                border: none;
+                background: transparent;
+                color: var(--text-mute);
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 13px;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: color 0.15s, background 0.15s;
+            }
+            .promo-banner__close:hover {
+                color: var(--text);
+                background: var(--border-mute);
+            }
+            @media (max-width: 720px) {
+                .promo-banner { padding: 12px 16px; }
+                .promo-banner__close {
+                    position: static;
+                    transform: none;
+                    margin-left: auto;
+                }
+                .promo-banner__countdown { width: 100%; justify-content: center; }
+            }
+
+            /* 倍率说明卡：限时折后倍率高亮（克制：accent 色，无背景） */
+            .multiplier-info .promo-strike {
+                color: var(--text-faint);
+                text-decoration: line-through;
+                margin-right: 4px;
+                opacity: 0.7;
+            }
+            .multiplier-info .promo-now {
+                color: var(--accent);
+                font-weight: 600;
+                font-family: var(--font-mono);
+                font-size: 12px;
+            }
+
+            /* ────────── 2026-05-29 满月折扣：plan/topup 卡片价格上的删除线 + 折扣徽章 ────────── */
+            .price-original {
+                color: var(--text-faint);
+                text-decoration: line-through;
+                font-size: 0.55em;
+                margin-right: 6px;
+                font-weight: 400;
+                opacity: 0.75;
+            }
+            .price-discount-badge {
+                display: inline-block;
+                margin-left: 8px;
+                padding: 1px 7px;
+                border-radius: 8px;
+                background: var(--accent);
+                color: #fff;
+                font-size: 0.32em;
+                font-family: var(--font-mono);
+                font-weight: 600;
+                vertical-align: middle;
+                letter-spacing: 0.04em;
+            }
+            .topup-card__amount .price-original {
+                font-size: 0.65em;
+            }
+            .topup-card__amount .price-discount-badge {
+                font-size: 0.55em;
+            }
+        </style>
+    </head>
+    <body>
+        <header class="topbar">
+            <div class="topbar__inner">
+                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+                    <img
+                        class="brand__logo cancri-logo"
+                        src="../Logo/Cancri1.jpg"
+                        data-dark-src="../Logo/Cancri1.jpg"
+                        data-light-src="../Logo/Cancri.png"
+                        alt="Cancri"
+                        width="28"
+                        height="28"
+                    />
+                </a>
+                <nav class="topnav" aria-label="开放平台导航">
+                    <a href="./api/">概览</a>
+                    <a href="./api_apply.html">申请</a>
+                    <a href="./api_keys.html">Keys</a>
+                    <a href="./api_models.html">模型</a>
+                    <a href="./api_docs.html">文档</a>
+                    <a href="./pricing.html" class="is-active">套餐</a>
+                    <a href="./orders.html">我的订单</a>
+                    <a href="./" class="topnav__back">← 返回聊天</a>
+                </nav>
+                <button
+                    class="theme-toggle"
+                    type="button"
+                    data-theme-toggle
+                    aria-label="切换主题"
+                    title="切换主题"
+                >
+                    <svg
+                        class="theme-toggle__sun"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="4" />
+                        <path
+                            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                        />
+                    </svg>
+                    <svg
+                        class="theme-toggle__moon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="page-shell">
+            <!-- 2026-05-22 限时倍率 5 折促销横幅。窗口（UTC+8）：
+                 05-22 20:30 → 05-24 00:00。pricing-app.js 在窗口外把整个
+                 banner 隐藏；用户也能手动 × 关闭（仅本会话）。 -->
+            <div
+                class="promo-banner"
+                id="promo-banner"
+                role="status"
+                aria-live="polite"
+                hidden
+            >
+                <div class="promo-banner__body">
+                    <p class="promo-banner__title">限时倍率 5 折</p>
+                    <p class="promo-banner__sub">
+                        所有付费模型 token 倍率 <strong>× 0.5</strong> · 订阅配额翻倍耐用 · 加油包同样享折扣。
+                    </p>
+                </div>
+                <div class="promo-banner__countdown" aria-live="off">
+                    <div>
+                        <small>剩余</small>
+                        <span class="promo-banner__time" id="promo-countdown">--:--:--</span>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    class="promo-banner__close"
+                    id="promo-banner-close"
+                    aria-label="关闭促销横幅"
+                    title="关闭"
+                >✕</button>
+            </div>
+
+            <!-- 2026-05-26 满月庆典 banner：5/29-5/31 套餐折扣 + 加油包充返。
+                 不带倒计时（避免与 celebrate.html 重复），点击跳活动页。
+                 后端 chat-gateway handleSubmitPaymentOrder 5/29-5/31 自动应用折扣，前端无需特殊处理。 -->
+            <a
+                class="promo-banner"
+                id="celebrate-banner"
+                href="./celebrate.html"
+                role="status"
+                title="Cancri 满月庆典 · 点击查看完整福利"
+                aria-label="Cancri 满月庆典 5/29 - 5/31 套餐折扣 + 充返加油包，点击查看完整福利"
+                style="text-decoration: none; color: inherit; display: flex"
+            >
+                <div class="promo-banner__body">
+                    <p class="promo-banner__title">🌕 满月庆典 · 5/29 - 5/31 套餐折扣 + 充返加油包</p>
+                    <p class="promo-banner__sub">
+                        Pro <strong>5 折</strong> · Pro+ / Pro Max <strong>8 折</strong> · 加油包激活赠送 token（¥10/¥50/¥200 三档）·
+                        <strong>点击查看九重满月福利 · 含互动三件套 →</strong>
+                    </p>
+                </div>
+            </a>
+
+            <div class="top-bar">
+                <div>
+                    <h1 class="page-title">套餐与加油包</h1>
+                    <p class="subtitle" data-pricing-subtitle>
+                        ¥9.9 / ¥29 / ¥99 三档月度订阅 · ¥10 起加油包永不过期
+                    </p>
+                </div>
+                <div id="current-tier"></div>
+            </div>
+
+            <!-- ──── 三档订阅 ──── -->
+            <div class="plan-grid" id="plan-grid">
+                <div class="plan-tier" data-plan="pro">
+                    <div class="plan-tier__head">
+                        <h3 class="plan-tier__name">Pro<small>入门</small></h3>
+                        <span class="badge-tier pro">PRO</span>
+                    </div>
+                    <div class="plan-tier__price" data-price-slot="pro">
+                        <span class="currency">¥</span>9.9<span class="period">/ 月</span>
+                    </div>
+                    <div class="plan-tier__quota" data-quota-slot="pro">月度配额 2000 万 token</div>
+                    <ul class="plan-tier__features">
+                        <li>解锁非 Opus 全模型（GPT-5.4、Sonnet、Grok-4.20、Kimi 等）</li>
+                        <li>月度配额内不限次调用，每 30 天订阅周期重置</li>
+                        <li>免并发排队，付费用户优先直通</li>
+                        <li>可叠加续费，最长预付 90 天</li>
+                    </ul>
+                    <button type="button" class="btn btn-secondary plan-tier__cta" data-plan-select="pro">
+                        选择 Pro
+                    </button>
+                </div>
+
+                <div class="plan-tier is-recommended" data-plan="pro_plus">
+                    <div class="plan-tier__ribbon">推荐</div>
+                    <div class="plan-tier__head">
+                        <h3 class="plan-tier__name">Pro+<small>标准</small></h3>
+                        <span class="badge-tier pro_plus">PRO+</span>
+                    </div>
+                    <div class="plan-tier__price" data-price-slot="pro_plus">
+                        <span class="currency">¥</span>29<span class="period">/ 月</span>
+                    </div>
+                    <div class="plan-tier__quota" data-quota-slot="pro_plus">月度配额 8000 万 token</div>
+                    <ul class="plan-tier__features">
+                        <li><strong>解锁 Claude Opus 全系</strong>（4.5 / 4.6 / 4.6 Thinking）</li>
+                        <li>月度配额内不限次调用，每 30 天订阅周期重置</li>
+                        <li>含 Pro 所有特权 + 模型选择器优先标识</li>
+                        <li>可叠加续费，最长预付 90 天</li>
+                    </ul>
+                    <button type="button" class="btn btn-primary plan-tier__cta" data-plan-select="pro_plus">
+                        选择 Pro+
+                    </button>
+                </div>
+
+                <div class="plan-tier" data-plan="pro_max">
+                    <div class="plan-tier__head">
+                        <h3 class="plan-tier__name">Pro Max<small>重度</small></h3>
+                        <span class="badge-tier pro_max">PRO MAX</span>
+                    </div>
+                    <div class="plan-tier__price" data-price-slot="pro_max">
+                        <span class="currency">¥</span>99<span class="period">/ 月</span>
+                    </div>
+                    <div class="plan-tier__quota" data-quota-slot="pro_max">月度配额 3 亿 token</div>
+                    <ul class="plan-tier__features">
+                        <li>解锁全部模型，包含图像 / 视频生成（vip 级模型）</li>
+                        <li>月度配额内不限次调用，每 30 天订阅周期重置</li>
+                        <li>含 Pro+ 所有特权</li>
+                        <li>对重度开发 / 内容创作友好</li>
+                    </ul>
+                    <button type="button" class="btn btn-secondary plan-tier__cta" data-plan-select="pro_max">
+                        选择 Pro Max
+                    </button>
+                </div>
+            </div>
+
+            <!-- ──── 加油包 ──── -->
+            <div class="topup-section">
+                <h2 style="margin: 0 0 8px 0">加油包（永不过期）</h2>
+                <p class="subtitle" style="margin: 0 0 14px 0">
+                    任何档位（含 Free）都可买加油包补足配额。永不清零，可累积。
+                </p>
+                <div class="topup-grid" id="topup-grid">
+                    <div class="topup-card" data-topup="topup_small">
+                        <div class="topup-card__head">
+                            <div class="topup-card__amount" data-topup-amount-slot="topup_small">
+                                <span class="currency">¥</span>10
+                            </div>
+                            <div class="topup-card__tokens" data-topup-tokens-slot="topup_small">1500 万 token</div>
+                        </div>
+                        <p class="topup-card__hint">轻量补足，约够标准模型 5000 段对话</p>
+                        <button type="button" class="btn btn-secondary topup-card__cta" data-topup-select="topup_small">
+                            选这个
+                        </button>
+                    </div>
+                    <div class="topup-card" data-topup="topup_medium">
+                        <div class="topup-card__head">
+                            <div class="topup-card__amount" data-topup-amount-slot="topup_medium">
+                                <span class="currency">¥</span>50
+                            </div>
+                            <div class="topup-card__tokens" data-topup-tokens-slot="topup_medium">9000 万 token</div>
+                        </div>
+                        <p class="topup-card__hint">中量补足，性价比最高，相当于一个 Pro+ 月配额</p>
+                        <button type="button" class="btn btn-secondary topup-card__cta" data-topup-select="topup_medium">
+                            选这个
+                        </button>
+                    </div>
+                    <div class="topup-card" data-topup="topup_large">
+                        <div class="topup-card__head">
+                            <div class="topup-card__amount" data-topup-amount-slot="topup_large">
+                                <span class="currency">¥</span>200
+                            </div>
+                            <div class="topup-card__tokens" data-topup-tokens-slot="topup_large">4 亿 token</div>
+                        </div>
+                        <p class="topup-card__hint">重度备货，Opus 重度也可撑数月</p>
+                        <button type="button" class="btn btn-secondary topup-card__cta" data-topup-select="topup_large">
+                            选这个
+                        </button>
+                    </div>
+                </div>
+
+                <div class="multiplier-info" id="multiplier-info">
+                    <strong>模型权重说明：</strong>
+                    实际扣分 = (输入 + 输出 token) × 模型权重。
+                    <span data-promo-mult="0.5">轻量模型（GLM Flash 等）<code>0.5x</code></span>，
+                    <span data-promo-mult="1">标准（GPT-4）<code>1x</code></span>，
+                    <span data-promo-mult="3">中端（Kimi、Doubao、Haiku）<code>3x</code></span>，
+                    <span data-promo-mult="10">高端（GPT-5.4、Grok 4.3 等）<code>10x</code></span>，
+                    <span data-promo-mult="30">顶级（Gemini 3.1 Pro、视频等）<code>30x</code></span>
+                    （Grok 4.20 特惠已降至 <strong>3x</strong>！Sonnet 4.6 已降至 <strong>5x</strong>！Opus 4.6 降至 <strong>20x</strong>！）。
+                    日常对话主要消耗在前 3 档，配额很经用。
+                </div>
+            </div>
+
+            <!-- ──── 订单提交（选档后展开） ──── -->
+            <div class="card" id="order-card">
+                <h2>提交订单</h2>
+
+                <div id="order-loading" class="loading">加载中…</div>
+
+                <div id="order-login-gate" style="display: none">
+                    <div class="alert alert-info" style="margin-bottom: 12px">
+                        提交订单需要先登录 Cancri 账号（用同样的邮箱）。
+                    </div>
+                    <a class="btn btn-primary" href="./">前往登录</a>
+                </div>
+
+                <div id="order-empty" style="display: none">
+                    <div class="alert alert-info">
+                        请先在上方选择一个套餐档位或加油包规格。
+                    </div>
+                </div>
+
+                <div id="order-form-section" style="display: none">
+                    <div class="order-card">
+                        <div>
+                            <div class="selected-summary" id="selected-summary">
+                                <!-- 由 pricing-app.js 注入 -->
+                            </div>
+                            <form id="order-form" class="order-form" autocomplete="off">
+                                <div class="form-row">
+                                    <label for="of-email">付款时备注的邮箱</label>
+                                    <input
+                                        type="email"
+                                        id="of-email"
+                                        placeholder="you@qq.com"
+                                        required
+                                    />
+                                    <div class="hint">
+                                        需要和付款备注里写的邮箱一致，便于对单。
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <label for="of-qq">付款时备注的 QQ 号</label>
+                                    <input
+                                        type="text"
+                                        id="of-qq"
+                                        placeholder="123456789"
+                                        inputmode="numeric"
+                                        required
+                                    />
+                                    <div class="hint">5~15 位纯数字</div>
+                                </div>
+                                <div class="form-row">
+                                    <label for="of-method">付款方式</label>
+                                    <select id="of-method">
+                                        <option value="unspecified">不确定 / 二者其一</option>
+                                        <option value="wechat">微信支付</option>
+                                        <option value="alipay">支付宝</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        id="of-submit"
+                                    >
+                                        提交订单
+                                    </button>
+                                    <a class="btn btn-secondary" href="./orders.html"
+                                        >我的订单 →</a
+                                    >
+                                </div>
+                            </form>
+                            <div id="order-msg" style="margin-top: 14px"></div>
+                        </div>
+                        <div class="qr-card">
+                            <h3>扫码付款</h3>
+                            <img
+                                src="../Logo/1107.jpg"
+                                alt="微信 / 支付宝收款码"
+                                loading="lazy"
+                            />
+                            <p class="qr-note">
+                                微信或支付宝扫码，金额 <code id="qr-amount">—</code><br />
+                                付款备注请务必填 <code>邮箱 + QQ</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>购买流程</h2>
+                <ol class="step-list">
+                    <li>
+                        <div>
+                            <h4>选择档位 / 加油包</h4>
+                            <p>
+                                上方点 <code>选择 Pro+</code> 或 <code>选这个</code>，
+                                右侧二维码会显示对应金额。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <h4>扫码支付</h4>
+                            <p>
+                                微信或支付宝任一即可。请在<strong>付款备注 / 留言</strong>里填写你的
+                                邮箱 + QQ（用空格分隔），以便对单。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <h4>提交订单</h4>
+                            <p>
+                                在下方表单填写同样的邮箱和 QQ，点提交。
+                                你需要先登录 Cancri 账号。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <h4>等待审核</h4>
+                            <p>
+                                站主收到付款后会人工对照备注，通常 1~24 小时内完成。
+                                通过后会生成一个一次性激活码。
+                            </p>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <h4>激活</h4>
+                            <p>
+                                在
+                                <a href="./orders.html">我的订单</a>
+                                页面输入激活码 → 立刻升级到对应档位 / 加油包到账。
+                            </p>
+                        </div>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h2>常见问题</h2>
+                <p class="doc-card-text">
+                    <strong>现有 ¥9.9 用户会被影响吗？</strong>
+                    到期日完全不变。从今天起按 Pro 档位（月 2000 万 token）计费，且
+                    <strong>本订阅周期内继续可调 Claude Opus 全系</strong>（Phase A 老用户福利，30× 权重照常生效，月度配额受 2000 万限制）。
+                    续费时根据用量自行选择档位（Pro 续费 / Pro+ 升级 / Pro Max 重度），<strong>续费后老用户福利失效</strong>，按所选新档位的明码规则计费。
+                </p>
+                <p class="doc-card-text">
+                    <strong>为什么要分档？</strong>
+                    站开了几天烧了 10 亿+ token，订阅转化不足 10%，再不分档单位经济撑不下去。
+                    Opus 系列上游成本是普通模型的几十倍，必须靠 Pro+ 档位的对等收入覆盖。这是为了能继续做下去，请各位理解。
+                </p>
+                <p class="doc-card-text">
+                    <strong>加油包真的永不过期？</strong>
+                    是的。加油包余额独立于订阅档位，任何时候都能用，订阅过期后也能继续消耗。
+                </p>
+                <p class="doc-card-text">
+                    <strong>可以一次买好几个月吗？</strong>
+                    可以叠加续费，但到期时间最长预付 90 天（从当前算起）。超出部分不会丢失，只是无法一次性囤积超过 90 天的会员时长。
+                </p>
+                <p class="doc-card-text">
+                    <strong>没收到激活码？</strong>
+                    审核完成后激活码会显示在
+                    <a href="./orders.html">我的订单</a> 页面，不发邮件。
+                </p>
+                <p class="doc-card-text">
+                    <strong>付款后没有立刻升级？</strong>
+                    这是人工对单的流程，付款 → 提交订单 → 站主对账 →
+                    生成激活码 → 你手动兑换。请耐心等 1~24 小时。
+                </p>
+                <p class="doc-card-text">
+                    <strong>付费后能退款吗？</strong>
+                    本服务所有费用用于覆盖上游 API 成本，一旦激活恕不退款。例外情形：（1）付款后未提交订单、未领取激活码；（2）服务明显故障导致付费期不可用且超过订单期间的 50%。退款请通过
+                    <a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub Issues</a> 或邮箱 nexusvai@139.com 提交。
+                </p>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="site-footer__inner">
+                <div class="site-footer__sig">Built with care · Cancri</div>
+                <div>&copy; 2026 NexusV / Cancri Open Platform</div>
+            </div>
+        </footer>
+
+        <script src="./cancri_config.js"></script>
+        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+        <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
+        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+        <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+        ></script>
+        <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
+        <script src="./api/pricing-app.js?v=2026-05-29-pricing-rpc"></script>
+    </body>
+</html>
