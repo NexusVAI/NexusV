@@ -12,6 +12,14 @@
 //   • multiplier-info 卡内 5 个 [data-promo-mult] span 自动渲染折后倍率
 //   • 窗口外横幅 hidden 不显示，折后倍率回退为原倍率
 //
+// 2026-05-29 满月套餐折扣从后端拉：
+//   • CLIENT_CATALOG 不再硬编码价位 / 配额 / token 数，改由 RPC
+//     cancri_celebrate_get_pricing() 返回，与后端 ORDER_CATALOG 同步 source of truth
+//   • 5/29-5/31 活动窗口期：Pro 5 折 / Pro+/Max 8 折自动生效，价格卡上
+//     原价加删除线 + 折后价 + 折扣徽章
+//   • 后台提交订单时仍会 server-side 重算金额（submit_payment_order），
+//     前端显示仅供预览，不会引起 client/server 金额不一致
+//
 // 沿用 admin-*-app.js 同款做法：全部 addEventListener，无 inline onclick。
 
 // ────────── 2026-05-22 限时倍率 5 折促销 ──────────
@@ -107,13 +115,15 @@ const sb = window.supabase.createClient(
 );
 const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 
-// 与后端 ORDER_CATALOG 保持同步。这里只用于前端渲染金额预览；
-// 真实金额仍由 server 端写入订单，前端值不可信。
+// 2026-05-29 改为后端拉。loadPricing() 会在 init 阶段调
+// cancri_celebrate_get_pricing() 填充。初始值仅为 fallback（避免 RPC 失败时
+// 选择逻辑拿不到 amount），与 HTML 中的 hardcoded 原价一致。
+// 订单提交仍由 server 端重算金额，前端值不可信。
 const CLIENT_CATALOG = {
     subscription: {
-        pro: { amount: 9.9, label: "Pro", desc: "月 2000 万 token" },
-        pro_plus: { amount: 29, label: "Pro+", desc: "月 8000 万 token + Opus" },
-        pro_max: { amount: 99, label: "Pro Max", desc: "月 3 亿 token" },
+        pro: { amount: 9.9, amount_original: 9.9, discount: 1.0, label: "Pro", desc: "月 2000 万 token" },
+        pro_plus: { amount: 29, amount_original: 29, discount: 1.0, label: "Pro+", desc: "月 8000 万 token + Opus" },
+        pro_max: { amount: 99, amount_original: 99, discount: 1.0, label: "Pro Max", desc: "月 3 亿 token" },
     },
     topup: {
         topup_small: { amount: 10, label: "加油包 ¥10", desc: "1500 万 token" },
@@ -121,6 +131,129 @@ const CLIENT_CATALOG = {
         topup_large: { amount: 200, label: "加油包 ¥200", desc: "4 亿 token" },
     },
 };
+let pricingMeta = { in_window: false, active_from: null, active_to: null };
+
+// 价格格式化：整数不加小数点，含小数保留 2 位去尾零
+function fmtPrice(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return "—";
+    if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
+    return v.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+// 折扣标签文本：0.5 → "5 折"，0.8 → "8 折"
+function discountLabel(d) {
+    const tenths = Math.round(d * 10);
+    if (tenths >= 1 && tenths <= 9) return tenths + " 折";
+    return Math.round((1 - d) * 100) + "% OFF";
+}
+
+async function loadPricing() {
+    try {
+        const { data, error } = await sb.rpc("cancri_celebrate_get_pricing");
+        if (error || !data || data.ok !== true) {
+            console.warn("[pricing] rpc error, fallback to hardcoded", error);
+            return;
+        }
+        // 覆盖 CLIENT_CATALOG。amount 是折后（包含折扣），订单提交后
+        // server 会重算 + 虚开发票防扣项 —— 前端值仅供显示。
+        const sub = data.subscription || {};
+        ["pro", "pro_plus", "pro_max"].forEach((code) => {
+            const s = sub[code];
+            if (!s || !CLIENT_CATALOG.subscription[code]) return;
+            CLIENT_CATALOG.subscription[code].amount = Number(s.amount_cny);
+            CLIENT_CATALOG.subscription[code].amount_original = Number(s.amount_cny_original);
+            CLIENT_CATALOG.subscription[code].discount = Number(s.discount);
+            if (s.label) CLIENT_CATALOG.subscription[code].label = String(s.label);
+            if (s.monthly_quota_label) {
+                // selection summary 里的 desc 同步后端文案
+                CLIENT_CATALOG.subscription[code].desc = String(s.monthly_quota_label).replace(/^月度配额\s*/, "月 ");
+            }
+        });
+        const tp = data.topup || {};
+        ["topup_small", "topup_medium", "topup_large"].forEach((code) => {
+            const t = tp[code];
+            if (!t || !CLIENT_CATALOG.topup[code]) return;
+            CLIENT_CATALOG.topup[code].amount = Number(t.amount_cny);
+            if (t.label) CLIENT_CATALOG.topup[code].label = String(t.label);
+            if (t.tokens_label) CLIENT_CATALOG.topup[code].desc = String(t.tokens_label);
+        });
+        pricingMeta = data.discount_window || pricingMeta;
+
+        renderPlanCards(data);
+        renderTopupCards(data);
+        renderPricingSubtitle();
+    } catch (e) {
+        console.warn("[pricing] loadPricing exception", e);
+    }
+}
+
+function renderPlanCards(data) {
+    const sub = (data && data.subscription) || {};
+    document.querySelectorAll("[data-price-slot]").forEach((el) => {
+        const code = el.getAttribute("data-price-slot");
+        const s = sub[code];
+        if (!s) return;
+        const cur = fmtPrice(s.amount_cny);
+        const orig = fmtPrice(s.amount_cny_original);
+        const isDiscounted = Number(s.discount) > 0 && Number(s.discount) < 1;
+        const badge = isDiscounted
+            ? '<span class="price-discount-badge">' + esc(discountLabel(Number(s.discount))) + "</span>"
+            : "";
+        const strike = isDiscounted
+            ? '<span class="price-original">¥' + esc(orig) + "</span>"
+            : "";
+        el.innerHTML =
+            '<span class="currency">¥</span>' +
+            strike +
+            esc(cur) +
+            '<span class="period">/ 月</span>' +
+            badge;
+    });
+    document.querySelectorAll("[data-quota-slot]").forEach((el) => {
+        const code = el.getAttribute("data-quota-slot");
+        const s = sub[code];
+        if (s && s.monthly_quota_label) el.textContent = String(s.monthly_quota_label);
+    });
+}
+
+function renderTopupCards(data) {
+    const tp = (data && data.topup) || {};
+    document.querySelectorAll("[data-topup-amount-slot]").forEach((el) => {
+        const code = el.getAttribute("data-topup-amount-slot");
+        const t = tp[code];
+        if (!t) return;
+        el.innerHTML = '<span class="currency">¥</span>' + esc(fmtPrice(t.amount_cny));
+    });
+    document.querySelectorAll("[data-topup-tokens-slot]").forEach((el) => {
+        const code = el.getAttribute("data-topup-tokens-slot");
+        const t = tp[code];
+        if (t && t.tokens_label) el.textContent = String(t.tokens_label);
+    });
+}
+
+function renderPricingSubtitle() {
+    const el = document.querySelector("[data-pricing-subtitle]");
+    if (!el) return;
+    const pro = CLIENT_CATALOG.subscription.pro;
+    const pp = CLIENT_CATALOG.subscription.pro_plus;
+    const pm = CLIENT_CATALOG.subscription.pro_max;
+    const ts = CLIENT_CATALOG.topup.topup_small;
+    if (pricingMeta && pricingMeta.in_window) {
+        el.innerHTML =
+            '<span style="color:var(--accent);font-weight:600">满月折扣并未结束</span> · ' +
+            "Pro ¥" + esc(fmtPrice(pro.amount)) +
+            " / Pro+ ¥" + esc(fmtPrice(pp.amount)) +
+            " / Pro Max ¥" + esc(fmtPrice(pm.amount)) +
+            " · ¥" + esc(fmtPrice(ts.amount)) + " 起加油包永不过期";
+    } else {
+        el.textContent =
+            "¥" + fmtPrice(pro.amount) +
+            " / ¥" + fmtPrice(pp.amount) +
+            " / ¥" + fmtPrice(pm.amount) +
+            " 三档月度订阅 · ¥" + fmtPrice(ts.amount) + " 起加油包永不过期";
+    }
+}
 
 // 当前选中的订单（用户点 plan-tier 或 topup-card 后填充）
 let selection = null; // { kind: 'subscription'|'topup', code: 'pro'|...|'topup_small'|... }
@@ -215,9 +348,16 @@ function renderSelectedSummary() {
     }
     if (orderEmpty) orderEmpty.style.display = "none";
     if (formSection) formSection.style.display = "block";
-    if (qrAmount) qrAmount.textContent = "¥" + catalog.amount;
+    if (qrAmount) qrAmount.textContent = "¥" + fmtPrice(catalog.amount);
     if (card) {
         const kindLabel = selection.kind === "subscription" ? "订阅" : "加油包";
+        const isDiscounted = selection.kind === "subscription"
+            && Number(catalog.discount) > 0 && Number(catalog.discount) < 1;
+        const priceCell = isDiscounted
+            ? '<span class="price-original" style="font-size:0.85em">¥' + esc(fmtPrice(catalog.amount_original)) + "</span>"
+              + "¥" + esc(fmtPrice(catalog.amount))
+              + ' <span class="price-discount-badge" style="font-size:0.55em">' + esc(discountLabel(Number(catalog.discount))) + "</span>"
+            : "¥" + esc(fmtPrice(catalog.amount));
         card.innerHTML =
             '<div class="selected-summary__row">' +
                 '<span class="selected-summary__label">已选</span>' +
@@ -233,7 +373,7 @@ function renderSelectedSummary() {
             "</div>" +
             '<div class="selected-summary__row">' +
                 '<span class="selected-summary__label">应付金额</span>' +
-                '<span class="selected-summary__big">¥' + catalog.amount + "</span>" +
+                '<span class="selected-summary__big">' + priceCell + "</span>" +
             "</div>";
     }
 }
@@ -278,6 +418,10 @@ async function init() {
     const gate = document.getElementById("order-login-gate");
     const formSection = document.getElementById("order-form-section");
     const orderEmpty = document.getElementById("order-empty");
+
+    // 2026-05-29 价位 / 折扣拉取：在鉴权之前跑，同时适用于未登录浏览
+    // （RPC GRANT 了 anon）。不 await 会走 fallback、但初渲染拿不到折后价。
+    loadPricing();
 
     const { data: { user } } = await sb.auth.getUser();
     loading.style.display = "none";
