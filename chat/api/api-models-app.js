@@ -191,6 +191,7 @@ const BRAND_LOGO = {
     yuanbao: "./yuanbao-color.svg",
     kling: "./kling-color.svg",
     xiaomimimo: "./xiaomimimo-color.svg",
+    baichuan: "./baichuan-color.svg",
     microsoft: "./microsoft-color.svg",
     ibm: "./ibm.svg",
     cohere: "./cohere-color.svg",
@@ -213,7 +214,7 @@ function brandLogoHtml(brand) {
     //   - 之前误用 yuanbao（Ant Ling/百灵 logo）已纠正。
     // 未来如果拿到专属 Inclusion AI / Ling logo，在 BRAND_LOGO 直接加
     // inclusionai / ling key 覆盖此别名即可。
-    const ALIAS = { inclusionai: "antgroup" };
+    const ALIAS = { inclusionai: "antgroup", "小米mimo": "xiaomimimo" };
     const url = BRAND_LOGO[ALIAS[key] || key];
     if (url) {
         return `<span class="card-logo" aria-hidden="true"><img src="${url}" alt="" loading="lazy" decoding="async" /></span>`;
