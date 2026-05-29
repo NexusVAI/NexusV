@@ -2326,6 +2326,8 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
   // 2026-05-29: claude-opus-4-8 — aspirin 上游，复用 ASPIRIN_API_KEY。
   {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 80.0},
+  // 2026-05-29: Claude Opus 4.7 Thinking — thinkai 上游，独立 key。
+  {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-05-27：MiMo 聊天模型全线免费福利。
