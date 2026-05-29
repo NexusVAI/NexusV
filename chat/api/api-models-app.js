@@ -196,6 +196,7 @@ const BRAND_LOGO = {
     cohere: "./cohere-color.svg",
     swissai: "./huggingface-color.svg",
     utterproject: "./huggingface-color.svg",
+    swe: "./windsurf.svg",
 };
 
 function normalizeBrandKey(brand) {
@@ -450,6 +451,10 @@ function card(m) {
     const disabledBadge = disabled
         ? '<span class="tier tier-disabled" title="该模型线路当前不可用">不可用</span>'
         : "";
+    // 2026-05-29: windsurf 本地反代 — 仅白天 10-22 可用
+    const windsurfBadge = m.lineLabel === "windsurf"
+        ? '<span class="tier" style="background:rgba(251,191,36,.16);color:#fbbf24" title="该模型仅在 10:00-22:00 (北京时间) 可用，由本地反代提供">⏰ 白天可用</span>'
+        : "";
     const inputK = m.maxInputTokens
         ? m.maxInputTokens >= 1000
             ? Math.round(m.maxInputTokens / 1000) + "K"
@@ -473,7 +478,7 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${disabledBadge}</span>
+            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${windsurfBadge}${disabledBadge}</span>
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
