@@ -240,8 +240,12 @@ function renderPricingSubtitle() {
     const pm = CLIENT_CATALOG.subscription.pro_max;
     const ts = CLIENT_CATALOG.topup.topup_small;
     if (pricingMeta && pricingMeta.in_window) {
+        // source: 'window' = 满月一次性窗口；'weekly' = 每周末自动折扣
+        const promoLabel = pricingMeta.source === "weekly"
+            ? "周末限时折扣进行中"
+            : "满月折扣并未结束";
         el.innerHTML =
-            '<span style="color:var(--accent);font-weight:600">满月折扣并未结束</span> · ' +
+            '<span style="color:var(--accent);font-weight:600">' + esc(promoLabel) + '</span> · ' +
             "Pro ¥" + esc(fmtPrice(pro.amount)) +
             " / Pro+ ¥" + esc(fmtPrice(pp.amount)) +
             " / Pro Max ¥" + esc(fmtPrice(pm.amount)) +

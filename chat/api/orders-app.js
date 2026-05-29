@@ -25,15 +25,25 @@ const sb = window.supabase.createClient(
 );
 const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 
+// 2026-05-29 积分化：统一走 window.CancriCredits（cancri_credits.js 先加载）。
+// 兜底：按 1 积分 = 1 万 token 本地降级，避免订单页崩。
+const CC = window.CancriCredits || {
+    num: function (t) {
+        const c = (Number(t) || 0) / 10000;
+        return c >= 100 ? Math.round(c).toLocaleString("en-US")
+            : String(Math.round(c * 10) / 10);
+    },
+};
+
 const PLAN_LABEL = {
     pro: "PRO",
     pro_plus: "PRO+",
     pro_max: "PRO MAX",
 };
 const PLAN_DESC = {
-    pro: "月度配额 2000 万 token，解锁非 Opus 全模型",
-    pro_plus: "月度配额 8000 万 token，解锁 Claude Opus 全系",
-    pro_max: "月度配额 3 亿 token，全部模型 + 视频图像优先",
+    pro: "月度配额 2000 积分，解锁非 Opus 全模型",
+    pro_plus: "月度配额 8000 积分，解锁 Claude Opus 全系",
+    pro_max: "月度配额 30000 积分，全部模型 + 视频图像优先",
 };
 
 async function getSession() {
@@ -76,14 +86,6 @@ function showMsg(el, text, kind, opts) {
         : esc(String(text == null ? "" : text));
     el.innerHTML =
         '<div class="alert alert-' + esc(kind || "info") + '">' + body + "</div>";
-}
-
-// 格式化 token 数为可读字符串（万 / 亿）
-function formatTokens(n) {
-    n = Number(n || 0);
-    if (n >= 100000000) return (n / 100000000).toFixed(2).replace(/\.?0+$/, "") + " 亿";
-    if (n >= 10000) return Math.round(n / 10000) + " 万";
-    return n.toLocaleString();
 }
 
 // ────────── 订阅状态卡 ──────────
@@ -138,7 +140,7 @@ function renderSubscription(sub) {
     if (isPaid && quota > 0) {
         const percent = Math.min(Math.round((consumed / quota) * 100), 100);
         quotaMonthlyText.textContent =
-            formatTokens(consumed) + " / " + formatTokens(quota) + " (" + percent + "%)";
+            CC.num(consumed) + " / " + CC.num(quota) + " 积分 (" + percent + "%)";
         quotaMonthlyFill.style.width = percent + "%";
         quotaMonthlyFill.className = "quota-bar__fill" +
             (percent >= 90 ? " danger" : percent >= 75 ? " warn" : "");
@@ -153,7 +155,7 @@ function renderSubscription(sub) {
 
     // 加油包余额（所有用户都显示）
     quotaTopupText.textContent = topup > 0
-        ? formatTokens(topup) + " token"
+        ? CC.num(topup) + " 积分"
         : "0";
 }
 
@@ -238,9 +240,9 @@ document.getElementById("activate-form").addEventListener("submit", async (e) =>
         let successMsg;
         if (r.order_kind === "topup") {
             successMsg =
-                "✅ 加油包激活成功！本次到账 <strong>" + formatTokens(r.topup_tokens) +
-                " token</strong>，当前余额 <strong>" + formatTokens(r.topup_balance_after) +
-                " token</strong>。永不过期。";
+                "✅ 加油包激活成功！本次到账 <strong>" + CC.num(r.topup_tokens) +
+                " 积分</strong>，当前余额 <strong>" + CC.num(r.topup_balance_after) +
+                " 积分</strong>。永不过期。";
         } else {
             const planLabel = PLAN_LABEL[r.plan_code] || "PAID";
             const exp = r.expires_at
@@ -248,8 +250,8 @@ document.getElementById("activate-form").addEventListener("submit", async (e) =>
                 : "—";
             successMsg =
                 "✅ 激活成功！您已是 <strong>" + esc(planLabel) +
-                "</strong> 会员，月度配额 <strong>" + formatTokens(r.monthly_quota) +
-                " token</strong>，到期时间 <code>" + esc(exp) + "</code>";
+                "</strong> 会员，月度配额 <strong>" + CC.num(r.monthly_quota) +
+                " 积分</strong>，到期时间 <code>" + esc(exp) + "</code>";
         }
         showMsg(msg, successMsg, "ok", { html: true });
         document.getElementById("activate-code").value = "";
