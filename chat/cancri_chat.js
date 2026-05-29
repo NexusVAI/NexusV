@@ -2464,6 +2464,12 @@ const MODEL_CATALOG = [
   {"id": "hf:eurollm-22b", "name": "EuroLLM 22B", "brand": "utter-project", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:tiny-aya-earth", "name": "Tiny Aya Earth", "brand": "Cohere", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:llama-3.2-1b", "name": "Llama 3.2 1B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  // 2026-05-29: windsurf 本地反代 — 免费公益，白天 10-22 可用
+  {"id": "wf-minimax-m2.5", "name": "MiniMax M2.5 (白天公益)", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
+  {"id": "claude-4.5-haiku", "name": "Claude 4.5 Haiku (白天公益)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
+  {"id": "wf-gemini-2.5-flash", "name": "Gemini 2.5 Flash (白天公益)", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
+  {"id": "swe-1.5", "name": "SWE-1.5 (白天公益)", "brand": "SWE", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
+  {"id": "swe-1.6", "name": "SWE-1.6 (白天公益)", "brand": "SWE", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
 ];
 
 // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
@@ -2495,6 +2501,7 @@ const BRAND_ICON_MAP = {
   "utter-project": "./huggingface-color.svg",
   "Baichuan": "./baichuan-color.svg",
   "小米 MiMo": "./xiaomimimo-color.svg",
+  "SWE": "./windsurf.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
