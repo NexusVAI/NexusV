@@ -2307,9 +2307,9 @@ const MODEL_CATALOG = [
   {"id": "gpt-4", "name": "GPT-4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 20.0},
+  {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 25.0},
   // 2026-05-25: claude-opus-4-5 重新上线（supxh.xin 上游，Pro+ 专享）。
-  {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
+  {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 15.0},
   // 2026-05-26: 百川官方 API（baichuan-ai.com）8 模型。
   {"id": "baichuan-m3", "name": "Baichuan M3", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "cheap"},
   {"id": "baichuan4", "name": "Baichuan 4", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
@@ -2327,7 +2327,7 @@ const MODEL_CATALOG = [
   // 2026-05-29: claude-opus-4-8 — aspirin 上游，复用 ASPIRIN_API_KEY。
   {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 80.0},
   // 2026-05-29: Claude Opus 4.7 Thinking — thinkai 上游，独立 key。
-  {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
+  {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 50.0},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-05-27：MiMo 聊天模型全线免费福利。
@@ -2341,17 +2341,15 @@ const MODEL_CATALOG = [
   // 2026-05-28: grok-4.20-multi-agent-xhigh（dgbmc 上游，复用现有 Grok key）
   {"id": "grok-4.20-multi-agent-xhigh", "name": "Grok-4.20-Agent", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
   // 2026-05-28: grok-4.3-high（dgbmc 上游，复用现有 Grok key）
-  {"id": "grok-4.3-high", "name": "Grok-4.3-Thinking", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
+  {"id": "grok-4.3-high", "name": "Grok-4.3-Thinking", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
   {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
-  {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "doubao-seedance-2-0-260128", "name": "Seedance 2.0（5s 480p）", "brand": "Doubao", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
-  {"id": "veo-3.1-lite-generate-preview", "name": "VEO 3.1 Lite（5s 720p 有声）", "brand": "Google", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "vip", "freeLimitNote": "VIP 专享 · 3 次/周"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
@@ -2466,12 +2464,6 @@ const MODEL_CATALOG = [
   {"id": "hf:eurollm-22b", "name": "EuroLLM 22B", "brand": "utter-project", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:tiny-aya-earth", "name": "Tiny Aya Earth", "brand": "Cohere", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:llama-3.2-1b", "name": "Llama 3.2 1B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
-  // 2026-05-29: windsurf 本地反代 — 免费公益，白天 10-22 可用
-  {"id": "wf-minimax-m2.5", "name": "MiniMax M2.5 (白天公益)", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
-  {"id": "claude-4.5-haiku", "name": "Claude 4.5 Haiku (白天公益)", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
-  {"id": "wf-gemini-2.5-flash", "name": "Gemini 2.5 Flash (白天公益)", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
-  {"id": "swe-1.5", "name": "SWE-1.5 (白天公益)", "brand": "SWE", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
-  {"id": "swe-1.6", "name": "SWE-1.6 (白天公益)", "brand": "SWE", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "windsurf"},
 ];
 
 // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
@@ -2503,7 +2495,6 @@ const BRAND_ICON_MAP = {
   "utter-project": "./huggingface-color.svg",
   "Baichuan": "./baichuan-color.svg",
   "小米 MiMo": "./xiaomimimo-color.svg",
-  "SWE": "./windsurf.svg",
 };
 
 // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
