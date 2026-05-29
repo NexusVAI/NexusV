@@ -2328,7 +2328,6 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 80.0},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "nano-banana-2", "name": "Nano Banana 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   // 2026-05-27：MiMo 聊天模型全线免费福利。
   {"id": "mimo-v2.5-pro", "name": "【福利】MiMo 2.5 Pro", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "mimo-v2.5", "name": "【福利】MiMo 2.5", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
