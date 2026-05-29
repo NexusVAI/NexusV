@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-22-promo-fix-ts" />
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-05-29-card-fix" />
     <script src="./api/api-platform.js?v=20260513"></script>
     <!-- Cancri 双主题 logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -322,7 +322,7 @@
         gap: 12px;
       }
       .card-head-text {
-        min-width: 0;
+        min-width: 110px;
         flex: 1;
       }
       /* badge 子容器：多个 badge（PAID/30×/PRO+/FREE不可用）打包在一起，
@@ -333,7 +333,9 @@
         gap: 4px;
         justify-content: flex-end;
         align-items: center;
-        flex-shrink: 0;
+        flex-shrink: 1;
+        min-width: 0;
+        max-width: 55%;
       }
       .card-name {
         font-family: var(--c-serif);
@@ -1214,6 +1216,6 @@
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态 +
          调用代码区，sessionStorage 自动填入用户最近 Key）。 -->
-    <script src="./api/api-models-app.js?v=2026-05-22-promo-fix-ts"></script>
+    <script src="./api/api-models-app.js?v=2026-05-29-card-fix"></script>
   </body>
 </html>
