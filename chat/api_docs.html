@@ -1709,6 +1709,28 @@ openclaw agent</pre>
             另外有<b>加油包</b>（¥10 / ¥50 / ¥200，永不过期）可在月度配额耗尽后接续使用。
           </p>
 
+          <h3>积分与 token 的关系（重要）</h3>
+          <p>
+            同一份钱包额度，<b>网页端</b>用「<b>积分</b>」显示、<b>开发平台 API</b>
+            用「<b>真实 token</b>」显示——两者是同一个钱包的两种口径，换算固定：
+          </p>
+          <div class="code-block">
+            <pre><code>1 积分 = 10,000 token   <span class="c"># 额度口径换算</span>
+
+<span class="c"># 一次调用实际扣减：</span>
+扣减 token = effective_pool_tokens × 模型权重
+扣减 积分 = 扣减 token ÷ 10,000</code></pre>
+          </div>
+          <ul>
+            <li><b>网页端 / 设置面板「额度」：</b>余额、月度配额、加油包都按<b>积分</b>显示
+              （Pro = 2000 积分 = 2000 万 token，Pro+ = 8000 积分，Pro Max = 30000 积分），避免大数字吓人。</li>
+            <li><b>开发平台（本文档 / Keys 页 / 用量统计）：</b>一律用<b>原始 token</b>。
+              per-key 的 <code>used_total_tokens</code> / <code>max_total_tokens</code>、用量图表、
+              调用日志都是真实 token，<i>不</i>做积分折算——开发者按 token 思考更直接。</li>
+            <li><b>同一个钱包：</b>网页聊天与 API key 调用扣的是同一份月度配额 + 加油包余额，
+              只是一个显示积分、一个显示 token。换算永远是 1 积分 = 1 万 token。</li>
+          </ul>
+
           <h3>FREE 用户的 PAID 模型试用规则</h3>
           <ul>
             <li>
@@ -1740,7 +1762,7 @@ openclaw agent</pre>
               <code>403 model_pro_plus_required</code>。<br/>
               <b>2026-05-17 Phase A 老用户豁免：</b> 在 2026-05-17 之前订阅的 Pro 用户，
               <code>get_quota_status</code> 返回的 <code>is_grandfathered=true</code>，
-              在本订阅周期内可继续调用 Claude Opus 全系（权重 30× 仍生效），到期/续费后自动失效。
+              在本订阅周期内可继续调用 Claude Opus 全系（Opus 权重按下表生效），到期/续费后自动失效。
             </li>
           </ul>
 
@@ -1767,7 +1789,9 @@ openclaw agent</pre>
           <h3>模型权重表</h3>
           <p>
             权重直接挂在 <code>SERVER_MODEL_REGISTRY[id].costTier</code> 上，
-            扣的是 <code>effective_pool_tokens × multiplier</code>：
+            扣的是 <code>effective_pool_tokens × multiplier</code>。部分模型用
+            <code>customMultiplier</code> 覆盖 costTier 默认值（见下表第 4、5 行）。
+            <b>2026-05-29 已下调：</b>normal 3→2、expensive 10→5、vip 30→15，Opus 系列同步压平：
           </p>
           <table>
             <thead>
@@ -1776,9 +1800,9 @@ openclaw agent</pre>
             <tbody>
               <tr><td><code>free</code></td><td>0.5×</td><td>GLM Flash、DeepSeek V3.1 等国产 FREE</td></tr>
               <tr><td><code>cheap</code></td><td>1×</td><td>Qwen3 系列、轻量模型</td></tr>
-              <tr><td><code>normal</code></td><td>3×</td><td>GPT-4 类标准模型、Doubao、Kimi、Haiku</td></tr>
-              <tr><td><code>expensive</code></td><td>10×</td><td>GPT-5.2 / GPT-5.3 Codex / GPT-5.4 / GPT-5.4 Mini / GPT-5.5 / GPT-5.5 High、Grok 4.20、Claude Sonnet 4.6 系列、Mistral Large</td></tr>
-              <tr><td><code>vip</code></td><td>30×</td><td>Claude Opus 全系、Gemini 3.1 Pro、视频生成全系（Pro+ 起）</td></tr>
+              <tr><td><code>normal</code></td><td>2×</td><td>GPT-4 类标准模型、Doubao、Kimi、Haiku</td></tr>
+              <tr><td><code>expensive</code></td><td>5×（默认）</td><td>GPT-5.2 / GPT-5.4 / GPT-5.5 等默认 5×。自定义覆盖：Grok 4.20 <code>3×</code>、Claude Sonnet 4.6 <code>5×</code>、GPT-5.3 Codex / GPT-5.5 High <code>12×</code>、GPT-5.5 XHigh <code>18×</code></td></tr>
+              <tr><td><code>vip</code></td><td>15×（默认）</td><td>Gemini 3.1 Pro、视频生成全系（Pro+ 起）。Claude Opus 自定义：4.5 <code>12×</code> / 4.6 <code>14×</code> / 4.7 <code>16×</code> / 4.7 Max <code>18×</code> / 4.8 <code>20×</code> / 4.7 Thinking <code>17×</code></td></tr>
             </tbody>
           </table>
 

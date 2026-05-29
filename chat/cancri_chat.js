@@ -2342,6 +2342,7 @@ const MODEL_CATALOG = [
   {"id": "grok-4.20-multi-agent-xhigh", "name": "Grok-4.20-Agent", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
   // 2026-05-28: grok-4.3-high（dgbmc 上游，复用现有 Grok key）
   {"id": "grok-4.3-high", "name": "Grok-4.3-Thinking", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+  {"id": "gemini-3.5-flash-thinking", "name": "Gemini 3.5 Flash High", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
   {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
