@@ -25,6 +25,17 @@
 (function () {
   'use strict';
 
+  // 2026-05-29 积分化：统一走 window.CancriCredits（cancri_credits.js 同步先加载）。
+  // 兜底：万一外联工具没加载，按 1 积分 = 1 万 token 本地降级，避免额度面板崩。
+  var CC = window.CancriCredits || {
+    num: function (t) {
+      var c = (Number(t) || 0) / 10000;
+      return c >= 100 ? Math.round(c).toLocaleString('en-US')
+        : String(Math.round(c * 10) / 10);
+    },
+    fmt: function (t) { return this.num(t) + ' 积分'; },
+  };
+
   // ── 配置 ────────────────────────────────────────────────────────
   var CACHE_TTL_MS = 60 * 1000;     // 60 秒内重复打开复用上次数据
   var quotaCache = null;            // { fetchedAt, data }
@@ -189,7 +200,7 @@
       '    <span class="claude-quota-card-sub">永不过期</span>',
       '  </div>',
       '  <div class="claude-quota-stat">',
-      '    <span>剩余 <b>' + fmtTokens(topupBalance) + '</b> tokens</span>',
+      '    <span>剩余 <b>' + CC.num(topupBalance) + '</b> 积分</span>',
       '  </div>',
       '  <p class="claude-quota-note">加油包余额独立于订阅档位，订阅过期后也可继续消耗。</p>',
       '</div>',
@@ -203,10 +214,10 @@
       '  </div>',
       '  <div class="claude-quota-bar"><div class="claude-quota-bar-fill ' + poolBarClass + '" style="width:' + poolPercent.toFixed(2) + '%"></div></div>',
       '  <div class="claude-quota-stat">',
-      '    <span>已用 <b>' + fmtTokens(pool.consumed || 0) + '</b> / ' + fmtTokens(pool.budget || 100000000) + ' tokens</span>',
+      '    <span>已用 <b>' + CC.num(pool.consumed || 0) + '</b> / ' + CC.num(pool.budget || 100000000) + ' 积分</span>',
       '    <span>' + poolPercent.toFixed(1) + '%</span>',
       '  </div>',
-      '  <p class="claude-quota-note">本月共享池将于 <b>' + fmtDate(pool.period_end) + ' 00:00（UTC+8）</b> 重置。共享池采用上游真实计费（缓存命中按 10% 折算）× 模型权重，公式与详细规则见 <a href="./api_docs.html#quota">API 文档</a>。</p>',
+      '  <p class="claude-quota-note">本月共享池将于 <b>' + fmtDate(pool.period_end) + ' 00:00（UTC+8）</b> 重置。余额以积分计（1 积分 = 1 万 token），按上游真实计费（缓存命中按 10% 折算）× 模型权重换算，详见 <a href="./api_docs.html#quota">API 文档</a>。</p>',
       '</div>',
 
       '<div class="claude-quota-card">',
@@ -230,9 +241,9 @@
       '  </div>',
       '  <p class="claude-quota-note">升级到付费档位即可：',
       '    <ul style="margin:8px 0 0 18px; color:var(--text-soft); font-size:12.5px; line-height:1.7;">',
-      '      <li><b>Pro</b>（¥9.9/月）月度配额 2000 万 token，解锁 GPT-5.5 / Claude Sonnet 等非 Opus 全模型</li>',
-      '      <li><b>Pro+</b>（¥29/月）月度配额 8000 万 token，<b>解锁 Claude Opus 全系</b></li>',
-      '      <li><b>Pro Max</b>（¥99/月）月度配额 3 亿 token，全部模型 + 视频图像生成</li>',
+      '      <li><b>Pro</b>（¥9.9/月）月度配额 2000 积分，解锁 GPT-5.5 / Claude Sonnet 等非 Opus 全模型</li>',
+      '      <li><b>Pro+</b>（¥29/月）月度配额 8000 积分，<b>解锁 Claude Opus 全系</b></li>',
+      '      <li><b>Pro Max</b>（¥99/月）月度配额 30000 积分，全部模型 + 视频图像生成</li>',
       '      <li>加油包（¥10 起）永不过期，可累积，付费/免费用户都能买</li>',
       '    </ul>',
       '  </p>',
@@ -319,8 +330,8 @@
       '    <span class="claude-quota-card-sub">永不过期</span>',
       '  </div>',
       '  <div class="claude-quota-stat">',
-      '    <span>剩余 <b>' + fmtTokens(topupBalance) + '</b> tokens</span>',
-      '    <span>累计购买 ' + fmtTokens(topupTotalPurchased) + ' · 已用 ' + fmtTokens(topupTotalConsumed) + '</span>',
+      '    <span>剩余 <b>' + CC.num(topupBalance) + '</b> 积分</span>',
+      '    <span>累计购买 ' + CC.num(topupTotalPurchased) + ' · 已用 ' + CC.num(topupTotalConsumed) + ' 积分</span>',
       '  </div>',
       '  <p class="claude-quota-note">月度配额用完后自动从加油包扣减。前往 <a href="./pricing.html">套餐页</a> 购买。</p>',
       '</div>',
@@ -331,7 +342,7 @@
       '    <span class="claude-quota-card-sub">永不过期</span>',
       '  </div>',
       '  <div class="claude-quota-stat">',
-      '    <span>剩余 <b>0</b> tokens</span>',
+      '    <span>剩余 <b>0</b> 积分</span>',
       '  </div>',
       '  <p class="claude-quota-note">月配额用完后可购买加油包（¥10 起）继续使用，余额永不清零。前往 <a href="./pricing.html">套餐页</a> 购买。</p>',
       '</div>',
@@ -342,8 +353,8 @@
       : '';
 
     var subscriptionNote = showGrandfatherChip
-      ? 'PAID 订阅扣的是周期配额（按上游真实 token × 模型权重折算），每 30 天订阅周期自动重置。<b>您是 Phase A 老用户</b>，在本订阅周期内可继续调用 Claude Opus 全系（30× 权重照常生效），到期不延续。续费请前往 <a href="./pricing.html">套餐页</a>。'
-      : 'PAID 订阅扣的是周期配额（按上游真实 token × 模型权重折算），每 30 天订阅周期自动重置。Pro+ 以上可调 Claude Opus 系列。续费请前往 <a href="./pricing.html">套餐页</a>。';
+      ? 'PAID 订阅扣的是周期配额（积分 = 真实 token ÷ 1 万，再 × 模型权重折算），每 30 天订阅周期自动重置。<b>您是 Phase A 老用户</b>，在本订阅周期内可继续调用 Claude Opus 全系（权重照常生效），到期不延续。续费请前往 <a href="./pricing.html">套餐页</a>。'
+      : 'PAID 订阅扣的是周期配额（积分 = 真实 token ÷ 1 万，再 × 模型权重折算），每 30 天订阅周期自动重置。Pro+ 以上可调 Claude Opus 系列。续费请前往 <a href="./pricing.html">套餐页</a>。';
 
     return [
       '<div class="claude-quota-card">',
@@ -366,8 +377,8 @@
       '  </div>',
       '  <div class="claude-quota-bar"><div class="claude-quota-bar-fill ' + monthlyBarClass + '" style="width:' + monthlyPercent.toFixed(2) + '%"></div></div>',
       '  <div class="claude-quota-stat">',
-      '    <span>已用 <b>' + fmtTokens(monthlyConsumed) + '</b> / ' + fmtTokens(monthlyQuota) + ' tokens</span>',
-      '    <span>剩余 ' + fmtTokens(monthlyRemaining) + ' · ' + monthlyPercent.toFixed(1) + '%</span>',
+      '    <span>已用 <b>' + CC.num(monthlyConsumed) + '</b> / ' + CC.num(monthlyQuota) + ' 积分</span>',
+      '    <span>剩余 ' + CC.num(monthlyRemaining) + ' 积分 · ' + monthlyPercent.toFixed(1) + '%</span>',
       '  </div>',
       '  <p class="claude-quota-note">月度配额耗尽后会自动从加油包扣减；都为 0 时返回 <code>monthly_quota_exhausted</code>。</p>',
       '</div>',
@@ -386,7 +397,7 @@
       '    <span>合计 <b>' + fmtTokens(totalAll) + '</b></span>',
       '  </div>',
       '  <div class="claude-quota-day-grid">' + dayHtml + '</div>',
-      '  <p class="claude-quota-note">条形图最右侧为今日（UTC+8），从右至左各代表前 N 天。鼠标悬停查看具体数值。</p>',
+      '  <p class="claude-quota-note">此处为真实 token 收发量（非积分口径），仅供参考。条形图最右侧为今日（UTC+8），从右至左各代表前 N 天。鼠标悬停查看具体数值。</p>',
       '</div>',
 
       topModels ? (
