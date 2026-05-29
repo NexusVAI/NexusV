@@ -3,7 +3,7 @@ var menuConfig = {
         label: 'menu.research.label',
         items: [
             { href: 'article.html?id=tactfr600', i18n: 'menu.research.index' },
-            { href: 'article.html?id=news8', i18n: 'menu.research.deep_nexusv5' },
+            { href: 'article.html?id=n3', i18n: 'menu.research.deep_nexusv5' },
             { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.deep_sentienceV4C' },
             { href: 'article.html?id=tactfr600', i18n: 'menu.research.deep_tactfr60' },
             { href: 'article.html?id=chatai', i18n: 'menu.research.deep_chatai' }
