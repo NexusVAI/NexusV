@@ -84,9 +84,9 @@ const FALLBACK_PAID_IDS = new Set([
 const COST_TIER_MULTIPLIER = {
     free: 0.5,
     cheap: 1,
-    normal: 3,
-    expensive: 10,
-    vip: 30,
+    normal: 2,
+    expensive: 5,
+    vip: 15,
 };
 
 function getCostMultiplier(m) {
@@ -196,7 +196,6 @@ const BRAND_LOGO = {
     cohere: "./cohere-color.svg",
     swissai: "./huggingface-color.svg",
     utterproject: "./huggingface-color.svg",
-    swe: "./windsurf.svg",
 };
 
 function normalizeBrandKey(brand) {
@@ -433,9 +432,9 @@ function card(m) {
     const proMaxBadge = m && m.proMaxOnly
         ? '<span class="tier" style="background:rgba(168,85,247,.18);color:#a855f7" title="该模型仅 Pro Max 订阅可用">PRO MAX</span>'
         : "";
-    // 2026-05-18 计费倍率徽章：显示 0.5× / 1× / 3× / 10× / 30×。
-    // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=3,
-    // expensive=10, vip=30。样式跟 PRO+ 徽章同样位置，但颜色用 amber/clay。
+    // 2026-05-18 计费倍率徽章：显示 0.5× / 1× / 2× / 5× / 15×（2026-05-29 下调）。
+    // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=2,
+    // expensive=5, vip=15（实时还会被 catalog 的 multiplier_legend 覆盖）。样式跟 PRO+ 徽章同位，颜色 amber/clay。
     // 2026-05-22 限时 5 折促销期间：徽章变红，显示折后倍率，title 标明原价。
     const mult = getCostMultiplier(m);
     const promoActive = isPromoActive();
@@ -450,10 +449,6 @@ function card(m) {
         : "";
     const disabledBadge = disabled
         ? '<span class="tier tier-disabled" title="该模型线路当前不可用">不可用</span>'
-        : "";
-    // 2026-05-29: windsurf 本地反代 — 仅白天 10-22 可用
-    const windsurfBadge = m.lineLabel === "windsurf"
-        ? '<span class="tier" style="background:rgba(251,191,36,.16);color:#fbbf24" title="该模型仅在 10:00-22:00 (北京时间) 可用，由本地反代提供">⏰ 白天可用</span>'
         : "";
     const inputK = m.maxInputTokens
         ? m.maxInputTokens >= 1000
@@ -478,7 +473,7 @@ function card(m) {
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
             </div>
-            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${windsurfBadge}${disabledBadge}</span>
+            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${disabledBadge}</span>
           </div>
           <div class="meta">
             ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}

@@ -115,20 +115,31 @@ const sb = window.supabase.createClient(
 );
 const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 
+// 2026-05-29 积分化：统一走 window.CancriCredits（cancri_credits.js 先加载）。
+// 后端 RPC 仍返回真实 token 数值（monthly_quota / tokens），前端按
+// 1 积分 = 1 万 token 转换显示，不动后端。兜底避免工具未加载时崩。
+const CC = window.CancriCredits || {
+    num: function (t) {
+        const c = (Number(t) || 0) / 10000;
+        return c >= 100 ? Math.round(c).toLocaleString("en-US")
+            : String(Math.round(c * 10) / 10);
+    },
+};
+
 // 2026-05-29 改为后端拉。loadPricing() 会在 init 阶段调
 // cancri_celebrate_get_pricing() 填充。初始值仅为 fallback（避免 RPC 失败时
 // 选择逻辑拿不到 amount），与 HTML 中的 hardcoded 原价一致。
 // 订单提交仍由 server 端重算金额，前端值不可信。
 const CLIENT_CATALOG = {
     subscription: {
-        pro: { amount: 9.9, amount_original: 9.9, discount: 1.0, label: "Pro", desc: "月 2000 万 token" },
-        pro_plus: { amount: 29, amount_original: 29, discount: 1.0, label: "Pro+", desc: "月 8000 万 token + Opus" },
-        pro_max: { amount: 99, amount_original: 99, discount: 1.0, label: "Pro Max", desc: "月 3 亿 token" },
+        pro: { amount: 9.9, amount_original: 9.9, discount: 1.0, label: "Pro", desc: "月 2000 积分" },
+        pro_plus: { amount: 29, amount_original: 29, discount: 1.0, label: "Pro+", desc: "月 8000 积分 + Opus" },
+        pro_max: { amount: 99, amount_original: 99, discount: 1.0, label: "Pro Max", desc: "月 30000 积分" },
     },
     topup: {
-        topup_small: { amount: 10, label: "加油包 ¥10", desc: "1500 万 token" },
-        topup_medium: { amount: 50, label: "加油包 ¥50", desc: "9000 万 token" },
-        topup_large: { amount: 200, label: "加油包 ¥200", desc: "4 亿 token" },
+        topup_small: { amount: 10, label: "加油包 ¥10", desc: "1500 积分" },
+        topup_medium: { amount: 50, label: "加油包 ¥50", desc: "9000 积分" },
+        topup_large: { amount: 200, label: "加油包 ¥200", desc: "40000 积分" },
     },
 };
 let pricingMeta = { in_window: false, active_from: null, active_to: null };
@@ -165,9 +176,9 @@ async function loadPricing() {
             CLIENT_CATALOG.subscription[code].amount_original = Number(s.amount_cny_original);
             CLIENT_CATALOG.subscription[code].discount = Number(s.discount);
             if (s.label) CLIENT_CATALOG.subscription[code].label = String(s.label);
-            if (s.monthly_quota_label) {
-                // selection summary 里的 desc 同步后端文案
-                CLIENT_CATALOG.subscription[code].desc = String(s.monthly_quota_label).replace(/^月度配额\s*/, "月 ");
+            if (Number.isFinite(Number(s.monthly_quota))) {
+                // 2026-05-29 积分化：用数值字段算积分，不再用后端 token 文案
+                CLIENT_CATALOG.subscription[code].desc = "月 " + CC.num(s.monthly_quota) + " 积分";
             }
         });
         const tp = data.topup || {};
@@ -176,7 +187,7 @@ async function loadPricing() {
             if (!t || !CLIENT_CATALOG.topup[code]) return;
             CLIENT_CATALOG.topup[code].amount = Number(t.amount_cny);
             if (t.label) CLIENT_CATALOG.topup[code].label = String(t.label);
-            if (t.tokens_label) CLIENT_CATALOG.topup[code].desc = String(t.tokens_label);
+            if (Number.isFinite(Number(t.tokens))) CLIENT_CATALOG.topup[code].desc = CC.num(t.tokens) + " 积分";
         });
         pricingMeta = data.discount_window || pricingMeta;
 
@@ -213,7 +224,9 @@ function renderPlanCards(data) {
     document.querySelectorAll("[data-quota-slot]").forEach((el) => {
         const code = el.getAttribute("data-quota-slot");
         const s = sub[code];
-        if (s && s.monthly_quota_label) el.textContent = String(s.monthly_quota_label);
+        if (s && Number.isFinite(Number(s.monthly_quota))) {
+            el.textContent = "月度配额 " + CC.num(s.monthly_quota) + " 积分";
+        }
     });
 }
 
@@ -228,7 +241,9 @@ function renderTopupCards(data) {
     document.querySelectorAll("[data-topup-tokens-slot]").forEach((el) => {
         const code = el.getAttribute("data-topup-tokens-slot");
         const t = tp[code];
-        if (t && t.tokens_label) el.textContent = String(t.tokens_label);
+        if (t && Number.isFinite(Number(t.tokens))) {
+            el.textContent = CC.num(t.tokens) + " 积分";
+        }
     });
 }
 
