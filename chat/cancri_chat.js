@@ -1644,6 +1644,8 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.3-codex",
   "gpt-5.2",
   "grok-4.20-0309",
+  "grok-4.20-multi-agent-xhigh",
+  "grok-4.3-high",
   "grok-4.3",
   "mistral-large-2512",
   "gemini-3.1-pro",
@@ -2332,6 +2334,10 @@ const MODEL_CATALOG = [
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   // 2026-05-25: grok-4.20-0309-non-reasoning（dgbmc 上游，复用现有 key）
   {"id": "grok-4.20-0309-non-reasoning", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  // 2026-05-28: grok-4.20-multi-agent-xhigh（dgbmc 上游，复用现有 Grok key）
+  {"id": "grok-4.20-multi-agent-xhigh", "name": "Grok-4.20-Agent", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
+  // 2026-05-28: grok-4.3-high（dgbmc 上游，复用现有 Grok key）
+  {"id": "grok-4.3-high", "name": "Grok-4.3-Thinking", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
