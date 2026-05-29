@@ -290,9 +290,15 @@ async function callGateway(endpoint, payload) {
     return data;
 }
 
-function showMsg(el, text, kind) {
+function showMsg(el, text, kind, opts) {
+    // 默认把 text 当纯文本转义，杜绝调用方忘记 esc() 造成 HTML 注入。
+    // 需要富文本（<code>/<strong>/<a>）的调用方显式传 { html: true }，
+    // 并自行 esc() 其中的动态片段。
+    const body = (opts && opts.html)
+        ? String(text == null ? "" : text)
+        : esc(String(text == null ? "" : text));
     el.innerHTML =
-        '<div class="alert alert-' + (kind || "info") + '">' + text + "</div>";
+        '<div class="alert alert-' + esc(kind || "info") + '">' + body + "</div>";
 }
 
 // ────────── 当前订阅 badge ──────────
@@ -493,12 +499,14 @@ document.getElementById("order-form").addEventListener("submit", async (e) => {
                 '</code>。金额 ¥' + esc(r.order && r.order.amount_cny) +
                 '。请耐心等待管理员审核，审核结果会出现在 <a href="./orders.html">我的订单</a>。',
             "ok",
+            { html: true },
         );
         document.getElementById("of-qq").value = "";
     } catch (err) {
         const m = (err.body && (err.body.message || err.body.error)) ||
                   err.message || "提交失败";
-        showMsg(msg, "❌ " + esc(m), "warn");
+        // m 走 showMsg 默认转义，无需再 esc()。
+        showMsg(msg, "❌ " + m, "warn");
     } finally {
         btn.disabled = false;
         btn.textContent = "提交订单";

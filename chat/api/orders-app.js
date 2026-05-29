@@ -67,9 +67,15 @@ async function callGateway(endpoint, payload) {
     return data;
 }
 
-function showMsg(el, text, kind) {
+function showMsg(el, text, kind, opts) {
+    // 默认把 text 当纯文本转义，杜绝调用方忘记 esc() 造成 HTML 注入。
+    // 需要富文本（<code>/<strong>）的调用方显式传 { html: true }，
+    // 并自行 esc() 其中的动态片段。
+    const body = (opts && opts.html)
+        ? String(text == null ? "" : text)
+        : esc(String(text == null ? "" : text));
     el.innerHTML =
-        '<div class="alert alert-' + (kind || "info") + '">' + text + "</div>";
+        '<div class="alert alert-' + esc(kind || "info") + '">' + body + "</div>";
 }
 
 // 格式化 token 数为可读字符串（万 / 亿）
@@ -245,13 +251,14 @@ document.getElementById("activate-form").addEventListener("submit", async (e) =>
                 "</strong> 会员，月度配额 <strong>" + formatTokens(r.monthly_quota) +
                 " token</strong>，到期时间 <code>" + esc(exp) + "</code>";
         }
-        showMsg(msg, successMsg, "ok");
+        showMsg(msg, successMsg, "ok", { html: true });
         document.getElementById("activate-code").value = "";
         await loadAll();
     } catch (err) {
         const m = (err.body && (err.body.message || err.body.error)) ||
                   err.message || "兑换失败";
-        showMsg(msg, "❌ " + esc(m), "warn");
+        // m 走 showMsg 默认转义，无需再 esc()。
+        showMsg(msg, "❌ " + m, "warn");
     } finally {
         btn.disabled = false;
         btn.textContent = "兑换";

@@ -151,10 +151,26 @@ function metaRowHtml(s) {
     </div>`;
 }
 
+// 只放行 http(s) 图片 URL。后端已校验 image_urls 必须是 storage 公开桶前缀，
+// 这里是前端纵深防御：即便后端校验回退，也不会在 admin 视图渲染出可点击的
+// javascript:/data: 链接（admin 点 "查看大图" = admin 态 XSS）。
+function safeImageUrl(u) {
+  const s = String(u == null ? "" : u).trim();
+  return /^https?:\/\//i.test(s) ? s : "";
+}
+
 function imagesHtml(urls) {
   if (!Array.isArray(urls) || !urls.length) return "";
+  const items = urls
+    .map((u, i) => {
+      const safe = safeImageUrl(u);
+      if (!safe) return "";
+      return `<a href="${escHtml(safe)}" target="_blank" rel="noopener noreferrer" title="查看大图"><img src="${escHtml(safe)}" alt="图片 ${i + 1}" loading="lazy" /></a>`;
+    })
+    .join("");
+  if (!items) return "";
   return `<div class="sc-images">
-    ${urls.map((u, i) => `<a href="${escHtml(u)}" target="_blank" rel="noopener noreferrer" title="查看大图"><img src="${escHtml(u)}" alt="图片 ${i + 1}" loading="lazy" /></a>`).join("")}
+    ${items}
   </div>`;
 }
 
