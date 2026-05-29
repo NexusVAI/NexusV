@@ -2324,8 +2324,11 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7 XHigh", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
   // 2026-05-26: Claude Opus 4.7 Max — aspirin 上游独立 key，Pro+ 专属（costTier: vip）。
   {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
-  // 2026-05-27：Claude Opus 4.7 Max Fast — ai.linguangchat.com，120x 倍率。
-  {"id": "claude-opus-4-7-max-fast", "name": "Claude Opus 4.7 Max Fast", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 120.0},
+  // 2026-05-29: claude-opus-4-8 — aspirin 上游，复用 ASPIRIN_API_KEY。
+  {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 80.0},
+  // 2026-05-29: deepsb 模型。
+  {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "nano-banana-2", "name": "Nano Banana 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   // 2026-05-27：MiMo 聊天模型全线免费福利。
   {"id": "mimo-v2.5-pro", "name": "【福利】MiMo 2.5 Pro", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "mimo-v2.5", "name": "【福利】MiMo 2.5", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -4809,7 +4812,9 @@ function createRestoredImageElement(imageUrl) {
       "max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px";
     this.removeAttribute("src");
     this.alt = "";
-    this.parentElement.querySelector("button")?.remove();
+    this.parentElement
+      .querySelectorAll("button")
+      .forEach((b) => b.remove());
     const tip = document.createElement("span");
     tip.textContent = "图片已过期";
     tip.style.cssText = "display:block;text-align:center;line-height:120px";
@@ -4823,6 +4828,24 @@ function createRestoredImageElement(imageUrl) {
     .catch(() => {
       img.onerror?.call(img);
     });
+  const copyBtn = document.createElement("button");
+  copyBtn.title = "复制图片";
+  copyBtn.style.cssText =
+    "position:absolute;bottom:8px;right:46px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center";
+  copyBtn.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+  copyBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    copyBtn.disabled = true;
+    try {
+      await copyImageElementToClipboard(img);
+      showToast("图片已复制");
+    } catch (err) {
+      showToast(err?.message || "复制失败");
+    } finally {
+      copyBtn.disabled = false;
+    }
+  });
   const dlBtn = document.createElement("button");
   dlBtn.title = "下载图片";
   dlBtn.style.cssText =
@@ -4841,6 +4864,7 @@ function createRestoredImageElement(imageUrl) {
     }
   });
   wrapper.appendChild(img);
+  wrapper.appendChild(copyBtn);
   wrapper.appendChild(dlBtn);
   return wrapper;
 }
@@ -5007,9 +5031,20 @@ function initSharedConversationFromHash() {
   const params = new URLSearchParams(window.location.hash.slice(1));
   const raw = params.get("share");
   if (!raw) return false;
+  // DoS 防护：分享串走 URL hash，长度由构造链接的人控制。正常对话编码后
+  // 只有几 KB，这里硬上限 ~600KB，超了直接拒绝，避免超大 atob/JSON.parse/
+  // 渲染把标签页卡死。
+  if (raw.length > 600000) {
+    showToast("分享链接过大，已拒绝打开");
+    return false;
+  }
   try {
     const payload = JSON.parse(decodeUtf8Base64(raw));
-    const messages = Array.isArray(payload.messages) ? payload.messages : [];
+    // 结构收口：只接受对象消息，最多 200 条。渲染层已做 XSS 转义 + 附件
+    // scheme 过滤，这里主要限量 + 丢掉非法结构，避免被塞入超长数组。
+    const messages = (Array.isArray(payload.messages) ? payload.messages : [])
+      .filter((m) => m && typeof m === "object")
+      .slice(0, 200);
     state.sharedConversation = true;
     document.body.dataset.sharedConversation = "true";
     currentChatId = null;
@@ -7789,6 +7824,92 @@ function safeUrl(url) {
   return "#";
 }
 
+// safeUrl 的"媒体附件"变体：在 safeUrl 白名单基础上额外放行 blob:（用户本地
+// 预览的 ObjectURL 走 blob:）。仍然拒绝 javascript:/vbscript:/data:text/html
+// 以及 data:image/svg+xml（SVG 作为文档导航可执行脚本）。返回 "" 表示不安全，
+// 调用方据此决定不 open / 不设 src。用于分享会话里来自不可信 payload 的附件 URL。
+function safeMediaUrl(url) {
+  const trimmed = String(url || "").trim();
+  if (!trimmed) return "";
+  if (/^(https?:|blob:|\/)/i.test(trimmed)) return trimmed;
+  if (/^data:image\/(png|jpe?g|webp|gif|bmp|x-icon|vnd\.microsoft\.icon)[;,]/i.test(trimmed)) return trimmed;
+  if (/^data:video\/(mp4|webm|ogg|quicktime)[;,]/i.test(trimmed)) return trimmed;
+  if (/^data:audio\/(mpeg|mp4|wav|ogg|webm)[;,]/i.test(trimmed)) return trimmed;
+  return "";
+}
+
+// 代码块语言 -> 下载文件后缀。未知语言一律 txt。
+const CODE_LANG_EXT = {
+  javascript: "js", js: "js", node: "js", typescript: "ts", ts: "ts",
+  jsx: "jsx", tsx: "tsx", python: "py", py: "py", java: "java",
+  c: "c", h: "h", cpp: "cpp", "c++": "cpp", cc: "cpp", cs: "cs", csharp: "cs",
+  go: "go", golang: "go", rust: "rs", rs: "rs", ruby: "rb", rb: "rb",
+  php: "php", swift: "swift", kotlin: "kt", kt: "kt", scala: "scala",
+  html: "html", xml: "xml", svg: "svg", css: "css", scss: "scss", less: "less",
+  json: "json", json5: "json", yaml: "yml", yml: "yml", toml: "toml", ini: "ini",
+  markdown: "md", md: "md", bash: "sh", sh: "sh", shell: "sh", zsh: "sh",
+  bat: "bat", powershell: "ps1", ps1: "ps1", sql: "sql", graphql: "graphql",
+  dockerfile: "dockerfile", makefile: "mk", lua: "lua", r: "r", dart: "dart",
+  vue: "vue", svelte: "svelte", text: "txt", plaintext: "txt", "": "txt",
+};
+
+function codeFilename(lang) {
+  const ext = CODE_LANG_EXT[String(lang || "").trim().toLowerCase()] || "txt";
+  return `cancri-code-${Date.now()}.${ext}`;
+}
+
+// 通用文本下载：把字符串包成 Blob 触发浏览器下载，用于代码块 / Markdown 源文件。
+function downloadTextFile(text, filename) {
+  try {
+    const blob = new Blob([String(text ?? "")], {
+      type: "text/plain;charset=utf-8",
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = filename || `cancri-${Date.now()}.txt`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    return true;
+  } catch (e) {
+    showToast(`下载失败：${e?.message || e}`);
+    return false;
+  }
+}
+
+// 把已经渲染出来的 <img> 一键复制到剪贴板。统一转 PNG（剪贴板对
+// image/png 支持最好），并用 Promise<Blob> 形式喂给 ClipboardItem——
+// 这样浏览器能在用户手势内 await canvas.toBlob，规避 Safari 对异步
+// clipboard.write 的手势校验。img 的 src 是 blob:/data: ObjectURL，
+// 同源不会污染 canvas。
+async function copyImageElementToClipboard(img) {
+  if (!navigator.clipboard || typeof window.ClipboardItem === "undefined") {
+    throw new Error("当前浏览器不支持复制图片");
+  }
+  const blobPromise = (async () => {
+    if (!img || !img.naturalWidth || !img.naturalHeight) {
+      throw new Error("图片尚未加载完成");
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas 不可用");
+    ctx.drawImage(img, 0, 0);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("图片编码失败"))),
+        "image/png",
+      );
+    });
+  })();
+  await navigator.clipboard.write([
+    new ClipboardItem({ "image/png": blobPromise }),
+  ]);
+}
+
 // Server-side proxy download. Posts the upstream URL to chat-gateway's
 // `media-download` endpoint, which fetches the bytes and streams them back
 // with `Content-Disposition: attachment`. This is the ONLY supported way to
@@ -7962,6 +8083,34 @@ document.addEventListener("click", (event) => {
   downloadMarkdownImage(href);
 });
 
+// 代码块工具条（复制 / 下载）。委托监听，覆盖流式重渲染产生的所有代码块。
+// 按钮本身只有 SVG 图标 + title（无文本节点），语言名走 CSS ::before，
+// 因此不会污染 answer-body.textContent（消息级复制/引用/朗读读取的是它）。
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const btn = target.closest(".code-block-btn");
+  if (!(btn instanceof HTMLElement)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const block = btn.closest(".code-block");
+  const codeEl = block ? block.querySelector("pre code") : null;
+  const code = codeEl ? codeEl.textContent || "" : "";
+  if (!code) {
+    showToast("没有可操作的代码");
+    return;
+  }
+  const action = btn.dataset.codeAction;
+  if (action === "download") {
+    const lang = block instanceof HTMLElement ? block.dataset.codeLang || "" : "";
+    downloadTextFile(code, codeFilename(lang));
+  } else {
+    writeTextToClipboard(code).then((ok) =>
+      showToast(ok ? "代码已复制" : "复制失败"),
+    );
+  }
+});
+
 function renderInlineMarkdown(text) {
   const placeholders = [];
   const keep = (html) => {
@@ -8090,6 +8239,7 @@ function renderMarkdown(markdown) {
   let listItems = [];
   let codeLines = [];
   let inCode = false;
+  let codeLang = "";
   let mathLines = [];
   let inMath = false;
 
@@ -8116,9 +8266,28 @@ function renderMarkdown(markdown) {
   }
 
   function flushCode() {
-    if (!codeLines.length) return;
-    blocks.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    if (!codeLines.length) {
+      codeLang = "";
+      return;
+    }
+    const code = escapeHtml(codeLines.join("\n"));
+    const langAttr = escapeHtml(codeLang || "");
+    const copyIcon =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+    const dlIcon =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    blocks.push(
+      `<div class="code-block" data-code-lang="${langAttr}">` +
+        `<div class="code-block-tools">` +
+          `<span class="code-block-lang" data-lang="${langAttr}" aria-hidden="true"></span>` +
+          `<button type="button" class="code-block-btn" data-code-action="copy" title="复制代码" aria-label="复制代码">${copyIcon}</button>` +
+          `<button type="button" class="code-block-btn" data-code-action="download" title="下载代码" aria-label="下载代码">${dlIcon}</button>` +
+        `</div>` +
+        `<pre><code>${code}</code></pre>` +
+      `</div>`,
+    );
     codeLines = [];
+    codeLang = "";
   }
 
   function flushMath() {
@@ -8139,6 +8308,8 @@ function renderMarkdown(markdown) {
         flushList();
         flushMath();
         inCode = true;
+        // 取 ``` 之后 info string 的第一段作为语言（```python / ```js foo=bar）
+        codeLang = line.trim().slice(3).trim().split(/\s+/)[0].toLowerCase();
       }
       continue;
     }
@@ -9261,57 +9432,10 @@ async function sendImageGenerationMessage(
       const messageDiv = document.getElementById(assistantMessageId);
       const answerBody = messageDiv?.querySelector(".answer-body");
       if (answerBody) {
-        const wrapper = document.createElement("span");
-        wrapper.style.cssText =
-          "display:inline-block;position:relative;max-width:360px";
-        const img = document.createElement("img");
-        img.alt = "generated image";
-        img.style.cssText =
-          "max-width:100%;border-radius:10px;display:block;cursor:default";
-        img.addEventListener("contextmenu", (e) => e.preventDefault());
-        img.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        });
-        img.onerror = function () {
-          this.onerror = null;
-          this.style.cssText =
-            "max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px";
-          this.removeAttribute("src");
-          this.alt = "";
-          this.parentElement.querySelector("button")?.remove();
-          const tip = document.createElement("span");
-          tip.textContent = "图片已过期";
-          tip.style.cssText =
-            "display:block;text-align:center;line-height:120px";
-          this.parentElement.insertBefore(tip, this);
-          this.style.display = "none";
-        };
-        mediaObjectUrlViaProxy(imageUrl, "image")
-          .then((src) => {
-            img.src = src;
-          })
-          .catch(() => {
-            img.onerror?.call(img);
-          });
-        const dlBtn = document.createElement("button");
-        dlBtn.title = "下载图片";
-        dlBtn.style.cssText =
-          "position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center";
-        dlBtn.innerHTML =
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-        dlBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          dlBtn.disabled = true;
-          try {
-            await downloadViaMediaProxy(imageUrl, "image");
-          } finally {
-            dlBtn.disabled = false;
-          }
-        });
-        wrapper.appendChild(img);
-        wrapper.appendChild(dlBtn);
-        answerBody.appendChild(wrapper);
+        // 复用 createRestoredImageElement：图片预览 + 一键复制 + 下载，
+        // 与历史回放路径完全一致，避免两处重复维护。
+        answerBody.innerHTML = "";
+        answerBody.appendChild(createRestoredImageElement(imageUrl));
       }
       pushHistory("user", query);
       pushHistory(
@@ -9792,7 +9916,12 @@ function createUserMessage(content, attachments = [], messageIndex = null) {
         item.appendChild(icon);
       } else {
         const img = document.createElement("img");
-        img.src = attachment.dataUrl || attachment.previewUrl || attachment.url;
+        // safeMediaUrl 拦截 javascript:/svg 等危险 scheme——分享会话里的
+        // 附件 URL 来自不可信 payload，必须过滤后再 set src / open。
+        const safeSrc = safeMediaUrl(
+          attachment.dataUrl || attachment.previewUrl || attachment.url,
+        );
+        if (safeSrc) img.src = safeSrc;
         img.alt = attachment.name;
         item.appendChild(img);
       }
@@ -9802,13 +9931,16 @@ function createUserMessage(content, attachments = [], messageIndex = null) {
       label.textContent = attachment.name;
 
       item.appendChild(label);
-      item.addEventListener("click", () =>
-        window.open(
+      item.addEventListener("click", () => {
+        const safeHref = safeMediaUrl(
           attachment.dataUrl || attachment.previewUrl || attachment.url,
-          "_blank",
-          "noopener,noreferrer",
-        ),
-      );
+        );
+        if (!safeHref) {
+          showToast("无法打开：附件链接无效");
+          return;
+        }
+        window.open(safeHref, "_blank", "noopener,noreferrer");
+      });
       attachmentGrid.appendChild(item);
     });
 
@@ -10011,6 +10143,14 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
           </svg>
           <span>复制</span>
         </button>
+        <button class="message-action-btn" data-action="download-md" title="下载 Markdown">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>下载</span>
+        </button>
         <button class="message-action-btn" data-action="speak" title="朗读">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -10063,6 +10203,20 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
       }
       const ok = await writeTextToClipboard(text);
       showToast(ok ? "已复制" : "复制失败");
+    });
+
+  messageActions
+    .querySelector('[data-action="download-md"]')
+    .addEventListener("click", () => {
+      // 优先下载原始 Markdown 源码（answerStreamState.text 保留了未渲染的
+      // markdown）；流式/历史回放都会写入它。兜底用渲染后的纯文本。
+      const md =
+        messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
+      if (!md.trim() || md === "正在思考中…") {
+        showToast("没有可下载的内容");
+        return;
+      }
+      downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
     });
 
   messageActions

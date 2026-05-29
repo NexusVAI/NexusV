@@ -38,6 +38,13 @@
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
         });
     }
+    // 只放行 http(s) 图片 URL。后端 wall_submit 已校验 image_urls 必须是 storage
+    // 公开桶前缀，这里是前端纵深防御：即便后端校验回退，也不会渲染出
+    // 可点击的 javascript:/data: 链接。
+    function safeImageUrl(u) {
+        var s = String(u == null ? "" : u).trim();
+        return /^https?:\/\//i.test(s) ? s : "";
+    }
     function formatNum(n) {
         n = Number(n || 0);
         if (n >= 10000) return (n / 10000).toFixed(n >= 100000 ? 0 : 1) + "万";
@@ -227,15 +234,20 @@
         var imgs = Array.isArray(s.image_urls) ? s.image_urls.slice(0, 3) : [];
         var photosHtml = "";
         if (imgs.length) {
-            photosHtml = '<div class="celebrate-wall-card-photos" data-count="' + imgs.length + '">' +
-                imgs.map(function (u, i) {
-                    return '<a class="celebrate-wall-card-photo celebrate-wall-card-photo--' + i +
-                        '" href="' + escapeHtml(u) + '" target="_blank" rel="noopener noreferrer">' +
-                        '<span class="celebrate-wall-card-pin" aria-hidden="true"></span>' +
-                        '<img src="' + escapeHtml(u) + '" alt="故事图片 ' + (i + 1) + '" loading="lazy" />' +
-                        '</a>';
-                }).join("") +
-              '</div>';
+            var photoItems = imgs.map(function (u, i) {
+                var safe = safeImageUrl(u);
+                if (!safe) return "";
+                return '<a class="celebrate-wall-card-photo celebrate-wall-card-photo--' + i +
+                    '" href="' + escapeHtml(safe) + '" target="_blank" rel="noopener noreferrer">' +
+                    '<span class="celebrate-wall-card-pin" aria-hidden="true"></span>' +
+                    '<img src="' + escapeHtml(safe) + '" alt="故事图片 ' + (i + 1) + '" loading="lazy" />' +
+                    '</a>';
+            }).join("");
+            if (photoItems) {
+                photosHtml = '<div class="celebrate-wall-card-photos" data-count="' + imgs.length + '">' +
+                    photoItems +
+                  '</div>';
+            }
         }
         return (
             '<article class="celebrate-wall-card' + featuredClass + '" data-story-id="' + s.id + '">' +

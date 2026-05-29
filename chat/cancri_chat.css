@@ -3573,6 +3573,64 @@ body[data-view="leaderboard"] #compareModelSelector {
     line-height: 1.65;
 }
 
+/* 代码块工具条：浮在代码框右上角的 语言名 + 复制 + 下载。
+   绝对定位相对 .code-block（不改 pre 盒模型，避免和 claude.css 的
+   .message.assistant .message-content pre 规则打架）。按钮只有 SVG 图标，
+   语言名走 ::before(attr)，因此都不会进入 answer-body.textContent。 */
+.md-content .code-block {
+    position: relative;
+}
+.md-content .code-block-tools {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+    opacity: 0.55;
+    transition: opacity var(--transition);
+    user-select: none;
+}
+.md-content .code-block:hover .code-block-tools,
+.md-content .code-block:focus-within .code-block-tools {
+    opacity: 1;
+}
+.md-content .code-block-lang::before {
+    content: attr(data-lang);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: lowercase;
+    letter-spacing: 0.3px;
+    margin-right: 2px;
+}
+.md-content .code-block-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--text-soft);
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    transition: color var(--transition), border-color var(--transition),
+        background var(--transition);
+}
+.md-content .code-block-btn:hover {
+    color: var(--text);
+    border-color: var(--accent);
+}
+.md-content .code-block-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
 .md-content a {
     color: var(--accent);
     text-decoration: none;
