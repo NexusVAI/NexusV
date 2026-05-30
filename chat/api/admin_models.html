@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <!-- 内联 script 抽离到 admin-models-app.js，不用 'unsafe-inline' script-src。 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>管理员 · 模型配置 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+    <script src="./_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api-platform.css?v=2026-05-22-docs-single-page" />
+    <style>
+      /* 模型配置页专有：配置卡片 / 配置行 / 保存按钮 / 促销预览 */
+      .cfg-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 18px;
+        overflow: hidden;
+      }
+      .cfg-card > .cfg-head {
+        padding: 14px 18px;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+      }
+      .cfg-head h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .cfg-head p {
+        margin: 4px 0 0;
+        font-size: 12px;
+        color: var(--text-mute);
+      }
+      .cfg-body {
+        padding: 14px 18px;
+      }
+      .cfg-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .cfg-row:last-child {
+        border-bottom: none;
+      }
+      .cfg-label {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .cfg-input {
+        width: 130px;
+        padding: 7px 10px;
+        font-size: 13px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg-elev);
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+      .cfg-input:focus {
+        outline: none;
+        border-color: var(--accent, #6366f1);
+      }
+      .cfg-unit {
+        font-size: 13px;
+        color: var(--text-faint);
+        width: 14px;
+      }
+      .btn-save {
+        padding: 7px 16px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border: 1px solid rgba(99, 102, 241, 0.35);
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--accent, #818cf8);
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn-save:hover {
+        background: rgba(99, 102, 241, 0.18);
+      }
+      .btn-save:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .promo-grid {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 12px 14px;
+        align-items: center;
+        font-size: 13px;
+      }
+      .promo-grid label {
+        font-weight: 600;
+        color: var(--text-mute);
+      }
+      .promo-grid input[type="datetime-local"],
+      .promo-grid input[type="number"] {
+        padding: 7px 10px;
+        font-size: 13px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg-elev);
+        color: var(--text);
+        max-width: 280px;
+      }
+      .promo-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .preview {
+        margin-top: 14px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        color: var(--text-mute);
+      }
+      .preview.on {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.3);
+        background: rgba(74, 222, 128, 0.08);
+      }
+      .preview.pending {
+        color: #fbbf24;
+        border-color: rgba(251, 191, 36, 0.3);
+        background: rgba(251, 191, 36, 0.08);
+      }
+      .preview.off {
+        color: var(--text-mute);
+      }
+      .cfg-actions {
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+      }
+      .hint {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        margin-top: 10px;
+        line-height: 1.6;
+      }
+      .toast {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%) translateY(8px);
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      @media (max-width: 720px) {
+        .promo-grid {
+          grid-template-columns: 1fr;
+          gap: 6px 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin.html">审核</a>
+        <a href="./admin_orders.html">订单</a>
+        <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
+        <a href="./admin_models.html" class="active">模型配置</a>
+        <a href="./admin_users.html">用户</a>
+        <a href="./admin_appeals.html">申诉</a>
+        <a href="./admin_stories.html">满月故事</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>
+          这个页面仅站点管理员可见。如果你认为这是误判，请联系
+          <code>站主</code>。
+        </p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>模型配置</h1>
+          <p>
+            倍率档位 / 促销窗口 / 默认模型现在存数据库，改完
+            <strong>≤60s 全量生效，无需重新部署后端</strong>。倍率只影响扣分系数，
+            不改配额 / 队列 / 准入逻辑。
+          </p>
+        </header>
+
+        <!-- 倍率档位 -->
+        <div class="cfg-card">
+          <div class="cfg-head">
+            <h2>倍率档位</h2>
+            <p>
+              每个模型按 costTier 归到一档，扣分 = token × 该档 factor。改一档会影响所有该档模型。
+              （Opus 等走 customMultiplier 的模型不受档位影响，单独压平。）
+            </p>
+          </div>
+          <div class="cfg-body">
+            <div id="tiers"></div>
+            <div class="hint">
+              参考：free 让国产免费模型真便宜；normal 是主力付费档；vip 仅 Pro+ 可用的高价模型。
+              数值越大，同样 token 扣得越多。
+            </div>
+          </div>
+        </div>
+
+        <!-- 促销窗口 -->
+        <div class="cfg-card">
+          <div class="cfg-head">
+            <h2>限时倍率促销</h2>
+            <p>窗口内全站倍率统一乘以折扣系数（如 0.5 = 五折）。窗口外自动恢复 1.0。</p>
+          </div>
+          <div class="cfg-body">
+            <div class="promo-grid">
+              <label for="promo-enabled">启用</label>
+              <div class="promo-toggle">
+                <input type="checkbox" id="promo-enabled" />
+                <span style="font-size: 12px; color: var(--text-faint)"
+                  >关闭后即使在时间窗口内也不打折</span
+                >
+              </div>
+
+              <label for="promo-start">开始时间</label>
+              <input type="datetime-local" id="promo-start" />
+
+              <label for="promo-end">结束时间</label>
+              <input type="datetime-local" id="promo-end" />
+
+              <label for="promo-factor">折扣系数</label>
+              <input
+                type="number"
+                id="promo-factor"
+                min="0"
+                step="0.05"
+                placeholder="0.5"
+              />
+            </div>
+            <div id="promo-preview" class="preview off">状态：—</div>
+            <div class="hint">
+              时间按你当前浏览器本地时区。系数仅影响扣分，proPlusOnly / proMaxOnly
+              等准入门槛仍按原 costTier 判断，不会因打折被绕过。
+            </div>
+            <div class="cfg-actions">
+              <button class="btn-save" id="promo-save">保存促销窗口</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 默认模型 -->
+        <div class="cfg-card">
+          <div class="cfg-head">
+            <h2>默认聊天模型</h2>
+            <p>请求未带 model 字段时使用。必须是 SERVER_MODEL_REGISTRY 中存在的 ID。</p>
+          </div>
+          <div class="cfg-body">
+            <div class="cfg-row">
+              <div class="cfg-label">默认模型 ID</div>
+              <input
+                class="cfg-input"
+                style="width: 240px"
+                type="text"
+                id="default-model"
+                placeholder="grok-4.20-0309"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="btn-save" id="default-save">保存</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar" style="justify-content: flex-end">
+          <button class="reload-btn" id="reload-btn">↻ 重新加载</button>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <!-- 设备 / 浏览器指纹（反多账号信号采集）。 -->
+    <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="./admin-models-app.js?v=2026-05-30-phase-a"></script>
+  </body>
+</html>
