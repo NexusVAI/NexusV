@@ -21,11 +21,14 @@
     var SIGNIN_URL = "https://diusqgphvybnzazgopor.supabase.co/functions/v1/celebrate-signin";
     var PAGE_SIZE = 12;
 
+    var INITIAL_SHOW = 5;  // 默认只展示前 5 条故事
+
     var state = {
         stories: [],
         beforeId: null,
         hasMore: true,
         loading: false,
+        expanded: false,            // 是否已展开全部
         viewedIds: new Set(),       // 已埋点的 story_id（本会话内去重）
         openCommentIds: new Set(),  // 当前展开评论区的 story_id
     };
@@ -291,11 +294,15 @@
             ensureLoadMore();
             return;
         }
+
+        // 默认只展示前 INITIAL_SHOW 条，点击「展开全部」后显示全部
+        var visibleStories = state.expanded ? state.stories : state.stories.slice(0, INITIAL_SHOW);
+
         var existingIds = new Set();
         Array.prototype.forEach.call(grid.querySelectorAll("[data-story-id]"), function (el) {
             existingIds.add(Number(el.getAttribute("data-story-id")));
         });
-        var html = state.stories
+        var html = visibleStories
             .filter(function (s) { return !existingIds.has(Number(s.id)); })
             .map(buildCard)
             .join("");
@@ -308,7 +315,32 @@
         grid.setAttribute("data-source", "loaded");
         // 给新增卡片绑事件 + 观察可见性
         attachCardHandlers();
-        ensureLoadMore();
+        ensureExpandBtn();
+        if (state.expanded) {
+            ensureLoadMore();
+        }
+    }
+
+    // ---------- 展开全部按钮 ----------
+    var expandBtn;
+    function ensureExpandBtn() {
+        if (state.expanded || state.stories.length <= INITIAL_SHOW) {
+            if (expandBtn) expandBtn.style.display = "none";
+            return;
+        }
+        if (!expandBtn) {
+            expandBtn = document.createElement("button");
+            expandBtn.className = "celebrate-wall-load-more";
+            expandBtn.type = "button";
+            expandBtn.textContent = "显示所有故事";
+            expandBtn.addEventListener("click", function () {
+                state.expanded = true;
+                expandBtn.style.display = "none";
+                render(false);
+            });
+            grid.parentNode.insertBefore(expandBtn, grid.nextSibling);
+        }
+        expandBtn.style.display = "";
     }
 
     function attachCardHandlers() {
@@ -529,7 +561,9 @@
         state.stories = [];
         state.beforeId = null;
         state.hasMore = true;
+        state.expanded = false;
         state.openCommentIds.clear();
+        if (expandBtn) expandBtn.style.display = "none";
         if (grid) grid.innerHTML = '<div class="celebrate-wall-empty">正在加载故事…</div>';
         loadNextPage();
     };
