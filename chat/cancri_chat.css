@@ -96,36 +96,78 @@ html[data-theme="dark"] {
     --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
+/* ── BLACK THEME (纯黑，站内默认；独立于暖色 dark) ─────────── */
+html[data-theme="black"] {
+    --bg: #000000;
+    --bg-2: #050505;
+    --bg-3: #0d0d0d;
+    --panel: #0a0a0a;
+    --panel-2: #111111;
+    --panel-3: #161616;
+    --panel-4: #050505;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-2: rgba(255, 255, 255, 0.13);
+    --hover: rgba(255, 255, 255, 0.05);
+    --hover-strong: rgba(255, 255, 255, 0.09);
+    --text: rgba(255, 255, 255, 0.95);
+    --text-soft: rgba(255, 255, 255, 0.6);
+    --text-dim: rgba(255, 255, 255, 0.33);
+    --chip: rgba(255, 255, 255, 0.04);
+    --input: #111111;
+    --voice: #e8e8e8;
+    --voice-text: #000000;
+    --scrim: rgba(0, 0, 0, 0.65);
+    --sidebar-bg: #000000;
+    --main-bg: #000000;
+    --input-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --msg-user-bg: linear-gradient(135deg, #d97757 0%, #b85a3e 100%);
+    --msg-user-border: transparent;
+    --msg-ai-bg: #111111;
+    --msg-ai-border: rgba(255, 255, 255, 0.08);
+    --think-bg: rgba(255, 255, 255, 0.02);
+    --code-bg: #050505;
+    --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* black 主题：AI 输出文字强制纯白，确保可读性 */
+html[data-theme="black"] .message.assistant .message-content {
+    color: #ffffff;
+}
+html[data-theme="black"] .answer-body {
+    color: #ffffff;
+}
+
 /* ── LIGHT THEME ────────────────────────────────────────── */
 html[data-theme="light"] {
-    --bg: #f9f9f8;
+    --bg: #F8F8F6;
     --bg-2: #f4f4f2;
     --bg-3: #eeeeeb;
     --panel: #ffffff;
-    --panel-2: #f9f9f8;
-    --panel-3: #f3f3f1;
+    --panel-2: #F8F8F6;
+    --panel-3: #f3f3f0;
     --panel-4: #ffffff;
-    --line: rgba(0, 0, 0, 0.07);
-    --line-2: rgba(0, 0, 0, 0.11);
-    --hover: rgba(0, 0, 0, 0.04);
-    --hover-strong: rgba(0, 0, 0, 0.075);
-    --text: rgba(0, 0, 0, 0.88);
-    --text-soft: rgba(0, 0, 0, 0.5);
-    --text-dim: rgba(0, 0, 0, 0.34);
-    --chip: rgba(0, 0, 0, 0.03);
+    --line: rgba(31, 30, 28, 0.09);
+    --line-2: rgba(31, 30, 28, 0.14);
+    --hover: rgba(31, 30, 28, 0.05);
+    --hover-strong: rgba(31, 30, 28, 0.10);
+    --text: rgba(20, 20, 20, 0.88);
+    --text-soft: rgba(82, 81, 78, 0.72);
+    --text-dim: rgba(137, 135, 129, 0.55);
+    --chip: rgba(31, 30, 28, 0.04);
     --input: #ffffff;
     --voice: #1a1a1a;
     --voice-text: #ffffff;
     --scrim: rgba(0, 0, 0, 0.24);
-    --sidebar-bg: #f3f3f1;
+    --sidebar-bg: #f3f3f0;
     --main-bg: #fcfcfb;
     --input-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06);
+        0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(31, 30, 28, 0.08);
     --msg-user-bg: linear-gradient(135deg, #c45a32 0%, #a14722 100%);
     --msg-user-border: transparent;
     --msg-ai-bg: #ffffff;
-    --msg-ai-border: rgba(0, 0, 0, 0.07);
-    --think-bg: rgba(0, 0, 0, 0.02);
+    --msg-ai-border: rgba(31, 30, 28, 0.09);
+    --think-bg: rgba(31, 30, 28, 0.02);
     --code-bg: #f5f5f3;
     --grain: none;
 }
@@ -1623,6 +1665,8 @@ svg {
 
 /* ── CONTEXT METER ──────────────────────────────────────── */
 .context-meter {
+    /* 2026-05-31：按用户要求隐藏上下文额度圆环 */
+    display: none !important;
     position: relative;
     width: 34px;
     height: 34px;
@@ -1724,10 +1768,41 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 
 .voice-btn.listening {
-    box-shadow:
-        0 0 0 3px var(--accent-soft),
-        0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--text);
     animation: voicePulse 1.4s ease-in-out infinite;
+}
+
+/* ── 设置「主题色」色板（2026-05-31） ── */
+.claude-accent-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.claude-accent-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    padding: 0;
+    border: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition:
+        border-color 0.15s ease,
+        transform 0.12s ease;
+}
+.claude-accent-swatch:hover {
+    transform: scale(1.08);
+}
+.claude-accent-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+.claude-accent-swatch.active {
+    border-color: var(--text);
 }
 
 @keyframes voicePulse {
@@ -2273,10 +2348,10 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 
 .composer:focus-within {
-    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    border-color: color-mix(in srgb, var(--text) 26%, transparent);
     box-shadow:
         var(--input-shadow),
-        0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+        0 0 0 3px color-mix(in srgb, var(--text) 8%, transparent);
 }
 
 .plus-btn,
@@ -2395,11 +2470,10 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 
 .send-btn:hover {
-    background: color-mix(in srgb, var(--accent) 85%, #000);
-    transform: scale(1.04);
+    background: color-mix(in srgb, var(--accent) 92%, white);
 }
 .send-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
 }
 .send-btn:disabled {
     opacity: 0.35;
@@ -3102,15 +3176,16 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 
 .message.user .message-content {
-    max-width: min(560px, 82%);
+    max-width: min(75ch, 85%);
     background: var(--msg-user-bg);
     color: white;
     border: none;
-    border-radius: 18px;
-    padding: 12px 16px;
+    border-radius: 12px;
+    padding: 10px 16px;
     font-size: 15px;
     line-height: 1.55;
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 22%, transparent);
+    box-shadow: none;
+    transition: opacity 200ms ease, transform 200ms ease;
 }
 
 /* Assistant messages: full-width, clean */
@@ -3388,8 +3463,9 @@ body[data-view="leaderboard"] #compareModelSelector {
 .message-action-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    padding: 4px 8px;
+    padding: 4px;
     border-radius: 6px;
     border: none;
     background: transparent;
@@ -3409,19 +3485,34 @@ body[data-view="leaderboard"] #compareModelSelector {
     flex-shrink: 0;
 }
 
+/* Assistant actions should appear clearly below the message bubble */
+.message.assistant .message-actions {
+    width: 100%;
+    justify-content: flex-start;
+}
+
 /* ── USER ATTACHMENTS ────────────────────────────────────── */
 .user-attachments {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    margin-top: 8px;
+    margin-bottom: 8px;
 }
 .user-attachment {
     position: relative;
+    width: 120px;
+    height: 120px;
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
-    aspect-ratio: 1;
+    flex-shrink: 0;
+    background: var(--surface-2, #f0f0f0);
+    border: 1px solid var(--border, rgba(0,0,0,0.06));
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.user-attachment:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 }
 .user-attachment img {
     width: 100%;
@@ -3431,12 +3522,13 @@ body[data-view="leaderboard"] #compareModelSelector {
 }
 .user-attachment-label {
     position: absolute;
-    left: 6px;
-    right: 6px;
-    bottom: 6px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 4px 6px;
     font-size: 10px;
     color: #fff;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(transparent, rgba(0,0,0,0.5));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4012,6 +4104,171 @@ body[data-view="leaderboard"] #compareModelSelector {
     width: 100%;
     max-width: 420px;
     border-radius: 12px;
+}
+
+/* ── Image Loader (图像生成占位动画，移植自 IMAGE-PRO.html) ── */
+.img-loader-card {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+    cursor: default;
+}
+.img-loader-card .img-loader-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+.img-loader-card .img-loader-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.img-loader-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    overflow: hidden;
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.35),
+        0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.img-loader-glass-warp {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: 0;
+}
+.img-loader-glass-rim {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: 1;
+    pointer-events: none;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.42),
+        inset 0 -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+.img-loader-glass-rim::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 42%);
+    -webkit-mask: linear-gradient(180deg, #000 0%, transparent 55%);
+    mask: linear-gradient(180deg, #000 0%, transparent 55%);
+}
+.img-loader-badge-content {
+    position: relative;
+    z-index: 2;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.img-loader-badge-base {
+    color: #dadada;
+    position: relative;
+    z-index: 1;
+}
+.img-loader-badge-shimmer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        100deg,
+        transparent 0%,
+        transparent 42%,
+        #ffffff 50%,
+        transparent 58%,
+        transparent 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: imgLoaderShimmer 3.8s linear infinite;
+    z-index: 2;
+}
+@keyframes imgLoaderShimmer {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+/* 深浅色适配：浅色主题（light / yellow / blue）下，胶囊文字与描边改用深色调，
+   流光改为暗色扫光，避免白字白光在浅底上糊成一片。点阵颜色由 JS 按主题反转。 */
+html[data-theme="light"] .img-loader-badge,
+html[data-theme="yellow"] .img-loader-badge,
+html[data-theme="blue"] .img-loader-badge {
+    background: rgba(0, 0, 0, 0.04);
+}
+html[data-theme="light"] .img-loader-glass-rim,
+html[data-theme="yellow"] .img-loader-glass-rim,
+html[data-theme="blue"] .img-loader-glass-rim {
+    box-shadow:
+        inset 0 0 0 1px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.06);
+}
+html[data-theme="light"] .img-loader-glass-rim::before,
+html[data-theme="yellow"] .img-loader-glass-rim::before,
+html[data-theme="blue"] .img-loader-glass-rim::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
+}
+html[data-theme="light"] .img-loader-badge-content,
+html[data-theme="yellow"] .img-loader-badge-content,
+html[data-theme="blue"] .img-loader-badge-content {
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+html[data-theme="light"] .img-loader-badge-base,
+html[data-theme="yellow"] .img-loader-badge-base,
+html[data-theme="blue"] .img-loader-badge-base {
+    color: rgba(0, 0, 0, 0.62);
+}
+html[data-theme="light"] .img-loader-badge-shimmer,
+html[data-theme="yellow"] .img-loader-badge-shimmer,
+html[data-theme="blue"] .img-loader-badge-shimmer {
+    background: linear-gradient(
+        100deg,
+        transparent 0%,
+        transparent 42%,
+        rgba(0, 0, 0, 0.55) 50%,
+        transparent 58%,
+        transparent 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+/* 浏览器若不支持 backdrop-filter 的 SVG url 滤镜（Firefox/Safari），
+   降级成普通毛玻璃，仍保留液态玻璃质感。 */
+@supports not (backdrop-filter: url(#x)) {
+    .img-loader-glass-warp {
+        backdrop-filter: blur(12px) saturate(150%);
+        -webkit-backdrop-filter: blur(12px) saturate(150%);
+    }
 }
 
 .style-carousel {
@@ -4857,8 +5114,8 @@ body {
 #homeView:not(.chatting) .home-center {
     flex: 0 0 auto;
     min-height: calc(100dvh - var(--header-h));
-    justify-content: center;
-    padding: clamp(8px, 2vh, 20px) 20px clamp(20px, 8vh, 56px);
+    justify-content: flex-start;
+    padding: min(22dvh, 200px) 24px clamp(20px, 8vh, 56px) !important;
 }
 
 /* 聊天态：消息区滚动，输入框固定在底部区域 */
@@ -4912,6 +5169,49 @@ body {
     opacity: 1;
     visibility: visible;
     transform: scale(1) translateY(0);
+}
+
+/* ── 账户菜单：左下角用户头像位置上拉的抽屉（2026-05-31，PC + 移动一致）──
+   #accountPopover 由 cancri_chat.js 按 accountTrigger rect 定位到头像左上方
+   （inline left/bottom），这里做上滑+淡入动画与现代面板样式。放在 .popover.open
+   之后，靠源序压过其默认 scale 动画。点空白处由全局 document click → closePopover 收起。 */
+.account-popover {
+    position: fixed;
+    z-index: 210;
+    min-width: 224px;
+    max-width: min(300px, calc(100vw - 24px));
+    padding: 0;
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    background: var(--panel);
+    box-shadow: var(--shadow-xl);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transform-origin: bottom left;
+    transition:
+        opacity 200ms ease,
+        transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+        visibility 260ms;
+}
+.account-popover.open,
+.account-popover.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.account-popover .popover-inner {
+    border-radius: 16px;
+    padding: 6px;
+    gap: 1px;
+    max-height: 70dvh;
+    overflow-y: auto;
+}
+.account-popover .popover-item {
+    height: 42px;
+    border-radius: 10px;
+    font-size: 14px;
+    padding: 0 12px;
 }
 
 .modal.open,
@@ -5364,7 +5664,8 @@ html[data-theme="light"] {
     --code-bg: #f3f5f7;
 }
 
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html[data-theme="black"] {
     --accent: #d97757;
     --accent-soft: rgba(217, 119, 87, 0.14);
     --msg-user-bg: #d97757;
@@ -5383,11 +5684,6 @@ html[data-theme="blue"] {
     --accent-soft: rgba(37, 99, 235, 0.12);
     --msg-user-bg: #245fd8;
     --msg-user-border: rgba(36, 95, 216, 0.2);
-}
-
-.message.user .message-content {
-    border: 1px solid var(--msg-user-border);
-    box-shadow: none;
 }
 
 .model-dropdown {
@@ -6393,7 +6689,8 @@ html[data-theme="blue"] {
     margin-top: 4px;
 }
 
-[data-theme="dark"] .auth-overlay {
+[data-theme="dark"] .auth-overlay,
+[data-theme="black"] .auth-overlay {
     background: rgba(0, 0, 0, 0.7);
 }
 
@@ -6508,6 +6805,103 @@ html[data-theme="blue"] {
         opacity: 0.55;
         transform: translateY(0);
     }
+}
+
+/* ── MESSAGE ACTIONS (Claude-style hover bar) ─────────────────── */
+.message-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+    padding-right: 4px;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.message.user:hover .message-actions,
+.message-actions:focus-within {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.message-action-ts {
+    font-size: 12px;
+    color: hsl(var(--text-500));
+    margin-right: 6px;
+    user-select: none;
+}
+
+.message-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: hsl(var(--text-400));
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.message-action-btn:hover {
+    background: hsl(var(--bg-200) / 0.6);
+    color: hsl(var(--text-200));
+}
+
+.message-action-btn svg {
+    width: 15px;
+    height: 15px;
+}
+
+@media (hover: none) {
+    .message-actions {
+        opacity: 0.7;
+        transform: translateY(0);
+    }
+}
+
+/* ── SCROLL-TO-BOTTOM BUTTON ─────────────────── */
+.scroll-to-bottom-btn {
+    position: fixed;
+    bottom: calc(var(--composer-height, 120px) + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid hsl(var(--border-300) / 0.5);
+    background: hsl(var(--bg-000) / 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: hsl(var(--text-300));
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease, background 200ms ease, box-shadow 200ms ease;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.scroll-to-bottom-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.scroll-to-bottom-btn:hover {
+    background: hsl(var(--bg-000));
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.scroll-to-bottom-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* ── QUEUE CARD ─────────────────────────────────
@@ -6666,19 +7060,20 @@ html[data-theme="blue"] {
     }
 }
 
-/* ── CHAT TURN NAVIGATOR (右侧用户提问跳转条) ─────────────────
-   在聊天态显示一列用户提问摘要，点击平滑滚动到对应轮次。
-   只在 #homeView.chatting 时可见，且窄屏（<1180px）隐藏避免遮挡。 */
+/* ── CHAT TURN NAVIGATOR (右侧对话轮次导航条) ─────────────────
+   Grok 风格 minimap：右缘竖排刻度，每个用户提问一个 tick，悬停浮出提问
+   预览标签，点击平滑跳到该轮，滚动时高亮当前轮（JS: updateChatNav）。
+   只在 #homeView.chatting 时可见，窄屏隐藏避免遮挡。 */
 #homeView {
     position: relative;
 }
 
 .chat-nav {
     position: absolute;
-    top: 28px;
-    right: 16px;
-    bottom: 240px;
-    width: 220px;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    max-height: 72vh;
     pointer-events: none;
     z-index: 5;
     display: none;
@@ -6692,30 +7087,17 @@ html[data-theme="blue"] {
     pointer-events: auto;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    max-height: 100%;
+    align-items: flex-end;
+    gap: 9px;
+    max-height: 72vh;
     overflow-y: auto;
-    padding: 12px 4px 12px 8px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--line-2) transparent;
-    -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        #000 28px,
-        #000 calc(100% - 28px),
-        transparent 100%
-    );
-    mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        #000 28px,
-        #000 calc(100% - 28px),
-        transparent 100%
-    );
+    padding: 8px 4px;
+    scrollbar-width: none;
 }
 
 .chat-nav-list::-webkit-scrollbar {
-    width: 4px;
+    width: 0;
+    height: 0;
 }
 .chat-nav-list::-webkit-scrollbar-thumb {
     background: var(--line-2);
@@ -6730,58 +7112,74 @@ html[data-theme="blue"] {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
-    padding: 5px 10px 5px 8px;
-    border-radius: 0;
-    background: transparent;
+    padding: 0;
     border: 0;
-    color: var(--text-2, #888);
-    font-family: inherit;
-    font-size: 12.5px;
-    line-height: 1.35;
-    text-align: right;
+    background: transparent;
+    color: var(--text-dim);
     cursor: pointer;
-    transition: color 0.18s ease;
-    max-width: 100%;
-    overflow: hidden;
+    transition: color 0.16s ease;
+}
+/* 放大命中区（可见 tick 只有 2px 高） */
+.chat-nav-item::after {
+    content: "";
+    position: absolute;
+    inset: -4px -8px;
 }
 
+/* 默认只露 tick；提问文字悬停时浮出（对齐 Grok minimap） */
 .chat-nav-item-text {
-    max-width: 168px;
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
     white-space: nowrap;
+    max-width: 240px;
     overflow: hidden;
     text-overflow: ellipsis;
+    background: var(--panel-3);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 12px;
+    line-height: 1.3;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+}
+.chat-nav-item:hover .chat-nav-item-text {
+    opacity: 1;
 }
 
 .chat-nav-item-tick {
     flex: 0 0 auto;
-    width: 10px;
-    height: 1px;
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
     background: currentColor;
-    opacity: 0.35;
+    opacity: 0.55;
     transition:
-        width 0.18s ease,
-        opacity 0.18s ease;
+        width 0.16s ease,
+        opacity 0.16s ease,
+        background 0.16s ease;
 }
 
 .chat-nav-item:hover {
-    color: var(--text);
-    background: transparent;
+    color: var(--text-soft);
 }
 .chat-nav-item:hover .chat-nav-item-tick {
-    opacity: 0.95;
-    width: 16px;
-    height: 2px;
+    width: 26px;
+    opacity: 1;
 }
 
 .chat-nav-item.is-active {
-    color: var(--text);
-    font-weight: 600;
+    color: var(--accent);
 }
 .chat-nav-item.is-active .chat-nav-item-tick {
-    width: 18px;
-    height: 2px;
+    width: 26px;
     opacity: 1;
+    background: var(--accent);
 }
 
 @media (max-width: 820px) {
@@ -6939,7 +7337,8 @@ body[data-shared-conversation="true"] .input-icon {
     line-height: 1.45;
 }
 
-[data-theme="dark"] .auth-invite-hint {
+[data-theme="dark"] .auth-invite-hint,
+[data-theme="black"] .auth-invite-hint {
     background: rgba(34, 197, 94, 0.16);
     border-color: rgba(34, 197, 94, 0.45);
     color: #4ade80;

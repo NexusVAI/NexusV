@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grok 编辑图像中 Loader</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  }
+  .editor-card {
+    position: relative;
+    width: 768px;
+    max-width: 95vw;
+    aspect-ratio: 768 / 500;
+    background: #111111;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .editor-card canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .editor-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  /* ── liquid-glass capsule ── */
+  .editor-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 18px;
+    border-radius: 9999px;
+    overflow: hidden;
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.35),
+      0 2px 6px rgba(0, 0, 0, 0.30);
+  }
+  /* refraction layer — reads the dot field behind it through the SVG filter */
+  .glass-warp {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: 0;
+    backdrop-filter: url(#badge-glass-filter) blur(2px) saturate(150%) brightness(1.08);
+    -webkit-backdrop-filter: url(#badge-glass-filter) blur(2px) saturate(150%) brightness(1.08);
+  }
+  /* thin specular bevel */
+  .glass-rim {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: 1;
+    pointer-events: none;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.30),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.42),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.08);
+  }
+  .glass-rim::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 42%);
+    mask: linear-gradient(180deg, #000 0%, transparent 55%);
+    -webkit-mask: linear-gradient(180deg, #000 0%, transparent 55%);
+  }
+
+  .badge-content {
+    position: relative;
+    z-index: 2;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+  .badge-base {
+    color: #dadada;
+    position: relative;
+    z-index: 1;
+  }
+  .badge-shimmer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(100deg,
+      transparent 0%, transparent 42%,
+      #ffffff 50%,
+      transparent 58%, transparent 100%);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: shimmer 3.8s linear infinite;
+    z-index: 2;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 100% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* graceful degrade: browsers without SVG-in-backdrop-filter get frosted glass */
+  @supports not (backdrop-filter: url(#x)) {
+    .glass-warp {
+      backdrop-filter: blur(12px) saturate(150%);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="editor-card">
+  <canvas id="dotCanvas" width="768" height="500"></canvas>
+  <div class="editor-overlay">
+    <div class="editor-badge" id="badge">
+      <div class="glass-warp"></div>
+      <div class="glass-rim"></div>
+      <div class="badge-content">
+        <span class="badge-base">编辑图像中…</span>
+        <span class="badge-shimmer">编辑图像中…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── liquid-glass SVG filter (refraction + edge chromatic aberration) ── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="badge-glass-filter"
+      x="0" y="0" width="100%" height="100%"
+      filterUnits="objectBoundingBox"
+      primitiveUnits="userSpaceOnUse"
+      color-interpolation-filters="sRGB">
+      <feImage id="bg-feimage" href="" result="MAP" preserveAspectRatio="xMidYMid slice" />
+      <feColorMatrix in="MAP" type="matrix" result="EDGE_GREY"
+        values="0.3 0.3 0.3 0 0  0.3 0.3 0.3 0 0  0.3 0.3 0.3 0 0  0 0 0 1 0" />
+      <feComponentTransfer in="EDGE_GREY" result="EDGE_MASK">
+        <feFuncA type="discrete" tableValues="0 0.15 1" />
+      </feComponentTransfer>
+      <feDisplacementMap id="bg-disp-r" in="SourceGraphic" in2="MAP"
+        scale="16" xChannelSelector="R" yChannelSelector="G" result="DISP_R" />
+      <feColorMatrix in="DISP_R" type="matrix" result="CH_R"
+        values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
+      <feDisplacementMap id="bg-disp-g" in="SourceGraphic" in2="MAP"
+        scale="14" xChannelSelector="R" yChannelSelector="G" result="DISP_G" />
+      <feColorMatrix in="DISP_G" type="matrix" result="CH_G"
+        values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" />
+      <feDisplacementMap id="bg-disp-b" in="SourceGraphic" in2="MAP"
+        scale="12" xChannelSelector="R" yChannelSelector="G" result="DISP_B" />
+      <feColorMatrix in="DISP_B" type="matrix" result="CH_B"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" />
+      <feBlend in="CH_G" in2="CH_B" mode="screen" result="GB" />
+      <feBlend in="CH_R" in2="GB" mode="screen" result="ABERRATED" />
+      <feComposite in="ABERRATED" in2="EDGE_MASK" operator="in" result="RIM_CHROMA" />
+      <feComponentTransfer in="EDGE_MASK" result="INV_MASK">
+        <feFuncA type="table" tableValues="1 0" />
+      </feComponentTransfer>
+      <feComposite in="DISP_G" in2="INV_MASK" operator="in" result="CENTER_CLEAN" />
+      <feComposite in="RIM_CHROMA" in2="CENTER_CLEAN" operator="over" result="COMBINED" />
+      <feGaussianBlur in="COMBINED" stdDeviation="0.4" />
+    </filter>
+  </defs>
+</svg>
+
+<script>
+  /* ============ liquid-glass displacement map ============ */
+  function generateDisplacementMap(width, height) {
+    const c = document.createElement('canvas');
+    c.width = width; c.height = height;
+    const cx = c.getContext('2d');
+    const img = cx.createImageData(width, height);
+    const data = img.data;
+
+    const smoothStep = (a, b, t) => {
+      t = Math.max(0, Math.min(1, (t - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    const len = (x, y) => Math.sqrt(x * x + y * y);
+    const sdfRoundedRect = (x, y, w, h, r) => {
+      const qx = Math.abs(x) - w + r;
+      const qy = Math.abs(y) - h + r;
+      return Math.min(Math.max(qx, qy), 0) + len(Math.max(qx, 0), Math.max(qy, 0)) - r;
+    };
+
+    const raw = new Float32Array(width * height * 2);
+    let maxScale = 0, i = 0;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const ix = x / width - 0.5;
+        const iy = y / height - 0.5;
+        const d = sdfRoundedRect(ix, iy, 0.32, 0.26, 0.5);
+        const bulge = smoothStep(0.8, 0, d - 0.12);
+        const k = smoothStep(0, 1, bulge);
+        const dx = (ix * k) * width;
+        const dy = (iy * k) * height;
+        maxScale = Math.max(maxScale, Math.abs(dx), Math.abs(dy));
+        raw[i++] = dx; raw[i++] = dy;
+      }
+    }
+    maxScale = Math.max(maxScale, 1);
+
+    let p = 0, j = 0;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const dx = raw[p++], dy = raw[p++];
+        const edgeDist = Math.min(x, y, width - 1 - x, height - 1 - y);
+        const edgeFactor = Math.min(1, edgeDist / 2);
+        const r = (dx * edgeFactor) / maxScale * 0.5 + 0.5;
+        const g = (dy * edgeFactor) / maxScale * 0.5 + 0.5;
+        data[j++] = Math.max(0, Math.min(255, r * 255));
+        data[j++] = Math.max(0, Math.min(255, g * 255));
+        data[j++] = Math.max(0, Math.min(255, g * 255));
+        data[j++] = 255;
+      }
+    }
+    cx.putImageData(img, 0, 0);
+    return c.toDataURL();
+  }
+
+  function applyBadgeGlass() {
+    const badge = document.getElementById('badge');
+    const feImage = document.getElementById('bg-feimage');
+    const w = Math.max(1, Math.round(badge.offsetWidth));
+    const h = Math.max(1, Math.round(badge.offsetHeight));
+    const url = generateDisplacementMap(w, h);
+    feImage.setAttribute('href', url);
+    feImage.setAttribute('xlink:href', url);
+  }
+  // wait a frame so layout (and the web font) settle before measuring
+  requestAnimationFrame(() => requestAnimationFrame(applyBadgeGlass));
+  window.addEventListener('resize', applyBadgeGlass);
+
+  /* ============ pseudo-3D wave dot field ============ */
+  const canvas = document.getElementById('dotCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const DOT_SPACING = 26;
+  const DOT_RADIUS = 1.5;
+
+  const dots = [];
+  const PAD = 2;
+  const cols = Math.ceil(W / DOT_SPACING) + PAD * 2;
+  const rows = Math.ceil(H / DOT_SPACING) + PAD * 2;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      dots.push({
+        ox: (c - PAD) * DOT_SPACING + DOT_SPACING / 2,
+        oy: (r - PAD) * DOT_SPACING + DOT_SPACING / 2,
+      });
+    }
+  }
+
+  // 高度场波浪（叠加正弦），用于伪 3D：高度 + 解析法线做明暗 + 视差
+  const waves = [
+    { kx: 0.0110, ky: 0.0140, v: 0.0016, a: 9 },
+    { kx: 0.0190, ky: -0.0090, v: 0.0023, a: 6 },
+    { kx: -0.0070, ky: 0.0110, v: 0.0011, a: 7 },
+  ];
+  const MAX_A = waves.reduce((s, w) => s + w.a, 0);
+
+  // 光照方向（左上前方），归一化
+  const Lx = -0.45, Ly = -0.65, Lz = 0.62;
+  const Llen = Math.hypot(Lx, Ly, Lz);
+  const lx = Lx / Llen, ly = Ly / Llen, lz = Lz / Llen;
+
+  const HEIGHT_LIFT = 1.5;     // 高度抬升像素（伪 3D 起伏）
+  const SLOPE_PARALLAX = 30;   // 斜率水平视差
+  const NORMAL_SLOPE = 7;      // 法线斜率放大（明暗强度）
+
+  // 点阵流光
+  const SWEEP_PERIOD = 3200;   // ms 扫一足周期
+  const SWEEP_WIDTH = 160;     // 亮带宽度(px)
+
+  let time = 0;
+
+  function draw() {
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(0, 0, W, H);
+
+    const sweepT = (time % SWEEP_PERIOD) / SWEEP_PERIOD;
+    const sweepX = -SWEEP_WIDTH + sweepT * (W + SWEEP_WIDTH * 2);
+    const sweepSigma2 = 2 * (SWEEP_WIDTH / 2.4) ** 2;
+
+    for (const d of dots) {
+      // 高度场及其偏导（解析）
+      let hgt = 0, dhdx = 0, dhdy = 0;
+      for (const w of waves) {
+        const ph = d.ox * w.kx + d.oy * w.ky + time * w.v;
+        const s = Math.sin(ph), co = Math.cos(ph);
+        hgt += w.a * s;
+        dhdx += w.a * w.kx * co;
+        dhdy += w.a * w.ky * co;
+      }
+
+      // 屏幕坐标：高度抬升 + 斜率视差（产生 3D 倾斜感）
+      const sx = d.ox + dhdx * SLOPE_PARALLAX;
+      const sy = d.oy - hgt * HEIGHT_LIFT;
+
+      // 法线 → 明暗
+      const nx = -dhdx * NORMAL_SLOPE;
+      const ny = -dhdy * NORMAL_SLOPE;
+      const ninv = 1 / Math.sqrt(nx * nx + ny * ny + 1);
+      const shade = Math.max(0, (nx * lx + ny * ly + lz) * ninv);
+
+      // 深度：越高越近 → 越大越亮
+      const depth = (hgt + MAX_A) / (2 * MAX_A); // 0..1
+
+      // 流光扫过（高斯衰减）
+      const sweepDist = Math.abs(sx - sweepX);
+      const sweepGlow = Math.exp(-(sweepDist * sweepDist) / sweepSigma2);
+
+      let alpha = 0.10 + 0.30 * shade + 0.18 * depth + sweepGlow * 0.55;
+      alpha = Math.min(alpha, 0.96);
+
+      // 扫过光的点明显变大
+      const r = DOT_RADIUS * (0.7 + depth * 0.55 + shade * 0.25 + sweepGlow * 1.8);
+
+      const ch = Math.round(165 + shade * 40 + depth * 20 + sweepGlow * 50);
+
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${ch}, ${ch}, ${ch}, ${alpha})`;
+      ctx.fill();
+    }
+
+    time += 16;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+</script>
+
+</body>
+</html>

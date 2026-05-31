@@ -79,6 +79,7 @@ const heroTitle = document.getElementById("heroTitle");
 const homeInput = document.getElementById("homeInput");
 const sendChatBtn = document.getElementById("sendChatBtn");
 const chatMessages = document.getElementById("chatMessages");
+const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
 const homeCenter = document.getElementById("homeCenter");
 const attachBtn = document.getElementById("attachBtn");
 const attachmentInput = document.getElementById("attachmentInput");
@@ -1711,6 +1712,8 @@ let quotaState = {
   // 所以前端 pool_exhausted / daily_limit 预阻挡也必须放行 topup>0 的用户，
   // 否则 chat 页 UI 上还是横杠所有模型。null = 未知（不阻挡）。
   topupBalance: null,
+  // 2026-05-31 T7：免费共享池重置时间（period_end），用于输入框下方「免费额度耗尽」提示。
+  freePoolPeriodEnd: null,
 };
 let quotaStateFetchInflight = null;
 const QUOTA_STATE_TTL_MS = 30 * 1000;
@@ -1914,6 +1917,10 @@ async function refreshQuotaState(force) {
           typeof data.topup_balance === "string"
             ? Number(data.topup_balance) || 0
             : null;
+        quotaState.freePoolPeriodEnd =
+          data.free_pool && data.free_pool.period_end
+            ? data.free_pool.period_end
+            : null;
         quotaState.fetchedAt = Date.now();
         if (clearTopupBackedQuotaLocks()) {
           persistModelTelemetryCache();
@@ -1925,6 +1932,11 @@ async function refreshQuotaState(force) {
         if (typeof updateModelDropdownIndicators === "function") {
           updateModelDropdownIndicators();
         }
+      } catch (e) {
+        /* ignore */
+      }
+      try {
+        renderFreeQuotaBanner();
       } catch (e) {
         /* ignore */
       }
@@ -1943,6 +1955,40 @@ async function refreshQuotaState(force) {
 function invalidateQuotaState() {
   quotaState.fetchedAt = 0;
   return refreshQuotaState(true);
+}
+
+// T7：免费消息额度耗尽时在输入框下方提示恢复时间。
+// 仅当「确知」free 档 + 共享池/当日试用/加油包三者都 <= 0 时显示；
+// 任一为 null（未知）则不显示，避免把「未知」误判成「为 0」误报。
+function formatFreePoolResetDate(raw) {
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return String(raw);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function renderFreeQuotaBanner() {
+  const banner = document.getElementById("freeQuotaBanner");
+  if (!banner) return;
+  const free = quotaState.freePoolRemaining;
+  const daily = quotaState.dailyPaidRemaining;
+  const topup = quotaState.topupBalance;
+  const allEmpty =
+    quotaState.tier === "free" &&
+    free !== null && Number(free) <= 0 &&
+    daily !== null && Number(daily) <= 0 &&
+    topup !== null && Number(topup) <= 0;
+  if (!allEmpty) {
+    banner.hidden = true;
+    banner.textContent = "";
+    return;
+  }
+  const when = formatFreePoolResetDate(quotaState.freePoolPeriodEnd);
+  banner.textContent = when
+    ? `您的免费消息额度已用完，将于 ${when} 恢复`
+    : "您的免费消息额度已用完，可升级订阅或购买加油包继续使用";
+  banner.hidden = false;
 }
 
 function clearTopupBackedQuotaLocks() {
@@ -2762,6 +2808,7 @@ function resolveEffectiveTheme(mode) {
       ? "dark"
       : "light";
   }
+  if (mode === "black") return "black";
   return mode === "dark" ? "dark" : "light";
 }
 
@@ -2772,22 +2819,30 @@ function restoreUiPreferences() {
   try {
     const raw = localStorage.getItem(UI_PREFS_STORAGE_KEY);
     if (!raw) {
-      // 2026-05-18：首次访问默认跟随系统（用户在新设置面板里期望的"system"档）。
-      // resolveEffectiveTheme 把 'system' 解析成 light/dark，CSS 仍只看 data-theme。
-      state.themeMode = "system";
-      state.theme = resolveEffectiveTheme("system");
-      const sysIdx = themeCycle.findIndex((item) => item.value === state.theme);
-      if (sysIdx >= 0) themeIndex = sysIdx;
+      // 2026-05-31：站内默认主题改为「纯黑」(data-theme="black")。仅对从未设置过
+      // 偏好的全新访客生效；已保存偏好的回访用户保持原选择（见下方分支）。
+      state.themeMode = "black";
+      state.theme = "black";
       return;
     }
     const prefs = JSON.parse(raw);
     // themeMode 是新字段（2026-05-18），向后兼容老 prefs.theme=light/dark 直接迁移：
     // 老用户一打开就把他们当年的选择当作新 themeMode（system/light/dark 的子集）。
     const rawMode = String(prefs.themeMode || prefs.theme || "system");
-    if (rawMode === "system" || rawMode === "light" || rawMode === "dark") {
+    // 2026-05-31 一次性迁移：站内默认主题改「纯黑」。把"从未显式选过主题"
+    // （旧版隐式默认 system）的老用户一次性切到 black；显式选过 light/dark/black
+    // 的用户保持原样。blackDefaultMigrated 标记保证只迁一次，之后用户自己改了就尊重。
+    if (!prefs.blackDefaultMigrated && rawMode === "system") {
+      state.themeMode = "black";
+    } else if (
+      rawMode === "system" ||
+      rawMode === "light" ||
+      rawMode === "dark" ||
+      rawMode === "black"
+    ) {
       state.themeMode = rawMode;
     } else {
-      state.themeMode = "system";
+      state.themeMode = "black";
     }
     state.theme = resolveEffectiveTheme(state.themeMode);
     const nextThemeIndex = themeCycle.findIndex(
@@ -2856,6 +2911,8 @@ function persistUiPreferences() {
         customInstructions: state.customInstructions,
         fullName: state.fullName,
         profession: state.profession,
+        // 2026-05-31：标记已执行「默认纯黑」一次性迁移，避免重复覆盖用户后续选择。
+        blackDefaultMigrated: true,
       }),
     );
   } catch (error) {
@@ -3684,6 +3741,24 @@ function _ensureAuthShowcaseVideo(overlay) {
 function showAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (overlay) overlay.classList.add("visible");
+  // 2026-05-31 fix(T9)：每次显示登录遮罩都把表单重置回「邮箱步骤」。否则上一轮发码留下的
+  // inline style（sendOtpBtn display:none + otpSection display:block）会残留，导致退出再登录时
+  // 卡片显示成半截 OTP 态——「Continue」按钮被藏、OTP 段提前展开、中间留大空隙、布局错乱。
+  const sendOtpBtn = document.getElementById("authSendOtpBtn");
+  const otpSection = document.getElementById("authOtpSection");
+  const otpInput = document.getElementById("authOtpInput");
+  const emailError = document.getElementById("authEmailError");
+  if (sendOtpBtn) {
+    sendOtpBtn.style.display = "";
+    sendOtpBtn.disabled = false;
+    sendOtpBtn.textContent = "Continue with email";
+  }
+  if (otpSection) otpSection.style.display = "none";
+  if (otpInput) otpInput.value = "";
+  if (emailError) {
+    emailError.textContent = "";
+    emailError.style.color = "";
+  }
   const video = _ensureAuthShowcaseVideo(overlay);
   if (video instanceof HTMLVideoElement) {
     const src = video.dataset.src || "";
@@ -4232,9 +4307,9 @@ function getChatHistoryBucket(chat) {
   ).getTime();
   const startYesterday = startToday - 24 * 60 * 60 * 1000;
   const time = Number.isFinite(date.getTime()) ? date.getTime() : startToday;
-  if (time >= startToday) return "Today";
-  if (time >= startYesterday) return "Yesterday";
-  return "Older";
+  if (time >= startToday) return "今天";
+  if (time >= startYesterday) return "昨天";
+  return "更早";
 }
 
 function matchesChatHistorySearch(chat, query) {
@@ -4475,17 +4550,21 @@ async function renderChatHistoryList() {
       pinnedGroup.forEach(appendChatHistoryItem);
     }
 
-    ["Today", "Yesterday", "Older"].forEach((bucket) => {
-      const group = sorted.filter(
-        (chat) => !pinned.includes(chat.id) && getChatHistoryBucket(chat) === bucket,
-      );
-      if (!group.length) return;
-      const section = document.createElement("div");
-      section.className = "section-title history-date-title";
-      section.textContent = bucket;
-      listContainer.appendChild(section);
-      group.forEach(appendChatHistoryItem);
-    });
+    const groupBy = (typeof window !== "undefined" && window.CANCRI_GROUP_BY) || "date";
+    const nonPinned = sorted.filter((chat) => !pinned.includes(chat.id));
+    if (groupBy === "none") {
+      nonPinned.forEach(appendChatHistoryItem);
+    } else {
+      ["今天", "昨天", "更早"].forEach((bucket) => {
+        const group = nonPinned.filter((chat) => getChatHistoryBucket(chat) === bucket);
+        if (!group.length) return;
+        const section = document.createElement("div");
+        section.className = "section-title history-date-title";
+        section.textContent = bucket;
+        listContainer.appendChild(section);
+        group.forEach(appendChatHistoryItem);
+      });
+    }
   } catch (error) {
     console.error("加载聊天记录列表失败:", error);
     listContainer.innerHTML = '<div class="recent-placeholder">加载失败</div>';
@@ -6281,7 +6360,10 @@ function applyTheme() {
   // 真实生效。登录页字色已在 cancri_motion.css 用 .auth-overlay scope
   // 锁死暖白系，不再受 [data-theme="light"] 影响；.auth-card / .auth-input
   // 也写死 brutalist 米白色，独立于 theme。
-  root.setAttribute("data-theme", state.theme === "light" ? "light" : "dark");
+  root.setAttribute(
+    "data-theme",
+    state.theme === "light" || state.theme === "black" ? state.theme : "dark",
+  );
   // 2026-05-18：聊天字体偏好。CSS 通过 html[data-chat-font="serif|sans|mono"]
   // 覆盖 `.message .message-content` 的 font-family。data-chat-font 永远存在
   // （不会缺省），即便用户没显式选过也会写入默认 sans。
@@ -6290,11 +6372,19 @@ function applyTheme() {
   // 让 cancri_chat.css 中 html[data-theme=...] 里定义的 --accent 生效。
   if (state.accentValue) {
     root.style.setProperty("--accent", state.accentValue);
+    root.style.setProperty(
+      "--accent-soft",
+      `color-mix(in srgb, ${state.accentValue} 14%, transparent)`,
+    );
+    root.setAttribute("data-custom-accent", "");
   } else {
     root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-soft");
+    root.removeAttribute("data-custom-accent");
   }
   if (appearanceValue)
-    appearanceValue.textContent = themeCycle[themeIndex].label;
+    appearanceValue.textContent =
+      state.theme === "black" ? "纯黑" : themeCycle[themeIndex].label;
   if (contrastValue) contrastValue.textContent = state.contrast;
   if (accentValueEl) accentValueEl.textContent = state.accentName;
   if (accentDot) {
@@ -8686,160 +8776,160 @@ function getDefaultHomeHeroText() {
   const emailLikeName = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(name);
   const numericQQName = /^\d{4,}$/.test(name);
 
-  // 2026-05-22 真 Claude 对齐：邮箱 / 纯 QQ 号 / 占位「用户」 不该出现在 hero。
-  // Real Claude 没设昵称时只显示纯问候语「下午好」，没有 ", \n3573799137@qq.com"
-  // 这种尴尬。这里直接退化为纯问候 + 跨小时刷新。
-  if (emailLikeName || numericQQName || name === "用户") {
-    if (hour < 5) return "夜深了";
-    if (hour < 11) return "早上好";
-    if (hour < 14) return "中午好";
-    if (hour < 18) return "下午好";
-    return "晚上好";
+  // 邮箱 / 纯 QQ 号 / 占位「用户」 不该带名字出现在 hero，
+  // 但文案仍然保持丰富轮换，不是僵硬的固定问候。
+  const noName = emailLikeName || numericQQName || name === "用户";
+  if (noName) {
+    if (hour < 5) {
+      return pickHomeText(["夜深了", "还没休息？", "夜色正好", "月亮不睡我不睡", "夜猫子模式", "星星伴你"]);
+    }
+    if (weekday === 1) {
+      if (hour < 11) {
+        return pickHomeText(["周一快乐！", "新的一周，加油", "早安，打起精神", "元气满满的周一", "今天也要冲"]);
+      }
+      if (hour < 18) {
+        return pickHomeText(["周一下午，摸会儿鱼？", "加油，快过半了", "你在干嘛？", "下午打起精神", "来杯咖啡续命"]);
+      }
+      return pickHomeText(["周一晚上，辛苦啦", "在想什么？", "晚上好", "今天过得如何", "准备好放松了吗"]);
+    }
+    if (weekday === 5) {
+      if (hour < 11) {
+        return pickHomeText(["周五啦！坚持住", "早安，最后一个工作日", "周末倒计时", "再撑一下", "马上解放"]);
+      }
+      if (hour < 18) {
+        return pickHomeText(["周五下午，准备放假", "快解放了", "你在干嘛？", "胜利在望", "心情起飞"]);
+      }
+      return pickHomeText(["周五晚上！嗨起来", "周末开始！", "Happy Friday！", "终于周五了", "今晚放松一下"]);
+    }
+    if (weekday === 0 || weekday === 6) {
+      if (hour < 11) {
+        return pickHomeText(["周末快乐！", "放假中，早安", "早安，今天不卷", "睡到自然醒", "周末充电中"]);
+      }
+      if (hour < 18) {
+        return pickHomeText(["周末下午，在干嘛？", "你在干嘛？", "在想什么？", "周末打算怎么过", "出去浪还是宅"]);
+      }
+      return pickHomeText(["周末晚上", "在想什么？", "晚上好", "周末余额不足", "享受最后的悠闲"]);
+    }
+    if (hour < 11) {
+      return pickHomeText(["早安", "在想什么？", "你在干嘛？", "今天有什么计划", "新的一天", "准备好出发了吗", "早起的鸟儿", "来聊聊"]);
+    }
+    if (hour < 14) {
+      return pickHomeText(["中午好", "在想什么？", "你在干嘛？", "午饭吃了吗", "午休时间", "下午继续加油", "来点灵感"]);
+    }
+    if (hour < 18) {
+      return pickHomeText(["下午好", "在想什么？", "你在干嘛？", "下午茶时间", "灵感来了吗", "今天进展如何", "来聊会天", "需要帮忙吗"]);
+    }
+    return pickHomeText(["晚上好", "在想什么？", "你在干嘛？", "今晚打算做什么", "夜色温柔", "来场深夜对话", "今天收获如何", "放松一下吧"]);
   }
 
-  // 1. 深夜 (0:00 - 4:59) - 不分工作日和周末，全部突出深夜温馨氛围
+  // 深夜
   if (hour < 5) {
     return pickHomeText([
-      `这是深夜的${name}，怎么还没睡呀，还在忙什么？`,
-      `夜深了，${name}。今天写代码辛苦了，要早点休息哦。`,
-      `还没睡觉的${name}，深夜是灵感最澎湃的时候吗？`,
-      `夜深人静，适合静下心来。${name}，今晚我们来聊点什么？`,
-      `黑夜里的守护者，${name}，今天也是超棒的一天，别太累着自己。`
+      `深夜的${name}，还没睡？`,
+      `还没休息，${name}？`,
+      `咖啡和Cancri，${name}也醒着`,
+      `夜色正好，${name}`
     ]);
   }
 
-  // 2. 周一特供 (Monday Blues)
+  // 周一
   if (weekday === 1) {
     if (hour < 11) {
       return pickHomeText([
-        `周一不快乐！${name}，今天也要打起精神来呀~`,
-        `新的一周开始啦！${name}，这周打算整点什么大动作？`,
-        `周一早安，${name}！今天喝咖啡了吗？`,
-        `又是奋斗的星期一，${name}，今天先从哪个难题开始？`
-      ]);
-    }
-    if (hour < 14) {
-      return pickHomeText([
-        `周一中午好，${name}。午饭吃了吗？稍微午休一下吧~`,
-        `${name}，周一的中午，适合来点新想法，碰撞一下火花？`
+        `周一快乐！${name}`,
+        `新的一周，${name}加油`,
+        `早安，${name}，打起精神`
       ]);
     }
     if (hour < 18) {
       return pickHomeText([
-        `周一下午好，${name}！熬过了最痛苦的上午，下午继续加油！`,
-        `${name}，周一的下午感觉如何？来理一理工作思路吧。`,
-        `下午茶时间，${name}。周一下午稍微站起来活动一下，喝杯水？`
+        `周一下午，${name}摸会儿鱼？`,
+        `加油${name}，快过半了`,
+        `你在干嘛？${name}`
       ]);
     }
     return pickHomeText([
-      `忙碌的周一终于过完了，晚上好，${name}~`,
-      `周一的晚上，${name}，今天辛苦啦，晚上来放松聊聊？`,
-      `晚上好，${name}！周一最艰难的部分已经过去，今晚我们搞点轻松的。`
+      `周一晚上，${name}辛苦啦`,
+      `在想什么？${name}`,
+      `晚上好，${name}`
     ]);
   }
 
-  // 3. 周五特供 (Friday Joy)
+  // 周五
   if (weekday === 5) {
     if (hour < 11) {
       return pickHomeText([
-        `周五早安，${name}！今天上完班就是周末啦，坚持就是胜利！`,
-        `早安！${name}，今天是本周最后一个工作日，开心起来！`,
-        `${name}，早！周五啦，今天的日常任务打算怎么收尾？`
-      ]);
-    }
-    if (hour < 14) {
-      return pickHomeText([
-        `周五中午好，${name}。今天中午多吃点，准备迎接美好的周末！`,
-        `${name}，周五午安！午休时间，畅想一下周末的计划吧。`
+        `周五啦！${name}，坚持住`,
+        `早安${name}，最后一个工作日`,
+        `周末倒计时，${name}`
       ]);
     }
     if (hour < 18) {
       return pickHomeText([
-        `周五下午啦！${name}，再坚持一下，马上就周末放假啦！`,
-        `周五下午好，${name}！今天的工作准备收尾了吗？`,
-        `摸鱼时间到？${name}，周五下午先简单推进点什么，准备迎接假期！`,
-        `周五的下午，${name}，阳光正好，心情是不是已经飞到周末去了？`
+        `周五下午，${name}准备放假`,
+        `快解放了，${name}`,
+        `你在干嘛？${name}`
       ]);
     }
     return pickHomeText([
-      `周五晚上好！${name}，周末时间到，好好放松犒劳自己！`,
-      `终于到周五晚上啦！${name}，今晚打算怎么度过周末前夜？`,
-      `Happy Friday! ${name}，今晚不加班，尽情享受自由时光吧！`
+      `周五晚上！${name}嗨起来`,
+      `周末开始，${name}！`,
+      `Happy Friday！${name}`
     ]);
   }
 
-  // 4. 周六/周日特供 (Weekend Mode)
+  // 周末
   if (weekday === 0 || weekday === 6) {
     if (hour < 11) {
       return pickHomeText([
-        `周末快乐！${name}，今天不卷工作，玩点好玩的吧~`,
-        `周末早安！${name}，今天打算怎么安排惬意的一天？`,
-        `享受周末！${name}，今天有什么想探索的新点子吗？`,
-        `早安，放假中的${name}！睡饱了感觉怎么样？`
-      ]);
-    }
-    if (hour < 14) {
-      return pickHomeText([
-        `周末午安，${name}。今天外面天气怎么样？`,
-        `惬意的周末中午，${name}，要不要来闲聊一会儿？`,
-        `${name}，午安！周末睡个懒觉起来，吃顿丰盛的午餐吧。`
+        `周末快乐！${name}`,
+        `放假中的${name}，早安`,
+        `早安${name}，今天不卷`
       ]);
     }
     if (hour < 18) {
       return pickHomeText([
-        `周末下午好，${name}。今天过得舒服吗？`,
-        `暖洋洋的周末午后，${name}，想写点自己喜欢的代码吗？`,
-        `惬意的周末时光，${name}，喝杯茶/咖啡，听首好歌吧。`
+        `周末下午，${name}在干嘛？`,
+        `你在干嘛？${name}`,
+        `在想什么？${name}`
       ]);
     }
-    // 晚上
-    if (weekday === 0) { // 周日晚上
-      return pickHomeText([
-        `周日晚上好，${name}。明天又是崭新的一周，今晚早点休息哦~`,
-        `周日晚上，${name}，是在为明天做准备，还是在享受最后的周末时光？`,
-        `${name}，周末快结束啦，今晚来充充电，轻松聊点什么。`
-      ]);
-    } else { // 周六晚上
-      return pickHomeText([
-        `周六的晚上，${name}，今晚是属于自己的自由时间！`,
-        `周六晚上好，${name}！今天玩得开心吗？明天还可以继续嗨！`,
-        `周六的夜色正美，${name}，今晚有什么好玩的夜生活计划吗？`
-      ]);
-    }
+    return pickHomeText([
+      `周末晚上，${name}`,
+      `在想什么？${name}`,
+      `晚上好，${name}`
+    ]);
   }
 
-  // 5. 常规工作日 (Tue, Wed, Thu)
+  // 常规工作日 (Tue–Thu)
   if (hour < 11) {
     return pickHomeText([
-      `早安，${name}！今天也是充满干劲的一天！`,
-      `${name}，早！今天有什么计划要和我一起完成吗？`,
-      `早，${name}！今天也来杯咖啡，开启元气满满的一天吧。`,
-      `新的一天，${name}，准备好迎接新的挑战了吗？`
+      `早安，${name}`,
+      `在想什么？${name}`,
+      `你在干嘛？${name}`,
+      `咖啡和Cancri，${name}`
     ]);
   }
-
   if (hour < 14) {
     return pickHomeText([
-      `中午好，${name}。午饭吃饱了吗？稍微午休一下吧~`,
-      `${name}，午安，来点新想法，科学摸鱼碰撞一下火花？`,
-      `午休时刻，${name}，让大脑放空十几分钟吧。`
+      `中午好，${name}`,
+      `在想什么？${name}`,
+      `你在干嘛？${name}`
     ]);
   }
-
   if (hour < 18) {
     return pickHomeText([
-      `下午好，${name}。写累了的话，起来活动一下，喝杯水吧？`,
-      `下午先推进点什么？${name}，我们一起来看看。`,
-      `下午好，${name}。来杯下午茶，清醒一下脑子？`,
-      `下午的漫长时刻，${name}，让我来帮你写几段干净的代码。`
+      `下午好，${name}`,
+      `在想什么？${name}`,
+      `你在干嘛？${name}`,
+      `咖啡和Cancri，${name}`
     ]);
   }
-
   return pickHomeText([
-    `晚上好，${name}。今天忙了一天，今晚我们来点轻松的探讨吧。`,
-    `${name}，晚上好！今晚是要写一会儿自己喜欢的私活，还是单纯闲聊？`,
-    `晚上好，${name}！夜色很美，适合静静思考，有什么想聊的？`,
-    `${name}，今晚想聊点什么？随时准备着。`
+    `晚上好，${name}`,
+    `在想什么？${name}`,
+    `你在干嘛？${name}`,
+    `咖啡和Cancri，${name}`
   ]);
 }
 
@@ -8885,26 +8975,49 @@ function updateComposerPlaceholder() {
     return;
   }
 
-  // 否则是正常聊天模型，如果已经有 Carousel 在运行，我们只是更新当前的 placeholder (不覆盖)，避免突然打断 rotation
-  // 否则，启动 Carousel!
+  // 移动端禁用 carousel（渐变动画在低配设备上卡顿，且表现与 PC 不一致）
+  const isMobile =
+    typeof window !== "undefined" &&
+    (window.matchMedia("(max-width: 768px)").matches ||
+    "ontouchstart" in window);
+  if (isMobile) {
+    if (placeholderIntervalId) {
+      clearInterval(placeholderIntervalId);
+      placeholderIntervalId = null;
+    }
+    homeInput.classList.remove("placeholder-faded");
+    homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[0];
+    return;
+  }
+
+  // PC 端：启动 Carousel，周期拉长到 15s 减少视觉干扰
   if (!placeholderIntervalId) {
-    // 首次载入或重切回聊天模型
     homeInput.classList.remove("placeholder-faded");
     homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[currentPlaceholderIndex];
-    
+
     placeholderIntervalId = setInterval(() => {
       if (!homeInput) return;
-      // 如果当前不是聊天模型，就不跑了
       const currentMeta = getModelMeta(currentModel);
       if (currentMeta.imageOnly || currentMeta.videoOnly) {
         clearInterval(placeholderIntervalId);
         placeholderIntervalId = null;
         return;
       }
-      
+      // 若窗口缩到移动端宽度，自动停掉 carousel
+      if (
+        window.matchMedia("(max-width: 768px)").matches ||
+        "ontouchstart" in window
+      ) {
+        clearInterval(placeholderIntervalId);
+        placeholderIntervalId = null;
+        homeInput.classList.remove("placeholder-faded");
+        homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[0];
+        return;
+      }
+
       // 开始渐出
       homeInput.classList.add("placeholder-faded");
-      
+
       setTimeout(() => {
         if (!homeInput) return;
         currentPlaceholderIndex = (currentPlaceholderIndex + 1) % CHAT_PLACEHOLDER_TEMPLATES.length;
@@ -8912,7 +9025,7 @@ function updateComposerPlaceholder() {
         // 开始渐入
         homeInput.classList.remove("placeholder-faded");
       }, 500); // 对齐 CSS 0.5s 渐出动画
-    }, 8000); // 每 8 秒更换一次
+    }, 15000); // PC 端每 15 秒更换一次
   }
 }
 
@@ -8923,6 +9036,13 @@ function isChatNearBottom(threshold = 120) {
     chatMessages.scrollTop -
     chatMessages.clientHeight;
   return distanceFromBottom <= threshold;
+}
+
+function updateScrollToBottomButton() {
+  if (!scrollToBottomBtn || !chatMessages) return;
+  const isNear = isChatNearBottom(160);
+  scrollToBottomBtn.hidden = isNear;
+  scrollToBottomBtn.classList.toggle("visible", !isNear);
 }
 
 function resetChatAutoScrollLock() {
@@ -8961,6 +9081,7 @@ function scrollChatToBottom(smooth = true, force = false) {
   } else {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
+  updateScrollToBottomButton();
 }
 
 function setComposerBusy(isBusy) {
@@ -8994,6 +9115,29 @@ function setComposerBusy(isBusy) {
   }
   sendChatBtn.setAttribute("aria-disabled", String(sendChatBtn.disabled));
   updateComposerToolStatus();
+  updateComposerSendButton();
+}
+
+function updateComposerSendButton() {
+  if (!sendChatBtn || !voiceInputBtn) return;
+  const hasContent = Boolean(
+    homeInput?.value?.trim() || pendingAttachments.length,
+  );
+  if (state.isStreaming) {
+    sendChatBtn.classList.remove("hidden", "has-text");
+    voiceInputBtn.classList.add("hidden");
+  } else if (state.sharedConversation) {
+    sendChatBtn.classList.remove("hidden", "has-text");
+    voiceInputBtn.classList.add("hidden");
+  } else if (hasContent) {
+    sendChatBtn.classList.remove("hidden");
+    sendChatBtn.classList.add("has-text");
+    voiceInputBtn.classList.add("hidden");
+  } else {
+    sendChatBtn.classList.add("hidden");
+    sendChatBtn.classList.remove("has-text");
+    voiceInputBtn.classList.remove("hidden");
+  }
 }
 
 function getComposerResizeMaxHeight() {
@@ -9393,6 +9537,7 @@ async function sendImageGenerationMessage(
   createUserMessage(query, attachments, turnUserIndex);
   homeInput.value = "";
   autoResizeComposerInput();
+  updateComposerSendButton();
 
   const assistantMessageId = createAssistantMessage(metadata);
   tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
@@ -9407,9 +9552,10 @@ async function sendImageGenerationMessage(
   {
     const messageDiv = document.getElementById(assistantMessageId);
     const answerBody = messageDiv?.querySelector(".answer-body");
-    if (answerBody && window.CancriOrbLoader) {
+    const ImageLoader = window.CancriImageLoader || window.CancriOrbLoader;
+    if (answerBody && ImageLoader) {
       answerBody.innerHTML = "";
-      chatImagePendingLoader = window.CancriOrbLoader.create({
+      chatImagePendingLoader = ImageLoader.create({
         caption: "正在生成图片…",
         subCaption: query.length > 30 ? query.slice(0, 30) + "…" : query,
       });
@@ -9707,6 +9853,7 @@ async function sendVideoGenerationMessage(
   createUserMessage(query, attachments, turnUserIndex);
   homeInput.value = "";
   autoResizeComposerInput();
+  updateComposerSendButton();
 
   const assistantMessageId = createAssistantMessage(metadata);
   tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
@@ -9904,11 +10051,7 @@ function createUserMessage(content, attachments = [], messageIndex = null) {
   });
   messageDiv.appendChild(undoBtn);
 
-  const textBlock = document.createElement("div");
-  textBlock.textContent =
-    text || (messageAttachments.length ? "已发送图片" : "");
-  bubble.appendChild(textBlock);
-
+  // 附件缩略图放在文字上方（Claude 风格小块卡片）
   if (messageAttachments.length) {
     const attachmentGrid = document.createElement("div");
     attachmentGrid.className = "user-attachments";
@@ -9960,11 +10103,118 @@ function createUserMessage(content, attachments = [], messageIndex = null) {
     bubble.appendChild(attachmentGrid);
   }
 
+  const textBlock = document.createElement("div");
+  textBlock.className = "user-message-text";
+  textBlock.textContent =
+    text || (messageAttachments.length ? "已发送图片" : "");
+  bubble.appendChild(textBlock);
+
+  // Claude-style message actions bar (timestamp + retry)
+  const actionsBar = document.createElement("div");
+  actionsBar.className = "message-actions";
+  actionsBar.setAttribute("role", "group");
+  actionsBar.setAttribute("aria-label", "Message actions");
+
+  const tsSpan = document.createElement("span");
+  tsSpan.className = "message-action-ts";
+  const now = new Date();
+  tsSpan.textContent = now.toLocaleTimeString("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "message-action-btn";
+  retryBtn.setAttribute("aria-label", "Retry");
+  retryBtn.title = "重新发送";
+  retryBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="1 4 1 10 7 10"></polyline>
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+    </svg>
+  `;
+  retryBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const idx = Number(messageDiv.dataset.messageIndex);
+    undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+    // Also re-populate the composer with the original text
+    const originalText = messageDiv.dataset.userText || "";
+    if (originalText && homeInput) {
+      homeInput.value = originalText;
+      autoResizeComposerInput();
+      updateComposerSendButton();
+      homeInput.focus();
+    }
+  });
+
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "message-action-btn";
+  copyBtn.setAttribute("aria-label", "复制");
+  copyBtn.title = "复制消息";
+  copyBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+  `;
+  copyBtn.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    const text = messageDiv.dataset.userText || "";
+    if (!text) {
+      showToast("没有可复制的内容");
+      return;
+    }
+    const ok = await writeTextToClipboard(text);
+    showToast(ok ? "已复制" : "复制失败");
+  });
+
+  actionsBar.appendChild(tsSpan);
+  actionsBar.appendChild(copyBtn);
+  actionsBar.appendChild(retryBtn);
+
   messageDiv.appendChild(avatar);
   messageDiv.appendChild(bubble);
+  messageDiv.appendChild(actionsBar);
   chatMessages.appendChild(messageDiv);
+  setupUserMessageCollapse(bubble, textBlock);
   scrollChatToBottom(false);
   updateChatNav();
+}
+
+// Claude 风格：用户长消息自动折叠。超过阈值高度时把正文 clamp 到固定高度，
+// 上下边缘做渐变虚化（mask），并在底部加「显示更多 / 收起」开关。
+// 必须在 messageDiv 已插入 DOM 后调用（要量 scrollHeight）。
+function setupUserMessageCollapse(bubble, textBlock) {
+  if (!bubble || !textBlock) return;
+  const CLAMP_PX = 176; // 折叠后可见高度（约 7-8 行）
+  const measure = () => {
+    const full = textBlock.scrollHeight;
+    // 只比阈值高出一截才折叠，短消息不动，避免一两行也出现「显示更多」。
+    if (full <= CLAMP_PX + 32) return;
+    if (bubble.querySelector(".user-msg-toggle")) return; // 幂等
+    bubble.classList.add("is-collapsible", "is-collapsed");
+    bubble.style.setProperty("--user-clamp", CLAMP_PX + "px");
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "user-msg-toggle";
+    toggle.textContent = "显示更多";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const collapsed = bubble.classList.toggle("is-collapsed");
+      toggle.textContent = collapsed ? "显示更多" : "收起";
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    bubble.appendChild(toggle);
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(measure);
+  } else {
+    measure();
+  }
 }
 
 // Roll the conversation back to *before* the user message at `messageIndex`.
@@ -10154,7 +10404,6 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
             <rect x="9" y="9" width="13" height="13" rx="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
-          <span>复制</span>
         </button>
         <button class="message-action-btn" data-action="download-md" title="下载 Markdown">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -10162,7 +10411,6 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>下载</span>
         </button>
         <button class="message-action-btn" data-action="speak" title="朗读">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -10170,28 +10418,12 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
           </svg>
-          <span>朗读</span>
         </button>
         <button class="message-action-btn" data-action="quote" title="引用">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
             <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
           </svg>
-          <span>引用</span>
-        </button>
-        <button class="message-action-btn" data-action="like" title="赞">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 10v12"></path>
-            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3.28a2 2 0 0 0 1.7-.94L13 2a2.38 2.38 0 0 1 2 3.88Z"></path>
-          </svg>
-          <span>赞</span>
-        </button>
-        <button class="message-action-btn" data-action="dislike" title="踩">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 14V2"></path>
-            <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3.28a2 2 0 0 0-1.7.94L11 22a2.38 2.38 0 0 1-2-3.88Z"></path>
-          </svg>
-          <span>踩</span>
         </button>
       `;
 
@@ -10202,9 +10434,9 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
   bubble.appendChild(thinkBlock);
   bubble.appendChild(toolCallsContainer);
   bubble.appendChild(answerBody);
-  bubble.appendChild(messageActions);
   messageDiv.appendChild(avatar);
   messageDiv.appendChild(bubble);
+  messageDiv.appendChild(messageActions);
 
   messageActions
     .querySelector('[data-action="copy"]')
@@ -10257,18 +10489,6 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
         return;
       }
       await speakTextWithMimo(text);
-    });
-
-  messageActions
-    .querySelector('[data-action="like"]')
-    .addEventListener("click", () => {
-      showToast("感谢反馈");
-    });
-
-  messageActions
-    .querySelector('[data-action="dislike"]')
-    .addEventListener("click", () => {
-      showToast("已记录反馈");
     });
 
   thinkHeader.addEventListener("click", () => {
@@ -10731,6 +10951,7 @@ async function retryAssistantError(messageDiv) {
   if (homeInput) {
     homeInput.value = "";
     autoResizeComposerInput();
+    updateComposerSendButton();
   }
   await saveOrUpdateChatHistory().catch(() => {});
   await sendMessage(parts.text || "");
@@ -10910,6 +11131,7 @@ function clearConversation() {
   homeView.classList.remove("chatting");
   homeInput.value = "";
   autoResizeComposerInput();
+  updateComposerSendButton();
   updateHomeHeroText();
   setComposerBusy(false);
   homeInput.focus();
@@ -12417,6 +12639,7 @@ async function sendMessage(content) {
   createUserMessage(query || effectiveQuery, attachmentsForSend, turnUserIndex);
   homeInput.value = "";
   autoResizeComposerInput();
+  updateComposerSendButton();
 
   let fallbackToSingleModel = false;
   if (
@@ -12859,15 +13082,27 @@ function cycleAppearance() {
 
 // 2026-05-18：3 按钮主题选择（system/light/dark）的入口。
 function setThemeMode(mode) {
-  const next = mode === "system" || mode === "light" || mode === "dark"
-    ? mode
-    : "system";
+  const next =
+    mode === "system" || mode === "light" || mode === "dark" || mode === "black"
+      ? mode
+      : "system";
   state.themeMode = next;
   state.theme = resolveEffectiveTheme(next);
   applyTheme();
   if (typeof updateThemeSwitcherActive === "function") {
     updateThemeSwitcherActive();
   }
+}
+
+// 2026-05-31：主题色（accent）选择入口，供 claude_ui.js 设置面板「主题色」色板调用。
+// name 对应 accentCycle 里的项；"Claude" = value:null = 跟随主题色。
+function setAccent(name) {
+  const idx = accentCycle.findIndex((item) => item.name === name);
+  if (idx < 0) return;
+  accentIndex = idx;
+  state.accentName = accentCycle[idx].name;
+  state.accentValue = accentCycle[idx].value;
+  applyTheme();
 }
 
 // 2026-05-18：聊天字体选择（serif/sans/mono）的入口。
@@ -13214,10 +13449,13 @@ document.getElementById("plusTrigger").addEventListener("click", (e) => {
 });
 document.getElementById("accountTrigger").addEventListener("click", (e) => {
   e.stopPropagation();
+  // 2026-05-31：账户菜单=左下角用户头像位置上拉的抽屉。按 trigger rect 定位到头像
+  // 左上方（inline left/bottom），CSS 再做 translateY 上滑+淡入（见 .account-popover）。
   const rect = document
     .getElementById("accountTrigger")
     .getBoundingClientRect();
-  accountPopover.style.left = Math.max(6, rect.left) + "px";
+  accountPopover.style.left = Math.max(8, rect.left) + "px";
+  accountPopover.style.right = "auto";
   accountPopover.style.bottom = window.innerHeight - rect.top + 8 + "px";
   accountPopover.style.top = "auto";
   openPopover(accountPopover);
@@ -13315,7 +13553,6 @@ if (chatHistorySearchInput) {
 
 on("settingsBtn", "click", () => openModal("settingsModal"));
 on("themeShortcutBtn", "click", () => openModal("settingsModal"));
-on("tempChatBtn", "click", () => openModal("tempChatModal"));
 on("projectBtn", "click", () => openModal("projectModal"));
 on("createProjectFromPlus", "click", () => openModal("projectModal"));
 on("privacyPolicyBtn", "click", () => window.open("../privacy.html", "_blank"));
@@ -13433,6 +13670,7 @@ document
 homeInput.addEventListener("input", () => {
   autoResizeComposerInput();
   setComposerBusy(state.isStreaming);
+  updateComposerSendButton();
 });
 
 if (webSearchToggle) {
@@ -13577,7 +13815,15 @@ if (chatMessages) {
   }, { passive: true });
   chatMessages.addEventListener("scroll", () => {
     if (isChatNearBottom(48)) resetChatAutoScrollLock();
+    updateScrollToBottomButton();
   }, { passive: true });
+}
+
+if (scrollToBottomBtn) {
+  scrollToBottomBtn.addEventListener("click", () => {
+    scrollChatToBottom(true, true);
+    updateScrollToBottomButton();
+  });
 }
 
 sendChatBtn.addEventListener("click", () => {
@@ -13883,7 +14129,6 @@ function modelMatchesFilter(option, filter, query) {
   if (filter === "code") return /code|coder|编程|编码/.test(haystack);
   if (filter === "image")
     return meta.multimodal || /image|多模态|视觉|图片|生图/.test(haystack);
-  if (filter === "search") return /search|联网|搜索/.test(haystack);
   return true;
 }
 
@@ -14196,16 +14441,49 @@ if (modelDropdown) {
   }
 
   if (modelFilterRow) {
+    // 创建滑块指示器（如果不存在）
+    let indicator = modelFilterRow.querySelector(".model-filter-indicator");
+    if (!indicator) {
+      indicator = document.createElement("span");
+      indicator.className = "model-filter-indicator";
+      indicator.style.opacity = "0";
+      modelFilterRow.appendChild(indicator);
+    }
+
+    function moveIndicatorTo(activeChip) {
+      if (!activeChip || !indicator) return;
+      const rowRect = modelFilterRow.getBoundingClientRect();
+      const chipRect = activeChip.getBoundingClientRect();
+      indicator.style.opacity = "1";
+      indicator.style.left = (chipRect.left - rowRect.left) + "px";
+      indicator.style.width = chipRect.width + "px";
+    }
+
+    // 初始化：把 indicator 放到当前 active chip 后面
+    const initialActive = modelFilterRow.querySelector(".model-filter-chip.active");
+    if (initialActive) {
+      requestAnimationFrame(() => moveIndicatorTo(initialActive));
+    }
+
     modelFilterRow.querySelectorAll(".model-filter-chip").forEach((chip) => {
       chip.addEventListener("click", (e) => {
         e.stopPropagation();
         modelFilterRow
           .querySelectorAll(".model-filter-chip")
           .forEach((item) => item.classList.toggle("active", item === chip));
+        moveIndicatorTo(chip);
         currentModelPage = 1;
         applyModelDropdownFilters();
       });
     });
+
+    // dropdown 打开时重新校正位置（防止 sidebar 展开/收起导致偏移）
+    if (modelDropdown) {
+      modelDropdown.addEventListener("transitionend", () => {
+        const a = modelFilterRow.querySelector(".model-filter-chip.active");
+        if (a) moveIndicatorTo(a);
+      });
+    }
   }
 
   // 分页按钮事件
@@ -14267,6 +14545,7 @@ updateVoiceButtonState();
 updateComposerPlaceholder();
 updateComposerToolStatus();
 autoResizeComposerInput();
+updateComposerSendButton();
 // 初始化上传按钮显示状态
 updateAttachBtnVisibility();
 if (isMobileViewport() && sidebar) {
@@ -14290,6 +14569,8 @@ refreshNicknameUI();
 setComposerBusy(false);
 updateTokenExpiryNote();
 setInterval(updateTokenExpiryNote, 1000);
+// 跨小时自动刷新问候语（用户长时间停在主页时，下午→晚上等应自动切换）
+setInterval(updateHomeHeroText, 60 * 1000);
 initChatShareButton();
 initAuthOverlay();
 bootstrapModelTelemetry();
@@ -14348,7 +14629,7 @@ const closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 const openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
 // 2026-05-17 Phase A grandfather：升一版 key，所有用户重新看到公告红点。
-const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0517_phase_a_v1";
+const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0531_welfare_substation_v1";
 
 function openAnnouncementModal() {
   if (!announcementModal) return;
@@ -14424,6 +14705,7 @@ window.CancriApp = {
   applyTheme,
   // 2026-05-18：暴露给 claude_ui.js 的"概述"设置面板使用。
   setThemeMode,
+  setAccent,
   setChatFont,
   setVoicePreset,
   setCustomInstructions,

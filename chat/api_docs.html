@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-docs-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>API 文档 · Cancri 开放平台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
@@ -781,6 +781,7 @@
         <a href="#cli-claude">Claude Code</a>
         <a href="#cli-opencode">OpenCode</a>
         <a href="#cli-openclaw">OpenClaw</a>
+        <a href="#cli-aider">Aider</a>
 
         <h4>主流客户端</h4>
         <a href="#client-cherry">Cherry Studio</a>
@@ -792,6 +793,7 @@
 
         <h4>规则与参考</h4>
         <a href="#quota">免费档配额</a>
+        <a href="#quota-renewal-edge-cases"> └ 升级/续期边缘情况</a>
         <a href="#ratelimit">速率限制</a>
         <a href="#errors">错误码</a>
         <a href="#sdk">SDK 兼容</a>
@@ -924,7 +926,7 @@
             <b>⚠️ 不要在浏览器代码或开源仓库里硬编码 Key。</b> Key 一旦泄露，
             立刻到 Keys 管理页撤销并重新生成。
           </div>
-          <p>每个账号最多同时持有 <b>5 个</b> 活跃 Key，超过需先撤销旧的。</p>
+          <p>你可以生成任意数量的 Key，但建议按需创建，过多 Key 会增加管理复杂度。</p>
         </section>
 
         <section id="quickstart">
@@ -1518,7 +1520,7 @@ claude</pre>
         <span class="s">"gpt-5.3-codex"</span>: {},
         <span class="s">"claude-sonnet-4-6"</span>: {},
         <span class="s">"deepseek-v4-pro"</span>: {},
-        <span class="s">"gemini-3.1-pro-preview"</span>: {}
+        <span class="s">"gemini-3.1-pro"</span>: {}
       }
     }
   }
@@ -1553,6 +1555,35 @@ openclaw agent</pre>
     }
   }
 }</pre>
+          </div>
+        </section>
+
+        <section id="cli-aider">
+          <h2>Aider 接入</h2>
+          <p>
+            <a href="https://aider.chat">Aider</a> 是开发者中使用最广泛的 AI 结对编程工具，
+            直接支持 OpenAI 兼容格式。配置方式：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-aider">复制</button>
+            <pre class="lang active" data-grp="cli-aider" data-lang="sh">aider \
+  --model openai/gpt-5.4 \
+  --openai-api-base https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1 \
+  --openai-api-key cancri_sk_YOUR_KEY</pre>
+          </div>
+          <p>
+            或在项目根目录创建 <code>.aider.conf.yml</code>：
+          </p>
+          <div class="code-block">
+            <button class="copy-icon" data-copy-grp="cli-aider-yml">复制</button>
+            <pre class="lang active" data-grp="cli-aider-yml" data-lang="yaml">model: openai/gpt-5.4
+openai-api-base: https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1
+openai-api-key: cancri_sk_YOUR_KEY</pre>
+          </div>
+          <div class="alert info">
+            <b>模型推荐：</b>编码场景首选 <code>gpt-5.3-codex</code> 或 <code>gpt-5.4</code>；
+            需要超长上下文时用 <code>claude-sonnet-4-6</code>（把 <code>openai/</code> 前缀换成
+            <code>openai/claude-sonnet-4-6</code> 即可，Aider 透传 model 字段，网关内部路由）。
           </div>
         </section>
 
@@ -1745,9 +1776,9 @@ openclaw agent</pre>
               用满会返回 <code>429 daily_paid_limit_reached</code>。
             </li>
             <li>
-              <b>失败不计数：</b> 上游错误（HTTP 5xx、上游 unavailable、key 失效、
-              quota 等返回 4xx/5xx 的失败请求）会自动 refund —— 不扣 15 次/日，
-              也不扣共享池。判定基于 HTTP 状态码，不读取上游错误文本。
+              <b>失败不计数：</b> 上游错误（HTTP 4xx/5xx，包括上游 unavailable、key 失效、
+              quota 耗尽等失败请求）会自动 refund —— 不扣 15 次/日，
+              也不扣共享池。判定基于 HTTP 状态码（statusCode ≥ 400），不读取上游错误文本。
             </li>
             <li>
               <b>GPT-5.5 / GPT-5.4 Mini 例外：</b> <code>gpt-5.5</code> /
@@ -1934,6 +1965,102 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             用户改吃所选新档位的明码规则。
           </p>
 
+          <h3 id="quota-renewal-edge-cases">升级、续期与档位变更边缘情况</h3>
+          <p>
+            下面是用户最常困惑的 6 种档位变更场景，以及后端为什么这样设计的解释。
+          </p>
+
+          <div class="faq-item">
+            <h4>1. Pro 没到期，买 Pro+ 会怎样？</h4>
+            <p>
+              <b>立即生效。</b> 系统会把你的 plan_code 改成 <code>pro_plus</code>，
+              monthly_quota 提升到 8000 万 token，有效期从激活时刻重新计算 30 天。
+              <b>已消耗 token 不清零</b>——你之前用掉的 500 万继续算在 8000 万里，
+              不会因为升档就「刷新」成 0/8000。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么不清零？防止用户通过反复升降档刷配额。后端只提升上限，不重置计数器。
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>2. Pro+ 没到期，买 Pro（更低档）续期会怎样？</h4>
+            <p>
+              <b>被拒绝。</b> 系统返回 <code>subscription_plan_downgrade_not_allowed</code>。
+              你当前的 Pro+ 还有效时，不能用低档 Pro 的激活码来「延长」你的高档权益。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么要这样？防止「降档套利」：如果允许，用户可以先用 Pro+ 享受 Opus 和 8000 万额度，
+              再用便宜的 Pro 码把有效期延长，相当于花 Pro 的钱享 Pro+ 的权。正确做法是：
+              买<strong>当前或更高档</strong>的激活码（Pro+ 或 Pro Max），或等当前订阅到期后再用 Pro 码重新激活。
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>3. 同档位续期（Pro 续 Pro）会怎样？</h4>
+            <p>
+              <b>有效期延长 30 天。</b> 新的 expires_at = 当前到期日 + 30 天。
+              已消耗 token <b>不清零</b>，monthly_quota 保持 2000 万。
+              只有等到当前 30 天周期自然结束后，系统才会在下次消费/查额时懒重置计数器。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么不清零？防止「周期重叠套利」。如果允许同档续期立即重置，
+              用户可以在第 29 天续期，立刻获得新的 2000 万，相当于 30 天内用了 4000 万。
+              懒重置保证每个 30 天窗口内最多只能消耗一次 monthly_quota。
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>4.  grandfather 老用户（Pro 但可调 Opus）续期后会怎样？</h4>
+            <p>
+              <b> grandfather 特权在续期（任何续期）后自动清除。</b>
+              如果你用 Pro 码续 Pro，续期后 <code>is_grandfathered</code> 变成 <code>false</code>，
+              你失去 Opus 调用权，变成普通 Pro（2000 万/月，无 Opus）。
+              如果你用 Pro+ 码升级， grandfather 同样清除，但你获得 Pro+ 明码权益（8000 万 + Opus）。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么 grandfather 不能永久保留？Phase A  grandfather 是一个<strong>一次性过渡期补偿</strong>，
+              目的是不让早期支持者在档位重构（2026-05-17）后立即失去已有权益。
+              它只保「当前订阅周期」，续期意味着进入新周期，应该按新规则走。
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>5. 90 天续期上限是什么？</h4>
+            <p>
+              单次激活/续期后，如果新的到期日超过「当前时间 + 90 天」，
+              系统会拒绝并返回 <code>subscription_max_horizon_exceeded</code>。
+              例如你今天 6 月 1 日，当前订阅已续到 9 月 1 日（90 天后），
+              你再尝试续期就会被拒。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么设 90 天上限？防止用户一次性囤太多激活码、把有效期拉到几年后，
+              导致平台现金流和运营预测困难。等有效期缩短到 60 天以下后，续期窗口重新打开。
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>6. 套餐配额耗尽后，加油包怎么扣？</h4>
+            <p>
+              扣费顺序是严格的「<b>套餐配额 → 加油包</b>」：
+            </p>
+            <ol>
+              <li>每次成功调用先扣 monthly_quota 余额；</li>
+              <li>monthly_quota 降到 0 后，自动从 topup_balance 扣；</li>
+              <li>两者都为 0 时返回 <code>429 monthly_quota_exhausted</code>。</li>
+            </ol>
+            <p>
+              <b>加油包永不过期</b>，也不会因为订阅到期而清零。
+              但加油包只在「套餐配额耗尽后」才启用，<b>不能替代套餐配额</b>。
+              也就是说，即使你有 1 亿加油包余额，如果 monthly_quota 还没用完，
+              系统仍然先扣 monthly_quota。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么不优先扣加油包？加油包是「额外储备」，设计目的是在月度配额意外耗尽时兜底，
+              而不是替代订阅。如果允许加油包优先，用户买最小套餐 + 大量加油包就能绕过档位设计。
+            </p>
+          </div>
+
           <h3>错误码速查（配额相关）</h3>
           <table>
             <thead>
@@ -1970,9 +2097,19 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
                 <td>PAID 用户本周期套餐配额 + 加油包余额都耗尽；订阅配额在当前 30 天周期结束后重置（加油包不重置）</td>
               </tr>
               <tr>
-                <td>400</td>
-                <td><code>subscription_plan_downgrade_not_allowed</code></td>
-                <td>当前订阅仍在有效期内时，不能用低档套餐延长高档权益；请购买当前或更高档套餐，或等当前订阅到期后再购买低档套餐</td>
+                <td>429</td>
+                <td><code>key_token_quota_exhausted</code></td>
+                <td>该 API Key 已触达其总 token 上限。到 <a href="./api_keys.html">Keys 管理页</a> 调大限额或重置已用量</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td><code>key_request_quota_exhausted</code></td>
+                <td>该 API Key 已触达其总调用次数上限。到 Keys 管理页调大限额或重置已用量</td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td><code>model_pro_max_required</code></td>
+                <td>该模型仅 Pro Max 订阅可用（如 <code>gpt-image-2-pro</code>）</td>
               </tr>
               <tr>
                 <td>503</td>
@@ -2140,8 +2277,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
                 <td>404</td>
                 <td>model_not_found</td>
                 <td>
-                  model 字段不在可用列表里。两种可能：<b>不存在</b>或
-                  <b>被健康度临时隐藏</b>（见下节）。
+                  model 字段不在可用列表里。请用 <code>/v1/models</code> 核对 Canonical ID，
+                  注意大小写与连字符必须完全一致。
                 </td>
               </tr>
               <tr>
@@ -2155,6 +2292,30 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
                 <td>
                   调用了未对外开放的端点（如 <code>/v1/images/generations</code> /
                   <code>/v1/videos/generations</code>），仅网页端可用。
+                </td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td>model_not_in_whitelist</td>
+                <td>
+                  该 Key 配置了模型白名单，但所调模型不在白名单内。
+                  到 <a href="./api_keys.html">Keys 管理页</a> 修改白名单或留空。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>welfare_global_rpm_exceeded</td>
+                <td>
+                  福利模型（如 <code>gpt-5.5-welfare</code>）全站每分钟合计 100 次已用完。
+                  请稍后再试或换普通模型。
+                </td>
+              </tr>
+              <tr>
+                <td>503</td>
+                <td>api_paused</td>
+                <td>
+                  API 维护闸门（仅在维护期触发）。<code>/v1/models</code> 仍可读取模型列表，
+                  其它写端点暂停，<code>Retry-After: 86400</code>。
                 </td>
               </tr>
               <tr>
@@ -2204,32 +2365,31 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
                 <td>upstream_error</td>
                 <td>
                   模型服务异常。<b>所有 5xx 统一映射为 <code>upstream_error</code></b>，
-                  客户端只用一个分支即可处理所有此类故障。<code>503</code>
-                  会带 <code>Retry-After</code>，表示该模型被临时熔断（10 分钟窗口内 3 次失败触发 60 分钟冷却）；
-                  改用其他模型即可，无需等待。
+                  客户端只用一个分支即可处理所有此类故障。
+                  遇到 <code>503</code> 时响应会带 <code>Retry-After</code>，
+                  建议看 <code>Retry-After</code> 后退避，或直接换一个模型。
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <h3>模型健康度自动熔断</h3>
+          <h3>上游线路健康与自动阻断</h3>
           <p>
-            为了不让调用方在临时不可用的模型上浪费重试额度，后端在
-            <b>10 分钟的滑动窗口</b>内计每个模型的不可用信号（1 次任意 2xx
-            会重置计数）：
+            后端对每条上游线路（line-key 级别）有内存软阻断机制，防止调用方在
+            临时不可用的线路上浪费重试额度：
           </p>
           <ul>
-            <li>累计 ≥ 3 次不可用返回 → <b>该模型被熔断 60 分钟</b>，期间调用返回
-              <code>503 model_temporarily_unavailable</code>（带 <code>Retry-After</code> 头）</li>
-            <li>60 分钟冷却后自动解锁，无需人工介入；下次调用成功则立即清除计数</li>
-            <li>被熔断的模型 <b>仍然出现在 <code>/v1/models</code> 列表里</b>，只是调用会
-              被拒；列表本身不会隐藏</li>
-            <li>极端信号（如 401/402 上游 Key 死亡）会写入 DB 以 24 小时为周期硬禁用，
-              需管理员到 <code>admin_lines.html</code> 手动重新启用</li>
+            <li><b>内存软阻断：</b> 单条线路在 <b>3 分钟窗口</b> 内累计 ≥ 6 次失败信号 →
+              该线路被临时阻断 <b>5 分钟</b>，期间自动路由到同模型的其它可用线路</li>
+            <li>软阻断仅影响内部路由选择，<b>不会从 <code>/v1/models</code> 列表里移除模型</b></li>
+            <li>5 分钟冷却后自动解锁，无需人工介入</li>
+            <li><b>硬禁用（24h）：</b> 极端信号如上游 401/402（Key 死亡）或 429 带明确
+              account/key 终止文本时，会写入 <code>model_line_disabled</code> 表，需管理员到
+              <code>admin_lines.html</code> 手动重新启用</li>
           </ul>
           <p>
-            拿到 <code>503 upstream_error</code> 不要在同模型上原地重试。看
-            <code>Retry-After</code> 后退避，或直接换一个模型。
+            拿到 <code>503 upstream_error</code> 或 <code>429 upstream_rate_limit</code> 不要在同模型上原地重试。
+            看 <code>Retry-After</code> 后退避，或直接换一个模型。
           </p>
 
           <p>
@@ -2348,6 +2508,12 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             限流阈值会自动按你当前档位生效。Paid 到期后会自动降回 Free，
             <code>cancri_sk_</code> 本身不会失效。
           </p>
+          <p style="color: var(--text-faint); font-size: 12.5px">
+            <b>注意：</b>当前订阅仍在有效期内时，不能用低档套餐（如 Pro）的激活码来延长高档权益（如 Pro+）。
+            系统会返回 <code>subscription_plan_downgrade_not_allowed</code>。
+            如需续期，请购买<strong>当前或更高档</strong>套餐，或等当前订阅到期后再用低档码。
+            该错误仅出现在网页端订单激活流程，不会通过公开 API 返回。
+          </p>
           <h3>能在浏览器里直接调吗？</h3>
           <p>
             <b>不要</b>。Key 暴露在前端等于免费送给所有人。请始终从你的服务端转发。
@@ -2441,6 +2607,6 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
          右侧 outline + 底部 prev/next 全栈逻辑。原 tabs / copy / toc 保留。
          2026-05-22：取消 Kimi-风多页化（?page=...），统一为单页长文档；
          api-docs-app.js 移除了 multi-page applyDocPage / setActiveDocPage / popstate 等逻辑。 -->
-    <script src="./api/api-docs-app.js?v=2026-05-22-single-page"></script>
+    <script src="./api/api-docs-app.js?v=2026-05-31-api-doc-detailed"></script>
   </body>
 </html>

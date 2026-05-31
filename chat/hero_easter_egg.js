@@ -1,12 +1,11 @@
 /* ============================================================
- * Cancri Hero Logo · 满月小彩蛋
- * 2026-05-26
+ * Cancri Hero Logo · 打招呼小气泡
+ * 2026-05-26 初版 / 2026-05-31 改版（去满月弹窗，改 Claude 风气泡）
  *
  * 行为：
- *   首页 hero 区域那枚 32px 品牌装饰图标（.hero-icon-img / .hero-icon），
- *   点击后弹出一张小卡片：上半部 1Mth.png 海报图，下半部一段真挚的
- *   满月感谢语。再次点击外部 / × / Esc 关闭。无 localStorage 记忆，
- *   随时可触发。
+ *   首页 hero 区域那枚品牌装饰图标（.hero-icon-img / .hero-icon），
+ *   点击后在图标上方冒出一个小气泡，随机说一句短话；连点会逐级
+ *   「微恼 → 生气」。气泡几秒后自动消散，无 localStorage 记忆。
  *
  * 不影响 hero 文案的可访问性：父级 .hero-icon 原本是 aria-hidden=true，
  *   这里用 click 委托而不是改 ARIA。
@@ -14,140 +13,160 @@
 (function () {
     "use strict";
 
-    var POSTER_SRC = "../Logo/1Mth.png";
+    // 随手点：普通短语
+    var CALM_LINES = [
+        "在的，找我有事？",
+        "嗯？戳我干嘛～",
+        "今天也辛苦啦",
+        "想聊点什么都行",
+        "我在听呢",
+        "晚上好呀 🌙",
+        "需要帮忙尽管说",
+        "随时待命中",
+        "嘿，你来啦",
+        "这就为你打起精神",
+        "摸摸鱼也没关系的",
+        "记得喝口水哦"
+    ];
+    // 被连点：微恼
+    var ANNOYED_LINES = [
+        "哎你轻点戳…",
+        "好啦好啦我知道你在",
+        "再戳我可要躲起来了",
+        "你是不是有点上瘾了",
+        "戳一下就够啦喂",
+        "我又不会跑～"
+    ];
+    // 连点过头：生气
+    var ANGRY_LINES = [
+        "别戳了别戳了 😤",
+        "再点我要生气了！",
+        "你够了啊喂！(╯‵□′)╯",
+        "戳坏了你赔得起吗",
+        "哼，不理你了 💢",
+        "信不信我把你拉黑"
+    ];
 
-    // 真挚的满月寄语 —— 作者自留心意，不做营销味
-    var THANK_HTML = [
-        '<p>满月这天，先把这张图递给你。</p>',
-        '<p>过去这一个月里，Cancri Code 从一个还在打磨的小工具，长到今天 <strong>2454 位</strong> 朋友愿意每天打开它。每一次报错、每一句吐槽、每一条建议，我们都收到了。</p>',
-        '<p>很多功能是因为你随手发来的一句"这里要是能…就好了"才有的。所以这次满月庆典里所有的福利，从加油包到转盘到精选墙，都不是营销动作，是想用我们能给的方式，对你说一句：</p>',
-        '<p class="hee-signoff">感谢一路同行，下个月见。<br/><span class="hee-sign-name">— Cancri Code 团队</span></p>'
-    ].join("");
+    var clickBurst = 0;        // 连点计数
+    var lastClickAt = 0;       // 上次点击时间戳
+    var lastLine = "";         // 避免连续重复同一句
+    var BURST_RESET_MS = 2600; // 超过该间隔视为冷静，计数清零
+
+    function pick(pool) {
+        if (!pool.length) return "";
+        var line = pool[Math.floor(Math.random() * pool.length)];
+        if (pool.length > 1 && line === lastLine) {
+            line = pool[(pool.indexOf(line) + 1) % pool.length];
+        }
+        lastLine = line;
+        return line;
+    }
+
+    function nextLine() {
+        var now = Date.now();
+        if (now - lastClickAt > BURST_RESET_MS) clickBurst = 0;
+        lastClickAt = now;
+        clickBurst++;
+        if (clickBurst >= 8) return { text: pick(ANGRY_LINES), mood: "angry" };
+        if (clickBurst >= 4) return { text: pick(ANNOYED_LINES), mood: "annoyed" };
+        return { text: pick(CALM_LINES), mood: "calm" };
+    }
 
     function injectStyles() {
         if (document.getElementById("hero-easter-egg-styles")) return;
         var s = document.createElement("style");
         s.id = "hero-easter-egg-styles";
         s.textContent = [
-            // hero icon 提示交互（去紫色，hover 仅极轻的中性 drop-shadow）
+            // hero icon 可点击 + 轻微 hover 反馈
             ".hero-icon{cursor:pointer;transition:transform .18s ease,filter .18s ease;border-radius:8px}",
             ".hero-icon:hover{transform:scale(1.06) rotate(-2deg);filter:drop-shadow(0 1px 4px rgba(0,0,0,.18))}",
-            ".hero-icon:active{transform:scale(.97)}",
-            // overlay（中性深底，不带紫色调）
-            ".hee-overlay{position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;",
-            "padding:16px;background:rgba(15,15,15,.48);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);",
-            "opacity:0;transition:opacity .22s ease}",
-            ".hee-overlay.hee-open{opacity:1}",
-            // card（Claude 沙底 + hairline border + 极轻中性阴影）
-            ".hee-card{position:relative;width:100%;max-width:420px;background:#faf9f5;border-radius:16px;overflow:hidden;",
-            "box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.08);",
-            "border:1px solid rgba(112,107,87,.18);",
-            "transform:translateY(8px) scale(.98);transition:transform .26s cubic-bezier(.2,.7,.3,1)}",
-            ".hee-overlay.hee-open .hee-card{transform:translateY(0) scale(1)}",
-            // close（极简方钮，无阴影）
-            ".hee-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border:none;border-radius:8px;",
-            "background:rgba(255,255,255,.78);color:#29261b;cursor:pointer;display:flex;align-items:center;justify-content:center;",
-            "z-index:2;transition:background .15s,transform .15s}",
-            ".hee-close:hover{background:#fff;transform:scale(1.04)}",
-            // poster
-            ".hee-poster{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;background:#262624}",
-            // body
-            ".hee-body{padding:20px 22px 22px 22px}",
-            // eyebrow：紫色 → Claude clay，光晕也去掉
-            ".hee-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;",
-            "color:#656358;font-weight:600;margin-bottom:10px}",
-            ".hee-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:#d97757}",
-            ".hee-title{margin:0 0 10px 0;font-size:18px;font-weight:700;line-height:1.3;color:#29261b;",
-            "font-family:'Source Serif 4','Source Serif Pro',ui-serif,Georgia,serif;letter-spacing:-.005em}",
-            ".hee-body p{margin:0 0 10px 0;font-size:13.5px;line-height:1.65;color:#3d3929}",
-            ".hee-body p:last-child{margin-bottom:0}",
-            ".hee-body strong{color:#29261b;font-weight:600}",
-            ".hee-signoff{margin-top:16px !important;padding-top:14px;border-top:1px solid rgba(112,107,87,.22);",
-            "font-size:13px !important;color:#656358 !important;font-style:italic}",
-            // 落款：去紫色，沿用正文色 + 中性强调
-            ".hee-sign-name{display:inline-block;margin-top:4px;font-style:normal;color:#29261b;font-weight:600;letter-spacing:.01em}",
-            // dark theme（Claude 暗调）
-            "html[data-theme=\"dark\"] .hee-card{background:#262624;border-color:rgba(234,221,216,.10);",
+            ".hero-icon:active{transform:scale(.92)}",
+            // 气泡：Claude 风沙底 + hairline，斜体衬线，浮在 icon 上方
+            ".hee-bubble{position:fixed;z-index:9100;max-width:min(78vw,300px);padding:9px 13px;",
+            "background:#faf9f5;color:#29261b;border:1px solid rgba(112,107,87,.20);border-radius:14px;",
+            "box-shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.10);",
+            "font-size:14px;line-height:1.45;font-style:italic;",
+            "font-family:'Source Serif 4','Source Serif Pro',ui-serif,Georgia,serif;",
+            "white-space:nowrap;pointer-events:none;opacity:0;transform:translateY(6px) scale(.96);",
+            "transition:opacity .2s ease,transform .24s cubic-bezier(.2,.7,.3,1)}",
+            ".hee-bubble.hee-show{opacity:1;transform:translateY(0) scale(1)}",
+            // 尾巴：默认指向 icon 中心，由 --hee-tail 定位
+            ".hee-bubble::after{content:'';position:absolute;left:var(--hee-tail,24px);bottom:-6px;width:11px;height:11px;",
+            "background:inherit;border-right:1px solid rgba(112,107,87,.20);border-bottom:1px solid rgba(112,107,87,.20);",
+            "transform:rotate(45deg);border-bottom-right-radius:3px}",
+            // 微恼 / 生气配色
+            ".hee-bubble.hee-annoyed{font-style:normal}",
+            ".hee-bubble.hee-angry{font-style:normal;color:#b4432b;border-color:rgba(180,67,43,.42);animation:hee-shake .42s ease}",
+            "@keyframes hee-shake{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(0) translateX(-3px) rotate(-1.2deg)}75%{transform:translateY(0) translateX(3px) rotate(1.2deg)}}",
+            // dark / black theme
+            "html[data-theme=\"dark\"] .hee-bubble{background:#262624;color:#f5f4ef;border-color:rgba(234,221,216,.12);",
             "box-shadow:0 1px 2px rgba(0,0,0,.32),0 12px 32px rgba(0,0,0,.45)}",
-            "html[data-theme=\"dark\"] .hee-title{color:#f5f4ef}",
-            "html[data-theme=\"dark\"] .hee-eyebrow{color:#a6a39a}",
-            "html[data-theme=\"dark\"] .hee-body p{color:#ceccc5}",
-            "html[data-theme=\"dark\"] .hee-body strong{color:#f5f4ef}",
-            "html[data-theme=\"dark\"] .hee-signoff{border-top-color:rgba(234,221,216,.10);color:#a6a39a !important}",
-            "html[data-theme=\"dark\"] .hee-sign-name{color:#f5f4ef}",
-            "html[data-theme=\"dark\"] .hee-close{background:rgba(38,38,36,.85);color:#e5e5e2}",
-            "html[data-theme=\"dark\"] .hee-close:hover{background:#2f2f2d}"
+            "html[data-theme=\"dark\"] .hee-bubble::after{border-right-color:rgba(234,221,216,.12);border-bottom-color:rgba(234,221,216,.12)}",
+            "html[data-theme=\"dark\"] .hee-bubble.hee-angry{color:#ff9b86;border-color:rgba(255,155,134,.42)}",
+            "html[data-theme=\"black\"] .hee-bubble{background:#111;color:#f5f4ef;border-color:rgba(255,255,255,.14)}",
+            "html[data-theme=\"black\"] .hee-bubble::after{border-right-color:rgba(255,255,255,.14);border-bottom-color:rgba(255,255,255,.14)}",
+            "html[data-theme=\"black\"] .hee-bubble.hee-angry{color:#ff9b86;border-color:rgba(255,155,134,.42)}"
         ].join("");
         document.head.appendChild(s);
     }
 
-    function buildOverlay() {
-        var overlay = document.createElement("div");
-        overlay.className = "hee-overlay";
-        overlay.setAttribute("role", "dialog");
-        overlay.setAttribute("aria-modal", "true");
-        overlay.setAttribute("aria-labelledby", "heeTitle");
-        overlay.innerHTML = [
-            '<div class="hee-card" tabindex="-1">',
-              '<button type="button" class="hee-close" aria-label="关闭" data-hee-close>',
-                '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
-              '</button>',
-              '<img class="hee-poster" src="' + POSTER_SRC + '" alt="Cancri Code 满月" loading="lazy" />',
-              '<div class="hee-body">',
-                '<div class="hee-eyebrow"><span class="hee-eyebrow-dot"></span>给你的小满月</div>',
-                '<h3 id="heeTitle" class="hee-title">嗨，被你点开了 🌕</h3>',
-                THANK_HTML,
-              '</div>',
-            '</div>'
-        ].join("");
-        return overlay;
-    }
+    var _bubbleEl = null;
+    var _hideTimer = null;
+    var _removeTimer = null;
 
-    function close(overlay) {
-        if (!overlay || overlay.__heeClosed) return;
-        overlay.__heeClosed = true;
-        overlay.classList.remove("hee-open");
-        document.removeEventListener("keydown", overlay.__heeKey, true);
-        setTimeout(function () {
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-            document.documentElement.style.overflow = overlay.__heePrevHtmlOverflow || "";
-            document.body.style.overflow = overlay.__heePrevBodyOverflow || "";
-        }, 220);
-    }
-
-    function open() {
+    function showBubble(anchor) {
         injectStyles();
+        if (!anchor) anchor = document.querySelector(".hero-icon");
+        if (!anchor) return;
 
-        // 若已经有打开的实例（连点 spam），直接重新触发动画
-        var existing = document.querySelector(".hee-overlay");
-        if (existing) return;
+        var info = nextLine();
 
-        var overlay = buildOverlay();
-        document.body.appendChild(overlay);
+        // 复用单一气泡元素（连点不叠出多个）
+        if (!_bubbleEl) {
+            _bubbleEl = document.createElement("div");
+            _bubbleEl.className = "hee-bubble";
+            _bubbleEl.setAttribute("role", "status");
+            _bubbleEl.setAttribute("aria-live", "polite");
+            document.body.appendChild(_bubbleEl);
+        }
+        clearTimeout(_hideTimer);
+        clearTimeout(_removeTimer);
 
-        overlay.__heePrevHtmlOverflow = document.documentElement.style.overflow;
-        overlay.__heePrevBodyOverflow = document.body.style.overflow;
-        document.documentElement.style.overflow = "hidden";
-        document.body.style.overflow = "hidden";
+        _bubbleEl.className = "hee-bubble" +
+            (info.mood === "angry" ? " hee-angry" : info.mood === "annoyed" ? " hee-annoyed" : "");
+        _bubbleEl.textContent = info.text;
 
-        overlay.addEventListener("click", function (e) {
-            if (e.target === overlay) close(overlay);
-        });
-        overlay.querySelectorAll("[data-hee-close]").forEach(function (el) {
-            el.addEventListener("click", function () { close(overlay); });
-        });
-        overlay.__heeKey = function (e) {
-            if (e.key === "Escape" || e.keyCode === 27) {
-                e.stopPropagation();
-                close(overlay);
-            }
-        };
-        document.addEventListener("keydown", overlay.__heeKey, true);
+        // 量尺寸后按 anchor 定位（气泡在 icon 正上方居中）
+        _bubbleEl.style.left = "0px";
+        _bubbleEl.style.top = "0px";
+        var bw = _bubbleEl.offsetWidth;
+        var bh = _bubbleEl.offsetHeight;
+        var r = anchor.getBoundingClientRect();
+        var cx = r.left + r.width / 2;
+        var margin = 8;
+        var left = cx - bw / 2;
+        if (left < margin) left = margin;
+        if (left + bw > window.innerWidth - margin) left = window.innerWidth - margin - bw;
+        var top = r.top - bh - 10;
+        if (top < margin) top = r.bottom + 10; // 上方放不下就翻到下方
+        _bubbleEl.style.left = Math.round(left) + "px";
+        _bubbleEl.style.top = Math.round(top) + "px";
+        // 尾巴对准 icon 中心
+        var tail = cx - left - 5.5;
+        tail = Math.max(12, Math.min(bw - 20, tail));
+        _bubbleEl.style.setProperty("--hee-tail", Math.round(tail) + "px");
 
-        requestAnimationFrame(function () { overlay.classList.add("hee-open"); });
+        requestAnimationFrame(function () { if (_bubbleEl) _bubbleEl.classList.add("hee-show"); });
 
-        var card = overlay.querySelector(".hee-card");
-        if (card) setTimeout(function () { try { card.focus(); } catch (_) {} }, 40);
+        var dwell = info.mood === "angry" ? 2600 : info.mood === "annoyed" ? 2200 : 1900;
+        _hideTimer = setTimeout(function () {
+            if (!_bubbleEl) return;
+            _bubbleEl.classList.remove("hee-show");
+            _removeTimer = setTimeout(function () {
+                if (_bubbleEl && _bubbleEl.parentNode) _bubbleEl.parentNode.removeChild(_bubbleEl);
+                _bubbleEl = null;
+            }, 260);
+        }, dwell);
     }
 
     // 用事件委托绑定，覆盖 hero-icon 任何可能的重渲染场景
@@ -163,9 +182,9 @@
             el.__heeUpgraded = true;
             el.setAttribute("role", "button");
             el.setAttribute("tabindex", "0");
-            el.setAttribute("aria-label", "Cancri 满月小彩蛋");
+            el.setAttribute("aria-label", "戳戳 Cancri，打个招呼");
             el.removeAttribute("aria-hidden");
-            el.title = "点我，有惊喜 🌕";
+            el.title = "戳我一下～";
         }
 
         document.querySelectorAll(".hero-icon").forEach(upgrade);
@@ -179,7 +198,7 @@
             e.preventDefault();
             e.stopPropagation();
             upgrade(hit);
-            open();
+            showBubble(hit);
         }, false);
 
         document.addEventListener("keydown", function (e) {
@@ -187,7 +206,7 @@
             var t = document.activeElement;
             if (!t || !t.classList || !t.classList.contains("hero-icon")) return;
             e.preventDefault();
-            open();
+            showBubble(t);
         }, false);
     }
 

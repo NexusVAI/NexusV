@@ -49,7 +49,6 @@
             bindChatsPageList,
             bindProjectsPage,
             bindSettingsNav,
-            bindHeroGreeting,
             bindChatTitleSync,
             bindMobileSidebarDrawer,
             bindAttachMenu,
@@ -59,7 +58,9 @@
             bindHomeInputDefensiveFocus,
             bindSettingsModalClose,
             bindPageDragOverlay,
-            bindRecentHeaderToggle
+            bindRecentHeaderToggle,
+            bindGroupByDropdown,
+            bindVoiceHoverAnimation
         ].forEach(function (step) {
             try {
                 step();
@@ -320,70 +321,6 @@
                 childList: true,
             });
         }
-    }
-
-    // 8. Hero 动态问候：根据当前时间显示"早上好/下午好/晚上好，{昵称}"。
-    //    昵称取自 #nicknameDisplay → .account-strip .account-name → 兜底 "克劳姆"。
-    //    监听这两个元素的内容变化，登录/改昵称时自动刷新 hero 文本。
-    function bindHeroGreeting() {
-        const hero = document.getElementById('heroTitle');
-        if (!hero) return;
-
-        // v2026-05-15 改进：只有用户真正设了昵称才显示。
-        // 默认 (邮箱前缀如 "3573799137" / 未设置 / 未登录) 一律显示纯问候，
-        // 避免 hero 出现 "早上好，3573799137" 这种 QQ 号尴尬（群友图 9 反馈）。
-        function pickName() {
-            const display = document.getElementById('nicknameDisplay');
-            let nick = display ? display.textContent.trim() : '';
-            if (!nick || nick === '未设置') {
-                const accName = document.querySelector('.account-strip .account-name');
-                if (accName) nick = accName.textContent.trim();
-            }
-            if (!nick) return '';
-            // 占位/默认/邮箱前缀（含 @ / 纯数字 / 未登录态）一律视为"未设置"
-            const placeholders = ['未登录', 'MR', 'Cancri 用户', 'Kraum', '克劳姆'];
-            if (placeholders.indexOf(nick) >= 0) return '';
-            if (nick.indexOf('@') > 0) return '';  // 邮箱直接 fallback
-            if (/^\d{4,}$/.test(nick)) return '';  // 纯数字 QQ 号
-            return nick;
-        }
-
-        function update() {
-            const h = new Date().getHours();
-            let greet = '晚上好';
-            if (h >= 5 && h < 12) greet = '早上好';
-            else if (h >= 12 && h < 18) greet = '下午好';
-            const nick = pickName();
-            // 2026-05-22 §23.4：hero 现在内含 .hero-icon 32px 品牌图标 + .hero-text 文案，
-            //   写入 .hero-text 而不是整个 hero，保留装饰图标。如果 .hero-text 不存在
-            //   （老结构兼容）则退回原行为。
-            const textSlot = hero.querySelector('.hero-text');
-            const target = textSlot || hero;
-            if (!nick) {
-                target.textContent = greet;
-                return;
-            }
-            const safeNick = nick.replace(/[<>&"']/g, function (c) {
-                return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c];
-            });
-            target.innerHTML = greet + '，' + safeNick;
-        }
-
-        update();
-
-        // 观察昵称源元素的变化，cancri_chat.js 同步昵称/账户信息后自动刷新。
-        const nodes = [
-            document.getElementById('nicknameDisplay'),
-            document.querySelector('.account-strip .account-name'),
-        ].filter(Boolean);
-        if (nodes.length && typeof MutationObserver !== 'undefined') {
-            const obs = new MutationObserver(update);
-            nodes.forEach(function (n) {
-                obs.observe(n, { childList: true, characterData: true, subtree: true });
-            });
-        }
-        // 跨小时刷新（用户长时间停在主页时，从下午变晚上时也应该自动改）
-        setInterval(update, 60 * 1000);
     }
 
     // 0. 物理把 #modelSelector 从 .header-left 移动到 composer-actions 里，
@@ -787,10 +724,9 @@
             if (sub && sub.tier === 'paid') {
                 var plan = sub.plan_code || 'pro';
                 var label = PLAN_LABEL_FOR_BILLING[plan] || 'Pro';
-                var days = Number(sub.days_remaining || 0);
-                text = days > 0 ? 'Cancri ' + label + ' · ' + days + ' 天剩余' : 'Cancri ' + label;
+                text = label + ' plan';
             } else {
-                text = '免费计划';
+                text = 'Free plan';
             }
         }
         accountPlanObserverMuted = true;
@@ -1576,6 +1512,94 @@
                 if (scrim) scrim.classList.remove('show');
             }
         }
+        // 项目页 composer 辅助函数（同步首页输入框体验）
+        function autoResizeProjectInput() {
+            const input = document.getElementById('claudeProjectPromptInput');
+            if (!input) return;
+            const composer = input.closest('[data-workbench-composer], .composer');
+            const minHeight = window.matchMedia('(max-width: 640px)').matches ? 48 : 44;
+            const maxHeight = 180;
+            input.style.height = '0px';
+            const next = Math.max(minHeight, Math.min(input.scrollHeight, maxHeight));
+            input.style.height = next + 'px';
+            input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
+            if (composer) {
+                composer.classList.toggle('is-multiline', next > minHeight + 12 || input.value.includes('\n'));
+            }
+        }
+        function updateProjectSendButton() {
+            const input = document.getElementById('claudeProjectPromptInput');
+            const btn = document.getElementById('claudeProjectPromptSubmit');
+            if (!btn || !input) return;
+            const hasContent = Boolean(input.value.trim());
+            btn.disabled = !hasContent;
+            btn.classList.toggle('hidden', !hasContent);
+        }
+        var projectVoiceListening = false;
+        var projectVoiceRecognition = null;
+        var projectVoiceBaseText = '';
+        function updateProjectVoiceButtonState() {
+            const btn = document.getElementById('claudeProjectVoiceBtn');
+            if (!btn) return;
+            btn.classList.toggle('listening', projectVoiceListening);
+            btn.setAttribute('aria-pressed', String(projectVoiceListening));
+            btn.title = projectVoiceListening ? '停止语音输入' : '语音输入';
+        }
+        function ensureProjectVoiceRecognition() {
+            const Ctor = (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)) || null;
+            if (!Ctor) return null;
+            if (projectVoiceRecognition) return projectVoiceRecognition;
+            projectVoiceRecognition = new Ctor();
+            projectVoiceRecognition.lang = 'zh-CN';
+            projectVoiceRecognition.continuous = false;
+            projectVoiceRecognition.interimResults = true;
+            projectVoiceRecognition.maxAlternatives = 1;
+            projectVoiceRecognition.onstart = function () {
+                projectVoiceListening = true;
+                projectVoiceBaseText = document.getElementById('claudeProjectPromptInput')?.value || '';
+                updateProjectVoiceButtonState();
+                if (window.CancriApp && typeof window.CancriApp.showToast === 'function') window.CancriApp.showToast('开始语音输入');
+            };
+            projectVoiceRecognition.onresult = function (event) {
+                const transcript = Array.from(event.results).map(function (r) { return String(r[0]?.transcript || ''); }).join('').trim();
+                const input = document.getElementById('claudeProjectPromptInput');
+                if (!input) return;
+                const nextText = (projectVoiceBaseText + (projectVoiceBaseText && transcript ? ' ' : '') + transcript).trim();
+                if (nextText) {
+                    input.value = nextText;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+            projectVoiceRecognition.onend = function () {
+                projectVoiceListening = false;
+                updateProjectVoiceButtonState();
+            };
+            projectVoiceRecognition.onerror = function (event) {
+                projectVoiceListening = false;
+                updateProjectVoiceButtonState();
+                if (event.error !== 'aborted' && window.CancriApp && typeof window.CancriApp.showToast === 'function') {
+                    window.CancriApp.showToast('语音输入失败：' + event.error);
+                }
+            };
+            return projectVoiceRecognition;
+        }
+        function toggleProjectVoiceInput() {
+            const Ctor = (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)) || null;
+            if (!Ctor) {
+                if (window.CancriApp && typeof window.CancriApp.showToast === 'function') window.CancriApp.showToast('当前浏览器不支持语音输入');
+                return;
+            }
+            const recognition = ensureProjectVoiceRecognition();
+            if (!recognition) return;
+            if (projectVoiceListening) {
+                recognition.stop();
+                return;
+            }
+            try { recognition.start(); } catch (e) {
+                if (window.CancriApp && typeof window.CancriApp.showToast === 'function') window.CancriApp.showToast('语音输入已在运行');
+            }
+        }
+
         function ensureDetailView() {
             let view = document.getElementById('claudeProjectDetailView');
             if (view) return view;
@@ -1593,7 +1617,6 @@
                             '<div class="composer claude-project-composer" data-workbench-composer>' +
                                 '<textarea class="composer-input" id="claudeProjectPromptInput" rows="1" placeholder="向这个项目中的聊天提问"></textarea>' +
                                 '<div class="composer-bottom">' +
-                                    '<div class="composer-status"><span id="claudeProjectComposerStatus">项目内聊天 · 来源按需读取</span></div>' +
                                     '<div class="composer-tools-row">' +
                                         '<div class="composer-tools" aria-label="项目工具">' +
                                             '<button type="button" class="composer-tool-btn" id="claudeProjectSourceAddBtn" aria-label="添加项目来源">+</button>' +
@@ -1602,7 +1625,7 @@
                                         '</div>' +
                                         '<div class="composer-actions claude-project-composer-actions">' +
                                             '<button type="button" class="voice-btn" id="claudeProjectVoiceBtn" aria-label="语音输入" title="语音输入">' + iconSvg('mic') + '</button>' +
-                                            '<button type="button" class="send-btn" id="claudeProjectPromptSubmit" aria-label="发送项目消息">' + iconSvg('arrowUp') + '</button>' +
+                                            '<button type="button" class="send-btn hidden" id="claudeProjectPromptSubmit" aria-label="发送项目消息">' + iconSvg('arrowUp') + '</button>' +
                                         '</div>' +
                                     '</div>' +
                                 '</div>' +
@@ -1642,6 +1665,10 @@
                 const value = input ? input.value.trim() : '';
                 if (detailProjectId && value) beginProjectChat(detailProjectId, value, true);
             });
+            input?.addEventListener('input', function () {
+                autoResizeProjectInput();
+                updateProjectSendButton();
+            });
             input?.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
                     const value = input.value.trim();
@@ -1650,6 +1677,9 @@
                         beginProjectChat(detailProjectId, value, true);
                     }
                 }
+            });
+            view.querySelector('#claudeProjectVoiceBtn')?.addEventListener('click', function () {
+                toggleProjectVoiceInput();
             });
             view.querySelectorAll('[data-project-tab]').forEach(function (btn) {
                 btn.addEventListener('click', function () {
@@ -1667,15 +1697,12 @@
         }
         function ensureSidebarProjectsList() {
             let section = document.getElementById('claudeSidebarProjectsSection');
-            if (section) return document.getElementById('claudeSidebarProjectsList');
-            const recentTitle = document.querySelector('.claude-recent-title');
-            if (!recentTitle || !recentTitle.parentNode) return null;
-            section = document.createElement('div');
-            section.id = 'claudeSidebarProjectsSection';
-            section.className = 'claude-sidebar-projects';
-            section.innerHTML = '<div class="claude-sidebar-projects-title">项目</div><div id="claudeSidebarProjectsList" class="claude-sidebar-projects-list"></div>';
-            recentTitle.parentNode.insertBefore(section, recentTitle);
-            return document.getElementById('claudeSidebarProjectsList');
+            if (section) {
+                section.hidden = true;
+                return null;
+            }
+            // 2026-05-31：侧边栏项目列表暂时隐藏，待完善后再显示
+            return null;
         }
         function touchProject(projects, id) {
             const p = projects.find(function (item) { return item.id === id; });
@@ -1807,6 +1834,12 @@
                     }
                 });
             }
+            // 清空项目页输入框状态
+            const projectInput = document.getElementById('claudeProjectPromptInput');
+            if (projectInput) {
+                projectInput.value = '';
+                projectInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         }
         function loadProjectChat(projectId, chatId) {
             setActiveProject(projectId);
@@ -1838,33 +1871,9 @@
             writeProjects(projects);
         }
         function renderSidebarProjects() {
-            const sidebarList = ensureSidebarProjectsList();
+            // 2026-05-31：侧边栏项目列表暂时隐藏，待完善后再显示
             const section = document.getElementById('claudeSidebarProjectsSection');
-            if (!sidebarList || !section) return;
-            const projects = readProjects().sort(function (a, b) { return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0); });
-            section.hidden = projects.length === 0;
-            sidebarList.innerHTML = '';
-            projects.slice(0, 8).forEach(function (project) {
-                const row = document.createElement('button');
-                row.type = 'button';
-                row.className = 'nav-row claude-sidebar-project-row';
-                row.classList.toggle('active', document.body.dataset.view === 'claudeProjectDetail' && project.id === detailProjectId);
-                row.style.setProperty('--project-color', colorValue(project.color));
-                const rowIcon = document.createElement('span');
-                rowIcon.className = 'claude-sidebar-project-icon';
-                rowIcon.innerHTML = iconSvg(project.icon);
-                const rowLabel = document.createElement('span');
-                rowLabel.className = 'sidebar-label';
-                rowLabel.textContent = project.name;
-                const rowMore = document.createElement('span');
-                rowMore.className = 'claude-sidebar-project-more';
-                rowMore.textContent = '...';
-                row.appendChild(rowIcon);
-                row.appendChild(rowLabel);
-                row.appendChild(rowMore);
-                row.addEventListener('click', function () { openProject(project.id); });
-                sidebarList.appendChild(row);
-            });
+            if (section) section.hidden = true;
         }
         function renderProjectDetail() {
             const view = ensureDetailView();
@@ -1880,7 +1889,13 @@
                 icon.innerHTML = iconSvg(project.icon);
             }
             if (title) title.textContent = project.name;
-            if (input) input.placeholder = '向“' + project.name + '”中的聊天提问';
+            if (input) {
+                input.placeholder = '向“' + project.name + '”中的聊天提问';
+                requestAnimationFrame(function () {
+                    autoResizeProjectInput();
+                    updateProjectSendButton();
+                });
+            }
             requestAnimationFrame(relocateModelSelector);
             view.querySelectorAll('[data-project-tab]').forEach(function (btn) {
                 btn.classList.toggle('active', btn.getAttribute('data-project-tab') === detailTab);
@@ -2104,6 +2119,7 @@
 
         const app = window.CancriApp;
         const segBtns = document.querySelectorAll('.claude-segmented .claude-seg-btn[data-theme]');
+        const accentSwatches = document.querySelectorAll('.claude-accent-row .claude-accent-swatch[data-accent]');
         const fontSel = document.getElementById('claudeFormFont');
         const voiceSel = document.getElementById('claudeFormVoice');
         const fullNameInput = document.getElementById('claudeFormFullName');
@@ -2152,6 +2168,12 @@
                     b.classList.toggle('active', b.getAttribute('data-theme') === currentMode);
                 });
             }
+            if (accentSwatches.length) {
+                const currentAccent = st.accentName || 'Claude';
+                accentSwatches.forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-accent') === currentAccent);
+                });
+            }
             if (fontSel) fontSel.value = st.chatFont || 'sans';
             if (voiceSel) voiceSel.value = st.voicePreset || 'steady';
             if (fullNameInput) fullNameInput.value = st.fullName || '';
@@ -2176,6 +2198,19 @@
                     const mode = btn.getAttribute('data-theme');
                     if (app && typeof app.setThemeMode === 'function') {
                         app.setThemeMode(mode);
+                    }
+                });
+            });
+        }
+
+        // 主题色色板：点击切换 accent（复用 cancri_chat.js setAccent）
+        if (accentSwatches.length) {
+            accentSwatches.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    accentSwatches.forEach(function (b) { b.classList.toggle('active', b === btn); });
+                    const name = btn.getAttribute('data-accent');
+                    if (app && typeof app.setAccent === 'function') {
+                        app.setAccent(name);
                     }
                 });
             });
@@ -2383,8 +2418,8 @@
                 fileInput.click();
                 closeMenu();
             } else if (action === 'screenshot') {
-                showToast('截图功能正在开发中');
                 closeMenu();
+                captureScreenshot();
             } else if (action === 'websearch') {
                 // 触发原 #webSearchToggle.click()，保留 cancri 的状态机
                 if (webBtn) {
@@ -2413,6 +2448,76 @@
         // 滚动 / resize 关闭（避免位置漂移）
         window.addEventListener('scroll', function () { if (!menu.hidden) positionMenu(); }, true);
         window.addEventListener('resize', function () { if (!menu.hidden) positionMenu(); });
+    }
+
+    // 浏览器原生屏幕截图：调用 getDisplayMedia → canvas 捕获 → 转成 File
+    // 走 cancri_chat.js 的 handleSelectedAttachmentFiles 上传路径。
+    async function captureScreenshot() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            showToast('当前浏览器不支持截图功能');
+            return;
+        }
+        var video = null;
+        var stream = null;
+        try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { cursor: 'never' },
+                preferCurrentTab: false,
+            });
+            video = document.createElement('video');
+            video.srcObject = stream;
+            video.muted = true;
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+            await video.play();
+
+            // 等待至少一帧有效画面
+            if (video.readyState < 2) {
+                await new Promise(function (resolve) {
+                    video.addEventListener('loadeddata', resolve, { once: true });
+                });
+            }
+            await new Promise(function (resolve) { requestAnimationFrame(resolve); });
+
+            var w = video.videoWidth || 1920;
+            var h = video.videoHeight || 1080;
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('canvas context unavailable');
+            ctx.drawImage(video, 0, 0, w, h);
+
+            // 释放摄像头/屏幕流
+            stream.getTracks().forEach(function (t) { t.stop(); });
+            video.srcObject = null;
+            stream = null;
+            video = null;
+
+            canvas.toBlob(function (blob) {
+                if (!blob) {
+                    showToast('截图失败');
+                    return;
+                }
+                var file = new File([blob], 'screenshot.png', { type: 'image/png' });
+                var app = window.CancriApp;
+                if (app && typeof app.handleSelectedAttachmentFiles === 'function') {
+                    app.handleSelectedAttachmentFiles([file]);
+                } else {
+                    showToast('截图已捕获，但上传入口未就绪');
+                }
+            }, 'image/png');
+        } catch (err) {
+            if (stream) {
+                try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (_) {}
+            }
+            if (video) {
+                try { video.srcObject = null; } catch (_) {}
+            }
+            console.error('[claude_ui] screenshot failed:', err);
+            var msg = (err && err.name === 'NotAllowedError') ? '截图已取消' : '截图失败';
+            showToast(msg);
+        }
     }
 
     // 12. 模型 dropdown 折叠 + cascade submenu（PC）/ 全展开（mobile）
@@ -2979,21 +3084,152 @@
         });
     }
 
-    // 2026-05-22 §23.2：「最近」分节标题点击折叠 / 展开聊天列表。
+    // 2026-05-31：Group by 下拉（无 / 日期 / 项目）
+    // 选择后写入 window.CANCRI_GROUP_BY + localStorage，并重新渲染聊天记录列表。
+    function bindGroupByDropdown() {
+        var btn = document.getElementById('claudeGroupByBtn');
+        var dropdown = document.getElementById('claudeGroupByDropdown');
+        if (!btn || !dropdown) return;
+        var STORAGE_KEY = 'cancri_chat_group_by';
+        var saved = 'date';
+        try { saved = localStorage.getItem(STORAGE_KEY) || 'date'; } catch (e) {}
+        window.CANCRI_GROUP_BY = saved;
+
+        function closeDropdown() {
+            dropdown.hidden = true;
+            btn.setAttribute('aria-expanded', 'false');
+        }
+        function openDropdown() {
+            dropdown.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+        }
+        function toggleDropdown() {
+            if (dropdown.hidden) openDropdown(); else closeDropdown();
+        }
+        function setActiveItem(target) {
+            dropdown.querySelectorAll('.claude-group-by-item').forEach(function (el) {
+                el.classList.remove('active');
+                var svg = el.querySelector('svg');
+                if (svg) svg.remove();
+            });
+            target.classList.add('active');
+            if (!target.querySelector('svg')) {
+                var check = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                check.setAttribute('width', '14');
+                check.setAttribute('height', '14');
+                check.setAttribute('viewBox', '0 0 24 24');
+                check.setAttribute('fill', 'none');
+                check.setAttribute('stroke', 'currentColor');
+                check.setAttribute('stroke-width', '2.5');
+                check.setAttribute('stroke-linecap', 'round');
+                check.setAttribute('stroke-linejoin', 'round');
+                check.setAttribute('aria-hidden', 'true');
+                check.innerHTML = '<path d="M20 6 9 17l-5-5"/>';
+                target.appendChild(check);
+            }
+        }
+        // 初始化：把 saved 值对应的 item 设为 active
+        dropdown.querySelectorAll('.claude-group-by-item').forEach(function (item) {
+            if (item.getAttribute('data-value') === saved) setActiveItem(item);
+        });
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+        dropdown.querySelectorAll('.claude-group-by-item').forEach(function (item) {
+            item.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var value = item.getAttribute('data-value') || 'date';
+                setActiveItem(item);
+                closeDropdown();
+                window.CANCRI_GROUP_BY = value;
+                try { localStorage.setItem(STORAGE_KEY, value); } catch (err) {}
+                if (typeof window.renderChatHistoryList === 'function') {
+                    window.renderChatHistoryList();
+                }
+            });
+        });
+        document.addEventListener('click', function (e) {
+            if (!dropdown.hidden && !dropdown.contains(e.target) && e.target !== btn) {
+                closeDropdown();
+            }
+        });
+    }
+
+    // 2026-05-31：语音按钮波形动画 — 仅播放一次完整循环，鼠标离开后动画继续播完
+    function bindVoiceHoverAnimation() {
+        var btn = document.getElementById('voiceToastBtn');
+        if (!btn) return;
+        var fallbackTimer = null;
+
+        btn.addEventListener('mouseenter', function () {
+            if (fallbackTimer) {
+                clearTimeout(fallbackTimer);
+                fallbackTimer = null;
+            }
+
+            // 核心修复：如果 class 还在，先 remove → reflow → 再 add。
+            // 这样 CSS 选择器 .voice-btn.voice-animating .voice-bar
+            // 经历“匹配→不匹配→匹配”的变化，浏览器一定认为是新 animation。
+            if (btn.classList.contains('voice-animating')) {
+                btn.classList.remove('voice-animating');
+                void btn.offsetHeight; // 强制 reflow，让浏览器感知 class 已消失
+            }
+            btn.classList.add('voice-animating');
+        });
+
+        btn.addEventListener('mouseleave', function () {
+            var bars = btn.querySelectorAll('.voice-bar');
+            var anims = [];
+
+            // 用 Web Animations API 精确获取当前 running 的 voice-pulse
+            bars.forEach(function (bar) {
+                if (typeof bar.getAnimations === 'function') {
+                    bar.getAnimations().forEach(function (anim) {
+                        if (anim.animationName === 'voice-pulse') {
+                            anims.push(anim);
+                        }
+                    });
+                }
+            });
+
+            // 没有 running animation（已结束或从未开始），直接 remove class
+            if (anims.length === 0) {
+                btn.classList.remove('voice-animating');
+                return;
+            }
+
+            // 等所有 running animation 自然结束
+            Promise.all(anims.map(function (a) { return a.finished; }))
+                .then(function () {
+                    btn.classList.remove('voice-animating');
+                })
+                .catch(function () {
+                    // animation 被 mouseenter 的 reset 打断（cancel），忽略
+                });
+
+            // 兜底：getAnimations 不工作 / 极端情况下 1.6s 后强制清理
+            if (fallbackTimer) clearTimeout(fallbackTimer);
+            fallbackTimer = setTimeout(function () {
+                btn.classList.remove('voice-animating');
+                fallbackTimer = null;
+            }, 1600);
+        });
+    }
+
+    // 2026-05-22 §23.2：Recents 分节标题点击折叠 / 展开聊天列表。
     //   - 点击 #claudeRecentTitle 切换 .claude-recent-header 的 data-collapsed
     //   - data-collapsed=true 时 CSS（§23.2）隐藏后面的 #chatHistoryList
-    //   - 同步更新「藏起来 / 展开」hint 文案 + aria-expanded
+    //   - chevron 旋转由 CSS 自动处理（data-collapsed 控制 rotate）
     //   - localStorage('cancri_recent_collapsed') 持久化
     function bindRecentHeaderToggle() {
         var header = document.querySelector('.claude-recent-header');
         var title = document.getElementById('claudeRecentTitle');
-        var hint = header && header.querySelector('.claude-recent-collapse-hint');
         if (!header || !title) return;
         var KEY = 'cancri_recent_collapsed';
         function applyState(collapsed) {
             header.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
             title.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-            if (hint) hint.textContent = collapsed ? '展开' : '藏起来';
         }
         try {
             applyState(localStorage.getItem(KEY) === 'true');
@@ -3013,4 +3249,79 @@
             }
         });
     }
+})();
+
+// ── T5：composer 图标按钮自定义 tooltip（hover 2s 后出现）──
+// 用 aria-label 当提示文案，事件委托覆盖动态注入的按钮（项目内 composer 等）。
+// 对应原生 title 已从 HTML 移除，避免双重 tooltip。
+(function initComposerTooltips() {
+    'use strict';
+    var SEL = '.composer-tools-row button[aria-label], .composer button[aria-label]';
+    var DELAY = 2000;
+    var tip = null;
+    var timer = null;
+    var current = null;
+
+    function ensureTip() {
+        if (tip) return tip;
+        tip = document.createElement('div');
+        tip.id = 'cancriTip';
+        tip.setAttribute('role', 'tooltip');
+        document.body.appendChild(tip);
+        return tip;
+    }
+
+    function show(btn) {
+        var label = btn.getAttribute('aria-label');
+        if (!label) return;
+        var t = ensureTip();
+        t.textContent = label;
+        t.style.left = '0px';
+        t.style.top = '0px';
+        var r = btn.getBoundingClientRect();
+        var tr = t.getBoundingClientRect();
+        var left = r.left + r.width / 2 - tr.width / 2;
+        var top = r.top - tr.height - 8;
+        left = Math.max(6, Math.min(left, window.innerWidth - tr.width - 6));
+        if (top < 6) top = r.bottom + 8;
+        t.style.left = left + 'px';
+        t.style.top = top + 'px';
+        t.classList.add('show');
+    }
+
+    function hide() {
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+        if (current && current.__cancriTitle != null) {
+            current.setAttribute('title', current.__cancriTitle);
+            current.__cancriTitle = null;
+        }
+        current = null;
+        if (tip) tip.classList.remove('show');
+    }
+
+    document.addEventListener('mouseover', function (e) {
+        var btn = e.target.closest && e.target.closest(SEL);
+        if (!btn || btn === current) return;
+        hide();
+        current = btn;
+        // 暂存并摘掉原生 title，避免浏览器 ~1s 原生提示与 2s 自定义 tooltip 双重出现。
+        if (btn.hasAttribute('title')) {
+            btn.__cancriTitle = btn.getAttribute('title');
+            btn.removeAttribute('title');
+        }
+        timer = setTimeout(function () {
+            if (current === btn) show(btn);
+        }, DELAY);
+    });
+    document.addEventListener('mouseout', function (e) {
+        var btn = e.target.closest && e.target.closest(SEL);
+        if (!btn) return;
+        if (e.relatedTarget && btn.contains(e.relatedTarget)) return;
+        hide();
+    });
+    document.addEventListener('click', hide, true);
+    window.addEventListener('scroll', hide, true);
 })();

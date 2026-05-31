@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+    />
+    <title>账号设置 · Cancri</title>
+    <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet"
+    />
+    <script src="./api/_anti-debug.js"></script>
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-01-account" />
+    <script src="./api/api-platform.js?v=20260601"></script>
+    <script src="./cancri_config.js"></script>
+    <script>
+        // 与主站 cancri_theme_mode 保持一致（api-platform.js 只读 cancri_open_platform_theme）
+        (function () {
+            var mode;
+            try { mode = localStorage.getItem('cancri_theme_mode'); } catch (_) {}
+            if (mode === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            } else if (mode === 'black') {
+                // api-platform.css 无 black 定义，回退到 dark（默认）
+                document.documentElement.removeAttribute('data-theme');
+                document.documentElement.style.colorScheme = 'dark';
+            } else if (mode === 'system') {
+                var m = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)');
+                if (m && m.matches) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.style.colorScheme = 'light';
+                }
+            }
+        })();
+    </script>
+    <style>
+        /* ─── 设置页布局 ─── */
+        .settings-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        .settings-nav {
+            width: 260px;
+            padding: 40px 20px;
+            border-right: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .nav-header {
+            font-family: var(--serif);
+            font-size: 22px;
+            color: var(--text);
+            margin-bottom: 24px;
+            padding-left: 12px;
+        }
+        .nav-item {
+            display: block;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: var(--text-mute);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 2px;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+            user-select: none;
+        }
+        .nav-item:hover {
+            color: var(--text);
+            background: var(--bg-2);
+        }
+        .nav-item.is-active {
+            color: var(--text);
+            background: var(--bg-2);
+            font-weight: 500;
+        }
+        .settings-main {
+            flex: 1;
+            padding: 40px 48px;
+            max-width: 840px;
+        }
+        .settings-main h2 {
+            font-family: var(--sans);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 16px 0;
+        }
+        .section {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 0 20px;
+            margin-bottom: 24px;
+            background: var(--bg-1);
+        }
+        .section-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .section-row:last-child {
+            border-bottom: none;
+        }
+        .row-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .row-desc {
+            font-size: 13px;
+            color: var(--text-mute);
+            word-break: break-all;
+        }
+        .row-meta {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-faint);
+            background: var(--bg-2);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--line-2);
+            background: var(--bg-2);
+            color: var(--text);
+            transition: background 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            background: var(--line-2);
+        }
+        .btn-primary {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-danger {
+            background: var(--err);
+            color: #fff;
+            border-color: var(--err);
+        }
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+        .device-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .device-table th {
+            text-align: left;
+            font-weight: 500;
+            color: var(--text-mute);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .device-table td {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line);
+            color: var(--text);
+            vertical-align: top;
+        }
+        .device-table tr:last-child td {
+            border-bottom: none;
+        }
+        .td-empty {
+            color: var(--text-faint);
+            text-align: center;
+            padding: 24px 0;
+        }
+        .device-ua {
+            font-size: 12px;
+            color: var(--text-mute);
+            margin-top: 2px;
+            word-break: break-all;
+        }
+        .device-badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--ok);
+            margin-left: 8px;
+        }
+        .progress-msg {
+            font-size: 13px;
+            color: var(--text-mute);
+        }
+        .hidden {
+            display: none !important;
+        }
+        /* 移动端 */
+        @media (max-width: 768px) {
+            .settings-layout {
+                flex-direction: column;
+            }
+            .settings-nav {
+                width: 100%;
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+                padding: 20px 16px;
+            }
+            .nav-header {
+                margin-bottom: 12px;
+            }
+            .settings-main {
+                padding: 24px 16px;
+                max-width: none;
+            }
+            .section-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .device-table th:nth-child(3),
+            .device-table td:nth-child(3) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-layout">
+        <aside class="settings-nav">
+            <div class="nav-header">账号设置</div>
+            <nav id="settings-nav">
+                <a class="nav-item is-active" data-section="account">账号</a>
+                <a class="nav-item" data-section="privacy">隐私</a>
+                <a class="nav-item" href="./orders.html">账单</a>
+                <a class="nav-item" href="./pricing.html">套餐</a>
+            </nav>
+        </aside>
+        <main class="settings-main">
+            <!-- 账号 -->
+            <section id="section-account">
+                <h2>账号</h2>
+                <div class="section">
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">邮箱</div>
+                            <div class="row-desc" id="account-email">加载中…</div>
+                        </div>
+                        <span class="row-meta" id="account-uid" title="用户 ID">—</span>
+                    </div>
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">注册时间</div>
+                            <div class="row-desc" id="account-created">加载中…</div>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">上次登录</div>
+                            <div class="row-desc" id="account-last-signin">加载中…</div>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">本次在线时长</div>
+                            <div class="row-desc" id="account-online">加载中…</div>
+                        </div>
+                    </div>
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">当前 IP</div>
+                            <div class="row-desc" id="account-ip">加载中…</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>活跃设备</h2>
+                <div class="section">
+                    <table class="device-table">
+                        <thead>
+                            <tr>
+                                <th>装置</th>
+                                <th>位置</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="device-list">
+                            <tr><td colspan="3" class="td-empty">加载中…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2>操作</h2>
+                <div class="section">
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">从所有设备中登出</div>
+                            <div class="row-desc">结束所有位置的活跃会话</div>
+                        </div>
+                        <button class="btn" id="btn-signout-all">登出</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 隐私 -->
+            <section id="section-privacy" class="hidden">
+                <h2>隐私</h2>
+                <div class="section">
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">导出所有聊天记录</div>
+                            <div class="row-desc">下载 JSON 格式的全部对话备份。数据量较大时可能需要一些时间。</div>
+                        </div>
+                        <button class="btn btn-primary" id="btn-export">导出</button>
+                    </div>
+                    <div id="export-progress" class="hidden progress-msg" style="padding-bottom:16px;"></div>
+                </div>
+                <div class="section">
+                    <div class="section-row">
+                        <div>
+                            <div class="row-title">清除本地缓存</div>
+                            <div class="row-desc">清除浏览器本地保存的聊天记录缓存（不会删除云端记录）</div>
+                        </div>
+                        <button class="btn btn-danger" id="btn-clear-local">清除</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+        crossorigin="anonymous"
+    ></script>
+    <script src="./account-app.js?v=2026-06-01"></script>
+</body>
+</html>
