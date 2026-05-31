@@ -81,6 +81,12 @@ html[data-theme="dark"] [data-workbench-composer] {
   gap: 6px;
 }
 
+/* 发送/语音按钮在最右侧，模型选择器在其左侧 */
+.composer-actions .send-btn,
+.composer-actions .voice-btn {
+  order: 1;
+}
+
 .composer-tool-btn {
   width: 34px;
   height: 34px;
@@ -163,8 +169,7 @@ html[data-theme="dark"] [data-workbench-composer] {
 }
 
 .send-btn:hover {
-  background: var(--send-bg);
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--send-bg) 92%, white);
 }
 
 .send-btn.is-streaming {
@@ -174,6 +179,78 @@ html[data-theme="dark"] [data-workbench-composer] {
 
 .send-btn:disabled {
   opacity: .34;
+}
+
+/* 输入框有文字时：主题色正方润角发送按钮（Claude 对齐） */
+.send-btn.has-text {
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--oncolor-100);
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  border: none;
+  animation: send-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 从 voice 切换到 send：从右侧缩小滑入 + 小幅度过冲回弹 */
+@keyframes send-pop {
+  0%   { transform: translateX(12px) scale(0.88); opacity: 0.5; }
+  55%  { transform: translateX(-2px) scale(1.04); opacity: 1; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.send-btn.has-text:hover {
+  background: color-mix(in srgb, var(--accent) 92%, white);
+}
+
+.send-btn.has-text:active {
+  transform: scale(.96);
+  transition: transform 60ms ease-out;
+}
+
+/* 按钮切换：空输入时显 voice，有文字时显 send
+   voice 向右滑出淡出，send 从右侧弹入 */
+.composer-actions .send-btn,
+.composer-actions .voice-btn {
+  transition: transform 0.15s ease-out, opacity 0.12s ease-out;
+}
+
+.composer-actions button.send-btn.hidden,
+.composer-actions button.voice-btn.hidden {
+  display: inline-flex !important;
+  opacity: 0;
+  transform: translateX(12px) scale(0.88);
+  pointer-events: none;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 0 !important;
+  overflow: hidden;
+  border: none !important;
+}
+
+/* 语音按钮波形脉冲动画：由 JS 控制 .voice-animating 类触发，
+   仅播放一次完整循环，鼠标离开后动画继续播完 */
+.voice-btn .voice-bar {
+  transform-origin: center;
+  animation: none;
+}
+.voice-btn.voice-animating .voice-bar {
+  animation: voice-pulse 1.0s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  animation-fill-mode: forwards;
+}
+
+.voice-btn.voice-animating .voice-bar:nth-child(1) { animation-delay: 0s; }
+.voice-btn.voice-animating .voice-bar:nth-child(2) { animation-delay: 0.08s; }
+.voice-btn.voice-animating .voice-bar:nth-child(3) { animation-delay: 0.16s; }
+.voice-btn.voice-animating .voice-bar:nth-child(4) { animation-delay: 0.24s; }
+.voice-btn.voice-animating .voice-bar:nth-child(5) { animation-delay: 0.32s; }
+.voice-btn.voice-animating .voice-bar:nth-child(6) { animation-delay: 0.40s; }
+
+@keyframes voice-pulse {
+  0%   { transform: scaleY(0.2); }
+  30%  { transform: scaleY(1.5); }
+  55%  { transform: scaleY(0.45); }
+  100% { transform: scaleY(1); }
 }
 
 .plus-popover .popover-inner {
@@ -251,6 +328,6 @@ html[data-theme="dark"] [data-workbench-composer] {
     width: 34px;
     height: 34px;
     flex: 0 0 auto;
-    border-radius: 50%;
+    border-radius: 8px;
   }
 }

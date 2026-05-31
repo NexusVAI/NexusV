@@ -21,21 +21,24 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="light"] {
-  --bg: #f7f8fa;
-  --main-bg: #fafbfc;
-  --sidebar-bg: #f2f4f6;
+  --bg: #faf9f5;
+  --main-bg: #fcfcfb;
+  --sidebar-bg: #f3f3f0;
   --surface: #ffffff;
-  --surface-elevated: #f5f7f9;
+  --surface-elevated: #f9f9f7;
   --composer-bg: #ffffff;
   --panel: #ffffff;
-  --panel-2: #f5f7f9;
+  --panel-2: #f9f9f7;
   --input: #ffffff;
-  --line: rgba(15,23,42,.09);
-  --line-2: rgba(15,23,42,.14);
-  --text: rgba(15,23,42,.92);
-  --text-soft: rgba(51,65,85,.64);
-  --text-dim: rgba(71,85,105,.44);
+  --line: rgba(31,30,28,.09);
+  --line-2: rgba(31,30,28,.14);
+  --text: rgba(20,20,20,.92);
+  --text-soft: rgba(61,61,58,.72);
+  --text-dim: rgba(115,114,108,.55);
+  --hover: rgba(31,30,28,.05);
+  --hover-strong: rgba(31,30,28,.10);
   --send-bg: #111111;
   --send-fg: #ffffff;
+  --scrim: rgba(0,0,0,.24);
 }
 

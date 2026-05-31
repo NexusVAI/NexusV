@@ -217,9 +217,17 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
         margin-top: auto !important;
     }
 
-    .voice-btn,
-    .send-btn {
+    .voice-btn {
         border-radius: 999px !important;
+    }
+    .send-btn {
+        border-radius: 8px !important;
+    }
+
+    .composer-actions .send-btn.has-text,
+    .composer-right .send-btn.has-text,
+    #sendChatBtn.has-text {
+        border-radius: 8px !important;
     }
 
     body[data-view="home"][data-arena-mode="side_by_side"] {
