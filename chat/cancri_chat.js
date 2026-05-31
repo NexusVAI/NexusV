@@ -2325,9 +2325,9 @@ const MODEL_CATALOG = [
   // 2026-05-26: Claude Opus 4.7 Max — aspirin 上游独立 key，Pro+ 专属（costTier: vip）。
   {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
   // 2026-05-29: claude-opus-4-8 — aspirin 上游，复用 ASPIRIN_API_KEY。
-  {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 80.0},
+  {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 20.0},
   // 2026-05-29: Claude Opus 4.7 Thinking — thinkai 上游，独立 key。
-  {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 50.0},
+  {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 17.0},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-05-27：MiMo 聊天模型全线免费福利。
@@ -3854,15 +3854,18 @@ function localizeAuthError(err, fallback = "操作失败，请稍后重试。") 
   return fallback;
 }
 
-async function sendEmailOtp(email) {
+async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
   const client = getSupabaseClient();
   // v2026-05-15 修复"发送中..."无限卡死：
   // 1) 实际把 Turnstile captcha token 传给 Supabase（之前 getLoginCaptchaTokenBestEffort
   //    定义了但从未调用，等于裸送，Supabase 项目启用 captcha 时直接挂起）。
   // 2) 给整个调用包 12s timeout，避免 Supabase SDK 在网络抖动时无限等待。
   const captchaToken = await getLoginCaptchaTokenBestEffort(8000);
-  const opts = { email };
-  if (captchaToken) opts.options = { captchaToken };
+  // shouldCreateUser=false：见调用处注释。auth.users 上的触发器
+  // enforce_numeric_qq_email_on_signup 禁止非「纯数字@qq.com」注册新号（会回 500）。
+  // false 时已存在老用户仍能收码登录（不插新行），不存在用户回干净的 otp_disabled(422)。
+  const opts = { email, options: { shouldCreateUser } };
+  if (captchaToken) opts.options.captchaToken = captchaToken;
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error("发送超时，请检查网络后重试")), 12000);
   });
@@ -3945,23 +3948,33 @@ function initAuthOverlay() {
         if (emailError) emailError.textContent = "请输入有效的邮箱地址";
         return;
       }
-      const allowed = email.endsWith("@qq.com") || email.endsWith("@foxmail.com");
+      const emailLower = email.toLowerCase();
+      const allowed = /@qq\.com$/.test(emailLower) || /@foxmail\.com$/.test(emailLower);
       if (!allowed) {
         if (emailError) emailError.textContent = "仅支持 @qq.com 和 @foxmail.com 邮箱";
         return;
       }
+      // auth.users 触发器只允许「纯数字@qq.com」注册新号。非数字邮箱（foxmail / 带字母 QQ）
+      // 只放行已存在老用户登录：shouldCreateUser=false 时老用户照常收码，新用户回 otp_disabled(422)，
+      // catch 里给清晰提示，而不是让用户撞 500「Database error saving new user」。
+      const isNumericQQ = /^[0-9]+@qq\.com$/.test(emailLower);
       sendOtpBtn.disabled = true;
       sendOtpBtn.textContent = "发送中...";
       if (emailError) emailError.textContent = "";
       try {
-        await sendEmailOtp(email);
+        await sendEmailOtp(email, { shouldCreateUser: isNumericQQ });
         sendOtpBtn.style.display = "none";
         if (otpSection) otpSection.style.display = "block";
         if (otpInput) otpInput.focus();
         if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
         if (emailError) emailError.style.color = "#4ade80";
       } catch (err) {
-        if (emailError) emailError.textContent = localizeAuthError(err, "发送失败，请重试。");
+        const code = String((err && (err.code || err.error_code)) || "");
+        if (!isNumericQQ && code === "otp_disabled") {
+          if (emailError) emailError.textContent = "新账号仅支持 QQ 号邮箱注册（纯数字，如 3573799137@qq.com）。若你已注册过，请检查邮箱是否输错。";
+        } else if (emailError) {
+          emailError.textContent = localizeAuthError(err, "发送失败，请重试。");
+        }
         if (emailError) emailError.style.color = "";
       } finally {
         sendOtpBtn.disabled = false;
