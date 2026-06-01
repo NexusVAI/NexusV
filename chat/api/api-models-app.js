@@ -75,7 +75,7 @@ const FALLBACK_PAID_IDS = new Set([
     "qwen3.5-flash",
     "qwen3-coder-flash",
     "qwen3-coder-plus-2025-09-23",
-    "minimax-m2.7",
+    "minimax-m3",
     "kimi-k2.6",
 ]);
 
