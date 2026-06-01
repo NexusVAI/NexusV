@@ -480,6 +480,58 @@ async function init() {
             if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "start" });
         });
     });
+    setupPaymentMethodTabs();
+}
+
+// ────────── 支付方式切换胶囊 ──────────
+function setupPaymentMethodTabs() {
+    const tabs = document.getElementById("pay-method-tabs");
+    const qrImg = document.getElementById("qr-img");
+    const qrRecommend = document.getElementById("qr-recommend");
+    const methodSelect = document.getElementById("of-method");
+    if (!tabs || !qrImg || !qrRecommend || !methodSelect) return;
+
+    const QR_SRC = {
+        wechat: "../Logo/1107.jpg",
+        alipay: "../Logo/ZFB.jpg",
+    };
+    const QR_ALT = {
+        wechat: "微信收款码",
+        alipay: "支付宝收款码",
+    };
+    const RECOMMEND_TEXT = {
+        wechat: "推荐使用微信支付",
+        alipay: "推荐使用支付宝",
+    };
+
+    function switchMethod(method) {
+        if (!QR_SRC[method]) return;
+        tabs.querySelectorAll("button").forEach((btn) => {
+            btn.classList.toggle("is-active", btn.getAttribute("data-pay-method") === method);
+        });
+        qrImg.src = QR_SRC[method];
+        qrImg.alt = QR_ALT[method];
+        qrRecommend.textContent = RECOMMEND_TEXT[method];
+        if (methodSelect.value !== method) {
+            methodSelect.value = method;
+        }
+    }
+
+    tabs.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            switchMethod(btn.getAttribute("data-pay-method"));
+        });
+    });
+
+    methodSelect.addEventListener("change", () => {
+        const val = methodSelect.value;
+        if (val === "wechat" || val === "alipay") {
+            switchMethod(val);
+        }
+    });
+
+    const initial = (methodSelect.value === "alipay") ? "alipay" : "wechat";
+    switchMethod(initial);
 }
 
 // ────────── 提交订单 ──────────
