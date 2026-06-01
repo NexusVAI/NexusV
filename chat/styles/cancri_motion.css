@@ -1091,6 +1091,10 @@ html[data-theme="light"] .auth-input:focus {
     font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
+.auth-otp-input::placeholder {
+    text-align: center;
+    opacity: 1;
+}
 
 /* ── Button（白底深字 primary，参照 Claude "Continue with email"）── */
 .auth-btn {
@@ -1160,9 +1164,9 @@ html[data-theme="light"] .auth-btn:disabled {
 .auth-otp-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     width: 100%;
-    margin-top: 12px;
+    margin-top: 14px;
 }
 
 .auth-divider {
@@ -1215,6 +1219,62 @@ html[data-theme="light"] .auth-error {
 }
 #loginTurnstileMount:empty {
     min-height: 0 !important;
+}
+
+/* ── Inline auth captcha (replaces Turnstile) ────────── */
+.auth-captcha-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 2px;
+    width: 100%;
+}
+.auth-captcha-canvas {
+    width: 140px;
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-100));
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.auth-captcha-input {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    letter-spacing: 4px;
+    font-variant-numeric: tabular-nums;
+}
+.auth-captcha-refresh {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-200));
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 150ms ease, color 150ms ease;
+}
+.auth-captcha-refresh:hover {
+    background: hsl(var(--bg-200));
+    color: hsl(var(--text-000));
+}
+html[data-theme="light"] .auth-captcha-canvas {
+    border-color: hsl(var(--border-300) / 0.45);
+    background: hsl(var(--bg-100));
+}
+html[data-theme="light"] .auth-captcha-refresh {
+    border-color: hsl(var(--border-300) / 0.45);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-200));
+}
+html[data-theme="light"] .auth-captcha-refresh:hover {
+    background: hsl(var(--bg-200));
+    color: hsl(var(--text-000));
 }
 
 /* ── Footer microcopy（卡内底部）──────────────────── */
