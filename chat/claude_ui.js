@@ -3253,58 +3253,6 @@
             }
         });
     }
-})();
-
-// ── T5：composer 图标按钮自定义 tooltip（hover 2s 后出现）──
-// 用 aria-label 当提示文案，事件委托覆盖动态注入的按钮（项目内 composer 等）。
-// 对应原生 title 已从 HTML 移除，避免双重 tooltip。
-(function initComposerTooltips() {
-    'use strict';
-    var SEL = '.composer-tools-row button[aria-label], .composer button[aria-label]';
-    var DELAY = 2000;
-    var tip = null;
-    var timer = null;
-    var current = null;
-
-    function ensureTip() {
-        if (tip) return tip;
-        tip = document.createElement('div');
-        tip.id = 'cancriTip';
-        tip.setAttribute('role', 'tooltip');
-        document.body.appendChild(tip);
-        return tip;
-    }
-
-    function show(btn) {
-        var label = btn.getAttribute('aria-label');
-        if (!label) return;
-        var t = ensureTip();
-        t.textContent = label;
-        t.style.left = '0px';
-        t.style.top = '0px';
-        var r = btn.getBoundingClientRect();
-        var tr = t.getBoundingClientRect();
-        var left = r.left + r.width / 2 - tr.width / 2;
-        var top = r.top - tr.height - 8;
-        left = Math.max(6, Math.min(left, window.innerWidth - tr.width - 6));
-        if (top < 6) top = r.bottom + 8;
-        t.style.left = left + 'px';
-        t.style.top = top + 'px';
-        t.classList.add('show');
-    }
-
-    function hide() {
-        if (timer) {
-            clearTimeout(timer);
-            timer = null;
-        }
-        if (current && current.__cancriTitle != null) {
-            current.setAttribute('title', current.__cancriTitle);
-            current.__cancriTitle = null;
-        }
-        current = null;
-        if (tip) tip.classList.remove('show');
-    }
 
     /* ── 设置页 Account / Privacy 内嵌逻辑（2026-06-01） ── */
     var claudeAccountTimer = null;
@@ -3532,6 +3480,58 @@
                 }
             });
         }
+    }
+})();
+
+// ── T5：composer 图标按钮自定义 tooltip（hover 2s 后出现）──
+// 用 aria-label 当提示文案，事件委托覆盖动态注入的按钮（项目内 composer 等）。
+// 对应原生 title 已从 HTML 移除，避免双重 tooltip。
+(function initComposerTooltips() {
+    'use strict';
+    var SEL = '.composer-tools-row button[aria-label], .composer button[aria-label]';
+    var DELAY = 2000;
+    var tip = null;
+    var timer = null;
+    var current = null;
+
+    function ensureTip() {
+        if (tip) return tip;
+        tip = document.createElement('div');
+        tip.id = 'cancriTip';
+        tip.setAttribute('role', 'tooltip');
+        document.body.appendChild(tip);
+        return tip;
+    }
+
+    function show(btn) {
+        var label = btn.getAttribute('aria-label');
+        if (!label) return;
+        var t = ensureTip();
+        t.textContent = label;
+        t.style.left = '0px';
+        t.style.top = '0px';
+        var r = btn.getBoundingClientRect();
+        var tr = t.getBoundingClientRect();
+        var left = r.left + r.width / 2 - tr.width / 2;
+        var top = r.top - tr.height - 8;
+        left = Math.max(6, Math.min(left, window.innerWidth - tr.width - 6));
+        if (top < 6) top = r.bottom + 8;
+        t.style.left = left + 'px';
+        t.style.top = top + 'px';
+        t.classList.add('show');
+    }
+
+    function hide() {
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+        if (current && current.__cancriTitle != null) {
+            current.setAttribute('title', current.__cancriTitle);
+            current.__cancriTitle = null;
+        }
+        current = null;
+        if (tip) tip.classList.remove('show');
     }
 
     document.addEventListener('mouseover', function (e) {
