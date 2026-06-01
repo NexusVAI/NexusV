@@ -5603,9 +5603,7 @@ body {
     .modal.large.open,
     .modal.medium.open,
     .modal.small.open {
-        width: calc(100vw - 16px);
         max-height: calc(100dvh - 16px);
-        border-radius: 16px;
     }
 
     .settings-layout {

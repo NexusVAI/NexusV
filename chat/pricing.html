@@ -566,6 +566,34 @@
             .topup-card__amount .price-discount-badge {
                 font-size: 0.55em;
             }
+
+            /* ────────── 支付方式切换胶囊 ────────── */
+            .pay-method-tabs {
+                display: inline-flex;
+                gap: 4px;
+                padding: 4px;
+                border: 1px solid var(--border-strong);
+                border-radius: 999px;
+                background: var(--surface);
+                margin-bottom: 14px;
+            }
+            .pay-method-tabs button {
+                padding: 6px 16px;
+                border-radius: 999px;
+                border: none;
+                background: transparent;
+                color: var(--text-mute);
+                font-size: 13px;
+                font-family: inherit;
+                cursor: pointer;
+                transition: background 0.18s, color 0.18s;
+                white-space: nowrap;
+            }
+            .pay-method-tabs button.is-active {
+                background: var(--accent);
+                color: #fff;
+                font-weight: 600;
+            }
         </style>
     </head>
     <body>
@@ -889,13 +917,18 @@
                         </div>
                         <div class="qr-card">
                             <h3>扫码付款</h3>
+                            <div class="pay-method-tabs" id="pay-method-tabs">
+                                <button type="button" data-pay-method="wechat" class="is-active">微信支付</button>
+                                <button type="button" data-pay-method="alipay">支付宝</button>
+                            </div>
                             <img
+                                id="qr-img"
                                 src="../Logo/1107.jpg"
-                                alt="微信 / 支付宝收款码"
+                                alt="微信收款码"
                                 loading="lazy"
                             />
-                            <p class="qr-note">
-                                微信或支付宝扫码，金额 <code id="qr-amount">—</code><br />
+                            <p class="qr-note" id="qr-note">
+                                <span id="qr-recommend">推荐使用微信支付</span>，金额 <code id="qr-amount">—</code><br />
                                 付款备注请务必填 <code>邮箱 + QQ</code>
                             </p>
                         </div>
@@ -1013,6 +1046,6 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
-        <script src="./api/pricing-app.js?v=2026-05-29-credits"></script>
+        <script src="./api/pricing-app.js?v=2026-06-01-pay-tabs"></script>
     </body>
 </html>

@@ -2388,6 +2388,7 @@ const MODEL_CATALOG = [
   {"id": "grok-4.20-multi-agent-xhigh", "name": "Grok-4.20-Agent", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
   // 2026-05-28: grok-4.3-high（dgbmc 上游，复用现有 Grok key）
   {"id": "grok-4.3-high", "name": "Grok-4.3-Thinking", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+  {"id": "minimax-m3", "name": "MiniMax M3", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 3.0},
   {"id": "gemini-3.5-flash-thinking", "name": "Gemini 3.5 Flash High", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
   {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
@@ -3200,9 +3201,19 @@ function ensureVoiceRecognition() {
   voiceRecognition.onerror = (event) => {
     voiceListening = false;
     updateVoiceButtonState();
-    if (event.error !== "aborted") {
-      showToast(`语音输入失败：${event.error}`);
+    if (event.error === "aborted") return;
+    let msg = `语音输入失败：${event.error}`;
+    if (event.error === "service-not-allowed") {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      msg = isIOS
+        ? "iOS Safari 暂不支持语音输入，请手动输入或换用 Chrome"
+        : "当前浏览器不支持语音输入，请手动输入";
+    } else if (event.error === "not-allowed") {
+      msg = "麦克风权限被拒绝，请在设置中开启";
+    } else if (event.error === "network") {
+      msg = "语音识别网络异常，请检查网络后重试";
     }
+    showToast(msg);
   };
 
   return voiceRecognition;
@@ -3766,6 +3777,11 @@ function showAuthOverlay() {
     video.muted = true;
     video.play?.().catch(() => {});
   }
+  // Init inline captcha when overlay shows; clear stale input.
+  if (window.NexusAuthCaptcha) {
+    try { window.NexusAuthCaptcha.init(); } catch (_e) {}
+    try { window.NexusAuthCaptcha.clearInput(); } catch (_e) {}
+  }
 }
 
 function hideAuthOverlay() {
@@ -4027,6 +4043,17 @@ function initAuthOverlay() {
       const allowed = /@qq\.com$/.test(emailLower) || /@foxmail\.com$/.test(emailLower);
       if (!allowed) {
         if (emailError) emailError.textContent = "仅支持 @qq.com 和 @foxmail.com 邮箱";
+        return;
+      }
+      // Inline captcha check — MUST pass; module missing also blocks.
+      if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
+        if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
+        return;
+      }
+      if (!window.NexusAuthCaptcha.validate()) {
+        if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+        if (emailError) emailError.style.color = "";
+        window.NexusAuthCaptcha.focusInput();
         return;
       }
       // auth.users 触发器只允许「纯数字@qq.com」注册新号。非数字邮箱（foxmail / 带字母 QQ）

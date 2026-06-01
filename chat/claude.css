@@ -1445,6 +1445,13 @@ html[data-theme="black"] .claude-suggest:hover {
     color: var(--c-text);
     min-width: 220px;
 }
+/* #accountPopover 在 sidebar DOM 内部，sidebar collapsed 时继承
+   pointer-events: none 导致菜单项全部不可点击。强制覆盖。 */
+.account-popover,
+.account-popover .popover-inner,
+.account-popover .popover-item {
+    pointer-events: auto !important;
+}
 .popover-item {
     height: 36px !important;
     padding: 0 10px !important;
@@ -2600,12 +2607,6 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         box-sizing: border-box;
     }
 
-    /* 搜索 modal 在 mobile 占满 */
-    .claude-search-modal {
-        width: calc(100vw - 24px) !important;
-        max-width: 100% !important;
-    }
-
     /* 记忆区域「导入记忆」行在移动端改为纵向堆叠，避免文字与按钮互相挤压 */
     .memory-import-row {
         flex-direction: column !important;
@@ -2701,6 +2702,8 @@ button.composer-tool-btn:hover {
    - 弹在 attachBtn 上方，220px 宽，深色 Claude pop 风格
    ─────────────────────────────────────────────────────────── */
 .claude-attach-menu {
+    display: flex !important;
+    flex-direction: column !important;
     position: fixed;
     z-index: 1200;
     min-width: 220px;
@@ -6766,4 +6769,55 @@ html[data-custom-accent][data-theme="light"] .hero .hero-icon-img {
     background: var(--c-hover, rgba(0, 0, 0, 0.05));
     color: var(--c-text, #29261b);
     border-color: var(--c-line-strong, rgba(112, 107, 87, 0.42));
+}
+
+/* §28 ─ 设置页账号与隐私内容（2026-06-01）
+   把原来外链 account.html 的信息直接内嵌到 claudeSettingsView。 */
+.claude-device-table-wrap {
+    border: 1px solid var(--c-line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.claude-device-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.claude-device-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--c-text-soft);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--c-line);
+    background: var(--c-bg-elev);
+}
+.claude-device-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--c-line);
+    color: var(--c-text);
+    vertical-align: top;
+}
+.claude-device-table tr:last-child td {
+    border-bottom: none;
+}
+.claude-device-empty {
+    text-align: center;
+    color: var(--c-text-soft);
+    padding: 18px;
+}
+.claude-device-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: var(--font-mono, monospace);
+    background: rgba(74, 222, 128, 0.15);
+    color: #10b981;
+    margin-left: 6px;
+}
+html[data-theme="dark"] .claude-device-badge,
+html[data-theme="black"] .claude-device-badge {
+    background: rgba(74, 222, 128, 0.18);
+    color: #34d399;
 }

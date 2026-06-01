@@ -60,7 +60,8 @@
             bindPageDragOverlay,
             bindRecentHeaderToggle,
             bindGroupByDropdown,
-            bindVoiceHoverAnimation
+            bindVoiceHoverAnimation,
+            bindClaudeAccountPanel
         ].forEach(function (step) {
             try {
                 step();
@@ -2113,6 +2114,9 @@
                     if (key === 'invite' && typeof window.fetchAndRenderInvitePanel === 'function') {
                         window.fetchAndRenderInvitePanel();
                     }
+                    if (key === 'account') {
+                        loadClaudeAccount();
+                    }
                 });
             });
         }
@@ -3300,6 +3304,234 @@
         }
         current = null;
         if (tip) tip.classList.remove('show');
+    }
+
+    /* ── 设置页 Account / Privacy 内嵌逻辑（2026-06-01） ── */
+    var claudeAccountTimer = null;
+    var claudeAccountSessionStart = 0;
+
+    function setClaudeText(id, text) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s == null ? '' : s);
+        return d.innerHTML;
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso);
+        return d.toLocaleString('zh-CN', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        });
+    }
+
+    function fmtDuration(ms) {
+        var totalSec = Math.floor(ms / 1000);
+        var h = Math.floor(totalSec / 3600);
+        var m = Math.floor((totalSec % 3600) / 60);
+        var s = totalSec % 60;
+        if (h > 0) return h + ' 小时 ' + m + ' 分钟';
+        if (m > 0) return m + ' 分钟 ' + s + ' 秒';
+        return s + ' 秒';
+    }
+
+    function parseUA(ua) {
+        if (!ua) return { browser: '未知', os: '' };
+        var u = String(ua).toLowerCase();
+        var browser = '未知';
+        var os = '';
+        if (u.indexOf('edg/') !== -1 || u.indexOf('edge/') !== -1) browser = 'Edge';
+        else if (u.indexOf('chrome/') !== -1 && u.indexOf('chromium/') === -1) browser = 'Chrome';
+        else if (u.indexOf('firefox/') !== -1) browser = 'Firefox';
+        else if (u.indexOf('safari/') !== -1 && u.indexOf('chrome/') === -1) browser = 'Safari';
+        else if (u.indexOf('opr/') !== -1 || u.indexOf('opera/') !== -1) browser = 'Opera';
+        if (u.indexOf('windows') !== -1) os = 'Windows';
+        else if (u.indexOf('macintosh') !== -1 || u.indexOf('mac os') !== -1) os = 'macOS';
+        else if (u.indexOf('linux') !== -1) os = 'Linux';
+        else if (u.indexOf('android') !== -1) os = 'Android';
+        else if (u.indexOf('iphone') !== -1 || u.indexOf('ipad') !== -1) os = 'iOS';
+        return { browser: browser, os: os };
+    }
+
+    function loadClaudeAccount() {
+        claudeAccountSessionStart = Date.now();
+        if (claudeAccountTimer) { clearInterval(claudeAccountTimer); claudeAccountTimer = null; }
+        var client = null;
+        if (window.supabase && window.supabase.createClient) {
+            try {
+                client = window.supabase.createClient(
+                    window.__SUPABASE_URL__,
+                    window.__SUPABASE_ANON_KEY__,
+                    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'cancri_supabase_auth' } }
+                );
+            } catch (e) { client = null; }
+        }
+        if (!client) return;
+        client.auth.getSession().then(function (res) {
+            var session = res && res.data && res.data.session;
+            if (!session || !session.user) {
+                setClaudeText('claudeAccountEmail', '未登录');
+                return;
+            }
+            var user = session.user;
+            setClaudeText('claudeAccountEmail', esc(user.email || '匿名用户'));
+            setClaudeText('claudeAccountUid', esc(user.id).slice(0, 8) + '…');
+            var uidEl = document.getElementById('claudeAccountUid');
+            if (uidEl) uidEl.title = user.id;
+            setClaudeText('claudeAccountCreated', fmtDate(user.created_at));
+            setClaudeText('claudeAccountLastSignin', fmtDate(user.last_sign_in_at));
+            claudeAccountTimer = setInterval(function () {
+                setClaudeText('claudeAccountOnline', fmtDuration(Date.now() - claudeAccountSessionStart));
+            }, 1000);
+            setClaudeText('claudeAccountOnline', fmtDuration(0));
+            var token = session.access_token;
+            fetch(window.__SUPABASE_URL__ + '/functions/v1/chat-gateway', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', apikey: window.__SUPABASE_ANON_KEY__ },
+                body: JSON.stringify({ endpoint: 'my_account', __auth_token: token })
+            }).then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (data) {
+                setClaudeText('claudeAccountIp', esc(data.current_ip || '—'));
+                renderClaudeDevices(data.devices || []);
+            }).catch(function (err) {
+                console.error('my_account:', err);
+                setClaudeText('claudeAccountIp', '获取失败');
+                renderClaudeDevices([]);
+            });
+        });
+    }
+
+    function renderClaudeDevices(devices) {
+        var tbody = document.getElementById('claudeDeviceList');
+        if (!tbody) return;
+        if (!devices.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="claude-device-empty">暂无记录</td></tr>';
+            return;
+        }
+        var html = '';
+        devices.forEach(function (d, idx) {
+            var parsed = parseUA(d.ua);
+            var isCurrent = idx === 0 && d.ua === navigator.userAgent;
+            var badge = isCurrent ? '<span class="claude-device-badge">当前</span>' : '';
+            var location = [d.country, d.timezone].filter(Boolean).join(' / ') || '—';
+            html += '<tr>' +
+                '<td><div>' + esc(parsed.browser + (parsed.os ? ' (' + parsed.os + ')' : '')) + badge + '</div>' +
+                '<div style="font-size:12px;color:var(--c-text-soft);margin-top:2px;word-break:break-all;">' + esc(d.ua ? d.ua.slice(0, 80) : '') + '</div></td>' +
+                '<td>' + esc(location) + '</td>' +
+                '<td>' + esc(fmtDate(d.created_at)) + '</td>' +
+                '</tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    function bindClaudeAccountPanel() {
+        var signOutBtn = document.getElementById('claudeSignOutAllBtn');
+        if (signOutBtn) {
+            signOutBtn.addEventListener('click', function () {
+                if (!confirm('确定要从所有设备登出？这将结束所有会话。')) return;
+                var client = null;
+                if (window.supabase && window.supabase.createClient) {
+                    try {
+                        client = window.supabase.createClient(
+                            window.__SUPABASE_URL__,
+                            window.__SUPABASE_ANON_KEY__,
+                            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'cancri_supabase_auth' } }
+                        );
+                    } catch (e) { client = null; }
+                }
+                if (!client) return;
+                client.auth.signOut({ scope: 'global' }).then(function () {
+                    window.location.href = './index.html';
+                }).catch(function (err) {
+                    alert('登出失败：' + (err.message || '未知错误'));
+                });
+            });
+        }
+
+        var exportBtn = document.getElementById('claudeExportChatsBtn');
+        var progress = document.getElementById('claudeExportProgress');
+        var progressRow = document.getElementById('claudeExportProgressRow');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', async function () {
+                exportBtn.disabled = true;
+                if (progressRow) progressRow.style.display = 'flex';
+                if (progress) progress.textContent = '正在获取对话列表…';
+                var token = getCancriAccessToken();
+                var SUPABASE_URL = window.__SUPABASE_URL__ || '';
+                var SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
+                if (!token) {
+                    if (progress) progress.textContent = '请先登录。';
+                    exportBtn.disabled = false;
+                    return;
+                }
+                try {
+                    var resp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token },
+                        body: JSON.stringify({ endpoint: 'chat_history', action: 'list', __auth_token: token })
+                    });
+                    var json = await resp.json().catch(function () { return {}; });
+                    var chats = (json.data || []);
+                    if (!chats.length) {
+                        if (progress) progress.textContent = '暂无聊天记录可导出。';
+                        exportBtn.disabled = false;
+                        return;
+                    }
+                    var full = [];
+                    for (var i = 0; i < chats.length; i++) {
+                        var chat = chats[i];
+                        if (progress) progress.textContent = '正在导出 ' + (i + 1) + ' / ' + chats.length + '…';
+                        try {
+                            var dResp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token },
+                                body: JSON.stringify({ endpoint: 'chat_history', action: 'get', id: chat.id, __auth_token: token })
+                            });
+                            var dJson = await dResp.json().catch(function () { return {}; });
+                            full.push({ id: chat.id, title: chat.title || '', created_at: chat.created_at, updated_at: chat.updated_at, messages: (dJson.data && dJson.data.messages) || [] });
+                        } catch (e) {
+                            full.push({ id: chat.id, title: chat.title || '', created_at: chat.created_at, updated_at: chat.updated_at, messages: [], _error: String(e.message || e) });
+                        }
+                        if (i < chats.length - 1) await new Promise(function (r) { setTimeout(r, 120); });
+                    }
+                    var blob = new Blob([JSON.stringify(full, null, 2)], { type: 'application/json' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'cancri_chats_' + new Date().toISOString().slice(0, 10) + '.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                    if (progress) progress.textContent = '导出完成：共 ' + full.length + ' 条对话。';
+                } catch (err) {
+                    console.error('export:', err);
+                    if (progress) progress.textContent = '导出失败：' + (err.message || '未知错误');
+                } finally {
+                    exportBtn.disabled = false;
+                }
+            });
+        }
+
+        var clearBtn = document.getElementById('claudeClearLocalBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                if (!confirm('确定要清除本地聊天记录缓存吗？这不会删除服务器上的记录。')) return;
+                try {
+                    localStorage.removeItem('cancri_chat_history_list_cache_v1');
+                    localStorage.removeItem('cancri_pinned_chats');
+                    alert('本地缓存已清除。');
+                } catch (e) {
+                    alert('清除失败：' + (e.message || '未知错误'));
+                }
+            });
+        }
     }
 
     document.addEventListener('mouseover', function (e) {
