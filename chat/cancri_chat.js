@@ -2966,6 +2966,7 @@ function updateAttachmentPreview() {
   if (!pendingAttachments.length) {
     attachmentPreview.hidden = true;
     updateComposerToolStatus();
+    syncComposerHeightVar();
     return;
   }
 
@@ -3028,6 +3029,15 @@ function updateAttachmentPreview() {
   });
 
   updateComposerToolStatus();
+  syncComposerHeightVar();
+}
+
+function syncComposerHeightVar() {
+  const composer = homeInput?.closest("[data-workbench-composer], .composer");
+  if (!composer) return;
+  const height = Math.max(0, Math.round(composer.getBoundingClientRect().height));
+  if (!height) return;
+  document.documentElement.style.setProperty("--composer-height", `${height}px`);
 }
 
 function removePendingAttachment(index) {
@@ -6878,6 +6888,7 @@ function setActiveView(view) {
   if (view === "leaderboard") {
     loadMainLeaderboard();
   }
+  syncComposerHeightVar();
   window.dispatchEvent(
     new CustomEvent("cancri:viewchange", { detail: { view } }),
   );
@@ -9165,6 +9176,8 @@ function updateComposerSendButton() {
     sendChatBtn.classList.remove("has-text");
     voiceInputBtn.classList.remove("hidden");
   }
+
+  syncComposerHeightVar();
 }
 
 function getComposerResizeMaxHeight() {
@@ -9192,6 +9205,8 @@ function autoResizeComposerInput() {
       next > minHeight + 12 || homeInput.value.includes("\n"),
     );
   }
+
+  syncComposerHeightVar();
 }
 
 function sleep(ms) {
@@ -13082,12 +13097,33 @@ function isMobileViewport() {
   return window.innerWidth <= 640;
 }
 
+function ensureLatestClaudeStylesheet() {
+  const href = "./claude.css?v=2026-06-01-scroll-black";
+  if (document.querySelector(`link[rel="stylesheet"][href="${href}"]`)) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function syncScrollToBottomAnchor() {
+  if (!scrollToBottomBtn) return;
+  if (window.matchMedia("(max-width: 768px)").matches) {
+    scrollToBottomBtn.style.left = "50%";
+    return;
+  }
+  const sidebarWidth = sidebar?.getBoundingClientRect().width || 0;
+  const shift = Math.max(0, Math.round(sidebarWidth / 2));
+  scrollToBottomBtn.style.left = shift ? `calc(50% + ${shift}px)` : "50%";
+}
+
 function updateScrimVisibility() {
   if (!scrim) return;
   const shouldShow =
     Boolean(state.modal) ||
     (isMobileViewport() && sidebar && !sidebar.classList.contains("collapsed"));
   scrim.classList.toggle("show", shouldShow);
+  syncScrollToBottomAnchor();
 }
 
 function updateNexusvFooterVisibility() {
@@ -14556,6 +14592,7 @@ function updateThemeSwitcherActive() {
 }
 
 renderWatermark();
+ensureLatestClaudeStylesheet();
 restoreUiPreferences();
 applyTheme();
 updateThemeSwitcherActive();
@@ -14580,6 +14617,8 @@ if (isMobileViewport() && sidebar) {
 }
 updateScrimVisibility();
 window.addEventListener("resize", updateScrimVisibility);
+window.addEventListener("resize", syncComposerHeightVar);
+window.addEventListener("resize", syncScrollToBottomAnchor);
 
 // 设置当前模型显示
 if (currentModelName) {

@@ -133,7 +133,9 @@ html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"
        我们在 Claude 栈基础上补 CJK fallback（中文用户需要），位置放在 sans-serif
        generic 之前，确保中文字符命中系统中文字体而非 emoji。 */
     --c-font: "Anthropic Sans", ui-sans-serif, system-ui,
-              "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+              "PingFang SC", "PingFang TC", "Hiragino Sans GB",
+              "Microsoft JhengHei", "Microsoft YaHei",
+              "Noto Sans CJK SC", "Noto Sans CJK JP", "Noto Sans CJK KR",
               sans-serif,
               "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
               "Noto Color Emoji";
@@ -195,6 +197,7 @@ body {
     background: var(--c-bg) !important;
     color: var(--c-text) !important;
     font-family: var(--c-font) !important;
+    font-weight: 100;
     /* 2026-05-15 v3 fix(C2)：群友反馈"我们站内就很模糊，Claude就很锐利
        看的清楚不知道为啥"。Claude 网页 body 里有这三个 rendering 优化：
          - antialiased smoothing 让字 stroke 更锐（vs 默认 subpixel 厚边）
@@ -222,6 +225,16 @@ body {
 
 .main {
     background: var(--c-bg) !important;
+    --scroll-to-bottom-shift-x: calc(var(--workbench-sidebar-width) / 2);
+}
+
+.sidebar.collapsed ~ .main,
+.sidebar[data-collapsed="true"] ~ .main {
+    --scroll-to-bottom-shift-x: calc(var(--workbench-rail-width) / 2);
+}
+
+.scroll-to-bottom-btn {
+    left: calc(50% + var(--scroll-to-bottom-shift-x, 0px));
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -1032,6 +1045,7 @@ html[data-theme="light"] .composer:focus-within {
     resize: none !important;
     width: 100%;
     font-family: var(--c-font) !important;
+    font-weight: 100;
 }
 .composer-input::placeholder {
     color: var(--c-text-dim) !important;
@@ -1494,7 +1508,14 @@ html[data-theme="black"] .claude-suggest:hover {
     top: 0;
     display: block;
     height: 24px;
-    background: linear-gradient(to bottom, var(--c-bg) 0%, transparent 100%);
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--c-bg) 96%, transparent) 0%,
+        color-mix(in srgb, var(--c-bg) 84%, transparent) 58%,
+        transparent 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 2;
     pointer-events: none;
 }
@@ -1531,6 +1552,11 @@ html[data-theme="black"] .claude-suggest:hover {
     /* 2026-05-15 essence: 去除 cancri_chat.css:3046 的橙色发光阴影。
        Claude 真站 user bubble 是干净的圆角矩形，底部无 elevation。 */
     box-shadow: none !important;
+}
+html[data-theme="light"] .chat-messages .message.user-message .message-content,
+html[data-theme="light"] .chat-messages .message.user .message-content,
+html[data-theme="light"] .chat-messages .message[data-role="user"] .message-content {
+    background: #efeeeb !important;
 }
 .chat-messages .message.assistant-message,
 .chat-messages .message.assistant,
@@ -2322,6 +2348,7 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     .main, .app .main {
         margin-left: 0 !important;
         width: 100vw !important;
+        --scroll-to-bottom-shift-x: 0px;
     }
     /* 汉堡按钮在 mobile 必须显示 */
     .main-header .header-left > #mobileMenuBtn,
@@ -3238,6 +3265,7 @@ button.composer-tool-btn:hover {
 .message.assistant .think-body {
     /* 对齐 claude.ai 回复正文：衬线栈。拉丁=Anthropic Serif，中文=宋体系 fallback。 */
     font-family: var(--c-font-serif) !important;
+    font-weight: 100;
     /* 2026-05-16 PR ·prose 1:1：字号 16px→1rem、行高 1.62→1.75 对齐 Claude
        真站 .prose root（源 main_window/index.html:1230-1231）。 */
     font-size: 1rem;
@@ -3254,6 +3282,7 @@ button.composer-tool-btn:hover {
 /* 用户气泡显式 sans（防防其他规则误覆盖） */
 .message.user .message-content {
     font-family: var(--c-font) !important;
+    font-weight: 100;
 }
 /* 原§16 的重复声明块（hero · page-title · settings-title 全块强制 serif）全部删除。
    这些位置现在走 body 默认 sans，跟 Claude 真站 1:1。 */
@@ -3571,6 +3600,27 @@ html[data-theme="dark"] .message.assistant .message-content {
     --tw-prose-kbd-shadows: 255 255 255;
     --tw-prose-code: #fff;
     --tw-prose-pre-code: #d1d5db;
+    --tw-prose-pre-bg: rgb(0 0 0 / 50%);
+    --tw-prose-th-borders: #4b5563;
+    --tw-prose-td-borders: #374151;
+}
+
+html[data-theme="black"] .message.assistant .message-content {
+    --tw-prose-body: #e5e7eb;
+    --tw-prose-headings: #ffffff;
+    --tw-prose-lead: #cbd5e1;
+    --tw-prose-links: #ffffff;
+    --tw-prose-bold: #ffffff;
+    --tw-prose-counters: #9ca3af;
+    --tw-prose-bullets: #6b7280;
+    --tw-prose-hr: #374151;
+    --tw-prose-quotes: #f3f4f6;
+    --tw-prose-quote-borders: #374151;
+    --tw-prose-captions: #9ca3af;
+    --tw-prose-kbd: #ffffff;
+    --tw-prose-kbd-shadows: 255 255 255;
+    --tw-prose-code: #ffffff;
+    --tw-prose-pre-code: #e5e7eb;
     --tw-prose-pre-bg: rgb(0 0 0 / 50%);
     --tw-prose-th-borders: #4b5563;
     --tw-prose-td-borders: #374151;
