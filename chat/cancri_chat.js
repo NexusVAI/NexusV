@@ -2407,6 +2407,8 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
   {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
+  // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
+  {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "gpt-5.5-welfare", "name": "【福利A】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-3.5-flash-welfare", "name": "【福利】Gemini 3.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-3.1-flash-lite-welfare", "name": "【福利】Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
