@@ -2382,7 +2382,7 @@ const MODEL_CATALOG = [
   // 2026-05-29: Claude Opus 4.7 Thinking — thinkai 上游，独立 key。
   {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 17.0},
   // 2026-06-03: 【特价】claude-opus-4-7 — coderelay 上游，normal 档 3x。
-  {"id": "claude-opus-4-7-special", "name": "【特价】claude-opus-4-7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "claude-opus-4-7-special", "name": "【特价】Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-06-02: Mimo 聊天模型全部下线。
@@ -14703,7 +14703,7 @@ const closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 const openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
 // 2026-05-17 Phase A grandfather：升一版 key，所有用户重新看到公告红点。
-const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0531_welfare_substation_v1";
+const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0603_618_special_v1";
 
 function openAnnouncementModal() {
   if (!announcementModal) return;
