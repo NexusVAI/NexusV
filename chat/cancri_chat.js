@@ -1672,6 +1672,7 @@ const PAID_GATE_IDS = new Set([
   "gpt-image-2-pro",
   "claude-haiku-4-5-20251001",
   "claude-haiku-4-5-20251001-thinking",
+  "claude-opus-4-7-special",
 ]);
 // 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
 // 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
@@ -1686,6 +1687,7 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gemini-3.1-pro",
   "gpt-image-2-all",
   "gpt-image-2-pro",
+  "claude-opus-4-7-special",
 ]);
 
 const PRO_MAX_GATE_IDS = new Set([
@@ -2379,6 +2381,8 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 20.0},
   // 2026-05-29: Claude Opus 4.7 Thinking — thinkai 上游，独立 key。
   {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 17.0},
+  // 2026-06-03: 【特价】claude-opus-4-7 — coderelay 上游，normal 档 3x。
+  {"id": "claude-opus-4-7-special", "name": "【特价】claude-opus-4-7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-06-02: Mimo 聊天模型全部下线。
