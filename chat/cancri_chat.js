@@ -2326,6 +2326,12 @@ const MODEL_SELECTION_MIGRATIONS = {
   "wan2.7-r2v": DEFAULT_MODEL_ID,
   "wan2.6-r2v-flash": DEFAULT_MODEL_ID,
   "wan2.6-r2v": DEFAULT_MODEL_ID,
+  // 2026-06-02: Mimo 模型全部下线。
+  "mimo-v2.5-pro": DEFAULT_MODEL_ID,
+  "mimo-v2.5": DEFAULT_MODEL_ID,
+  "mimo-v2-pro": DEFAULT_MODEL_ID,
+  // 2026-06-02: gpt-4 下线。
+  "gpt-4": DEFAULT_MODEL_ID,
   // 2026-05-13 审查：catalog/registry 已用 grok-4.20-0309 取代 grok-4.3
 };
 // 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则
@@ -2350,7 +2356,6 @@ const MODEL_CATALOG = [
   {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 3.0},
   {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "gpt-4", "name": "GPT-4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 25.0},
@@ -2376,10 +2381,7 @@ const MODEL_CATALOG = [
   {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 17.0},
   // 2026-05-29: deepsb 模型。
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  // 2026-05-27：MiMo 聊天模型全线免费福利。
-  {"id": "mimo-v2.5-pro", "name": "【福利】MiMo 2.5 Pro", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "mimo-v2.5", "name": "【福利】MiMo 2.5", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "mimo-v2-pro", "name": "【福利】MiMo V2 Pro", "brand": "小米 MiMo", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  // 2026-06-02: Mimo 聊天模型全部下线。
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
   {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   // 2026-05-25: grok-4.20-0309-non-reasoning（dgbmc 上游，复用现有 key）
