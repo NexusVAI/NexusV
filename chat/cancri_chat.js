@@ -1788,7 +1788,7 @@ function isFreeUserBlockedGateModel(modelId) {
 // 直接看 MODEL_CATALOG 上的 costTier === 'vip'（Claude Opus / Gemini 3.1 Pro / 全部视频模型）。
 function isProPlusGateModel(modelId) {
   const meta = getModelMeta(modelId);
-  return Boolean(meta && meta.costTier === "vip");
+  return Boolean(meta && (meta.costTier === "vip" || meta.proPlusOnly));
 }
 
 function isProMaxGateModel(modelId) {
@@ -2452,7 +2452,7 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
   {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
   // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
-  {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 0.5, "proPlusOnly": true},
   {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
   {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
   {"id": "gemini-3.1-flash-lite-welfare", "name": "Gemini 3.1 Flash Lite 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
