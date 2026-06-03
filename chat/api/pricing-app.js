@@ -132,8 +132,8 @@ const CC = window.CancriCredits || {
 // 订单提交仍由 server 端重算金额，前端值不可信。
 const CLIENT_CATALOG = {
     subscription: {
-        pro: { amount: 9.9, amount_original: 9.9, discount: 1.0, label: "Pro", desc: "月 2000 积分" },
-        pro_plus: { amount: 29, amount_original: 29, discount: 1.0, label: "Pro+", desc: "月 8000 积分 + Opus" },
+        pro: { amount: 7.92, amount_original: 9.9, discount: 0.8, label: "Pro", desc: "月 2000 积分" },
+        pro_plus: { amount: 24.65, amount_original: 29, discount: 0.85, label: "Pro+", desc: "月 8000 积分 + Opus" },
         pro_max: { amount: 99, amount_original: 99, discount: 1.0, label: "Pro Max", desc: "月 30000 积分" },
     },
     topup: {
