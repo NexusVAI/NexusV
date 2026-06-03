@@ -756,6 +756,7 @@
         <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
           <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
           <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-toggle__black" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>
         </button>
       </div>
     </header>
@@ -2480,6 +2481,11 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <code>/v1/images/generations</code> 和 <code>/v1/videos/generations</code>
             <b>已下线 API 入口</b>，改为只在网页版可用。如果你之前在调用，会收到
             <code>403 endpoint_disabled</code>。后续如果重开会在这里另行说明。
+          </p>
+          <p>
+            网页端图像生成固定扣减（不计 token）：
+            <code>gpt-image-2</code> 150 积分/次，
+            <code>gpt-image-2-pro</code> 300 积分/次。
           </p>
           <h3>CLI 模型选择器里看不到我想要的模型？</h3>
           <p>
