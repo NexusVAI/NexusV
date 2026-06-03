@@ -230,6 +230,9 @@ const KNOWN_ERROR_CODE_MESSAGES = {
   upstream_unavailable: "模型服务暂时不可用，请稍后重试。",
   upstream_parse_failed: "模型服务响应异常，请稍后重试。",
   upstream_fetch_failed: "Cancri API 连接失败，请稍后重试。",
+  // 2026-06-03: 免费用户滚动 token 窗口限制
+  token_window_5h_exceeded: "5 小时内 token 用量已达上限，请稍后再试。升级 Pro 解除限制。",
+  token_window_week_exceeded: "本周 token 用量已达上限，请稍后再试。升级 Pro 解除限制。",
   // Image / video specialised codes
   image_content_policy:
     "提示词被内容安全策略拒绝，请修改后重试（避免明确版权角色名 / 真人姓名 / 暴力或不当描述）。",
@@ -1716,6 +1719,11 @@ let quotaState = {
   topupBalance: null,
   // 2026-05-31 T7：免费共享池重置时间（period_end），用于输入框下方「免费额度耗尽」提示。
   freePoolPeriodEnd: null,
+  // 2026-06-03：免费用户滚动 token 窗口
+  tokenWindow5hUsed: null,     // null = 未知
+  tokenWindow5hLimit: null,
+  tokenWindowWeekUsed: null,
+  tokenWindowWeekLimit: null,
 };
 let quotaStateFetchInflight = null;
 const QUOTA_STATE_TTL_MS = 30 * 1000;
@@ -1923,6 +1931,18 @@ async function refreshQuotaState(force) {
           data.free_pool && data.free_pool.period_end
             ? data.free_pool.period_end
             : null;
+        // 2026-06-03: 免费用户滚动 token 窗口
+        if (data.token_window) {
+          quotaState.tokenWindow5hUsed = Number(data.token_window.used_5h) || 0;
+          quotaState.tokenWindow5hLimit = Number(data.token_window.limit_5h) || null;
+          quotaState.tokenWindowWeekUsed = Number(data.token_window.used_week) || 0;
+          quotaState.tokenWindowWeekLimit = Number(data.token_window.limit_week) || null;
+        } else {
+          quotaState.tokenWindow5hUsed = null;
+          quotaState.tokenWindow5hLimit = null;
+          quotaState.tokenWindowWeekUsed = null;
+          quotaState.tokenWindowWeekLimit = null;
+        }
         quotaState.fetchedAt = Date.now();
         if (clearTopupBackedQuotaLocks()) {
           persistModelTelemetryCache();
@@ -13001,7 +13021,9 @@ async function sendMessage(content) {
       message.includes("已切换会话");
     const failureAnswer = isUserStopped
       ? "已停止生成。"
-      : getSafeModelErrorText(turnModelId);
+      : (message && message !== "抱歉，发送消息时出现错误，请稍后重试。" && message.length < 200
+        ? message
+        : getSafeModelErrorText(turnModelId));
     if (isUserStopped) {
       updateAssistantMessage(assistantMessageId, {
         answer: failureAnswer,

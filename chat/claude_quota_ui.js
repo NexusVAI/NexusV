@@ -193,6 +193,47 @@
     var dailyBarClass = dailyUsed >= dailyLimit ? 'is-exhausted' : dailyUsed >= dailyLimit * 0.8 ? 'is-warn' : '';
     var topupBalance = Number(data.topup_balance) || 0;
 
+    // 2026-06-03: 滚动 token 窗口
+    var tw = data.token_window || null;
+    var twCard = '';
+    if (tw) {
+      var tw5hUsed = Number(tw.used_5h) || 0;
+      var tw5hLimit = Number(tw.limit_5h) || 100000;
+      var tw5hPct = tw5hLimit > 0 ? Math.min(100, (tw5hUsed / tw5hLimit) * 100) : 0;
+      var tw5hBar = tw5hPct >= 95 ? 'is-exhausted' : tw5hPct >= 80 ? 'is-warn' : '';
+      var twWkUsed = Number(tw.used_week) || 0;
+      var twWkLimit = Number(tw.limit_week) || 500000;
+      var twWkPct = twWkLimit > 0 ? Math.min(100, (twWkUsed / twWkLimit) * 100) : 0;
+      var twWkBar = twWkPct >= 95 ? 'is-exhausted' : twWkPct >= 80 ? 'is-warn' : '';
+      twCard = [
+        '<div class="claude-quota-card">',
+        '  <div class="claude-quota-card-head">',
+        '    <span class="claude-quota-card-title">Token 用量窗口</span>',
+        '    <span class="claude-quota-card-sub">滚动上限，超限需等待重置</span>',
+        '  </div>',
+        '  <div style="display:flex;flex-direction:column;gap:12px;">',
+        '    <div>',
+        '      <div style="font-size:12px;color:var(--text-soft);margin-bottom:4px;">5 小时窗口</div>',
+        '      <div class="claude-quota-bar"><div class="claude-quota-bar-fill ' + tw5hBar + '" style="width:' + tw5hPct.toFixed(1) + '%"></div></div>',
+        '      <div class="claude-quota-stat">',
+        '        <span>已用 <b>' + fmtTokens(tw5hUsed) + '</b> / ' + fmtTokens(tw5hLimit) + '</span>',
+        '        <span>' + tw5hPct.toFixed(1) + '%</span>',
+        '      </div>',
+        '    </div>',
+        '    <div>',
+        '      <div style="font-size:12px;color:var(--text-soft);margin-bottom:4px;">周窗口</div>',
+        '      <div class="claude-quota-bar"><div class="claude-quota-bar-fill ' + twWkBar + '" style="width:' + twWkPct.toFixed(1) + '%"></div></div>',
+        '      <div class="claude-quota-stat">',
+        '        <span>已用 <b>' + fmtTokens(twWkUsed) + '</b> / ' + fmtTokens(twWkLimit) + '</span>',
+        '        <span>' + twWkPct.toFixed(1) + '%</span>',
+        '      </div>',
+        '    </div>',
+        '  </div>',
+        '  <p class="claude-quota-note">免费用户每 5 小时最多 ' + fmtTokens(tw5hLimit) + ' token，每周最多 ' + fmtTokens(twWkLimit) + ' token。超出后需等待窗口滚动重置。升级 Pro 解除此限制。</p>',
+        '</div>',
+      ].join('');
+    }
+
     var topupCard = topupBalance > 0 ? [
       '<div class="claude-quota-card">',
       '  <div class="claude-quota-card-head">',
@@ -232,6 +273,8 @@
       '  </div>',
       '  <p class="claude-quota-note">失败请求（上游错误、key 失效、风控）不计入此 ' + dailyLimit + ' 次。GPT-5.5 系列为 Pro 以上专属，Claude Opus 系列为 Pro+ 以上专属，均不计入免费试用次数。</p>',
       '</div>',
+
+      twCard,
 
       topupCard,
 
