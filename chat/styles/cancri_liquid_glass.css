@@ -5,6 +5,7 @@
  * drops, especially on mobile where backdrop-filter url(SVG) is GPU-heavy):
  *
  *   • Composer action buttons   (.send-btn / .voice-btn / .composer-tool-btn)
+ *   • Scroll-to-bottom orb      (.scroll-to-bottom-btn)
  *   • Model picker dropdown     (.model-dropdown)
  *
  * Everything else (composer body, modals, announcement carousel, admin
@@ -26,17 +27,17 @@
 [data-glass] {
     position: relative;
     isolation: isolate;
-    background-color: rgba(255, 255, 255, var(--lg-tint, 0.05)) !important;
+    background-color: rgba(255, 255, 255, var(--lg-tint, 0.045)) !important;
     backdrop-filter:
         url(#cancri-liquid-glass)
-        blur(var(--lg-blur, 2px))
-        saturate(140%)
-        brightness(1.05);
+        blur(var(--lg-blur, 1.25px))
+        saturate(128%)
+        brightness(1.035);
     -webkit-backdrop-filter:
         url(#cancri-liquid-glass)
-        blur(var(--lg-blur, 2px))
-        saturate(140%)
-        brightness(1.05);
+        blur(var(--lg-blur, 1.25px))
+        saturate(128%)
+        brightness(1.035);
 }
 
 /* Specular rim — paints only the inset ring, middle stays fully
@@ -63,17 +64,17 @@ html[data-theme="light"] [data-glass]::after {
 /* ── Variants ──────────────────────────────────────────────────── */
 
 [data-glass="button"] {
-    --lg-blur: 1px;
-    --lg-tint: 0.06;
-    --lg-rim: 0.32;
-    --lg-rim-top: 0.50;
+    --lg-blur: 0.85px;
+    --lg-tint: 0.045;
+    --lg-rim: 0.26;
+    --lg-rim-top: 0.42;
 }
 
 [data-glass="card"] {
-    --lg-blur: 3px;
-    --lg-tint: 0.05;
-    --lg-rim: 0.22;
-    --lg-rim-top: 0.34;
+    --lg-blur: 2px;
+    --lg-tint: 0.04;
+    --lg-rim: 0.2;
+    --lg-rim-top: 0.3;
 }
 
 /* ── Performance-driven fallbacks ──────────────────────────────────
@@ -88,22 +89,22 @@ html[data-theme="light"] [data-glass]::after {
  */
 @supports not (backdrop-filter: url(#x)) {
     [data-glass] {
-        backdrop-filter: blur(10px) saturate(150%);
-        -webkit-backdrop-filter: blur(10px) saturate(150%);
+        backdrop-filter: blur(6px) saturate(132%);
+        -webkit-backdrop-filter: blur(6px) saturate(132%);
     }
 }
 
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
     [data-glass] {
-        backdrop-filter: blur(8px) saturate(140%) !important;
-        -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
+        backdrop-filter: blur(5px) saturate(128%) !important;
+        -webkit-backdrop-filter: blur(5px) saturate(128%) !important;
     }
 }
 
 @media (prefers-reduced-motion: reduce), (prefers-reduced-data: reduce) {
     [data-glass] {
-        backdrop-filter: blur(6px) saturate(130%) !important;
-        -webkit-backdrop-filter: blur(6px) saturate(130%) !important;
+        backdrop-filter: blur(4px) saturate(124%) !important;
+        -webkit-backdrop-filter: blur(4px) saturate(124%) !important;
     }
 }
 
@@ -122,13 +123,96 @@ html[data-theme="light"] [data-glass]::after {
 
 /* Tool buttons (+/web search) stay subtle — secondary affordances. */
 .composer-tool-btn[data-glass] {
-    --lg-tint: 0.04;
-    --lg-rim: 0.24;
+    --lg-tint: 0.05;
+    --lg-rim: 0.28;
 }
 
 /* Model dropdown sits over varied page background — give it a touch
    more tint so labels stay legible. */
 .model-dropdown[data-glass] {
-    --lg-tint: 0.06;
-    --lg-blur: 4px;
+    --lg-tint: 0.05;
+    --lg-blur: 2px;
+}
+
+/* Scroll-to-bottom: small floating orb over chat — liquid glass when
+   supported, plain panel tint otherwise (see @supports / mobile fallbacks). */
+.scroll-to-bottom-btn[data-glass] {
+    /* [data-glass] 基类会设 position:relative，不能把回底按钮打进 flex 行里压扁 */
+    position: fixed !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    flex: none !important;
+    border: 0;
+    --lg-tint: 0.07;
+    --lg-blur: 1.25px;
+    --lg-rim: 0.3;
+    --lg-rim-top: 0.4;
+    background-color: color-mix(
+        in srgb,
+        var(--panel) 66%,
+        rgba(255, 255, 255, 0.1)
+    ) !important;
+}
+
+html[data-theme="light"] .scroll-to-bottom-btn[data-glass] {
+    background-color: color-mix(
+        in srgb,
+        var(--panel) 74%,
+        rgba(255, 255, 255, 0.16)
+    ) !important;
+}
+
+/* 生图结果浮层：复制 / 下载，叠在图片右下角 */
+.generated-image-action-btn[data-glass] {
+    --lg-tint: 0.08;
+    --lg-blur: 1px;
+    --lg-rim: 0.32;
+    --lg-rim-top: 0.45;
+    background-color: color-mix(
+        in srgb,
+        var(--panel) 58%,
+        rgba(255, 255, 255, 0.12)
+    ) !important;
+}
+
+html[data-theme="light"] .generated-image-action-btn[data-glass] {
+    background-color: color-mix(
+        in srgb,
+        var(--panel) 70%,
+        rgba(255, 255, 255, 0.2)
+    ) !important;
+    --lg-rim: 0.48;
+    --lg-rim-top: 0.72;
+}
+
+.code-block-btn[data-glass] {
+    --lg-tint: 0.08;
+    --lg-blur: 1px;
+    --lg-rim: 0.32;
+    --lg-rim-top: 0.45;
+    background-color: color-mix(
+        in srgb,
+        var(--panel) 58%,
+        rgba(255, 255, 255, 0.12)
+    ) !important;
+}
+
+html[data-theme="light"] .code-block-btn[data-glass] {
+    background-color: color-mix(
+        in srgb,
+        var(--panel) 70%,
+        rgba(255, 255, 255, 0.2)
+    ) !important;
+    --lg-rim: 0.48;
+    --lg-rim-top: 0.72;
+}
+
+@supports not (backdrop-filter: url(#x)) {
+    .scroll-to-bottom-btn[data-glass] {
+        background-color: var(--panel) !important;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
 }

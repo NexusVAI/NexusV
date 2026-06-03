@@ -984,7 +984,7 @@ html[data-theme="light"] .auth-hero-subtitle {
     width: 100%;
     max-width: 448px;
     min-width: min(100%, 320px);
-    padding: 28px;
+    padding: 20px 22px 18px;
     border-radius: 32px;
     background: hsl(var(--bg-100));
     border: 1px solid hsl(var(--border-300) / 0.14);
@@ -1003,7 +1003,7 @@ html[data-theme="light"] .auth-card {
 .auth-step {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     width: 100%;
 }
 
@@ -1160,6 +1160,31 @@ html[data-theme="light"] .auth-btn:disabled {
 
 /* .auth-btn-primary 沿用 .auth-btn 全部样式 */
 
+.auth-password-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.auth-mode-toggle {
+    margin-top: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: hsl(var(--text-300));
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    align-self: flex-start;
+}
+.auth-mode-toggle:hover {
+    color: hsl(var(--text-200));
+}
+
 /* ── OTP section / divider / error ───────────────────── */
 .auth-otp-section {
     display: flex;
@@ -1210,15 +1235,34 @@ html[data-theme="light"] .auth-error {
     color: #b3422f;
 }
 
-/* Turnstile 容器 */
-#loginTurnstileStatus {
+/* Turnstile 已弃用（登录改画布验证码）；旧脚本若插入占位槽则强制不占位 */
+#loginTurnstileStatus,
+#loginTurnstileContainer,
+#loginTurnstileMount {
     display: none !important;
-}
-#loginTurnstileContainer {
-    margin: 6px 0 !important;
-}
-#loginTurnstileMount:empty {
+    margin: 0 !important;
     min-height: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+#authCaptchaContainer:empty {
+    display: none;
+    margin: 0;
+    min-height: 0;
+}
+
+#authSendOtpBtn[style*="display: none"],
+#authSendOtpBtn[style*="display:none"] {
+    display: none !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
 }
 
 /* ── Inline auth captcha (replaces Turnstile) ────────── */
@@ -1226,7 +1270,7 @@ html[data-theme="light"] .auth-error {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 10px 0 2px;
+    margin: 0;
     width: 100%;
 }
 .auth-captcha-canvas {
