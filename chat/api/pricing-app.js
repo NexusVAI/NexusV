@@ -29,6 +29,12 @@ const PROMO_START_MS = 1779453000000; // 2026-05-22T12:30:00Z = 2026-05-22 20:30
 const PROMO_END_MS = 1779552000000;   // 2026-05-23T16:00:00Z = 2026-05-24 00:00 UTC+8
 const PROMO_DISCOUNT = 0.5;
 
+// ────────── 2026-06-03 订阅限时折扣（4 天）──────────
+// Pro 8折 / Pro+ 85折 / Pro Max 不打折。窗口（UTC+8）：06-03 → 06-07。
+const SUB_PROMO_START_MS = 1780416000000; // 2026-06-03T00:00:00+08:00
+const SUB_PROMO_END_MS   = 1780761600000; // 2026-06-07T00:00:00+08:00
+const SUB_PROMO_DISCOUNTS = { pro: 0.8, pro_plus: 0.85 };
+
 function isPromoActive(now) {
     return now >= PROMO_START_MS && now < PROMO_END_MS;
 }
@@ -99,6 +105,38 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startPromoBanner);
 } else {
     startPromoBanner();
+}
+
+// 2026-06-03 订阅折扣横幅倒计时
+function startSubPromoBanner() {
+    const banner = document.getElementById("sub-promo-banner");
+    if (!banner) return;
+    const countdown = document.getElementById("sub-promo-countdown");
+    const closeBtn = document.getElementById("sub-promo-banner-close");
+    const tick = () => {
+        const now = Date.now();
+        if (now < SUB_PROMO_START_MS || now >= SUB_PROMO_END_MS) {
+            banner.style.display = "none";
+            return false;
+        }
+        if (countdown) countdown.textContent = formatHMS(SUB_PROMO_END_MS - now);
+        return true;
+    };
+    if (!tick()) return;
+    const handle = setInterval(() => {
+        if (!tick()) clearInterval(handle);
+    }, 1000);
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            banner.style.display = "none";
+            clearInterval(handle);
+        });
+    }
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startSubPromoBanner);
+} else {
+    startSubPromoBanner();
 }
 
 const sb = window.supabase.createClient(
@@ -190,6 +228,23 @@ async function loadPricing() {
             if (Number.isFinite(Number(t.tokens))) CLIENT_CATALOG.topup[code].desc = CC.num(t.tokens) + " 积分";
         });
         pricingMeta = data.discount_window || pricingMeta;
+
+        // 2026-06-03: 客户端订阅折扣（后端 RPC 未覆盖时生效）。
+        // 与后端 cancri_celebrate_apply_subscription_discount 取更优惠者。
+        const subNow = Date.now();
+        if (subNow >= SUB_PROMO_START_MS && subNow < SUB_PROMO_END_MS) {
+            ["pro", "pro_plus"].forEach((code) => {
+                const d = SUB_PROMO_DISCOUNTS[code];
+                if (!d || d >= 1) return;
+                const s = CLIENT_CATALOG.subscription[code];
+                if (!s) return;
+                const discounted = Math.round(s.amount_original * d * 100) / 100;
+                if (discounted < s.amount) {
+                    s.amount = discounted;
+                    s.discount = d;
+                }
+            });
+        }
 
         renderPlanCards(data);
         renderTopupCards(data);
