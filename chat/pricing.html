@@ -702,26 +702,54 @@
                 >✕</button>
             </div>
 
-            <!-- 2026-05-26 满月庆典 banner：5/29-5/31 套餐折扣 + 加油包充返。
-                 不带倒计时（避免与 celebrate.html 重复），点击跳活动页。
-                 后端 chat-gateway handleSubmitPaymentOrder 5/29-5/31 自动应用折扣，前端无需特殊处理。 -->
-            <a
-                class="promo-banner"
-                id="celebrate-banner"
-                href="./celebrate.html"
-                role="status"
-                title="Cancri 满月庆典 · 点击查看完整福利"
-                aria-label="Cancri 满月庆典 5/29 - 5/31 套餐折扣 + 充返加油包，点击查看完整福利"
-                style="text-decoration: none; color: inherit; display: flex"
-            >
-                <div class="promo-banner__body">
-                    <p class="promo-banner__title">🌕 满月庆典 · 5/29 - 5/31 套餐折扣 + 充返加油包</p>
-                    <p class="promo-banner__sub">
-                        Pro <strong>5 折</strong> · Pro+ / Pro Max <strong>8 折</strong> · 加油包激活赠送积分（¥10/¥50/¥200 三档）·
-                        <strong>点击查看九重满月福利 · 含互动三件套 →</strong>
-                    </p>
+            <!-- 双栏 banner：满月余晖 + 回馈礼 -->
+            <div style="display:flex;gap:10px;margin:0 0 16px;flex-wrap:wrap">
+                <a
+                    class="promo-banner"
+                    id="celebrate-banner"
+                    href="./celebrate.html"
+                    role="status"
+                    title="满月余晖 · 点击查看活动收尾"
+                    aria-label="满月余晖转盘/加油包仍在领取中，点击查看活动收尾"
+                    style="text-decoration:none;color:inherit;flex:1 1 320px;min-width:0;margin:0"
+                >
+                    <div class="promo-banner__body">
+                        <p class="promo-banner__title">🌙 满月余晖 · 活动收尾中</p>
+                        <p class="promo-banner__sub">
+                            转盘每天 1 次（至 <strong>6/4</strong>）· 故事墙开放至 <strong>6/4</strong> · 加油包仍在领取中 ·
+                            <strong>点击查看活动收尾 →</strong>
+                        </p>
+                    </div>
+                </a>
+                <div
+                    class="promo-banner"
+                    id="sub-promo-banner"
+                    role="status"
+                    aria-live="polite"
+                    style="flex:1 1 320px;min-width:0;margin:0;background:linear-gradient(135deg,rgba(99,179,237,.12),rgba(66,153,225,.08));border:1px solid rgba(99,179,237,.25)"
+                >
+                    <div class="promo-banner__body">
+                        <p class="promo-banner__title">🎁 回馈礼 · 订阅限时折扣</p>
+                        <p class="promo-banner__sub">
+                            限时 4 天 · Pro <strong>8 折 ¥7.92</strong> · Pro+ <strong>85 折 ¥24.65</strong><br>
+                            <strong>GPT-5.5 砍到 0.5x</strong> · Opus 4.7 全部特价
+                        </p>
+                    </div>
+                    <div class="promo-banner__countdown" aria-live="off">
+                        <div>
+                            <small>剩余</small>
+                            <span class="promo-banner__time" id="sub-promo-countdown">--:--:--</span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="promo-banner__close"
+                        id="sub-promo-banner-close"
+                        aria-label="关闭促销横幅"
+                        title="关闭"
+                    >✕</button>
                 </div>
-            </a>
+            </div>
 
             <div class="top-bar">
                 <div>
