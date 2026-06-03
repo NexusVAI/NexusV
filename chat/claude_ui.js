@@ -61,7 +61,8 @@
             bindRecentHeaderToggle,
             bindGroupByDropdown,
             bindVoiceHoverAnimation,
-            bindClaudeAccountPanel
+            bindClaudeAccountPanel,
+            bindClaudePasswordPanel
         ].forEach(function (step) {
             try {
                 step();
@@ -129,7 +130,12 @@
         }
         function showCard(row) {
             const text = row.getAttribute('data-sidebar-tooltip') || '';
-            if (!text || window.matchMedia('(max-width: 768px)').matches) {
+            if (
+                !text ||
+                window.matchMedia('(max-width: 768px)').matches ||
+                !sidebar.classList.contains('collapsed') ||
+                sidebar.classList.contains('is-rail-animating')
+            ) {
                 hideCard();
                 return;
             }
@@ -152,6 +158,9 @@
         window.addEventListener('resize', hideCard);
         if (typeof MutationObserver !== 'undefined') {
             new MutationObserver(applyTitles).observe(sidebar, { subtree: true, childList: true });
+            new MutationObserver(function () {
+                if (sidebar.classList.contains('is-rail-animating')) hideCard();
+            }).observe(sidebar, { attributes: true, attributeFilter: ['class'] });
         }
     }
 
@@ -449,34 +458,46 @@
     //    2026-05-15 fix(M5)：用 capture-phase + stopImmediatePropagation 抢在 cancri_chat.js
     //    给 #themeShortcutBtn 注册的 bubble-phase listener (line 9786 `openModal("settingsModal")`)
     //    前面把 click 干掉。否则旧 modal 会先被打开 → 触发 scrim → 用户体感"东西不显示还弄个遮罩"。
-    //    同时显式关 .popover.open（cancri 老逻辑靠 document click 委托关 popover，但我们 stop
-    //    propagation 后那条委托不再触发，需要自己关）。
+    function openClaudeSettingsModal() {
+        var view = document.getElementById('claudeSettingsView');
+        if (!view) return;
+        var prevView = (document.body && document.body.dataset.view) || 'home';
+        if (prevView !== 'claudeSettings') {
+            window.__claudeSettingsPrevView = prevView;
+        }
+        var accountPopover = document.getElementById('accountPopover');
+        var keepAccountSheet = Boolean(
+            accountPopover &&
+            accountPopover.classList.contains('open') &&
+            window.matchMedia('(max-width: 768px)').matches
+        );
+        window.__claudeSettingsKeepAccountSheet = keepAccountSheet;
+        if (typeof window.setActiveView === 'function') {
+            window.setActiveView('claudeSettings', { preservePopover: keepAccountSheet });
+        } else {
+            document.querySelectorAll('.main > .view').forEach(function (v) {
+                v.classList.toggle('active', v.id === 'claudeSettingsView');
+            });
+            if (document.body) document.body.dataset.view = 'claudeSettings';
+        }
+    }
+
     function bindCustomNav() {
         document.querySelectorAll('[data-claude-action="open-settings"]').forEach(function (el) {
             el.addEventListener('click', function (e) {
                 e.stopImmediatePropagation();
                 e.preventDefault();
-                // 关闭打开的 popover（如 accountPopover），保持 click "打开 popover → 选项 → 切 view"
-                // 的体感一致（cancri closePopover 走不到了）。
+                var accountPopover = document.getElementById('accountPopover');
+                var keepAccountSheet = Boolean(
+                    accountPopover &&
+                    accountPopover.classList.contains('open') &&
+                    window.matchMedia('(max-width: 768px)').matches
+                );
                 document.querySelectorAll('.popover.open').forEach(function (p) {
+                    if (keepAccountSheet && p.id === 'accountPopover') return;
                     p.classList.remove('open');
                 });
-                // 2026-05-22：设置改成弹窗后，记录"打开前的 view"，关闭弹窗时回到原 view。
-                // 不再像之前那样把整页切到 settings → home（信息量丢失）。
-                var prevView = (document.body && document.body.dataset.view) || 'home';
-                if (prevView !== 'claudeSettings') {
-                    window.__claudeSettingsPrevView = prevView;
-                }
-                // 走 cancri_chat.js 暴露的 setActiveView（如果存在），否则手动切。
-                if (typeof window.setActiveView === 'function') {
-                    window.setActiveView('claudeSettings');
-                } else {
-                    // Fallback：手动 toggle .active 在所有 .main > .view 上。
-                    document.querySelectorAll('.main > .view').forEach(function (v) {
-                        v.classList.toggle('active', v.id === 'claudeSettingsView');
-                    });
-                    if (document.body) document.body.dataset.view = 'claudeSettings';
-                }
+                openClaudeSettingsModal();
             }, true);  // capture phase
         });
     }
@@ -906,7 +927,7 @@
         modal.hidden = true;
         modal.innerHTML =
             '<div class="memory-import-backdrop" data-memory-import-close></div>' +
-            '<div class="memory-import-dialog" role="dialog" aria-modal="true" aria-labelledby="memoryImportTitle">' +
+            '<div class="memory-import-dialog cancri-themed-scroll" role="dialog" aria-modal="true" aria-labelledby="memoryImportTitle">' +
             '<div class="memory-import-head">' +
             '<div><h2 id="memoryImportTitle">导入其他 AI 记忆</h2><p>粘贴 ChatGPT、Claude、Gemini 等历史，Cancri 会先提炼长期偏好，确认后再写入记忆区。</p></div>' +
             '<button class="memory-import-x" type="button" data-memory-import-close aria-label="关闭导入记忆">×</button>' +
@@ -915,14 +936,25 @@
             '<label class="memory-import-field"><span>来源</span><select id="memoryImportSource"><option value="ChatGPT">ChatGPT</option><option value="Claude">Claude</option><option value="Gemini">Gemini</option><option value="Kimi">Kimi</option><option value="其他 AI">其他 AI</option></select></label>' +
             '<label class="memory-import-file"><span>上传导出文件</span><input id="memoryImportFile" type="file" accept=".json,.txt,.md,.html,.htm,application/json,text/plain,text/markdown,text/html"></label>' +
             '</div>' +
-            '<label class="memory-import-field memory-import-text-field"><span>历史文本或导出 JSON</span><textarea id="memoryImportText" rows="8" placeholder="粘贴其他 AI 的聊天历史、偏好说明，或上传 conversations.json / html / txt。"></textarea></label>' +
+            '<label class="memory-import-field memory-import-text-field"><span>历史文本或导出 JSON</span><textarea id="memoryImportText" class="cancri-themed-scroll" rows="8" placeholder="粘贴其他 AI 的聊天历史、偏好说明，或上传 conversations.json / html / txt。"></textarea></label>' +
             '<div class="memory-import-actions"><button class="claude-secondary-btn" type="button" id="memoryImportPreviewBtn">解析记忆</button><button class="claude-primary-btn" type="button" id="memoryImportSaveBtn" disabled>导入选中</button></div>' +
             '<div id="memoryImportPreview" class="memory-import-preview"><p>解析后会在这里显示最多 5 条候选记忆，可编辑、取消勾选后再导入。</p></div>' +
             '</div>';
         document.body.appendChild(modal);
 
+        function onMemoryImportClosePress(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') {
+                    e.stopImmediatePropagation();
+                }
+            }
+            closeMemoryImportModal();
+        }
         modal.querySelectorAll('[data-memory-import-close]').forEach(function (el) {
-            el.addEventListener('click', closeMemoryImportModal);
+            el.addEventListener('click', onMemoryImportClosePress, true);
+            el.addEventListener('touchend', onMemoryImportClosePress, { capture: true, passive: false });
         });
         const fileInput = modal.querySelector('#memoryImportFile');
         const textarea = modal.querySelector('#memoryImportText');
@@ -949,37 +981,54 @@
         return modal;
     }
 
+    var closingMemoryImportModal = false;
+    var MEMORY_IMPORT_CLOSE_MS = 150;
+
     function openMemoryImportModal() {
         const modal = ensureMemoryImportModal();
+        closingMemoryImportModal = false;
+        modal.classList.remove('is-closing');
         modal.hidden = false;
-        modal.classList.add('is-open');
+        requestAnimationFrame(function () {
+            modal.classList.add('is-open');
+        });
         const textarea = modal.querySelector('#memoryImportText');
         setTimeout(function () { if (textarea) textarea.focus(); }, 40);
     }
 
     function closeMemoryImportModal() {
         const modal = document.getElementById('claudeMemoryImportModal');
-        if (!modal) return;
+        if (!modal || modal.hidden) return;
+        if (closingMemoryImportModal || modal.classList.contains('is-closing')) return;
+        closingMemoryImportModal = true;
         modal.classList.remove('is-open');
-        modal.hidden = true;
+        modal.classList.add('is-closing');
+        window.setTimeout(function () {
+            modal.classList.remove('is-closing');
+            modal.hidden = true;
+            closingMemoryImportModal = false;
+        }, MEMORY_IMPORT_CLOSE_MS);
     }
 
     function renderMemoryImportCandidates(candidates) {
         const modal = ensureMemoryImportModal();
         const preview = modal.querySelector('#memoryImportPreview');
         const saveBtn = modal.querySelector('#memoryImportSaveBtn');
-        memoryImportCandidates = Array.isArray(candidates) ? candidates : [];
+        memoryImportCandidates = Array.isArray(candidates) ? candidates.slice(0, 5) : [];
         if (!preview || !saveBtn) return;
         if (!memoryImportCandidates.length) {
             preview.innerHTML = '<p>没有提炼出适合长期保存的记忆。可以粘贴更多历史，或删掉无关页面内容后再试。</p>';
             saveBtn.disabled = true;
             return;
         }
-        preview.innerHTML = memoryImportCandidates.map(function (item, index) {
-            const content = String(item.content || '').slice(0, 100);
+        preview.innerHTML =
+            '<div class="memory-import-preview-head">候选记忆（一行一条，最多 5 条，每条 100 字内）</div>' +
+            memoryImportCandidates.map(function (item, index) {
+            const content = String(item.content || '').replace(/\s+/g, ' ').trim().slice(0, 100);
             return '<label class="memory-import-candidate">' +
                 '<input class="memory-import-check" type="checkbox" checked data-index="' + index + '">' +
-                '<textarea class="memory-import-candidate-text" maxlength="100" rows="2">' + escapeText(content) + '</textarea>' +
+                '<span class="memory-import-candidate-index" aria-hidden="true">' + (index + 1) + '</span>' +
+                '<input class="memory-import-candidate-text" type="text" maxlength="100" value="' + escapeText(content) + '">' +
                 '</label>';
         }).join('');
         saveBtn.disabled = false;
@@ -1514,12 +1563,18 @@
             }
         }
         // 项目页 composer 辅助函数（同步首页输入框体验）
+        function getProjectComposerResizeMaxHeight() {
+            if (window.matchMedia('(max-width: 640px)').matches) {
+                return Math.min(176, Math.max(120, Math.floor(window.innerHeight * 0.28)));
+            }
+            return 220;
+        }
         function autoResizeProjectInput() {
             const input = document.getElementById('claudeProjectPromptInput');
             if (!input) return;
             const composer = input.closest('[data-workbench-composer], .composer');
-            const minHeight = window.matchMedia('(max-width: 640px)').matches ? 48 : 44;
-            const maxHeight = 180;
+            const minHeight = window.matchMedia('(max-width: 640px)').matches ? 44 : 36;
+            const maxHeight = getProjectComposerResizeMaxHeight();
             input.style.height = '0px';
             const next = Math.max(minHeight, Math.min(input.scrollHeight, maxHeight));
             input.style.height = next + 'px';
@@ -1601,12 +1656,32 @@
             }
         }
 
+        const PROJECT_COMPOSER_V = 'home-sync-2026-06';
+        const PROJECT_PLUS_SVG =
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
+        const PROJECT_VOICE_SVG =
+            '<svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg" class="voice-wave-svg" aria-hidden="true">' +
+            '<rect class="voice-bar" x="0" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>' +
+            '<rect class="voice-bar" x="4" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>' +
+            '<rect class="voice-bar" x="8" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>' +
+            '<rect class="voice-bar" x="12" y="5.5" width="1" height="10" rx="0.5" fill="currentColor"></rect>' +
+            '<rect class="voice-bar" x="16" y="2.5" width="1" height="16" rx="0.5" fill="currentColor"></rect>' +
+            '<rect class="voice-bar" x="20" y="7.5" width="1" height="6" rx="0.5" fill="currentColor"></rect>' +
+            '</svg>';
+        const PROJECT_SEND_SVG =
+            '<svg class="send-icon-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>';
+
         function ensureDetailView() {
             let view = document.getElementById('claudeProjectDetailView');
+            if (view && view.dataset.composerV !== PROJECT_COMPOSER_V) {
+                view.remove();
+                view = null;
+            }
             if (view) return view;
             view = document.createElement('section');
             view.className = 'view';
             view.id = 'claudeProjectDetailView';
+            view.dataset.composerV = PROJECT_COMPOSER_V;
             view.innerHTML =
                 '<div class="claude-project-detail-page">' +
                     '<div class="claude-project-detail-shell">' +
@@ -1618,15 +1693,16 @@
                             '<div class="composer claude-project-composer" data-workbench-composer>' +
                                 '<textarea class="composer-input" id="claudeProjectPromptInput" rows="1" placeholder="向这个项目中的聊天提问"></textarea>' +
                                 '<div class="composer-bottom">' +
+                                    '<div class="composer-status" aria-live="polite"></div>' +
                                     '<div class="composer-tools-row">' +
                                         '<div class="composer-tools" aria-label="项目工具">' +
-                                            '<button type="button" class="composer-tool-btn" id="claudeProjectSourceAddBtn" aria-label="添加项目来源">+</button>' +
-                                            '<button type="button" class="composer-tool-btn claude-project-web-search" id="claudeProjectWebSearchBtn" aria-label="本轮允许联网搜索">' + iconSvg('globe') + '</button>' +
+                                            '<button type="button" class="composer-tool-btn" id="claudeProjectSourceAddBtn" data-glass="button" aria-label="添加项目来源" title="添加附件">' + PROJECT_PLUS_SVG + '</button>' +
+                                            '<button type="button" class="composer-tool-btn claude-project-web-search" id="claudeProjectWebSearchBtn" data-glass="button" aria-label="本轮允许联网搜索" title="本轮联网搜索">' + iconSvg('globe') + '</button>' +
                                             '<button type="button" class="composer-tool-btn claude-project-source-shortcut" id="claudeProjectSourcesShortcut">来源</button>' +
                                         '</div>' +
                                         '<div class="composer-actions claude-project-composer-actions">' +
-                                            '<button type="button" class="voice-btn" id="claudeProjectVoiceBtn" aria-label="语音输入" title="语音输入">' + iconSvg('mic') + '</button>' +
-                                            '<button type="button" class="send-btn hidden" id="claudeProjectPromptSubmit" aria-label="发送项目消息">' + iconSvg('arrowUp') + '</button>' +
+                                            '<button type="button" class="voice-btn" id="claudeProjectVoiceBtn" data-glass="button" aria-label="语音输入" title="语音输入">' + PROJECT_VOICE_SVG + '</button>' +
+                                            '<button type="button" class="send-btn hidden" id="claudeProjectPromptSubmit" data-glass="button" aria-label="发送项目消息" disabled>' + PROJECT_SEND_SVG + '</button>' +
                                         '</div>' +
                                     '</div>' +
                                 '</div>' +
@@ -2089,6 +2165,14 @@
             const chatId = e.detail && e.detail.chatId;
             attachSavedChat(chatId);
         });
+        window.addEventListener('cancri:restore-session', function (e) {
+            const saved = e.detail || {};
+            if (saved.view !== 'claudeProjectDetail' || !saved.projectId) return;
+            openProject(saved.projectId);
+            if (saved.chatting && saved.chatId) {
+                loadProjectChat(saved.projectId, saved.chatId);
+            }
+        });
         enhanceProjectModal();
         ensureDetailView();
         setTimeout(renderProjects, 0);
@@ -2111,13 +2195,46 @@
                     });
                     // 切回"概述"时刷新一次表单显示，避免外面改了昵称 / 主题没同步进来。
                     if (key === 'overview') populateOverviewForm();
+                    if (key === 'capability') populateCapabilitiesForm();
                     if (key === 'invite' && typeof window.fetchAndRenderInvitePanel === 'function') {
                         window.fetchAndRenderInvitePanel();
                     }
                     if (key === 'account') {
                         loadClaudeAccount();
                     }
+                    if (key === 'billing') {
+                        loadClaudeBillingActivations();
+                    }
                 });
+            });
+        }
+
+        const settingsSearch = document.getElementById('claudeSettingsSearch');
+        if (settingsSearch && navItems.length) {
+            settingsSearch.addEventListener('input', function () {
+                const q = settingsSearch.value.trim().toLowerCase();
+                document.querySelectorAll('.claude-snav-li').forEach(function (li) {
+                    const labelEl = li.querySelector('.claude-snav-label');
+                    const label = (labelEl ? labelEl.textContent : li.textContent || '').trim().toLowerCase();
+                    li.hidden = Boolean(q) && !label.includes(q);
+                });
+            });
+        }
+
+        const capManageMemoryBtn = document.getElementById('claudeCapManageMemoryBtn');
+        if (capManageMemoryBtn) {
+            capManageMemoryBtn.addEventListener('click', function () {
+                const overviewBtn = document.querySelector('.claude-snav-item[data-snav="overview"]');
+                if (overviewBtn) overviewBtn.click();
+                const memoryBlock = document.getElementById('claudeMemoriesContainer');
+                if (memoryBlock) memoryBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+        const capImportMemoryBtn = document.getElementById('claudeCapImportMemoryBtn');
+        const overviewImportBtn = document.getElementById('claudeImportMemoryBtn');
+        if (capImportMemoryBtn && overviewImportBtn) {
+            capImportMemoryBtn.addEventListener('click', function () {
+                overviewImportBtn.click();
             });
         }
 
@@ -2160,6 +2277,14 @@
             }
         }
 
+        function populateCapabilitiesForm() {
+            if (!app) return;
+            const capInlineViz = document.getElementById('claudeCapInlineViz');
+            if (capInlineViz) {
+                capInlineViz.checked = app.state.inlineMermaidEnabled !== false;
+            }
+        }
+
         // ─── 工具：把当前 state 写入表单控件 ───
         function populateOverviewForm() {
             if (!app) return;
@@ -2173,7 +2298,7 @@
                 });
             }
             if (accentSwatches.length) {
-                const currentAccent = st.accentName || 'Claude';
+                const currentAccent = st.accentName || '橙色';
                 accentSwatches.forEach(function (b) {
                     b.classList.toggle('active', b.getAttribute('data-accent') === currentAccent);
                 });
@@ -2297,16 +2422,29 @@
             });
         }
 
+        const capInlineViz = document.getElementById('claudeCapInlineViz');
+        if (capInlineViz) {
+            capInlineViz.addEventListener('change', function () {
+                if (app && typeof app.setInlineMermaidEnabled === 'function') {
+                    app.setInlineMermaidEnabled(capInlineViz.checked);
+                }
+            });
+        }
+
         // 初始化一次：state 在 cancri_chat.js 顶层已 restore + applyTheme，
         // 这时表单第一次显示时填进去。
         populateOverviewForm();
+        populateCapabilitiesForm();
 
         // 当 #claudeSettingsView 变成可见 view 时（cancri 切 view 用 hidden 属性 / class），
         // 再 populate 一次保证表单显示当前 state。MutationObserver 监听 class / hidden。
         const settingsView = document.getElementById('claudeSettingsView');
         if (settingsView && typeof MutationObserver !== 'undefined') {
             new MutationObserver(function () {
-                if (!settingsView.hasAttribute('hidden')) populateOverviewForm();
+                if (!settingsView.hasAttribute('hidden')) {
+                    populateOverviewForm();
+                    populateCapabilitiesForm();
+                }
             }).observe(settingsView, { attributes: true, attributeFilter: ['hidden', 'class'] });
         }
     }
@@ -2558,42 +2696,9 @@
         // 同时清掉 cancri 算的 inline top。这样不动 cancri 逻辑，只在 claude 层做
         // viewport-aware 翻转。non-chat 模式（home / settings 等）保留向下展开。
         function sizeDropdownByViewport() {
-            if (!mqDesktop.matches) return; // mobile 完全交给 CSS
-            const inlineTop = parseFloat(dropdown.style.top || '');
-            if (!Number.isFinite(inlineTop) || inlineTop <= 0) return;
-            const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-            if (!vh) return;
-
-            // chat-mode 翻转判定：用户希望对话中输入框居底时菜单向上拉。
-            const triggerEl = modelSelector?.querySelector('.model-current')
-                              || document.getElementById('modelCurrentBtn');
-            const rect = triggerEl ? triggerEl.getBoundingClientRect() : null;
-            const isChatBottom = rect
-                && document.body.classList.contains('is-chatting')
-                && (vh - rect.bottom) < 320;
-
-            if (isChatBottom && rect) {
-                // 翻转到 bottom-anchor：dropdown 底边 8px 上贴 trigger 顶
-                const bottomPx = Math.max(8, Math.round(vh - rect.top + 8));
-                const maxH = Math.max(220, Math.round(rect.top - 24));
-                if (dropdown.style.top !== 'auto') dropdown.style.top = 'auto';
-                if (dropdown.style.bottom !== bottomPx + 'px') {
-                    dropdown.style.bottom = bottomPx + 'px';
-                }
-                if (dropdown.style.maxHeight !== maxH + 'px') {
-                    dropdown.style.maxHeight = maxH + 'px';
-                }
-                return;
+            if (window.CancriApp && typeof window.CancriApp.syncModelDropdownPosition === 'function') {
+                window.CancriApp.syncModelDropdownPosition();
             }
-
-            // 非 chat-mode（或空间足够）：默认向下展开，bottom 留空。
-            if (dropdown.style.bottom) {
-                dropdown.style.bottom = '';
-            }
-            const maxH = Math.max(220, Math.round(vh - inlineTop - 24));
-            const want = maxH + 'px';
-            if (dropdown.style.maxHeight === want) return;
-            dropdown.style.maxHeight = want;
         }
         if (typeof MutationObserver !== 'undefined') {
             new MutationObserver(sizeDropdownByViewport)
@@ -2610,7 +2715,7 @@
             moreRow.className = 'claude-more-models-row';
             moreRow.setAttribute('role', 'menuitem');
             moreRow.innerHTML = '<span class="claude-more-models-label">更多模型</span>'
-                + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+                + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
             content.parentNode.insertBefore(moreRow, content.nextSibling);
         }
 
@@ -2929,25 +3034,77 @@
     function bindSettingsModalClose() {
         var view = document.getElementById('claudeSettingsView');
         if (!view) return;
-        function closeSettings() {
-            if (!view.classList.contains('active')) return;
+        var closingSettings = false;
+        var SETTINGS_CLOSE_MS = 150;
+
+        function restoreAccountSheetIfNeeded() {
+            if (!window.__claudeSettingsKeepAccountSheet) return;
+            var accountPopover = document.getElementById('accountPopover');
+            if (accountPopover) accountPopover.classList.add('open');
+            var api = window.CancriApp;
+            if (api && typeof api.syncAccountSheetState === 'function') {
+                api.syncAccountSheetState();
+            }
+            if (api && typeof api.updateScrimVisibility === 'function') {
+                api.updateScrimVisibility();
+            }
+            window.__claudeSettingsKeepAccountSheet = false;
+        }
+
+        function finishCloseSettings() {
             var target = window.__claudeSettingsPrevView || 'home';
             if (target === 'claudeSettings') target = 'home';
+            var keepSheet = Boolean(window.__claudeSettingsKeepAccountSheet);
+            var search = document.getElementById('claudeSettingsSearch');
+            if (search) search.value = '';
+            document.querySelectorAll('.claude-snav-li[hidden]').forEach(function (li) {
+                li.hidden = false;
+            });
+            view.classList.remove('active', 'is-closing');
             if (typeof window.setActiveView === 'function') {
-                window.setActiveView(target);
+                window.setActiveView(target, { preservePopover: keepSheet });
             } else {
                 document.querySelectorAll('.main > .view').forEach(function (v) {
                     v.classList.toggle('active', v.id === (target + 'View'));
                 });
                 if (document.body) document.body.dataset.view = target;
             }
+            restoreAccountSheetIfNeeded();
+            window.setTimeout(function () {
+                closingSettings = false;
+            }, 80);
         }
-        // 关闭按钮命中区 = .claude-settings-title 的右侧 ~28px 内（::after 伪元素位置）。
-        // 用 click 委托：只要点 title 元素本身（非内部输入），且命中点 x 在右侧 36px 内即关。
+
+        function closeSettings() {
+            if (closingSettings || !view.classList.contains('active')) return;
+            if (view.classList.contains('is-closing')) return;
+            closingSettings = true;
+            view.classList.add('is-closing');
+            window.setTimeout(finishCloseSettings, SETTINGS_CLOSE_MS);
+        }
+        window.closeClaudeSettingsModal = closeSettings;
+
+        function onClosePress(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') {
+                    e.stopImmediatePropagation();
+                }
+            }
+            closeSettings();
+        }
+
+        var closeBtn = document.getElementById('claudeSettingsCloseBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', onClosePress, true);
+            closeBtn.addEventListener('touchend', onClosePress, { capture: true, passive: false });
+        }
+        // 兼容旧版 title 伪元素关闭（若仍存在）
         var title = view.querySelector('.claude-settings-title');
         if (title) {
             title.addEventListener('click', function (e) {
-                if (e.target !== title) return;  // 跳过 title 内可能的子节点（目前无）
+                if (e.target !== title) return;
                 var rect = title.getBoundingClientRect();
                 if (e.clientX >= rect.right - 44) {
                     e.preventDefault();
@@ -2971,16 +3128,21 @@
             }
             view.dataset.backdropDown = '';
         });
-        // ESC 关闭
+        view.addEventListener('touchend', function (e) {
+            if (e.target !== view) return;
+            e.preventDefault();
+            closeSettings();
+        }, { passive: false });
+        // ESC 关闭（capture 先于 cancri_chat 全局 ESC，避免顺带关掉账户抽屉）
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
             if (!view.classList.contains('active')) return;
-            // 不要抢走其他 modal（如 search modal）的 ESC：仅当当前 dataset.view 是 claudeSettings
             if (document.body && document.body.dataset.view === 'claudeSettings') {
                 e.preventDefault();
+                e.stopPropagation();
                 closeSettings();
             }
-        });
+        }, true);
     }
 
     // 2026-05-22 §23.3：全站文件拖入提示层。
@@ -3124,7 +3286,7 @@
                 check.setAttribute('viewBox', '0 0 24 24');
                 check.setAttribute('fill', 'none');
                 check.setAttribute('stroke', 'currentColor');
-                check.setAttribute('stroke-width', '2.5');
+                check.setAttribute('stroke-width', '1.5');
                 check.setAttribute('stroke-linecap', 'round');
                 check.setAttribute('stroke-linejoin', 'round');
                 check.setAttribute('aria-hidden', 'true');
@@ -3256,7 +3418,43 @@
 
     /* ── 设置页 Account / Privacy 内嵌逻辑（2026-06-01） ── */
     var claudeAccountTimer = null;
-    var claudeAccountSessionStart = 0;
+    var SITE_SESSION_KEY = 'cancri_site_session_start';
+
+    function getSiteSessionStartMs() {
+        try {
+            var raw = sessionStorage.getItem(SITE_SESSION_KEY);
+            if (raw) {
+                var parsed = parseInt(raw, 10);
+                if (!isNaN(parsed) && parsed > 0) return parsed;
+            }
+            var now = Date.now();
+            sessionStorage.setItem(SITE_SESSION_KEY, String(now));
+            return now;
+        } catch (e) {
+            return Date.now();
+        }
+    }
+
+    var claudeAccountSessionStart = getSiteSessionStartMs();
+
+    function getCurrentVisitorId() {
+        if (window.CancriFingerprint && typeof window.CancriFingerprint.getVisitorId === 'function') {
+            return window.CancriFingerprint.getVisitorId() || '';
+        }
+        try {
+            return localStorage.getItem('cancri_visitor_id') || '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function isCurrentDeviceRecord(d) {
+        if (!d) return false;
+        var vid = getCurrentVisitorId();
+        if (vid && d.visitor_id && d.visitor_id === vid) return true;
+        var ua = navigator.userAgent || '';
+        return Boolean(ua && d.ua && d.ua === ua);
+    }
 
     function setClaudeText(id, text) {
         var el = document.getElementById(id);
@@ -3308,7 +3506,6 @@
     }
 
     function loadClaudeAccount() {
-        claudeAccountSessionStart = Date.now();
         if (claudeAccountTimer) { clearInterval(claudeAccountTimer); claudeAccountTimer = null; }
         var client = null;
         if (window.supabase && window.supabase.createClient) {
@@ -3321,8 +3518,8 @@
             } catch (e) { client = null; }
         }
         if (!client) return;
-        client.auth.getSession().then(function (res) {
-            var session = res && res.data && res.data.session;
+
+        function fetchAccountInfo(session) {
             if (!session || !session.user) {
                 setClaudeText('claudeAccountEmail', '未登录');
                 return;
@@ -3337,7 +3534,7 @@
             claudeAccountTimer = setInterval(function () {
                 setClaudeText('claudeAccountOnline', fmtDuration(Date.now() - claudeAccountSessionStart));
             }, 1000);
-            setClaudeText('claudeAccountOnline', fmtDuration(0));
+            setClaudeText('claudeAccountOnline', fmtDuration(Date.now() - claudeAccountSessionStart));
             var token = session.access_token;
             fetch(window.__SUPABASE_URL__ + '/functions/v1/chat-gateway', {
                 method: 'POST',
@@ -3352,7 +3549,19 @@
                 setClaudeText('claudeAccountIp', '获取失败');
                 renderClaudeDevices([]);
             });
+        }
+
+        client.auth.getSession().then(function (res) {
+            fetchAccountInfo(res && res.data && res.data.session);
         });
+
+        if (window.CancriFingerprint && typeof window.CancriFingerprint.submitNow === 'function') {
+            window.CancriFingerprint.submitNow().catch(function () { return null; }).then(function () {
+                client.auth.getSession().then(function (res) {
+                    fetchAccountInfo(res && res.data && res.data.session);
+                });
+            });
+        }
     }
 
     function renderClaudeDevices(devices) {
@@ -3362,20 +3571,133 @@
             tbody.innerHTML = '<tr><td colspan="3" class="claude-device-empty">暂无记录</td></tr>';
             return;
         }
+        var sorted = devices.slice().sort(function (a, b) {
+            return Number(isCurrentDeviceRecord(b)) - Number(isCurrentDeviceRecord(a));
+        });
         var html = '';
-        devices.forEach(function (d, idx) {
+        sorted.forEach(function (d) {
             var parsed = parseUA(d.ua);
-            var isCurrent = idx === 0 && d.ua === navigator.userAgent;
+            var label = parsed.browser + (parsed.os ? ' (' + parsed.os + ')' : '');
+            if (d.platform && label.indexOf(String(d.platform)) === -1) {
+                label += ' · ' + d.platform;
+            }
+            var isCurrent = isCurrentDeviceRecord(d);
             var badge = isCurrent ? '<span class="claude-device-badge">当前</span>' : '';
             var location = [d.country, d.timezone].filter(Boolean).join(' / ') || '—';
             html += '<tr>' +
-                '<td><div>' + esc(parsed.browser + (parsed.os ? ' (' + parsed.os + ')' : '')) + badge + '</div>' +
+                '<td><div>' + esc(label) + badge + '</div>' +
                 '<div style="font-size:12px;color:var(--c-text-soft);margin-top:2px;word-break:break-all;">' + esc(d.ua ? d.ua.slice(0, 80) : '') + '</div></td>' +
                 '<td>' + esc(location) + '</td>' +
                 '<td>' + esc(fmtDate(d.created_at)) + '</td>' +
                 '</tr>';
         });
         tbody.innerHTML = html;
+    }
+
+    var BILLING_STATUS_LABEL = {
+        activated: '已激活',
+        approved: '待激活',
+        pending: '待审核',
+        rejected: '已驳回'
+    };
+
+    function loadClaudeBillingActivations() {
+        var panel = document.getElementById('claudeBillingActivations');
+        if (!panel) return;
+        panel.innerHTML = '<p class="claude-billing-empty">正在加载…</p>';
+        var token = typeof getCancriAccessToken === 'function' ? getCancriAccessToken() : '';
+        if (!token) {
+            panel.innerHTML = '<p class="claude-billing-empty">请先登录后查看激活记录。</p>';
+            return;
+        }
+        fetch(window.__SUPABASE_URL__ + '/functions/v1/chat-gateway', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: window.__SUPABASE_ANON_KEY__,
+                Authorization: 'Bearer ' + token
+            },
+            body: JSON.stringify({ endpoint: 'list_my_orders', __auth_token: token })
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (data) {
+            var orders = (data && data.orders) || [];
+            var records = orders.filter(function (o) {
+                return o.status === 'activated' || (o.activation_code && o.status === 'approved');
+            });
+            if (!records.length) {
+                panel.innerHTML = '<p class="claude-billing-empty">暂无激活记录。提交订单并通过审核、兑换激活码后会显示在这里。</p>';
+                return;
+            }
+            var rows = records.map(function (o) {
+                var when = o.activated_at || o.updated_at || o.created_at;
+                var kind = o.order_kind_label || (o.order_kind === 'topup' ? '加油包' : '订阅');
+                var spec = o.spec_label || o.plan_code || o.topup_sku || '—';
+                var amount = (o.amount_cny != null && o.amount_cny !== '') ? ('¥' + o.amount_cny) : '—';
+                var status = BILLING_STATUS_LABEL[o.status] || o.status_label || o.status || '—';
+                var code = o.activation_code ? esc(String(o.activation_code)) : '—';
+                return '<tr>' +
+                    '<td>' + esc(fmtDate(when)) + '</td>' +
+                    '<td>' + esc(kind) + '<div style="font-size:12px;color:var(--c-text-soft);margin-top:2px;">' + esc(spec) + '</div></td>' +
+                    '<td>' + esc(amount) + '</td>' +
+                    '<td><code style="font-size:12px;">' + code + '</code></td>' +
+                    '<td>' + esc(status) + '</td>' +
+                    '</tr>';
+            }).join('');
+            panel.innerHTML =
+                '<table class="claude-billing-table">' +
+                '<thead><tr><th>时间</th><th>类型</th><th>花费</th><th>激活码</th><th>状态</th></tr></thead>' +
+                '<tbody>' + rows + '</tbody></table>';
+        }).catch(function (err) {
+            console.error('list_my_orders:', err);
+            panel.innerHTML = '<p class="claude-billing-empty">加载失败，请稍后重试。</p>';
+        });
+    }
+
+    function bindClaudePasswordPanel() {
+        var saveBtn = document.getElementById('claudePasswordSaveBtn');
+        if (!saveBtn) return;
+        saveBtn.addEventListener('click', function () {
+            var msgEl = document.getElementById('claudePasswordMsg');
+            var p1El = document.getElementById('claudePasswordNew');
+            var p2El = document.getElementById('claudePasswordConfirm');
+            var p1 = p1El ? String(p1El.value || '') : '';
+            var p2 = p2El ? String(p2El.value || '') : '';
+            if (p1.length < 8) {
+                if (msgEl) msgEl.textContent = '密码至少 8 位。';
+                return;
+            }
+            if (p1 !== p2) {
+                if (msgEl) msgEl.textContent = '两次输入的密码不一致。';
+                return;
+            }
+            var client = null;
+            if (window.supabase && window.supabase.createClient) {
+                try {
+                    client = window.supabase.createClient(
+                        window.__SUPABASE_URL__,
+                        window.__SUPABASE_ANON_KEY__,
+                        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'cancri_supabase_auth' } }
+                    );
+                } catch (e) { client = null; }
+            }
+            if (!client) {
+                if (msgEl) msgEl.textContent = '无法连接认证服务。';
+                return;
+            }
+            saveBtn.disabled = true;
+            if (msgEl) msgEl.textContent = '保存中…';
+            client.auth.updateUser({ password: p1 }).then(function (res) {
+                if (res.error) throw res.error;
+                try { localStorage.setItem('cancri_password_login_enabled', '1'); } catch (e) { /* ignore */ }
+                if (p1El) p1El.value = '';
+                if (p2El) p2El.value = '';
+                if (msgEl) msgEl.textContent = '密码已保存。下次可在登录页使用「邮箱 + 密码」登录。';
+            }).catch(function (err) {
+                if (msgEl) msgEl.textContent = '保存失败：' + (err && err.message ? err.message : '请稍后重试');
+            }).finally(function () {
+                saveBtn.disabled = false;
+            });
+        });
     }
 
     function bindClaudeAccountPanel() {

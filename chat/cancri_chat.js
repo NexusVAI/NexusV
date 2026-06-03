@@ -25,8 +25,8 @@ const state = {
   contrast: "系统",
   // accentValue=null 意味着“跟随主题”：applyTheme 不写 inline style，
   // 让 CSS 中按主题定义的 --accent 生效。
-  accentName: "Claude",
-  accentValue: null,
+  accentName: "橙色",
+  accentValue: "#d97757",
   language: "自动检测",
   speech: "自动检测",
   // 2026-05-18：聊天字体偏好。serif=Anthropic Serif（人形衬线体），
@@ -64,6 +64,8 @@ const state = {
   // 在 chat 请求时与 customInstructions 一起注入 system message。
   userMemories: [],
   userMemoryEnabled: true,
+  // 对话内 Mermaid 图表（设置「内联可视化」）
+  inlineMermaidEnabled: true,
 };
 
 const root = document.documentElement;
@@ -146,6 +148,7 @@ const CONTEXT_COMPRESSION_TRIGGER = Math.floor(CONTEXT_TOKEN_LIMIT * 0.92);
 const MAX_ATTACHMENT_COUNT = 4;
 const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
 const UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
+const SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
 const MODEL_TELEMETRY_STORAGE_KEY = "cancri_model_telemetry";
 const MODEL_TELEMETRY_CACHE_VERSION = 7;
 
@@ -165,7 +168,7 @@ const SHARED_QUOTA_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 共享额度页面�
 const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
 const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
 const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
-const DEFAULT_MODEL_ID = "grok-4.20-0309";
+const DEFAULT_MODEL_ID = "grok-4.20-0309-console";
 const DEFAULT_COMPARE_MODEL_ID = "minimax-m2.7";
 const RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
 let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
@@ -1647,7 +1650,7 @@ const PAID_GATE_IDS = new Set([
   "gpt-5.5-high",
   "gpt-5.3-codex",
   "gpt-5.2",
-  "grok-4.20-0309",
+  "grok-4.20-0309-console",
   "grok-4.20-multi-agent-xhigh",
   "grok-4.3-high",
   "grok-4.3",
@@ -1684,6 +1687,7 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-5.4-mini",
   "gpt-5.5",
   "gpt-5.5-high",
+  "gpt-5.5-special",
   "grok-4.3",
   "qwen3.7-max",
   "qwen3.7-max-2026-05-20",
@@ -1691,6 +1695,7 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-image-2-all",
   "gpt-image-2-pro",
   "claude-opus-4-7-special",
+  "doubao-seed-2.0-pro",
 ]);
 
 const PRO_MAX_GATE_IDS = new Set([
@@ -1810,6 +1815,9 @@ function getQuotaBlockReason(modelId) {
   // tier === "paid" → 全通（vip 闸门在上面已处理）。
   // 后端 chat-gateway enforceQuotaGate 仍会真正执法，前端这层是 UX 预判。
   if (quotaState.tier !== "free") return null;
+  // 2026-06-03: VIP 模型（Opus 系列等）对 free 用户一律禁用。
+  // 上面 isProPlusGateModel 分支因 planCode===null 跳过了 free 用户，这里补上。
+  if (isProPlusGateModel(modelId)) return "pro_plus_only";
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
   // 2026-05-25: 替换 claude-opus-4-6-thinking-welfare 为 gpt-5.4-mini-welfare + claude-haiku-4-5-20251001-welfare。
@@ -2283,6 +2291,9 @@ function on(id, event, handler) {
 // 2026-05-23：阿里云百炼 8 个免费额度耗尽 / 已下线的模型 ID 加入迁移表，避免老
 // 用户 localStorage 选中这些 ID 后 chat 直接报 invalid_model。
 const MODEL_SELECTION_MIGRATIONS = {
+  // 2026-06-03: Grok 4.20 统一迁到 grok-4.20-0309-console
+  "grok-4.20-0309": DEFAULT_MODEL_ID,
+  "grok-4.20-0309-non-reasoning": DEFAULT_MODEL_ID,
   "deepseek-v3.2": DEFAULT_MODEL_ID,
   "deepseek-v3.2-exp": DEFAULT_MODEL_ID,
   "qwen3.6-flash": DEFAULT_MODEL_ID,
@@ -2359,7 +2370,7 @@ const MODEL_SELECTION_MIGRATIONS = {
 // 模型排序优先级（数值越小越靠前）。所有 ID 必须存在于 MODEL_CATALOG，否则
 // 排序时会被忽略，等于排在最后。
 const MODEL_PRIORITY_IDS = [
-  "grok-4.20-0309",
+  "grok-4.20-0309-console",
   "claude-opus-4-6",
   "deepseek-v4-pro",
   "kimi-k2.6",
@@ -2379,6 +2390,8 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
+  {"id": "step-3.7-flash", "name": "Step 3.7 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "ernie-4.5-turbo-20260402", "name": "ERNIE 4.5 Turbo", "brand": "Baidu", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 25.0},
   // 2026-05-25: claude-opus-4-5 重新上线（supxh.xin 上游，Pro+ 专享）。
@@ -2407,9 +2420,8 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   // 2026-06-02: Mimo 聊天模型全部下线。
   {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
-  {"id": "grok-4.20-0309", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
-  // 2026-05-25: grok-4.20-0309-non-reasoning（dgbmc 上游，复用现有 key）
-  {"id": "grok-4.20-0309-non-reasoning", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  // 2026-06-03: Grok 4.20 统一走 juziapi.xin
+  {"id": "grok-4.20-0309-console", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   // 2026-05-28: grok-4.20-multi-agent-xhigh（dgbmc 上游，复用现有 Grok key）
   {"id": "grok-4.20-multi-agent-xhigh", "name": "Grok-4.20-Agent", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
   // 2026-05-28: grok-4.3-high（dgbmc 上游，复用现有 Grok key）
@@ -2424,6 +2436,7 @@ const MODEL_CATALOG = [
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+  {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
@@ -2444,7 +2457,9 @@ const MODEL_CATALOG = [
   {"id": "gemma-4-26b-a4b-it", "name": "Gemma 4 26B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-  {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  // 2026-06-03: bluesminds 备用线路
+  {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro 0603", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+  {"id": "glm-5.1", "name": "[采桑子]glm-5.1①", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2534,7 +2549,8 @@ const MODEL_CATALOG = [
   {"id": "hf:qwen3-4b-thinking", "name": "Qwen3 4B Thinking", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:deepseek-r1-distill-1.5b", "name": "DeepSeek R1 Distill 1.5B", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:qwen3.5-27b", "name": "Qwen 3.5 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
-  {"id": "hf:glm-5.1-fp8", "name": "GLM 5.1 FP8", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+  // 2026-06-03: 从 HuggingFace 切到 bluesminds
+  {"id": "hf:glm-5.1-fp8", "name": "GLM 5.1 FP8", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "bluesminds"},
   {"id": "hf:qwen3-8b", "name": "Qwen3 8B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:apertus-8b", "name": "Apertus 8B", "brand": "Swiss AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
   {"id": "hf:eurollm-22b", "name": "EuroLLM 22B", "brand": "utter-project", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
@@ -2557,6 +2573,7 @@ const BRAND_ICON_MAP = {
   "Meta": "./meta-color.svg",
   "NVIDIA": "./nvidia-color.svg",
   "Doubao": "./doubao-color.svg",
+  "Baidu": "./wenxin-color.svg",
   "SenseNova": "./sensenova-color.svg",
   "Inclusion AI": "./antgroup-color.svg",
   "InclusionAI": "./antgroup-color.svg",
@@ -2580,6 +2597,7 @@ const BRAND_ICON_MAP = {
 const MODEL_ICON_OVERRIDE = {
   // Seedance 2.0（豆包视频模型）→ 即梦。用户 2026-05-17 指定。
   "doubao-seedance-2-0-260128": "./jimeng-color.svg",
+  "ernie-4.5-turbo-20260402": "./wenxin-color.svg",
 };
 
 function getModelIconPath(brand, modelId) {
@@ -2818,15 +2836,51 @@ let themeIndex = 0;
 const contrastCycle = ["系统", "标准", "高对比"];
 let contrastIndex = 0;
 
-// 首项 value=null 表示“跟随主题”（Claude 风格），其它项走 inline style 覆盖。
+const DEFAULT_ACCENT_NAME = "橙色";
+const DEFAULT_ACCENT_VALUE = "#d97757";
+
+// 首项为品牌橙（默认）；value=null 的「跟随主题」保留给老用户显式选择。
 const accentCycle = [
+  { name: DEFAULT_ACCENT_NAME, value: DEFAULT_ACCENT_VALUE },
   { name: "Claude", value: null },
   { name: "绿色", value: "#10a37f" },
   { name: "琥珀", value: "#f59e0b" },
   { name: "珊瑚", value: "#ef4444" },
   { name: "石墨", value: "#6b7280" },
+  { name: "天青", value: "#06b6d4" },
+  { name: "靛蓝", value: "#6366f1" },
+  { name: "紫罗兰", value: "#a855f7" },
+  { name: "玫红", value: "#e11d48" },
+  { name: "薄荷", value: "#14b8a6" },
+  { name: "深海", value: "#2563eb" },
 ];
 let accentIndex = 0;
+
+function isUnreadableAccentOnLight(value) {
+  if (!value || typeof value !== "string") return false;
+  const hex = value.trim().toLowerCase();
+  if (hex === "#fff" || hex === "#ffffff" || hex === "white") return true;
+  const m = hex.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/);
+  if (!m) return false;
+  let raw = m[1];
+  if (raw.length === 3) {
+    raw = raw
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+  const r = parseInt(raw.slice(0, 2), 16);
+  const g = parseInt(raw.slice(2, 4), 16);
+  const b = parseInt(raw.slice(4, 6), 16);
+  const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luma > 0.82;
+}
+
+function applyDefaultAccent() {
+  accentIndex = 0;
+  state.accentName = DEFAULT_ACCENT_NAME;
+  state.accentValue = DEFAULT_ACCENT_VALUE;
+}
 
 // 2026-05-18：把 themeMode（system/light/dark）解析成实际生效的 light/dark。
 // "system" 模式下读 prefers-color-scheme: dark 的 matchMedia 结果，其余直接返回。
@@ -2852,6 +2906,7 @@ function restoreUiPreferences() {
       // 偏好的全新访客生效；已保存偏好的回访用户保持原选择（见下方分支）。
       state.themeMode = "black";
       state.theme = "black";
+      applyDefaultAccent();
       return;
     }
     const prefs = JSON.parse(raw);
@@ -2883,15 +2938,15 @@ function restoreUiPreferences() {
       contrastIndex = nextContrastIndex;
       state.contrast = contrastCycle[nextContrastIndex];
     }
-    // 一次性迁移：把旧默认"绿色 #10a37f"偏好升级为新默认"Claude"（跟随主题）。
-    // 这样所有未显式选过其它颜色的老用户在 2026-05-14 后会直接看到新风格。
     const isLegacyDefaultGreen =
-      (prefs.accentName === "绿色" || prefs.accentValue === "#10a37f") &&
-      prefs.accentName !== "Claude";
-    if (isLegacyDefaultGreen) {
-      accentIndex = 0;
-      state.accentName = accentCycle[0].name;
-      state.accentValue = accentCycle[0].value;
+      prefs.accentName === "绿色" || prefs.accentValue === "#10a37f";
+    const isLegacyFollowTheme =
+      !prefs.accentOrangeDefaultMigrated &&
+      (prefs.accentName === "Claude" ||
+        prefs.accentValue == null ||
+        prefs.accentValue === "");
+    if (isLegacyDefaultGreen || isLegacyFollowTheme) {
+      applyDefaultAccent();
     } else {
       const nextAccentIndex = accentCycle.findIndex(
         (item) =>
@@ -2902,6 +2957,9 @@ function restoreUiPreferences() {
         state.accentName = accentCycle[nextAccentIndex].name;
         state.accentValue = accentCycle[nextAccentIndex].value;
       }
+    }
+    if (isUnreadableAccentOnLight(state.accentValue)) {
+      applyDefaultAccent();
     }
     // 2026-05-18 新增字段
     if (typeof prefs.chatFont === "string" && VALID_CHAT_FONTS.has(prefs.chatFont)) {
@@ -2918,6 +2976,9 @@ function restoreUiPreferences() {
     }
     if (typeof prefs.profession === "string") {
       state.profession = prefs.profession.slice(0, 30);
+    }
+    if (typeof prefs.inlineMermaidEnabled === "boolean") {
+      state.inlineMermaidEnabled = prefs.inlineMermaidEnabled;
     }
   } catch (error) {
     console.warn("恢复主题偏好失败:", error);
@@ -2940,8 +3001,10 @@ function persistUiPreferences() {
         customInstructions: state.customInstructions,
         fullName: state.fullName,
         profession: state.profession,
+        inlineMermaidEnabled: state.inlineMermaidEnabled,
         // 2026-05-31：标记已执行「默认纯黑」一次性迁移，避免重复覆盖用户后续选择。
         blackDefaultMigrated: true,
+        accentOrangeDefaultMigrated: true,
       }),
     );
   } catch (error) {
@@ -3061,9 +3124,14 @@ function updateAttachmentPreview() {
 }
 
 function syncComposerHeightVar() {
-  const composer = homeInput?.closest("[data-workbench-composer], .composer");
-  if (!composer) return;
-  const height = Math.max(0, Math.round(composer.getBoundingClientRect().height));
+  const anchor =
+    homeCenter?.querySelector(".composer-wrap") || homeCenter;
+  if (!anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  let height = Math.max(0, Math.round(window.innerHeight - rect.top));
+  if (homeView?.classList.contains("chatting")) {
+    height += 34;
+  }
   if (!height) return;
   document.documentElement.style.setProperty("--composer-height", `${height}px`);
 }
@@ -3184,6 +3252,16 @@ function updateComposerToolStatus() {
 function setWebSearchEnabled(enabled) {
   state.webSearchEnabled = Boolean(enabled);
   updateComposerToolStatus();
+}
+
+function setInlineMermaidEnabled(enabled) {
+  const next = Boolean(enabled);
+  if (state.inlineMermaidEnabled === next) return;
+  state.inlineMermaidEnabled = next;
+  persistUiPreferences();
+  if (chatMessages && conversationHistory.length) {
+    renderMessages();
+  }
 }
 
 function updateVoiceButtonState() {
@@ -3800,7 +3878,7 @@ function showAuthOverlay() {
   if (sendOtpBtn) {
     sendOtpBtn.style.display = "";
     sendOtpBtn.disabled = false;
-    sendOtpBtn.textContent = "Continue with email";
+    sendOtpBtn.textContent = "发送验证码";
   }
   if (otpSection) otpSection.style.display = "none";
   if (otpInput) otpInput.value = "";
@@ -3819,6 +3897,11 @@ function showAuthOverlay() {
   if (window.NexusAuthCaptcha) {
     try { window.NexusAuthCaptcha.init(); } catch (_e) {}
     try { window.NexusAuthCaptcha.clearInput(); } catch (_e) {}
+  }
+  const turnstileSlot = document.getElementById("loginTurnstileContainer");
+  if (turnstileSlot) turnstileSlot.remove();
+  if (window.NexusLoginCaptcha?.suspend) {
+    try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
   }
 }
 
@@ -3843,6 +3926,7 @@ function hideAuthOverlay() {
   if (window.NexusLoginCaptcha?.suspend) {
     try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
   }
+  void initSessionNavRestore();
 }
 
 function updateAccountInfo(user) {
@@ -3969,7 +4053,7 @@ function localizeAuthError(err, fallback = "操作失败，请稍后重试。") 
     captcha_failed: "人机验证未通过，请刷新页面后重试。",
     otp_expired: "验证码已过期，请重新获取。",
     otp_disabled: "验证码登录暂未开放。",
-    invalid_credentials: "验证码错误，请检查后重试。",
+    invalid_credentials: "邮箱或密码错误，请检查后重试。",
     signup_disabled: "注册已暂停。",
     user_banned: "该账号已被封禁。",
     user_not_found: "账号不存在，请检查邮箱后重试。",
@@ -3989,7 +4073,11 @@ async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
   // 1) 实际把 Turnstile captcha token 传给 Supabase（之前 getLoginCaptchaTokenBestEffort
   //    定义了但从未调用，等于裸送，Supabase 项目启用 captcha 时直接挂起）。
   // 2) 给整个调用包 12s timeout，避免 Supabase SDK 在网络抖动时无限等待。
-  const captchaToken = await getLoginCaptchaTokenBestEffort(8000);
+  // 登录页已用 NexusAuthCaptcha 画布验证码；勿再挂载 Turnstile 占位（70px 空槽）。
+  const captchaToken =
+    window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function"
+      ? ""
+      : await getLoginCaptchaTokenBestEffort(8000);
   // shouldCreateUser=false：见调用处注释。auth.users 上的触发器
   // enforce_numeric_qq_email_on_signup 禁止非「纯数字@qq.com」注册新号（会回 500）。
   // false 时已存在老用户仍能收码登录（不插新行），不存在用户回干净的 otp_disabled(422)。
@@ -4003,6 +4091,32 @@ async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
     timeoutPromise,
   ]);
   if (error) throw error;
+}
+
+async function signInWithEmailPassword(email, password) {
+  const client = getSupabaseClient();
+  const captchaToken =
+    window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function"
+      ? ""
+      : await getLoginCaptchaTokenBestEffort(8000);
+  const opts = { email, password };
+  if (captchaToken) opts.options = { captchaToken };
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("登录超时，请检查网络后重试")), 12000);
+  });
+  const { data, error } = await Promise.race([
+    client.auth.signInWithPassword(opts),
+    timeoutPromise,
+  ]);
+  if (error) throw error;
+  if (!data?.session?.access_token) {
+    throw new Error("登录失败，请重试。");
+  }
+  authSessionPromise = Promise.resolve(data.session);
+  updateAccountInfo(data.session.user);
+  hideAuthOverlay();
+  authInitialized = true;
+  return data.session;
 }
 
 async function verifyEmailOtp(email, token) {
@@ -4104,6 +4218,11 @@ function initAuthOverlay() {
       try {
         await sendEmailOtp(email, { shouldCreateUser: isNumericQQ });
         sendOtpBtn.style.display = "none";
+        const turnstileSlot = document.getElementById("loginTurnstileContainer");
+        if (turnstileSlot) turnstileSlot.remove();
+        if (window.NexusLoginCaptcha?.suspend) {
+          try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
+        }
         if (otpSection) otpSection.style.display = "block";
         if (otpInput) otpInput.focus();
         if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
@@ -4118,7 +4237,7 @@ function initAuthOverlay() {
         if (emailError) emailError.style.color = "";
       } finally {
         sendOtpBtn.disabled = false;
-        sendOtpBtn.textContent = "Continue with email";
+        sendOtpBtn.textContent = "发送验证码";
       }
     });
   }
@@ -4153,9 +4272,76 @@ function initAuthOverlay() {
     });
   }
 
+  const loginModeToggle = document.getElementById("authLoginModeToggle");
+  const passwordSection = document.getElementById("authPasswordSection");
+  const passwordInput = document.getElementById("authPasswordInput");
+  const passwordLoginBtn = document.getElementById("authPasswordLoginBtn");
+  let authLoginMode = "otp";
+
+  function setAuthLoginMode(mode) {
+    authLoginMode = mode === "password" ? "password" : "otp";
+    const isPassword = authLoginMode === "password";
+    if (passwordSection) passwordSection.hidden = !isPassword;
+    if (sendOtpBtn) sendOtpBtn.style.display = isPassword ? "none" : "";
+    if (otpSection && isPassword) otpSection.style.display = "none";
+    if (loginModeToggle) {
+      loginModeToggle.textContent = isPassword ? "使用验证码登录" : "使用密码登录";
+    }
+  }
+
+  if (loginModeToggle) {
+    loginModeToggle.addEventListener("click", () => {
+      setAuthLoginMode(authLoginMode === "password" ? "otp" : "password");
+    });
+  }
+
+  if (passwordLoginBtn) {
+    passwordLoginBtn.addEventListener("click", async () => {
+      const email = (emailInput && emailInput.value || "").trim();
+      const password = (passwordInput && passwordInput.value || "").trim();
+      if (!email || !email.includes("@")) {
+        if (emailError) emailError.textContent = "请输入有效的邮箱地址";
+        return;
+      }
+      if (!password || password.length < 8) {
+        if (emailError) emailError.textContent = "请输入至少 8 位密码";
+        return;
+      }
+      if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
+        if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
+        return;
+      }
+      if (!window.NexusAuthCaptcha.validate()) {
+        if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+        window.NexusAuthCaptcha.focusInput();
+        return;
+      }
+      passwordLoginBtn.disabled = true;
+      passwordLoginBtn.textContent = "登录中…";
+      if (emailError) emailError.textContent = "";
+      try {
+        await signInWithEmailPassword(email, password);
+      } catch (err) {
+        if (emailError) emailError.textContent = localizeAuthError(err, "登录失败，请重试。");
+      } finally {
+        passwordLoginBtn.disabled = false;
+        passwordLoginBtn.textContent = "登录";
+      }
+    });
+  }
+
+  if (passwordInput) {
+    passwordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && passwordLoginBtn) passwordLoginBtn.click();
+    });
+  }
+
   if (emailInput) {
     emailInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && sendOtpBtn) sendOtpBtn.click();
+      if (e.key === "Enter") {
+        if (authLoginMode === "password" && passwordLoginBtn) passwordLoginBtn.click();
+        else if (sendOtpBtn) sendOtpBtn.click();
+      }
     });
   }
 
@@ -4637,7 +4823,7 @@ async function renderChatHistoryList() {
 }
 
 // 加载特定聊天记录
-async function loadChat(chatId) {
+async function loadChat(chatId, { silent = false } = {}) {
   exitSharedConversationMode();
   try {
     const chat = await loadChatHistory(chatId);
@@ -4669,11 +4855,12 @@ async function loadChat(chatId) {
         });
       });
 
-      showToast("已加载聊天记录");
+      if (!silent) showToast("已加载聊天记录");
+      persistSessionNav();
     }
   } catch (error) {
     console.error("加载聊天记录失败:", error);
-    showToast("加载失败");
+    if (!silent) showToast("加载失败");
   }
 }
 
@@ -4690,6 +4877,8 @@ function newChat() {
   updateContextMeter();
   updateHomeHeroText();
   updateChatNav();
+  updateScrollToBottomButton();
+  persistSessionNav();
   showToast("已创建新对话");
 }
 
@@ -4780,6 +4969,8 @@ function renderMessages() {
 // 仿照文档/笔记类产品的右侧 outline 体验。
 let chatNavObserver = null;
 let chatNavLastActiveIndex = null;
+let chatNavTurnData = [];
+let chatNavPreviewBound = false;
 
 function getUserMessageSnippet(domNode, fallbackContent) {
   const fromDataset = (domNode?.dataset?.userText || "").trim();
@@ -4788,6 +4979,143 @@ function getUserMessageSnippet(domNode, fallbackContent) {
     return extractUserMessageParts(fallbackContent).text;
   }
   return String(fallbackContent || "").trim();
+}
+
+function getAssistantBubbleAfterUser(userBubble) {
+  let el = userBubble.nextElementSibling;
+  while (el) {
+    if (el.classList.contains("message")) {
+      if (el.classList.contains("assistant")) return el;
+      if (el.classList.contains("user")) break;
+    }
+    el = el.nextElementSibling;
+  }
+  return null;
+}
+
+function getAssistantHistoryAfterUserIndex(userIdx) {
+  if (!Number.isFinite(userIdx) || userIdx < 0) return "";
+  for (let i = userIdx + 1; i < conversationHistory.length; i++) {
+    const msg = conversationHistory[i];
+    if (msg.role === "user") break;
+    if (msg.role === "assistant") {
+      const content = msg.content;
+      return typeof content === "string"
+        ? content.replace(/\s+/g, " ").trim()
+        : "";
+    }
+  }
+  return "";
+}
+
+function getAssistantMessageSnippet(assistantBubble, historyContent) {
+  if (assistantBubble) {
+    const body =
+      assistantBubble.querySelector(".answer-body") ||
+      assistantBubble.querySelector(".message-content");
+    const text = (body?.textContent || "").replace(/\s+/g, " ").trim();
+    if (text) return text;
+  }
+  if (typeof historyContent === "string") {
+    return historyContent.replace(/\s+/g, " ").trim();
+  }
+  return "";
+}
+
+function truncateNavPreviewText(text, maxLen = 36) {
+  const normalized = String(text || "").trim();
+  if (!normalized) return "";
+  if (normalized.length <= maxLen) return normalized;
+  return normalized.slice(0, maxLen) + "…";
+}
+
+function ensureChatNavPreviewEl() {
+  let preview = document.getElementById("chatNavPreview");
+  if (!preview) {
+    preview = document.createElement("div");
+    preview.id = "chatNavPreview";
+    preview.className = "chat-nav-preview";
+    preview.hidden = true;
+    preview.setAttribute("aria-hidden", "true");
+    document.body.appendChild(preview);
+  } else if (preview.parentElement !== document.body) {
+    document.body.appendChild(preview);
+  }
+  return preview;
+}
+
+function hideChatNavPreview() {
+  const preview = document.getElementById("chatNavPreview");
+  if (!preview) return;
+  preview.hidden = true;
+  preview.setAttribute("aria-hidden", "true");
+  preview.innerHTML = "";
+}
+
+function showChatNavPreview(itemEl, ord) {
+  const preview = ensureChatNavPreviewEl();
+  if (!preview || !chatNavTurnData[ord]) return;
+
+  const rows = [];
+  if (ord > 0) {
+    const prev = chatNavTurnData[ord - 1];
+    if (prev.userText) rows.push({ text: prev.userText, tone: "normal" });
+    if (prev.followingAssistantText) {
+      rows.push({ text: prev.followingAssistantText, tone: "muted" });
+    }
+  }
+  const current = chatNavTurnData[ord];
+  rows.push({
+    text: current.userText || `第 ${ord + 1} 轮`,
+    tone: "current",
+  });
+  while (rows.length > 3) rows.shift();
+
+  preview.innerHTML = "";
+  for (const row of rows) {
+    const rowEl = document.createElement("div");
+    rowEl.className = `chat-nav-preview-row is-${row.tone}`;
+    const textEl = document.createElement("span");
+    textEl.className = "chat-nav-preview-text";
+    textEl.textContent = truncateNavPreviewText(row.text);
+    const tickEl = document.createElement("span");
+    tickEl.className = "chat-nav-preview-tick";
+    tickEl.setAttribute("aria-hidden", "true");
+    rowEl.appendChild(textEl);
+    rowEl.appendChild(tickEl);
+    preview.appendChild(rowEl);
+  }
+
+  preview.hidden = false;
+  preview.setAttribute("aria-hidden", "false");
+
+  const rect = itemEl.getBoundingClientRect();
+  preview.style.left = `${rect.left}px`;
+  preview.style.right = "auto";
+  preview.style.top = `${rect.top + rect.height / 2}px`;
+  preview.style.transform = "translate(calc(-100% - 12px), -50%)";
+}
+
+function bindChatNavPreviewEvents(listEl) {
+  if (chatNavPreviewBound || !listEl) return;
+  chatNavPreviewBound = true;
+
+  listEl.addEventListener("mouseover", (e) => {
+    const item = e.target.closest(".chat-nav-item");
+    if (!item || !listEl.contains(item)) return;
+    const ord = Number(item.dataset.navOrd);
+    if (!Number.isFinite(ord)) return;
+    showChatNavPreview(item, ord);
+  });
+
+  listEl.addEventListener("mouseleave", () => hideChatNavPreview());
+
+  listEl.addEventListener("scroll", () => {
+    const hovered = listEl.querySelector(".chat-nav-item:hover");
+    if (!hovered) return;
+    const ord = Number(hovered.dataset.navOrd);
+    if (Number.isFinite(ord)) showChatNavPreview(hovered, ord);
+  });
 }
 
 function updateChatNav() {
@@ -4802,6 +5130,8 @@ function updateChatNav() {
   if (!userBubbles.length || !homeView?.classList.contains("chatting")) {
     navEl.hidden = true;
     listEl.innerHTML = "";
+    hideChatNavPreview();
+    chatNavTurnData = [];
     if (chatNavObserver) {
       chatNavObserver.disconnect();
       chatNavObserver = null;
@@ -4810,38 +5140,40 @@ function updateChatNav() {
     return;
   }
 
+  hideChatNavPreview();
   listEl.innerHTML = "";
-  userBubbles.forEach((bubble, ord) => {
+  chatNavTurnData = userBubbles.map((bubble, ord) => {
     const idx = Number(bubble.dataset.messageIndex);
     const histMsg =
       Number.isFinite(idx) && idx >= 0 ? conversationHistory[idx] : null;
-    const text = getUserMessageSnippet(bubble, histMsg?.content);
-    const display = text
-      ? text.length > 18
-        ? text.slice(0, 18) + "…"
-        : text
-      : `第 ${ord + 1} 轮`;
+    const userText = getUserMessageSnippet(bubble, histMsg?.content);
+    const assistantBubble = getAssistantBubbleAfterUser(bubble);
+    const followingAssistantText = getAssistantMessageSnippet(
+      assistantBubble,
+      getAssistantHistoryAfterUserIndex(idx),
+    );
+    return { userText, followingAssistantText, messageIndex: idx, ord };
+  });
 
+  chatNavTurnData.forEach((turn) => {
+    const { ord, messageIndex: idx, userText } = turn;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "chat-nav-item";
     btn.dataset.messageIndex = String(idx);
-    btn.title = text || `第 ${ord + 1} 轮`;
-
-    const textSpan = document.createElement("span");
-    textSpan.className = "chat-nav-item-text";
-    textSpan.textContent = display;
+    btn.dataset.navOrd = String(ord);
+    btn.title = userText || `第 ${ord + 1} 轮`;
 
     const tick = document.createElement("span");
     tick.className = "chat-nav-item-tick";
     tick.setAttribute("aria-hidden", "true");
 
-    btn.appendChild(textSpan);
     btn.appendChild(tick);
     btn.addEventListener("click", () => scrollChatToUserMessage(idx));
     listEl.appendChild(btn);
   });
 
+  bindChatNavPreviewEvents(listEl);
   navEl.hidden = false;
   setupChatNavObserver(userBubbles);
 }
@@ -4945,19 +5277,40 @@ function renderRestoredDuelMessage(answerA, answerB, metadata) {
   wrapper.appendChild(grid);
   chatMessages.appendChild(wrapper);
 
-  if (window.renderMathInElement) {
-    window.renderMathInElement(wrapper);
-  }
+  renderPostMarkdownInElement(wrapper);
+}
+
+const GENERATED_IMAGE_COPY_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+const GENERATED_IMAGE_DOWNLOAD_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+function createGeneratedImageActionButton(title, svg, onClick) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "generated-image-action-btn";
+  btn.setAttribute("data-glass", "button");
+  btn.title = title;
+  btn.setAttribute("aria-label", title);
+  btn.innerHTML = svg;
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick(btn);
+  });
+  return btn;
 }
 
 function createRestoredImageElement(imageUrl) {
-  const wrapper = document.createElement("span");
-  wrapper.style.cssText =
-    "display:inline-block;position:relative;max-width:360px";
+  const block = document.createElement("div");
+  block.className = "generated-image-block";
+
+  const wrap = document.createElement("div");
+  wrap.className = "generated-image-wrap";
+
   const img = document.createElement("img");
+  img.className = "generated-image-media";
   img.alt = "generated image";
-  img.style.cssText =
-    "max-width:100%;border-radius:10px;display:block;cursor:default";
   img.addEventListener("contextmenu", (e) => e.preventDefault());
   img.addEventListener("click", (e) => {
     e.preventDefault();
@@ -4965,18 +5318,15 @@ function createRestoredImageElement(imageUrl) {
   });
   img.onerror = function () {
     this.onerror = null;
-    this.style.cssText =
-      "max-width:360px;height:120px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:13px";
+    this.classList.add("is-expired");
     this.removeAttribute("src");
     this.alt = "";
-    this.parentElement
-      .querySelectorAll("button")
-      .forEach((b) => b.remove());
-    const tip = document.createElement("span");
+    block.querySelector(".generated-image-actions")?.remove();
+    block.querySelector(".generated-image-hint")?.remove();
+    const tip = document.createElement("p");
+    tip.className = "generated-image-expired";
     tip.textContent = "图片已过期";
-    tip.style.cssText = "display:block;text-align:center;line-height:120px";
-    this.parentElement.insertBefore(tip, this);
-    this.style.display = "none";
+    wrap.appendChild(tip);
   };
   mediaObjectUrlViaProxy(imageUrl, "image")
     .then((src) => {
@@ -4985,45 +5335,50 @@ function createRestoredImageElement(imageUrl) {
     .catch(() => {
       img.onerror?.call(img);
     });
-  const copyBtn = document.createElement("button");
-  copyBtn.title = "复制图片";
-  copyBtn.style.cssText =
-    "position:absolute;bottom:8px;right:46px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center";
-  copyBtn.innerHTML =
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-  copyBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    copyBtn.disabled = true;
-    try {
-      await copyImageElementToClipboard(img);
-      showToast("图片已复制");
-    } catch (err) {
-      showToast(err?.message || "复制失败");
-    } finally {
-      copyBtn.disabled = false;
-    }
-  });
-  const dlBtn = document.createElement("button");
-  dlBtn.title = "下载图片";
-  dlBtn.style.cssText =
-    "position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center";
-  dlBtn.innerHTML =
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-  dlBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    dlBtn.disabled = true;
-    try {
-      // Always go through the server proxy — hides the upstream URL and
-      // bypasses CORS on provider CDNs.
-      await downloadViaMediaProxy(imageUrl, "image");
-    } finally {
-      dlBtn.disabled = false;
-    }
-  });
-  wrapper.appendChild(img);
-  wrapper.appendChild(copyBtn);
-  wrapper.appendChild(dlBtn);
-  return wrapper;
+
+  const actions = document.createElement("div");
+  actions.className = "generated-image-actions";
+  actions.appendChild(
+    createGeneratedImageActionButton(
+      "复制图片",
+      GENERATED_IMAGE_COPY_SVG,
+      async (copyBtn) => {
+        copyBtn.disabled = true;
+        try {
+          await copyImageElementToClipboard(img);
+          showToast("图片已复制");
+        } catch (err) {
+          showToast(err?.message || "复制失败");
+        } finally {
+          copyBtn.disabled = false;
+        }
+      },
+    ),
+  );
+  actions.appendChild(
+    createGeneratedImageActionButton(
+      "下载图片",
+      GENERATED_IMAGE_DOWNLOAD_SVG,
+      async (dlBtn) => {
+        dlBtn.disabled = true;
+        try {
+          await downloadViaMediaProxy(imageUrl, "image");
+        } finally {
+          dlBtn.disabled = false;
+        }
+      },
+    ),
+  );
+
+  const hint = document.createElement("p");
+  hint.className = "generated-image-hint";
+  hint.textContent = "请尽快下载";
+
+  wrap.appendChild(img);
+  wrap.appendChild(actions);
+  block.appendChild(wrap);
+  block.appendChild(hint);
+  return block;
 }
 
 function createRestoredVideoElement(videoUrl) {
@@ -5216,6 +5571,7 @@ function initSharedConversationFromHash() {
     setComposerBusy(false);
     requestAnimationFrame(() => scrollChatToBottom(false, true));
     showToast("已打开分享对话");
+    persistSessionNav();
     return true;
   } catch (error) {
     console.error("解析分享链接失败:", error);
@@ -5232,7 +5588,7 @@ async function saveChatHistory(messages) {
       body: JSON.stringify({
         endpoint: "chat_history",
         action: "create",
-        title: generateChatTitle(messages),
+        title: await generateSmartTitle(messages),
         messages: messages,
         model: currentModel,
       }),
@@ -5243,6 +5599,7 @@ async function saveChatHistory(messages) {
     const { data } = await response.json();
     currentChatId = data.id;
     upsertCachedChatSummary(data);
+    persistSessionNav();
     return data;
   } catch (error) {
     console.error("保存聊天记录失败:", error);
@@ -5259,7 +5616,7 @@ async function updateChatHistory(chatId, messages) {
         action: "update",
         id: chatId,
         messages: messages,
-        title: generateChatTitle(messages),
+        // title 不再每次更新：保留创建时的智能标题或手动重命名
       }),
     });
 
@@ -5387,6 +5744,40 @@ async function fetchUserMemories() {
   }
 }
 
+const MEMORY_SLOT_COUNT = 5;
+
+function buildMemorySlotListHtml(memories) {
+  const bySlot = {};
+  (Array.isArray(memories) ? memories : []).forEach((m) => {
+    if (!m || typeof m.content !== "string" || !m.content.trim()) return;
+    const slot = Number.isInteger(Number(m.slot)) ? Number(m.slot) : Object.keys(bySlot).length;
+    if (slot >= 0 && slot < MEMORY_SLOT_COUNT) {
+      bySlot[slot] = m.content.trim().slice(0, 100);
+    }
+  });
+  const rows = [];
+  for (let slot = 0; slot < MEMORY_SLOT_COUNT; slot += 1) {
+    const content = bySlot[slot] || "";
+    if (content) {
+      rows.push(
+        `<div class="memory-slot-row is-filled" data-slot="${slot}">` +
+        `<span class="memory-slot-index" aria-hidden="true">${slot + 1}</span>` +
+        `<span class="memory-slot-text" title="${escapeHtml(content)}">${escapeHtml(content)}</span>` +
+        `<button class="memory-delete-btn" type="button" data-action="delete-memory" data-slot="${slot}" title="删除此记忆">&times;</button>` +
+        `</div>`
+      );
+      continue;
+    }
+    rows.push(
+      `<div class="memory-slot-row is-empty" data-slot="${slot}">` +
+      `<span class="memory-slot-index" aria-hidden="true">${slot + 1}</span>` +
+      `<span class="memory-slot-text memory-slot-placeholder">空槽位 · 可导入或等待系统自动总结</span>` +
+      `</div>`
+    );
+  }
+  return `<div class="memory-slot-list" aria-label="记忆列表，最多 ${MEMORY_SLOT_COUNT} 条">${rows.join("")}</div>`;
+}
+
 // 2026-05-20：在设置面板渲染记忆列表
 function renderMemoriesInSettings() {
   const container = document.getElementById("claudeMemoriesContainer");
@@ -5397,28 +5788,18 @@ function renderMemoriesInSettings() {
     '<input type="checkbox" data-action="toggle-memory-generation"' + (enabled ? " checked" : "") + ">" +
     '<span><strong>生成并使用记忆</strong><small>关闭后，系统不会在每日批处理里总结您的对话，也不会把现有记忆注入新对话。</small></span>' +
     "</label>";
+  const slotListHtml = buildMemorySlotListHtml(state.userMemories);
   if (!enabled) {
-    container.innerHTML = toggleHtml + '<p class="claude-form-help" style="margin:0;">记忆已暂停。您仍可删除下方已有记忆。</p>';
-    if (state.userMemories && state.userMemories.length) {
-      container.innerHTML += state.userMemories.map((m) =>
-        `<div class="memory-item" data-slot="${m.slot}">` +
-        `<span class="memory-text">${escapeHtml(m.content)}</span>` +
-        `<button class="memory-delete-btn" data-action="delete-memory" data-slot="${m.slot}" title="删除此记忆">&times;</button>` +
-        `</div>`
-      ).join("");
-    }
+    container.innerHTML =
+      toggleHtml +
+      '<p class="claude-form-help memory-slot-note">记忆已暂停。您仍可删除下方已有记忆。</p>' +
+      slotListHtml;
     return;
   }
-  if (!state.userMemories || state.userMemories.length === 0) {
-    container.innerHTML = toggleHtml + '<p class="claude-form-help" style="margin:0;">暂无记忆。系统会在每天凌晨自动总结您的对话内容。</p>';
-    return;
-  }
-  container.innerHTML = toggleHtml + state.userMemories.map((m) =>
-    `<div class="memory-item" data-slot="${m.slot}">` +
-    `<span class="memory-text">${escapeHtml(m.content)}</span>` +
-    `<button class="memory-delete-btn" data-action="delete-memory" data-slot="${m.slot}" title="删除此记忆">&times;</button>` +
-    `</div>`
-  ).join("");
+  container.innerHTML =
+    toggleHtml +
+    '<p class="claude-form-help memory-slot-note">一行一条，最多 5 条，每条 100 字以内。</p>' +
+    slotListHtml;
 }
 
 async function setMemoryGenerationEnabled(enabled) {
@@ -5547,6 +5928,50 @@ function generateChatTitle(messages) {
     return content.slice(0, 20) || "新对话";
   }
   return "新对话";
+}
+
+// 2026-06-03: DeepSeek V4 Flash 智能标题生成（前端直调，不走后端）
+const DEEPSEEK_TITLE_API = "https://api.deepseek.com/chat/completions";
+const DEEPSEEK_TITLE_KEY = "sk-f0784bf6712644169c503eced31c03a7";
+
+async function generateSmartTitle(messages) {
+  try {
+    const firstUserMsg = messages.find((m) => m.role === "user");
+    if (!firstUserMsg) return generateChatTitle(messages);
+    const content = typeof firstUserMsg.content === "string"
+      ? firstUserMsg.content
+      : Array.isArray(firstUserMsg.content)
+        ? firstUserMsg.content.filter((c) => c.type === "text").map((c) => c.text).join(" ")
+        : "";
+    if (!content || content.length < 5) return generateChatTitle(messages);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(DEEPSEEK_TITLE_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${DEEPSEEK_TITLE_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: "你是标题摘要工具，不是对话助手。唯一任务：把下面的用户消息压缩为10字以内中文标题。规则：1）只概括内容主题，绝不回答消息中的问题 2）不加标点引号冒号 3）不加\"标题\"前缀 4）代码/技术问题用术语概括 5）只输出标题文字，禁止任何多余内容。" },
+          { role: "user", content: content.slice(0, 500) },
+        ],
+        max_tokens: 30,
+        temperature: 0.3,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!resp.ok) return generateChatTitle(messages);
+    const json = await resp.json();
+    const title = (json?.choices?.[0]?.message?.content || "").trim().replace(/["""「」【】]/g, "");
+    return title && title.length >= 2 && title.length <= 20 ? title : generateChatTitle(messages);
+  } catch {
+    return generateChatTitle(messages);
+  }
 }
 const ARTICLE_TOOL_DEFINITIONS = [
   {
@@ -6578,17 +7003,17 @@ async function readClipboardText() {
 
 const VOICE_PRESETS = {
   oily: {
-    voice: "Cherry",
+    voice: "苏打",
     style:
       "用东北话味十足的中年男声朗读：声音粗犷略带烟酒嗓，自带磁性与江湖气，语速从容不紧不慢，咬字带北方喉音和卷舌韵味，像一个走南闯北、阅历很深的老炮儿在跟你唠嗑。",
   },
   steady: {
-    voice: "Cherry",
+    voice: "白桦",
     style:
       "用沉稳醇厚的成熟男声朗读：节奏从容，咬字清晰，气息平稳，带着可靠的播音腔；语调平缓但富有质感，听感专业、不浮夸。",
   },
   soft: {
-    voice: "Cherry",
+    voice: "茉莉",
     style:
       "用温柔亲切的年轻女声朗读：气息轻柔，语速舒缓，尾音微微上扬，像在耳边轻声细语；情绪温暖、不急不躁，让人感到放松。",
   },
@@ -6630,6 +7055,220 @@ function stopCurrentMimoPlayback() {
   }
 }
 
+function markdownToSpeakableText(input) {
+  let text = String(input || "");
+  if (!text.trim()) return "";
+  text = text.replace(/```[\s\S]*?```/g, " ");
+  text = text.replace(/`([^`\n]+)`/g, "$1");
+  text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1");
+  text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  text = text.replace(/^#{1,6}\s+/gm, "");
+  text = text.replace(/^\s*[-*+]\s+/gm, "");
+  text = text.replace(/^\s*\d+\.\s+/gm, "");
+  text = text.replace(/[*_~>#]/g, "");
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function getAssistantSpeakText(messageDiv, answerBody) {
+  const fromRaw = markdownToSpeakableText(
+    messageDiv?._parts?.answerStreamState?.text || "",
+  );
+  const fromDom = String(answerBody?.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (fromRaw && fromDom) {
+    return fromRaw.length >= fromDom.length ? fromRaw : fromDom;
+  }
+  return fromRaw || fromDom;
+}
+
+function decodeBase64ToBytes(base64) {
+  const bin = atob(String(base64 || ""));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function extractTtsAudioBase64(json) {
+  if (!json || typeof json !== "object") return "";
+  const choice = json.choices?.[0];
+  if (!choice) return "";
+  const audio = choice.message?.audio ?? choice.delta?.audio;
+  if (typeof audio === "string") return audio;
+  if (audio && typeof audio === "object" && typeof audio.data === "string") {
+    return audio.data;
+  }
+  return "";
+}
+
+function splitSpeakTextChunks(text, maxLen = 480) {
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  if (normalized.length <= maxLen) return [normalized];
+  const chunks = [];
+  let rest = normalized;
+  while (rest.length > maxLen) {
+    let cut = -1;
+    for (const mark of ["。", "！", "？", "；", "，", " "]) {
+      const idx = rest.lastIndexOf(mark, maxLen);
+      if (idx > Math.floor(maxLen * 0.25)) {
+        cut = idx + 1;
+        break;
+      }
+    }
+    if (cut < 0) cut = maxLen;
+    const piece = rest.slice(0, cut).trim();
+    if (!piece) break;
+    chunks.push(piece);
+    rest = rest.slice(cut).trim();
+  }
+  if (rest) chunks.push(rest);
+  return chunks.length ? chunks : [normalized.slice(0, maxLen)];
+}
+
+function appendTtsPcmFromSseBuffer(buffer, pcmChunks, totalRef) {
+  let sepIdx;
+  while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
+    const eventBlock = buffer.slice(0, sepIdx);
+    buffer = buffer.slice(sepIdx + 2);
+    for (const line of eventBlock.split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let json;
+      try {
+        json = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (json?.error) {
+        throw new Error("朗读服务暂时不可用，请稍后重试。");
+      }
+      const b64 = extractTtsAudioBase64(json);
+      if (!b64) continue;
+      const bytes = decodeBase64ToBytes(b64);
+      pcmChunks.push(bytes);
+      totalRef.value += bytes.length;
+    }
+  }
+  return buffer;
+}
+
+async function collectTtsPcmFromSseStream(body) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  const pcmChunks = [];
+  const totalRef = { value: 0 };
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (value) {
+      buffer += decoder.decode(value, { stream: !done }).replace(/\r\n/g, "\n");
+      buffer = appendTtsPcmFromSseBuffer(buffer, pcmChunks, totalRef);
+    }
+    if (done) {
+      buffer += decoder.decode().replace(/\r\n/g, "\n");
+      buffer = appendTtsPcmFromSseBuffer(buffer, pcmChunks, totalRef);
+      if (buffer.trim()) {
+        for (const line of buffer.split("\n")) {
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          let json;
+          try {
+            json = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+          if (json?.error) {
+            throw new Error("朗读服务暂时不可用，请稍后重试。");
+          }
+          const b64 = extractTtsAudioBase64(json);
+          if (!b64) continue;
+          const bytes = decodeBase64ToBytes(b64);
+          pcmChunks.push(bytes);
+          totalRef.value += bytes.length;
+        }
+      }
+      break;
+    }
+  }
+  if (totalRef.value === 0) {
+    throw new Error("无法获取音频数据");
+  }
+  const pcm = new Uint8Array(totalRef.value);
+  let offset = 0;
+  for (const chunk of pcmChunks) {
+    pcm.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return pcm;
+}
+
+async function requestMimoTtsPcmOnce(text, preset, session) {
+  const response = await fetch(EDGE_FUNCTION_URL, {
+    method: "POST",
+    headers: await proxyHeaders(),
+    body: JSON.stringify({
+      __auth_token: session.access_token,
+      endpoint: "chat",
+      model: "mimo-v2.5-tts",
+      messages: [
+        { role: "user", content: preset.style },
+        { role: "assistant", content: text },
+      ],
+      audio: {
+        format: "pcm16",
+        voice: preset.voice,
+      },
+      stream: false,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("text/event-stream") && response.body) {
+    return collectTtsPcmFromSseStream(response.body);
+  }
+  const json = await response.json();
+  if (json?.error) {
+    throw new Error("朗读服务暂时不可用，请稍后重试。");
+  }
+  const b64 = extractTtsAudioBase64(json);
+  if (!b64) {
+    throw new Error("无法获取音频数据");
+  }
+  return decodeBase64ToBytes(b64);
+}
+
+function playPcm16Buffer(audioCtx, pcm) {
+  if (!audioCtx) {
+    throw new Error("当前浏览器不支持 Web Audio API");
+  }
+  if (!pcm || pcm.length === 0) {
+    throw new Error("无法获取音频数据");
+  }
+  if (pcm.length % 2 !== 0) {
+    throw new Error(`PCM 字节数非偶数 (${pcm.length})，可能流被截断`);
+  }
+  const sampleCount = pcm.length / 2;
+  const audioBuffer = audioCtx.createBuffer(1, sampleCount, 24000);
+  const channel = audioBuffer.getChannelData(0);
+  const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+  for (let i = 0; i < sampleCount; i++) {
+    channel[i] = view.getInt16(i * 2, true) / 32768;
+  }
+  const source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(audioCtx.destination);
+  source.onended = () => {
+    if (__mimoCurrentSource === source) __mimoCurrentSource = null;
+  };
+  __mimoCurrentSource = source;
+  source.start();
+}
+
 async function speakTextWithMimo(text) {
   if (!text || text.trim().length === 0) {
     showToast("没有可朗读的内容");
@@ -6652,128 +7291,30 @@ async function speakTextWithMimo(text) {
   }
 
   const preset = resolveVoicePreset();
+  const speakChunks = splitSpeakTextChunks(text.slice(0, 2000));
+  if (!speakChunks.length) {
+    showToast("没有可朗读的内容");
+    return;
+  }
   showToast("正在生成语音...");
 
   try {
     const session = await ensureAuthSession();
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: "POST",
-      headers: await proxyHeaders(),
-      body: JSON.stringify({
-        __auth_token: session.access_token,
-        endpoint: "chat",
-        model: "qwen3-tts-instruct-flash-realtime",
-        messages: [
-          { role: "user", content: preset.style },
-          { role: "assistant", content: text.slice(0, 2000) },
-        ],
-        audio: {
-          format: "pcm16",
-          voice: preset.voice,
-        },
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-      // 上游错误体不直接外泄，按 status 走通用模板。
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    if (!response.body) {
-      throw new Error("浏览器不支持流式响应");
-    }
-
-    // SSE 流式解码：累积 base64 PCM16LE 块。
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    const pcmChunks = []; // Array<Uint8Array> 原始 PCM 字节
-    let totalPcmBytes = 0;
-    let buffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      // Normalize CRLF→LF up front so the event-block splitter only
-      // needs to look for "\n\n". Mixed line endings would otherwise
-      // make `indexOf` race between two delimiters.
-      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
-
-      // 按 SSE 双换行切分事件块。
-      let sepIdx;
-      while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
-        const eventBlock = buffer.slice(0, sepIdx);
-        buffer = buffer.slice(sepIdx + 2);
-
-        for (const line of eventBlock.split("\n")) {
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (!payload || payload === "[DONE]") continue;
-
-          let json;
-          try {
-            json = JSON.parse(payload);
-          } catch {
-            continue;
-          }
-
-          if (json?.error) {
-            // 上游错误字段值不外泄，统一中文模板。
-            throw new Error("朗读服务暂时不可用，请稍后重试。");
-          }
-
-          const audioData = json?.choices?.[0]?.delta?.audio?.data;
-          if (typeof audioData !== "string" || audioData.length === 0) continue;
-
-          // base64 → Uint8Array。atob 解码后逐字节拷贝。
-          const bin = atob(audioData);
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          pcmChunks.push(bytes);
-          totalPcmBytes += bytes.length;
-        }
+    const pcmParts = [];
+    for (let i = 0; i < speakChunks.length; i++) {
+      if (i > 0) {
+        showToast(`正在生成语音 (${i + 1}/${speakChunks.length})…`);
       }
+      pcmParts.push(await requestMimoTtsPcmOnce(speakChunks[i], preset, session));
     }
-
-    if (totalPcmBytes === 0) {
-      throw new Error("无法获取音频数据");
-    }
-    if (totalPcmBytes % 2 !== 0) {
-      throw new Error(
-        `PCM 字节数非偶数 (${totalPcmBytes})，可能流被截断`,
-      );
-    }
-
-    // 合并 PCM 块。
+    const totalPcmBytes = pcmParts.reduce((sum, part) => sum + part.length, 0);
     const pcm = new Uint8Array(totalPcmBytes);
-    {
-      let offset = 0;
-      for (const chunk of pcmChunks) {
-        pcm.set(chunk, offset);
-        offset += chunk.length;
-      }
+    let offset = 0;
+    for (const part of pcmParts) {
+      pcm.set(part, offset);
+      offset += part.length;
     }
-
-    // 直接走 Web Audio API：AudioBuffer 接受 Float32 样本，跳过 WAV 容器
-    // 解析这一步，浏览器兼容性最稳。Int16 → Float32 用 sample/32768。
-    if (!audioCtx) {
-      throw new Error("当前浏览器不支持 Web Audio API");
-    }
-    const sampleCount = totalPcmBytes / 2;
-    const audioBuffer = audioCtx.createBuffer(1, sampleCount, 24000);
-    const channel = audioBuffer.getChannelData(0);
-    const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
-    for (let i = 0; i < sampleCount; i++) {
-      channel[i] = view.getInt16(i * 2, true) / 32768;
-    }
-    const source = audioCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioCtx.destination);
-    source.onended = () => {
-      if (__mimoCurrentSource === source) __mimoCurrentSource = null;
-    };
-    __mimoCurrentSource = source;
-    source.start();
+    playPcm16Buffer(audioCtx, pcm);
     showToast("开始朗读");
   } catch (error) {
     console.error("TTS 错误:", error);
@@ -6784,7 +7325,7 @@ async function speakTextWithMimo(text) {
     showToast(`朗读失败：${reason}（已切换系统语音）`);
     if ("speechSynthesis" in window) {
       speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text.slice(0, 800));
+      const utterance = new SpeechSynthesisUtterance(text.slice(0, 4000));
       utterance.lang = "zh-CN";
       speechSynthesis.speak(utterance);
     }
@@ -6878,6 +7419,129 @@ async function handleContextMenuAction(action) {
   }
 }
 
+function persistSessionNav() {
+  try {
+    const view = String(state.currentView || document.body.dataset.view || "home");
+    const chatting = Boolean(homeView?.classList.contains("chatting"));
+    sessionStorage.setItem(
+      SESSION_NAV_STORAGE_KEY,
+      JSON.stringify({
+        view,
+        chatting,
+        chatId: chatting ? currentChatId || null : null,
+        shared: Boolean(state.sharedConversation),
+        projectId:
+          view === "claudeProjectDetail"
+            ? localStorage.getItem(CLAUDE_ACTIVE_PROJECT_STORAGE_KEY) || ""
+            : "",
+      }),
+    );
+  } catch (error) {
+    console.warn("保存会话导航状态失败:", error);
+  }
+}
+
+function clearSessionNav() {
+  try {
+    sessionStorage.removeItem(SESSION_NAV_STORAGE_KEY);
+  } catch (_) {}
+}
+
+function readSessionNav() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_NAV_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function waitForAuthReady(timeoutMs = 10000) {
+  try {
+    if (authSessionPromise) {
+      const session = await Promise.race([
+        authSessionPromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("auth_timeout")), timeoutMs),
+        ),
+      ]);
+      return Boolean(session?.user);
+    }
+  } catch (_) {}
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (authInitialized) {
+      try {
+        const client = getSupabaseClient();
+        const { data } = await client.auth.getSession();
+        return Boolean(data?.session?.user);
+      } catch {
+        return false;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 80));
+  }
+  return false;
+}
+
+async function restoreSessionNav() {
+  if (hasSharedConversationHash()) return false;
+  const saved = readSessionNav();
+  if (!saved || saved.shared) return false;
+
+  if (saved.view === "claudeProjectDetail" && saved.projectId) {
+    window.dispatchEvent(
+      new CustomEvent("cancri:restore-session", { detail: saved }),
+    );
+    return true;
+  }
+
+  if (saved.view && saved.view !== "home") {
+    setActiveView(saved.view);
+  }
+
+  if (saved.chatting && saved.chatId) {
+    const ready = await waitForAuthReady();
+    if (!ready) {
+      setActiveView("home");
+      return false;
+    }
+    await loadChat(saved.chatId, { silent: true });
+    return true;
+  }
+
+  if (saved.chatting) {
+    setActiveView("home");
+    homeView?.classList.add("chatting");
+    chatMessages?.classList.add("active");
+    if (homeCenter) homeCenter.style.display = "none";
+    persistSessionNav();
+    return true;
+  }
+
+  if (saved.view) {
+    setActiveView(saved.view);
+    return true;
+  }
+
+  return false;
+}
+
+let sessionNavRestoreStarted = false;
+
+async function initSessionNavRestore() {
+  if (sessionNavRestoreStarted) return;
+  sessionNavRestoreStarted = true;
+  if (initSharedConversationFromHash()) {
+    persistSessionNav();
+    return;
+  }
+  const restored = await restoreSessionNav();
+  if (!restored) setActiveView("home");
+}
+
 function setActiveView(view) {
   // 2026-05-14 Phase 1：Arena/Leaderboard 已下线，所有进入 arena/leaderboard
   // 的导航统一重定向到 home。保留 view 参数支持其他可能的 view（settings 等）。
@@ -6920,6 +7584,7 @@ function setActiveView(view) {
   window.dispatchEvent(
     new CustomEvent("cancri:viewchange", { detail: { view } }),
   );
+  persistSessionNav();
 }
 
 function syncTopArenaMode() {
@@ -6955,7 +7620,7 @@ function syncTopArenaMode() {
       homeInput.placeholder = "向两个匿名模型发起同一个问题";
     else if (state.arenaMode === "side_by_side")
       homeInput.placeholder = "比较你选择的两个模型回答";
-    else homeInput.placeholder = "有问题，尽管问";
+    else homeInput.placeholder = pickComposerPlaceholder();
   }
   document.body.dataset.arenaMode = state.arenaMode;
   document.documentElement.dataset.arenaMode = state.arenaMode;
@@ -8262,7 +8927,7 @@ document.addEventListener("click", (event) => {
   if (!(btn instanceof HTMLElement)) return;
   event.preventDefault();
   event.stopPropagation();
-  const block = btn.closest(".code-block");
+  const block = btn.closest(".code-block, .mermaid-block");
   const codeEl = block ? block.querySelector("pre code") : null;
   const code = codeEl ? codeEl.textContent || "" : "";
   if (!code) {
@@ -8270,15 +8935,55 @@ document.addEventListener("click", (event) => {
     return;
   }
   const action = btn.dataset.codeAction;
+  if (action === "preview") {
+    toggleCodeBlockHtmlPreview(block);
+    return;
+  }
   if (action === "download") {
     const lang = block instanceof HTMLElement ? block.dataset.codeLang || "" : "";
     downloadTextFile(code, codeFilename(lang));
-  } else {
+  } else if (action === "copy") {
     writeTextToClipboard(code).then((ok) =>
       showToast(ok ? "代码已复制" : "复制失败"),
     );
   }
 });
+
+function toggleCodeBlockHtmlPreview(block) {
+  if (!(block instanceof HTMLElement)) return;
+  const codeEl = block.querySelector("pre code");
+  const code = codeEl ? codeEl.textContent || "" : "";
+  if (!code.trim()) {
+    showToast("没有可预览的 HTML");
+    return;
+  }
+  let pane = block.querySelector(".code-block-preview");
+  if (!pane) {
+    pane = document.createElement("div");
+    pane.className = "code-block-preview";
+    pane.hidden = true;
+    const iframe = document.createElement("iframe");
+    iframe.className = "code-block-preview-frame";
+    iframe.setAttribute("sandbox", "");
+    iframe.setAttribute("referrerpolicy", "no-referrer");
+    iframe.setAttribute("title", "HTML 预览");
+    pane.appendChild(iframe);
+    block.appendChild(pane);
+  }
+  const iframe = pane.querySelector("iframe");
+  const previewBtn = block.querySelector('[data-code-action="preview"]');
+  if (pane.hidden) {
+    if (iframe) iframe.srcdoc = code;
+    pane.hidden = false;
+    block.classList.add("is-preview-open");
+    previewBtn?.classList.add("is-active");
+  } else {
+    pane.hidden = true;
+    block.classList.remove("is-preview-open");
+    previewBtn?.classList.remove("is-active");
+    if (iframe) iframe.removeAttribute("srcdoc");
+  }
+}
 
 function renderInlineMarkdown(text) {
   const placeholders = [];
@@ -8439,22 +9144,49 @@ function renderMarkdown(markdown) {
       codeLang = "";
       return;
     }
-    const code = escapeHtml(codeLines.join("\n"));
+    const rawCode = codeLines.join("\n");
+    const code = escapeHtml(rawCode);
     const langAttr = escapeHtml(codeLang || "");
     const copyIcon =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
     const dlIcon =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-    blocks.push(
-      `<div class="code-block" data-code-lang="${langAttr}">` +
-        `<div class="code-block-tools">` +
-          `<span class="code-block-lang" data-lang="${langAttr}" aria-hidden="true"></span>` +
-          `<button type="button" class="code-block-btn" data-code-action="copy" title="复制代码" aria-label="复制代码">${copyIcon}</button>` +
-          `<button type="button" class="code-block-btn" data-code-action="download" title="下载代码" aria-label="下载代码">${dlIcon}</button>` +
-        `</div>` +
-        `<pre><code>${code}</code></pre>` +
-      `</div>`,
-    );
+    const previewIcon =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const langLower = (codeLang || "").toLowerCase();
+    const previewBtn =
+      langLower === "html" || langLower === "htm"
+        ? `<button type="button" class="code-block-btn" data-glass="button" data-code-action="preview" title="预览网页" aria-label="预览网页">${previewIcon}</button>`
+        : "";
+    const glassBtn = (action, title, label, icon) =>
+      `<button type="button" class="code-block-btn" data-glass="button" data-code-action="${action}" title="${title}" aria-label="${label}">${icon}</button>`;
+    const toolsHtml =
+      `<div class="code-block-tools">` +
+        `<span class="code-block-lang" data-lang="${langAttr}" aria-hidden="true"></span>` +
+        glassBtn("copy", "复制代码", "复制代码", copyIcon) +
+        glassBtn("download", "下载代码", "下载代码", dlIcon) +
+        previewBtn +
+      `</div>`;
+    if (
+      (codeLang || "").toLowerCase() === "mermaid" &&
+      state.inlineMermaidEnabled
+    ) {
+      blocks.push(
+        `<div class="mermaid-block code-block" data-code-lang="mermaid" data-mermaid-pending="1">` +
+          toolsHtml +
+          `<p class="mermaid-error-hint" hidden></p>` +
+          `<pre class="mermaid-source"><code>${code}</code></pre>` +
+          `<div class="mermaid-diagram" aria-label="Mermaid 图表"></div>` +
+        `</div>`,
+      );
+    } else {
+      blocks.push(
+        `<div class="code-block" data-code-lang="${langAttr}">` +
+          toolsHtml +
+          `<pre><code>${code}</code></pre>` +
+        `</div>`,
+      );
+    }
     codeLines = [];
     codeLang = "";
   }
@@ -8687,22 +9419,31 @@ function fallbackMathRender(element) {
   element.innerHTML = html;
 }
 
+function renderPostMarkdownInElement(element) {
+  if (!element) return;
+  renderMathInElement(element);
+  if (window.CancriMermaid?.renderMermaidInElement) {
+    window.CancriMermaid.renderMermaidInElement(element);
+  }
+}
+
 function renderAnimatedMarkdown(markdown) {
   const html = renderMarkdown(markdown);
   // 使用 setTimeout 确保 KaTeX 已加载
   setTimeout(() => {
     const container = document.querySelector(".message-content");
-    if (container) renderMathInElement(container);
+    if (container) renderPostMarkdownInElement(container);
   }, 0);
   return html;
 }
 
-// 在消息更新后调用 KaTeX 渲染
+// 在消息更新后调用 KaTeX / Mermaid 渲染
 function renderMathInMessage(messageId) {
   const messageDiv = document.getElementById(messageId);
   if (!messageDiv) return;
-  const answerBody = messageDiv.querySelector(".answer-body");
-  if (answerBody) renderMathInElement(answerBody);
+  messageDiv
+    .querySelectorAll(".answer-body, .think-body, .duel-answer")
+    .forEach((el) => renderPostMarkdownInElement(el));
 }
 
 function renderStreamingFragment(text) {
@@ -8741,11 +9482,11 @@ function syncStreamingMarkdownBlock(
   // 流式输出期间 debounce KaTeX 渲染，避免每帧全量扫描导致卡顿。
   // 流结束后立即渲染一次。
   if (!thinking) {
-    renderMathInElement(blockElement);
+    renderPostMarkdownInElement(blockElement);
   } else {
     if (!streamState._katexTimer) {
       streamState._katexTimer = setTimeout(() => {
-        renderMathInElement(blockElement);
+        renderPostMarkdownInElement(blockElement);
         streamState._katexTimer = null;
       }, 800);
     }
@@ -8877,15 +9618,15 @@ function getDefaultHomeHeroText() {
       return pickHomeText(["周末晚上", "在想什么？", "晚上好", "周末余额不足", "享受最后的悠闲"]);
     }
     if (hour < 11) {
-      return pickHomeText(["早安", "在想什么？", "你在干嘛？", "今天有什么计划", "新的一天", "准备好出发了吗", "早起的鸟儿", "来聊聊"]);
+      return pickHomeText(["早安", "在想什么？", "你在干嘛？", "今天有什么计划", "新的一天", "准备好出发了吗", "早起的鸟儿", "来聊聊", "今天想完成什么", "有什么新想法", "起床了吗", "精神还好吗"]);
     }
     if (hour < 14) {
-      return pickHomeText(["中午好", "在想什么？", "你在干嘛？", "午饭吃了吗", "午休时间", "下午继续加油", "来点灵感"]);
+      return pickHomeText(["中午好", "在想什么？", "你在干嘛？", "午饭吃了吗", "午休时间", "下午继续加油", "来点灵感", "吃饱了吗", "歇一会儿？", "上午过得怎么样", "需要搭把手吗", "有什么想聊的"]);
     }
     if (hour < 18) {
-      return pickHomeText(["下午好", "在想什么？", "你在干嘛？", "下午茶时间", "灵感来了吗", "今天进展如何", "来聊会天", "需要帮忙吗"]);
+      return pickHomeText(["下午好", "在想什么？", "你在干嘛？", "下午茶时间", "灵感来了吗", "今天进展如何", "来聊会天", "需要帮忙吗", "卡在哪了？", "写点什么？", "脑子转不动了吗", "一起理理思路"]);
     }
-    return pickHomeText(["晚上好", "在想什么？", "你在干嘛？", "今晚打算做什么", "夜色温柔", "来场深夜对话", "今天收获如何", "放松一下吧"]);
+    return pickHomeText(["晚上好", "在想什么？", "你在干嘛？", "今晚打算做什么", "夜色温柔", "来场深夜对话", "今天收获如何", "放松一下吧", "累了吗", "有什么想复盘", "睡前聊两句？", "今天最开心的事"]);
   }
 
   // 深夜
@@ -8973,14 +9714,20 @@ function getDefaultHomeHeroText() {
       `早安，${name}`,
       `在想什么？${name}`,
       `你在干嘛？${name}`,
-      `咖啡和Cancri，${name}`
+      `咖啡和Cancri，${name}`,
+      `今天想搞定什么，${name}？`,
+      `新的一天，${name}`,
+      `有什么计划，${name}？`
     ]);
   }
   if (hour < 14) {
     return pickHomeText([
       `中午好，${name}`,
+      `午饭吃了吗，${name}？`,
       `在想什么？${name}`,
-      `你在干嘛？${name}`
+      `你在干嘛？${name}`,
+      `上午还顺利吗，${name}？`,
+      `歇会儿再继续，${name}`
     ]);
   }
   if (hour < 18) {
@@ -8988,14 +9735,18 @@ function getDefaultHomeHeroText() {
       `下午好，${name}`,
       `在想什么？${name}`,
       `你在干嘛？${name}`,
-      `咖啡和Cancri，${name}`
+      `咖啡和Cancri，${name}`,
+      `今天进展如何，${name}？`,
+      `需要帮忙吗，${name}？`
     ]);
   }
   return pickHomeText([
     `晚上好，${name}`,
     `在想什么？${name}`,
     `你在干嘛？${name}`,
-    `咖啡和Cancri，${name}`
+    `咖啡和Cancri，${name}`,
+    `今晚打算做什么，${name}？`,
+    `今天过得怎么样，${name}？`
   ]);
 }
 
@@ -9012,14 +9763,25 @@ function updateHomeHeroText() {
 let placeholderIntervalId = null;
 const CHAT_PLACEHOLDER_TEMPLATES = [
   "有问题，尽管问",
-  "问我想法，写段代码，或者纯粹聊聊",
-  "输入你的灵感，让我们一起实现它",
-  "有什么我能帮你的吗？不管是写文章还是找 Bug",
-  "今天想聊点什么？试着让我帮你写个小工具",
-  "有什么难题？让我来为你排忧解难",
-  "脑海中有个点子？写下来，我们一起聊聊",
-  "任何困惑，或者想听个故事？尽管说吧"
+  "问想法、写代码，或者随便聊聊",
+  "输入你的灵感，我们一起实现",
+  "有什么我能帮你的？写文章、查资料、找 Bug",
+  "今天想聊点什么？写个小工具也行",
+  "有什么难题？说出来一起拆",
+  "脑子里有个点子？写下来聊聊",
+  "任何困惑，或者想听个故事，尽管说",
+  "卡住了？把问题扔过来",
+  "想润色文案、改邮件、理思路都可以",
+  "不懂就问，越具体越好",
+  "从一句废话开始也行",
+  "需要总结、翻译、头脑风暴？开口吧",
+  "说说你在做什么，我来搭把手",
+  "随便丢个话题，我们慢慢聊"
 ];
+
+function pickComposerPlaceholder() {
+  return pickHomeText(CHAT_PLACEHOLDER_TEMPLATES);
+}
 let currentPlaceholderIndex = 0;
 
 function updateComposerPlaceholder() {
@@ -9052,7 +9814,7 @@ function updateComposerPlaceholder() {
       placeholderIntervalId = null;
     }
     homeInput.classList.remove("placeholder-faded");
-    homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[0];
+    homeInput.placeholder = pickComposerPlaceholder();
     return;
   }
 
@@ -9077,7 +9839,7 @@ function updateComposerPlaceholder() {
         clearInterval(placeholderIntervalId);
         placeholderIntervalId = null;
         homeInput.classList.remove("placeholder-faded");
-        homeInput.placeholder = CHAT_PLACEHOLDER_TEMPLATES[0];
+        homeInput.placeholder = pickComposerPlaceholder();
         return;
       }
 
@@ -9106,6 +9868,12 @@ function isChatNearBottom(threshold = 120) {
 
 function updateScrollToBottomButton() {
   if (!scrollToBottomBtn || !chatMessages) return;
+  const isChatting = Boolean(homeView?.classList.contains("chatting"));
+  if (!isChatting) {
+    scrollToBottomBtn.hidden = true;
+    scrollToBottomBtn.classList.remove("visible");
+    return;
+  }
   const isNear = isChatNearBottom(160);
   scrollToBottomBtn.hidden = isNear;
   scrollToBottomBtn.classList.toggle("visible", !isNear);
@@ -9218,7 +9986,7 @@ function getComposerResizeMaxHeight() {
 function autoResizeComposerInput() {
   if (!homeInput) return;
   const composer = homeInput.closest("[data-workbench-composer], .composer");
-  const minHeight = window.matchMedia("(max-width: 640px)").matches ? 48 : 44;
+  const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
   const maxHeight = getComposerResizeMaxHeight();
 
   homeInput.style.height = "0px";
@@ -10358,6 +11126,7 @@ function undoUserMessage(messageIndex) {
     if (homeView) homeView.classList.remove("chatting");
     if (homeCenter) homeCenter.style.display = "flex";
     currentChatId = null;
+    updateScrollToBottomButton();
   }
 
   if (homeInput) homeInput.focus();
@@ -10553,7 +11322,7 @@ function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
   messageActions
     .querySelector('[data-action="speak"]')
     .addEventListener("click", async () => {
-      const text = answerBody.textContent || "";
+      const text = getAssistantSpeakText(messageDiv, answerBody);
       if (!text || text === "正在思考中…") {
         showToast("没有可朗读的内容");
         return;
@@ -10722,7 +11491,7 @@ function updateDuelMessage(
     target.innerHTML = value
       ? renderMarkdown(value)
       : `<span class="typing-indicator">${loading ? "正在生成…" : "暂无内容"}</span>`;
-    renderMathInElement(target);
+    renderPostMarkdownInElement(target);
     if (modelId && wrapper._duel?.anonymous) {
       const head = card.querySelector(".duel-card-head");
       if (head)
@@ -10861,7 +11630,7 @@ function updateDuelMessage(
     }
 
     // 流式期间跳过 card 级 KaTeX，syncStreamingMarkdownBlock 内部已 debounce
-    if (!thinking && (hasAnswer || hasReasoning)) renderMathInElement(card);
+    if (!thinking && (hasAnswer || hasReasoning)) renderPostMarkdownInElement(card);
   }
 
   // Reveal model name
@@ -11203,8 +11972,10 @@ function clearConversation() {
   autoResizeComposerInput();
   updateComposerSendButton();
   updateHomeHeroText();
+  updateScrollToBottomButton();
   setComposerBusy(false);
   homeInput.focus();
+  persistSessionNav();
 }
 
 function pushHistory(roleOrMessage, content, extra = {}) {
@@ -11553,6 +12324,7 @@ async function requestConversationCompression(modelId = currentModel) {
   }
   renderMessages();
   updateContextMeter();
+  persistSessionNav();
   showToast("上下文已自动压缩，并作为新对话继续");
   return true;
 }
@@ -12647,6 +13419,7 @@ async function sendMessage(content) {
 
   homeView.classList.add("chatting");
   chatMessages.classList.add("active");
+  persistSessionNav();
   if (turnModelMeta.imageOnly) {
     if (!query && !attachmentsForSend.length) return;
     await sendImageGenerationMessage(
@@ -13087,12 +13860,22 @@ function openPopover(el) {
   if (willOpen) {
     el.classList.add("open");
     state.popover = el;
+    if (el === accountPopover) {
+      syncAccountSheetState();
+      if (!isAccountSheetViewport()) {
+        accountPopover.style.position = "fixed";
+        positionAccountPopoverNearTrigger();
+      }
+    }
+    updateScrimVisibility();
   }
 }
 
 function closePopover() {
   [plusPopover, accountPopover].forEach((p) => p.classList.remove("open"));
   state.popover = null;
+  syncAccountSheetState();
+  updateScrimVisibility();
 }
 
 function openModal(id) {
@@ -13127,16 +13910,88 @@ function isMobileViewport() {
   return window.innerWidth <= 640;
 }
 
-function ensureLatestClaudeStylesheet() {
-  const href = "./claude.css?v=2026-06-01-scroll-black";
-  if (document.querySelector(`link[rel="stylesheet"][href="${href}"]`)) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
+/** 账户菜单底部抽屉断点（与 claude.css 侧栏 mobile drawer 一致） */
+function isAccountSheetViewport() {
+  return window.innerWidth <= 768;
+}
+
+/** 与 claude_ui.js bindMobileSidebarDrawer 语义对齐，供 scrim / document 点击收口 */
+function isMobileDrawerOpen() {
+  if (!window.matchMedia("(max-width: 768px)").matches) return false;
+  if (!sidebar) return document.body.classList.contains("sidebar-open");
+  return (
+    document.body.classList.contains("sidebar-open") ||
+    sidebar.classList.contains("is-mobile-open") ||
+    sidebar.dataset.open === "true"
+  );
+}
+
+function closeMobileSidebarDrawer() {
+  if (!window.matchMedia("(max-width: 768px)").matches) return;
+  document.body.classList.remove("sidebar-open");
+  if (!sidebar) return;
+  sidebar.classList.add("collapsed");
+  sidebar.classList.remove("is-mobile-open");
+  sidebar.classList.add("is-mobile-closing");
+  sidebar.dataset.open = "false";
+  sidebar.dataset.collapsed = "true";
+  window.setTimeout(() => {
+    sidebar?.classList.remove("is-mobile-closing");
+  }, 220);
+  ["mobileMenuBtn", "sidebarToggle"].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  });
+}
+
+function isAccountMenuClickTarget(target) {
+  if (!target || !(target instanceof Node)) return false;
+  const trigger = document.getElementById("accountTrigger");
+  if (trigger && trigger.contains(target)) return true;
+  return Boolean(accountPopover && accountPopover.contains(target));
+}
+
+function relocateAccountPopover() {
+  if (!accountPopover || accountPopover.dataset.portaled === "1") return;
+  document.body.appendChild(accountPopover);
+  accountPopover.dataset.portaled = "1";
+}
+
+function syncAccountSheetState() {
+  const open =
+    accountPopover && accountPopover.classList.contains("open");
+  document.body.classList.toggle(
+    "account-sheet-open",
+    Boolean(open) && isAccountSheetViewport(),
+  );
+  if (!accountPopover || open) return;
+  accountPopover.style.position = "";
+  accountPopover.style.left = "";
+  accountPopover.style.right = "";
+  accountPopover.style.bottom = "";
+  accountPopover.style.top = "";
+}
+
+function positionAccountPopoverNearTrigger() {
+  if (!accountPopover) return;
+  const trigger = document.getElementById("accountTrigger");
+  if (!trigger) return;
+  const rect = trigger.getBoundingClientRect();
+  const width = Math.min(300, Math.max(224, accountPopover.offsetWidth || 260));
+  let left = rect.left;
+  if (left + width > window.innerWidth - 12) {
+    left = Math.max(8, window.innerWidth - width - 12);
+  }
+  accountPopover.style.position = "fixed";
+  accountPopover.style.left = Math.max(8, left) + "px";
+  accountPopover.style.right = "auto";
+  accountPopover.style.bottom = window.innerHeight - rect.top + 8 + "px";
+  accountPopover.style.top = "auto";
+  accountPopover.style.zIndex = "210";
 }
 
 function syncScrollToBottomAnchor() {
+  syncComposerHeightVar();
   if (!scrollToBottomBtn) return;
   if (window.matchMedia("(max-width: 768px)").matches) {
     scrollToBottomBtn.style.left = "50%";
@@ -13149,8 +14004,13 @@ function syncScrollToBottomAnchor() {
 
 function updateScrimVisibility() {
   if (!scrim) return;
+  const accountSheetOpen =
+    accountPopover &&
+    accountPopover.classList.contains("open") &&
+    isAccountSheetViewport();
   const shouldShow =
     Boolean(state.modal) ||
+    accountSheetOpen ||
     (isMobileViewport() && sidebar && !sidebar.classList.contains("collapsed"));
   scrim.classList.toggle("show", shouldShow);
   syncScrollToBottomAnchor();
@@ -13196,6 +14056,7 @@ function setAccent(name) {
   state.accentName = accentCycle[idx].name;
   state.accentValue = accentCycle[idx].value;
   applyTheme();
+  persistUiPreferences();
 }
 
 // 2026-05-18：聊天字体选择（serif/sans/mono）的入口。
@@ -13501,17 +14362,44 @@ if (document.readyState === "loading") {
   bindInviteCopyBtn();
 }
 
-document.getElementById("sidebarToggle").addEventListener("click", (e) => {
-  e.stopPropagation();
-  sidebar.classList.toggle("collapsed");
+const SIDEBAR_RAIL_ANIM_MS = 260;
+let sidebarRailAnimTimer = 0;
+
+function beginSidebarRailAnimation(mode) {
+  if (!sidebar) return;
+  sidebar.classList.remove("is-rail-collapsing", "is-rail-expanding", "is-rail-animating");
+  sidebar.classList.add("is-rail-animating", mode === "expand" ? "is-rail-expanding" : "is-rail-collapsing");
+  window.clearTimeout(sidebarRailAnimTimer);
+  sidebarRailAnimTimer = window.setTimeout(() => {
+    sidebar?.classList.remove(
+      "is-rail-animating",
+      "is-rail-collapsing",
+      "is-rail-expanding"
+    );
+  }, SIDEBAR_RAIL_ANIM_MS);
+}
+
+function toggleSidebarCollapsed() {
+  if (!sidebar) return;
+  const willCollapse = !sidebar.classList.contains("collapsed");
+  if (willCollapse) {
+    sidebar.classList.add("collapsed");
+    beginSidebarRailAnimation("collapse");
+  } else {
+    sidebar.classList.remove("collapsed");
+    beginSidebarRailAnimation("expand");
+  }
   closePopover();
   updateScrimVisibility();
+}
+
+document.getElementById("sidebarToggle").addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleSidebarCollapsed();
 });
 document.getElementById("mobileMenuBtn").addEventListener("click", (e) => {
   e.stopPropagation();
-  sidebar.classList.toggle("collapsed");
-  closePopover();
-  updateScrimVisibility();
+  toggleSidebarCollapsed();
 });
 
 document.getElementById("newChatBtn").addEventListener("click", newChat);
@@ -13542,15 +14430,6 @@ document.getElementById("plusTrigger").addEventListener("click", (e) => {
 });
 document.getElementById("accountTrigger").addEventListener("click", (e) => {
   e.stopPropagation();
-  // 2026-05-31：账户菜单=左下角用户头像位置上拉的抽屉。按 trigger rect 定位到头像
-  // 左上方（inline left/bottom），CSS 再做 translateY 上滑+淡入（见 .account-popover）。
-  const rect = document
-    .getElementById("accountTrigger")
-    .getBoundingClientRect();
-  accountPopover.style.left = Math.max(8, rect.left) + "px";
-  accountPopover.style.right = "auto";
-  accountPopover.style.bottom = window.innerHeight - rect.top + 8 + "px";
-  accountPopover.style.top = "auto";
   openPopover(accountPopover);
 });
 
@@ -13562,10 +14441,27 @@ if (donateBtn) {
     if (accountPopover) {
       const isOpen = accountPopover.classList.contains("open");
       document.querySelectorAll(".popover.open").forEach(p => p.classList.remove("open"));
-      if (!isOpen) accountPopover.classList.add("open");
+      if (!isOpen) {
+        openPopover(accountPopover);
+      } else {
+        closePopover();
+      }
     }
   });
 }
+
+relocateAccountPopover();
+window.addEventListener("resize", () => {
+  if (
+    accountPopover &&
+    accountPopover.classList.contains("open") &&
+    !isAccountSheetViewport()
+  ) {
+    positionAccountPopoverNearTrigger();
+  }
+  syncAccountSheetState();
+  updateScrimVisibility();
+});
 
 /* ── 侧边栏赞助卡片 ── */
 (function initDonationPromoCard() {
@@ -13982,6 +14878,7 @@ document
 scrim.addEventListener("click", () => {
   closePopover();
   closeModal();
+  closeMobileSidebarDrawer();
   if (isMobileViewport() && sidebar) {
     sidebar.classList.add("collapsed");
   }
@@ -13989,8 +14886,17 @@ scrim.addEventListener("click", () => {
 });
 
 document.addEventListener("click", (event) => {
+  if (isAccountMenuClickTarget(event.target)) return;
   closePopover();
-  if (
+  if (isMobileDrawerOpen()) {
+    const toggles = [
+      document.getElementById("mobileMenuBtn"),
+      document.getElementById("sidebarToggle"),
+    ];
+    if (!toggles.some((el) => el && el.contains(event.target))) {
+      closeMobileSidebarDrawer();
+    }
+  } else if (
     isMobileViewport() &&
     sidebar &&
     !sidebar.contains(event.target) &&
@@ -14003,6 +14909,8 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    const settingsView = document.getElementById("claudeSettingsView");
+    if (settingsView && settingsView.classList.contains("active")) return;
     closePopover();
     closeModal();
     if (isMobileViewport() && sidebar) {
@@ -14277,6 +15185,90 @@ function goToModelPage(page) {
   updateModelPageDisplay();
 }
 
+let modelDropdownTriggerEl = null;
+let modelDropdownSyncRaf = 0;
+
+function setModelDropdownLayout(prop, value) {
+  if (!modelDropdown) return;
+  if (value === "" || value == null) {
+    modelDropdown.style.removeProperty(prop);
+    return;
+  }
+  modelDropdown.style.setProperty(prop, value, "important");
+}
+
+function isModelDropdownOpen() {
+  return Boolean(
+    modelSelector?.classList.contains("open") ||
+      modelSelector?.classList.contains("is-open") ||
+      compareModelSelector?.classList.contains("is-open"),
+  );
+}
+
+function getActiveModelDropdownTrigger() {
+  if (modelDropdownTriggerEl) return modelDropdownTriggerEl;
+  if (compareModelSelector?.classList.contains("is-open")) {
+    return compareModelCurrentBtn;
+  }
+  return modelCurrentBtn;
+}
+
+function positionModelDropdown(triggerEl) {
+  if (!modelDropdown || !triggerEl) return;
+
+  const rect = triggerEl.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isCompact = window.matchMedia("(max-width: 768px)").matches;
+  const width = Math.round(
+    isCompact
+      ? Math.min(320, vw - 24)
+      : Math.min(320, Math.max(280, Math.min(420, vw - 24))),
+  );
+  const spaceBelow = vh - rect.bottom;
+  const openUp = spaceBelow < 280 && rect.top > 180;
+
+  let left = Math.round(rect.right - width);
+  left = Math.max(12, Math.min(left, vw - width - 12));
+
+  setModelDropdownLayout("width", `${width}px`);
+  setModelDropdownLayout("left", `${left}px`);
+  setModelDropdownLayout("right", "auto");
+
+  if (openUp) {
+    setModelDropdownLayout("top", "auto");
+    setModelDropdownLayout(
+      "bottom",
+      `${Math.max(12, Math.round(vh - rect.top + 8))}px`,
+    );
+    setModelDropdownLayout(
+      "max-height",
+      `${Math.max(200, Math.round(rect.top - 24))}px`,
+    );
+  } else {
+    setModelDropdownLayout("bottom", "auto");
+    setModelDropdownLayout("top", `${Math.round(rect.bottom + 8)}px`);
+    setModelDropdownLayout(
+      "max-height",
+      `${Math.max(200, Math.round(spaceBelow - 16))}px`,
+    );
+  }
+}
+
+function syncModelDropdownPosition() {
+  if (!isModelDropdownOpen()) return;
+  const trigger = getActiveModelDropdownTrigger();
+  if (trigger) positionModelDropdown(trigger);
+}
+
+function scheduleModelDropdownPositionSync() {
+  if (!isModelDropdownOpen()) return;
+  cancelAnimationFrame(modelDropdownSyncRaf);
+  modelDropdownSyncRaf = requestAnimationFrame(() => {
+    modelDropdownSyncRaf = requestAnimationFrame(syncModelDropdownPosition);
+  });
+}
+
 function openModelDropdown(triggerEl) {
   closeTopArenaModeDropdown();
 
@@ -14317,41 +15309,11 @@ function openModelDropdown(triggerEl) {
       opt.style.setProperty("--stagger", String(i));
     });
 
-    if (triggerEl) {
-      const rect = triggerEl.getBoundingClientRect();
-      const isCompact = window.matchMedia("(max-width: 768px)").matches;
-
-      if (isCompact) {
-        modelDropdown.style.top = `${Math.round(rect.bottom + 8)}px`;
-        modelDropdown.style.left = "12px";
-        modelDropdown.style.right = "12px";
-        modelDropdown.style.width = "auto";
-      } else {
-        const vw = window.innerWidth;
-        // Width: 420-520px but capped so it fits in the viewport
-        const maxW = Math.max(240, vw - 24);
-        const width = Math.round(
-          Math.min(520, Math.max(Math.min(420, maxW), rect.width)),
-        );
-        const top = Math.round(rect.bottom + 8);
-        // Right-align when button center is past viewport midpoint
-        // (natural for header buttons on the right side)
-        const buttonCenterX = rect.left + rect.width / 2;
-        if (buttonCenterX > vw / 2) {
-          const right = Math.max(12, vw - rect.right);
-          modelDropdown.style.top = `${top}px`;
-          modelDropdown.style.left = "auto";
-          modelDropdown.style.right = `${right}px`;
-        } else {
-          const left = Math.max(12, Math.min(rect.left, vw - width - 12));
-          modelDropdown.style.top = `${top}px`;
-          modelDropdown.style.left = `${Math.round(left)}px`;
-          modelDropdown.style.right = "auto";
-        }
-        modelDropdown.style.width = `${width}px`;
-      }
-
+    modelDropdownTriggerEl = triggerEl || getActiveModelDropdownTrigger();
+    if (modelDropdownTriggerEl) {
+      positionModelDropdown(modelDropdownTriggerEl);
       modelDropdown.style.transform = "translateY(-4px) scale(.98)";
+      scheduleModelDropdownPositionSync();
     }
   }
 
@@ -14367,12 +15329,12 @@ function closeModelDropdown() {
   compareModelCurrentBtn?.setAttribute("aria-expanded", "false");
 
   modelDropdown?.classList.remove("animating");
+  modelDropdownTriggerEl = null;
 
   if (modelDropdown) {
-    modelDropdown.style.top = "";
-    modelDropdown.style.left = "";
-    modelDropdown.style.right = "";
-    modelDropdown.style.width = "";
+    ["top", "left", "right", "bottom", "width", "max-height"].forEach((prop) => {
+      modelDropdown.style.removeProperty(prop);
+    });
     modelDropdown.style.transform = "";
   }
 
@@ -14622,9 +15584,14 @@ function updateThemeSwitcherActive() {
 }
 
 renderWatermark();
-ensureLatestClaudeStylesheet();
 restoreUiPreferences();
 applyTheme();
+
+window.addEventListener("resize", scheduleModelDropdownPositionSync);
+window.addEventListener("orientationchange", scheduleModelDropdownPositionSync);
+window
+  .matchMedia("(max-width: 768px)")
+  .addEventListener("change", scheduleModelDropdownPositionSync);
 updateThemeSwitcherActive();
 
 // 同步侧边栏主题标签
@@ -14647,7 +15614,13 @@ if (isMobileViewport() && sidebar) {
 }
 updateScrimVisibility();
 window.addEventListener("resize", updateScrimVisibility);
-window.addEventListener("resize", syncComposerHeightVar);
+if (homeCenter && "ResizeObserver" in window) {
+  const composerHeightObserver = new ResizeObserver(() => {
+    syncComposerHeightVar();
+  });
+  composerHeightObserver.observe(homeCenter);
+}
+syncComposerHeightVar();
 window.addEventListener("resize", syncScrollToBottomAnchor);
 
 // 设置当前模型显示
@@ -14660,7 +15633,6 @@ if (compareModelName) {
 updateModelSelectorIcons();
 updateModelSelectorActive();
 syncTopArenaMode();
-setActiveView("home");
 refreshNicknameUI();
 setComposerBusy(false);
 updateTokenExpiryNote();
@@ -14669,6 +15641,9 @@ setInterval(updateTokenExpiryNote, 1000);
 setInterval(updateHomeHeroText, 60 * 1000);
 initChatShareButton();
 initAuthOverlay();
+setTimeout(() => {
+  void initSessionNavRestore();
+}, 400);
 bootstrapModelTelemetry();
 
 if (nexusvFooter && typeof IntersectionObserver !== "undefined") {
@@ -14685,8 +15660,10 @@ if (nexusvFooter && typeof IntersectionObserver !== "undefined") {
   updateNexusvFooterVisibility();
 }
 
-if (!initSharedConversationFromHash()) initQueryFromUrl();
+if (!hasSharedConversationHash()) initQueryFromUrl();
 updateChatShareButtonVisibility();
+window.addEventListener("beforeunload", persistSessionNav);
+window.addEventListener("pagehide", persistSessionNav);
 
 // 加载并渲染聊天记录列表
 if (!hasSharedConversationHash()) {
@@ -14802,10 +15779,12 @@ window.CancriApp = {
   // 2026-05-18：暴露给 claude_ui.js 的"概述"设置面板使用。
   setThemeMode,
   setAccent,
+  syncModelDropdownPosition,
   setChatFont,
   setVoicePreset,
   setCustomInstructions,
   setWebSearchEnabled,
+  setInlineMermaidEnabled,
   setFullName,
   setProfession,
   getNickname,

@@ -157,6 +157,7 @@ html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"
    原版只对 dark + light 都强制 dark；现在 dark/light 都走相同 mapping，
    但 --c-* 本身按 theme 分支（见上方两个 token 块）。 */
 html, html[data-theme="dark"], html[data-theme="light"] {
+    --icon-stroke: 1.5;
     --bg:       var(--c-bg);
     --bg-2:     var(--c-bg-side);
     --bg-3:     var(--c-bg-elev);
@@ -186,11 +187,13 @@ html, html[data-theme="dark"], html[data-theme="light"] {
 html, html[data-theme="dark"], html[data-theme="black"] {
     color-scheme: dark !important;
     --code-bg:     #14110f;
+    --code-fg:     #f4f3ee;
 }
 
 html[data-theme="light"] {
     color-scheme: light !important;
-    --code-bg:     #f0ebe2;
+    --code-bg:     #f3f2ef;
+    --code-fg:     #1a1a1a;
 }
 
 body {
@@ -234,7 +237,24 @@ body {
 }
 
 .scroll-to-bottom-btn {
-    left: calc(50% + var(--scroll-to-bottom-shift-x, 0px));
+    position: fixed !important;
+    bottom: calc(var(--composer-height, 140px) + 40px) !important;
+    left: calc(50% + var(--scroll-to-bottom-shift-x, 0px)) !important;
+    transform: translateX(-50%) !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    flex: none !important;
+    border-radius: 50% !important;
+    z-index: 60 !important;
+}
+.scroll-to-bottom-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+    flex-shrink: 0;
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -244,12 +264,16 @@ body {
 /* 顶部品牌区：用 ::before 注入 "Claude" 文字 logo（图标是 cancri，
    但视觉文字是 Claude 风格 wordmark）。原 .brand-mark 隐藏不影响 ID 引用。 */
 .sidebar-topbar {
-    height: auto !important;
-    min-height: 40px !important;
-    padding: 8px 8px 4px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    flex-direction: row !important;
+    flex-shrink: 0;
 }
 .sidebar-topbar::before {
     content: "Cancri";
@@ -260,8 +284,42 @@ body {
     font-weight: 500;
     letter-spacing: -0.005em;
     color: var(--c-text);
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    transform: translateX(0);
+    transition:
+        opacity 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        flex 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        transform 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        margin 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        padding 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* 收起动画：文字随侧栏变窄同步淡出（不用 display:none 硬切） */
+.sidebar-label,
+.sidebar-footer-text,
+.claude-nav-tag,
+.claude-recent-title,
+.section-title,
+.recent-item-title,
+.conversation-title,
+.account-meta,
+.upgrade-btn,
+.account-arrow,
+.sidebar-search-wrap,
+.recent-wrap,
+#chatHistoryList,
+.claude-onboarding-card {
+    transition:
+        opacity 200ms cubic-bezier(0.32, 0.72, 0, 1),
+        width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        margin 200ms ease,
+        padding 200ms ease;
 }
 .sidebar-topbar .brand-mark,
 .sidebar-topbar #brandHomeBtn {
@@ -351,10 +409,7 @@ html[data-theme="dark"] .nav-row:has(.claude-nav-icon) {
 .nav-row:hover .claude-nav-artifacts-star {
     transform: rotate(120deg);
 }
-.nav-row:active .claude-nav-icon--new-chat {
-    transform: scale(0.94);
-}
-/* 搜索图标：hover 放大（放大镜的语义）+ 轻微旋转 */
+/* 搜索图标：hover 放大 + 轻微旋转（Claude 真站侧栏搜索语义） */
 #sidebarSearchBtn svg {
     transition: transform 220ms cubic-bezier(0.165, 0.85, 0.45, 1);
     transform-origin: 11px 11px;
@@ -383,50 +438,150 @@ html[data-theme="light"] .nav-row.active {
 /* 折叠时（rail 模式）只显示图标。
    参考图 ceff02：56px 宽，"Cancri" 文字隐，nav 只剩图标列居中，
    底部头像保留，"运行历史" 区域全隐。 */
+.sidebar {
+    overflow-x: hidden;
+    transition: width 240ms cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
 .sidebar.collapsed {
     width: 56px !important;
 }
+.nav-row,
+.account-strip,
+.sidebar-footer-btn {
+    transition:
+        padding 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        gap 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        justify-content 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        background 160ms ease,
+        color 160ms ease;
+}
+.sidebar-body,
+.sidebar-footer {
+    transition: padding 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
 .sidebar.collapsed .sidebar-topbar {
-    padding: 16px 8px 8px !important;
-    justify-content: center !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 0 10px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    transition: padding 240ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .sidebar.collapsed .sidebar-topbar::before {
-    display: none !important;
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    opacity: 0 !important;
+    transform: translateX(18px) !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
 }
 .sidebar.collapsed .sidebar-toggle {
-    margin: 0 auto;
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
+    flex-shrink: 0;
 }
 .sidebar.collapsed .sidebar-body {
     padding: 4px 4px 8px !important;
 }
+.sidebar.collapsed .nav-group {
+    gap: 1px !important;
+}
 .sidebar.collapsed .nav-row {
-    width: 40px !important;
-    height: 40px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
     margin: 2px auto !important;
     padding: 0 !important;
     justify-content: center !important;
     gap: 0 !important;
+    display: flex !important;
+    position: static !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+}
+.sidebar.collapsed .nav-row:hover,
+.sidebar.collapsed .nav-row.active {
+    border-radius: 10px !important;
+}
+.sidebar.collapsed .nav-row svg,
+.sidebar.collapsed .nav-row .claude-nav-icon,
+.sidebar.collapsed .nav-row .claude-anthropicon {
+    position: static !important;
+    transform: none !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
 }
 .sidebar.collapsed .nav-row .sidebar-label,
 .sidebar.collapsed .nav-row .claude-nav-tag {
-    display: none !important;
+    display: block !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
 }
 .sidebar.collapsed .claude-recent-title,
 .sidebar.collapsed .recent-wrap,
 .sidebar.collapsed #chatHistoryList,
 .sidebar.collapsed #sidebarSearchWrap {
-    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 .sidebar.collapsed .sidebar-footer {
-    padding: 8px 4px !important;
+    margin-top: auto !important;
+    padding: 0 4px 10px !important;
+    gap: 0 !important;
+}
+.sidebar.collapsed .sidebar-footer-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    margin: 2px auto !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 .sidebar.collapsed .account-strip {
-    width: 40px !important;
-    height: 40px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
     padding: 0 !important;
     margin: 0 auto !important;
     justify-content: center !important;
     gap: 0 !important;
+    display: flex !important;
+    position: static !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+}
+.sidebar.collapsed .account-strip .avatar {
+    position: static !important;
+    transform: none !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
 }
 .sidebar.collapsed .account-strip .account-meta,
 .sidebar.collapsed .account-strip .upgrade-btn,
@@ -706,14 +861,64 @@ html[data-theme="light"] .conversation-item:hover {
    4. MAIN HEADER — 极简，只显示中央"免费计划·升级"pill
    ─────────────────────────────────────────────────────────── */
 .main-header {
-    height: 56px !important;
+    height: var(--header-h, 56px) !important;
     padding: 12px 24px !important;
-    background: var(--c-bg) !important;
-    border-bottom: 0 !important;
     position: relative;
+    z-index: 100;
+    isolation: isolate;
+    flex-shrink: 0;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    background: var(--c-bg) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-bottom: none !important;
+    overflow: visible;
+}
+/* 顶栏背景下缘：纯渐变柔化（无毛玻璃），消息滚入时底边过渡更软 */
+.main-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 72px;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        var(--c-bg) 0%,
+        color-mix(in srgb, var(--c-bg) 88%, transparent) 22%,
+        color-mix(in srgb, var(--c-bg) 52%, transparent) 52%,
+        color-mix(in srgb, var(--c-bg) 18%, transparent) 78%,
+        transparent 100%
+    );
+}
+
+/* 聊天态：消息区上探到顶栏下方，滚动时经毛玻璃虚化（对齐 claude.ai 顶栏） */
+body.is-chatting #homeView.chatting {
+    margin-top: calc(-1 * var(--header-h, 56px));
+    position: relative;
+    z-index: 0;
+}
+
+body.is-chatting #homeView.chatting .chat-messages.active {
+    padding-top: calc(var(--header-h, 56px) + 12px) !important;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        rgba(0, 0, 0, 0.35) 20px,
+        #000 56px,
+        #000 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        rgba(0, 0, 0, 0.35) 20px,
+        #000 56px,
+        #000 100%
+    );
 }
 
 .main-header .header-left {
@@ -957,23 +1162,30 @@ body.is-tier-loading .claude-nav-tag {
     transform: translateY(-1px);
 }
 
-/* 问候语旁的 logo 图标：用 accent 色圆环使其响应主题色 */
+/* 问候语旁的 logo：无描边圆环，仅保留图标本体 */
 .hero-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 34px;
     height: 34px;
-    border-radius: 50%;
-    border: 2px solid var(--c-accent);
-    overflow: hidden;
+    border: none;
+    border-radius: 8px;
+    overflow: visible;
     flex-shrink: 0;
+    background: transparent;
 }
 .hero-icon-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
+}
+#homeView:not(.chatting) .scroll-to-bottom-btn {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
 }
 
 /* COMPOSER 主体 */
@@ -1266,6 +1478,12 @@ html[data-theme="black"] .claude-suggest:hover {
 /* ───────────────────────────────────────────────────────────
    6. MODEL DROPDOWN — Claude 选择卡片
    ─────────────────────────────────────────────────────────── */
+.model-selector.open .model-dropdown,
+.model-selector.is-open .model-dropdown {
+    position: fixed !important;
+    z-index: 802;
+    margin: 0;
+}
 .model-dropdown {
     background: var(--c-bg-elev-2) !important;
     border: 1px solid var(--c-line-strong) !important;
@@ -1384,8 +1602,8 @@ html[data-theme="black"] .claude-suggest:hover {
     transform: translateY(-50%) rotate(45deg);
     width: 6px;
     height: 11px;
-    border-right: 2px solid var(--c-accent);
-    border-bottom: 2px solid var(--c-accent);
+    border-right: 1.5px solid var(--c-accent);
+    border-bottom: 1.5px solid var(--c-accent);
 }
 
 /* 适应性思考开关行 */
@@ -1459,11 +1677,14 @@ html[data-theme="black"] .claude-suggest:hover {
     color: var(--c-text);
     min-width: 220px;
 }
-/* #accountPopover 在 sidebar DOM 内部，sidebar collapsed 时继承
-   pointer-events: none 导致菜单项全部不可点击。强制覆盖。 */
-.account-popover,
-.account-popover .popover-inner,
-.account-popover .popover-item {
+/* #accountPopover 在 sidebar 内时 collapsed 会继承 pointer-events:none；
+   仅 open 时可点。mobile 底部抽屉见 §28。 */
+.account-popover.open,
+.account-popover.show,
+.account-popover.open .popover-inner,
+.account-popover.open .popover-item,
+.account-popover.show .popover-inner,
+.account-popover.show .popover-item {
     pointer-events: auto !important;
 }
 .popover-item {
@@ -1500,24 +1721,6 @@ html[data-theme="black"] .claude-suggest:hover {
     margin: 0 auto !important;
     width: 100% !important;
     position: relative;
-}
-/* 顶部渐变遮罩：消息滚动到顶部时在 header 下方渐隐，过渡柔和 */
-.chat-messages::before {
-    content: "";
-    position: sticky;
-    top: 0;
-    display: block;
-    height: 24px;
-    background: linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--c-bg) 96%, transparent) 0%,
-        color-mix(in srgb, var(--c-bg) 84%, transparent) 58%,
-        transparent 100%
-    );
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 2;
-    pointer-events: none;
 }
 .chat-messages .message {
     margin: 16px 0 !important;
@@ -1683,6 +1886,13 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 #homeView.chatting .composer {
     width: 100% !important;
     border-radius: 20px !important;  /* 2026-05-16 同上：Tailwind .rounded-3xl 对齐 */
+    min-height: 72px !important;
+    padding: 10px 12px !important;
+    gap: 4px !important;
+}
+#homeView.chatting .composer-input {
+    min-height: 32px !important;
+    padding: 2px 4px 0 !important;
 }
 
 /* 对话进行中底部一行小字"Cancri 错错的，会忘错..." */
@@ -1976,21 +2186,93 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     letter-spacing: -0.005em;
 }
 .claude-settings-layout {
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    gap: 36px;
-    align-items: start;
+    display: flex;
+    align-items: stretch;
+    min-height: 0;
+    height: 100%;
 }
 .claude-settings-nav {
     display: flex;
     flex-direction: column;
+    gap: 4px;
+    flex: 0 0 192px;
+    width: 192px;
+    min-height: 0;
+    overflow-y: auto;
+}
+.claude-snav-item:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+.claude-snav-item.active {
+    background: color-mix(in srgb, var(--c-text) 8%, var(--c-bg-elev));
+    color: var(--c-text);
+    font-weight: 600;
+}
+
+/* Claude.ai 2026 设置弹窗：左侧 nav 内标题 + 搜索 + 图标项 */
+.claude-settings-nav-title {
+    margin: 0;
+    padding: 8px 8px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--c-text);
+}
+.claude-settings-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    margin: 0 0 8px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--c-bg-elev-3);
+    border: 1px solid transparent;
+    box-shadow: inset 0 0 0 1px var(--c-line);
+    color: var(--c-text-dim);
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+.claude-settings-search:focus-within {
+    box-shadow:
+        inset 0 0 0 1px var(--c-line-strong),
+        0 0 0 2px color-mix(in srgb, var(--c-accent) 12%, transparent);
+}
+.claude-settings-search svg {
+    flex: 0 0 auto;
+    opacity: 0.72;
+}
+.claude-settings-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--c-text);
+    font-size: 13.5px;
+    font-family: inherit;
+}
+.claude-settings-search input::placeholder {
+    color: var(--c-text-dim);
+}
+.claude-settings-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
     gap: 1px;
-    position: sticky;
-    top: 16px;
+}
+.claude-snav-li[hidden] {
+    display: none !important;
 }
 .claude-snav-item {
-    height: 34px;
-    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
     border-radius: 8px;
     background: transparent;
     color: var(--c-text-soft);
@@ -2002,13 +2284,214 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     font-family: inherit;
     transition: background 160ms, color 160ms;
 }
-.claude-snav-item:hover {
+.claude-snav-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    color: var(--c-text-dim);
+}
+.claude-snav-icon svg {
+    width: 18px;
+    height: 18px;
+}
+.claude-snav-item:hover .claude-snav-icon,
+.claude-snav-item.active .claude-snav-icon {
+    color: var(--c-text-soft);
+}
+.claude-snav-label {
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.claude-settings-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    background: var(--c-bg-elev);
+}
+.claude-settings-main-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 12px 16px 4px;
+}
+.claude-settings-close-btn {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-text-soft);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 160ms ease, color 160ms ease;
+}
+.claude-settings-close-btn:hover {
     background: var(--c-hover);
     color: var(--c-text);
 }
-.claude-snav-item.active {
-    background: var(--c-hover-strong);
+.claude-settings-close-btn svg {
+    pointer-events: none;
+}
+
+/* 能力页：分组卡片 + 行内开关（对齐 Claude capabilities） */
+.claude-setting-group {
+    margin-bottom: 28px;
+}
+.claude-setting-group-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-text-soft);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.claude-setting-card {
+    border: 1px solid var(--c-line);
+    border-radius: 12px;
+    background: var(--c-bg-elev);
+    overflow: hidden;
+}
+.claude-setting-card + .claude-setting-card {
+    margin-top: 10px;
+}
+.claude-setting-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--c-line);
+}
+.claude-setting-row:last-child {
+    border-bottom: 0;
+}
+.claude-setting-row-footer {
+    align-items: center;
+    padding-top: 10px;
+    padding-bottom: 12px;
+}
+.claude-setting-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.claude-setting-row > .claude-secondary-btn,
+.claude-setting-row > .claude-primary-btn {
+    flex: 0 0 auto;
+    align-self: center;
+    white-space: nowrap;
+    min-width: 92px;
+    padding: 0 16px;
+}
+.claude-setting-name {
+    font-size: 14px;
+    font-weight: 500;
     color: var(--c-text);
+    margin-bottom: 4px;
+}
+.claude-setting-desc {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--c-text-dim);
+}
+.claude-setting-desc a {
+    color: var(--c-accent);
+    text-decoration: none;
+}
+.claude-setting-desc a:hover {
+    text-decoration: underline;
+}
+.claude-setting-select {
+    min-width: 168px;
+    height: 34px;
+}
+.claude-setting-text-btn {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--c-accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+}
+.claude-setting-text-btn:hover {
+    text-decoration: underline;
+}
+.claude-setting-meta {
+    font-size: 12px;
+    color: var(--c-text-dim);
+}
+.claude-setting-lock-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    vertical-align: -2px;
+    color: var(--c-text-dim);
+    opacity: 0.85;
+}
+.claude-setting-lock-badge svg {
+    width: 14px;
+    height: 14px;
+}
+.claude-setting-group--locked .claude-setting-row.is-locked .claude-switch,
+.claude-setting-group--locked .claude-setting-row.is-locked .claude-setting-select {
+    opacity: 0.42;
+    pointer-events: none;
+}
+.claude-billing-activations {
+    margin-top: 20px;
+}
+.claude-billing-activations-title {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-text);
+}
+.claude-billing-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--c-line);
+    border-radius: 12px;
+}
+.claude-billing-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.claude-billing-table th,
+.claude-billing-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--c-line);
+}
+.claude-billing-table th {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-text-soft);
+    background: color-mix(in srgb, var(--c-bg-elev) 88%, var(--c-bg));
+}
+.claude-billing-table tr:last-child td {
+    border-bottom: 0;
+}
+.claude-billing-empty {
+    padding: 16px 12px;
+    color: var(--c-text-dim);
+    font-size: 13px;
 }
 
 .claude-settings-content {
@@ -2299,6 +2782,30 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--c-hover-strong); }
 
+.cancri-themed-scroll,
+#claudeSettingsView.active .claude-settings-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-line-strong) transparent;
+}
+.cancri-themed-scroll::-webkit-scrollbar,
+#claudeSettingsView.active .claude-settings-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.cancri-themed-scroll::-webkit-scrollbar-track,
+#claudeSettingsView.active .claude-settings-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.cancri-themed-scroll::-webkit-scrollbar-thumb,
+#claudeSettingsView.active .claude-settings-content::-webkit-scrollbar-thumb {
+    background: var(--c-line-strong);
+    border-radius: 999px;
+}
+.cancri-themed-scroll::-webkit-scrollbar-thumb:hover,
+#claudeSettingsView.active .claude-settings-content::-webkit-scrollbar-thumb:hover {
+    background: var(--c-hover-strong);
+}
+
 /* ───────────────────────────────────────────────────────────
    13. RESPONSIVE — 移动端折叠 sidebar
    ─────────────────────────────────────────────────────────── */
@@ -2335,9 +2842,11 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
        群友反馈"很烦"。降到 0.32，drawer 打开时只是淡淡变暗，不刺眼。 */
     body.sidebar-open::after {
         content: "";
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,0.32);
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.16);
         z-index: 99;
+        pointer-events: auto;
         animation: cscrim-fade-in 200ms ease;
     }
     @keyframes cscrim-fade-in {
@@ -2491,9 +3000,9 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         flex-shrink: 0 !important;
     }
     /* send-btn 略缩 + 圆形，避免 36px 占太多右侧空间 */
-    .composer-right .send-btn,
-    .composer-actions .send-btn,
-    #sendChatBtn {
+    .composer-right .send-btn:not(.hidden),
+    .composer-actions .send-btn:not(.hidden),
+    #sendChatBtn:not(.hidden) {
         width: 32px !important;
         height: 32px !important;
         border-radius: 999px !important;
@@ -2548,11 +3057,11 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         min-width: 0 !important;
         flex-shrink: 0 !important;
     }
-    /* send / voice 按钮永不被挤压 */
-    .composer-actions .send-btn,
-    .composer-actions .voice-btn,
-    .composer-actions #voiceToastBtn,
-    .composer-actions #sendChatBtn {
+    /* send / voice 按钮永不被挤压（:not(.hidden) 避免空输入时 send 占位把 voice 挤偏左） */
+    .composer-actions .send-btn:not(.hidden),
+    .composer-actions .voice-btn:not(.hidden),
+    .composer-actions #voiceToastBtn:not(.hidden),
+    .composer-actions #sendChatBtn:not(.hidden) {
         flex: 0 0 32px !important;
         width: 32px !important;
         height: 32px !important;
@@ -2578,16 +3087,21 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         max-width: 100% !important;
         padding: 18px 14px 64px !important;
     }
+    #claudeSettingsView.active .claude-settings-page {
+        max-width: none !important;
+        padding: 0 !important;
+    }
     #claudeSettingsView .claude-settings-title {
         font-size: 24px !important;
         margin: 0 0 16px !important;
     }
-    #claudeSettingsView .claude-settings-layout {
+    /* 非弹窗态（旧全屏 fallback）才用纵向 nav；.active 弹窗由 §23.6 接管 */
+    #claudeSettingsView:not(.active) .claude-settings-layout {
         display: flex !important;
         flex-direction: column !important;
         gap: 14px !important;
     }
-    #claudeSettingsView .claude-settings-nav {
+    #claudeSettingsView:not(.active) .claude-settings-nav {
         position: static !important;
         flex-direction: row !important;
         width: 100% !important;
@@ -2598,10 +3112,10 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         padding-bottom: 6px !important;
         border-bottom: 1px solid var(--c-line) !important;
     }
-    #claudeSettingsView .claude-settings-nav::-webkit-scrollbar {
+    #claudeSettingsView:not(.active) .claude-settings-nav::-webkit-scrollbar {
         display: none;
     }
-    #claudeSettingsView .claude-snav-item {
+    #claudeSettingsView:not(.active) .claude-snav-item {
         flex-shrink: 0 !important;
         height: 36px !important;
         padding: 0 14px !important;
@@ -2969,17 +3483,8 @@ button.composer-tool-btn:hover {
         display: none !important;
     }
     .model-dropdown {
-        top: auto !important;
-        bottom: 76px !important;
-        left: auto !important;
-        right: 12px !important;
-        max-width: 320px !important;
+        max-width: min(320px, calc(100vw - 24px)) !important;
         min-width: 0 !important;
-        width: auto !important;
-        max-height: 50dvh !important;
-        /* 99-polish-fixes 给 mobile 写了 transform: translateY(-4px) scale(.98)！important，
-           open 时再切到 translateY(0) scale(1) — 我们 bottom-anchor 后这套向上偏移
-           视觉不需要，统一回正。 */
         transform: none !important;
     }
     .model-selector.open .model-dropdown,
@@ -3369,14 +3874,35 @@ button#plusTrigger:hover {
 .sidebar .nav-row svg {
     color: var(--c-text) !important;
     opacity: 1 !important;
-    /* stroke-width 用 inline 原值（1.9），不再 CSS 覆盖加粗。
-       Claude 真机也是细笔画，加粗反而失真。 */
+}
+
+/* 统一细笔画：侧栏描边图标 / 顶栏 / 模型菜单（不作用于 fill 型 claude-nav-icon） */
+.sidebar .nav-row svg:not(.claude-nav-icon) :is(path, circle, line, polyline, rect, ellipse),
+.sidebar .nav-row svg.claude-nav-icon--new-chat :is(path, line),
+.sidebar-toggle svg :is(path, circle, line, polyline, rect),
+.main-header .header-right svg :is(path, circle, line, polyline, rect),
+.main-header .header-left button svg :is(path, circle, line, polyline, rect),
+.model-selector svg :is(path, circle, line, polyline, rect),
+.model-dropdown svg :is(path, circle, line, polyline, rect),
+.claude-model-cascade svg :is(path, circle, line, polyline, rect),
+.claude-more-models-row svg :is(path, circle, line, polyline, rect),
+.claude-suggest svg :is(path, circle, line, polyline, rect) {
+    stroke-width: var(--icon-stroke) !important;
+}
+.scroll-to-bottom-btn svg :is(path, circle, line, polyline, rect) {
+    stroke-width: 1.5 !important;
 }
 .sidebar .nav-row .sidebar-label {
     font-weight: 400 !important;
     color: var(--c-text) !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+}
+.sidebar .nav-row .claude-anthropicon {
+    color: var(--c-text) !important;
 }
 .sidebar .claude-recent-title {
     /* "近期" 标题字重稍重，跟 nav 区分 */
@@ -3577,8 +4103,8 @@ button#plusTrigger:hover {
     --tw-prose-kbd: #111827;
     --tw-prose-kbd-shadows: 17 24 39;
     --tw-prose-code: #111827;
-    --tw-prose-pre-code: #e5e7eb;
-    --tw-prose-pre-bg: #1f2937;
+    --tw-prose-pre-code: var(--code-fg, #1a1a1a);
+    --tw-prose-pre-bg: var(--code-bg, #f3f2ef);
     --tw-prose-th-borders: #d1d5db;
     --tw-prose-td-borders: #e5e7eb;
 }
@@ -3599,8 +4125,8 @@ html[data-theme="dark"] .message.assistant .message-content {
     --tw-prose-kbd: #fff;
     --tw-prose-kbd-shadows: 255 255 255;
     --tw-prose-code: #fff;
-    --tw-prose-pre-code: #d1d5db;
-    --tw-prose-pre-bg: rgb(0 0 0 / 50%);
+    --tw-prose-pre-code: var(--code-fg, #f4f3ee);
+    --tw-prose-pre-bg: var(--code-bg, #14110f);
     --tw-prose-th-borders: #4b5563;
     --tw-prose-td-borders: #374151;
 }
@@ -3620,10 +4146,25 @@ html[data-theme="black"] .message.assistant .message-content {
     --tw-prose-kbd: #ffffff;
     --tw-prose-kbd-shadows: 255 255 255;
     --tw-prose-code: #ffffff;
-    --tw-prose-pre-code: #e5e7eb;
-    --tw-prose-pre-bg: rgb(0 0 0 / 50%);
+    --tw-prose-pre-code: var(--code-fg, #f4f3ee);
+    --tw-prose-pre-bg: var(--code-bg, #14110f);
     --tw-prose-th-borders: #4b5563;
     --tw-prose-td-borders: #374151;
+}
+
+/* 对话内 fenced 代码块：跟随深浅主题，不用 Tailwind 固定灰蓝底 */
+.message.assistant .message-content .md-content .code-block > pre {
+    color: var(--code-fg) !important;
+    background-color: var(--code-bg) !important;
+    border: 1px solid var(--line, var(--c-line)) !important;
+    border-radius: 12px !important;
+    margin: 0 !important;
+    padding: 38px 14px 14px !important;
+}
+
+.message.assistant .message-content .md-content .code-block > pre code {
+    color: inherit !important;
+    background-color: transparent !important;
 }
 
 /* prose root 颜色 + max-width（源 :900-903） */
@@ -4116,11 +4657,30 @@ html[data-chat-font="mono"] .message.assistant .think-body {
    保留视觉层级靠 border + 实色 background 而不靠 blur。 */
 @media (max-width: 768px) {
     .main-header {
+        background: var(--c-bg) !important;
         -webkit-backdrop-filter: none !important;
         backdrop-filter: none !important;
-        background: var(--c-bg) !important;
         box-shadow: none !important;
         position: relative;
+    }
+    .main-header::after {
+        height: 56px;
+    }
+    body.is-chatting #homeView.chatting .chat-messages.active {
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            rgba(0, 0, 0, 0.3) 16px,
+            #000 44px,
+            #000 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            rgba(0, 0, 0, 0.3) 16px,
+            #000 44px,
+            #000 100%
+        );
     }
     .toast {
         -webkit-backdrop-filter: none !important;
@@ -4725,75 +5285,20 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     padding: 0 !important;
 }
 
+/* 项目 composer：视觉与首页 .composer 共用（padding / 阴影 / 圆角 / 输入框），
+   此处只保留项目页布局差异（全宽）与拖拽高亮。 */
 .claude-project-composer {
     width: 100%;
     max-width: none;
-    min-height: 104px !important;
-    border-radius: 20px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
-    background: var(--c-bg-elev) !important;
-    border: 1px solid transparent !important;
-    padding: 14px !important;
-    box-shadow:
-        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
-        0 0 0 0.5px var(--c-line) !important;
-    transition: box-shadow 200ms, background-color 160ms;
-}
-
-.claude-project-composer:hover {
-    box-shadow:
-        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
-        0 0 0 0.5px var(--c-line-strong) !important;
-}
-
-.claude-project-composer:focus-within {
-    border-color: transparent !important;
-    box-shadow:
-        0 0.25rem 1.25rem rgba(0, 0, 0, 0.26),
-        0 0 0 0.5px var(--c-line-strong) !important;
 }
 
 .claude-project-composer.is-drag-over {
     border-color: color-mix(in srgb, var(--accent) 58%, var(--c-line)) !important;
-    background: color-mix(in srgb, var(--accent) 6%, var(--composer-bg)) !important;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 13%, transparent) !important;
-}
-
-#claudeProjectPromptInput {
-    min-height: 44px !important;
-    max-height: 180px !important;
-    flex: 0 1 auto !important;
-    font-size: 15px !important;
-    line-height: 1.5 !important;
-    padding: 8px 8px 4px !important;
-}
-
-.claude-project-composer .composer-bottom {
-    width: 100%;
-    min-width: 0;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 8px !important;
-    padding-top: 0 !important;
-    margin-top: auto !important;
-}
-
-.claude-project-composer .composer-tools-row {
-    width: 100%;
-    min-width: 0;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    gap: 8px;
-}
-
-.claude-project-composer .composer-tools {
-    min-width: 0;
-    flex: 1 1 auto;
+    background: color-mix(in srgb, var(--accent) 6%, var(--c-bg-elev)) !important;
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.26),
+        0 0 0 0.5px var(--c-line-strong),
+        0 0 0 4px color-mix(in srgb, var(--accent) 13%, transparent) !important;
 }
 
 .claude-project-composer .claude-project-composer-actions {
@@ -4837,10 +5342,9 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--c-line)) !important;
 }
 
-#claudeProjectVoiceBtn svg,
-#claudeProjectPromptSubmit svg {
-    width: 16px;
-    height: 16px;
+#claudeProjectVoiceBtn .voice-wave-svg {
+    width: 20px;
+    height: 20px;
 }
 
 .claude-project-tabs {
@@ -5309,8 +5813,53 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 .memories-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     margin-top: 4px;
+}
+.memory-slot-note {
+    margin: 0;
+}
+.memory-slot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.memory-slot-row {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--c-line, rgba(128,128,128,0.12));
+    background: var(--c-surface, rgba(128,128,128,0.06));
+}
+.memory-slot-row.is-empty {
+    background: var(--c-bg);
+    border-style: dashed;
+}
+.memory-slot-index {
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-text-dim);
+    font-variant-numeric: tabular-nums;
+}
+.memory-slot-text {
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.memory-slot-placeholder {
+    color: var(--c-text-dim);
+    font-size: 12.5px;
 }
 .memory-item {
     display: flex;
@@ -5359,6 +5908,12 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     background: var(--c-bg-elev);
     border: 1px solid var(--c-line);
 }
+.memory-import-row .claude-secondary-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-width: 92px;
+    padding: 0 16px;
+}
 .memory-import-row.is-highlighted {
     border-color: var(--c-line-strong);
     box-shadow: 0 0 0 3px rgba(204, 119, 85, 0.12);
@@ -5374,7 +5929,7 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 }
 
 .memory-import-modal[hidden] {
-    display: none;
+    display: none !important;
 }
 .memory-import-modal {
     position: fixed;
@@ -5384,6 +5939,17 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+}
+.memory-import-modal.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+.memory-import-modal.is-closing {
+    opacity: 0;
+    pointer-events: none;
 }
 .memory-import-backdrop {
     position: absolute;
@@ -5391,6 +5957,7 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     background: rgba(0, 0, 0, 0.34);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
+    transition: opacity 150ms ease;
 }
 .memory-import-dialog {
     position: relative;
@@ -5404,6 +5971,17 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     border: 1px solid var(--c-line);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
     padding: 18px;
+    transform: scale(0.97);
+    opacity: 0;
+    transition: transform 180ms cubic-bezier(0.32, 0.72, 0.4, 1), opacity 180ms ease;
+}
+.memory-import-modal.is-open .memory-import-dialog {
+    transform: scale(1);
+    opacity: 1;
+}
+.memory-import-modal.is-closing .memory-import-dialog {
+    transform: scale(0.98);
+    opacity: 0;
 }
 .memory-import-head {
     display: flex;
@@ -5425,8 +6003,11 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     line-height: 1.5;
 }
 .memory-import-x {
-    width: 30px;
-    height: 30px;
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
     border-radius: 999px;
     border: 1px solid var(--c-line);
     background: var(--c-bg);
@@ -5434,6 +6015,9 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     cursor: pointer;
     font-size: 20px;
     line-height: 1;
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 .memory-import-grid {
     display: grid;
@@ -5487,35 +6071,68 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     justify-content: flex-end;
     gap: 10px;
     margin: 12px 0;
+    flex-wrap: wrap;
+}
+.memory-import-actions .claude-primary-btn,
+.memory-import-actions .claude-secondary-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-width: 96px;
+    padding: 0 18px;
 }
 .memory-import-preview {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     padding-top: 4px;
+}
+.memory-import-preview-head {
+    margin: 0 0 2px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--c-text-dim);
 }
 .memory-import-candidate {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 10px;
-    align-items: flex-start;
-    padding: 10px;
+    grid-template-columns: auto 24px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    min-height: 40px;
+    padding: 6px 10px;
     border: 1px solid var(--c-line);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--c-bg);
 }
 .memory-import-check {
-    margin-top: 9px;
+    margin: 0;
+}
+.memory-import-candidate-index {
+    width: 24px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-text-dim);
+    font-variant-numeric: tabular-nums;
 }
 .memory-import-candidate-text {
     width: 100%;
-    resize: vertical;
+    min-width: 0;
+    height: 32px;
+    padding: 0 8px;
     border: 0;
     outline: none;
     background: transparent;
     color: var(--c-text);
     font: inherit;
-    line-height: 1.45;
+    font-size: 13px;
+    line-height: 32px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.memory-import-candidate-text:focus {
+    background: var(--c-bg-elev);
+    border-radius: 6px;
 }
 @media (max-width: 640px) {
     .memory-import-modal {
@@ -5709,14 +6326,14 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     }
     /* send-btn 在 mobile 仍 36×36（参考站尺寸），原规则改成 32×32 看起来太
        小且与 voice-btn 对不齐。.composer-actions 内 voice + send 一起放大。 */
-    .composer-actions .send-btn,
-    .composer-actions #sendChatBtn,
-    .composer-right .send-btn {
+    .composer-actions .send-btn:not(.hidden),
+    .composer-actions #sendChatBtn:not(.hidden),
+    .composer-right .send-btn:not(.hidden) {
         width: 36px !important;
         height: 36px !important;
     }
-    .composer-actions .voice-btn,
-    .composer-actions #voiceToastBtn {
+    .composer-actions .voice-btn:not(.hidden),
+    .composer-actions #voiceToastBtn:not(.hidden) {
         width: 36px !important;
         height: 36px !important;
     }
@@ -5786,12 +6403,21 @@ html[data-theme="light"] #claudeSettingsView.active {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
+@keyframes claude-settings-modal-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+#claudeSettingsView.active.is-closing {
+    animation: claude-settings-modal-fade-out 150ms ease-in forwards;
+    pointer-events: none !important;
+}
 #claudeSettingsView.active .claude-settings-page {
     width: min(960px, calc(100vw - 32px));
     height: calc(100vh - 32px);
     max-height: 720px;
     margin: 0 auto !important;
     padding: 0 !important;
+    position: relative;
     background: var(--c-bg-elev);
     border: 1px solid var(--c-line);
     border-radius: 18px;
@@ -5801,64 +6427,50 @@ html[data-theme="light"] #claudeSettingsView.active {
     flex-direction: column;
     animation: claude-settings-modal-pop 200ms cubic-bezier(0.32, 0.72, 0.4, 1);
 }
+#claudeSettingsView.active .claude-settings-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
 @keyframes claude-settings-modal-pop {
     from { transform: scale(0.96); opacity: 0; }
     to   { transform: scale(1); opacity: 1; }
 }
+@keyframes claude-settings-modal-pop-out {
+    from { transform: scale(1); opacity: 1; }
+    to   { transform: scale(0.98); opacity: 0; }
+}
+#claudeSettingsView.active.is-closing .claude-settings-page {
+    animation: claude-settings-modal-pop-out 150ms ease-in forwards;
+}
 #claudeSettingsView.active .claude-settings-title {
-    flex: 0 0 auto;
-    margin: 0 !important;
-    padding: 18px 24px 14px !important;
-    font-size: 17px !important;
-    font-weight: 600 !important;
-    letter-spacing: -0.005em !important;
-    border-bottom: 1px solid var(--c-line);
-    background: var(--c-bg-elev);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-#claudeSettingsView.active .claude-settings-title::after {
-    content: "";
-    width: 28px;
-    height: 28px;
-    flex: 0 0 auto;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E");
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 16px 16px;
-    border-radius: 8px;
-    color: var(--c-text-soft);
-    cursor: pointer;
-    transition: background 140ms ease, color 140ms ease;
-    pointer-events: auto;
-}
-#claudeSettingsView.active .claude-settings-title:hover::after {
-    background-color: var(--c-hover);
-    color: var(--c-text);
+    display: none !important;
 }
 #claudeSettingsView.active .claude-settings-layout {
     flex: 1 1 auto;
     min-height: 0;
     min-width: 0;
-    grid-template-columns: 200px 1fr !important;
-    gap: 0 !important;
     align-items: stretch !important;
-    /* 2026-05-22 fix(mobile-settings-fix)：原 overflow: hidden 在 mobile flex column
-       下会把 .claude-settings-content 的自滚阻断（content height:100% 强行等高 layout
-       后超出被裁），改成 visible 让 content 自身 overflow-y:auto 接管。 */
-    overflow: visible !important;
+    overflow: hidden !important;
 }
 #claudeSettingsView.active .claude-settings-nav {
-    /* 2026-05-22 fix：去掉 height: 100% !important，PC 下让 nav 由 align-items:stretch 拉满，
-       mobile 下让 nav 横向 tabs 取自身 intrinsic 高度。 */
     border-right: 1px solid var(--c-line);
     padding: 14px 12px !important;
     overflow-y: auto;
-    background: transparent;
+    background: color-mix(in srgb, var(--c-bg) 88%, var(--c-bg-elev));
     position: static !important;
+    flex: 0 0 192px !important;
+    width: 192px !important;
+}
+#claudeSettingsView.active .claude-settings-main {
+    min-height: 0;
+    flex: 1 1 auto;
 }
 #claudeSettingsView.active .claude-settings-content {
     /* 2026-05-22 fix(mobile-settings-fix)：把 height:100% 换成 flex:1 1 auto + min-height:0。
@@ -5870,66 +6482,126 @@ html[data-theme="light"] #claudeSettingsView.active {
     min-width: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 24px 28px 32px !important;
+    padding: 8px 28px 32px !important;
+}
+#claudeSettingsView.active .claude-settings-main-header {
+    display: none;
 }
 @media (max-width: 768px) {
+    /* 移动端：居中弹窗 + 顶栏标题/关闭 + 横向 tab（不用 display:contents，避免触控失效） */
     #claudeSettingsView.active {
-        /* 2026-05-22 fix(mobile-settings-fix)：移动端 modal 直接占满视口，去掉 8px 包边
-           （包边 + iOS Safari 100vh 包含地址栏会让有效高度更小）。 */
-        padding: 0 !important;
-        align-items: stretch !important;
+        padding: 10px !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     #claudeSettingsView.active .claude-settings-page {
-        width: 100% !important;
-        /* 2026-05-22 fix(mobile-settings-fix)：iOS Safari 100vh 包含地址栏，导致实际可视
-           高度 < 100vh，settings modal 底部被地址栏盖住、上半视觉上"空"。
-           顺序：100vh（最老 fallback）→ -webkit-fill-available（iOS Safari < 15.4）
-           → 100dvh（现代浏览器，会扣掉地址栏）。 */
-        height: 100vh !important;
-        height: -webkit-fill-available !important;
-        height: 100dvh !important;
-        max-height: none !important;
-        border-radius: 0 !important;
-        /* 2026-05-22 fix(mobile-settings-fix)：modal 形态下 page 不需要 padding，
-           padding 全权交给 title / nav / content 各自处理。 */
+        width: min(960px, calc(100vw - 20px)) !important;
+        height: min(680px, calc(100dvh - 20px)) !important;
+        max-height: calc(100dvh - 20px) !important;
+        border-radius: 16px !important;
+        margin: 0 auto !important;
         padding: 0 !important;
-    }
-    #claudeSettingsView.active .claude-settings-layout {
-        grid-template-columns: 1fr !important;
         display: flex !important;
         flex-direction: column !important;
-        /* 2026-05-22 fix(mobile-settings-fix)：必须 min-height:0 才能让 flex 子项滚动生效。 */
+        overflow: hidden;
+    }
+    #claudeSettingsView.active .claude-settings-close-btn {
+        top: 6px;
+        right: 6px;
+        z-index: 300;
+    }
+    #claudeSettingsView.active .claude-settings-layout {
+        flex: 1 1 auto !important;
         min-height: 0 !important;
+        flex-direction: column !important;
+        display: flex !important;
+        overflow: hidden !important;
     }
     #claudeSettingsView.active .claude-settings-nav {
-        border-right: 0 !important;
-        border-bottom: 1px solid var(--c-line);
-        padding: 10px 14px !important;
-        flex-direction: row !important;
-        gap: 4px !important;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-width: none;
-        /* 2026-05-22 fix(mobile-settings-fix)：mobile 下 nav 不要 stretch 到 100%，
-           取自身 intrinsic 高度（约 56px：tab 36 + 上下 padding 20）。 */
         flex: 0 0 auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        border: none !important;
+        border-bottom: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: transparent !important;
     }
-    #claudeSettingsView.active .claude-settings-nav::-webkit-scrollbar {
+    #claudeSettingsView.active .claude-settings-nav-title {
+        padding: 16px 52px 8px 16px !important;
+        font-size: 17px !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
+    }
+    #claudeSettingsView.active .claude-settings-search {
+        display: none !important;
+    }
+    #claudeSettingsView.active .claude-settings-nav-list {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding: 0 12px 12px !important;
+        margin: 0 !important;
+        border-bottom: 1px solid var(--c-line);
+    }
+    #claudeSettingsView.active .claude-settings-nav-list::-webkit-scrollbar {
         display: none;
+    }
+    #claudeSettingsView.active .claude-snav-li {
+        flex: 0 0 auto;
+    }
+    #claudeSettingsView.active .claude-snav-icon {
+        display: none !important;
     }
     #claudeSettingsView.active .claude-snav-item {
         flex-shrink: 0;
-        height: 34px;
-        padding: 0 12px;
-        font-size: 13.5px;
+        height: 34px !important;
+        padding: 0 12px !important;
+        font-size: 14px !important;
+        border-radius: 999px !important;
         white-space: nowrap;
     }
+    #claudeSettingsView.active .claude-snav-item.active {
+        background: var(--c-hover-strong) !important;
+        font-weight: 600;
+    }
+    #claudeSettingsView.active .claude-settings-main {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
     #claudeSettingsView.active .claude-settings-content {
-        padding: 18px 16px 28px !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 16px 24px !important;
     }
     #claudeSettingsView.active .claude-settings-title {
-        padding: 14px 18px 12px !important;
-        font-size: 16px !important;
+        display: none !important;
+    }
+    #claudeSettingsView.active .claude-form-row {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 6px !important;
+        padding: 12px 0 !important;
+    }
+    #claudeSettingsView.active .claude-form-control {
+        justify-self: stretch !important;
+        width: 100% !important;
+    }
+    #claudeSettingsView.active .claude-form-input,
+    #claudeSettingsView.active .claude-form-select,
+    #claudeSettingsView.active .claude-form-textarea {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
     }
 }
 
@@ -6190,6 +6862,10 @@ html[data-theme="light"] #claudeSettingsView.active {
     width: 32px;
     height: 32px;
     line-height: 1;
+    border: none !important;
+    border-radius: 8px !important;
+    overflow: visible !important;
+    background: transparent !important;
 }
 .hero .hero-icon-img {
     width: 32px;
@@ -6291,31 +6967,7 @@ html[data-theme="light"] #claudeSettingsView.active {
     display: none !important;
 }
 
-/* §23.9 ─ 侧栏「新聊天 / 自定义」hover 微动画
-   真 Claude 在新聊天的 + 圆环图标上加了 group-hover:-rotate-3 group-hover:scale-110 */
-#newChatBtn .claude-nav-icon--new-chat,
-#claudeCustomNavBtn .claude-nav-icon--customize {
-    transition: transform 220ms cubic-bezier(0.165, 0.85, 0.45, 1);
-    transform-origin: center center;
-}
-#newChatBtn:hover .claude-nav-icon--new-chat,
-#claudeCustomNavBtn:hover .claude-nav-icon--customize {
-    transform: rotate(-3deg) scale(1.1);
-}
-#newChatBtn:active .claude-nav-icon--new-chat,
-#claudeCustomNavBtn:active .claude-nav-icon--customize {
-    transform: rotate(6deg) scale(0.98);
-}
-@media (prefers-reduced-motion: reduce) {
-    #newChatBtn .claude-nav-icon--new-chat,
-    #claudeCustomNavBtn .claude-nav-icon--customize {
-        transition: none;
-    }
-    #newChatBtn:hover .claude-nav-icon--new-chat,
-    #claudeCustomNavBtn:hover .claude-nav-icon--customize {
-        transform: none;
-    }
-}
+/* §23.9 ─ 侧栏「新聊天」hover 微动画：仅 #newChatBtn 的 nav-icon-bounce（见 claude-sidebar-icons.css） */
 
 /* §23.10 ─ Composer 内部 model-selector 在所有屏幕都生效（之前只 mobile） */
 .composer-actions #modelSelector,
@@ -6350,6 +7002,16 @@ html[data-theme="light"] #claudeSettingsView.active {
     flex: 1;
     justify-content: flex-end;
     gap: 4px;
+}
+@media (max-width: 768px) {
+    /* mobile：动作区收紧为右下簇，勿 flex:1 撑满整行把模型与语音拉开 */
+    .composer-tools-row .composer-actions,
+    [data-workbench-composer] .composer-tools-row .composer-actions {
+        flex: 0 0 auto !important;
+        flex-grow: 0 !important;
+        width: auto !important;
+        margin-left: auto !important;
+    }
 }
 
 /* §23.11 ─ main-header 残留 model-selector 占位（若 JS 没运行时的兜底） */
@@ -6691,7 +7353,7 @@ html[data-custom-accent][data-theme="light"] .hero .hero-icon-img {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        justify-content: space-between !important;
+        justify-content: flex-start !important;
         flex-wrap: nowrap !important;
         gap: 8px !important;
         width: 100% !important;
@@ -6701,30 +7363,50 @@ html[data-custom-accent][data-theme="light"] .hero .hero-icon-img {
         flex: 0 0 auto !important;
         gap: 4px !important;
     }
-    /* 动作区作为右侧紧凑簇：模型 + 语音/发送相邻成组，整体贴右
-       （对齐桌面 image3：不再用 margin-right:auto 把模型与语音拉开） */
+    /* 右下簇：模型名紧贴语音/发送槽（发送隐藏时不占位把模型挤到中间）
+       语音/发送叠在同一 absolute 槽，模型留在 flex 流里紧贴槽左侧 */
     [data-workbench-composer] .composer-actions {
-        flex: 0 1 auto !important;
+        position: relative !important;
+        flex: 0 0 auto !important;
+        flex-grow: 0 !important;
+        width: auto !important;
+        max-width: calc(100% - 48px) !important;
+        margin-left: auto !important;
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
         justify-content: flex-end !important;
         gap: 6px !important;
         min-width: 0 !important;
+        padding-right: 36px !important;
+        box-sizing: border-box !important;
     }
-    /* 模型选择器与语音/发送相邻成组 */
-    .composer-actions #modelSelector {
+    [data-workbench-composer] .composer-actions .voice-btn,
+    [data-workbench-composer] .composer-actions .send-btn {
+        order: unset !important;
+    }
+    /* 撤销 99-polish 顶栏 grid 遗留（会把 composer 内模型撑宽/居中） */
+    body[data-view="home"] [data-workbench-composer] .composer-actions #modelSelector,
+    [data-workbench-composer] .composer-actions #modelSelector {
+        display: inline-flex !important;
+        width: auto !important;
+        max-width: min(150px, 42vw) !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
         margin: 0 !important;
-        flex: 0 1 auto !important;
+        grid-column: unset !important;
+        grid-row: unset !important;
+        justify-self: unset !important;
     }
-    /* 图标按钮锁死成 36×36 正方 + 垂直居中：min/max 双向夹死 + ID 选择器
-       (1,1,0) 盖过一切，box-sizing 兜底，彻底杜绝被父容器上下拉长 / 左右挤窄。
-       :not(.hidden) 排除隐藏态，保留 voice↔send 折叠切换动画。 */
-    .composer-tools .composer-tool-btn,
-    #voiceToastBtn:not(.hidden),
-    #sendChatBtn:not(.hidden),
-    .composer-actions .voice-btn:not(.hidden),
-    .composer-actions .send-btn:not(.hidden) {
+    [data-workbench-composer] .composer-actions #modelSelector .model-current {
+        width: auto !important;
+        max-width: 100% !important;
+        border: 0 !important;
+        background: transparent !important;
+        justify-content: flex-start !important;
+    }
+    /* 图标按钮锁死 36×36；语音/发送脱离 flex 流，叠在右侧槽位 */
+    .composer-tools .composer-tool-btn {
         flex: 0 0 36px !important;
         width: 36px !important;
         min-width: 36px !important;
@@ -6735,12 +7417,41 @@ html[data-custom-accent][data-theme="light"] .hero .hero-icon-img {
         align-self: center !important;
         padding: 0 !important;
         box-sizing: border-box !important;
+    }
+    [data-workbench-composer] .composer-actions #voiceToastBtn,
+    [data-workbench-composer] .composer-actions #sendChatBtn,
+    [data-workbench-composer] .composer-actions .voice-btn,
+    [data-workbench-composer] .composer-actions .send-btn {
+        position: absolute !important;
+        right: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        margin: auto 0 !important;
+        flex: 0 0 36px !important;
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
         border-radius: 999px !important;
     }
-    /* 发送按钮用微圆角方形（Claude 风），与圆形语音键区分 */
-    #sendChatBtn:not(.hidden),
-    .composer-actions .send-btn:not(.hidden) {
+    [data-workbench-composer] .composer-actions #sendChatBtn:not(.hidden),
+    [data-workbench-composer] .composer-actions .send-btn:not(.hidden) {
         border-radius: 10px !important;
+    }
+    /* 隐藏态仍占槽位（叠放），仅透明+禁点，保留 opacity 切换动画 */
+    [data-workbench-composer] .composer-actions #sendChatBtn.hidden,
+    [data-workbench-composer] .composer-actions #voiceToastBtn.hidden,
+    [data-workbench-composer] .composer-actions .send-btn.hidden,
+    [data-workbench-composer] .composer-actions .voice-btn.hidden {
+        display: grid !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transform: none !important;
+        overflow: hidden !important;
     }
 }
 
@@ -6870,4 +7581,72 @@ html[data-theme="dark"] .claude-device-badge,
 html[data-theme="black"] .claude-device-badge {
     background: rgba(74, 222, 128, 0.18);
     color: #34d399;
+}
+
+/* §28 ─ 账户菜单：mobile 底部抽屉（对齐主站 mega-menu / mobile-drawer 动效）
+   群友反馈：侧栏底部账户菜单不要浮动 popover，要整屏底部上拉抽屉 + 蒙层。
+   #accountPopover 由 cancri_chat.js relocate 到 body；≤768px 走 sheet，桌面仍锚在头像旁。 */
+@media (max-width: 768px) {
+    body.account-sheet-open {
+        overflow: hidden;
+    }
+    body.account-sheet-open .scrim.show {
+        z-index: 250 !important;
+        opacity: 1 !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+    .account-popover {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-top: 1px solid var(--c-line-strong) !important;
+        border-radius: 20px 20px 0 0 !important;
+        background: var(--c-bg-elev-2) !important;
+        box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.18) !important;
+        transform: translateY(100%) !important;
+        transform-origin: bottom center !important;
+        transition:
+            transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+            visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        z-index: 260 !important;
+        opacity: 1 !important;
+        visibility: hidden;
+        pointer-events: none !important;
+    }
+    .account-popover.open,
+    .account-popover.show {
+        visibility: visible !important;
+        transform: translateY(0) !important;
+        pointer-events: auto !important;
+    }
+    .account-popover .popover-inner {
+        border-radius: 20px 20px 0 0 !important;
+        padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+        max-height: min(72dvh, 520px) !important;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .account-popover .popover-inner::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        margin: 6px auto 10px;
+        border-radius: 999px;
+        background: var(--c-line-strong);
+        opacity: 0.85;
+    }
+    .account-popover .popover-item {
+        height: 48px !important;
+        font-size: 15px !important;
+        border-radius: 12px !important;
+    }
 }

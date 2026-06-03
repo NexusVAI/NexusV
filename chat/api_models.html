@@ -304,17 +304,7 @@
       .card.is-disabled .card-id {
         text-decoration: line-through;
       }
-      /* PAID 卡片左侧描边一道 clay，让付费档在卡海里被一眼挑出 */
-      .card[data-tier="paid"]::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 14px;
-        bottom: 14px;
-        width: 3px;
-        background: var(--accent);
-        border-radius: 0 3px 3px 0;
-      }
+      /* 左侧描边已移除，改为标签显示 */
       .card-head {
         display: flex;
         justify-content: space-between;
@@ -424,15 +414,7 @@
         color: #d4a04d;
         border: 1px solid color-mix(in srgb, #d4a04d 40%, transparent);
       }
-      .card[data-tier="welfare"]::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: #d4a04d;
-      }
+      /* 福利卡片左侧描边已移除，改为标签显示 */
       .tier-disabled {
         background: color-mix(in srgb, var(--err) 14%, transparent);
         color: var(--err);

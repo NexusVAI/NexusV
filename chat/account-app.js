@@ -15,7 +15,21 @@ const sb = window.supabase.createClient(
 );
 const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 
-let sessionStartMs = Date.now();
+let sessionStartMs = (function () {
+    try {
+        const key = "cancri_site_session_start";
+        const raw = sessionStorage.getItem(key);
+        if (raw) {
+            const n = parseInt(raw, 10);
+            if (!isNaN(n) && n > 0) return n;
+        }
+        const now = Date.now();
+        sessionStorage.setItem(key, String(now));
+        return now;
+    } catch (_e) {
+        return Date.now();
+    }
+})();
 let onlineTimer = null;
 
 async function getSession() {
@@ -151,15 +165,29 @@ function renderDevices(devices) {
         tbody.innerHTML = '<tr><td colspan="3" class="td-empty">暂无记录</td></tr>';
         return;
     }
+    function getVisitorId() {
+        if (window.CancriFingerprint && typeof window.CancriFingerprint.getVisitorId === "function") {
+            return window.CancriFingerprint.getVisitorId() || "";
+        }
+        try { return localStorage.getItem("cancri_visitor_id") || ""; } catch (_e) { return ""; }
+    }
+    const currentVid = getVisitorId();
+    const currentUa = navigator.userAgent || "";
+    function isCurrent(d) {
+        if (currentVid && d.visitor_id && d.visitor_id === currentVid) return true;
+        return Boolean(currentUa && d.ua && d.ua === currentUa);
+    }
+    const sorted = devices.slice().sort((a, b) => Number(isCurrent(b)) - Number(isCurrent(a)));
     let html = "";
-    devices.forEach(function (d, idx) {
+    sorted.forEach(function (d) {
         const parsed = parseUA(d.ua);
-        const isCurrent = idx === 0 && d.ua === navigator.userAgent;
-        const badge = isCurrent ? '<span class="device-badge">当前</span>' : "";
+        let label = parsed.browser + (parsed.os ? " (" + parsed.os + ")" : "");
+        if (d.platform && !label.includes(String(d.platform))) label += " · " + d.platform;
+        const badge = isCurrent(d) ? '<span class="device-badge">当前</span>' : "";
         const location = [d.country, d.timezone].filter(Boolean).join(" / ") || "—";
         html +=
             "<tr>" +
-            '<td><div>' + esc(parsed.browser + (parsed.os ? " (" + parsed.os + ")" : "")) + badge + '</div>' +
+            '<td><div>' + esc(label) + badge + '</div>' +
             '<div class="device-ua">' + esc(d.ua ? d.ua.slice(0, 80) : "") + "</div></td>" +
             "<td>" + esc(location) + "</td>" +
             "<td>" + esc(fmtDate(d.created_at)) + "</td>" +

@@ -8,7 +8,7 @@
         />
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+            content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://diusqgphvybnzazgopor.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
         <title>Cancri</title>
         <!-- Browser tab icon. -->
@@ -66,7 +66,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-05-31-msg-actions" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-03-code-block" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -88,29 +88,29 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/layout-sidebar.css?v=header-final-0507"
+            href="./styles/layout-sidebar.css?v=2026-06-03-rail-collapse-fix"
         />
         <link
             rel="stylesheet"
-            href="./styles/99-polish-fixes.css?v=2026-05-14d-user-newlines"
+            href="./styles/99-polish-fixes.css?v=2026-06-03-sidebar-avatar-tune"
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_liquid_glass.css?v=2026-05-14-lg-b"
+            href="./styles/cancri_liquid_glass.css?v=2026-06-03-code-block"
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-05-31-ui-pass"
+            href="./styles/cancri_motion.css?v=2026-06-03-auth-compact"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-01-scroll-black"
+            href="./claude.css?v=2026-06-03-model-anchor-resize"
         />
         <link
             rel="stylesheet"
-            href="./styles/claude-sidebar-icons.css?v=2026-05-31-icons"
+            href="./styles/claude-sidebar-icons.css?v=2026-06-03-rail-collapse-fix"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -120,6 +120,7 @@
         <script defer src="./katex/katex.min.js"></script>
         <script defer src="./katex/contrib/auto-render.min.js"></script>
         <script defer src="./cancri_katex_fallback.js?v=0504"></script>
+        <script defer src="./cancri_mermaid.js?v=2026-06-03-mermaid"></script>
         <!-- Cloudflare Turnstile: explicit rendering mode.
              We have TWO independent widgets on this page (chat anti-bot &
              login OTP captcha), so per Cloudflare's official guidance we use
@@ -192,6 +193,27 @@
                             autocomplete="email"
                             required
                         />
+
+                        <div id="authCaptchaContainer"></div>
+
+                        <div class="auth-password-section" id="authPasswordSection" hidden>
+                            <label class="auth-field-label" for="authPasswordInput">密码</label>
+                            <input
+                                type="password"
+                                id="authPasswordInput"
+                                class="auth-input"
+                                placeholder="请输入密码"
+                                autocomplete="current-password"
+                            />
+                            <button
+                                class="auth-btn auth-btn-primary"
+                                id="authPasswordLoginBtn"
+                                type="button"
+                            >
+                                登录
+                            </button>
+                        </div>
+
                         <button
                             class="auth-btn auth-btn-primary"
                             id="authSendOtpBtn"
@@ -200,7 +222,13 @@
                             发送验证码
                         </button>
 
-                        <div id="authCaptchaContainer"></div>
+                        <button
+                            type="button"
+                            class="auth-mode-toggle"
+                            id="authLoginModeToggle"
+                        >
+                            使用密码登录
+                        </button>
 
                         <div
                             class="auth-otp-section"
@@ -404,22 +432,44 @@
 
                 <div class="sidebar-body">
                     <div class="nav-group">
+                        <div class="sidebar-nav-primary">
                         <div
                             class="nav-row active"
                             data-view-target="home"
                             id="newChatBtn"
                         >
-                            <svg
-                                class="claude-nav-icon claude-nav-icon--new-chat"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                                aria-hidden="true"
-                            >
-                                <path d="M10 3a.75.75 0 0 1 .75.75v5.5h5.5a.75.75 0 0 1 .077 1.496l-.077.004h-5.5v5.5a.75.75 0 0 1-1.5 0v-5.5h-5.5a.75.75 0 0 1 0-1.5h5.5v-5.5A.75.75 0 0 1 10 3"></path>
-                            </svg>
-                            <span class="sidebar-label">新聊天</span>
+                            <div class="nav-row-inner">
+                                <div class="nav-icon-slot">
+                                    <div class="nav-icon-bounce">
+                                        <div class="nav-icon-ring nav-icon-ring--new-chat">
+                                            <span class="claude-anthropicon claude-anthropicon--new-chat" aria-hidden="true">&#xe001;</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="sidebar-label">新聊天</span>
+                                <span class="nav-kbd-hint" aria-hidden="true">Ctrl+&#8679;+O</span>
+                            </div>
+                        </div>
+                        <div class="nav-row" id="sidebarSearchBtn">
+                            <div class="nav-row-inner">
+                                <div class="nav-icon-slot">
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.9"
+                                        aria-hidden="true"
+                                    >
+                                        <circle cx="11" cy="11" r="7"></circle>
+                                        <path d="m20 20-3.5-3.5"></path>
+                                    </svg>
+                                </div>
+                                <span class="sidebar-label">搜索</span>
+                                <span class="nav-kbd-hint" aria-hidden="true">Ctrl+K</span>
+                            </div>
+                        </div>
                         </div>
                         <div
                             class="nav-row"
@@ -452,21 +502,6 @@
                                 暂无排行榜数据。
                             </div>
                         </div>
-                        <div class="nav-row" id="sidebarSearchBtn">
-                            <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <circle cx="11" cy="11" r="7"></circle>
-                                <path d="m20 20-3.5-3.5"></path>
-                            </svg>
-                            <span class="sidebar-label">搜索</span>
-                            <span class="nav-kbd-hint" aria-hidden="true">Ctrl+K</span>
-                        </div>
                         <div
                             class="sidebar-search-wrap"
                             id="sidebarSearchWrap"
@@ -479,23 +514,22 @@
                                 autocomplete="off"
                             />
                         </div>
-                        <!-- Claude 风格新加 nav-rows：聊天 / 项目 / 文物 / 自定义。
-                             点击通过 data-view-target 触发 cancri_chat.js 的
-                             setActiveView，对应 view 在主区 .main 下定义。 -->
+                        <div class="sidebar-nav-secondary">
                         <div class="nav-row" id="claudeChatsNavBtn" data-view-target="claudeChats">
-                            <svg class="claude-nav-icon claude-nav-icon--chats" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-label="Chats">
-                                <g class="claude-nav-chats-back"><path d="M16.5445 9.72754C16.4182 9.53266 16.1678 9.44648 15.943 9.53418C15.7183 9.62215 15.5932 9.85502 15.6324 10.084L15.7369 10.3955C15.9073 10.8986 16.0006 11.438 16.0006 12C16.0006 13.1123 15.6376 14.1386 15.024 14.9687C14.8811 15.1621 14.8956 15.4302 15.0592 15.6064L16.3531 17H11.0006C9.54519 17 8.23527 16.3782 7.32091 15.3848L7.07091 15.1103C6.88996 14.9645 6.62535 14.9606 6.43907 15.1143C6.25267 15.2682 6.20668 15.529 6.31603 15.7344L6.58458 16.0625C7.68048 17.253 9.25377 18 11.0006 18H17.5006C17.6991 17.9998 17.8791 17.8822 17.9586 17.7002C18.038 17.5181 18.0018 17.3058 17.8668 17.1602L16.0631 15.2178C16.6554 14.2876 17.0006 13.1837 17.0006 12C17.0006 11.3271 16.8891 10.6792 16.6842 10.0742L16.5445 9.72754Z" fill="currentColor"></path></g>
-                                <g class="claude-nav-chats-front"><path d="M8.99962 2C12.3133 2 14.9996 4.68629 14.9996 8C14.9996 11.3137 12.3133 14 8.99962 14H2.49962C2.30105 13.9998 2.12113 13.8821 2.04161 13.7002C1.96224 13.5181 1.99835 13.3058 2.1334 13.1602L3.93516 11.2178C3.34317 10.2878 2.99962 9.18343 2.99962 8C2.99962 4.68643 5.68609 2.00022 8.99962 2ZM8.99962 3C6.23838 3.00022 3.99961 5.23871 3.99961 8C3.99961 9.11212 4.36265 10.1386 4.97618 10.9688C5.11884 11.1621 5.1035 11.4293 4.94004 11.6055L3.64512 13H8.99962C11.761 13 13.9996 10.7614 13.9996 8C13.9996 5.23858 11.761 3 8.99962 3Z" fill="currentColor"></path></g>
-                            </svg>
-                            <span class="sidebar-label">聊天</span>
+                            <div class="nav-row-inner">
+                                <div class="nav-icon-slot">
+                                    <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe039;</span>
+                                </div>
+                                <span class="sidebar-label">聊天</span>
+                            </div>
                         </div>
                         <div class="nav-row" id="claudeProjectsNavBtn" data-view-target="claudeProjects">
-                            <svg class="claude-nav-icon claude-nav-icon--projects" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-label="Projects">
-                                <g class="claude-nav-project-body"><path d="M15.8198 7C16.6885 7.00025 17.3624 7.73158 17.3178 8.57617L17.2993 8.74707L16.1332 15.7471C16.0126 16.4699 15.3865 16.9996 14.6538 17H5.34711C4.6142 16.9998 3.98833 16.47 3.86762 15.7471L2.7016 8.74707C2.54922 7.83277 3.25418 7 4.18109 7H15.8198ZM4.18109 8C3.87216 8 3.63722 8.27731 3.68793 8.58203L4.85394 15.582C4.89413 15.8229 5.10291 15.9998 5.34711 16H14.6538C14.8978 15.9996 15.1068 15.8228 15.1469 15.582L16.3129 8.58203L16.3188 8.46973C16.3036 8.21259 16.0899 8.00023 15.8198 8H4.18109Z" fill="currentColor"></path></g>
-                                <g class="claude-nav-project-tab"><path d="M16.0004 5.5C16.0004 5.224 15.7764 5.00024 15.5004 5H4.50043C4.22428 5 4.00043 5.22386 4.00043 5.5C4.00043 5.77614 4.22428 6 4.50043 6H15.5004C15.7764 5.99976 16.0004 5.776 16.0004 5.5Z" fill="currentColor"></path></g>
-                                <g class="claude-nav-project-lid"><path d="M14.5004 3.5C14.5004 3.224 14.2764 3.00024 14.0004 3H6.00043C5.72428 3 5.50043 3.22386 5.50043 3.5C5.50043 3.77614 5.72428 4 6.00043 4H14.0004C14.2764 3.99976 14.5004 3.776 14.5004 3.5Z" fill="currentColor"></path></g>
-                            </svg>
-                            <span class="sidebar-label">项目</span>
+                            <div class="nav-row-inner">
+                                <div class="nav-icon-slot">
+                                    <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe0c9;</span>
+                                </div>
+                                <span class="sidebar-label">项目</span>
+                            </div>
                         </div>
                         <a
                             class="nav-row"
@@ -503,17 +537,27 @@
                             href="./api/"
                             style="text-decoration: none; color: inherit"
                         >
-                            <svg class="claude-nav-icon claude-nav-icon--artifacts" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path clip-rule="evenodd" d="M6.35352 3.1464L9.35352 6.14642C9.43935 6.25103 9.5 6.36003 9.5 6.50091C9.4998 6.6332 9.44704 6.75988 9.35352 6.85346L6.35352 9.85347C6.14584 10.0609 5.85611 10.0243 5.64648 9.85347L2.64648 6.85346C2.55296 6.75988 2.5002 6.6332 2.5 6.50091C2.5 6.36841 2.55285 6.24017 2.64648 6.14642L5.64648 3.1464C5.8552 2.97421 6.14635 2.93936 6.35352 3.1464ZM6 8.79194L3.70703 6.49994L6 4.20696L8.29297 6.49994L6 8.79194Z" fill-rule="evenodd"></path>
-                                <path class="claude-nav-artifacts-flag" d="M16.8984 3.7509C16.9875 3.90632 16.986 4.09826 16.8955 4.25286L15.5791 6.49994L16.8955 8.74702C16.986 8.90159 16.9874 9.09354 16.8984 9.24898C16.8093 9.40436 16.643 9.49996 16.4638 9.49996H11.5C11.3198 9.49996 11.1532 9.4028 11.0644 9.24605C10.976 9.08949 10.9789 8.89736 11.0713 8.74312L12.417 6.49994L11.0713 4.25676C10.9789 4.1025 10.976 3.91037 11.0644 3.75383C11.1532 3.59717 11.3199 3.49992 11.5 3.49992H16.4638C16.6429 3.51309 16.8055 3.58909 16.8984 3.7509ZM13.4287 6.2431C13.5152 6.4107 13.5166 6.58638 13.4287 6.75678L12.3828 8.49995H15.5918L14.5683 6.75287C14.477 6.59683 14.477 6.40303 14.5683 6.24701L15.5918 4.49993H12.3828L13.4287 6.2431Z"></path>
-                                <path class="claude-nav-artifacts-star" clip-rule="evenodd" d="M7.25293 10.9668C7.40708 10.8793 7.59647 10.8801 7.75 10.9687C7.90356 11.0574 7.99869 11.2211 8 11.3984L8.01074 12.8388L9.30762 13.6054C9.42811 13.6994 9.49994 13.8448 9.5 14C9.5 14.1773 9.40587 14.3418 9.25293 14.4316L8.01074 15.1601L7.99512 16.667C7.97406 16.8184 7.88446 16.9536 7.75 17.0312C7.59642 17.1199 7.40713 17.1207 7.25293 17.0332L6 16.3203L4.74707 17.0332C4.59287 17.1207 4.40358 17.1199 4.25 17.0312C4.09643 16.9425 4.00124 16.7789 4 16.6015L3.99023 15.1601L2.74707 14.4316C2.59413 14.3418 2.5 14.1773 2.5 14C2.50006 13.8448 2.57188 13.6994 2.69238 13.6054L3.99023 12.8388L4 11.3984C4.00131 11.2211 4.09644 11.0574 4.25 10.9687C4.40353 10.8801 4.59292 10.8793 4.74707 10.9668L6 11.6787L7.25293 10.9668ZM4.99512 12.2568L5.75293 12.6884C5.90608 12.7754 6.09392 12.7754 6.24707 12.6884L7.00586 12.2568L7.01172 13.1308C7.01308 13.3068 7.10706 13.4695 7.25879 13.5586L8.01172 14L7.25879 14.4414C7.10706 14.5304 7.01315 14.6932 7.01172 14.8691L7.00586 15.7422L6.24707 15.3115C6.09397 15.2246 5.90603 15.2246 5.75293 15.3115L4.99512 15.7422L4.98828 14.8691C4.98703 14.7152 4.91459 14.5716 4.79492 14.4785L3.98926 14L4.74121 13.5586C4.87421 13.4805 4.96267 13.3457 4.9834 13.1953L4.99512 12.2568Z" fill-rule="evenodd"></path>
-                                <path clip-rule="evenodd" d="M14 11C15.6568 11 16.9999 12.3432 17 14C17 15.6568 15.6569 17 14 17C12.3431 17 11 15.6568 11 14C11.0001 12.3432 12.3432 11 14 11ZM12 14C12.0001 12.8955 12.8955 12 14 12C15.1045 12 15.9999 12.8955 16 14C16 15.1045 15.1046 16 14 16C12.8954 16 12 15.1045 12 14Z" fill-rule="evenodd"></path>
-                            </svg>
-                            <span class="sidebar-label">开放平台</span>
+                            <div class="nav-row-inner">
+                                <div class="nav-icon-slot">
+                                    <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe017;</span>
+                                </div>
+                                <span class="sidebar-label">开放平台</span>
+                            </div>
                         </a>
-                        <!-- 2026-05-15 fix(M3)：自定义 从侧栏移除，迁到 账户头像 popover 里
-                             （见 #accountPopover 中新增的 .popover-item id="claudeCustomPopoverBtn"）。
-                             bindCustomNav 走 data-claude-action="open-settings" 选择器仍能匹配。 -->
+                        <div
+                            class="nav-row"
+                            id="claudeCustomNavBtn"
+                            data-view-target="claudeSettings"
+                            data-claude-action="open-settings"
+                        >
+                            <div class="nav-row-inner">
+                                <div class="nav-icon-slot">
+                                    <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe100;</span>
+                                </div>
+                                <span class="sidebar-label">自定义</span>
+                            </div>
+                        </div>
+                        </div>
                         <a
                             class="nav-row sidebar-api-platform"
                             id="sidebarApiPlatformBtn"
@@ -697,8 +741,8 @@
                         <!-- 2026-05-22 真 Claude 对齐：账户按钮右侧 "获取应用和扩展" 入口。
                              指向 ./code/ 桌面客户端，配 animate-ping 红点提示新功能。 -->
                         <a class="account-download-btn" id="accountDownloadBtn"
-                           href="./code/" target="_self"
-                           aria-label="获取应用和扩展" title="获取应用和扩展"
+                           href="https://pan.baidu.com/s/1Q9mm9CnwjtB0tlusgaYlSw" target="_blank" rel="noopener noreferrer"
+                           aria-label="下载 Cancri Chat APK" title="下载 Cancri Chat APK（提取码: Nexu）"
                            onclick="event.stopPropagation();">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1188,15 +1232,17 @@
                         class="scroll-to-bottom-btn"
                         id="scrollToBottomBtn"
                         type="button"
+                        data-glass="button"
                         aria-label="Scroll to bottom"
                         title="回到底部"
                         hidden
                     >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M12 5v14M5 12l7 7 7-7"/>
                         </svg>
                     </button>
                     <aside class="chat-nav" id="chatNav" aria-label="对话跳转" hidden>
+                        <div class="chat-nav-preview" id="chatNavPreview" hidden aria-hidden="true"></div>
                         <div class="chat-nav-list" id="chatNavList"></div>
                     </aside>
                     <div class="home-center" id="homeCenter">
@@ -1694,20 +1740,30 @@
 
                 <!-- ─────── Claude 风格设置全屏 view (data-view-target="claudeSettings") ─────── -->
                 <section class="view" id="claudeSettingsView">
-                    <div class="claude-settings-page">
-                        <h1 class="claude-settings-title">设置</h1>
+                    <div class="claude-settings-page" role="dialog" aria-modal="true" aria-labelledby="claudeSettingsDialogTitle">
+                        <button type="button" class="claude-settings-close-btn" id="claudeSettingsCloseBtn" aria-label="关闭">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        </button>
                         <div class="claude-settings-layout">
-                            <aside class="claude-settings-nav">
-                                <button class="claude-snav-item active" type="button" data-snav="overview">概述</button>
-                                <button class="claude-snav-item" type="button" data-snav="account">账号</button>
-                                <button class="claude-snav-item" type="button" data-snav="privacy">隐私</button>
-                                <button class="claude-snav-item" type="button" data-snav="billing">账单</button>
-                                <button class="claude-snav-item" type="button" data-snav="capability">能力</button>
-                                <button class="claude-snav-item" type="button" data-snav="invite">邀请</button>
-                                <button class="claude-snav-item" type="button" data-snav="quota">额度</button>
-                                <button class="claude-snav-item" type="button" data-snav="password">Cancri 密码</button>
-                            </aside>
-                            <div class="claude-settings-content">
+                            <nav class="claude-settings-nav" aria-label="背景设定">
+                                <h2 id="claudeSettingsDialogTitle" class="claude-settings-nav-title">背景设定</h2>
+                                <label class="claude-settings-search">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                    <input type="search" id="claudeSettingsSearch" placeholder="搜索" aria-label="搜索设置" autocomplete="off" />
+                                </label>
+                                <ul class="claude-settings-nav-list" role="list">
+                                    <li class="claude-snav-li"><button class="claude-snav-item active" type="button" data-snav="overview"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 19a7 7 0 0 1 14 0"/></svg></span><span class="claude-snav-label">概述</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="account"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span><span class="claude-snav-label">账号</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="privacy"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.4 3 8.5 7 9 4-.5 7-4.6 7-9V6l-7-3z"/></svg></span><span class="claude-snav-label">隐私</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><span class="claude-snav-label">账单</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span class="claude-snav-label">能力</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 1 7.07 0l1.41 1.41a2 2 0 0 1 0 2.83l-1.41 1.41M14 11a5 5 0 0 0-7.07 0L5.52 12.41a2 2 0 0 0 0 2.83l1.41 1.41"/></svg></span><span class="claude-snav-label">邀请</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="quota"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg></span><span class="claude-snav-label">额度</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="password"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span><span class="claude-snav-label">Cancri 密码</span></button></li>
+                                </ul>
+                            </nav>
+                            <div class="claude-settings-main">
+                                <div class="claude-settings-content">
                                 <!-- 概述 section -->
                                 <div class="claude-settings-section claude-snav-target active" data-snav-target="overview">
                                     <h2 class="claude-settings-h2">简介</h2>
@@ -1772,11 +1828,18 @@
                                         <span class="claude-form-label">主题色</span>
                                         <div class="claude-form-control">
                                             <div class="claude-accent-row" role="group" aria-label="主题色">
+                                                <button class="claude-accent-swatch active" type="button" data-accent="橙色" title="橙色（默认）"><span class="claude-accent-dot" style="background: #d97757"></span></button>
                                                 <button class="claude-accent-swatch" type="button" data-accent="Claude" title="跟随主题"><span class="claude-accent-dot" style="background: var(--accent)"></span></button>
                                                 <button class="claude-accent-swatch" type="button" data-accent="绿色" title="绿色"><span class="claude-accent-dot" style="background: #10a37f"></span></button>
                                                 <button class="claude-accent-swatch" type="button" data-accent="琥珀" title="琥珀"><span class="claude-accent-dot" style="background: #f59e0b"></span></button>
                                                 <button class="claude-accent-swatch" type="button" data-accent="珊瑚" title="珊瑚"><span class="claude-accent-dot" style="background: #ef4444"></span></button>
                                                 <button class="claude-accent-swatch" type="button" data-accent="石墨" title="石墨"><span class="claude-accent-dot" style="background: #6b7280"></span></button>
+                                                <button class="claude-accent-swatch" type="button" data-accent="天青" title="天青"><span class="claude-accent-dot" style="background: #06b6d4"></span></button>
+                                                <button class="claude-accent-swatch" type="button" data-accent="靛蓝" title="靛蓝"><span class="claude-accent-dot" style="background: #6366f1"></span></button>
+                                                <button class="claude-accent-swatch" type="button" data-accent="紫罗兰" title="紫罗兰"><span class="claude-accent-dot" style="background: #a855f7"></span></button>
+                                                <button class="claude-accent-swatch" type="button" data-accent="玫红" title="玫红"><span class="claude-accent-dot" style="background: #e11d48"></span></button>
+                                                <button class="claude-accent-swatch" type="button" data-accent="薄荷" title="薄荷"><span class="claude-accent-dot" style="background: #14b8a6"></span></button>
+                                                <button class="claude-accent-swatch" type="button" data-accent="深海" title="深海"><span class="claude-accent-dot" style="background: #2563eb"></span></button>
                                             </div>
                                         </div>
                                     </div>
@@ -1919,13 +1982,97 @@
                                     <p class="claude-form-help" id="claudeBillingCopy" data-tier-state="loading">
                                         正在加载订阅状态…
                                     </p>
+                                    <div class="claude-billing-activations">
+                                        <h3 class="claude-billing-activations-title">激活记录</h3>
+                                        <div id="claudeBillingActivations" class="claude-billing-table-wrap">
+                                            <p class="claude-billing-empty">正在加载…</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="capability">
-                                    <h2 class="claude-settings-h2">能力</h2>
-                                    <p class="claude-form-help">能力开关将在后续版本添加。</p>
+                                    <div class="claude-setting-group">
+                                        <h3 class="claude-setting-group-title">记忆</h3>
+                                        <div class="claude-setting-card">
+                                            <div class="claude-setting-row">
+                                                <div class="claude-setting-copy">
+                                                    <div class="claude-setting-name">从聊天历史生成记忆</div>
+                                                    <p class="claude-setting-desc">让 Cancri 记住你聊天中相关的上下文。该设置控制聊天和项目的记忆。<a href="../privacy.html" target="_blank" rel="noopener">了解更多</a></p>
+                                                </div>
+                                                <label class="claude-switch">
+                                                    <input type="checkbox" id="claudeCapMemoryGen" checked disabled />
+                                                    <span class="claude-switch-track"></span>
+                                                </label>
+                                            </div>
+                                            <div class="claude-setting-row claude-setting-row-footer">
+                                                <button class="claude-setting-text-btn" type="button" id="claudeCapManageMemoryBtn">查看和管理记忆</button>
+                                                <span class="claude-setting-meta">· 每日自动更新</span>
+                                            </div>
+                                        </div>
+                                        <div class="claude-setting-card">
+                                            <div class="claude-setting-row">
+                                                <div class="claude-setting-copy">
+                                                    <div class="claude-setting-name">从其他 AI 提供商导入记忆</div>
+                                                    <p class="claude-setting-desc">将来自其他 AI 提供商的相关背景和数据带到 Cancri。我们会提供一个提示，你可以用来从另一个账户中获取记忆。</p>
+                                                </div>
+                                                <button class="claude-secondary-btn" type="button" id="claudeCapImportMemoryBtn">开始导入</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="claude-setting-group claude-setting-group--locked">
+                                        <h3 class="claude-setting-group-title">工具访问模式 <span class="claude-setting-lock-badge" title="暂未开放"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span></h3>
+                                        <div class="claude-setting-card">
+                                            <div class="claude-setting-row is-locked">
+                                                <div class="claude-setting-copy">
+                                                    <div class="claude-setting-name">必要时装载工具</div>
+                                                    <p class="claude-setting-desc">控制连接器工具在新会话中的加载方式。</p>
+                                                </div>
+                                                <select class="claude-form-select claude-setting-select" id="claudeCapToolLoadMode" disabled>
+                                                    <option value="lazy" selected>必要时装载工具</option>
+                                                    <option value="eager">始终装载工具</option>
+                                                </select>
+                                            </div>
+                                            <div class="claude-setting-row is-locked">
+                                                <div class="claude-setting-copy">
+                                                    <div class="claude-setting-name">连接器发现</div>
+                                                    <p class="claude-setting-desc">让 Cancri 从目录中提取可能与你们对话相关的连接器。</p>
+                                                </div>
+                                                <label class="claude-switch">
+                                                    <input type="checkbox" id="claudeCapConnectorDiscovery" disabled />
+                                                    <span class="claude-switch-track"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="claude-setting-group">
+                                        <h3 class="claude-setting-group-title">视觉效果</h3>
+                                        <div class="claude-setting-card">
+                                            <div class="claude-setting-row is-locked">
+                                                <div class="claude-setting-copy">
+                                                    <div class="claude-setting-name">文物 <span class="claude-setting-lock-badge" title="暂未开放"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span></div>
+                                                    <p class="claude-setting-desc">在对话旁边的专用窗口中生成代码、文档和设计。</p>
+                                                </div>
+                                                <label class="claude-switch">
+                                                    <input type="checkbox" id="claudeCapArtifacts" disabled />
+                                                    <span class="claude-switch-track"></span>
+                                                </label>
+                                            </div>
+                                            <div class="claude-setting-row">
+                                                <div class="claude-setting-copy">
+                                                    <div class="claude-setting-name">内联可视化</div>
+                                                    <p class="claude-setting-desc">允许 Cancri 直接在对话中生成交互式可视化、图表和图表。</p>
+                                                </div>
+                                                <label class="claude-switch">
+                                                    <input type="checkbox" id="claudeCapInlineViz" checked />
+                                                    <span class="claude-switch-track"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="invite">
-                                    <h2 class="claude-settings-h2">满月邀请</h2>
+                                    <h2 class="claude-settings-h2">邀请</h2>
                                     <p class="claude-form-help">复制你的专属邀请链接，也可以查看自己的 UUID 来对照活动页邀请排行榜。</p>
                                     <div id="claudeInvitePanel" class="invite-settings-panel">
                                         <div id="claudeInviteLoginPrompt" class="invite-empty" hidden>
@@ -2016,7 +2163,6 @@
                                                     <li>每位邀请人最多结算 <strong>50</strong> 位被邀请人</li>
                                                     <li>被邀请人需在被邀请后累计 ≥<strong>3</strong> 天对话活跃，系统每小时自动结算</li>
                                                     <li>活动页排行榜显示 UUID 前 8 位，可用上方 UUID 对照自己的排名</li>
-                                                    <li>排行前 10 将参与 5/29 00:00 自动抽奖</li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -2036,8 +2182,27 @@
                                 </div>
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="password">
                                     <h2 class="claude-settings-h2">Cancri 密码</h2>
-                                    <p class="claude-form-help">密码与多因素认证设置将在后续版本添加。</p>
+                                    <p class="claude-form-help">设置密码后，可在登录页选择「使用密码登录」，用邮箱 + 密码进入账号。</p>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">新密码</span>
+                                        <div class="claude-form-control">
+                                            <input class="claude-form-input" type="password" id="claudePasswordNew" autocomplete="new-password" placeholder="至少 8 位" />
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">确认密码</span>
+                                        <div class="claude-form-control">
+                                            <input class="claude-form-input" type="password" id="claudePasswordConfirm" autocomplete="new-password" />
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <div class="claude-form-control">
+                                            <button type="button" class="claude-secondary-btn" id="claudePasswordSaveBtn">保存密码</button>
+                                            <p class="claude-form-help" id="claudePasswordMsg" style="margin-top:8px;"></p>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -2478,7 +2643,7 @@
                              并填充链接 / 3 数字卡 / 流水。失败 → 显示 #inviteEmptyState；
                              未登录（拿不到 token）→ 显示 #inviteLoginPrompt。 -->
                         <div class="settings-panel invite-settings-panel" id="invitePanel">
-                            <h3 class="settings-heading">满月邀请</h3>
+                            <h3 class="settings-heading">邀请</h3>
 
                             <div id="inviteLoginPrompt" class="invite-empty" hidden>
                                 请先登录后再生成专属邀请链接。
@@ -3007,13 +3172,13 @@
         <!-- hero Logo 小彩蛋：点击首页问候语左侧的装饰图标 → 图标上方冒出一个
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
-        <script defer src="./hero_easter_egg.js?v=2026-05-31-hello-bubble"></script>
-        <script defer src="./cancri_chat.js?v=2026-06-01-auth-captcha"></script>
+        <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
+        <script defer src="./cancri_chat.js?v=2026-06-03-code-block"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-06-01-account-initfix"></script>
+        <script defer src="./claude_ui.js?v=2026-06-03-rail-collapse-fix"></script>
         <!-- 2026-05-17 Phase A：「额度」面板（替代原「连接器」占位）。
              FREE 共享池 + 当日 15 次 PAID 试用 + 三档订阅月度配额进度 + 加油包余额。 -->
         <script defer src="./claude_quota_ui.js?v=2026-05-17-grandfather"></script>
