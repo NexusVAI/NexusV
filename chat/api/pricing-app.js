@@ -230,18 +230,25 @@ async function loadPricing() {
         pricingMeta = data.discount_window || pricingMeta;
 
         // 2026-06-03: 客户端订阅折扣（后端 RPC 未覆盖时生效）。
-        // 与后端 cancri_celebrate_apply_subscription_discount 取更优惠者。
+        // 同时修改 data 和 CLIENT_CATALOG，确保 renderPlanCards 读到折后价。
         const subNow = Date.now();
         if (subNow >= SUB_PROMO_START_MS && subNow < SUB_PROMO_END_MS) {
             ["pro", "pro_plus"].forEach((code) => {
                 const d = SUB_PROMO_DISCOUNTS[code];
                 if (!d || d >= 1) return;
-                const s = CLIENT_CATALOG.subscription[code];
-                if (!s) return;
-                const discounted = Math.round(s.amount_original * d * 100) / 100;
-                if (discounted < s.amount) {
-                    s.amount = discounted;
+                const s = sub[code];
+                const cat = CLIENT_CATALOG.subscription[code];
+                if (!s || !cat) return;
+                const baseOriginal = Number(s.amount_cny_original) || cat.amount_original;
+                const discounted = Math.round(baseOriginal * d * 100) / 100;
+                const currentAmount = Number(s.amount_cny) || cat.amount;
+                if (discounted < currentAmount) {
+                    // 修改 RPC 返回的 data（renderPlanCards 读这个）
+                    s.amount_cny = discounted;
                     s.discount = d;
+                    // 同步 CLIENT_CATALOG
+                    cat.amount = discounted;
+                    cat.discount = d;
                 }
             });
         }

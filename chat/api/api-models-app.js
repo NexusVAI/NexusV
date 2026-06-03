@@ -123,10 +123,6 @@ function fmtMult(n) {
 // 所有用户免费使用，但有「每用户并发 1 + 全局 100 RPM」的硬上限；
 // 付费用户绕过限流。视觉上用 clay/amber 区别 FREE（中性）和 PAID（实心）。
 const WELFARE_IDS = new Set([
-    "gpt-5.5-welfare",
-    "gemini-3.5-flash-welfare",
-    "gemini-3.1-flash-lite-welfare",
-    "gpt-5.4-mini-welfare",
     "claude-haiku-4-5-20251001-welfare",
     "baichuan-m2-welfare",
     "baichuan4-air-welfare",
@@ -196,6 +192,7 @@ const BRAND_LOGO = {
     cohere: "./cohere-color.svg",
     swissai: "./huggingface-color.svg",
     utterproject: "./huggingface-color.svg",
+    baidu: "./wenxin-color.svg",
 };
 
 function normalizeBrandKey(brand) {
