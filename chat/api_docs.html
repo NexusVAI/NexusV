@@ -1972,15 +1972,32 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </p>
 
           <div class="faq-item">
-            <h4>1. Pro 没到期，买 Pro+ 会怎样？</h4>
+            <h4>1. Pro 没到期，买 Pro+（升级）会怎样？</h4>
             <p>
-              <b>立即生效。</b> 系统会把你的 plan_code 改成 <code>pro_plus</code>，
-              monthly_quota 提升到 8000 万 token，有效期从激活时刻重新计算 30 天。
-              <b>已消耗 token 不清零</b>——你之前用掉的 500 万继续算在 8000 万里，
-              不会因为升档就「刷新」成 0/8000。
+              <b>立即生效，按剩余天数补差价，不延长到期日。</b> 这套语义与 ChatGPT、Claude
+              的「升级」一致：系统把你的 plan_code 改成 <code>pro_plus</code>、monthly_quota
+              提升到 8000 万 token，<b>剩余的每一天都从 Pro 抬到 Pro+</b>，
+              但<b>到期日（expires_at）保持不变</b>——升级不送时长，只升档。
+            </p>
+            <p>
+              <b>价格 = 按比例补差价（proration）：</b>
+              <code>(Pro+ 月价 − 当前档月价) ÷ 30 × 剩余天数</code>（最低 ¥1）。
+              例如还剩 28 天的 Pro 升 Pro+：(29 − 9.9) ÷ 30 × 28 ≈ <b>¥17.83</b>。
+              下单接口会把订单 <code>order_kind</code> 自动判定为 <code>upgrade</code> 并按此金额计费，
+              <b>升级价不叠加任何促销折扣</b>。激活码仍在「我的订单」页兑换。
+            </p>
+            <p>
+              <b>已消耗 token 不清零、不分段、不回退。</b> 之前用掉的 500 万继续算在 8000 万里
+              （只是分母变大），不会因升档刷新成 0/8000；当前 30 天周期结束时按 Pro+（8000 万）懒重置。
+              升级后<b>整段剩余订阅期都是 Pro+</b>，到期后订阅自然结束 ——
+              <b>不存在「先用 30 天 Pro+ 再退回 Pro」的分段</b>。
             </p>
             <p style="color: var(--text-faint); font-size: 12.5px">
-              为什么不清零？防止用户通过反复升降档刷配额。后端只提升上限，不重置计数器。
+              为什么这样设计？① 补差价保证不亏本也不送钱：你付的正是「把剩余时间从低档抬到高档」的差价；
+              ② 不加时长 → 不存在用升级变相买便宜时长，也<b>不受 90 天上限影响</b>；
+              ③ 已用量不清零 + 禁止降级 → 无法靠升降档刷配额。
+              两个边界：升级时订阅已过期返回 <code>upgrade_requires_active_subscription</code>（请改买新订阅）；
+              当前档已 ≥ 目标档返回 <code>upgrade_not_applicable</code>。
             </p>
           </div>
 
@@ -2037,6 +2054,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <p style="color: var(--text-faint); font-size: 12.5px">
               为什么设 90 天上限？防止用户一次性囤太多激活码、把有效期拉到几年后，
               导致平台现金流和运营预测困难。等有效期缩短到 60 天以下后，续期窗口重新打开。
+              注：<b>升级（买更高档）不延长到期日，因此不受 90 天上限影响</b>，任何剩余天数都能立即升级。
             </p>
           </div>
 
