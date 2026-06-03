@@ -1679,6 +1679,11 @@ const PAID_GATE_IDS = new Set([
   "claude-haiku-4-5-20251001",
   "claude-haiku-4-5-20251001-thinking",
   "claude-opus-4-7-special",
+  // 2026-06-03: 退出福利档，改为付费专属。
+  "gpt-5.4-mini-welfare",
+  "gpt-5.5-welfare",
+  "gemini-3.5-flash-welfare",
+  "gemini-3-flash-preview",
 ]);
 // 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
 // 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
@@ -1696,6 +1701,11 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gpt-image-2-pro",
   "claude-opus-4-7-special",
   "doubao-seed-2.0-pro",
+  // 2026-06-03: 退出福利档，free 用户硬挡。
+  "gpt-5.4-mini-welfare",
+  "gpt-5.5-welfare",
+  "gemini-3.5-flash-welfare",
+  "gemini-3-flash-preview",
 ]);
 
 const PRO_MAX_GATE_IDS = new Set([
@@ -1820,13 +1830,10 @@ function getQuotaBlockReason(modelId) {
   if (isProPlusGateModel(modelId)) return "pro_plus_only";
   if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
   // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
-  // 2026-05-25: 替换 claude-opus-4-6-thinking-welfare 为 gpt-5.4-mini-welfare + claude-haiku-4-5-20251001-welfare。
+  // 2026-06-03: 移除 gpt-5.5-welfare / gemini-3.5-flash-welfare /
+  //            gemini-3.1-flash-lite-welfare / gpt-5.4-mini-welfare，退出福利档改为付费专属。
   // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
   if (
-    modelId === "gpt-5.5-welfare" ||
-    modelId === "gemini-3.5-flash-welfare" ||
-    modelId === "gemini-3.1-flash-lite-welfare" ||
-    modelId === "gpt-5.4-mini-welfare" ||
     modelId === "claude-haiku-4-5-20251001-welfare" ||
     modelId === "baichuan-m2-welfare" ||
     modelId === "baichuan4-air-welfare" ||
@@ -2387,8 +2394,8 @@ const MODEL_CATALOG = [
   {"id": "gemini-3.1-pro", "name": "Gemini 3.1 Pro", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
   {"id": "gemini-3.1-flash-lite-preview", "name": "Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 3.0},
-  {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
-  {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
+  {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 6.5},
   {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
   {"id": "step-3.7-flash", "name": "Step 3.7 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ernie-4.5-turbo-20260402", "name": "ERNIE 4.5 Turbo", "brand": "Baidu", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
@@ -2406,7 +2413,7 @@ const MODEL_CATALOG = [
   {"id": "baichuan3-turbo-welfare", "name": "【福利】Baichuan 3 Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "baichuan2-turbo-welfare", "name": "【福利】Baichuan 2 Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   // 2026-05-25: 福利档 GPT-5.4 Mini（togoapi.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
-  {"id": "gpt-5.4-mini-welfare", "name": "GPT 5.4 Mini 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.4-mini-welfare", "name": "GPT 5.4 Mini 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
   {"id": "claude-opus-4-7", "name": "Claude Opus 4.7 XHigh", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
   // 2026-05-26: Claude Opus 4.7 Max — aspirin 上游独立 key，Pro+ 专属（costTier: vip）。
   {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
@@ -2432,8 +2439,8 @@ const MODEL_CATALOG = [
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
-  {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
-  {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+  {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
   {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2441,18 +2448,18 @@ const MODEL_CATALOG = [
   {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
   // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
   {"id": "claude-haiku-4-5-20251001-welfare", "name": "【福利】Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
-  {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive"},
+  {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
   {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
   {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
   // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
   {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
-  {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
+  {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
   {"id": "gemini-3.1-flash-lite-welfare", "name": "Gemini 3.1 Flash Lite 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   // Google AI Studio free models
   {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
-  {"id": "gemini-3-flash-preview", "name": "Gemini 3 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "gemini-3-flash-preview", "name": "Gemini 3 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
   {"id": "gemma-4-31b-it", "name": "Gemma 4 31B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "gemma-4-26b-a4b-it", "name": "Gemma 4 26B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
