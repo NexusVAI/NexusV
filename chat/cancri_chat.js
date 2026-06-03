@@ -2459,7 +2459,7 @@ const MODEL_CATALOG = [
   {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
   // 2026-06-03: bluesminds 备用线路
   {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro 0603", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-  {"id": "glm-5.1", "name": "[采桑子]glm-5.1①", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+  {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
   {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
