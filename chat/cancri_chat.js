@@ -15213,6 +15213,26 @@ function getActiveModelDropdownTrigger() {
   return modelCurrentBtn;
 }
 
+function getFixedContainingBlock(el) {
+  let parent = el.parentElement;
+  while (parent) {
+    const cs = getComputedStyle(parent);
+    if (
+      cs.transform !== "none" ||
+      cs.filter !== "none" ||
+      cs.perspective !== "none" ||
+      (cs.backdropFilter && cs.backdropFilter !== "none") ||
+      (cs.webkitBackdropFilter && cs.webkitBackdropFilter !== "none") ||
+      cs.contain !== "none" ||
+      (cs.willChange && cs.willChange.includes("transform"))
+    ) {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
+}
+
 function positionModelDropdown(triggerEl) {
   if (!modelDropdown || !triggerEl) return;
 
@@ -15228,8 +15248,18 @@ function positionModelDropdown(triggerEl) {
   const spaceBelow = vh - rect.bottom;
   const openUp = spaceBelow < 280 && rect.top > 180;
 
-  let left = Math.round(rect.right - width);
-  left = Math.max(12, Math.min(left, vw - width - 12));
+  // Compensate for ancestors that establish a containing block for
+  // position:fixed (transform / backdrop-filter / filter / etc.)
+  const cb = getFixedContainingBlock(modelDropdown);
+  const cbRect = cb ? cb.getBoundingClientRect() : { left: 0, top: 0, right: vw, bottom: vh };
+  const cbStyle = cb ? getComputedStyle(cb) : null;
+  const cbLeft = cbRect.left + parseFloat(cbStyle?.borderLeftWidth || 0);
+  const cbTop = cbRect.top + parseFloat(cbStyle?.borderTopWidth || 0);
+  const cbRight = cbRect.right - parseFloat(cbStyle?.borderRightWidth || 0);
+  const cbBottom = cbRect.bottom - parseFloat(cbStyle?.borderBottomWidth || 0);
+
+  let left = Math.round(rect.right - width) - cbLeft;
+  left = Math.max(12, Math.min(left, cbRight - width - 12));
 
   setModelDropdownLayout("width", `${width}px`);
   setModelDropdownLayout("left", `${left}px`);
@@ -15239,18 +15269,21 @@ function positionModelDropdown(triggerEl) {
     setModelDropdownLayout("top", "auto");
     setModelDropdownLayout(
       "bottom",
-      `${Math.max(12, Math.round(vh - rect.top + 8))}px`,
+      `${Math.max(12, Math.round(cbBottom - rect.top + 8))}px`,
     );
     setModelDropdownLayout(
       "max-height",
-      `${Math.max(200, Math.round(rect.top - 24))}px`,
+      `${Math.max(200, Math.round(rect.top - 24 - cbTop))}px`,
     );
   } else {
     setModelDropdownLayout("bottom", "auto");
-    setModelDropdownLayout("top", `${Math.round(rect.bottom + 8)}px`);
+    setModelDropdownLayout(
+      "top",
+      `${Math.round(rect.bottom + 8 - cbTop)}px`,
+    );
     setModelDropdownLayout(
       "max-height",
-      `${Math.max(200, Math.round(spaceBelow - 16))}px`,
+      `${Math.max(200, Math.round(cbBottom - rect.bottom - 16))}px`,
     );
   }
 }
@@ -15592,6 +15625,11 @@ window.addEventListener("orientationchange", scheduleModelDropdownPositionSync);
 window
   .matchMedia("(max-width: 768px)")
   .addEventListener("change", scheduleModelDropdownPositionSync);
+// Auto-follow: keep dropdown anchored to trigger on page / chat scroll
+window.addEventListener("scroll", scheduleModelDropdownPositionSync, true);
+if (chatMessages) {
+  chatMessages.addEventListener("scroll", scheduleModelDropdownPositionSync, { passive: true });
+}
 updateThemeSwitcherActive();
 
 // 同步侧边栏主题标签
