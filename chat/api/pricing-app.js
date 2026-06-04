@@ -339,6 +339,26 @@ function renderPricingSubtitle() {
 // 当前选中的订单（用户点 plan-tier 或 topup-card 后填充）
 let selection = null; // { kind: 'subscription'|'topup', code: 'pro'|...|'topup_small'|... }
 
+// 2026-06-03 升级补差价预览：当前订阅有效且选了更高档 → 显示按剩余天数补差价的预览金额。
+// 与后端 handleSubmitPaymentOrder 同口径（原价做差、最低 ¥1）。仅预览，真实金额以提交后订单为准。
+let currentSub = null;
+const PLAN_RANK = { pro: 1, pro_plus: 2, pro_max: 3 };
+function planLabelOf(code) {
+    return code === "pro_plus" ? "Pro+" : (code === "pro_max" ? "Pro Max" : "Pro");
+}
+function computeUpgradePreview(planCode) {
+    if (!currentSub || currentSub.tier !== "paid" || !currentSub.plan_code) return null;
+    const cur = currentSub.plan_code;
+    if (!PLAN_RANK[cur] || !PLAN_RANK[planCode]) return null;
+    if (PLAN_RANK[planCode] <= PLAN_RANK[cur]) return null; // 同档/降档不是升级
+    const days = Math.max(1, Math.floor(Number(currentSub.days_remaining) || 0));
+    const tgt = Number((CLIENT_CATALOG.subscription[planCode] || {}).amount_original) || 0;
+    const curMonth = Number((CLIENT_CATALOG.subscription[cur] || {}).amount_original) || 0;
+    const prorated = ((tgt - curMonth) / 30) * days;
+    const amount = Math.max(1, Math.round(prorated * 100) / 100);
+    return { amount, days, fromLabel: planLabelOf(cur), toLabel: planLabelOf(planCode) };
+}
+
 async function getSession() {
     const { data: { session } } = await sb.auth.getSession();
     return session;
@@ -407,6 +427,7 @@ function paintTierBadge(subscription) {
 async function loadCurrentSubscription() {
     try {
         const r = await callGateway("get_my_subscription", {});
+        currentSub = r.subscription || null;
         paintTierBadge(r.subscription || {});
     } catch (e) {
         if (e.message === "not_logged_in") return;
@@ -435,16 +456,29 @@ function renderSelectedSummary() {
     }
     if (orderEmpty) orderEmpty.style.display = "none";
     if (formSection) formSection.style.display = "block";
-    if (qrAmount) qrAmount.textContent = "¥" + fmtPrice(catalog.amount);
+    // 2026-06-03：当前订阅有效且选了更高档 → 升级，按剩余天数补差价（预览金额）。
+    const upg = selection.kind === "subscription" ? computeUpgradePreview(selection.code) : null;
+    const payAmount = upg ? upg.amount : catalog.amount;
+    if (qrAmount) qrAmount.textContent = "¥" + fmtPrice(payAmount);
     if (card) {
-        const kindLabel = selection.kind === "subscription" ? "订阅" : "加油包";
-        const isDiscounted = selection.kind === "subscription"
+        const kindLabel = upg ? "升级（补差价）" : (selection.kind === "subscription" ? "订阅" : "加油包");
+        const isDiscounted = !upg && selection.kind === "subscription"
             && Number(catalog.discount) > 0 && Number(catalog.discount) < 1;
-        const priceCell = isDiscounted
-            ? '<span class="price-original" style="font-size:0.85em">¥' + esc(fmtPrice(catalog.amount_original)) + "</span>"
-              + "¥" + esc(fmtPrice(catalog.amount))
-              + ' <span class="price-discount-badge" style="font-size:0.55em">' + esc(discountLabel(Number(catalog.discount))) + "</span>"
-            : "¥" + esc(fmtPrice(catalog.amount));
+        const priceCell = upg
+            ? "¥" + esc(fmtPrice(upg.amount))
+            : (isDiscounted
+                ? '<span class="price-original" style="font-size:0.85em">¥' + esc(fmtPrice(catalog.amount_original)) + "</span>"
+                  + "¥" + esc(fmtPrice(catalog.amount))
+                  + ' <span class="price-discount-badge" style="font-size:0.55em">' + esc(discountLabel(Number(catalog.discount))) + "</span>"
+                : "¥" + esc(fmtPrice(catalog.amount)));
+        const upgradeNote = upg
+            ? '<div class="selected-summary__row">' +
+                  '<span class="selected-summary__label">升级说明</span>' +
+                  '<span class="selected-summary__value">立即生效，剩余 ' + esc(String(upg.days)) +
+                  " 天从 " + esc(upg.fromLabel) + " 升到 " + esc(upg.toLabel) +
+                  "，不延长到期日。最终金额以提交后订单为准。</span>" +
+              "</div>"
+            : "";
         card.innerHTML =
             '<div class="selected-summary__row">' +
                 '<span class="selected-summary__label">已选</span>' +
@@ -458,6 +492,7 @@ function renderSelectedSummary() {
                 '<span class="selected-summary__label">规格</span>' +
                 '<span class="selected-summary__value">' + esc(catalog.desc) + "</span>" +
             "</div>" +
+            upgradeNote +
             '<div class="selected-summary__row">' +
                 '<span class="selected-summary__label">应付金额</span>' +
                 '<span class="selected-summary__big">' + priceCell + "</span>" +
