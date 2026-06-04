@@ -6142,7 +6142,7 @@ const PLATFORM_KNOWLEDGE_BASE = {
   meta: {
     name: "NexusV / Cancri 开放平台",
     base_url:
-      "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway",
+      "https://chat.nexusvai.xyz/functions/v1/api-gateway",
     docs_url: "https://www.nexusvai.xyz/chat/api_docs.html",
     models_url: "https://www.nexusvai.xyz/chat/api_models.html",
     pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
@@ -6283,7 +6283,7 @@ const PLATFORM_KNOWLEDGE_BASE = {
       site: "https://github.com/openai/codex",
       config_path: "~/.codex/config.toml",
       base_url:
-        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1",
+        "https://chat.nexusvai.xyz/functions/v1/api-gateway/v1",
       wire_api: "responses（默认）或 chat（兼容性更好）",
       env_key: "CANCRI_API_KEY",
       recommended_models: ["gpt-5.3-codex", "gpt-5.4"],
@@ -6292,7 +6292,7 @@ const PLATFORM_KNOWLEDGE_BASE = {
       name: "Claude Code",
       site: "https://github.com/anthropics/claude-code",
       env_ANTHROPIC_BASE_URL:
-        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway",
+        "https://chat.nexusvai.xyz/functions/v1/api-gateway",
       env_ANTHROPIC_API_KEY: "cancri_sk_...（推荐，走 x-api-key 头）",
       env_ANTHROPIC_AUTH_TOKEN_note:
         "ANTHROPIC_API_KEY 比 ANTHROPIC_AUTH_TOKEN 稳，避开 anthropics/claude-code#39013 的 Authorization 头偶尔不发送的 bug",
@@ -6307,14 +6307,14 @@ const PLATFORM_KNOWLEDGE_BASE = {
       site: "https://github.com/sst/opencode",
       config_path: "~/.config/opencode/opencode.json",
       base_url:
-        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1",
+        "https://chat.nexusvai.xyz/functions/v1/api-gateway/v1",
       provider_npm: "@ai-sdk/openai-compatible",
     },
     {
       name: "OpenClaw",
       site: "https://github.com/openclaw/openclaw",
       env_ANTHROPIC_BASE_URL:
-        "https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway",
+        "https://chat.nexusvai.xyz/functions/v1/api-gateway",
       env_ANTHROPIC_AUTH_TOKEN: "cancri_sk_...",
     },
   ],

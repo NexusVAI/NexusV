@@ -886,7 +886,7 @@
           <div class="endpoint">
             <span style="color: var(--text-mute)">Base URL：</span>
             <span id="base-url"
-              >https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</span
+              >https://chat.nexusvai.xyz/functions/v1/api-gateway</span
             >
             <button class="copy-icon" data-copy-text="base-url">复制</button>
           </div>
@@ -947,14 +947,14 @@
             </div>
             <button class="copy-icon" data-copy-grp="qs">复制</button>
             <pre class="lang active" data-grp="qs" data-lang="curl"><span class="c"># 列出可用模型（不消耗额度）</span>
-curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/models \
+curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/models \
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
             <pre class="lang" data-grp="qs" data-lang="js"><span class="c">// 用官方 openai 包，把 baseURL 指过来即可</span>
 <span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
 
 <span class="k">const</span> client = <span class="k">new</span> OpenAI({
   apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
-  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+  baseURL: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
 });
 
 <span class="k">const</span> r = <span class="k">await</span> client.chat.completions.create({
@@ -967,7 +967,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
 
 client = OpenAI(
     api_key=<span class="s">"cancri_sk_YOUR_KEY"</span>,
-    base_url=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+    base_url=<span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
 )
 
 r = client.chat.completions.create(
@@ -995,7 +995,7 @@ r = client.chat.completions.create(
               </button>
             </div>
             <button class="copy-icon" data-copy-grp="m">复制</button>
-            <pre class="lang active" data-grp="m" data-lang="req">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/models \
+            <pre class="lang active" data-grp="m" data-lang="req">curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/models \
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span></pre>
             <pre class="lang" data-grp="m" data-lang="resp">{
   <span class="s">"object"</span>: <span class="s">"list"</span>,
@@ -1100,7 +1100,7 @@ r = client.chat.completions.create(
               </button>
             </div>
             <button class="copy-icon" data-copy-grp="c1">复制</button>
-            <pre class="lang active" data-grp="c1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+            <pre class="lang active" data-grp="c1" data-lang="curl">curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions \
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{
@@ -1157,7 +1157,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
               </button>
             </div>
             <button class="copy-icon" data-copy-grp="c2">复制</button>
-            <pre class="lang active" data-grp="c2" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+            <pre class="lang active" data-grp="c2" data-lang="curl">curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions \
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -N \
@@ -1262,7 +1262,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
               <button class="code-tab" data-grp="msg1" data-lang="resp">响应</button>
             </div>
             <button class="copy-icon" data-copy-grp="msg1">复制</button>
-            <pre class="lang active" data-grp="msg1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/messages \
+            <pre class="lang active" data-grp="msg1" data-lang="curl">curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/messages \
   -H <span class="s">"x-api-key: cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"anthropic-version: 2023-06-01"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
@@ -1277,7 +1277,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
 
 <span class="k">const</span> client = <span class="k">new</span> Anthropic({
   apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
-  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>,
+  baseURL: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>,
 });
 
 <span class="k">const</span> r = <span class="k">await</span> client.messages.create({
@@ -1292,7 +1292,7 @@ console.log(r.content[<span class="n">0</span>].text);</pre>
 
 client = Anthropic(
     api_key=<span class="s">"cancri_sk_YOUR_KEY"</span>,
-    base_url=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>,
+    base_url=<span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>,
 )
 
 r = client.messages.create(
@@ -1400,7 +1400,7 @@ r = client.messages.create(
               <button class="code-tab" data-grp="rsp1" data-lang="resp">响应</button>
             </div>
             <button class="copy-icon" data-copy-grp="rsp1">复制</button>
-            <pre class="lang active" data-grp="rsp1" data-lang="curl">curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/responses \
+            <pre class="lang active" data-grp="rsp1" data-lang="curl">curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/responses \
   -H <span class="s">"Authorization: Bearer cancri_sk_YOUR_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{
@@ -1416,7 +1416,7 @@ r = client.messages.create(
 
 <span class="k">const</span> client = <span class="k">new</span> OpenAI({
   apiKey: <span class="s">"cancri_sk_YOUR_KEY"</span>,
-  baseURL: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+  baseURL: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
 });
 
 <span class="k">const</span> r = <span class="k">await</span> client.responses.create({
@@ -1463,7 +1463,7 @@ model_provider = <span class="s">"cancri"</span>
 
 [model_providers.cancri]
 name = <span class="s">"Cancri"</span>
-base_url = <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>
+base_url = <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>
 wire_api = <span class="s">"responses"</span>
 env_key = <span class="s">"CANCRI_API_KEY"</span></pre>
           </div>
@@ -1486,7 +1486,7 @@ codex</pre>
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-claude">复制</button>
-            <pre class="lang active" data-grp="cli-claude" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>
+            <pre class="lang active" data-grp="cli-claude" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>
 <span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
 claude</pre>
           </div>
@@ -1513,7 +1513,7 @@ claude</pre>
       <span class="s">"npm"</span>: <span class="s">"@ai-sdk/openai-compatible"</span>,
       <span class="s">"name"</span>: <span class="s">"Cancri"</span>,
       <span class="s">"options"</span>: {
-        <span class="s">"baseURL"</span>: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+        <span class="s">"baseURL"</span>: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
         <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
       },
       <span class="s">"models"</span>: {
@@ -1537,7 +1537,7 @@ claude</pre>
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-openclaw-anth">复制</button>
-            <pre class="lang active" data-grp="cli-openclaw-anth" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway"</span>
+            <pre class="lang active" data-grp="cli-openclaw-anth" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>
 <span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
 openclaw agent</pre>
           </div>
@@ -1551,7 +1551,7 @@ openclaw agent</pre>
   <span class="s">"providers"</span>: {
     <span class="s">"cancri-openai"</span>: {
       <span class="s">"type"</span>: <span class="s">"openai"</span>,
-      <span class="s">"baseURL"</span>: <span class="s">"https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1"</span>,
+      <span class="s">"baseURL"</span>: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
       <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
     }
   }
@@ -1569,7 +1569,7 @@ openclaw agent</pre>
             <button class="copy-icon" data-copy-grp="cli-aider">复制</button>
             <pre class="lang active" data-grp="cli-aider" data-lang="sh">aider \
   --model openai/gpt-5.4 \
-  --openai-api-base https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1 \
+  --openai-api-base https://chat.nexusvai.xyz/functions/v1/api-gateway/v1 \
   --openai-api-key cancri_sk_YOUR_KEY</pre>
           </div>
           <p>
@@ -1578,7 +1578,7 @@ openclaw agent</pre>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-aider-yml">复制</button>
             <pre class="lang active" data-grp="cli-aider-yml" data-lang="yaml">model: openai/gpt-5.4
-openai-api-base: https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1
+openai-api-base: https://chat.nexusvai.xyz/functions/v1/api-gateway/v1
 openai-api-key: cancri_sk_YOUR_KEY</pre>
           </div>
           <div class="alert info">
@@ -1606,7 +1606,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                 <ul>
                   <li><strong>服务商名称：</strong> <code>Cancri</code></li>
                   <li><strong>API Key (密钥)：</strong> 填入你的 <code>cancri_sk_YOUR_KEY</code></li>
-                  <li><strong>API 地址 (Endpoint)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code> (注意：末尾必须带上 <code>/v1</code>)</li>
+                  <li><strong>API 地址 (Endpoint)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code> (注意：末尾必须带上 <code>/v1</code>)</li>
                 </ul>
               </li>
               <li>点击 <strong>管理模型</strong> 或 <strong>刷新模型</strong> 按钮，Cherry Studio 将自动访问 <code>/v1/models</code> 并获取全量支持的模型列表，无需手动一个个输入！</li>
@@ -1627,7 +1627,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <li>在下方输入框中配置：
                 <ul>
                   <li><strong>API Key：</strong> 填入你的 <code>cancri_sk_YOUR_KEY</code></li>
-                  <li><strong>Custom Endpoint (逆向API地址/基址)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code> (注意结尾必须带 <code>/v1</code> 且不能多出额外的斜杠)</li>
+                  <li><strong>Custom Endpoint (逆向API地址/基址)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code> (注意结尾必须带 <code>/v1</code> 且不能多出额外的斜杠)</li>
                 </ul>
               </li>
               <li>点击右侧的 <strong>Connect (连接)</strong> 按钮。</li>
@@ -1649,7 +1649,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <li>填入配置信息：
                 <ul>
                   <li><strong>Provider Name (名称)：</strong> <code>Cancri</code></li>
-                  <li><strong>Base URL (地址)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code></li>
+                  <li><strong>Base URL (地址)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code></li>
                   <li><strong>API Key：</strong> <code>cancri_sk_YOUR_KEY</code></li>
                 </ul>
               </li>
@@ -1670,7 +1670,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <li>配置对应字段：
                 <ul>
                   <li><strong>API 密钥 (API Key)：</strong> 你的 <code>cancri_sk_YOUR_KEY</code></li>
-                  <li><strong>API 域名 (API Host/Base URL)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code></li>
+                  <li><strong>API 域名 (API Host/Base URL)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code></li>
                 </ul>
               </li>
               <li>在 <strong>模型 (Model)</strong> 输入框中填入你想默认调用的模型 ID，或者点击刷新加载列表。</li>
@@ -1691,7 +1691,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                 <ul>
                   <li>将开关切换为 <strong>开启 (Enabled)</strong>。</li>
                   <li><strong>API 密钥 (API Key)：</strong> 输入你的 <code>cancri_sk_YOUR_KEY</code></li>
-                  <li><strong>接口代理地址 (Base URL)：</strong> <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code></li>
+                  <li><strong>接口代理地址 (Base URL)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code></li>
                 </ul>
               </li>
               <li>LobeChat 将通过内置机制验证并展现所有支持的模型列表。直接选中你常挂载的模型即可开始沉浸式对话。</li>
@@ -2452,7 +2452,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <ul>
             <li>
               <code>baseURL</code> / <code>OPENAI_BASE_URL</code> →
-              <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1</code>
+              <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code>
             </li>
             <li>
               <code>apiKey</code> / <code>OPENAI_API_KEY</code> →
@@ -2472,7 +2472,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <ul>
             <li>
               <code>baseURL</code> / <code>ANTHROPIC_BASE_URL</code> →
-              <code>https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway</code>
+              <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>
               <span style="color: var(--text-faint)">（Anthropic SDK 自带 <code>/v1</code> 后缀，不要重复加）</span>
             </li>
             <li>
