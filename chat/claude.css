@@ -340,10 +340,12 @@ body {
 /* nav rows */
 .sidebar-body {
     padding: 4px 8px 8px !important;
-    max-height: calc(100vh - 40px - 90px) !important;
 }
 .nav-group {
     gap: 1px !important;
+    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
 }
 .nav-row {
     height: 34px !important;
