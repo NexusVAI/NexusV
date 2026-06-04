@@ -1676,6 +1676,7 @@ const PAID_GATE_IDS = new Set([
   "kimi-k2.6",
   "gpt-image-2-all",
   "gpt-image-2-pro",
+  "gpt-image-2",
   "claude-haiku-4-5-20251001",
   "claude-haiku-4-5-20251001-thinking",
   "claude-opus-4-7-special",
@@ -1699,6 +1700,7 @@ const FREE_USER_BLOCKED_GATE_IDS = new Set([
   "gemini-3.1-pro",
   "gpt-image-2-all",
   "gpt-image-2-pro",
+  "gpt-image-2",
   "claude-opus-4-7-special",
   "doubao-seed-2.0-pro",
   // 2026-06-03: 退出福利档，free 用户硬挡。
@@ -2439,6 +2441,7 @@ const MODEL_CATALOG = [
   {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
   {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
   {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
+  {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
   {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
   {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
   {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
