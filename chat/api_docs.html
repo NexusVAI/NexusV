@@ -795,6 +795,8 @@
         <h4>规则与参考</h4>
         <a href="#quota">免费档配额</a>
         <a href="#quota-renewal-edge-cases"> └ 升级/续期边缘情况</a>
+        <a href="#quota-token-window"> └ 免费用户 Token 窗口</a>
+        <a href="#quota-anti-freeloading">防滥用体系（白嫖防御）</a>
         <a href="#ratelimit">速率限制</a>
         <a href="#errors">错误码</a>
         <a href="#sdk">SDK 兼容</a>
@@ -1782,6 +1784,14 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               也不扣共享池。判定基于 HTTP 状态码（statusCode ≥ 400），不读取上游错误文本。
             </li>
             <li>
+              <b>滚动 Token 窗口限制：</b> 所有 FREE 用户额外受两层时间窗口限制：
+              5 小时内累计 ≤ <b>100,000 token</b>，
+              7 天内累计 ≤ <b>500,000 token</b>（含所有模型、网页+API 合计）。
+              任一窗口超限返回 <code>429 token_window_5h_exceeded</code> 或
+              <code>token_window_week_exceeded</code>。PAID 用户不受影响。
+              详见 <a href="#quota-token-window">Token 窗口</a>。
+            </li>
+            <li>
               <b>GPT-5.5 / GPT-5.4 Mini 例外：</b> <code>gpt-5.5</code> /
               <code>gpt-5.5-high</code> / <code>gpt-5.4-mini</code> 是 Pro 以上专属，
               FREE 用户调用直接返回 <code>403 model_pro_required</code>，
@@ -1910,7 +1920,13 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
     "remaining": 11
   },
   "subscription": { "tier": "free", "plan_code": null,
-                    "expires_at": null, "days_remaining": 0 }
+                    "expires_at": null, "days_remaining": 0 },
+  "token_window": {
+    "used_5h": 42000,
+    "limit_5h": 100000,
+    "used_week": 185000,
+    "limit_week": 500000
+  }
 }</code></pre>
           </div>
           <p>响应（PAID 用户 — Pro+ 为例）：</p>
@@ -1933,7 +1949,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
   "daily_paid": { /* 全 0，PAID 用户不走此闸 */ },
   "subscription": { "tier": "paid", "plan_code": "pro_plus",
                     "expires_at": "...", "days_remaining": 28,
-                    "is_grandfathered": false }
+                    "is_grandfathered": false },
+  "token_window": null  // PAID 用户不受 token 窗口限制
 }</code></pre>
           </div>
           <p>响应（Phase A 老用户 — Pro 但保留 Opus 访问）：</p>
@@ -1995,9 +2012,29 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <p style="color: var(--text-faint); font-size: 12.5px">
               为什么这样设计？① 补差价保证不亏本也不送钱：你付的正是「把剩余时间从低档抬到高档」的差价；
               ② 不加时长 → 不存在用升级变相买便宜时长，也<b>不受 90 天上限影响</b>；
-              ③ 已用量不清零 + 禁止降级 → 无法靠升降档刷配额。
-              两个边界：升级时订阅已过期返回 <code>upgrade_requires_active_subscription</code>（请改买新订阅）；
-              当前档已 ≥ 目标档返回 <code>upgrade_not_applicable</code>。
+              ③ 已用量不清零 + 禁止降级 → 无法靠升降档刷配额；
+              ④ <b>升级后配额也按比例折算</b>（不是直接给满额）：
+              <code>新配额 = CEIL(目标档满配额 × 剩余天数 / 30)</code>。
+              例如 Pro 升 Pro+ 剩 20 天：8000 万 × 20/30 ≈ 5334 万，而不是 8000 万
+              —— 防止「临近到期时低价升级薅满配额」。
+            </p>
+            <p>
+              <b>两个边界：</b> 升级时订阅已过期 → 返回 <code>upgrade_requires_active_subscription</code>（请改买新订阅）；
+              当前档已 ≥ 目标档 → 返回 <code>upgrade_not_applicable</code>。
+            </p>
+          </div>
+
+          <div class="faq-item">
+            <h4>1b. 剩余天数不足 7 天时还能补差价升级吗？</h4>
+            <p>
+              <b>不能。</b> 系统要求剩余 ≥ <b>7 天</b>才允许走补差价（proration）升级路径。
+              如果剩余天数 &lt; 7 天，你必须<b>按目标档全价购买新订阅</b>（会提档 + 顺延 30 天）。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              为什么设 7 天最低门槛？防止「鸽到临到期再低价升级」的白嫖策略：
+              如果不设门槛，用户可以在到期前 1 天花几块钱把 Pro 升到 Pro Max，
+              立即获得 3 亿配额用完即弃 —— 相当于花几块钱买了 3 亿 token 的「天卡」。
+              7 天门槛确保升级用户至少承担一周的高档成本，避免这种套利。
             </p>
           </div>
 
@@ -2080,6 +2117,54 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </p>
           </div>
 
+          <h3 id="quota-token-window">免费用户滚动 Token 窗口（2026-06-03 上线）</h3>
+          <p>
+            <b>所有 FREE 用户</b>（网页聊天 + API Key 调用）额外受两层滚动时间窗口限制，
+            防止单用户无限制薅 token。两层窗口<b>同时生效</b>，任一触发即返回 429：
+          </p>
+          <table>
+            <thead>
+              <tr><th>窗口</th><th>上限</th><th>含义</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>5 小时窗口</b></td>
+                <td><b>100,000 token</b></td>
+                <td>过去 5 小时内该用户累计消耗的 token 总数（input + output，含所有模型）。超过即拦截，冷却到窗口滑出。</td>
+              </tr>
+              <tr>
+                <td><b>7 天窗口</b></td>
+                <td><b>500,000 token</b></td>
+                <td>过去 7 天内该用户累计消耗的 token 总数。超过即拦截，冷却到窗口滑出。</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            <b>如何计算：</b> 每次成功调用结束后，实际消耗的 token（<code>effective_pool_tokens × 模型权重</code>）
+            写入 <code>free_user_token_window</code> 表。后续每次新请求前，系统 SUM 窗口内的记录与上限比对。
+            失败调用（上游 4xx/5xx）不计入窗口。
+          </p>
+          <p>
+            <b>PAID 用户不受影响：</b> 订阅用户完全跳过此检查，token 窗口仅针对 FREE tier。
+            升级到 Pro 即可解除。
+          </p>
+          <div class="faq-item">
+            <h4>为什么设 5h / 7d 两层？</h4>
+            <p>
+              5 小时窗口拦截「短时间狂刷」：防止用户脚本在几小时内消耗数十万 token；
+              7 天窗口拦截「慢速持续薅」：防止用户每天少量调用、一周累计超过 50 万 token。
+              双层叠加堵住了「打一枪换一个地方」和「细水长流」两种白嫖策略。
+            </p>
+          </div>
+          <div class="faq-item">
+            <h4>触达上限后多久恢复？</h4>
+            <p>
+              窗口是<b>滚动</b>的，不是固定时间点重置。例如 5h 窗口在 14:00 被拦截，
+              你需要等到最早那笔记录滑出窗口（约 19:00 后）才能恢复。7 天窗口同理，
+              最早记录满 7 天后自动过期。没有「定时清零」，全靠时间自然滚动。
+            </p>
+          </div>
+
           <h3>错误码速查（配额相关）</h3>
           <table>
             <thead>
@@ -2131,12 +2216,225 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
                 <td>该模型仅 Pro Max 订阅可用（如 <code>gpt-image-2-pro</code>）</td>
               </tr>
               <tr>
+                <td>429</td>
+                <td><code>token_window_5h_exceeded</code></td>
+                <td>FREE 用户过去 5 小时内 token 用量已达 100,000 上限，等待最早记录滑出窗口后恢复。升级 Pro 解除</td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td><code>token_window_week_exceeded</code></td>
+                <td>FREE 用户过去 7 天内 token 用量已达 500,000 上限，等待最早记录滑出窗口后恢复。升级 Pro 解除</td>
+              </tr>
+              <tr>
                 <td>503</td>
                 <td><code>quota_check_failed</code></td>
                 <td>配额服务暂不可用（DB 异常）。这种情况下用户被保守拒绝，请稍后重试</td>
               </tr>
             </tbody>
           </table>
+        </section>
+
+        <section id="quota-anti-freeloading">
+          <h2>防滥用体系（白嫖防御）</h2>
+          <p>
+            Cancri 的免费档设计原则是「对正常用户足够用，对白嫖用户层层设卡」。
+            以下汇总所有已上线的防滥用机制，每一层都是独立防线，
+            绕过一层还有下一层。想白嫖？先过这 13 关。
+          </p>
+
+          <h3>第一层：全站共享池（总量封顶）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              所有 FREE 用户共享每月 <b>1 亿 token</b> 预算（按 effective_pool_tokens 计，即折算后扣池量）。
+              池子耗尽 → 当月所有 FREE 用户全部拦截（<code>429 free_pool_exhausted</code>），
+              下月 1 号 00:00 UTC+8 重置。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止 FREE 用户集体把平台成本吃爆。即使单个用户行为正常，
+              全站 FREE 总量也有硬上限，平台成本可控。
+            </p>
+          </div>
+
+          <h3>第二层：每日 15 次 PAID 模型试用（频次封顶）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              每个 FREE 用户每天最多 <b>15 次</b> 成功调用 PAID 模型（如 GPT-5.4、Claude Sonnet 4.6 等）。
+              用满返回 <code>429 daily_paid_limit_reached</code>，次日 00:00 UTC+8 重置。
+              失败调用（上游 4xx/5xx）不计入次数、自动 refund。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止单个 FREE 用户一天内对 PAID 模型发起数百次调用。
+              15 次足够日常尝鲜体验，但不够用于批量任务或自动化脚本。
+            </p>
+          </div>
+
+          <h3>第三层：5 小时 Token 窗口（短时爆量封顶）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              过去 5 小时内累计消耗 token 超过 <b>100,000</b> → 拦截（<code>429 token_window_5h_exceeded</code>）。
+              窗口是滚动的，不是固定时间点重置。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止用户在几小时内用脚本狂刷。即使没到每日 15 次上限
+              （每次只消耗少量 token），token 总量也会触发此闸。
+            </p>
+          </div>
+
+          <h3>第四层：7 天 Token 窗口（慢速持续薅封顶）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              过去 7 天内累计消耗 token 超过 <b>500,000</b> → 拦截（<code>429 token_window_week_exceeded</code>）。
+              与 5h 窗口同时生效，任一触发即拦截。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：堵住「每天少量调用，一周累计超额」的细水长流策略。
+              5h 窗口管短时爆量，7d 窗口管长期持续薅。
+            </p>
+          </div>
+
+          <h3>第五层：速率限制（频率封顶）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              FREE 用户：10 次/分钟、60 次/小时、1000 次/天、2 并发。
+              详见 <a href="#ratelimit">速率限制</a> 章节。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止单用户高频撞击 API。即使 token 量不大，
+              高频率请求本身也会消耗服务器资源。
+            </p>
+          </div>
+
+          <h3>第六层：模型通道排队（并发挤兑封顶）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              每个模型最多同时服务 <b>3 个 FREE 用户</b>。第 4 个 FREE 用户起进入排队，
+              等前面的完成后才能开始。PAID 用户不参与排队，直通。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止热门模型被 FREE 用户集体挤兑，导致所有 FREE 用户都卡住。
+              同时也给 PAID 用户一个明显的体验差异（不排队 vs 排队）。
+            </p>
+          </div>
+
+          <h3>第七层：福利模型全局 RPM 限制</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              标记为「福利」的免费模型（如 GLM Flash、DeepSeek V3.1 等），
+              全站每分钟合计最多 <b>100 次</b>调用（<code>WELFARE_GLOBAL_RPM_MAX</code>）。
+              超限后该分钟内所有福利模型请求 429，下一分钟自动恢复。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：福利模型虽然 token 便宜，但调用次数多了仍然有成本。
+              100 RPM 全局上限保证平台不会因为福利模型被刷爆。
+            </p>
+          </div>
+
+          <h3>第八层：升级补差价（杜绝「低价升档薅配额」）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              有效期内从低档升到高档，必须<b>按剩余天数补差价</b>：
+              <code>(目标档月价 − 当前档月价) ÷ 30 × 剩余天数</code>（最低 ¥1）。
+              升级<b>不延长到期日、不重置已用量</b>。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：旧实现把「升级」当成续期处理，用户已付的低档剩余天数被免费抬成高档 → 送钱。
+              补差价机制确保升级只改档位、不加时长，不存在「花 Pro 的钱享 Pro Max 的权」。
+            </p>
+          </div>
+
+          <h3>第九层：升级配额按比例折算（杜绝「临到期低价薅满配额」）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              升级后获得的月度配额不是目标档的满额，而是<b>按剩余天数比例折算</b>：
+              <code>新配额 = CEIL(目标档满配额 × 剩余天数 / 30)</code>。
+              例如剩 10 天的 Pro 升 Pro Max：3 亿 × 10/30 = 1 亿（而非 3 亿）。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：如果不折算，用户可以在到期前 1 天花几块钱升到 Pro Max，
+              立即获得 3 亿配额用完即弃。折算后配额与付出的差价成正比。
+            </p>
+          </div>
+
+          <h3>第十层：升级最低剩余天数守卫（7 天门槛）</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              剩余天数 <b>&lt; 7 天</b>时，不能走补差价升级路径。
+              必须按目标档全价购买新订阅（提档 + 顺延 30 天）。
+              DB 端 <code>cancri_activate_paid_code_v2</code> 有同款硬拒兜底。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止「鸽到临到期再低价升级」—— 即使上面配额折算已经限制了收益，
+              但如果剩余 1-2 天时升级，折算后的配额/价格比仍然可能异常划算。
+              7 天门槛确保升级用户至少承担一周的高档成本。
+            </p>
+          </div>
+
+          <h3>第十一层：禁止有效期内降级续期</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              当前订阅有效时，不能用低档激活码延长权益。
+              例如 Pro+ 有效期内买 Pro 码 → 返回 <code>subscription_plan_downgrade_not_allowed</code>。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止「降档套利」—— 先用 Pro+ 享受 Opus 和 8000 万额度，
+              再用便宜的 Pro 码延长有效期，花 Pro 的钱享 Pro+ 的权。
+            </p>
+          </div>
+
+          <h3>第十二层：90 天续期上限</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              单次续期后，如果新的到期日超过「当前时间 + 90 天」，
+              系统拒绝并返回 <code>subscription_max_horizon_exceeded</code>。
+              升级不受此限制（升级不加时长）。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止用户一次性囤大量激活码把有效期拉到几年后，
+              导致平台现金流和运营预测困难。也防止用户趁促销期大量囤货。
+            </p>
+          </div>
+
+          <h3>第十三层：多账号检测与风控</h3>
+          <div class="faq-item">
+            <h4>怎么挡？</h4>
+            <p>
+              后台通过<b>设备指纹</b>（visitorId、WebRTC IP 泄露、时区/语言、屏幕分辨率、
+              UA、硬件配置等）和 <b>IP 维度</b>（同 IP 多账号）检测多账号嫌疑。
+              同设备/同 IP/同邮箱/同 QQ 的多个账号会被标记风险，
+              管理员可在订单审核时据此拒绝可疑订单。
+            </p>
+            <p style="color: var(--text-faint); font-size: 12.5px">
+              防御目标：防止用户通过注册多个 FREE 账号来绕过每日 15 次限制、
+              token 窗口限制和速率限制。多账号行为会被设备指纹交叉关联。
+            </p>
+          </div>
+
+          <h3>总结：白嫖成本</h3>
+          <p>
+            以上 13 层防线叠加后，一个 FREE 用户的理论最大白嫖量：
+          </p>
+          <ul>
+            <li><b>单日：</b> 15 次 PAID 模型调用，且总 token 不超 5h/100K + 7d/500K 窗口</li>
+            <li><b>单月：</b> 共享池 1 亿 token 中抢到的那一份（先到先得，池子耗尽即停）</li>
+            <li><b>多账号：</b> 设备指纹 + IP 关联可被检测，管理后台可见风险标记</li>
+            <li><b>升级套利：</b> 补差价 + 配额折算 + 7 天门槛三重封锁，不存在低价薅满配额路径</li>
+          </ul>
+          <p>
+            <b>底线：</b> 如果以上限制仍然不够你用，说明你的用量已经远超「免费尝鲜」范畴
+            —— 这正是付费订阅存在的意义。Pro ¥9.9/月起，解除以上所有限制。
+          </p>
         </section>
 
         <section id="ratelimit">
@@ -2532,6 +2830,18 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             限流阈值会自动按你当前档位生效。Paid 到期后会自动降回 Free，
             <code>cancri_sk_</code> 本身不会失效。
           </p>
+          <p>
+            <b>升级补差价：</b> 如果你已有有效订阅，想从 Pro 升到 Pro+ 或 Pro Max，
+            不需要付全价。系统会自动计算差价：
+            <code>(目标档月价 − 当前档月价) ÷ 30 × 剩余天数</code>（最低 ¥1）。
+            升级后到期日不变、已用配额不清零、新配额按剩余天数比例折算。
+            详见 <a href="#quota-renewal-edge-cases">升级/续期边缘情况</a>。
+          </p>
+          <p>
+            <b>续费叠加：</b> 同档续期只需付原价（¥9.9 / ¥29 / ¥99），有效期延长 30 天，
+            配额不重置（等当前 30 天周期自然结束后懒重置）。最高可续到 90 天后。
+            详见 <a href="#quota-anti-freeloading">防滥用体系</a>。
+          </p>
           <p style="color: var(--text-faint); font-size: 12.5px">
             <b>注意：</b>当前订阅仍在有效期内时，不能用低档套餐（如 Pro）的激活码来延长高档权益（如 Pro+）。
             系统会返回 <code>subscription_plan_downgrade_not_allowed</code>。
@@ -2555,7 +2865,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <h3>计费怎么算？</h3>
           <p>
             后台实计费按 <code>effective_pool_tokens × 模型权重</code> 扣减（见上面「模型权重表」）：
-            <b>Free 档免费</b>使用全站 1亿/月共享池 + 个人每日 15 次 PAID 试用；
+            <b>Free 档免费</b>使用全站 1亿/月共享池 + 个人每日 15 次 PAID 试用 +
+            5h 滚动窗口 100K token + 7d 滚动窗口 500K token；
             <b>Pro ¥9.9 / 30 天订阅周期</b> 个人周期配额 2000 万 token，
             <b>Pro+ ¥29 / 30 天订阅周期</b> 8000 万 token + Claude Opus，
             <b>Pro Max ¥99 / 30 天订阅周期</b> 3 亿 token + 视频图像优先，加油包 ¥10 起永不过期，见
