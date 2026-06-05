@@ -804,8 +804,11 @@ html[data-theme="black"] .auth-overlay {
     border: 1px solid hsl(var(--border-300) / 0.18);
     border-radius: 16px;
     overflow: hidden;
-    align-self: stretch;
-    /* GPU 合成层提升，避免 video 重绘时回流左列 stage */
+    align-self: center;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    /* GPU 合成层提升，避免重绘时回流左列 stage */
     transform: translateZ(0);
     will-change: transform;
     box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
@@ -818,26 +821,65 @@ html[data-theme="light"] .auth-showcase {
     box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
 }
 
-.auth-showcase-video {
+.auth-showcase-poster {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
     display: block;
-    border-radius: inherit;
-    /* 视频本身没有 alpha，container border-radius 已 overflow:hidden，
-       这里 border-radius: inherit 是双保险（兼容旧版浏览器 overflow 裁剪边角的 bug）。 */
 }
 
-/* mobile：< 880px 退化为单列 + 隐藏 showcase，让 .auth-stage 独占视口 */
+.auth-mobile-poster {
+    display: none;
+    width: min(88vw, 340px);
+    max-width: 340px;
+    margin-top: 20px;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid hsl(var(--border-300) / 0.18);
+    box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
+    flex-shrink: 0;
+}
+
+.auth-mobile-poster-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+/* mobile：< 880px 退化为单列 + 隐藏 showcase，左列底部展示 16:9 海报 */
 @media (max-width: 880px) {
     .auth-overlay {
         grid-template-columns: 1fr;
         padding: 0;
         gap: 0;
+        overflow-y: auto;
+        align-items: flex-start;
     }
     .auth-showcase {
         display: none;
+    }
+    .auth-mobile-poster {
+        display: block;
+    }
+    .auth-stage {
+        padding-bottom: 32px;
+    }
+}
+
+@media (max-width: 520px) {
+    .auth-mobile-poster {
+        width: min(92vw, 300px);
+        max-width: 300px;
+        margin-top: 16px;
     }
 }
 
