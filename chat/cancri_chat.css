@@ -397,7 +397,6 @@ svg {
     flex-direction: column;
     overflow: hidden;
     padding: 2px 6px 8px;
-    max-height: calc(100vh - var(--header-h) - 140px);
 }
 
 .nav-group {
@@ -924,6 +923,7 @@ svg {
 }
 
 .sidebar-footer {
+    margin-top: auto;
     padding: 12px 10px;
     border-top: 1px solid var(--line);
     flex-shrink: 0;

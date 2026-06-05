@@ -2005,9 +2005,11 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 }
 /* sidebar-footer 简化：只保留 account-strip */
 .sidebar-footer {
+    margin-top: auto !important;
     border-top: 1px solid var(--c-line) !important;
     padding: 10px !important;
     background: transparent !important;
+    flex-shrink: 0 !important;
 }
 
 /* ───────────────────────────────────────────────────────────

@@ -3852,32 +3852,48 @@ function getSupabaseClient() {
   return supabaseClient;
 }
 
-// 2026-05-18 fix(图 5)：登录视频残留触发 Chrome Global Media Controls
-// （顶部"实时字幕 / 窗口画中画 / X"工具条）。原 hideAuthOverlay 只 pause +
-// removeAttribute('src') + load()，video 元素仍挂在 DOM 中、MediaSession
-// 仍记录其元数据，Chrome 会保持 1~5s 控件可见甚至更久（取决于浏览器版本）。
-// 修：登录成功后整体移除 .auth-showcase-video DOM 节点；下次 showAuthOverlay
-// 若节点缺失就按规格重建（loop / muted / playsinline / preload="none" +
-// disablePictureInPicture / disableRemotePlayback）。彻底切断 MediaSession。
-function _ensureAuthShowcaseVideo(overlay) {
-  if (!overlay) return null;
-  let video = overlay.querySelector(".auth-showcase-video");
-  if (video instanceof HTMLVideoElement) return video;
-  const showcase = overlay.querySelector(".auth-showcase");
-  if (!showcase) return null;
-  video = document.createElement("video");
-  video.className = "auth-showcase-video";
-  video.dataset.src = "./cowork-login-hero-light.webm";
-  video.loop = true;
-  video.muted = true;
-  video.playsInline = true;
-  video.preload = "none";
-  video.disablePictureInPicture = true;
-  // disableRemotePlayback 是 HTMLMediaElement 标准属性（Chrome 49+ / Safari 13.1+），
-  // 部分老 Firefox 不识别但不报错。set 后浏览器不会把元素加入 Cast / AirPlay 列表。
-  try { video.disableRemotePlayback = true; } catch (_e) {}
-  showcase.appendChild(video);
-  return video;
+let authLoginMode = "otp";
+let authOtpSent = false;
+
+function applyAuthSecretInputMode(mode) {
+  const secretInput = document.getElementById("authPasswordInput");
+  if (!secretInput) return;
+  if (mode === "password") {
+    secretInput.type = "password";
+    secretInput.placeholder = "请输入密码";
+    secretInput.autocomplete = "current-password";
+    secretInput.removeAttribute("maxlength");
+    secretInput.removeAttribute("inputmode");
+  } else {
+    secretInput.type = "text";
+    secretInput.placeholder = "请输入验证码";
+    secretInput.autocomplete = "one-time-code";
+    secretInput.maxLength = 8;
+    secretInput.inputMode = "numeric";
+  }
+}
+
+function resetAuthLoginForm() {
+  authLoginMode = "otp";
+  authOtpSent = false;
+  const sendOtpBtn = document.getElementById("authSendOtpBtn");
+  const verifyOtpBtn = document.getElementById("authVerifyOtpBtn");
+  const passwordLoginBtn = document.getElementById("authPasswordLoginBtn");
+  const loginModeToggle = document.getElementById("authLoginModeToggle");
+  const secretInput = document.getElementById("authPasswordInput");
+  const passwordSection = document.getElementById("authPasswordSection");
+  if (passwordSection) passwordSection.hidden = false;
+  if (secretInput) secretInput.value = "";
+  applyAuthSecretInputMode("otp");
+  if (sendOtpBtn) {
+    sendOtpBtn.hidden = false;
+    sendOtpBtn.style.display = "";
+    sendOtpBtn.disabled = false;
+    sendOtpBtn.textContent = "发送验证码";
+  }
+  if (verifyOtpBtn) verifyOtpBtn.hidden = true;
+  if (passwordLoginBtn) passwordLoginBtn.hidden = true;
+  if (loginModeToggle) loginModeToggle.textContent = "使用密码登录";
 }
 
 function showAuthOverlay() {
@@ -3886,27 +3902,11 @@ function showAuthOverlay() {
   // 2026-05-31 fix(T9)：每次显示登录遮罩都把表单重置回「邮箱步骤」。否则上一轮发码留下的
   // inline style（sendOtpBtn display:none + otpSection display:block）会残留，导致退出再登录时
   // 卡片显示成半截 OTP 态——「Continue」按钮被藏、OTP 段提前展开、中间留大空隙、布局错乱。
-  const sendOtpBtn = document.getElementById("authSendOtpBtn");
-  const otpSection = document.getElementById("authOtpSection");
-  const otpInput = document.getElementById("authOtpInput");
+  resetAuthLoginForm();
   const emailError = document.getElementById("authEmailError");
-  if (sendOtpBtn) {
-    sendOtpBtn.style.display = "";
-    sendOtpBtn.disabled = false;
-    sendOtpBtn.textContent = "发送验证码";
-  }
-  if (otpSection) otpSection.style.display = "none";
-  if (otpInput) otpInput.value = "";
   if (emailError) {
     emailError.textContent = "";
     emailError.style.color = "";
-  }
-  const video = _ensureAuthShowcaseVideo(overlay);
-  if (video instanceof HTMLVideoElement) {
-    const src = video.dataset.src || "";
-    if (src && !video.currentSrc) video.src = src;
-    video.muted = true;
-    video.play?.().catch(() => {});
   }
   // Init inline captcha when overlay shows; clear stale input.
   if (window.NexusAuthCaptcha) {
@@ -3923,15 +3923,6 @@ function showAuthOverlay() {
 function hideAuthOverlay() {
   const overlay = document.getElementById("authOverlay");
   if (overlay) overlay.classList.remove("visible");
-  const video = overlay?.querySelector(".auth-showcase-video");
-  if (video instanceof HTMLVideoElement) {
-    try { video.pause(); } catch (_e) {}
-    video.removeAttribute("src");
-    try { video.load(); } catch (_e) {}
-    // 整体移除节点而非只清 src。MediaSession 元数据随节点消亡而解除，
-    // Chrome Global Media Controls 立即收起。下次 showAuthOverlay 会 ensure 重建。
-    video.remove();
-  }
   // 2026-05-17 排查残留：登录成功后销毁 Turnstile widget + 清状态。否则
   // CF challenges.cloudflare.com iframe 会留在隐藏的 #authOverlay 里继续
   // 后台运行（轮询、心跳、cookie），同时 cancri_login_captcha.js 闭包里的
@@ -4194,9 +4185,11 @@ function initAuthOverlay() {
 
   const emailInput = document.getElementById("authEmailInput");
   const sendOtpBtn = document.getElementById("authSendOtpBtn");
-  const otpSection = document.getElementById("authOtpSection");
-  const otpInput = document.getElementById("authOtpInput");
   const verifyOtpBtn = document.getElementById("authVerifyOtpBtn");
+  const passwordInput = document.getElementById("authPasswordInput");
+  const passwordLoginBtn = document.getElementById("authPasswordLoginBtn");
+  const loginModeToggle = document.getElementById("authLoginModeToggle");
+  const passwordSection = document.getElementById("authPasswordSection");
   const emailError = document.getElementById("authEmailError");
 
   if (sendOtpBtn) {
@@ -4232,14 +4225,19 @@ function initAuthOverlay() {
       if (emailError) emailError.textContent = "";
       try {
         await sendEmailOtp(email, { shouldCreateUser: isNumericQQ });
+        authOtpSent = true;
+        sendOtpBtn.hidden = true;
         sendOtpBtn.style.display = "none";
+        if (verifyOtpBtn) verifyOtpBtn.hidden = false;
         const turnstileSlot = document.getElementById("loginTurnstileContainer");
         if (turnstileSlot) turnstileSlot.remove();
         if (window.NexusLoginCaptcha?.suspend) {
           try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
         }
-        if (otpSection) otpSection.style.display = "block";
-        if (otpInput) otpInput.focus();
+        if (passwordInput) {
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
         if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
         if (emailError) emailError.style.color = "#4ade80";
       } catch (err) {
@@ -4260,7 +4258,7 @@ function initAuthOverlay() {
   if (verifyOtpBtn) {
     verifyOtpBtn.addEventListener("click", async () => {
       const email = (emailInput && emailInput.value || "").trim();
-      const code = (otpInput && otpInput.value || "").trim();
+      const code = (passwordInput && passwordInput.value || "").trim();
       if (!code || code.length < 6) {
         if (emailError) emailError.textContent = "请输入完整的验证码";
         if (emailError) emailError.style.color = "";
@@ -4281,24 +4279,21 @@ function initAuthOverlay() {
     });
   }
 
-  if (otpInput) {
-    otpInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && verifyOtpBtn) verifyOtpBtn.click();
-    });
-  }
-
-  const loginModeToggle = document.getElementById("authLoginModeToggle");
-  const passwordSection = document.getElementById("authPasswordSection");
-  const passwordInput = document.getElementById("authPasswordInput");
-  const passwordLoginBtn = document.getElementById("authPasswordLoginBtn");
-  let authLoginMode = "otp";
-
   function setAuthLoginMode(mode) {
     authLoginMode = mode === "password" ? "password" : "otp";
+    authOtpSent = false;
     const isPassword = authLoginMode === "password";
-    if (passwordSection) passwordSection.hidden = !isPassword;
-    if (sendOtpBtn) sendOtpBtn.style.display = isPassword ? "none" : "";
-    if (otpSection && isPassword) otpSection.style.display = "none";
+    if (passwordSection) passwordSection.hidden = false;
+    if (passwordInput) passwordInput.value = "";
+    applyAuthSecretInputMode(authLoginMode);
+    if (sendOtpBtn) {
+      sendOtpBtn.hidden = isPassword;
+      sendOtpBtn.style.display = isPassword ? "none" : "";
+      sendOtpBtn.disabled = false;
+      sendOtpBtn.textContent = "发送验证码";
+    }
+    if (verifyOtpBtn) verifyOtpBtn.hidden = true;
+    if (passwordLoginBtn) passwordLoginBtn.hidden = !isPassword;
     if (loginModeToggle) {
       loginModeToggle.textContent = isPassword ? "使用验证码登录" : "使用密码登录";
     }
@@ -4347,7 +4342,10 @@ function initAuthOverlay() {
 
   if (passwordInput) {
     passwordInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && passwordLoginBtn) passwordLoginBtn.click();
+      if (e.key !== "Enter") return;
+      if (authLoginMode === "password" && passwordLoginBtn) passwordLoginBtn.click();
+      else if (authOtpSent && verifyOtpBtn) verifyOtpBtn.click();
+      else if (sendOtpBtn) sendOtpBtn.click();
     });
   }
 
@@ -4355,6 +4353,7 @@ function initAuthOverlay() {
     emailInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         if (authLoginMode === "password" && passwordLoginBtn) passwordLoginBtn.click();
+        else if (authOtpSent && verifyOtpBtn) verifyOtpBtn.click();
         else if (sendOtpBtn) sendOtpBtn.click();
       }
     });
@@ -5326,7 +5325,9 @@ function createRestoredImageElement(imageUrl) {
   const img = document.createElement("img");
   img.className = "generated-image-media";
   img.alt = "generated image";
-  img.addEventListener("contextmenu", (e) => e.preventDefault());
+  img.addEventListener("contextmenu", (e) => {
+    if (!prefersNativeContextMenu()) e.preventDefault();
+  });
   img.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -6923,6 +6924,15 @@ function renderWatermark() {
 }
 
 let customContextMenuTarget = null;
+
+function prefersNativeContextMenu() {
+  if (typeof window === "undefined") return false;
+  if (navigator.maxTouchPoints > 0) return true;
+  if (window.matchMedia("(pointer: coarse)").matches) return true;
+  return (
+    window.matchMedia("(hover: none)").matches && "ontouchstart" in window
+  );
+}
 
 function closeCustomContextMenu() {
   if (!customContextMenu) return;
@@ -14955,8 +14965,9 @@ if (customContextMenu) {
   });
 }
 
-// 全局右键菜单拦截：只允许自定义菜单
+// 全局右键菜单拦截：PC 用自定义菜单；触屏设备交给系统框选/复制
 document.addEventListener("contextmenu", (e) => {
+  if (prefersNativeContextMenu()) return;
   e.preventDefault();
   openCustomContextMenu(e.clientX, e.clientY, e.target);
 });

@@ -196,22 +196,16 @@
 
                         <div id="authCaptchaContainer"></div>
 
-                        <div class="auth-password-section" id="authPasswordSection" hidden>
-                            <label class="auth-field-label" for="authPasswordInput">密码</label>
+                        <div class="auth-password-section" id="authPasswordSection">
                             <input
-                                type="password"
+                                type="text"
                                 id="authPasswordInput"
                                 class="auth-input"
-                                placeholder="请输入密码"
-                                autocomplete="current-password"
+                                placeholder="请输入验证码"
+                                maxlength="8"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
                             />
-                            <button
-                                class="auth-btn auth-btn-primary"
-                                id="authPasswordLoginBtn"
-                                type="button"
-                            >
-                                登录
-                            </button>
                         </div>
 
                         <button
@@ -223,41 +217,30 @@
                         </button>
 
                         <button
+                            class="auth-btn auth-btn-primary"
+                            id="authVerifyOtpBtn"
+                            type="button"
+                            hidden
+                        >
+                            验证登录
+                        </button>
+
+                        <button
+                            class="auth-btn auth-btn-primary"
+                            id="authPasswordLoginBtn"
+                            type="button"
+                            hidden
+                        >
+                            登录
+                        </button>
+
+                        <button
                             type="button"
                             class="auth-mode-toggle"
                             id="authLoginModeToggle"
                         >
                             使用密码登录
                         </button>
-
-                        <div
-                            class="auth-otp-section"
-                            id="authOtpSection"
-                            style="display: none"
-                        >
-                            <div class="auth-divider">
-                                <span>已发送邮箱验证码</span>
-                            </div>
-                            <label class="auth-field-label" for="authOtpInput"
-                                >8 位验证码</label
-                            >
-                            <input
-                                type="text"
-                                id="authOtpInput"
-                                class="auth-input auth-otp-input"
-                                placeholder="••••••••"
-                                maxlength="8"
-                                inputmode="numeric"
-                                autocomplete="one-time-code"
-                            />
-                            <button
-                                class="auth-btn auth-btn-primary"
-                                id="authVerifyOtpBtn"
-                                type="button"
-                            >
-                                验证登录
-                            </button>
-                        </div>
 
                         <div class="auth-error" id="authEmailError"></div>
 
@@ -304,34 +287,30 @@
                         >。
                     </p>
                 </div>
+
+                <div class="auth-mobile-poster" aria-hidden="true">
+                    <img
+                        class="auth-mobile-poster-img"
+                        src="../Logo/CCODE-1.5.16.9.png"
+                        alt="Cancri Code"
+                        width="960"
+                        height="540"
+                        loading="lazy"
+                        decoding="async"
+                    />
+                </div>
             </div>
 
-            <!-- 2026-05-16 claude-clone v4：右侧 video showcase，1:1 复刻
-                 Claude 真站登录页 (claude.ai) 右侧奶白大圆角卡布局。视频源
-                 用 ../Logo/Nexusai.mp4（项目自有素材，4MB）。
-                 data-src 由 cancri_chat.js 在登录遮罩显示时挂载，登录后卸载，
-                 避免浏览器媒体控件残留。
-                 aria-hidden 是因为视频是装饰性的，不承载关键登录信息。
-                 mobile (<880px) 由 cancri_motion.css 直接 display:none，
-                 .auth-stage 退化为居中单列。 -->
             <aside class="auth-showcase" aria-hidden="true">
-                <!-- 2026-05-18 fix(图 5)：登录视频在 hideAuthOverlay 后
-                     Chrome Global Media Controls 残留显示"实时字幕 / 窗口
-                     画中画 / X"工具条。补 disablepictureinpicture +
-                     disableremoteplayback 抑制 PiP / Cast 入口；
-                     另在 cancri_chat.js hideAuthOverlay 里把 video 节点
-                     从 DOM 移除 + showAuthOverlay 按需重建，彻底切断
-                     MediaSession。 -->
-                <video
-                    class="auth-showcase-video"
-                    data-src="./cowork-login-hero-light.webm"
-                    loop
-                    muted
-                    playsinline
-                    preload="none"
-                    disablepictureinpicture
-                    disableremoteplayback
-                ></video>
+                <img
+                    class="auth-showcase-poster"
+                    src="../Logo/CCODE-1.5.16.9.png"
+                    alt="Cancri Code"
+                    width="960"
+                    height="540"
+                    loading="lazy"
+                    decoding="async"
+                />
             </aside>
 
             <!-- 2026-05-15：登录页左下角 theme switch。fixed 定位独立于

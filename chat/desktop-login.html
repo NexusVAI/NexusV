@@ -1,207 +1,211 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="black">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>登录 Cancri Code 桌面端</title>
   <meta name="referrer" content="no-referrer" />
-  <!--
-    Sprint 2 / 2.2：桌面端登录回调页。
-    URL 参数：
-      ?cb=<URL编码的桌面端回调地址，如 http://127.0.0.1:23456/cb>
-      &state=<32 字符 hex，桌面端生成、防 CSRF/replay>
-    流程：
-      1. 加载时检查 supabase session：
-         a) 已登录 → 直接 redirect 到 cb，带上 access_token / refresh_token / expires_in / user_email / user_id / state
-         b) 未登录 → 渲染 OTP 表单
-      2. 输邮箱 → signInWithOtp → 等待验证码
-      3. 输验证码 → verifyOtp → 拿 session → redirect 到 cb（同上）
-      4. cb 收到后桌面端会写 auth.json 然后我们这页面会被浏览器自动关闭
-    注意：
-      - 不依赖 cancri_chat.js（避免拉 26000 行只为登录）
-      - 桌面端不受 QQ/Foxmail 邮箱限制（后端 chat-gateway 已据 X-Cancri-Desktop:1 跳过）
-  -->
+  <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600&display=swap"
+  />
   <script src="./cancri_config.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
     crossorigin="anonymous"
   ></script>
-  <!--
-    Cloudflare Turnstile (Supabase Auth captcha) — 与 chat/index.html 完全一致。
-    不带 captchaToken 调 signInWithOtp 会被 Supabase 静默挂起，邮件不发。
-  -->
-  <script
-    src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-    defer
-  ></script>
-  <script defer src="./cancri_login_captcha.js"></script>
+  <link rel="stylesheet" href="./styles/00-tokens.css" />
+  <link rel="stylesheet" href="./styles/01-claude-tokens.css" />
+  <link rel="stylesheet" href="./styles/02-themes.css" />
+  <link rel="stylesheet" href="./styles/cancri_motion.css?v=2026-06-05-desktop-login" />
   <style>
-    :root {
-      --bg: #1a1a18;
-      --card: #262624;
-      --line: #3a3a36;
-      --text: #f4f3ee;
-      --muted: #8a867d;
-      --accent: #d97757;
-      --accent-hover: #cc785c;
-      --danger: #c85a5a;
-      --success: #8fa680;
-    }
-    * { box-sizing: border-box; }
     html, body {
       margin: 0;
-      padding: 0;
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-            "Microsoft YaHei", system-ui, sans-serif;
+      min-height: 100%;
+      background: hsl(var(--bg-100));
     }
-    .stage {
-      min-height: 100vh;
-      display: grid;
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      min-height: 100dvh;
+    }
+    .auth-desktop-note {
+      margin: 0 auto;
+      max-width: 420px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: hsl(var(--text-300));
+    }
+    .auth-status-line {
+      min-height: 16px;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+      color: hsl(var(--text-300));
+    }
+    .auth-status-line.is-error { color: #e57361; }
+    .auth-status-line.is-ok { color: hsl(var(--text-200)); }
+    .auth-invalid-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
       place-items: center;
       padding: 24px;
+      background: hsl(var(--bg-100));
     }
-    .card {
-      width: 100%;
-      max-width: 380px;
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 28px 26px 24px;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-    }
-    h1 {
-      margin: 0 0 6px;
-      font-size: 18px;
-      letter-spacing: 0.2px;
-    }
-    .subtitle {
-      margin: 0 0 20px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    label {
-      display: block;
-      font-size: 12px;
-      color: var(--muted);
-      margin: 14px 0 6px;
-    }
-    input {
-      width: 100%;
-      background: #1f1f1d;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 9px 11px;
-      font: inherit;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    input:focus {
-      border-color: var(--accent);
-    }
-    input:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    button {
-      width: 100%;
-      margin-top: 16px;
-      background: var(--accent);
-      color: #fff;
-      border: 0;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font: inherit;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    button:hover:not(:disabled) { background: var(--accent-hover); }
-    button:disabled {
-      background: #4a4a45;
-      cursor: not-allowed;
-    }
-    .msg {
-      margin-top: 12px;
-      min-height: 18px;
-      font-size: 12.5px;
-    }
-    .msg.error { color: var(--danger); }
-    .msg.ok { color: var(--success); }
-    .msg.muted { color: var(--muted); }
-    .footer-hint {
-      margin-top: 18px;
-      font-size: 11.5px;
-      color: var(--muted);
+    .auth-overlay.is-invalid .auth-invalid-panel { display: grid; }
+    .auth-overlay.is-invalid .auth-stage,
+    .auth-overlay.is-invalid .auth-showcase,
+    .auth-overlay.is-invalid .auth-brand { display: none !important; }
+    .auth-invalid-card {
+      width: min(100%, 420px);
+      padding: 24px 22px;
+      border-radius: 24px;
+      border: 1px solid hsl(var(--border-300) / 0.14);
+      background: hsl(var(--bg-100));
       text-align: center;
-      line-height: 1.6;
     }
-    .footer-hint code {
-      font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
-      font-size: 11px;
-      color: #c3bfb5;
+    .auth-invalid-card h1 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: hsl(var(--text-000));
     }
-    .step-back {
-      margin-top: 6px;
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--line);
+    .auth-invalid-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: hsl(var(--text-300));
     }
-    .step-back:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text);
+    .auth-back-link {
+      margin-top: 4px;
+      align-self: center;
     }
-    .hidden { display: none !important; }
+    #authPasswordSection[hidden],
+    #authVerifyOtpBtn[hidden],
+    #authSendOtpBtn[hidden] {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
-  <div class="stage">
-    <div class="card" id="card">
-      <h1>登录 Cancri Code</h1>
-      <p class="subtitle" id="subtitle">桌面端会在登录成功后自动接收凭证。</p>
+  <!--
+    Cancri Code 桌面端登录页（Sprint 2）
+    URL: ?cb=<http://127.0.0.1:PORT/cb>&state=<hex>
+    已登录 → 直接带 token 跳回 cb；未登录 → 邮箱 OTP（无 Turnstile / 无安全验证）
+    UI 对齐 claude.html auth-overlay
+  -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-bg" aria-hidden="true"></div>
 
-      <!-- 加载阶段 -->
-      <div id="loadingStage">
-        <p class="msg muted">正在检查登录状态…</p>
+    <a class="auth-brand" href="/" aria-label="Cancri">
+      <img
+        src="../Logo/Cancri1.jpg"
+        data-dark-src="../Logo/Cancri1.jpg"
+        data-light-src="../Logo/Cancri.png"
+        alt="Cancri"
+        width="22"
+        height="22"
+        class="auth-brand-mark cancri-logo"
+      />
+      <span class="auth-brand-name">Cancri</span>
+    </a>
+
+    <div class="auth-stage">
+      <div class="auth-hero">
+        <h1 class="auth-hero-title">思如闪电，<br />构建更快</h1>
+        <p class="auth-hero-subtitle">登录 Cancri Code 桌面端，凭证将自动回传至本机应用</p>
       </div>
 
-      <!-- 邮箱输入阶段（id=authStepEmail / authSendOtpBtn 与 cancri_login_captcha.js 对接，让 Turnstile widget 插到这里） -->
-      <div id="authStepEmail" class="hidden">
-        <label for="emailInput">邮箱</label>
-        <input id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
-        <button id="authSendOtpBtn" type="button">发送验证码</button>
-        <div id="emailMsg" class="msg"></div>
+      <div class="auth-card" id="authCard">
+        <div class="auth-step" id="authStepEmail">
+          <div class="auth-email-divider"><span>邮箱登录</span></div>
+
+          <label class="auth-field-label" for="authEmailInput">邮箱地址</label>
+          <input
+            type="email"
+            id="authEmailInput"
+            class="auth-input"
+            placeholder="请输入邮箱"
+            autocomplete="email"
+            required
+          />
+
+          <div class="auth-password-section" id="authPasswordSection" hidden>
+            <input
+              type="text"
+              id="authPasswordInput"
+              class="auth-input auth-otp-input"
+              placeholder="请输入验证码"
+              maxlength="8"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+            />
+          </div>
+
+          <button class="auth-btn auth-btn-primary" id="authSendOtpBtn" type="button">
+            发送验证码
+          </button>
+
+          <button class="auth-btn auth-btn-primary" id="authVerifyOtpBtn" type="button" hidden>
+            验证登录
+          </button>
+
+          <button type="button" class="auth-mode-toggle auth-back-link" id="authBackBtn" hidden>
+            返回修改邮箱
+          </button>
+
+          <div class="auth-status-line" id="authStatusLine" aria-live="polite"></div>
+          <div class="auth-error" id="authEmailError"></div>
+        </div>
+
+        <p class="auth-footer-line">
+          继续即表示同意
+          <a href="../terms.html" class="auth-footer-link" target="_blank" rel="noopener">服务条款</a>
+          与
+          <a href="../privacy.html" class="auth-footer-link" target="_blank" rel="noopener">隐私协议</a>。
+        </p>
       </div>
 
-      <!-- 验证码输入阶段 -->
-      <div id="otpStage" class="hidden">
-        <label for="otpInput">邮箱验证码</label>
-        <!-- Supabase 项目当前 OTP 长度为 8 位（GoTrue 配置 GOTRUE_MAILER_OTP_LENGTH）；
-             保留 maxlength=8 上限，placeholder 8 个点提示用户。后端从 6 改回也不影响：
-             verifyOtp 阶段下限只校 6，6/7/8 位都接受。 -->
-        <input id="otpInput" type="text" inputmode="numeric" maxlength="8" autocomplete="one-time-code" placeholder="••••••••" />
-        <button id="verifyBtn" type="button">验证登录</button>
-        <button id="backBtn" class="step-back" type="button">返回上一步</button>
-        <div id="otpMsg" class="msg"></div>
-      </div>
-
-      <!-- 完成阶段 -->
-      <div id="doneStage" class="hidden">
-        <p class="msg ok" id="doneMsg">登录成功，正在返回桌面端…</p>
-      </div>
-
-      <!-- 错误阶段（缺 cb / state 等） -->
-      <div id="badStage" class="hidden">
-        <p class="msg error" id="badMsg">无效的回调参数。请回到 Cancri Code 桌面端重新点登录。</p>
-      </div>
-
-      <p class="footer-hint">
-        本页面只用于 Cancri Code 桌面端登录。<br>
-        网页端登录请回到 <code>nexusvai.xyz/chat</code>。
+      <p class="auth-desktop-note">
+        网页端请访问 <a href="/chat/" class="auth-footer-link">nexusvai.xyz/chat</a>
       </p>
+
+      <div class="auth-mobile-poster" aria-hidden="true">
+        <img
+          class="auth-mobile-poster-img"
+          src="../Logo/CCODE-1.5.16.9.png"
+          alt="Cancri Code"
+          width="960"
+          height="540"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+
+    <aside class="auth-showcase" aria-hidden="true">
+      <img
+        class="auth-showcase-poster"
+        src="../Logo/CCODE-1.5.16.9.png"
+        alt="Cancri Code"
+        width="960"
+        height="540"
+        loading="lazy"
+        decoding="async"
+      />
+    </aside>
+
+    <div class="auth-invalid-panel" id="authInvalidPanel">
+      <div class="auth-invalid-card">
+        <h1>无法打开登录</h1>
+        <p id="authInvalidMsg">无效的回调参数。请回到 Cancri Code 桌面端重新点击登录。</p>
+      </div>
     </div>
   </div>
 
@@ -209,56 +213,92 @@
     (function () {
       "use strict";
 
-      // ── URL 参数 ──────────────────────────────────────
       const params = new URLSearchParams(location.search);
       const cb = params.get("cb") || "";
       const state = params.get("state") || "";
 
-      // 保护：cb 必须是 http://127.0.0.1:<port>/cb 或 http://localhost:<port>/cb
-      // 防止恶意页面构造 cb=https://evil/... 然后骗用户在桌面端点开。
       function isValidCb(url) {
         try {
           const u = new URL(url);
-          if (u.protocol !== "http:") return false;
-          if (u.hostname !== "127.0.0.1" && u.hostname !== "localhost") return false;
-          if (u.pathname !== "/cb") return false;
-          return true;
+          return (
+            u.protocol === "http:" &&
+            (u.hostname === "127.0.0.1" || u.hostname === "localhost") &&
+            u.pathname === "/cb"
+          );
         } catch {
           return false;
         }
       }
 
-      const valid = cb && state && isValidCb(cb);
+      const valid = Boolean(cb && state && isValidCb(cb));
+      const overlay = document.getElementById("authOverlay");
+      const invalidMsg = document.getElementById("authInvalidMsg");
 
-      const el = (id) => document.getElementById(id);
-      function showStage(id) {
-        ["loadingStage", "authStepEmail", "otpStage", "doneStage", "badStage"].forEach((s) => {
-          el(s).classList.toggle("hidden", s !== id);
-        });
-        // 进邮箱 stage 时预加载 Turnstile widget，减少 sendOtp 点击等待
-        if (id === "authStepEmail" && window.NexusLoginCaptcha) {
-          try { window.NexusLoginCaptcha.prerender(); } catch (e) { console.warn("[desktop-login] prerender:", e); }
-        }
+      const emailInput = document.getElementById("authEmailInput");
+      const otpInput = document.getElementById("authPasswordInput");
+      const sendBtn = document.getElementById("authSendOtpBtn");
+      const verifyBtn = document.getElementById("authVerifyOtpBtn");
+      const backBtn = document.getElementById("authBackBtn");
+      const otpSection = document.getElementById("authPasswordSection");
+      const statusLine = document.getElementById("authStatusLine");
+      const errorEl = document.getElementById("authEmailError");
+      const authCard = document.getElementById("authCard");
+
+      function setStatus(text, kind) {
+        statusLine.textContent = text || "";
+        statusLine.className = "auth-status-line" + (kind ? " is-" + kind : "");
+      }
+
+      function setError(text) {
+        errorEl.textContent = text || "";
+      }
+
+      function showOtpStep() {
+        otpSection.hidden = false;
+        sendBtn.hidden = true;
+        verifyBtn.hidden = false;
+        backBtn.hidden = false;
+        otpInput.focus();
+      }
+
+      function showEmailStep() {
+        otpSection.hidden = true;
+        sendBtn.hidden = false;
+        verifyBtn.hidden = true;
+        backBtn.hidden = true;
+        otpInput.value = "";
+        setError("");
+      }
+
+      function showDone(message) {
+        authCard.innerHTML =
+          '<div class="auth-step">' +
+          '<p class="auth-status-line is-ok" style="min-height:auto;padding:12px 0;font-size:14px;">' +
+          (message || "登录成功，正在返回桌面端…") +
+          "</p></div>";
+      }
+
+      function failInvalid(message) {
+        overlay.classList.add("is-invalid");
+        if (invalidMsg) invalidMsg.textContent = message;
       }
 
       if (!valid) {
-        showStage("badStage");
+        failInvalid("无效的回调参数。请回到 Cancri Code 桌面端重新点击登录。");
         return;
       }
 
-      // ── Supabase client ────────────────────────────────
       const SUPABASE_URL = window.__SUPABASE_URL__ || "";
       const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        el("badMsg").textContent = "Supabase 配置未加载，请刷新页面重试。";
-        showStage("badStage");
+        failInvalid("Supabase 配置未加载，请刷新页面重试。");
         return;
       }
       if (!window.supabase || !window.supabase.createClient) {
-        el("badMsg").textContent = "Supabase Auth SDK 加载失败，请检查网络后刷新。";
-        showStage("badStage");
+        failInvalid("Supabase Auth SDK 加载失败，请检查网络后刷新。");
         return;
       }
+
       const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
           persistSession: true,
@@ -267,7 +307,6 @@
         },
       });
 
-      // ── 跳回桌面端 ────────────────────────────────────
       function redirectToDesktop(session) {
         const url = new URL(cb);
         url.searchParams.set("access_token", session.access_token);
@@ -278,25 +317,25 @@
           url.searchParams.set("user_id", session.user.id || "");
         }
         url.searchParams.set("state", state);
-
-        showStage("doneStage");
-        // 直接 location.href 触发 GET，桌面端 server 接收后会回 200 自闭合页。
-        // 注意：这里先 location.href 跳，再 setTimeout 关 window，用户会先看到桌面端的"登录成功"提示。
+        showDone("登录成功，正在返回桌面端…");
         location.href = url.toString();
       }
 
       function localizeAuthError(err, fallback) {
-        const msg = err && (err.message || err.error_description || err.error) || "";
+        const msg = (err && (err.message || err.error_description || err.error)) || "";
         const code = (err && (err.code || err.error)) || "";
-        if (code === "over_email_send_rate_limit") return "邮件发送过于频繁，请等几分钟后再试。";
+        if (code === "over_email_send_rate_limit") return "邮件发送过于频繁，请稍后再试。";
         if (code === "otp_expired") return "验证码已过期，请重新获取。";
         if (code === "invalid_credentials") return "验证码错误，请检查后重试。";
         if (/timeout/i.test(msg)) return "请求超时，请检查网络。";
         return fallback || msg || "未知错误";
       }
 
-      // ── 检查现有 session ──────────────────────────────
-      (async () => {
+      emailInput.disabled = true;
+      sendBtn.disabled = true;
+      setStatus("正在检查登录状态…");
+
+      (async function bootstrap() {
         try {
           const { data } = await supabase.auth.getSession();
           if (data && data.session && data.session.access_token) {
@@ -306,106 +345,56 @@
         } catch (err) {
           console.warn("[desktop-login] getSession failed:", err);
         }
-        showStage("authStepEmail");
+
+        emailInput.disabled = false;
+        sendBtn.disabled = false;
+        setStatus("");
       })();
-
-      // ── 邮箱阶段：发 OTP（带 Turnstile captchaToken）───────────────
-      const emailInput = el("emailInput");
-      const sendBtn = el("authSendOtpBtn");
-      const emailMsg = el("emailMsg");
-
-      /**
-       * best-effort 拿 Turnstile token：45s 预算内拿到就传给 Supabase，拿不到则裸送。
-       * 与 cancri_chat.js 的 getLoginCaptchaTokenBestEffort 策略一致。
-       * Supabase 项目启用 captcha 时如果裸送，会回 captcha_failed 而不是静默挂起，
-       * 用户至少能看到明确错误（比"发送中..."无限转好）。
-       */
-      async function getCaptchaTokenBestEffort(budgetMs) {
-        return new Promise((resolve) => {
-          let settled = false;
-          const finish = (val) => { if (!settled) { settled = true; resolve(val); } };
-          const t = setTimeout(() => finish(""), budgetMs);
-          if (!window.NexusLoginCaptcha) {
-            clearTimeout(t);
-            return finish("");
-          }
-          window.NexusLoginCaptcha.getToken().then(
-            (tok) => { clearTimeout(t); finish(tok || ""); },
-            (err) => {
-              clearTimeout(t);
-              console.info("[desktop-login] captcha unavailable:", err && err.message);
-              finish("");
-            },
-          );
-        });
-      }
 
       async function sendOtp() {
         const email = emailInput.value.trim();
         if (!email || !email.includes("@")) {
-          emailMsg.textContent = "请输入有效邮箱。";
-          emailMsg.className = "msg error";
+          setError("请输入有效邮箱。");
           return;
         }
         sendBtn.disabled = true;
-        sendBtn.textContent = "验证中…";
-        emailMsg.textContent = "正在完成人机验证…";
-        emailMsg.className = "msg muted";
-        const captchaToken = await getCaptchaTokenBestEffort(45000);
         sendBtn.textContent = "发送中…";
-        emailMsg.textContent = "";
-        emailMsg.className = "msg";
+        setError("");
+        setStatus("");
         try {
-          // 12s timeout 防 SDK hang
-          const timeout = new Promise((_, rej) =>
-            setTimeout(() => rej(new Error("发送超时，请检查网络后重试")), 12000),
-          );
-          const opts = { email };
-          if (captchaToken) opts.options = { captchaToken };
+          const timeout = new Promise(function (_, rej) {
+            setTimeout(function () {
+              rej(new Error("发送超时，请检查网络后重试"));
+            }, 12000);
+          });
           const { error } = await Promise.race([
-            supabase.auth.signInWithOtp(opts),
+            supabase.auth.signInWithOtp({ email: email }),
             timeout,
           ]);
           if (error) throw error;
-          emailMsg.textContent = "验证码已发到邮箱，请查收。";
-          emailMsg.className = "msg ok";
-          showStage("otpStage");
-          el("otpInput").focus();
+          setStatus("验证码已发到邮箱，请查收。", "ok");
+          showOtpStep();
         } catch (err) {
-          emailMsg.textContent = localizeAuthError(err, "发送失败，请重试。");
-          emailMsg.className = "msg error";
+          setError(localizeAuthError(err, "发送失败，请重试。"));
         } finally {
           sendBtn.disabled = false;
           sendBtn.textContent = "发送验证码";
         }
       }
 
-      sendBtn.addEventListener("click", sendOtp);
-      emailInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") sendOtp();
-      });
-
-      // ── OTP 阶段：验证 + 跳回 ─────────────────────────
-      const otpInput = el("otpInput");
-      const verifyBtn = el("verifyBtn");
-      const backBtn = el("backBtn");
-      const otpMsg = el("otpMsg");
-
       async function verifyOtp() {
         const email = emailInput.value.trim();
         const code = otpInput.value.trim();
-        // 下限 6 位（Supabase 历史最短）；上限交给 input maxlength 防多打。
         if (!code || code.length < 6) {
-          otpMsg.textContent = "请输入完整的验证码。";
-          otpMsg.className = "msg error";
+          setError("请输入完整的验证码。");
           return;
         }
         verifyBtn.disabled = true;
         verifyBtn.textContent = "验证中…";
-        otpMsg.textContent = "";
+        setError("");
         try {
           const { data, error } = await supabase.auth.verifyOtp({
-            email,
+            email: email,
             token: code,
             type: "email",
           });
@@ -415,22 +404,24 @@
           }
           redirectToDesktop(data.session);
         } catch (err) {
-          otpMsg.textContent = localizeAuthError(err, "验证失败，请重试。");
-          otpMsg.className = "msg error";
+          setError(localizeAuthError(err, "验证失败，请重试。"));
         } finally {
           verifyBtn.disabled = false;
           verifyBtn.textContent = "验证登录";
         }
       }
 
+      sendBtn.addEventListener("click", sendOtp);
       verifyBtn.addEventListener("click", verifyOtp);
-      otpInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") verifyOtp();
+      backBtn.addEventListener("click", function () {
+        showEmailStep();
+        setStatus("");
       });
-      backBtn.addEventListener("click", () => {
-        showStage("authStepEmail");
-        emailMsg.textContent = "";
-        emailMsg.className = "msg";
+      emailInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !sendBtn.hidden) sendOtp();
+      });
+      otpInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !verifyBtn.hidden) verifyOtp();
       });
     })();
   </script>
