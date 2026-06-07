@@ -167,6 +167,35 @@
                 border-color: var(--clay);
                 color: #fffaf2;
             }
+            .ops-alert {
+                margin-bottom: 14px;
+                padding: 12px 14px;
+                border-radius: 12px;
+                font-size: 12.5px;
+                line-height: 1.55;
+            }
+            .ops-alert ul {
+                margin: 8px 0 0;
+                padding-left: 18px;
+            }
+            .ops-alert--warn {
+                background: rgba(251, 191, 36, 0.1);
+                border: 1px solid rgba(251, 191, 36, 0.35);
+            }
+            .ops-alert--info {
+                background: rgba(96, 165, 250, 0.1);
+                border: 1px solid rgba(96, 165, 250, 0.35);
+            }
+            .ops-del-btn {
+                margin-left: 4px;
+                padding: 2px 8px;
+                border-radius: 6px;
+                border: 1px solid rgba(248, 113, 113, 0.4);
+                background: rgba(248, 113, 113, 0.12);
+                color: var(--err);
+                font-size: 11px;
+                cursor: pointer;
+            }
         </style>
     </head>
     <body>
@@ -210,6 +239,8 @@
                         审核三档订阅与加油包订单。对账时以每条订单的<strong>用户应付</strong>为准（含升级补差 / 促销），勿按标价 ¥9.9 等默认值核对。审核通过会自动生成激活码。
                     </p>
                 </header>
+
+                <div id="ops-alerts" style="display: none"></div>
 
                 <div class="stats" id="stats">
                     <div class="stat-card pending">
@@ -291,6 +322,6 @@
         ></script>
         <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-orders-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
         <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
-        <script src="./admin-orders-app.js?v=2026-06-07-admin"></script>
+        <script src="./admin-orders-app.js?v=2026-06-07-admin-v2"></script>
     </body>
 </html>

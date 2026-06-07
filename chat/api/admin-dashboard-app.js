@@ -80,12 +80,47 @@ async function init() {
 async function loadDashboard() {
   const session = await getSession();
   if (!session) return;
-  const r = await callGW({ endpoint: "admin_dashboard_stats" }, session);
-  if (!r.ok) {
-    showToast("加载失败：" + (r.data?.message || r.status), "err");
+  const [statsR, opsR] = await Promise.all([
+    callGW({ endpoint: "admin_dashboard_stats" }, session),
+    callGW({ endpoint: "admin_ops_alerts" }, session),
+  ]);
+  if (!statsR.ok) {
+    showToast("加载失败：" + (statsR.data?.message || statsR.status), "err");
     return;
   }
-  renderDashboard(r.data);
+  renderDashboard(statsR.data);
+  if (opsR.ok) renderOpsAlerts(opsR.data);
+}
+
+function renderOpsAlerts(d) {
+  const panel = $("ops-panel");
+  const box = $("dash-ops-alerts");
+  if (!panel || !box || !d) return;
+  const dup = d.duplicate_submitted || [];
+  const exp = d.expiring_subscriptions || [];
+  if (dup.length === 0 && exp.length === 0) {
+    panel.style.display = "none";
+    return;
+  }
+  panel.style.display = "block";
+  let html = '<div style="display:grid;gap:10px;">';
+  if (dup.length > 0) {
+    html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);font-size:12.5px;">
+      <strong>重复待审 ${dup.length} 用户</strong> · 共 ${fmt(d.pending_submitted_total)} 条 submitted
+      <div style="margin-top:6px;color:var(--text-mute)">请去 <a href="./admin_orders.html">订单审核</a> 删除重复记录</div>
+    </div>`;
+  }
+  if (exp.length > 0) {
+    html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.35);font-size:12.5px;">
+      <strong>${exp.length} 个订阅 7 天内到期</strong>
+      <ul style="margin:6px 0 0;padding-left:18px;color:var(--text-mute)">`;
+    exp.slice(0, 5).forEach((s) => {
+      html += `<li>${esc(String(s.user_id || "").slice(0, 8))}… · ${esc(s.plan_code)} · 剩 ${esc(s.days_remaining)} 天</li>`;
+    });
+    html += `</ul><div style="margin-top:6px"><a href="./admin_users.html">用户管理</a> 可续期/提醒</div></div>`;
+  }
+  html += "</div>";
+  box.innerHTML = html;
 }
 
 function renderDashboard(d) {

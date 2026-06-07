@@ -333,6 +333,8 @@ async function loadUserQuota(userId, email) {
   $("usagePanel").style.display = "block";
   $("usagePanelUserEmail").textContent = selectedQuotaUserEmail;
   loadUserUsage(userId);
+  loadUserOrders(userId);
+  loadCreditLedger(userId);
 
   $("quota-plan").textContent = "加载中…";
   $("quota-monthly").textContent = "加载中…";
@@ -488,6 +490,112 @@ $("btnCustomDays").addEventListener("click", () => {
   adjustSubscriptionDays(selectedQuotaUserId, val, planCode);
   $("customDaysInput").value = "";
 });
+
+async function adjustMonthlyConsumed(userId, delta, reason) {
+  if (!userId) {
+    showToast("请先在搜索结果中选择用户", "err");
+    return;
+  }
+  const action = delta > 0 ? "增加已用量 " + delta : "减少已用量 " + Math.abs(delta);
+  if (!confirm(`确认对用户 ${selectedQuotaUserEmail} ${action} tokens？`)) return;
+  const session = await getSession();
+  const r = await callGW({
+    endpoint: "admin_adjust_monthly_consumed",
+    user_id: userId,
+    delta_tokens: delta,
+    reason: reason || "admin:manual_adjust",
+  }, session);
+  if (r.ok) {
+    showToast(`月已用量已调整：${r.data.previous_consumed} → ${r.data.monthly_consumed}`, "ok");
+    await loadUserQuota(userId, selectedQuotaUserEmail);
+    await loadCreditLedger(userId);
+  } else {
+    showToast("调整失败：" + (r.data?.message || r.status), "err");
+  }
+}
+
+$("btnConsumePlus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 10_000_000, ""));
+$("btnConsumePlus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 50_000_000, ""));
+$("btnConsumeMinus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -10_000_000, ""));
+$("btnConsumeMinus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -50_000_000, ""));
+$("btnCustomConsume").addEventListener("click", () => {
+  const val = parseInt($("customConsumeInput").value, 10);
+  if (isNaN(val) || val === 0) {
+    showToast("请输入非零整数 delta", "err");
+    return;
+  }
+  adjustMonthlyConsumed(selectedQuotaUserId, val, $("customConsumeReason").value.trim());
+  $("customConsumeInput").value = "";
+});
+
+async function loadUserOrders(userId) {
+  const el = $("userOrdersList");
+  if (!el || !userId) return;
+  el.innerHTML = '<div style="padding:10px;color:var(--text-mute)">加载中…</div>';
+  const session = await getSession();
+  const r = await callGW({ endpoint: "admin_list_user_orders", user_id: userId, limit: 20 }, session);
+  if (!r.ok) {
+    el.innerHTML = '<div style="padding:10px;color:var(--err)">加载失败</div>';
+    return;
+  }
+  const orders = Array.isArray(r.data?.orders) ? r.data.orders : [];
+  if (!orders.length) {
+    el.innerHTML = '<div style="padding:10px;color:var(--text-mute)">无订单记录</div>';
+    return;
+  }
+  el.innerHTML = orders.map((o) => {
+    const payable = o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny;
+    const del = o.status !== "activated"
+      ? ` <button type="button" class="btn-ban user-order-del" data-oid="${esc(o.id)}" style="padding:2px 8px;font-size:10px;margin-left:6px">删</button>`
+      : "";
+    return `<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+      <span class="status-pill ${esc(o.status)}" style="font-size:10px">${esc(o.status)}</span>
+      <span>应付 ¥${esc(payable)}</span>
+      <span style="color:var(--text-mute)">${esc(new Date(o.created_at).toLocaleString("zh-CN", { hour12: false }))}</span>
+      ${del}
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".user-order-del").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const oid = btn.getAttribute("data-oid");
+      if (!oid || !confirm("删除此订单记录？")) return;
+      const session = await getSession();
+      const dr = await callGW({ endpoint: "admin_delete_order", order_id: oid }, session);
+      if (dr.ok) {
+        showToast("订单已删除", "ok");
+        await loadUserOrders(userId);
+      } else {
+        showToast("删除失败：" + (dr.data?.message || dr.status), "err");
+      }
+    });
+  });
+}
+
+async function loadCreditLedger(userId) {
+  const el = $("creditLedgerList");
+  if (!el || !userId) return;
+  el.innerHTML = '<div style="padding:10px;color:var(--text-mute)">加载中…</div>';
+  const session = await getSession();
+  const r = await callGW({ endpoint: "admin_list_credit_ledger", user_id: userId, limit: 40 }, session);
+  if (!r.ok) {
+    el.innerHTML = '<div style="padding:10px;color:var(--err)">加载失败</div>';
+    return;
+  }
+  const rows = Array.isArray(r.data?.ledger) ? r.data.ledger : [];
+  if (!rows.length) {
+    el.innerHTML = '<div style="padding:10px;color:var(--text-mute)">无额度流水</div>';
+    return;
+  }
+  const fmtTok = window.AdminFormatters ? window.AdminFormatters.fmtTokens : (n) => String(n);
+  el.innerHTML = rows.map((row) => {
+    const sign = Number(row.delta_tokens) >= 0 ? "+" : "";
+    return `<div style="padding:6px 10px;border-bottom:1px solid var(--border-mute);display:grid;grid-template-columns:100px 1fr 90px;gap:8px;">
+      <span style="color:var(--text-mute);font-size:10.5px">${esc(new Date(row.created_at).toLocaleString("zh-CN", { hour12: false }))}</span>
+      <span><code style="font-size:10.5px">${esc(row.kind)}</code> · ${esc(row.source_bucket || "—")} · ${esc(row.source_ref || "")}</span>
+      <span style="text-align:right;font-family:var(--font-mono);color:${Number(row.delta_tokens) >= 0 ? "var(--ok)" : "var(--err)"}">${sign}${fmtTok(row.delta_tokens)}</span>
+    </div>`;
+  }).join("");
+}
 
 // ─── 2026-05-23：单用户调用日志 + 聚合 ───
 const fmtN = (n) => (n == null ? "—" : Number(n).toLocaleString("en-US"));

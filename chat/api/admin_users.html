@@ -272,7 +272,7 @@
         <header>
           <h1>用户管理与额度控制中心</h1>
           <p>
-            通过邮箱或 <code>user_id</code> 搜索任意用户，进行 **订阅赠送、月度额度清零、加油包充值** 等快捷额度管理，或在此进行 **账号封禁与解封** 特权操作。
+            搜索用户后可进行订阅赠送、减天、月配额精细化扣减/回补、加油包调整、订单删除、额度审计与封禁解封。
           </p>
         </header>
 
@@ -434,6 +434,30 @@
                 提示：正数加天、负数减天；减天减到 ≤ 当前时间会直接删订阅回到 FREE。90 天 horizon 上限仍生效（加天超过 NOW+90d 不允许）。
               </div>
             </div>
+
+            <!-- 2026-06-07：精细化月已用量（非清零） -->
+            <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">5. 精细化月配额 (Adjust Monthly Consumed)</h4>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus10M">+10M 已用（扣额度）</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus50M">+50M 已用</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumeMinus10M">-10M 已用（回补）</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumeMinus50M">-50M 已用</button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span style="font-size: 11.5px; color: var(--text-mute);">自定义 delta（正=加已用/扣额度，负=减已用/回补）:</span>
+                <input type="number" id="customConsumeInput" placeholder="例如 5000000 或 -20000000" style="width: 160px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
+                <input type="text" id="customConsumeReason" placeholder="备注（写入审计流水）" maxlength="200" style="flex:1; min-width:140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
+                <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600;" id="btnCustomConsume">执行</button>
+              </div>
+            </div>
+
+            <!-- 2026-06-07：用户订单 + 额度审计 -->
+            <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">6. 订单历史 & 额度审计</h4>
+              <div id="userOrdersList" style="font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); margin-bottom: 10px;">选择用户后加载…</div>
+              <div id="creditLedgerList" style="font-size: 11.5px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev);">选择用户后加载…</div>
+            </div>
           </div>
         </div>
 
@@ -518,6 +542,6 @@
       crossorigin="anonymous"
     ></script>
     <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-users-app.js。 -->
-    <script src="./admin-users-app.js?v=2026-05-23-days-usage"></script>
+    <script src="./admin-users-app.js?v=2026-06-07-admin"></script>
   </body>
 </html>

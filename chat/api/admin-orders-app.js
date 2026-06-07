@@ -344,6 +344,12 @@ function renderOrders() {
                 esc(o.status) +
                 "</span>";
             let actions = "";
+            const deleteBtn =
+                o.status !== "activated"
+                    ? '<button class="btn-tiny reject" data-action="delete" data-id="' +
+                      esc(o.id) +
+                      '" title="从后台删除此记录（已激活不可删）">删除记录</button>'
+                    : "";
             if (o.status === "submitted") {
                 actions =
                     '<div class="order-actions">' +
@@ -356,6 +362,7 @@ function renderOrders() {
                     '<button class="btn-tiny reject" data-action="reject" data-id="' +
                     esc(o.id) +
                     '">拒绝</button>' +
+                    deleteBtn +
                     "</div>";
             } else if (o.activation_code) {
                 const codeBlock =
@@ -363,10 +370,20 @@ function renderOrders() {
                     esc(o.activation_code) +
                     '</strong> <button class="btn-tiny approve" data-copy="' +
                     esc(o.activation_code) +
-                    '">复制</button></div>';
+                    '">复制</button>' +
+                    (deleteBtn
+                        ? '<div class="order-actions" style="margin-top:8px;justify-content:flex-start">' +
+                          deleteBtn +
+                          "</div>"
+                        : "") +
+                    "</div>";
                 actions = codeBlock;
             } else {
-                actions = "—";
+                actions = deleteBtn
+                    ? '<div class="order-actions" style="justify-content:flex-start">' +
+                      deleteBtn +
+                      "</div>"
+                    : "—";
             }
 
             return (
@@ -448,7 +465,7 @@ function renderOrders() {
                                 (r.activation_code || ""),
                             "ok",
                         );
-                    } else {
+                    } else if (action === "reject") {
                         if (
                             !confirm(
                                 "确认拒绝？建议先在备注里写明原因（用户能看到）。",
@@ -462,8 +479,23 @@ function renderOrders() {
                             admin_note: note || "未通过审核",
                         });
                         showToast("✅ 已拒绝", "ok");
+                    } else if (action === "delete") {
+                        if (
+                            !confirm(
+                                "确认删除此订单记录？\n\n" +
+                                    "• 仅在你这边清除记录（如手滑重复提交）\n" +
+                                    "• 待审订单删除后仪表盘红点会同步减少\n" +
+                                    "• 已激活订单不可删除",
+                            )
+                        ) {
+                            btn.disabled = false;
+                            return;
+                        }
+                        await callGateway("admin_delete_order", { order_id: id });
+                        showToast("✅ 订单已删除", "ok");
                     }
                     await loadOrders();
+                    await loadOpsAlerts();
                 } catch (err) {
                     const m =
                         (err.body &&
@@ -631,6 +663,89 @@ function wireGrantPanel() {
 
 wireGrantPanel();
 
+async function loadOpsAlerts() {
+    const box = document.getElementById("ops-alerts");
+    if (!box) return;
+    try {
+        const data = await callGateway("admin_ops_alerts", {});
+        const dup = data.duplicate_submitted || [];
+        const exp = data.expiring_subscriptions || [];
+        if (dup.length === 0 && exp.length === 0) {
+            box.style.display = "none";
+            box.innerHTML = "";
+            return;
+        }
+        box.style.display = "block";
+        let html = "";
+        if (dup.length > 0) {
+            html +=
+                '<div class="ops-alert ops-alert--warn"><strong>⚠️ 重复待审订单</strong> · ' +
+                dup.length +
+                " 个用户有多条 submitted（可能是手滑连点）<ul>";
+            dup.slice(0, 8).forEach(function (d) {
+                html +=
+                    "<li>" +
+                    esc(d.email || d.user_id) +
+                    " · " +
+                    d.count +
+                    " 条 · 保留 1 条删其余 → " +
+                    d.order_ids
+                        .slice(1)
+                        .map(function (oid) {
+                            return (
+                                '<button type="button" class="ops-del-btn" data-order-id="' +
+                                esc(oid) +
+                                '">删</button>'
+                            );
+                        })
+                        .join(" ") +
+                    "</li>";
+            });
+            html += "</ul></div>";
+        }
+        if (exp.length > 0) {
+            html +=
+                '<div class="ops-alert ops-alert--info"><strong>📅 7 天内到期订阅</strong> · ' +
+                exp.length +
+                " 人<ul>";
+            exp.slice(0, 6).forEach(function (s) {
+                html +=
+                    "<li><code>" +
+                    esc(String(s.user_id || "").slice(0, 8)) +
+                    "…</code> · " +
+                    esc(s.plan_code || "pro") +
+                    " · 剩 " +
+                    esc(s.days_remaining) +
+                    " 天</li>";
+            });
+            html += "</ul></div>";
+        }
+        box.innerHTML = html;
+        box.querySelectorAll(".ops-del-btn").forEach(function (b) {
+            b.addEventListener("click", async function () {
+                const oid = b.getAttribute("data-order-id");
+                if (!oid || !confirm("删除重复订单 " + oid.slice(0, 8) + "… ？")) return;
+                b.disabled = true;
+                try {
+                    await callGateway("admin_delete_order", { order_id: oid });
+                    showToast("✅ 已删除重复订单", "ok");
+                    await loadOrders();
+                    await loadOpsAlerts();
+                } catch (err) {
+                    showToast(
+                        "❌ " +
+                            ((err.body && err.body.message) || err.message),
+                        "err",
+                    );
+                    b.disabled = false;
+                }
+            });
+        });
+    } catch (_e) {
+        box.style.display = "none";
+    }
+}
+
 async function init() {
     const loading = document.getElementById("loading");
     const loginGate = document.getElementById("login-gate");
@@ -654,6 +769,7 @@ async function init() {
         }
         main.style.display = "block";
         await loadOrders();
+        await loadOpsAlerts();
     } catch (err) {
         loading.style.display = "none";
         denyGate.style.display = "block";
