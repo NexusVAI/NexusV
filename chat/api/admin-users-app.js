@@ -28,6 +28,15 @@ const esc = (s) => {
   return d.innerHTML;
 };
 
+const fmtCreditsFromTokens = (tokens) =>
+  window.AdminFormatters ? window.AdminFormatters.fmtCreditsFromTokens(tokens) : String(tokens);
+const creditsToTokens = (credits) =>
+  window.AdminFormatters ? window.AdminFormatters.creditsToTokens(credits) : Math.round(Number(credits) * 10000);
+const fmtCreditInput = (credits) =>
+  window.CancriCredits && window.CancriCredits.fmtCreditAmount
+    ? window.CancriCredits.fmtCreditAmount(credits)
+    : `${credits} 积分`;
+
 function showToast(msg, kind) {
   const t = $("toast");
   t.textContent = msg;
@@ -356,13 +365,12 @@ async function loadUserQuota(userId, email) {
 
   const sub = r.data.subscription;
   const topup = r.data.topup;
-  const fmtTokens = window.AdminFormatters ? window.AdminFormatters.fmtTokens : (n) => String(n);
 
   if (sub) {
     const plans = { pro: "PRO", pro_plus: "PRO+", pro_max: "PRO MAX" };
     $("quota-plan").textContent = plans[sub.plan_code] || String(sub.plan_code).toUpperCase();
-    $("quota-monthly").textContent = fmtTokens(sub.monthly_quota);
-    $("quota-consumed").textContent = fmtTokens(sub.monthly_consumed);
+    $("quota-monthly").textContent = fmtCreditsFromTokens(sub.monthly_quota);
+    $("quota-consumed").textContent = fmtCreditsFromTokens(sub.monthly_consumed);
     $("quota-expires").textContent = new Date(sub.expires_at).toLocaleString("zh-CN", { hour12: false });
   } else {
     $("quota-plan").textContent = "FREE";
@@ -371,7 +379,7 @@ async function loadUserQuota(userId, email) {
     $("quota-expires").textContent = "无有效订阅";
   }
 
-  $("quota-topup").textContent = topup ? fmtTokens(topup.balance_tokens) : "0";
+  $("quota-topup").textContent = topup ? fmtCreditsFromTokens(topup.balance_tokens) : fmtCreditsFromTokens(0);
 }
 
 async function grantSubscription(userId, days, planCode) {
@@ -411,15 +419,15 @@ async function resetConsumption(userId) {
   }
 }
 
-async function adjustTopup(userId, delta) {
-  const actionText = delta > 0 ? `增加 ${delta}` : `扣除 ${Math.abs(delta)}`;
-  if (!confirm(`确认向用户 ${selectedQuotaUserEmail} ${actionText} tokens 加油包？`)) return;
+async function adjustTopup(userId, deltaCredits) {
+  const actionText = deltaCredits > 0 ? `增加 ${fmtCreditInput(deltaCredits)}` : `扣除 ${fmtCreditInput(Math.abs(deltaCredits))}`;
+  if (!confirm(`确认向用户 ${selectedQuotaUserEmail} ${actionText} 加油包？`)) return;
 
   const session = await getSession();
   const r = await callGW({
     endpoint: "admin_adjust_user_topup",
     user_id: userId,
-    delta_tokens: delta
+    delta_tokens: creditsToTokens(deltaCredits),
   }, session);
 
   if (r.ok) {
@@ -435,14 +443,14 @@ $("btnGrant30Pro").addEventListener("click", () => grantSubscription(selectedQuo
 $("btnGrant30ProPlus").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro_plus"));
 $("btnGrant30ProMax").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro_max"));
 $("btnResetConsumption").addEventListener("click", () => resetConsumption(selectedQuotaUserId));
-$("btnTopup10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 10000000));
-$("btnTopup50").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 50000000));
-$("btnTopup100").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 100000000));
-$("btnTopupMinus10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, -10000000));
+$("btnTopup10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 1000));
+$("btnTopup50").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 5000));
+$("btnTopup100").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 10000));
+$("btnTopupMinus10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, -1000));
 $("btnCustomTopup").addEventListener("click", () => {
-  const val = parseInt($("customTopupInput").value, 10);
-  if (isNaN(val) || val === 0) {
-    showToast("请输入合法的自定义充值 tokens 量！", "err");
+  const val = Number($("customTopupInput").value);
+  if (!isFinite(val) || val === 0) {
+    showToast("请输入合法的积分数（可负，非零）！", "err");
     return;
   }
   adjustTopup(selectedQuotaUserId, val);
@@ -491,22 +499,27 @@ $("btnCustomDays").addEventListener("click", () => {
   $("customDaysInput").value = "";
 });
 
-async function adjustMonthlyConsumed(userId, delta, reason) {
+async function adjustMonthlyConsumed(userId, deltaCredits, reason) {
   if (!userId) {
     showToast("请先在搜索结果中选择用户", "err");
     return;
   }
-  const action = delta > 0 ? "增加已用量 " + delta : "减少已用量 " + Math.abs(delta);
-  if (!confirm(`确认对用户 ${selectedQuotaUserEmail} ${action} tokens？`)) return;
+  const action = deltaCredits > 0
+    ? "增加已用量 " + fmtCreditInput(deltaCredits)
+    : "减少已用量 " + fmtCreditInput(Math.abs(deltaCredits));
+  if (!confirm(`确认对用户 ${selectedQuotaUserEmail} ${action}？`)) return;
   const session = await getSession();
   const r = await callGW({
     endpoint: "admin_adjust_monthly_consumed",
     user_id: userId,
-    delta_tokens: delta,
+    delta_tokens: creditsToTokens(deltaCredits),
     reason: reason || "admin:manual_adjust",
   }, session);
   if (r.ok) {
-    showToast(`月已用量已调整：${r.data.previous_consumed} → ${r.data.monthly_consumed}`, "ok");
+    showToast(
+      `月已用量已调整：${fmtCreditsFromTokens(r.data.previous_consumed)} → ${fmtCreditsFromTokens(r.data.monthly_consumed)}`,
+      "ok",
+    );
     await loadUserQuota(userId, selectedQuotaUserEmail);
     await loadCreditLedger(userId);
   } else {
@@ -514,14 +527,14 @@ async function adjustMonthlyConsumed(userId, delta, reason) {
   }
 }
 
-$("btnConsumePlus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 10_000_000, ""));
-$("btnConsumePlus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 50_000_000, ""));
-$("btnConsumeMinus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -10_000_000, ""));
-$("btnConsumeMinus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -50_000_000, ""));
+$("btnConsumePlus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 1000, ""));
+$("btnConsumePlus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 5000, ""));
+$("btnConsumeMinus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -1000, ""));
+$("btnConsumeMinus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -5000, ""));
 $("btnCustomConsume").addEventListener("click", () => {
-  const val = parseInt($("customConsumeInput").value, 10);
-  if (isNaN(val) || val === 0) {
-    showToast("请输入非零整数 delta", "err");
+  const val = Number($("customConsumeInput").value);
+  if (!isFinite(val) || val === 0) {
+    showToast("请输入非零积分数 delta", "err");
     return;
   }
   adjustMonthlyConsumed(selectedQuotaUserId, val, $("customConsumeReason").value.trim());
@@ -586,13 +599,14 @@ async function loadCreditLedger(userId) {
     el.innerHTML = '<div style="padding:10px;color:var(--text-mute)">无额度流水</div>';
     return;
   }
-  const fmtTok = window.AdminFormatters ? window.AdminFormatters.fmtTokens : (n) => String(n);
   el.innerHTML = rows.map((row) => {
-    const sign = Number(row.delta_tokens) >= 0 ? "+" : "";
-    return `<div style="padding:6px 10px;border-bottom:1px solid var(--border-mute);display:grid;grid-template-columns:100px 1fr 90px;gap:8px;">
+    const n = Number(row.delta_tokens);
+    const label = fmtCreditsFromTokens(n);
+    const display = n > 0 ? "+" + label : label;
+    return `<div style="padding:6px 10px;border-bottom:1px solid var(--border-mute);display:grid;grid-template-columns:100px 1fr 110px;gap:8px;">
       <span style="color:var(--text-mute);font-size:10.5px">${esc(new Date(row.created_at).toLocaleString("zh-CN", { hour12: false }))}</span>
       <span><code style="font-size:10.5px">${esc(row.kind)}</code> · ${esc(row.source_bucket || "—")} · ${esc(row.source_ref || "")}</span>
-      <span style="text-align:right;font-family:var(--font-mono);color:${Number(row.delta_tokens) >= 0 ? "var(--ok)" : "var(--err)"}">${sign}${fmtTok(row.delta_tokens)}</span>
+      <span style="text-align:right;font-family:var(--font-mono);color:${n >= 0 ? "var(--ok)" : "var(--err)"}">${esc(display)}</span>
     </div>`;
   }).join("");
 }

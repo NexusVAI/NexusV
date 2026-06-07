@@ -38,6 +38,19 @@
     return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
   }
 
+  // 把后端 token 数格式化为「X 积分」（1 积分 = 1 万 token）。
+  function fmtCreditsFromTokens(tokens) {
+    if (window.CancriCredits) return window.CancriCredits.fmt(tokens);
+    var c = (Number(tokens) || 0) / 10000;
+    return (Math.round(c * 10) / 10).toLocaleString("en-US") + " 积分";
+  }
+
+  // 管理员输入积分数 → 后端 delta_tokens。
+  function creditsToTokens(credits) {
+    if (window.CancriCredits) return window.CancriCredits.toTokens(credits);
+    return Math.round(Number(credits) * 10000);
+  }
+
   function fmtIpGeo(geo) {
     if (!geo) return "";
     const parts = [];
@@ -56,6 +69,8 @@
     fmtScreen,
     fmtAgeDays,
     fmtTokens,
+    fmtCreditsFromTokens,
+    creditsToTokens,
     fmtIpGeo,
   };
 })(window);

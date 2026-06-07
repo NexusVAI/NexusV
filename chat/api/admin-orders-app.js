@@ -25,7 +25,7 @@ function esc(s) {
     return d.innerHTML;
 }
 
-const { fmtTime, fmtArr, fmtScreen, fmtAgeDays, fmtTokens, fmtIpGeo } = window.AdminFormatters;
+const { fmtTime, fmtArr, fmtScreen, fmtAgeDays, fmtTokens, fmtCreditsFromTokens, fmtIpGeo } = window.AdminFormatters;
 
 function fmtPayable(n) {
     const v = Number(n);
@@ -249,10 +249,8 @@ function renderOrderKindCell(o) {
     if (kind === "topup") {
         const sku = o.topup_sku || "";
         const tokens = Number(o.topup_tokens || 0);
-        const tokensLabel = tokens >= 100000000 ? (tokens / 100000000).toFixed(2).replace(/\.?0+$/, "") + " 亿"
-                          : tokens >= 10000 ? Math.round(tokens / 10000) + " 万"
-                          : tokens.toLocaleString();
-        return '<span class="status-pill" style="background:rgba(168,85,247,.18);color:#a855f7" title="加油包 ' + esc(sku) + '">加油包 ' + esc(tokensLabel) + '</span>';
+        const creditsLabel = fmtCreditsFromTokens(tokens);
+        return '<span class="status-pill" style="background:rgba(168,85,247,.18);color:#a855f7" title="加油包 ' + esc(sku) + ' · ' + esc(creditsLabel) + '">加油包 ' + esc(creditsLabel) + '</span>';
     }
     const plan = o.plan_code || "pro";
     const label = plan === "pro_max" ? "Pro Max"

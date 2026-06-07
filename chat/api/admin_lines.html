@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-13 审查：抽离内联 script 到 admin-lines-app.js，删 'unsafe-inline' script-src。 -->
+    <!-- 2026-05-13 审查：抽离内�?script �?admin-lines-app.js，删 'unsafe-inline' script-src�?-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理员 · 模型线路 · Cancri</title>
+    <title>管理�?· 模型线路 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
     <script src="./_anti-debug.js"></script>
-    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-admin" />
+    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-layout-fix" />
     <script src="./api-platform.js?v=20260607"></script>
     <style>
-      /* 页面专有：模型线路分组 / 状态 pill / 重启按钮 / 危险 stat */
+      /* 页面专有：模型线路分�?/ 状�?pill / 重启按钮 / 危险 stat */
       .stat-card.danger {
         border-color: rgba(248, 113, 113, 0.4);
         background: rgba(248, 113, 113, 0.05);
@@ -224,7 +224,7 @@
   <body>
     <div class="container">
       <nav class="nav">
-        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin_dashboard.html">仪表�?/a>
         <a href="./admin.html">审核</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_usage.html">调用日志</a>
@@ -233,19 +233,19 @@
         <a href="./admin_users.html">用户</a>
         <a href="./admin_appeals.html">申诉</a>
         <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审核</a>
+        <a href="./admin_orbit.html">百万亿审�?/a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../" style="color: var(--text-faint)"
-          >← 返回聊天</a
+          >�?返回聊天</a
         >
       </nav>
 
-      <div id="loading" class="loading">检查权限中…</div>
+      <div id="loading" class="loading">检查权限中�?/div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登录</h2>
-        <p>请先登录账号，验证你的管理员身份。</p>
+        <h2>需要登�?/h2>
+        <p>请先登录账号，验证你的管理员身份�?/p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
@@ -253,8 +253,7 @@
         <h2>无权访问</h2>
         <p>
           这个页面仅站点管理员可见。如果你认为这是误判，请联系
-          <code>站主</code>。
-        </p>
+          <code>站主</code>�?        </p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
@@ -262,27 +261,26 @@
         <header>
           <h1>模型线路</h1>
           <p>
-            上游密钥失效（401/402/quota）时会被自动写入禁用表，路由器在 60s
-            内绕开。轮换密钥后点"恢复"重新启用。
-          </p>
+            上游密钥失效�?01/402/quota）时会被自动写入禁用表，路由器在 60s
+            内绕开。轮换密钥后�?恢复"重新启用�?          </p>
         </header>
 
         <div class="stats">
           <div class="stat-card">
             <div class="label">总线路数</div>
-            <div class="value" id="stat-total">—</div>
+            <div class="value" id="stat-total">�?/div>
           </div>
           <div class="stat-card">
             <div class="label">canonical 模型</div>
-            <div class="value" id="stat-groups">—</div>
+            <div class="value" id="stat-groups">�?/div>
           </div>
           <div class="stat-card danger">
-            <div class="label">已禁用线路</div>
-            <div class="value" id="stat-disabled">—</div>
+            <div class="label">已禁用线�?/div>
+            <div class="value" id="stat-disabled">�?/div>
           </div>
           <div class="stat-card">
             <div class="label">健康线路</div>
-            <div class="value" id="stat-healthy">—</div>
+            <div class="value" id="stat-healthy">�?/div>
           </div>
         </div>
 
@@ -292,7 +290,7 @@
               全部<span class="count" id="cnt-all">0</span>
             </button>
             <button class="filter-btn" data-filter="dead">
-              已禁用<span class="count" id="cnt-dead">0</span>
+              已禁�?span class="count" id="cnt-dead">0</span>
             </button>
             <button class="filter-btn" data-filter="live">
               健康<span class="count" id="cnt-live">0</span>
@@ -302,10 +300,10 @@
             id="search"
             class="search-box"
             type="search"
-            placeholder="搜模型 ID / canonical / 品牌…"
+            placeholder="搜模�?ID / canonical / 品牌�?
             autocomplete="off"
           />
-          <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+          <button class="reload-btn" id="reload-btn">�?刷新</button>
         </div>
 
         <div id="groups"></div>
@@ -315,13 +313,13 @@
     </div>
 
     <script src="../cancri_config.js"></script>
-    <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+    <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详�?js/fingerprint.js 顶部注释�?-->
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
       crossorigin="anonymous"
     ></script>
-    <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-lines-app.js。 -->
+    <!-- 2026-05-13 审查：原 inline <script> 抽离�?admin-lines-app.js�?-->
     <script src="./admin-lines-app.js?v=2026-05-19-permission-init"></script>
   </body>
 </html>

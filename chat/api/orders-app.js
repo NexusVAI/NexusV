@@ -271,17 +271,28 @@ async function init() {
     const loading = document.getElementById("loading");
     const gate = document.getElementById("login-gate");
     const main = document.getElementById("main-section");
-    const { data: { user } } = await sb.auth.getUser();
-    loading.style.display = "none";
-    if (!user || user.is_anonymous) {
-        gate.style.display = "block";
-        return;
-    }
-    main.style.display = "block";
+    const loadErr = document.getElementById("orders-load-error");
     try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (loading) loading.style.display = "none";
+        if (!session || !session.user || session.user.is_anonymous) {
+            if (gate) gate.style.display = "block";
+            return;
+        }
+        if (main) main.style.display = "block";
         await loadAll();
     } catch (e) {
-        console.error("loadAll:", e);
+        console.error("orders init:", e);
+        if (loading) loading.style.display = "none";
+        if (main) main.style.display = "block";
+        if (loadErr) {
+            loadErr.style.display = "block";
+            loadErr.textContent =
+                "订单加载失败：" +
+                ((e.body && (e.body.message || e.body.error)) || e.message || "请刷新重试");
+        } else {
+            showMsg(document.getElementById("activate-msg"), "订单加载失败，请刷新页面。", "warn");
+        }
     }
 }
 

@@ -4,17 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-13 审查：抽离内联 script 到 admin-app.js，删 'unsafe-inline'。
-         style-src 仍保留 'unsafe-inline'因为 row 渲染中用了少量内联 style 属性。 -->
+    <!-- 2026-05-13 审查：抽离内�?script �?admin-app.js，删 'unsafe-inline'�?         style-src 仍保�?'unsafe-inline'因为 row 渲染中用了少量内�?style 属性�?-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理员 · API 审核 · Cancri</title>
+    <title>管理�?· API 审核 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
     <script src="./_anti-debug.js"></script>
-    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-admin" />
+    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-layout-fix" />
     <script src="./api-platform.js?v=20260607"></script>
     <style>
-      /* 页面专有：IP 标签 / 批量操作条 / 行复选 / 审核按钮 */
+      /* 页面专有：IP 标签 / 批量操作�?/ 行复�?/ 审核按钮 */
       .ip-link {
         color: var(--text-mute);
         cursor: pointer;
@@ -169,16 +168,13 @@
         cursor: not-allowed;
       }
       /* 2026-05-16：审核页 enrichment 视觉 */
-      /* 表格本身设最小宽度：邮箱(240) + 用途(140) + IP(210) + 状态(86)
-         + 时间(130) + 操作(220) + checkbox(32) + 间距 ≈ 1100px，窄屏
-         .table-wrap overflow-x: auto 接管横向滚动，"用途说明"不再被
-         挤成竖排单字。 */
+      /* 表格本身设最小宽度：邮箱(240) + 用�?140) + IP(210) + 状�?86)
+         + 时间(130) + 操作(220) + checkbox(32) + 间距 �?1100px，窄�?         .table-wrap overflow-x: auto 接管横向滚动�?用途说�?不再�?         挤成竖排单字�?*/
       .apply-table {
         min-width: 1100px;
         width: 100%;
       }
-      /* 邮箱列内容多行（邮箱 + tier + risk pills + 用户上下文），td 顶
-         对齐让所有列从同一基线起 */
+      /* 邮箱列内容多行（邮箱 + tier + risk pills + 用户上下文），td �?         对齐让所有列从同一基线�?*/
       .apply-table tbody td {
         vertical-align: top;
         padding-top: 10px;
@@ -189,12 +185,12 @@
         word-break: break-word;
         line-height: 1.5;
       }
-      /* IP 列 + 地理小字 — 允许换行 */
+      /* IP �?+ 地理小字 �?允许换行 */
       .apply-table .ip {
         word-break: break-word;
         line-height: 1.5;
       }
-      /* 操作列 — 3 个按钮挤一起时允许折行（防止溢出截掉） */
+      /* 操作�?�?3 个按钮挤一起时允许折行（防止溢出截掉） */
       .actions {
         flex-wrap: wrap;
       }
@@ -320,12 +316,12 @@
     </style>
   </head>
   <body>
-    <!-- admin.html 用 wide container（1400px）容纳 enrichment 后的 1100px 宽表格，
-         避免在大屏（>= 1440px）也出现横向滚动。窄屏 (<1440px) 仍由 .table-wrap
-         的 overflow-x: auto 兜底滚动。 -->
+    <!-- admin.html �?wide container�?400px）容�?enrichment 后的 1100px 宽表格，
+         避免在大屏（>= 1440px）也出现横向滚动。窄�?(<1440px) 仍由 .table-wrap
+         �?overflow-x: auto 兜底滚动�?-->
     <div class="container container--wide">
       <nav class="nav">
-        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin_dashboard.html">仪表�?/a>
         <a href="./admin.html" class="active">审核</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_usage.html">调用日志</a>
@@ -333,19 +329,19 @@
         <a href="./admin_users.html">用户</a>
         <a href="./admin_appeals.html">申诉</a>
         <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审核</a>
+        <a href="./admin_orbit.html">百万亿审�?/a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../" style="color: var(--text-faint)"
-          >← 返回聊天</a
+          >�?返回聊天</a
         >
       </nav>
 
-      <div id="loading" class="loading">检查权限中…</div>
+      <div id="loading" class="loading">检查权限中�?/div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登录</h2>
-        <p>请先登录账号，验证你的管理员身份。</p>
+        <h2>需要登�?/h2>
+        <p>请先登录账号，验证你的管理员身份�?/p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
@@ -353,33 +349,32 @@
         <h2>无权访问</h2>
         <p>
           这个页面仅站点管理员可见。如果你认为这是误判，请联系
-          <code>站主</code>。
-        </p>
+          <code>站主</code>�?        </p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
       <div id="main" style="display: none">
         <header>
           <h1>API 申请审核</h1>
-          <p>查看待审核的 API Key 申请，一键 approve / reject。</p>
+          <p>查看待审核的 API Key 申请，一�?approve / reject�?/p>
         </header>
 
         <div class="stats" id="stats">
           <div class="stat-card pending">
-            <div class="label">待审核</div>
-            <div class="value" id="stat-pending">—</div>
+            <div class="label">待审�?/div>
+            <div class="value" id="stat-pending">�?/div>
           </div>
           <div class="stat-card approved">
             <div class="label">已通过</div>
-            <div class="value" id="stat-approved">—</div>
+            <div class="value" id="stat-approved">�?/div>
           </div>
           <div class="stat-card rejected">
-            <div class="label">已拒绝</div>
-            <div class="value" id="stat-rejected">—</div>
+            <div class="label">已拒�?/div>
+            <div class="value" id="stat-rejected">�?/div>
           </div>
           <div class="stat-card">
             <div class="label">总数</div>
-            <div class="value" id="stat-total">—</div>
+            <div class="value" id="stat-total">�?/div>
           </div>
         </div>
 
@@ -389,33 +384,31 @@
               全部<span class="count" id="cnt-all">0</span>
             </button>
             <button class="filter-btn" data-status="pending">
-              待审核<span class="count" id="cnt-pending">0</span>
+              待审�?span class="count" id="cnt-pending">0</span>
             </button>
             <button class="filter-btn" data-status="approved">
               已通过<span class="count" id="cnt-approved">0</span>
             </button>
             <button class="filter-btn" data-status="rejected">
-              已拒绝<span class="count" id="cnt-rejected">0</span>
+              已拒�?span class="count" id="cnt-rejected">0</span>
             </button>
           </div>
           <input
             id="search"
             class="search-box"
             type="search"
-            placeholder="搜邮箱 / IP / 用途 / user_id…"
+            placeholder="搜邮�?/ IP / 用�?/ user_id�?
             autocomplete="off"
           />
-          <button class="reload-btn" id="reload-btn">↻ 刷新</button>
+          <button class="reload-btn" id="reload-btn">�?刷新</button>
         </div>
 
         <div class="ip-filter-bar" id="ipFilterBar">
-          已锁定 IP <code id="ipFilterValue"></code>，仅显示该 IP 的申请
-          <button id="ipFilterClear">取消筛选</button>
+          已锁�?IP <code id="ipFilterValue"></code>，仅显示�?IP 的申�?          <button id="ipFilterClear">取消筛�?/button>
         </div>
 
         <div class="batch-bar" id="batchBar">
-          已选 <span class="count-pill" id="batchCount">0</span> 条申请
-          <button class="btn-batch approve" id="batchApprove">批量通过</button>
+          已�?<span class="count-pill" id="batchCount">0</span> 条申�?          <button class="btn-batch approve" id="batchApprove">批量通过</button>
           <button class="btn-batch reject" id="batchReject">批量拒绝</button>
           <button class="btn-clear" id="batchClear">取消选择</button>
         </div>
@@ -425,19 +418,19 @@
             <thead>
               <tr>
                 <th style="width: 32px">
-                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可见" />
+                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可�? />
                 </th>
                 <th style="width: 240px">邮箱</th>
-                <th style="min-width: 140px">用途说明</th>
+                <th style="min-width: 140px">用途说�?/th>
                 <th style="width: 210px">IP</th>
-                <th style="width: 86px">状态</th>
+                <th style="width: 86px">状�?/th>
                 <th style="width: 130px">提交时间</th>
                 <th style="width: 220px">操作</th>
               </tr>
             </thead>
             <tbody id="rows">
               <tr>
-                <td colspan="7" class="empty">加载中…</td>
+                <td colspan="7" class="empty">加载中�?/td>
               </tr>
             </tbody>
           </table>
@@ -448,7 +441,7 @@
     </div>
 
     <script src="../cancri_config.js"></script>
-    <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+    <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详�?js/fingerprint.js 顶部注释�?-->
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
@@ -456,6 +449,6 @@
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
     <script src="./admin-app.js?v=2026-05-19-permission-init"></script>
-    <!-- 2026-05-13 审查：原 inline <script>（296-692 行）抽离到 admin-app.js。 -->
+    <!-- 2026-05-13 审查：原 inline <script>�?96-692 行）抽离�?admin-app.js�?-->
   </body>
 </html>

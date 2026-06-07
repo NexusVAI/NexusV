@@ -411,7 +411,7 @@ async function actComment(id, scope, decision, card) {
       `作者：${c.email || "(无邮箱)"} (UID ${shortId(c.user_id)})\n` +
       `内容：${(c.content || "").slice(0, 60)}${c.content && c.content.length > 60 ? "…" : ""}\n` +
       `─────────────────\n` +
-      `奖励：Pro 30 天激活码 + 1000 万 token\n` +
+      `奖励：Pro 30 天激活码 + 1,000 积分\n` +
       `每个作者最多 1 条被精选。本动作会自动生成激活码（用户可在订单页激活）。`,
     );
     if (!ok) return;
@@ -430,7 +430,7 @@ async function actComment(id, scope, decision, card) {
         `✓ 已精选！\n\n` +
         `激活码：${r.activation_code}\n` +
         `（已点击复制按钮自动复制，发给作者）\n\n` +
-        `Token：+${Number(r.tokens_granted || 0).toLocaleString()}\n` +
+        `积分：+${window.CancriCredits ? window.CancriCredits.fmt(r.tokens_granted || 0) : Number(r.tokens_granted || 0).toLocaleString()}\n` +
         `Pro 天数：${r.pro_days || 30}`;
       if (r.activation_code) {
         try { await navigator.clipboard.writeText(r.activation_code); } catch (_) {}
@@ -445,7 +445,7 @@ async function actComment(id, scope, decision, card) {
     return;
   }
   if (decision === "unfeature") {
-    if (!confirm(`取消精选 #${id}？已发出的 token 和 Pro 激活码不会撤回。`)) return;
+    if (!confirm(`取消精选 #${id}？已发出的积分和 Pro 激活码不会撤回。`)) return;
     const buttons = card.querySelectorAll("button");
     buttons.forEach((b) => (b.disabled = true));
     try {

@@ -316,6 +316,7 @@ function renderPricingSubtitle() {
     const pp = CLIENT_CATALOG.subscription.pro_plus;
     const pm = CLIENT_CATALOG.subscription.pro_max;
     const ts = CLIENT_CATALOG.topup.topup_small;
+    const topupFrom = Math.max(0, Number(ts && ts.amount) || 10);
     if (pricingMeta && pricingMeta.in_window) {
         // source: 'window' = 满月一次性窗口；'weekly' = 每周末自动折扣
         const promoLabel = pricingMeta.source === "weekly"
@@ -326,13 +327,13 @@ function renderPricingSubtitle() {
             "Pro ¥" + esc(fmtPrice(pro.amount)) +
             " / Pro+ ¥" + esc(fmtPrice(pp.amount)) +
             " / Pro Max ¥" + esc(fmtPrice(pm.amount)) +
-            " · ¥" + esc(fmtPrice(ts.amount)) + " 起加油包永不过期";
+            " · ¥" + esc(fmtPrice(topupFrom)) + " 起加油包永不过期";
     } else {
         el.textContent =
             "¥" + fmtPrice(pro.amount) +
             " / ¥" + fmtPrice(pp.amount) +
             " / ¥" + fmtPrice(pm.amount) +
-            " 三档月度订阅 · ¥" + fmtPrice(ts.amount) + " 起加油包永不过期";
+            " 三档月度订阅 · ¥" + fmtPrice(topupFrom) + " 起加油包永不过期";
     }
 }
 
@@ -343,6 +344,8 @@ let selection = null; // { kind: 'subscription'|'topup', code: 'pro'|...|'topup_
 // 与后端 handleSubmitPaymentOrder 同口径（原价做差、最低 ¥1）。仅预览，真实金额以提交后订单为准。
 let currentSub = null;
 const PLAN_RANK = { pro: 1, pro_plus: 2, pro_max: 3 };
+// 2026-06-04 与后端同步：剩余 < 此天数不给 proration 升级（防临到期薅），改满价买新周期。
+const UPGRADE_MIN_REMAINING_DAYS = 7;
 function planLabelOf(code) {
     return code === "pro_plus" ? "Pro+" : (code === "pro_max" ? "Pro Max" : "Pro");
 }
@@ -352,6 +355,8 @@ function computeUpgradePreview(planCode) {
     if (!PLAN_RANK[cur] || !PLAN_RANK[planCode]) return null;
     if (PLAN_RANK[planCode] <= PLAN_RANK[cur]) return null; // 同档/降档不是升级
     const days = Math.max(1, Math.floor(Number(currentSub.days_remaining) || 0));
+    // 剩余不足阈值：后端不会按差价升级（改满价新周期）→ 前端也不显示升级差价预览，避免误导。
+    if (days < UPGRADE_MIN_REMAINING_DAYS) return null;
     const tgt = Number((CLIENT_CATALOG.subscription[planCode] || {}).amount_original) || 0;
     const curMonth = Number((CLIENT_CATALOG.subscription[cur] || {}).amount_original) || 0;
     const prorated = ((tgt - curMonth) / 30) * days;
@@ -541,43 +546,50 @@ async function init() {
     const formSection = document.getElementById("order-form-section");
     const orderEmpty = document.getElementById("order-empty");
 
-    // 2026-05-29 价位 / 折扣拉取：在鉴权之前跑，同时适用于未登录浏览
-    // （RPC GRANT 了 anon）。不 await 会走 fallback、但初渲染拿不到折后价。
-    loadPricing();
+    try {
+        await loadPricing();
 
-    const { data: { user } } = await sb.auth.getUser();
-    loading.style.display = "none";
-    if (!user || user.is_anonymous) {
-        gate.style.display = "block";
-        return;
+        const { data: { session } } = await sb.auth.getSession();
+        if (loading) loading.style.display = "none";
+        if (!session || !session.user || session.user.is_anonymous) {
+            if (gate) gate.style.display = "block";
+            return;
+        }
+
+        const user = session.user;
+        const emailInput = document.getElementById("of-email");
+        if (user.email && emailInput) emailInput.value = user.email;
+
+        if (formSection) formSection.style.display = "none";
+        if (orderEmpty) orderEmpty.style.display = "block";
+
+        await loadCurrentSubscription();
+
+        document.querySelectorAll("[data-plan-select]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                selectPlan(btn.getAttribute("data-plan-select"));
+                const formCard = document.getElementById("order-card");
+                if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        });
+        document.querySelectorAll("[data-topup-select]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                selectTopup(btn.getAttribute("data-topup-select"));
+                const formCard = document.getElementById("order-card");
+                if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        });
+        setupPaymentMethodTabs();
+    } catch (e) {
+        console.error("pricing init:", e);
+        if (loading) loading.style.display = "none";
+        if (gate) {
+            gate.style.display = "block";
+            gate.innerHTML =
+                '<p style="color:var(--err);margin-bottom:12px">页面加载失败，请刷新重试。</p>' +
+                '<a href="./" class="btn-secondary">返回聊天</a>';
+        }
     }
-
-    // 预填邮箱
-    const emailInput = document.getElementById("of-email");
-    if (user.email) emailInput.value = user.email;
-
-    // 初始：未选档位 → 显示 empty 提示
-    if (formSection) formSection.style.display = "none";
-    if (orderEmpty) orderEmpty.style.display = "block";
-
-    await loadCurrentSubscription();
-
-    // 绑定档位选择按钮
-    document.querySelectorAll("[data-plan-select]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            selectPlan(btn.getAttribute("data-plan-select"));
-            const formCard = document.getElementById("order-card");
-            if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-    });
-    document.querySelectorAll("[data-topup-select]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            selectTopup(btn.getAttribute("data-topup-select"));
-            const formCard = document.getElementById("order-card");
-            if (formCard) formCard.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-    });
-    setupPaymentMethodTabs();
 }
 
 // ────────── 支付方式切换胶囊 ──────────

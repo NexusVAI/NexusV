@@ -8,14 +8,14 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>管理员 · 订单审核 · Cancri</title>
+        <title>管理�?· 订单审核 · Cancri</title>
         <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
         <script src="./_anti-debug.js"></script>
-        <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-admin" />
+        <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-layout-fix" />
         <script src="./api-platform.js?v=20260607"></script>
         <style>
-            /* 页面专有：状态 pill / 设备指纹 / 用户上下文（共用 order-row 样式在 api-platform.css） */
+            /* 页面专有：状�?pill / 设备指纹 / 用户上下文（共用 order-row 样式�?api-platform.css�?*/
             .status-pill {
                 display: inline-block;
                 padding: 2px 10px;
@@ -40,7 +40,7 @@
                 background: rgba(248, 113, 113, 0.18);
                 color: #f87171;
             }
-            /* 2026-05-16：订单行下方设备指纹折叠块 */
+            /* 2026-05-16：订单行下方设备指纹折叠�?*/
             .dev-block {
                 grid-column: 1 / -1;
                 margin-top: 10px;
@@ -65,7 +65,7 @@
             }
             .dev-summary::-webkit-details-marker { display: none; }
             .dev-summary::before {
-                content: "▶";
+                content: "�?;
                 font-size: 9px;
                 transition: transform 0.15s ease;
                 color: var(--text-faint);
@@ -126,7 +126,7 @@
                 font-size: 11.5px;
                 user-select: all;
             }
-            /* 2026-05-16：用户上下文 pill 行（注册时长 / 历史订单 / 用量 / 封禁） */
+            /* 2026-05-16：用户上下文 pill 行（注册时长 / 历史订单 / 用量 / 封禁�?*/
             .ctx-row {
                 grid-column: 1 / -1;
                 margin-top: 8px;
@@ -201,7 +201,7 @@
     <body>
         <div class="container">
             <nav class="nav">
-                <a href="./admin_dashboard.html">仪表盘</a>
+                <a href="./admin_dashboard.html">仪表�?/a>
                 <a href="./admin_users.html">用户</a>
                 <a href="./admin_orders.html" class="active">订单</a>
                 <a href="./admin_usage.html">调用日志</a>
@@ -209,17 +209,17 @@
                 <a href="./admin.html">API 申请</a>
                 <a href="./admin_appeals.html">申诉</a>
                 <a href="./admin_stories.html">满月故事</a>
-                <a href="./admin_orbit.html">百万亿审核</a>
+                <a href="./admin_orbit.html">百万亿审�?/a>
                 <span class="badge-admin">ADMIN</span>
                 <span class="spacer"></span>
-                <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+                <a href="../" style="color: var(--text-faint)">�?返回聊天</a>
             </nav>
 
-            <div id="loading" class="loading">检查权限中…</div>
+            <div id="loading" class="loading">检查权限中�?/div>
 
             <div id="login-gate" class="gate" style="display: none">
-                <h2>需要登录</h2>
-                <p>请先登录账号，验证你的管理员身份。</p>
+                <h2>需要登�?/h2>
+                <p>请先登录账号，验证你的管理员身份�?/p>
                 <a class="btn-primary" href="../">前往登录</a>
             </div>
 
@@ -227,8 +227,7 @@
                 <h2>无权访问</h2>
                 <p>
                     这个页面仅站点管理员可见。如果你认为这是误判，请联系
-                    <code>站主</code>。
-                </p>
+                    <code>站主</code>�?                </p>
                 <a class="btn-primary" href="../">返回聊天</a>
             </div>
 
@@ -236,8 +235,7 @@
                 <header>
                     <h1>付费订单审核</h1>
                     <p>
-                        审核三档订阅与加油包订单。对账时以每条订单的<strong>用户应付</strong>为准（含升级补差 / 促销），勿按标价 ¥9.9 等默认值核对。审核通过会自动生成激活码。
-                    </p>
+                        审核三档订阅与加油包订单。对账时以每条订单的<strong>用户应付</strong>为准（含升级补差 / 促销），勿按标价 ¥9.9 等默认值核对。审核通过会自动生成激活码�?                    </p>
                 </header>
 
                 <div id="ops-alerts" style="display: none"></div>
@@ -245,46 +243,45 @@
                 <div class="stats" id="stats">
                     <div class="stat-card pending">
                         <div class="label">待审</div>
-                        <div class="value" id="stat-submitted">—</div>
+                        <div class="value" id="stat-submitted">�?/div>
                     </div>
                     <div class="stat-card approved">
-                        <div class="label">已通过 · 待激活</div>
-                        <div class="value" id="stat-approved">—</div>
+                        <div class="label">已通过 · 待激�?/div>
+                        <div class="value" id="stat-approved">�?/div>
                     </div>
                     <div class="stat-card">
-                        <div class="label">已激活</div>
-                        <div class="value" id="stat-activated">—</div>
+                        <div class="label">已激�?/div>
+                        <div class="value" id="stat-activated">�?/div>
                     </div>
                     <div class="stat-card rejected">
-                        <div class="label">已拒绝</div>
-                        <div class="value" id="stat-rejected">—</div>
+                        <div class="label">已拒�?/div>
+                        <div class="value" id="stat-rejected">�?/div>
                     </div>
                 </div>
 
                 <div class="grant-panel">
                     <div class="grant-panel-title">指定邮箱赠送激活码</div>
                     <p class="grant-panel-hint">
-                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用。
-                    </p>
+                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用�?                    </p>
                     <div class="grant-form">
                         <input
                             type="email"
                             id="grantEmail"
-                            placeholder="对方邮箱（QQ / Foxmail）"
+                            placeholder="对方邮箱（QQ / Foxmail�?
                             autocomplete="off"
                             maxlength="200"
                         />
                         <select id="grantSku" class="grant-form-select">
-                            <option value="plan:pro">订阅 · Pro（¥9.9 / 2000 万 token / 30 天）</option>
-                            <option value="plan:pro_plus">订阅 · Pro+（¥29 / 8000 万 token / 30 天）</option>
-                            <option value="plan:pro_max">订阅 · Pro Max（¥99 / 3 亿 token / 30 天）</option>
-                            <option value="topup:topup_small">加油包 · 1500 万 token（¥10）</option>
-                            <option value="topup:topup_medium">加油包 · 9000 万 token（¥50）</option>
-                            <option value="topup:topup_large">加油包 · 4 亿 token（¥200）</option>
+                            <option value="plan:pro">订阅 · Pro（�?.9 / 2,000 积分 / 30 天）</option>
+                            <option value="plan:pro_plus">订阅 · Pro+（�?9 / 8,000 积分 / 30 天）</option>
+                            <option value="plan:pro_max">订阅 · Pro Max（�?9 / 30,000 积分 / 30 天）</option>
+                            <option value="topup:topup_small">加油�?· 1,500 积分（�?0�?/option>
+                            <option value="topup:topup_medium">加油�?· 9,000 积分（�?0�?/option>
+                            <option value="topup:topup_large">加油�?· 40,000 积分（�?00�?/option>
                         </select>
                         <textarea
                             id="grantNote"
-                            placeholder="备注（可选 · 仅站主可见，比如 '送 abc 一个月'）"
+                            placeholder="备注（可�?· 仅站主可见，比如 '�?abc 一个月'�?
                             maxlength="500"
                         ></textarea>
                         <button class="btn-grant" id="grantBtn" type="button">生成激活码</button>
@@ -294,34 +291,34 @@
 
                 <div class="filter-group" id="statusFilter">
                     <button class="filter-btn active" data-status="">全部</button>
-                    <button class="filter-btn" data-status="submitted">待审核</button>
+                    <button class="filter-btn" data-status="submitted">待审�?/button>
                     <button class="filter-btn" data-status="approved">已通过</button>
-                    <button class="filter-btn" data-status="activated">已激活</button>
-                    <button class="filter-btn" data-status="rejected">已拒绝</button>
+                    <button class="filter-btn" data-status="activated">已激�?/button>
+                    <button class="filter-btn" data-status="rejected">已拒�?/button>
                     <button class="reload-btn" id="reload-btn" style="margin-left: auto">
-                        ↻ 刷新
+                        �?刷新
                     </button>
                 </div>
 
                 <div id="orders"></div>
 
                 <div id="empty-msg" class="empty" style="display: none">
-                    没有匹配的订单。
-                </div>
+                    没有匹配的订单�?                </div>
             </div>
 
             <div id="toast" class="toast"></div>
         </div>
 
         <script src="../cancri_config.js"></script>
-        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详�?js/fingerprint.js 顶部注释�?-->
         <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <!-- 2026-05-13 审查：原 inline <script> 抽离到 admin-orders-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
-        <script src="./admin-orders-app.js?v=2026-06-07-admin-v2"></script>
+        <!-- 2026-05-13 审查：原 inline <script> 抽离�?admin-orders-app.js，并�?CSP �?'unsafe-inline' script-src�?-->
+        <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
+        <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
+        <script src="./admin-orders-app.js?v=2026-06-07-credits"></script>
     </body>
 </html>

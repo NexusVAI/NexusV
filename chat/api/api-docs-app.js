@@ -16,11 +16,33 @@
 const $ = (id) => document.getElementById(id);
 
 // ─── 0. Visible-section helper ──────────────────────────────────────────
-// 2026-05-22 单页后只看 main 直属 section[id]。这样 .faq-item 内嵌的
-// section/article 等元素不会污染 toc / outline / pager 集合；当前文档
-// 共 22 条顶层 section 进入滚动响应周期。
+// 顶层 section[id] = 分页单元（Cursor 文档式，每页底部自带 prev/next）。
+function getDocPages() {
+    return Array.from(document.querySelectorAll("main > section[id]"));
+}
 function getVisibleSections() {
-    return document.querySelectorAll("main > section[id]");
+    return getDocPages();
+}
+const DOC_PAGES = getDocPages();
+const DOC_MAIN = document.querySelector("main");
+
+function getPageTitle(section) {
+    if (!section) return "";
+    const h2 = section.querySelector(":scope > h2");
+    return h2 ? h2.textContent.trim() : section.id;
+}
+
+function resolvePageId(anyId) {
+    if (!anyId) return DOC_PAGES[0] ? DOC_PAGES[0].id : "";
+    const el = document.getElementById(anyId);
+    if (!el) return DOC_PAGES[0] ? DOC_PAGES[0].id : "";
+    if (DOC_PAGES.includes(el)) return el.id;
+    let cur = el.parentElement;
+    while (cur && cur !== DOC_MAIN) {
+        if (cur.id && DOC_PAGES.includes(cur)) return cur.id;
+        cur = cur.parentElement;
+    }
+    return DOC_PAGES[0] ? DOC_PAGES[0].id : "";
 }
 
 // ─── 1. Tabbed code blocks ────────────────────────────────────────────
@@ -68,33 +90,219 @@ document.querySelectorAll(".copy-icon").forEach((btn) => {
     });
 });
 
-// ─── 3. 左侧 toc 滚动高亮 ───────────────────────────────────────────
-// IntersectionObserver 阈值 -30% top / -60% bottom：视口中段进入视野的 section
-// 才会被认作「当前在读」，避免还没真正滚到就把高亮换走。隐藏页的
-// section 被 CSS display:none，getBoundingClientRect 为 0×0，不会被观察出
-// isIntersecting=true，所以 scroll-spy 会自动志 fail-closed——不需额外过滤。
-let sections = getVisibleSections();
-const tocLinks = document.querySelectorAll("aside.toc a");
-const tocObserver = new IntersectionObserver(
-    (entries) => {
-        entries.forEach((e) => {
-            if (e.isIntersecting) {
-                tocLinks.forEach((a) => a.classList.remove("active"));
-                const link = document.querySelector(
-                    `aside.toc a[href="#${e.target.id}"]`,
-                );
-                if (link) link.classList.add("active");
-            }
-        });
-    },
-    { rootMargin: "-30% 0px -60% 0px" },
-);
-function observeSections() {
-    sections = getVisibleSections();
-    sections.forEach((s) => tocObserver.observe(s));
+// ─── 3. 左侧 toc：折叠预览 + 高亮（分页模式） ─────────────────────────
+const TOC_COLLAPSED_HEIGHT = 220;
+
+function getTocCollapsedHeight(toc) {
+    const raw = getComputedStyle(toc).getPropertyValue("--toc-collapsed-h").trim();
+    const n = parseFloat(raw);
+    return Number.isFinite(n) ? n : TOC_COLLAPSED_HEIGHT;
 }
-observeSections();
-// 单页化后 DOM 不再随页面切换重构，section 集合在初始化后就是最终态。
+
+function initTocCollapse() {
+    const toc = document.querySelector("aside.toc");
+    if (!toc || toc.querySelector(".toc-body")) return;
+
+    const body = document.createElement("div");
+    body.className = "toc-body";
+    while (toc.firstChild) {
+        body.appendChild(toc.firstChild);
+    }
+    toc.appendChild(body);
+
+    const footer = document.createElement("div");
+    footer.className = "toc-footer";
+    footer.innerHTML =
+        '<div class="toc-fade" aria-hidden="true"></div>' +
+        '<button type="button" class="toc-toggle" aria-expanded="false" aria-label="展开全部目录">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<polyline points="6 9 12 15 18 9"></polyline>' +
+        "</svg>" +
+        '<span class="toc-toggle__text">展开全部</span>' +
+        "</button>";
+    toc.appendChild(footer);
+
+    const toggle = footer.querySelector(".toc-toggle");
+    const toggleText = footer.querySelector(".toc-toggle__text");
+
+    function syncCollapsible() {
+        const needs =
+            body.scrollHeight > getTocCollapsedHeight(toc) + 8;
+        toc.classList.toggle("toc-collapsible", needs);
+        if (!needs) {
+            toc.classList.remove("is-expanded");
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.setAttribute("aria-label", "展开全部目录");
+            toggleText.textContent = "展开全部";
+        }
+    }
+
+    toggle.addEventListener("click", () => {
+        const expanding = !toc.classList.contains("is-expanded");
+        toc.classList.toggle("is-expanded", expanding);
+        toggle.setAttribute("aria-expanded", String(expanding));
+        toggleText.textContent = expanding ? "收起" : "展开全部";
+        toggle.setAttribute(
+            "aria-label",
+            expanding ? "收起目录" : "展开全部目录",
+        );
+        if (!expanding) {
+            body.scrollTop = 0;
+        }
+    });
+
+    syncCollapsible();
+    window.addEventListener("resize", syncCollapsible);
+}
+
+function scrollTocActiveIntoView() {
+    const toc = document.querySelector("aside.toc");
+    const body = toc?.querySelector(".toc-body");
+    const active = toc?.querySelector("a.active");
+    if (!toc || !body || !active || toc.classList.contains("is-expanded")) {
+        return;
+    }
+    const bodyRect = body.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    if (activeRect.top < bodyRect.top) {
+        body.scrollTop -= bodyRect.top - activeRect.top + 4;
+    } else if (activeRect.bottom > bodyRect.bottom) {
+        body.scrollTop += activeRect.bottom - bodyRect.bottom + 4;
+    }
+}
+
+initTocCollapse();
+initTocPanel();
+
+const tocLinks = document.querySelectorAll("aside.toc a");
+
+function initTocPanel() {
+    const panel = document.getElementById("tocPanel");
+    const resizeHandle = document.getElementById("tocPanelResize");
+    const collapseBtn = document.getElementById("tocPanelCollapse");
+    if (!panel || !collapseBtn) return;
+
+    const MIN_W = 168;
+    const MAX_W = 380;
+    const DEFAULT_W = 220;
+    const COLLAPSED_W = 44;
+    const storedW = Number(localStorage.getItem("docs-toc-panel-width"));
+    let width = Number.isFinite(storedW) ? storedW : DEFAULT_W;
+    width = Math.min(MAX_W, Math.max(MIN_W, width));
+    let collapsed = localStorage.getItem("docs-toc-panel-collapsed") === "1";
+    let resizing = false;
+    const label = collapseBtn.querySelector(".toc-panel__collapse-label");
+
+    function syncCollapseUi() {
+        panel.classList.toggle("is-collapsed", collapsed);
+        collapseBtn.setAttribute("aria-expanded", String(!collapsed));
+        collapseBtn.setAttribute(
+            "aria-label",
+            collapsed ? "展开目录" : "收起目录",
+        );
+        if (label) label.textContent = collapsed ? "展开" : "收起";
+        if (collapsed) {
+            panel.style.width = COLLAPSED_W + "px";
+        } else {
+            panel.style.width = width + "px";
+        }
+    }
+
+    collapseBtn.addEventListener("click", () => {
+        collapsed = !collapsed;
+        localStorage.setItem(
+            "docs-toc-panel-collapsed",
+            collapsed ? "1" : "0",
+        );
+        syncCollapseUi();
+    });
+
+    if (resizeHandle) {
+        resizeHandle.addEventListener("pointerdown", (e) => {
+            if (collapsed || window.innerWidth <= 800) return;
+            resizing = true;
+            resizeHandle.setPointerCapture(e.pointerId);
+            document.body.classList.add("toc-is-resizing");
+        });
+        resizeHandle.addEventListener("pointermove", (e) => {
+            if (!resizing) return;
+            e.preventDefault();
+            const left = panel.getBoundingClientRect().left;
+            width = Math.min(MAX_W, Math.max(MIN_W, e.clientX - left));
+            panel.style.width = width + "px";
+            localStorage.setItem("docs-toc-panel-width", String(Math.round(width)));
+        });
+        const endResize = (e) => {
+            if (!resizing) return;
+            resizing = false;
+            document.body.classList.remove("toc-is-resizing");
+            try {
+                resizeHandle.releasePointerCapture(e.pointerId);
+            } catch {
+                /* ignore */
+            }
+        };
+        resizeHandle.addEventListener("pointerup", endResize);
+        resizeHandle.addEventListener("pointercancel", endResize);
+    }
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth <= 800) {
+            panel.classList.remove("is-collapsed");
+            panel.style.width = "";
+        } else {
+            syncCollapseUi();
+        }
+    });
+
+    syncCollapseUi();
+}
+
+function setTocActiveForPage(pageId) {
+    tocLinks.forEach((a) => {
+        const href = a.getAttribute("href") || "";
+        if (!href.startsWith("#")) return;
+        const targetId = href.slice(1);
+        const linkPageId = resolvePageId(targetId);
+        a.classList.toggle("active", linkPageId === pageId && targetId === pageId);
+    });
+    rebuildTocInPageNav(pageId);
+    requestAnimationFrame(scrollTocActiveIntoView);
+}
+
+function getTocInpageAfter(link) {
+    const next = link?.nextElementSibling;
+    return next?.classList?.contains("toc-inpage") ? next : null;
+}
+
+function setTocSubnavExpanded(link, expanded) {
+    const inpage = getTocInpageAfter(link);
+    if (!link || !inpage) return false;
+    inpage.classList.toggle("is-open", expanded);
+    link.classList.toggle("toc-sub-expanded", expanded);
+    link.setAttribute("aria-expanded", String(expanded));
+    return true;
+}
+
+tocLinks.forEach((a) => {
+    a.addEventListener("click", (e) => {
+        const href = a.getAttribute("href");
+        if (!href || !href.startsWith("#")) return;
+        const targetId = href.slice(1);
+        const pageId = resolvePageId(targetId);
+        if (!pageId) return;
+        e.preventDefault();
+
+        const isPageLink = targetId === pageId;
+        const inpage = getTocInpageAfter(a);
+        if (isPageLink && a.classList.contains("active") && inpage) {
+            setTocSubnavExpanded(a, !inpage.classList.contains("is-open"));
+            return;
+        }
+
+        showDocPage(pageId, { anchorId: targetId !== pageId ? targetId : null });
+    });
+});
 
 // ─── 4. 右侧 outline（在此页面） ────────────────────────────────────────────
 // 扫 main 下所有 h2/h3 自动生成。h2 是节点标题（lvl-2，与 toc 一一对应），
@@ -114,6 +322,14 @@ if (outlineHost) {
                         x.link.classList.remove("is-active"),
                     );
                     link.classList.add("is-active");
+                    const tocBody = document.querySelector("aside.toc .toc-body");
+                    if (tocBody) {
+                        tocBody
+                            .querySelectorAll(".toc-inpage a")
+                            .forEach((a) => a.classList.remove("is-active"));
+                        const tocLink = e.target._tocInpageLink;
+                        if (tocLink) tocLink.classList.add("is-active");
+                    }
                 }
             });
         },
@@ -131,10 +347,12 @@ function rebuildOutline() {
     outlineHeadings = [];
     outlineHost.innerHTML = "";
     const fragment = document.createDocumentFragment();
-    document
-        .querySelectorAll("main h2, main h3")
-        .forEach((h) => {
-            if (!h.id) h.id = autoSlug(h.textContent, outlineHeadings.length);
+    const scope =
+        document.querySelector("main > section[id].is-docs-page-active") ||
+        document.querySelector("main");
+    const sectionId = scope.id || "";
+    scope.querySelectorAll("h2, h3").forEach((h, hi) => {
+            ensureHeadingId(h, hi, sectionId);
             const li = document.createElement("li");
             const a = document.createElement("a");
             a.href = "#" + h.id;
@@ -149,58 +367,239 @@ function rebuildOutline() {
     outlineHost.appendChild(fragment);
 }
 
-function autoSlug(text, idx) {
+function headingSlug(text, idx, sectionId) {
     const base = (text || "")
         .trim()
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]+/gu, "-")
         .replace(/^-+|-+$/g, "");
+    if (sectionId) {
+        return base ? `${sectionId}--${base}` : `${sectionId}--h-${idx}`;
+    }
     return base ? `h-${base}` : `h-auto-${idx}`;
 }
 
-// ─── 5. 底部 prev/next 导航 ────────────────────────────────────────
-// 2026-05-22 单页化后仅在同一文档相邻 section 之间跳转。文档第 1 / 末 section
-// 时，对侧链接 visibility:hidden（aria-disabled="true"）。
-const pager = document.getElementById("docsPager");
-let pagerObserver = null;
-if (pager) {
-    const prevLink = pager.querySelector(".docs-pager-prev");
-    const nextLink = pager.querySelector(".docs-pager-next");
-    pagerObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((e) => {
-                if (e.isIntersecting) {
-                    const idx = Array.from(sections).indexOf(e.target);
-                    if (idx >= 0) updatePager(idx);
-                }
-            });
-        },
-        { rootMargin: "-30% 0px -60% 0px" },
+function ensureHeadingId(h, idx, sectionId) {
+    const want = headingSlug(h.textContent, idx, sectionId);
+    if (!h.id || (sectionId && !h.id.startsWith(sectionId + "--"))) {
+        h.id = want;
+    }
+}
+
+function scrollToDocAnchor(section, anchorId, smooth) {
+    if (!section || !anchorId) return;
+    const esc =
+        typeof CSS !== "undefined" && CSS.escape
+            ? CSS.escape(anchorId)
+            : anchorId.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    let anchor = section.querySelector('[id="' + esc + '"]');
+    if (!anchor) anchor = document.getElementById(anchorId);
+    if (!anchor || !section.contains(anchor)) return;
+    anchor.scrollIntoView({
+        behavior: smooth !== false ? "smooth" : "auto",
+        block: "start",
+    });
+}
+
+function rebuildTocInPageNav(pageId) {
+    const body = document.querySelector("aside.toc .toc-body");
+    if (!body) return;
+    body.querySelectorAll(".toc-inpage").forEach((el) => el.remove());
+
+    const pageLink = body.querySelector('a[href="#' + pageId + '"]');
+    const section = document.getElementById(pageId);
+    if (!pageLink || !section) return;
+
+    pageLink.classList.remove("toc-has-subnav", "toc-sub-expanded");
+    pageLink.removeAttribute("aria-expanded");
+    pageLink.querySelectorAll(".toc-link-text, .toc-sub-chevron").forEach((el) => {
+        if (el.parentNode === pageLink) el.remove();
+    });
+    if (pageLink.dataset.tocLabel) {
+        pageLink.textContent = pageLink.dataset.tocLabel;
+        delete pageLink.dataset.tocLabel;
+    }
+
+    const headings = Array.from(section.querySelectorAll("h3"));
+    if (!headings.length) return;
+
+    if (!pageLink.dataset.tocLabel) {
+        pageLink.dataset.tocLabel = pageLink.textContent.trim();
+    }
+    const label = pageLink.dataset.tocLabel;
+    pageLink.textContent = "";
+    const textSpan = document.createElement("span");
+    textSpan.className = "toc-link-text";
+    textSpan.textContent = label;
+    const chevron = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chevron.setAttribute("class", "toc-sub-chevron");
+    chevron.setAttribute("viewBox", "0 0 24 24");
+    chevron.setAttribute("fill", "none");
+    chevron.setAttribute("stroke", "currentColor");
+    chevron.setAttribute("stroke-width", "2");
+    chevron.setAttribute("stroke-linecap", "round");
+    chevron.setAttribute("stroke-linejoin", "round");
+    chevron.setAttribute("aria-hidden", "true");
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    poly.setAttribute("points", "6 9 12 15 18 9");
+    chevron.appendChild(poly);
+    pageLink.appendChild(textSpan);
+    pageLink.appendChild(chevron);
+    pageLink.classList.add("toc-has-subnav");
+
+    const wrap = document.createElement("div");
+    wrap.className = "toc-inpage";
+    wrap.setAttribute("aria-label", "在此页面");
+    wrap.innerHTML =
+        '<div class="toc-inpage__inner">' +
+        '<span class="toc-inpage__label">在此页面</span>' +
+        '<ul class="toc-inpage__list"></ul>' +
+        "</div>";
+    const list = wrap.querySelector(".toc-inpage__list");
+
+    headings.forEach((h, hi) => {
+        ensureHeadingId(h, hi, pageId);
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = "#" + h.id;
+        a.textContent = h.textContent.trim();
+        a.addEventListener("click", (e) => {
+            e.preventDefault();
+            showDocPage(pageId, { anchorId: h.id });
+        });
+        li.appendChild(a);
+        list.appendChild(li);
+        h._tocInpageLink = a;
+    });
+
+    pageLink.insertAdjacentElement("afterend", wrap);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            setTocSubnavExpanded(pageLink, true);
+        });
+    });
+}
+
+// ─── 5. 分页式文档 + 每页底部 prev/next（Cursor 文档风格） ─────────────
+function buildSectionPagerNav(prevSection, nextSection) {
+    const nav = document.createElement("nav");
+    nav.className = "docs-section-pager";
+    nav.setAttribute("aria-label", "章节导航");
+
+    const prev = document.createElement("a");
+    prev.className = "docs-section-pager__prev";
+    const next = document.createElement("a");
+    next.className = "docs-section-pager__next";
+
+    if (prevSection) {
+        prev.href = "#" + prevSection.id;
+        prev.innerHTML =
+            '<span class="docs-section-pager__label">上一节</span>' +
+            '<span class="docs-section-pager__title"></span>';
+        prev.querySelector(".docs-section-pager__title").textContent =
+            getPageTitle(prevSection);
+        prev.addEventListener("click", (e) => {
+            e.preventDefault();
+            showDocPage(prevSection.id);
+        });
+    } else {
+        prev.href = "#";
+        prev.setAttribute("aria-disabled", "true");
+        prev.innerHTML =
+            '<span class="docs-section-pager__label">上一节</span>' +
+            '<span class="docs-section-pager__title"></span>';
+    }
+
+    if (nextSection) {
+        next.href = "#" + nextSection.id;
+        next.innerHTML =
+            '<span class="docs-section-pager__label">下一节</span>' +
+            '<span class="docs-section-pager__title"></span>';
+        next.querySelector(".docs-section-pager__title").textContent =
+            getPageTitle(nextSection);
+        next.addEventListener("click", (e) => {
+            e.preventDefault();
+            showDocPage(nextSection.id);
+        });
+    } else {
+        next.href = "#";
+        next.setAttribute("aria-disabled", "true");
+        next.innerHTML =
+            '<span class="docs-section-pager__label">下一节</span>' +
+            '<span class="docs-section-pager__title"></span>';
+    }
+
+    nav.appendChild(prev);
+    nav.appendChild(next);
+    return nav;
+}
+
+DOC_PAGES.forEach((section, idx) => {
+    if (section.querySelector(".docs-section-pager")) return;
+    section.appendChild(
+        buildSectionPagerNav(DOC_PAGES[idx - 1], DOC_PAGES[idx + 1]),
     );
-    function updatePager(currentIdx) {
-        const list = Array.from(sections);
-        setPagerLink(prevLink, list[currentIdx - 1]);
-        setPagerLink(nextLink, list[currentIdx + 1]);
+});
+
+let activeDocPageId = "";
+
+function showDocPage(pageId, opts = {}) {
+    const id = resolvePageId(pageId);
+    const section = document.getElementById(id);
+    if (!section || !DOC_MAIN) return;
+    activeDocPageId = id;
+    DOC_MAIN.classList.add("docs-paginated");
+    DOC_PAGES.forEach((s) => {
+        const on = s === section;
+        s.classList.toggle("is-docs-page-active", on);
+        s.toggleAttribute("hidden", !on);
+    });
+    const globalPager = document.getElementById("docsPager");
+    if (globalPager) globalPager.hidden = true;
+    setTocActiveForPage(id);
+    rebuildOutline();
+    const anchorTarget =
+        opts.anchorId && opts.anchorId !== id ? opts.anchorId : null;
+    const hashTarget = anchorTarget ? "#" + anchorTarget : "#" + id;
+    if (!opts.skipHash && location.hash !== hashTarget) {
+        history.replaceState(null, "", hashTarget);
     }
-    function setPagerLink(linkEl, section) {
-        if (!linkEl) return;
-        const titleEl = linkEl.querySelector(".docs-pager-title");
-        linkEl.onclick = null;
-        if (section) {
-            const h2 = section.querySelector("h2");
-            linkEl.removeAttribute("aria-disabled");
-            linkEl.href = "#" + section.id;
-            if (titleEl)
-                titleEl.textContent = h2 ? h2.textContent.trim() : section.id;
-            return;
-        }
-        linkEl.setAttribute("aria-disabled", "true");
-        linkEl.href = "#";
-        if (titleEl) titleEl.textContent = "";
+    if (anchorTarget) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                scrollToDocAnchor(section, anchorTarget, opts.smooth);
+            });
+        });
+    } else {
+        window.scrollTo({
+            top: 0,
+            behavior: opts.smooth ? "smooth" : "auto",
+        });
     }
-    sections.forEach((s) => pagerObserver.observe(s));
-    if (sections.length > 0) updatePager(0);
-    pager.hidden = false;
+}
+
+window.addEventListener("hashchange", () => {
+    const raw = location.hash.slice(1);
+    if (!raw) {
+        showDocPage(DOC_PAGES[0] ? DOC_PAGES[0].id : "", { skipHash: true });
+        return;
+    }
+    const pageId = resolvePageId(raw);
+    showDocPage(pageId, {
+        anchorId: raw !== pageId ? raw : null,
+        skipHash: true,
+    });
+});
+
+const initialHash = location.hash.slice(1);
+if (initialHash) {
+    const pageId = resolvePageId(initialHash);
+    showDocPage(pageId, {
+        anchorId: initialHash !== pageId ? initialHash : null,
+        skipHash: true,
+    });
+} else if (DOC_PAGES[0]) {
+    showDocPage(DOC_PAGES[0].id);
 }
 
 // ─── 6. 搜索：index 构建 + Cmd/Ctrl+K modal + 键盘导航 ──────────────────────
@@ -213,7 +612,17 @@ const searchInput = document.getElementById("docsSearchInput");
 const searchResultsHost = document.getElementById("docsSearchResults");
 const searchBackdrop = document.getElementById("docsSearchBackdrop");
 const searchTrigger = document.getElementById("docsSearchTrigger");
+const SEARCH_ANIM_MS = 300;
 let activeResultIdx = -1;
+let searchCloseTimer = 0;
+
+function isSearchOpen() {
+    return (
+        searchModal &&
+        !searchModal.hidden &&
+        searchModal.classList.contains("is-visible")
+    );
+}
 
 if (searchTrigger) searchTrigger.addEventListener("click", openSearch);
 if (searchBackdrop) searchBackdrop.addEventListener("click", closeSearch);
@@ -222,14 +631,19 @@ if (searchInput) {
     searchInput.addEventListener("keydown", onSearchKeydown);
 }
 document.addEventListener("keydown", (e) => {
-    const isOpen = searchModal && !searchModal.hidden;
+    const open = isSearchOpen();
+    const busy =
+        searchModal &&
+        !searchModal.hidden &&
+        searchModal.classList.contains("is-closing");
     // Cmd+K / Ctrl+K 全局唤起（页内任何位置）
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        isOpen ? closeSearch() : openSearch();
+        if (open || busy) closeSearch();
+        else openSearch();
         return;
     }
-    if (isOpen && e.key === "Escape") {
+    if ((open || busy) && e.key === "Escape") {
         e.preventDefault();
         closeSearch();
     }
@@ -243,8 +657,17 @@ if (modKey && /Mac|iPhone|iPad/.test(navigator.platform)) {
 
 function openSearch() {
     if (!searchModal || !searchInput) return;
+    if (searchCloseTimer) {
+        clearTimeout(searchCloseTimer);
+        searchCloseTimer = 0;
+    }
     searchModal.hidden = false;
-    // 微任务后再 focus + 选中，确保动画/display 切换完毕
+    searchModal.classList.remove("is-closing");
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            searchModal.classList.add("is-visible");
+        });
+    });
     queueMicrotask(() => {
         searchInput.value = "";
         searchInput.focus();
@@ -253,10 +676,21 @@ function openSearch() {
     document.body.style.overflow = "hidden";
 }
 function closeSearch() {
-    if (!searchModal) return;
-    searchModal.hidden = true;
-    document.body.style.overflow = "";
+    if (!searchModal || searchModal.hidden) return;
+    if (searchModal.classList.contains("is-closing")) return;
+    if (!searchModal.classList.contains("is-visible")) {
+        searchModal.hidden = true;
+        return;
+    }
+    searchModal.classList.add("is-closing");
     activeResultIdx = -1;
+    document.body.style.overflow = "";
+    if (searchCloseTimer) clearTimeout(searchCloseTimer);
+    searchCloseTimer = window.setTimeout(() => {
+        searchModal.classList.remove("is-visible", "is-closing");
+        searchModal.hidden = true;
+        searchCloseTimer = 0;
+    }, SEARCH_ANIM_MS);
 }
 
 function onSearchKeydown(e) {
@@ -365,10 +799,10 @@ function buildResultNode(entry, tokens, isFirst) {
         const target = document.getElementById(entry.id);
         if (!target) return;
         closeSearch();
-        // 2026-05-22 单页化后直接滚动到 anchor，不再有跨页切换。
-        requestAnimationFrame(() => {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-            history.replaceState(null, "", "#" + entry.id);
+        const pageId = resolvePageId(entry.id);
+        showDocPage(pageId, {
+            anchorId: entry.id !== pageId ? entry.id : null,
+            smooth: true,
         });
     });
     if (entry.crumbs) {
@@ -443,17 +877,82 @@ function truncateAround(text, tokens) {
     return (start > 0 ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
 }
 
-// ─── 7. 复制本页为 Markdown ─────────────────────────────────────────────────
+// ─── 7. 复制 Markdown（此页 / 全部） ───────────────────────────────────────
+const copyMdPicker = document.getElementById("docsCopyMdPicker");
 const copyMdBtn = document.getElementById("docsCopyMdBtn");
-if (copyMdBtn) {
-    copyMdBtn.addEventListener("click", async () => {
-        const md = serializeMainAsMarkdown();
-        try {
-            await navigator.clipboard.writeText(md);
-            flashButton(copyMdBtn, "docsCopyMdLabel", "已复制为 Markdown", "复制 Markdown");
-        } catch {
-            flashButton(copyMdBtn, "docsCopyMdLabel", "复制失败", "复制 Markdown");
-        }
+const copyMdMenu = document.getElementById("docsCopyMdMenu");
+const COPY_MENU_ANIM_MS = 200;
+let copyMdCloseTimer = 0;
+
+function setCopyMdMenuOpen(open) {
+    if (!copyMdPicker || !copyMdBtn || !copyMdMenu) return;
+    if (copyMdCloseTimer) {
+        clearTimeout(copyMdCloseTimer);
+        copyMdCloseTimer = 0;
+    }
+    if (open) {
+        copyMdPicker.classList.remove("is-closing");
+        copyMdMenu.hidden = false;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                copyMdPicker.classList.add("is-open");
+            });
+        });
+        copyMdBtn.setAttribute("aria-expanded", "true");
+        return;
+    }
+    if (!copyMdPicker.classList.contains("is-open")) {
+        copyMdMenu.hidden = true;
+        copyMdBtn.setAttribute("aria-expanded", "false");
+        return;
+    }
+    copyMdPicker.classList.remove("is-open");
+    copyMdPicker.classList.add("is-closing");
+    copyMdBtn.setAttribute("aria-expanded", "false");
+    copyMdCloseTimer = window.setTimeout(() => {
+        copyMdPicker.classList.remove("is-closing");
+        copyMdMenu.hidden = true;
+        copyMdCloseTimer = 0;
+    }, COPY_MENU_ANIM_MS);
+}
+
+function closeCopyMdMenu() {
+    setCopyMdMenuOpen(false);
+}
+
+async function copyMarkdownScope(scope) {
+    if (!copyMdBtn) return;
+    const md =
+        scope === "all"
+            ? serializeAllAsMarkdown()
+            : serializePageAsMarkdown();
+    try {
+        await navigator.clipboard.writeText(md);
+        const okText = scope === "all" ? "已复制全部" : "已复制此页";
+        flashButton(copyMdBtn, "docsCopyMdLabel", okText, "复制 Markdown");
+    } catch {
+        flashButton(copyMdBtn, "docsCopyMdLabel", "复制失败", "复制 Markdown");
+    }
+    closeCopyMdMenu();
+}
+
+if (copyMdBtn && copyMdMenu) {
+    copyMdBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open =
+            copyMdPicker.classList.contains("is-open") &&
+            !copyMdPicker.classList.contains("is-closing");
+        setCopyMdMenuOpen(!open);
+    });
+    copyMdMenu.querySelectorAll("[data-copy-scope]").forEach((item) => {
+        item.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            await copyMarkdownScope(item.dataset.copyScope);
+        });
+    });
+    document.addEventListener("click", () => closeCopyMdMenu());
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeCopyMdMenu();
     });
 }
 
@@ -503,13 +1002,18 @@ function flashButton(btn, labelId, flashText, originalText) {
 //   - .alert → > blockquote
 // 不嵌入任何文档外的内容，不发明字段。所有文本来自 DOM。
 
-function serializeMainAsMarkdown() {
-    const main = document.querySelector("main");
-    if (!main) return "";
+function serializePageAsMarkdown() {
+    const active = document.querySelector("main > section[id].is-docs-page-active");
+    if (!active) return "";
+    const md = nodeToMarkdown(active, 0);
+    return md ? md.trim() + "\n" : "";
+}
+
+function serializeAllAsMarkdown() {
     const out = [];
-    Array.from(main.children).forEach((node) => {
-        const md = nodeToMarkdown(node, 0);
-        if (md != null) out.push(md);
+    document.querySelectorAll("main > section[id]").forEach((section) => {
+        const md = nodeToMarkdown(section, 0);
+        if (md) out.push(md);
     });
     return out.join("\n\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
 }
@@ -518,7 +1022,8 @@ function nodeToMarkdown(node, depth) {
     if (!node || node.nodeType !== 1) return null;
     if (
         node.classList.contains("docs-toolbar") ||
-        node.classList.contains("docs-pager")
+        node.classList.contains("docs-pager") ||
+        node.classList.contains("docs-section-pager")
     )
         return null;
     const tag = node.tagName.toLowerCase();

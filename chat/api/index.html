@@ -18,15 +18,8 @@
   <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high" />
   <link rel="preload" as="image" href="../../Logo/Cancri.png" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet"
-  />
-
-  <link rel="stylesheet" href="./api-platform.css?v=2026-05-22-docs-single-page" />
-  <script src="./api-platform.js?v=20260513"></script>
+  <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
+  <script src="./api-platform.js?v=20260607-search-compact"></script>
   <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
        img.cancri-logo 的 src（黑/白），实现主题切换时 logo 跟随翻转。 -->
   <script src="../cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -227,8 +220,16 @@
       color: var(--cream-on);
     }
     .btn--primary:hover {
-      filter: brightness(1.04);
-      transform: translateY(-1px);
+      filter: none;
+      background: var(--cream-on);
+      color: var(--cream);
+      border-color: var(--cream-on);
+      transform: none;
+    }
+    :root[data-theme="light"] .btn--primary:hover {
+      background: #ffffff;
+      color: var(--cream);
+      border-color: var(--cream);
     }
     .btn--ghost {
       background: transparent;
@@ -236,7 +237,10 @@
       border-color: var(--line-2);
     }
     .btn--ghost:hover {
-      border-color: var(--ink-2);
+      background: var(--ink);
+      color: var(--bg);
+      border-color: var(--ink);
+      transform: none;
     }
     .btn .arrow {
       display: inline-block;
@@ -319,56 +323,57 @@
       overflow: hidden;
       color: rgba(255, 250, 245, 0.96);
       text-decoration: none;
-      background: rgba(255, 255, 255, 0.045);
+      background: rgba(255, 255, 255, 0.04);
       box-shadow:
-        0 18px 48px rgba(0, 0, 0, 0.22),
-        0 42px 90px rgba(0, 0, 0, 0.16);
+        0 10px 30px rgba(0, 0, 0, 0.25),
+        0 30px 60px rgba(0, 0, 0, 0.25);
       transform: translateZ(0);
+      will-change: transform;
       transition:
-        transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
-        box-shadow 180ms ease;
+        box-shadow 220ms ease,
+        transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .api-glass-pill:hover {
+    .api-glass-pill:hover:not(.is-stretching) {
       transform: translateY(-2px) scale(1.01);
       box-shadow:
-        0 22px 56px rgba(0, 0, 0, 0.26),
-        0 50px 110px rgba(0, 0, 0, 0.18);
+        0 14px 40px rgba(0, 0, 0, 0.3),
+        0 36px 80px rgba(0, 0, 0, 0.32);
     }
-    .api-glass-pill:active {
+    .api-glass-pill:active:not(.is-stretching) {
       transform: translateY(0) scale(0.985);
     }
+    .api-glass-pill.is-stretching {
+      cursor: grabbing;
+      transition: box-shadow 220ms ease;
+    }
     .api-glass-pill__warp,
-    .api-glass-pill__rim,
-    .api-glass-pill__shine {
+    .api-glass-pill__rim {
       position: absolute;
       inset: 0;
       border-radius: inherit;
       pointer-events: none;
     }
-    .api-glass-pill__warp {
-      -webkit-backdrop-filter:
-        url(#api-liquid-glass-filter)
-        blur(5px)
-        saturate(150%)
-        brightness(1.08);
-      backdrop-filter:
-        url(#api-liquid-glass-filter)
-        blur(5px)
-        saturate(150%)
-        brightness(1.08);
-    }
     .api-glass-pill__rim {
       box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.34),
-        inset 0 1px 0 rgba(255, 255, 255, 0.42),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+        inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+        inset 0 -1px 0 0 rgba(255, 255, 255, 0.1);
     }
-    .api-glass-pill__shine {
-      background:
-        radial-gradient(circle at 22% 0%, rgba(255, 255, 255, 0.38), transparent 38%),
-        linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.16) 42%, rgba(255, 255, 255, 0.34) 50%, transparent 58%);
-      mix-blend-mode: screen;
-      opacity: 0.72;
+    .api-glass-pill__rim::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0) 35%,
+        rgba(255, 255, 255, 0) 70%,
+        rgba(255, 255, 255, 0.04) 100%
+      );
+      mask: linear-gradient(180deg, #000 0%, transparent 50%);
+      -webkit-mask: linear-gradient(180deg, #000 0%, transparent 50%);
+      pointer-events: none;
     }
     .api-glass-pill__content {
       position: relative;
@@ -460,8 +465,8 @@
     }
     @supports not (backdrop-filter: url(#x)) {
       .api-glass-pill__warp {
-        -webkit-backdrop-filter: blur(18px) saturate(165%);
-        backdrop-filter: blur(18px) saturate(165%);
+        -webkit-backdrop-filter: blur(14px) saturate(160%);
+        backdrop-filter: blur(14px) saturate(160%);
       }
     }
 
@@ -474,8 +479,12 @@
       max-width: 1100px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 220px 1fr;
+      grid-template-columns: 220px minmax(0, 1fr);
       gap: 40px;
+    }
+    .chapter__body {
+      min-width: 0;
+      max-width: 100%;
     }
     .chapter__head {
       position: sticky;
@@ -551,6 +560,8 @@
       border-radius: var(--radius);
       overflow: hidden;
       background: var(--bg-1);
+      max-width: 100%;
+      min-width: 0;
     }
     .code-tabs__head {
       display: flex;
@@ -584,6 +595,8 @@
       padding: 22px 24px;
       max-height: 460px;
       overflow: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .code-tabs__pre {
       display: none;
@@ -593,6 +606,8 @@
       line-height: 1.75;
       white-space: pre;
       tab-size: 2;
+      max-width: 100%;
+      overflow-x: auto;
     }
     .code-tabs__pre.is-active {
       display: block;
@@ -714,6 +729,13 @@
         gap: 12px;
         padding: 18px 20px;
       }
+      .code-tabs__body {
+        padding: 14px 12px;
+        max-height: none;
+      }
+      .code-tabs__pre {
+        font-size: 12px;
+      }
       .api-glass-pill__badge {
         grid-column: 1 / -1;
         justify-self: start;
@@ -770,13 +792,51 @@
   </header>
 
   <main>
-    <svg class="api-liquid-glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <svg class="api-liquid-glass-defs" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
       <defs>
-        <filter id="api-liquid-glass-filter" x="-12%" y="-28%" width="124%" height="156%" color-interpolation-filters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.035" numOctaves="2" seed="17" result="noise" />
-          <feGaussianBlur in="noise" stdDeviation="1.6" result="softNoise" />
-          <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="30" xChannelSelector="R" yChannelSelector="G" result="warped" />
-          <feGaussianBlur in="warped" stdDeviation="0.35" />
+        <filter
+          id="api-liquid-glass-filter"
+          x="0" y="0" width="100%" height="100%"
+          filterUnits="objectBoundingBox"
+          primitiveUnits="userSpaceOnUse"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage id="api-lg-feimage" href="" result="MAP" preserveAspectRatio="xMidYMid slice" />
+          <feColorMatrix in="MAP" type="matrix" result="EDGE_GREY"
+            values="0.3 0.3 0.3 0 0
+                    0.3 0.3 0.3 0 0
+                    0.3 0.3 0.3 0 0
+                    0   0   0   1 0" />
+          <feComponentTransfer in="EDGE_GREY" result="EDGE_MASK">
+            <feFuncA type="discrete" tableValues="0 0.15 1" />
+          </feComponentTransfer>
+          <feDisplacementMap id="api-lg-disp-r" in="SourceGraphic" in2="MAP" scale="70" xChannelSelector="R" yChannelSelector="G" result="DISP_R" />
+          <feColorMatrix in="DISP_R" type="matrix" result="CH_R"
+            values="1 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" />
+          <feDisplacementMap id="api-lg-disp-g" in="SourceGraphic" in2="MAP" scale="67" xChannelSelector="R" yChannelSelector="G" result="DISP_G" />
+          <feColorMatrix in="DISP_G" type="matrix" result="CH_G"
+            values="0 0 0 0 0
+                    0 1 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" />
+          <feDisplacementMap id="api-lg-disp-b" in="SourceGraphic" in2="MAP" scale="64" xChannelSelector="R" yChannelSelector="G" result="DISP_B" />
+          <feColorMatrix in="DISP_B" type="matrix" result="CH_B"
+            values="0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 0 0
+                    0 0 0 1 0" />
+          <feBlend in="CH_G" in2="CH_B" mode="screen" result="GB" />
+          <feBlend in="CH_R" in2="GB" mode="screen" result="ABERRATED" />
+          <feComposite in="ABERRATED" in2="EDGE_MASK" operator="in" result="RIM_CHROMA" />
+          <feComponentTransfer in="EDGE_MASK" result="INV_MASK">
+            <feFuncA type="table" tableValues="1 0" />
+          </feComponentTransfer>
+          <feComposite in="DISP_G" in2="INV_MASK" operator="in" result="CENTER_CLEAN" />
+          <feComposite in="RIM_CHROMA" in2="CENTER_CLEAN" operator="over" result="COMBINED" />
+          <feGaussianBlur in="COMBINED" stdDeviation="0.5" />
         </filter>
       </defs>
     </svg>
@@ -1001,12 +1061,19 @@
         <div class="api-glass-ask">
           <a
             class="api-glass-pill"
+            id="apiGlassPill"
             href="../?q=%E4%BD%BF%E7%94%A8%E7%AB%99%E5%86%85%E5%B7%A5%E5%85%B7%E5%91%8A%E8%AF%89%E6%88%91%E7%AB%99%E5%86%85%E7%9A%84%20API%20%E5%A4%9A%E5%B0%91%E9%92%B1%EF%BC%9F"
             aria-label="跳转到聊天页并询问 Cancri API 价格"
+            data-liquid-glass
+            data-lg-filter="api-liquid-glass-filter"
+            data-lg-feimage="api-lg-feimage"
+            data-lg-disp-r="api-lg-disp-r"
+            data-lg-disp-g="api-lg-disp-g"
+            data-lg-disp-b="api-lg-disp-b"
+            data-lg-stretch="true"
           >
             <span class="api-glass-pill__warp"></span>
             <span class="api-glass-pill__rim"></span>
-            <span class="api-glass-pill__shine"></span>
             <span class="api-glass-pill__content">
               <span class="api-glass-pill__badge">Ask Cancri</span>
               <span class="api-glass-pill__main">
@@ -1219,5 +1286,6 @@ console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>]
       });
     })();
   </script>
+  <script src="./liquid-glass-pill.js?v=20260607-lg-stretch"></script>
 </body>
 </html>
