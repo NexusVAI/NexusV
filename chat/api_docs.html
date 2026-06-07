@@ -790,6 +790,9 @@
         <a href="#client-ccswitch">CC Switch</a>
         <a href="#client-chatbox">Chatbox</a>
         <a href="#client-lobechat">LobeChat</a>
+        <a href="#client-cursor">Cursor</a>
+        <a href="#client-cline">Cline</a>
+        <a href="#client-continue">Continue</a>
         <a href="#client-faq">客户端 FAQ</a>
 
         <h4>规则与参考</h4>
@@ -877,6 +880,11 @@
                 <td>POST /v1/messages</td>
                 <td>Anthropic Messages</td>
                 <td>Claude Code、@anthropic-ai/sdk、OpenClaw</td>
+              </tr>
+              <tr>
+                <td>POST /v1/messages/count_tokens</td>
+                <td>Anthropic Token Counting</td>
+                <td>Claude Code 内部（auto-compact）；免费、不计配额</td>
               </tr>
               <tr>
                 <td>GET /v1/models</td>
@@ -1484,18 +1492,23 @@ codex</pre>
         <section id="cli-claude">
           <h2>Claude Code 接入</h2>
           <p>
-            Anthropic 官方编码 CLI。把它的两个环境变量指过来即可：
+            Anthropic 官方编码 CLI。把 Base URL 和 Key 两个环境变量指过来即可。
+            <b>推荐</b>用 <code>ANTHROPIC_API_KEY</code>（走 <code>x-api-key</code> 头）；
+            备选 <code>ANTHROPIC_AUTH_TOKEN</code>（走 <code>Authorization: Bearer</code>，
+            偶发有 <a href="https://github.com/anthropics/claude-code/issues/39013">claude-code#39013</a>
+            不发 Authorization 的 bug）。
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-claude">复制</button>
             <pre class="lang active" data-grp="cli-claude" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>
-<span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
+<span class="k">export</span> ANTHROPIC_API_KEY=<span class="s">"cancri_sk_YOUR_KEY"</span>
 claude</pre>
           </div>
           <p>
             启动后 Claude Code 会自动调 <code>/v1/models</code> 拉模型列表（网关检测到
-            <code>anthropic-version</code> 头会自动返回 Anthropic 格式）。模型选择器里挑
-            <code>claude-sonnet-4-6</code> / <code>claude-opus-4-5</code> 或者其它兼容模型都行。
+            <code>anthropic-version</code> 头会自动返回 Anthropic 格式），并调用
+            <code>/v1/messages/count_tokens</code> 做上下文计数。模型选择器里挑
+            <code>claude-sonnet-4-6</code> / <code>claude-opus-4-6</code> 或者其它兼容模型都行。
           </p>
         </section>
 
@@ -1535,26 +1548,54 @@ claude</pre>
           <h2>OpenClaw 接入</h2>
           <p>
             <a href="https://github.com/openclaw/openclaw">openclaw/openclaw</a>
-            默认走 Anthropic 协议，所以直接复用 Claude Code 那套环境变量：
+            Gateway 模式请编辑 <code>~/.openclaw/openclaw.json</code>（或项目根
+            <code>openclaw.json</code>）。新版 OpenClaw 的 gateway <b>不一定</b>读取 shell 里的
+            <code>ANTHROPIC_BASE_URL</code>，需在 <code>models.providers</code> 里声明自定义
+            Anthropic 兼容 provider（<code>api: "anthropic-messages"</code>）：
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-openclaw-anth">复制</button>
-            <pre class="lang active" data-grp="cli-openclaw-anth" data-lang="sh"><span class="k">export</span> ANTHROPIC_BASE_URL=<span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>
-<span class="k">export</span> ANTHROPIC_AUTH_TOKEN=<span class="s">"cancri_sk_YOUR_KEY"</span>
-openclaw agent</pre>
+            <pre class="lang active" data-grp="cli-openclaw-anth" data-lang="json">{
+  <span class="s">"env"</span>: { <span class="s">"CANCRI_API_KEY"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span> },
+  <span class="s">"agents"</span>: {
+    <span class="s">"defaults"</span>: {
+      <span class="s">"model"</span>: { <span class="s">"primary"</span>: <span class="s">"cancri/claude-sonnet-4-6"</span> }
+    }
+  },
+  <span class="s">"models"</span>: {
+    <span class="s">"mode"</span>: <span class="s">"merge"</span>,
+    <span class="s">"providers"</span>: {
+      <span class="s">"cancri"</span>: {
+        <span class="s">"baseUrl"</span>: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway"</span>,
+        <span class="s">"apiKey"</span>: <span class="s">"${CANCRI_API_KEY}"</span>,
+        <span class="s">"api"</span>: <span class="s">"anthropic-messages"</span>,
+        <span class="s">"models"</span>: [
+          { <span class="s">"id"</span>: <span class="s">"claude-sonnet-4-6"</span>, <span class="s">"name"</span>: <span class="s">"Claude Sonnet 4.6"</span> },
+          { <span class="s">"id"</span>: <span class="s">"claude-opus-4-6"</span>, <span class="s">"name"</span>: <span class="s">"Claude Opus 4.6"</span> }
+        ]
+      }
+    }
+  }
+}</pre>
           </div>
           <p>
-            如果 OpenClaw 想直接用 OpenAI 协议的某个模型（比如 <code>gpt-5.4</code>），在
-            <code>~/.config/openclaw/config.json</code> 里追加一个 OpenAI provider：
+            如果 OpenClaw 想走 OpenAI 协议（比如 <code>gpt-5.4</code>），再追加一个
+            OpenAI 兼容 provider（模型引用形如 <code>cancri-oai/gpt-5.4</code>）：
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-openclaw-oai">复制</button>
             <pre class="lang active" data-grp="cli-openclaw-oai" data-lang="json">{
-  <span class="s">"providers"</span>: {
-    <span class="s">"cancri-openai"</span>: {
-      <span class="s">"type"</span>: <span class="s">"openai"</span>,
-      <span class="s">"baseURL"</span>: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
-      <span class="s">"apiKey"</span>: <span class="s">"cancri_sk_YOUR_KEY"</span>
+  <span class="s">"models"</span>: {
+    <span class="s">"mode"</span>: <span class="s">"merge"</span>,
+    <span class="s">"providers"</span>: {
+      <span class="s">"cancri-oai"</span>: {
+        <span class="s">"baseUrl"</span>: <span class="s">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
+        <span class="s">"apiKey"</span>: <span class="s">"${CANCRI_API_KEY}"</span>,
+        <span class="s">"models"</span>: [
+          { <span class="s">"id"</span>: <span class="s">"gpt-5.4"</span>, <span class="s">"name"</span>: <span class="s">"GPT 5.4"</span> },
+          { <span class="s">"id"</span>: <span class="s">"gpt-5.3-codex"</span>, <span class="s">"name"</span>: <span class="s">"GPT 5.3 Codex"</span> }
+        ]
+      }
     }
   }
 }</pre>
@@ -1623,7 +1664,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             </p>
             <h3>配置步骤：</h3>
             <ol>
-              <li>启动 SillyTavern 并打开网页端。点击顶部导航栏 of <strong>API 连接 (插头图标)</strong>。</li>
+              <li>启动 SillyTavern 并打开网页端。点击顶部导航栏上的 <strong>API 连接 (插头图标)</strong>。</li>
               <li>在 <strong>API</strong> 下拉菜单中选择 <strong>Chat Completion</strong>。</li>
               <li>在 <strong>Chat Completion Source (服务商)</strong> 菜单中选择 <strong>Custom (OpenAI-compatible)</strong>。</li>
               <li>在下方输入框中配置：
@@ -1648,10 +1689,15 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <li>打开 CC Switch 桌面客户端面板。</li>
               <li>切到 <strong>Settings (设置) -> Providers (服务商)</strong> 页面。</li>
               <li>点击 <strong>Add Custom Provider (添加自定义服务商)</strong>。</li>
-              <li>填入配置信息：
+              <li>按目标工具填 <strong>不同的 Base URL</strong>（CC Switch 会为各 CLI 注入对应环境变量）：
                 <ul>
-                  <li><strong>Provider Name (名称)：</strong> <code>Cancri</code></li>
-                  <li><strong>Base URL (地址)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code></li>
+                  <li><strong>Claude Code / Anthropic 协议：</strong>
+                    <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>
+                    <span style="color: var(--text-faint)">（<b>不带</b>末尾 <code>/v1</code>，否则 SDK 会请求 <code>.../v1/v1/messages</code>）</span>
+                  </li>
+                  <li><strong>Codex / OpenCode / OpenAI 兼容：</strong>
+                    <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code>
+                  </li>
                   <li><strong>API Key：</strong> <code>cancri_sk_YOUR_KEY</code></li>
                 </ul>
               </li>
@@ -1697,6 +1743,79 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                 </ul>
               </li>
               <li>LobeChat 将通过内置机制验证并展现所有支持的模型列表。直接选中你常挂载的模型即可开始沉浸式对话。</li>
+            </ol>
+          </section>
+
+          <section id="client-cursor">
+            <h2>Cursor 接入指南</h2>
+            <p>
+              <a href="https://cursor.com">Cursor</a> 支持 Override OpenAI Base URL，但能力因模式而异。
+              配置路径：<strong>Settings → Models → OpenAI API Key</strong>，开启
+              <strong>Override OpenAI Base URL</strong>。
+            </p>
+            <h3>可用配置</h3>
+            <ul>
+              <li><strong>Override URL：</strong>
+                <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code>
+              </li>
+              <li><strong>API Key：</strong> <code>cancri_sk_YOUR_KEY</code></li>
+              <li><strong>Model：</strong> 手动填入 Cancri Canonical ID（如 <code>gpt-5.4</code>、<code>claude-sonnet-4-6</code>）</li>
+            </ul>
+            <div class="alert info">
+              <b>能力边界（2026-06）：</b>自定义 Base URL 主要对 <b>Chat / Plan 面板</b>（Cmd+L）有效。
+              <b>Agent / Composer / 行内补全</b> 仍走 Cursor 自有后端，不会路由到 Cancri。
+              Agent 模式 + Override URL 还有已知 bug：请求体可能丢失 <code>model</code> 字段
+              （<a href="https://forum.cursor.com/t/gent-mode-with-openai-base-url-override-sends-request-without-model-model-is-required/160070">Cursor Forum #160070</a>）。
+              需要完整编程 Agent 请用 <a href="#cli-claude">Claude Code</a>、
+              <a href="#client-cline">Cline</a> 或 <a href="#client-continue">Continue</a>。
+            </div>
+          </section>
+
+          <section id="client-cline">
+            <h2>Cline 接入指南</h2>
+            <p>
+              <a href="https://github.com/cline/cline">Cline</a> 是 VS Code 里的开源 AI 编程扩展，
+              走 OpenAI 兼容协议，配置与 Cherry Studio 类似。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>在 VS Code 侧边栏打开 Cline，点击右上角 <strong>设置 (齿轮)</strong>。</li>
+              <li><strong>API Provider</strong> 选择 <strong>OpenAI Compatible</strong>。</li>
+              <li>填入：
+                <ul>
+                  <li><strong>Base URL：</strong>
+                    <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code>
+                  </li>
+                  <li><strong>API Key：</strong> <code>cancri_sk_YOUR_KEY</code></li>
+                  <li><strong>Model ID：</strong> 如 <code>gpt-5.4</code>、<code>gpt-5.3-codex</code>、<code>claude-sonnet-4-6</code></li>
+                </ul>
+              </li>
+              <li>保存后即可在 Agent 模式中使用工具调用与多文件编辑。</li>
+            </ol>
+          </section>
+
+          <section id="client-continue">
+            <h2>Continue 接入指南</h2>
+            <p>
+              <a href="https://continue.dev">Continue</a> 支持 VS Code / JetBrains，
+              可配置自定义 OpenAI 兼容端点，<b>Agent 模式</b>对第三方 Base URL 支持完整。
+            </p>
+            <h3>配置步骤：</h3>
+            <ol>
+              <li>打开 Continue 侧边栏 → <strong>Settings</strong> → <strong>config.yaml</strong>
+                （或 <code>~/.continue/config.yaml</code>）。</li>
+              <li>在 <code>models</code> 数组追加一项：
+                <div class="code-block" style="margin-top: 8px">
+                  <button class="copy-icon" data-copy-grp="client-continue-yml">复制</button>
+                  <pre class="lang active" data-grp="client-continue-yml" data-lang="yaml">models:
+  - name: Cancri GPT 5.4
+    provider: openai
+    model: gpt-5.4
+    apiBase: https://chat.nexusvai.xyz/functions/v1/api-gateway/v1
+    apiKey: cancri_sk_YOUR_KEY</pre>
+                </div>
+              </li>
+              <li>保存后在模型下拉中选 <code>Cancri GPT 5.4</code>，Chat 与 Agent 模式均可使用。</li>
             </ol>
           </section>
 
@@ -1883,7 +2002,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="quota-status">复制</button>
-            <pre><code>POST https://diusqgphvybnzazgopor.supabase.co/functions/v1/chat-gateway
+            <pre><code>POST https://chat.nexusvai.xyz/functions/v1/chat-gateway
 Content-Type: application/json
 Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
 
@@ -2774,7 +2893,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               <span style="color: var(--text-faint)">（Anthropic SDK 自带 <code>/v1</code> 后缀，不要重复加）</span>
             </li>
             <li>
-              <code>apiKey</code> / <code>ANTHROPIC_AUTH_TOKEN</code> →
+              <code>apiKey</code> / <code>ANTHROPIC_API_KEY</code>（推荐，<code>x-api-key</code> 头）
+              或 <code>ANTHROPIC_AUTH_TOKEN</code>（<code>Authorization: Bearer</code> 备选）→
               <code>cancri_sk_xxx</code>
             </li>
           </ul>
@@ -2791,6 +2911,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <li><b>无脑用 <a href="#chat">/v1/chat/completions</a></b>——支持的 SDK / 工具最多，调用最稳。</li>
             <li>客户端是 <b>Codex CLI</b>、想走它的默认协议→ <a href="#responses">/v1/responses</a>。</li>
             <li>客户端是 <b>Claude Code</b>、Anthropic SDK、OpenClaw→ <a href="#messages">/v1/messages</a>。</li>
+            <li><b>Claude Code</b> 还会自动调 <code>/v1/messages/count_tokens</code>（免费、不计配额），无需手动配置。</li>
           </ul>
           <h3>图像生成怎么没了？</h3>
           <p>
