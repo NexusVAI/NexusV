@@ -65,7 +65,33 @@
     return num(tokens) + ' ' + UNIT;
   }
 
-  // 直接把「积分数」格式化（用于已经是积分的数值，不再除换算系数）。
+  // 直接把「积分数」格式化成带单位的字符串（输入已是积分，不再除以系数）。
+  function fmtCreditAmount(credits) {
+    var n = Number(credits);
+    if (!isFinite(n)) return '0 ' + UNIT;
+    var neg = n < 0;
+    n = Math.abs(n);
+    var s;
+    if (n === 0) {
+      s = '0';
+    } else if (n < 1) {
+      s = trimZeros(n.toFixed(2));
+    } else if (n < 100) {
+      s = trimZeros(n.toFixed(1));
+    } else {
+      s = Math.round(n).toLocaleString('en-US');
+    }
+    return (neg ? '-' : '') + s + ' ' + UNIT;
+  }
+
+  // 管理员输入积分数 → 后端 token 数（整数）。
+  function toTokens(credits) {
+    var n = Number(credits);
+    if (!isFinite(n)) return 0;
+    return Math.round(n * TOKENS_PER_CREDIT);
+  }
+
+  // 输入已是积分数（非 token）→ 纯数字串，与 2026-05-29 前 fmtCredits 行为一致。
   function fmtCredits(credits) {
     return num(Number(credits) * TOKENS_PER_CREDIT);
   }
@@ -74,8 +100,10 @@
     TOKENS_PER_CREDIT: TOKENS_PER_CREDIT,
     UNIT: UNIT,
     toCredits: toCredits,
+    toTokens: toTokens,
     num: num,
     fmt: fmt,
     fmtCredits: fmtCredits,
+    fmtCreditAmount: fmtCreditAmount,
   };
 })();
