@@ -1656,37 +1656,56 @@ body.has-topbar {
 }
 .topbar-mobile-menu-btn {
   display: none;
+  position: relative;
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 8px;
   cursor: pointer;
   padding: 0;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
   width: 32px;
   height: 32px;
   flex-shrink: 0;
 }
 .topbar-mobile-menu-btn span {
-  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 16px;
   height: 2px;
-  flex-shrink: 0;
+  margin-left: -8px;
+  margin-top: -1px;
   background: var(--ink);
   border-radius: 1px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
+}
+.topbar-mobile-menu-btn span:nth-child(1) {
+  transform: translateY(-7px);
+}
+.topbar-mobile-menu-btn span:nth-child(2) {
+  transform: translateY(0);
+}
+.topbar-mobile-menu-btn span:nth-child(3) {
+  transform: translateY(7px);
 }
 .topbar-mobile-menu-btn.is-active span:nth-child(1) {
-  transform: translateY(6.5px) rotate(45deg);
+  transform: translateY(0) rotate(45deg);
 }
 .topbar-mobile-menu-btn.is-active span:nth-child(2) {
   opacity: 0;
+  transform: scaleX(0);
 }
 .topbar-mobile-menu-btn.is-active span:nth-child(3) {
-  transform: translateY(-6.5px) rotate(-45deg);
+  transform: translateY(0) rotate(-45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .topbar-mobile-menu-btn span {
+    transition: none;
+  }
 }
 .topbar-mobile-drawer {
   display: none;
@@ -1779,7 +1798,7 @@ body.has-topbar {
     display: none !important;
   }
   .topbar-mobile-menu-btn {
-    display: flex;
+    display: block;
   }
   .topbar-mobile-drawer {
     display: block;
