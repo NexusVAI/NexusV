@@ -12,9 +12,8 @@
     <link rel="preload" as="image" href="../Logo/Cancri.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-layout-fix" />
-    <script src="./api/api-platform.js?v=20260513"></script>
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact" />
+    <script src="./api/api-platform.js?v=20260607-search-compact"></script>
     <!-- Cancri 双主题 logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
     <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
@@ -31,19 +30,215 @@
       }
       .layout {
         display: grid;
-        grid-template-columns: 220px minmax(0, 1fr);
-        max-width: 1200px;
+        grid-template-columns: auto minmax(0, 1fr);
+        max-width: 1320px;
         margin: 0 auto;
-        gap: 32px;
+        gap: 28px;
         padding: 24px 20px 48px;
+      }
+      .toc-panel {
+        position: relative;
+        width: 220px;
+        min-width: 0;
+        flex-shrink: 0;
+        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .toc-panel.is-collapsed {
+        width: 44px !important;
+      }
+      .toc-panel__head {
+        position: sticky;
+        top: 76px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding-right: 4px;
+        background: var(--bg);
+      }
+      .toc-panel__title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .toc-panel__collapse {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg-card);
+        color: var(--text-mute);
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .toc-panel__collapse:hover {
+        color: var(--text);
+        border-color: var(--text-faint);
+        background: var(--bg-2);
+      }
+      .toc-panel__collapse svg {
+        width: 14px;
+        height: 14px;
+        transition: transform 0.28s ease;
+      }
+      .toc-panel.is-collapsed .toc-panel__head {
+        justify-content: center;
+        padding: 0;
+        margin-bottom: 0;
+      }
+      .toc-panel.is-collapsed .toc-panel__title,
+      .toc-panel.is-collapsed .toc-panel__collapse-label {
+        display: none;
+      }
+      .toc-panel.is-collapsed .toc-panel__collapse {
+        width: 36px;
+        height: 36px;
+        justify-content: center;
+        padding: 0;
+        border-radius: 8px;
+      }
+      .toc-panel.is-collapsed .toc-panel__collapse svg {
+        transform: rotate(180deg);
+      }
+      .toc-panel.is-collapsed aside.toc {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        height: 0;
+        overflow: hidden;
+      }
+      .toc-panel__resize-handle {
+        position: absolute;
+        top: 0;
+        right: -7px;
+        width: 14px;
+        height: 100%;
+        cursor: col-resize;
+        z-index: 6;
+        touch-action: none;
+      }
+      .toc-panel__resize-handle::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 3px;
+        height: 56px;
+        border-radius: 3px;
+        background: color-mix(in srgb, var(--border) 80%, var(--text-faint));
+        opacity: 0.65;
+        transition: opacity 0.15s, height 0.15s, background 0.15s;
+      }
+      .toc-panel__resize-handle:hover::after,
+      body.toc-is-resizing .toc-panel__resize-handle::after {
+        opacity: 1;
+        height: 72px;
+        background: var(--accent);
+      }
+      .toc-panel.is-collapsed .toc-panel__resize-handle {
+        display: none;
+      }
+      body.toc-is-resizing {
+        cursor: col-resize;
+        user-select: none;
       }
       aside.toc {
         position: sticky;
         top: 76px;
         height: fit-content;
-        max-height: calc(100vh - 96px);
-        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
         font-size: 13px;
+        --toc-collapsed-h: 220px;
+      }
+      aside.toc .toc-body {
+        overflow: hidden;
+        max-height: none;
+        transition: max-height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      aside.toc.toc-collapsible:not(.is-expanded) .toc-body {
+        max-height: var(--toc-collapsed-h);
+      }
+      aside.toc.toc-collapsible.is-expanded .toc-body {
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+      }
+      aside.toc .toc-footer {
+        display: none;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+      }
+      aside.toc.toc-collapsible .toc-footer {
+        display: block;
+      }
+      aside.toc.toc-collapsible:not(.is-expanded) .toc-footer {
+        margin-top: -52px;
+      }
+      aside.toc.toc-collapsible.is-expanded .toc-footer {
+        margin-top: 10px;
+      }
+      aside.toc .toc-fade {
+        height: 52px;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          var(--bg) 72%
+        );
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+      aside.toc.is-expanded .toc-fade {
+        opacity: 0;
+        height: 0;
+      }
+      aside.toc .toc-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-card);
+        color: var(--text-mute);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          color 0.15s,
+          background 0.15s;
+      }
+      aside.toc .toc-toggle:hover {
+        color: var(--text);
+        border-color: var(--text-faint);
+        background: var(--bg-2);
+      }
+      aside.toc .toc-toggle svg {
+        flex-shrink: 0;
+        transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      aside.toc.is-expanded .toc-toggle svg {
+        transform: rotate(180deg);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        aside.toc .toc-body,
+        aside.toc .toc-toggle svg,
+        aside.toc .toc-fade {
+          transition: none;
+        }
       }
       aside.toc h4 {
         color: var(--text-faint);
@@ -75,6 +270,82 @@
         border-left-color: var(--accent);
         background: var(--bg-card);
       }
+      aside.toc a.toc-has-subnav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      aside.toc a.toc-has-subnav .toc-link-text {
+        flex: 1;
+        min-width: 0;
+      }
+      aside.toc a.toc-has-subnav .toc-sub-chevron {
+        flex-shrink: 0;
+        width: 12px;
+        height: 12px;
+        opacity: 0.55;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      aside.toc a.toc-has-subnav.toc-sub-expanded .toc-sub-chevron {
+        transform: rotate(180deg);
+        opacity: 0.85;
+      }
+      .toc-inpage {
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        margin: 0 0 6px;
+        transition:
+          grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.24s ease;
+      }
+      .toc-inpage.is-open {
+        grid-template-rows: 1fr;
+        opacity: 1;
+      }
+      .toc-inpage__inner {
+        overflow: hidden;
+        margin-left: 10px;
+        padding: 4px 0 6px 12px;
+        border-left: 2px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+      }
+      .toc-inpage__label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 5px;
+      }
+      .toc-inpage__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .toc-inpage__list a {
+        display: block;
+        padding: 4px 8px;
+        font-size: 12px;
+        color: var(--text-faint);
+        border-left: none;
+        border-radius: 5px;
+        margin-bottom: 1px;
+      }
+      .toc-inpage__list a:hover {
+        color: var(--text-mute);
+        background: var(--bg-card);
+      }
+      .toc-inpage__list a.is-active {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .toc-inpage {
+          transition: none;
+        }
+      }
       main {
         min-width: 0;
       }
@@ -92,7 +363,113 @@
         color: var(--text-mute);
         font-size: 17px;
         line-height: 1.5;
-        margin-bottom: 36px;
+        margin-bottom: 28px;
+      }
+      .docs-intro-figure {
+        position: relative;
+        margin: 0 0 40px;
+        width: 100%;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .docs-intro-figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        min-height: 168px;
+        aspect-ratio: 21 / 8;
+        object-fit: cover;
+        object-position: center 42%;
+        border-radius: 16px;
+      }
+      /* liquid-glass-pure：折射靠 SVG displacement，blur 仅 2px 垫底 */
+      .docs-glass-pill {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 0 30px;
+        border: 0;
+        border-radius: 999px;
+        overflow: hidden;
+        color: rgba(255, 250, 245, 0.96);
+        text-decoration: none;
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow:
+          0 10px 30px rgba(0, 0, 0, 0.25),
+          0 30px 60px rgba(0, 0, 0, 0.25);
+        transform: translate(-50%, -50%) translateZ(0);
+        will-change: transform;
+        transition:
+          box-shadow 220ms ease,
+          transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .docs-glass-pill:hover {
+        transform: translate(-50%, calc(-50% - 2px)) scale(1.02);
+        box-shadow:
+          0 14px 40px rgba(0, 0, 0, 0.3),
+          0 36px 80px rgba(0, 0, 0, 0.32);
+      }
+      .docs-glass-pill:active:not(.is-stretching) {
+        transform: translate(-50%, -50%) scale(0.98);
+      }
+      .docs-glass-pill.is-stretching {
+        cursor: grabbing;
+        transition: box-shadow 220ms ease;
+      }
+      .docs-glass-pill.is-stretching .docs-glass-pill__content {
+        transition: transform 80ms linear;
+      }
+      .docs-glass-pill__warp,
+      .docs-glass-pill__rim {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+      }
+      .docs-glass-pill__rim {
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+          inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+          inset 0 -1px 0 0 rgba(255, 255, 255, 0.1);
+      }
+      .docs-glass-pill__rim::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.18) 0%,
+          rgba(255, 255, 255, 0) 35%,
+          rgba(255, 255, 255, 0) 70%,
+          rgba(255, 255, 255, 0.04) 100%
+        );
+        mask: linear-gradient(180deg, #000 0%, transparent 50%);
+        -webkit-mask: linear-gradient(180deg, #000 0%, transparent 50%);
+        pointer-events: none;
+      }
+      .docs-glass-pill__content {
+        position: relative;
+        z-index: 2;
+        font-family: var(--serif);
+        font-size: clamp(17px, 2vw, 22px);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        white-space: nowrap;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        pointer-events: none;
+      }
+      @supports not (backdrop-filter: url(#x)) {
+        .docs-glass-pill__warp {
+          -webkit-backdrop-filter: blur(14px) saturate(160%);
+          backdrop-filter: blur(14px) saturate(160%);
+        }
       }
       h2 {
         font-size: 22px;
@@ -325,20 +702,28 @@
         }
         aside.toc {
           position: static;
-          max-height: none;
-          padding-bottom: 16px;
+          --toc-collapsed-h: 128px;
+          padding-bottom: 0;
           border-bottom: 1px solid var(--border);
           margin-bottom: 16px;
         }
+        aside.toc.toc-collapsible.is-expanded .toc-body {
+          max-height: min(52vh, 360px);
+          -webkit-overflow-scrolling: touch;
+        }
         aside.toc a {
-          display: inline-block;
-          margin-right: 4px;
-          margin-bottom: 4px;
-          border-left: none;
+          display: block;
+          margin-right: 0;
+          margin-bottom: 1px;
+          border-left: 2px solid transparent;
         }
         aside.toc h4 {
-          display: inline-block;
-          margin-right: 8px;
+          display: block;
+          margin-right: 0;
+        }
+        aside.toc .toc-toggle {
+          min-height: 44px;
+          font-size: 13px;
         }
       }
 
@@ -348,10 +733,6 @@
        * 主区域顶部加搜索框 + 复制 MD + 分享，layout 改三栏（toc / main /
        * outline），section 之间加大留白并显示分隔线，最底加 prev/next。
        * ==================================================================== */
-
-      .layout {
-        grid-template-columns: 220px minmax(0, 1fr) 200px;
-      }
 
       /* main 顶部工具栏 */
       .docs-toolbar {
@@ -441,57 +822,75 @@
         color: var(--ok);
         border-color: rgba(74, 222, 128, 0.32);
       }
-
-      /* 右侧 outline */
-      .docs-outline {
-        position: sticky;
-        top: 76px;
-        align-self: start;
-        max-height: calc(100vh - 96px);
-        overflow-y: auto;
-        font-size: 12.5px;
-        padding-top: 4px;
+      .docs-copy-md-picker {
+        position: relative;
+        display: inline-flex;
       }
-      .docs-outline h4 {
-        margin: 0 0 8px;
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--text-faint);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+      .docs-copy-md-picker .docs-copy-md-chevron {
+        width: 12px;
+        height: 12px;
+        opacity: 0.72;
+        transition: transform 0.22s ease;
       }
-      .docs-outline ul {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        font-size: 12.5px;
+      .docs-copy-md-picker.is-open .docs-copy-md-chevron {
+        transform: rotate(180deg);
       }
-      .docs-outline li {
-        margin: 0;
+      .docs-copy-md-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 156px;
+        padding: 6px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-elev);
+        box-shadow:
+          0 6px 20px rgba(0, 0, 0, 0.08),
+          0 1px 3px rgba(0, 0, 0, 0.04);
+        z-index: 30;
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.94) translateY(-6px);
+        transform-origin: top right;
+        transition:
+          opacity 0.2s ease,
+          transform 0.24s cubic-bezier(0.34, 1.15, 0.64, 1);
       }
-      .docs-outline a {
+      :root[data-theme="light"] .docs-copy-md-menu {
+        box-shadow:
+          0 8px 22px rgba(0, 0, 0, 0.06),
+          0 0 0 1px rgba(0, 0, 0, 0.03);
+      }
+      .docs-copy-md-picker.is-open:not(.is-closing) .docs-copy-md-menu {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1) translateY(0);
+      }
+      .docs-copy-md-picker.is-closing .docs-copy-md-menu {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.96) translateY(-4px);
+        transition:
+          opacity 0.16s ease,
+          transform 0.18s cubic-bezier(0.4, 0, 1, 1);
+      }
+      .docs-copy-md-menu button {
         display: block;
-        padding: 4px 10px;
+        width: 100%;
+        text-align: left;
+        padding: 8px 12px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
         color: var(--text-mute);
-        text-decoration: none;
-        border-left: 2px solid transparent;
-        line-height: 1.45;
-        transition: color 0.12s, border-color 0.12s;
+        font: inherit;
+        font-size: 12.5px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
       }
-      .docs-outline a:hover {
+      .docs-copy-md-menu button:hover {
+        background: var(--bg-card);
         color: var(--text);
-      }
-      .docs-outline a.is-active {
-        color: var(--accent);
-        border-left-color: var(--accent);
-      }
-      .docs-outline a.lvl-3 {
-        padding-left: 22px;
-        font-size: 12px;
-        color: var(--text-faint);
-      }
-      .docs-outline a.lvl-3.is-active {
-        color: var(--accent);
       }
 
       /* section 之间的视觉分隔 — 让文档不挤在一起 */
@@ -505,7 +904,24 @@
         padding-top: 36px;
       }
 
-      /* 底部上一节 / 下一节 */
+      /* Cursor 式分页：每次只显示一个顶层 section */
+      main.docs-paginated > section[id] {
+        display: none;
+        border-top: none;
+        padding-top: 0;
+      }
+      main.docs-paginated > section[id].is-docs-page-active {
+        display: block;
+      }
+      main.docs-paginated > section[id].is-docs-page-active + section[id] {
+        border-top: none;
+      }
+      main.docs-paginated > .docs-intro {
+        display: none;
+      }
+
+      /* 每页底部上一节 / 下一节（注入到各 section 末尾） */
+      .docs-section-pager,
       .docs-pager {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -514,6 +930,10 @@
         padding-top: 28px;
         border-top: 1px solid var(--border);
       }
+      main.docs-paginated #docsPager {
+        display: none !important;
+      }
+      .docs-section-pager a,
       .docs-pager a {
         display: flex;
         flex-direction: column;
@@ -524,28 +944,36 @@
         background: var(--bg-card);
         color: var(--text-mute);
         text-decoration: none;
-        transition: border-color 0.15s, color 0.15s;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
       }
+      .docs-section-pager a:hover,
       .docs-pager a:hover {
         color: var(--text);
         border-color: var(--text-faint);
+        background: var(--bg-2);
       }
+      .docs-section-pager__label,
       .docs-pager-label {
         font-size: 11px;
         color: var(--text-faint);
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
+      .docs-section-pager__title,
       .docs-pager-title {
         font-size: 14.5px;
         color: var(--text);
         font-weight: 500;
       }
+      .docs-section-pager__next,
       .docs-pager .docs-pager-next {
         text-align: right;
+        align-items: flex-end;
       }
+      .docs-section-pager a[aria-disabled="true"],
       .docs-pager a[aria-disabled="true"] {
         visibility: hidden;
+        pointer-events: none;
       }
 
       /* 搜索 modal */
@@ -558,17 +986,27 @@
         justify-content: center;
         padding: 88px 16px 16px;
         pointer-events: none;
+        visibility: hidden;
       }
       .docs-search-modal[hidden] {
         display: none;
       }
+      .docs-search-modal.is-visible {
+        visibility: visible;
+        pointer-events: auto;
+      }
       .docs-search-backdrop {
         position: absolute;
         inset: 0;
-        background: rgba(8, 8, 8, 0.55);
-        -webkit-backdrop-filter: blur(6px);
-        backdrop-filter: blur(6px);
+        background: color-mix(in srgb, var(--bg) 8%, transparent);
+        -webkit-backdrop-filter: blur(18px) saturate(1.12);
+        backdrop-filter: blur(18px) saturate(1.12);
         pointer-events: auto;
+        opacity: 0;
+        transition: opacity 0.26s ease;
+      }
+      .docs-search-modal.is-visible:not(.is-closing) .docs-search-backdrop {
+        opacity: 1;
       }
       .docs-search-panel {
         position: relative;
@@ -576,12 +1014,53 @@
         max-height: calc(100vh - 120px);
         display: flex;
         flex-direction: column;
-        background: var(--bg-elev);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+        border-radius: 22px;
+        box-shadow:
+          0 24px 64px rgba(0, 0, 0, 0.18),
+          0 0 0 1px rgba(255, 255, 255, 0.04) inset;
         overflow: hidden;
         pointer-events: auto;
+        opacity: 0;
+        transform: scale(0.94) translateY(6px);
+        transform-origin: top center;
+        transition:
+          opacity 0.24s ease,
+          transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+        -webkit-backdrop-filter: blur(20px) saturate(1.1);
+        backdrop-filter: blur(20px) saturate(1.1);
+      }
+      :root[data-theme="light"] .docs-search-panel {
+        background: color-mix(in srgb, var(--bg-1) 82%, transparent);
+        box-shadow:
+          0 20px 50px rgba(0, 0, 0, 0.1),
+          0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+      }
+      .docs-search-modal.is-visible:not(.is-closing) .docs-search-panel {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+      .docs-search-modal.is-visible.is-closing .docs-search-panel {
+        opacity: 0;
+        transform: scale(0.96) translateY(4px);
+        transition:
+          opacity 0.2s ease,
+          transform 0.24s cubic-bezier(0.4, 0, 1, 1);
+      }
+      .docs-search-modal.is-visible.is-closing .docs-search-backdrop {
+        opacity: 0;
+        transition: opacity 0.22s ease;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .docs-search-backdrop,
+        .docs-search-panel {
+          transition: none;
+        }
+        .docs-search-modal.is-visible:not(.is-closing) .docs-search-panel,
+        .docs-search-modal.is-visible.is-closing .docs-search-panel {
+          transform: none;
+        }
       }
       .docs-search-input-row {
         display: flex;
@@ -690,18 +1169,26 @@
         line-height: 1;
       }
 
-      /* 三栏 → 两栏 / 一栏 的响应式 */
-      @media (max-width: 1100px) {
-        .layout {
-          grid-template-columns: 200px minmax(0, 1fr);
-        }
-        .docs-outline {
-          display: none;
-        }
-      }
       @media (max-width: 800px) {
         .layout {
           grid-template-columns: 1fr;
+        }
+        .toc-panel {
+          width: 100% !important;
+        }
+        .toc-panel.is-collapsed {
+          width: 100% !important;
+        }
+        .toc-panel.is-collapsed aside.toc {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          height: auto;
+          overflow: visible;
+        }
+        .toc-panel__head,
+        .toc-panel__resize-handle {
+          display: none;
         }
         .docs-toolbar {
           flex-wrap: wrap;
@@ -713,8 +1200,14 @@
         .docs-action-btn {
           flex: 1;
         }
+        .docs-section-pager,
         .docs-pager {
           grid-template-columns: 1fr;
+        }
+        .docs-section-pager__next,
+        .docs-pager .docs-pager-next {
+          text-align: left;
+          align-items: flex-start;
         }
         .docs-search-modal {
           padding-top: 24px;
@@ -761,14 +1254,80 @@
       </div>
     </header>
 
+    <svg class="docs-liquid-glass-defs" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <filter
+          id="docs-liquid-glass-filter"
+          x="0" y="0" width="100%" height="100%"
+          filterUnits="objectBoundingBox"
+          primitiveUnits="userSpaceOnUse"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage id="docs-lg-feimage" href="" result="MAP" preserveAspectRatio="xMidYMid slice" />
+          <feColorMatrix in="MAP" type="matrix" result="EDGE_GREY"
+            values="0.3 0.3 0.3 0 0
+                    0.3 0.3 0.3 0 0
+                    0.3 0.3 0.3 0 0
+                    0   0   0   1 0" />
+          <feComponentTransfer in="EDGE_GREY" result="EDGE_MASK">
+            <feFuncA type="discrete" tableValues="0 0.15 1" />
+          </feComponentTransfer>
+          <feDisplacementMap id="docs-lg-disp-r" in="SourceGraphic" in2="MAP" scale="70" xChannelSelector="R" yChannelSelector="G" result="DISP_R" />
+          <feColorMatrix in="DISP_R" type="matrix" result="CH_R"
+            values="1 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" />
+          <feDisplacementMap id="docs-lg-disp-g" in="SourceGraphic" in2="MAP" scale="67" xChannelSelector="R" yChannelSelector="G" result="DISP_G" />
+          <feColorMatrix in="DISP_G" type="matrix" result="CH_G"
+            values="0 0 0 0 0
+                    0 1 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" />
+          <feDisplacementMap id="docs-lg-disp-b" in="SourceGraphic" in2="MAP" scale="64" xChannelSelector="R" yChannelSelector="G" result="DISP_B" />
+          <feColorMatrix in="DISP_B" type="matrix" result="CH_B"
+            values="0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 0 0
+                    0 0 0 1 0" />
+          <feBlend in="CH_G" in2="CH_B" mode="screen" result="GB" />
+          <feBlend in="CH_R" in2="GB" mode="screen" result="ABERRATED" />
+          <feComposite in="ABERRATED" in2="EDGE_MASK" operator="in" result="RIM_CHROMA" />
+          <feComponentTransfer in="EDGE_MASK" result="INV_MASK">
+            <feFuncA type="table" tableValues="1 0" />
+          </feComponentTransfer>
+          <feComposite in="DISP_G" in2="INV_MASK" operator="in" result="CENTER_CLEAN" />
+          <feComposite in="RIM_CHROMA" in2="CENTER_CLEAN" operator="over" result="COMBINED" />
+          <feGaussianBlur in="COMBINED" stdDeviation="0.5" />
+        </filter>
+      </defs>
+    </svg>
+
     <div class="layout">
-      <aside class="toc">
+      <div class="toc-panel" id="tocPanel">
+        <div class="toc-panel__head">
+          <span class="toc-panel__title">目录</span>
+          <button
+            type="button"
+            class="toc-panel__collapse"
+            id="tocPanelCollapse"
+            aria-expanded="true"
+            aria-label="收起目录"
+          >
+            <span class="toc-panel__collapse-label">收起</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+        </div>
+        <aside class="toc">
         <!-- 2026-05-22：取消多页 ?page= 切换。sidebar 现在是一棵静态分组目录树，
              所有锚点对所有人始终可点。scroll-spy 由 api-docs-app.js 给当前
              section 的链接打 .active 状态。 -->
         <h4>开始</h4>
         <a href="#intro">概述</a>
         <a href="#auth">认证</a>
+        <a href="#common-misunderstandings">易混淆点</a>
         <a href="#quickstart">快速开始</a>
 
         <h4>API 端点</h4>
@@ -804,7 +1363,16 @@
         <a href="#errors">错误码</a>
         <a href="#sdk">SDK 兼容</a>
         <a href="#faq">常见问题</a>
-      </aside>
+        </aside>
+        <div
+          class="toc-panel__resize-handle"
+          id="tocPanelResize"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="拖拽调整目录宽度"
+          tabindex="0"
+        ></div>
+      </div>
 
       <main>
         <!-- 顶部工具栏：搜索 / 复制 Markdown / 分享。
@@ -821,13 +1389,30 @@
               <kbd id="docsSearchModKey">Ctrl</kbd><kbd>K</kbd>
             </span>
           </button>
-          <button class="docs-action-btn" type="button" id="docsCopyMdBtn" aria-label="复制本页为 Markdown">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span id="docsCopyMdLabel">复制 Markdown</span>
-          </button>
+          <div class="docs-copy-md-picker" id="docsCopyMdPicker">
+            <button
+              class="docs-action-btn"
+              type="button"
+              id="docsCopyMdBtn"
+              aria-label="复制 Markdown"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="docsCopyMdMenu"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span id="docsCopyMdLabel">复制 Markdown</span>
+              <svg class="docs-copy-md-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="docs-copy-md-menu" id="docsCopyMdMenu" role="menu" hidden>
+              <button type="button" role="menuitem" data-copy-scope="page">复制此页</button>
+              <button type="button" role="menuitem" data-copy-scope="all">复制全部</button>
+            </div>
+          </div>
           <button class="docs-action-btn" type="button" id="docsShareBtn" aria-label="分享文档">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="18" cy="5" r="3"></circle>
@@ -846,16 +1431,44 @@
 
         <h1>Cancri API 文档</h1>
         <p>
-          OpenAI / Anthropic 双协议兼容的统一模型 API。一个 Key，OpenAI SDK、
-          Anthropic SDK、Codex CLI、Claude Code、OpenCode、OpenClaw 都能直接接入。
+          部署在 Cloudflare Worker 上的统一模型网关，提供 OpenAI Chat Completions、
+          OpenAI Responses 与 Anthropic Messages 三条兼容路径。第三方工具能否接入，
+          取决于它是否允许自定义 Base URL、API Key 和模型 ID。
         </p>
+
+        <figure class="docs-intro-figure">
+          <img
+            src="../Logo/neyyyss.png"
+            alt="Cancri API 文档"
+            loading="lazy"
+            decoding="async"
+          />
+          <a
+            class="docs-glass-pill"
+            id="docsGlassPill"
+            href="../?q=%E4%BD%BF%E7%94%A8%E7%AB%99%E5%86%85%E5%B7%A5%E5%85%B7%E5%91%8A%E8%AF%89%E6%88%91%E7%AB%99%E5%86%85%E7%9A%84%20API%20%E5%A4%9A%E5%B0%91%E9%92%B1%EF%BC%9F"
+            aria-label="跳转到聊天页并询问 Cancri API 价格"
+            data-liquid-glass
+            data-lg-filter="docs-liquid-glass-filter"
+            data-lg-feimage="docs-lg-feimage"
+            data-lg-disp-r="docs-lg-disp-r"
+            data-lg-disp-g="docs-lg-disp-g"
+            data-lg-disp-b="docs-lg-disp-b"
+            data-lg-stretch="true"
+            data-lg-base-transform="translate(-50%, -50%)"
+          >
+            <span class="docs-glass-pill__warp" aria-hidden="true"></span>
+            <span class="docs-glass-pill__rim" aria-hidden="true"></span>
+            <span class="docs-glass-pill__content">问问Cancri</span>
+          </a>
+        </figure>
 
         <section id="intro">
           <h2>概述</h2>
           <p>
             Cancri API 在一个端点后面统一了 GPT、Claude、Gemini、DeepSeek、GLM、
-            Qwen 等主流模型，<b>同一把 Key，三种协议</b>——选你的客户端原生支持的
-            那一种就行：
+            Qwen 等模型，<b>同一把 Key，三种协议</b>。优先选择客户端原生支持的
+            协议；IDE/Agent 的厂商托管模式不会自动继承这个自定义网关。
           </p>
           <table>
             <thead>
@@ -900,6 +1513,20 @@
             >
             <button class="copy-icon" data-copy-text="base-url">复制</button>
           </div>
+          <div class="alert info">
+            <b>真实后端路径：</b>生产请求先到 <code>chat.nexusvai.xyz</code> 的
+            <code>cf-chat-gateway</code> Worker。<code>/functions/v1/api-gateway</code>
+            是当前公开 API 的 Cloudflare 原生路由；它再通过 service binding 调
+            <code>cf-modelscope-proxy</code> 做模型路由。Supabase 仍负责 Auth、RPC、
+            配额和用量落库。
+          </div>
+          <div class="alert warn">
+            <b>Base URL 不能混用：</b>OpenAI-compatible SDK / 工具填
+            <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code>；
+            Anthropic SDK / Claude Code 填
+            <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>。
+            原始 curl 示例则写完整路径。
+          </div>
           <ul>
             <li>认证：<code>Authorization: Bearer cancri_sk_xxx</code> 或 <code>x-api-key: cancri_sk_xxx</code></li>
             <li>支持流式（SSE）和非流式两种模式</li>
@@ -917,11 +1544,13 @@
         <section id="auth">
           <h2>认证</h2>
           <p>
-            所有 API 请求都必须在 <code>Authorization</code> 头里带 Bearer Token。Key 形如：
+            推理请求需要带公开 API Key。网关接受两种等价认证头：
+            <code>Authorization: Bearer cancri_sk_xxx</code> 或
+            <code>x-api-key: cancri_sk_xxx</code>。Key 形如：
           </p>
           <div class="endpoint">
             <code style="color: var(--accent)">cancri_sk_</code
-            ><span style="color: var(--text-faint)">48 个十六进制字符</span>
+            ><span style="color: var(--text-faint)">48 个 base64url 字符</span>
           </div>
           <p style="color: var(--text-faint); font-size: 12.5px; margin-top: -4px">
             前缀 <code>cancri_sk_</code>（10 字符）+ 36 字节随机熵的 base64url 编码（48 字符）= <b>总长度恒为 58 字符</b>。
@@ -937,7 +1566,24 @@
             <b>⚠️ 不要在浏览器代码或开源仓库里硬编码 Key。</b> Key 一旦泄露，
             立刻到 Keys 管理页撤销并重新生成。
           </div>
+          <div class="alert info">
+            <b>公开 API Key 不是 Supabase JWT。</b> <code>cancri_sk_</code> 只用于
+            <code>/v1/*</code> 公开 API；网页版登录、RLS、站内 RPC 仍使用 Supabase
+            用户会话。不要把 <code>cancri_sk_</code> 填到 Supabase 客户端配置里。
+          </div>
           <p>你可以生成任意数量的 Key，但建议按需创建，过多 Key 会增加管理复杂度。</p>
+        </section>
+
+        <section id="common-misunderstandings">
+          <h2>易混淆点</h2>
+          <ul>
+            <li><b><code>/v1/models</code> 成功不代表写接口开放。</b> 维护闸门开启时，模型列表仍可读，<code>/v1/chat/completions</code>、<code>/v1/messages</code>、<code>/v1/responses</code> 会返回 <code>503 api_paused</code>。</li>
+            <li><b>不要直连 <code>cf-modelscope-proxy</code>。</b> 它是 Cloudflare service binding，公开客户端只调用 <code>/functions/v1/api-gateway</code>。</li>
+            <li><b>模型 ID 用 Cancri Canonical ID。</b> <code>model</code> 必须来自 <a href="./api_models.html">模型广场</a> 或 <code>/v1/models</code> 返回值，不要照搬上游官方 ID。</li>
+            <li><b>OpenAI Base URL 带 <code>/v1</code>，Anthropic Base URL 不带。</b> Anthropic SDK 和 Claude Code 会自行拼 <code>/v1/messages</code>、<code>/v1/messages/count_tokens</code>。</li>
+            <li><b>兼容协议不是完整上游平台能力。</b> 这里支持核心对话、流式、token usage 与自定义 function tools；OpenAI hosted tools、Responses state、文件/向量库、网页搜索、computer use 不属于公开 API 能力。</li>
+            <li><b>流量和账本分层。</b> Token 流经 Cloudflare Worker；用户身份、配额判断和用量回写仍落在 Supabase。</li>
+          </ul>
         </section>
 
         <section id="quickstart">
@@ -1206,9 +1852,10 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
             <span>/v1/messages</span>
           </div>
           <p>
-            <b>Anthropic Messages API 兼容</b>，给 Claude Code、官方 <code>@anthropic-ai/sdk</code>、
-            OpenClaw 等以 Anthropic 协议为母语的客户端用。请求体和响应体严格符合 Anthropic
-            规范，且 <code>model</code> 字段不限于 Claude 系列 ——
+            <b>Anthropic Messages API 兼容路径</b>，给 Claude Code、官方 <code>@anthropic-ai/sdk</code>、
+            OpenClaw 等以 Anthropic 协议为母语的客户端用。网关支持 Messages
+            核心字段并翻译到内部 Chat 协议；这不是 Claude 官方 API 全功能复刻。
+            <code>model</code> 字段不限于 Claude 系列 ——
             <code>claude-sonnet-4-6</code>、<code>gpt-5.4</code>、<code>deepseek-v4-pro</code>
             都可以直接传，网关内部会做协议翻译。
           </p>
@@ -1327,15 +1974,16 @@ r = client.messages.create(
           </div>
 
           <div class="alert info">
-            <b>流式（SSE）</b> 在请求里加 <code>"stream": true</code> 即可，输出严格符合 Anthropic
-            事件协议——<code>message_start → content_block_start → content_block_delta×N →
+            <b>流式（SSE）</b> 在请求里加 <code>"stream": true</code> 即可，输出 Anthropic
+            Messages 兼容事件帧——<code>message_start → content_block_start → content_block_delta×N →
             content_block_stop → message_delta → message_stop</code>。Claude Code 默认走这条路径。
           </div>
 
           <div class="alert warn">
             <b>当前限制：</b> <code>cache_control</code>（提示缓存）字段会被忽略；
             extended thinking blocks 当作普通文本透传；Responses-only 的 <code>web_search</code>/
-            <code>file_search</code> 等内置工具不支持，仅 <code>function</code> 类自定义工具可用。
+            <code>file_search</code> 等内置工具不支持，仅自定义工具定义与
+            <code>tool_use</code> / <code>tool_result</code> 往返可用。
           </div>
         </section>
 
@@ -1346,10 +1994,11 @@ r = client.messages.create(
             <span>/v1/responses</span>
           </div>
           <p>
-            <b>OpenAI Responses API 兼容</b>，主要给 Codex CLI 这类默认走新协议的客户端用。
+            <b>OpenAI Responses API 兼容路径</b>，主要给 Codex CLI 这类默认走新协议的客户端用。
             字段名跟 Chat Completions 不太一样（<code>input</code> 而不是 <code>messages</code>，
             <code>instructions</code> 而不是 system 消息，<code>max_output_tokens</code>
             而不是 <code>max_tokens</code> 等）——网关会自动转换到内部 Chat 协议再翻译回来。
+            这是面向客户端接入的适配层，不提供 OpenAI hosted tools、状态托管或文件检索能力。
           </p>
 
           <h3>请求参数</h3>
@@ -1397,7 +2046,7 @@ r = client.messages.create(
                 <td>tools</td>
                 <td>array</td>
                 <td>否</td>
-                <td>Responses 风格 <code>{type:"function", name, description, parameters}</code>。<code>web_search</code>/<code>file_search</code> 等内置工具暂不支持</td>
+                <td>Responses 风格自定义 function tools。<code>web_search</code>、<code>file_search</code>、<code>computer_use</code> 等 OpenAI hosted tools 不支持</td>
               </tr>
             </tbody>
           </table>
@@ -1454,8 +2103,8 @@ console.log(r.output[<span class="n">0</span>].content[<span class="n">0</span>]
           </div>
 
           <div class="alert info">
-            <b>不想折腾新协议？</b> Codex CLI 也支持 <code>wire_api = "chat"</code>，可以让它走
-            <a href="#chat">Chat Completions</a>，这样所有内部转换都跳过去，更简单。配置见
+            <b>Codex CLI 默认走 Responses。</b> 当前 OpenAI Codex 配置参考把
+            <code>wire_api</code> 标为 <code>responses</code>；本页按 Responses 路径给配置。配置见
             <a href="#cli-codex">下面的 Codex CLI 一节</a>。
           </div>
         </section>
@@ -1464,7 +2113,7 @@ console.log(r.output[<span class="n">0</span>].content[<span class="n">0</span>]
           <h2>Codex CLI 接入</h2>
           <p>
             OpenAI 官方编码 CLI。把它指向我们的网关后，它就能用我们这边的所有模型。
-            编辑 <code>~/.codex/config.toml</code>：
+            自定义 provider 配置写在用户级 <code>~/.codex/config.toml</code>：
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-codex">复制</button>
@@ -1484,8 +2133,10 @@ env_key = <span class="s">"CANCRI_API_KEY"</span></pre>
 codex</pre>
           </div>
           <div class="alert info">
-            想走更稳定的 Chat Completions 协议？把 <code>wire_api = "responses"</code>
-            改成 <code>wire_api = "chat"</code> 即可。两条路径 Codex 都支持。
+            当前 OpenAI Codex 配置参考将 <code>model_providers.&lt;id&gt;.wire_api</code>
+            标为 <code>responses</code>。不要把 <code>[model_providers.openai]</code>
+            当作内置 OpenAI provider 的覆盖项；自定义网关用新的 provider id，例如上面的
+            <code>cancri</code>。
           </div>
         </section>
 
@@ -1494,9 +2145,9 @@ codex</pre>
           <p>
             Anthropic 官方编码 CLI。把 Base URL 和 Key 两个环境变量指过来即可。
             <b>推荐</b>用 <code>ANTHROPIC_API_KEY</code>（走 <code>x-api-key</code> 头）；
-            备选 <code>ANTHROPIC_AUTH_TOKEN</code>（走 <code>Authorization: Bearer</code>，
-            偶发有 <a href="https://github.com/anthropics/claude-code/issues/39013">claude-code#39013</a>
-            不发 Authorization 的 bug）。
+            <code>ANTHROPIC_AUTH_TOKEN</code> 也可用（走 <code>Authorization: Bearer</code>）。
+            两者同时存在时以 Claude Code 当前版本的优先级为准，本页示例只设置
+            <code>ANTHROPIC_API_KEY</code>。
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-claude">复制</button>
@@ -1507,9 +2158,15 @@ claude</pre>
           <p>
             启动后 Claude Code 会自动调 <code>/v1/models</code> 拉模型列表（网关检测到
             <code>anthropic-version</code> 头会自动返回 Anthropic 格式），并调用
-            <code>/v1/messages/count_tokens</code> 做上下文计数。模型选择器里挑
-            <code>claude-sonnet-4-6</code> / <code>claude-opus-4-6</code> 或者其它兼容模型都行。
+            <code>/v1/messages/count_tokens</code> 做上下文计数。Claude Code 的 gateway model
+            discovery 会按客户端规则过滤模型；模型选择器里以实际显示的条目为准。
           </p>
+          <div class="alert warn">
+            <b>Base URL 不要带 <code>/v1</code>。</b> Claude Code 会向
+            <code>ANTHROPIC_BASE_URL</code> 后面追加 <code>/v1/messages</code> 和
+            <code>/v1/messages/count_tokens</code>；填成 <code>.../api-gateway/v1</code>
+            会形成重复路径。
+          </div>
         </section>
 
         <section id="cli-opencode">
@@ -1542,6 +2199,11 @@ claude</pre>
   }
 }</pre>
           </div>
+          <div class="alert info">
+            OpenCode 官方配置项使用 <code>options.baseURL</code>；OpenAI-compatible provider
+            使用 <code>@ai-sdk/openai-compatible</code> 走 <code>/v1/chat/completions</code>。
+            需要 Responses 路径的模型再按 OpenCode 当前文档改用 <code>@ai-sdk/openai</code>。
+          </div>
         </section>
 
         <section id="cli-openclaw">
@@ -1549,9 +2211,8 @@ claude</pre>
           <p>
             <a href="https://github.com/openclaw/openclaw">openclaw/openclaw</a>
             Gateway 模式请编辑 <code>~/.openclaw/openclaw.json</code>（或项目根
-            <code>openclaw.json</code>）。新版 OpenClaw 的 gateway <b>不一定</b>读取 shell 里的
-            <code>ANTHROPIC_BASE_URL</code>，需在 <code>models.providers</code> 里声明自定义
-            Anthropic 兼容 provider（<code>api: "anthropic-messages"</code>）：
+            <code>openclaw.json</code>），在 <code>models.providers</code> 里声明自定义
+            Anthropic 兼容 provider。Anthropic 协议 Base URL 不带 <code>/v1</code>：
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-openclaw-anth">复制</button>
@@ -1579,7 +2240,7 @@ claude</pre>
 }</pre>
           </div>
           <p>
-            如果 OpenClaw 想走 OpenAI 协议（比如 <code>gpt-5.4</code>），再追加一个
+            OpenAI 协议 Base URL 带 <code>/v1</code>。要调用 <code>gpt-5.4</code> 这类模型时，追加一个
             OpenAI 兼容 provider（模型引用形如 <code>cancri-oai/gpt-5.4</code>）：
           </p>
           <div class="code-block">
@@ -1605,8 +2266,8 @@ claude</pre>
         <section id="cli-aider">
           <h2>Aider 接入</h2>
           <p>
-            <a href="https://aider.chat">Aider</a> 是开发者中使用最广泛的 AI 结对编程工具，
-            直接支持 OpenAI 兼容格式。配置方式：
+            <a href="https://aider.chat">Aider</a> 支持 OpenAI-compatible API。按官方写法，
+            模型名前加 <code>openai/</code>，并配置 OpenAI API base 与 Key：
           </p>
           <div class="code-block">
             <button class="copy-icon" data-copy-grp="cli-aider">复制</button>
@@ -1626,13 +2287,16 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           </div>
           <div class="alert info">
             <b>模型推荐：</b>编码场景首选 <code>gpt-5.3-codex</code> 或 <code>gpt-5.4</code>；
-            需要超长上下文时用 <code>claude-sonnet-4-6</code>（把 <code>openai/</code> 前缀换成
-            <code>openai/claude-sonnet-4-6</code> 即可，Aider 透传 model 字段，网关内部路由）。
+            需要长上下文时可用 <code>--model openai/claude-sonnet-4-6</code>。
+            <code>openai/</code> 是 Aider 的 provider 前缀，网关收到的模型 ID 仍是
+            <code>claude-sonnet-4-6</code>。
           </div>
         </section>
 
         <p class="docs-intro">
-          Cancri API 完美兼容 OpenAI 及 Anthropic 协议，因此可以直接接入市面上几乎所有主流的 AI 桌面、移动或网页端第三方客户端。通过一个 <code>cancri_sk_</code> 密钥，你便能把诸如 GPT-5、Claude-Opus、DeepSeek-V4、Gemini-3.1 等顶级模型悉数接入你钟爱的日常工具中。
+          Cancri API 支持 OpenAI-compatible 与 Anthropic-compatible 两类客户端。能否接入取决于
+          目标工具是否开放自定义 Base URL、API Key 和模型 ID；Agent、补全、托管推理等模式
+          有时会绕过自定义端点，请按本节能力边界验证。
         </p>
 
         <section id="client-cherry">
@@ -1701,8 +2365,8 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                   <li><strong>API Key：</strong> <code>cancri_sk_YOUR_KEY</code></li>
                 </ul>
               </li>
-              <li>点击 <strong>Test Connection (连接测试)</strong>。CC Switch 会调用 <code>/v1/models</code> 自行拉取可用的模型。</li>
-              <li>在路由 takeover 功能中，你可以一键将 Claude Code 或 Codex 的路由劫持/转发给 Cancri，从此命令行里的 AI 编程工具直接免代理运行！</li>
+              <li>点击 <strong>Test Connection (连接测试)</strong>。连接测试通常会调用 <code>/v1/models</code>；模型列表成功只证明发现接口可读，不证明写接口未处于 <code>api_paused</code>。</li>
+              <li>启用路由 takeover 后，再分别用 Claude Code 或 Codex 发一条最小推理请求确认该 CLI 已走 Cancri。</li>
             </ol>
           </section>
 
@@ -1722,7 +2386,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                 </ul>
               </li>
               <li>在 <strong>模型 (Model)</strong> 输入框中填入你想默认调用的模型 ID，或者点击刷新加载列表。</li>
-              <li>保存并返回主页，即可无缝发起流畅多端会话。</li>
+              <li>保存并返回主页后，发送一条最小消息验证模型 ID、Key 与 Base URL。</li>
             </ol>
           </section>
 
@@ -1742,7 +2406,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                   <li><strong>接口代理地址 (Base URL)：</strong> <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1</code></li>
                 </ul>
               </li>
-              <li>LobeChat 将通过内置机制验证并展现所有支持的模型列表。直接选中你常挂载的模型即可开始沉浸式对话。</li>
+              <li>LobeChat 验证通过后，在模型列表里选择 Cancri Canonical ID；如列表未刷新，手动输入 <code>/v1/models</code> 返回的模型 ID。</li>
             </ol>
           </section>
 
@@ -1762,20 +2426,20 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <li><strong>Model：</strong> 手动填入 Cancri Canonical ID（如 <code>gpt-5.4</code>、<code>claude-sonnet-4-6</code>）</li>
             </ul>
             <div class="alert info">
-              <b>能力边界（2026-06）：</b>自定义 Base URL 主要对 <b>Chat / Plan 面板</b>（Cmd+L）有效。
-              <b>Agent / Composer / 行内补全</b> 仍走 Cursor 自有后端，不会路由到 Cancri。
-              Agent 模式 + Override URL 还有已知 bug：请求体可能丢失 <code>model</code> 字段
+              <b>能力边界（2026-06）：</b>自定义 Base URL 主要用于支持 Override URL 的对话路径。
+              <b>Agent / Composer / 行内补全</b> 是否走 Override URL 由 Cursor 当前版本决定；不要把普通对话可用当作全 IDE 能力已切到 Cancri。
+              Cursor Forum 上有 Agent 模式 + Override URL 请求体丢失 <code>model</code> 字段的报告
               （<a href="https://forum.cursor.com/t/gent-mode-with-openai-base-url-override-sends-request-without-model-model-is-required/160070">Cursor Forum #160070</a>）。
-              需要完整编程 Agent 请用 <a href="#cli-claude">Claude Code</a>、
+              需要公开可配置 Base URL 的编程 Agent，请优先用 <a href="#cli-claude">Claude Code</a>、
               <a href="#client-cline">Cline</a> 或 <a href="#client-continue">Continue</a>。
             </div>
           </section>
 
           <section id="client-cline">
             <h2>Cline 接入指南</h2>
-            <p>
+          <p>
               <a href="https://github.com/cline/cline">Cline</a> 是 VS Code 里的开源 AI 编程扩展，
-              走 OpenAI 兼容协议，配置与 Cherry Studio 类似。
+              OpenAI Compatible provider 需要 Base URL、API Key 和 Model ID 三项。
             </p>
             <h3>配置步骤：</h3>
             <ol>
@@ -1790,15 +2454,16 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                   <li><strong>Model ID：</strong> 如 <code>gpt-5.4</code>、<code>gpt-5.3-codex</code>、<code>claude-sonnet-4-6</code></li>
                 </ul>
               </li>
-              <li>保存后即可在 Agent 模式中使用工具调用与多文件编辑。</li>
+              <li>保存后先点 Verify 或发送一条最小消息，确认 Base URL、Key 与模型 ID 均有效。</li>
             </ol>
           </section>
 
           <section id="client-continue">
             <h2>Continue 接入指南</h2>
-            <p>
+          <p>
               <a href="https://continue.dev">Continue</a> 支持 VS Code / JetBrains，
-              可配置自定义 OpenAI 兼容端点，<b>Agent 模式</b>对第三方 Base URL 支持完整。
+              可在 OpenAI provider 下配置 <code>apiBase</code> 指向 OpenAI-compatible 端点。
+              Agent 模式需要模型具备工具调用能力；使用自定义模型时可按 Continue 文档补充能力声明。
             </p>
             <h3>配置步骤：</h3>
             <ol>
@@ -1815,7 +2480,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
     apiKey: cancri_sk_YOUR_KEY</pre>
                 </div>
               </li>
-              <li>保存后在模型下拉中选 <code>Cancri GPT 5.4</code>，Chat 与 Agent 模式均可使用。</li>
+              <li>保存后在模型下拉中选 <code>Cancri GPT 5.4</code>，再分别验证 Chat 与 Agent 所需工具调用流程。</li>
             </ol>
           </section>
 
@@ -1824,16 +2489,16 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             <div class="faq-item">
               <h4>Q: 报错 503 Service Unavailable 并带代码 "api_paused" 是怎么回事？</h4>
               <p>
-                A: 这是站内的<b>API维护闸门限制</b>。当平台准备上线全新的 ¥9.9/月 付费订阅配额时，系统会暂停纯公网非网页端 API 的写入操作以防恶意攻击，而 <code>/v1/models</code> 路由保持开放发现。如果是平台管理员或内部进行测试，只需在 Supabase 控制面板将 Secret 环境变量 <code>API_PAUSED_UNTIL_PAID</code> 设为 <code>false</code> 即可秒级解除此 503 限制，重新开放全站 API 接口。
+                A: 这是公开 API 的维护闸门。维护期开启时，<code>/v1/models</code> 仍可读取模型列表，推理写接口会返回 <code>503 api_paused</code> 与 <code>Retry-After</code>。普通 API 用户不能通过换 Key 或换客户端解除；平台管理员需要在当前网关部署环境中调整 <code>API_PAUSED_UNTIL_PAID</code>。
               </p>
             </div>
             <div class="faq-item">
               <h4>Q: Paid（付费）账户和 Free（免费）账户的 API 限制有何不同？</h4>
               <p>
-                A: 网站上的公共文档默认展示的是免费档防刷限制，实际上后台针对付费/VIP用户的限流极其宽裕，具有极其显著的体验优势：
+                A: 后端按 Key tier 应用不同限流常量：
                 <br>
-                • <b>并发数：</b> 免费用户单 Key 限 2 并发；<b>付费用户和 VIP 用户无并发数限制 (maxConcurrent=0，允许任意多路多线程并行)</b>。<br>
-                • <b>频次限制：</b> 免费用户 10 次/分、1000 次/天；<b>付费用户放宽到 60 次/分、600 次/小时、50000 次/天</b>，完美承载各种高频编程辅助 (如 Aider, Claude Code) 与高频测试场景。
+                • <b>并发数：</b> Free 单 Key 最多 2 个进行中请求；Paid / VIP 的 per-key 并发闸门为 <code>maxConcurrent=0</code>。<br>
+                • <b>频次限制：</b> Free 为 10 次/分、60 次/小时、1000 次/天；Paid / VIP 为 60 次/分、600 次/小时、50000 次/天。上游线路健康、模型级队列、福利池和维护闸门仍会单独生效。
               </p>
             </div>
             <div class="faq-item">
@@ -2853,7 +3518,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <h2>SDK 兼容</h2>
           <p>
             网关同时讲 OpenAI 协议（Chat Completions + Responses）和 Anthropic 协议
-            （Messages），现成的 SDK 都能接：
+            （Messages）。使用对应 SDK 时，只改 Base URL 与 Key；具体能力仍受端点支持范围限制：
           </p>
 
           <h3>OpenAI 阵营</h3>
@@ -2900,7 +3565,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </ul>
           <div class="alert info">
             <b>同一把 Key 可以在两个 SDK 里同时用。</b> 限流是按 Key 维度统一计的，不分协议。
-            想在同一个项目里 OpenAI + Anthropic 双 SDK 并用？没问题。
+            同一项目内并用 OpenAI SDK 与 Anthropic SDK 时，仍共享同一个 Key 的速率限制与配额。
           </div>
         </section>
 
@@ -2908,7 +3573,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <h2>常见问题</h2>
           <h3>三个端点我该用哪个？</h3>
           <ul>
-            <li><b>无脑用 <a href="#chat">/v1/chat/completions</a></b>——支持的 SDK / 工具最多，调用最稳。</li>
+            <li><b>通用聊天优先用 <a href="#chat">/v1/chat/completions</a></b>——OpenAI-compatible 工具覆盖面最广。</li>
             <li>客户端是 <b>Codex CLI</b>、想走它的默认协议→ <a href="#responses">/v1/responses</a>。</li>
             <li>客户端是 <b>Claude Code</b>、Anthropic SDK、OpenClaw→ <a href="#messages">/v1/messages</a>。</li>
             <li><b>Claude Code</b> 还会自动调 <code>/v1/messages/count_tokens</code>（免费、不计配额），无需手动配置。</li>
@@ -2930,12 +3595,14 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             一份列表对得上。直接 <code>curl /v1/models</code> 看一下，或到
             <a href="./api_models.html">模型广场</a> 查可用 ID；不要照搬 Anthropic / OpenAI 官方
             的版本号（比如 <code>claude-3-5-sonnet-20241022</code> 这边没有）。
+            Claude Code 的 gateway discovery 还会按客户端规则过滤显示项；非 Claude 命名模型
+            需要看客户端是否允许手动指定。
           </p>
           <h3>tool calling（function calling）支持吗？</h3>
           <p>
-            三条路径都支持，自定义 <code>function</code> 工具会原样翻译往返。但 Responses 协议
-            的 <code>web_search</code> / <code>file_search</code> / <code>computer_use</code>
-            等内置工具暂未实现，传过来会被忽略。
+            支持自定义 <code>function</code> 工具定义与工具调用往返。OpenAI hosted tools
+            例如 <code>web_search</code> / <code>file_search</code> / <code>computer_use</code>
+            不属于公开 API 能力；本页不承诺这些字段的稳定行为，客户端不要依赖它们。
           </p>
           <h3>怎么追踪用量？</h3>
           <p>
@@ -3015,13 +3682,6 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
         </nav>
       </main>
 
-      <!-- 右侧「在此页面」Outline：api-docs-app.js 扫描 main 里所有
-           h2/h3 生成错运列表，滚动时 IntersectionObserver 高亮当前可见
-           章节。< 1100px 隐藏。 -->
-      <aside class="docs-outline" aria-label="在此页面">
-        <h4>在此页面</h4>
-        <ul id="docsOnPageOutline"></ul>
-      </aside>
     </div>
 
     <footer class="site-footer">
@@ -3063,6 +3723,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
          右侧 outline + 底部 prev/next 全栈逻辑。原 tabs / copy / toc 保留。
          2026-05-22：取消 Kimi-风多页化（?page=...），统一为单页长文档；
          api-docs-app.js 移除了 multi-page applyDocPage / setActiveDocPage / popstate 等逻辑。 -->
-    <script src="./api/api-docs-app.js?v=2026-05-31-api-doc-detailed"></script>
+    <script src="./api/liquid-glass-pill.js?v=20260607-lg-stretch"></script>
+    <script src="./api/api-docs-app.js?v=20260607-toc-panel"></script>
   </body>
 </html>
