@@ -27,6 +27,46 @@ function esc(s) {
 
 const { fmtTime, fmtArr, fmtScreen, fmtAgeDays, fmtTokens, fmtIpGeo } = window.AdminFormatters;
 
+function fmtPayable(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return "—";
+    return v.toFixed(2).replace(/\.?0+$/, "");
+}
+
+// 对账核心：展示 server 下单时算出的「用户应付」，不是 catalog 标价。
+function renderPayableBlock(o) {
+    const payable = o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny;
+    const list = o.list_price_cny;
+    const kind = o.order_kind || "subscription";
+    let hint = "";
+    if (kind === "upgrade") {
+        hint = "升级补差价";
+    } else if (list != null && Number(list) !== Number(payable)) {
+        hint = "非标价";
+    }
+    const listNote =
+        list != null && Number(list) !== Number(payable)
+            ? '<span class="order-payable__list">标价 ¥' +
+              esc(fmtPayable(list)) +
+              " · 以用户应付为准</span>"
+            : "";
+    return (
+        '<div class="order-payable">' +
+        '<span class="order-payable__label">用户应付</span>' +
+        '<span class="order-payable__amount">¥' +
+        esc(fmtPayable(payable)) +
+        "</span>" +
+        (hint
+            ? '<span class="order-payable__hint">' + esc(hint) + "</span>"
+            : "") +
+        '<span class="order-payable__method">' +
+        esc(o.method || "—") +
+        "</span>" +
+        listNote +
+        "</div>"
+    );
+}
+
 // 用户上下文摘要：注册多久 / 历史订单 / 用量 / 是否封禁
 function renderUserContext(o) {
     const m = o.user_meta;
@@ -330,7 +370,10 @@ function renderOrders() {
             }
 
             return (
-                '<div class="order-row">' +
+                '<div class="order-row' +
+                (o.status === "submitted" ? " is-submitted" : "") +
+                '">' +
+                renderPayableBlock(o) +
                 '<div class="order-meta-block">' +
                 "<strong>" +
                 esc(o.email) +
@@ -349,6 +392,14 @@ function renderOrders() {
                 "</code></span>" +
                 "</div>" +
                 '<div class="order-meta-block">' +
+                "<span>" +
+                statusPill +
+                " " +
+                renderTierPill(o.tier, o.plan_code) +
+                "</span>" +
+                "<span>" + renderOrderKindCell(o) + "</span>" +
+                "</div>" +
+                '<div class="order-meta-block">' +
                 "<span>提交 " +
                 esc(created) +
                 "</span>" +
@@ -357,19 +408,6 @@ function renderOrders() {
                 "</span>" +
                 "<span>激活 " +
                 esc(activated) +
-                "</span>" +
-                "</div>" +
-                '<div class="order-meta-block">' +
-                "<span>" +
-                statusPill +
-                " " +
-                renderTierPill(o.tier, o.plan_code) +
-                "</span>" +
-                "<span>" + renderOrderKindCell(o) + "</span>" +
-                "<span>¥" +
-                esc(o.amount_cny) +
-                " · " +
-                esc(o.method) +
                 "</span>" +
                 (o.admin_note
                     ? "<span>站主备注：" +
