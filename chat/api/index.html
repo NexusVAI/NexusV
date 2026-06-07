@@ -1083,7 +1083,7 @@
             </div>
             <div class="code-tabs__body">
 <pre class="code-tabs__pre is-active" data-tab="curl"><span class="c-cmt"># 兼容 OpenAI 协议</span>
-curl <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1/chat/completions"</span> \
+curl <span class="c-str">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions"</span> \
   -H <span class="c-str">"Authorization: Bearer $CANCRI_KEY"</span> \
   -H <span class="c-str">"Content-Type: application/json"</span> \
   -d <span class="c-str">'{
@@ -1094,8 +1094,8 @@ curl <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1/cha
 <pre class="code-tabs__pre" data-tab="python"><span class="c-key">from</span> openai <span class="c-key">import</span> OpenAI
 
 client = <span class="c-fn">OpenAI</span>(
-    api_key=<span class="c-str">"sk-cancri-..."</span>,
-    base_url=<span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1"</span>,
+    api_key=<span class="c-str">"cancri_sk_..."</span>,
+    base_url=<span class="c-str">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
 )
 
 resp = client.chat.completions.<span class="c-fn">create</span>(
@@ -1108,7 +1108,7 @@ resp = client.chat.completions.<span class="c-fn">create</span>(
 
 <span class="c-key">const</span> client = <span class="c-key">new</span> <span class="c-fn">OpenAI</span>({
   apiKey: process.env.<span class="c-str">CANCRI_KEY</span>,
-  baseURL: <span class="c-str">"https://...supabase.co/functions/v1/api-gateway/v1"</span>,
+  baseURL: <span class="c-str">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
 });
 
 <span class="c-key">const</span> resp = <span class="c-key">await</span> client.chat.completions.<span class="c-fn">create</span>({
