@@ -18,7 +18,7 @@
     "use strict";
 
     // ---------- 常量 ----------
-    var SUPABASE_BASE = "https://diusqgphvybnzazgopor.supabase.co/functions/v1";
+    var SUPABASE_BASE = ((window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz").replace(/\/+$/, "") + "/functions/v1");
     var MOON_TS_UTC = Date.UTC(2026, 4, 28, 16, 0, 0); // 2026-05-29 00:00 UTC+8 = 5-28 16:00 UTC
     var THEME_KEY = "cancri-theme";
     var SNAPSHOT_URL = "./celebrate_snapshot.json?v=2026-05-25";

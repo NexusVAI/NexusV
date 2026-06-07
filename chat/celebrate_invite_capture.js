@@ -17,7 +17,8 @@
     "use strict";
 
     var STORAGE_KEY = "cancri_invite_capture_v1";
-    var SIGNIN_URL = "https://diusqgphvybnzazgopor.supabase.co/functions/v1/celebrate-signin";
+    var SUPABASE_FUNCTIONS_BASE = ((window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz").replace(/\/+$/, "") + "/functions/v1");
+    var SIGNIN_URL = SUPABASE_FUNCTIONS_BASE + "/celebrate-signin";
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     var UUID_ANYWHERE_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
     var MAX_AGE_MS = 30 * 24 * 3600 * 1000; // 30 天

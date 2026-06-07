@@ -17,8 +17,9 @@
     "use strict";
     window.__CANCRI_WALL_V2__ = true;
 
-    var STATS_URL = "https://diusqgphvybnzazgopor.supabase.co/functions/v1/celebrate-stats";
-    var SIGNIN_URL = "https://diusqgphvybnzazgopor.supabase.co/functions/v1/celebrate-signin";
+    var SUPABASE_FUNCTIONS_BASE = ((window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz").replace(/\/+$/, "") + "/functions/v1");
+    var STATS_URL = SUPABASE_FUNCTIONS_BASE + "/celebrate-stats";
+    var SIGNIN_URL = SUPABASE_FUNCTIONS_BASE + "/celebrate-signin";
     var PAGE_SIZE = 12;
 
     var INITIAL_SHOW = 5;  // 默认只展示前 5 条故事

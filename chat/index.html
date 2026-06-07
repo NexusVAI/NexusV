@@ -66,7 +66,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-03-code-block" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-07-review-fixes" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -106,7 +106,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-03-model-anchor-resize"
+            href="./claude.css?v=2026-06-07-review-fixes"
         />
         <link
             rel="stylesheet"
@@ -3139,7 +3139,7 @@
         <!-- 2026-05-26 满月庆典 D-2：邀请关系捕获。
              URL 带 ?invite=<uuid> 时缓存 + 登录后调 celebrate-signin?action=invite_register。
              静默运行，对未登录用户无副作用，且 5/25-5/31 活动窗口外后端会拒绝。 -->
-        <script defer src="./celebrate_invite_capture.js?v=2026-05-26-invite"></script>
+        <script defer src="./celebrate_invite_capture.js?v=2026-06-07-review-fixes"></script>
         <!-- 2026-05-26 满月庆典 D-1：主站顶部 banner。
              5/28 起预热倒计时 → 5/29-5/31 主活动 → 6/1-6/4 长尾 → 6/5 自动隐藏。
              纯客户端时间判断，0 网络请求；用户可 × 关闭（本会话），URL ?nomoon=1 永久关。 -->
@@ -3152,12 +3152,12 @@
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=2026-06-03-code-block"></script>
+        <script defer src="./cancri_chat.js?v=2026-06-07-review-fixes"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=2026-06-03-rail-collapse-fix"></script>
+        <script defer src="./claude_ui.js?v=2026-06-07-review-fixes"></script>
         <!-- 2026-05-17 Phase A：「额度」面板（替代原「连接器」占位）。
              FREE 共享池 + 当日 15 次 PAID 试用 + 三档订阅月度配额进度 + 加油包余额。 -->
         <script defer src="./claude_quota_ui.js?v=2026-05-17-grandfather"></script>

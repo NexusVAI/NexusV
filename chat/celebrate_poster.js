@@ -18,7 +18,8 @@
 (function () {
     "use strict";
 
-    var SIGNIN_URL = "https://diusqgphvybnzazgopor.supabase.co/functions/v1/celebrate-signin";
+    var SUPABASE_FUNCTIONS_BASE = ((window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz").replace(/\/+$/, "") + "/functions/v1");
+    var SIGNIN_URL = SUPABASE_FUNCTIONS_BASE + "/celebrate-signin";
     var QR_PATH = "../Logo/2WM1.png";
 
     // ─── 标题文案池（成对：line1 = 正体标题，line2 = 斜体延续） ─────

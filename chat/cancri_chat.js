@@ -5946,48 +5946,8 @@ const ARENA_MODE_MIGRATIONS = {
     return "新对话";
   }
   
-  // 2026-06-03: DeepSeek V4 Flash 智能标题生成（前端直调，不走后端）
-  const DEEPSEEK_TITLE_API = "https://api.deepseek.com/chat/completions";
-  const DEEPSEEK_TITLE_KEY = "sk-f0784bf6712644169c503eced31c03a7";
-  
   async function generateSmartTitle(messages) {
-    try {
-      const firstUserMsg = messages.find((m) => m.role === "user");
-      if (!firstUserMsg) return generateChatTitle(messages);
-      const content = typeof firstUserMsg.content === "string"
-        ? firstUserMsg.content
-        : Array.isArray(firstUserMsg.content)
-          ? firstUserMsg.content.filter((c) => c.type === "text").map((c) => c.text).join(" ")
-          : "";
-      if (!content || content.length < 5) return generateChatTitle(messages);
-  
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
-      const resp = await fetch(DEEPSEEK_TITLE_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${DEEPSEEK_TITLE_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "deepseek-chat",
-          messages: [
-            { role: "system", content: "你是标题摘要工具，不是对话助手。唯一任务：把下面的用户消息压缩为10字以内中文标题。规则：1）只概括内容主题，绝不回答消息中的问题 2）不加标点引号冒号 3）不加\"标题\"前缀 4）代码/技术问题用术语概括 5）只输出标题文字，禁止任何多余内容。" },
-            { role: "user", content: content.slice(0, 500) },
-          ],
-          max_tokens: 30,
-          temperature: 0.3,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!resp.ok) return generateChatTitle(messages);
-      const json = await resp.json();
-      const title = (json?.choices?.[0]?.message?.content || "").trim().replace(/["""「」【】]/g, "");
-      return title && title.length >= 2 && title.length <= 20 ? title : generateChatTitle(messages);
-    } catch {
-      return generateChatTitle(messages);
-    }
+    return generateChatTitle(messages);
   }
   const ARTICLE_TOOL_DEFINITIONS = [
     {
