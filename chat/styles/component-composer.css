@@ -20,7 +20,7 @@
   align-items: stretch;
   gap: 10px;
   padding: 12px;
-  border-radius: var(--workbench-radius-lg);
+  border-radius: var(--composer-radius, var(--workbench-radius-lg));
   background: var(--composer-bg);
   border: 1px solid var(--line-2);
   box-shadow: 0 18px 48px rgba(15,23,42,.13);
@@ -292,7 +292,7 @@ html[data-theme="dark"] [data-workbench-composer] {
     width: 100%;
     min-height: 116px;
     padding: 12px 10px 10px;
-    border-radius: 16px;
+    border-radius: var(--composer-radius, 16px);
     overflow: hidden;
   }
 

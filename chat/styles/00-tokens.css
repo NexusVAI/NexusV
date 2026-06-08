@@ -10,9 +10,9 @@
   --send-bg: #111111;
   --send-fg: #ffffff;
   --composer-bg: var(--input);
+  --composer-radius: 24px;
   --surface: var(--panel);
   --surface-elevated: var(--panel-2);
   --border: var(--line);
   --text-muted: var(--text-soft);
 }
-
