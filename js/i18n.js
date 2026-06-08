@@ -9,10 +9,10 @@ const translations = {
         'nav.login': '登录',
         'nav.try': '使用 NexusV <span class="arrow-icon">↗</span>',
         'search.placeholder': '关于 NexusV',
-        'hero.overlay': 'Technical Report 0524',
-        'hero.title': '技术报告 0524：堵住 SSE 流式取消的成本漏洞',
-        'hero.author': 'NexusV 安全团队',
-        'hero.time': '12 分钟阅读',
+        'hero.overlay': 'Cancri Code',
+        'hero.title': '介绍你的 AI 助理 Cancri Code',
+        'hero.author': 'NexusV 工程团队',
+        'hero.time': '14 分钟阅读',
         'cta.title': '开始使用 Nexus V',
         'cta.btn': '立即体验 ↗',
         'footer.research': '研究',
@@ -44,14 +44,20 @@ const translations = {
         'menu.research.deep_chatai': '深入了解 ChatAI 聚合平台',
         'menu.research.deep_sentience31': '了解 Cancri 研究报告',
         'menu.research.deep_sentienceV4C': '深入了解 SentienceV4.1 Omni',
+        'menu.research.deep_sentienceV52': '深入了解 SentienceV5.2 Mens',
         'menu.research.deep_sentienceV4C_v4': '深入了解 Sentience V4 Cogito',
+        'menu.research.deep_cancriCode': '深入了解 Cancri Code',
         'menu.research.nexusv5': 'TACTFR 5.7.0',
+        'menu.research.sentienceV52': 'SentienceV5.2 Mens',
         'menu.research.sentienceV4C': 'SentienceV4.1 Omni',
+        'menu.research.hero0524': '技术报告 0524',
         'menu.research.sentienceV4C_v4': 'Sentience V4 Cogito',
         'menu.research.deep_tactfr5': '深入了解 TACTFR 5.4.0',
         'menu.research.deep_tactfr55': '深入了解 TACTFR 5.5.0',
         'menu.research.deep_tactfr56': '深入了解 TACTFR 5.7.0',
-        'menu.research.deep_tactfr60': '深入了解 TACTFR 6.0.0',
+        'menu.research.deep_tactfr60': '深入了解 TACTFR 6.0.0 Beta.2.7',
+        'menu.research.tactfr627': 'TACTFR 6.0.0 Beta.2.7',
+        'menu.research.tactfr60_beta2': 'TACTFR 6.0.0 Beta.2',
         'menu.research.tactfr60': 'TACTFR 6.0.0',
         'menu.research.label': '前沿进展',
         'menu.research.sentience31': 'Cancri 研究报告',
@@ -100,10 +106,10 @@ const translations = {
         'nav.login': 'Log in',
         'nav.try': 'Try NexusV <span class="arrow-icon">↗</span>',
         'search.placeholder': 'About NexusV',
-        'hero.overlay': 'Technical Report 0524',
-        'hero.title': 'Technical Report 0524: Closing the SSE Stream-Cancel Cost Loophole',
-        'hero.author': 'NexusV Security Team',
-        'hero.time': '12 min read',
+        'hero.overlay': 'Cancri Code',
+        'hero.title': 'Meet Your AI Assistant — Cancri Code',
+        'hero.author': 'NexusV Engineering Team',
+        'hero.time': '14 min read',
         'cta.title': 'Get started with Nexus V',
         'cta.btn': 'Try now ↗',
         'footer.research': 'Research',
@@ -135,15 +141,21 @@ const translations = {
         'menu.research.deep_chatai': 'Deep Dive: ChatAI Aggregator',
         'menu.research.deep_sentience31': 'Read the Cancri Research Report',
         'menu.research.deep_sentienceV4C': 'Deep Dive: SentienceV4.1 Omni',
+        'menu.research.deep_sentienceV52': 'Deep Dive: SentienceV5.2 Mens',
         'menu.research.deep_sentienceV4C_v4': 'Deep Dive: Sentience V4 Cogito',
+        'menu.research.deep_cancriCode': 'Deep Dive: Cancri Code',
         'menu.research.nexusv5': 'TACTFR 5.7.0',
+        'menu.research.sentienceV52': 'SentienceV5.2 Mens',
         'menu.research.sentienceV4C': 'SentienceV4.1 Omni',
+        'menu.research.hero0524': 'Technical Report 0524',
         'menu.research.sentienceV4C_v4': 'Sentience V4 Cogito',
         'menu.research.deep_tactfr5': 'Deep Dive: TACTFR 5.4.0',
         'menu.research.deep_tactfr55': 'Deep Dive: TACTFR 5.5.0',
         'menu.research.deep_tactfr56': 'Deep Dive: TACTFR 5.7.0',
         'menu.research.deep_tactfr57': 'Deep Dive: TACTFR 5.7.0',
-        'menu.research.deep_tactfr60': 'Deep Dive: TACTFR 6.0.0',
+        'menu.research.deep_tactfr60': 'Deep Dive: TACTFR 6.0.0 Beta.2.7',
+        'menu.research.tactfr627': 'TACTFR 6.0.0 Beta.2.7',
+        'menu.research.tactfr60_beta2': 'TACTFR 6.0.0 Beta.2',
         'menu.research.tactfr60': 'TACTFR 6.0.0',
         'menu.research.label': 'Frontier Progress',
         'menu.research.sentience31': 'Cancri Research',
@@ -185,6 +197,25 @@ const translations = {
     }
 };
 
+function renderInlineI18n(el, value) {
+    const arrowHtml = '<span class="arrow-icon">↗</span>';
+    if (!value.includes('<')) {
+        el.textContent = value;
+        return;
+    }
+    el.textContent = '';
+    const parts = value.split(arrowHtml);
+    parts.forEach((part, index) => {
+        if (part) el.appendChild(document.createTextNode(part));
+        if (index < parts.length - 1) {
+            const span = document.createElement('span');
+            span.className = 'arrow-icon';
+            span.textContent = '↗';
+            el.appendChild(span);
+        }
+    });
+}
+
 function translate(root = document) {
     const lang = localStorage.getItem('lang') || 'zh';
     const elements = root.querySelectorAll('[data-i18n]');
@@ -192,11 +223,7 @@ function translate(root = document) {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) {
             const value = translations[lang][key];
-            if (value.includes('<')) {
-                el.innerHTML = value;
-            } else {
-                el.textContent = value;
-            }
+            renderInlineI18n(el, value);
         }
     });
 

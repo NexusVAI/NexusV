@@ -92,24 +92,6 @@ function bindGlobalToggles() {
         });
     }
 
-    const emailCopyBtn = document.getElementById('email-copy-btn');
-    if (emailCopyBtn && emailCopyBtn.dataset.bound !== '1') {
-        emailCopyBtn.dataset.bound = '1';
-        emailCopyBtn.addEventListener('click', async () => {
-            const emails = 'nexusvai@139.com, nexusvai@foxmail.com';
-            try {
-                await navigator.clipboard.writeText(emails);
-                const originalTitle = emailCopyBtn.getAttribute('title') || '复制邮箱';
-                const isZh = localStorage.getItem('lang') !== 'en';
-                emailCopyBtn.setAttribute('title', isZh ? '已复制！' : 'Copied!');
-                setTimeout(() => {
-                    emailCopyBtn.setAttribute('title', originalTitle);
-                }, 2000);
-            } catch (err) {
-                console.error('复制失败:', err);
-            }
-        });
-    }
 }
 
 async function initPageContent() {
@@ -479,8 +461,8 @@ window.initLazyVideo = initLazyVideo;
 // AI Hero 功能
 const AI_HERO = {
     placeholders: [
-        "TACTFR 6.0 有哪些新功能？",
-        "Sentience V4.1 什么时候发布？",
+        "TACTFR 6.0.0 Beta.2.7 有哪些新功能？",
+        "SentienceV5.2 Mens 有什么新能力？",
         "如何安装 NexusV 模组？",
         "NexusV 支持哪些游戏？",
         "解释 TACTFR 的 AI 驱动 NPC 系统",

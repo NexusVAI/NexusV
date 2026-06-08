@@ -34,6 +34,9 @@
 
   var CONSENT_KEY = 'cancri_telemetry_consent';
   var CONSENT_TS_KEY = 'cancri_telemetry_consent_ts';
+  /** UI / 收集范围变更时 bump，旧决策视为无效并重新弹窗 */
+  var CONSENT_POLICY_VERSION = '2026-06-08-trae';
+  var CONSENT_POLICY_KEY = 'cancri_telemetry_consent_policy';
   var ANON_ID_KEY = 'cancri_anon_id';
 
   // ── 工具 ──────────────────────────────────────────────────────────
@@ -153,8 +156,7 @@
   }
 
   function reportError(level, message, stack) {
-    var consent = lsGet(CONSENT_KEY);
-    if (consent !== 'accept') return;
+    if (getEffectiveConsent() !== 'accept') return;
     if (!shouldReport(message, stack)) return;
 
     var payload = {
@@ -187,9 +189,17 @@
     } catch (e) { /* ignore */ }
   }
 
+  function getEffectiveConsent() {
+    var consent = lsGet(CONSENT_KEY);
+    if (consent !== 'accept' && consent !== 'decline') return null;
+    if (lsGet(CONSENT_POLICY_KEY) !== CONSENT_POLICY_VERSION) return null;
+    return consent;
+  }
+
   function recordConsent(level) {
     lsSet(CONSENT_KEY, level);
     lsSet(CONSENT_TS_KEY, String(Date.now()));
+    lsSet(CONSENT_POLICY_KEY, CONSENT_POLICY_VERSION);
 
     var payload = {
       endpoint: 'client_consent_record',
@@ -241,72 +251,163 @@
     });
   }
 
-  // ── 同意弹窗 UI ───────────────────────────────────────────────────
+  // ── 同意弹窗 UI（TRAE elegant-black 风格）────────────────────────────
+  function getLang() {
+    try { return (localStorage.getItem('lang') || 'zh').toLowerCase(); } catch (e) { return 'zh'; }
+  }
+
+  function privacyHref() {
+    var p = String(location.pathname || '');
+    if (/\/chat\/api(\/|$)/.test(p)) return '../../privacy.html';
+    if (/\/chat(\/|$)/.test(p)) return '../privacy.html';
+    return 'privacy.html';
+  }
+
+  function copyForLang(lang) {
+    var isEn = lang === 'en';
+    var privacy = privacyHref();
+    return {
+      title: isEn ? 'Accept cookies from NexusV on this browser?' : '是否在此浏览器接受 NexusV 的 Cookie？',
+      desc: isEn
+        ? 'NexusV uses essential cookies and similar technologies to provide, improve and secure our services.<br>By clicking "Accept All", we may also collect diagnostic data when a page error occurs (browser type, error stack, recent request URLs) to fix bugs — never chat content or ad tracking. Click "Decline All" to skip diagnostics. Learn more in our <a class="cc__link" href="' + privacy + '" target="_blank" rel="noopener">Privacy Policy</a>.'
+        : 'NexusV 使用必要的 Cookie 和类似技术来提供、改进和保护我们的服务。<br>点击「全部接受」后，我们还会在发生页面错误时收集诊断信息（浏览器型号、错误堆栈、最近请求记录），用于修复 bug；不会收集聊天内容，也不会用于广告追踪。点击「全部拒绝」则不上报诊断信息。详见 <a class="cc__link" href="' + privacy + '" target="_blank" rel="noopener">隐私协议</a>。',
+      accept: isEn ? 'Accept All' : '全部接受',
+      decline: isEn ? 'Decline All' : '全部拒绝',
+      manage: isEn ? 'Manage preferences' : '管理偏好',
+      prefsTitle: isEn ? 'Cookie preferences' : 'Cookie 偏好设置',
+      prefsEssential: isEn
+        ? '<strong>Essential</strong> — always on: login session, theme and language preferences (localStorage).'
+        : '<strong>必要</strong> — 始终启用：登录态、主题与语言偏好（localStorage）。',
+      prefsDiag: isEn
+        ? '<strong>Diagnostics</strong> — optional: uncaught JS errors only when you choose Accept All. No chat content, forms, or ad tracking.'
+        : '<strong>错误诊断</strong> — 可选：仅在你选择「全部接受」后，于未捕获异常时上报；不含聊天内容、表单输入或广告追踪。',
+      prefsLink: isEn ? 'Read full Privacy Policy' : '阅读完整隐私协议',
+      back: isEn ? 'Back' : '返回',
+    };
+  }
+
   function injectBannerStyles() {
     if (document.getElementById('cancri-telemetry-style')) return;
     var style = document.createElement('style');
     style.id = 'cancri-telemetry-style';
     style.textContent = '' +
-      // ── dark theme（默认） ───────────────────────────────────
-      '.cancri-telemetry-banner{position:fixed;right:16px;bottom:16px;z-index:2147483600;' +
-      'width:min(360px,calc(100vw - 32px));padding:16px 18px 14px;border-radius:14px;' +
-      'background:rgba(20,22,28,0.97);color:#f3f3f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;' +
-      'font-size:13px;line-height:1.55;box-shadow:0 12px 32px rgba(0,0,0,0.32);' +
-      'border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' +
-      'transform:translateY(8px);opacity:0;transition:opacity .25s ease,transform .25s ease;}' +
-      '.cancri-telemetry-banner.is-visible{transform:translateY(0);opacity:1;}' +
-      '.cancri-telemetry-banner h4{margin:0 0 6px;font-size:14px;font-weight:600;color:#fff;letter-spacing:0.01em;}' +
-      '.cancri-telemetry-banner p{margin:0 0 12px;font-size:12.5px;color:rgba(243,243,245,0.78);}' +
-      '.cancri-telemetry-actions{display:flex;gap:8px;justify-content:flex-end;}' +
-      '.cancri-telemetry-actions button{padding:7px 14px;font-size:12.5px;font-weight:500;border-radius:8px;cursor:pointer;' +
-      'border:1px solid rgba(255,255,255,0.16);background:transparent;color:#f3f3f5;transition:background .15s ease,border-color .15s ease,color .15s ease;font-family:inherit;}' +
-      '.cancri-telemetry-actions button:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.32);}' +
-      // 2026-05-16：primary 从紫色 #6366f1 统一到全站 clay orange，跟登录页主按钮 + brand accent 一致
-      '.cancri-telemetry-actions button.is-primary{background:#c96e4a;border-color:#c96e4a;color:#fff;}' +
-      '.cancri-telemetry-actions button.is-primary:hover{background:#d97757;border-color:#d97757;}' +
-      // ── light theme override ────────────────────────────────
-      'html[data-theme="light"] .cancri-telemetry-banner{background:rgba(253,248,236,0.98);color:#1a120c;border-color:rgba(26,18,12,0.10);box-shadow:0 12px 32px rgba(26,18,12,0.18);}' +
-      'html[data-theme="light"] .cancri-telemetry-banner h4{color:#1a120c;}' +
-      'html[data-theme="light"] .cancri-telemetry-banner p{color:rgba(26,18,12,0.68);}' +
-      'html[data-theme="light"] .cancri-telemetry-actions button{border-color:rgba(26,18,12,0.16);color:#1a120c;}' +
-      'html[data-theme="light"] .cancri-telemetry-actions button:hover{background:rgba(26,18,12,0.05);border-color:rgba(26,18,12,0.30);}' +
-      'html[data-theme="light"] .cancri-telemetry-actions button.is-primary{background:#c96e4a;border-color:#c96e4a;color:#fff;}' +
-      'html[data-theme="light"] .cancri-telemetry-actions button.is-primary:hover{background:#b25c3e;border-color:#b25c3e;color:#fff;}' +
-      '@media (max-width:480px){.cancri-telemetry-banner{right:12px;left:12px;bottom:12px;width:auto;}}';
+      '#cc-main.cc--elegant-black{color-scheme:dark;' +
+      '--cc-bg:#000;--cc-primary-color:#eff4f6;--cc-secondary-color:hsla(0,0%,100%,.8);' +
+      '--cc-btn-primary-bg:#fff;--cc-btn-primary-color:#000;--cc-btn-primary-border-color:#fff;' +
+      '--cc-btn-primary-hover-bg:hsla(0,0%,100%,.8);--cc-btn-primary-hover-color:#000;' +
+      '--cc-btn-secondary-bg:hsla(0,0%,100%,.039);--cc-btn-secondary-color:var(--cc-primary-color);' +
+      '--cc-btn-secondary-border-color:#252729;--cc-btn-secondary-hover-bg:#252729;' +
+      '--cc-btn-secondary-hover-color:#fff;--cc-btn-secondary-hover-border-color:#252729;' +
+      '--cc-separator-border-color:#252729;--cc-link-color:#fff;' +
+      '--cc-modal-border-radius:.5rem;--cc-btn-border-radius:3px;--cc-modal-margin:1rem;' +
+      '--cc-z-index:2147483647;--cc-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;}' +
+      '#cc-main{background:transparent;color:var(--cc-primary-color);font-family:var(--cc-font-family);' +
+      'font-size:16px;font-weight:400;line-height:1.15;position:fixed;inset:0;z-index:var(--cc-z-index);pointer-events:none;}' +
+      '#cc-main .cm-wrapper{pointer-events:auto;position:fixed;right:var(--cc-modal-margin);bottom:var(--cc-modal-margin);z-index:1;}' +
+      '#cc-main .cm{background:var(--cc-bg);border:1px solid var(--cc-separator-border-color);border-radius:var(--cc-modal-border-radius);' +
+      'box-shadow:0 .625em 1.875em rgba(0,0,2,.3);display:flex;flex-direction:column;overflow:hidden;max-width:36em;width:min(36em,calc(100vw - 2rem));' +
+      'opacity:0;transform:translateY(1em);transition:opacity .25s ease,transform .25s ease,visibility .25s ease;visibility:hidden;}' +
+      '#cc-main.is-visible .cm{opacity:1;transform:translateY(0);visibility:visible;}' +
+      '#cc-main .cm__body{display:flex;flex-direction:column;justify-content:space-between;}' +
+      '#cc-main .cm__texts{display:flex;flex-direction:column;justify-content:center;padding:1rem 0 0;}' +
+      '#cc-main .cm__title,#cc-main .cm__desc{padding:0 1.3rem;margin:0;}' +
+      '#cc-main .cm__title{font-size:1.05em;font-weight:600;color:var(--cc-primary-color);}' +
+      '#cc-main .cm__title+.cm__desc{margin-top:1.1em;}' +
+      '#cc-main .cm__desc{color:var(--cc-secondary-color);font-size:.9em;line-height:1.5;padding-bottom:1em;}' +
+      '#cc-main .cc__link{color:var(--cc-link-color);font-weight:600;text-decoration:underline;text-underline-offset:2px;}' +
+      '#cc-main .cc__link:hover{color:var(--cc-primary-color);}' +
+      '#cc-main .cm__btns{border-top:1px solid var(--cc-separator-border-color);display:flex;flex-direction:row-reverse;' +
+      'justify-content:space-between;align-items:stretch;padding:1rem 1.3rem;gap:.375rem;}' +
+      '#cc-main .cm__btn-group{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:.375rem;}' +
+      '#cc-main .cm__btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:.5em 1em;' +
+      'font-family:inherit;font-size:.82em;font-weight:600;text-align:center;cursor:pointer;border-radius:var(--cc-btn-border-radius);' +
+      'background:var(--cc-btn-primary-bg);border:1px solid var(--cc-btn-primary-border-color);color:var(--cc-btn-primary-color);' +
+      'transition:background-color .15s ease,border-color .15s ease,color .15s ease;}' +
+      '#cc-main .cm__btn:hover{background:var(--cc-btn-primary-hover-bg);color:var(--cc-btn-primary-hover-color);}' +
+      '#cc-main .cm__btn--secondary{background:var(--cc-btn-secondary-bg);border-color:var(--cc-btn-secondary-border-color);color:var(--cc-btn-secondary-color);}' +
+      '#cc-main .cm__btn--secondary:hover{background:var(--cc-btn-secondary-hover-bg);border-color:var(--cc-btn-secondary-hover-border-color);color:var(--cc-btn-secondary-hover-color);}' +
+      '#cc-main .cm__prefs{padding:1rem 1.3rem 1.2rem;display:none;}' +
+      '#cc-main .cm__prefs.is-open{display:block;}' +
+      '#cc-main .cm__prefs h3{margin:0 0 .9em;font-size:1.05em;font-weight:600;color:var(--cc-primary-color);}' +
+      '#cc-main .cm__prefs p{margin:0 0 .75em;font-size:.88em;line-height:1.55;color:var(--cc-secondary-color);}' +
+      '#cc-main .cm__prefs a{color:var(--cc-link-color);font-weight:600;text-decoration:underline;}' +
+      '#cc-main .cm__panel-main.is-hidden{display:none;}' +
+      '@media screen and (max-width:640px){#cc-main{--cc-modal-margin:.5em;}' +
+      '#cc-main .cm-wrapper{left:var(--cc-modal-margin);right:var(--cc-modal-margin);}' +
+      '#cc-main .cm{width:auto;max-width:none;}' +
+      '#cc-main .cm__btns{flex-direction:column-reverse;}' +
+      '#cc-main .cm__btn-group{grid-auto-flow:row;width:100%;}' +
+      '#cc-main .cm__title,#cc-main .cm__desc,#cc-main .cm__btns{padding-left:1.1rem;padding-right:1.1rem;}}';
     document.head.appendChild(style);
   }
 
   function showBanner() {
-    if (document.getElementById('cancri-telemetry-banner')) return;
+    if (document.getElementById('cc-main')) return;
     injectBannerStyles();
 
-    var el = document.createElement('div');
-    el.id = 'cancri-telemetry-banner';
-    el.className = 'cancri-telemetry-banner';
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-label', '错误日志收集请求');
-    el.innerHTML = '' +
-      '<h4>帮我们更快修 bug</h4>' +
-      '<p>仅当你遇到错误时，我们会收集浏览器型号、错误堆栈和最近的请求记录用来定位问题。不会收集聊天内容，也不会共享给第三方。</p>' +
-      '<div class="cancri-telemetry-actions">' +
-        '<button type="button" data-act="decline">拒绝</button>' +
-        '<button type="button" class="is-primary" data-act="accept">同意</button>' +
+    var copy = copyForLang(getLang());
+    var root = document.createElement('div');
+    root.id = 'cc-main';
+    root.className = 'cc--elegant-black';
+    root.setAttribute('data-nosnippet', '');
+    root.innerHTML = '' +
+      '<div class="cm-wrapper cc--anim">' +
+        '<div class="cm cm--box cm--wide cm--bottom cm--right cm--flip" role="dialog" aria-modal="true" aria-labelledby="cm__title" aria-describedby="cm__desc">' +
+          '<div class="cm__body">' +
+            '<div class="cm__panel-main" id="cancri-cm-main">' +
+              '<div class="cm__texts">' +
+                '<h2 id="cm__title" class="cm__title">' + copy.title + '</h2>' +
+                '<p id="cm__desc" class="cm__desc">' + copy.desc + '</p>' +
+              '</div>' +
+              '<div class="cm__btns">' +
+                '<div class="cm__btn-group">' +
+                  '<button type="button" class="cm__btn" data-act="accept"><span>' + copy.accept + '</span></button>' +
+                  '<button type="button" class="cm__btn" data-act="decline"><span>' + copy.decline + '</span></button>' +
+                '</div>' +
+                '<div class="cm__btn-group">' +
+                  '<button type="button" class="cm__btn cm__btn--secondary" data-act="manage"><span>' + copy.manage + '</span></button>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cm__prefs" id="cancri-cm-prefs" hidden>' +
+              '<h3>' + copy.prefsTitle + '</h3>' +
+              '<p>' + copy.prefsEssential + '</p>' +
+              '<p>' + copy.prefsDiag + '</p>' +
+              '<p><a href="' + privacyHref() + '" target="_blank" rel="noopener">' + copy.prefsLink + '</a></p>' +
+              '<button type="button" class="cm__btn cm__btn--secondary" data-act="back" style="margin-top:.5rem;min-width:7rem;"><span>' + copy.back + '</span></button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
-    document.body.appendChild(el);
-    requestAnimationFrame(function () { el.classList.add('is-visible'); });
+    document.body.appendChild(root);
+    requestAnimationFrame(function () { root.classList.add('is-visible'); });
+
+    var mainPanel = root.querySelector('#cancri-cm-main');
+    var prefsPanel = root.querySelector('#cancri-cm-prefs');
 
     function close(level) {
       recordConsent(level);
-      el.classList.remove('is-visible');
-      setTimeout(function () { try { el.remove(); } catch (e) { /* ignore */ } }, 280);
-      if (level === 'accept') {
-        // 同意后立刻启用捕获，本次会话内剩余的错误就能上报
-        registerErrorHandlers();
-      }
+      root.classList.remove('is-visible');
+      setTimeout(function () { try { root.remove(); } catch (e) { /* ignore */ } }, 280);
+      if (level === 'accept') registerErrorHandlers();
     }
 
-    el.querySelector('[data-act="accept"]').addEventListener('click', function () { close('accept'); });
-    el.querySelector('[data-act="decline"]').addEventListener('click', function () { close('decline'); });
+    function showPrefs() {
+      mainPanel.classList.add('is-hidden');
+      prefsPanel.hidden = false;
+      prefsPanel.classList.add('is-open');
+    }
+
+    function hidePrefs() {
+      prefsPanel.hidden = true;
+      prefsPanel.classList.remove('is-open');
+      mainPanel.classList.remove('is-hidden');
+    }
+
+    root.querySelector('[data-act="accept"]').addEventListener('click', function () { close('accept'); });
+    root.querySelector('[data-act="decline"]').addEventListener('click', function () { close('decline'); });
+    root.querySelector('[data-act="manage"]').addEventListener('click', showPrefs);
+    root.querySelector('[data-act="back"]').addEventListener('click', hidePrefs);
   }
 
   // ── 启动逻辑 ──────────────────────────────────────────────────────
@@ -314,7 +415,7 @@
     // fetch 拦截总是装上（环形缓冲不需要同意；这只是内存数据，不上报就丢）
     instrumentFetch();
 
-    var consent = lsGet(CONSENT_KEY);
+    var consent = getEffectiveConsent();
     if (consent === 'accept') {
       registerErrorHandlers();
       return;
@@ -333,10 +434,14 @@
   // 暴露简单 API 方便后续手动测试 / 重置
   window.CancriTelemetry = {
     /** 当前决策（'accept' | 'decline' | null） */
-    getConsent: function () { return lsGet(CONSENT_KEY); },
+    getConsent: function () { return getEffectiveConsent(); },
     /** 重置决策，下次刷新会重新弹窗（仅用于调试） */
     reset: function () {
-      try { localStorage.removeItem(CONSENT_KEY); localStorage.removeItem(CONSENT_TS_KEY); } catch (e) { /* ignore */ }
+      try {
+        localStorage.removeItem(CONSENT_KEY);
+        localStorage.removeItem(CONSENT_TS_KEY);
+        localStorage.removeItem(CONSENT_POLICY_KEY);
+      } catch (e) { /* ignore */ }
     },
     /** 手动触发一次测试上报（仅在已同意时生效） */
     test: function () {

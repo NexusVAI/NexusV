@@ -118,7 +118,7 @@ const articleData = {
             category: '产品',
             readTime: '15 分钟阅读',
             paragraphs: [
-                '今天，我们正式发布 ChatAI——一个无需复杂注册即可上手的 AI 聚合服务平台。ChatAI 将来自全球 14 家以上供应商的 40+ 顶尖大语言模型整合到一个简洁优雅的对话界面中，让每一位用户都能在统一界面下体验最前沿的 AI 对话能力。无论你需要写作辅助、代码调试、数据分析还是创意灵感，ChatAI 都能为你提供一站式解决方案。',
+                '今天，我们正式发布 ChatAI——一个以邮箱验证码登录、注册即可上手的 AI 聚合服务平台。ChatAI 将来自全球 14 家以上供应商的 40+ 顶尖大语言模型整合到一个简洁优雅的对话界面中，让每一位用户都能在统一界面下体验最前沿的 AI 对话能力。无论你需要写作辅助、代码调试、数据分析还是创意灵感，ChatAI 都能为你提供一站式解决方案。',
                 '为什么要做 ChatAI？',
                 '当前 AI 行业的现状是：优秀的模型分散在各个平台，每个平台都有自己的注册流程、计费方式和使用限制。用户想要对比不同模型的表现，需要在多个平台之间反复切换，既繁琐又低效。ChatAI 的诞生就是为了解决这个问题——一个入口，所有模型，统一体验。我们相信，AI 技术的普惠不应该被复杂的接入流程所阻挡。',
                 '海量模型，一站聚合',
@@ -167,20 +167,20 @@ const articleData = {
                 '• 消息朗读：AI 回答支持一键朗读（TTS），采用 MiMo V2.5 TTS 语音合成引擎，也可回退到浏览器内置语音。',
                 '• Markdown 与数学公式：完整支持 Markdown 渲染（标题、代码块、表格、列表等）和 KaTeX 数学公式，技术讨论和学术写作毫无障碍。',
                 '安全与隐私',
-                '我们高度重视用户隐私与安全：',
-                '• 对话内容不存储于服务端：你的对话请求仅用于实时推理处理，不会被存储、分析或用于模型训练。',
-                '• 无用户追踪：ChatAI 不使用追踪 Cookie，不采集用户行为数据，不进行用户画像分析。',
-                '• 加密传输：所有数据传输均通过 HTTPS 加密通道完成。',
-                '• 双因素认证：支持短信和身份验证器 App 两种双因素认证方式，保护你的账户安全。',
-                '• 开发者工具屏蔽：检测到浏览器开发者工具打开时会显示安全提醒，防止恶意脚本注入。',
-                '• 防滥用系统：内置行为风控机制，自动拦截自动化请求和异常访问模式。',
-                '• 敏感信息提醒：页面底部持续提醒用户不要输入身份证号、银行卡号、验证码等敏感信息。',
+                '我们高度重视用户隐私与安全（完整条款见 <a href="privacy.html">隐私协议</a>）：',
+                '• 对话历史云端存储：默认对话记录保存在 Supabase 数据库，支持跨设备同步与回看；你可随时删除单条对话。临时对话模式开启后不会写入历史。我们不会将对话内容用于训练自有模型。',
+                '• 用量与反滥用：记录模型调用 token 数、时间戳等用量元数据（不含对话原文）用于配额与计费；登录后采集设备指纹 visitor_id 防范多账号刷配额；经你同意后才上报客户端错误遥测。',
+                '• 无广告追踪 Cookie：不使用第三方广告追踪 Cookie；Cloudflare Turnstile 仅用于登录人机验证。',
+                '• 加密传输：客户端经 HTTPS 访问 <code>chat.nexusvai.xyz</code>，推理请求转发至上游模型供应方。',
+                '• 账户安全：邮箱 OTP 登录 + Turnstile 人机验证；检测到开发者工具打开时显示安全提醒。',
+                '• 防滥用系统：内置行为风控、封禁与申诉机制，自动拦截自动化脚本与异常访问。',
+                '• 敏感信息提醒：请勿在对话中输入身份证号、银行卡号、验证码等高度敏感信息。',
                 '与 NexusV 套件的关系',
                 'ChatAI 是一个完全独立的产品，与 NexusV 套件（TACTFR、NexusV 修改器、Sentience）没有功能上的关联。NexusV 套件是面向 GTA V 单机环境的游戏模组，而 ChatAI 是面向所有用户的通用 AI 对话服务。两者共享 NexusV 品牌，但在技术架构、功能定位和用户群体上完全独立。',
                 '技术架构',
-                'ChatAI 采用纯云端处理架构，基于 Supabase 提供认证、数据库和边缘函数服务。用户的对话请求通过安全加密通道传输至云端 AI 模型进行推理，推理结果以 SSE（Server-Sent Events）流式传输实时返回用户界面，打字机效果让每个字自然呈现。对话历史保存在云端数据库中，支持跨设备同步。客户端采用响应式设计，完美适配桌面端、平板和移动设备。',
+                'ChatAI 采用纯云端处理架构：前端通过 <code>chat.nexusvai.xyz</code>（Cloudflare Workers）接入，聊天推理网关（chat-gateway）与公开 API 网关（api-gateway）在边缘执行，流式 SSE 响应不经 Supabase 出站；认证、PostgreSQL 数据库、chat-history、user-memory 等仍由 Supabase 提供，其余路径由 Worker 透明反代。用户对话经网关转发至 60+ 上游线路，结果实时流式返回。客户端响应式设计，适配桌面、平板与移动设备。',
                 '未来展望',
-                'ChatAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、开放 API 接口、支持项目协作等。我们致力于将 ChatAI 打造为最便捷、最开放的 AI 聚合平台。',
+                'ChatAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、增强 API 与项目协作等。开放 API 已上线，详见 <a href="chat/api_docs.html">API 文档</a>。我们致力于将 ChatAI 打造为最便捷、最开放的 AI 聚合平台。',
                 '立即体验：打开 ChatAI 即刻开始与 AI 对话。一个入口，所有模型，统一体验。',
                 '—— NexusV 团队'
             ]
@@ -240,20 +240,20 @@ const articleData = {
                 '• Read Aloud: One-click TTS for AI responses using MiMo V2.5 TTS engine, with browser speech fallback.',
                 '• Markdown & Math: Full Markdown rendering (headings, code blocks, tables, lists) and KaTeX math formulas for technical and academic writing.',
                 'Security & Privacy',
-                'We take your privacy and security seriously:',
-                '• Conversations Not Stored: Your requests are used only for real-time inference — not stored, analyzed, or used for training.',
-                '• No Tracking: No tracking cookies, no behavior data collection, no user profiling.',
-                '• Encrypted: All data transmission via HTTPS encrypted channels.',
-                '• Two-Factor Auth: SMS and authenticator app 2FA support for account security.',
-                '• DevTools Shield: Detects open browser DevTools and shows security warnings to prevent script injection.',
-                '• Anti-Abuse: Built-in behavioral risk control blocking automated requests and abnormal access patterns.',
-                '• Sensitive Data Warning: Persistent footer reminder not to enter ID numbers, bank cards, or verification codes.',
+                'We take your privacy and security seriously (full terms: <a href="privacy.html">Privacy Policy</a>):',
+                '• Cloud History: Conversations are stored in Supabase by default for cross-device sync; you can delete any thread. Temporary chat mode skips persistence. We do not train on your content.',
+                '• Usage & Anti-Abuse: Token counts and call metadata (not message bodies) power quotas/billing; post-login device fingerprints deter multi-account abuse; client error telemetry only with your consent.',
+                '• No Ad Tracking Cookies: No third-party ad tracking cookies; Cloudflare Turnstile is used for login CAPTCHA only.',
+                '• Encrypted Transit: HTTPS to <code>chat.nexusvai.xyz</code>, then forwarding to upstream model providers.',
+                '• Account Security: Email OTP login + Turnstile; DevTools-open warnings for script-injection awareness.',
+                '• Anti-Abuse: Risk controls, bans, and appeals block automated scripts and abnormal access.',
+                '• Sensitive Data Warning: Do not enter ID numbers, bank cards, or verification codes in chats.',
                 'Relationship with NexusV Suite',
                 'ChatAI is a completely independent product with no functional connection to the NexusV suite (TACTFR, NexusV Modifier, Sentience). The NexusV suite targets GTA V single-player game mods, while ChatAI is a universal AI dialogue service for all users. Both share the NexusV brand, but are entirely independent in architecture, positioning, and audience.',
                 'Technical Architecture',
-                'ChatAI uses a pure cloud architecture powered by Supabase for authentication, database, and edge functions. Conversation requests are transmitted via secure encrypted channels to cloud AI models, with results streamed back in real-time via SSE (Server-Sent Events) with a typewriter effect. Conversation history is stored in cloud databases with cross-device sync. The client uses responsive design, perfectly adapting to desktop, tablet, and mobile.',
+                'ChatAI is a pure cloud stack: the client hits <code>chat.nexusvai.xyz</code> (Cloudflare Workers) where chat-gateway and api-gateway run at the edge; streaming SSE bypasses Supabase egress. Auth, PostgreSQL, chat-history, and user-memory remain on Supabase, with other paths transparently proxied. Requests fan out to 60+ upstream routes and stream back in real time. Responsive UI for desktop, tablet, and mobile.',
                 'Future Outlook',
-                'ChatAI is currently in Beta. We will continue iterating — upcoming plans include more AI models, enhanced video generation, open API access, and project collaboration features. We are committed to making ChatAI the most convenient and open AI aggregation platform.',
+                'ChatAI is in Beta. Upcoming work includes more models, better video generation, and richer API/project collaboration. The OpenAI-compatible API is already live — see <a href="chat/api_docs.html">API docs</a>. We aim to be the most convenient open AI aggregation platform.',
                 'Try it now: Open ChatAI and start talking to AI immediately. One entry point, all models, one unified experience.',
                 '— The NexusV Team'
             ]
@@ -621,6 +621,85 @@ const articleData = {
             ]
         }
     },
+    tactfr627: {
+        overlay: 'TACTFR 6.0.0 Beta.2.7',
+        media: { type: 'video', src: 'Logo/1mo.Cancri.mp4', poster: 'Logo/TACTFR6.0.0.png', fit: 'cover', alt: 'TACTFR 6.0.0 Beta.2.7' },
+        zh: {
+            title: '隆重推出 TACTFR 6.0.0 Beta.2.7 测试版',
+            date: '2026年6月8日',
+            category: '产品',
+            readTime: '14 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们发布 **TACTFR 6.0.0 Beta.2.7**——在 Beta.2 故事任务与七阶段逮捕管线之上，本版把嫌疑人行为、交付语义、双目标押送、UI 统一主题与 legacy 链路 Officer AI 全部推到可玩状态。版本号 <code>6.0.2.7</code>（信息版本 <code>TACTFR-6.0.0-BETA-2.7</code>），Release|x64 编译通过，QQ 群 1061632354。',
+                '<strong>从 Beta.2 到 Beta.2.7：我们修了什么</strong>',
+                'Beta.2 奠定了 6.0 的骨架：分层故事任务（银行抢劫完整叙事链）、七阶段电影化逮捕、警官小队连续双嫌逮捕、警察终端重绘，以及 PullOver / Patrol 纯 V6 战术切片。Beta.2.7 不再扩架构边界，而是把玩家能感知到的断裂点一条条焊死——嫌疑人刷不出来、双车上车不同步、交付后仍显示成功、逮捕镜头穿地、银行警车瞬移、菜单配色各写各的。',
+                '<strong>嫌疑人行为：更像 GTA6 时刻</strong>',
+                '武装嫌疑人在被瞄准施压时，可按概率进入<strong>假投降链</strong>：举手约 1.8 秒 → 放手转身约 0.7 秒 tell 窗口 → 掏枪反抗，走标准 <code>ForceResist</code> 战斗管线。未被瞄准时，每约 1.2 秒扫描活跃警力：civilian / nervous 仓惶逃跑并求饶；violent 转头戒备后撤；armed maniac 在警员逼近且持枪时有概率直接反击。',
+                '扫描<strong>排除玩家自己的座驾</strong>——你开警车停在旁边不会误吓跑嫌犯。全部使用工程内已验证 native（<code>TASK_HANDS_UP</code>、<code>TASK_SMART_FLEE_COORD</code>、<code>PLAY_PED_AMBIENT_SPEECH_NATIVE</code> 等），唇形与内置语音同步，不依赖 LLM 服务器在线。',
+                '新增 <strong>X 键嫌疑人语音互动</strong>（<code>SuspectVoiceInteract</code>，可在 TACTFR.ini 改绑）：按一次轮换命令呵斥 → 辱骂 → 安慰 → 闲聊。玩家警员用 <code>FORCE_SHOUTED</code> 真实吼出声；嫌犯按语气与性格做表情并内置语音回应。辱骂时暴力型怒怼，紧张型更恐惧并标记恐吓。',
+                '<strong>交付与案件结算：语义终于对齐</strong>',
+                '修复 <code>CaseManager.OnSuspectDelivered()</code> 异常后误完成案件的风险：异常记录日志并保守中止，不再静默落入 Completed。<code>MarkDelivered()</code> 返回是否真正标记成功。',
+                '双嫌疑人边界采用方案 A：<strong>任一嫌疑人死亡或逃脱，最终不再显示完整「成功交付」</strong>，分别按 <code>SuspectDead</code> / <code>Failed</code> 结算。<code>DeliverSystem</code> 缓存委托，<code>Shutdown()</code> 对称退订并清理等待下车过渡态。',
+                '<strong>双目标押送与逮捕镜头</strong>',
+                '车辆交互 <code>E</code> 优先解析车外可押送目标，避免车内已有嫌疑人时误触发下车。补齐 secondary follow / boarding 标记；移除「主目标回步行就强制副目标下车」的冲突逻辑，保留「玩家下车后嫌犯留车内，按 G 再一起下车」方案。',
+                '逮捕序列收紧动画 anchor 安全半径、垂直落差校验、snap 距离上限与 cuff lock 单帧步进上限；异常 anchor 放弃 snap，降低相机入地后实体大距离瞬移风险。银行剧情警车不再反复 <code>Position = origin</code> 搬回 approach，必须实际接近 staging 才结算抵达；司机不在车内时优先 <code>TASK_ENTER_VEHICLE</code>，距离异常则跳过本次驾驶命令。',
+                '<strong>嫌疑人生成稳定性</strong>',
+                '当 ambient 模型池连续失败时，改用固定模型池兜底（business / mexgoon / freemode），根治「all fallbacks failed」导致接案无嫌、狂按 E/G 刷屏 <code>no current suspect</code> 的下游症状。外观不再完全随机 ambient，这是为稳定性做的有意取舍。',
+                '警员档案 <code>SaveOfficerProfile()</code> 走原子写盘（临时文件 + <code>File.Replace</code>，最多 3 次重试）；失败时明确提示「保存失败」，不再误报「已保存」。',
+                '<strong>UI：统一指挥台主题</strong>',
+                '新增 <code>TactfrUiTheme.cs</code> 集中调色板与绘制原语，终结此前 5+ 份重复配色。警察终端重建为页眉 + accent 下划线 / 左列表 / 右简报 / 页脚布局，数据与输入逻辑零改动。',
+                '第二批迁移全部常驻菜单到统一 <code>ListMenu</code> 渲染器：F7 调度、巡逻指令、后备箱装备、F8 小队、车库警服。修复 F7 调度菜单 13 项面板中心锚在 0.22、表头被顶出屏外的问题；键位提示统一 <code>GetKeyDisplayName</code> 友好显示。',
+                '<strong>玩法扩展与架构债务</strong>',
+                '警车后备箱装备菜单（<code>B</code> 键，执勤中距警务车 5m）：战术防弹衣 / 步枪 / 霰弹枪 / 急救包 / 雪糕筒 / 警笛点燃。拖车系统：调度菜单呼叫拖车，offscreen 生成 → 挂钩驶离 → 黄色 Blip 跟随，支持「解散拖车」。',
+                '6 个 legacy 系统完成事件订阅治理（SpikeStrip / K9 / Convoy / SuspectController / SuspectOnFootExecutor / SuspectVehicleEscortExecutor）：缓存委托，<code>Initialize()</code> 订阅，<code>Shutdown()</code> 对称退订。',
+                '<strong>AI：legacy 链路独立 Officer AI</strong>',
+                '不改动 <code>EnableV6Runtime=false</code> 默认值。新增 <code>OfficerAILegacyHost</code>：在 legacy 主链独立启用 Officer AI，读取 <code>config.ini</code> 的 Provider / CloudAPIKey / LocalEndpoint；与 V6 GameLoop 互斥。想看到智能行为：填 DeepSeek Key 或启动 SentienceV5.2 启动器本地模型（默认端口 5001）；不想用 AI 设 <code>[AI] EnableOfficerAI=false</code>。',
+                'DeepSeek 接入约束不变：LLM 输出必须为 JSON 白名单动作与短对白，游戏内只解析允许字段；中文显示走 GTA 原生 subtitle，避免 3D 文本缺字。嫌犯 LLM 原创台词目前仍只显示字幕，TTS 朗读对齐 SentienceV5.2 为后续批次。',
+                '<strong>与 Beta.2 保留一致的核心</strong>',
+                '故事任务框架与银行抢劫章节、七阶段逮捕 + 四组镜头 + 慢动作、警官小队连续双嫌逮捕、警察终端三区右栏、V6 PullOver / Patrol 纯切片、<code>LegacyTacticalContextBridge</code> 句柄镜像——这些 Beta.2 能力在 2.7 中完整保留并在此基础上加固。',
+                '<strong>安装与配置</strong>',
+                '将 <code>a.TACTFR.dll</code> 放入 GTA V <code>scripts/</code> 目录，配合 ScriptHookV + ScriptHookVDotNet。终端按 O 打开，选 920 进入银行警报剧情。本地 AI：在 SentienceV5.2 启动器点「启动本地模型」使 5001 有服务；或 <code>config.ini</code> 设 <code>Provider=cloud</code> 填 DeepSeek Key。',
+                '日志确认：<code>[EFCore] EF Police Mod TACTFR-6.0.0-BETA-2.7 loaded</code>；legacy AI 路径见 <code>[Legacy:AI] Officer AI host initialized</code>。',
+                '<strong>已知限制</strong>',
+                'V6 运行时默认仍关闭，需单独 smoke test 后再考虑默认开启。拘捕上铐段同步场景与镜头避墙待在实机截图后迭代。Anima LLM 请求失败若本地 5001 未监听，属环境依赖而非代码缺陷。',
+                'TACTFR 6.0.0 Beta.2.7 不是换皮预览，而是把 6.0 主链路上每一个「差一点」焊成「能玩一整局」——从假投降反杀到双嫌上车，从交付语义到统一指挥台 UI。',
+                '—— TACTFR 开发团队'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 6.0.0 Beta.2.7 Preview',
+            date: 'June 8, 2026',
+            category: 'Product',
+            readTime: '14 min read',
+            paragraphs: [
+                'Abstract: Today we ship **TACTFR 6.0.0 Beta.2.7** — building on Beta.2 story missions and the seven-stage arrest pipeline, this release hardens suspect behavior, delivery semantics, dual-target escort, unified UI theming, and legacy-path Officer AI into a playable state. Version <code>6.0.2.7</code> (<code>TACTFR-6.0.0-BETA-2.7</code>), Release|x64 clean build. QQ group 1061632354.',
+                '<strong>From Beta.2 to Beta.2.7</strong>',
+                'Beta.2 laid the 6.0 skeleton: layered story missions (full bank heist arc), cinematic seven-stage arrests, officer-squad consecutive dual-suspect cuffs, terminal redesign, and pure-V6 PullOver / Patrol slices. Beta.2.7 stops expanding architecture and welds every player-visible fracture — suspects failing to spawn, dual boarding desync, false “successful delivery”, arrest camera clipping underground, bank police teleporting, and menus each with their own color palette.',
+                '<strong>Suspect behavior: GTA6 moments</strong>',
+                'Armed suspects under aim pressure can enter a <strong>fake surrender chain</strong>: hands up ~1.8s → turn-and-draw ~0.7s tell window → weapon resist via standard <code>ForceResist</code>. When not aimed at, ~1.2s scans for active police: civilians/nervous types flee and plead; violent types turn and back off; armed maniacs may counter-attack when officers close with guns drawn.',
+                'Scans <strong>exclude the player\'s own cruiser</strong> — parking your police car nearby won\'t spook suspects. All verified in-engine natives with lip-sync ambient speech, no LLM server required.',
+                'New <strong>X-key suspect voice interaction</strong> (<code>SuspectVoiceInteract</code>, rebindable in TACTFR.ini): cycles command shout → insult → comfort → chat. Player officer shouts with <code>FORCE_SHOUTED</code>; suspects respond with facial anim and built-in voice lines matched to tone and personality.',
+                '<strong>Delivery and case closure semantics</strong>',
+                'Fixed <code>CaseManager.OnSuspectDelivered()</code> falsely completing cases on exceptions. <code>MarkDelivered()</code> now returns real success. Dual-suspect rule A: <strong>any death or escape blocks the full “successful delivery” message</strong>, settling as <code>SuspectDead</code> or <code>Failed</code>. <code>DeliverSystem</code> caches delegates with symmetric unsubscribe on shutdown.',
+                '<strong>Dual-target escort and arrest camera</strong>',
+                'Vehicle <code>E</code> interaction prioritizes outside escortable targets. Secondary follow/boarding markers fixed; removed logic that kicked the secondary out when the primary returned to on-foot. Arrest sequence tightens anchor safety, vertical delta checks, snap distance caps; bank phase police no longer teleport-staging — must actually approach before arrival counts.',
+                '<strong>Suspect spawn stability</strong>',
+                'Fixed model pool fallback when ambient selection fails, ending “all fallbacks failed” and downstream <code>no current suspect</code> spam. Officer profile saves atomically with honest failure messaging.',
+                '<strong>UI: unified command-console theme</strong>',
+                '<code>TactfrUiTheme.cs</code> centralizes palette and draw primitives. Terminal rebuilt; F7 dispatch, patrol, trunk, F8 squad, and uniform menus migrated to shared <code>ListMenu</code> renderer with friendly key names.',
+                '<strong>Gameplay and architecture debt</strong>',
+                'Trunk equipment menu (<code>B</code> near police vehicle): armor, rifles, shotgun, medkit, cones, siren flare. Tow truck via dispatch menu with dismiss option and yellow blip. Six legacy systems received event-subscription governance with symmetric shutdown.',
+                '<strong>AI: legacy Officer AI host</strong>',
+                '<code>OfficerAILegacyHost</code> enables Officer AI on the legacy path without flipping <code>EnableV6Runtime</code> default. Configure DeepSeek or local port 5001 via <code>config.ini</code>; disable with <code>EnableOfficerAI=false</code>. LLM output remains JSON-whitelisted; TTS for custom lines aligns with SentienceV5.2 in a later batch.',
+                '<strong>Carried forward from Beta.2</strong>',
+                'Story framework, bank chapter, seven-stage arrest + four camera rigs, squad dual-suspect chain, terminal three-zone panel, V6 PullOver/Patrol slices, and <code>LegacyTacticalContextBridge</code> handle mirroring — all retained and reinforced.',
+                '<strong>Install</strong>',
+                'Drop <code>a.TACTFR.dll</code> into <code>scripts/</code>. Terminal O → option 920 for bank alarm. Start local model on port 5001 or set cloud DeepSeek in <code>config.ini</code>.',
+                'TACTFR 6.0.0 Beta.2.7 welds every “almost there” moment on the 6.0 main path into something you can play start to finish.',
+                '— TACTFR Development Team'
+            ]
+        }
+    },
     sentienceV4ob: {
         overlay: 'Sentience V4.1 Omni',
         media: { type: 'video', src: 'Logo/意识V4o.webm', poster: 'Logo/4.1Omni.png', fit: 'cover', alt: 'Sentience V4 Omni' },
@@ -734,6 +813,159 @@ const articleData = {
                 'For detailed tutorials, please check the documentation and videos after downloading the mod.',
                 'SentienceV4.1 Omni brings a new level of immersion to GTA V by giving every NPC a true digital soul.',
                 'Experience a game world that truly responds to your actions.'
+            ]
+        }
+    },
+    sentienceV52mens: {
+        overlay: 'Sentience V5.2 Mens',
+        media: { type: 'video', src: 'Logo/NewImage-0608.mp4', poster: 'Logo/neyyys.png', fit: 'cover', alt: 'Sentience V5.2 Mens' },
+        zh: {
+            title: '隆重介绍 SentienceV5.2 Mens 正式版',
+            date: '2026年6月8日',
+            category: '产品',
+            readTime: '18 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们发布 **SentienceV5.2 Mens 正式版**——GTA V 沉浸式 AI NPC 模组的下一代架构。V5.2 在 V4.1 Omni 的对话引擎之上，引入了完整的认知栈：五层记忆、五轴人格向量、十二意图效用评分、目击传播与三跳流言网络。模组遵循 MIT 许可证完全开源，SDK 1.0 插件无需重编译即可加载，并为开发者预留了意图注册、场景 JSON、插件 ABI 等扩展接口。',
+                '<strong>从 Omni 到 Mens：两代架构的分野</strong>',
+                'SentienceV4.1 Omni 正式版解决的是"能不能稳定对话"——多服务商 API、本地与云端 LLM 切换、TTS/STT 管线、启动器体验、OpenAI 兼容接口。它是一个成熟的对话层产品，让洛圣都的 NPC 能够听懂你说的话、用合适的声音回答你。',
+                'SentienceV5.2 Mens 解决的是"NPC 是否像一个有记忆、有性格、有社会关系的个体"——这是次世代 Mod 的核心命题。V5.2 在 V5.1 Animus 插件 SDK 与 V5/V5.1 对话管线之上叠加了三层全新子系统（认知 Cognition、记忆 Memory、社会/具身 Social/Embodiment），与既有存档和插件完全向后兼容。',
+                '<strong>架构：Mens 认知栈</strong>',
+                'V5.2 的数据流从玩家输入开始，经 AIManager 路由至本地 llama.cpp 或云端 LLM（DeepSeek / Qwen / GPT-4 / Claude），再由 PromptBuilder 自动在 PIPE 格式（V5.1 兼容，适用于小参数本地模型）与 INTENT_JSON 格式（云端推荐，要求模型返回结构化意图）之间切换。',
+                'LLM 输出进入 Cognition 层：IntentResolver 在 12 个内置意图（GreetFriendly、WarnOff、BackAway、FleeInPanic、CallCops、Salute、Mock、Threaten、Comply、Recoil、Speak、Idle）之间做效用评分，UtilityScorer 读取实时漂移的 PersonalityVector 决定身体语言——同一句台词，五种人格向量会走出五种不同的肢体反应。',
+                'Memory 层维护五个并行存储：WorkingMemory（30 秒对话窗口，纯 RAM）、EpisodicMemory（每 NPC 50 条事件，JSON 持久化）、GossipMemory（每 NPC 30 条流言，三跳可信度衰减）、AreaMemory（区域危险热力图，约 60 分钟半衰期）、SemanticMemory（玩家标签派生，如"暴力分子"/"友好"）。',
+                'Social 层让 NPC 不再孤立：WitnessRegistry 在 40–50 米半径内将玩家行为扇出为目击事件；RelationshipGraph 基于 5 米 × 3 秒停留建立 NPC 邻接边；GossipTick 以 2 秒节拍沿关系图传播流言，最远三跳。',
+                'Embodiment 层负责"身体在场"：FacialExpressionManager 驱动 PLAY_FACIAL_ANIM 五种情绪映射（3 秒冷却）；AmbientBehavior 在 NPC 生成时分配环境场景（抽烟、倚靠、打电话），且 AI 对话不会粗暴打断这些场景——默认仅头部瞥视，只有 GreetFriendly / Salute / Speak 意图才旋转身体面向玩家。',
+                '<strong>与 V4.1 的关键差异一览</strong>',
+                'V4.1 Omni 的核心是"对话管道 + 启动器 + 多服务商接入"，NPC 人格是相对静态的字符串标签，记忆限于 legacy NPCMemory 单表，没有跨 NPC 的社会传播，也没有意图驱动的身体语言选择。',
+                'V5.2 Mens 在此基础上新增了：五轴人格向量（aggression / openness / anxiety / sociability / integrity）及每次交互的漂移规则；云端 LLM 的 JSON 意图协议与 4 条 few-shot 示例；多并发云端请求（默认 cloud=8、local=2，硬顶 32）；小米 MiMo 云端 TTS（9 种内置中文音色，情绪标签自动前缀，失败自动回退 edge-tts）；游戏内 F5 → 心智 Mens 子菜单，实时查看最近 NPC 的人格向量、五层记忆计数与社会图统计。',
+                '向后兼容性经过验证：V5.1 存档的 npc_memory.json 原样加载；SDK 1.0 插件（如 Sentience.Plugins.PoliceRP）零重编译运行；本地 3B 模型仍走 V5.1 PIPE prompt，无需升级硬件即可游玩。',
+                '<strong>开发者接口与开源生态</strong>',
+                'Sentience 模组遵循 MIT 许可证，完整源码镜像随发布包提供。开发者可以：',
+                '通过 ISentiencePlugin SDK 1.0 编写插件，注册自定义 NPC 原型、场景与意图扩展点；',
+                '参考 samples/Sentience.Plugins.PoliceRP 示例工程与 docs/Plugin-Development-Guide.md 快速上手；',
+                '使用 Scenario JSON（hostile_biker.json、traffic_stop.json 等）定义可复用的交互剧本；',
+                'Fork launcher 源码（Flet + PyInstaller）自定义 TTS/LLM 配置 UI；',
+                '直接阅读 Memory/、Cognition/、Social/、Embodiment/ 目录下的 C# 源码，理解 Mens 管线的每一个决策点。',
+                'SDK 1.1（计划随 V5.3 发布）将新增可选的 INPCMemoryView 与 IIntentRegistry 接口，让插件能够读取并扩展 Mens 认知状态——V5.2 已为这一演进预留了注册表与 partial class 扩展点。',
+                '<strong>配置与部署</strong>',
+                '最低配置：GT730 + i5-10400。推荐配置：GTX 1060 6GB + i5-10400 及以上。本地模型为 gta5_npc_v2_q4_K_M GGUF（1.2 GB），由 bundled llama.cpp 在 8080 端口服务。',
+                '配置文件位于 <code>%USERPROFILE%/Documents/GTA5MOD2026/config.ini</code>，完整注释模板见 config.reference.ini。云端 LLM 推荐配置：',
+                '<code>[LLM] Provider = cloud / CloudProvider = deepseek / CloudModel = deepseek-chat</code>',
+                '云端 TTS：启动器 → 语音卡片 → 云端按钮 → 填入小米 MiMo API Key → 测试 → 保存。热重载，无需重启 TTS 服务。',
+                '安装步骤：ScriptHookV + ScriptHookVDotNet 3 → 将 ModFiles/ 复制到 GTA V scripts 目录 → 运行 SentienceV5.exe → 启动 TTS → 启动本地模型或配置云端 → 进游戏按 G 对话。',
+                '<strong>游戏内操作</strong>',
+                'G — 与最近 NPC 对话；H — 跳过当前 TTS；T — 切换头顶标签；J — 循环响应显示模式；F5 — 打开 Sentience 菜单（含心智 Mens 查看器、插件管理、模组设置）。',
+                '<strong>验证与质量</strong>',
+                'V5.2.0 发布前完成：dotnet build 模组工程 0 error；示例插件 0 error 0 warning；SDK 1.0 ABI 100% 兼容；Python voice_server.py / launcher 全量 py_compile 通过；认知管线从云端 JSON → intent → UtilityScorer → 动作全链路 trace 验证。',
+                'docs/Mens-Cases.md 收录了 11 个可直接录制的演示场景，涵盖目击、流言、区域记忆、人格漂移与表情驱动等玩家可感知能力。',
+                '<strong>下载</strong>',
+                'NexusV 官网：https://nexusvai.github.io/NexusV/',
+                'GitHub 源码：https://github.com/NexusVAI/SENTIENCE',
+                '模组反馈群：1061632354',
+                'SentienceV5.2 Mens 不是对 V4.1 的修补，而是 GTA V AI NPC 领域的下一代 Mod 架构——它让洛圣都的每一个路人，都拥有记住你、议论你、因你而改变人格的权利。',
+                '—— NexusV 团队'
+            ]
+        },
+        en: {
+            title: 'Introducing SentienceV5.2 Mens Official Release',
+            date: 'June 8, 2026',
+            category: 'Product',
+            readTime: '18 min read',
+            paragraphs: [
+                'Abstract: Today we release **SentienceV5.2 Mens Official** — the next-generation architecture for immersive AI NPC mods in GTA V. V5.2 layers a full cognitive stack on top of the V4.1 Omni dialogue engine: five-layer memory, five-axis personality vectors, twelve-intent utility scoring, witness propagation, and a three-hop gossip network. The mod is fully open source under MIT, SDK 1.0 plugins load without recompilation, and developers get extension points for intent registration, scenario JSON, and the plugin ABI.',
+                '<strong>From Omni to Mens: two generations</strong>',
+                'SentienceV4.1 Omni solved "can we talk stably" — multi-provider APIs, local/cloud LLM switching, TTS/STT pipelines, launcher UX, OpenAI-compatible endpoints. It is a mature dialogue product that lets Los Santos NPCs hear you and answer with the right voice.',
+                'SentienceV5.2 Mens solves "does this NPC feel like someone with memory, personality, and social ties" — the defining question of a next-gen mod. V5.2 stacks three new subsystems (Cognition, Memory, Social/Embodiment) on the V5.1 Animus plugin SDK and legacy dialogue pipeline, fully backward-compatible with existing saves and plugins.',
+                '<strong>Architecture: the Mens cognitive stack</strong>',
+                'Player input flows through AIManager to local llama.cpp or cloud LLMs (DeepSeek / Qwen / GPT-4 / Claude). PromptBuilder auto-switches between PIPE format (V5.1 compat, small local models) and INTENT_JSON (cloud-recommended, structured intent output).',
+                'Cognition: IntentResolver scores across 12 built-in intents; UtilityScorer reads the live drifting PersonalityVector to pick body language — the same line of dialogue yields five different physical reactions across five personality profiles.',
+                'Memory: WorkingMemory (30s window), EpisodicMemory (50 events/NPC), GossipMemory (30 entries, 3-hop credibility decay), AreaMemory (zone danger heatmap, ~60min half-life), SemanticMemory (derived player tags).',
+                'Social: WitnessRegistry fans player actions to nearby NPCs (40–50m); RelationshipGraph builds proximity edges (5m × 3s dwell); GossipTick propagates rumours at 2s cadence, up to three hops.',
+                'Embodiment: FacialExpressionManager drives PLAY_FACIAL_ANIM with five mood mappings; AmbientBehavior assigns spawn scenarios (smoking, leaning, on-phone) that dialogue does not brutally interrupt — head glance by default, body turn only for GreetFriendly / Salute / Speak.',
+                '<strong>Key deltas from V4.1</strong>',
+                'V4.1 Omni centered on dialogue pipes + launcher + multi-provider access. NPC personality was a relatively static string label; memory was limited to legacy NPCMemory; no cross-NPC social propagation; no intent-driven body language.',
+                'V5.2 Mens adds: five-axis personality vectors with per-interaction drift; cloud LLM JSON intent protocol with few-shot examples; multi-concurrent cloud requests (default cloud=8, local=2, hard cap 32); Xiaomi MiMo cloud TTS (9 Chinese voices, emotion tags, edge-tts fallback); in-game F5 → Mens viewer for live vectors, memory counts, and social graph stats.',
+                'Backward compatibility verified: V5.1 npc_memory.json loads unchanged; SDK 1.0 plugins (e.g. Sentience.Plugins.PoliceRP) run without recompile; local 3B models still use V5.1 PIPE prompts.',
+                '<strong>Developer APIs and open source</strong>',
+                'Sentience is MIT-licensed with a full source mirror in every release. Developers can: write plugins via ISentiencePlugin SDK 1.0; reference the PoliceRP sample and Plugin-Development-Guide.md; author Scenario JSON; fork the Flet launcher; read Memory/, Cognition/, Social/, Embodiment/ C# sources directly.',
+                'SDK 1.1 (planned for V5.3) will add optional INPCMemoryView and IIntentRegistry surfaces — V5.2 already reserves registry and partial-class extension points for this evolution.',
+                '<strong>Setup</strong>',
+                'Min: GT730 + i5-10400. Recommended: GTX 1060 6GB + i5-10400+. Local model: gta5_npc_v2_q4_K_M GGUF (1.2 GB) served by bundled llama.cpp on port 8080.',
+                'Config at <code>%USERPROFILE%/Documents/GTA5MOD2026/config.ini</code>. Cloud LLM: <code>Provider = cloud</code>, <code>CloudProvider = deepseek</code>. MiMo TTS via launcher cloud button with hot-reload.',
+                'Install: ScriptHookV + SHVDN3 → copy ModFiles/ to scripts → run SentienceV5.exe → start TTS → start local model or configure cloud → press G in-game.',
+                '<strong>In-game controls</strong>',
+                'G — talk to nearest NPC; H — skip TTS; T — toggle labels; J — cycle display mode; F5 — Sentience menu with Mens viewer.',
+                '<strong>Verification</strong>',
+                'Pre-release: dotnet build 0 errors; sample plugin 0 warnings; SDK 1.0 ABI 100% compatible; full Python py_compile clean; cognition pipeline end-to-end traced. docs/Mens-Cases.md ships 11 record-ready demo scenarios.',
+                '<strong>Download</strong>',
+                'NexusV: https://nexusvai.github.io/NexusV/ | GitHub: https://github.com/NexusVAI/SENTIENCE | Feedback: 1061632354',
+                'SentienceV5.2 Mens is not a patch on V4.1 — it is the next-generation mod architecture for GTA V AI NPCs. Every passerby in Los Santos now has the dignity of remembering you, gossiping about you, and changing who they are because of you.',
+                '— The NexusV Team'
+            ]
+        }
+    },
+    cancriCode: {
+        overlay: 'Cancri Code',
+        media: { type: 'image', src: 'Logo/15933dbaacdc5cfed5b7f9fc0f14cf96.png', alt: 'Cancri Code' },
+        zh: {
+            title: '介绍你的 AI 助理 Cancri Code',
+            date: '2026年6月8日',
+            category: '产品',
+            readTime: '14 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们正式介绍 **Cancri Code**——NexusV 团队打造的本地 AI 编程助理。它是一款基于 Tauri 2 的桌面 IDE，采用组装主义架构（Monaco Editor、xterm.js、tree-sitter、ripgrep 等独立开源组件），通过 Agentic Tool-Calling 范式让 AI 能够自主读取、编辑、搜索和执行你的代码库。Cancri Code 接入 NexusV 自研 chat-gateway，在统一账户体系下使用 40+ 顶尖大语言模型，当前版本 v1.5.0。',
+                '<strong>为什么需要 Cancri Code</strong>',
+                '通用 AI 聊天窗口擅长回答孤立的问题，但在真实工程场景中，开发者需要的是：理解整个仓库上下文、跨文件重构、先搜索再修改、运行命令验证结果。Cancri Code 的定位不是"另一个聊天框"，而是坐在你项目旁边的 AI 结对程序员——它打开你的文件夹，看见你的文件树，在 Monaco 编辑器里与你共读同一份代码。',
+                '与 Fork 整个 VS Code 不同，Cancri Code 走组装主义路线：每个零件从开源世界独立选取，UI、快捷键、插件系统与品牌 100% 自主。这意味着我们不被 upstream 绑架，却能复用经过验证的编辑器内核与终端组件。',
+                '<strong>核心能力</strong>',
+                '<strong>Agentic 工具循环</strong>：Cancri Code 采用 vNext 架构，LLM 通过原生 tool_calls 调用 read_file、edit_file、write_file、glob、grep、bash 等工具。Agent Loop 自动执行工具、回填结果、继续推理，直到任务完成。写类工具走用户审批闸门（沿用成熟的 Apply 卡片体验），读类工具默认放行。',
+                '<strong>SEARCH/REPLACE 编辑协议</strong>：edit_file 工具包装了经过生产验证的四级模糊匹配算法（精确匹配 → 缩进容错 → trim-line → Levenshtein 提示），在 AI 建议与磁盘落盘之间保留了人工确认环节，避免误改。',
+                '<strong>多文件上下文</strong>：用户可以用 @file: 协议显式引用文件，也可以直接输入文件名由 IDE 自动探针注入。拖入文件、粘贴图片、引用工作区路径——composer 支持多模态输入与 .cancri-drops 临时目录管理。',
+                '<strong>模型与网关</strong>：桌面端通过真实用户 JWT 接入 NexusV chat-gateway，可使用 DeepSeek、Claude、GPT、Qwen、GLM、Kimi 等 40+ 模型。Provider 抽象层支持 OpenAI-compatible、Anthropic Messages 与 Tauri Bridge 三种路径，模型选择与运行模式（本地/云端）持久化到本地设置。',
+                '<strong>IDE 工作区</strong>：欢迎页 → 打开文件夹 → 进入三栏工作区（文件树 / Monaco 编辑器 / 资源面板）。内置 xterm.js 终端、PTY 支持、自定义标题栏、侧栏与资源面板可折叠并 localStorage 持久化。支持最近项目列表、工作区自动重开、Codex 风格启动流光。',
+                '<strong>会话与轨迹</strong>：对话历史按项目归档，支持置顶、重命名、自动标题生成。Session Trajectory 记录 Agent 每一步工具调用，为未来的 revert/fork/replay 奠定基础。切换对话时后台 Agent 可继续运行，切回时重连实时渲染——多会话不再互相抢占。',
+                '<strong>扩展生态</strong>：Rules 系统让项目级 AI 行为可配置；Skills 商店支持自定义技能注入；MCP 插件协议可挂载外部工具服务器；Subagent 支持派生子任务并行探索。Trajectory 上传（需用户明示同意）帮助改进模型在真实工程场景中的表现。',
+                '<strong>安全设计</strong>',
+                'Markdown 链接经过 scheme 白名单过滤（阻断 javascript:/data:/ipc: 等注入向量）。客户端内置速率限制（并发 1、每分钟 10 次、每天 20 次）作为后端配额_gate 的第一道门。CSP 与 XSS 防护在 v0.15.x 安全审查中系统加固。桌面端通过 Supabase OAuth 登录，不再依赖硬编码 secret。',
+                '<strong>技术栈</strong>',
+                '前端：TypeScript + Vite 6 + Monaco Editor 0.55。桌面壳：Tauri 2（Rust 后端提供文件 IO、PTY、HTTP SSE 流、Agent 工具执行）。测试：Vitest 129+ 用例，cargo test 覆盖 Rust agent_tools 模块。构建：pnpm tauri build 产出 Windows 安装包与便携 exe。',
+                'Rust 端 agent_tools 模块提供 glob、grep、bash、文件读写等 IPC 命令；portable-pty 驱动集成终端；auth 模块处理 OAuth localhost 回调。前端 agent/ 目录包含 Provider 抽象、Tool Registry、Permission 策略与 Agent Loop 核心循环。',
+                '<strong>与 NexusV 生态的关系</strong>',
+                'Cancri Code 与 ChatAI 共享 NexusV 账户与 chat-gateway 基础设施，但产品定位不同：ChatAI 是面向所有用户的 Web 对话平台，Cancri Code 是面向开发者的本地 IDE。它与 Sentience/TACTFR 游戏模组无功能耦合，却共享同一支工程团队对"AI 应该理解上下文、应该能动手、应该对用户透明"的产品哲学。',
+                '<strong>现状与路线图</strong>',
+                '当前 v1.5.0 已具备：完整 IDE 工作区、Agentic 工具循环、多模型网关、会话归档、Rules/Skills/MCP、后台运行、Windows 桌面打包。后续重点：完善 bash 工具白名单与权限分级、Trajectory replay UI、Android 端远程壳、以及 SDK 化开放给第三方自动化流水线。',
+                'Cancri Code 是我们对"AI 编程助理应该长什么样"的回答——不是云端黑盒，不是 Fork 绑架，而是一个能打开你项目、读懂你代码、在你确认后动手修改的本地搭档。',
+                '—— NexusV 工程团队'
+            ]
+        },
+        en: {
+            title: 'Meet Your AI Assistant — Cancri Code',
+            date: 'June 8, 2026',
+            category: 'Product',
+            readTime: '14 min read',
+            paragraphs: [
+                'Abstract: Today we introduce **Cancri Code** — NexusV\'s local AI programming assistant. Built on Tauri 2 with an assembly-architecture IDE (Monaco Editor, xterm.js, tree-sitter, ripgrep as independent open-source parts), it uses an Agentic Tool-Calling paradigm so AI can autonomously read, edit, search, and execute across your codebase. Cancri Code connects to the NexusV chat-gateway under a unified account, giving access to 40+ top-tier LLMs. Current version: v1.5.0.',
+                '<strong>Why Cancri Code</strong>',
+                'Generic AI chat excels at isolated questions, but real engineering needs whole-repo context, cross-file refactors, search-then-edit workflows, and command execution to verify results. Cancri Code is not "another chat box" — it is an AI pair programmer sitting beside your project: it opens your folder, sees your file tree, and reads the same code as you in Monaco.',
+                'Unlike forking VS Code, Cancri Code assembles independent open-source parts. UI, shortcuts, plugin system, and brand are 100% ours — no upstream lock-in, with battle-tested editor and terminal cores.',
+                '<strong>Core capabilities</strong>',
+                '<strong>Agentic tool loop</strong>: LLMs call read_file, edit_file, write_file, glob, grep, bash via native tool_calls. The agent loop executes tools, feeds results back, and continues until done. Write tools require user approval (Apply cards); read tools pass by default.',
+                '<strong>SEARCH/REPLACE editing</strong>: edit_file wraps a production-grade four-level fuzzy matcher (exact → indent-tolerant → trim-line → Levenshtein hints), keeping human confirmation between AI suggestions and disk writes.',
+                '<strong>Multi-file context</strong>: @file: protocol, bare-filename auto-detection, drag-and-drop, image paste, and .cancri-drops temp management in the composer.',
+                '<strong>Models and gateway</strong>: Desktop authenticates with real user JWT to the NexusV chat-gateway — DeepSeek, Claude, GPT, Qwen, GLM, Kimi, and 40+ more. Provider abstraction covers OpenAI-compatible, Anthropic Messages, and Tauri Bridge paths.',
+                '<strong>IDE workspace</strong>: Welcome → open folder → three-pane workspace (file tree / Monaco / resource panel). Built-in xterm.js terminal, PTY, custom titlebar, collapsible sidebars with localStorage persistence, recent projects, Codex-style boot shimmer.',
+                '<strong>Sessions and trajectory</strong>: Per-project chat archives with pin, rename, auto-titles. Session Trajectory logs every agent tool step for future revert/fork/replay. Background agents keep running when you switch conversations.',
+                '<strong>Extensions</strong>: Project-level Rules; Skills store; MCP plugin protocol; Subagent spawning; opt-in Trajectory upload for real-world engineering improvement.',
+                '<strong>Security</strong>',
+                'Markdown links sanitized via scheme whitelist. Client-side rate limits (concurrency 1, 10/min, 20/day) as first gate before backend quotas. XSS/CSP hardened in v0.15 security review. Desktop OAuth via Supabase — no hardcoded secrets.',
+                '<strong>Stack</strong>',
+                'Frontend: TypeScript + Vite 6 + Monaco 0.55. Shell: Tauri 2 (Rust file IO, PTY, HTTP SSE, agent tool execution). Tests: Vitest 129+, cargo test for agent_tools. Build: pnpm tauri build → Windows installer + portable exe.',
+                '<strong>NexusV ecosystem</strong>',
+                'Cancri Code shares accounts and chat-gateway with ChatAI but targets developers locally. It has no functional coupling to Sentience/TACTFR game mods, yet shares the team philosophy: AI should understand context, take action, and stay transparent.',
+                '<strong>Roadmap</strong>',
+                'v1.5.0 ships: full IDE workspace, agentic loop, multi-model gateway, session archives, Rules/Skills/MCP, background runs, Windows packaging. Next: bash whitelist, trajectory replay UI, Android remote shell, SDK for automation pipelines.',
+                'Cancri Code is our answer to what an AI programming assistant should be — not a cloud black box, not a fork hostage, but a local partner that opens your project, reads your code, and edits with your approval.',
+                '— NexusV Engineering Team'
             ]
         }
     },
@@ -1007,6 +1239,97 @@ const articleData = {
             ]
         }
     },
+    nexusv5: {
+        overlay: 'NexusV V5',
+        media: { type: 'image', src: 'Logo/NEXUSV.webp', alt: 'NexusV V5 Modifier' },
+        zh: {
+            title: '深入了解 NexusV V5 修改器',
+            date: '2026年6月8日',
+            category: '产品',
+            readTime: '14 分钟阅读',
+            paragraphs: [
+                '摘要：NexusV V5（源码工程 EF_TSP.Core）是面向 GTA V 单机离线环境的游戏修改器，当前正式版本 v5.2.3。它基于 ScriptHookVDotNet 构建，以模块化架构覆盖玩家、载具、武器、世界、传送、保镖、特效等 200+ 可调条目，并内置 Rockstar Editor 工作流与创意玩法实验室。按 F6 呼出菜单，在洛圣都实现从数值微调到电影级布景的完整掌控。',
+                '<strong>产品定位</strong>',
+                'NexusV 修改器（游戏内标题为「Nexus修改器」）与 TACTFR、Sentience 同属 NexusV 套件，但职责不同：TACTFR 负责警务玩法闭环，Sentience 负责 AI NPC 对话，而 NexusV 修改器是你手中的万能控制台——调整物理规则、生成实体、导演镜头、触发灾变演出，一切围绕「让创作更简单」展开。',
+                '从早期的 EF-Yuyu 实验脚本到今天的 V5 架构，我们始终坚持微内核思路：不堆砌无效入口，让每一个功能都有明确的执行链路和可感知的反馈。',
+                '<strong>架构：模块化 + 分层菜单</strong>',
+                'V5 的核心入口是 <code>GrandTrainer_New2</code>，采用栈式子菜单导航。顶层 14 个一级分类：玩家、载具、武器、服装、世界、传送、保镖、杂项、动作/摆造型、工具箱、R星编辑器、创意、特效、热咖啡娱乐、设置与版本/帮助。每个分类由独立 Module 类承载业务逻辑（PlayerModule、VehicleModule、WeaponModule、WorldModule 等），菜单只负责路由与状态展示，避免 V4 时代「所有逻辑堆在一个文件」的维护困境。',
+                '配置通过 ConfigManager 持久化到本地 ini，支持延迟保存与脏数据标记；UIRenderer 独立负责绘制，包含层级面包屑、动态滚动条、霓虹描边与底部状态栏，长列表浏览不再迷失。',
+                '<strong>内置 Rockstar Editor 工作流</strong>',
+                'V5 的重大跃迁之一，是把 Rockstar Editor 能力直接嵌入修改器菜单，而不再要求玩家退出游戏切换外部工具。EditorManager 统一管理项目生命周期（新建 / 保存 / 加载 / 时间轴播放），并注册六个 IEditorModule 插件：',
+                '放置物体（PropPlacementModule）—— 在场景中精确摆放道具，支持放置模式与实时预览；',
+                '摄像机关键帧（CameraKeyframeModule）—— 记录与回放镜头轨迹，可调鼠标灵敏度；',
+                '电影级特效（CinematicEffectsModule）—— 时间轴驱动的画面后期效果；',
+                '时间缩放（TimeDilationModule）—— 与子弹时间、慢动作联动的节奏控制；',
+                '角色动画（CharacterAnimationModule）—— 场景角色的姿态与动作编排；',
+                '天气与时间（WeatherTimeModule）—— 拍摄环境的即时切换。',
+                '项目文件序列化为 ini 格式，保存在 scripts/EditorProjects/ 目录，可在同一会话内反复加载，适合 Machinima 创作者与关卡设计师快速迭代。',
+                '<strong>创意实验室：10 项次世代玩法</strong>',
+                'InnovationLabModule 是 V5.2 起新增的「导演向」能力集，所有条目支持统一的创意半径（15–80m）与创意强度调节，并写入配置：',
+                '引力漩涡 — 持续吸附周边行人与载具向玩家前方聚拢；',
+                '斥力脉冲 — 瞬间向外弹飞周边目标，适合脱困与转场；',
+                '猎手指令 — 命令武装行人围猎准星锁定目标；',
+                '城市漫游 — 随机体验 NPC/动物视角并同步天气，或瞄准路人直接变身；',
+                '撒钱 — 吸引路人哄抢的街头社会学实验；',
+                '愿得一人心 — 与瞄准目标建立 T 键牵引连接；',
+                '陨石雨 / 雷暴信标 — 区域级灾变演出；',
+                '时停交通领域 — 冻结周边交通流，便于导演模式构图。',
+                '版本/帮助菜单内提供完整的玩法说明与 UI 升级文档，更新日志与版本号统一由 TrainerReleaseInfo 维护，杜绝版本号分裂问题。',
+                '<strong>经典能力矩阵（节选）</strong>',
+                '玩家：无敌/锁血、通缉控制、超级跳跃、无限耐力与氧气、飞行/无重力、慢动作与子弹时间、自由相机、模型更换、金钱管理、伤害倍率、免疫模式、NPC/警察无视等。',
+                '载具与武器：全品类载具生成、载具物理调教、武器分类浏览、传送枪/载具枪/金钱枪、一击必杀、连发、无后座等扩展射击模式。',
+                '世界与工具：天气时间、重力枪、坐标记录器、实体检查器、绘制辅助、自动巡航、空袭模块、屏幕粒子特效、保镖编队。',
+                '上述能力均通过独立 Module 的 OnTick 生命周期驱动，关闭功能时会主动恢复 native 状态（V5.2.2 起重点修复了无重力、慢动作截断等状态残留问题）。',
+                '<strong>UI 与交互升级</strong>',
+                'V5.2 对菜单体验做了系统级打磨：层级面包屑让跨层导航有据可循；动态滚动条跟踪当前选区；扫描底板与状态芯片强化开关确认感；方向键长按采用加速重复策略，连续翻页与调参更跟手。菜单缩放、每页可见条目数、标题/背景/高亮/文字四色预设均可自定义，热键支持用户自行绑定。',
+                '<strong>技术规格</strong>',
+                '运行时：GTA V Legacy / Enhanced + ScriptHookV + ScriptHookVDotNet 3；',
+                '目标框架：.NET Framework 4.8；',
+                '当前版本：v5.2.3（程序集 5.2.3.0）；',
+                '默认热键：F6 打开菜单（可在设置中重绑）；',
+                '部署：将 EF_TSP.Core.dll 放入 GTA V scripts 目录即可加载。',
+                '<strong>与 V4 的差异</strong>',
+                'NexusV V4 强调 74KB 微内核与基础物理/生存覆盖；V5 在此基础上完成了三件事：UI 渲染层彻底拆分（UIRenderer）、内置 Rockstar Editor 六模块工作流、以及 InnovationLab 创意玩法层。菜单条目从 V4 的「够用」扩展到 200+ 信息节点，但每条菜单都附带功能说明 tooltip，降低学习成本。',
+                '<strong>获取与支持</strong>',
+                '点击页面右上角「使用 NexusV」跳转官方下载页；',
+                'BUG 反馈群：1079691553；',
+                '请在单机离线环境下使用，使用前完整备份游戏目录与存档。',
+                'NexusV V5 修改器不是外挂式的数值作弊器，而是一套面向创作者的工具平台——每一次按键，都应该得到确定的响应。',
+                '—— NexusV 团队'
+            ]
+        },
+        en: {
+            title: 'Deep Dive: NexusV V5 Modifier',
+            date: 'June 8, 2026',
+            category: 'Product',
+            readTime: '14 min read',
+            paragraphs: [
+                'Abstract: NexusV V5 (source project EF_TSP.Core) is a GTA V single-player offline trainer/modifier, currently at v5.2.3. Built on ScriptHookVDotNet, it uses a modular architecture covering 200+ tunable entries across player, vehicle, weapon, world, teleport, bodyguard, and effects — plus a built-in Rockstar Editor workflow and a Creative Lab. Press F6 to open the menu and take full control from stat tweaks to cinematic staging.',
+                '<strong>Positioning</strong>',
+                'The NexusV Modifier (in-game title: "Nexus修改器") sits alongside TACTFR and Sentience in the NexusV suite. TACTFR handles law-enforcement gameplay; Sentience handles AI NPC dialogue; the modifier is your universal control panel for physics, spawning, camera direction, and disaster staging — all in service of making creation simpler.',
+                'From the early EF-Yuyu prototype to today\'s V5 architecture, we keep a micro-kernel philosophy: no dead menu entries, every feature with a clear execution path and perceptible feedback.',
+                '<strong>Architecture: modular + layered menus</strong>',
+                'The core entry is GrandTrainer_New2 with stack-based submenu navigation. Fourteen top-level categories: Player, Vehicle, Weapon, Clothing, World, Teleport, Bodyguard, Misc, Actions/Posing, Toolbox, Rockstar Editor, Creative, Effects, Hot Coffee, Settings, and Version/Help. Each category is backed by an independent Module class; menus only route and display state.',
+                'ConfigManager persists settings to local ini with delayed save and dirty tracking. UIRenderer handles drawing with breadcrumb paths, dynamic scrollbars, neon outlines, and a bottom status bar.',
+                '<strong>Built-in Rockstar Editor workflow</strong>',
+                'A major V5 leap: Rockstar Editor capabilities embedded directly in the trainer menu. EditorManager manages project lifecycle (new/save/load/timeline playback) with six IEditorModule plugins: Prop Placement, Camera Keyframes, Cinematic Effects, Time Dilation, Character Animation, and Weather/Time. Projects serialize to ini under scripts/EditorProjects/.',
+                '<strong>Creative Lab: 10 next-gen play modes</strong>',
+                'InnovationLabModule (V5.2+) adds director-oriented capabilities with unified radius (15–80m) and strength controls: Gravity Vortex, Repulsor Pulse, Hunter Command, City Roam (random or aim-transform), Money Scatter, Bond Mode (T-key tether), Meteor Shower, Storm Beacon, and Traffic Stasis Field. Full docs live in Version/Help; TrainerReleaseInfo keeps version strings consistent.',
+                '<strong>Core capability matrix (selected)</strong>',
+                'Player: god mode, wanted control, super jump, infinite stamina/oxygen, flight/no-gravity, slow-mo/bullet time, free cam, model swap, money, damage multipliers, immunity, NPC/police ignore. Vehicles & weapons: full spawn catalog, physics tuning, teleport/vehicle/money guns, one-shot kill, rapid fire, no recoil. World & tools: weather/time, gravity gun, coordinate logger, entity inspector, autopilot, airstrike, screen FX, bodyguard squads.',
+                '<strong>UI upgrades</strong>',
+                'V5.2: breadcrumb navigation, dynamic scrollbar, scan-line backgrounds, status chips, accelerated key-repeat for paging. Menu scale, visible item count, and four color presets are customizable; hotkey is rebindable.',
+                '<strong>Specs</strong>',
+                'GTA V Legacy/Enhanced + ScriptHookV + SHVDN3; .NET Framework 4.8; v5.2.3; default F6; deploy EF_TSP.Core.dll to scripts/.',
+                '<strong>vs V4</strong>',
+                'V4 emphasized a 74KB micro-kernel and basic survival overrides. V5 adds: split UIRenderer, six-module Rockstar Editor workflow, and InnovationLab creative layer — 200+ menu nodes, each with a tooltip.',
+                '<strong>Get it</strong>',
+                'Click "Try NexusV" top-right; feedback group 1079691553. Use offline only; back up game and saves first.',
+                'NexusV V5 is not a cheat overlay — it is a creator-facing tool platform. Every keypress should get a definite response.',
+                '— The NexusV Team'
+            ]
+        }
+    },
     sentienceV4C: {
         overlay: 'Sentience V4C',
         media: { type: 'video', src: 'Logo/V4C.mp4', poster: 'Logo/N1.jpg', fit: 'cover', alt: 'Sentience V4C' },
@@ -1219,7 +1542,7 @@ const articleData = {
                 '3.1 游戏模组部分：本套件使用 ScriptHookV（不随包分发，请用户自行官网下载）、ScriptHookVDotNet、NAudio、Newtonsoft.Json。本套件仅作为脚本补丁运行，不包含、不修改、不分发任何原游戏（GTA V）的核心二进制文件或任何受版权保护的游戏资源（包括但不限于模型、纹理、音频、动画数据等）。本套件仅包含第三方逻辑脚本及开发者原创的配置文件。用户需自行承担因安装 ScriptHookV 等第三方注入工具导致的软件冲突或系统不稳定风险。',
                 '3.2 Sentience默认模型为基于 Qwen 系列模型的 SFT 微调权重（如 Qwen2.5/Qwen3）。相关基础模型、微调权重及衍生权重的使用、分发与再利用，应遵守模型文件夹内附带的许可文件及其上游官方许可要求。',
                 '3.3 游戏模组云端模式需用户自备：OpenAI API、DeepSeek API 等，使用即视为您已同意其服务条款与AUP。LM Studio为可选本地工具。',
-                '3.4 ChatAI 服务第三方组件：ChatAI 服务后端依赖以下第三方服务：（1）Supabase（supabase.com）：提供用户认证、数据库托管及存储服务，其数据处理受 Supabase 隐私政策（supabase.com/privacy）约束，服务器位于新加坡；（2）Cloudflare Turnstile：提供登录人机验证服务，其数据处理受 Cloudflare 隐私政策（cloudflare.com/privacypolicy）约束；（3）第三方 AI 模型服务商：提供实际推理服务，详见第 4.6 节第（9）项。开发者不对上述第三方的数据处理行为承担责任。',
+                '3.4 ChatAI 服务第三方组件：ChatAI 服务后端依赖以下第三方服务：（1）Supabase（supabase.com）：提供用户认证、数据库托管及存储服务，其数据处理受 Supabase 隐私政策（supabase.com/privacy）约束，服务器位于新加坡；（2）Cloudflare：通过 Workers 域名 chat.nexusvai.xyz 承载 chat-gateway 与 api-gateway 流式推理网关，并提供 Turnstile 登录人机验证，其数据处理受 Cloudflare 隐私政策（cloudflare.com/privacypolicy）约束；（3）第三方 AI 模型服务商：提供实际推理服务，详见第 4.6 节第（9）项。开发者不对上述第三方的数据处理行为承担责任。',
                 '4. 隐私与数据说明',
                 '4.1 默认本地推理模式：Sentience 默认优先使用本地部署的 SFT 微调 Qwen 模型进行推理。在默认本地推理模式下，与 NPC 对话相关的上下文和玩家输入原则上不经过开发者运营的服务器。在本套件当前版本的默认设计下，开发者不主动收集用户的游戏对话内容、个人身份信息或用户自行配置的第三方 API Key。',
                 '4.2 用户主动启用的第三方云端模式：如用户主动在本地配置第三方模型服务商的 API Key 并启用云端模式，则相关对话数据将由用户设备直接发送至其所选服务商（如 OpenAI、DeepSeek 等），开发者不提供该等请求的中转、托管或代付服务。云端模式产生的网络通信、费用、账号风控及服务可用性风险，由用户自行承担。用户需遵守所选API服务商的服务条款与隐私政策。',
@@ -1282,7 +1605,7 @@ const articleData = {
                 '10. 投诉、问题反馈与联系信息',
                 '10.1 联系渠道：若您发现安全问题、违法或严重不当的 AI 输出、或需要行使数据主体权利（见第 10.2 节），请通过下列优先顺序与开发者联系：',
                 '（推荐）在模组发布仓库提交 Issue（若使用 GitHub/GitLab，请使用发布页提供的 Issue 模板），此方式更公开透明且便于跟踪处理进度；',
-                '或发送邮件至：nexusv@139.com / nexusvvvai@foxmail.com（请在邮件主题注明"NexusV — 问题上报/数据请求"）；',
+                '或发送邮件至：nexusvai@139.com / nexusvai@foxmail.com（请在邮件主题注明"NexusV — 问题上报/数据请求"）；',
                 '请勿通过邮件或 Issue 直接发送 API Key、密码、身份证号等敏感信息。',
                 '开发者将在合理时间内（通常为 15 个工作日内）确认收到并在可行范围内处理或给出处理计划。若涉及法律问题，开发者保留将相关信息移交执法或权利人处理的权利。',
                 '10.2 ChatAI 用户数据权利：依据《个人信息保护法》，ChatAI 服务用户就其个人信息享有以下权利，可通过上述联系方式申请行使：（1）知情权与决定权：有权了解开发者处理其个人信息的种类、目的、方式及保留期限；（2）查阅权：有权查阅开发者持有的其个人信息；（3）复制权：有权获取其个人信息的副本（以电子可读格式）；（4）更正权：有权要求更正不准确或不完整的个人信息；（5）删除权：在以下情形下有权要求删除个人信息：a) 处理目的已实现或不再需要；b) 用户撤回同意；c) 开发者违法处理；（6）撤回同意权：用户可随时撤回对特定处理活动的同意（撤回不影响撤回前基于同意的处理的合法性）；（7）可携带权：有权要求将个人信息转移至其指定的处理者（在技术可行的情形下）。开发者将在收到申请后 15 个工作日内予以处理，法律另有规定的除外。',
@@ -1339,7 +1662,7 @@ const articleData = {
                 '3.1 Game mod components: The Suite uses ScriptHookV (NOT included in package, please download from official website), ScriptHookVDotNet, NAudio, Newtonsoft.Json. The Suite only runs as a script patch, does NOT include, modify, or distribute any core binary files of the original game (GTA V) or any copyrighted game assets. Users bear full responsibility for any software conflicts or system instability caused by installing third-party injection tools such as ScriptHookV.',
                 '3.2 Sentience default model: SFT fine-tuned Qwen series weights (such as Qwen2.5/Qwen3), subject to original model license (see LICENSE in model folder), using means you agree to that license.',
                 '3.3 Game mod cloud mode requires user-provided: OpenAI API, DeepSeek API, etc., using means you agree to their Terms of Service and AUP. LM Studio is an optional local tool.',
-                '3.4 ChatAI Service third-party components: ChatAI Service backend depends on: (1) Supabase (supabase.com): provides user authentication, database hosting and storage; data processing is governed by Supabase Privacy Policy (supabase.com/privacy); servers located in Singapore. (2) Cloudflare Turnstile: provides login CAPTCHA verification; data processing is governed by Cloudflare Privacy Policy (cloudflare.com/privacypolicy). (3) Third-party AI model providers: provide actual inference services; see Section 4.6 item (9). Developer is not responsible for data processing by the above third parties.',
+                '3.4 ChatAI Service third-party components: ChatAI Service backend depends on: (1) Supabase (supabase.com): provides user authentication, database hosting and storage; data processing is governed by Supabase Privacy Policy (supabase.com/privacy); servers located in Singapore. (2) Cloudflare: Workers at chat.nexusvai.xyz host chat-gateway and api-gateway streaming inference, plus Turnstile login CAPTCHA; governed by Cloudflare Privacy Policy (cloudflare.com/privacypolicy). (3) Third-party AI model providers: provide actual inference services; see Section 4.6 item (9). Developer is not responsible for data processing by the above third parties.',
                 '4. Privacy & Data Processing',
                 '4.1 Default Local Mode (Strongly Recommended): Sentience uses built-in SFT fine-tuned Qwen model, all inference runs on your PC locally, does NOT send any game data or player input to any third party. Developer does not collect any personal data.',
                 '4.2 Cloud API Mode (Requires User Initiative): After you enter your own API Key in local config.ini, the Suite sends NPC dialogue context directly to your designated service provider. Developer does NOT intercept, store, or view your API Key or dialogue content. API Key is stored in plain text in locally accessible config file, do NOT share this file or upload to public repositories, strongly recommend using local mode to avoid data transmission and cost risks. When using cloud mode, your IP address and device info will be sent directly to your chosen API service provider by your PC, governed by their privacy policy.',
@@ -1387,7 +1710,7 @@ const articleData = {
                 '10. Complaints, Feedback & Contact Information',
                 '10.1 Contact Channels: If you discover security issues, illegal or seriously inappropriate AI outputs, or need to exercise data subject rights (see Section 10.2), please contact Developer via:',
                 '(Recommended) Submit an Issue on the Mod release repository (if using GitHub/GitLab, use the issue template on the release page) — this is more transparent and trackable;',
-                'Or email: nexusv@139.com / nexusvvvai@foxmail.com (subject: "NexusV — Issue Report/Data Request");',
+                'Or email: nexusvai@139.com / nexusvai@foxmail.com (subject: "NexusV — Issue Report/Data Request");',
                 'Do NOT send API Keys, passwords, ID numbers or other sensitive information via email or Issue.',
                 'Developer will confirm receipt within a reasonable time (typically within 15 business days) and handle or provide a plan within feasible scope. If legal issues are involved, Developer reserves the right to transfer information to law enforcement or rights holders.',
                 '10.2 ChatAI User Data Rights: ChatAI Service users have the following rights regarding their personal information, exercisable via the above contact methods: (1) Right to know and decide; (2) Right of access; (3) Right to copy (in electronic readable format); (4) Right to correction; (5) Right to erasure: when processing purpose is achieved, consent is withdrawn, or Developer processes unlawfully; (6) Right to withdraw consent (without affecting lawfulness of prior processing); (7) Right to data portability (where technically feasible). Developer will respond within 15 business days of receiving a request.',
@@ -1856,6 +2179,61 @@ function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const ARTICLE_ALLOWED_TAGS = new Set(['A', 'BR', 'CODE', 'EM', 'I', 'STRONG', 'B']);
+
+function isSafeArticleHref(href) {
+    try {
+        const url = new URL(href, window.location.href);
+        return url.origin === window.location.origin && /\/article\.html$/i.test(url.pathname);
+    } catch {
+        return false;
+    }
+}
+
+function sanitizeArticleNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+        return document.createTextNode(node.textContent || '');
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+        return document.createTextNode('');
+    }
+
+    const tag = node.tagName.toUpperCase();
+    if (!ARTICLE_ALLOWED_TAGS.has(tag)) {
+        const fragment = document.createDocumentFragment();
+        node.childNodes.forEach(child => {
+            fragment.appendChild(sanitizeArticleNode(child));
+        });
+        return fragment;
+    }
+
+    const el = document.createElement(tag.toLowerCase());
+    if (tag === 'A') {
+        const href = node.getAttribute('href') || '';
+        if (!isSafeArticleHref(href)) {
+            const fragment = document.createDocumentFragment();
+            node.childNodes.forEach(child => {
+                fragment.appendChild(sanitizeArticleNode(child));
+            });
+            return fragment;
+        }
+        el.setAttribute('href', href);
+    }
+
+    node.childNodes.forEach(child => {
+        el.appendChild(sanitizeArticleNode(child));
+    });
+    return el;
+}
+
+function renderArticleParagraph(p, html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    template.content.childNodes.forEach(child => {
+        p.appendChild(sanitizeArticleNode(child));
+    });
+}
+
 function initArticlePage() {
     const articleRoot = document.querySelector('.article-page');
     if (!articleRoot) return;
@@ -1947,10 +2325,10 @@ function initArticlePage() {
         }
 
         if (bodyEl) {
-            bodyEl.innerHTML = '';
+            bodyEl.replaceChildren();
             (data.paragraphs || []).forEach(t => {
                 const p = document.createElement('p');
-                p.innerHTML = t;
+                renderArticleParagraph(p, t);
                 bodyEl.appendChild(p);
             });
         }
@@ -2066,11 +2444,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (sentienceV4ob, hero, legal article)
+        // Scrollable List (sentienceV52mens, tactfr627, news3)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['sentienceV4ob', 'tactfr600', 'news3'];
-            const linkTargets = ['sentienceV4ob', 'tactfr600', 'news3'];
+            const listIds = ['sentienceV52mens', 'tactfr627', 'news3'];
+            const linkTargets = ['sentienceV52mens', 'tactfr627', 'news3'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
