@@ -40,7 +40,7 @@
         <div class="legal-header">
             <div class="legal-category">法律文档</div>
             <h1 class="legal-title">隐私协议</h1>
-            <p class="legal-effective">最后更新：2026 年 5 月 22 日 · 生效日期：2026 年 5 月 22 日</p>
+            <p class="legal-effective">最后更新：2026 年 6 月 8 日 · 生效日期：2026 年 5 月 22 日</p>
         </div>
 
         <div class="legal-content">
@@ -116,12 +116,12 @@
                 <li>Anthropic</li>
                 <li>DeepSeek</li>
             </ul>
-            <p>各供应方均有其自有的隐私政策与数据处理实践，您可在选择模型前通过 <a href="api_models.html">模型广场</a> 查询对应供应方的官方政策。本服务对上游供应方的数据处理不承担直接监管责任。</p>
+            <p>各供应方均有其自有的隐私政策与数据处理实践，您可在选择模型前通过 <a href="chat/api_models.html">模型广场</a> 查询对应供应方的官方政策。本服务对上游供应方的数据处理不承担直接监管责任。</p>
 
             <h3>4.2 服务运营商</h3>
             <ul>
-                <li><strong>Supabase</strong>：用于账户认证（OTP 邮箱验证码）、PostgreSQL 数据库存储、Edge Functions 边缘函数计算。Supabase 为独立第三方服务商，其服务器部署位置、数据处理实践遵从其自有隐私政策（<a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>）；</li>
-                <li><strong>Cloudflare</strong>：仅用于 Turnstile 人机验证（防验证码薅、防脚本滥用）。Cloudflare Turnstile widget 不下发 cookie、不进行跨站追踪；</li>
+                <li><strong>Supabase</strong>：用于账户认证（OTP 邮箱验证码）、PostgreSQL 数据库存储，以及 chat-history、user-memory 等非流式边缘函数。Supabase 为独立第三方服务商，其服务器部署位置、数据处理实践遵从其自有隐私政策（<a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>）；</li>
+                <li><strong>Cloudflare</strong>：通过 Workers 自定义域名 <code>chat.nexusvai.xyz</code> 承载聊天推理网关（chat-gateway）与公开 API 网关（api-gateway），流式 LLM 响应经 Cloudflare 边缘返回客户端以降低 Supabase 出站流量；其余 <code>/auth</code>、<code>/rest</code>、<code>/storage</code> 及部分 Edge Functions 由该 Worker 透明反代至 Supabase。Cloudflare Turnstile 用于登录与人机验证（防脚本滥用），Turnstile widget 不进行跨站广告追踪；</li>
                 <li><strong>jsdelivr CDN</strong>：加载 <code>@supabase/supabase-js</code> 等公开的前端依赖库，仅传送网络请求必要的 IP / UA。本服务不向 CDN 提交任何个人信息；</li>
                 <li><strong>付款收款</strong>：不接入任何第三方支付平台。您通过微信 / 支付宝扫码直接转账至站主个人收款账户，由站主人工对账。您的付款账户信息仅在微信 / 支付宝 与站主账户之间交互，<strong>本服务后端不接收任何支付令牌、不保存银行卡号</strong>。</li>
             </ul>
@@ -167,7 +167,7 @@
                 <li><strong>传输加密</strong>：所有客户端与服务端通信均通过 HTTPS（TLS 1.3）加密；</li>
                 <li><strong>身份鉴权</strong>：基于 Supabase JWT 的无状态鉴权，访问后端 API 必须携带有效 token；</li>
                 <li><strong>OTP 防滥用</strong>：邮箱验证码使用密码学随机生成，单次有效且有时效；登录尝试有频率限制；</li>
-                <li><strong>边缘函数隔离</strong>：核心业务逻辑在 Supabase Edge Functions 中执行，与数据库通过受控接口通信；</li>
+                <li><strong>网关与边缘隔离</strong>：聊天推理与公开 API 在 Cloudflare Workers（<code>chat.nexusvai.xyz</code>）执行；认证、配额 RPC、对话历史存储等仍由 Supabase 提供，经 HTTPS 与受控接口通信；</li>
                 <li><strong>最小权限原则</strong>：仅在必要范围内授予内部人员访问数据的权限，所有敏感操作均有审计日志。</li>
             </ul>
             <p>尽管我们已尽合理的安全努力，但互联网传输不存在绝对安全。<strong>如发生数据泄露事件，我们将在事故发生与确认后及时通过站点公告与注册邮箱通知受影响用户</strong>，并配合您减小损失。</p>
@@ -225,7 +225,7 @@
     <script src="js/theme.js" defer></script>
     <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
     <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
-    <script src="js/telemetry.js?v=2026-05-14-tel-init" defer></script>
+    <script src="js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
     <script src="js/search.js" defer></script>
     <script src="js/main.js" defer></script>
     <script>document.addEventListener('DOMContentLoaded',function(){injectComponents({});});</script>
