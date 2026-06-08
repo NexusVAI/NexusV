@@ -3012,17 +3012,30 @@
     }
 
     // 公共 toast：使用现有 #toast 元素，没有就 fallback alert
-    function showToast(msg) {
+    function resolveToastType(msg, type) {
+        const explicitType = String(type || '').toLowerCase();
+        if (/^(success|error|info|warning)$/.test(explicitType)) return explicitType;
+
+        const text = String(msg || '');
+        if (/失败|错误|异常|封禁|过期|无法|拒绝|不可用|无效|损坏|过大|不支持|未就绪|用完|校验失败/.test(text)) return 'error';
+        if (/警告|限制|请|稍后|只读|太长|已忽略|已暂停|已满/.test(text)) return 'warning';
+        if (/已|成功|完成|开始|打开|复制|导出|导入|生成|创建|重命名|删除|切换|加载|引用|进入|选中|保存/.test(text)) return 'success';
+        return 'info';
+    }
+
+    function showToast(msg, type) {
         const toast = document.getElementById('toast');
         if (!toast) { alert(msg); return; }
         toast.textContent = msg;
-        const isWarning = /失败|错误|异常|封禁|过期|请|无法|警告|限制|拒绝|不可用/.test(String(msg || ''));
-        toast.classList.toggle('is-warning', isWarning);
-        toast.classList.toggle('is-info', !isWarning);
+        const toastType = resolveToastType(msg, type);
+        toast.dataset.type = toastType;
+        toast.classList.toggle('is-warning', toastType === 'warning');
+        toast.classList.toggle('is-info', toastType === 'info');
         toast.classList.add('show');
         clearTimeout(showToast._timer);
         showToast._timer = setTimeout(function () {
             toast.classList.remove('show');
+            delete toast.dataset.type;
         }, 2000);
     }
 

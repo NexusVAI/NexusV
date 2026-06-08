@@ -16,6 +16,7 @@
   <script src="./cancri_config.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+    integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE"
     crossorigin="anonymous"
   ></script>
   <link rel="stylesheet" href="./styles/00-tokens.css" />
@@ -97,7 +98,7 @@
   <!--
     Cancri Code 桌面端登录页（Sprint 2）
     URL: ?cb=<http://127.0.0.1:PORT/cb>&state=<hex>
-    已登录 → 直接带 token 跳回 cb；未登录 → 邮箱 OTP（无 Turnstile / 无安全验证）
+    已登录 → POST session 到本机 cb；未登录 → 邮箱 OTP（无 Turnstile / 无安全验证）
     UI 对齐 claude.html auth-overlay
   -->
   <div class="auth-overlay" id="authOverlay">
@@ -307,18 +308,29 @@
         },
       });
 
-      function redirectToDesktop(session) {
-        const url = new URL(cb);
-        url.searchParams.set("access_token", session.access_token);
-        url.searchParams.set("refresh_token", session.refresh_token);
-        url.searchParams.set("expires_in", String(session.expires_in || 3600));
-        if (session.user) {
-          url.searchParams.set("user_email", session.user.email || "");
-          url.searchParams.set("user_id", session.user.id || "");
-        }
-        url.searchParams.set("state", state);
+      async function sendSessionToDesktop(session) {
+        const body = {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_in: session.expires_in || 3600,
+          user_email: session.user ? session.user.email || "" : "",
+          user_id: session.user ? session.user.id || "" : "",
+          state: state,
+        };
         showDone("登录成功，正在返回桌面端…");
-        location.href = url.toString();
+        const response = await fetch(cb, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) {
+          const text = await response.text().catch(function () {
+            return "";
+          });
+          throw new Error(text || "桌面端登录回调被拒绝。");
+        }
+        setTimeout(function () {
+          window.close();
+        }, 800);
       }
 
       function localizeAuthError(err, fallback) {
@@ -336,14 +348,22 @@
       setStatus("正在检查登录状态…");
 
       (async function bootstrap() {
+        let existingSession = null;
         try {
           const { data } = await supabase.auth.getSession();
-          if (data && data.session && data.session.access_token) {
-            redirectToDesktop(data.session);
-            return;
-          }
+          existingSession = data && data.session && data.session.access_token ? data.session : null;
         } catch (err) {
           console.warn("[desktop-login] getSession failed:", err);
+        }
+
+        if (existingSession) {
+          try {
+            await sendSessionToDesktop(existingSession);
+          } catch (err) {
+            console.warn("[desktop-login] callback failed:", err);
+            setError(localizeAuthError(err, "桌面端登录回调失败，请回到 Cancri Code 重新发起登录。"));
+          }
+          return;
         }
 
         emailInput.disabled = false;
@@ -402,7 +422,7 @@
           if (!data || !data.session || !data.session.access_token) {
             throw new Error("验证返回无 session，请重试。");
           }
-          redirectToDesktop(data.session);
+          await sendSessionToDesktop(data.session);
         } catch (err) {
           setError(localizeAuthError(err, "验证失败，请重试。"));
         } finally {

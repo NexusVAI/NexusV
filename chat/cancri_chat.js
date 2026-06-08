@@ -2472,8 +2472,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gemma-4-26b-a4b-it", "name": "Gemma 4 26B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-    // 2026-06-03: bluesminds 备用线路
-    {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro 0603", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+    // 2026-06-08: NVIDIA Integrate API 备用线路（魔塔 deepseek-v4-pro 不动）
+    {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "nvidia"},
     {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -3090,7 +3090,8 @@ const ARENA_MODE_MIGRATIONS = {
         item.appendChild(icon);
       } else if (attachment.isVideo) {
         const video = document.createElement("video");
-        video.src = attachment.previewUrl || attachment.dataUrl || attachment.url;
+        const safeSrc = safeMediaUrl(attachment.previewUrl || attachment.dataUrl || attachment.url);
+        if (safeSrc) video.src = safeSrc;
         video.muted = true;
         video.playsInline = true;
         video.preload = "metadata";
@@ -3098,7 +3099,8 @@ const ARENA_MODE_MIGRATIONS = {
       } else {
         // 图片文件显示图片预览
         const img = document.createElement("img");
-        img.src = attachment.previewUrl || attachment.dataUrl || attachment.url;
+        const safeSrc = safeMediaUrl(attachment.previewUrl || attachment.dataUrl || attachment.url);
+        if (safeSrc) img.src = safeSrc;
         img.alt = attachment.name;
         item.appendChild(img);
       }
@@ -3124,11 +3126,14 @@ const ARENA_MODE_MIGRATIONS = {
           // 文本文件不打开新窗口，只显示已上传
           showToast(`已上传文件：${attachment.name}`);
         } else {
-          window.open(
+          const safeHref = safeMediaUrl(
             attachment.previewUrl || attachment.dataUrl || attachment.url,
-            "_blank",
-            "noopener,noreferrer",
           );
+          if (!safeHref) {
+            showToast("无法打开：附件链接无效");
+            return;
+          }
+          window.open(safeHref, "_blank", "noopener,noreferrer");
         }
       });
       attachmentPreview.appendChild(item);
@@ -6867,16 +6872,29 @@ const ARENA_MODE_MIGRATIONS = {
     persistUiPreferences();
   }
   
-  function showToast(message) {
+  function resolveToastType(message, type) {
+    const explicitType = String(type || "").toLowerCase();
+    if (/^(success|error|info|warning)$/.test(explicitType)) return explicitType;
+
+    const text = String(message || "");
+    if (/失败|错误|异常|封禁|过期|无法|拒绝|不可用|无效|损坏|过大|不支持|未就绪|用完|校验失败/.test(text)) return "error";
+    if (/警告|限制|请|稍后|只读|太长|已忽略|已暂停|已满/.test(text)) return "warning";
+    if (/已|成功|完成|开始|打开|复制|导出|导入|生成|创建|重命名|删除|切换|加载|引用|进入|选中|保存/.test(text)) return "success";
+    return "info";
+  }
+
+  function showToast(message, type) {
     toast.textContent = message;
-    const isWarning = /失败|错误|异常|封禁|过期|请|无法|警告|限制|拒绝|不可用/.test(
-      String(message || ""),
-    );
-    toast.classList.toggle("is-warning", isWarning);
-    toast.classList.toggle("is-info", !isWarning);
+    const toastType = resolveToastType(message, type);
+    toast.dataset.type = toastType;
+    toast.classList.toggle("is-warning", toastType === "warning");
+    toast.classList.toggle("is-info", toastType === "info");
     toast.classList.add("show");
     clearTimeout(showToast._timer);
-    showToast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    showToast._timer = setTimeout(() => {
+      toast.classList.remove("show");
+      delete toast.dataset.type;
+    }, 2200);
   }
   
   function renderWatermark() {

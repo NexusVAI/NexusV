@@ -1,3 +1,4 @@
+/* !important freeze - 新样式禁止再叠加 !important；优先改现有规则或 CSS 变量。 */
 /* =============================================================
    claude.css — 1:1 Claude.ai UI 复刻覆盖层
    ----------------------------------------------------------------
@@ -200,7 +201,7 @@ body {
     background: var(--c-bg) !important;
     color: var(--c-text) !important;
     font-family: var(--c-font) !important;
-    font-weight: 100;
+    font-weight: 400;
     /* 2026-05-15 v3 fix(C2)：群友反馈"我们站内就很模糊，Claude就很锐利
        看的清楚不知道为啥"。Claude 网页 body 里有这三个 rendering 优化：
          - antialiased smoothing 让字 stroke 更锐（vs 默认 subpixel 厚边）
@@ -1205,7 +1206,7 @@ body.is-tier-loading .claude-nav-tag {
 .composer {
     background: var(--c-bg-elev) !important;
     border: 1px solid transparent !important;
-    border-radius: 20px !important;
+    border-radius: var(--composer-radius, 24px) !important;
     /* 2026-05-31 对齐 claude.ai：整体收小一点。padding 14→12、min-height
        104→88、gap 10→6，让空态输入框更紧凑（桌面；mobile 由 §25/99-polish 另管）。 */
     padding: 12px !important;
@@ -1887,7 +1888,7 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 }
 #homeView.chatting .composer {
     width: 100% !important;
-    border-radius: 20px !important;  /* 2026-05-16 同上：Tailwind .rounded-3xl 对齐 */
+    border-radius: var(--composer-radius, 24px) !important;  /* 2026-05-16 同上：Tailwind .rounded-3xl 对齐 */
     min-height: 72px !important;
     padding: 10px 12px !important;
     gap: 4px !important;
@@ -2972,7 +2973,7 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         width: 100% !important;
         max-width: 100% !important;
         min-height: 104px !important;
-        border-radius: 20px !important;
+        border-radius: var(--composer-radius, 24px) !important;
         box-sizing: border-box;
         overflow: visible !important;
     }
@@ -3182,11 +3183,11 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     right: 16px !important;
     left: auto !important;
     bottom: auto !important;
-    background: rgba(60, 47, 14, 0.96) !important;
-    color: #fbbf24 !important;
-    border: 1px solid rgba(251, 191, 36, 0.35) !important;
+    background: var(--toast-bg, rgba(60, 47, 14, 0.96)) !important;
+    color: var(--toast-fg, #fbbf24) !important;
+    border: 1px solid var(--toast-border, rgba(251, 191, 36, 0.35)) !important;
     border-radius: 10px !important;
-    padding: 12px 16px 12px 40px !important;
+    padding: var(--toast-padding, 12px 16px 12px 40px) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     line-height: 1.45 !important;
@@ -3194,9 +3195,40 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     -webkit-backdrop-filter: blur(8px) !important;
     backdrop-filter: blur(8px) !important;
     max-width: 340px !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fbbf24' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' x2='12' y1='9' y2='13'/%3E%3Cline x1='12' x2='12.01' y1='17' y2='17'/%3E%3C/svg%3E") !important;
+    background-image: var(--toast-icon, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fbbf24' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' x2='12' y1='9' y2='13'/%3E%3Cline x1='12' x2='12.01' y1='17' y2='17'/%3E%3C/svg%3E")) !important;
     background-repeat: no-repeat !important;
     background-position: 12px center !important;
+}
+
+.toast[data-type="success"] {
+    --toast-bg: rgba(20, 60, 30, 0.96);
+    --toast-fg: #86efac;
+    --toast-border: rgba(134, 239, 172, 0.35);
+    --toast-padding: 12px 16px;
+    --toast-icon: none;
+}
+
+.toast[data-type="error"] {
+    --toast-bg: rgba(60, 20, 20, 0.96);
+    --toast-fg: #fca5a5;
+    --toast-border: rgba(252, 165, 165, 0.35);
+    --toast-padding: 12px 16px;
+    --toast-icon: none;
+}
+
+.toast[data-type="info"] {
+    --toast-bg: rgba(20, 30, 60, 0.96);
+    --toast-fg: #93c5fd;
+    --toast-border: rgba(147, 197, 253, 0.35);
+    --toast-padding: 12px 16px;
+    --toast-icon: none;
+}
+
+.toast[data-type="warning"] {
+    --toast-bg: rgba(60, 47, 14, 0.96);
+    --toast-fg: #fbbf24;
+    --toast-border: rgba(251, 191, 36, 0.35);
+    --toast-padding: 12px 16px 12px 40px;
 }
 
 /* + 按钮去边框（composer 左下 attach 按钮）
@@ -4796,15 +4828,11 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 }
 
 .toast.is-info {
-    padding: 12px 16px !important;
-    background: var(--c-bg-elev-2) !important;
-    color: var(--c-text) !important;
-    border-color: var(--c-line-strong) !important;
-    background-image: none !important;
+    --toast-padding: 12px 16px;
 }
 
 .toast.is-warning {
-    padding: 12px 16px 12px 40px !important;
+    --toast-padding: 12px 16px 12px 40px;
 }
 
 .announcement-modal-footer .primary-btn {
@@ -6325,7 +6353,7 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     }
     /* composer 圆角对齐参考 24px */
     .composer {
-        border-radius: 24px !important;
+        border-radius: var(--composer-radius, 24px) !important;
         padding: 14px !important;
     }
     /* send-btn 在 mobile 仍 36×36（参考站尺寸），原规则改成 32×32 看起来太

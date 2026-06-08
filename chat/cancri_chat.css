@@ -30,8 +30,7 @@
     overflow: hidden;
     display: flex;
     align-items: center;
-    background: #d32f2f;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+    background: color-mix(in srgb, var(--accent) 55%, #d32f2f);
     pointer-events: auto;
 }
 
@@ -47,8 +46,8 @@
     flex: 0 0 auto;
     padding: 0 48px;
     color: #ffffff;
-    font-size: 14px;
-    font-weight: 800;
+    font-size: 12px;
+    font-weight: 500;
     line-height: 36px;
     letter-spacing: 0.02em;
 }
@@ -93,7 +92,7 @@ html[data-theme="dark"] {
     --msg-ai-border: rgba(255, 240, 230, 0.08);
     --think-bg: rgba(255, 240, 230, 0.02);
     --code-bg: #18130f;
-    --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    --grain: none;
 }
 
 /* ── BLACK THEME (纯黑，站内默认；独立于暖色 dark) ─────────── */
@@ -127,7 +126,7 @@ html[data-theme="black"] {
     --msg-ai-border: rgba(255, 255, 255, 0.08);
     --think-bg: rgba(255, 255, 255, 0.02);
     --code-bg: #050505;
-    --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    --grain: none;
 }
 
 /* black 主题：AI 输出文字强制纯白，确保可读性 */
@@ -2395,7 +2394,7 @@ html[data-theme="light"] .claude-accent-dot {
     width: min(760px, calc(100vw - 40px));
     min-height: 60px;
     height: auto;
-    border-radius: 18px;
+    border-radius: var(--composer-radius, 18px);
     background: var(--input);
     border: 1px solid var(--line-2);
     box-shadow: var(--input-shadow);
@@ -6489,7 +6488,7 @@ html[data-theme="blue"] {
         align-items: flex-start;
         gap: 6px;
         padding: 14px 10px 10px;
-        border-radius: 14px;
+        border-radius: var(--composer-radius, 14px);
         overflow: hidden;
     }
 
