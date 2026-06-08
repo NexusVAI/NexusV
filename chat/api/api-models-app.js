@@ -9,6 +9,9 @@ function coalesce(value, fallback) {
 
 const GW =
     (window.__SUPABASE_URL__ || "") + "/functions/v1/chat-gateway";
+// cf-migration-handoff §5：CF 入口异常时可秒级回退 Supabase 直连（catalog 为小 JSON）
+const GW_SUPABASE_DIRECT =
+    "https://diusqgphvybnzazgopor.supabase.co/functions/v1/chat-gateway";
 const ANON = window.__SUPABASE_ANON_KEY__ || "";
 let MODELS = [];
 let activeCap = "all";
@@ -460,19 +463,92 @@ function brandLogoHtml(brand) {
     )}</span>`;
 }
 
-function fetchWithTimeout(url, options, timeoutMs) {
-    if (typeof AbortController === "function") {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-        return fetch(url, Object.assign({}, options, { signal: ctrl.signal }))
-            .finally(() => clearTimeout(timer));
+function isQqBrowser() {
+    return /QQBrowser|MQQBrowser|QQ\//i.test(navigator.userAgent || "");
+}
+
+function catalogFetchOptions() {
+    return {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            apikey: ANON,
+        },
+        body: JSON.stringify({ endpoint: "model_public_catalog" }),
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+    };
+}
+
+/** 不用 AbortController：QQ 浏览器对 signal 兼容差，易误 abort 或一直挂起 */
+function fetchCatalogOnce(url, options, timeoutMs) {
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error("request_timeout"));
+        }, timeoutMs);
+
+        fetch(url, options)
+            .then((resp) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve(resp);
+            })
+            .catch((err) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                reject(err);
+            });
+    });
+}
+
+function catalogGatewayCandidates() {
+    const primary = (GW || "").replace(/\/+$/, "");
+    const list = [];
+    if (primary) list.push(primary);
+    if (primary.indexOf("chat.nexusvai.xyz") !== -1) {
+        list.push(GW_SUPABASE_DIRECT);
+    } else if (primary.indexOf("supabase.co") === -1) {
+        list.push(GW_SUPABASE_DIRECT);
     }
-    return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => {
-            setTimeout(() => reject(new Error("请求超时，请刷新重试")), timeoutMs);
-        }),
-    ]);
+    return list.filter((url, idx, arr) => arr.indexOf(url) === idx);
+}
+
+async function fetchModelCatalog() {
+    const options = catalogFetchOptions();
+    const urls = catalogGatewayCandidates();
+    if (!urls.length) throw new Error("网关地址未配置");
+
+    // QQ 浏览器对 CF 域名更易卡住 → 优先 Supabase 直连
+    if (isQqBrowser()) {
+        const sb = urls.indexOf(GW_SUPABASE_DIRECT);
+        if (sb > 0) {
+            urls.splice(sb, 1);
+            urls.unshift(GW_SUPABASE_DIRECT);
+        }
+    }
+
+    let lastErr = null;
+    for (let i = 0; i < urls.length; i++) {
+        const timeoutMs = i === 0 ? (isQqBrowser() ? 15000 : 10000) : 18000;
+        try {
+            const resp = await fetchCatalogOnce(urls[i], options, timeoutMs);
+            if (resp.ok) return resp;
+            lastErr = new Error("HTTP " + resp.status);
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+
+    if (lastErr && lastErr.message === "request_timeout") {
+        throw new Error("请求超时，请检查网络后刷新");
+    }
+    throw lastErr || new Error("加载模型列表失败");
 }
 
 function showLoadError(message) {
@@ -514,18 +590,7 @@ async function load() {
         if (!window.__SUPABASE_URL__ || !ANON) {
             throw new Error("站点配置未就绪，请刷新页面");
         }
-        const resp = await fetchWithTimeout(
-            GW,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    apikey: ANON,
-                },
-                body: JSON.stringify({ endpoint: "model_public_catalog" }),
-            },
-            20000,
-        );
+        const resp = await fetchModelCatalog();
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         const data = await resp.json();
         if (data && data.multiplier_legend) {
