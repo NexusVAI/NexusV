@@ -217,6 +217,7 @@ const BRAND_LOGO = {
     microsoft: "./microsoft-color.svg",
     ibm: "./ibm.svg",
     cohere: "./cohere-color.svg",
+    cursor: "./cursor.svg",
     swissai: "./huggingface-color.svg",
     utterproject: "./huggingface-color.svg",
     baidu: "./wenxin-color.svg",
