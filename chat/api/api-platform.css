@@ -102,6 +102,8 @@
 
   --cream: #f5f4ed;
   --cream-on: #1c1c1a;
+  --heading-color: var(--cream);
+  --heading-on: var(--cream-on);
   --clay: #d97757;
   --clay-2: #b85a3e;
 
@@ -165,6 +167,8 @@
 
   --cream: #111111;
   --cream-on: #ffffff;
+  --heading-color: var(--ink);
+  --heading-on: var(--cream-on);
   --clay: #d97757;
   --clay-2: #c96e4a;
 
@@ -186,6 +190,8 @@
 
   --cream: #f5f4ed;
   --cream-on: #1c1c1a;
+  --heading-color: var(--cream);
+  --heading-on: var(--cream-on);
   --clay: #e8845f;
   --clay-2: #d97757;
 
@@ -324,7 +330,7 @@ header h1,
   font-size: 32px;
   font-weight: 400;
   letter-spacing: -0.02em;
-  color: var(--cream);
+  color: var(--heading-color);
   line-height: 1.1;
 }
 
@@ -499,15 +505,15 @@ button {
 }
 
 .btn-primary {
-  background: var(--cream);
-  color: var(--cream-on);
+  background: var(--heading-color);
+  color: var(--heading-on);
 }
 
 .btn-primary:hover {
   filter: none;
-  background: var(--cream-on);
-  color: var(--cream);
-  border-color: var(--cream-on);
+  background: var(--heading-on);
+  color: var(--heading-color);
+  border-color: var(--heading-on);
   transform: none;
 }
 
@@ -908,7 +914,7 @@ td.ip {
 }
 .key-tier-chip.is-paid {
   background: var(--accent);
-  color: var(--cream, #f5f4ed);
+  color: var(--heading-color, #f5f4ed);
   border: 1px solid var(--accent);
 }
 :root[data-theme="light"] .key-tier-chip.is-paid {
@@ -1686,7 +1692,7 @@ body.has-topbar {
 /* ::selection 配色（开放平台所有页面统一） */
 ::selection {
   background: var(--clay);
-  color: var(--cream-on);
+  color: var(--heading-on);
 }
 
 /* Auto-applied Liquid Glass on admin surfaces was removed 2026-05-14
@@ -1830,20 +1836,20 @@ table {
 
 .btn-primary,
 .plan-tier__ribbon {
-  background: var(--cream);
-  color: var(--cream-on);
+  background: var(--heading-color);
+  color: var(--heading-on);
 }
 
 :root[data-theme="light"] .btn-primary,
 :root[data-theme="light"] .plan-tier__ribbon {
-  background: var(--cream);
-  color: var(--cream-on);
+  background: var(--heading-color);
+  color: var(--heading-on);
 }
 
 :root[data-theme="light"] .btn-primary:hover {
-  background: var(--cream-on);
-  color: var(--cream);
-  border-color: var(--cream);
+  background: var(--heading-on);
+  color: var(--heading-color);
+  border-color: var(--heading-color);
 }
 
 .btn-secondary,
@@ -2236,7 +2242,7 @@ body.admin-shell .order-row.is-submitted {
   font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--cream);
+  color: var(--heading-color);
   letter-spacing: -0.02em;
 }
 
