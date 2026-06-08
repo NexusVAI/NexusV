@@ -8,28 +8,6 @@ html {
     padding: 80px 24px 40px;
 }
 
-/* 选中文本颜色 - 白色底黑色字 */
-::selection {
-    background: rgba(255, 255, 255, 0.9);
-    color: #000000;
-}
-
-::-moz-selection {
-    background: rgba(255, 255, 255, 0.9);
-    color: #000000;
-}
-
-/* 浅色模式相反 - 黑色底白色字 */
-body.light-theme ::selection {
-    background: rgba(0, 0, 0, 0.9);
-    color: #ffffff;
-}
-
-body.light-theme ::-moz-selection {
-    background: rgba(0, 0, 0, 0.9);
-    color: #ffffff;
-}
-
 .article-wrap {
     max-width: 720px;
     margin: 0 auto;

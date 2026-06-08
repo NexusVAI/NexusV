@@ -150,3 +150,50 @@ body {
     overflow-x: hidden;
     transition: background-color 0.3s, color 0.3s;
 }
+
+/* Text selection — :root default is light (OpenAI-style); no theme class on html/body */
+::selection {
+    background: rgba(0, 0, 0, 0.18);
+    color: inherit;
+}
+
+::-moz-selection {
+    background: rgba(0, 0, 0, 0.18);
+    color: inherit;
+}
+
+.dark-theme ::selection,
+body.dark-theme ::selection {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.dark-theme ::-moz-selection,
+body.dark-theme ::-moz-selection {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.warm-theme ::selection,
+body.warm-theme ::selection {
+    background: rgba(196, 165, 116, 0.38);
+    color: #f4f3ee;
+}
+
+.warm-theme ::-moz-selection,
+body.warm-theme ::-moz-selection {
+    background: rgba(196, 165, 116, 0.38);
+    color: #f4f3ee;
+}
+
+.blue-theme ::selection,
+body.blue-theme ::selection {
+    background: rgba(140, 167, 214, 0.38);
+    color: #eaf2ff;
+}
+
+.blue-theme ::-moz-selection,
+body.blue-theme ::-moz-selection {
+    background: rgba(140, 167, 214, 0.38);
+    color: #eaf2ff;
+}

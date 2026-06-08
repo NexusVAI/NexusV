@@ -55,65 +55,50 @@
     font-size: 12px;
 }
 
-.bottom-left {
+.footer-socials {
     display: flex;
-    gap: 24px;
     align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.bottom-left a {
-    color: var(--text-color);
-    text-decoration: none;
-    font-weight: 500;
+.footer-socials > a {
     display: inline-flex;
     align-items: center;
-    transition: color 0.2s;
-}
-
-.bottom-left a:hover {
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     color: var(--secondary-text);
+    opacity: 0.72;
+    text-decoration: none;
+    transition:
+        opacity 0.15s ease,
+        background-color 0.15s ease,
+        color 0.15s ease;
 }
 
-.bottom-left a svg {
-    transition: fill 0.2s;
+.footer-socials > a:hover,
+.footer-socials > a:focus-visible {
+    opacity: 1;
+    background: var(--pill-bg);
+    color: var(--text-color);
+    outline: none;
+}
+
+.footer-socials svg,
+.footer-socials img {
     display: block;
+    pointer-events: none;
 }
 
-.bottom-left a img {
-    display: block;
-}
-
-/* Fix Bilibili icon vertical alignment */
-.bottom-left a .social-icon--bilibili,
-.bottom-left a .social-icon--huggingface {
+.footer-socials .social-icon--bilibili,
+.footer-socials .social-icon--huggingface {
     position: relative;
     top: 1px;
-}
-
-.bottom-left a .social-icon--huggingface {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
-}
-
-/* Email copy button styles */
-.bottom-left .email-copy-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    color: var(--text-color);
-    display: inline-flex;
-    align-items: center;
-    transition: color 0.2s;
-}
-
-.bottom-left .email-copy-btn:hover {
-    color: var(--secondary-text);
-}
-
-.bottom-left .email-copy-btn svg {
-    display: block;
 }
 
 .bottom-center {
@@ -212,7 +197,7 @@
         text-align: center;
     }
 
-    .bottom-left {
+    .footer-socials {
         justify-content: center;
     }
 

@@ -135,12 +135,17 @@
     gap: 12px;
     text-decoration: none;
     color: inherit;
+    transition: opacity 0.2s ease;
+}
+
+.latest-news-feature-card:hover {
+    opacity: 0.92;
 }
 
 .latest-news-feature-thumb {
     width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
     background: var(--bg-card);
 }
@@ -149,11 +154,13 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(1);
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
 }
 
 .latest-news-feature-card:hover .latest-news-feature-thumb img {
-    transform: scale(1.04);
+    transform: scale(1.05);
 }
 
 .latest-news-feature-info {
@@ -223,19 +230,29 @@
 
     .latest-news-feature-strip {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 28px;
         margin-top: 32px;
     }
 
+    /* OpenAI 移动端：封面保持 1:1 正方形，与桌面/粘性方格一致 */
     .latest-news-feature-thumb {
-        aspect-ratio: 16 / 10;
+        aspect-ratio: 1 / 1;
+        border-radius: 8px;
     }
 
     .latest-news-feature-info h3 {
-        font-size: 15px;
+        font-size: 16px;
+        line-height: 1.35;
     }
 
     .latest-news-feature-info p {
-        font-size: 11px;
+        font-size: 12px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+    .latest-news-feature-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
     }
 }
