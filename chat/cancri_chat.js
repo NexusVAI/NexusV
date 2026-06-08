@@ -302,9 +302,18 @@ const ARENA_MODE_MIGRATIONS = {
     "daily_paid_limit_reached",
     // 2026-05-17 Phase A 新增
     "monthly_quota_exhausted",
+    "token_window_5h_exceeded",
+    "token_window_week_exceeded",
     "model_pro_plus_required",
     "model_pro_max_required",
     "model_pro_required",
+  ]);
+  const UPGRADE_MODAL_TRIGGER_CODES = new Set([
+    "free_pool_exhausted",
+    "daily_paid_limit_reached",
+    "monthly_quota_exhausted",
+    "token_window_5h_exceeded",
+    "token_window_week_exceeded",
   ]);
   const USER_QUOTA_ERROR_CODES = new Set([
     "free_pool_exhausted",
@@ -323,6 +332,13 @@ const ARENA_MODE_MIGRATIONS = {
     if (code && QUOTA_REFRESH_TRIGGER_CODES.has(code) &&
         typeof invalidateQuotaState === "function") {
       try { invalidateQuotaState(); } catch (e) { /* ignore */ }
+    }
+    if (code && UPGRADE_MODAL_TRIGGER_CODES.has(code) &&
+        window.CancriUpgradeQuotaUI &&
+        typeof window.CancriUpgradeQuotaUI.openModal === "function") {
+      try {
+        window.CancriUpgradeQuotaUI.openModal(code);
+      } catch (e) { /* ignore */ }
     }
     if (code && Object.prototype.hasOwnProperty.call(KNOWN_ERROR_CODE_MESSAGES, code)) {
       const tpl = KNOWN_ERROR_CODE_MESSAGES[code];
@@ -1674,6 +1690,7 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.3-codex",
+    "gpt-5.3-codex-spark",
     "gpt-5.2",
     "grok-4.20-0309-console",
     "grok-4.20-multi-agent-xhigh",
@@ -1684,6 +1701,7 @@ const ARENA_MODE_MIGRATIONS = {
     "gemini-3.1-pro-preview",
     "glm-5.1",
     "deepseek-v4-pro",
+    "deepseek-v4-pro-0608",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
     // 2026-05-23 批次：10 个百炼 PAID 模型（pro 用户专属）
@@ -1766,6 +1784,10 @@ const ARENA_MODE_MIGRATIONS = {
     tokenWindow5hLimit: null,
     tokenWindowWeekUsed: null,
     tokenWindowWeekLimit: null,
+    monthlyQuota: null,
+    monthlyRemaining: null,
+    expiresAt: null,
+    daysRemaining: null,
   };
   let quotaStateFetchInflight = null;
   const QUOTA_STATE_TTL_MS = 30 * 1000;
@@ -1985,6 +2007,23 @@ const ARENA_MODE_MIGRATIONS = {
             quotaState.tokenWindowWeekUsed = null;
             quotaState.tokenWindowWeekLimit = null;
           }
+          quotaState.monthlyQuota =
+            typeof data.monthly_quota === "number" ||
+            typeof data.monthly_quota === "string"
+              ? Number(data.monthly_quota) || 0
+              : null;
+          quotaState.monthlyRemaining =
+            typeof data.monthly_remaining === "number" ||
+            typeof data.monthly_remaining === "string"
+              ? Number(data.monthly_remaining)
+              : null;
+          quotaState.expiresAt =
+            typeof data.expires_at === "string" ? data.expires_at : null;
+          quotaState.daysRemaining =
+            typeof data.days_remaining === "number" ||
+            typeof data.days_remaining === "string"
+              ? Number(data.days_remaining) || 0
+              : null;
           quotaState.fetchedAt = Date.now();
           if (clearTopupBackedQuotaLocks()) {
             persistModelTelemetryCache();
@@ -2033,27 +2072,48 @@ const ARENA_MODE_MIGRATIONS = {
   }
   
   function renderFreeQuotaBanner() {
+    if (
+      window.CancriUpgradeQuotaUI &&
+      typeof window.CancriUpgradeQuotaUI.renderRibbon === "function"
+    ) {
+      try {
+        window.CancriUpgradeQuotaUI.renderRibbon();
+        return;
+      } catch (e) {
+        /* fallback below */
+      }
+    }
     const banner = document.getElementById("freeQuotaBanner");
     if (!banner) return;
-    const free = quotaState.freePoolRemaining;
-    const daily = quotaState.dailyPaidRemaining;
-    const topup = quotaState.topupBalance;
-    const allEmpty =
-      quotaState.tier === "free" &&
-      free !== null && Number(free) <= 0 &&
-      daily !== null && Number(daily) <= 0 &&
-      topup !== null && Number(topup) <= 0;
-    if (!allEmpty) {
-      banner.hidden = true;
-      banner.textContent = "";
-      return;
-    }
-    const when = formatFreePoolResetDate(quotaState.freePoolPeriodEnd);
-    banner.textContent = when
-      ? `您的免费消息额度已用完，将于 ${when} 恢复`
-      : "您的免费消息额度已用完，可升级订阅或购买加油包继续使用";
-    banner.hidden = false;
+    banner.hidden = true;
+    banner.textContent = "";
   }
+
+  window.CancriQuotaRuntime = {
+    getSnapshot: function () {
+      return {
+        fetchedAt: quotaState.fetchedAt,
+        tier: quotaState.tier,
+        planCode: quotaState.planCode,
+        isGrandfathered: quotaState.isGrandfathered,
+        freePoolRemaining: quotaState.freePoolRemaining,
+        dailyPaidRemaining: quotaState.dailyPaidRemaining,
+        topupBalance: quotaState.topupBalance,
+        freePoolPeriodEnd: quotaState.freePoolPeriodEnd,
+        tokenWindow5hUsed: quotaState.tokenWindow5hUsed,
+        tokenWindow5hLimit: quotaState.tokenWindow5hLimit,
+        tokenWindowWeekUsed: quotaState.tokenWindowWeekUsed,
+        tokenWindowWeekLimit: quotaState.tokenWindowWeekLimit,
+        monthlyQuota: quotaState.monthlyQuota,
+        monthlyRemaining: quotaState.monthlyRemaining,
+        expiresAt: quotaState.expiresAt,
+        daysRemaining: quotaState.daysRemaining,
+      };
+    },
+    refresh: function (force) {
+      return refreshQuotaState(Boolean(force));
+    },
+  };
   
   function clearTopupBackedQuotaLocks() {
     if (!(quotaState.topupBalance > 0)) return false;
@@ -2468,6 +2528,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
     {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
     {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+    {"id": "gpt-5.3-codex-spark", "name": "GPT 5.3 Codex Spark", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
     {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
     {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2492,6 +2553,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gemma-4-26b-a4b-it", "name": "Gemma 4 26B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+    {"id": "deepseek-v4-pro-0608", "name": "DeepSeek V4 Pro 0608", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "fuka"},
     // 2026-06-08: NVIDIA Integrate API 备用线路（魔塔 deepseek-v4-pro 不动）
     {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "nvidia"},
     {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -4993,7 +5055,13 @@ const ARENA_MODE_MIGRATIONS = {
         }
   
         const id = createAssistantMessage(metadata);
-        updateAssistantMessage(id, { answer: content, thinking: false });
+        const restoredReasoning =
+          typeof message.reasoning === "string" ? message.reasoning : "";
+        updateAssistantMessage(id, {
+          answer: content,
+          reasoning: restoredReasoning,
+          thinking: false,
+        });
       }
     });
   
@@ -10870,13 +10938,15 @@ const ARENA_MODE_MIGRATIONS = {
       : normalizedContent?.attachments || [];
     const text = normalizedContent
       ? normalizedContent.text
-      : String(content || "").trim();
+      : String(content || "")
+          .replace(/\r\n/g, "\n")
+          .trim();
   
     // Stash the original user text on the DOM node so the undo button can
     // repopulate the composer even if conversationHistory has not been pushed
     // yet (e.g. user clicks undo while the response is still streaming and the
     // history slot has not been written).
-    messageDiv.dataset.userText = text;
+    messageDiv.dataset.userText = text.replace(/\r\n/g, "\n");
   
     // Undo control: small "return" arrow that lets the user retract this turn,
     // dropping it (and everything after) and re-loading the original text into
@@ -10954,8 +11024,11 @@ const ARENA_MODE_MIGRATIONS = {
   
     const textBlock = document.createElement("div");
     textBlock.className = "user-message-text";
-    textBlock.textContent =
-      text || (messageAttachments.length ? "已发送图片" : "");
+    if (text) {
+      textBlock.innerHTML = renderStreamingFragment(text);
+    } else {
+      textBlock.textContent = messageAttachments.length ? "已发送图片" : "";
+    }
     bubble.appendChild(textBlock);
   
     // Claude-style message actions bar (timestamp + retry)
@@ -11171,8 +11244,12 @@ const ARENA_MODE_MIGRATIONS = {
       sanitized.metadata = normalizeAssistantMetadata(
         sanitized.metadata || sanitized.modelMetadata || null,
       );
+      const reasoning = String(sanitized.reasoning || "").trim();
+      if (reasoning) sanitized.reasoning = reasoning;
+      else delete sanitized.reasoning;
     } else {
       delete sanitized.metadata;
+      delete sanitized.reasoning;
     }
     if (sanitized.metadata?.errorCard) {
       sanitized.content = getSafeModelErrorText(sanitized.metadata.modelId || currentModel);
@@ -11180,6 +11257,45 @@ const ARENA_MODE_MIGRATIONS = {
     delete sanitized.modelMetadata;
     delete sanitized.provider;
     return sanitized;
+  }
+
+  const THINK_HEADER_INNER_HTML =
+    `<span class="think-caret" aria-hidden="true">` +
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">` +
+    `<path d="m6 9 6 6 6-6"></path></svg></span>` +
+    `<span class="think-label">思考中</span>`;
+
+  function createThinkHeaderElement(thinkBlock) {
+    const thinkHeader = document.createElement("div");
+    thinkHeader.className = "think-header";
+    thinkHeader.setAttribute("role", "button");
+    thinkHeader.setAttribute("tabindex", "0");
+    thinkHeader.setAttribute("aria-expanded", "true");
+    thinkHeader.innerHTML = THINK_HEADER_INNER_HTML;
+    const toggle = () => {
+      if (thinkBlock.hidden) return;
+      const collapsed = !thinkBlock.classList.contains("is-collapsed");
+      thinkBlock.classList.toggle("is-collapsed", collapsed);
+      thinkHeader.setAttribute("aria-expanded", String(!collapsed));
+    };
+    thinkHeader.addEventListener("click", toggle);
+    thinkHeader.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggle();
+      }
+    });
+    return thinkHeader;
+  }
+
+  function setThinkHeaderLabel(thinkHeader, { thinking = false, startedAt = 0 } = {}) {
+    if (!thinkHeader) return;
+    const label = thinkHeader.querySelector(".think-label");
+    if (!label) return;
+    const seconds = startedAt
+      ? Math.max(1, Math.round((Date.now() - startedAt) / 1000))
+      : 1;
+    label.textContent = thinking ? "思考中" : `思考 ${seconds} 秒`;
   }
   
   function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
@@ -11207,38 +11323,29 @@ const ARENA_MODE_MIGRATIONS = {
     generatingDot.className = "generating-dot";
     generatingIndicator.appendChild(generatingDot);
   
-    const modelBadge = document.createElement("div");
-    modelBadge.className = "assistant-model-badge";
-  
-    const modelPulse = document.createElement("span");
-    modelPulse.className = "assistant-model-pulse";
-    modelPulse.setAttribute("aria-hidden", "true");
-    modelBadge.appendChild(modelPulse);
+    const modelLabel = document.createElement("div");
+    modelLabel.className = "assistant-model-label";
   
     const modelIcon = document.createElement("img");
     modelIcon.className = "assistant-model-icon";
     modelIcon.src = modelMetadata.iconPath;
     modelIcon.alt = "";
-    modelBadge.appendChild(modelIcon);
+    modelLabel.appendChild(modelIcon);
   
     const modelName = document.createElement("span");
     modelName.className = "assistant-model-name";
     modelName.textContent = modelMetadata.modelName;
-    modelBadge.appendChild(modelName);
+    modelLabel.appendChild(modelName);
   
     const thinkBlock = document.createElement("div");
     thinkBlock.className = "think-block";
     thinkBlock.hidden = true;
   
-    const thinkHeader = document.createElement("button");
-    thinkHeader.className = "think-header";
-    thinkHeader.type = "button";
-    thinkHeader.setAttribute("aria-expanded", "true");
-    thinkHeader.innerHTML = `<span class="think-label">思考中</span><span class="think-caret">⌄</span>`;
-  
+    const thinkHeader = createThinkHeaderElement(thinkBlock);
+
     const thinkBody = document.createElement("div");
     thinkBody.className = "think-body md-content";
-  
+
     const answerBody = document.createElement("div");
     answerBody.className = "answer-body md-content";
     answerBody.innerHTML = "";
@@ -11279,7 +11386,7 @@ const ARENA_MODE_MIGRATIONS = {
   
     thinkBlock.appendChild(thinkHeader);
     thinkBlock.appendChild(thinkBody);
-    bubble.appendChild(modelBadge);
+    bubble.appendChild(modelLabel);
     bubble.appendChild(generatingIndicator);
     bubble.appendChild(thinkBlock);
     bubble.appendChild(toolCallsContainer);
@@ -11340,13 +11447,6 @@ const ARENA_MODE_MIGRATIONS = {
         }
         await speakTextWithMimo(text);
       });
-  
-    thinkHeader.addEventListener("click", () => {
-      if (thinkBlock.hidden) return;
-      const collapsed = !thinkBlock.classList.contains("is-collapsed");
-      thinkBlock.classList.toggle("is-collapsed", collapsed);
-      thinkHeader.setAttribute("aria-expanded", String(!collapsed));
-    });
   
     messageDiv._parts = {
       thinkBlock,
@@ -11413,19 +11513,8 @@ const ARENA_MODE_MIGRATIONS = {
       thinkBlock.className = "think-block";
       thinkBlock.hidden = true;
   
-      const thinkHeader = document.createElement("button");
-      thinkHeader.className = "think-header";
-      thinkHeader.type = "button";
-      thinkHeader.setAttribute("aria-expanded", "true");
-      thinkHeader.innerHTML =
-        '<span class="think-label">思考中</span><span class="think-caret">⌄</span>';
-      thinkHeader.addEventListener("click", () => {
-        if (thinkBlock.hidden) return;
-        const collapsed = !thinkBlock.classList.contains("is-collapsed");
-        thinkBlock.classList.toggle("is-collapsed", collapsed);
-        thinkHeader.setAttribute("aria-expanded", String(!collapsed));
-      });
-  
+      const thinkHeader = createThinkHeaderElement(thinkBlock);
+
       const thinkBody = document.createElement("div");
       thinkBody.className = "think-body md-content";
       thinkBlock.appendChild(thinkHeader);
@@ -11559,16 +11648,10 @@ const ARENA_MODE_MIGRATIONS = {
       }
       if (thinking) thinkBlock.classList.add("is-thinking");
       else thinkBlock.classList.remove("is-thinking");
-      if (thinkHeader) {
-        const label = thinkHeader.querySelector(".think-label");
-        const seconds = thinkStreamState.startedAt
-          ? Math.max(
-              1,
-              Math.round((Date.now() - thinkStreamState.startedAt) / 1000),
-            )
-          : 1;
-        if (label) label.textContent = thinking ? "思考中" : `思考 ${seconds} 秒`;
-      }
+      setThinkHeaderLabel(thinkHeader, {
+        thinking,
+        startedAt: thinkStreamState.startedAt,
+      });
       if (
         !thinking &&
         hasReasoning &&
@@ -11580,7 +11663,7 @@ const ARENA_MODE_MIGRATIONS = {
         thinkStreamState.autoCollapsed = true;
       }
       thinkStreamState.wasThinking = Boolean(thinking);
-  
+
       // Answer body
       if (hasAnswer) {
         syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, {
@@ -11594,7 +11677,7 @@ const ARENA_MODE_MIGRATIONS = {
       } else if (!hasReasoning) {
         answerBody.innerHTML = '<span class="typing-indicator">暂无内容</span>';
       }
-  
+
       // Tool calls display (badge only, no execution in Arena)
       if (Array.isArray(toolCalls) && toolCalls.length) {
         const existing = toolCallsContainer.querySelectorAll(".tool-call-block");
@@ -11705,16 +11788,10 @@ const ARENA_MODE_MIGRATIONS = {
   
     if (thinking) thinkBlock.classList.add("is-thinking");
     else thinkBlock.classList.remove("is-thinking");
-    if (thinkHeader) {
-      const label = thinkHeader.querySelector(".think-label");
-      const seconds = thinkStreamState.startedAt
-        ? Math.max(
-            1,
-            Math.round((Date.now() - thinkStreamState.startedAt) / 1000),
-          )
-        : 1;
-      if (label) label.textContent = thinking ? "思考中" : `思考 ${seconds} 秒`;
-    }
+    setThinkHeaderLabel(thinkHeader, {
+      thinking,
+      startedAt: thinkStreamState.startedAt,
+    });
     if (
       !thinking &&
       hasReasoning &&
@@ -11726,7 +11803,7 @@ const ARENA_MODE_MIGRATIONS = {
       thinkStreamState.autoCollapsed = true;
     }
     thinkStreamState.wasThinking = Boolean(thinking);
-  
+
     if (hasAnswer) {
       syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, {
         thinking,
@@ -11999,12 +12076,31 @@ const ARENA_MODE_MIGRATIONS = {
     updateContextMeter();
   }
   
-  function assistantHistoryMessage(content, metadata) {
-    return {
+  function assistantHistoryMessage(content, metadata, { reasoning = "" } = {}) {
+    const message = {
       role: "assistant",
       content,
       metadata: normalizeAssistantMetadata(metadata),
     };
+    const reasoningText = String(reasoning || "").trim();
+    if (reasoningText) message.reasoning = reasoningText;
+    return message;
+  }
+
+  function assistantHistoryMessageFromDom(
+    messageId,
+    content,
+    metadata,
+    { reasoning = "" } = {},
+  ) {
+    const partial = getPartialAssistantContent(messageId);
+    const answer = String(partial.answer || "").trim() || content;
+    const mergedReasoning =
+      String(partial.reasoning || "").trim() ||
+      String(reasoning || "").trim();
+    return assistantHistoryMessage(answer, metadata, {
+      reasoning: mergedReasoning,
+    });
   }
   
   const SUPPORT_EMAIL = "3573799137@qq.com";
@@ -13293,7 +13389,7 @@ const ARENA_MODE_MIGRATIONS = {
     const container = messageDiv._parts.toolCallsContainer;
   
     const block = document.createElement("div");
-    block.className = "tool-call-block";
+    block.className = "tool-call-block is-running";
     block.dataset.toolCallId = toolCall.id || "";
   
     const header = document.createElement("div");
@@ -13360,6 +13456,7 @@ const ARENA_MODE_MIGRATIONS = {
   
   function completeToolCallUI(block, resultText) {
     if (!block) return;
+    block.classList.remove("is-running");
     const spinner = block.querySelector(".tool-call-spinner");
     const status = block.querySelector(".tool-call-status");
     const resultDiv = block.querySelector(".tool-call-result");
@@ -13381,6 +13478,7 @@ const ARENA_MODE_MIGRATIONS = {
   
   function failToolCallUI(block, resultText) {
     if (!block) return;
+    block.classList.remove("is-running");
     const spinner = block.querySelector(".tool-call-spinner");
     const status = block.querySelector(".tool-call-status");
     const resultDiv = block.querySelector(".tool-call-result");
@@ -13677,7 +13775,9 @@ const ARENA_MODE_MIGRATIONS = {
               pushHistory(userHistoryMessage);
               turnMessages.forEach((message) => pushHistory(message));
               pushHistory(
-                assistantHistoryMessage(repeatedAnswer, turnModelMetadata),
+                assistantHistoryMessage(repeatedAnswer, turnModelMetadata, {
+                  reasoning: accumulatedReasoningText,
+                }),
               );
               await finalizeConversationTurn();
               return;
@@ -13732,11 +13832,15 @@ const ARENA_MODE_MIGRATIONS = {
   
         pushHistory(userHistoryMessage);
         turnMessages.forEach((message) => pushHistory(message));
-        pushHistory(assistantHistoryMessage(resolvedAnswer, turnModelMetadata));
+        pushHistory(
+          assistantHistoryMessage(resolvedAnswer, turnModelMetadata, {
+            reasoning: accumulatedReasoningText,
+          }),
+        );
         await finalizeConversationTurn();
         return;
       }
-  
+
       const fallbackAnswer = controller.signal.aborted
         ? "请求已取消。"
         : "请求超时（对话回合超过3分钟），建议简化问题或分多次询问。";
@@ -13746,7 +13850,14 @@ const ARENA_MODE_MIGRATIONS = {
       });
       pushHistory(userHistoryMessage);
       turnMessages.forEach((message) => pushHistory(message));
-      pushHistory(assistantHistoryMessage(fallbackAnswer, turnModelMetadata));
+      pushHistory(
+        assistantHistoryMessageFromDom(
+          assistantMessageId,
+          fallbackAnswer,
+          turnModelMetadata,
+          { reasoning: accumulatedReasoningText },
+        ),
+      );
       await finalizeConversationTurn();
     } catch (error) {
       // DIAGNOSTIC（2026-05-13f）：用户报告"Assignment to constant variable"
@@ -13823,7 +13934,11 @@ const ARENA_MODE_MIGRATIONS = {
         turnMessages.forEach((historyMessage) => pushHistory(historyMessage));
         pushHistory(
           isUserStopped
-            ? assistantHistoryMessage(failureAnswer, turnModelMetadata)
+            ? assistantHistoryMessageFromDom(
+                assistantMessageId,
+                failureAnswer,
+                turnModelMetadata,
+              )
             : assistantErrorHistoryMessage(turnModelMetadata, turnModelId),
         );
         await finalizeConversationTurn();
@@ -15239,9 +15354,18 @@ const ARENA_MODE_MIGRATIONS = {
         ? Math.min(320, vw - 24)
         : Math.min(320, Math.max(280, Math.min(420, vw - 24))),
     );
-    const spaceBelow = vh - rect.bottom;
-    const openUp = spaceBelow < 280 && rect.top > 180;
-  
+    // Viewport space for max-height — must NOT use containing-block coords:
+    // composer-bottom has backdrop-filter, so getFixedContainingBlock() returns
+    // a short bar; rect.top - cbTop then ≈ trigger height (~40px) → 200px floor.
+    const spaceAbove = Math.round(rect.top - 24);
+    const spaceBelow = Math.round(vh - rect.bottom - 16);
+    const openUp = spaceBelow < spaceAbove;
+    const maxDropdownHeight = Math.min(Math.round(vh * 0.7), 520);
+    const availableHeight = Math.min(
+      maxDropdownHeight,
+      Math.max(openUp ? spaceAbove : spaceBelow, 240),
+    );
+
     // Compensate for ancestors that establish a containing block for
     // position:fixed (transform / backdrop-filter / filter / etc.)
     const cb = getFixedContainingBlock(modelDropdown);
@@ -15251,34 +15375,28 @@ const ARENA_MODE_MIGRATIONS = {
     const cbTop = cbRect.top + parseFloat(cbStyle?.borderTopWidth || 0);
     const cbRight = cbRect.right - parseFloat(cbStyle?.borderRightWidth || 0);
     const cbBottom = cbRect.bottom - parseFloat(cbStyle?.borderBottomWidth || 0);
-  
+
     let left = Math.round(rect.right - width) - cbLeft;
     left = Math.max(12, Math.min(left, cbRight - width - 12));
-  
+
     setModelDropdownLayout("width", `${width}px`);
     setModelDropdownLayout("left", `${left}px`);
     setModelDropdownLayout("right", "auto");
-  
+
     if (openUp) {
       setModelDropdownLayout("top", "auto");
       setModelDropdownLayout(
         "bottom",
         `${Math.max(12, Math.round(cbBottom - rect.top + 8))}px`,
       );
-      setModelDropdownLayout(
-        "max-height",
-        `${Math.max(200, Math.round(rect.top - 24 - cbTop))}px`,
-      );
+      setModelDropdownLayout("max-height", `${availableHeight}px`);
     } else {
       setModelDropdownLayout("bottom", "auto");
       setModelDropdownLayout(
         "top",
         `${Math.round(rect.bottom + 8 - cbTop)}px`,
       );
-      setModelDropdownLayout(
-        "max-height",
-        `${Math.max(200, Math.round(cbBottom - rect.bottom - 16))}px`,
-      );
+      setModelDropdownLayout("max-height", `${availableHeight}px`);
     }
   }
   

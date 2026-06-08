@@ -18,6 +18,9 @@
     --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-brand: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+    /* cancri-code 桌面端思考流光（1.5.3 统一扫光 token） */
+    --shimmer-dim: #a6abb2;
+    --shimmer-bright: #24272b;
 }
 
 .emergency-ticker {
@@ -93,6 +96,8 @@ html[data-theme="dark"] {
     --think-bg: rgba(255, 240, 230, 0.02);
     --code-bg: #18130f;
     --grain: none;
+    --shimmer-dim: #6d737b;
+    --shimmer-bright: #f0f1f3;
 }
 
 /* ── BLACK THEME (纯黑，站内默认；独立于暖色 dark) ─────────── */
@@ -127,6 +132,8 @@ html[data-theme="black"] {
     --think-bg: rgba(255, 255, 255, 0.02);
     --code-bg: #050505;
     --grain: none;
+    --shimmer-dim: #6d737b;
+    --shimmer-bright: #f0f1f3;
 }
 
 /* black 主题：AI 输出文字强制纯白，确保可读性 */
@@ -312,10 +319,10 @@ svg {
 
 .sidebar.collapsed .sidebar-topbar {
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: 0;
-    padding: 0 10px;
+    padding: 0;
     height: 44px;
     min-height: 44px;
     max-height: 44px;
@@ -326,10 +333,13 @@ svg {
     display: none;
 }
 .sidebar.collapsed .sidebar-toggle {
-    width: 36px;
-    height: 36px;
-    margin: 0;
+    width: 28px;
+    height: 28px;
+    margin: 0 auto;
     flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
 }
 
 .brand-mark,
@@ -2530,10 +2540,15 @@ html[data-theme="light"] .claude-accent-dot {
     background: var(--text);
     color: var(--bg);
     box-shadow: none;
+    border-radius: 8px;
 }
 .send-btn.is-streaming:hover {
     background: var(--text);
     opacity: 0.82;
+}
+.send-btn.is-streaming .send-icon-stop {
+    width: 20px;
+    height: 20px;
 }
 
 .send-btn:hover {
@@ -3318,31 +3333,52 @@ html[data-theme="light"] .claude-accent-dot {
     font-weight: 500;
     letter-spacing: 0.01em;
     color: var(--text-dim);
+    line-height: 1.3;
 }
 
+/* 思考进行中：1:1 复刻 cancri-code 桌面端 thinkShimmer（styles.css §0.20.0-beta.5 / §1.5.3） */
 .think-block.is-thinking .think-label {
-    background: linear-gradient(
+    color: transparent;
+    background-image: linear-gradient(
         90deg,
-        var(--text-dim) 0%,
-        var(--text-dim) 34%,
-        var(--text) 50%,
-        var(--text-dim) 66%,
-        var(--text-dim) 100%
+        var(--shimmer-dim) 0%,
+        var(--shimmer-dim) 34%,
+        var(--shimmer-bright) 50%,
+        var(--shimmer-dim) 66%,
+        var(--shimmer-dim) 100%
     );
     background-size: 200% 100%;
     background-repeat: repeat-x;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: thinkTextShimmer 1.65s linear infinite;
+    animation: thinkShimmer 1.65s linear infinite;
 }
 
-@keyframes thinkTextShimmer {
+@keyframes thinkShimmer {
     0% {
         background-position: 200% 0;
     }
     100% {
         background-position: 0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .think-block.is-thinking .think-label {
+        animation: none;
+        color: var(--text-dim);
+        background: none;
+        -webkit-text-fill-color: currentColor;
+    }
+    .think-body {
+        transition: none;
+    }
+    .tool-call-block.is-running .tool-call-name {
+        animation: none;
+        color: var(--text);
+        background: none;
+        -webkit-text-fill-color: currentColor;
     }
 }
 
@@ -3353,9 +3389,16 @@ html[data-theme="light"] .claude-accent-dot {
     width: 16px;
     height: 16px;
     color: var(--text-dim);
-    font-size: 10px;
+    line-height: 0;
+    transform-origin: center center;
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
+}
+
+.think-caret svg {
+    width: 12px;
+    height: 12px;
+    display: block;
 }
 
 .think-block.is-collapsed .think-caret {
@@ -3371,13 +3414,19 @@ html[data-theme="light"] .claude-accent-dot {
 .think-body {
     max-height: 260px;
     padding: 0 0 4px;
-    font-size: 13px;
-    color: var(--text-soft);
-    line-height: 1.75;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--text-dim);
+    line-height: 1.65;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--line-2) transparent;
+    opacity: 1;
+    transition:
+        max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.22s ease,
+        padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .think-body::-webkit-scrollbar {
@@ -3389,7 +3438,12 @@ html[data-theme="light"] .claude-accent-dot {
 }
 
 .think-block.is-collapsed .think-body {
-    display: none;
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
 
 .answer-body {
@@ -4041,6 +4095,25 @@ html[data-theme="light"] .claude-accent-dot {
 .tool-call-name {
     font-weight: 500;
     color: var(--text);
+}
+
+/* 工具调用进行中：桌面端同款流光（cancri-code §1.5.3） */
+.tool-call-block.is-running .tool-call-name {
+    color: transparent;
+    background-image: linear-gradient(
+        90deg,
+        var(--shimmer-dim) 0%,
+        var(--shimmer-dim) 34%,
+        var(--shimmer-bright) 50%,
+        var(--shimmer-dim) 66%,
+        var(--shimmer-dim) 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: repeat-x;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: thinkShimmer 1.65s linear infinite;
 }
 
 .tool-call-spinner {
@@ -5938,38 +6011,34 @@ html[data-theme="blue"] {
     letter-spacing: 0;
 }
 
-.assistant-model-badge {
-    display: inline-flex;
+.assistant-model-label {
+    display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     width: fit-content;
     max-width: 100%;
-    margin-bottom: 8px;
-    padding: 4px 8px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--panel-2);
+    margin: 0 0 8px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
     color: var(--text-soft);
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.2;
-    position: relative;
-    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
 }
 
-.assistant-model-badge::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    transform: translateX(-120%);
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.16),
-        transparent
-    );
-    animation: modelBadgeSheen 3.6s ease-in-out infinite;
-    pointer-events: none;
+.message.user .user-message-text strong {
+    font-weight: 700;
+}
+
+.message.user .user-message-text em {
+    font-style: italic;
+}
+
+.message.user .user-message-text del {
+    text-decoration: line-through;
+    opacity: 0.88;
 }
 
 .assistant-model-pulse {

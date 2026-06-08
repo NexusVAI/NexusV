@@ -107,16 +107,28 @@
     const thinkBlock = document.createElement('div');
     thinkBlock.className = 'think-block';
     thinkBlock.hidden = true;
-    const thinkHeader = document.createElement('button');
+    const thinkHeader = document.createElement('div');
     thinkHeader.className = 'think-header';
-    thinkHeader.type = 'button';
+    thinkHeader.setAttribute('role', 'button');
+    thinkHeader.setAttribute('tabindex', '0');
     thinkHeader.setAttribute('aria-expanded', 'true');
-    thinkHeader.innerHTML = '<span class="think-label">思考中</span><span class="think-caret">⌄</span>';
-    thinkHeader.addEventListener('click', function () {
+    thinkHeader.innerHTML =
+      `<span class="think-caret" aria-hidden="true">` +
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">` +
+      `<path d="m6 9 6 6 6-6"></path></svg></span>` +
+      `<span class="think-label">思考中</span>`;
+    const toggleThink = function () {
       if (thinkBlock.hidden) return;
       const collapsed = !thinkBlock.classList.contains('is-collapsed');
       thinkBlock.classList.toggle('is-collapsed', collapsed);
       thinkHeader.setAttribute('aria-expanded', String(!collapsed));
+    };
+    thinkHeader.addEventListener('click', toggleThink);
+    thinkHeader.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleThink();
+      }
     });
     const thinkBody = document.createElement('div');
     thinkBody.className = 'think-body md-content';
@@ -173,7 +185,9 @@
     if (thinkHeader) {
       const label = thinkHeader.querySelector('.think-label');
       const seconds = thinkStreamState.startedAt ? Math.max(1, Math.round((Date.now() - thinkStreamState.startedAt) / 1000)) : 1;
-      if (label) label.textContent = thinking ? '思考中' : '思考 ' + seconds + ' 秒';
+      if (label) {
+        label.textContent = thinking ? '思考中' : '思考 ' + seconds + ' 秒';
+      }
     }
     if (!thinking && hasReasoning && thinkStreamState.wasThinking && !thinkStreamState.autoCollapsed) {
       thinkBlock.classList.add('is-collapsed');

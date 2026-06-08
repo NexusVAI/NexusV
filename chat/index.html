@@ -66,7 +66,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-07-review-fixes" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-08-desktop-think-shimmer" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -84,7 +84,7 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/component-composer.css?v=2026-05-20-project-upload-memory-dot"
+            href="./styles/component-composer.css?v=2026-06-08-stop-think-fix"
         />
         <link
             rel="stylesheet"
@@ -92,7 +92,7 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/99-polish-fixes.css?v=2026-06-03-sidebar-avatar-tune"
+            href="./styles/99-polish-fixes.css?v=2026-06-08-stop-think-fix"
         />
         <link
             rel="stylesheet"
@@ -106,11 +106,11 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-07-review-fixes"
+            href="./claude.css?v=2026-06-08-desktop-think-shimmer"
         />
         <link
             rel="stylesheet"
-            href="./styles/claude-sidebar-icons.css?v=2026-06-03-rail-collapse-fix"
+            href="./styles/claude-sidebar-icons.css?v=2026-06-08-rail-center-fix"
         />
         <!-- KaTeX: 静态引用本地文件，JS 层做加载检测和 CDN 兜底.
              defer = 不阻塞 HTML 解析。renderMathInElement 在 cancri_chat.js
@@ -1331,8 +1331,8 @@
                                                 class="voice-btn"
                                                 id="voiceToastBtn"
                                                 data-glass="button"
-                                                aria-label="语音输入"
-                                                title="语音输入"
+                                                aria-label="按住说话"
+                                                title="按住说话"
                                             >
                                                 <svg
                                                     width="20"
@@ -1373,18 +1373,18 @@
                                                 </svg>
                                                 <svg
                                                     class="send-icon-stop"
-                                                    width="18"
-                                                    height="18"
+                                                    width="20"
+                                                    height="20"
                                                     viewBox="0 0 24 24"
                                                     fill="currentColor"
                                                     stroke="none"
                                                 >
                                                     <rect
-                                                        x="7"
-                                                        y="7"
-                                                        width="10"
-                                                        height="10"
-                                                        rx="1.5"
+                                                        x="6"
+                                                        y="6"
+                                                        width="12"
+                                                        height="12"
+                                                        rx="2"
                                                     ></rect>
                                                 </svg>
                                             </button>
@@ -3146,7 +3146,7 @@
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=2026-06-07-review-fixes"></script>
+        <script defer src="./cancri_chat.js?v=2026-06-08-chat-header-md"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
@@ -3155,5 +3155,7 @@
         <!-- 2026-05-17 Phase A：「额度」面板（替代原「连接器」占位）。
              FREE 共享池 + 当日 15 次 PAID 试用 + 三档订阅月度配额进度 + 加油包余额。 -->
         <script defer src="./claude_quota_ui.js?v=2026-05-17-grandfather"></script>
+        <script defer src="./claude_upgrade_assets.js?v=2026-06-08-upgrade-quota-ui"></script>
+        <script defer src="./claude_upgrade_quota_ui.js?v=2026-06-08-upgrade-quota-ui-b"></script>
     </body>
 </html>

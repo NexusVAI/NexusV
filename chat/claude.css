@@ -466,10 +466,10 @@ html[data-theme="light"] .nav-row.active {
     height: 44px !important;
     min-height: 44px !important;
     max-height: 44px !important;
-    padding: 0 10px !important;
+    padding: 0 !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     transition: padding 240ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .sidebar.collapsed .sidebar-topbar::before {
@@ -484,10 +484,16 @@ html[data-theme="light"] .nav-row.active {
     pointer-events: none !important;
 }
 .sidebar.collapsed .sidebar-toggle {
-    width: 36px !important;
-    height: 36px !important;
-    margin: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     flex-shrink: 0;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 8px !important;
 }
 .sidebar.collapsed .sidebar-body {
     padding: 4px 4px 8px !important;
@@ -496,24 +502,25 @@ html[data-theme="light"] .nav-row.active {
     gap: 1px !important;
 }
 .sidebar.collapsed .nav-row {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    max-width: 36px !important;
-    min-height: 36px !important;
-    max-height: 36px !important;
-    margin: 2px auto !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     justify-content: center !important;
     gap: 0 !important;
-    display: flex !important;
+    display: grid !important;
+    place-items: center !important;
     position: static !important;
-    border-radius: 10px !important;
+    border-radius: 9px !important;
     box-sizing: border-box !important;
 }
 .sidebar.collapsed .nav-row:hover,
 .sidebar.collapsed .nav-row.active {
-    border-radius: 10px !important;
+    border-radius: 9px !important;
 }
 .sidebar.collapsed .nav-row svg,
 .sidebar.collapsed .nav-row .claude-nav-icon,
@@ -927,6 +934,7 @@ body.is-chatting #homeView.chatting .chat-messages.active {
 .main-header .header-left {
     flex: 1;
     min-width: 0;
+    justify-content: flex-start !important;
 }
 
 /* 隐藏顶栏 left 侧的所有遗留控件（model-selector / arena 模式 / 移动汉堡），
@@ -955,7 +963,10 @@ body.is-chatting #homeView.chatting .chat-messages.active {
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
-    max-width: 50vw;
+    max-width: min(42vw, 360px);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 1;
     transition: background 160ms;
 }
 .claude-chat-title:hover { background: var(--c-hover); }
@@ -970,15 +981,14 @@ body.is-chatting #homeView.chatting .chat-messages.active {
 /* 在 chatting 状态显示标题：通过 body.is-chatting class 联动（claude_ui.js 同步） */
 body.is-chatting .claude-chat-title { display: inline-flex !important; }
 
-/* Claude 右上 pill：免费计划 · 升级。
-   2026-05-15 essence: 从居中改右上角，跟随 Claude 真站 desktop 版顶栏布局
-   “右上 plan pill + 账号头像”。多余的中央位置会掲住 chat-title。 */
+/* Claude 中央 pill：免费计划 · 升级（desktop 顶栏水平居中）。
+   对话标题在 .header-left 左侧，不与 pill 争抢中央位。 */
 .claude-plan-pill {
     position: absolute !important;
-    left: auto !important;
-    right: 16px !important;
+    left: 50% !important;
+    right: auto !important;
     top: 50% !important;
-    transform: translateY(-50%) !important;
+    transform: translate(-50%, -50%) !important;
     height: 28px;
     padding: 0 14px;
     display: inline-flex;
@@ -3013,6 +3023,11 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         border-radius: 999px !important;
         margin-right: 0 !important;
     }
+    .composer-right .send-btn.is-streaming,
+    .composer-actions .send-btn.is-streaming,
+    #sendChatBtn.is-streaming {
+        border-radius: 8px !important;
+    }
     /* 2026-05-15 fix(M8)：群友图 1 反馈"iOS composer 输入框左右的 + 箭头完全错位
        不在移动框内"。根因：99-polish-fixes.css:864 给 #modelSelector .model-current
        设了 `width: 100% !important`（为老的 header 双行布局而写）。relocateModelSelector
@@ -3071,6 +3086,10 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         width: 32px !important;
         height: 32px !important;
         border-radius: 999px !important;
+    }
+    .composer-actions .send-btn.is-streaming,
+    .composer-actions #sendChatBtn.is-streaming {
+        border-radius: 8px !important;
     }
 
     /* 模型 dropdown 在 mobile 占满更多宽度 */
@@ -3802,8 +3821,7 @@ button.composer-tool-btn:hover {
 .message.assistant .message-content p,
 .message.assistant .message-content li,
 .message.assistant .message-content blockquote,
-.message.assistant .answer-body,
-.message.assistant .think-body {
+.message.assistant .answer-body {
     /* 对齐 claude.ai 回复正文：衬线栈。拉丁=Anthropic Serif，中文=宋体系 fallback。 */
     font-family: var(--c-font-serif) !important;
     font-weight: 100;
@@ -3811,6 +3829,15 @@ button.composer-tool-btn:hover {
        真站 .prose root（源 main_window/index.html:1230-1231）。 */
     font-size: 1rem;
     line-height: 1.75;
+}
+.message.assistant .think-body,
+.message.assistant .think-body p,
+.message.assistant .think-body li {
+    font-family: var(--c-font-serif) !important;
+    font-size: 0.8125rem !important;
+    font-weight: 300 !important;
+    line-height: 1.65 !important;
+    color: var(--c-text-dim) !important;
 }
 /* code / pre / inline code 保持 monospace（不要 serif 化代码块） */
 .message.assistant .message-content code,
@@ -4068,13 +4095,15 @@ button#plusTrigger:hover {
    + background-position 平移制造扫光感。timing 用 linear（shimmer 必须
    匀速感才不抽搐），跟 Claude utility 注解 "2.25s infinite" 一致。
 
-   注：cancri 已有 thinkTextShimmer (cancri_chat.css:3128) 1.65s 在 think-
-   block 用，本 utility 不动 cancri，仅给后续新组件备用。 */
+   注：思考块流光见 cancri_chat.css thinkShimmer + .think-block.is-thinking
+   .think-label；本 utility 给其它组件备用。 */
 @keyframes claude-shimmertext {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
 .claude-shimmertext {
+    display: inline-block;
+    vertical-align: baseline;
     background: linear-gradient(
         90deg,
         var(--c-text-soft) 25%,
@@ -4082,11 +4111,58 @@ button#plusTrigger:hover {
         var(--c-text-soft) 75%
     );
     background-size: 200% 100%;
+    background-repeat: no-repeat;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
-    animation: claude-shimmertext 2.25s linear infinite;
+    animation: claude-shimmertext 1.65s linear infinite;
+}
+.think-label.claude-shimmertext {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+/* 思考流光：1:1 复刻 cancri-code 桌面端（styles.css thinkShimmer + §1.5.3 token） */
+.message.assistant .think-block.is-thinking .think-label {
+    color: transparent !important;
+    background-image: linear-gradient(
+        90deg,
+        var(--shimmer-dim) 0%,
+        var(--shimmer-dim) 34%,
+        var(--shimmer-bright) 50%,
+        var(--shimmer-dim) 66%,
+        var(--shimmer-dim) 100%
+    ) !important;
+    background-size: 200% 100% !important;
+    background-repeat: repeat-x !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    animation: thinkShimmer 1.65s linear infinite !important;
+}
+/* 工具调用进行中流光（桌面端 §1.5.3） */
+.message.assistant .tool-call-block.is-running .tool-call-name {
+    color: transparent !important;
+    background-image: linear-gradient(
+        90deg,
+        var(--shimmer-dim) 0%,
+        var(--shimmer-dim) 34%,
+        var(--shimmer-bright) 50%,
+        var(--shimmer-dim) 66%,
+        var(--shimmer-dim) 100%
+    ) !important;
+    background-size: 200% 100% !important;
+    background-repeat: repeat-x !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    animation: thinkShimmer 1.65s linear infinite !important;
+}
+.think-header:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--c-accent, #d97757) 42%, transparent);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 /* ── prefers-reduced-motion ──
@@ -4101,7 +4177,9 @@ button#plusTrigger:hover {
     .claude-modal-fade-close,
     .claude-modal-zoom-open,
     .claude-modal-zoom-close,
-    .claude-shimmertext {
+    .claude-shimmertext,
+    .message.assistant .think-block.is-thinking .think-label,
+    .message.assistant .tool-call-block.is-running .tool-call-name {
         animation: none !important;
     }
 }
@@ -4576,28 +4654,30 @@ html[data-chat-font="mono"] .message.assistant .think-body {
    修复：用 (0,3,0) 子选择器把 badge 三轴尺寸（font-size / padding /
    line-height）锁死回 cancri 原值 + height: auto 防其他 cascade 撑高。
    ─────────────────────────────────────────────────────────── */
-.message.assistant .message-content .assistant-model-badge {
-    font-size: 12px !important;
-    line-height: 1.2 !important;
-    padding: 3px 7px !important;
-    height: auto !important;
-    /* 不重设其他视觉属性（border / bg / shadow），让 cancri_chat.css:5263
-       的默认值继续生效。仅锁定可能被 prose 父样式间接放大的三轴。 */
+.message.assistant .message-content .assistant-model-label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 0 0 8px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    font-weight: 500 !important;
+    color: var(--c-text-soft, var(--text-soft)) !important;
 }
 .message.assistant .message-content .assistant-model-name {
-    /* 防 prose 父 max-width: 65ch 让 name span 错误换行 */
-    font-size: 12px !important;
-    line-height: 1.2 !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    font-weight: 500 !important;
+    color: var(--c-text-soft, var(--text-soft)) !important;
 }
 .message.assistant .message-content .assistant-model-icon {
-    /* 防 prose img 规则 (margin: 2em 0) 命中 model icon 撑高 badge */
     width: 16px !important;
     height: 16px !important;
     margin: 0 !important;
-}
-.message.assistant .message-content .assistant-model-pulse {
-    display: none !important;
-    animation: none !important;
 }
 
 /* ───────────────────────────────────────────────────────────
@@ -7153,6 +7233,18 @@ html[data-theme="light"] .app {
 #sendChatBtn.has-text {
     border-radius: 8px !important;
 }
+/* 停止生成态与发送键同款润角正方，覆盖 99-polish 的 999px 圆形 */
+.composer-actions .send-btn.is-streaming,
+.composer-right .send-btn.is-streaming,
+#sendChatBtn.is-streaming {
+    border-radius: 8px !important;
+}
+.composer-actions .send-btn.is-streaming .send-icon-stop,
+.composer-right .send-btn.is-streaming .send-icon-stop,
+#sendChatBtn.is-streaming .send-icon-stop {
+    width: 20px !important;
+    height: 20px !important;
+}
 
 /* §23.16 ─ Hero 装饰图标在 light 主题下染暖橙色，更接近 Anthropic accent-brand
    Cancri logo 是黑色，在 light 米色背景上对比度 OK 但不及 Claude 的橙色 logo
@@ -7681,4 +7773,232 @@ html[data-theme="black"] .claude-device-badge {
         font-size: 15px !important;
         border-radius: 12px !important;
     }
+}
+
+/* ── Claude 1:1 升级弹窗 + composer 额度条（claude_upgrade_quota_ui.js）── */
+.claude-upgrade-modal-root {
+    position: fixed;
+    inset: 0;
+    z-index: 920;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.claude-upgrade-modal-root[hidden] {
+    display: none !important;
+}
+body.claude-upgrade-modal-open {
+    overflow: hidden;
+}
+.claude-upgrade-modal-scrim {
+    position: absolute;
+    inset: 0;
+    background: hsl(var(--always-black, 0 0% 0%) / 0.45);
+}
+.claude-upgrade-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(860px, calc(100vw - 32px));
+    max-height: min(90dvh, 720px);
+    overflow: auto;
+    border-radius: 16px;
+    background: hsl(var(--bg-000, 0 0% 100%));
+    border: 0.5px solid hsl(var(--border-300, 30 3.3% 11.8%) / 0.15);
+    box-shadow:
+        0 24px 64px hsl(var(--always-black, 0 0% 0%) / 18%),
+        0 0 0 0.5px hsl(var(--border-300, 30 3.3% 11.8%) / 0.08);
+}
+.claude-upgrade-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+}
+.claude-upgrade-modal-title {
+    margin: 0;
+    font-family: var(--c-font-serif, "Anthropic Serif", ui-serif, Georgia, serif);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: hsl(var(--text-100, 60 2.6% 7.6%));
+}
+.claude-upgrade-modal-lead,
+.claude-upgrade-modal-sub {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: hsl(var(--text-300, 60 2.5% 23.3%));
+}
+.claude-upgrade-modal-head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.claude-upgrade-modal-cards-wrap {
+    position: relative;
+}
+.claude-upgrade-modal-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    padding: 0 8px;
+    margin: 0 -8px;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+.claude-upgrade-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 4px;
+    margin: -4px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 160ms ease;
+}
+.claude-upgrade-card:hover {
+    background: hsl(var(--bg-100, 48 33.3% 97.1%) / 0.5);
+}
+.claude-upgrade-card-img {
+    width: 100%;
+    aspect-ratio: 149 / 106;
+    object-fit: contain;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+.claude-upgrade-card-text {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    min-width: 0;
+}
+.claude-upgrade-card-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--text-100, 60 2.6% 7.6%));
+}
+.claude-upgrade-card-desc {
+    margin-top: 2px;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: hsl(var(--text-400, 51 3.1% 43.7%));
+}
+.claude-upgrade-modal-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+}
+.claude-upgrade-btn-secondary,
+.claude-upgrade-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: 0;
+}
+.claude-upgrade-btn-secondary {
+    background: hsl(var(--bg-200, 53 28.6% 94.5%));
+    color: hsl(var(--text-100, 60 2.6% 7.6%));
+}
+.claude-upgrade-btn-secondary:hover {
+    background: hsl(var(--bg-300, 48 25% 92.2%));
+}
+.claude-upgrade-btn-primary {
+    background: hsl(var(--accent-brand, 15 63.1% 59.6%));
+    color: hsl(var(--oncolor-100, 0 0% 100%));
+}
+.claude-upgrade-btn-primary:hover {
+    filter: brightness(0.96);
+}
+@media (min-width: 768px) {
+    .claude-upgrade-modal-cards {
+        max-height: none;
+        overflow: visible;
+    }
+    .claude-upgrade-modal-actions {
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+}
+@media (max-width: 767px) {
+    .claude-upgrade-modal-cards {
+        grid-template-columns: 1fr;
+    }
+    .claude-upgrade-card {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+    .claude-upgrade-card-img {
+        width: 112px;
+    }
+    .claude-upgrade-card-text {
+        text-align: left;
+    }
+}
+
+.claude-composer-quota-ribbon {
+    width: 100%;
+    margin-bottom: -20px;
+    position: relative;
+    z-index: 0;
+}
+.claude-composer-quota-ribbon[hidden] {
+    display: none !important;
+}
+.claude-composer-quota-ribbon-inner {
+    width: 100%;
+    border: 0.5px solid transparent;
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 14px 28px;
+    background: hsl(var(--bg-300, 48 25% 92.2%));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: hsl(var(--text-300, 60 2.5% 23.3%));
+}
+.claude-composer-quota-ribbon-msg .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+.claude-composer-quota-upgrade-link {
+    font-size: 0.875rem;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    white-space: nowrap;
+}
+.claude-composer-quota-upgrade-link:hover,
+.claude-composer-quota-upgrade-link:focus {
+    text-decoration-color: currentColor;
+}
+@media (min-width: 768px) {
+    .claude-composer-quota-ribbon-inner {
+        flex-direction: row;
+        align-items: center;
+        gap: 24px;
+    }
+    .claude-composer-quota-ribbon-msg {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+    .claude-composer-quota-ribbon-action {
+        flex: 0 0 auto;
+        width: fit-content;
+    }
+}
+.composer-wrap:has(.claude-composer-quota-ribbon:not([hidden])) .composer {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
