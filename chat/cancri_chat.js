@@ -117,6 +117,8 @@ const ARENA_MODE_MIGRATIONS = {
   const plusPopover = document.getElementById("plusPopover");
   const accountPopover = document.getElementById("accountPopover");
   const settingsModal = document.getElementById("settingsModal");
+  const htmlPreviewModal = document.getElementById("htmlPreviewModal");
+  const htmlPreviewFrame = document.getElementById("htmlPreviewFrame");
   const tempChatModal = document.getElementById("tempChatModal");
   const projectModal = document.getElementById("projectModal");
   const privacyPolicyModal = document.getElementById("privacyPolicyModal"); // removed — now links to ../privacy.html
@@ -377,7 +379,25 @@ const ARENA_MODE_MIGRATIONS = {
         retryAfter: parsed?.retry_after_seconds,
       };
     } catch {
-      return { message: raw, code: "" };
+      return { message: "", code: "" };
+    }
+  }
+
+  function friendlyMemoryImportError(json, fallback) {
+    const code = String(json?.code || json?.error || "").trim();
+    switch (code) {
+      case "import_text_too_short":
+        return "导入内容太短，请粘贴更多历史文本。";
+      case "invalid_memories":
+        return "导入内容格式不正确。";
+      case "memory_disabled":
+        return "已关闭记忆功能。请先在设置中开启「智能记忆」再导入。";
+      case "invalid_session":
+        return "登录已过期，请重新登录。";
+      case "missing_authorization":
+        return "需要登录后才能导入记忆。";
+      default:
+        return fallback;
     }
   }
   
@@ -5888,7 +5908,7 @@ const ARENA_MODE_MIGRATIONS = {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(json.message || json.error || "解析导入记忆失败");
+      throw new Error(friendlyMemoryImportError(json, "解析导入记忆失败"));
     }
     return Array.isArray(json.memories)
       ? json.memories
@@ -5927,7 +5947,7 @@ const ARENA_MODE_MIGRATIONS = {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(json.message || json.error || "导入记忆失败");
+      throw new Error(friendlyMemoryImportError(json, "导入记忆失败"));
     }
     if (typeof json.memory_enabled === "boolean") {
       state.userMemoryEnabled = json.memory_enabled;
@@ -8943,7 +8963,7 @@ const ARENA_MODE_MIGRATIONS = {
     }
     const action = btn.dataset.codeAction;
     if (action === "preview") {
-      toggleCodeBlockHtmlPreview(block);
+      openHtmlPreviewModal(code);
       return;
     }
     if (action === "download") {
@@ -8956,40 +8976,24 @@ const ARENA_MODE_MIGRATIONS = {
     }
   });
   
-  function toggleCodeBlockHtmlPreview(block) {
-    if (!(block instanceof HTMLElement)) return;
-    const codeEl = block.querySelector("pre code");
-    const code = codeEl ? codeEl.textContent || "" : "";
+  function openHtmlPreviewModal(code) {
     if (!code.trim()) {
       showToast("没有可预览的 HTML");
       return;
     }
-    let pane = block.querySelector(".code-block-preview");
-    if (!pane) {
-      pane = document.createElement("div");
-      pane.className = "code-block-preview";
-      pane.hidden = true;
-      const iframe = document.createElement("iframe");
-      iframe.className = "code-block-preview-frame";
-      iframe.setAttribute("sandbox", "");
-      iframe.setAttribute("referrerpolicy", "no-referrer");
-      iframe.setAttribute("title", "HTML 预览");
-      pane.appendChild(iframe);
-      block.appendChild(pane);
+    if (!htmlPreviewModal || !htmlPreviewFrame) {
+      showToast("预览面板未就绪");
+      return;
     }
-    const iframe = pane.querySelector("iframe");
-    const previewBtn = block.querySelector('[data-code-action="preview"]');
-    if (pane.hidden) {
-      if (iframe) iframe.srcdoc = code;
-      pane.hidden = false;
-      block.classList.add("is-preview-open");
-      previewBtn?.classList.add("is-active");
-    } else {
-      pane.hidden = true;
-      block.classList.remove("is-preview-open");
-      previewBtn?.classList.remove("is-active");
-      if (iframe) iframe.removeAttribute("srcdoc");
-    }
+    htmlPreviewFrame.srcdoc = code;
+    openModal("htmlPreviewModal");
+  }
+
+  function closeHtmlPreviewModal() {
+    if (htmlPreviewFrame) htmlPreviewFrame.removeAttribute("srcdoc");
+    document
+      .querySelectorAll('[data-code-action="preview"].is-active')
+      .forEach((btn) => btn.classList.remove("is-active"));
   }
   
   function renderInlineMarkdown(text) {
@@ -13897,7 +13901,10 @@ const ARENA_MODE_MIGRATIONS = {
   }
   
   function closeModal() {
-    [settingsModal, tempChatModal, projectModal, privacyPolicyModal].forEach(
+    if (htmlPreviewModal?.classList.contains("open")) {
+      closeHtmlPreviewModal();
+    }
+    [settingsModal, htmlPreviewModal, tempChatModal, projectModal, privacyPolicyModal].forEach(
       (m) => {
         if (!m) return;
         m.classList.remove("open");

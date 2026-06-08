@@ -2439,6 +2439,42 @@
             </div>
         </div>
 
+        <div class="modal large" id="htmlPreviewModal" aria-hidden="true">
+            <div class="modal-header">
+                <button
+                    class="modal-close"
+                    data-close-modal="htmlPreviewModal"
+                    aria-label="关闭 HTML 预览"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+                <div
+                    class="modal-title"
+                    style="margin-right: auto; padding-left: 10px"
+                >
+                    HTML 预览
+                </div>
+            </div>
+            <div class="modal-body html-preview-modal-body">
+                <iframe
+                    id="htmlPreviewFrame"
+                    class="html-preview-modal-frame"
+                    sandbox=""
+                    referrerpolicy="no-referrer"
+                    title="HTML 预览"
+                ></iframe>
+            </div>
+        </div>
+
         <div class="modal small" id="tempChatModal" aria-hidden="true">
             <div class="modal-header">
                 <div class="modal-title">临时聊天</div>

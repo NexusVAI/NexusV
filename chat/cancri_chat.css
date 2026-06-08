@@ -3795,21 +3795,28 @@ html[data-theme="light"] .claude-accent-dot {
     width: 14px;
     height: 14px;
 }
-.md-content .code-block.is-preview-open > pre {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-.md-content .code-block-preview {
-    border: 1px solid var(--line);
-    border-top: 0;
-    border-radius: 0 0 12px 12px;
+#htmlPreviewModal.modal.large.open {
+    width: min(920px, calc(100vw - 32px));
+    height: min(720px, calc(100dvh - 48px));
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 18px;
     overflow: hidden;
-    background: var(--panel);
 }
-.md-content .code-block-preview-frame {
-    display: block;
+
+.html-preview-modal-body {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+}
+
+.html-preview-modal-frame {
+    flex: 1;
     width: 100%;
-    height: min(420px, 55vh);
+    min-height: 0;
     border: 0;
     background: #fff;
 }
@@ -6164,6 +6171,13 @@ html[data-theme="blue"] {
         top: 50%;
         transform: translate(-50%, -50%);
         border-radius: 18px;
+    }
+
+    #htmlPreviewModal.modal.large.open {
+        width: calc(100vw - 16px);
+        height: calc(100dvh - 24px);
+        max-height: none;
+        border-radius: 14px;
     }
 
     #settingsModal .modal-header {
