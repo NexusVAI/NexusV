@@ -16,7 +16,11 @@ const sb = window.supabase.createClient(
   },
 );
 const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
+const INITIAL_LIMIT = 100;
 let APPS = [];
+let APPS_TOTAL = 0;
+let LIST_STATS = null;
+let isLoadingMore = false;
 let activeStatus = "";
 let activeSearch = "";
 let activeIpFilter = "";
@@ -29,6 +33,10 @@ const SELECTED = new Set();
 const EXPANDED = new Set();
 
 const $ = (id) => document.getElementById(id);
+const setText = (id, v) => {
+  const el = $(id);
+  if (el) el.textContent = v;
+};
 const esc = (s) => {
   const d = document.createElement("div");
   d.textContent = String(s == null ? "" : s);
@@ -133,8 +141,24 @@ async function init() {
   await loadApps();
 }
 
-async function loadApps() {
+async function loadApps(opts = {}) {
+  const append = !!opts.append;
+  const limit = Math.max(
+    1,
+    Math.min(
+      500,
+      Number(opts.limit) ||
+        (append ? Number($("loadMoreSize")?.value || INITIAL_LIMIT) : INITIAL_LIMIT),
+    ),
+  );
+  const offset = append ? APPS.length : 0;
+  if (!append) {
+    SELECTED.clear();
+    EXPANDED.clear();
+  }
   const session = await getSession();
+  isLoadingMore = true;
+  updateLoadMoreBar();
   try {
     const resp = await fetch(GW, {
       method: "POST",
@@ -144,6 +168,8 @@ async function loadApps() {
       },
       body: JSON.stringify({
         endpoint: "admin_list_api_applications",
+        limit,
+        offset,
         __auth_token: session.access_token,
       }),
     });
@@ -155,30 +181,91 @@ async function loadApps() {
       throw new Error("HTTP " + resp.status);
     }
     const data = await resp.json();
-    APPS = Array.isArray(data.applications) ? data.applications : [];
+    const incoming = Array.isArray(data.applications) ? data.applications : [];
+    if (append) {
+      const seen = new Set(APPS.map((a) => a.id));
+      incoming.forEach((a) => {
+        if (!seen.has(a.id)) APPS.push(a);
+      });
+    } else {
+      APPS = incoming;
+    }
+    APPS_TOTAL = Number(data.total) || APPS.length;
+    LIST_STATS = data.stats || LIST_STATS;
+    if (data.ip_counts && typeof data.ip_counts === "object") {
+      IP_COUNTS = new Map(Object.entries(data.ip_counts));
+    }
     $("main").style.display = "block";
     updateStats();
     render();
+    updateLoadMoreBar();
   } catch (e) {
     showToast("加载失败：" + (e.message || e), "err");
+    updateLoadMoreBar();
+  } finally {
+    isLoadingMore = false;
+    updateLoadMoreBar();
   }
 }
 
+function bumpListStats(oldStatus, newStatus) {
+  if (!LIST_STATS || oldStatus === newStatus) return;
+  if (oldStatus === "pending" && LIST_STATS.pending > 0) LIST_STATS.pending--;
+  if (newStatus === "approved") LIST_STATS.approved++;
+  else if (newStatus === "rejected") LIST_STATS.rejected++;
+}
+
 function updateStats() {
+  if (LIST_STATS) {
+    setText("stat-pending", LIST_STATS.pending);
+    setText("stat-approved", LIST_STATS.approved);
+    setText("stat-rejected", LIST_STATS.rejected);
+    setText("stat-total", LIST_STATS.total);
+    setText("cnt-all", LIST_STATS.total);
+    setText("cnt-pending", LIST_STATS.pending);
+    setText("cnt-approved", LIST_STATS.approved);
+    setText("cnt-rejected", LIST_STATS.rejected);
+    return;
+  }
   const counts = { pending: 0, approved: 0, rejected: 0 };
   IP_COUNTS = new Map();
   APPS.forEach((a) => {
     if (counts[a.status] !== undefined) counts[a.status]++;
     if (a.ip) IP_COUNTS.set(a.ip, (IP_COUNTS.get(a.ip) || 0) + 1);
   });
-  $("stat-pending").textContent = counts.pending;
-  $("stat-approved").textContent = counts.approved;
-  $("stat-rejected").textContent = counts.rejected;
-  $("stat-total").textContent = APPS.length;
-  $("cnt-all").textContent = APPS.length;
-  $("cnt-pending").textContent = counts.pending;
-  $("cnt-approved").textContent = counts.approved;
-  $("cnt-rejected").textContent = counts.rejected;
+  setText("stat-pending", counts.pending);
+  setText("stat-approved", counts.approved);
+  setText("stat-rejected", counts.rejected);
+  setText("stat-total", APPS.length);
+  setText("cnt-all", APPS.length);
+  setText("cnt-pending", counts.pending);
+  setText("cnt-approved", counts.approved);
+  setText("cnt-rejected", counts.rejected);
+}
+
+function updateLoadMoreBar() {
+  const bar = $("loadMoreBar");
+  if (!bar) return;
+  const loaded = APPS.length;
+  const total = APPS_TOTAL || loaded;
+  const hasMore = loaded < total;
+  bar.style.display = hasMore ? "flex" : "none";
+  setText("loadMoreMeta", `已加载 ${loaded} / ${total} 条`);
+  const moreBtn = $("loadMoreBtn");
+  const allBtn = $("loadAllBtn");
+  if (moreBtn) moreBtn.disabled = isLoadingMore;
+  if (allBtn) allBtn.disabled = isLoadingMore;
+  if (moreBtn) moreBtn.textContent = isLoadingMore ? "加载中…" : "继续看";
+  if (allBtn) allBtn.textContent = isLoadingMore ? "加载中…" : "加载全部";
+}
+
+async function loadAllApps() {
+  while (APPS.length < APPS_TOTAL) {
+    const before = APPS.length;
+    const remaining = APPS_TOTAL - before;
+    await loadApps({ append: true, limit: Math.min(500, remaining) });
+    if (APPS.length === before) break;
+  }
 }
 
 // Apply all filters (status / IP / free-text search) in order. Pulled
@@ -426,7 +513,10 @@ async function batchDecide(newStatus) {
       // Update local state and re-render without a full reload.
       const idSet = new Set(pendingIds);
       APPS.forEach((a) => {
-        if (idSet.has(a.id)) a.status = newStatus;
+        if (idSet.has(a.id)) {
+          bumpListStats(a.status, newStatus);
+          a.status = newStatus;
+        }
       });
       SELECTED.clear();
       updateStats();
@@ -469,7 +559,10 @@ async function decide(btn) {
       showToast(`已${verb}`, "ok");
       // Update local data and re-render
       const app = APPS.find((a) => a.id === id);
-      if (app) app.status = action;
+      if (app) {
+        bumpListStats(app.status, action);
+        app.status = action;
+      }
       // Remove from batch selection — the row is no longer pending so
       // its checkbox won't render anyway, but the count badge would
       // stay stale otherwise.
@@ -497,7 +590,9 @@ $("statusFilter").addEventListener("click", (e) => {
   render();
 });
 
-$("reload-btn").addEventListener("click", () => loadApps());
+$("reload-btn").addEventListener("click", () => loadApps({ append: false }));
+$("loadMoreBtn").addEventListener("click", () => loadApps({ append: true }));
+$("loadAllBtn").addEventListener("click", () => loadAllApps());
 
 // Search box (instant filter; debounce not needed for ≤500 rows).
 $("search").addEventListener("input", (e) => {

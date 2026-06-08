@@ -128,6 +128,59 @@
       .batch-bar .btn-clear:hover {
         color: var(--text);
       }
+      .apps-load-more {
+        display: none;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 16px;
+        padding: 14px 16px;
+        background: var(--surface-2, rgba(255, 255, 255, 0.03));
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text-mute);
+      }
+      .apps-load-more .load-more-meta {
+        margin-right: auto;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .apps-load-more label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .apps-load-more select {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 12.5px;
+      }
+      .apps-load-more button {
+        padding: 7px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border-strong);
+        background: transparent;
+        color: var(--text);
+        font-size: 12.5px;
+        cursor: pointer;
+      }
+      .apps-load-more button:hover:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .apps-load-more button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .apps-load-more #loadMoreBtn {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.35);
+        color: var(--accent);
+      }
       input[type="checkbox"].row-check {
         width: 16px;
         height: 16px;
@@ -384,31 +437,33 @@
               全部<span class="count" id="cnt-all">0</span>
             </button>
             <button class="filter-btn" data-status="pending">
-              待审span class="count" id="cnt-pending">0</span>
+              待审核<span class="count" id="cnt-pending">0</span>
             </button>
             <button class="filter-btn" data-status="approved">
               已通过<span class="count" id="cnt-approved">0</span>
             </button>
             <button class="filter-btn" data-status="rejected">
-              已拒span class="count" id="cnt-rejected">0</span>
+              已拒绝<span class="count" id="cnt-rejected">0</span>
             </button>
           </div>
           <input
             id="search"
             class="search-box"
             type="search"
-            placeholder="搜邮箱 / IP / 用户 / user_id
+            placeholder="搜邮箱 / IP / 用途 / user_id"
             autocomplete="off"
           />
           <button class="reload-btn" id="reload-btn">刷新</button>
         </div>
 
         <div class="ip-filter-bar" id="ipFilterBar">
-          已锁IP <code id="ipFilterValue"></code>，仅显示该 IP 的申请          <button id="ipFilterClear">取消筛选</button>
+          已锁定 IP <code id="ipFilterValue"></code>，仅显示该 IP 的申请
+          <button id="ipFilterClear">取消筛选</button>
         </div>
 
         <div class="batch-bar" id="batchBar">
-          已<span class="count-pill" id="batchCount">0</span> 条申          <button class="btn-batch approve" id="batchApprove">批量通过</button>
+          已选 <span class="count-pill" id="batchCount">0</span> 条申请
+          <button class="btn-batch approve" id="batchApprove">批量通过</button>
           <button class="btn-batch reject" id="batchReject">批量拒绝</button>
           <button class="btn-clear" id="batchClear">取消选择</button>
         </div>
@@ -418,7 +473,7 @@
             <thead>
               <tr>
                 <th style="width: 32px">
-                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可 />
+                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可见的待审核" />
                 </th>
                 <th style="width: 240px">邮箱</th>
                 <th style="min-width: 140px">用途说明</th>
@@ -435,6 +490,18 @@
             </tbody>
           </table>
         </div>
+
+        <div class="apps-load-more" id="loadMoreBar">
+          <span class="load-more-meta" id="loadMoreMeta">已加载 0 / 0 条</span>
+          <label for="loadMoreSize">继续加载</label>
+          <select id="loadMoreSize">
+            <option value="50">50 条</option>
+            <option value="100" selected>100 条</option>
+            <option value="200">200 条</option>
+          </select>
+          <button type="button" id="loadMoreBtn">继续看</button>
+          <button type="button" id="loadAllBtn">加载全部</button>
+        </div>
       </div>
 
       <div id="toast" class="toast"></div>
@@ -448,7 +515,7 @@
       crossorigin="anonymous"
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
-    <script src="./admin-app.js?v=2026-05-19-permission-init"></script>
+    <script src="./admin-app.js?v=20260607-load-more"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   </body>
 </html>
