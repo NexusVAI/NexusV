@@ -2196,7 +2196,12 @@
                         t.classList.toggle('active', t.getAttribute('data-snav-target') === key);
                     });
                     // 切回"概述"时刷新一次表单显示，避免外面改了昵称 / 主题没同步进来。
-                    if (key === 'overview') populateOverviewForm();
+                    if (key === 'overview') {
+                        populateOverviewForm();
+                        if (window.CancriApp && typeof window.CancriApp.fetchUserMemories === 'function') {
+                            window.CancriApp.fetchUserMemories();
+                        }
+                    }
                     if (key === 'capability') populateCapabilitiesForm();
                     if (key === 'invite' && typeof window.fetchAndRenderInvitePanel === 'function') {
                         window.fetchAndRenderInvitePanel();

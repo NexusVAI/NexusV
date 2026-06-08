@@ -1704,6 +1704,9 @@ const ARENA_MODE_MIGRATIONS = {
     "deepseek-v4-pro-0608",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
+    // 2026-06-09: 订阅福利模型 — Pro+ 完全免费不扣积分
+    "qwen3.7-plus",
+    "qwen3.7-max-2026-05-17",
     // 2026-05-23 批次：10 个百炼 PAID 模型（pro 用户专属）
     "qwen3.5-omni-plus-2026-03-15",
     "qwen3-coder-480b-a35b-instruct",
@@ -1740,11 +1743,16 @@ const ARENA_MODE_MIGRATIONS = {
     "grok-4.3",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
+    // 2026-06-09: 订阅福利模型 free 用户硬挡
+    "qwen3.7-plus",
+    "qwen3.7-max-2026-05-17",
     "gemini-3.1-pro",
     "gpt-image-2-all",
     "gpt-image-2-pro",
     "gpt-image-2",
     "claude-opus-4-7-special",
+    "composer-2.5-fast",
+    "claude-opus-4-8-special",
     "doubao-seed-2.0-pro",
     // 2026-06-03: 退出福利档，free 用户硬挡。
     "gpt-5.4-mini-welfare",
@@ -2470,6 +2478,8 @@ const ARENA_MODE_MIGRATIONS = {
     "kimi-k2.6",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
+    "qwen3.7-plus",
+    "qwen3.7-max-2026-05-17",
     "qwen3-max",
     "glm-5.1",
   ];
@@ -2485,6 +2495,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 6.5},
     {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
     {"id": "step-3.7-flash", "name": "Step 3.7 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "kat-coder-pro-v2", "name": "KwaiKAT Coder Pro V2", "brand": "KwaiKAT", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ernie-4.5-turbo-20260402", "name": "ERNIE 4.5 Turbo", "brand": "Baidu", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 25.0},
@@ -2520,13 +2531,15 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "grok-4.20-multi-agent-xhigh", "name": "Grok-4.20-Agent", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
     // 2026-05-28: grok-4.3-high（dgbmc 上游，复用现有 Grok key）
     {"id": "grok-4.3-high", "name": "Grok-4.3-Thinking", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
-    {"id": "minimax-m3", "name": "MiniMax M3", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
+    {"id": "minimax-m3", "name": "MiniMax M3", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gemini-3.5-flash-thinking", "name": "Gemini 3.5 Flash High", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
     {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
     {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
     {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
     {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
+    // 2026-06-09: 【订阅福利】造相-Z-Image-Turbo — ModelScope 异步生图，Pro+ 免费不扣积分。
+    {"id": "z-image-turbo", "name": "【订阅福利】造相-Z-Image-Turbo", "brand": "Tongyi-MAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
     {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "gpt-5.3-codex-spark", "name": "GPT 5.3 Codex Spark", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
     {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
@@ -2535,6 +2548,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
+    // 2026-06-09: 【特价】Claude Opus 4.8 — newapi.makelove.cloud 上游，normal 档。
+    {"id": "claude-opus-4-8-special", "name": "【特价】Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
     {"id": "claude-haiku-4-5-20251001-welfare", "name": "【福利】Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
     {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
@@ -2542,6 +2557,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
     // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
     {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 0.5, "proPlusOnly": true},
+    // 2026-06-09: 【订阅福利】composer-2.5-fast — newapi.makelove.cloud 上游，Pro+ 免费。
+    {"id": "composer-2.5-fast", "name": "【订阅福利】composer-2.5-fast", "brand": "Cursor", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
     {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
     {"id": "gemini-3.1-flash-lite-welfare", "name": "Gemini 3.1 Flash Lite 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
@@ -2565,6 +2582,9 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "deepseek-v3.1", "name": "DeepSeek V3.1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "qwen3.7-max", "name": "Qwen 3.7 Max", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
     {"id": "qwen3.7-max-2026-05-20", "name": "Qwen 3.7 Max (0520)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+    // 2026-06-09: 订阅福利模型 — Pro+ 完全免费不扣积分
+    {"id": "qwen3.7-plus", "name": "【订阅福利】Qwen3.7 Plus", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "qwen3.7-max-2026-05-17", "name": "【订阅福利】Qwen3.7 Max 0609", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free"},
     {"id": "qwen3.5-flash-2026-02-23", "name": "Qwen 3.5 Flash (0223)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
     {"id": "qwen3.5-plus-2026-04-20", "name": "Qwen 3.5 Plus (0420)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "qwen3.5-plus-2026-02-15", "name": "Qwen 3.5 Plus (0215)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2677,6 +2697,7 @@ const ARENA_MODE_MIGRATIONS = {
     "Wan": "./qwen-color.svg",
     "HappyHorse": "../Logo/欢乐马.webp",
     "Stepfun": "./stepfun-color.svg",
+    "KwaiKAT": "./kwaikat.svg",
     "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
     "Microsoft": "./microsoft-color.svg",
     "IBM": "./ibm.svg",
@@ -2695,6 +2716,7 @@ const ARENA_MODE_MIGRATIONS = {
     // Seedance 2.0（豆包视频模型）→ 即梦。用户 2026-05-17 指定。
     "doubao-seedance-2-0-260128": "./jimeng-color.svg",
     "ernie-4.5-turbo-20260402": "./wenxin-color.svg",
+    "kat-coder-pro-v2": "./kwaikat.svg",
   };
   
   function getModelIconPath(brand, modelId) {
@@ -9044,6 +9066,30 @@ const ARENA_MODE_MIGRATIONS = {
     }
   });
   
+  let htmlPreviewBlobUrl = null;
+
+  function revokeHtmlPreviewBlobUrl() {
+    if (!htmlPreviewBlobUrl) return;
+    URL.revokeObjectURL(htmlPreviewBlobUrl);
+    htmlPreviewBlobUrl = null;
+  }
+
+  function prepareHtmlPreviewDocument(code) {
+    const trimmed = String(code || "").trim();
+    if (!trimmed) return "";
+    if (/<!doctype\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed)) {
+      return trimmed;
+    }
+    return (
+      '<!DOCTYPE html><html lang="zh-CN"><head>' +
+      '<meta charset="UTF-8">' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+      "</head><body>" +
+      trimmed +
+      "</body></html>"
+    );
+  }
+
   function openHtmlPreviewModal(code) {
     if (!code.trim()) {
       showToast("没有可预览的 HTML");
@@ -9053,12 +9099,23 @@ const ARENA_MODE_MIGRATIONS = {
       showToast("预览面板未就绪");
       return;
     }
-    htmlPreviewFrame.srcdoc = code;
+    revokeHtmlPreviewBlobUrl();
+    htmlPreviewFrame.removeAttribute("srcdoc");
+    htmlPreviewFrame.removeAttribute("src");
+    const doc = prepareHtmlPreviewDocument(code);
+    htmlPreviewBlobUrl = URL.createObjectURL(
+      new Blob([doc], { type: "text/html;charset=utf-8" }),
+    );
+    htmlPreviewFrame.src = htmlPreviewBlobUrl;
     openModal("htmlPreviewModal");
   }
 
   function closeHtmlPreviewModal() {
-    if (htmlPreviewFrame) htmlPreviewFrame.removeAttribute("srcdoc");
+    if (htmlPreviewFrame) {
+      htmlPreviewFrame.removeAttribute("srcdoc");
+      htmlPreviewFrame.removeAttribute("src");
+    }
+    revokeHtmlPreviewBlobUrl();
     document
       .querySelectorAll('[data-code-action="preview"].is-active')
       .forEach((btn) => btn.classList.remove("is-active"));
@@ -10228,7 +10285,10 @@ const ARENA_MODE_MIGRATIONS = {
     // and polls /task until SUCCEED/FAILED. 当前下拉里唯一的图像模型是
     // grok-imagine-image-lite，走 OpenAI-style 同步返回。
     const isOpenAIImage =
-      imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2-pro";
+      imageModel === "grok-imagine-image-lite" ||
+      imageModel === "gpt-image-2-all" ||
+      imageModel === "gpt-image-2-pro" ||
+      imageModel === "gpt-image-2";
     // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
     const imageSize = "1024x1024";
   
@@ -10251,7 +10311,7 @@ const ARENA_MODE_MIGRATIONS = {
   
     // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
     // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-    const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2-all", "gpt-image-2-pro"]);
+    const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "z-image-turbo"]);
     if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
       setImageGenerationBusy(false);
       showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
