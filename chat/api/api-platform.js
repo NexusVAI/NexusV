@@ -380,6 +380,13 @@
   }
 
   function chatSiblingHref(topnav, tail) {
+    // 以「返回聊天」为 chat 根目录，避免 ./api/ 被误判成 ./api/account.html
+    var back = topnav && topnav.querySelector("a.topnav__back");
+    if (back) {
+      var root = back.getAttribute("href") || "./";
+      if (!/\/$/.test(root)) root += "/";
+      return root + String(tail || "").replace(/^\//, "");
+    }
     var sample = topnav.querySelector("a:not(.topnav__back)");
     if (!sample) return tail;
     var href = sample.getAttribute("href") || "";
@@ -877,7 +884,7 @@
       }
     }
     var s = document.createElement("script");
-    s.src = base + "api-platform-search.js?v=20260607-search-compact";
+    s.src = base + "api-platform-search.js?v=20260607-account-fix";
     s.defer = true;
     document.head.appendChild(s);
   }

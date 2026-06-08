@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理�?· 满月故事审核 · Cancri</title>
+    <title>管理员 · 满月故事审核 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
     <script src="./_anti-debug.js"></script>
-    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-layout-fix" />
-    <script src="./api-platform.js?v=20260607"></script>
+    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
+    <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       /* ---- 通用卡片 ---- */
       .story-card, .comment-card, .ban-card {
@@ -56,7 +56,7 @@
       }
       .sc-email { color: var(--text-mute); }
 
-      /* 元数据栏：IP / FP / 用户 ID 一行展�?*/
+      /* 元数据栏：IP / FP / 用户 ID 一行展*/
       .sc-meta-row {
         display: flex;
         gap: 14px;
@@ -97,7 +97,7 @@
         color: var(--text);
       }
 
-      /* 图片缩略�?*/
+      /* 图片缩略*/
       .sc-images {
         display: flex;
         gap: 8px;
@@ -147,7 +147,7 @@
       .btn-delete:hover { color: var(--err); border-color: var(--err); }
       button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-      /* 批量操作�?*/
+      /* 批量操作*/
       .bulk-bar {
         position: sticky;
         top: 0;
@@ -223,7 +223,7 @@
   <body>
     <div class="container">
       <nav class="nav">
-        <a href="./admin_dashboard.html">仪表�?/a>
+        <a href="./admin_dashboard.html">仪表盘</a>
         <a href="./admin.html">审核</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_usage.html">调用日志</a>
@@ -231,23 +231,23 @@
         <a href="./admin_users.html">用户</a>
         <a href="./admin_appeals.html">申诉</a>
         <a href="./admin_stories.html" class="active">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审�?/a>
+        <a href="./admin_orbit.html">百万亿审核</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
-        <a href="../" style="color: var(--text-faint)">�?返回聊天</a>
+        <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
       </nav>
 
-      <div id="loading" class="loading">检查权限中�?/div>
+      <div id="loading" class="loading">检查权限中…</div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登�?/h2>
-        <p>请先登录账号，验证你的管理员身份�?/p>
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份。</p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
       <div id="deny-gate" class="gate deny" style="display: none">
         <h2>无权访问</h2>
-        <p>这个页面仅站点管理员可见�?/p>
+        <p>这个页面仅站点管理员可见。</p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
@@ -255,10 +255,10 @@
         <header>
           <h1>满月内容管理</h1>
           <p>
-            管理 <code>celebrate.html</code> 的故事墙、编年史评论与禁言名单�?            通过 = 上故事墙；精�?= 上故事墙 + 1,000 积分；驳�?= 写理由不上墙�?            删除 = 物理删除；禁言 = 拉黑 user_id 或指纹，全局或单 scope�?          </p>
+            管理 <code>celebrate.html</code> 的故事墙、编年史评论与禁言名单            通过 = 上故事墙；精选 = 上故事墙 + 1,000 积分；驳回 = 写理由不上墙            删除 = 物理删除；禁言 = 拉黑 user_id 或指纹，全局或单 scope。          </p>
         </header>
 
-        <!-- 视图切换：故�?/ 评论 / 禁言 -->
+        <!-- 视图切换：故事 / 评论 / 禁言 -->
         <div class="view-tabs" id="viewTabs">
           <button data-view="stories" class="active">故事</button>
           <button data-view="comments">评论</button>
@@ -268,34 +268,34 @@
         <!-- 故事 toolbar -->
         <div class="toolbar" id="storiesToolbar">
           <div class="filter-group" id="statusFilter">
-            <!-- 默认进入「全部」，避免"通过后什么都看不�?的错�?-->
-            <button class="filter-btn" data-filter="pending">待审�?<span class="count-badge" data-count-for="pending">·</span></button>
+            <!-- 默认进入「全部」，避免"通过后什么都看不的错-->
+            <button class="filter-btn" data-filter="pending">待审<span class="count-badge" data-count-for="pending">·</span></button>
             <button class="filter-btn" data-filter="approved">已通过 <span class="count-badge" data-count-for="approved">·</span></button>
-            <button class="filter-btn" data-filter="featured">精�?<span class="count-badge" data-count-for="featured">·</span></button>
-            <button class="filter-btn" data-filter="rejected">已驳�?<span class="count-badge" data-count-for="rejected">·</span></button>
+            <button class="filter-btn" data-filter="featured">精<span class="count-badge" data-count-for="featured">·</span></button>
+            <button class="filter-btn" data-filter="rejected">已驳<span class="count-badge" data-count-for="rejected">·</span></button>
             <button class="filter-btn active" data-filter="all">全部 <span class="count-badge" data-count-for="all">·</span></button>
           </div>
-          <button class="reload-btn" id="reload-btn">�?刷新</button>
+          <button class="reload-btn" id="reload-btn">刷新</button>
         </div>
 
         <!-- 评论 toolbar -->
         <div class="toolbar" id="commentsToolbar" style="display:none">
           <div class="filter-group" id="commentScopeFilter">
-            <button class="filter-btn active" data-scope="wall">故事�?/button>
-            <button class="filter-btn" data-scope="chronicle">编年�?/button>
+            <button class="filter-btn active" data-scope="wall">故事墙</button>
+            <button class="filter-btn" data-scope="chronicle">编年史</button>
           </div>
-          <button class="reload-btn" id="comments-reload-btn">�?刷新</button>
+          <button class="reload-btn" id="comments-reload-btn">刷新</button>
         </div>
 
         <!-- 禁言 toolbar -->
         <div class="toolbar" id="bansToolbar" style="display:none">
-          <button class="reload-btn" id="bans-reload-btn">�?刷新</button>
+          <button class="reload-btn" id="bans-reload-btn">刷新</button>
           <button class="filter-btn" id="add-ban-btn">+ 手动禁言</button>
         </div>
 
-        <!-- 批量操作栏（仅故�?view 显示�?-->
+        <!-- 批量操作栏（仅故view 显示-->
         <div class="bulk-bar is-hidden" id="bulkBar">
-          <span id="bulkCount">已�?0 �?/span>
+          <span id="bulkCount">已选 0 条</span>
           <button class="btn-approve" data-bulk="approve">批量通过</button>
           <button class="btn-reject" data-bulk="reject">批量驳回</button>
           <button class="btn-delete" data-bulk="delete">批量删除</button>
