@@ -2539,7 +2539,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
     {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
     // 2026-06-09: 【订阅福利】造相-Z-Image-Turbo — ModelScope 异步生图，Pro+ 免费不扣积分。
-    {"id": "z-image-turbo", "name": "【订阅福利】造相-Z-Image-Turbo", "brand": "Tongyi-MAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
+    {"id": "z-image-turbo", "name": "【订阅福利】造相-Z-Image-Turbo", "brand": "Qwen", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
     {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "gpt-5.3-codex-spark", "name": "GPT 5.3 Codex Spark", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
     {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
@@ -2698,6 +2698,7 @@ const ARENA_MODE_MIGRATIONS = {
     "HappyHorse": "../Logo/欢乐马.webp",
     "Stepfun": "./stepfun-color.svg",
     "KwaiKAT": "./kwaikat.svg",
+    "Cursor": "./cursor.svg",
     "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
     "Microsoft": "./microsoft-color.svg",
     "IBM": "./ibm.svg",
@@ -5843,20 +5844,63 @@ const ARENA_MODE_MIGRATIONS = {
     }
   }
   
+  function userMemoryRequestHeaders(session) {
+    return {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: SUPABASE_ANON_KEY,
+      "Content-Type": "application/json",
+    };
+  }
+
+  function memoryAutoSummarizeStorageKey() {
+    const utc8 = new Date(Date.now() + 8 * 60 * 60 * 1000);
+    return `cancri_memory_auto_summarize_${utc8.toISOString().slice(0, 10)}`;
+  }
+
+  async function maybeAutoSummarizeMemories() {
+    if (state.userMemoryEnabled === false) return;
+    if (Array.isArray(state.userMemories) && state.userMemories.length > 0) return;
+    try {
+      if (sessionStorage.getItem(memoryAutoSummarizeStorageKey())) return;
+      sessionStorage.setItem(memoryAutoSummarizeStorageKey(), "1");
+    } catch (e) {
+      /* ignore quota */
+    }
+
+    const container = document.getElementById("claudeMemoriesContainer");
+    if (container) {
+      container.innerHTML =
+        '<p class="claude-form-help memory-slot-note">正在根据近期对话生成记忆，请稍候…</p>';
+    }
+
+    try {
+      const session = await ensureAuthSession();
+      const response = await fetch(USER_MEMORY_URL, {
+        method: "POST",
+        headers: userMemoryRequestHeaders(session),
+        body: JSON.stringify({ action: "summarize_me" }),
+      });
+      if (!response.ok) {
+        console.warn("[memory] auto summarize failed:", response.status);
+      }
+    } catch (e) {
+      console.warn("[memory] auto summarize error:", e);
+    }
+  }
+
   // 2026-05-20：获取用户记忆（从 user-memory edge function）
-  async function fetchUserMemories() {
+  async function fetchUserMemories(options = {}) {
+    const skipAutoSummarize = options.skipAutoSummarize === true;
     try {
       const session = await ensureAuthSession();
       const response = await fetch(USER_MEMORY_URL, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        headers: userMemoryRequestHeaders(session),
       });
       if (!response.ok) {
         console.warn("[memory] API 响应非 OK:", response.status);
-        renderMemoriesInSettings();
+        state.userMemories = [];
+        renderMemoriesInSettings({ error: "加载记忆失败，请稍后重试" });
         return;
       }
       const json = await response.json();
@@ -5867,11 +5911,18 @@ const ARENA_MODE_MIGRATIONS = {
         state.userMemories = json.memories
           .filter((m) => m && typeof m.content === "string" && m.content.trim())
           .map((m) => ({ slot: m.slot_index, content: m.content.trim() }));
+      } else {
+        state.userMemories = [];
       }
       renderMemoriesInSettings();
+      if (!skipAutoSummarize && state.userMemoryEnabled !== false && state.userMemories.length === 0) {
+        await maybeAutoSummarizeMemories();
+        await fetchUserMemories({ skipAutoSummarize: true });
+      }
     } catch (e) {
       console.warn("[memory] 获取记忆失败:", e);
-      renderMemoriesInSettings();
+      state.userMemories = [];
+      renderMemoriesInSettings({ error: "加载记忆失败，请检查网络后重试" });
     }
   }
   
@@ -5910,7 +5961,7 @@ const ARENA_MODE_MIGRATIONS = {
   }
   
   // 2026-05-20：在设置面板渲染记忆列表
-  function renderMemoriesInSettings() {
+  function renderMemoriesInSettings(options = {}) {
     const container = document.getElementById("claudeMemoriesContainer");
     if (!container) return;
     const enabled = state.userMemoryEnabled !== false;
@@ -5920,16 +5971,26 @@ const ARENA_MODE_MIGRATIONS = {
       '<span><strong>生成并使用记忆</strong><small>关闭后，系统不会在每日批处理里总结您的对话，也不会把现有记忆注入新对话。</small></span>' +
       "</label>";
     const slotListHtml = buildMemorySlotListHtml(state.userMemories);
+    const hasMemories = Array.isArray(state.userMemories) && state.userMemories.length > 0;
+    const emptyHint = hasMemories
+      ? ""
+      : '<p class="claude-form-help memory-slot-note">暂无记忆。系统会从近期对话自动提取；若对话多为寒暄，可能暂时没有可记录内容。</p>';
+    const errorHint = options.error
+      ? `<p class="claude-form-help memory-slot-note" style="color:var(--danger,#c85a5a);">${escapeHtml(options.error)}</p>`
+      : "";
     if (!enabled) {
       container.innerHTML =
         toggleHtml +
+        errorHint +
         '<p class="claude-form-help memory-slot-note">记忆已暂停。您仍可删除下方已有记忆。</p>' +
         slotListHtml;
       return;
     }
     container.innerHTML =
       toggleHtml +
+      errorHint +
       '<p class="claude-form-help memory-slot-note">一行一条，最多 5 条，每条 100 字以内。</p>' +
+      emptyHint +
       slotListHtml;
   }
   
@@ -5942,10 +6003,7 @@ const ARENA_MODE_MIGRATIONS = {
       const session = await ensureAuthSession();
       const response = await fetch(USER_MEMORY_URL, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        headers: userMemoryRequestHeaders(session),
         body: JSON.stringify({ action: "set_memory_enabled", enabled: next }),
       });
       if (!response.ok) throw new Error("set_memory_enabled_failed");
@@ -5964,10 +6022,7 @@ const ARENA_MODE_MIGRATIONS = {
       const session = await ensureAuthSession();
       await fetch(USER_MEMORY_URL, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        headers: userMemoryRequestHeaders(session),
         body: JSON.stringify({ action: "delete_memory", slot }),
       });
       state.userMemories = state.userMemories.filter((m) => m.slot !== slot);
@@ -5986,10 +6041,7 @@ const ARENA_MODE_MIGRATIONS = {
     const session = await ensureAuthSession();
     const response = await fetch(USER_MEMORY_URL, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
+      headers: userMemoryRequestHeaders(session),
       body: JSON.stringify({
         action: "preview_import_memories",
         source: String(source || "").slice(0, 40),
@@ -6026,10 +6078,7 @@ const ARENA_MODE_MIGRATIONS = {
     const session = await ensureAuthSession();
     const response = await fetch(USER_MEMORY_URL, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
+      headers: userMemoryRequestHeaders(session),
       body: JSON.stringify({
         action: "import_memories",
         memories: selected,
