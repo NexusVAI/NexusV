@@ -267,6 +267,84 @@
       }
 
       /* ── 模型 grid ────────────────────────────────────────────── */
+      .grid-scroll-wrap {
+        position: relative;
+        overflow: hidden;
+        transition: max-height 0.52s cubic-bezier(0.33, 1, 0.68, 1);
+      }
+      .grid-scroll-wrap.is-collapsed {
+        max-height: min(68vh, 880px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        padding-bottom: 8px;
+        scrollbar-gutter: stable;
+      }
+      .grid-scroll-wrap.is-expanded {
+        max-height: var(--grid-expanded-h, none);
+        overflow: visible;
+      }
+      .grid-scroll-fade {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 128px;
+        margin-top: -128px;
+        pointer-events: none;
+        z-index: 2;
+        opacity: 0;
+        transition: opacity 0.38s ease;
+        background: linear-gradient(
+          180deg,
+          transparent 0%,
+          color-mix(in srgb, var(--bg) 18%, transparent) 22%,
+          color-mix(in srgb, var(--bg) 62%, transparent) 52%,
+          color-mix(in srgb, var(--bg) 92%, transparent) 78%,
+          var(--bg) 100%
+        );
+      }
+      .grid-scroll-wrap.is-collapsed .grid-scroll-fade {
+        opacity: 1;
+      }
+      .grid-scroll-wrap.is-collapsed.is-scrolled-end .grid-scroll-fade {
+        opacity: 0;
+      }
+      .grid-expand-btn {
+        display: block;
+        width: 100%;
+        max-width: 280px;
+        margin: 14px auto 28px;
+        padding: 10px 18px;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: var(--bg-card);
+        color: var(--text);
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s,
+          color 0.15s,
+          transform 0.2s ease;
+      }
+      .grid-expand-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .grid-expand-btn:active {
+        transform: scale(0.98);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .grid-scroll-wrap {
+          transition: none;
+        }
+        .grid-scroll-fade {
+          transition: none;
+        }
+      }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -979,49 +1057,6 @@
         以不到原价 2% 的倍率体验顶级模型，Pro+ 用户专享。618 期间还将推出更多惊喜，敬请期待 🎁
       </div>
 
-      <!-- ── 站主赞助横幅 ── -->
-      <div class="cancri-promo-banner" id="cancriPromoBanner">
-        <button
-          type="button"
-          class="cancri-promo-banner__head"
-          id="cancriPromoToggle"
-          aria-expanded="true"
-          aria-controls="cancriPromoBody"
-        >
-          <span class="cancri-promo-banner__heart" aria-hidden="true">❤</span>
-          <span class="cancri-promo-banner__title">站主不易，喜欢就请喝杯咖啡</span>
-          <span class="cancri-promo-banner__hint">点击展开/收起</span>
-          <svg
-            class="cancri-promo-banner__chevron"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.4"
-            aria-hidden="true"
-          >
-            <path d="m18 15-6-6-6 6"></path>
-          </svg>
-        </button>
-        <div class="cancri-promo-banner__body" id="cancriPromoBody">
-          <img
-            src="../Logo/1107.jpg"
-            alt="微信收款码"
-            class="cancri-promo-banner__qr"
-            loading="lazy"
-          />
-          <div class="cancri-promo-banner__copy">
-            <span class="cancri-promo-banner__lead"
-              >维护服务、适配新模型、修 bug 都需要持续投入。如果觉得对你有帮助，欢迎扫码请杯咖啡。</span
-            >
-            <span class="cancri-promo-banner__sub"
-              >赞助完全自愿，与账号、额度、使用体验无任何关联。</span
-            >
-          </div>
-        </div>
-      </div>
-
       <div id="error" class="err-box" style="display: none"></div>
 
       <!-- stats 按需求：总数 / 免费 / 付费 / 思考。原 聊天 / 图像 计数与
@@ -1081,7 +1116,17 @@
 
       <div id="loading" class="loading">加载中…</div>
       <div id="empty" class="empty" style="display: none">没有匹配的模型</div>
-      <div id="grid" class="grid" style="display: none"></div>
+      <div class="grid-scroll-wrap" id="gridScrollWrap">
+        <div id="grid" class="grid" style="display: none"></div>
+        <div class="grid-scroll-fade" id="gridScrollFade" aria-hidden="true"></div>
+      </div>
+      <button
+        type="button"
+        class="grid-expand-btn"
+        id="gridExpandBtn"
+        hidden
+        aria-expanded="false"
+      >展开全部</button>
 
       <!-- legend：两档说明。重复使用 .tier badge 同样的外观，保证语义一致。
            2026-05-17 Phase A：FREE 用户每日 15 次 PAID 试用 + 1亿/月共享池；
@@ -1207,6 +1252,6 @@
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态 +
          调用代码区，sessionStorage 自动填入用户最近 Key）。 -->
-    <script src="./api/api-models-app.js?v=2026-05-29-mult"></script>
+    <script src="./api/api-models-app.js?v=20260608-grid-animate"></script>
   </body>
 </html>

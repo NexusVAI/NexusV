@@ -19,144 +19,389 @@
         <!-- Cancri 双主题 logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
         <style>
-            /* ────────── 三档订阅卡 ────────── */
+            /* ── Claude 风定价页（参考 claude.ai/upgrade）── */
+            .pricing-page.page-shell {
+                max-width: 72rem;
+            }
+            .pricing-hero {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                margin: 8px 0 28px;
+                position: relative;
+            }
+            .pricing-back {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 36px;
+                height: 36px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                color: var(--text-mute);
+                text-decoration: none;
+                transition: background 0.15s, color 0.15s, border-color 0.15s;
+            }
+            .pricing-back:hover {
+                color: var(--text);
+                border-color: var(--border-strong);
+                background: var(--bg-2, var(--surface));
+            }
+            .pricing-title {
+                font-family: var(--serif);
+                font-size: clamp(1.75rem, 4vw, 2.35rem);
+                font-weight: 500;
+                letter-spacing: -0.02em;
+                color: var(--text);
+                margin: 0 0 10px;
+                line-height: 1.15;
+            }
+            .pricing-hero .subtitle {
+                max-width: 36rem;
+                margin: 0 auto 18px;
+            }
+            .pricing-hero #current-tier {
+                margin-bottom: 16px;
+            }
+            .pricing-segment {
+                display: inline-flex;
+                padding: 3px;
+                border-radius: 0.625rem;
+                background: var(--bg-2, rgba(0, 0, 0, 0.06));
+                border: 1px solid var(--border);
+                gap: 2px;
+            }
+            .pricing-segment button {
+                border: none;
+                background: transparent;
+                color: var(--text-mute);
+                font-size: 0.875rem;
+                font-weight: 500;
+                padding: 8px 18px;
+                border-radius: 0.5rem;
+                cursor: pointer;
+                transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+            }
+            .pricing-segment button.is-active {
+                background: var(--bg-1, var(--surface));
+                color: var(--text);
+                box-shadow: var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.08));
+            }
+            .pricing-panel[hidden] { display: none !important; }
+
             .plan-grid {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 18px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 16px;
                 margin-bottom: 28px;
+                width: 100%;
             }
-            @media (max-width: 880px) {
-                .plan-grid { grid-template-columns: 1fr; }
+            @media (max-width: 960px) {
+                .plan-grid { grid-template-columns: 1fr; max-width: 26rem; margin-left: auto; margin-right: auto; }
             }
             .plan-tier {
                 position: relative;
-                padding: 22px 22px 20px;
-                border: 1px solid var(--border-strong);
-                border-radius: 14px;
-                background: var(--surface-elevated, var(--surface));
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
-                transition: border-color 0.18s, transform 0.18s;
+                border: 1px solid var(--border-strong);
+                border-radius: 1rem;
+                background: var(--bg-1, var(--surface));
+                box-shadow: var(--shadow-card);
+                overflow: hidden;
+                transition: border-color 0.2s, box-shadow 0.2s;
             }
-            .plan-tier:hover {
-                border-color: var(--accent);
-                transform: translateY(-2px);
+            .pricing-page .plan-tier:hover,
+            .pricing-page .topup-card:hover,
+            .pricing-page .card:hover {
+                transform: none !important;
             }
             .plan-tier.is-recommended {
                 border-color: var(--accent);
-                box-shadow: 0 0 0 1px var(--accent);
+                box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), var(--shadow-card);
             }
             .plan-tier__ribbon {
                 position: absolute;
-                top: -10px;
-                right: 16px;
-                background: var(--accent);
-                color: #fff;
+                top: 14px;
+                right: 14px;
+                background: color-mix(in srgb, var(--accent) 18%, transparent);
+                color: var(--accent);
                 font-size: 11px;
-                font-family: var(--font-mono);
                 font-weight: 600;
                 padding: 3px 10px;
-                border-radius: 10px;
-                letter-spacing: 0.04em;
+                border-radius: 999px;
+                letter-spacing: 0.02em;
             }
-            .plan-tier__head {
+            .claude-plan-top {
+                padding: 1.5rem 1.5rem 1.25rem;
                 display: flex;
-                align-items: baseline;
-                justify-content: space-between;
+                flex-direction: column;
+                gap: 0.75rem;
             }
-            .plan-tier__name {
+            .claude-ornament {
+                width: 64px;
+                height: 64px;
+                color: var(--text);
+                opacity: 0.92;
+            }
+            .claude-ornament img {
+                width: 64px;
+                height: 64px;
+                display: block;
+            }
+            .claude-plan-name {
                 font-family: var(--serif);
-                font-size: 22px;
+                font-size: 1.35rem;
+                font-weight: 600;
                 color: var(--text);
                 margin: 0;
+                line-height: 1.2;
             }
-            .plan-tier__name small {
-                display: block;
-                font-family: var(--font-sans);
-                font-size: 11px;
-                color: var(--text-faint);
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                margin-top: 2px;
-                font-weight: 500;
+            .claude-plan-tagline {
+                margin: 2px 0 0;
+                font-size: 0.875rem;
+                color: var(--text-mute);
+                line-height: 1.45;
             }
             .plan-tier__price {
                 font-family: var(--serif);
-                font-size: 34px;
+                font-size: 2.5rem;
                 line-height: 1;
                 color: var(--text);
+                margin-top: 4px;
             }
             .plan-tier__price .currency {
-                font-size: 0.5em;
+                font-size: 0.55em;
                 color: var(--text-mute);
                 margin-right: 2px;
                 vertical-align: top;
             }
             .plan-tier__price .period {
-                font-size: 0.35em;
+                font-size: 0.38em;
                 color: var(--text-mute);
                 font-family: var(--font-sans);
                 margin-left: 4px;
+                font-weight: 400;
             }
             .plan-tier__quota {
-                font-size: 13.5px;
-                color: var(--accent);
-                font-family: var(--font-mono);
-                margin: -4px 0 4px;
+                font-size: 0.8125rem;
+                color: var(--text-mute);
+                margin: 0;
+            }
+            .claude-plan-btn {
+                position: relative;
+                width: 100%;
+                min-height: 2.75rem;
+                margin-top: 4px;
+                padding: 0 1.25rem;
+                border-radius: 0.6rem;
+                font-size: 1rem;
+                font-weight: 500;
+                font-family: inherit;
+                cursor: pointer;
+                border: 1px solid transparent;
+                transition: transform 0.12s ease-out, background 0.15s, color 0.15s, border-color 0.15s;
+            }
+            .claude-plan-btn:active:not(:disabled) {
+                transform: scale(0.96);
+            }
+            .claude-plan-btn.btn-secondary {
+                background: var(--bg-1, var(--surface));
+                color: var(--text);
+                border-color: var(--border-strong);
+            }
+            .claude-plan-btn.btn-secondary:hover:not(:disabled) {
+                border-color: var(--text-mute);
+            }
+            .claude-plan-btn.btn-primary {
+                background: var(--cream, var(--text));
+                color: var(--cream-on, var(--bg));
+                border-color: transparent;
+            }
+            .claude-plan-btn.btn-primary:hover:not(:disabled) {
+                opacity: 0.92;
+            }
+            .claude-plan-features {
+                border-top: 1px solid var(--border);
+                margin: 0;
+                padding: 1.25rem 1.5rem 1.5rem;
+            }
+            .claude-plan-features__lead {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: var(--text-mute);
+                margin: 0 0 10px;
             }
             .plan-tier__features {
                 list-style: none;
                 margin: 0;
                 padding: 0;
                 display: grid;
-                gap: 8px;
-                flex: 1;
+                gap: 10px;
             }
             .plan-tier__features li {
                 display: flex;
                 align-items: flex-start;
                 gap: 8px;
-                font-size: 13.5px;
-                color: var(--text);
+                font-size: 0.875rem;
+                color: var(--text-mute);
                 line-height: 1.5;
             }
-            .plan-tier__features li::before {
-                content: "✓";
-                color: var(--accent);
-                font-weight: 700;
-                line-height: 1.4;
+            .claude-check {
                 flex-shrink: 0;
+                margin-top: 2px;
+                color: var(--text-faint);
             }
-            .plan-tier__cta {
+            .pricing-footnote {
                 width: 100%;
-                padding: 10px;
-                font-size: 14px;
-                font-weight: 600;
+                text-align: center;
+                font-size: 0.75rem;
+                color: var(--text-faint);
+                margin: -8px 0 24px;
             }
 
-            /* ────────── 加油包行 ────────── */
-            .topup-section { margin-bottom: 28px; }
+            /* ────────── 加油包（Claude 卡同款） ────────── */
+            .topup-section { margin-bottom: 28px; width: 100%; }
+            .topup-section__head {
+                text-align: center;
+                margin-bottom: 18px;
+            }
+            .topup-section__head h2 {
+                font-family: var(--serif);
+                font-size: 1.35rem;
+                font-weight: 500;
+                margin: 0 0 6px;
+            }
             .topup-grid {
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 14px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 16px;
+                max-width: 72rem;
+                margin: 0 auto;
             }
-            @media (max-width: 720px) {
-                .topup-grid { grid-template-columns: 1fr; }
+            @media (max-width: 960px) {
+                .topup-grid { grid-template-columns: 1fr; max-width: 26rem; }
             }
             .topup-card {
-                padding: 16px 18px;
+                padding: 1.5rem;
                 border: 1px solid var(--border-strong);
-                border-radius: 12px;
-                background: var(--surface);
+                border-radius: 1rem;
+                background: var(--bg-1, var(--surface));
+                box-shadow: var(--shadow-card);
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
-                transition: border-color 0.18s;
+                gap: 12px;
+                transition: border-color 0.2s;
             }
-            .topup-card:hover { border-color: var(--accent); }
+            .topup-card .claude-ornament img { width: 48px; height: 48px; }
+
+            /* ── 常见问题手风琴（参考百万亿 token 补贴页） ── */
+            .pricing-faq {
+                width: 100%;
+                max-width: 45rem;
+                margin: 0 auto 2rem;
+                padding: 0 0 2rem;
+            }
+            .pricing-faq__title {
+                text-align: center;
+                font-family: var(--serif);
+                font-size: 1.65rem;
+                font-weight: 600;
+                color: var(--text);
+                margin: 0 0 2.5rem;
+                letter-spacing: -0.02em;
+            }
+            .pricing-faq-list {
+                border-top: 1px solid var(--border);
+            }
+            .pricing-faq-item {
+                border-bottom: 1px solid var(--border);
+            }
+            .pricing-faq-item.active {
+                border-bottom-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+            }
+            .pricing-faq-q {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1.25rem 0;
+                cursor: pointer;
+                font-size: 0.97rem;
+                font-weight: 500;
+                color: var(--text);
+                user-select: none;
+            }
+            .pricing-faq-num {
+                flex-shrink: 0;
+                min-width: 1.5rem;
+                font-size: 0.8125rem;
+                font-weight: 600;
+                font-variant-numeric: tabular-nums;
+                color: var(--text-faint);
+            }
+            .pricing-faq-item.active .pricing-faq-num {
+                color: var(--accent);
+            }
+            .pricing-faq-text {
+                flex: 1;
+                line-height: 1.45;
+            }
+            .pricing-faq-icon {
+                flex-shrink: 0;
+                width: 1.125rem;
+                height: 1.125rem;
+                color: var(--text-faint);
+                opacity: 0.7;
+                transition: transform 0.3s ease, color 0.2s;
+            }
+            .pricing-faq-item.active .pricing-faq-icon {
+                transform: rotate(180deg);
+                color: var(--accent);
+                opacity: 1;
+            }
+            .pricing-faq-a {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.4s ease, padding 0.4s ease;
+                color: var(--text-mute);
+                font-size: 0.9375rem;
+                line-height: 1.75;
+                padding-left: 2.5rem;
+            }
+            .pricing-faq-item.active .pricing-faq-a {
+                max-height: 32rem;
+                padding-bottom: 1.25rem;
+            }
+            .pricing-faq-a p {
+                margin: 0 0 0.75rem;
+            }
+            .pricing-faq-a p:last-child {
+                margin-bottom: 0;
+            }
+            .pricing-faq-a ul {
+                margin: 0 0 0.75rem;
+                padding-left: 1.25rem;
+            }
+            .pricing-faq-a li {
+                margin-bottom: 0.5rem;
+            }
+            .pricing-faq-a code {
+                font-family: var(--font-mono);
+                font-size: 0.85em;
+                background: var(--bg-2, var(--surface));
+                padding: 1px 6px;
+                border-radius: 4px;
+                color: var(--accent);
+            }
+            .pricing-faq-a a {
+                color: var(--accent);
+            }
+            @media (max-width: 720px) {
+                .pricing-faq-a { padding-left: 0; }
+            }
             .topup-card__head {
                 display: flex;
                 align-items: baseline;
@@ -653,7 +898,7 @@
             </div>
         </header>
 
-        <main class="page-shell">
+        <main class="page-shell pricing-page">
             <!-- 2026-06-02 Claude Opus 系列倍率调整公告 -->
             <div class="promo-banner" role="status" aria-live="polite" style="background:linear-gradient(135deg,rgba(217,119,87,.12),rgba(184,90,62,.08));border:1px solid rgba(217,119,87,.25);">
                 <div class="promo-banner__body">
@@ -726,88 +971,129 @@
                     >✕</button>
             </div>
 
-            <div class="top-bar">
-                <div>
-                    <h1 class="page-title">套餐与加油包</h1>
-                    <p class="subtitle" data-pricing-subtitle>
-                        ¥9.9 / ¥29 / ¥99 三档月度订阅 · ¥10 起加油包永不过期
-                    </p>
-                </div>
+            <header class="pricing-hero">
+                <a class="pricing-back" href="./" aria-label="返回聊天" title="返回聊天">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M228,128a12,12,0,0,1-12,12H69l51.52,51.51a12,12,0,0,1-17,17l-72-72a12,12,0,0,1,0-17l72-72a12,12,0,0,1,17,17L69,116H216A12,12,0,0,1,228,128Z"></path></svg>
+                </a>
+                <h1 class="pricing-title">与你一起成长的套餐</h1>
+                <p class="subtitle" data-pricing-subtitle>
+                    ¥9.9 / ¥29 / ¥99 三档月度订阅 · ¥10 起加油包永不过期
+                </p>
                 <div id="current-tier"></div>
-            </div>
+                <div class="pricing-segment" role="group" aria-label="套餐类型">
+                    <button type="button" class="is-active" data-pricing-tab="subscription">月度订阅</button>
+                    <button type="button" data-pricing-tab="topup">加油包</button>
+                </div>
+            </header>
 
-            <!-- ──── 三档订阅 ──── -->
+            <!-- ──── 三档订阅（Claude 三列卡） ──── -->
+            <div class="pricing-panel" id="pricing-panel-subscription">
             <div class="plan-grid" id="plan-grid">
-                <div class="plan-tier" data-plan="pro">
-                    <div class="plan-tier__head">
-                        <h3 class="plan-tier__name">Pro<small>入门</small></h3>
-                        <span class="badge-tier pro">PRO</span>
+                <article class="plan-tier" data-plan="pro">
+                    <div class="claude-plan-top">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <img src="./assets/claude-pricing-svgs/ornament-pro.svg" width="64" height="64" alt="" />
+                        </div>
+                        <div>
+                            <h3 class="claude-plan-name">Pro</h3>
+                            <p class="claude-plan-tagline">入门 · 日常对话与编码</p>
+                        </div>
+                        <div class="plan-tier__price" data-price-slot="pro">
+                            <span class="currency">¥</span>9.9<span class="period">/ 月</span>
+                        </div>
+                        <p class="plan-tier__quota" data-quota-slot="pro">月度配额 2000 积分</p>
+                        <button type="button" class="claude-plan-btn btn btn-secondary" data-plan-select="pro">
+                            选择 Pro
+                        </button>
                     </div>
-                    <div class="plan-tier__price" data-price-slot="pro">
-                        <span class="currency">¥</span>9.9<span class="period">/ 月</span>
+                    <div class="claude-plan-features">
+                        <ul class="plan-tier__features">
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>解锁非 Opus 全模型（GPT-5.4、Sonnet、Grok-4.20、Kimi 等）</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重置</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>免并发排队，付费用户优先直通</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预付 90 天</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>完全使用 Cancri Code</li>
+                        </ul>
                     </div>
-                    <div class="plan-tier__quota" data-quota-slot="pro">月度配额 2000 积分</div>
-                    <ul class="plan-tier__features">
-                        <li>解锁非 Opus 全模型（GPT-5.4、Sonnet、Grok-4.20、Kimi 等）</li>
-                        <li>月度配额内不限次调用，每 30 天订阅周期重置</li>
-                        <li>免并发排队，付费用户优先直通</li>
-                        <li>可叠加续费，最长预付 90 天</li>
-                    </ul>
-                    <button type="button" class="btn btn-secondary plan-tier__cta" data-plan-select="pro">
-                        选择 Pro
-                    </button>
-                </div>
+                </article>
 
-                <div class="plan-tier is-recommended" data-plan="pro_plus">
+                <article class="plan-tier is-recommended" data-plan="pro_plus">
                     <div class="plan-tier__ribbon">推荐</div>
-                    <div class="plan-tier__head">
-                        <h3 class="plan-tier__name">Pro+<small>标准</small></h3>
-                        <span class="badge-tier pro_plus">PRO+</span>
+                    <div class="claude-plan-top">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <img src="./assets/claude-pricing-svgs/ornament-pro-plus.svg" width="64" height="64" alt="" />
+                        </div>
+                        <div>
+                            <h3 class="claude-plan-name">Pro+</h3>
+                            <p class="claude-plan-tagline">研究、编码与重度使用</p>
+                        </div>
+                        <div class="plan-tier__price" data-price-slot="pro_plus">
+                            <span class="currency">¥</span>29<span class="period">/ 月</span>
+                        </div>
+                        <p class="plan-tier__quota" data-quota-slot="pro_plus">月度配额 8000 积分</p>
+                        <button type="button" class="claude-plan-btn btn btn-primary" data-plan-select="pro_plus">
+                            选择 Pro+
+                        </button>
                     </div>
-                    <div class="plan-tier__price" data-price-slot="pro_plus">
-                        <span class="currency">¥</span>29<span class="period">/ 月</span>
+                    <div class="claude-plan-features">
+                        <p class="claude-plan-features__lead">包含 Pro 全部权益，以及：</p>
+                        <ul class="plan-tier__features">
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg><strong>解锁 Claude Opus 全系</strong>（4.5 / 4.6 / 4.6 Thinking）</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重置</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>模型选择器优先标识</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预付 90 天</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>完全使用 Cancri Code</li>
+                        </ul>
                     </div>
-                    <div class="plan-tier__quota" data-quota-slot="pro_plus">月度配额 8000 积分</div>
-                    <ul class="plan-tier__features">
-                        <li><strong>解锁 Claude Opus 全系</strong>（4.5 / 4.6 / 4.6 Thinking）</li>
-                        <li>月度配额内不限次调用，每 30 天订阅周期重置</li>
-                        <li>含 Pro 所有特权 + 模型选择器优先标识</li>
-                        <li>可叠加续费，最长预付 90 天</li>
-                    </ul>
-                    <button type="button" class="btn btn-primary plan-tier__cta" data-plan-select="pro_plus">
-                        选择 Pro+
-                    </button>
-                </div>
+                </article>
 
-                <div class="plan-tier" data-plan="pro_max">
-                    <div class="plan-tier__head">
-                        <h3 class="plan-tier__name">Pro Max<small>重度</small></h3>
-                        <span class="badge-tier pro_max">PRO MAX</span>
+                <article class="plan-tier" data-plan="pro_max">
+                    <div class="claude-plan-top">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <img src="./assets/claude-pricing-svgs/ornament-pro-max.svg" width="64" height="64" alt="" />
+                        </div>
+                        <div>
+                            <h3 class="claude-plan-name">Pro Max</h3>
+                            <p class="claude-plan-tagline">更高配额 · 全模型优先</p>
+                        </div>
+                        <div class="plan-tier__price" data-price-slot="pro_max">
+                            <span class="currency">¥</span>99<span class="period">/ 月</span>
+                        </div>
+                        <p class="plan-tier__quota" data-quota-slot="pro_max">月度配额 30000 积分</p>
+                        <button type="button" class="claude-plan-btn btn btn-secondary" data-plan-select="pro_max">
+                            选择 Pro Max
+                        </button>
+                        <p class="plan-tier__quota" style="margin-top:-4px;font-size:0.75rem;text-align:center">无长期绑定 · 随时可续</p>
                     </div>
-                    <div class="plan-tier__price" data-price-slot="pro_max">
-                        <span class="currency">¥</span>99<span class="period">/ 月</span>
+                    <div class="claude-plan-features">
+                        <p class="claude-plan-features__lead">包含 Pro+ 全部权益，以及：</p>
+                        <ul class="plan-tier__features">
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>解锁全部模型，含图像 / 视频生成（vip 级）</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重置</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>重度开发 / 内容创作友好</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预付 90 天</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>完全使用 Cancri Code</li>
+                        </ul>
                     </div>
-                    <div class="plan-tier__quota" data-quota-slot="pro_max">月度配额 30000 积分</div>
-                    <ul class="plan-tier__features">
-                        <li>解锁全部模型，包含图像 / 视频生成（vip 级模型）</li>
-                        <li>月度配额内不限次调用，每 30 天订阅周期重置</li>
-                        <li>含 Pro+ 所有特权</li>
-                        <li>对重度开发 / 内容创作友好</li>
-                    </ul>
-                    <button type="button" class="btn btn-secondary plan-tier__cta" data-plan-select="pro_max">
-                        选择 Pro Max
-                    </button>
-                </div>
+                </article>
+            </div>
+            <p class="pricing-footnote">* 用量受月度积分与模型权重限制。价格与活动以页面实时显示为准。</p>
             </div>
 
             <!-- ──── 加油包 ──── -->
+            <div class="pricing-panel" id="pricing-panel-topup" hidden>
             <div class="topup-section">
-                <h2 style="margin: 0 0 8px 0">加油包（永不过期）</h2>
-                <p class="subtitle" style="margin: 0 0 14px 0">
-                    任何档位（含 Free）都可买加油包补足配额。永不清零，可累积。
-                </p>
+                <div class="topup-section__head">
+                    <h2>加油包（永不过期）</h2>
+                    <p class="subtitle" style="margin: 0">
+                        任何档位（含 Free）都可买加油包补足配额。永不清零，可累积。
+                    </p>
+                </div>
                 <div class="topup-grid" id="topup-grid">
-                    <div class="topup-card" data-topup="topup_small">
+                    <article class="topup-card" data-topup="topup_small">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <img src="./assets/claude-pricing-svgs/ornament-pro.svg" width="48" height="48" alt="" />
+                        </div>
                         <div class="topup-card__head">
                             <div class="topup-card__amount" data-topup-amount-slot="topup_small">
                                 <span class="currency">¥</span>10
@@ -815,11 +1101,14 @@
                             <div class="topup-card__tokens" data-topup-tokens-slot="topup_small">1500 积分</div>
                         </div>
                         <p class="topup-card__hint">轻量补足，约够标准模型 5000 段对话</p>
-                        <button type="button" class="btn btn-secondary topup-card__cta" data-topup-select="topup_small">
+                        <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_small">
                             选这个
                         </button>
-                    </div>
-                    <div class="topup-card" data-topup="topup_medium">
+                    </article>
+                    <article class="topup-card" data-topup="topup_medium">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <img src="./assets/claude-pricing-svgs/ornament-pro-plus.svg" width="48" height="48" alt="" />
+                        </div>
                         <div class="topup-card__head">
                             <div class="topup-card__amount" data-topup-amount-slot="topup_medium">
                                 <span class="currency">¥</span>50
@@ -827,11 +1116,14 @@
                             <div class="topup-card__tokens" data-topup-tokens-slot="topup_medium">9000 积分</div>
                         </div>
                         <p class="topup-card__hint">中量补足，性价比最高，相当于一个 Pro+ 月配额</p>
-                        <button type="button" class="btn btn-secondary topup-card__cta" data-topup-select="topup_medium">
+                        <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_medium">
                             选这个
                         </button>
-                    </div>
-                    <div class="topup-card" data-topup="topup_large">
+                    </article>
+                    <article class="topup-card" data-topup="topup_large">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <img src="./assets/claude-pricing-svgs/ornament-pro-max.svg" width="48" height="48" alt="" />
+                        </div>
                         <div class="topup-card__head">
                             <div class="topup-card__amount" data-topup-amount-slot="topup_large">
                                 <span class="currency">¥</span>200
@@ -839,10 +1131,10 @@
                             <div class="topup-card__tokens" data-topup-tokens-slot="topup_large">40000 积分</div>
                         </div>
                         <p class="topup-card__hint">重度备货，Opus 重度也可撑数月</p>
-                        <button type="button" class="btn btn-secondary topup-card__cta" data-topup-select="topup_large">
+                        <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_large">
                             选这个
                         </button>
-                    </div>
+                    </article>
                 </div>
 
                 <div class="multiplier-info" id="multiplier-info">
@@ -856,6 +1148,7 @@
                     （Grok 4.20 仅 <strong>3x</strong>，Sonnet 4.6 <strong>5x</strong>，Claude Opus 4.5~4.8 仅 <strong>12~20x</strong>）。
                     日常对话主要消耗在前 3 档，配额很经用。
                 </div>
+            </div>
             </div>
 
             <!-- ──── 订单提交（选档后展开） ──── -->
@@ -1003,56 +1296,98 @@
                 </ol>
             </div>
 
-            <div class="card">
-                <h2>常见问题</h2>
-                <p class="doc-card-text">
-                    <strong>现有 ¥9.9 用户会被影响吗？</strong>
-                    到期日完全不变。从今天起按 Pro 档位（月 2000 积分）计费，且
-                    <strong>本订阅周期内继续可调 Claude Opus 全系</strong>（Phase A 老用户福利，Opus 权重照常生效，月度配额受 2000 积分限制）。
-                    续费时根据用量自行选择档位（Pro 续费 / Pro+ 升级 / Pro Max 重度），<strong>续费后老用户福利失效</strong>，按所选新档位的明码规则计费。
-                </p>
-                <p class="doc-card-text">
-                    <strong>有 Pro 怎么升级 Pro+？续费 / 到期怎么算？</strong>
-                    系统按你订阅<strong>剩余天数</strong>自动判定，无需手动选「升级」还是「续费」：<br />
-                    · <strong>升级</strong>（有效期内买更高档，且剩余 ≥ 7 天）：只补差价
-                    <code>(目标月价 − 当前月价) ÷ 30 × 剩余天数</code>（最低 ¥1），<strong>立即生效、到期日不变（不送时长）</strong>；
-                    配额也<strong>按剩余天数比例</strong>提升 —— 例：剩 7 天 Pro 升 Pro+ → 月配额
-                    <code>2000万 + (8000万 − 2000万) × 7/30 = 3400万</code>，用满整 30 天才给满档。
-                    <br />
-                    · <strong>续费</strong>（买当前同档，或剩余不足 7 天买更高档）：按<strong>满价</strong>购买，
-                    <strong>到期日顺延 30 天</strong>（封顶 90 天），立即按所选档位生效。
-                    <br />
-                    · <strong>到期后</strong>：订阅整体过期 → 回到<strong>免费档</strong>，不会自动降到更低的付费档。
-                </p>
-                <p class="doc-card-text">
-                    <strong>为什么要分档？</strong>
-                    站开了几天烧了 10 亿+ token，订阅转化不足 10%，再不分档单位经济撑不下去。
-                    Opus 系列上游成本是普通模型的几十倍，必须靠 Pro+ 档位的对等收入覆盖。这是为了能继续做下去，请各位理解。
-                </p>
-                <p class="doc-card-text">
-                    <strong>加油包真的永不过期？</strong>
-                    是的。加油包余额独立于订阅档位，任何时候都能用，订阅过期后也能继续消耗。
-                </p>
-                <p class="doc-card-text">
-                    <strong>可以一次买好几个月吗？</strong>
-                    可以叠加续费，但到期时间最长预付 90 天（从当前算起）。超出部分不会丢失，只是无法一次性囤积超过 90 天的会员时长。
-                </p>
-                <p class="doc-card-text">
-                    <strong>没收到激活码？</strong>
-                    审核完成后激活码会显示在
-                    <a href="./orders.html">我的订单</a> 页面，不发邮件。
-                </p>
-                <p class="doc-card-text">
-                    <strong>付款后没有立刻升级？</strong>
-                    这是人工对单的流程，付款 → 提交订单 → 站主对账 →
-                    生成激活码 → 你手动兑换。请耐心等 1~24 小时。
-                </p>
-                <p class="doc-card-text">
-                    <strong>付费后能退款吗？</strong>
-                    本服务所有费用用于覆盖上游 API 成本，一旦激活恕不退款。例外情形：（1）付款后未提交订单、未领取激活码；（2）服务明显故障导致付费期不可用且超过订单期间的 50%。退款请通过
-                    <a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub Issues</a> 或邮箱 nexusvai@139.com 提交。
-                </p>
-            </div>
+            <section class="pricing-faq" id="pricing-faq" aria-labelledby="pricing-faq-title">
+                <h2 class="pricing-faq__title" id="pricing-faq-title">常见问题</h2>
+                <div class="pricing-faq-list" id="pricing-faq-list">
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">01</span>
+                            <span class="pricing-faq-text">现有 ¥9.9 用户会被影响吗？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>到期日完全不变。从今天起按 Pro 档位（月 2000 积分）计费，且<strong>本订阅周期内继续可调 Claude Opus 全系</strong>（Phase A 老用户福利，Opus 权重照常生效，月度配额受 2000 积分限制）。</p>
+                            <p>续费时根据用量自行选择档位（Pro 续费 / Pro+ 升级 / Pro Max 重度），<strong>续费后老用户福利失效</strong>，按所选新档位的明码规则计费。</p>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">02</span>
+                            <span class="pricing-faq-text">有 Pro 怎么升级 Pro+？续费 / 到期怎么算？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>系统按你订阅<strong>剩余天数</strong>自动判定，无需手动选「升级」还是「续费」：</p>
+                            <ul>
+                                <li><strong>升级</strong>（有效期内买更高档，且剩余 ≥ 7 天）：只补差价 <code>(目标月价 − 当前月价) ÷ 30 × 剩余天数</code>（最低 ¥1），立即生效、到期日不变；配额按剩余天数比例提升。</li>
+                                <li><strong>续费</strong>（买当前同档，或剩余不足 7 天买更高档）：按满价购买，到期日顺延 30 天（封顶 90 天）。</li>
+                                <li><strong>到期后</strong>：订阅整体过期 → 回到免费档，不会自动降到更低的付费档。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">03</span>
+                            <span class="pricing-faq-text">为什么要分档？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>站开了几天烧了 10 亿+ token，订阅转化不足 10%，再不分档单位经济撑不下去。Opus 系列上游成本是普通模型的几十倍，必须靠 Pro+ 档位的对等收入覆盖。这是为了能继续做下去，请各位理解。</p>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">04</span>
+                            <span class="pricing-faq-text">加油包真的永不过期？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>是的。加油包余额独立于订阅档位，任何时候都能用，订阅过期后也能继续消耗。</p>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">05</span>
+                            <span class="pricing-faq-text">可以一次买好几个月吗？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>可以叠加续费，但到期时间最长预付 90 天（从当前算起）。超出部分不会丢失，只是无法一次性囤积超过 90 天的会员时长。</p>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">06</span>
+                            <span class="pricing-faq-text">没收到激活码？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>审核完成后激活码会显示在 <a href="./orders.html">我的订单</a> 页面，不发邮件。</p>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">07</span>
+                            <span class="pricing-faq-text">付款后没有立刻升级？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>这是人工对单的流程：付款 → 提交订单 → 站主对账 → 生成激活码 → 你手动兑换。请耐心等 1~24 小时。</p>
+                        </div>
+                    </div>
+                    <div class="pricing-faq-item">
+                        <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
+                            <span class="pricing-faq-num">08</span>
+                            <span class="pricing-faq-text">付费后能退款吗？</span>
+                            <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="pricing-faq-a">
+                            <p>本服务所有费用用于覆盖上游 API 成本，一旦激活恕不退款。</p>
+                            <p>例外情形：（1）付款后未提交订单、未领取激活码；（2）服务明显故障导致付费期不可用且超过订单期间的 50%。退款请通过 <a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub Issues</a> 或邮箱 nexusvai@139.com 提交。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <footer class="site-footer">
@@ -1074,6 +1409,6 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
-        <script src="./api/pricing-app.js?v=2026-06-07-credits-fix"></script>
+        <script src="./api/pricing-app.js?v=20260608-pricing-faq"></script>
     </body>
 </html>

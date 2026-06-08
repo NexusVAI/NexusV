@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-docs-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>API 文档 · Cancri 开放平台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
     <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
     <link rel="preload" as="image" href="../Logo/Cancri.png" />
+    <link rel="preload" as="image" href="../Logo/neyyyss.png" />
+    <link rel="preload" as="video" href="../Logo/NewImage-0608.mp4" type="video/mp4" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact" />
@@ -35,6 +37,13 @@
         margin: 0 auto;
         gap: 28px;
         padding: 24px 20px 48px;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      .layout > main {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: hidden;
       }
       .toc-panel {
         position: relative;
@@ -371,8 +380,10 @@
         width: 100%;
         border-radius: 16px;
         overflow: hidden;
+        line-height: 0;
+        background: var(--bg-1, var(--bg));
       }
-      .docs-intro-figure img {
+      .docs-intro-figure__poster {
         display: block;
         width: 100%;
         height: auto;
@@ -381,6 +392,34 @@
         object-fit: cover;
         object-position: center 42%;
         border-radius: 16px;
+        transition: opacity 0.75s ease;
+        opacity: 1;
+      }
+      .docs-intro-figure__video {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 42%;
+        border-radius: 16px;
+        transition: opacity 0.75s ease;
+        opacity: 0;
+        z-index: 1;
+      }
+      .docs-intro-figure.is-video-ready .docs-intro-figure__video {
+        opacity: 1;
+      }
+      .docs-intro-figure.is-video-ready .docs-intro-figure__poster {
+        opacity: 0;
+        pointer-events: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .docs-intro-figure__poster,
+        .docs-intro-figure__video {
+          transition: none;
+        }
       }
       /* liquid-glass-pure：折射靠 SVG displacement，blur 仅 2px 垫底 */
       .docs-glass-pill {
@@ -517,33 +556,48 @@
       a:hover {
         text-decoration: underline;
       }
-      table {
+      /* 表格外层即滚动容器：窄屏可横滑，避免撑破视口 */
+      main section table {
         width: 100%;
+        max-width: 100%;
         border-collapse: collapse;
         font-size: 13px;
         margin: 12px 0 16px;
         background: var(--bg-card);
         border: 1px solid var(--border);
         border-radius: 8px;
-        overflow: hidden;
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        box-sizing: border-box;
       }
-      th,
-      td {
+      main section table thead,
+      main section table tbody {
+        display: table;
+        width: 100%;
+        min-width: max-content;
+      }
+      main section table tr {
+        display: table-row;
+      }
+      main section th,
+      main section td {
+        display: table-cell;
         text-align: left;
         padding: 9px 14px;
         border-bottom: 1px solid var(--border);
         color: var(--text-mute);
       }
-      th {
+      main section th {
         background: var(--bg-elev);
         color: var(--text);
         font-weight: 600;
         font-size: 12px;
       }
-      tr:last-child td {
+      main section tr:last-child td {
         border-bottom: none;
       }
-      td:first-child {
+      main section td:first-child {
         font-family: ui-monospace, "SF Mono", Consolas, monospace;
         color: var(--text);
         font-size: 12.5px;
@@ -699,6 +753,17 @@
       @media (max-width: 800px) {
         .layout {
           grid-template-columns: 1fr;
+          padding: 16px 12px 40px;
+          gap: 16px;
+        }
+        main section table {
+          margin-left: 0;
+          margin-right: 0;
+        }
+        main section th,
+        main section td {
+          padding: 8px 10px;
+          font-size: 12px;
         }
         aside.toc {
           position: static;
@@ -1436,13 +1501,29 @@
           取决于它是否允许自定义 Base URL、API Key 和模型 ID。
         </p>
 
-        <figure class="docs-intro-figure">
+        <figure class="docs-intro-figure" id="docsIntroFigure">
           <img
+            class="docs-intro-figure__poster"
+            id="docsIntroPoster"
             src="../Logo/neyyyss.png"
             alt="Cancri API 文档"
-            loading="lazy"
             decoding="async"
+            fetchpriority="high"
           />
+          <video
+            class="docs-intro-figure__video"
+            id="docsIntroVideo"
+            poster="../Logo/neyyyss.png"
+            autoplay
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            preload="auto"
+            aria-label="Cancri API 文档"
+          >
+            <source src="../Logo/NewImage-0608.mp4" type="video/mp4" />
+          </video>
           <a
             class="docs-glass-pill"
             id="docsGlassPill"
@@ -3724,6 +3805,6 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
          2026-05-22：取消 Kimi-风多页化（?page=...），统一为单页长文档；
          api-docs-app.js 移除了 multi-page applyDocPage / setActiveDocPage / popstate 等逻辑。 -->
     <script src="./api/liquid-glass-pill.js?v=20260607-lg-stretch"></script>
-    <script src="./api/api-docs-app.js?v=20260607-toc-panel"></script>
+    <script src="./api/api-docs-app.js?v=20260608-docs-video-play"></script>
   </body>
 </html>

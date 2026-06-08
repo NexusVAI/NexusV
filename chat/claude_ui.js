@@ -16,7 +16,8 @@
     var ONBOARDING_COMPLETED_KEY = 'cancri_getting_started_completed_v1';
     var ONBOARDING_TASK_IDS = ['importMemory', 'community', 'cancriCode'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
-    var CANCRI_CODE_URL = 'https://github.com/NexusVAI/CancriCode';
+    var CANCRI_CODE_URL = 'https://pan.baidu.com/s/1yfEVg1rmk9XVuZTdp7KEbA';
+    var CANCRI_CODE_PAN_CODE = 'Nexu';
     var MEMORY_IMPORT_TEXT_LIMIT = 12000;
     var memoryImportCandidates = [];
     var latestTierSubscription = null;
@@ -1109,6 +1110,7 @@
             window.open(COMMUNITY_URL, '_blank', 'noopener');
         } else if (action === 'open-cancri-code') {
             window.open(CANCRI_CODE_URL, '_blank', 'noopener');
+            showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
         }
     }
 
