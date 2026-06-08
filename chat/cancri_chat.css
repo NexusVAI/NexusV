@@ -1388,6 +1388,14 @@ svg {
     border-radius: 5px;
 }
 
+/* 单色品牌 logo：浅色模式黑、深色模式白（OpenAI / Cancri 等） */
+html:not([data-theme="dark"]) .model-icon-theme-adaptive {
+    filter: brightness(0);
+}
+html[data-theme="dark"] .model-icon-theme-adaptive {
+    filter: brightness(0) invert(1);
+}
+
 @keyframes model-breath-dot {
     0%, 100% {
         transform: scale(0.76);

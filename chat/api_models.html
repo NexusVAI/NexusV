@@ -488,6 +488,12 @@
         object-fit: contain;
         display: block;
       }
+      html:not([data-theme="dark"]) .card-logo img.model-icon-theme-adaptive {
+        filter: brightness(0);
+      }
+      html[data-theme="dark"] .card-logo img.model-icon-theme-adaptive {
+        filter: brightness(0) invert(1);
+      }
       .card-logo--fallback {
         font-family: var(--c-serif);
         font-size: 16px;

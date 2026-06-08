@@ -2495,6 +2495,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 6.5},
     {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
     {"id": "step-3.7-flash", "name": "Step 3.7 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "cancriv1-0.1b", "name": "CancriV1-0.1B", "brand": "Cancri", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cancriv1_studio"},
     {"id": "kat-coder-pro-v2", "name": "KwaiKAT Coder Pro V2", "brand": "KwaiKAT", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ernie-4.5-turbo-20260402", "name": "ERNIE 4.5 Turbo", "brand": "Baidu", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2698,6 +2699,7 @@ const ARENA_MODE_MIGRATIONS = {
     "HappyHorse": "../Logo/欢乐马.webp",
     "Stepfun": "./stepfun-color.svg",
     "KwaiKAT": "./kwaikat.svg",
+    "Cancri": "../Logo/Cancri1.jpg",
     "Cursor": "./cursor.svg",
     "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
     "Microsoft": "./microsoft-color.svg",
@@ -2718,8 +2720,26 @@ const ARENA_MODE_MIGRATIONS = {
     "doubao-seedance-2-0-260128": "./jimeng-color.svg",
     "ernie-4.5-turbo-20260402": "./wenxin-color.svg",
     "kat-coder-pro-v2": "./kwaikat.svg",
+    "cancriv1-0.1b": "../Logo/Cancri1.jpg",
   };
-  
+
+  const THEME_ADAPTIVE_ICON_BRANDS = new Set(["OpenAI", "Clawto", "Cancri"]);
+  const THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "Cancri1.jpg"];
+
+  function shouldUseThemeAdaptiveIcon(iconPath, brand) {
+    if (brand && THEME_ADAPTIVE_ICON_BRANDS.has(brand)) return true;
+    const path = String(iconPath || "");
+    return THEME_ADAPTIVE_ICON_SUFFIXES.some((suffix) => path.endsWith(suffix) || path.includes(suffix));
+  }
+
+  function applyModelIconThemeClass(img, iconPath, brand) {
+    if (!img) return;
+    img.classList.toggle(
+      "model-icon-theme-adaptive",
+      shouldUseThemeAdaptiveIcon(iconPath, brand),
+    );
+  }
+
   function getModelIconPath(brand, modelId) {
     if (modelId && MODEL_ICON_OVERRIDE[modelId]) return MODEL_ICON_OVERRIDE[modelId];
     return BRAND_ICON_MAP[brand] || "./openai.svg";
@@ -2797,6 +2817,7 @@ const ARENA_MODE_MIGRATIONS = {
       button.insertBefore(icon, name || button.firstChild);
     }
     icon.src = meta.iconPath || "./openai.svg";
+    applyModelIconThemeClass(icon, meta.iconPath, meta.brand);
     icon.title = meta.displayName || modelId || "模型";
   }
   
@@ -4888,6 +4909,7 @@ const ARENA_MODE_MIGRATIONS = {
         const modelIcon = document.createElement("img");
         modelIcon.className = "recent-model-icon";
         modelIcon.src = modelMeta?.iconPath || "./openai.svg";
+        applyModelIconThemeClass(modelIcon, modelMeta?.iconPath, modelMeta?.brand);
         modelIcon.alt = "";
         modelIcon.loading = "lazy";
         modelIcon.decoding = "async";
@@ -10337,7 +10359,8 @@ const ARENA_MODE_MIGRATIONS = {
       imageModel === "grok-imagine-image-lite" ||
       imageModel === "gpt-image-2-all" ||
       imageModel === "gpt-image-2-pro" ||
-      imageModel === "gpt-image-2";
+      imageModel === "gpt-image-2" ||
+      imageModel === "z-image-turbo";
     // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
     const imageSize = "1024x1024";
   
@@ -11438,6 +11461,7 @@ const ARENA_MODE_MIGRATIONS = {
     const modelIcon = document.createElement("img");
     modelIcon.className = "assistant-model-icon";
     modelIcon.src = modelMetadata.iconPath;
+    applyModelIconThemeClass(modelIcon, modelMetadata.iconPath, modelMetadata.brand);
     modelIcon.alt = "";
     modelLabel.appendChild(modelIcon);
   
@@ -13166,7 +13190,7 @@ const ARENA_MODE_MIGRATIONS = {
     // `cancri_custom_instructions` 字段，由 chat-gateway 服务端拼成第二条
     // system message。详见 buildApiMessages 注释。空内容跳过。
     const customInstructionsContent = buildCustomInstructionsSystemContent();
-    if (customInstructionsContent) {
+    if (customInstructionsContent && activeModelId !== "cancriv1-0.1b") {
       requestBody.cancri_custom_instructions = customInstructionsContent;
     }
   
@@ -13175,7 +13199,7 @@ const ARENA_MODE_MIGRATIONS = {
     const queueSessionId = queueSessionIdOverride || crypto.randomUUID();
     requestBody.queue_session_id = queueSessionId;
   
-    if (enableTools) {
+    if (enableTools && activeModelId !== "cancriv1-0.1b") {
       const tools = getToolDefinitionsForCurrentTurn({
         webSearch: webSearchEnabled,
       });
@@ -15275,6 +15299,7 @@ const ARENA_MODE_MIGRATIONS = {
   
           const icon = document.createElement("img");
           icon.src = model.iconPath || "./openai.svg";
+          applyModelIconThemeClass(icon, model.iconPath, model.brand);
           icon.alt = "";
           icon.className = "model-option-icon";
           label.appendChild(icon);
