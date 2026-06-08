@@ -147,6 +147,7 @@
         background: var(--bg-card);
       }
       .filter-group {
+        position: relative;
         display: inline-flex;
         gap: 2px;
         padding: 3px;
@@ -154,7 +155,24 @@
         border: 1px solid var(--border);
         border-radius: 10px;
       }
+      .filter-slider {
+        position: absolute;
+        top: 3px;
+        left: 0;
+        height: calc(100% - 6px);
+        border-radius: 7px;
+        background: var(--bg-card);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+        pointer-events: none;
+        z-index: 0;
+        transition:
+          transform 0.32s cubic-bezier(0.33, 1, 0.68, 1),
+          width 0.32s cubic-bezier(0.33, 1, 0.68, 1);
+        will-change: transform, width;
+      }
       .filter-btn {
+        position: relative;
+        z-index: 1;
         appearance: none;
         background: transparent;
         border: 0;
@@ -165,15 +183,13 @@
         font-weight: 500;
         font-family: inherit;
         cursor: pointer;
-        transition: background 0.15s, color 0.15s;
+        transition: color 0.2s ease;
       }
       .filter-btn:hover {
         color: var(--text);
       }
       .filter-btn.active {
-        background: var(--bg-card);
         color: var(--text);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
       }
 
       /* ── 品牌筛选 chip 行 ────────────────────────────────────────
@@ -266,55 +282,76 @@
         color: #fffaf2;
       }
 
-      /* ── 模型 grid ────────────────────────────────────────────── */
-      .grid-scroll-wrap {
+      /* ── 模型 grid：外层 stage 控高 + 动画，内层 wrap 滚动，fade 贴 stage 底 ── */
+      .grid-stage {
         position: relative;
         overflow: hidden;
-        transition: max-height 0.52s cubic-bezier(0.33, 1, 0.68, 1);
       }
-      .grid-scroll-wrap.is-collapsed {
-        max-height: min(68vh, 880px);
+      .grid-stage.is-animating {
+        transition: height 0.62s cubic-bezier(0.33, 1, 0.68, 1);
+        will-change: height;
+      }
+      .grid-scroll-wrap {
+        overflow-y: visible;
+      }
+      .grid-stage.is-collapsed .grid-scroll-wrap,
+      .grid-stage.is-expanded .grid-scroll-wrap {
+        height: 100%;
+      }
+      .grid-stage.is-collapsed .grid-scroll-wrap {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
-        padding-bottom: 8px;
         scrollbar-gutter: stable;
       }
-      .grid-scroll-wrap.is-expanded {
-        max-height: var(--grid-expanded-h, none);
-        overflow: visible;
+      .grid-stage.is-expanded .grid-scroll-wrap {
+        overflow-y: visible;
       }
       .grid-scroll-fade {
-        position: sticky;
-        bottom: 0;
+        position: absolute;
         left: 0;
         right: 0;
-        height: 128px;
-        margin-top: -128px;
+        bottom: 0;
+        height: 140px;
         pointer-events: none;
-        z-index: 2;
+        z-index: 3;
         opacity: 0;
-        transition: opacity 0.38s ease;
+        transition: opacity 0.35s ease;
         background: linear-gradient(
           180deg,
-          transparent 0%,
-          color-mix(in srgb, var(--bg) 18%, transparent) 22%,
-          color-mix(in srgb, var(--bg) 62%, transparent) 52%,
-          color-mix(in srgb, var(--bg) 92%, transparent) 78%,
+          rgba(0, 0, 0, 0) 0%,
+          var(--bg) 82%,
           var(--bg) 100%
         );
       }
-      .grid-scroll-wrap.is-collapsed .grid-scroll-fade {
+      @supports (background: color-mix(in srgb, white 50%, transparent)) {
+        .grid-scroll-fade {
+          background: linear-gradient(
+            180deg,
+            transparent 0%,
+            color-mix(in srgb, var(--bg) 10%, transparent) 16%,
+            color-mix(in srgb, var(--bg) 52%, transparent) 46%,
+            color-mix(in srgb, var(--bg) 88%, transparent) 74%,
+            var(--bg) 100%
+          );
+        }
+      }
+      .grid-stage.is-collapsed:not(.is-scrolled-end) .grid-scroll-fade,
+      .grid-stage.is-animating.is-expanding .grid-scroll-fade,
+      .grid-stage.is-animating.is-collapsing .grid-scroll-fade {
         opacity: 1;
       }
-      .grid-scroll-wrap.is-collapsed.is-scrolled-end .grid-scroll-fade {
+      .grid-stage.is-animating.is-expanding .grid-scroll-fade {
+        transition: opacity 0.42s ease 0.18s;
+      }
+      .grid-stage.is-expanded:not(.is-animating) .grid-scroll-fade {
         opacity: 0;
       }
       .grid-expand-btn {
         display: block;
         width: 100%;
         max-width: 280px;
-        margin: 14px auto 28px;
+        margin: 8px auto 28px;
         padding: 10px 18px;
         border: 1px solid var(--border-strong);
         border-radius: 999px;
@@ -338,10 +375,9 @@
         transform: scale(0.98);
       }
       @media (prefers-reduced-motion: reduce) {
-        .grid-scroll-wrap {
-          transition: none;
-        }
-        .grid-scroll-fade {
+        .grid-stage,
+        .grid-scroll-fade,
+        .filter-slider {
           transition: none;
         }
       }
@@ -1096,12 +1132,14 @@
           spellcheck="false"
         />
         <div class="filter-group" id="capFilter" role="group" aria-label="能力筛选">
+          <span class="filter-slider" aria-hidden="true"></span>
           <button class="filter-btn active" type="button" data-cap="all">全部</button>
           <button class="filter-btn" type="button" data-cap="chat">聊天</button>
           <button class="filter-btn" type="button" data-cap="multimodal">多模态</button>
           <button class="filter-btn" type="button" data-cap="thinking">思考</button>
         </div>
         <div class="filter-group" id="tierFilter" role="group" aria-label="档位筛选">
+          <span class="filter-slider" aria-hidden="true"></span>
           <button class="filter-btn active" type="button" data-tier="all">全部</button>
           <button class="filter-btn" type="button" data-tier="free">FREE</button>
           <button class="filter-btn" type="button" data-tier="welfare">福利</button>
@@ -1116,8 +1154,10 @@
 
       <div id="loading" class="loading">加载中…</div>
       <div id="empty" class="empty" style="display: none">没有匹配的模型</div>
-      <div class="grid-scroll-wrap" id="gridScrollWrap">
-        <div id="grid" class="grid" style="display: none"></div>
+      <div class="grid-stage" id="gridStage">
+        <div class="grid-scroll-wrap" id="gridScrollWrap">
+          <div id="grid" class="grid" style="display: none"></div>
+        </div>
         <div class="grid-scroll-fade" id="gridScrollFade" aria-hidden="true"></div>
       </div>
       <button
@@ -1252,6 +1292,6 @@
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态 +
          调用代码区，sessionStorage 自动填入用户最近 Key）。 -->
-    <script src="./api/api-models-app.js?v=20260608-grid-animate"></script>
+    <script src="./api/api-models-app.js?v=20260608-grid-reveal"></script>
   </body>
 </html>
