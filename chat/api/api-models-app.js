@@ -3,8 +3,13 @@
 // 同款做法：inline <script> -> 外联 .js + CSP <meta> 删 script-src 'unsafe-inline'。
 // 本页原 inline 代码已使用 addEventListener / data-copy 委托，无 inline onclick。
 
-const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
-const ANON = window.__SUPABASE_ANON_KEY__;
+function coalesce(value, fallback) {
+    return value != null ? value : fallback;
+}
+
+const GW =
+    (window.__SUPABASE_URL__ || "") + "/functions/v1/chat-gateway";
+const ANON = window.__SUPABASE_ANON_KEY__ || "";
 let MODELS = [];
 let activeCap = "all";
 let activeTier = "all";
@@ -41,6 +46,7 @@ const FEATURED_RANK = new Map(
 
 const GRID_COLLAPSE_MIN_ITEMS = 12;
 let gridListExpanded = false;
+let gridAnimating = false;
 
 const HIDE_IDS = new Set([
     "grok-imagine-image-lite",
@@ -112,7 +118,7 @@ function getCostMultiplier(m) {
         return m.customMultiplier;
     }
     const tier = (m && m.costTier) || "normal";
-    return COST_TIER_MULTIPLIER[tier] ?? 1;
+    return coalesce(COST_TIER_MULTIPLIER[tier], 1);
 }
 
 // 2026-05-22 限时倍率 5 折促销（与 chat-gateway / api-gateway / pricing-app.js
@@ -229,92 +235,145 @@ function getGridCollapsedMaxPx() {
 }
 
 function measureGridExpandedHeight() {
-    const wrap = $("gridScrollWrap");
     const grid = $("grid");
-    if (!wrap || !grid) return 0;
-    const prevMax = wrap.style.maxHeight;
-    const wasCollapsed = wrap.classList.contains("is-collapsed");
-    wrap.classList.remove("is-collapsed");
-    wrap.classList.add("is-expanded");
-    wrap.style.maxHeight = "none";
-    const h = grid.offsetHeight;
-    wrap.style.maxHeight = prevMax;
-    if (wasCollapsed) {
-        wrap.classList.remove("is-expanded");
-        wrap.classList.add("is-collapsed");
-    }
-    return h;
+    if (!grid) return 0;
+    return grid.offsetHeight;
 }
 
-function syncGridExpandedHeightVar() {
+function getGridHeights() {
+    const fullH = measureGridExpandedHeight();
+    const collapsedH = Math.min(getGridCollapsedMaxPx(), fullH);
+    return { fullH, collapsedH };
+}
+
+function applyGridStageHeight(px) {
+    const stage = $("gridStage");
+    if (!stage || !(px > 0)) return;
+    stage.style.height = px + "px";
+}
+
+function setGridCollapseClasses(expanded) {
+    const stage = $("gridStage");
     const wrap = $("gridScrollWrap");
-    if (!wrap) return;
-    const h = measureGridExpandedHeight();
-    if (h > 0) wrap.style.setProperty("--grid-expanded-h", h + "px");
+    if (!stage || !wrap) return;
+    stage.classList.toggle("is-expanded", expanded);
+    stage.classList.toggle("is-collapsed", !expanded);
+    wrap.classList.toggle("is-expanded", expanded);
+    wrap.classList.toggle("is-collapsed", !expanded);
+    if (!expanded) {
+        stage.classList.remove("is-scrolled-end");
+        wrap.classList.remove("is-scrolled-end");
+        wrap.scrollTop = 0;
+    }
+}
+
+function snapGridCollapse(expanded) {
+    const { fullH, collapsedH } = getGridHeights();
+    setGridCollapseClasses(expanded);
+    applyGridStageHeight(expanded ? fullH : collapsedH);
+    if (!expanded) syncGridFadeAtScrollEnd();
 }
 
 function setGridExpandBtnState(expanded) {
     const btn = $("gridExpandBtn");
     if (!btn) return;
-    btn.textContent = expanded ? "收起" : "展开全部";
+    btn.textContent = expanded ? "收起全部" : "展开全部";
     btn.setAttribute("aria-expanded", String(expanded));
 }
 
 function syncGridFadeAtScrollEnd() {
+    const stage = $("gridStage");
     const wrap = $("gridScrollWrap");
-    if (!wrap || !wrap.classList.contains("is-collapsed")) return;
+    if (!stage || !wrap || !stage.classList.contains("is-collapsed")) return;
     const atEnd =
         wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
+    stage.classList.toggle("is-scrolled-end", atEnd);
     wrap.classList.toggle("is-scrolled-end", atEnd);
 }
 
+function runGridHeightTween(stage, fromH, toH, onDone) {
+    gridAnimating = true;
+    stage.classList.add("is-animating");
+    stage.style.height = fromH + "px";
+    void stage.offsetHeight;
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            stage.style.height = toH + "px";
+        });
+    });
+
+    let settled = false;
+    const settle = () => {
+        if (settled) return;
+        settled = true;
+        gridAnimating = false;
+        stage.removeEventListener("transitionend", onEnd);
+        clearTimeout(fallbackTimer);
+        if (typeof onDone === "function") onDone();
+    };
+    const onEnd = (e) => {
+        if (e.target !== stage || e.propertyName !== "height") return;
+        settle();
+    };
+    stage.addEventListener("transitionend", onEnd);
+    const fallbackTimer = setTimeout(settle, 720);
+}
+
 function animateGridExpandToggle(expanded) {
+    const stage = $("gridStage");
     const wrap = $("gridScrollWrap");
-    if (!wrap) return;
+    if (!stage || !wrap) return;
+
     const reducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
     ).matches;
-    syncGridExpandedHeightVar();
-
     if (reducedMotion) {
-        wrap.style.maxHeight = "";
-        wrap.classList.toggle("is-collapsed", !expanded);
-        wrap.classList.toggle("is-expanded", expanded);
-        wrap.classList.toggle("is-scrolled-end", false);
-        if (!expanded) wrap.scrollTop = 0;
+        snapGridCollapse(expanded);
         return;
     }
 
-    const collapsedPx = getGridCollapsedMaxPx();
-    const expandedPx =
-        parseFloat(
-            getComputedStyle(wrap).getPropertyValue("--grid-expanded-h"),
-        ) || wrap.scrollHeight;
-
-    if (expanded) {
-        const from = Math.min(wrap.clientHeight, collapsedPx);
-        wrap.style.maxHeight = from + "px";
-        wrap.classList.remove("is-collapsed", "is-scrolled-end");
-        wrap.classList.add("is-expanded");
-        wrap.offsetHeight;
-        wrap.style.maxHeight = expandedPx + "px";
-    } else {
-        const from = wrap.scrollHeight;
-        wrap.style.maxHeight = from + "px";
-        wrap.classList.remove("is-expanded");
-        wrap.offsetHeight;
-        wrap.classList.add("is-collapsed");
-        wrap.style.maxHeight = collapsedPx + "px";
-        wrap.scrollTop = 0;
+    const { fullH, collapsedH } = getGridHeights();
+    const fromH = stage.offsetHeight || (expanded ? collapsedH : fullH);
+    const toH = expanded ? fullH : collapsedH;
+    if (Math.abs(fromH - toH) < 2) {
+        snapGridCollapse(expanded);
+        return;
     }
 
-    const onEnd = (e) => {
-        if (e.target !== wrap || e.propertyName !== "max-height") return;
-        wrap.removeEventListener("transitionend", onEnd);
-        wrap.style.maxHeight = "";
-        if (!expanded) syncGridFadeAtScrollEnd();
-    };
-    wrap.addEventListener("transitionend", onEnd);
+    stage.classList.remove("is-expanding", "is-collapsing", "is-scrolled-end");
+    wrap.classList.remove("is-scrolled-end");
+
+    if (expanded) {
+        // 展开：保持折叠态 + 底部分割线，stage 高度从 cutoff 缓慢长到全量
+        stage.classList.add("is-expanding");
+        stage.classList.remove("is-expanded");
+        stage.classList.add("is-collapsed");
+        wrap.classList.remove("is-expanded");
+        wrap.classList.add("is-collapsed");
+        wrap.scrollTop = 0;
+
+        runGridHeightTween(stage, fromH, toH, () => {
+            stage.classList.remove("is-animating", "is-expanding");
+            setGridCollapseClasses(true);
+            applyGridStageHeight(fullH);
+        });
+        return;
+    }
+
+    // 收起：从全高缓慢压回分割高度，分割线渐变始终贴在可视底边
+    stage.classList.add("is-collapsing");
+    stage.classList.remove("is-collapsed");
+    stage.classList.add("is-expanded");
+    wrap.classList.remove("is-collapsed");
+    wrap.classList.add("is-expanded");
+    wrap.scrollTop = 0;
+
+    runGridHeightTween(stage, fromH, toH, () => {
+        stage.classList.remove("is-animating", "is-collapsing");
+        setGridCollapseClasses(false);
+        applyGridStageHeight(collapsedH);
+        syncGridFadeAtScrollEnd();
+    });
 }
 
 function setupGridCollapse() {
@@ -324,10 +383,10 @@ function setupGridCollapse() {
     btn.dataset.bound = "1";
     btn.addEventListener("click", () => {
         const count = Number(btn.dataset.visibleCount || 0);
-        if (count < GRID_COLLAPSE_MIN_ITEMS) return;
+        if (count < GRID_COLLAPSE_MIN_ITEMS || gridAnimating) return;
         gridListExpanded = !gridListExpanded;
-        animateGridExpandToggle(gridListExpanded);
         setGridExpandBtnState(gridListExpanded);
+        animateGridExpandToggle(gridListExpanded);
     });
     if (wrap) {
         wrap.addEventListener(
@@ -339,21 +398,28 @@ function setupGridCollapse() {
         );
     }
     window.addEventListener("resize", () => {
-        syncGridExpandedHeightVar();
+        const stage = $("gridStage");
+        if (!stage || !stage.classList.contains("is-collapsed") &&
+            !stage.classList.contains("is-expanded")) {
+            return;
+        }
+        const { fullH, collapsedH } = getGridHeights();
+        applyGridStageHeight(gridListExpanded ? fullH : collapsedH);
         syncGridFadeAtScrollEnd();
     });
 }
 
 function updateGridCollapse(visibleCount) {
+    const stage = $("gridStage");
     const wrap = $("gridScrollWrap");
     const btn = $("gridExpandBtn");
-    if (!wrap) return;
+    if (!stage || !wrap) return;
     if (btn) btn.dataset.visibleCount = String(visibleCount);
 
     if (visibleCount < GRID_COLLAPSE_MIN_ITEMS) {
         gridListExpanded = false;
-        wrap.style.maxHeight = "";
-        wrap.style.removeProperty("--grid-expanded-h");
+        stage.style.height = "";
+        stage.classList.remove("is-collapsed", "is-expanded", "is-scrolled-end");
         wrap.classList.remove("is-collapsed", "is-expanded", "is-scrolled-end");
         if (btn) {
             btn.hidden = true;
@@ -362,20 +428,9 @@ function updateGridCollapse(visibleCount) {
         return;
     }
 
-    syncGridExpandedHeightVar();
     if (btn) btn.hidden = false;
-
-    wrap.style.maxHeight = "";
-    if (gridListExpanded) {
-        wrap.classList.remove("is-collapsed", "is-scrolled-end");
-        wrap.classList.add("is-expanded");
-    } else {
-        wrap.classList.add("is-collapsed");
-        wrap.classList.remove("is-expanded", "is-scrolled-end");
-        wrap.scrollTop = 0;
-    }
+    snapGridCollapse(gridListExpanded);
     setGridExpandBtnState(gridListExpanded);
-    syncGridFadeAtScrollEnd();
 }
 
 function normalizeBrandKey(brand) {
@@ -405,16 +460,72 @@ function brandLogoHtml(brand) {
     )}</span>`;
 }
 
+function fetchWithTimeout(url, options, timeoutMs) {
+    if (typeof AbortController === "function") {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        return fetch(url, Object.assign({}, options, { signal: ctrl.signal }))
+            .finally(() => clearTimeout(timer));
+    }
+    return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("请求超时，请刷新重试")), timeoutMs);
+        }),
+    ]);
+}
+
+function showLoadError(message) {
+    const loading = $("loading");
+    if (loading) loading.style.display = "none";
+    const err = $("error");
+    if (err) {
+        err.style.display = "block";
+        err.textContent = "加载失败：" + message;
+    }
+}
+
+function syncFilterSlider(group) {
+    if (!group) return;
+    const slider = group.querySelector(".filter-slider");
+    const active = group.querySelector(".filter-btn.active");
+    if (!slider || !active) return;
+    slider.style.width = active.offsetWidth + "px";
+    slider.style.transform = "translateX(" + active.offsetLeft + "px)";
+}
+
+function initFilterSliders() {
+    syncFilterSlider($("capFilter"));
+    syncFilterSlider($("tierFilter"));
+}
+
+function setActiveFilterBtn(group, btn, attr) {
+    if (!group || !btn) return;
+    group.querySelectorAll(".filter-btn").forEach((x) => {
+        x.classList.remove("active");
+    });
+    btn.classList.add("active");
+    syncFilterSlider(group);
+    return btn.getAttribute(attr);
+}
+
 async function load() {
     try {
-        const resp = await fetch(GW, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                apikey: ANON,
+        if (!window.__SUPABASE_URL__ || !ANON) {
+            throw new Error("站点配置未就绪，请刷新页面");
+        }
+        const resp = await fetchWithTimeout(
+            GW,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    apikey: ANON,
+                },
+                body: JSON.stringify({ endpoint: "model_public_catalog" }),
             },
-            body: JSON.stringify({ endpoint: "model_public_catalog" }),
-        });
+            20000,
+        );
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         const data = await resp.json();
         if (data && data.multiplier_legend) {
@@ -448,16 +559,31 @@ async function load() {
         );
         // 给每条模型挂上展示用的 displayTier（缓存计算结果，避免渲染时反复算）
         for (const m of MODELS) m._displayTier = getDisplayTier(m);
-        $("loading").style.display = "none";
-        $("grid").style.display = "grid";
+        const loadingEl = $("loading");
+        const gridEl = $("grid");
+        if (loadingEl) loadingEl.style.display = "none";
+        if (gridEl) gridEl.style.display = "grid";
         setupGridCollapse();
         buildBrandFilter();
         updateStats();
         render();
+        requestAnimationFrame(() => {
+            initFilterSliders();
+            if ($("gridStage")) {
+                const { fullH, collapsedH } = getGridHeights();
+                applyGridStageHeight(
+                    gridListExpanded ? fullH : collapsedH,
+                );
+            }
+        });
     } catch (e) {
-        $("loading").style.display = "none";
-        $("error").style.display = "block";
-        $("error").textContent = "加载失败：" + (e.message || e);
+        const msg =
+            e && e.name === "AbortError"
+                ? "请求超时，请检查网络后刷新"
+                : e && e.message
+                  ? e.message
+                  : String(e);
+        showLoadError(msg);
     }
 }
 
@@ -468,14 +594,19 @@ async function load() {
 // → 页面看似一片空白；用户再点 filter 触发的 render 跳过 updateStats，所以
 // 又能渲染。删 ct-multi 这一行即彻底修复。
 function updateStats() {
-    $("total").textContent = MODELS.length;
-    $("ct-free").textContent = MODELS.filter(
+    const totalEl = $("total");
+    const freeEl = $("ct-free");
+    const paidEl = $("ct-paid");
+    const thinkingEl = $("ct-thinking");
+    if (!totalEl || !freeEl || !paidEl || !thinkingEl) return;
+    totalEl.textContent = MODELS.length;
+    freeEl.textContent = MODELS.filter(
         (m) => m._displayTier === "free",
     ).length;
-    $("ct-paid").textContent = MODELS.filter(
+    paidEl.textContent = MODELS.filter(
         (m) => m._displayTier === "paid",
     ).length;
-    $("ct-thinking").textContent = MODELS.filter(
+    thinkingEl.textContent = MODELS.filter(
         (m) => m.enableThinking,
     ).length;
 }
@@ -673,27 +804,34 @@ function card(m) {
         </div>`;
 }
 
-$("search").addEventListener("input", render);
-$("capFilter").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-cap]");
-    if (!b) return;
-    $("capFilter")
-        .querySelectorAll(".filter-btn")
-        .forEach((x) => x.classList.remove("active"));
-    b.classList.add("active");
-    activeCap = b.dataset.cap;
-    render();
-});
-$("tierFilter").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-tier]");
-    if (!b) return;
-    $("tierFilter")
-        .querySelectorAll(".filter-btn")
-        .forEach((x) => x.classList.remove("active"));
-    b.classList.add("active");
-    activeTier = b.dataset.tier;
-    render();
-});
+function bindFilterEvents() {
+    const searchEl = $("search");
+    if (searchEl) searchEl.addEventListener("input", render);
+
+    const capFilter = $("capFilter");
+    if (capFilter) {
+        capFilter.addEventListener("click", (e) => {
+            const b = e.target.closest("[data-cap]");
+            if (!b) return;
+            activeCap = setActiveFilterBtn(capFilter, b, "data-cap") || "all";
+            render();
+        });
+    }
+
+    const tierFilter = $("tierFilter");
+    if (tierFilter) {
+        tierFilter.addEventListener("click", (e) => {
+            const b = e.target.closest("[data-tier]");
+            if (!b) return;
+            activeTier = setActiveFilterBtn(tierFilter, b, "data-tier") || "all";
+            render();
+        });
+    }
+
+    window.addEventListener("resize", () => {
+        initFilterSliders();
+    });
+}
 
 // 品牌 chip 路线与上面两组一致：事件委托 + 独点切换。同一个 chip 再点
 // 一次不会切回 "all"（与 segmented 一致）。
@@ -861,7 +999,10 @@ function populateDrawer(m) {
     if (explainEl) {
         let baseExplain = COST_TIER_EXPLAIN[m.costTier || "normal"] || "";
         if (m && typeof m.customMultiplier === "number") {
-            const defMult = COST_TIER_MULTIPLIER[m.costTier || "normal"] ?? 1;
+            const defMult = coalesce(
+                COST_TIER_MULTIPLIER[m.costTier || "normal"],
+                1,
+            );
             if (m.customMultiplier < defMult) {
                 baseExplain += ` (已为您特惠降费：该模型原定为 ${defMult}x 倍率，当前特殊降为 ${m.customMultiplier}x 倍率，高频聊天或 IDE 开发极其经用划算！)`;
             } else if (m.customMultiplier > defMult) {
@@ -1034,10 +1175,10 @@ function renderDrawerStatus(model) {
         if (status === "operational") {
             hint.textContent = `近 24 小时共 ${h.total_requests || 0} 次请求，状态正常。`;
         } else if (status === "degraded") {
-            hint.textContent = `近 24 小时部分降级（成功率 ${sr ?? "?"}%），建议优先选其他模型。`;
+            hint.textContent = `近 24 小时部分降级（成功率 ${coalesce(sr, "?")}%），建议优先选其他模型。`;
             hint.classList.add("drawer-status-hint--err");
         } else if (status === "down") {
-            hint.textContent = `近 24 小时不可用（成功率 ${sr ?? "?"}%），暂时跳过此模型。`;
+            hint.textContent = `近 24 小时不可用（成功率 ${coalesce(sr, "?")}%），暂时跳过此模型。`;
             hint.classList.add("drawer-status-hint--err");
         } else {
             hint.textContent = "近 24 小时数据样本较少，状态未知。";
@@ -1150,4 +1291,18 @@ if (gridEl && drawer) {
     });
 }
 
-load();
+function boot() {
+    try {
+        bindFilterEvents();
+        initFilterSliders();
+        load();
+    } catch (e) {
+        showLoadError((e && e.message) || String(e));
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+} else {
+    boot();
+}
