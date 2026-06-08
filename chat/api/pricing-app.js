@@ -512,9 +512,48 @@ function selectPlan(code) {
     renderSelectedSummary();
 }
 
+function switchPricingTab(tab) {
+    const seg = document.querySelector(".pricing-segment");
+    const subPanel = document.getElementById("pricing-panel-subscription");
+    const topupPanel = document.getElementById("pricing-panel-topup");
+    if (!seg) return;
+    seg.querySelectorAll("button[data-pricing-tab]").forEach((b) => {
+        b.classList.toggle("is-active", b.getAttribute("data-pricing-tab") === tab);
+    });
+    if (subPanel) subPanel.hidden = tab !== "subscription";
+    if (topupPanel) topupPanel.hidden = tab !== "topup";
+}
+
+function setupPricingTabs() {
+    const seg = document.querySelector(".pricing-segment");
+    if (!seg || seg.dataset.tabsBound === "1") return;
+    seg.dataset.tabsBound = "1";
+    seg.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-pricing-tab]");
+        if (!btn) return;
+        switchPricingTab(btn.getAttribute("data-pricing-tab"));
+    });
+}
+
+function setupPricingFaq() {
+    const list = document.getElementById("pricing-faq-list");
+    if (!list || list.dataset.faqBound === "1") return;
+    list.dataset.faqBound = "1";
+    list.querySelectorAll(".pricing-faq-q").forEach((q) => {
+        q.addEventListener("click", () => {
+            const item = q.closest(".pricing-faq-item");
+            if (!item) return;
+            const wasActive = item.classList.contains("active");
+            list.querySelectorAll(".pricing-faq-item").forEach((i) => i.classList.remove("active"));
+            if (!wasActive) item.classList.add("active");
+        });
+    });
+}
+
 function selectTopup(code) {
     if (!CLIENT_CATALOG.topup[code]) return;
     selection = { kind: "topup", code };
+    switchPricingTab("topup");
     highlightSelection();
     renderSelectedSummary();
 }
@@ -541,6 +580,8 @@ function highlightSelection() {
 
 // ────────── 初始化 ──────────
 async function init() {
+    setupPricingTabs();
+    setupPricingFaq();
     const loading = document.getElementById("order-loading");
     const gate = document.getElementById("order-login-gate");
     const formSection = document.getElementById("order-form-section");

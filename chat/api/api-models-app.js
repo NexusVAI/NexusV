@@ -24,6 +24,24 @@ const esc = (s) => {
 // 2026-05-17 模型广场重构：用户指定从展示中移除的 model id 黑名单。
 // 后端 catalog 仍包含这些（聊天页 / api-gateway 计费仍按原状），仅模型广场
 // UI 隐藏。下面 9 条来自用户 2026-05-17 09:50 UTC+08 指令。
+// 模型广场置顶：旗舰模型固定排在最前（其余保持原 catalog 顺序）。
+const FEATURED_MODEL_ORDER = [
+    "gpt-5.5",
+    "claude-opus-4-8",
+    "grok-4.3",
+    "gpt-image-2-pro",
+    "minimax-m3",
+    "kimi-k2.6",
+    "glm-5.1",
+    "deepseek-v4-pro",
+];
+const FEATURED_RANK = new Map(
+    FEATURED_MODEL_ORDER.map((id, i) => [id.toLowerCase(), i]),
+);
+
+const GRID_COLLAPSE_MIN_ITEMS = 12;
+let gridListExpanded = false;
+
 const HIDE_IDS = new Set([
     "grok-imagine-image-lite",
     "gpt-image-2-all",
@@ -195,6 +213,171 @@ const BRAND_LOGO = {
     baidu: "./wenxin-color.svg",
 };
 
+function sortModelsFeaturedFirst(models) {
+    return [...models].sort((a, b) => {
+        const idA = String(a.id || a.canonicalId || "").toLowerCase();
+        const idB = String(b.id || b.canonicalId || "").toLowerCase();
+        const ra = FEATURED_RANK.has(idA) ? FEATURED_RANK.get(idA) : 9999;
+        const rb = FEATURED_RANK.has(idB) ? FEATURED_RANK.get(idB) : 9999;
+        if (ra !== rb) return ra - rb;
+        return idA.localeCompare(idB);
+    });
+}
+
+function getGridCollapsedMaxPx() {
+    return Math.min(window.innerHeight * 0.68, 880);
+}
+
+function measureGridExpandedHeight() {
+    const wrap = $("gridScrollWrap");
+    const grid = $("grid");
+    if (!wrap || !grid) return 0;
+    const prevMax = wrap.style.maxHeight;
+    const wasCollapsed = wrap.classList.contains("is-collapsed");
+    wrap.classList.remove("is-collapsed");
+    wrap.classList.add("is-expanded");
+    wrap.style.maxHeight = "none";
+    const h = grid.offsetHeight;
+    wrap.style.maxHeight = prevMax;
+    if (wasCollapsed) {
+        wrap.classList.remove("is-expanded");
+        wrap.classList.add("is-collapsed");
+    }
+    return h;
+}
+
+function syncGridExpandedHeightVar() {
+    const wrap = $("gridScrollWrap");
+    if (!wrap) return;
+    const h = measureGridExpandedHeight();
+    if (h > 0) wrap.style.setProperty("--grid-expanded-h", h + "px");
+}
+
+function setGridExpandBtnState(expanded) {
+    const btn = $("gridExpandBtn");
+    if (!btn) return;
+    btn.textContent = expanded ? "收起" : "展开全部";
+    btn.setAttribute("aria-expanded", String(expanded));
+}
+
+function syncGridFadeAtScrollEnd() {
+    const wrap = $("gridScrollWrap");
+    if (!wrap || !wrap.classList.contains("is-collapsed")) return;
+    const atEnd =
+        wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
+    wrap.classList.toggle("is-scrolled-end", atEnd);
+}
+
+function animateGridExpandToggle(expanded) {
+    const wrap = $("gridScrollWrap");
+    if (!wrap) return;
+    const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+    syncGridExpandedHeightVar();
+
+    if (reducedMotion) {
+        wrap.style.maxHeight = "";
+        wrap.classList.toggle("is-collapsed", !expanded);
+        wrap.classList.toggle("is-expanded", expanded);
+        wrap.classList.toggle("is-scrolled-end", false);
+        if (!expanded) wrap.scrollTop = 0;
+        return;
+    }
+
+    const collapsedPx = getGridCollapsedMaxPx();
+    const expandedPx =
+        parseFloat(
+            getComputedStyle(wrap).getPropertyValue("--grid-expanded-h"),
+        ) || wrap.scrollHeight;
+
+    if (expanded) {
+        const from = Math.min(wrap.clientHeight, collapsedPx);
+        wrap.style.maxHeight = from + "px";
+        wrap.classList.remove("is-collapsed", "is-scrolled-end");
+        wrap.classList.add("is-expanded");
+        wrap.offsetHeight;
+        wrap.style.maxHeight = expandedPx + "px";
+    } else {
+        const from = wrap.scrollHeight;
+        wrap.style.maxHeight = from + "px";
+        wrap.classList.remove("is-expanded");
+        wrap.offsetHeight;
+        wrap.classList.add("is-collapsed");
+        wrap.style.maxHeight = collapsedPx + "px";
+        wrap.scrollTop = 0;
+    }
+
+    const onEnd = (e) => {
+        if (e.target !== wrap || e.propertyName !== "max-height") return;
+        wrap.removeEventListener("transitionend", onEnd);
+        wrap.style.maxHeight = "";
+        if (!expanded) syncGridFadeAtScrollEnd();
+    };
+    wrap.addEventListener("transitionend", onEnd);
+}
+
+function setupGridCollapse() {
+    const btn = $("gridExpandBtn");
+    const wrap = $("gridScrollWrap");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+        const count = Number(btn.dataset.visibleCount || 0);
+        if (count < GRID_COLLAPSE_MIN_ITEMS) return;
+        gridListExpanded = !gridListExpanded;
+        animateGridExpandToggle(gridListExpanded);
+        setGridExpandBtnState(gridListExpanded);
+    });
+    if (wrap) {
+        wrap.addEventListener(
+            "scroll",
+            () => {
+                syncGridFadeAtScrollEnd();
+            },
+            { passive: true },
+        );
+    }
+    window.addEventListener("resize", () => {
+        syncGridExpandedHeightVar();
+        syncGridFadeAtScrollEnd();
+    });
+}
+
+function updateGridCollapse(visibleCount) {
+    const wrap = $("gridScrollWrap");
+    const btn = $("gridExpandBtn");
+    if (!wrap) return;
+    if (btn) btn.dataset.visibleCount = String(visibleCount);
+
+    if (visibleCount < GRID_COLLAPSE_MIN_ITEMS) {
+        gridListExpanded = false;
+        wrap.style.maxHeight = "";
+        wrap.style.removeProperty("--grid-expanded-h");
+        wrap.classList.remove("is-collapsed", "is-expanded", "is-scrolled-end");
+        if (btn) {
+            btn.hidden = true;
+            setGridExpandBtnState(false);
+        }
+        return;
+    }
+
+    syncGridExpandedHeightVar();
+    if (btn) btn.hidden = false;
+
+    wrap.style.maxHeight = "";
+    if (gridListExpanded) {
+        wrap.classList.remove("is-collapsed", "is-scrolled-end");
+        wrap.classList.add("is-expanded");
+    } else {
+        wrap.classList.add("is-collapsed");
+        wrap.classList.remove("is-expanded", "is-scrolled-end");
+        wrap.scrollTop = 0;
+    }
+    setGridExpandBtnState(gridListExpanded);
+    syncGridFadeAtScrollEnd();
+}
+
 function normalizeBrandKey(brand) {
     return String(brand || "")
         .toLowerCase()
@@ -257,14 +440,17 @@ async function load() {
             }
         }
         // 黑名单过滤后再写入 MODELS，让 stats / 过滤 / 渲染统一基于已清洗的列表
-        MODELS = Array.from(byCanonical.values()).filter((m) => {
-            const id = m.id || m.canonicalId || "";
-            return !HIDE_IDS.has(id);
-        });
+        MODELS = sortModelsFeaturedFirst(
+            Array.from(byCanonical.values()).filter((m) => {
+                const id = m.id || m.canonicalId || "";
+                return !HIDE_IDS.has(id);
+            }),
+        );
         // 给每条模型挂上展示用的 displayTier（缓存计算结果，避免渲染时反复算）
         for (const m of MODELS) m._displayTier = getDisplayTier(m);
         $("loading").style.display = "none";
         $("grid").style.display = "grid";
+        setupGridCollapse();
         buildBrandFilter();
         updateStats();
         render();
@@ -378,11 +564,13 @@ function render() {
     if (filtered.length === 0) {
         $("grid").style.display = "none";
         $("empty").style.display = "block";
+        updateGridCollapse(0);
         return;
     }
     $("grid").style.display = "grid";
     $("empty").style.display = "none";
     $("grid").innerHTML = filtered.map(card).join("");
+    updateGridCollapse(filtered.length);
     $("grid")
         .querySelectorAll("[data-copy]")
         .forEach((el) => {
@@ -522,35 +710,6 @@ if (brandFilterEl) {
         render();
     });
 }
-
-// 赞助横幅折叠/展开。state key 与主聊天侧边栏共享，
-// 用户在任意一处收起，全站统一收起，避免多页反复弹出打扰。
-(function () {
-    const banner = document.getElementById("cancriPromoBanner");
-    const btn = document.getElementById("cancriPromoToggle");
-    if (!banner || !btn) return;
-    const KEY = "nexusv_promo_donation_v2";
-    try {
-        if (localStorage.getItem(KEY) === "collapsed") {
-            banner.classList.add("is-collapsed");
-            btn.setAttribute("aria-expanded", "false");
-        }
-    } catch (_) {}
-    btn.addEventListener("click", () => {
-        const willCollapse = !banner.classList.contains("is-collapsed");
-        banner.classList.toggle("is-collapsed", willCollapse);
-        btn.setAttribute(
-            "aria-expanded",
-            willCollapse ? "false" : "true",
-        );
-        try {
-            localStorage.setItem(
-                KEY,
-                willCollapse ? "collapsed" : "expanded",
-            );
-        } catch (_) {}
-    });
-})();
 
 // ── 模型卡片右侧抽屉 (2026-05-22 新增) ────────────────────────────────────
 // 点击卡片任意非 .copy-btn 区域 → openDrawer(model)；展示：

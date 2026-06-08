@@ -380,10 +380,10 @@ function headingSlug(text, idx, sectionId) {
 }
 
 function ensureHeadingId(h, idx, sectionId) {
-    const want = headingSlug(h.textContent, idx, sectionId);
-    if (!h.id || (sectionId && !h.id.startsWith(sectionId + "--"))) {
-        h.id = want;
-    }
+    // 保留 HTML 里显式写的 id（如 quota-renewal-edge-cases），避免 TOC/文内
+    // #锚点与 ensureHeadingId 生成的 sectionId--slug 不一致导致点击无反应。
+    if (h.id) return;
+    h.id = headingSlug(h.textContent, idx, sectionId);
 }
 
 function scrollToDocAnchor(section, anchorId, smooth) {
@@ -1146,3 +1146,62 @@ function inlineToMarkdown(el) {
     });
     return out.replace(/\s+/g, " ").trim();
 }
+
+// ─── 10. 文档头图：海报图 → 视频渐变切换 ───────────────────────────────────
+(function initDocsIntroMedia() {
+    const figure = document.getElementById("docsIntroFigure");
+    const video = document.getElementById("docsIntroVideo");
+    const poster = document.getElementById("docsIntroPoster");
+    if (!figure || !video || !poster) return;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
+    let revealed = false;
+    const revealVideo = () => {
+        if (revealed) return;
+        if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+        revealed = true;
+        figure.classList.add("is-video-ready");
+    };
+
+    const tryPlay = () => {
+        revealVideo();
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+            // 自动播放被拦截时仍保留首帧，进入视口后再试
+            playPromise.catch(() => {});
+        }
+    };
+
+    ["loadeddata", "canplay", "canplaythrough", "playing"].forEach((evt) => {
+        video.addEventListener(evt, tryPlay);
+    });
+
+    if (typeof IntersectionObserver !== "undefined") {
+        const io = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) tryPlay();
+                });
+            },
+            { threshold: 0.2 },
+        );
+        io.observe(figure);
+    }
+
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        tryPlay();
+    } else {
+        video.load();
+    }
+
+    video.addEventListener("error", () => {
+        revealed = false;
+        figure.classList.remove("is-video-ready");
+        video.style.display = "none";
+    });
+})();

@@ -172,24 +172,3 @@ function bindUI() {
 
 bindUI();
 init();
-
-// 赞助横幅折叠/展开。localStorage key 与模型广场、主聊天侧边栏共用，
-// 一处收起、全站收起，避免多页反复弹出打扰。
-(function () {
-  const banner = document.getElementById("cancriPromoBanner");
-  const btn = document.getElementById("cancriPromoToggle");
-  if (!banner || !btn) return;
-  const KEY = "nexusv_promo_donation_v2";
-  try {
-    if (localStorage.getItem(KEY) === "collapsed") {
-      banner.classList.add("is-collapsed");
-      btn.setAttribute("aria-expanded", "false");
-    }
-  } catch (_) {}
-  btn.addEventListener("click", () => {
-    const willCollapse = !banner.classList.contains("is-collapsed");
-    banner.classList.toggle("is-collapsed", willCollapse);
-    btn.setAttribute("aria-expanded", willCollapse ? "false" : "true");
-    try { localStorage.setItem(KEY, willCollapse ? "collapsed" : "expanded"); } catch (_) {}
-  });
-})();
