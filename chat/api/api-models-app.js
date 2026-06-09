@@ -52,6 +52,7 @@ let gridListExpanded = false;
 let gridAnimating = false;
 
 const HIDE_IDS = new Set([
+    "z-image-turbo",
     "grok-imagine-image-lite",
     "gpt-image-2-all",
     "tongyi-xiaomi-analysis-pro",
@@ -190,6 +191,8 @@ function getDisplayTier(m) {
 const BRAND_LOGO = {
     anthropic: "./claude-color.svg",
     openai: "./openai.svg",
+    cancri: "../Logo/Cancri.svg",
+    kwaikat: "./kwaikat.svg",
     google: "./gemini-color.svg",
     minimax: "./minimax-color.svg",
     stepfun: "./stepfun-color.svg",
@@ -444,7 +447,14 @@ function normalizeBrandKey(brand) {
         .replace(/[._-]/g, "");
 }
 
-function brandLogoHtml(brand) {
+// per-model 图标覆盖（优先级高于 BRAND_LOGO）
+const MODEL_ICON_OVERRIDE = {
+    "kat-coder-pro-v2": "./kwaikat.svg",
+    "cancriv1-0.1b": "../Logo/Cancri.svg",
+};
+
+function brandLogoHtml(brand, modelId) {
+    const override = modelId && MODEL_ICON_OVERRIDE[modelId];
     const key = normalizeBrandKey(brand);
     // 2026-05-17 别名归一：
     //   - inclusionai → antgroup：Inclusion AI 是蚂蚁集团的开源 AI 团队，
@@ -453,9 +463,11 @@ function brandLogoHtml(brand) {
     // 未来如果拿到专属 Inclusion AI / Ling logo，在 BRAND_LOGO 直接加
     // inclusionai / ling key 覆盖此别名即可。
     const ALIAS = { inclusionai: "antgroup", "小米mimo": "xiaomimimo" };
-    const url = BRAND_LOGO[ALIAS[key] || key];
+    const url = override || BRAND_LOGO[ALIAS[key] || key];
+    const themeAdaptive = key === "openai" || key === "cancri";
+    const themeClass = themeAdaptive ? "model-icon-theme-adaptive" : "";
     if (url) {
-        return `<span class="card-logo" aria-hidden="true"><img src="${url}" alt="" loading="lazy" decoding="async" /></span>`;
+        return `<span class="card-logo" aria-hidden="true"><img${themeClass ? ` class="${themeClass}"` : ""} src="${url}" alt="" loading="lazy" decoding="async" /></span>`;
     }
     // fallback：品牌首字母圈。采用 cream 色背、clay 色字，跟主调一致。
     const initial = (String(brand || "?").trim()[0] || "?").toUpperCase();
@@ -849,7 +861,7 @@ function card(m) {
     // 2026-05-22 增 data-model-id：抽屉点击委托靠它从 MODELS 反查模型对象。
     return `<div class="card${disabled ? " is-disabled" : ""}" data-tier="${displayTier}" data-model-id="${esc(m.id)}" tabindex="0" role="button" aria-label="${esc(m.displayName || m.id)} — 查看详情"${disabled ? ` title="${esc(unavailableMessage)}"` : ""}>
           <div class="card-head">
-            ${brandLogoHtml(m.brand)}
+            ${brandLogoHtml(m.brand, m.id)}
             <div class="card-head-text">
               <div class="card-name">${esc(m.displayName || m.id)}</div>
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
@@ -999,7 +1011,7 @@ function closeDrawer() {
 function populateDrawer(m) {
     // Header
     const logoHost = document.getElementById("modelDrawerLogo");
-    if (logoHost) logoHost.innerHTML = brandLogoHtml(m.brand);
+    if (logoHost) logoHost.innerHTML = brandLogoHtml(m.brand, m.id);
     const nameEl = document.getElementById("modelDrawerName");
     if (nameEl) nameEl.textContent = m.displayName || m.id;
     const brandEl = document.getElementById("modelDrawerBrand");
