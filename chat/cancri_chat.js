@@ -2547,6 +2547,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+    {"id": "doubao-seed-2-0-code-preview-260215", "name": "Doubao Seed 2.0 Code", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     // 2026-06-09: 【特价】Claude Opus 4.8 — newapi.makelove.cloud 上游，normal 档。
@@ -2699,7 +2700,7 @@ const ARENA_MODE_MIGRATIONS = {
     "HappyHorse": "../Logo/欢乐马.webp",
     "Stepfun": "./stepfun-color.svg",
     "KwaiKAT": "./kwaikat.svg",
-    "Cancri": "../Logo/Cancri1.jpg",
+    "Cancri": "../Logo/Cancri.svg",
     "Cursor": "./cursor.svg",
     "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
     "Microsoft": "./microsoft-color.svg",
@@ -2720,11 +2721,11 @@ const ARENA_MODE_MIGRATIONS = {
     "doubao-seedance-2-0-260128": "./jimeng-color.svg",
     "ernie-4.5-turbo-20260402": "./wenxin-color.svg",
     "kat-coder-pro-v2": "./kwaikat.svg",
-    "cancriv1-0.1b": "../Logo/Cancri1.jpg",
+    "cancriv1-0.1b": "../Logo/Cancri.svg",
   };
 
   const THEME_ADAPTIVE_ICON_BRANDS = new Set(["OpenAI", "Clawto", "Cancri"]);
-  const THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "Cancri1.jpg"];
+  const THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "/Cancri.svg"];
 
   function shouldUseThemeAdaptiveIcon(iconPath, brand) {
     if (brand && THEME_ADAPTIVE_ICON_BRANDS.has(brand)) return true;
