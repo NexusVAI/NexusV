@@ -10,21 +10,28 @@
 
 <p align="center">
   <a href="https://www.nexusvai.xyz">官网</a> ·
-  <a href="https://www.nexusvai.xyz/chat/">对话</a> ·
+  <a href="https://www.nexusvai.xyz/chat/">在线对话</a> ·
   <a href="https://www.nexusvai.xyz/chat/api_docs.html">API 文档</a> ·
   <a href="https://www.nexusvai.xyz/chat/api_models.html">模型广场</a>
 </p>
 
-
 ---
+
 [![Star History Chart](https://api.star-history.com/chart?repos=NexusVAI/NexusV&type=date&legend=top-left)](https://www.star-history.com/?repos=NexusVAI%2FNexusV&type=date&legend=top-left)
+
 ## 简介
 
-NexusV 是一个非商业开源项目，旨在为用户提供统一的多模型 AI 对话体验。通过一个简洁的 Web 界面，您可以同时访问来自不同供应商的数十个大语言模型，在同一会话中切换模型、横向比较输出质量。
+NexusV 是一个多模型 AI 对话平台，为用户提供统一的多模型对话体验。通过一个简洁的 Web 界面，您可以同时访问来自不同供应商的数十个大语言模型，在同一会话中切换模型、横向比较输出质量。
+
+> **开源范围说明**
+>
+> 本仓库**仅开源前端代码**（静态页面、聊天界面、API 平台界面等全部浏览器端代码）。
+> 后端（Supabase Edge Functions、网关、路由、鉴权、计费等服务端代码）为**闭源**，不包含在本仓库中。
+> 前端中出现的 `__SUPABASE_ANON_KEY__`、Turnstile site key 等均为设计上公开的客户端公钥，不构成敏感信息。
 
 **当前接入的上游模型供应方：**
 
-阿里云百炼 · 魔搭社区 · 智谱  · 月之暗面 · Mistral · Google Gemini · 星火 · 商汤 · 以及更多第三方中转服务
+阿里云百炼 · 魔搭社区 · 智谱 · 月之暗面 · Mistral · Google Gemini · 星火 · 商汤 · 以及更多第三方中转服务
 
 ## 功能特性
 
@@ -42,11 +49,13 @@ NexusV 是一个非商业开源项目，旨在为用户提供统一的多模型 
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Frontend (GitHub Pages)                         │
+│  前端（本仓库 · 开源）                            │
+│  GitHub Pages 静态托管                            │
 │  index.html · chat/ · js/ · css/                 │
 └──────────────┬───────────────────────────────────┘
-               │ HTTPS
+               │ HTTPS（经 Cloudflare 边缘网关反代）
 ┌──────────────▼───────────────────────────────────┐
+│  后端（闭源 · 不在本仓库）                        │
 │  Supabase Edge Functions (Deno / TypeScript)     │
 │                                                  │
 │  chat-gateway ──┬── modelscope-proxy ──► 上游模型 │
@@ -55,18 +64,20 @@ NexusV 是一个非商业开源项目，旨在为用户提供统一的多模型 
 └──────────────┬───────────────────────────────────┘
                │
 ┌──────────────▼───────────────────────────────────┐
-│  Supabase PostgreSQL                             │
+│  Supabase PostgreSQL（闭源）                      │
 │  用户 · 对话历史 · 配额 · 模型目录 · 使用统计     │
 └──────────────────────────────────────────────────┘
 ```
 
-| 组件 | 说明 |
+| 后端组件（闭源） | 说明 |
 |------|------|
 | **chat-gateway** | 面向前端的主入口，处理鉴权、配额、队列、system prompt 注入 |
 | **api-gateway** | OpenAI 兼容 API 入口，Bearer Token 鉴权，转发至 modelscope-proxy |
 | **modelscope-proxy** | 核心路由层，30+ 个 provider 的 URL 构造、密钥注入、重试、健康检测 |
 | **chat-history** | 对话历史的 CRUD |
 | **web-search** | 对话中的联网搜索工具 |
+
+所有鉴权、配额、限流、密钥管理均在服务端强制执行；前端代码不包含任何上游模型密钥或服务端机密。
 
 ## 快速开始
 
@@ -79,7 +90,7 @@ NexusV 是一个非商业开源项目，旨在为用户提供统一的多模型 
 ### 使用 API
 
 ```bash
-curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/completions \
+curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -90,50 +101,44 @@ curl https://diusqgphvybnzazgopor.supabase.co/functions/v1/api-gateway/v1/chat/c
 
 API Key 在 [API 管理页](https://www.nexusvai.xyz/chat/api_keys.html) 生成，完整文档见 [API Docs](https://www.nexusvai.xyz/chat/api_docs.html)。
 
-## 项目结构
+## 项目结构（本仓库 / 前端）
 
 ```
 ├── index.html              # 官网首页
-├── about.html              # 关于页
+├── about.html / research.html / article.html   # 内容页
 ├── privacy.html            # 隐私协议
 ├── terms.html              # 服务条款
+├── pricing.html            # 价格页
 ├── chat/                   # 对话应用
 │   ├── index.html          # 聊天主界面
 │   ├── cancri_chat.js      # 聊天核心逻辑
-│   ├── api_docs.html       # API 文档
-│   ├── api_keys.html       # API Key 管理
-│   └── api_models.html     # 模型广场
-├── js/                     # 公共脚本
-│   ├── menu.js             # 导航栏
-│   ├── components.js       # 共享组件注入
-│   └── theme.js            # 主题切换
+│   ├── cancri_config.js    # 前端公开配置（网关地址 / 公钥）
+│   ├── api/                # API 开放平台与管理后台界面
+│   ├── shop/               # 商店 / 订单界面
+│   └── api_docs.html · api_keys.html · api_models.html
+├── js/                     # 官网公共脚本（导航 / 主题 / 搜索 / 评论等）
 ├── css/                    # 样式
-│   └── 后端/               # 不公开
-│       └── supabase/
-│           └── functions/  # Edge Functions 源码
-├── Logo/                   # 品牌素材
-└── docs/                   # 文档与指南
+└── Logo/                   # 品牌素材
 ```
 
 ## 本地开发
 
-本项目为纯静态前端 + Supabase 后端，无需构建步骤：
+前端为纯静态页面，无需构建步骤：
 
 ```bash
-# 克隆仓库
 git clone https://github.com/NexusVAI/NexusV.git
 cd NexusV
 
-# 直接用浏览器打开
-open index.html
-
-# 或启动本地服务器
+# 启动本地服务器（推荐，直接双击打开会受 CORS 限制）
 python -m http.server 8080
+# 浏览器访问 http://localhost:8080
 ```
+
+注意：本地运行的前端仍会连接线上后端网关（`chat.nexusvai.xyz`）。后端闭源，无法本地自建完整环境。
 
 ## 贡献
 
-欢迎提交 Issue 和 Pull Request。请通过 [GitHub Issues](https://github.com/NexusVAI/NexusV/issues) 报告 bug 或提出功能建议。
+欢迎针对**前端**提交 Issue 和 Pull Request。请通过 [GitHub Issues](https://github.com/NexusVAI/NexusV/issues) 报告 bug 或提出功能建议。涉及后端的问题（鉴权、配额、模型路由等）也欢迎通过 Issue 反馈，但相应代码不在本仓库维护。
 
 ## 联系方式
 
@@ -144,10 +149,6 @@ python -m http.server 8080
 | X / Twitter | [@NexusVAI](https://x.com/NexusVAI) |
 | 官网 | [https://www.nexusvai.xyz/](https://www.nexusvai.xyz/) |
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=NexusVAI/NexusV&type=date&legend=top-left)](https://www.star-history.com/?repos=NexusVAI%2FNexusV&type=date&legend=top-left)
-
 ## 许可
 
-本项目为开源项目，代码公开于 GitHub。详见仓库中的许可文件。
+本仓库中的**前端代码**开源公开；**后端服务端代码闭源**，不在本仓库范围内。仓库目前未附带正式的 LICENSE 文件——在补充 LICENSE 之前，默认保留所有权利（All Rights Reserved），仅供学习与参考。
