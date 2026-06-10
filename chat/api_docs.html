@@ -15,11 +15,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact" />
-    <script src="./api/api-platform.js?v=20260607-account-fix"></script>
+    <script src="./api/api-platform.js?v=2026-06-10-docs"></script>
     <!-- Cancri 双主题 logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
-    <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
-    <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
+    <!-- 可选客户端诊断：仅在用户同意后启用。-->
+    <script src="../js/telemetry.js?v=2026-06-10-docs" defer></script>
     <style>
       :root {
         --bg-code: #0d0d0d;
@@ -1419,11 +1419,14 @@
         <a href="#client-continue">Continue</a>
         <a href="#client-faq">客户端 FAQ</a>
 
+        <h4>Cancri Code</h4>
+        <a href="#cancri-code">桌面 IDE</a>
+
         <h4>规则与参考</h4>
         <a href="#quota">免费档配额</a>
         <a href="#quota-renewal-edge-cases"> └ 升级/续期边缘情况</a>
         <a href="#quota-token-window"> └ 免费用户 Token 窗口</a>
-        <a href="#quota-anti-freeloading">防滥用体系（白嫖防御）</a>
+        <a href="#quota-anti-freeloading">防滥用与配额保护</a>
         <a href="#ratelimit">速率限制</a>
         <a href="#errors">错误码</a>
         <a href="#sdk">SDK 兼容</a>
@@ -1595,11 +1598,9 @@
             <button class="copy-icon" data-copy-text="base-url">复制</button>
           </div>
           <div class="alert info">
-            <b>真实后端路径：</b>生产请求先到 <code>chat.nexusvai.xyz</code> 的
-            <code>cf-chat-gateway</code> Worker。<code>/functions/v1/api-gateway</code>
-            是当前公开 API 的 Cloudflare 原生路由；它再通过 service binding 调
-            <code>cf-modelscope-proxy</code> 做模型路由。Supabase 仍负责 Auth、RPC、
-            配额和用量落库。
+            <b>公开入口：</b>第三方客户端只需要配置本页 Base URL、自己的
+            <code>cancri_sk_</code> Key 与模型 ID。模型路由、鉴权、配额和用量统计
+            由平台在服务端完成；调用方不需要配置上游线路、代理服务、数据库地址或内部管理端点。
           </div>
           <div class="alert warn">
             <b>Base URL 不能混用：</b>OpenAI-compatible SDK / 工具填
@@ -1648,9 +1649,9 @@
             立刻到 Keys 管理页撤销并重新生成。
           </div>
           <div class="alert info">
-            <b>公开 API Key 不是 Supabase JWT。</b> <code>cancri_sk_</code> 只用于
-            <code>/v1/*</code> 公开 API；网页版登录、RLS、站内 RPC 仍使用 Supabase
-            用户会话。不要把 <code>cancri_sk_</code> 填到 Supabase 客户端配置里。
+            <b>公开 API Key 不是登录会话。</b> <code>cancri_sk_</code> Key 只用于
+            <code>/v1/*</code> 公开 API；网页版登录和站内账户功能使用用户会话，
+            二者不能互换。
           </div>
           <p>你可以生成任意数量的 Key，但建议按需创建，过多 Key 会增加管理复杂度。</p>
         </section>
@@ -1659,11 +1660,11 @@
           <h2>易混淆点</h2>
           <ul>
             <li><b><code>/v1/models</code> 成功不代表写接口开放。</b> 维护闸门开启时，模型列表仍可读，<code>/v1/chat/completions</code>、<code>/v1/messages</code>、<code>/v1/responses</code> 会返回 <code>503 api_paused</code>。</li>
-            <li><b>不要直连 <code>cf-modelscope-proxy</code>。</b> 它是 Cloudflare service binding，公开客户端只调用 <code>/functions/v1/api-gateway</code>。</li>
+            <li><b>只使用公开 Base URL。</b> 公开客户端只调用本页 Base URL；其它地址不属于公开 API 合约。</li>
             <li><b>模型 ID 用 Cancri Canonical ID。</b> <code>model</code> 必须来自 <a href="./api_models.html">模型广场</a> 或 <code>/v1/models</code> 返回值，不要照搬上游官方 ID。</li>
             <li><b>OpenAI Base URL 带 <code>/v1</code>，Anthropic Base URL 不带。</b> Anthropic SDK 和 Claude Code 会自行拼 <code>/v1/messages</code>、<code>/v1/messages/count_tokens</code>。</li>
             <li><b>兼容协议不是完整上游平台能力。</b> 这里支持核心对话、流式、token usage 与自定义 function tools；OpenAI hosted tools、Responses state、文件/向量库、网页搜索、computer use 不属于公开 API 能力。</li>
-            <li><b>流量和账本分层。</b> Token 流经 Cloudflare Worker；用户身份、配额判断和用量回写仍落在 Supabase。</li>
+            <li><b>站内聊天与公开 API 共用账户额度。</b> 同一个用户的网页聊天、API Key 调用使用同一账户额度；不要尝试绕过 <code>/v1/*</code> 入口调用其它地址。</li>
           </ul>
         </section>
 
@@ -1844,14 +1845,14 @@ r = client.chat.completions.create(
     "model": "deepseek-v4-pro",
     "messages": [
       {"role": "system", "content": "你是简洁的助手"},
-      {"role": "user", "content": "用一句话解释 RLS"}
+      {"role": "user", "content": "用一句话解释流式响应"}
     ]
   }'</span></pre>
             <pre class="lang" data-grp="c1" data-lang="js"><span class="k">const</span> r = <span class="k">await</span> client.chat.completions.create({
   model: <span class="s">"deepseek-v4-pro"</span>,
   messages: [
     { role: <span class="s">"system"</span>, content: <span class="s">"你是简洁的助手"</span> },
-    { role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释 RLS"</span> },
+    { role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释流式响应"</span> },
   ],
 });
 console.log(r.choices[<span class="n">0</span>].message.content);</pre>
@@ -1859,7 +1860,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
     model=<span class="s">"deepseek-v4-pro"</span>,
     messages=[
         {<span class="s">"role"</span>: <span class="s">"system"</span>, <span class="s">"content"</span>: <span class="s">"你是简洁的助手"</span>},
-        {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释 RLS"</span>},
+        {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释流式响应"</span>},
     ],
 )
 <span class="k">print</span>(r.choices[<span class="n">0</span>].message.content)</pre>
@@ -2008,7 +2009,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
     "model": "claude-sonnet-4-6",
     "max_tokens": 256,
     "system": "你是简洁的助手",
-    "messages": [{"role":"user","content":"用一句话解释 RLS"}]
+    "messages": [{"role":"user","content":"用一句话解释流式响应"}]
   }'</span></pre>
             <pre class="lang" data-grp="msg1" data-lang="js"><span class="c">// npm i @anthropic-ai/sdk</span>
 <span class="k">import</span> Anthropic <span class="k">from</span> <span class="s">"@anthropic-ai/sdk"</span>;
@@ -2022,7 +2023,7 @@ console.log(r.choices[<span class="n">0</span>].message.content);</pre>
   model: <span class="s">"claude-sonnet-4-6"</span>,
   max_tokens: <span class="n">256</span>,
   system: <span class="s">"你是简洁的助手"</span>,
-  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释 RLS"</span> }],
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"用一句话解释流式响应"</span> }],
 });
 console.log(r.content[<span class="n">0</span>].text);</pre>
             <pre class="lang" data-grp="msg1" data-lang="py"><span class="c"># pip install anthropic</span>
@@ -2037,7 +2038,7 @@ r = client.messages.create(
     model=<span class="s">"claude-sonnet-4-6"</span>,
     max_tokens=<span class="n">256</span>,
     system=<span class="s">"你是简洁的助手"</span>,
-    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释 RLS"</span>}],
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"用一句话解释流式响应"</span>}],
 )
 <span class="k">print</span>(r.content[<span class="n">0</span>].text)</pre>
             <pre class="lang" data-grp="msg1" data-lang="resp">{
@@ -2147,7 +2148,7 @@ r = client.messages.create(
     "model": "gpt-5.3-codex",
     "instructions": "你是简洁的助手",
     "input": [
-      {"type":"message","role":"user","content":[{"type":"input_text","text":"用一句话解释 RLS"}]}
+      {"type":"message","role":"user","content":[{"type":"input_text","text":"用一句话解释流式响应"}]}
     ],
     "max_output_tokens": 256
   }'</span></pre>
@@ -2162,7 +2163,7 @@ r = client.messages.create(
 <span class="k">const</span> r = <span class="k">await</span> client.responses.create({
   model: <span class="s">"gpt-5.3-codex"</span>,
   instructions: <span class="s">"你是简洁的助手"</span>,
-  input: <span class="s">"用一句话解释 RLS"</span>,
+  input: <span class="s">"用一句话解释流式响应"</span>,
   max_output_tokens: <span class="n">256</span>,
 });
 console.log(r.output[<span class="n">0</span>].content[<span class="n">0</span>].text);</pre>
@@ -2596,8 +2597,160 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             </div>
           </section>
 
+          <section id="cancri-code">
+            <h2>Cancri Code 桌面 IDE</h2>
+            <p>
+              Cancri Code 是面向本地工程的桌面 AI 编程 IDE。当前公开文档按桌面端
+              <b>1.5.0</b> 能力描述：内置模型使用 Cancri 开放平台账户与 Key；
+              自定义模型直连你填写的 OpenAI-compatible 服务商。
+            </p>
+
+            <div class="alert info">
+              <b>两种模型来源：</b>内置 Cancri 模型走平台鉴权、订阅和配额；自定义模型
+              直接请求你配置的端点，API Key 仅保存在本机并发送给该端点。自定义模型的费用、
+              速率和可用性由对应服务商决定。
+            </div>
+
+            <h3>配置 Cancri API Key</h3>
+            <ol>
+              <li>打开命令面板，选择 <strong>设置：配置（API Key / 自定义模型）</strong>；也可以进入设置页的「配置」栏。</li>
+              <li>在 <strong>API Key</strong> 输入框填入 <code>cancri_sk_...</code>。</li>
+              <li>保存后选择内置 Cancri 模型发起一次最小请求，验证 Key、账户权益和模型 ID。</li>
+            </ol>
+            <p>
+              该 Key 只影响内置 Cancri 模型。未填写 Key 时，桌面端使用登录会话；未登录用户不能使用内置模型，
+              但仍可使用自定义模型。
+            </p>
+
+            <h3>添加自定义模型</h3>
+            <p>
+              自定义模型用于接入 OpenAI-compatible 的 <code>/chat/completions</code> 服务。
+              在「自定义模型」区域填写以下字段：
+            </p>
+            <table>
+              <thead>
+                <tr><th>字段</th><th>说明</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>显示名</td>
+                  <td>模型选择器里显示的名称，例如 <code>我的 GPT-4o</code>。</td>
+                </tr>
+                <tr>
+                  <td>端点</td>
+                  <td>可填 API Base URL（如 <code>https://api.example.com/v1</code>）或完整 <code>/chat/completions</code> 地址。</td>
+                </tr>
+                <tr>
+                  <td>模型名</td>
+                  <td>发送给服务商的 <code>model</code> 字段，必须与该服务商要求完全一致。</td>
+                </tr>
+                <tr>
+                  <td>API Key</td>
+                  <td>第三方服务商 Key，仅用于请求你填写的端点。</td>
+                </tr>
+                <tr>
+                  <td>支持工具调用</td>
+                  <td>服务商支持 OpenAI tool calling 时保持勾选；不支持时关闭，否则 Agent 工具流程会失败。</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="code-block">
+              <button class="copy-icon" data-copy-text="cancri-code-custom-endpoint">复制</button>
+              <pre><code id="cancri-code-custom-endpoint">端点填写 https://api.example.com/v1
+实际请求 https://api.example.com/v1/chat/completions
+
+端点填写 https://api.example.com/v1/chat/completions
+实际请求 https://api.example.com/v1/chat/completions</code></pre>
+            </div>
+
+            <h3>使用 Agent</h3>
+            <ul>
+              <li><b>打开工程：</b>选择本地 workspace 后，Agent 才能读取、搜索和修改工程文件。</li>
+              <li><b>选择模型：</b>模型选择器同时显示内置 Cancri 模型与已保存的自定义模型。</li>
+              <li><b>选择运行模式：</b><strong>手动</strong>会逐个审批需要确认的工具；<strong>自动编辑</strong>自动放行编辑类白名单；<strong>全自动</strong>放行可审批工具，但不会绕过明确拒绝的工具或权限规则。</li>
+              <li><b>复杂任务：</b>使用计划模式拆分步骤；计划模式下隐藏写文件和命令类工具，退出计划后再执行修改。</li>
+              <li><b>并行调查：</b>子代理用于只读检索和归纳，不能写文件或运行命令。</li>
+            </ul>
+
+            <h3>内置工具与技能</h3>
+            <table>
+              <thead>
+                <tr><th>类别</th><th>能力</th><th>边界</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>文件与搜索</td>
+                  <td><code>read_file</code>、<code>write_file</code>、<code>edit_file</code>、<code>glob</code>、<code>grep</code></td>
+                  <td>修改已有文件前必须先读取；写文件用于新建或整文件重写。</td>
+                </tr>
+                <tr>
+                  <td>命令与诊断</td>
+                  <td>PowerShell、命令行、诊断命令</td>
+                  <td>命令类工具默认需要审批；输出和运行时长有上限。</td>
+                </tr>
+                <tr>
+                  <td>计划与协作</td>
+                  <td>待办、计划模式、只读子代理</td>
+                  <td>单个会话同一时间只运行一个 Agent 回合；默认最多 50 个工具步骤。</td>
+                </tr>
+                <tr>
+                  <td>联网</td>
+                  <td><code>web_fetch</code></td>
+                  <td>仅支持 <code>http</code> / <code>https</code> 文本抓取，默认最多返回 20,000 字符，硬上限 60,000 字符。</td>
+                </tr>
+                <tr>
+                  <td>Skills</td>
+                  <td>MCP、个性、代码审查，以及已安装的自定义 Skill</td>
+                  <td>斜杠菜单只显示已安装 Skill；执行 Skill 会向当前对话插入对应工作提示。</td>
+                </tr>
+                <tr>
+                  <td>MCP</td>
+                  <td>本地 stdio MCP server</td>
+                  <td>参数中的 <code>.</code> 或 <code>${workspace}</code> 会替换为当前项目路径；连接成功后把 <code>tools/list</code> 返回的工具注册给 Agent。</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>项目规则与权限</h3>
+            <ul>
+              <li>工程根目录首个命中的 <code>CANCRI.md</code>、<code>AGENTS.md</code> 或 <code>CLAUDE.md</code> 会作为项目规则注入当前回合。</li>
+              <li>设置页可追加自定义规则，用来固定语言、风格、代码约束和团队约定。</li>
+              <li>权限规则是 allow-only：可按命令前缀、文件路径 glob 或 URL 前缀放行；明确 deny 的工具不会被规则覆盖。</li>
+              <li><code>exit_plan_mode</code> 必须手动确认，不能通过权限规则自动放行。</li>
+            </ul>
+
+            <h3>当前能力评估</h3>
+            <table>
+              <thead>
+                <tr><th>适合</th><th>限制</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>本地代码阅读、跨文件搜索、小到中型改动、命令验证、文档抓取、MCP 扩展工具。</td>
+                  <td>不提供浏览器自动化或 computer use 能力；网页抓取不是可视化浏览器。</td>
+                </tr>
+                <tr>
+                  <td>接入自有 OpenAI-compatible 模型，并让 Agent 在该模型上运行。</td>
+                  <td>自定义模型必须支持流式 Chat Completions；工具调用只有在服务商兼容 tool calling 时可用。</td>
+                </tr>
+                <tr>
+                  <td>带审批的工程修改流程：先读、再改、再用命令验证。</td>
+                  <td>全自动模式不会绕过 deny 规则；高风险命令、文件写入和外部请求仍受权限系统约束。</td>
+                </tr>
+                <tr>
+                  <td>团队级规则沉淀：项目规则文件、自定义规则、Skills、MCP server。</td>
+                  <td>项目规则单次注入有长度上限；过长规则请拆成当前任务真正需要的约束。</td>
+                </tr>
+                <tr>
+                  <td>可选上传匿名化轨迹，用于改进模型和产品体验。</td>
+                  <td>轨迹上传默认关闭；开启后不上传 API Key、登录令牌或完整本机路径。</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
         <section id="quota">
-          <h2>配额机制（2026-05-17 Phase A）</h2>
+          <h2>配额机制</h2>
           <p>
             Cancri 把模型分成 <b>FREE</b> 与 <b>PAID</b> 两档（见 <a href="./api_models.html">模型广场</a>
             每张卡片右上的 badge）。FREE 档对所有用户始终免费；PAID 档对 FREE 用户
@@ -2617,7 +2770,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             <pre><code>1 积分 = 10,000 token   <span class="c"># 额度口径换算</span>
 
 <span class="c"># 一次调用实际扣减：</span>
-扣减 token = effective_pool_tokens × 模型权重
+扣减 token = 计费 token × 模型权重
 扣减 积分 = 扣减 token ÷ 10,000</code></pre>
           </div>
           <ul>
@@ -2633,7 +2786,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           <h3>FREE 用户的 PAID 模型试用规则</h3>
           <ul>
             <li>
-              <b>全站共享池：</b> 每月 1 亿 token（按下文折算后的 <code>effective_pool_tokens</code>
+              <b>全站共享池：</b> 每月 1 亿 token（按下文折算后的计费 token
               计），所有 FREE 用户共享。每月 1 号 00:00（UTC+8）自动重置回 1 亿。
               池内余额耗尽后，<b>当月</b>所有 FREE 用户调 PAID 模型都会被立刻拦截
               （返回 <code>429 free_pool_exhausted</code>），直到下月初。
@@ -2667,9 +2820,9 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <code>claude-opus-4-6</code> / <code>claude-opus-4-6-thinking</code> 等
               <code>vip</code> 级模型仅 Pro+ 以上可用，FREE 与 Pro 调用都返回
               <code>403 model_pro_plus_required</code>。<br/>
-              <b>2026-05-17 Phase A 老用户豁免：</b> 在 2026-05-17 之前订阅的 Pro 用户，
-              <code>get_quota_status</code> 返回的 <code>is_grandfathered=true</code>，
-              在本订阅周期内可继续调用 Claude Opus 全系（Opus 权重按下表生效），到期/续费后自动失效。
+              <b>老用户订阅豁免：</b> 在 2026-05-17 之前订阅的 Pro 用户，
+              账户权益页会标记为老用户豁免；在本订阅周期内可继续调用 Claude Opus 全系
+              （Opus 权重按下表生效），到期/续费后自动失效。
             </li>
           </ul>
 
@@ -2678,11 +2831,11 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             <li>
               <b>plan_code 决定额度：</b> Pro = 2000 万 token / 月；Pro+ = 8000 万 / 月；
               Pro Max = 3 亿 / 月。每次成功调用扣除
-              <code>effective_pool_tokens × 模型权重</code>（见下方权重表）。
+              <code>计费 token × 模型权重</code>（见下方权重表）。
             </li>
             <li>
-              <b>订阅周期自动重置：</b> 付费订阅按激活后的每 30 天周期懒重置（消费或查询额度时由
-              <code>cancri_consume_paid_quota_v2</code> / <code>cancri_get_quota_status_v2</code> 检测并归零）。周期内续费只延长有效期，不会立刻清零，避免通过反复续费刷配额。
+              <b>订阅周期自动重置：</b> 付费订阅按激活后的每 30 天周期懒重置。
+              周期内续费只延长有效期，不会立刻清零，避免通过反复续费刷配额。
             </li>
             <li>
               <b>加油包接续：</b> 本周期套餐配额耗尽后自动从加油包余额扣减；都为 0 时返回
@@ -2695,10 +2848,9 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
 
           <h3>模型权重表</h3>
           <p>
-            权重直接挂在 <code>SERVER_MODEL_REGISTRY[id].costTier</code> 上，
-            扣的是 <code>effective_pool_tokens × multiplier</code>。部分模型用
-            <code>customMultiplier</code> 覆盖 costTier 默认值（见下表第 4、5 行）。
-            <b>2026-05-29 已下调：</b>normal 3→2、expensive 10→5、vip 30→15，Opus 系列同步压平：
+            每个模型都有对应的计费权重，最终扣减为
+            <code>计费 token × 模型权重</code>。<b>2026-05-29 已下调：</b>
+            normal 3→2、expensive 10→5、vip 30→15，Opus 系列同步压平：
           </p>
           <table>
             <thead>
@@ -2715,17 +2867,17 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
 
           <h3>token 折算公式</h3>
           <p>
-            每次成功调用入池的有效 token 数（<code>effective_pool_tokens</code>）按
+            每次成功调用入池的计费 token 数按
             上游返回的真实 usage 字段折算。缓存命中按 <b>10%</b> 计价（与
             Anthropic / OpenAI prompt caching 主流商家一致）：
           </p>
           <div class="code-block">
-            <pre><code>effective_pool_tokens
+            <pre><code>计费 token
   = (prompt_tokens - cached_tokens) × 1.0       // 普通输入（全价）
   + cached_tokens                  × 0.1       // 缓存命中（10% 折扣）
   + completion_tokens              × 1.0;      // 输出（全价）
 
-# 最终扣减 = effective_pool_tokens × 模型权重</code></pre>
+# 最终扣减 = 计费 token × 模型权重</code></pre>
           </div>
           <p>
             上游字段映射：OpenAI 协议读 <code>usage.prompt_tokens</code> /
@@ -2739,114 +2891,16 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
             <code>output_tokens ≈ chars / 4</code> 兜底入池。
           </p>
 
-          <h3>实时查询配额状态</h3>
+          <h3>查看额度状态</h3>
           <p>
-            登录用户可通过 chat-gateway 实时查询当前订阅档位、订阅周期配额、加油包余额、
-            共享池余额、当日 PAID 调用余量。这是 <i>内部接口</i>（chat-gateway 上的
-            JSON-RPC 风格 endpoint），<b>不在公开 /v1/* API 列表内</b>。聊天页 /
-            设置面板的「额度」段就走这个接口。
+            登录后可在 <a href="./api_keys.html">Keys 管理页</a>、套餐/订单页和官方客户端设置面板查看额度状态。
+            可见信息包括当前档位、订阅到期日、周期配额、已用 token、加油包余额、FREE 共享池状态、
+            当日 PAID 试用剩余次数和老用户豁免标记。
           </p>
-          <div class="code-block">
-            <button class="copy-icon" data-copy-grp="quota-status">复制</button>
-            <pre><code>POST https://chat.nexusvai.xyz/functions/v1/chat-gateway
-Content-Type: application/json
-Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
-
-{ "endpoint": "get_quota_status" }</code></pre>
+          <div class="alert info">
+            <b>公开 API 不提供单独的额度查询端点。</b> <code>/v1/*</code> 只覆盖模型列表、
+            对话、消息和 Responses 兼容协议。额度展示属于账户管理功能，请以官方页面显示为准。
           </div>
-          <p>响应（FREE 用户）：</p>
-          <div class="code-block">
-            <pre><code>{
-  "ok": true,
-  "tier": "free",
-  "plan_code": null,
-  "expires_at": null,
-  "days_remaining": 0,
-  "monthly_quota": 0,
-  "monthly_consumed": 0,
-  "monthly_remaining": 0,
-  "monthly_percent": 0,
-  "topup_balance": 0,
-  "topup_total_purchased": 0,
-  "topup_total_consumed": 0,
-  "is_grandfathered": false,
-  "free_pool": {
-    "period_start": "2026-04-30T16:00:00Z",   // = 2026-05-01 00:00 UTC+8
-    "period_end":   "2026-05-31T16:00:00Z",
-    "budget":   100000000,
-    "consumed":   8421337,
-    "remaining": 91578663,
-    "percent": 8.42
-  },
-  "daily_paid": {
-    "day": "2026-05-17",
-    "used": 4,
-    "limit": 15,
-    "remaining": 11
-  },
-  "subscription": { "tier": "free", "plan_code": null,
-                    "expires_at": null, "days_remaining": 0 },
-  "token_window": {
-    "used_5h": 42000,
-    "limit_5h": 100000,
-    "used_week": 185000,
-    "limit_week": 500000
-  }
-}</code></pre>
-          </div>
-          <p>响应（PAID 用户 — Pro+ 为例）：</p>
-          <div class="code-block">
-            <pre><code>{
-  "ok": true,
-  "tier": "paid",
-  "plan_code": "pro_plus",
-  "expires_at": "2026-06-14T08:30:00Z",
-  "days_remaining": 28,
-  "monthly_quota": 80000000,
-  "monthly_consumed": 12340000,
-  "monthly_remaining": 67660000,
-  "monthly_percent": 15.43,
-  "topup_balance": 15000000,
-  "topup_total_purchased": 15000000,
-  "topup_total_consumed": 0,
-  "is_grandfathered": false,
-  "free_pool":  { /* 仍返回，前端可忽略 */ },
-  "daily_paid": { /* 全 0，PAID 用户不走此闸 */ },
-  "subscription": { "tier": "paid", "plan_code": "pro_plus",
-                    "expires_at": "...", "days_remaining": 28,
-                    "is_grandfathered": false },
-  "token_window": null  // PAID 用户不受 token 窗口限制
-}</code></pre>
-          </div>
-          <p>响应（Phase A 老用户 — Pro 但保留 Opus 访问）：</p>
-          <div class="code-block">
-            <pre><code>{
-  "ok": true,
-  "tier": "paid",
-  "plan_code": "pro",
-  "expires_at": "2026-06-08T08:30:00Z",
-  "days_remaining": 22,
-  "monthly_quota": 20000000,
-  "monthly_consumed": 5430000,
-  "monthly_remaining": 14570000,
-  "monthly_percent": 27.15,
-  "topup_balance": 0,
-  "topup_total_purchased": 0,
-  "topup_total_consumed": 0,
-  "is_grandfathered": true,         // ← 关键：Phase A 老用户福利
-  "free_pool":  { /* 仍返回 */ },
-  "daily_paid": { /* 全 0 */ },
-  "subscription": { "tier": "paid", "plan_code": "pro",
-                    "expires_at": "...", "days_remaining": 22,
-                    "is_grandfathered": true }
-}</code></pre>
-          </div>
-          <p>
-            前端通过 <code>is_grandfathered === true</code> 即可判定要不要画「老用户 · Opus 可调」徽章。
-            后端 <code>cancri_consume_paid_quota_v2</code> 在 vip-gate 处自动豁免，不需要前端额外传参。
-            续费时（<code>cancri_activate_paid_code_v2</code>）通过 trigger 自动清除 <code>is_grandfathered</code>，
-            用户改吃所选新档位的明码规则。
-          </p>
 
           <h3 id="quota-renewal-edge-cases">升级、续期与档位变更边缘情况</h3>
           <p>
@@ -2881,7 +2935,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               ④ <b>升级后配额也按比例折算</b>（不是直接给满额）：
               <code>新配额 = CEIL(目标档满配额 × 剩余天数 / 30)</code>。
               例如 Pro 升 Pro+ 剩 20 天：8000 万 × 20/30 ≈ 5334 万，而不是 8000 万
-              —— 防止「临近到期时低价升级薅满配额」。
+              —— 防止临近到期低价升级后获得不成比例的周期配额。
             </p>
             <p>
               <b>两个边界：</b> 升级时订阅已过期 → 返回 <code>upgrade_requires_active_subscription</code>（请改买新订阅）；
@@ -2896,7 +2950,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               如果剩余天数 &lt; 7 天，你必须<b>按目标档全价购买新订阅</b>（会提档 + 顺延 30 天）。
             </p>
             <p style="color: var(--text-faint); font-size: 12.5px">
-              为什么设 7 天最低门槛？防止「鸽到临到期再低价升级」的白嫖策略：
+              为什么设 7 天最低门槛？防止临近到期才低价升级的套利行为：
               如果不设门槛，用户可以在到期前 1 天花几块钱把 Pro 升到 Pro Max，
               立即获得 3 亿配额用完即弃 —— 相当于花几块钱买了 3 亿 token 的「天卡」。
               7 天门槛确保升级用户至少承担一周的高档成本，避免这种套利。
@@ -2931,15 +2985,15 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </div>
 
           <div class="faq-item">
-            <h4>4.  grandfather 老用户（Pro 但可调 Opus）续期后会怎样？</h4>
+            <h4>4. 老用户豁免（Pro 但可调 Opus）续期后会怎样？</h4>
             <p>
-              <b> grandfather 特权在续期（任何续期）后自动清除。</b>
-              如果你用 Pro 码续 Pro，续期后 <code>is_grandfathered</code> 变成 <code>false</code>，
+              <b>老用户豁免在续期（任何续期）后自动清除。</b>
+              如果你用 Pro 码续 Pro，续期后老用户豁免失效，
               你失去 Opus 调用权，变成普通 Pro（2000 万/月，无 Opus）。
-              如果你用 Pro+ 码升级， grandfather 同样清除，但你获得 Pro+ 明码权益（8000 万 + Opus）。
+              如果你用 Pro+ 码升级，老用户豁免同样清除，但你获得 Pro+ 明码权益（8000 万 + Opus）。
             </p>
             <p style="color: var(--text-faint); font-size: 12.5px">
-              为什么 grandfather 不能永久保留？Phase A  grandfather 是一个<strong>一次性过渡期补偿</strong>，
+              为什么老用户豁免不能永久保留？老用户豁免是一个<strong>一次性过渡期补偿</strong>，
               目的是不让早期支持者在档位重构（2026-05-17）后立即失去已有权益。
               它只保「当前订阅周期」，续期意味着进入新周期，应该按新规则走。
             </p>
@@ -2985,7 +3039,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           <h3 id="quota-token-window">免费用户滚动 Token 窗口（2026-06-03 上线）</h3>
           <p>
             <b>所有 FREE 用户</b>（网页聊天 + API Key 调用）额外受两层滚动时间窗口限制，
-            防止单用户无限制薅 token。两层窗口<b>同时生效</b>，任一触发即返回 429：
+            防止单用户异常消耗 token。两层窗口<b>同时生效</b>，任一触发即返回 429：
           </p>
           <table>
             <thead>
@@ -3005,8 +3059,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </tbody>
           </table>
           <p>
-            <b>如何计算：</b> 每次成功调用结束后，实际消耗的 token（<code>effective_pool_tokens × 模型权重</code>）
-            写入 <code>free_user_token_window</code> 表。后续每次新请求前，系统 SUM 窗口内的记录与上限比对。
+            <b>如何计算：</b> 每次成功调用结束后，实际消耗的 token（<code>计费 token × 模型权重</code>）
+            会计入该用户的滚动窗口。后续每次新请求前，系统按窗口内累计消耗与上限比对。
             失败调用（上游 4xx/5xx）不计入窗口。
           </p>
           <p>
@@ -3017,8 +3071,8 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <h4>为什么设 5h / 7d 两层？</h4>
             <p>
               5 小时窗口拦截「短时间狂刷」：防止用户脚本在几小时内消耗数十万 token；
-              7 天窗口拦截「慢速持续薅」：防止用户每天少量调用、一周累计超过 50 万 token。
-              双层叠加堵住了「打一枪换一个地方」和「细水长流」两种白嫖策略。
+              7 天窗口拦截长期连续超额：防止用户每天少量调用、一周累计超过 50 万 token。
+              双层叠加覆盖短时爆量和长期连续超额两类异常消耗。
             </p>
           </div>
           <div class="faq-item">
@@ -3048,7 +3102,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
               <tr>
                 <td>403</td>
                 <td><code>model_pro_plus_required</code></td>
-                <td>该模型仅 Pro+ 以上可用（Claude Opus 全系 / Gemini 3.1 Pro / 视频生成等 vip 模型），FREE 与 Pro 都被挡（Phase A 老用户 <code>is_grandfathered=true</code> 在本订阅周期内豁免）</td>
+                <td>该模型仅 Pro+ 以上可用（Claude Opus 全系 / Gemini 3.1 Pro / 视频生成等 vip 模型），FREE 与 Pro 都被挡（老用户豁免在本订阅周期内例外）</td>
               </tr>
               <tr>
                 <td>429</td>
@@ -3100,18 +3154,17 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
         </section>
 
         <section id="quota-anti-freeloading">
-          <h2>防滥用体系（白嫖防御）</h2>
+          <h2>防滥用与配额保护</h2>
           <p>
-            Cancri 的免费档设计原则是「对正常用户足够用，对白嫖用户层层设卡」。
-            以下汇总所有已上线的防滥用机制，每一层都是独立防线，
-            绕过一层还有下一层。想白嫖？先过这 13 关。
+            Cancri 的免费档面向正常试用和轻量接入场景。以下规则用于保护共享池、
+            付费用户体验和平台成本；任一规则触发时，请求会返回对应错误码。
           </p>
 
           <h3>第一层：全站共享池（总量封顶）</h3>
           <div class="faq-item">
             <h4>怎么挡？</h4>
             <p>
-              所有 FREE 用户共享每月 <b>1 亿 token</b> 预算（按 effective_pool_tokens 计，即折算后扣池量）。
+              所有 FREE 用户共享每月 <b>1 亿 token</b> 预算（按计费 token 计，即折算后扣池量）。
               池子耗尽 → 当月所有 FREE 用户全部拦截（<code>429 free_pool_exhausted</code>），
               下月 1 号 00:00 UTC+8 重置。
             </p>
@@ -3148,7 +3201,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </p>
           </div>
 
-          <h3>第四层：7 天 Token 窗口（慢速持续薅封顶）</h3>
+          <h3>第四层：7 天 Token 窗口（长期连续超额封顶）</h3>
           <div class="faq-item">
             <h4>怎么挡？</h4>
             <p>
@@ -3157,7 +3210,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </p>
             <p style="color: var(--text-faint); font-size: 12.5px">
               防御目标：堵住「每天少量调用，一周累计超额」的细水长流策略。
-              5h 窗口管短时爆量，7d 窗口管长期持续薅。
+              5h 窗口管短时爆量，7d 窗口管长期连续超额。
             </p>
           </div>
 
@@ -3201,7 +3254,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </p>
           </div>
 
-          <h3>第八层：升级补差价（杜绝「低价升档薅配额」）</h3>
+          <h3>第八层：升级补差价（限制低价升档套利）</h3>
           <div class="faq-item">
             <h4>怎么挡？</h4>
             <p>
@@ -3215,7 +3268,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </p>
           </div>
 
-          <h3>第九层：升级配额按比例折算（杜绝「临到期低价薅满配额」）</h3>
+          <h3>第九层：升级配额按比例折算（限制临到期低价升档套利）</h3>
           <div class="faq-item">
             <h4>怎么挡？</h4>
             <p>
@@ -3235,7 +3288,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             <p>
               剩余天数 <b>&lt; 7 天</b>时，不能走补差价升级路径。
               必须按目标档全价购买新订阅（提档 + 顺延 30 天）。
-              DB 端 <code>cancri_activate_paid_code_v2</code> 有同款硬拒兜底。
+              服务端会按同一规则拒绝不符合条件的升档请求。
             </p>
             <p style="color: var(--text-faint); font-size: 12.5px">
               防御目标：防止「鸽到临到期再低价升级」—— 即使上面配额折算已经限制了收益，
@@ -3286,15 +3339,15 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </p>
           </div>
 
-          <h3>总结：白嫖成本</h3>
+          <h3>总结：免费档上限</h3>
           <p>
-            以上 13 层防线叠加后，一个 FREE 用户的理论最大白嫖量：
+            以上配额保护规则叠加后，一个 FREE 用户的理论最高免费消耗：
           </p>
           <ul>
             <li><b>单日：</b> 15 次 PAID 模型调用，且总 token 不超 5h/100K + 7d/500K 窗口</li>
             <li><b>单月：</b> 共享池 1 亿 token 中抢到的那一份（先到先得，池子耗尽即停）</li>
             <li><b>多账号：</b> 设备指纹 + IP 关联可被检测，管理后台可见风险标记</li>
-            <li><b>升级套利：</b> 补差价 + 配额折算 + 7 天门槛三重封锁，不存在低价薅满配额路径</li>
+            <li><b>升级套利：</b> 补差价 + 配额折算 + 7 天门槛三重限制，不存在低价获取完整高档配额的路径</li>
           </ul>
           <p>
             <b>底线：</b> 如果以上限制仍然不够你用，说明你的用量已经远超「免费尝鲜」范畴
@@ -3555,19 +3608,15 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
             </tbody>
           </table>
 
-          <h3>上游线路健康与自动阻断</h3>
+          <h3>模型可用性与自动切换</h3>
           <p>
-            后端对每条上游线路（line-key 级别）有内存软阻断机制，防止调用方在
-            临时不可用的线路上浪费重试额度：
+            平台会持续检测模型线路状态，并在单条线路临时不可用时自动切换到同模型的其它可用线路。
+            这类切换对调用方透明：
           </p>
           <ul>
-            <li><b>内存软阻断：</b> 单条线路在 <b>3 分钟窗口</b> 内累计 ≥ 6 次失败信号 →
-              该线路被临时阻断 <b>5 分钟</b>，期间自动路由到同模型的其它可用线路</li>
-            <li>软阻断仅影响内部路由选择，<b>不会从 <code>/v1/models</code> 列表里移除模型</b></li>
-            <li>5 分钟冷却后自动解锁，无需人工介入</li>
-            <li><b>硬禁用（24h）：</b> 极端信号如上游 401/402（Key 死亡）或 429 带明确
-              account/key 终止文本时，会写入 <code>model_line_disabled</code> 表，需管理员到
-              <code>admin_lines.html</code> 手动重新启用</li>
+            <li>临时线路故障不会改变 <code>/v1/models</code> 的模型列表。</li>
+            <li>若同模型仍有可用线路，请求会继续按原模型 ID 返回。</li>
+            <li>若该模型暂时无可用线路，请求会返回 <code>503 upstream_error</code> 或 <code>429 upstream_rate_limit</code>，并在可用时携带 <code>Retry-After</code>。</li>
           </ul>
           <p>
             拿到 <code>503 upstream_error</code> 或 <code>429 upstream_rate_limit</code> 不要在同模型上原地重试。
@@ -3734,7 +3783,7 @@ Authorization: Bearer &lt;SUPABASE_USER_JWT&gt;
           </p>
           <h3>计费怎么算？</h3>
           <p>
-            后台实计费按 <code>effective_pool_tokens × 模型权重</code> 扣减（见上面「模型权重表」）：
+            后台实计费按 <code>计费 token × 模型权重</code> 扣减（见上面「模型权重表」）：
             <b>Free 档免费</b>使用全站 1亿/月共享池 + 个人每日 15 次 PAID 试用 +
             5h 滚动窗口 100K token + 7d 滚动窗口 500K token；
             <b>Pro ¥9.9 / 30 天订阅周期</b> 个人周期配额 2000 万 token，
