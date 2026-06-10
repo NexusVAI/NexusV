@@ -35,6 +35,7 @@ const esc = (s) => {
 // 模型广场置顶：旗舰模型固定排在最前（其余保持原 catalog 顺序）。
 const FEATURED_MODEL_ORDER = [
     "gpt-5.5",
+    "claude-fable-5",
     "claude-opus-4-8",
     "grok-4.3",
     "gpt-image-2-pro",
@@ -50,6 +51,40 @@ const FEATURED_RANK = new Map(
 const GRID_COLLAPSE_MIN_ITEMS = 12;
 let gridListExpanded = false;
 let gridAnimating = false;
+
+// 2026-06-10：catalog 偶发落后（如 QQ 走 Supabase 回退且 Edge 未部署）时，
+// 前端兜底补全已上线模型，避免模型广场缺卡。字段与 chat-gateway catalog 对齐。
+const CATALOG_ENSURE_MODELS = [
+    {
+        id: "claude-fable-5",
+        displayName: "Claude Fable 5",
+        brand: "Anthropic",
+        canonicalId: "claude-fable-5",
+        lineLabel: "aspirin",
+        available: true,
+        disabled: false,
+        chat: true,
+        arena: true,
+        multimodal: true,
+        maxInputTokens: 200000,
+        maxOutputTokens: 32000,
+        costTier: "vip",
+        customMultiplier: 250.0,
+        gateCostTier: "paid",
+        freeUserBlocked: true,
+        enableThinking: false,
+    },
+];
+
+function mergeEnsuredCatalogModels(byCanonical) {
+    for (const patch of CATALOG_ENSURE_MODELS) {
+        const cid = patch.canonicalId || patch.id;
+        if (!byCanonical.has(cid)) {
+            byCanonical.set(cid, { ...patch, id: cid, _lineCount: 1 });
+        }
+    }
+    return byCanonical;
+}
 
 const HIDE_IDS = new Set([
     "z-image-turbo",
@@ -537,18 +572,13 @@ async function fetchModelCatalog() {
     const urls = catalogGatewayCandidates();
     if (!urls.length) throw new Error("网关地址未配置");
 
-    // QQ 浏览器对 CF 域名更易卡住 → 优先 Supabase 直连
-    if (isQqBrowser()) {
-        const sb = urls.indexOf(GW_SUPABASE_DIRECT);
-        if (sb > 0) {
-            urls.splice(sb, 1);
-            urls.unshift(GW_SUPABASE_DIRECT);
-        }
-    }
+    // 2026-06-10：QQ 与其它浏览器统一优先 CF（chat.nexusvai.xyz）。
+    // 旧逻辑把 Supabase 置顶 → Supabase catalog 未同步时模型广场缺新模型（如 Fable 5）。
+    // Supabase 仅作 CF 超时/失败后的回退。
 
     let lastErr = null;
     for (let i = 0; i < urls.length; i++) {
-        const timeoutMs = i === 0 ? (isQqBrowser() ? 15000 : 10000) : 18000;
+        const timeoutMs = i === 0 ? (isQqBrowser() ? 18000 : 10000) : 20000;
         try {
             const resp = await fetchCatalogOnce(urls[i], options, timeoutMs);
             if (resp.ok) return resp;
@@ -628,6 +658,7 @@ async function load() {
                 }
             }
         }
+        mergeEnsuredCatalogModels(byCanonical);
         // 黑名单过滤后再写入 MODELS，让 stats / 过滤 / 渲染统一基于已清洗的列表
         MODELS = sortModelsFeaturedFirst(
             Array.from(byCanonical.values()).filter((m) => {
