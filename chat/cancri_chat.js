@@ -2525,7 +2525,7 @@ const ARENA_MODE_MIGRATIONS = {
     // 2026-05-29: deepsb 模型。
     {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     // 2026-06-02: Mimo 聊天模型全部下线。
-    {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+    {"id": "claude-fable-5", "name": "Claude Fable 5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 250.0},
     // 2026-06-03: Grok 4.20 统一走 juziapi.xin
     {"id": "grok-4.20-0309-console", "name": "Grok 4.20", "brand": "xAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
     // 2026-05-28: grok-4.20-multi-agent-xhigh（dgbmc 上游，复用现有 Grok key）
@@ -2700,7 +2700,7 @@ const ARENA_MODE_MIGRATIONS = {
     "HappyHorse": "../Logo/欢乐马.webp",
     "Stepfun": "./stepfun-color.svg",
     "KwaiKAT": "./kwaikat.svg",
-    "Cancri": "../Logo/Cancri.svg",
+    "Cancri": "../Logo/Cancri1.jpg",
     "Cursor": "./cursor.svg",
     "Clawto": "./openai.svg",  // clawto 公益线路复用 OpenAI icon
     "Microsoft": "./microsoft-color.svg",
@@ -2721,11 +2721,11 @@ const ARENA_MODE_MIGRATIONS = {
     "doubao-seedance-2-0-260128": "./jimeng-color.svg",
     "ernie-4.5-turbo-20260402": "./wenxin-color.svg",
     "kat-coder-pro-v2": "./kwaikat.svg",
-    "cancriv1-0.1b": "../Logo/Cancri.svg",
+    "cancriv1-0.1b": "../Logo/Cancri1.jpg",
   };
 
   const THEME_ADAPTIVE_ICON_BRANDS = new Set(["OpenAI", "Clawto", "Cancri"]);
-  const THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "/Cancri.svg"];
+  const THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "Cancri1.jpg"];
 
   function shouldUseThemeAdaptiveIcon(iconPath, brand) {
     if (brand && THEME_ADAPTIVE_ICON_BRANDS.has(brand)) return true;
@@ -6453,8 +6453,8 @@ const ARENA_MODE_MIGRATIONS = {
         env_ANTHROPIC_AUTH_TOKEN_note:
           "ANTHROPIC_API_KEY 比 ANTHROPIC_AUTH_TOKEN 稳，避开 anthropics/claude-code#39013 的 Authorization 头偶尔不发送的 bug",
         recommended_models: [
-          "claude-sonnet-4-6",
-          "claude-opus-4-6",
+          "claude-fable-5",
+          "claude-opus-4-8",
           "claude-haiku-4-5-20251001",
         ],
       },
