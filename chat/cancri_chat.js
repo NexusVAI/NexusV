@@ -170,7 +170,8 @@ const ARENA_MODE_MIGRATIONS = {
   const INDEPENDENT_MODEL_PING_INTERVAL_MS = 60 * 60 * 1000; // 独立额度模型1小时ping一次
   const MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
   const RATE_LIMIT_UPDATE_INTERVAL_MS = SHARED_QUOTA_REFRESH_INTERVAL_MS;
-  const DEFAULT_MODEL_ID = "grok-4.20-0309-console";
+  // 2026-06-10: 默认模型恢复 DeepSeek V4 Flash（Agnes 2.0 仅 IDE 可用）。
+  const DEFAULT_MODEL_ID = "deepseek-v4-flash";
   const DEFAULT_COMPARE_MODEL_ID = "minimax-m2.7";
   const RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
   let INDEPENDENT_QUOTA_MODEL_IDS = new Set();
@@ -2409,6 +2410,8 @@ const ARENA_MODE_MIGRATIONS = {
     "deepseek-v4-pro-futureppo": DEFAULT_MODEL_ID,
     "deepseek-v4-flash-futureppo": DEFAULT_MODEL_ID,
     "gemma-4-31b-chat": DEFAULT_MODEL_ID,
+    // 2026-06-10: Agnes 2.0 仅 IDE，Web 端选中迁移到默认免费模型。
+    "agnes-2.0-flash": DEFAULT_MODEL_ID,
     "gpt-oss-120b-futureppo": DEFAULT_MODEL_ID,
     "grok-code-fast-1": DEFAULT_MODEL_ID,
     "gemini-3.0-flash-high": DEFAULT_MODEL_ID,
