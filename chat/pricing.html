@@ -1147,6 +1147,31 @@
                             选这个
                         </button>
                     </article>
+                    <article class="topup-card" data-topup="topup_custom">
+                        <div class="claude-ornament" aria-hidden="true">
+                            <svg class="claude-ornament__svg" width="48" height="48" viewBox="0 0 500 500" aria-hidden="true"><use href="#pricing-ornament-pro"/></svg>
+                        </div>
+                        <div class="topup-card__head">
+                            <div class="topup-card__amount">
+                                <span class="currency">¥</span><input
+                                    type="number"
+                                    id="topup-custom-amount"
+                                    min="1"
+                                    max="1000"
+                                    step="1"
+                                    inputmode="decimal"
+                                    placeholder="自填"
+                                    aria-label="自定义充值金额（元）"
+                                    style="width: 4.2em; font: inherit; color: inherit; background: transparent; border: none; border-bottom: 1px dashed currentColor; text-align: left; padding: 0 2px;"
+                                />
+                            </div>
+                            <div class="topup-card__tokens" id="topup-custom-tokens">输入 ¥1~1000</div>
+                        </div>
+                        <p class="topup-card__hint">按量充值 · ¥1 = 150 积分 · 永不过期、可累积</p>
+                        <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_custom">
+                            选这个
+                        </button>
+                    </article>
                 </div>
 
                 <div class="multiplier-info" id="multiplier-info">
@@ -1421,6 +1446,6 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
-        <script src="./api/pricing-app.js?v=20260608-pricing-faq"></script>
+        <script src="./api/pricing-app.js?v=20260612-custom-topup"></script>
     </body>
 </html>
