@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#000000" />
+        <meta
+            name="description"
+            content="Cancri 冠军预测 · 预测 2026 世界杯冠军队 · 畅聊比赛瓜分 Token 奖励池"
+        />
+        <meta property="og:title" content="Cancri · 冠军预测 · 抢万亿 Token" />
+        <meta
+            property="og:description"
+            content="超准分析、豪礼不断、轻松参与 — 与 AI 一起预测世界杯冠军。"
+        />
+        <meta property="og:image" content="../Logo/bf3a3d9c0a4f35425760e9c3d3b6fdaa.png" />
+        <meta property="og:type" content="website" />
+
+        <title>冠军预测 · 抢万亿 Token · Cancri</title>
+        <link rel="icon" type="image/png" href="../Logo/Cancri1.jpg" />
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        />
+        <link rel="stylesheet" href="./styles/01-claude-tokens.css?v=2026-06-11-cp" />
+        <link rel="stylesheet" href="./styles/02-themes.css?v=2026-06-11-cp" />
+        <link rel="stylesheet" href="./celebrate.css?v=2026-06-11-cp" />
+        <link rel="stylesheet" href="./champion_predict.css?v=2026-06-11-staticgrid" />
+        <script src="./cancri_config.js?v=2026-06-11-cp"></script>
+    </head>
+    <body class="celebrate-body">
+        <header class="celebrate-nav" role="banner">
+            <a class="celebrate-nav-brand" href="./index.html" aria-label="返回 Cancri 工作台">
+                <img src="../Logo/Cancri1.jpg" alt="" class="celebrate-nav-logo" />
+                <span class="celebrate-nav-title">Cancri</span>
+            </a>
+            <nav class="celebrate-nav-links" aria-label="活动导航">
+                <a class="celebrate-nav-trigger" href="#pick-team">选择主队</a>
+                <a class="celebrate-nav-trigger" href="#features">活动亮点</a>
+                <a class="celebrate-nav-trigger" href="#chat-prompts">畅聊预测</a>
+                <a class="celebrate-nav-trigger" href="#rules">活动说明</a>
+            </nav>
+            <div class="celebrate-nav-actions">
+                <a class="celebrate-nav-invite" href="../index.html">NexusV 主站</a>
+                <a class="celebrate-nav-cta" href="./index.html" data-cp-cta>立即预测</a>
+            </div>
+        </header>
+
+        <main>
+            <section class="cp-hero celebrate-section" aria-label="活动主视觉">
+                <div class="cp-hero-inner">
+                    <button type="button" class="cp-hero-hit" data-cp-cta aria-label="立即预测，赢取大奖">
+                        <img
+                            class="cp-hero-img"
+                            src="../Logo/bf3a3d9c0a4f35425760e9c3d3b6fdaa.png"
+                            alt="预测冠军队 · 抢万亿 Token"
+                            width="894"
+                            height="718"
+                            fetchpriority="high"
+                            decoding="async"
+                        />
+                    </button>
+                    <p class="cp-hero-hint">点击海报或下方按钮，跳转工作台开始预测</p>
+                </div>
+            </section>
+
+            <section class="celebrate-section" id="pick-team" aria-labelledby="cp-pick-title">
+                <header class="celebrate-section-header">
+                    <h2 class="celebrate-section-title" id="cp-pick-title">选择你的主队</h2>
+                    <p class="celebrate-section-sub">
+                        2026 世界杯 48 支参赛队 · 每场胜利 10 积分 = 10 万 Token
+                    </p>
+                </header>
+
+                <div id="cpSupportStatus" class="cp-support-status" aria-live="polite"></div>
+
+                <div class="cp-team-toolbar">
+                    <label class="cp-team-filter-label" for="cpTeamFilter">搜索球队</label>
+                    <input
+                        type="search"
+                        id="cpTeamFilter"
+                        class="cp-team-filter"
+                        placeholder="输入国家名或代码，如 巴西 / BRA"
+                        autocomplete="off"
+                    />
+                </div>
+
+                <div id="cpTeamGrid" class="cp-team-grid" role="list" aria-label="世界杯参赛国家队">
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="CAN" data-team-name="加拿大" data-team-flag="ca" aria-label="加拿大">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ca.png" alt="加拿大" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">加拿大</span>
+                        <span class="cp-team-code">CAN</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="MEX" data-team-name="墨西哥" data-team-flag="mx" aria-label="墨西哥">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/mx.png" alt="墨西哥" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">墨西哥</span>
+                        <span class="cp-team-code">MEX</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="USA" data-team-name="美国" data-team-flag="us" aria-label="美国">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/us.png" alt="美国" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">美国</span>
+                        <span class="cp-team-code">USA</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="AUS" data-team-name="澳大利亚" data-team-flag="au" aria-label="澳大利亚">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/au.png" alt="澳大利亚" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">澳大利亚</span>
+                        <span class="cp-team-code">AUS</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="IRQ" data-team-name="伊拉克" data-team-flag="iq" aria-label="伊拉克">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/iq.png" alt="伊拉克" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">伊拉克</span>
+                        <span class="cp-team-code">IRQ</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="IRN" data-team-name="伊朗" data-team-flag="ir" aria-label="伊朗">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ir.png" alt="伊朗" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">伊朗</span>
+                        <span class="cp-team-code">IRN</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="JPN" data-team-name="日本" data-team-flag="jp" aria-label="日本">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/jp.png" alt="日本" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">日本</span>
+                        <span class="cp-team-code">JPN</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="JOR" data-team-name="约旦" data-team-flag="jo" aria-label="约旦">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/jo.png" alt="约旦" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">约旦</span>
+                        <span class="cp-team-code">JOR</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="KOR" data-team-name="韩国" data-team-flag="kr" aria-label="韩国">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/kr.png" alt="韩国" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">韩国</span>
+                        <span class="cp-team-code">KOR</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="QAT" data-team-name="卡塔尔" data-team-flag="qa" aria-label="卡塔尔">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/qa.png" alt="卡塔尔" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">卡塔尔</span>
+                        <span class="cp-team-code">QAT</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="SAU" data-team-name="沙特阿拉伯" data-team-flag="sa" aria-label="沙特阿拉伯">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/sa.png" alt="沙特阿拉伯" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">沙特阿拉伯</span>
+                        <span class="cp-team-code">SAU</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="UZB" data-team-name="乌兹别克斯坦" data-team-flag="uz" aria-label="乌兹别克斯坦">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/uz.png" alt="乌兹别克斯坦" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">乌兹别克斯坦</span>
+                        <span class="cp-team-code">UZB</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="ALG" data-team-name="阿尔及利亚" data-team-flag="dz" aria-label="阿尔及利亚">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/dz.png" alt="阿尔及利亚" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">阿尔及利亚</span>
+                        <span class="cp-team-code">ALG</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="CPV" data-team-name="佛得角" data-team-flag="cv" aria-label="佛得角">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/cv.png" alt="佛得角" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">佛得角</span>
+                        <span class="cp-team-code">CPV</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="COD" data-team-name="刚果（金）" data-team-flag="cd" aria-label="刚果（金）">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/cd.png" alt="刚果（金）" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">刚果（金）</span>
+                        <span class="cp-team-code">COD</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="CIV" data-team-name="科特迪瓦" data-team-flag="ci" aria-label="科特迪瓦">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ci.png" alt="科特迪瓦" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">科特迪瓦</span>
+                        <span class="cp-team-code">CIV</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="EGY" data-team-name="埃及" data-team-flag="eg" aria-label="埃及">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/eg.png" alt="埃及" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">埃及</span>
+                        <span class="cp-team-code">EGY</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="GHA" data-team-name="加纳" data-team-flag="gh" aria-label="加纳">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/gh.png" alt="加纳" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">加纳</span>
+                        <span class="cp-team-code">GHA</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="MAR" data-team-name="摩洛哥" data-team-flag="ma" aria-label="摩洛哥">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ma.png" alt="摩洛哥" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">摩洛哥</span>
+                        <span class="cp-team-code">MAR</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="SEN" data-team-name="塞内加尔" data-team-flag="sn" aria-label="塞内加尔">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/sn.png" alt="塞内加尔" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">塞内加尔</span>
+                        <span class="cp-team-code">SEN</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="RSA" data-team-name="南非" data-team-flag="za" aria-label="南非">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/za.png" alt="南非" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">南非</span>
+                        <span class="cp-team-code">RSA</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="TUN" data-team-name="突尼斯" data-team-flag="tn" aria-label="突尼斯">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/tn.png" alt="突尼斯" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">突尼斯</span>
+                        <span class="cp-team-code">TUN</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="CUW" data-team-name="库拉索" data-team-flag="cw" aria-label="库拉索">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/cw.png" alt="库拉索" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">库拉索</span>
+                        <span class="cp-team-code">CUW</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="HAI" data-team-name="海地" data-team-flag="ht" aria-label="海地">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ht.png" alt="海地" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">海地</span>
+                        <span class="cp-team-code">HAI</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="PAN" data-team-name="巴拿马" data-team-flag="pa" aria-label="巴拿马">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/pa.png" alt="巴拿马" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">巴拿马</span>
+                        <span class="cp-team-code">PAN</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="ARG" data-team-name="阿根廷" data-team-flag="ar" aria-label="阿根廷">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ar.png" alt="阿根廷" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">阿根廷</span>
+                        <span class="cp-team-code">ARG</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="BRA" data-team-name="巴西" data-team-flag="br" aria-label="巴西">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/br.png" alt="巴西" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">巴西</span>
+                        <span class="cp-team-code">BRA</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="COL" data-team-name="哥伦比亚" data-team-flag="co" aria-label="哥伦比亚">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/co.png" alt="哥伦比亚" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">哥伦比亚</span>
+                        <span class="cp-team-code">COL</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="ECU" data-team-name="厄瓜多尔" data-team-flag="ec" aria-label="厄瓜多尔">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ec.png" alt="厄瓜多尔" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">厄瓜多尔</span>
+                        <span class="cp-team-code">ECU</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="PAR" data-team-name="巴拉圭" data-team-flag="py" aria-label="巴拉圭">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/py.png" alt="巴拉圭" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">巴拉圭</span>
+                        <span class="cp-team-code">PAR</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="URU" data-team-name="乌拉圭" data-team-flag="uy" aria-label="乌拉圭">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/uy.png" alt="乌拉圭" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">乌拉圭</span>
+                        <span class="cp-team-code">URU</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="NZL" data-team-name="新西兰" data-team-flag="nz" aria-label="新西兰">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/nz.png" alt="新西兰" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">新西兰</span>
+                        <span class="cp-team-code">NZL</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="AUT" data-team-name="奥地利" data-team-flag="at" aria-label="奥地利">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/at.png" alt="奥地利" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">奥地利</span>
+                        <span class="cp-team-code">AUT</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="BEL" data-team-name="比利时" data-team-flag="be" aria-label="比利时">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/be.png" alt="比利时" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">比利时</span>
+                        <span class="cp-team-code">BEL</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="BIH" data-team-name="波黑" data-team-flag="ba" aria-label="波黑">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ba.png" alt="波黑" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">波黑</span>
+                        <span class="cp-team-code">BIH</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="CRO" data-team-name="克罗地亚" data-team-flag="hr" aria-label="克罗地亚">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/hr.png" alt="克罗地亚" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">克罗地亚</span>
+                        <span class="cp-team-code">CRO</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="CZE" data-team-name="捷克" data-team-flag="cz" aria-label="捷克">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/cz.png" alt="捷克" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">捷克</span>
+                        <span class="cp-team-code">CZE</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="ENG" data-team-name="英格兰" data-team-flag="gb-eng" aria-label="英格兰">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/gb-eng.png" alt="英格兰" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">英格兰</span>
+                        <span class="cp-team-code">ENG</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="FRA" data-team-name="法国" data-team-flag="fr" aria-label="法国">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/fr.png" alt="法国" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">法国</span>
+                        <span class="cp-team-code">FRA</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="GER" data-team-name="德国" data-team-flag="de" aria-label="德国">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/de.png" alt="德国" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">德国</span>
+                        <span class="cp-team-code">GER</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="NED" data-team-name="荷兰" data-team-flag="nl" aria-label="荷兰">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/nl.png" alt="荷兰" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">荷兰</span>
+                        <span class="cp-team-code">NED</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="NOR" data-team-name="挪威" data-team-flag="no" aria-label="挪威">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/no.png" alt="挪威" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">挪威</span>
+                        <span class="cp-team-code">NOR</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="POR" data-team-name="葡萄牙" data-team-flag="pt" aria-label="葡萄牙">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/pt.png" alt="葡萄牙" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">葡萄牙</span>
+                        <span class="cp-team-code">POR</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="SCO" data-team-name="苏格兰" data-team-flag="gb-sct" aria-label="苏格兰">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/gb-sct.png" alt="苏格兰" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">苏格兰</span>
+                        <span class="cp-team-code">SCO</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="ESP" data-team-name="西班牙" data-team-flag="es" aria-label="西班牙">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/es.png" alt="西班牙" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">西班牙</span>
+                        <span class="cp-team-code">ESP</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="SWE" data-team-name="瑞典" data-team-flag="se" aria-label="瑞典">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/se.png" alt="瑞典" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">瑞典</span>
+                        <span class="cp-team-code">SWE</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="SUI" data-team-name="瑞士" data-team-flag="ch" aria-label="瑞士">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/ch.png" alt="瑞士" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">瑞士</span>
+                        <span class="cp-team-code">SUI</span>
+                    </button>
+                    <button type="button" class="cp-team-btn" role="listitem" data-team-code="TUR" data-team-name="土耳其" data-team-flag="tr" aria-label="土耳其">
+                        <img class="cp-team-flag-img" src="./assets/wc-flags/tr.png" alt="土耳其" width="48" height="36" loading="lazy" decoding="async" />
+                        <span class="cp-team-name">土耳其</span>
+                        <span class="cp-team-code">TUR</span>
+                    </button>
+                </div>
+            </section>
+
+            <div
+                id="cpConfirmModal"
+                class="cp-modal"
+                hidden
+                aria-hidden="true"
+                role="dialog"
+                aria-labelledby="cpConfirmTitle"
+            >
+                <div class="cp-modal-backdrop" data-cp-modal-close></div>
+                <div class="cp-modal-card">
+                    <h3 class="cp-modal-title" id="cpConfirmTitle">确认支持？</h3>
+                    <div id="cpConfirmFlagWrap" class="cp-modal-flag-wrap"></div>
+                    <p class="cp-modal-text">
+                        选定后<strong>不可更改</strong>。该队每赢一场，你将获得
+                        <strong>10 万 Token</strong>（10 积分 × 1 万 Token），自动计入充值余额。
+                    </p>
+                    <div class="cp-modal-actions">
+                        <button type="button" class="celebrate-btn celebrate-btn--ghost" data-cp-modal-close>
+                            取消
+                        </button>
+                        <button type="button" class="celebrate-btn celebrate-btn--primary" id="cpConfirmBtn">
+                            确认支持
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <section class="celebrate-section" id="features" aria-labelledby="cp-features-title">
+                <header class="celebrate-section-header">
+                    <h1 class="celebrate-section-title" id="cp-features-title">冠军预测</h1>
+                    <p class="celebrate-section-sub">数据分析，与你一起预判夺冠热门</p>
+                </header>
+
+                <div class="celebrate-benefits-grid">
+                    <article class="celebrate-benefit-card celebrate-benefit-card--feature">
+                        <span class="celebrate-benefit-eyebrow">analysis</span>
+                        <h2 class="celebrate-benefit-title">超准分析</h2>
+                        <p class="celebrate-benefit-desc">大数据 + AI 精准预测，多维度模型推理帮你看清夺冠概率。</p>
+                    </article>
+                    <article class="celebrate-benefit-card">
+                        <span class="celebrate-benefit-eyebrow">rewards</span>
+                        <h2 class="celebrate-benefit-title">豪礼不断</h2>
+                        <p class="celebrate-benefit-desc">瓜分万亿 Token 奖励池，参与互动即有机会获得平台奖励。</p>
+                    </article>
+                    <article class="celebrate-benefit-card">
+                        <span class="celebrate-benefit-eyebrow">easy</span>
+                        <h2 class="celebrate-benefit-title">轻松参与</h2>
+                        <p class="celebrate-benefit-desc">预测你心中的冠军队伍，点选话题或自由提问即可开始。</p>
+                    </article>
+                    <article class="celebrate-benefit-card">
+                        <span class="celebrate-benefit-eyebrow">insight</span>
+                        <h2 class="celebrate-benefit-title">深度解读</h2>
+                        <p class="celebrate-benefit-desc">阵容、赛程与赛事解读，从小组赛到淘汰赛全程陪伴。</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="celebrate-section cp-prompt-section" id="chat-prompts" aria-labelledby="cp-chat-title">
+                <header class="celebrate-section-header">
+                    <h2 class="celebrate-section-title" id="cp-chat-title">畅聊比赛</h2>
+                    <p class="celebrate-section-sub">赛场内外，与你共同见证</p>
+                </header>
+
+                <ul class="cp-prompt-list">
+                    <li class="cp-prompt-item" style="z-index: 10">
+                        <button
+                            type="button"
+                            class="cp-prompt-btn"
+                            data-cp-prompt="墨西哥 2026 世界杯有优势吗？帮我分析他们的夺冠概率"
+                        >
+                            <span class="cp-prompt-text">墨西哥 2026 世界杯有优势吗</span>
+                            <span class="cp-prompt-arrow" aria-hidden="true">→</span>
+                        </button>
+                    </li>
+                    <li class="cp-prompt-item" style="z-index: 9">
+                        <button
+                            type="button"
+                            class="cp-prompt-btn"
+                            data-cp-prompt="阿根廷会卫冕 2026 世界杯吗？给出你的预测和理由"
+                        >
+                            <span class="cp-prompt-text">阿根廷会卫冕 2026 世界杯吗</span>
+                            <span class="cp-prompt-arrow" aria-hidden="true">→</span>
+                        </button>
+                    </li>
+                    <li class="cp-prompt-item" style="z-index: 8">
+                        <button
+                            type="button"
+                            class="cp-prompt-btn"
+                            data-cp-prompt="这届世界杯巴西能夺冠吗？分析阵容与对手"
+                        >
+                            <span class="cp-prompt-text">这届世界杯巴西能夺冠吗</span>
+                            <span class="cp-prompt-arrow" aria-hidden="true">→</span>
+                        </button>
+                    </li>
+                    <li class="cp-prompt-item" style="z-index: 7">
+                        <button
+                            type="button"
+                            class="cp-prompt-btn"
+                            data-cp-prompt="我是颜值党，给我推荐一个值得支持的世界杯主队"
+                        >
+                            <span class="cp-prompt-text">我是颜值党，给我推荐一个主队</span>
+                            <span class="cp-prompt-arrow" aria-hidden="true">→</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="cp-prompt-cta">
+                    <button type="button" class="celebrate-btn celebrate-btn--primary celebrate-btn--lg" data-cp-cta>
+                        立即预测，赢取大奖
+                    </button>
+                </div>
+            </section>
+
+            <section class="celebrate-section" id="rules" aria-labelledby="cp-rules-title">
+                <header class="celebrate-section-header">
+                    <h2 class="celebrate-section-title" id="cp-rules-title">活动说明</h2>
+                </header>
+                <div class="cp-rules">
+                    <ul>
+                        <li>
+                            <strong>选择主队</strong>：须登录；从 48 支 2026 世界杯参赛队中选一支，<strong>选定后不可更改</strong>。
+                        </li>
+                        <li>
+                            <strong>胜场奖励</strong>：你支持的球队每赢一场比赛，你获得
+                            <strong>10 积分 = 10 万 Token</strong>，自动发放至充值余额（与加油包共用）。
+                        </li>
+                        <li>胜场由平台根据 FIFA 官方赛果录入后批量发放，通常有数小时延迟。</li>
+                        <li>点击话题或「立即预测」将跳转工作台畅聊；AI 预测内容仅供参考。</li>
+                        <li>请勿发布违法违规内容；刷号 / 作弊邀请将被取消资格。</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="cp-footer">Cancri / NexusVAI · 冠军预测活动</footer>
+
+        <script src="./champion_predict_teams.js?v=2026-06-11-staticgrid"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+        ></script>
+        <script src="./champion_predict.js?v=2026-06-11-staticgrid"></script>
+    </body>
+</html>

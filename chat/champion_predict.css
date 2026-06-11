@@ -1,0 +1,453 @@
+/* 冠军预测活动页 — 在 celebrate.css 之上的局部覆盖 */
+
+.celebrate-nav-links .celebrate-nav-trigger {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* Hero：限制海报尺寸，完整展示不裁切 */
+.cp-hero {
+  padding-top: clamp(20px, 4vw, 40px);
+  padding-bottom: clamp(28px, 5vw, 48px);
+}
+
+.cp-hero-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.cp-hero-hit {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--cel-radius-xl);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cp-hero-hit:hover {
+  transform: translateY(-2px);
+}
+
+.cp-hero-hit:focus-visible {
+  outline: 2px solid var(--cel-border-strong);
+  outline-offset: 4px;
+}
+
+.cp-hero-img {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  margin: 0 auto;
+  border-radius: var(--cel-radius-xl);
+  border: 1px solid var(--cel-border);
+  box-shadow: var(--cel-shadow-md);
+  object-fit: contain;
+  aspect-ratio: 894 / 718;
+}
+
+.cp-hero-hint {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--cel-text-dim);
+  line-height: 1.5;
+}
+
+/* 畅聊话题：保留 Kimi 叠放动效，配色对齐 celebrate 深色 */
+.cp-prompt-section {
+  padding-top: 0;
+}
+
+.cp-prompt-list {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.cp-prompt-item {
+  display: flex;
+  position: relative;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: -6px;
+}
+
+.cp-prompt-btn {
+  display: inline-flex;
+  max-width: 100%;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--cel-border);
+  background: var(--cel-bg-elevated);
+  color: var(--cel-text);
+  font-family: var(--cel-font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  transition: transform 300ms ease, opacity 300ms ease, border-color 0.2s ease,
+    background 0.2s ease;
+  transform: rotate(-2deg) scale(0.94);
+  opacity: 0.62;
+}
+
+.cp-prompt-item:nth-child(even) .cp-prompt-btn {
+  transform: rotate(2deg) scale(0.94);
+}
+
+.cp-prompt-btn.is-active,
+.cp-prompt-btn:hover {
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+  border-color: var(--cel-border-strong);
+  background: var(--cel-bg-soft);
+}
+
+.cp-prompt-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-prompt-arrow {
+  flex-shrink: 0;
+  color: var(--cel-text-dim);
+}
+
+.cp-prompt-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+/* 活动说明 */
+.cp-rules {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid var(--cel-border);
+  border-radius: var(--cel-radius-lg);
+  background: var(--cel-bg-soft);
+}
+
+.cp-rules ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--cel-text-soft);
+}
+
+.cp-rules li + li {
+  margin-top: 10px;
+}
+
+.cp-footer {
+  text-align: center;
+  padding: 24px 16px 32px;
+  font-size: 12px;
+  color: var(--cel-text-dim);
+  border-top: 1px solid var(--cel-border);
+}
+
+@media (max-width: 720px) {
+  .cp-hero-inner {
+    max-width: 100%;
+  }
+
+  .cp-hero-img {
+    max-width: min(100%, 420px);
+    border-radius: var(--cel-radius-lg);
+  }
+
+  .cp-prompt-btn {
+    font-size: 13px;
+    height: 42px;
+  }
+}
+
+/* ─── 主队选择 ─── */
+.cp-support-status {
+  max-width: 720px;
+  margin: 0 auto clamp(24px, 4vw, 40px);
+  text-align: center;
+}
+
+.cp-support-msg {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--cel-text-soft);
+}
+
+.cp-support-msg--warn {
+  color: var(--cel-warning);
+}
+
+.cp-supported-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  border: 1px solid var(--cel-border-strong);
+  border-radius: var(--cel-radius-xl);
+  background: var(--cel-bg-soft);
+  text-align: left;
+}
+
+.cp-supported-flag {
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid var(--cel-border);
+  object-fit: cover;
+}
+
+.cp-supported-label {
+  margin: 0;
+  font-family: var(--cel-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  color: var(--cel-text-dim);
+}
+
+.cp-supported-name {
+  margin: 4px 0 8px;
+  font-family: var(--cel-font-serif);
+  font-size: clamp(22px, 3vw, 28px);
+  color: var(--cel-text);
+}
+
+.cp-supported-code {
+  font-family: var(--cel-font-mono);
+  font-size: 13px;
+  color: var(--cel-text-dim);
+}
+
+.cp-supported-stats {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--cel-text-soft);
+}
+
+.cp-supported-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--cel-text-dim);
+}
+
+.cp-team-toolbar {
+  max-width: 1120px;
+  margin: 0 auto 16px;
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+.cp-team-filter-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--cel-text-dim);
+}
+
+.cp-team-filter {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 14px;
+  border-radius: var(--cel-radius-md);
+  border: 1px solid var(--cel-border);
+  background: var(--cel-bg-elevated);
+  color: var(--cel-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.cp-team-filter:focus {
+  outline: none;
+  border-color: var(--cel-border-strong);
+}
+
+.cp-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 10px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 40px);
+}
+
+.cp-team-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  padding: 10px 8px;
+  border: 1px solid var(--cel-border);
+  border-radius: var(--cel-radius-md);
+  background: transparent;
+  color: var(--cel-text);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.cp-team-flag-img,
+.cp-supported-flag-img,
+.cp-modal-flag-img {
+  width: 48px;
+  height: 36px;
+  border-radius: 4px;
+  border: 1px solid var(--cel-border);
+  object-fit: cover;
+  display: block;
+  background: var(--cel-bg-soft);
+}
+
+.cp-supported-flag-wrap {
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cp-supported-flag-img {
+  width: 72px;
+  height: 54px;
+}
+
+.cp-modal-flag-img {
+  width: 96px;
+  height: 72px;
+  margin: 0 auto;
+}
+
+.cp-team-code {
+  font-family: var(--cel-font-mono);
+  font-size: 10px;
+  color: var(--cel-text-dim);
+}
+
+.cp-team-name {
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.cp-team-btn:hover:not(:disabled) {
+  border-color: var(--cel-border-strong);
+  background: var(--cel-bg-soft);
+  transform: translateY(-2px);
+}
+
+.cp-team-btn.is-selected {
+  border-color: var(--cel-border-strong);
+  background: var(--cel-bg-soft);
+  box-shadow: var(--cel-shadow-sm);
+}
+
+.cp-team-btn.is-muted {
+  opacity: 0.35;
+}
+
+.cp-team-btn:disabled {
+  cursor: default;
+}
+
+/* 确认弹窗 */
+.cp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.cp-modal[hidden] {
+  display: none !important;
+}
+
+.cp-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.cp-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 400px);
+  padding: 24px;
+  border-radius: var(--cel-radius-xl);
+  border: 1px solid var(--cel-border);
+  background: var(--cel-bg);
+  text-align: center;
+}
+
+.cp-modal-title {
+  margin: 0 0 16px;
+  font-family: var(--cel-font-serif);
+  font-size: 22px;
+  color: var(--cel-text);
+}
+
+.cp-modal-flag {
+  display: block;
+  margin: 0 auto 16px;
+  border-radius: 8px;
+  border: 1px solid var(--cel-border);
+}
+
+.cp-modal-text {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--cel-text-soft);
+}
+
+.cp-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .cp-supported-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .cp-team-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-hero-hit:hover {
+    transform: none;
+  }
+
+  .cp-prompt-btn {
+    transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  }
+
+  .cp-team-btn:hover:not(:disabled) {
+    transform: none;
+  }
+}
