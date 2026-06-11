@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+    />
+    <title>管理员 · 世界杯主队 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="stylesheet" href="./api-platform.css?v=2026-06-11-wc" />
+    <script src="./api-platform.js?v=20260607-account-fix"></script>
+    <style>
+      .wc-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .wc-summary-card {
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-card);
+      }
+      .wc-summary-card .label {
+        font-size: 12px;
+        color: var(--text-mute);
+        margin-bottom: 6px;
+      }
+      .wc-summary-card .value {
+        font-size: 22px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .wc-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 16px;
+      }
+      .wc-toolbar label {
+        display: block;
+        font-size: 12px;
+        color: var(--text-mute);
+        margin-bottom: 6px;
+      }
+      .wc-toolbar input {
+        min-width: 240px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        color: var(--text);
+        font: inherit;
+      }
+      .wc-admin-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+      .wc-admin-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        background: var(--bg-card);
+        display: grid;
+        gap: 8px;
+        text-align: center;
+      }
+      .wc-admin-flag-img,
+      .wc-recent-flag-img {
+        width: 48px;
+        height: 36px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        display: block;
+        margin: 0 auto;
+      }
+      .wc-recent-flag-img {
+        width: 32px;
+        height: 24px;
+      }
+      .wc-admin-name {
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .wc-admin-code {
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .wc-admin-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .btn-win {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border-strong);
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-win:hover:not(:disabled) {
+        background: rgba(34, 197, 94, 0.22);
+      }
+      .btn-win:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+      .wc-recent {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: var(--bg-card);
+      }
+      .wc-recent h3 {
+        margin: 0 0 12px;
+        font-size: 14px;
+      }
+      .wc-recent-row {
+        display: grid;
+        grid-template-columns: 32px 1fr auto;
+        gap: 8px 12px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .wc-recent-row:last-child {
+        border-bottom: none;
+      }
+      .wc-recent-flag {
+        font-size: 22px;
+        text-align: center;
+      }
+      .wc-recent-meta {
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .wc-recent-time {
+        font-size: 11px;
+        color: var(--text-faint);
+        font-variant-numeric: tabular-nums;
+      }
+      .empty {
+        padding: 24px;
+        text-align: center;
+        color: var(--text-mute);
+      }
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        opacity: 0;
+        transform: translateY(8px);
+        transition: 0.2s ease;
+        z-index: 1000;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .toast.ok {
+        border-color: rgba(34, 197, 94, 0.45);
+      }
+      .toast.err {
+        border-color: rgba(232, 90, 90, 0.45);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin_users.html">用户</a>
+        <a href="./admin_orders.html">订单</a>
+        <a href="./admin_stories.html">满月故事</a>
+        <a href="./admin_wc2026.html" class="active">世界杯主队</a>
+        <a href="./admin.html">API 申请</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../champion_predict.html" style="color: var(--text-faint)">活动页 ↗</a>
+        <a href="../" style="color: var(--text-faint)">← 聊天</a>
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录管理员账号。</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>这个页面仅站点管理员可见。</p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>世界杯 2026 · 主队胜场录入</h1>
+          <p>
+            某队比赛获胜后，点 <strong>+1 胜场</strong>：全体支持者各得
+            <strong>10 万 Token</strong>（10 积分 × 1 万）。走 CF 模块
+            <code>wc2026-support</code>。
+          </p>
+        </header>
+
+        <div class="wc-summary">
+          <div class="wc-summary-card">
+            <div class="label">总支持者</div>
+            <div class="value" id="stat-supporters">—</div>
+          </div>
+          <div class="wc-summary-card">
+            <div class="label">已录入胜场</div>
+            <div class="value" id="stat-wins">—</div>
+          </div>
+          <div class="wc-summary-card">
+            <div class="label">累计发放 Token</div>
+            <div class="value" id="stat-tokens">—</div>
+          </div>
+          <div class="wc-summary-card">
+            <div class="label">单次奖励</div>
+            <div class="value" id="stat-per-win" style="font-size: 15px">—</div>
+          </div>
+        </div>
+
+        <div class="wc-toolbar">
+          <div>
+            <label for="match-label">本场备注（可选）</label>
+            <input id="match-label" type="text" placeholder="如：小组赛 A 组 第2场" />
+          </div>
+          <button type="button" class="btn-primary" id="reload-btn">刷新数据</button>
+        </div>
+
+        <div id="team-admin-grid" class="wc-admin-grid"></div>
+
+        <div class="wc-recent">
+          <h3>最近录入</h3>
+          <div id="recent-wins"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="../cancri_config.js?v=2026-06-11-wc"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+    <script src="../champion_predict_teams.js?v=2026-06-11-staticgrid"></script>
+    <script src="./admin-wc2026-app.js?v=2026-06-11-wc"></script>
+  </body>
+</html>
