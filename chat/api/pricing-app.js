@@ -178,8 +178,14 @@ const CLIENT_CATALOG = {
         topup_small: { amount: 10, label: "加油包 ¥10", desc: "1500 积分" },
         topup_medium: { amount: 50, label: "加油包 ¥50", desc: "9000 积分" },
         topup_large: { amount: 200, label: "加油包 ¥200", desc: "40000 积分" },
+        // 自定义按量充值：金额由用户填，desc/amount 在选择时按下方费率动态算。
+        topup_custom: { amount: 0, label: "自定义加油包", desc: "按量充值" },
     },
 };
+// 2026-06-12 自定义充值费率：与后端 TOPUP_CUSTOM_* 同步。¥1 = 150 积分（= 1_500_000 token）。
+const TOPUP_CUSTOM_POINTS_PER_CNY = 150;
+const TOPUP_CUSTOM_MIN_CNY = 1;
+const TOPUP_CUSTOM_MAX_CNY = 1000;
 let pricingMeta = { in_window: false, active_from: null, active_to: null };
 
 // 价格格式化：整数不加小数点，含小数保留 2 位去尾零
@@ -453,11 +459,20 @@ function renderSelectedSummary() {
         if (formSection) formSection.style.display = "none";
         return;
     }
-    const catalog = selection.kind === "subscription"
+    let catalog = selection.kind === "subscription"
         ? CLIENT_CATALOG.subscription[selection.code]
         : CLIENT_CATALOG.topup[selection.code];
     if (!catalog) {
         return;
+    }
+    // 自定义充值：金额/积分按用户输入的 customAmount 动态生成展示用 catalog。
+    if (selection.kind === "topup" && selection.code === "topup_custom") {
+        const amt = Number(selection.customAmount) || 0;
+        catalog = {
+            amount: amt,
+            label: "自定义加油包 ¥" + fmtPrice(amt),
+            desc: (amt * TOPUP_CUSTOM_POINTS_PER_CNY) + " 积分（按量充值，永不过期）",
+        };
     }
     if (orderEmpty) orderEmpty.style.display = "none";
     if (formSection) formSection.style.display = "block";
@@ -552,10 +567,45 @@ function setupPricingFaq() {
 
 function selectTopup(code) {
     if (!CLIENT_CATALOG.topup[code]) return;
-    selection = { kind: "topup", code };
+    if (code === "topup_custom") {
+        const input = document.getElementById("topup-custom-amount");
+        const amt = Math.round((Number(input && input.value) || 0) * 100) / 100;
+        const msg = document.getElementById("order-msg");
+        if (!Number.isFinite(amt) || amt < TOPUP_CUSTOM_MIN_CNY || amt > TOPUP_CUSTOM_MAX_CNY) {
+            if (msg) showMsg(msg, "❌ 请先填写充值金额：¥" + TOPUP_CUSTOM_MIN_CNY + " ~ ¥" + TOPUP_CUSTOM_MAX_CNY + "。", "warn");
+            if (input) input.focus();
+            return;
+        }
+        selection = { kind: "topup", code, customAmount: amt };
+    } else {
+        selection = { kind: "topup", code };
+    }
     switchPricingTab("topup");
     highlightSelection();
     renderSelectedSummary();
+}
+
+// 自定义金额输入时实时更新积分预览
+function setupCustomTopupInput() {
+    const input = document.getElementById("topup-custom-amount");
+    const out = document.getElementById("topup-custom-tokens");
+    if (!input || !out || input.dataset.bound === "1") return;
+    input.dataset.bound = "1";
+    const update = () => {
+        const amt = Math.round((Number(input.value) || 0) * 100) / 100;
+        if (!Number.isFinite(amt) || amt < TOPUP_CUSTOM_MIN_CNY || amt > TOPUP_CUSTOM_MAX_CNY) {
+            out.textContent = "输入 ¥" + TOPUP_CUSTOM_MIN_CNY + "~" + TOPUP_CUSTOM_MAX_CNY;
+        } else {
+            out.textContent = (amt * TOPUP_CUSTOM_POINTS_PER_CNY) + " 积分";
+        }
+        // 已选中自定义档时，改金额同步刷新订单摘要。
+        if (selection && selection.kind === "topup" && selection.code === "topup_custom"
+            && Number.isFinite(amt) && amt >= TOPUP_CUSTOM_MIN_CNY && amt <= TOPUP_CUSTOM_MAX_CNY) {
+            selection.customAmount = amt;
+            renderSelectedSummary();
+        }
+    };
+    input.addEventListener("input", update);
 }
 
 function highlightSelection() {
@@ -621,6 +671,7 @@ async function init() {
             });
         });
         setupPaymentMethodTabs();
+        setupCustomTopupInput();
     } catch (e) {
         console.error("pricing init:", e);
         if (loading) loading.style.display = "none";
@@ -711,6 +762,10 @@ document.getElementById("order-form").addEventListener("submit", async (e) => {
             payload.plan_code = selection.code;
         } else {
             payload.topup_sku = selection.code;
+            if (selection.code === "topup_custom") {
+                // server 端会按 [MIN,MAX] 钳制并按费率重算 token，此处只是把用户填的金额传过去。
+                payload.amount_cny = selection.customAmount;
+            }
         }
         const r = await callGateway("submit_payment_order", payload);
         showMsg(
