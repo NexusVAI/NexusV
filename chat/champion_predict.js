@@ -263,7 +263,7 @@
       "</strong> 场 · 我已获得 <strong>" +
       formatTokens(earned) +
       " Token</strong></p>" +
-      '<p class="cp-supported-hint">每场胜利 +" +
+      '<p class="cp-supported-hint">每场胜利 +' +
       formatTokens(perWin) +
       " Token · 已锁定</p>" +
       "</div></div>";
