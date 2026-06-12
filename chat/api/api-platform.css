@@ -198,6 +198,14 @@
   --shadow-toast: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
+/* 单色 SVG 作为 <img> 引用：浅色压黑，暗色/纯黑/默认暗色反白 */
+html[data-theme="light"] .model-icon-theme-adaptive {
+  filter: brightness(0);
+}
+html:not([data-theme="light"]) .model-icon-theme-adaptive {
+  filter: brightness(0) invert(1);
+}
+
 /* ─── base ─────────────────────────────────────────────────── */
 
 body {
@@ -1790,10 +1798,13 @@ table {
 
 .plan-tier:hover,
 .topup-card:hover,
-.card:hover,
 .stat-card:hover,
 .model-card:hover {
   transform: translateY(-1px);
+}
+
+.grid .card:hover {
+  transform: none;
 }
 
 .card,

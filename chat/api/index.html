@@ -22,7 +22,7 @@
   <script src="./api-platform.js?v=20260607-account-fix"></script>
   <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
        img.cancri-logo 的 src（黑/白），实现主题切换时 logo 跟随翻转。 -->
-  <script src="../cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+  <script src="../cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
   <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
   <script src="../../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
   <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
@@ -60,7 +60,7 @@
        呼应。z-index 0 在 ::before 之上、hero__inner（z=1）之下，
        不会遮挡标题 / 按钮。pointer-events: none 让鼠标穿透。
        径向 mask 让中心稍亮、四周淡出，避免条带在文字处过抢戏。
-       6 个 svg × 2 段拼接实现 0→-50% 的无缝 marquee。 */
+       17 个 svg × 2 段拼接，JS 按屏宽补填并用像素级位移无缝循环。 */
     .hero__marquee {
       position: absolute;
       inset: 0;
@@ -96,7 +96,10 @@
       align-items: center;
       gap: 44px;
       flex-shrink: 0;
+      --marquee-shift: 50%;
       will-change: transform;
+      backface-visibility: hidden;
+      transform: translate3d(0, 0, 0);
     }
     .marquee-row[data-dir="left"] .marquee-row__track {
       animation: hero-marquee-left var(--speed, 38s) linear infinite;
@@ -118,13 +121,19 @@
     :root[data-theme="light"] .marquee-row__track img {
       opacity: 0.55;
     }
+    html[data-theme="light"] .marquee-row__track img.model-icon-theme-adaptive {
+      filter: saturate(0.95) brightness(0);
+    }
+    html:not([data-theme="light"]) .marquee-row__track img.model-icon-theme-adaptive {
+      filter: saturate(0.95) brightness(0) invert(1);
+    }
     @keyframes hero-marquee-left {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(calc(-1 * var(--marquee-shift)), 0, 0); }
     }
     @keyframes hero-marquee-right {
-      from { transform: translateX(-50%); }
-      to   { transform: translateX(0); }
+      from { transform: translate3d(calc(-1 * var(--marquee-shift)), 0, 0); }
+      to   { transform: translate3d(0, 0, 0); }
     }
     @media (prefers-reduced-motion: reduce) {
       .marquee-row__track { animation: none; }
@@ -898,164 +907,187 @@
     <section class="hero">
       <!-- 装饰层：斜向滚动的生态合作伙伴 logo 条带。aria-hidden
            不参与无障碍朗读；prefers-reduced-motion 自动停止动画。
-           每行 14 个 svg × 2 段拼接，确保 0→-50% 无缝循环。 -->
+           每行 17 个 svg × 2 段拼接，确保无缝循环。 -->
       <div class="hero__marquee" aria-hidden="true">
         <div class="hero__marquee-rotor">
           <div class="marquee-row" data-dir="left" style="--speed: 52s">
             <div class="marquee-row__track">
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
             </div>
           </div>
           <div class="marquee-row" data-dir="right" style="--speed: 44s">
             <div class="marquee-row__track">
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
             </div>
           </div>
           <div class="marquee-row" data-dir="left" style="--speed: 62s">
             <div class="marquee-row__track">
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
             </div>
           </div>
           <div class="marquee-row" data-dir="right" style="--speed: 48s">
             <div class="marquee-row__track">
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../bailian-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../poe-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../claudecode-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openrouter.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../lmstudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../githubcopilot.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../modelscope-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../ollama.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../openclaw-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../copilot-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../trae-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../qoder-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codebuddy-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../alibabacloud-color.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../codex.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../cherrystudio.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
+              <img src="../windsurf.svg" alt="" loading="eager" decoding="async" width="46" height="46" />
             </div>
           </div>
         </div>
       </div>
-      <!-- 2026-05-17：自适应填充 marquee track。原 HTML 每段 14 svg × 2 段，
-           在大屏上 track 宽度 < 2× row 可见宽 → translateX(-50%) 出现右侧
-           露白 → 看起来「瞬间跳」。这里按实际 row 宽度动态复制原始 14 svg，
-           且每次成对追加（确保 track 段数始终为偶数，2 段拼接的接续点恰好
-           落在周期起点），直到 track.scrollWidth ≥ 2.2× row.width，
-           保证跨屏幕完美无缝。 -->
+      <!-- 2026-05-17：自适应填充 marquee track。HTML 每段 17 svg × 2 段，
+           在大屏上 track 宽度 < 2× row 可见宽 → 循环点错位 → 看起来「瞬间跳」。
+           按实际 row 宽度动态复制原始 17 svg，且每次成对追加（track 段数
+           始终为偶数），直到 track.scrollWidth ≥ 2.2× row.width。
+           布局完成后用像素级 --marquee-shift 锁定循环距离，消除 -50% 亚像素
+           取整导致的周期卡顿。 -->
       <script>
         (function () {
-          const BASE_LEN = 14;
+          const BASE_LEN = 17;
+          function syncMarqueeShift(track) {
+            const half = track.scrollWidth / 2;
+            if (half > 0) {
+              track.style.setProperty("--marquee-shift", half + "px");
+            }
+          }
           function fill() {
             const rows = document.querySelectorAll(".hero__marquee .marquee-row");
             rows.forEach(function (row) {
               const track = row.querySelector(".marquee-row__track");
               if (!track) return;
-              // 只取前 14 个作为「原始周期」复制份。HTML 里每行写了 28 个
-              // （14×2 拼接）作为默认填充，以防 JS 失败时仍有基本效果。
               const base = Array.from(track.children).slice(0, BASE_LEN);
-              if (base.length === 0) return;
-              // 用 offsetWidth 拿 layout 宽度，避免父级 rotate(22deg) 让
-              // getBoundingClientRect 返回缩水的投影宽度而填不够。
+              if (base.length < BASE_LEN) return;
               const rowWidth = row.offsetWidth || row.getBoundingClientRect().width || 0;
               let safety = 0;
-              // 每次追加 2 × base（即一对完整周期），让 track 总段数永远
-              // 为偶数。translateX(-50%) 把 track 走过整段数的一半，正好
-              // 落到下一周期起点 → 数学上完美无缝。
               while (track.scrollWidth < rowWidth * 2.2 && safety < 12) {
                 for (let i = 0; i < 2; i++) {
                   base.forEach(function (node) {
@@ -1064,14 +1096,19 @@
                 }
                 safety += 1;
               }
+              syncMarqueeShift(track);
+            });
+          }
+          function init() {
+            requestAnimationFrame(function () {
+              requestAnimationFrame(fill);
             });
           }
           if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", fill, { once: true });
+            document.addEventListener("DOMContentLoaded", init, { once: true });
           } else {
-            fill();
+            init();
           }
-          // 窗口变大时补填（不缩减）；反复调用安全，带 safety 限。
           let resizeTimer = null;
           window.addEventListener("resize", function () {
             clearTimeout(resizeTimer);

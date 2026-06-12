@@ -138,6 +138,7 @@ const FALLBACK_PAID_IDS = new Set([
     "qwen3-coder-plus-2025-09-23",
     "minimax-m3",
     "kimi-k2.6",
+    "kimi-k2.7-code",
 ]);
 
 // 2026-05-18 添加倍率列：与 chat-gateway MODEL_COST_MULTIPLIER 同步。
@@ -500,7 +501,9 @@ function brandLogoHtml(brand, modelId) {
     // inclusionai / ling key 覆盖此别名即可。
     const ALIAS = { inclusionai: "antgroup", "小米mimo": "xiaomimimo" };
     const url = override || BRAND_LOGO[ALIAS[key] || key];
-    const themeAdaptive = key === "openai" || key === "cancri";
+    const themeAdaptive = window.CancriThemeIcons
+        ? window.CancriThemeIcons.shouldUseThemeAdaptiveIcon(url, brand)
+        : key === "openai" || key === "cancri";
     const themeClass = themeAdaptive ? "model-icon-theme-adaptive" : "";
     if (url) {
         return `<span class="card-logo" aria-hidden="true"><img${themeClass ? ` class="${themeClass}"` : ""} src="${url}" alt="" loading="lazy" decoding="async" /></span>`;
@@ -654,8 +657,17 @@ async function load() {
             } else {
                 const existing = byCanonical.get(cid);
                 existing._lineCount += 1;
+                const mergedDesc = m.publicDescription || existing.publicDescription;
                 if (existing.available === false && m.available !== false) {
-                    byCanonical.set(cid, { ...existing, ...m, id: cid, _lineCount: existing._lineCount });
+                    byCanonical.set(cid, {
+                        ...existing,
+                        ...m,
+                        id: cid,
+                        _lineCount: existing._lineCount,
+                        publicDescription: mergedDesc,
+                    });
+                } else if (mergedDesc && !existing.publicDescription) {
+                    existing.publicDescription = mergedDesc;
                 }
             }
         }
@@ -898,6 +910,7 @@ function card(m) {
               <div class="card-name">${esc(m.displayName || m.id)}</div>
               ${m.brand ? `<div class="card-brand">${esc(m.brand)}</div>` : ""}
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
+              ${m.publicDescription ? `<div class="card-desc">${esc(m.publicDescription)}</div>` : ""}
             </div>
             <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${disabledBadge}</span>
           </div>
