@@ -117,8 +117,6 @@ const FALLBACK_PAID_IDS = new Set([
     "gpt-5.4-mini",
     "gpt-5.5",
     "gpt-5.5-high",
-    "gpt-5.3-codex",
-    "gpt-5.2",
     "grok-4.20-0309",
     "grok-4.3",
     "gpt-image-2-all",
@@ -186,7 +184,8 @@ function fmtMult(n) {
 // 所有用户免费使用，但有「每用户并发 1 + 全局 100 RPM」的硬上限；
 // 付费用户绕过限流。视觉上用 clay/amber 区别 FREE（中性）和 PAID（实心）。
 const WELFARE_IDS = new Set([
-    "claude-haiku-4-5-20251001-welfare",
+    "claude-sonnet-4.5",
+    "nex-n2-pro-welfare",
     "baichuan-m2-welfare",
     "baichuan4-air-welfare",
     "baichuan3-turbo-welfare",
@@ -252,6 +251,7 @@ const BRAND_LOGO = {
     kling: "./kling-color.svg",
     xiaomimimo: "./xiaomimimo-color.svg",
     baichuan: "./baichuan-color.svg",
+    nex: "./NEX_logo.svg",
     microsoft: "./microsoft-color.svg",
     ibm: "./ibm.svg",
     cohere: "./cohere-color.svg",
@@ -486,6 +486,7 @@ function normalizeBrandKey(brand) {
 const MODEL_ICON_OVERRIDE = {
     "kat-coder-pro-v2": "./kwaikat.svg",
     "cancriv1-0.1b": "../Logo/Cancri1.jpg",
+    "nex-n2-pro-welfare": "./NEX_logo.svg",
 };
 
 function brandLogoHtml(brand, modelId) {
