@@ -3959,6 +3959,7 @@ const ARENA_MODE_MIGRATIONS = {
   
   let supabaseClient = null;
   let authSessionPromise = null;
+  let authSessionInflight = null;
   let authInitialized = false;
   
   function getSupabaseClient() {
@@ -4088,8 +4089,12 @@ const ARENA_MODE_MIGRATIONS = {
   }
   
   async function ensureAuthSession() {
-    if (!authSessionPromise) {
-      authSessionPromise = (async () => {
+    // 每次请求都走 getSession()，让 Supabase SDK 有机会刷新 access_token。
+    // 旧实现把首次 session 永久缓存在 authSessionPromise 里，TOKEN_REFRESHED
+    // 后仍发送过期 JWT → chat-gateway 返回 invalid_session（用户看到「登录已失效」）。
+    if (authSessionInflight) return authSessionInflight;
+    authSessionInflight = (async () => {
+      try {
         const client = getSupabaseClient();
         const { data: sessionData, error: sessionError } =
           await client.auth.getSession();
@@ -4098,24 +4103,26 @@ const ARENA_MODE_MIGRATIONS = {
           const user = sessionData.session.user;
           updateAccountInfo(user);
           hideAuthOverlay();
+          authSessionPromise = Promise.resolve(sessionData.session);
+          authInitialized = true;
           return sessionData.session;
         }
-        // 无会话，显示登录界面
+        authSessionPromise = null;
         showAuthOverlay();
         throw new Error("请先登录后再使用。");
-      })().catch((error) => {
+      } catch (error) {
         authSessionPromise = null;
         const raw = error instanceof Error ? error.message : String(error);
-        // Supabase SDK 内部 bug 会抛 "Assignment to constant variable" 等
-        // 不可读的技术错误；拦截后转为用户可理解的提示。
         if (/assignment to constant|immutable|readonly|cannot assign/i.test(raw)) {
           console.error("[ensureAuthSession] SDK internal error:", error);
           throw new Error("登录会话异常，请刷新页面后重试。");
         }
         throw error;
-      });
-    }
-    return authSessionPromise;
+      } finally {
+        authSessionInflight = null;
+      }
+    })();
+    return authSessionInflight;
   }
   
   // =====================================================================
@@ -4494,13 +4501,18 @@ const ARENA_MODE_MIGRATIONS = {
     // 监听 Supabase auth 状态变化
     const client = getSupabaseClient();
     client.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
+      if (
+        (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
+        session?.user
+      ) {
         authSessionPromise = Promise.resolve(session);
         updateAccountInfo(session.user);
         hideAuthOverlay();
         authInitialized = true;
-        void maybeShowExpirySoonBanner();
-        void fetchUserMemories();
+        if (event === "SIGNED_IN") {
+          void maybeShowExpirySoonBanner();
+          void fetchUserMemories();
+        }
       } else if (event === "SIGNED_OUT") {
         authSessionPromise = null;
         authInitialized = false;
