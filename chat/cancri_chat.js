@@ -1690,9 +1690,6 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-5.4-mini",
     "gpt-5.5",
     "gpt-5.5-high",
-    "gpt-5.3-codex",
-    "gpt-5.3-codex-spark",
-    "gpt-5.2",
     "grok-4.20-0309-console",
     "grok-4.20-multi-agent-xhigh",
     "grok-4.3-high",
@@ -1725,7 +1722,6 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-image-2-pro",
     "gpt-image-2",
     "claude-haiku-4-5-20251001",
-    "claude-haiku-4-5-20251001-thinking",
     "claude-opus-4-7-special",
     // 2026-06-03: 退出福利档，改为付费专属。
     "gpt-5.4-mini-welfare",
@@ -1892,7 +1888,8 @@ const ARENA_MODE_MIGRATIONS = {
     //            gemini-3.1-flash-lite-welfare / gpt-5.4-mini-welfare，退出福利档改为付费专属。
     // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
     if (
-      modelId === "claude-haiku-4-5-20251001-welfare" ||
+      modelId === "claude-sonnet-4.5" ||
+      modelId === "nex-n2-pro-welfare" ||
       modelId === "baichuan-m2-welfare" ||
       modelId === "baichuan4-air-welfare" ||
       modelId === "baichuan3-turbo-welfare" ||
@@ -2476,7 +2473,7 @@ const ARENA_MODE_MIGRATIONS = {
   // 排序时会被忽略，等于排在最后。
   const MODEL_PRIORITY_IDS = [
     "grok-4.20-0309-console",
-    "claude-opus-4-6",
+    "claude-opus-4-8",
     "deepseek-v4-pro",
     "kimi-k2.6",
     "qwen3.7-max",
@@ -2502,7 +2499,6 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "kat-coder-pro-v2", "name": "KwaiKAT Coder Pro V2", "brand": "KwaiKAT", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ernie-4.5-turbo-20260402", "name": "ERNIE 4.5 Turbo", "brand": "Baidu", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-    {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 25.0},
     // 2026-05-25: claude-opus-4-5 重新上线（supxh.xin 上游，Pro+ 专享）。
     {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 15.0},
     // 2026-05-26: 百川官方 API（baichuan-ai.com）8 模型。
@@ -2516,13 +2512,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "baichuan2-turbo-welfare", "name": "【福利】Baichuan 2 Turbo", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     // 2026-05-25: 福利档 GPT-5.4 Mini（togoapi.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
     {"id": "gpt-5.4-mini-welfare", "name": "GPT 5.4 Mini 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
-    {"id": "claude-opus-4-7", "name": "Claude Opus 4.7 XHigh", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 40.0},
-    // 2026-05-26: Claude Opus 4.7 Max — aspirin 上游独立 key，Pro+ 专属（costTier: vip）。
-    {"id": "claude-opus-4-7-0526", "name": "Claude Opus 4.7 Max", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 60.0},
-    // 2026-05-29: claude-opus-4-8 — aspirin 上游，复用 ASPIRIN_API_KEY。
-    {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 20.0},
-    // 2026-05-29: Claude Opus 4.7 Thinking — thinkai 上游，独立 key。
-    {"id": "claude-opus-4-7-thinking", "name": "Claude Opus 4.7 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 17.0},
+    // 2026-06-12: claude-opus-4-8 — prorisehub 上游（$0.7/$3.5/M），倍率 12×。
+    {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 12.0},
     // 2026-06-03: 【特价】claude-opus-4-7 — newapi_qwqtao 上游，normal 档 3x。
     {"id": "claude-opus-4-7-special", "name": "【特价】Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     // 2026-05-29: deepsb 模型。
@@ -2544,19 +2535,16 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
     // 2026-06-09: 【订阅福利】造相-Z-Image-Turbo — ModelScope 异步生图，Pro+ 免费不扣积分。
     {"id": "z-image-turbo", "name": "【订阅福利】造相-Z-Image-Turbo", "brand": "Qwen", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
-    {"id": "gpt-5.3-codex", "name": "GPT-5.3 Codex", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
-    {"id": "gpt-5.3-codex-spark", "name": "GPT 5.3 Codex Spark", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
-    {"id": "gpt-5.2", "name": "GPT-5.2", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.5},
-    {"id": "claude-haiku-4-5-20251001-thinking", "name": "Claude Haiku 4.5 Thinking", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "doubao-seed-2-0-code-preview-260215", "name": "Doubao Seed 2.0 Code", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
-    // 2026-06-09: 【特价】Claude Opus 4.8 — newapi.makelove.cloud 上游，normal 档。
+    // 2026-06-12: 【特价】Claude Opus 4.8 — newapi.qwqtao.com 上游，normal 档。
     {"id": "claude-opus-4-8-special", "name": "【特价】Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
-    {"id": "claude-haiku-4-5-20251001-welfare", "name": "【福利】Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
+    {"id": "claude-sonnet-4.5", "name": "【福利】Claude Sonnet 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
+    {"id": "nex-n2-pro-welfare", "name": "【福利】Nex-N2-Pro", "brand": "Nex", "kind": "chat", "vision": false, "thinking": true, "tools": false, "costTier": "free"},
     {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
     {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
     {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
@@ -2671,8 +2659,6 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "hf:qwen3-4b-thinking", "name": "Qwen3 4B Thinking", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:deepseek-r1-distill-1.5b", "name": "DeepSeek R1 Distill 1.5B", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:qwen3.5-27b", "name": "Qwen 3.5 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
-    // 2026-06-03: 从 HuggingFace 切到 bluesminds
-    {"id": "hf:glm-5.1-fp8", "name": "GLM 5.1 FP8", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "bluesminds"},
     {"id": "hf:qwen3-8b", "name": "Qwen3 8B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:apertus-8b", "name": "Apertus 8B", "brand": "Swiss AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:eurollm-22b", "name": "EuroLLM 22B", "brand": "utter-project", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
@@ -2713,6 +2699,7 @@ const ARENA_MODE_MIGRATIONS = {
     "utter-project": "./huggingface-color.svg",
     "Baichuan": "./baichuan-color.svg",
     "小米 MiMo": "./xiaomimimo-color.svg",
+    "Nex": "./NEX_logo.svg",
   };
   
   // 2026-05-17 加入：per-model id 覆盖表。优先级高于 BRAND_ICON_MAP。
@@ -2725,6 +2712,7 @@ const ARENA_MODE_MIGRATIONS = {
     "ernie-4.5-turbo-20260402": "./wenxin-color.svg",
     "kat-coder-pro-v2": "./kwaikat.svg",
     "cancriv1-0.1b": "../Logo/Cancri1.jpg",
+    "nex-n2-pro-welfare": "./NEX_logo.svg",
   };
 
   const THEME_ADAPTIVE_ICON_BRANDS = new Set(["OpenAI", "Clawto", "Cancri"]);
@@ -6445,7 +6433,7 @@ const ARENA_MODE_MIGRATIONS = {
           "https://chat.nexusvai.xyz/functions/v1/api-gateway/v1",
         wire_api: "responses（默认）或 chat（兼容性更好）",
         env_key: "CANCRI_API_KEY",
-        recommended_models: ["gpt-5.3-codex", "gpt-5.4"],
+        recommended_models: ["gpt-5.4", "claude-opus-4-8"],
       },
       {
         name: "Claude Code",
