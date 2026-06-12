@@ -35,6 +35,7 @@
 
     function init() {
         [
+            injectSidebarNavIconMotionStyles,
             relocateModelSelector,
             function () { requestAnimationFrame(relocateModelSelector); },
             function () { setTimeout(relocateModelSelector, 250); },
@@ -75,6 +76,34 @@
                 console.error('[claude_ui] init step failed:', e);
             }
         });
+    }
+
+    // Cancri Code / 服务状态 SVG 悬停动画：写入 claude.css + 运行时注入，避免
+    // styles/claude-sidebar-icons.css 未进 Git 或 CDN 缓存旧 claude.css 时线上无动画。
+    function injectSidebarNavIconMotionStyles() {
+        if (document.getElementById('cancri-sidebar-nav-svg-motion')) return;
+        if (!document.getElementById('claudeCancriCodeNavBtn') && !document.getElementById('claudeServiceStatusNavBtn')) return;
+        var style = document.createElement('style');
+        style.id = 'cancri-sidebar-nav-svg-motion';
+        style.textContent =
+            '@media (hover:hover) and (prefers-reduced-motion:no-preference){' +
+            '#claudeCancriCodeNavBtn .nav-icon-slot svg path:nth-of-type(2),' +
+            '#claudeCancriCodeNavBtn .nav-icon-slot svg path:nth-of-type(3),' +
+            '#claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(2),' +
+            '#claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(3){' +
+            'transition:transform 200ms cubic-bezier(0.34,1.3,0.64,1);}' +
+            '#claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(2){transform-origin:14px 6.5px;}' +
+            '#claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(3){transform-origin:6px 14px;}' +
+            '#claudeCancriCodeNavBtn:hover .nav-icon-slot svg path:nth-of-type(2),' +
+            '#claudeCancriCodeNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(2){transform:translateX(1px)!important;}' +
+            '#claudeCancriCodeNavBtn:hover .nav-icon-slot svg path:nth-of-type(3),' +
+            '#claudeCancriCodeNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(3){transform:translateX(-1px)!important;}' +
+            '#claudeServiceStatusNavBtn:hover .nav-icon-slot svg path:nth-of-type(2),' +
+            '#claudeServiceStatusNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(2){transform:rotate(-90deg)!important;}' +
+            '#claudeServiceStatusNavBtn:hover .nav-icon-slot svg path:nth-of-type(3),' +
+            '#claudeServiceStatusNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(3){transform:rotate(120deg)!important;}' +
+            '}';
+        document.head.appendChild(style);
     }
 
     // 15. 群友反馈"对话中点输入框移动端无法触发打字"。

@@ -873,6 +873,38 @@ html[data-theme="light"] .conversation-item:hover {
     fill: currentColor !important;
     opacity: 1 !important;
 }
+
+/* Cancri Code / 服务状态 — Claude 同款 SVG 悬停动画（须在 claude.css，部署走 Git 可追踪） */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    #claudeCancriCodeNavBtn .nav-icon-slot svg path:nth-of-type(2),
+    #claudeCancriCodeNavBtn .nav-icon-slot svg path:nth-of-type(3),
+    #claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(2),
+    #claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(3) {
+        transition: transform 200ms cubic-bezier(0.34, 1.3, 0.64, 1);
+    }
+    #claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(2) {
+        transform-origin: 14px 6.5px;
+    }
+    #claudeServiceStatusNavBtn .nav-icon-slot svg path:nth-of-type(3) {
+        transform-origin: 6px 14px;
+    }
+    #claudeCancriCodeNavBtn:hover .nav-icon-slot svg path:nth-of-type(2),
+    #claudeCancriCodeNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(2) {
+        transform: translateX(1px) !important;
+    }
+    #claudeCancriCodeNavBtn:hover .nav-icon-slot svg path:nth-of-type(3),
+    #claudeCancriCodeNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(3) {
+        transform: translateX(-1px) !important;
+    }
+    #claudeServiceStatusNavBtn:hover .nav-icon-slot svg path:nth-of-type(2),
+    #claudeServiceStatusNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(2) {
+        transform: rotate(-90deg) !important;
+    }
+    #claudeServiceStatusNavBtn:hover .nav-icon-slot svg path:nth-of-type(3),
+    #claudeServiceStatusNavBtn:focus-visible .nav-icon-slot svg path:nth-of-type(3) {
+        transform: rotate(120deg) !important;
+    }
+}
 .claude-code-promo-card {
     position: relative;
     margin: 0 0 8px;
