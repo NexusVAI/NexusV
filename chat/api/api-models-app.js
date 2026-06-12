@@ -599,13 +599,22 @@ async function fetchModelCatalog() {
 }
 
 function showLoadError(message) {
-    const loading = $("loading");
-    if (loading) loading.style.display = "none";
+    if (window.PlatformSkeleton) PlatformSkeleton.hide("loading");
     const err = $("error");
     if (err) {
         err.style.display = "block";
         err.textContent = "加载失败：" + message;
     }
+}
+
+function clearStatsSkeleton() {
+    ["#total", "#ct-free", "#ct-paid", "#ct-thinking"].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (!el) return;
+        el.classList.remove("platform-skeleton-block", "platform-skeleton-shimmer");
+        el.style.minWidth = "";
+        el.style.minHeight = "";
+    });
 }
 
 function syncFilterSlider(group) {
@@ -683,7 +692,8 @@ async function load() {
         for (const m of MODELS) m._displayTier = getDisplayTier(m);
         const loadingEl = $("loading");
         const gridEl = $("grid");
-        if (loadingEl) loadingEl.style.display = "none";
+        if (window.PlatformSkeleton) PlatformSkeleton.hide(loadingEl);
+        else if (loadingEl) loadingEl.style.display = "none";
         if (gridEl) gridEl.style.display = "grid";
         setupGridCollapse();
         buildBrandFilter();
@@ -721,6 +731,7 @@ function updateStats() {
     const paidEl = $("ct-paid");
     const thinkingEl = $("ct-thinking");
     if (!totalEl || !freeEl || !paidEl || !thinkingEl) return;
+    clearStatsSkeleton();
     totalEl.textContent = MODELS.length;
     freeEl.textContent = MODELS.filter(
         (m) => m._displayTier === "free",

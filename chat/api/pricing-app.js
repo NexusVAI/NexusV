@@ -641,7 +641,8 @@ async function init() {
         await loadPricing();
 
         const { data: { session } } = await sb.auth.getSession();
-        if (loading) loading.style.display = "none";
+        if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+        else if (loading) loading.style.display = "none";
         if (!session || !session.user || session.user.is_anonymous) {
             if (gate) gate.style.display = "block";
             return;
@@ -674,7 +675,8 @@ async function init() {
         setupCustomTopupInput();
     } catch (e) {
         console.error("pricing init:", e);
-        if (loading) loading.style.display = "none";
+        if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+        else if (loading) loading.style.display = "none";
         if (gate) {
             gate.style.display = "block";
             gate.innerHTML =

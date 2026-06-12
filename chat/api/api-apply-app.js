@@ -58,8 +58,11 @@ async function callGateway(endpoint, payload) {
 }
 
 function hideLoading() {
-  const el = document.getElementById("loading");
-  if (el) el.style.display = "none";
+  if (window.PlatformSkeleton) PlatformSkeleton.hide("loading");
+  else {
+    const el = document.getElementById("loading");
+    if (el) el.style.display = "none";
+  }
 }
 
 function showLoadError(msg) {

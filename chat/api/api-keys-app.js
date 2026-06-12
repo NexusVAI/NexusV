@@ -34,15 +34,22 @@ let currentDetailKeyId = "";
 let effectiveTier = "free";
 
 async function init() {
-    const {
-        data: { user },
-    } = await sb.auth.getUser();
-    document.getElementById("loading").style.display = "none";
-    if (!user || user.is_anonymous) {
-        document.getElementById("login-section").style.display = "block";
-        return;
+    const loading = document.getElementById("loading");
+    try {
+        const {
+            data: { user },
+        } = await sb.auth.getUser();
+        if (!user || user.is_anonymous) {
+            if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+            else if (loading) loading.style.display = "none";
+            document.getElementById("login-section").style.display = "block";
+            return;
+        }
+        await loadData();
+    } finally {
+        if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+        else if (loading) loading.style.display = "none";
     }
-    await loadData();
 }
 
 async function fetchEffectiveTier(session) {

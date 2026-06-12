@@ -274,8 +274,9 @@ async function init() {
     const loadErr = document.getElementById("orders-load-error");
     try {
         const { data: { session } } = await sb.auth.getSession();
-        if (loading) loading.style.display = "none";
         if (!session || !session.user || session.user.is_anonymous) {
+            if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+            else if (loading) loading.style.display = "none";
             if (gate) gate.style.display = "block";
             return;
         }
@@ -283,7 +284,6 @@ async function init() {
         await loadAll();
     } catch (e) {
         console.error("orders init:", e);
-        if (loading) loading.style.display = "none";
         if (main) main.style.display = "block";
         if (loadErr) {
             loadErr.style.display = "block";
@@ -293,6 +293,9 @@ async function init() {
         } else {
             showMsg(document.getElementById("activate-msg"), "订单加载失败，请刷新页面。", "warn");
         }
+    } finally {
+        if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+        else if (loading) loading.style.display = "none";
     }
 }
 
