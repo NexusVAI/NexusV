@@ -866,11 +866,13 @@ html[data-theme="light"] .conversation-item:hover {
 }
 .sidebar .nav-row.nav-row-muted:hover .sidebar-label,
 .sidebar .nav-row.nav-row-muted:hover .nav-icon-slot,
-.sidebar .nav-row.nav-row-muted:hover .nav-icon-slot .claude-anthropicon,
-.sidebar .nav-row.nav-row-muted:hover .nav-icon-slot svg,
-.sidebar .nav-row.nav-row-muted:hover .nav-icon-slot svg path {
+.sidebar .nav-row.nav-row-muted:hover .nav-icon-slot .claude-anthropicon {
     color: inherit !important;
+}
+#claudeCancriCodeNavBtn:hover .nav-icon-slot svg path,
+#claudeCancriCodeNavBtn:focus-visible .nav-icon-slot svg path {
     fill: currentColor !important;
+    color: inherit !important;
     opacity: 1 !important;
 }
 
