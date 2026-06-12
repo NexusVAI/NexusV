@@ -106,7 +106,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-12-stroke-icon-fix"
+            href="./claude.css?v=2026-06-12-skeleton-light"
         />
         <link
             rel="stylesheet"
@@ -626,8 +626,15 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
                             </button>
                         </div>
-                        <div class="recent-wrap" id="chatHistoryList">
-                            <!-- 聊天记录列表将在这里动态生成 -->
+                        <div class="recent-wrap" id="chatHistoryList" aria-busy="true">
+                            <div class="recent-skeleton-list" aria-hidden="true">
+                                <div class="recent-skeleton-item"><span class="recent-skeleton-icon cancri-skeleton-shimmer"></span><span class="recent-skeleton-line cancri-skeleton-shimmer" style="width:72%"></span></div>
+                                <div class="recent-skeleton-item"><span class="recent-skeleton-icon cancri-skeleton-shimmer"></span><span class="recent-skeleton-line cancri-skeleton-shimmer" style="width:58%"></span></div>
+                                <div class="recent-skeleton-item"><span class="recent-skeleton-icon cancri-skeleton-shimmer"></span><span class="recent-skeleton-line cancri-skeleton-shimmer" style="width:84%"></span></div>
+                                <div class="recent-skeleton-item"><span class="recent-skeleton-icon cancri-skeleton-shimmer"></span><span class="recent-skeleton-line cancri-skeleton-shimmer" style="width:64%"></span></div>
+                                <div class="recent-skeleton-item"><span class="recent-skeleton-icon cancri-skeleton-shimmer"></span><span class="recent-skeleton-line cancri-skeleton-shimmer" style="width:76%"></span></div>
+                                <div class="recent-skeleton-item"><span class="recent-skeleton-icon cancri-skeleton-shimmer"></span><span class="recent-skeleton-line cancri-skeleton-shimmer" style="width:52%"></span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3203,7 +3210,7 @@
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=2026-06-12-light-default"></script>
+        <script defer src="./cancri_chat.js?v=2026-06-12-skeleton-light"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>

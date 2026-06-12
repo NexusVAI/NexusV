@@ -12,7 +12,7 @@
         <link rel="preload" as="image" href="../Logo/Cancri.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact" />
+        <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
         <script src="./api/api-platform.js?v=20260607-account-fix"></script>
         <!-- Cancri 双主题 logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -339,7 +339,7 @@
                 </div>
             </div>
 
-            <div id="loading" class="loading">加载中...</div>
+            <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
 
             <div id="login-section" style="display: none">
                 <div class="card">
@@ -561,6 +561,7 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/api-keys-app.js?v=2026-05-23-advanced-limits"></script>
+        <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+        <script src="./api/api-keys-app.js?v=2026-06-12-skeleton-light"></script>
     </body>
 </html>

@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://chat.nexusvai.xyz" crossorigin />
     <link rel="dns-prefetch" href="https://chat.nexusvai.xyz" />
     <script src="./cancri_config.js?v=2026-06-04-cf"></script>
-    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact" />
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
     <script src="./api/api-platform.js?v=20260607-account-fix"></script>
     <!-- Cancri 双主题 logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
@@ -1114,19 +1114,19 @@
            二档化后的价值走向不再匹配。 -->
       <section class="stats" id="stats" aria-label="模型总览">
         <div class="stats__item">
-          <div class="stats__num" id="total">—</div>
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="total" style="min-width:48px;min-height:28px">&nbsp;</div>
           <div class="stats__label">总模型数</div>
         </div>
         <div class="stats__item">
-          <div class="stats__num" id="ct-free">—</div>
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="ct-free" style="min-width:48px;min-height:28px">&nbsp;</div>
           <div class="stats__label">FREE 免费</div>
         </div>
         <div class="stats__item">
-          <div class="stats__num" id="ct-paid">—</div>
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="ct-paid" style="min-width:48px;min-height:28px">&nbsp;</div>
           <div class="stats__label">PAID 付费</div>
         </div>
         <div class="stats__item">
-          <div class="stats__num" id="ct-thinking">—</div>
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="ct-thinking" style="min-width:48px;min-height:28px">&nbsp;</div>
           <div class="stats__label">支持思考</div>
         </div>
       </section>
@@ -1167,7 +1167,7 @@
            不填入文本。 -->
       <div id="brandFilter" class="brand-filter" role="group" aria-label="按品牌筛选"></div>
 
-      <div id="loading" class="loading">加载中…</div>
+      <div id="loading" class="loading" data-platform-skeleton="model-grid" aria-busy="true"></div>
       <div id="empty" class="empty" style="display: none">没有匹配的模型</div>
       <div class="grid-stage" id="gridStage">
         <div class="grid-scroll-wrap" id="gridScrollWrap">
@@ -1306,7 +1306,8 @@
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态 +
          调用代码区，sessionStorage 自动填入用户最近 Key）。 -->
-    <script src="./api/api-models-app.js?v=20260610-hide-agnes"></script>
+    <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+    <script src="./api/api-models-app.js?v=2026-06-12-skeleton-light"></script>
     <!-- 2026-06-10：Claude Fable 5 上线推广弹窗 -->
     <script src="./fable5_launch_modal.js?v=2026-06-10-qq"></script>
   </body>

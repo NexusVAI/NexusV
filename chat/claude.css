@@ -646,6 +646,83 @@ html[data-theme="light"] .claude-sidebar-tooltip-card {
     padding: 12px 10px 4px !important;
 }
 
+/* 侧栏「最近」骨架屏 + Shimmer 流光（chat_history 拉取中） */
+.recent-skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 2px 4px 6px;
+}
+.recent-skeleton-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 10px;
+}
+.recent-skeleton-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.recent-skeleton-line {
+    display: block;
+    height: 10px;
+    border-radius: 999px;
+    flex: 0 1 auto;
+    min-width: 36%;
+    max-width: 88%;
+}
+.cancri-skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+/* 浅色：用 bg-400 实色，避免与侧栏 bg-100(~97%) 融在一起看不见 */
+html[data-theme="light"] .cancri-skeleton-shimmer,
+:root .cancri-skeleton-shimmer {
+    background: hsl(var(--bg-400, 50 20.7% 88.6%));
+}
+html[data-theme="dark"] .cancri-skeleton-shimmer,
+html[data-theme="black"] .cancri-skeleton-shimmer {
+    background: hsl(var(--bg-400, 60 2.7% 14%) / 0.92);
+}
+.cancri-skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        hsla(0, 0%, 100%, 0.04) 42%,
+        hsla(0, 0%, 100%, 0.18) 50%,
+        hsla(0, 0%, 100%, 0.04) 58%,
+        transparent 100%
+    );
+    animation: cancri-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+html[data-theme="light"] .cancri-skeleton-shimmer::after {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        hsla(0, 0%, 100%, 0.45) 42%,
+        hsla(0, 0%, 100%, 0.92) 50%,
+        hsla(0, 0%, 100%, 0.45) 58%,
+        transparent 100%
+    );
+}
+@keyframes cancri-skeleton-shimmer {
+    100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cancri-skeleton-shimmer::after {
+        animation: none;
+        opacity: 0;
+    }
+}
+
 /* recent-wrap / 历史列表 */
 .recent-wrap, .conversation-list {
     padding: 0 4px !important;
@@ -1204,6 +1281,48 @@ body.is-tier-loading .claude-plan-pill,
 body.is-tier-loading #donateBtn,
 body.is-tier-loading .claude-nav-tag {
     display: none !important;
+}
+body.is-account-tier-loading .account-strip .account-plan {
+    color: transparent;
+    min-width: 72px;
+    min-height: 11px;
+    border-radius: 6px;
+    background: hsl(var(--bg-400, 50 20.7% 88.6%));
+    position: relative;
+    overflow: hidden;
+}
+html[data-theme="dark"] body.is-account-tier-loading .account-strip .account-plan,
+html[data-theme="black"] body.is-account-tier-loading .account-strip .account-plan {
+    background: hsl(var(--bg-400, 60 2.7% 14%) / 0.92);
+}
+body.is-account-tier-loading .account-strip .account-name {
+    color: transparent;
+    min-width: 88px;
+    min-height: 12px;
+    border-radius: 6px;
+    background: hsl(var(--bg-400, 50 20.7% 88.6%));
+    position: relative;
+    overflow: hidden;
+}
+html[data-theme="dark"] body.is-account-tier-loading .account-strip .account-name,
+html[data-theme="black"] body.is-account-tier-loading .account-strip .account-name {
+    background: hsl(var(--bg-400, 60 2.7% 14%) / 0.92);
+}
+body.is-account-tier-loading .account-strip .account-name::after,
+body.is-account-tier-loading .account-strip .account-plan::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        hsla(0, 0%, 100%, 0.35) 42%,
+        hsla(0, 0%, 100%, 0.88) 50%,
+        hsla(0, 0%, 100%, 0.35) 58%,
+        transparent 100%
+    );
+    animation: cancri-skeleton-shimmer 1.4s ease-in-out infinite;
 }
 /* billing copy 在加载态显示占位文案；ready 后 claude_ui.js updateBillingCopy 填充。
    2026-05-17 修浅色模式不可读：原 --c-text-mute 在 chat/styles/02-themes.css

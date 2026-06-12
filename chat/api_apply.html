@@ -12,7 +12,7 @@
   <link rel="preload" as="image" href="../Logo/Cancri.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact">
+  <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light">
   <script src="./api/api-platform.js?v=20260607-account-fix"></script>
   <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
   <style>
@@ -50,7 +50,7 @@
       <div class="apply-card">
         <h1 class="page-title">API 申请</h1>
         <p class="subtitle">首次使用？提交申请进入白名单，审核通过后即可创建 API Key。</p>
-        <div id="loading" class="loading">加载中…</div>
+        <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
         <div id="login-section" style="display:none">
           <p style="margin-bottom:12px">请先登录后再申请 API Key。</p>
           <button id="login-redirect-btn" class="btn-primary full-btn">前往登录</button>
@@ -88,6 +88,7 @@
   <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
   <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE" crossorigin="anonymous"></script>
-  <script src="./api/api-apply-app.js?v=2026-06-07-credits-fix"></script>
+  <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+  <script src="./api/api-apply-app.js?v=2026-06-12-skeleton-light"></script>
 </body>
 </html>

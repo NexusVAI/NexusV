@@ -590,6 +590,9 @@
         }
         // 进入 loading 态：CSS 在此期间隐藏 pill / nav-tag / 模糊 billing copy
         document.body.classList.add('is-tier-loading');
+        if (getCancriAccessToken()) {
+            document.body.classList.add('is-account-tier-loading');
+        }
 
         // 先尝试用缓存即时应用（避免首屏闪烁）
         var cached = readTierCache();
@@ -642,6 +645,7 @@
     function applyTierState(sub, fromCache) {
         latestTierSubscription = sub || null;
         document.body.classList.remove('is-tier-loading');
+        document.body.classList.remove('is-account-tier-loading');
         if (sub && sub.tier === 'paid') {
             document.body.classList.add('is-paid-tier');
             updateBillingCopy(sub);

@@ -4655,6 +4655,7 @@ const ARENA_MODE_MIGRATIONS = {
   // 聊天记录管理
   let currentChatId = null;
   let chatHistoryList = [];
+  let chatHistoryListRenderSeq = 0;
   const CHAT_HISTORY_LIST_CACHE_KEY = "cancri_chat_history_list_cache_v1";
   
   function readCachedChatHistoryList() {
@@ -4871,17 +4872,48 @@ const ARENA_MODE_MIGRATIONS = {
     }
   }
   
+  function renderChatHistorySkeleton(container, count = 6) {
+    if (!container) return;
+    const widths = [72, 58, 84, 64, 76, 52];
+    container.innerHTML = "";
+    container.setAttribute("aria-busy", "true");
+    const wrap = document.createElement("div");
+    wrap.className = "recent-skeleton-list";
+    wrap.setAttribute("aria-hidden", "true");
+    for (let i = 0; i < count; i += 1) {
+      const row = document.createElement("div");
+      row.className = "recent-skeleton-item";
+      const icon = document.createElement("span");
+      icon.className = "recent-skeleton-icon cancri-skeleton-shimmer";
+      const line = document.createElement("span");
+      line.className = "recent-skeleton-line cancri-skeleton-shimmer";
+      line.style.width = `${widths[i % widths.length]}%`;
+      row.appendChild(icon);
+      row.appendChild(line);
+      wrap.appendChild(row);
+    }
+    container.appendChild(wrap);
+  }
+
+  function chatHistoryListHasRenderedItems(container) {
+    return Boolean(
+      container?.querySelector(".recent-item, .recent-placeholder"),
+    );
+  }
+
   // 加载并显示聊天记录列表
   async function renderChatHistoryList() {
     const listContainer = document.getElementById("chatHistoryList");
     if (!listContainer) return;
-  
+    const renderSeq = ++chatHistoryListRenderSeq;
+
     try {
-      if (!chatHistoryList.length) {
-        listContainer.innerHTML =
-          '<div class="recent-placeholder recent-placeholder-loading">正在加载中</div>';
+      if (!chatHistoryListHasRenderedItems(listContainer)) {
+        renderChatHistorySkeleton(listContainer);
       }
       const chats = await loadChatHistoryList();
+      if (renderSeq !== chatHistoryListRenderSeq) return;
+      listContainer.removeAttribute("aria-busy");
       listContainer.innerHTML = "";
   
       if (chats.length === 0) {
