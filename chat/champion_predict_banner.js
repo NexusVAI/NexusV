@@ -6,6 +6,8 @@
   var SESSION_KEY = "cancri_cp_banner_session_off";
   var KILL_KEY = "cancri_cp_banner_off";
   var END_UTC = Date.UTC(2026, 6, 19, 16, 0, 0); // 7/20 00:00 UTC+8
+  var bannerEl = null;
+  var resizeObserver = null;
 
   function isKilled() {
     try {
@@ -23,12 +25,33 @@
     return Date.now() < END_UTC;
   }
 
+  function syncBannerHeight() {
+    if (!bannerEl) {
+      document.documentElement.style.setProperty("--top-site-banner-h", "0px");
+      document.body.classList.remove("has-top-site-banner");
+      return;
+    }
+    var h = Math.ceil(bannerEl.getBoundingClientRect().height || bannerEl.offsetHeight || 0);
+    document.documentElement.style.setProperty("--top-site-banner-h", h + "px");
+    document.body.classList.add("has-top-site-banner");
+  }
+
+  function clearBannerHeight() {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+    bannerEl = null;
+    document.documentElement.style.setProperty("--top-site-banner-h", "0px");
+    document.body.classList.remove("has-top-site-banner");
+  }
+
   function injectStyles() {
     if (document.getElementById("cp-banner-styles")) return;
     var s = document.createElement("style");
     s.id = "cp-banner-styles";
     s.textContent =
-      ".cp-moon-banner{position:relative;z-index:80;display:flex;align-items:stretch;width:100%;" +
+      ".cp-moon-banner{position:relative;z-index:80;display:flex;align-items:stretch;width:100%;flex:none;" +
       "background:linear-gradient(95deg,#0d0d0d 0%,#1a1a1a 55%,#252525 100%);" +
       "color:#fff;font-size:13px;line-height:1.4;border-bottom:1px solid rgba(255,255,255,.1);" +
       "font-family:'Inter',system-ui,sans-serif}" +
@@ -41,7 +64,9 @@
       ".cp-moon-banner__close{flex:none;width:32px;border:none;background:transparent;" +
       "color:rgba(255,255,255,.55);font-size:16px;cursor:pointer}" +
       ".cp-moon-banner__close:hover{color:#fff;background:rgba(255,255,255,.08)}" +
-      "@media (max-width:720px){.cp-moon-banner__sub{display:none}}";
+      "@media (max-width:720px){.cp-moon-banner__sub{display:none}}" +
+      "body.has-top-site-banner .sidebar{height:calc(100dvh - var(--top-site-banner-h, 0px)) !important;" +
+      "top:var(--top-site-banner-h, 0px) !important}";
     document.head.appendChild(s);
   }
 
@@ -63,6 +88,15 @@
       '<button class="cp-moon-banner__close" type="button" aria-label="关闭">×</button>';
 
     document.body.insertBefore(bar, document.body.firstChild);
+    bannerEl = bar;
+    syncBannerHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(syncBannerHeight);
+      resizeObserver.observe(bar);
+    } else {
+      window.addEventListener("resize", syncBannerHeight);
+    }
 
     var closeBtn = bar.querySelector(".cp-moon-banner__close");
     if (closeBtn) {
@@ -70,9 +104,11 @@
         e.preventDefault();
         e.stopPropagation();
         try {
+          localStorage.setItem(KILL_KEY, "1");
           sessionStorage.setItem(SESSION_KEY, "1");
         } catch (_) {}
         if (bar.parentNode) bar.parentNode.removeChild(bar);
+        clearBannerHeight();
       });
     }
   }

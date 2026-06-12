@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-07-search-compact" />
     <script src="./api/api-platform.js?v=20260607-account-fix"></script>
     <!-- Cancri 双主题 logo 同步 -->
-    <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+    <script src="./cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
     <style>
       /* ─────────────────────────────────────────────────────────────────
          模型广场（2026-05-17 重构）
@@ -399,14 +399,10 @@
         flex-direction: column;
         gap: 12px;
         transition:
-          border-color 0.18s ease,
-          transform 0.18s ease,
-          box-shadow 0.18s ease;
+          border-color 0.18s ease;
       }
       .card:hover {
         border-color: var(--border-strong);
-        transform: translateY(-1px);
-        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
       }
       .card.is-disabled {
         opacity: 0.58;
@@ -467,6 +463,16 @@
         color: var(--text-faint);
         word-break: break-all;
       }
+      .card-desc {
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--text-mute);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
 
       /* ── card-logo：36×36 圆角小盒装品牌 SVG ───────────────────
          所有 SVG 来自 chat/ 根（claude-color.svg / openai.svg / gemini-color.svg
@@ -491,10 +497,10 @@
         object-fit: contain;
         display: block;
       }
-      html:not([data-theme="dark"]) .card-logo img.model-icon-theme-adaptive {
+      html[data-theme="light"] .card-logo img.model-icon-theme-adaptive {
         filter: brightness(0);
       }
-      html[data-theme="dark"] .card-logo img.model-icon-theme-adaptive {
+      html:not([data-theme="light"]) .card-logo img.model-icon-theme-adaptive {
         filter: brightness(0) invert(1);
       }
       .card-logo--fallback {

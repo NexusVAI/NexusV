@@ -1388,11 +1388,11 @@ svg {
     border-radius: 5px;
 }
 
-/* 单色品牌 logo：浅色模式黑、深色模式白（OpenAI / Cancri 等） */
-html:not([data-theme="dark"]) .model-icon-theme-adaptive {
+/* 单色品牌 logo：浅色模式黑、暗色/纯黑/默认暗色反白（OpenAI / Cursor / Grok 等） */
+html[data-theme="light"] .model-icon-theme-adaptive {
     filter: brightness(0);
 }
-html[data-theme="dark"] .model-icon-theme-adaptive {
+html:not([data-theme="light"]) .model-icon-theme-adaptive {
     filter: brightness(0) invert(1);
 }
 
@@ -2298,7 +2298,7 @@ html[data-theme="light"] .claude-accent-dot {
     }
 
     #leaderboardView.active {
-        height: calc(100dvh - var(--header-h));
+        height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
         overflow-y: auto;
     }
     .leaderboard-table-head,
@@ -5328,9 +5328,12 @@ body {
     overflow: hidden;
 }
 
+:root {
+    --top-site-banner-h: 0px;
+}
+
 .app {
-    height: 100vh;
-    height: 100dvh;
+    height: calc(100dvh - var(--top-site-banner-h, 0px));
     min-height: 0;
 }
 
@@ -5392,7 +5395,7 @@ body {
 
 /* 主页 / 聊天区必须占满剩余高度 */
 #homeView {
-    height: calc(100dvh - var(--header-h));
+    height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
     min-height: 0;
     overflow: hidden;
 }
@@ -5411,7 +5414,7 @@ body {
 /* 初始态输入框不要被压到屏幕外 */
 #homeView:not(.chatting) .home-center {
     flex: 0 0 auto;
-    min-height: calc(100dvh - var(--header-h));
+    min-height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
     justify-content: flex-start;
     padding: min(22dvh, 200px) 24px clamp(20px, 8vh, 56px) !important;
 }
@@ -6506,7 +6509,7 @@ html[data-theme="blue"] {
     }
 
     #homeView {
-        height: calc(100dvh - var(--header-h));
+        height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
     }
 
     #homeView.chatting {
@@ -6544,7 +6547,7 @@ html[data-theme="blue"] {
     }
 
     #homeView:not(.chatting) .home-center {
-        min-height: calc(100dvh - var(--header-h));
+        min-height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
         justify-content: flex-start;
         gap: 28px;
         padding: 22vh 14px 18px;
@@ -6981,7 +6984,7 @@ html[data-theme="blue"] {
 
 /* 排行榜页面内部自己滚动，不要把整个主区撑成两段 */
 #leaderboardView.active {
-    height: calc(100dvh - var(--header-h));
+    height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
     min-height: 0;
     overflow: hidden;
 }

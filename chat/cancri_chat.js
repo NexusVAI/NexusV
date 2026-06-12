@@ -1718,6 +1718,7 @@ const ARENA_MODE_MIGRATIONS = {
     "qwen3-coder-plus-2025-09-23",
     "minimax-m2.7",
     "kimi-k2.6",
+    "kimi-k2.7-code",
     "gpt-image-2-all",
     "gpt-image-2-pro",
     "gpt-image-2",
@@ -2539,6 +2540,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "doubao-seed-2-0-code-preview-260215", "name": "Doubao Seed 2.0 Code", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+    {"id": "kimi-k2.7-code", "name": "Kimi K2.7 Code", "brand": "Moonshot", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     // 2026-06-12: 【特价】Claude Opus 4.8 — newapi.qwqtao.com 上游，normal 档。
     {"id": "claude-opus-4-8-special", "name": "【特价】Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
@@ -2719,6 +2721,9 @@ const ARENA_MODE_MIGRATIONS = {
   const THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "Cancri1.jpg"];
 
   function shouldUseThemeAdaptiveIcon(iconPath, brand) {
+    if (window.CancriThemeIcons && window.CancriThemeIcons.shouldUseThemeAdaptiveIcon) {
+      return window.CancriThemeIcons.shouldUseThemeAdaptiveIcon(iconPath, brand);
+    }
     if (brand && THEME_ADAPTIVE_ICON_BRANDS.has(brand)) return true;
     const path = String(iconPath || "");
     return THEME_ADAPTIVE_ICON_SUFFIXES.some((suffix) => path.endsWith(suffix) || path.includes(suffix));
@@ -2726,6 +2731,10 @@ const ARENA_MODE_MIGRATIONS = {
 
   function applyModelIconThemeClass(img, iconPath, brand) {
     if (!img) return;
+    if (window.CancriThemeIcons && window.CancriThemeIcons.applyModelIconThemeClass) {
+      window.CancriThemeIcons.applyModelIconThemeClass(img, iconPath, brand);
+      return;
+    }
     img.classList.toggle(
       "model-icon-theme-adaptive",
       shouldUseThemeAdaptiveIcon(iconPath, brand),
@@ -3059,7 +3068,7 @@ const ARENA_MODE_MIGRATIONS = {
       ) {
         state.themeMode = rawMode;
       } else {
-        state.themeMode = "black";
+        state.themeMode = "light";
       }
       state.theme = resolveEffectiveTheme(state.themeMode);
       const nextThemeIndex = themeCycle.findIndex(
@@ -3594,7 +3603,7 @@ const ARENA_MODE_MIGRATIONS = {
   // （content 块 {type:"video_url", video_url:{url}}）。目前只有 qwen3.5-omni-plus
   // 注册到了站内；未来上 qwen3-omni-flash / qwen3.5-omni-flash 时也在这里加。
   function isOmniVideoModel(modelId) {
-    return modelId === "qwen3.5-omni-plus-2026-03-15";
+    return modelId === "qwen3.5-omni-plus-2026-03-15" || modelId === "kimi-k2.7-code";
   }
   
   function getAttachmentLimitForModel(modelId = currentModel) {

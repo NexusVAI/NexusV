@@ -72,4 +72,121 @@
       attributeFilter: ["data-theme"],
     });
   }
+
+  /* ── 单色 SVG 图标主题适配（模型菜单 / 模型广场 / marquee 共用） ──
+   * 作为 <img src="*.svg"> 引用时 currentColor 固定渲染为黑色；
+   * 浅色主题压黑、暗色/纯黑/无 data-theme 反白。 */
+  var MONO_ICON_FILES = {
+    "openai.svg": 1,
+    "kwaikat.svg": 1,
+    "cursor.svg": 1,
+    "ibm.svg": 1,
+    "flux.svg": 1,
+    "ollama.svg": 1,
+    "openrouter.svg": 1,
+    "githubcopilot.svg": 1,
+    "poe-color.svg": 1,
+    "qoder-color.svg": 1,
+    "lmstudio.svg": 1,
+    "sensenova.svg": 1,
+    "grok.svg": 1,
+    "xiaomimimo-color.svg": 1,
+    "moonshot.svg": 1,
+    "github.svg": 1,
+    "windsurf.svg": 1,
+  };
+  var MONO_ICON_BRANDS = {
+    OpenAI: 1,
+    Clawto: 1,
+    Cancri: 1,
+    Cursor: 1,
+    "KwaiKAT": 1,
+    IBM: 1,
+    xAI: 1,
+    Moonshot: 1,
+  };
+
+  function iconBasename(iconPath) {
+    var path = String(iconPath || "");
+    var q = path.indexOf("?");
+    if (q >= 0) path = path.slice(0, q);
+    var hash = path.indexOf("#");
+    if (hash >= 0) path = path.slice(0, hash);
+    var slash = path.lastIndexOf("/");
+    return (slash >= 0 ? path.slice(slash + 1) : path).toLowerCase();
+  }
+
+  function shouldUseThemeAdaptiveIcon(iconPath, brand) {
+    if (brand && MONO_ICON_BRANDS[brand]) return true;
+    return !!MONO_ICON_FILES[iconBasename(iconPath)];
+  }
+
+  function applyModelIconThemeClass(img, iconPath, brand) {
+    if (!img || !img.classList) return;
+    img.classList.toggle(
+      "model-icon-theme-adaptive",
+      shouldUseThemeAdaptiveIcon(iconPath, brand),
+    );
+  }
+
+  function scanMonoIcons(root) {
+    root = root || document;
+    var imgs = root.querySelectorAll("img[src]");
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      if (img.classList.contains("cancri-logo")) continue;
+      applyModelIconThemeClass(
+        img,
+        img.getAttribute("src"),
+        img.getAttribute("data-brand") || "",
+      );
+    }
+  }
+
+  var monoScanScheduled = false;
+  function scheduleMonoIconScan() {
+    if (monoScanScheduled) return;
+    monoScanScheduled = true;
+    requestAnimationFrame(function () {
+      monoScanScheduled = false;
+      scanMonoIcons();
+    });
+  }
+
+  window.CancriThemeIcons = {
+    shouldUseThemeAdaptiveIcon: shouldUseThemeAdaptiveIcon,
+    applyModelIconThemeClass: applyModelIconThemeClass,
+    scanAll: scanMonoIcons,
+  };
+
+  scanMonoIcons();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scanMonoIcons, { once: true });
+  }
+
+  if (typeof MutationObserver === "function" && document.documentElement) {
+    var monoObs = new MutationObserver(function (records) {
+      for (var i = 0; i < records.length; i++) {
+        var rec = records[i];
+        if (rec.type === "attributes" && rec.target && rec.target.tagName === "IMG") {
+          scheduleMonoIconScan();
+          return;
+        }
+        if (rec.type === "childList" && rec.addedNodes && rec.addedNodes.length) {
+          scheduleMonoIconScan();
+          return;
+        }
+      }
+    });
+    var attachMonoObserver = function () {
+      monoObs.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["src"],
+        childList: true,
+        subtree: true,
+      });
+    };
+    if (document.body) attachMonoObserver();
+    else document.addEventListener("DOMContentLoaded", attachMonoObserver, { once: true });
+  }
 })();
