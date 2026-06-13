@@ -2530,7 +2530,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "minimax-m3", "name": "MiniMax M3", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gemini-3.5-flash-thinking", "name": "Gemini 3.5 Flash High", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
-    {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal"},
+    {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "dgbmc"},
+    {"id": "grok-imagine-image-pro", "name": "Grok Image Pro", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "gemai.cc"},
     {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
     {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
     {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
@@ -2564,10 +2565,10 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gemma-4-31b-it", "name": "Gemma 4 31B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gemma-4-26b-a4b-it", "name": "Gemma 4 26B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-    {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
+    {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "fuka"},
     {"id": "deepseek-v4-pro-0608", "name": "DeepSeek V4 Pro 0608", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "fuka"},
-    // 2026-06-08: NVIDIA Integrate API 备用线路（魔塔 deepseek-v4-pro 不动）
-    {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "nvidia"},
+    // 2026-06-12: DeepSeek V4 Pro (NVIDIA 显示名) — 上游已切魔塔 ModelScope。
+    {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "modelscope"},
     {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -10468,6 +10469,7 @@ const ARENA_MODE_MIGRATIONS = {
     // grok-imagine-image-lite，走 OpenAI-style 同步返回。
     const isOpenAIImage =
       imageModel === "grok-imagine-image-lite" ||
+      imageModel === "grok-imagine-image-pro" ||
       imageModel === "gpt-image-2-all" ||
       imageModel === "gpt-image-2-pro" ||
       imageModel === "gpt-image-2" ||
@@ -10494,7 +10496,7 @@ const ARENA_MODE_MIGRATIONS = {
   
     // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
     // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-    const noI2iModels = new Set(["grok-imagine-image-lite", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "z-image-turbo"]);
+    const noI2iModels = new Set(["grok-imagine-image-lite", "grok-imagine-image-pro", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "z-image-turbo"]);
     if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
       setImageGenerationBusy(false);
       showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
