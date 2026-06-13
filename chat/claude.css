@@ -6299,6 +6299,94 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     background: rgba(255,59,48,0.1);
     color: #ff3b30;
 }
+.memory-slot-input {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: var(--c-text);
+    font-size: 13px;
+    line-height: 1.35;
+    padding: 0;
+    outline: none;
+}
+.memory-slot-input::placeholder {
+    color: var(--c-text-dim);
+}
+.memory-slot-edit-trigger {
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: var(--c-text);
+    font-size: 13px;
+    line-height: 1.35;
+    text-align: left;
+    padding: 0;
+    cursor: text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.memory-slot-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.memory-slot-save-btn {
+    flex-shrink: 0;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--c-text);
+    background: var(--c-surface, rgba(128,128,128,0.12));
+}
+.memory-slot-save-btn:hover {
+    background: var(--c-line, rgba(128,128,128,0.18));
+}
+.memory-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+.memory-section-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.memory-section-copy .claude-form-help {
+    margin: 0;
+}
+.memory-panel-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.memory-opt-toggle-compact {
+    margin: 0;
+}
+.memory-opt-toggle-compact span {
+    font-size: 13px;
+    color: var(--c-text);
+}
+.memory-slot-note-error {
+    color: var(--danger, #c85a5a);
+}
+.memory-import-meta {
+    display: flex;
+    justify-content: flex-end;
+    font-size: 12px;
+    color: var(--c-text-dim);
+    margin-top: -4px;
+}
+.memory-import-preview[hidden] {
+    display: none !important;
+}
 .memory-import-row {
     display: flex;
     align-items: center;

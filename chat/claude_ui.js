@@ -1003,16 +1003,13 @@
             '<div class="memory-import-backdrop" data-memory-import-close></div>' +
             '<div class="memory-import-dialog cancri-themed-scroll" role="dialog" aria-modal="true" aria-labelledby="memoryImportTitle">' +
             '<div class="memory-import-head">' +
-            '<div><h2 id="memoryImportTitle">导入其他 AI 记忆</h2><p>粘贴 ChatGPT、Claude、Gemini 等历史，Cancri 会先提炼长期偏好，确认后再写入记忆区。</p></div>' +
-            '<button class="memory-import-x" type="button" data-memory-import-close aria-label="关闭导入记忆">×</button>' +
+            '<div><h2 id="memoryImportTitle">导入聊天记录</h2><p>粘贴至多 1000 字聊天内容，由 SenseNova 6.7 提炼后填入空槽位。</p></div>' +
+            '<button class="memory-import-x" type="button" data-memory-import-close aria-label="关闭">×</button>' +
             '</div>' +
-            '<div class="memory-import-grid">' +
-            '<label class="memory-import-field"><span>来源</span><select id="memoryImportSource"><option value="ChatGPT">ChatGPT</option><option value="Claude">Claude</option><option value="Gemini">Gemini</option><option value="Kimi">Kimi</option><option value="其他 AI">其他 AI</option></select></label>' +
-            '<label class="memory-import-file"><span>上传导出文件</span><input id="memoryImportFile" type="file" accept=".json,.txt,.md,.html,.htm,application/json,text/plain,text/markdown,text/html"></label>' +
-            '</div>' +
-            '<label class="memory-import-field memory-import-text-field"><span>历史文本或导出 JSON</span><textarea id="memoryImportText" class="cancri-themed-scroll" rows="8" placeholder="粘贴其他 AI 的聊天历史、偏好说明，或上传 conversations.json / html / txt。"></textarea></label>' +
-            '<div class="memory-import-actions"><button class="claude-secondary-btn" type="button" id="memoryImportPreviewBtn">解析记忆</button><button class="claude-primary-btn" type="button" id="memoryImportSaveBtn" disabled>导入选中</button></div>' +
-            '<div id="memoryImportPreview" class="memory-import-preview"><p>解析后会在这里显示最多 5 条候选记忆，可编辑、取消勾选后再导入。</p></div>' +
+            '<label class="memory-import-field memory-import-text-field"><span>聊天记录</span><textarea id="memoryImportText" class="cancri-themed-scroll" rows="10" maxlength="1000" placeholder="粘贴 ChatGPT / Claude / 本站聊天片段，最多 1000 字。"></textarea></label>' +
+            '<div class="memory-import-meta"><span id="memoryImportCount">0 / 1000</span></div>' +
+            '<div class="memory-import-actions"><button class="claude-primary-btn" type="button" id="memoryImportSaveBtn">总结并填入</button></div>' +
+            '<div id="memoryImportPreview" class="memory-import-preview" hidden></div>' +
             '</div>';
         document.body.appendChild(modal);
 
@@ -1030,24 +1027,17 @@
             el.addEventListener('click', onMemoryImportClosePress, true);
             el.addEventListener('touchend', onMemoryImportClosePress, { capture: true, passive: false });
         });
-        const fileInput = modal.querySelector('#memoryImportFile');
         const textarea = modal.querySelector('#memoryImportText');
-        const previewBtn = modal.querySelector('#memoryImportPreviewBtn');
         const saveBtn = modal.querySelector('#memoryImportSaveBtn');
-        if (fileInput && textarea) {
-            fileInput.addEventListener('change', async function () {
-                const file = fileInput.files && fileInput.files[0];
-                if (!file) return;
-                try {
-                    const raw = await readTextFile(file);
-                    textarea.value = normalizeImportSourceText(raw);
-                    showToast('已读取导出文件，可点击解析记忆');
-                } catch (e) {
-                    showToast('读取导出文件失败');
-                }
-            });
+        const countEl = modal.querySelector('#memoryImportCount');
+        if (textarea && countEl) {
+            const syncCount = function () {
+                const len = String(textarea.value || '').length;
+                countEl.textContent = len + ' / 1000';
+            };
+            textarea.addEventListener('input', syncCount);
+            syncCount();
         }
-        if (previewBtn) previewBtn.addEventListener('click', runMemoryImportPreview);
         if (saveBtn) saveBtn.addEventListener('click', saveSelectedImportedMemories);
         modal.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') closeMemoryImportModal();
@@ -1147,28 +1137,37 @@
     async function saveSelectedImportedMemories() {
         const modal = ensureMemoryImportModal();
         const api = cancriApp();
-        if (!api || typeof api.importUserMemories !== 'function') {
+        if (!api || typeof api.previewImportedMemories !== 'function' || typeof api.importUserMemories !== 'function') {
             showToast('记忆导入模块未加载，请刷新页面后重试');
             return;
         }
-        const selected = Array.from(modal.querySelectorAll('.memory-import-candidate')).map(function (row) {
-            const check = row.querySelector('.memory-import-check');
-            const text = row.querySelector('.memory-import-candidate-text');
-            if (!check || !check.checked || !text) return '';
-            return String(text.value || '').replace(/\s+/g, ' ').trim().slice(0, 100);
-        }).filter(Boolean);
-        if (!selected.length) {
-            showToast('请选择至少一条记忆');
+        const textarea = modal.querySelector('#memoryImportText');
+        const preview = modal.querySelector('#memoryImportPreview');
+        const saveBtn = modal.querySelector('#memoryImportSaveBtn');
+        const text = normalizeImportSourceText(textarea ? textarea.value : '').slice(0, 1000);
+        if (textarea) textarea.value = text;
+        if (text.length < 20) {
+            showToast('请粘贴至少 20 字的聊天记录');
             return;
         }
-        const saveBtn = modal.querySelector('#memoryImportSaveBtn');
+        if (preview) {
+            preview.hidden = false;
+            preview.innerHTML = '<p>正在用 SenseNova 6.7 总结记忆…</p>';
+        }
         if (saveBtn) saveBtn.disabled = true;
         try {
-            const result = await api.importUserMemories(selected);
+            const candidates = await api.previewImportedMemories({ text: text, source: '聊天记录' });
+            if (!candidates.length) {
+                if (preview) preview.innerHTML = '<p>未能从这段聊天提炼出可保存的记忆。</p>';
+                showToast('未提炼出可导入的记忆');
+                return;
+            }
+            const result = await api.importUserMemories(candidates.map(function (item) { return item.content; }));
             const saved = Number(result && result.saved) || 0;
-            showToast(saved > 0 ? '已导入 ' + saved + ' 条记忆' : '记忆槽已满或内容重复');
+            showToast(saved > 0 ? '已填入 ' + saved + ' 条记忆' : '记忆槽已满或内容重复');
             if (saved > 0) closeMemoryImportModal();
         } catch (e) {
+            if (preview) preview.innerHTML = '<p>总结失败，请稍后重试。</p>';
             showToast(e && e.message ? e.message : '导入记忆失败');
         } finally {
             if (saveBtn) saveBtn.disabled = false;
@@ -3366,15 +3365,46 @@
         });
     }
 
-    // 2026-05-20：记忆删除按钮事件委托
+    // 2026-05-20：记忆区事件委托（删除 / 开关 / 手填槽位）
     var memoriesContainer = document.getElementById('claudeMemoriesContainer');
     if (memoriesContainer) {
         memoriesContainer.addEventListener('click', function (e) {
+            var app = window.CancriApp;
+            if (!app) return;
+            var saveBtn = e.target.closest('[data-action="save-memory"]');
+            if (saveBtn) {
+                var saveSlot = parseInt(saveBtn.getAttribute('data-slot'), 10);
+                var input = memoriesContainer.querySelector('.memory-slot-input[data-slot="' + saveSlot + '"]');
+                if (!isNaN(saveSlot) && input && typeof app.saveUserMemorySlot === 'function') {
+                    app.saveUserMemorySlot(saveSlot, input.value);
+                }
+                return;
+            }
+            var editBtn = e.target.closest('[data-action="edit-memory"]');
+            if (editBtn && typeof app.startMemorySlotEdit === 'function') {
+                var editSlot = parseInt(editBtn.getAttribute('data-slot'), 10);
+                if (!isNaN(editSlot)) app.startMemorySlotEdit(editSlot, editBtn.textContent || '');
+                return;
+            }
             var btn = e.target.closest('[data-action="delete-memory"]');
             if (!btn) return;
             var slot = parseInt(btn.getAttribute('data-slot'), 10);
-            if (!isNaN(slot) && window.CancriApp && typeof window.CancriApp.deleteUserMemory === 'function') {
-                window.CancriApp.deleteUserMemory(slot);
+            if (!isNaN(slot) && typeof app.deleteUserMemory === 'function') {
+                app.deleteUserMemory(slot);
+            }
+        });
+        memoriesContainer.addEventListener('keydown', function (e) {
+            var app = window.CancriApp;
+            var input = e.target.closest('[data-action="edit-memory-input"]');
+            if (!input || !app) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var slot = parseInt(input.getAttribute('data-slot'), 10);
+                if (!isNaN(slot) && typeof app.saveUserMemorySlot === 'function') {
+                    app.saveUserMemorySlot(slot, input.value);
+                }
+            } else if (e.key === 'Escape' && typeof app.cancelMemorySlotEdit === 'function') {
+                app.cancelMemorySlotEdit();
             }
         });
         memoriesContainer.addEventListener('change', function (e) {

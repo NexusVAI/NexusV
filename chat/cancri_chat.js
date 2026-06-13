@@ -3908,7 +3908,10 @@ const ARENA_MODE_MIGRATIONS = {
   const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
   const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
   const USER_MEMORY_URL = `${SUPABASE_URL}/functions/v1/user-memory`;
-  const MEMORY_IMPORT_TEXT_LIMIT = 12000;
+  const MEMORY_IMPORT_TEXT_LIMIT = 1000;
+  const MANUAL_MEMORY_MAX_LENGTH = 20;
+  const MEMORY_EDIT_MAX_LENGTH = 100;
+  let memorySlotEditing = null;
   const CLAUDE_PROJECTS_STORAGE_KEY = "cancri_claude_projects_v1";
   const CLAUDE_ACTIVE_PROJECT_STORAGE_KEY = "cancri_claude_active_project_id";
   const PROJECT_CONTEXT_SOURCE_LIMIT = 6;
@@ -5996,35 +5999,75 @@ const ARENA_MODE_MIGRATIONS = {
   const MEMORY_SLOT_COUNT = 5;
   
   function buildMemorySlotListHtml(memories) {
+    const readOnly = state.userMemoryEnabled === false;
     const bySlot = {};
     (Array.isArray(memories) ? memories : []).forEach((m) => {
       if (!m || typeof m.content !== "string" || !m.content.trim()) return;
       const slot = Number.isInteger(Number(m.slot)) ? Number(m.slot) : Object.keys(bySlot).length;
       if (slot >= 0 && slot < MEMORY_SLOT_COUNT) {
-        bySlot[slot] = m.content.trim().slice(0, 100);
+        bySlot[slot] = m.content.trim().slice(0, MEMORY_EDIT_MAX_LENGTH);
       }
     });
     const rows = [];
     for (let slot = 0; slot < MEMORY_SLOT_COUNT; slot += 1) {
       const content = bySlot[slot] || "";
-      if (content) {
+      if (readOnly) {
         rows.push(
-          `<div class="memory-slot-row is-filled" data-slot="${slot}">` +
+          `<div class="memory-slot-row${content ? " is-filled" : " is-empty"}" data-slot="${slot}">` +
           `<span class="memory-slot-index" aria-hidden="true">${slot + 1}</span>` +
-          `<span class="memory-slot-text" title="${escapeHtml(content)}">${escapeHtml(content)}</span>` +
-          `<button class="memory-delete-btn" type="button" data-action="delete-memory" data-slot="${slot}" title="删除此记忆">&times;</button>` +
+          (content
+            ? `<span class="memory-slot-text">${escapeHtml(content)}</span>`
+            : `<span class="memory-slot-text memory-slot-placeholder">空槽位</span>`) +
           `</div>`
         );
         continue;
       }
+      const isEditing = memorySlotEditing && memorySlotEditing.slot === slot;
+      if (isEditing || !content) {
+        const draft = isEditing ? String(memorySlotEditing.draft || "") : content;
+        const maxLen = content ? MEMORY_EDIT_MAX_LENGTH : MANUAL_MEMORY_MAX_LENGTH;
+        const placeholder = content ? "编辑记忆" : `点击填写，${MANUAL_MEMORY_MAX_LENGTH} 字以内`;
+        rows.push(
+          `<div class="memory-slot-row is-editing${content ? " is-filled" : " is-empty"}" data-slot="${slot}">` +
+          `<span class="memory-slot-index" aria-hidden="true">${slot + 1}</span>` +
+          `<input class="memory-slot-input" type="text" data-action="edit-memory-input" data-slot="${slot}" ` +
+          `maxlength="${maxLen}" value="${escapeHtml(draft)}" placeholder="${escapeHtml(placeholder)}" />` +
+          `<div class="memory-slot-actions">` +
+          `<button class="memory-slot-save-btn" type="button" data-action="save-memory" data-slot="${slot}" title="保存">保存</button>` +
+          (content
+            ? `<button class="memory-delete-btn" type="button" data-action="delete-memory" data-slot="${slot}" title="删除">&times;</button>`
+            : "") +
+          `</div></div>`
+        );
+        continue;
+      }
       rows.push(
-        `<div class="memory-slot-row is-empty" data-slot="${slot}">` +
+        `<div class="memory-slot-row is-filled" data-slot="${slot}">` +
         `<span class="memory-slot-index" aria-hidden="true">${slot + 1}</span>` +
-        `<span class="memory-slot-text memory-slot-placeholder">空槽位 · 可导入或等待系统自动总结</span>` +
+        `<button class="memory-slot-text memory-slot-edit-trigger" type="button" data-action="edit-memory" data-slot="${slot}" title="点击编辑">${escapeHtml(content)}</button>` +
+        `<button class="memory-delete-btn" type="button" data-action="delete-memory" data-slot="${slot}" title="删除">&times;</button>` +
         `</div>`
       );
     }
     return `<div class="memory-slot-list" aria-label="记忆列表，最多 ${MEMORY_SLOT_COUNT} 条">${rows.join("")}</div>`;
+  }
+
+  function startMemorySlotEdit(slot, draft = "") {
+    const existing = (state.userMemories || []).find((m) => Number(m.slot) === slot);
+    memorySlotEditing = { slot, draft: draft || (existing ? existing.content : "") };
+    renderMemoriesInSettings();
+    requestAnimationFrame(() => {
+      const input = document.querySelector(`.memory-slot-input[data-slot="${slot}"]`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+  }
+
+  function cancelMemorySlotEdit() {
+    memorySlotEditing = null;
+    renderMemoriesInSettings();
   }
   
   // 2026-05-20：在设置面板渲染记忆列表
@@ -6033,31 +6076,24 @@ const ARENA_MODE_MIGRATIONS = {
     if (!container) return;
     const enabled = state.userMemoryEnabled !== false;
     const toggleHtml =
-      '<label class="memory-opt-toggle">' +
+      '<label class="memory-opt-toggle memory-opt-toggle-compact">' +
       '<input type="checkbox" data-action="toggle-memory-generation"' + (enabled ? " checked" : "") + ">" +
-      '<span><strong>生成并使用记忆</strong><small>关闭后，系统不会在每日批处理里总结您的对话，也不会把现有记忆注入新对话。</small></span>' +
-      "</label>";
+      "<span>生成并使用记忆</span></label>";
     const slotListHtml = buildMemorySlotListHtml(state.userMemories);
-    const hasMemories = Array.isArray(state.userMemories) && state.userMemories.length > 0;
-    const emptyHint = hasMemories
-      ? ""
-      : '<p class="claude-form-help memory-slot-note">暂无记忆。系统会从近期对话自动提取；若对话多为寒暄，可能暂时没有可记录内容。</p>';
     const errorHint = options.error
-      ? `<p class="claude-form-help memory-slot-note" style="color:var(--danger,#c85a5a);">${escapeHtml(options.error)}</p>`
+      ? `<p class="claude-form-help memory-slot-note memory-slot-note-error">${escapeHtml(options.error)}</p>`
       : "";
     if (!enabled) {
       container.innerHTML =
-        toggleHtml +
+        '<div class="memory-panel-bar">' + toggleHtml + "</div>" +
         errorHint +
-        '<p class="claude-form-help memory-slot-note">记忆已暂停。您仍可删除下方已有记忆。</p>' +
+        '<p class="claude-form-help memory-slot-note">记忆已暂停，槽位只读。</p>' +
         slotListHtml;
       return;
     }
     container.innerHTML =
-      toggleHtml +
+      '<div class="memory-panel-bar">' + toggleHtml + "</div>" +
       errorHint +
-      '<p class="claude-form-help memory-slot-note">一行一条，最多 5 条，每条 100 字以内。</p>' +
-      emptyHint +
       slotListHtml;
   }
   
@@ -6083,6 +6119,35 @@ const ARENA_MODE_MIGRATIONS = {
     }
   }
   
+  async function saveUserMemorySlot(slot, content, options = {}) {
+    const hadContent = (state.userMemories || []).some((m) => Number(m.slot) === slot && m.content);
+    const maxLen = hadContent ? MEMORY_EDIT_MAX_LENGTH : MANUAL_MEMORY_MAX_LENGTH;
+    const cleaned = String(content || "").replace(/\s+/g, " ").trim().slice(0, maxLen);
+    if (!cleaned) {
+      showToast(`请输入 1–${maxLen} 字的记忆内容`);
+      return;
+    }
+    try {
+      const session = await ensureAuthSession();
+      const response = await fetch(USER_MEMORY_URL, {
+        method: "POST",
+        headers: userMemoryRequestHeaders(session),
+        body: JSON.stringify({ action: "save_memory", slot, content: cleaned }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(json.message || json.error || "save_memory_failed");
+      }
+      memorySlotEditing = null;
+      const others = (state.userMemories || []).filter((m) => Number(m.slot) !== slot);
+      state.userMemories = [...others, { slot, content: cleaned }].sort((a, b) => a.slot - b.slot);
+      renderMemoriesInSettings();
+      if (!options.silent) showToast("记忆已保存");
+    } catch (e) {
+      showToast("保存记忆失败");
+    }
+  }
+
   // 2026-05-20：删除单条记忆
   async function deleteUserMemory(slot) {
     try {
@@ -6093,6 +6158,7 @@ const ARENA_MODE_MIGRATIONS = {
         body: JSON.stringify({ action: "delete_memory", slot }),
       });
       state.userMemories = state.userMemories.filter((m) => m.slot !== slot);
+      if (memorySlotEditing && memorySlotEditing.slot === slot) memorySlotEditing = null;
       renderMemoriesInSettings();
       showToast("记忆已删除");
     } catch (e) {
@@ -16128,6 +16194,9 @@ const ARENA_MODE_MIGRATIONS = {
     // 2026-05-20：记忆功能
     fetchUserMemories,
     deleteUserMemory,
+    saveUserMemorySlot,
+    startMemorySlotEdit,
+    cancelMemorySlotEdit,
     setMemoryGenerationEnabled,
     previewImportedMemories,
     importUserMemories,
