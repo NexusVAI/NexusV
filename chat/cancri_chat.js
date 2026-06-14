@@ -3393,7 +3393,20 @@ const ARENA_MODE_MIGRATIONS = {
     if (attachmentStatusPill) {
       const count = pendingAttachments.length;
       attachmentStatusPill.hidden = count === 0;
-      attachmentStatusPill.textContent = count ? `${count} 个附件` : "";
+      if (!count) {
+        attachmentStatusPill.textContent = "";
+      } else {
+        const hasImages = pendingAttachments.some(
+          (item) => isImageAttachment(item) && !item?.isTextFile,
+        );
+        const ocrMode =
+          hasImages &&
+          !isMultimodalModel(currentModel) &&
+          !isOmniVideoModel(currentModel);
+        attachmentStatusPill.textContent = ocrMode
+          ? `${count} 个附件 · 发送时将 OCR 识别`
+          : `${count} 个附件`;
+      }
     }
   }
   
@@ -3745,6 +3758,110 @@ const ARENA_MODE_MIGRATIONS = {
     });
   }
   
+  async function requestOcrForImages(images) {
+    const list = Array.isArray(images)
+      ? images.filter((item) => isImageAttachment(item))
+      : [];
+    if (!list.length) {
+      return { textBlock: "", partialFailures: false };
+    }
+    const session = await ensureAuthSession();
+    const response = await proxyFetchWithTimeout(
+      EDGE_FUNCTION_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          endpoint: "ocr",
+          __auth_token: session.access_token,
+          images: list.map((img) => ({
+            name: img.name || "image",
+            data_url: img.dataUrl || img.url,
+          })),
+        }),
+      },
+      OCR_REQUEST_TIMEOUT_MS,
+      "图片识别",
+    );
+    const text = await response.text().catch(() => "");
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (_) {
+      data = {};
+    }
+    if (!response.ok || data.ok === false) {
+      const message =
+        data.message ||
+        data.error ||
+        (response.status === 429
+          ? "今日图片识别次数已用完，请明天再试。"
+          : "图片识别失败，请稍后重试。");
+      throw new Error(message);
+    }
+    const results = Array.isArray(data.results) ? data.results : [];
+    const blocks = [];
+    let partialFailures = false;
+    for (const row of results) {
+      if (row?.ok && row.text) {
+        blocks.push(
+          `\n\n--- 图片 OCR：${row.name || "image"} ---\n${String(row.text).trim()}\n--- OCR 结束 ---`,
+        );
+      } else {
+        partialFailures = true;
+      }
+    }
+    if (!blocks.length) {
+      throw new Error(data.message || "图片识别未返回有效文字。");
+    }
+    return { textBlock: blocks.join(""), partialFailures };
+  }
+
+  async function buildUserContentForModel(query, attachments, modelId) {
+    const trimmedQuery = String(query || "").trim();
+    if (isMultimodalModel(modelId) || isOmniVideoModel(modelId)) {
+      if (!attachments.length) return trimmedQuery;
+      return attachmentToUserContent(trimmedQuery, attachments);
+    }
+
+    if (attachments.some((item) => isVideoAttachment(item))) {
+      throw new Error("当前模型不支持视频，请切换到支持多模态的模型。");
+    }
+
+    const textFiles = attachments.filter((item) => item?.isTextFile);
+    const images = attachments.filter(
+      (item) => isImageAttachment(item) && !item?.isTextFile,
+    );
+    const parts = [];
+
+    textFiles.forEach((item) => {
+      if (!item?.textContent) return;
+      parts.push(
+        `\n\n--- 附件：${item.name} ---\n${item.textContent}\n--- 附件结束 ---\n`,
+      );
+    });
+
+    if (images.length) {
+      const { textBlock, partialFailures } = await requestOcrForImages(images);
+      if (textBlock) parts.push(textBlock);
+      if (partialFailures) {
+        showToast("部分图片识别失败，已使用成功识别的内容继续。");
+      }
+    }
+
+    if (trimmedQuery) parts.push(trimmedQuery);
+    else if (images.length) parts.push("请根据以下图片识别内容回答。");
+
+    const combined = parts.join("\n").trim();
+    if (!combined) {
+      throw new Error("请输入问题或上传有效附件。");
+    }
+    return combined;
+  }
+
   async function reserveFileUploadUsage(fileCount) {
     const count = Math.max(1, Math.min(20, Number(fileCount) || 1));
     try {
@@ -3780,10 +3897,16 @@ const ARENA_MODE_MIGRATIONS = {
   async function handleSelectedAttachmentFiles(files) {
     const nextAttachments = await filesToAttachments(files);
     if (!nextAttachments.length) return;
-    const allowed = await reserveFileUploadUsage(nextAttachments.length);
-    if (!allowed) {
-      cleanupAttachmentItems(nextAttachments);
-      return;
+    const needsFileUploadQuota =
+      isMultimodalModel(currentModel) ||
+      isOmniVideoModel(currentModel) ||
+      nextAttachments.some((item) => item?.isTextFile);
+    if (needsFileUploadQuota) {
+      const allowed = await reserveFileUploadUsage(nextAttachments.length);
+      if (!allowed) {
+        cleanupAttachmentItems(nextAttachments);
+        return;
+      }
     }
     pendingAttachments.push(...nextAttachments);
     updateAttachmentPreview();
@@ -3935,6 +4058,7 @@ const ARENA_MODE_MIGRATIONS = {
   //     STREAM_IDLE_TIMEOUT_MS 内没收到任何 SSE chunk 才视为停摆
   // arena 双模并行 fetch（非流式）依然用 CHAT_TURN_TIMEOUT_MS 当 wall。
   const CHAT_TURN_TIMEOUT_MS = 30 * 60 * 1000;
+  const OCR_REQUEST_TIMEOUT_MS = 120 * 1000;
   // SSE 流式空闲超时：常规模型 1-2s 出 chunk，Claude Opus thinking 可能 60s+
   // 才出第一个 reasoning chunk。110s 窗口对各家上游中转都安全。
   const STREAM_IDLE_TIMEOUT_MS = 110 * 1000;
@@ -13827,17 +13951,48 @@ const ARENA_MODE_MIGRATIONS = {
       return;
     }
   
-    const effectiveQuery = query || "请分析上传的图片。";
-    const userContent = attachmentsForSend.length
-      ? attachmentToUserContent(effectiveQuery, attachmentsForSend)
-      : effectiveQuery;
+    const effectiveQuery =
+      query ||
+      (attachmentsForSend.some((a) => isImageAttachment(a))
+        ? "请根据以下图片识别内容回答。"
+        : "请分析上传的内容。");
     const turnUserIndex = conversationHistory.length;
-    const userHistoryMessage = { role: "user", content: userContent };
-  
+    const needsOcr =
+      !isMultimodalModel(turnModelId) &&
+      !isOmniVideoModel(turnModelId) &&
+      attachmentsForSend.some((a) => isImageAttachment(a) && !a?.isTextFile);
+
+    let userContent = effectiveQuery;
+    if (attachmentsForSend.length) {
+      try {
+        setComposerBusy(true);
+        if (needsOcr && attachmentStatusPill) {
+          attachmentStatusPill.hidden = false;
+          attachmentStatusPill.textContent = "识别图片中…";
+        }
+        userContent = await buildUserContentForModel(
+          effectiveQuery,
+          attachmentsForSend,
+          turnModelId,
+        );
+      } catch (error) {
+        showToast(
+          normalizeErrorMessage(error, "图片识别失败，请稍后重试。"),
+        );
+        setComposerBusy(false);
+        updateComposerToolStatus();
+        return;
+      } finally {
+        if (needsOcr) updateComposerToolStatus();
+      }
+    }
+
     createUserMessage(query || effectiveQuery, attachmentsForSend, turnUserIndex);
     homeInput.value = "";
     autoResizeComposerInput();
     updateComposerSendButton();
+
+    const userHistoryMessage = { role: "user", content: userContent };
   
     let fallbackToSingleModel = false;
     if (
@@ -15795,13 +15950,14 @@ const ARENA_MODE_MIGRATIONS = {
   
   function updateAttachBtnVisibility() {
     const meta = getModelMeta(currentModel);
+    const chatLike =
+      meta.kind === "chat" ||
+      isMultimodal ||
+      isImageOnlyModel(currentModel) ||
+      isReferenceVideoModel(currentModel) ||
+      isVideoEditModel(currentModel);
     if (attachBtn) {
-      attachBtn.hidden = !(
-        isMultimodal ||
-        isImageOnlyModel(currentModel) ||
-        isReferenceVideoModel(currentModel) ||
-        isVideoEditModel(currentModel)
-      );
+      attachBtn.hidden = !chatLike;
     }
     if (attachmentInput) {
       attachmentInput.accept = getAttachmentAcceptForModel(currentModel);
