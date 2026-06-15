@@ -10704,11 +10704,12 @@ const ARENA_MODE_MIGRATIONS = {
   
       // OpenAI-compatible API returns images directly
       if (isOpenAIImage) {
+        // 2026-06-15: 优先 b64_json（内嵌数据，不过期），url 可能是临时地址会过期。
         const imageUrl =
-          data?.data?.[0]?.url ||
           (data?.data?.[0]?.b64_json
             ? `data:image/png;base64,${data.data[0].b64_json}`
-            : "");
+            : "") ||
+          data?.data?.[0]?.url || "";
         if (!imageUrl) {
           // 200 OK 但没返回图 → 走 image_generation_failed 模板，不读上游
           // data.error.message / data.message。revised_prompt 是 OpenAI
