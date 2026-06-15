@@ -1698,6 +1698,7 @@ const ARENA_MODE_MIGRATIONS = {
     "gemini-3.1-pro",
     "gemini-3.1-pro-preview",
     "glm-5.1",
+    "glm-5.2",
     "deepseek-v4-pro",
     "deepseek-v4-pro-0608",
     "qwen3.7-max",
@@ -1738,6 +1739,7 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.5-special",
+    "glm-5.2",
     "grok-4.3",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
@@ -2553,6 +2555,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
     // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
     {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 0.5, "proPlusOnly": true},
+    // 2026-06-15: GLM-5.2 — cheap-host1.cheapyun.com 上游。
+    {"id": "glm-5.2", "name": "GLM 5.2", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     // 2026-06-09: 【订阅福利】composer-2.5-fast — newapi.makelove.cloud 上游，Pro+ 免费。
     {"id": "composer-2.5-fast", "name": "【订阅福利】composer-2.5-fast", "brand": "Cursor", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
