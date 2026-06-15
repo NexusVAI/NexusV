@@ -26,9 +26,8 @@
   window.__cancri_telemetry_loaded = true;
 
   // ── 配置 ──────────────────────────────────────────────────────────
-  // 用 cancri_config.js 注入的常量优先（聊天/平台页有），否则用硬编码 fallback
-  // —— anon key 本来就是公开的（写在所有 HTML 里），不算秘密。
-  var SUPABASE_URL = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';
+  // 用 cancri_config.js / cancri_site_config.js 注入的常量优先；无配置时走 CF 网关（非 Supabase 直连）
+  var SUPABASE_URL = window.__SUPABASE_URL__ || 'https://chat.nexusvai.xyz';
   var SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
   var GW = SUPABASE_URL + '/functions/v1/chat-gateway';
 

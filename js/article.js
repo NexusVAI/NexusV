@@ -36,7 +36,7 @@ const articleData = {
                 '<strong>部署</strong>',
                 '本次修复涉及 NexusV 网关的两个边缘函数。',
                 'api-gateway 部署为 v337，状态 ACTIVE。影响范围覆盖三条 OpenAI 兼容路由：<code>POST /v1/chat/completions</code>、<code>POST /v1/messages</code>（Anthropic Messages 协议）、<code>POST /v1/responses</code>（OpenAI Responses 协议）。',
-                'chat-gateway 部署为 v551，状态 ACTIVE。影响范围覆盖 <code>wrapResponseForQuotaRecording</code> 包装的所有 chat 流式调用，即站内 ChatAI 用户走的全部模型对话路径。',
+                'chat-gateway 部署为 v551，状态 ACTIVE。影响范围覆盖 <code>wrapResponseForQuotaRecording</code> 包装的所有 chat 流式调用，即站内 NexusVAI 用户走的全部模型对话路径。',
                 '部署通过 Supabase Management API 的 multipart 上传端点完成，每个函数一次原子部署。整个改动不涉及 git 工作流——所有源代码修改均通过 IDE 直接编辑，部署后 HTTP 201 的响应携带新版本号与 ezbr 校验和，作为版本追踪凭证。',
                 '<strong>端到端验证</strong>',
                 '我们设计了一个五项主测试套件，目标是同时覆盖正常路径与异常路径：第一项查询 /v1/models 验证函数响应正常；第二项发起非流式 POST 请求验证 JSON 结算路径；第三项发起完整流式请求并读取到流末，观察到 196 个 chunks、34KB 数据、[DONE] 帧与最终 usage 帧均正确出现；第四项发起流式请求、读取首个 chunk 后立即 abort，验证 AbortError 正确传播且 reader 优雅退出；第五项在 abort 之后立即再发一次请求，验证网关未被卡死。5/5 PASS。',
@@ -89,7 +89,7 @@ const articleData = {
                 '<strong>Deployment</strong>',
                 'The fix spans two edge functions in the NexusV gateway.',
                 'api-gateway was deployed as v337, ACTIVE. It covers three OpenAI-compatible routes: <code>POST /v1/chat/completions</code>, <code>POST /v1/messages</code> (Anthropic Messages protocol), and <code>POST /v1/responses</code> (OpenAI Responses protocol).',
-                'chat-gateway was deployed as v551, ACTIVE. It covers every streaming chat call routed through <code>wrapResponseForQuotaRecording</code>, which is the entire model-conversation path used by ChatAI users in the web UI.',
+                'chat-gateway was deployed as v551, ACTIVE. It covers every streaming chat call routed through <code>wrapResponseForQuotaRecording</code>, which is the entire model-conversation path used by NexusVAI users in the web UI.',
                 'Deployment used the Supabase Management API multipart endpoint, one atomic upload per function. The change touched no git workflow — all source modifications were performed via direct IDE edits, and the HTTP 201 deployment responses (carrying the new version number and ezbr checksum) serve as our deployment receipts.',
                 '<strong>End-to-end verification</strong>',
                 'We assembled a five-step main test suite that exercises both normal and abnormal paths: (1) a query to /v1/models confirming the function is alive; (2) a non-streaming POST validating the JSON settlement path; (3) a streaming request read to completion, where we observed 196 chunks, 34 KB of data, and both [DONE] and the final usage frame; (4) a streaming request followed by abort after reading one chunk, where AbortError propagated cleanly and the reader exited gracefully; (5) an immediate follow-up request confirming the gateway was not wedged. All five passed.',
@@ -110,19 +110,19 @@ const articleData = {
         }
     },
     chatai: {
-        overlay: 'ChatAI',
-        media: { type: 'image', src: 'Logo/chatAI.png', alt: 'ChatAI' },
+        overlay: 'NexusVAI',
+        media: { type: 'image', src: 'Logo/chatAI.png', alt: 'NexusVAI' },
         zh: {
-            title: '隆重推出 ChatAI 多模型聚合平台',
+            title: '隆重推出 NexusVAI 多模型聚合平台',
             date: '2026年5月3日 16:00',
             category: '产品',
             readTime: '15 分钟阅读',
             paragraphs: [
-                '今天，我们正式发布 ChatAI——一个以邮箱验证码登录、注册即可上手的 AI 聚合服务平台。ChatAI 将来自全球 14 家以上供应商的 40+ 顶尖大语言模型整合到一个简洁优雅的对话界面中，让每一位用户都能在统一界面下体验最前沿的 AI 对话能力。无论你需要写作辅助、代码调试、数据分析还是创意灵感，ChatAI 都能为你提供一站式解决方案。',
-                '为什么要做 ChatAI？',
-                '当前 AI 行业的现状是：优秀的模型分散在各个平台，每个平台都有自己的注册流程、计费方式和使用限制。用户想要对比不同模型的表现，需要在多个平台之间反复切换，既繁琐又低效。ChatAI 的诞生就是为了解决这个问题——一个入口，所有模型，统一体验。我们相信，AI 技术的普惠不应该被复杂的接入流程所阻挡。',
+                '今天，我们正式发布 NexusVAI——一个以邮箱验证码登录、注册即可上手的 AI 聚合服务平台。NexusVAI 将来自全球 14 家以上供应商的 40+ 顶尖大语言模型整合到一个简洁优雅的对话界面中，让每一位用户都能在统一界面下体验最前沿的 AI 对话能力。无论你需要写作辅助、代码调试、数据分析还是创意灵感，NexusVAI 都能为你提供一站式解决方案。',
+                '为什么要做 NexusVAI？',
+                '当前 AI 行业的现状是：优秀的模型分散在各个平台，每个平台都有自己的注册流程、计费方式和使用限制。用户想要对比不同模型的表现，需要在多个平台之间反复切换，既繁琐又低效。NexusVAI 的诞生就是为了解决这个问题——一个入口，所有模型，统一体验。我们相信，AI 技术的普惠不应该被复杂的接入流程所阻挡。',
                 '海量模型，一站聚合',
-                'ChatAI 接入了来自全球 14 家以上供应商的 40+ 大语言模型，覆盖当前主流的几乎所有顶尖 AI：',
+                'NexusVAI 接入了来自全球 14 家以上供应商的 40+ 大语言模型，覆盖当前主流的几乎所有顶尖 AI：',
                 '• DeepSeek 系列：DeepSeek-V4-Flash（默认模型，极速稳定）、DeepSeek-V4-Pro（专业研究级）、DeepSeek-R1（强大推理能力）等 7 款模型。',
                 '• OpenAI / GPT 系列：GPT-5.4（通用旗舰）、GPT-OSS 120B（开源大参数模型）。',
                 '• Anthropic Claude 系列：Claude Opus 4.6（长文写作首选）、Claude Sonnet 4.6（均衡全能）。',
@@ -134,32 +134,32 @@ const articleData = {
                 '• 更多模型：MiniMax M2.7、Step-3.5 Flash、Spark-X2、Nemotron-3-Super、Ling 2.6、MiMo-V2.5-Pro、HunYuan3 Preview 等。',
                 '每个模型都标注了速度等级（绿色=极快、黄色=中等、红色=慢速）和能力标签（通用、编程、推理、写作等），方便你快速选择最适合的模型。当当前模型配额用尽时，系统会自动切换到最快的可用模型，对话不中断。',
                 '统一体验，零门槛上手',
-                'ChatAI 的核心对话功能为所有注册用户开放，打开即用。我们最大程度降低了使用门槛，让 AI 真正触手可及。每日配额在午夜自动刷新，配合智能自动切换机制，确保你的对话体验始终流畅。',
+                'NexusVAI 的核心对话功能为所有注册用户开放，打开即用。我们最大程度降低了使用门槛，让 AI 真正触手可及。每日配额在午夜自动刷新，配合智能自动切换机制，确保你的对话体验始终流畅。',
                 '强大的对话管理',
-                'ChatAI 提供了完整的对话管理系统：',
+                'NexusVAI 提供了完整的对话管理系统：',
                 '• 云端对话历史：对话记录通过 Supabase 云端同步，支持跨设备访问。你可以随时回顾、继续或删除历史对话。',
                 '• 对话置顶与重命名：重要对话可置顶显示，支持自定义命名，告别混乱的对话列表。',
                 '• 自动标题生成：系统根据你的首条消息自动生成对话标题，无需手动整理。',
                 '• 128K 超长上下文：支持高达 128,000 tokens 的上下文窗口，轻松处理长文档、长对话。系统会实时显示上下文使用量（环形进度条），当使用率达到 92% 时自动进行智能压缩——由 AI 总结对话要点并开启新会话，确保连贯性不受影响。',
                 '• 临时对话模式：开启临时对话后，对话不会被保存到历史记录，不会用于模型训练，关闭后即销毁。适合处理敏感或临时性内容。',
                 '多模态输入与文件处理',
-                'ChatAI 不仅仅是文字对话。它支持多种输入方式：',
+                'NexusVAI 不仅仅是文字对话。它支持多种输入方式：',
                 '• 图片上传：支持上传图片文件，多模态模型可直接理解图片内容并进行分析、描述或回答相关问题。',
                 '• 文件上传：支持 PDF、TXT、DOC、DOCX、MD、JSON、CSV 等格式，单条消息最多附带 4 个文件，单文件最大 8MB。文件内容会被智能解析并注入对话上下文。',
                 '• 语音输入：集成 Web Speech API，支持中文普通话实时语音转文字。点击麦克风按钮即可开始语音输入，松开自动发送。',
                 '• 全屏输入模式：点击展开按钮可进入全屏编辑模式，适合撰写长文或复杂 Prompt。',
                 'AI 图像生成',
-                'ChatAI 内置了独立的图像生成模块。你可以通过文字描述生成高质量图片，支持三种尺寸比例：1:1（正方形）、9:16（竖版海报）、16:9（横版宽屏）。系统提供了快捷 Prompt 模板（产品海报、界面概念、App 图标、社交媒体封面），也支持完全自定义描述。生成的图片以画廊形式展示，点击即可查看大图。',
+                'NexusVAI 内置了独立的图像生成模块。你可以通过文字描述生成高质量图片，支持三种尺寸比例：1:1（正方形）、9:16（竖版海报）、16:9（横版宽屏）。系统提供了快捷 Prompt 模板（产品海报、界面概念、App 图标、社交媒体封面），也支持完全自定义描述。生成的图片以画廊形式展示，点击即可查看大图。',
                 '联网搜索与网页阅读',
-                'ChatAI 具备联网能力，AI 可以自主调用以下工具：',
+                'NexusVAI 具备联网能力，AI 可以自主调用以下工具：',
                 '• 联网搜索：AI 可以自主搜索互联网，获取最新的公开信息（最多返回 10 条结果），让回答不再局限于训练数据。',
                 '• 网页阅读：AI 可以直接读取指定 URL 的完整内容，适合分析文章、文档或网页信息。',
                 '• 站内文章检索：AI 可以搜索和阅读 NexusV 站内的所有技术文章，为你提供精准的站内知识支持。',
                 '这些工具由 AI 自主决定是否调用——当你的问题需要最新信息或外部资料时，AI 会自动搜索并整合结果，无需你手动操作。',
                 'AI 竞技场：模型盲测对决',
-                'ChatAI 独创了「AI 竞技场」功能——匿名双模型对决。你输入一个问题，系统随机分配两个模型匿名回答，你投票选出更好的一方。投票后才会揭晓模型身份。竞技场维护了排行榜系统，记录每个模型的胜率和排名，采用防刷票机制确保公正性。这是了解不同模型真实能力差异的最佳方式。',
+                'NexusVAI 独创了「AI 竞技场」功能——匿名双模型对决。你输入一个问题，系统随机分配两个模型匿名回答，你投票选出更好的一方。投票后才会揭晓模型身份。竞技场维护了排行榜系统，记录每个模型的胜率和排名，采用防刷票机制确保公正性。这是了解不同模型真实能力差异的最佳方式。',
                 '个性化体验',
-                'ChatAI 提供了丰富的个性化设置：',
+                'NexusVAI 提供了丰富的个性化设置：',
                 '• 四套主题：暖白（Light）、深黑（Dark）、暖金（Yellow）、冷蓝（Blue），满足不同审美偏好。',
                 '• 四种强调色：绿色、琥珀色、珊瑚色、石板灰，自由搭配界面风格。',
                 '• 多语言支持：界面支持简体中文、英文、日文，语音输入支持普通话、英语、粤语。',
@@ -176,26 +176,26 @@ const articleData = {
                 '• 防滥用系统：内置行为风控、封禁与申诉机制，自动拦截自动化脚本与异常访问。',
                 '• 敏感信息提醒：请勿在对话中输入身份证号、银行卡号、验证码等高度敏感信息。',
                 '与 NexusV 套件的关系',
-                'ChatAI 是一个完全独立的产品，与 NexusV 套件（TACTFR、NexusV 修改器、Sentience）没有功能上的关联。NexusV 套件是面向 GTA V 单机环境的游戏模组，而 ChatAI 是面向所有用户的通用 AI 对话服务。两者共享 NexusV 品牌，但在技术架构、功能定位和用户群体上完全独立。',
+                'NexusVAI 是一个完全独立的产品，与 NexusV 套件（TACTFR、NexusV 修改器、Sentience）没有功能上的关联。NexusV 套件是面向 GTA V 单机环境的游戏模组，而 NexusVAI 是面向所有用户的通用 AI 对话服务。两者共享 NexusV 品牌，但在技术架构、功能定位和用户群体上完全独立。',
                 '技术架构',
-                'ChatAI 采用纯云端处理架构：前端通过 <code>chat.nexusvai.xyz</code>（Cloudflare Workers）接入，聊天推理网关（chat-gateway）与公开 API 网关（api-gateway）在边缘执行，流式 SSE 响应不经 Supabase 出站；认证、PostgreSQL 数据库、chat-history、user-memory 等仍由 Supabase 提供，其余路径由 Worker 透明反代。用户对话经网关转发至 60+ 上游线路，结果实时流式返回。客户端响应式设计，适配桌面、平板与移动设备。',
+                'NexusVAI 采用纯云端处理架构：前端通过 <code>chat.nexusvai.xyz</code>（Cloudflare Workers）接入，聊天推理网关（chat-gateway）与公开 API 网关（api-gateway）在边缘执行，流式 SSE 响应不经 Supabase 出站；认证、PostgreSQL 数据库、chat-history、user-memory 等仍由 Supabase 提供，其余路径由 Worker 透明反代。用户对话经网关转发至 60+ 上游线路，结果实时流式返回。客户端响应式设计，适配桌面、平板与移动设备。',
                 '未来展望',
-                'ChatAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、增强 API 与项目协作等。开放 API 已上线，详见 <a href="chat/api_docs.html">API 文档</a>。我们致力于将 ChatAI 打造为最便捷、最开放的 AI 聚合平台。',
-                '立即体验：打开 ChatAI 即刻开始与 AI 对话。一个入口，所有模型，统一体验。',
+                'NexusVAI 当前为 Beta 阶段，我们将持续迭代优化。后续计划包括：接入更多 AI 模型、完善视频生成能力、增强 API 与项目协作等。开放 API 已上线，详见 <a href="chat/api_docs.html">API 文档</a>。我们致力于将 NexusVAI 打造为最便捷、最开放的 AI 聚合平台。',
+                '立即体验：打开 NexusVAI 即刻开始与 AI 对话。一个入口，所有模型，统一体验。',
                 '—— NexusV 团队'
             ]
         },
         en: {
-            title: 'Introducing ChatAI — Multi-Model AI Aggregation Platform',
+            title: 'Introducing NexusVAI — Multi-Model AI Aggregation Platform',
             date: 'May 3, 2026 16:00',
             category: 'Product',
             readTime: '15 min read',
             paragraphs: [
-                'Today, we officially launch ChatAI — an AI aggregation service that brings 40+ top-tier large language models from over 14 global providers into a single clean conversational interface. Whether you need writing assistance, code debugging, data analysis, or creative inspiration, ChatAI is your one-stop solution under a unified experience.',
-                'Why ChatAI?',
-                'The current AI landscape is fragmented: excellent models are scattered across different platforms, each with its own registration process, billing method, and usage restrictions. Users who want to compare different models need to switch between multiple platforms repeatedly — tedious and inefficient. ChatAI was born to solve this: one entry point, all models, one unified experience.',
+                'Today, we officially launch NexusVAI — an AI aggregation service that brings 40+ top-tier large language models from over 14 global providers into a single clean conversational interface. Whether you need writing assistance, code debugging, data analysis, or creative inspiration, NexusVAI is your one-stop solution under a unified experience.',
+                'Why NexusVAI?',
+                'The current AI landscape is fragmented: excellent models are scattered across different platforms, each with its own registration process, billing method, and usage restrictions. Users who want to compare different models need to switch between multiple platforms repeatedly — tedious and inefficient. NexusVAI was born to solve this: one entry point, all models, one unified experience.',
                 'Massive Model Library, One Platform',
-                'ChatAI connects to 40+ LLMs from over 14 global providers, covering virtually every top-tier AI model available today:',
+                'NexusVAI connects to 40+ LLMs from over 14 global providers, covering virtually every top-tier AI model available today:',
                 '• DeepSeek Series: DeepSeek-V4-Flash (default, fast/stable), DeepSeek-V4-Pro (research grade), DeepSeek-R1 (strong reasoning), and more — 7 models total.',
                 '• OpenAI / GPT Series: GPT-5.4 (flagship general), GPT-OSS 120B (open-source large model).',
                 '• Anthropic Claude Series: Claude Opus 4.6 (long-form writing champion), Claude Sonnet 4.6 (balanced all-rounder).',
@@ -207,32 +207,32 @@ const articleData = {
                 '• And More: MiniMax M2.7, Step-3.5 Flash, Spark-X2, Nemotron-3-Super, Ling 2.6, MiMo-V2.5-Pro, HunYuan3 Preview, and more.',
                 'Each model displays speed ratings (green=fast, yellow=medium, red=slow) and capability tags (general, coding, reasoning, writing) for quick selection. When a model\'s quota is exhausted, the system auto-switches to the fastest available model — your conversation never interrupts.',
                 'Unified Experience, Zero Onboarding Friction',
-                'ChatAI\'s core conversation features are open to every signed-in user, ready to use the moment you arrive. Daily quotas refresh at midnight, and intelligent auto-switching keeps your experience smooth even when individual model quotas run out.',
+                'NexusVAI\'s core conversation features are open to every signed-in user, ready to use the moment you arrive. Daily quotas refresh at midnight, and intelligent auto-switching keeps your experience smooth even when individual model quotas run out.',
                 'Powerful Conversation Management',
-                'ChatAI provides a complete conversation management system:',
+                'NexusVAI provides a complete conversation management system:',
                 '• Cloud History: Conversations sync via Supabase cloud, accessible across devices. Review, continue, or delete any time.',
                 '• Pin & Rename: Pin important conversations, custom naming — no more messy lists.',
                 '• Auto Titles: System generates conversation titles from your first message automatically.',
                 '• 128K Context Window: Supports up to 128,000 tokens — handle long documents and extended conversations with ease. Real-time context usage meter shows capacity; auto-compression at 92% usage summarizes and starts fresh sessions seamlessly.',
                 '• Temporary Chat Mode: Enable temporary chats that aren\'t saved to history, aren\'t used for training, and are destroyed when closed. Perfect for sensitive or ad-hoc queries.',
                 'Multimodal Input & File Processing',
-                'ChatAI goes beyond text. It supports multiple input methods:',
+                'NexusVAI goes beyond text. It supports multiple input methods:',
                 '• Image Upload: Upload images for multimodal models to analyze, describe, or answer questions about.',
                 '• File Upload: Supports PDF, TXT, DOC, DOCX, MD, JSON, CSV — up to 4 files per message, 8MB each. Content is intelligently parsed and injected into context.',
                 '• Voice Input: Integrated Web Speech API for real-time Chinese speech-to-text. Tap the mic button to speak, release to send.',
                 '• Fullscreen Input: Expand to fullscreen editing mode for long-form writing or complex prompts.',
                 'AI Image Generation',
-                'ChatAI includes a dedicated image generation module. Generate high-quality images from text descriptions in three aspect ratios: 1:1 (square), 9:16 (portrait), 16:9 (landscape). Quick prompt templates (product poster, interface concept, app icon, social media cover) are provided, along with fully custom descriptions. Generated images display in a gallery with click-to-expand.',
+                'NexusVAI includes a dedicated image generation module. Generate high-quality images from text descriptions in three aspect ratios: 1:1 (square), 9:16 (portrait), 16:9 (landscape). Quick prompt templates (product poster, interface concept, app icon, social media cover) are provided, along with fully custom descriptions. Generated images display in a gallery with click-to-expand.',
                 'Web Search & Page Reading',
-                'ChatAI has internet connectivity. The AI can autonomously invoke these tools:',
+                'NexusVAI has internet connectivity. The AI can autonomously invoke these tools:',
                 '• Web Search: Search the internet for the latest public information (up to 10 results), so answers aren\'t limited to training data.',
                 '• Page Reading: Directly read the full content of any specified URL — perfect for analyzing articles, documents, or web pages.',
                 '• On-site Article Search: Search and read all NexusV technical articles for precise in-site knowledge support.',
                 'The AI decides when to call these tools automatically — when your question requires current information or external sources, it searches and integrates results without any manual effort from you.',
                 'AI Arena: Anonymous Model Battles',
-                'ChatAI features a unique "AI Arena" — anonymous dual-model battles. Enter a question, and two randomly assigned models answer anonymously side by side. Vote for the better answer, then reveal the model identities. A leaderboard tracks win rates and rankings with anti-script voting protection. This is the best way to discover the true capability differences between models.',
+                'NexusVAI features a unique "AI Arena" — anonymous dual-model battles. Enter a question, and two randomly assigned models answer anonymously side by side. Vote for the better answer, then reveal the model identities. A leaderboard tracks win rates and rankings with anti-script voting protection. This is the best way to discover the true capability differences between models.',
                 'Personalized Experience',
-                'ChatAI offers rich personalization options:',
+                'NexusVAI offers rich personalization options:',
                 '• Four Themes: Warm White (Light), Deep Black (Dark), Warm Gold (Yellow), Cool Blue (Slate).',
                 '• Four Accent Colors: Green, Amber, Coral, Slate — mix and match freely.',
                 '• Multi-language: UI supports Chinese, English, Japanese; voice input supports Mandarin, English, Cantonese.',
@@ -249,12 +249,12 @@ const articleData = {
                 '• Anti-Abuse: Risk controls, bans, and appeals block automated scripts and abnormal access.',
                 '• Sensitive Data Warning: Do not enter ID numbers, bank cards, or verification codes in chats.',
                 'Relationship with NexusV Suite',
-                'ChatAI is a completely independent product with no functional connection to the NexusV suite (TACTFR, NexusV Modifier, Sentience). The NexusV suite targets GTA V single-player game mods, while ChatAI is a universal AI dialogue service for all users. Both share the NexusV brand, but are entirely independent in architecture, positioning, and audience.',
+                'NexusVAI is a completely independent product with no functional connection to the NexusV suite (TACTFR, NexusV Modifier, Sentience). The NexusV suite targets GTA V single-player game mods, while NexusVAI is a universal AI dialogue service for all users. Both share the NexusV brand, but are entirely independent in architecture, positioning, and audience.',
                 'Technical Architecture',
-                'ChatAI is a pure cloud stack: the client hits <code>chat.nexusvai.xyz</code> (Cloudflare Workers) where chat-gateway and api-gateway run at the edge; streaming SSE bypasses Supabase egress. Auth, PostgreSQL, chat-history, and user-memory remain on Supabase, with other paths transparently proxied. Requests fan out to 60+ upstream routes and stream back in real time. Responsive UI for desktop, tablet, and mobile.',
+                'NexusVAI is a pure cloud stack: the client hits <code>chat.nexusvai.xyz</code> (Cloudflare Workers) where chat-gateway and api-gateway run at the edge; streaming SSE bypasses Supabase egress. Auth, PostgreSQL, chat-history, and user-memory remain on Supabase, with other paths transparently proxied. Requests fan out to 60+ upstream routes and stream back in real time. Responsive UI for desktop, tablet, and mobile.',
                 'Future Outlook',
-                'ChatAI is in Beta. Upcoming work includes more models, better video generation, and richer API/project collaboration. The OpenAI-compatible API is already live — see <a href="chat/api_docs.html">API docs</a>. We aim to be the most convenient open AI aggregation platform.',
-                'Try it now: Open ChatAI and start talking to AI immediately. One entry point, all models, one unified experience.',
+                'NexusVAI is in Beta. Upcoming work includes more models, better video generation, and richer API/project collaboration. The OpenAI-compatible API is already live — see <a href="chat/api_docs.html">API docs</a>. We aim to be the most convenient open AI aggregation platform.',
+                'Try it now: Open NexusVAI and start talking to AI immediately. One entry point, all models, one unified experience.',
                 '— The NexusV Team'
             ]
         }
@@ -904,6 +904,131 @@ const articleData = {
             ]
         }
     },
+    blackboardPhase0: {
+        overlay: 'Phase-0',
+        media: { type: 'video', src: 'Logo/789113.mp4', poster: 'Logo/neyssa.png', fit: 'cover', alt: 'Latent Blackboard Phase-0' },
+        zh: {
+            title: '那些"隐藏起来"的黑板很容易被忽视：对某种2B语言模型中压缩型隐藏状态记忆机制的诊断性研究',
+            date: '2026年6月15日',
+            category: '研究',
+            readTime: '22 分钟阅读',
+            paragraphs: [
+                '摘要：连续隐状态记忆有望让语言模型在不把每一步都翻译回文本的情况下传递中间状态。本文研究一种具体实现——小型隐式黑板（latent blackboard），将上游上下文压缩为下游模型可读取的隐藏向量。在同架构 2B 混合注意力检查点对上，我们运行受控 Phase-0 诊断套件，发现朴素 retrofit 黑板的约束因素与其说是板槽数量，不如说是读者（reader）的使用激励。精确 token 级隐藏状态重建在 2:1 压缩下即崩溃；gist 式黑板可恢复约 60–70% 的全上下文价值，但恢复率随板槽数几乎平坦，且可能被读者漂移（reader drift）高估。我们引入两项配对诊断指标——board lift 与 LM drift——并表明朴素读者 co-training 主要改善无板读者，而非板的使用。无板锚定（no-board anchoring）干预改变分解结果：board lift 从 0.14–0.16 升至 1.31–1.54 PPL 点，LM drift 从约 1.18 降至 0.20–0.32；log-PPL 空间方向一致。结论既不是隐式记忆失败，也不是系统已解决：retrofit 黑板更像有损笔记，只有目标函数结构上抑制忽略时才会被使用。这些结果指向从零预训练、强制跨段依赖的黑板架构。',
+                '<strong>引言</strong>',
+                '现代 Transformer 语言模型通过 token 通信，但内部计算是连续的。能否让一个模型写出紧凑的隐藏向量序列，供另一个模型作为工作记忆读取？成功的话，串行专家系统可以传递隐状态而非冗长文本，并提供区别于 KV cache 的记忆基底——后者记录完整 token 级计算轨迹。',
+                '本文在 Cancri 串行 relay 架构中研究该问题的正反两面：上游专家编码上下文；学习 resampler 将隐藏状态压缩为 M 个 board 向量；下游专家从这些 board 向量预测续写。期望的 board 不一定是每个 token 状态的无损重建，而更像连续笔记——保留对下一段有用的信息的紧凑状态。',
+                '核心发现是：可选隐式 board 很容易被预训练读者忽略。许多表面增益在与/无 board 的同一训练读者对比时消失——读者可通过普通语言模型适应降低训练损失，而非真正使用 board。加入 no-board anchor 约束这条逃逸路径后，读者才开始使用 board：board lift 约提升一个数量级，恢复价值主要归因于 board 而非 no-board LM drift。',
+                '<strong>实验设置与诊断指标</strong>',
+                'Relay 任务：上下文 x（448 token）→ 上游 A 的 layer 0:K 隐藏状态 → resampler C_θ 压缩为 M×d 的 board b → 下游 B 预测续写 y（64 token）。同架构 2B Base/Instruct 检查点对，24 层、hidden 2048、混合注意力（full-attention 层位于 3, 7, 11, 15, 19, 23），分割层 K=6。报告值为 16 个 held-out 窗口的中位数。',
+                '三项困惑度：PPL_full = PPL(y|x)，PPL_gist = PPL(y|C_θ(x))，PPL_none = PPL(y|∅)。恢复率 R = (PPL_none − PPL_gist) / (PPL_none − PPL_full)，R=1 表示 board 闭合无上下文与全上下文之间的测量差距。',
+                '读者 co-training 需分解 board lift Δ_board = PPL_trained_none − PPL_trained_gist 与 LM drift Δ_drift = PPL_frozen_none − PPL_trained_none。Board lift 是同一训练读者在加/不加 board 时的配对增益；LM drift 是读者在无 board 条件下获得的增益。',
+                '<strong>主要结果</strong>',
+                '<strong>1. 无损式隐藏状态压缩迅速崩溃。</strong>M=512（1:1）时 student/teacher PPL 比中位数 1.07；M=256（2:1）跳至 2.67；4:1 及以上 PPL 数量级崩溃。紧凑 board 不应被评估为无损 hidden-state 视频编解码器，而应被理解为有损笔记。',
+                '<strong>2. Gist board 恢复上下文价值但平台化。</strong>冻结读者下 M=8（56:1 压缩）R=0.654，M=32（14:1）R=0.658；增大 M 不能可靠提升。LoRA 将 M=32 最佳结果提至 R=0.697，但 M=64 仍为 0.688。瓶颈不在槽位数，而在读者使用 soft board 的能力与激励。原始 last-k 截断曲线陡峭——需约一半原始向量才接近全恢复，说明信息分布在整个上下文而非尾部集中；但训练 layer-K codec 在高压缩下仍优于截断。',
+                '<strong>3. 协议泄漏可高估恢复率。</strong>污染协议（续写表示在 board 插入前已见上下文）下 k=32 时 R=0.757，而 clean 协议仅 0.310；k=64 时分别为 0.926 vs 0.591。决定性比较必须使用 clean continuation encoding。',
+                '<strong>4. 朴素 co-training 学习 no-board 捷径。</strong>Clean KL-to-teacher、M=32：PPL_gist=5.526，PPL_none=5.668，配对 board lift 仅 0.142；LM drift 1.196（相对 frozen no-board PPL 6.864）。log-PPL 空间 board lift 仅 0.025 nats，LM drift 0.192 nats。解冻读者不能打破平台——优化存在简单路径：直接改善续写建模，忽略困难的隐式侧信道。',
+                '<strong>5. No-board anchoring 强制实际 board 使用。</strong>无 anchoring 时 board lift 约 0.15，LM drift 约 1.13–1.20。anchor weight=2 时 board lift 升至 1.31–1.41，drift 降至 0.23–0.32；weight=5 时 M=16 的 board lift 达 1.54，drift 全网格低于 0.30。主导效应是 anchor 权重，而非 M 从 16 变到 64。M=32 分解：KL only 时仅约 11% PPL 改善归因于 board；anchoring 后大部分改善为 board lift。Board 仍非无损——anchored recovery 约 0.57–0.60，远低于全上下文——但失败模式从「读者忽略 board」变为「board 是有损 gist 记忆」。',
+                '<strong>讨论与下一步</strong>',
+                '黑板不是 hidden-state 视频编解码器；读者目标比槽位数更重要；retrofit 使 board 对已有强续写先验的读者成为可选项；no-board anchor 移除最直接漂移路径。从零训练应使 board 成为唯一跨段路径——段 t 不应直接看到段 t−1 的 token，只能看到 board_{t−1}。',
+                '本文是 Phase-0 诊断，非成品黑板语言模型：单一 2B 模型族、K=6、100MB 子集、16 窗口中位数。最强证据来自 retrofit 中的 anchoring 干预；下一步需多种子、更大 held-out、额外 split layer，以及无需 retrofit anchoring 即可正 board lift 的从零 recurrent-board 原型。',
+                '__PDF__|Logo/main.pdf|完整论文 PDF（含 Figure 1–5、数据表与附录）',
+                '—— Cancri Project'
+            ]
+        },
+        en: {
+            title: 'Latent Blackboards Are Easy to Ignore: A Diagnostic Study of Compressed Hidden-State Memory in a 2B Language Model Pair',
+            date: 'June 15, 2026',
+            category: 'Research',
+            readTime: '22 min read',
+            paragraphs: [
+                'Abstract: Continuous latent memories promise to let language models pass intermediate state without translating every step back into text. We study a latent blackboard that compresses upstream context into hidden vectors read by a downstream model. On a same-architecture 2B mixed-attention checkpoint pair, naive retrofit blackboards are constrained less by board slot count than by reader incentives. Exact hidden-state reconstruction collapses under 2:1 compression; gist boards recover roughly 60–70% of full-context value but plateau in M and can be overstated by reader drift. Board lift and LM drift diagnostics show naive co-training mostly improves the no-board reader. No-board anchoring raises board lift from ~0.15 to ~1.3–1.5 PPL points while cutting LM drift to ~0.2–0.3. Retrofitted blackboards behave as lossy notes, used only when the objective structurally discourages ignoring them.',
+                '<strong>Introduction</strong>',
+                'Transformers communicate through tokens while computing continuously. Can one model write compact hidden vectors that another reads as working memory? In Cancri serial relay, upstream expert A encodes context; resampler C_θ compresses to M board vectors; downstream B predicts continuation. Optional latent boards are easy for pretrained readers to ignore until a no-board anchor removes the shortcut.',
+                '<strong>Setup and metrics</strong>',
+                'Context 448 tokens, continuation 64, split K=6, Qwen3.5-2B Base/Instruct pair. Recovery R = (PPL_none − PPL_gist) / (PPL_none − PPL_full). Board lift Δ_board and LM drift Δ_drift decompose co-training gains relative to a frozen no-board baseline.',
+                '<strong>Key results</strong>',
+                'Lossless-style reconstruction fails at 2:1 (median student/teacher ratio 2.67). Gist boards plateau near R≈0.65–0.70 regardless of M. Protocol leakage can inflate recovery by 2×+. Naive co-training yields board lift ~0.14 vs LM drift ~1.20. Anchoring (weight 2–5) shifts improvement to board lift (~1.3–1.5 PPL) with drift below ~0.3.',
+                '<strong>Discussion</strong>',
+                'A blackboard is a learned note, not a hidden-state codec. The next step is from-scratch pretraining where cross-segment information must flow through the board only.',
+                '__PDF__|Logo/main.pdf|Full paper PDF (Figures 1–5, tables, and appendices)',
+                '— Cancri Project'
+            ]
+        }
+    },
+    cancriV1: {
+        overlay: 'CancriV1',
+        media: { type: 'image', src: 'Logo/CancriV1-0.1B-Hero.png', alt: 'CancriV1-0.1B' },
+        zh: {
+            title: '隆重介绍 CancriV1-0.1B',
+            date: '2026年6月11日',
+            category: '研究',
+            readTime: '18 分钟阅读',
+            paragraphs: [
+                '摘要：CancriV1-0.1B 是 NexusV 自研的 0.1B 参数语言模型，基于YuXing Architecture完成预训练。本文记录一次没有机构算力背书、由个人研究者主导的完整实验：在极小参数预算下，模型是否仍能在推理、常识与代码感知任务上保持可用竞争力。答案并不夸张——它确实做到了，而且在若干 0.1B 对照组里拿到了可复现的优势。',
+                '<strong>为什么做 0.1B</strong>',
+                '大模型竞赛的默认叙事是：更多参数、更多数据、更多卡。但对个人研究者、边缘设备和本地 Agent 来说，真正稀缺的不是「能不能训出 70B」，而是「在一张消费级 GPU 上，能不能有一个足够聪明、足够稳定、足够便宜的底座」。0.1B 不是炫技，而是一道硬约束下的工程命题：如果这里都站不住，谈更大规模没有意义。',
+                'CancriV1 的核心动机因此很直接——证明没有实验室资源池的个人，仍然可以预训练出一个有竞争力的 LLM。不是追榜单第一，而是证明路线可行、指标可测、结果可复现。',
+                '<strong>YuXing Architecture与内存墙</strong>',
+                'YuXing Architecture针对的是训练与推理阶段的内存墙（memory wall）：当序列变长、层数变深、并行度拉高时，激活缓存与 KV 缓存会先于算力成为瓶颈。大型实验室并非看不见这个问题，但在它们的默认优先级里，往往会被「更大规模预训练」挤到后排——因为集群资源、数据管道和发布节奏都指向吞吐，而不是单卡可负担的极限效率。',
+                '对个人研究者而言，内存墙是第一天就要撞上的墙。YuXing Architecture的设计选择因此更偏「可驻留、可复用、可切片」：用更克制的中间维度、分组查询注意力（GQA）和更贴合硬件的缓存布局，把同样 0.1B 参数预算花在更不容易被带宽拖死的形状上。',
+                '<strong>2B 尺度的上游验证</strong>',
+                '在推出 0.1B 成品之前，我们先把YuXing Architecture的关键假设放在 Qwen 2B 量级上验证。目的不是复刻 Qwen，而是确认：当模型宽度与深度进入「能读出架构差异」的区间时，内存友好型改动是否仍能带来可测量的收益。',
+                '其中一项核心实验是 RoPE 位置编码的不变性（invariance）检验：在 24 个序列切分点上，比较不同切分策略下的困惑度漂移。结果是：相对 Qwen3.5-2B Instruct 基线，YuXing 改动在相同评测设置下取得约 5.1% 的困惑度下降。这不是魔法数字，但它说明架构改动传递到了语言建模损失本身，而不是停留在实现细节的自嗨。',
+                '<strong>CancriV1-0.1B 规格</strong>',
+                '参数规模约 0.1B（100M 级）。注意力采用 GQA：12 个查询头、4 个 KV 头，在保持表达能力的同时压低 KV 缓存占用。隐藏维度 768，12 层 Transformer，前馈中间层 2048。最大上下文长度 512，面向本地 Agent、短上下文工具链与边缘部署场景。词表为自研 BPE，约 26K token，针对中英文混排与代码符号做了词表密度优化，避免把宝贵参数浪费在极低频碎片上。',
+                '以上规格不是「抄一份公开 config」，而是把YuXing Architecture在 2B 验证过的取舍，压缩进 0.1B 能承受的边界里：能训完、能推理、能评测、能迭代。',
+                '<strong>0.1B 对照评测</strong>',
+                '__FIGURE__|Logo/benchmark_comparison.png|0.1B 级小模型评测对比：巨蟹座（YuXing Architecture）与 RWKV7-G1c、RWKV7-G1a、Xiaothink-T7.5',
+                '上图是我们目前在 0.1B 量级运行的对照评测。任务分成两类：Knowledge & Reasoning（MathQA、CommonSense、Logic、Translation）与 Agentic Capabilities（CodeSense）。指标统一为 Accuracy / Pass@1（%）。',
+                '读图方式应当诚实：Translation 四项全部归零，说明这一版小模型还没有把多语言翻译作为有效能力释放出来——我们不打算用「全面胜利」来包装它。真正值得关注的是那些在 0.1B 预算下仍然拉开差距的柱子。',
+                '在 MathQA 上，CancriV1 取得 33.3%，与 Xiaothink-T7.5 并列，而两款 RWKV7 对照为 0%。在 CommonSense 上为 60.0%，与 RWKV7-G1a 持平，高于 RWKV7-G1c 的 40.0%。Logic 达到 100.0%，与 RWKV7-G1c 并列满分。CodeSense 是最能体现「Agent 底座」的一项：CancriV1 为 33.3%，其余三款均为 0%——这意味着在同等参数规模下，它是唯一能在代码感知探针上给出非零通过的模型。',
+                '把这些结果合在一起看，CancriV1-0.1B 展现的不是「小模型奇迹」，而是一种更务实的竞争力：推理链条能走通，常识判断不掉队，逻辑题能稳定命中，代码场景有真实信号。对于 0.1B 这种通常只配做玩具的尺寸，这已经足够说明预训练路线是有效的。',
+                '<strong>与「黑板」路线的关系</strong>',
+                'CancriV1 被定位为迈向「黑板」专家系统的第一步。<a href="article.html?id=n1" style="text-decoration: underline; color: inherit;">黑板架构</a>需要多个窄域专家在共享工作区上协作，而每个专家又必须足够轻、足够快、足够便宜，才能在本地与网关侧常驻。0.1B 的意义在于：它让我们可以在不借用云端大模型的情况下，先验证「小专家是否真的能干活」。',
+                '后续路线会更大胆，也会更慢：在 CancriV1 的经验上继续扩词表、拉上下文、加领域数据，并向 1B 级黑板专家训练推进。但第一步必须小、必须硬、必须能测——否则只是 PPT。',
+                '<strong>局限</strong>',
+                '必须明确写出边界：512 上下文限制了长文档与多轮工具链；Translation 任务尚未建立有效能力；评测集规模仍属实验性质，尚未覆盖 MMLU、GSM8K、HumanEval 等工业标准全集；0.1B 参数上限决定了它不能替代云端旗舰模型，只能作为本地底座、路由前置或专家池的一员。',
+                '我们发布这篇文档，不是为了宣布「终结大模型」，而是把一次个人可复现的预训练实验摆到台面上：有架构动机、有中间尺度验证、有公开规格、有对照图表、有清醒局限。',
+                '如果你关心的是「没有机构资源的人，还能不能做出有用的 LLM」——CancriV1-0.1B 是我们的第一份答卷。',
+                '—— NexusV 研究团队'
+            ]
+        },
+        en: {
+            title: 'Introducing CancriV1-0.1B',
+            date: 'June 11, 2026',
+            category: 'Research',
+            readTime: '18 min read',
+            paragraphs: [
+                'Abstract: CancriV1-0.1B is NexusV\'s in-house 100M-parameter language model, pretrained with the YuXing Architecture. This article documents a full experiment run without institutional compute backing — led by an individual researcher — asking a blunt question: at tiny scale, can a model still remain competitively useful on reasoning, commonsense, and code-awareness probes? The answer is not hype. It works, and on several 0.1B baselines the advantage is reproducible.',
+                '<strong>Why 0.1B at all</strong>',
+                'The default narrative in large-model racing is simple: more parameters, more data, more GPUs. For individual researchers, edge devices, and local agents, the scarce resource is not "can we train 70B" but "on a consumer GPU, can we keep a brain that is smart enough, stable enough, and cheap enough." 0.1B is not a stunt. It is an engineering constraint. If you cannot stand here, everything larger is theater.',
+                'CancriV1\'s motivation is therefore direct: prove that a person without a lab resource pool can still pretrain a competitive LLM. Not chase leaderboard #1 — prove the route, the metrics, and the repeatability.',
+                '<strong>YuXing Architecture and the memory wall</strong>',
+                'YuXing targets the memory wall in training and inference: as sequences grow, depth increases, and parallelism rises, activation and KV caches hit bandwidth limits before FLOPs do. Big labs are not blind to this, but in their default priority stack it tends to sit behind "train bigger" — clusters, data pipes, and release cadence all point at throughput, not single-card survivability.',
+                'For an individual researcher, the memory wall is day-one reality. YuXing therefore biases toward shapes that stay resident, reusable, and sliceable: restrained intermediate width, grouped-query attention (GQA), and cache layouts that hurt less when bandwidth is the bottleneck.',
+                '<strong>Upstream validation at 2B scale</strong>',
+                'Before shipping 0.1B, we stress-tested YuXing assumptions at Qwen-scale (~2B). The goal was not to clone Qwen, but to verify that once width and depth are large enough to read architectural differences, memory-friendly changes still move measurable loss.',
+                'A core experiment was RoPE invariance across 24 sequence split points. Relative to a Qwen3.5-2B Instruct baseline, the YuXing changes yielded about 5.1% lower perplexity under the same evaluation setup. Not magic — but evidence the architecture change reaches language-modeling loss, not just implementation vanity.',
+                '<strong>CancriV1-0.1B specifications</strong>',
+                'Roughly 0.1B (100M-class) parameters. GQA attention: 12 query heads, 4 KV heads — expressive enough while cutting KV footprint. Hidden size 768, 12 Transformer layers, FFN intermediate 2048. Max context 512, aimed at local agents, short tool chains, and edge deployment. Custom BPE tokenizer at ~26K tokens, tuned for mixed Chinese/English and code symbols so parameters are not wasted on ultra-rare fragments.',
+                'This is not a copied public config. It compresses YuXing trade-offs validated at 2B into what 0.1B can afford: trainable, inferable, measurable, iterable.',
+                '<strong>0.1B benchmark comparison</strong>',
+                '__FIGURE__|Logo/benchmark_comparison.png|0.1B small-model benchmark: Cancri (Yuxing) vs RWKV7-G1c, RWKV7-G1a, Xiaothink-T7.5',
+                'The chart above is our current 0.1B comparison. Tasks split into Knowledge & Reasoning (MathQA, CommonSense, Logic, Translation) and Agentic Capabilities (CodeSense). Metric: Accuracy / Pass@1 (%).',
+                'Read it honestly: Translation is zero across the board — this build does not yet surface usable translation at 0.1B, and we will not sell a "total victory" narrative. The meaningful gaps are elsewhere.',
+                'On MathQA, CancriV1 hits 33.3%, tying Xiaothink-T7.5 while both RWKV7 variants score 0%. On CommonSense it reaches 60.0%, matching RWKV7-G1a and beating RWKV7-G1c (40.0%). Logic is 100.0%, tying RWKV7-G1c at perfect. CodeSense is the agent probe: CancriV1 at 33.3%, all others at 0% — the only model in this cohort with a non-zero pass on code awareness.',
+                'Taken together, CancriV1-0.1B is not a "tiny miracle." It is practical competitiveness: reasoning chains hold, commonsense does not collapse, logic is stable, and code probes emit a real signal. At a size usually dismissed as toy-grade, that is enough to show the pretraining route works.',
+                '<strong>Relation to the blackboard roadmap</strong>',
+                'CancriV1 is step one toward a <a href="article.html?id=n1" style="text-decoration: underline; color: inherit;">blackboard architecture</a>. Blackboards need multiple narrow experts collaborating in a shared workspace — each expert must be light, fast, and cheap enough to stay resident locally or at the gateway. 0.1B lets us verify "small experts can actually work" without borrowing cloud flagship models.',
+                'The roadmap gets bolder and slower from here: vocabulary, context, domain data, and training toward 1B-class blackboard experts. Step one had to be small, hard, and testable — otherwise it is slides.',
+                '<strong>Limitations</strong>',
+                'State the boundaries plainly: 512 context caps long documents and multi-hop tool chains; Translation is not yet a real capability; benchmark scope is experimental, not full MMLU/GSM8K/HumanEval coverage; 0.1B cannot replace cloud flagship models — only serve as a local base, routing front-end, or one member of an expert pool.',
+                'We publish this not to declare the end of large models, but to put a reproducible individual-scale pretraining run on the table: architectural motive, mid-scale validation, public specs, comparative chart, sober limits.',
+                'If your question is whether a person without institutional resources can still build a useful LLM — CancriV1-0.1B is our first answer.',
+                '— NexusV Research Team'
+            ]
+        }
+    },
     cancriCode: {
         overlay: 'Cancri Code',
         media: { type: 'image', src: 'Logo/15933dbaacdc5cfed5b7f9fc0f14cf96.png', alt: 'Cancri Code' },
@@ -931,7 +1056,7 @@ const articleData = {
                 '前端：TypeScript + Vite 6 + Monaco Editor 0.55。桌面壳：Tauri 2（Rust 后端提供文件 IO、PTY、HTTP SSE 流、Agent 工具执行）。测试：Vitest 129+ 用例，cargo test 覆盖 Rust agent_tools 模块。构建：pnpm tauri build 产出 Windows 安装包与便携 exe。',
                 'Rust 端 agent_tools 模块提供 glob、grep、bash、文件读写等 IPC 命令；portable-pty 驱动集成终端；auth 模块处理 OAuth localhost 回调。前端 agent/ 目录包含 Provider 抽象、Tool Registry、Permission 策略与 Agent Loop 核心循环。',
                 '<strong>与 NexusV 生态的关系</strong>',
-                'Cancri Code 与 ChatAI 共享 NexusV 账户与 chat-gateway 基础设施，但产品定位不同：ChatAI 是面向所有用户的 Web 对话平台，Cancri Code 是面向开发者的本地 IDE。它与 Sentience/TACTFR 游戏模组无功能耦合，却共享同一支工程团队对"AI 应该理解上下文、应该能动手、应该对用户透明"的产品哲学。',
+                'Cancri Code 与 NexusVAI 共享 NexusV 账户与 chat-gateway 基础设施，但产品定位不同：NexusVAI 是面向所有用户的 Web 对话平台，Cancri Code 是面向开发者的本地 IDE。它与 Sentience/TACTFR 游戏模组无功能耦合，却共享同一支工程团队对"AI 应该理解上下文、应该能动手、应该对用户透明"的产品哲学。',
                 '<strong>现状与路线图</strong>',
                 '当前 v1.5.0 已具备：完整 IDE 工作区、Agentic 工具循环、多模型网关、会话归档、Rules/Skills/MCP、后台运行、Windows 桌面打包。后续重点：完善 bash 工具白名单与权限分级、Trajectory replay UI、Android 端远程壳、以及 SDK 化开放给第三方自动化流水线。',
                 'Cancri Code 是我们对"AI 编程助理应该长什么样"的回答——不是云端黑盒，不是 Fork 绑架，而是一个能打开你项目、读懂你代码、在你确认后动手修改的本地搭档。',
@@ -961,7 +1086,7 @@ const articleData = {
                 '<strong>Stack</strong>',
                 'Frontend: TypeScript + Vite 6 + Monaco 0.55. Shell: Tauri 2 (Rust file IO, PTY, HTTP SSE, agent tool execution). Tests: Vitest 129+, cargo test for agent_tools. Build: pnpm tauri build → Windows installer + portable exe.',
                 '<strong>NexusV ecosystem</strong>',
-                'Cancri Code shares accounts and chat-gateway with ChatAI but targets developers locally. It has no functional coupling to Sentience/TACTFR game mods, yet shares the team philosophy: AI should understand context, take action, and stay transparent.',
+                'Cancri Code shares accounts and chat-gateway with NexusVAI but targets developers locally. It has no functional coupling to Sentience/TACTFR game mods, yet shares the team philosophy: AI should understand context, take action, and stay transparent.',
                 '<strong>Roadmap</strong>',
                 'v1.5.0 ships: full IDE workspace, agentic loop, multi-model gateway, session archives, Rules/Skills/MCP, background runs, Windows packaging. Next: bash whitelist, trajectory replay UI, Android remote shell, SDK for automation pipelines.',
                 'Cancri Code is our answer to what an AI programming assistant should be — not a cloud black box, not a fork hostage, but a local partner that opens your project, reads your code, and edits with your approval.',
@@ -1515,24 +1640,24 @@ const articleData = {
                 '重要提示（建议先阅读此部分）',
                 '本套件包含两类产品，数据处理方式截然不同，请分别留意：',
                 '【游戏模组（TACTFR / NexusV 修改器 / Sentience）】默认使用本地部署的SFT微调Qwen模型（自带一键安装器），强烈推荐本地运行，在默认本地推理模式下，AI 对话相关上下文原则上不发送至开发者运营的服务器。如您选择使用云端推理（DeepSeek、OpenAI等），需自行提供API Key（保存在本地ini文件），所有数据传输风险及费用由您自行承担。',
-                '【ChatAI 服务】为云端 AI 对话平台，需邮箱验证码登录。开发者运营云端网关并存储对话历史、用量记录、设备指纹等数据（详见第 4.6 节）。使用 ChatAI 服务即表示您同意本协议所述之个人信息处理方式。如您不同意，请勿注册或使用 ChatAI 服务。',
+                '【NexusVAI 服务】为云端 AI 对话平台，需邮箱验证码登录。开发者运营云端网关并存储对话历史、用量记录、设备指纹等数据（详见第 4.6 节）。使用 NexusVAI 服务即表示您同意本协议所述之个人信息处理方式。如您不同意，请勿注册或使用 NexusVAI 服务。',
                 'Sentience核心代码完全开源。开源仓库：https://github.com/NexusVAI/SENTIENCE',
                 '游戏模组部分为单机娱乐模组，严禁用于违法用途或商业行为。',
                 '使用本套件任一产品即视为您已阅读并同意本协议全部内容。',
                 '',
                 '更新日期：2026 年 5 月 26 日',
-                '本协议自 2026 年 5 月 26 日起生效。先前版本以其原生效规则处理。本次更新主要修正 ChatAI 服务隐私说明（第 4.6 节），以如实反映当前已上线的数据处理实践。',
+                '本协议自 2026 年 5 月 26 日起生效。先前版本以其原生效规则处理。本次更新主要修正 NexusVAI 服务隐私说明（第 4.6 节），以如实反映当前已上线的数据处理实践。',
                 '本使用协议（以下简称"本协议"）主要规范 NexusV 套件各模块的许可范围、使用限制、风险告知与责任边界；涉及个人信息与数据流转的说明适用于本套件当前已提供的功能，不构成对未来未上线云服务的承诺。',
                 '1. 定义与产品说明',
-                '1.1 "本套件"指由开发者发布的 NexusV 系列内容，当前包括：（1）TACTFR：用于 GTA V 单机离线环境的警务玩法增强模组；（2）NexusV 修改器：用于 GTA V 单机离线环境的数值与体验调整工具；（3）Sentience：用于 GTA V 游戏内 NPC 对话生成与互动增强的 AI 模组；（4）ChatAI：面向用户的 AI 聚合对话服务平台（以下简称"ChatAI 服务"），提供免费与付费（Pro / Pro+ / Pro Max 订阅及加油包）两种使用方式。',
+                '1.1 "本套件"指由开发者发布的 NexusV 系列内容，当前包括：（1）TACTFR：用于 GTA V 单机离线环境的警务玩法增强模组；（2）NexusV 修改器：用于 GTA V 单机离线环境的数值与体验调整工具；（3）Sentience：用于 GTA V 游戏内 NPC 对话生成与互动增强的 AI 模组；（4）NexusVAI：面向用户的 AI 聚合对话服务平台（以下简称"NexusVAI 服务"），提供免费与付费（Pro / Pro+ / Pro Max 订阅及加油包）两种使用方式。',
                 '1.2 Sentience 当前版本主要提供 AI 对话生成功能，支持本地模型推理及由用户自行配置的第三方云端模型接口。除非后续版本另有明确说明，当前版本不直接实现对 NPC 自主行为、移动、战斗或任务执行的实时控制。',
                 '1.3 本套件为第三方非官方模组，与 Rockstar Games、Take-Two Interactive 及《Grand Theft Auto V》原权利人不存在授权、认可、合作或联名关系。本套件仅为技术演示与娱乐用途，不构成上述任何方的官方扩展或联名产品。',
                 '1.4 本套件采用混合授权结构：Sentience 源代码中明确以 MIT 许可证发布的部分适用 MIT 许可证；TACTFR 与 NexusV 修改器当前版本及本套件内其他明确标注为闭源的程序、资源、UI 设计、安装器与配置内容，适用本协议约定的限制；第三方组件、模型权重及相关资源适用其各自原始许可。',
                 '1.5 TACTFR、NexusV修改器与Sentience具有相对独立的功能模块和风险边界，适用本协议中与其功能相对应的条款。',
-                '1.6 ChatAI 服务与上述游戏模组产品（TACTFR、NexusV 修改器、Sentience）在技术架构、功能定位和用户群体上完全独立。ChatAI 服务不依赖于任何游戏环境，不涉及游戏文件的修改或注入，不属于游戏模组范畴。ChatAI 服务作为生成式人工智能对话平台，适用本协议中与其功能相对应的条款，包括但不限于第 4.6 节（ChatAI 隐私说明）及第 5 节中涉及生成式人工智能的相关规定。就 ChatAI 服务而言，开发者作为云端网关运营者与平台提供方，依据《生成式人工智能服务管理暂行办法》及《个人信息保护法》承担相应数据处理者与服务提供者义务。',
+                '1.6 NexusVAI 服务与上述游戏模组产品（TACTFR、NexusV 修改器、Sentience）在技术架构、功能定位和用户群体上完全独立。NexusVAI 服务不依赖于任何游戏环境，不涉及游戏文件的修改或注入，不属于游戏模组范畴。NexusVAI 服务作为生成式人工智能对话平台，适用本协议中与其功能相对应的条款，包括但不限于第 4.6 节（NexusVAI 隐私说明）及第 5 节中涉及生成式人工智能的相关规定。就 NexusVAI 服务而言，开发者作为云端网关运营者与平台提供方，依据《生成式人工智能服务管理暂行办法》及《个人信息保护法》承担相应数据处理者与服务提供者义务。',
                 '1.7 "第三方组件"指本套件中嵌入或引用的由其他作者/组织提供的库、工具或二进制文件（详见第 3 节）。',
                 '1.8 "个人信息"指以电子或者其他方式记录的与已识别或者可识别的自然人有关的各种信息，不包括匿名化处理后的信息（定义依据《个人信息保护法》第四条）。',
-                '1.9 "个人信息处理者"指在个人信息处理活动中自主决定处理目的、处理方式的组织或个人。就 ChatAI 服务涉及的个人信息处理，开发者为个人信息处理者。',
+                '1.9 "个人信息处理者"指在个人信息处理活动中自主决定处理目的、处理方式的组织或个人。就 NexusVAI 服务涉及的个人信息处理，开发者为个人信息处理者。',
                 '⚠️ Rockstar/GTA V 风险独立警告：即使在单机离线模式下，使用任何注入式模组（包括但不限于本套件中的 TACTFR、NexusV 修改器及 Sentience 模块）仍存在极低概率因 Rockstar 未来政策变化、反作弊检测机制更新或游戏版本迭代而导致存档损坏、游戏异常运行、账号异常或封禁风险。在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者不对上述风险承担责任。强烈建议您在使用本套件前：（1）完整备份整个 GTA V 游戏根目录及所有存档文件；（2）仅在完全断网的单机离线模式下使用；（3）避免在已关联重要游戏进度或付费内容的账号上使用。',
                 '2. 授权与许可声明',
                 '2.1 Sentience 源代码中以 MIT 许可证发布的部分适用 MIT 许可证文本；本协议不应被解释为削减用户依据 MIT 许可证依法享有的权利。',
@@ -1542,32 +1667,32 @@ const articleData = {
                 '3.1 游戏模组部分：本套件使用 ScriptHookV（不随包分发，请用户自行官网下载）、ScriptHookVDotNet、NAudio、Newtonsoft.Json。本套件仅作为脚本补丁运行，不包含、不修改、不分发任何原游戏（GTA V）的核心二进制文件或任何受版权保护的游戏资源（包括但不限于模型、纹理、音频、动画数据等）。本套件仅包含第三方逻辑脚本及开发者原创的配置文件。用户需自行承担因安装 ScriptHookV 等第三方注入工具导致的软件冲突或系统不稳定风险。',
                 '3.2 Sentience默认模型为基于 Qwen 系列模型的 SFT 微调权重（如 Qwen2.5/Qwen3）。相关基础模型、微调权重及衍生权重的使用、分发与再利用，应遵守模型文件夹内附带的许可文件及其上游官方许可要求。',
                 '3.3 游戏模组云端模式需用户自备：OpenAI API、DeepSeek API 等，使用即视为您已同意其服务条款与AUP。LM Studio为可选本地工具。',
-                '3.4 ChatAI 服务第三方组件：ChatAI 服务后端依赖以下第三方服务：（1）Supabase（supabase.com）：提供用户认证、数据库托管及存储服务，其数据处理受 Supabase 隐私政策（supabase.com/privacy）约束，服务器位于新加坡；（2）Cloudflare：通过 Workers 域名 chat.nexusvai.xyz 承载 chat-gateway 与 api-gateway 流式推理网关，并提供 Turnstile 登录人机验证，其数据处理受 Cloudflare 隐私政策（cloudflare.com/privacypolicy）约束；（3）第三方 AI 模型服务商：提供实际推理服务，详见第 4.6 节第（9）项。开发者不对上述第三方的数据处理行为承担责任。',
+                '3.4 NexusVAI 服务第三方组件：NexusVAI 服务后端依赖以下第三方服务：（1）Supabase（supabase.com）：提供用户认证、数据库托管及存储服务，其数据处理受 Supabase 隐私政策（supabase.com/privacy）约束，服务器位于新加坡；（2）Cloudflare：通过 Workers 域名 chat.nexusvai.xyz 承载 chat-gateway 与 api-gateway 流式推理网关，并提供 Turnstile 登录人机验证，其数据处理受 Cloudflare 隐私政策（cloudflare.com/privacypolicy）约束；（3）第三方 AI 模型服务商：提供实际推理服务，详见第 4.6 节第（9）项。开发者不对上述第三方的数据处理行为承担责任。',
                 '4. 隐私与数据说明',
                 '4.1 默认本地推理模式：Sentience 默认优先使用本地部署的 SFT 微调 Qwen 模型进行推理。在默认本地推理模式下，与 NPC 对话相关的上下文和玩家输入原则上不经过开发者运营的服务器。在本套件当前版本的默认设计下，开发者不主动收集用户的游戏对话内容、个人身份信息或用户自行配置的第三方 API Key。',
                 '4.2 用户主动启用的第三方云端模式：如用户主动在本地配置第三方模型服务商的 API Key 并启用云端模式，则相关对话数据将由用户设备直接发送至其所选服务商（如 OpenAI、DeepSeek 等），开发者不提供该等请求的中转、托管或代付服务。云端模式产生的网络通信、费用、账号风控及服务可用性风险，由用户自行承担。用户需遵守所选API服务商的服务条款与隐私政策。',
                 '4.3 本地配置文件与 API Key：用户自行配置的 API Key 可能以明文形式保存在本地配置文件中。用户应自行妥善保管该文件，不应在公共设备、共享设备或公开仓库中泄露相关信息。请勿分享配置文件或上传至公开仓库，强烈建议优先使用本地模式以避免任何数据传输和费用风险。',
                 '4.4 用户输入内容提示：用户不应在与 Sentience 的对话中输入真实姓名、身份证号、银行卡信息、家庭住址、电话号码、支付凭证、账号密码等高度敏感信息；因自行输入敏感信息导致的信息泄露、第三方处理风险、账号风险或其他法律后果，由用户自行承担。',
-                '4.5 已上线云端服务说明：ChatAI 服务已上线由开发者运营的云端推理网关（chat-gateway）、账号系统（基于 Supabase Auth，使用邮箱验证码登录）及付费订阅系统（Pro / Pro+ / Pro Max 三档月度订阅 + 加油包）。该等服务的具体数据处理实践详见第 4.6 节。用户本地日志可自行删除。',
-                '4.6 ChatAI 服务隐私说明：ChatAI 服务采用云端处理架构，用户对话请求通过开发者运营的云端网关（chat-gateway）转发至第三方 AI 模型进行推理，推理结果经网关返回用户界面。ChatAI 服务的具体数据处理实践如下：',
-                '（1）对话内容存储：用户通过 ChatAI 服务产生的对话历史存储于开发者运营的云端数据库（Supabase），包括对话标题、消息内容、所用模型等信息。对话历史与用户账号关联，用于支持跨设备同步、对话续接及历史回看功能。开发者不会将用户对话内容用于训练 AI 模型。用户可在 ChatAI 界面中主动删除对话历史，删除后开发者不再持有该等数据。',
+                '4.5 已上线云端服务说明：NexusVAI 服务已上线由开发者运营的云端推理网关（chat-gateway）、账号系统（基于 Supabase Auth，使用邮箱验证码登录）及付费订阅系统（Pro / Pro+ / Pro Max 三档月度订阅 + 加油包）。该等服务的具体数据处理实践详见第 4.6 节。用户本地日志可自行删除。',
+                '4.6 NexusVAI 服务隐私说明：NexusVAI 服务采用云端处理架构，用户对话请求通过开发者运营的云端网关（chat-gateway）转发至第三方 AI 模型进行推理，推理结果经网关返回用户界面。NexusVAI 服务的具体数据处理实践如下：',
+                '（1）对话内容存储：用户通过 NexusVAI 服务产生的对话历史存储于开发者运营的云端数据库（Supabase），包括对话标题、消息内容、所用模型等信息。对话历史与用户账号关联，用于支持跨设备同步、对话续接及历史回看功能。开发者不会将用户对话内容用于训练 AI 模型。用户可在 NexusVAI 界面中主动删除对话历史，删除后开发者不再持有该等数据。',
                 '（2）用量记录：开发者记录每次 AI 模型调用的用量明细（包括用户 ID、模型 ID、输入/输出 Token 数、调用时间、调用是否成功等），用于配额管控、用量统计及计费结算。用量记录不包含对话原文内容。',
-                '（3）账号与身份信息：使用 ChatAI 服务需通过邮箱验证码登录（基于 Supabase Auth）。开发者获取并存储用户注册邮箱地址。付费订单处理过程中，开发者获取并存储用户提交的邮箱及 QQ 号，用于订单审核与激活码发放。开发者不要求用户提供手机号、真实姓名或身份证号。',
+                '（3）账号与身份信息：使用 NexusVAI 服务需通过邮箱验证码登录（基于 Supabase Auth）。开发者获取并存储用户注册邮箱地址。付费订单处理过程中，开发者获取并存储用户提交的邮箱及 QQ 号，用于订单审核与激活码发放。开发者不要求用户提供手机号、真实姓名或身份证号。',
                 '（4）设备指纹与反滥用：为防止多账号滥用及保障服务公平性，开发者在用户登录后采集设备/浏览器指纹信息（包括但不限于 Canvas/WebGL/Audio 指纹、WebRTC IP、User-Agent、屏幕分辨率、时区、语言、硬件参数等），综合生成 visitor_id 并存储于服务端，用于跨账号关联检测。开发者同时记录用户 IP 地址及地理信息缓存，用于安全审计与反滥用。',
-                '（5）错误遥测：ChatAI 服务在用户同意后，采集浏览器端未捕获异常信息（包括 UA、当前 URL、视口尺寸、异常 message 与 stack、最近 10 条 fetch 请求的 URL 与状态码），用于问题排查与产品改进。用户可拒绝遥测，拒绝后不影响正常使用。',
-                '（6）用户记忆功能：ChatAI 服务提供可选的用户记忆功能，允许用户设置个性化偏好信息（每用户最多 5 条，每条不超过 100 字），该等信息存储于云端数据库，用于在后续对话中为 AI 提供上下文。用户可随时关闭或删除该功能中的记忆内容。',
-                '（7）Arena 竞技场：ChatAI 服务提供模型对比竞技场功能。用户提交的 prompt 及模型返回的 response 存储于服务端，用于投票统计与模型评估。竞技场数据与用户账号关联。',
-                '（8）加密传输：所有用户与 ChatAI 服务之间的数据传输均通过 HTTPS 加密通道完成。',
-                '（9）第三方模型：ChatAI 服务聚合的 AI 模型由第三方提供，开发者通过云端网关将用户对话请求转发至第三方模型服务商进行推理。用户对话内容在推理过程中经由第三方模型服务商的服务器处理，该等处理受第三方服务商各自的隐私政策与服务条款约束。开发者不对第三方模型服务商的数据处理行为承担责任，用户应自行了解并同意相关第三方的服务条款。',
-                '（10）付费系统：ChatAI 服务提供 Pro / Pro+ / Pro Max 三档月度订阅及加油包购买。订阅状态、月度配额消耗、加油包余额及用量流水存储于服务端，用于计费与权益管理。付费通过人工订单审核 + 激活码兑换方式完成，开发者不直接处理支付信息。',
+                '（5）错误遥测：NexusVAI 服务在用户同意后，采集浏览器端未捕获异常信息（包括 UA、当前 URL、视口尺寸、异常 message 与 stack、最近 10 条 fetch 请求的 URL 与状态码），用于问题排查与产品改进。用户可拒绝遥测，拒绝后不影响正常使用。',
+                '（6）用户记忆功能：NexusVAI 服务提供可选的用户记忆功能，允许用户设置个性化偏好信息（每用户最多 5 条，每条不超过 100 字），该等信息存储于云端数据库，用于在后续对话中为 AI 提供上下文。用户可随时关闭或删除该功能中的记忆内容。',
+                '（7）Arena 竞技场：NexusVAI 服务提供模型对比竞技场功能。用户提交的 prompt 及模型返回的 response 存储于服务端，用于投票统计与模型评估。竞技场数据与用户账号关联。',
+                '（8）加密传输：所有用户与 NexusVAI 服务之间的数据传输均通过 HTTPS 加密通道完成。',
+                '（9）第三方模型：NexusVAI 服务聚合的 AI 模型由第三方提供，开发者通过云端网关将用户对话请求转发至第三方模型服务商进行推理。用户对话内容在推理过程中经由第三方模型服务商的服务器处理，该等处理受第三方服务商各自的隐私政策与服务条款约束。开发者不对第三方模型服务商的数据处理行为承担责任，用户应自行了解并同意相关第三方的服务条款。',
+                '（10）付费系统：NexusVAI 服务提供 Pro / Pro+ / Pro Max 三档月度订阅及加油包购买。订阅状态、月度配额消耗、加油包余额及用量流水存储于服务端，用于计费与权益管理。付费通过人工订单审核 + 激活码兑换方式完成，开发者不直接处理支付信息。',
                 '（11）封禁与申诉：如用户违反本协议或被系统检测为滥用，开发者有权封禁账号。被封禁用户可通过申诉流程提交申诉请求，申诉信息存储于服务端。',
-                '（12）敏感信息提示：用户不应在与 ChatAI 服务的对话中输入真实姓名、身份证号、银行卡信息、家庭住址、电话号码、支付凭证、账号密码等高度敏感信息；因自行输入敏感信息导致的信息泄露或法律后果，由用户自行承担。',
+                '（12）敏感信息提示：用户不应在与 NexusVAI 服务的对话中输入真实姓名、身份证号、银行卡信息、家庭住址、电话号码、支付凭证、账号密码等高度敏感信息；因自行输入敏感信息导致的信息泄露或法律后果，由用户自行承担。',
                 '（13）数据保留期限：对话历史在用户主动删除前持续保留；用户删除对话后，开发者将在 30 日内从生产数据库移除，备份系统中的副本将在 90 日内清除。用量记录保留至对应订阅周期结束后 12 个月，用于账务核对与争议处理。设备指纹数据在用户最后一次登录后保留 180 日。封禁记录与申诉记录保留至解封后 12 个月。法律法规要求更长期限保留的，从其规定。',
-                '（14）跨境传输：ChatAI 服务后端数据库托管于 Supabase（服务器位于新加坡）。用户数据在传输至新加坡的过程中受到 HTTPS 加密保护。开发者已评估该等跨境传输的必要性，并确认 Supabase 提供的数据安全保障措施符合适用法律要求。如用户所在地的强制性法律对数据出境有额外要求，以该等强制性法律规定为准。',
-                '（15）Cookie 与本地存储：ChatAI 服务在用户浏览器中使用以下本地存储机制：（a）Supabase Auth 会话令牌（localStorage 键名 cancri_supabase_auth），用于维持登录状态，用户关闭浏览器或主动登出后失效；（b）匿名标识符（localStorage 键名 cancri_anon_id），用于遥测与指纹关联；（c）遥测同意状态（localStorage 键名 cancri_telemetry_consent），记录用户是否同意错误回传；（d）用户偏好设置（localStorage 键名 theme、lang 等），用于保存主题与语言偏好。ChatAI 服务不使用追踪型 Cookie。用户可随时通过浏览器设置清除上述本地数据。',
+                '（14）跨境传输：NexusVAI 服务后端数据库托管于 Supabase（服务器位于新加坡）。用户数据在传输至新加坡的过程中受到 HTTPS 加密保护。开发者已评估该等跨境传输的必要性，并确认 Supabase 提供的数据安全保障措施符合适用法律要求。如用户所在地的强制性法律对数据出境有额外要求，以该等强制性法律规定为准。',
+                '（15）Cookie 与本地存储：NexusVAI 服务在用户浏览器中使用以下本地存储机制：（a）Supabase Auth 会话令牌（localStorage 键名 cancri_supabase_auth），用于维持登录状态，用户关闭浏览器或主动登出后失效；（b）匿名标识符（localStorage 键名 cancri_anon_id），用于遥测与指纹关联；（c）遥测同意状态（localStorage 键名 cancri_telemetry_consent），记录用户是否同意错误回传；（d）用户偏好设置（localStorage 键名 theme、lang 等），用于保存主题与语言偏好。NexusVAI 服务不使用追踪型 Cookie。用户可随时通过浏览器设置清除上述本地数据。',
                 '5. AI 生成内容与用户责任',
                 '5.1 游戏模组（Sentience）工具属性说明：Sentience 在当前版本中主要作为本地运行的 AI 对话增强工具提供。对于用户自行配置并调用的第三方云端模型服务，开发者仅提供本地接口集成，不参与第三方模型服务的实际运营。如适用法律将本套件的特定功能认定为生成式人工智能相关服务的一部分，开发者将在法律要求的范围内履行相应义务。用户在使用本套件生成内容时，应自行遵守所在国家及地区的相关法律法规（包括但不限于《互联网信息服务深度合成管理规定》等）。',
-                '5.2 ChatAI 服务生成式AI合规：ChatAI 服务作为生成式人工智能聚合平台，其输出内容由第三方 AI 模型基于用户输入自动生成。开发者运营云端网关进行请求转发、配额管控与用量记录，不参与 AI 模型的实际推理过程，不对任何特定输出内容拥有著作权或编辑控制权。依据《生成式人工智能服务管理暂行办法》，开发者履行以下义务：（1）提供内容标注：ChatAI 界面中 AI 生成的内容均带有明确标识，以区分人工内容与机器生成内容；（2）建立举报机制：用户可通过 ChatAI 界面或第 10 节提供的联系方式举报违法或不当 AI 输出，开发者将在合理时间内处理；（3）用户生成内容管理：用户使用 ChatAI 服务生成的内容，应自行判断其合法性、准确性与适用性，并自行承担因使用该等内容所产生的法律后果。用户不得利用 ChatAI 服务生成违反当地法律法规的内容，包括但不限于虚假信息、侵权内容、违法有害信息等。开发者保留在发现违法违规使用行为时采取内容过滤、限制或终止用户访问 ChatAI 服务的权利。',
+                '5.2 NexusVAI 服务生成式AI合规：NexusVAI 服务作为生成式人工智能聚合平台，其输出内容由第三方 AI 模型基于用户输入自动生成。开发者运营云端网关进行请求转发、配额管控与用量记录，不参与 AI 模型的实际推理过程，不对任何特定输出内容拥有著作权或编辑控制权。依据《生成式人工智能服务管理暂行办法》，开发者履行以下义务：（1）提供内容标注：NexusVAI 界面中 AI 生成的内容均带有明确标识，以区分人工内容与机器生成内容；（2）建立举报机制：用户可通过 NexusVAI 界面或第 10 节提供的联系方式举报违法或不当 AI 输出，开发者将在合理时间内处理；（3）用户生成内容管理：用户使用 NexusVAI 服务生成的内容，应自行判断其合法性、准确性与适用性，并自行承担因使用该等内容所产生的法律后果。用户不得利用 NexusVAI 服务生成违反当地法律法规的内容，包括但不限于虚假信息、侵权内容、违法有害信息等。开发者保留在发现违法违规使用行为时采取内容过滤、限制或终止用户访问 NexusVAI 服务的权利。',
                 '用户理解并同意，Sentience 作为一个开放接口，其输出完全取决于所加载的模型权重。如用户选择加载开发者分享的测试权重，应自行承担内容合规风险。',
                 'AI输出的独立性与虚构属性：Sentience 生成的对话、叙事、观点及角色表达均为模型基于上下文自动生成的虚构内容，仅供游戏娱乐体验，不应被理解为开发者、原游戏权利人、模型提供方或任何现实主体的真实立场、建议或事实陈述。',
                 '不得作为现实依据：用户不得将相关输出作为医疗、法律、投资、执法、新闻或其他现实决策的依据。模型生成的任何有关医疗、法律、投资等专业领域的建议均为虚构，严禁将其视为现实参考。',
@@ -1577,26 +1702,26 @@ const articleData = {
                 'TACTFR的警察/嫌疑人AI仅为游戏娱乐模拟，不得用于真实执法训练、不得冒充真实机关。',
                 '禁止用途：严禁利用本套件生成并在公共网络空间传播任何违反当地法律法规之内容，包括但不限于色情、暴力恐怖、仇恨言论、侵害隐私或诽谤等内容。开发者保留对恶意滥用行为追究法律责任的权利。',
                 '6. 使用限制与禁止行为',
-                '6.1 年龄限制：本套件面向成年人提供；如用户所在地法律对类似内容或游戏模组的使用年龄有更高要求，从其规定。您须在首次使用前自行确认符合上述限制；若您未满 18 周岁或不具备完全民事行为能力，请立即停止使用并删除本套件。开发者不具备年龄核验技术手段，因虚假声明导致的一切后果由用户自行承担。ChatAI 服务不面向未满 14 周岁的未成年人提供个人信息处理服务；如开发者在处理过程中发现用户为未满 14 周岁的未成年人，将依法通知其监护人并寻求追认，或删除其个人信息。',
+                '6.1 年龄限制：本套件面向成年人提供；如用户所在地法律对类似内容或游戏模组的使用年龄有更高要求，从其规定。您须在首次使用前自行确认符合上述限制；若您未满 18 周岁或不具备完全民事行为能力，请立即停止使用并删除本套件。开发者不具备年龄核验技术手段，因虚假声明导致的一切后果由用户自行承担。NexusVAI 服务不面向未满 14 周岁的未成年人提供个人信息处理服务；如开发者在处理过程中发现用户为未满 14 周岁的未成年人，将依法通知其监护人并寻求追认，或删除其个人信息。',
                 '6.2 游戏模组联机限制：严禁在GTA Online、Rockstar官方多人服务或任何其他未获允许的联机环境中加载、调用或测试本套件的任何功能，由此导致的封号由您自负。用户不得利用本套件规避、干扰或测试游戏服务方的安全机制、反作弊系统、账号风控系统或内容审核规则。出口管制合规：用户在使用云端API模式时，需自行确保其网络环境和调用行为符合所选API服务商所在地的出口管制法律法规（如美国的 EAR 规定）。因用户违规调用API导致的封号、IP拉黑或法律追责，在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者不承担连带责任。',
                 '6.3 商业变现禁止：禁止将本套件用于任何违法用途或以任何方式进行商业变现（如未经授权的付费分发、代售、代练、代装、收费分发、倒卖、捆绑销售、引流变现或其他未经授权的商业目的），除非事先获得开发者书面授权。严禁任何形式的"倒卖"、"整合包收费"、"赞助即获取"等行为。若发现此类行为，开发者将配合原版权方（Rockstar Games / Take-Two Interactive）追究侵权者的法律责任。',
                 '6.4 逆向工程限制：除非第三方组件原始许可允许，您不得对开发者的专有部分实施逆向工程、反编译或反汇编（Sentience按MIT许可除外）。对以开源许可分发的组件，请按其原始许可执行。本协议中关于禁止修改、逆向工程、二次分发等限制，仅适用于本套件所含闭源组件、闭源资源文件、专有 UI 设计、安装器及其他明确标注为非开源的内容，不适用于依法可自由使用的开源部分及第三方许可另有授权的部分。',
                 '6.5 游戏模组离线推荐：推荐在单人/离线模式下使用本套件以降低因修改游戏文件而被官方封禁的风险；开发者不保证在线多人模式使用的安全性或不会触发游戏服务方的处罚。',
-                '6.6 ChatAI 服务使用限制：（1）账号共享禁止：每个 ChatAI 账号仅限本人使用，禁止将账号凭据（包括邮箱、验证码、会话令牌等）提供给第三方使用。开发者有权检测并处置共享账号，包括但不限于重置会话、暂停配额或封禁账号。（2）配额滥用禁止：用户不得通过多账号注册、设备指纹伪造、自动化脚本或其他技术手段规避免费配额限制或付费订阅的用量上限。开发者有权通过设备指纹、IP 分析等技术手段检测并处置滥用行为。（3）自动化访问禁止：用户不得使用爬虫、机器人、自动化脚本或其他非官方授权的方式批量访问 ChatAI 服务接口，包括但不限于批量抓取对话内容、自动提交 prompt、自动化投票等。开发者有权对自动化访问行为进行限制或封禁。（4）服务滥用禁止：用户不得利用 ChatAI 服务进行任何损害服务稳定性、公平性或其他用户体验的行为，包括但不限于恶意占用资源、攻击服务基础设施等。',
+                '6.6 NexusVAI 服务使用限制：（1）账号共享禁止：每个 NexusVAI 账号仅限本人使用，禁止将账号凭据（包括邮箱、验证码、会话令牌等）提供给第三方使用。开发者有权检测并处置共享账号，包括但不限于重置会话、暂停配额或封禁账号。（2）配额滥用禁止：用户不得通过多账号注册、设备指纹伪造、自动化脚本或其他技术手段规避免费配额限制或付费订阅的用量上限。开发者有权通过设备指纹、IP 分析等技术手段检测并处置滥用行为。（3）自动化访问禁止：用户不得使用爬虫、机器人、自动化脚本或其他非官方授权的方式批量访问 NexusVAI 服务接口，包括但不限于批量抓取对话内容、自动提交 prompt、自动化投票等。开发者有权对自动化访问行为进行限制或封禁。（4）服务滥用禁止：用户不得利用 NexusVAI 服务进行任何损害服务稳定性、公平性或其他用户体验的行为，包括但不限于恶意占用资源、攻击服务基础设施等。',
                 '7. 免责声明（保证与责任限制）',
                 '7.1 按原样提供：本套件按"原样"（AS IS）提供，开发者对本套件不作任何明示或默示的保证，包括但不限于对适销性、对特定用途适用性、免侵权或无缺陷的保证。',
                 '7.2 不担保可用性：开发者不保证本套件将持续不间断、安全、无错误或完全符合用户期望；也不保证任何第三方服务或模型的可用性与稳定性。本地模型推理对用户设备的 CPU、GPU、显存、内存、磁盘空间及系统环境存在要求。开发者不保证所有设备均可流畅运行本地模型，也不保证本地模型输出符合用户预期。',
                 '7.3 风险自负：在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者不对用户因下载、安装、配置或使用本套件所遭受的间接损失、附带损失、后果性损失、利润损失、账号风险（包括但不限于被官方封禁）、存档损坏或第三方服务不可用承担责任。法律明确禁止排除或限制的责任，不因本协议而排除。',
                 '7.4 非官方渠道获取风险：本套件仅在开发者指定的官方渠道（如 Github、指定模组论坛等）免费发布。对于用户从非开发者公布的官方渠道获取的安装包、整合包、镜像文件、网盘转载或二次封装版本，开发者无法保证其真实性、完整性、安全性与可用性。用户因此遭受的账号风险、财产损失、恶意软件感染或数据泄露风险，由用户自行判断并承担相应后果。',
-                '7.5 责任限额：在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者对因本套件引起或与之相关的任何间接损害、特殊损害、惩罚性损害或后果性损害不承担责任。对于 ChatAI 付费用户，开发者因本套件所导致的可归因特定责任的直接损害，最高赔偿以用户最近 12 个月内向开发者实际支付的订阅费用为限；对于免费用户，最高赔偿不超过 100 元人民币或法律规定的最低赔偿下限，取其中较高者。若某一司法管辖区法律不允许完全排除责任，则开发者的责任范围以该法律允许限制的最大范围为限，但不影响法律规定不得排除或限制的责任。',
-                '7.6 ChatAI 付费订阅退款政策：ChatAI 订阅采用激活码兑换方式，激活后立即生效，未使用的剩余配额不作现金退还。如订阅周期内服务因开发者原因出现严重缺陷（单次连续中断超过 72 小时且开发者未提供补偿），用户可向开发者申请按剩余天数比例补偿。加油包一经激活消耗即不可退还；如全新未使用，可在激活后 7 日内向开发者申请退还。法律强制性规定的维权权利，不受本政策限制。',
+                '7.5 责任限额：在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，开发者对因本套件引起或与之相关的任何间接损害、特殊损害、惩罚性损害或后果性损害不承担责任。对于 NexusVAI 付费用户，开发者因本套件所导致的可归因特定责任的直接损害，最高赔偿以用户最近 12 个月内向开发者实际支付的订阅费用为限；对于免费用户，最高赔偿不超过 100 元人民币或法律规定的最低赔偿下限，取其中较高者。若某一司法管辖区法律不允许完全排除责任，则开发者的责任范围以该法律允许限制的最大范围为限，但不影响法律规定不得排除或限制的责任。',
+                '7.6 NexusVAI 付费订阅退款政策：NexusVAI 订阅采用激活码兑换方式，激活后立即生效，未使用的剩余配额不作现金退还。如订阅周期内服务因开发者原因出现严重缺陷（单次连续中断超过 72 小时且开发者未提供补偿），用户可向开发者申请按剩余天数比例补偿。加油包一经激活消耗即不可退还；如全新未使用，可在激活后 7 日内向开发者申请退还。法律强制性规定的维权权利，不受本政策限制。',
                 '7.7 安装器与安全软件拦截：本套件可能包含用于部署本地模型、依赖组件或运行环境的安装器/启动器。该工具仅用于简化本地部署流程，不改变用户对第三方组件、模型许可及游戏环境风险的自行判断义务。由于安装器、脚本注入、模型部署或目录写入行为可能被安全软件误报、被系统权限机制拦截，用户应在使用前自行备份相关目录并确认来源安全。"一键安装器"及脚本注入功能可能会被部分杀毒软件（如 Windows Defender 等）误报为风险文件。此为无数字签名的独立游戏补丁的常见现象。用户需自行判断并决定是否添加信任。在适用法律允许的最大范围内，除因开发者故意或重大过失造成的损害外，因安装器运行、权限不足或被杀毒软件误杀导致的游戏无法启动、文件损坏，开发者不承担责任。强烈建议在使用安装器前备份您的 GTA V 游戏根目录。如安装器需联网下载模型或依赖文件，相关网络请求仅用于获取用户主动选择安装的资源。',
                 '7.8 API 密钥安全：为了方便用户在不同 AI 工具间迁移配置，本套件采用了通用的明文配置文件格式。用户一旦将 API Key 写入该文件，即视为接受该等存储方式的公开性，并承诺自行采取加密磁盘、限制文件权限等措施保护其私钥。请勿分享该文件，不要在公共电脑或多人共用的设备上配置云端API功能。在当前版本已提供功能范围内，开发者不通过自建服务器接收、转存或查看该等 Key，但无法阻止您自行泄露。因泄露、被盗刷产生的费用由您全责承担。',
                 '7.9 本节责任限制及免责并不旨在规避对因故意或重大过失所导致的法定不可免除责任。',
                 '7.10 用户赔偿：您同意，因您违反本协议（包括但不限于输入违法违规内容、泄露API Key、违反Qwen或其他模型发行方的AUP、将本套件用于商业用途等），而导致开发者遭受第三方索赔、行政处罚、诉讼或经济损失（包括合理的律师费用），您应赔偿开发者因此遭受的合理损失。',
                 '8. 维护、更新与协议变更',
                 '8.1 开发者可不定期对本套件进行更新、维护或功能变更。对于本协议的修改，开发者将在模组发布页/仓库主页发布变更说明并标注生效日期。对于影响用户主要权利义务、数据处理方式、授权边界或责任限制的重要变更，开发者将通过发布页公告、仓库说明、更新日志或首次启动提示中的一种或多种方式进行显著通知，并标注生效日期。用户在变更生效后继续安装、启动或使用相关版本的，视为接受更新后的协议；如不同意，应停止使用相应版本并删除相关文件。',
-                '8.2 对于 ChatAI 服务涉及个人信息处理方式的重大变更（包括但不限于新增收集类型、变更处理目的、变更数据出境目的地等），开发者将通过 ChatAI 界面弹窗或注册邮箱通知等方式单独告知用户，并在用户重新确认同意后方可继续处理；如用户不同意变更，可停止使用 ChatAI 服务并申请删除其个人信息。',
+                '8.2 对于 NexusVAI 服务涉及个人信息处理方式的重大变更（包括但不限于新增收集类型、变更处理目的、变更数据出境目的地等），开发者将通过 NexusVAI 界面弹窗或注册邮箱通知等方式单独告知用户，并在用户重新确认同意后方可继续处理；如用户不同意变更，可停止使用 NexusVAI 服务并申请删除其个人信息。',
                 '8.3 若用户不同意任何变更，应停止使用并删除本套件。',
                 '9. 知识产权',
                 '9.1 Sentience源代码中以 MIT 许可证发布的部分适用 MIT 许可证文本；本协议不应被解释为削减用户依据 MIT 许可证依法享有的权利。',
@@ -1608,11 +1733,11 @@ const articleData = {
                 '或发送邮件至：nexusvai@139.com / nexusvai@foxmail.com（请在邮件主题注明"NexusV — 问题上报/数据请求"）；',
                 '请勿通过邮件或 Issue 直接发送 API Key、密码、身份证号等敏感信息。',
                 '开发者将在合理时间内（通常为 15 个工作日内）确认收到并在可行范围内处理或给出处理计划。若涉及法律问题，开发者保留将相关信息移交执法或权利人处理的权利。',
-                '10.2 ChatAI 用户数据权利：依据《个人信息保护法》，ChatAI 服务用户就其个人信息享有以下权利，可通过上述联系方式申请行使：（1）知情权与决定权：有权了解开发者处理其个人信息的种类、目的、方式及保留期限；（2）查阅权：有权查阅开发者持有的其个人信息；（3）复制权：有权获取其个人信息的副本（以电子可读格式）；（4）更正权：有权要求更正不准确或不完整的个人信息；（5）删除权：在以下情形下有权要求删除个人信息：a) 处理目的已实现或不再需要；b) 用户撤回同意；c) 开发者违法处理；（6）撤回同意权：用户可随时撤回对特定处理活动的同意（撤回不影响撤回前基于同意的处理的合法性）；（7）可携带权：有权要求将个人信息转移至其指定的处理者（在技术可行的情形下）。开发者将在收到申请后 15 个工作日内予以处理，法律另有规定的除外。',
+                '10.2 NexusVAI 用户数据权利：依据《个人信息保护法》，NexusVAI 服务用户就其个人信息享有以下权利，可通过上述联系方式申请行使：（1）知情权与决定权：有权了解开发者处理其个人信息的种类、目的、方式及保留期限；（2）查阅权：有权查阅开发者持有的其个人信息；（3）复制权：有权获取其个人信息的副本（以电子可读格式）；（4）更正权：有权要求更正不准确或不完整的个人信息；（5）删除权：在以下情形下有权要求删除个人信息：a) 处理目的已实现或不再需要；b) 用户撤回同意；c) 开发者违法处理；（6）撤回同意权：用户可随时撤回对特定处理活动的同意（撤回不影响撤回前基于同意的处理的合法性）；（7）可携带权：有权要求将个人信息转移至其指定的处理者（在技术可行的情形下）。开发者将在收到申请后 15 个工作日内予以处理，法律另有规定的除外。',
                 '11. 终止',
                 '11.1 因用户违约终止：若用户违反本协议之任一条款，开发者有权终止其对本套件相关闭源部分的使用许可，并要求其删除本套件全部副本；同时开发者可采取进一步的技术或法律措施维护合法权益。',
                 '11.2 因版权方要求的终止：鉴于本套件依附于《Grand Theft Auto V》，若收到原版权方（Take-Two Interactive 或 Rockstar Games）的停止通知（Cease & Desist）或相关维权要求，开发者有权随时、无条件且不经提前通知地永久停止本套件的维护、下架相关文件并终止云端推理服务。在适用法律允许的最大范围内，除法律另有强制性规定外，开发者无需向用户承担违约或赔偿责任，但将尽量提前通知以便用户做好备份与过渡。',
-                '11.3 ChatAI 服务终止与数据处理：开发者终止 ChatAI 服务时，将提前至少 30 日通过注册邮箱或 ChatAI 界面通知用户，并在服务终止前为用户提供导出对话历史的途径。服务终止后，开发者将依据第 4.6 节第（13）项所述数据保留期限处理用户数据，期限届满后予以删除。ChatAI 付费用户未到期的订阅，开发者将按剩余天数比例退还费用（如属激活码兑换，退还方式由双方协商）。',
+                '11.3 NexusVAI 服务终止与数据处理：开发者终止 NexusVAI 服务时，将提前至少 30 日通过注册邮箱或 NexusVAI 界面通知用户，并在服务终止前为用户提供导出对话历史的途径。服务终止后，开发者将依据第 4.6 节第（13）项所述数据保留期限处理用户数据，期限届满后予以删除。NexusVAI 付费用户未到期的订阅，开发者将按剩余天数比例退还费用（如属激活码兑换，退还方式由双方协商）。',
                 '11.4 本协议的终止不影响在终止前已产生之责任与义务。',
                 '12. 适用法律与争议解决',
                 '本协议的订立、效力、解释与争议解决，原则上适用中华人民共和国法律；但如用户所在地法律对消费者保护、个人信息保护或其他事项设有不得排除的强制性规定，则该等强制性规定优先适用。若用户所在司法区的强制性法律与本协议冲突，则以用户所在地的强制性法律为准。',
@@ -1621,8 +1746,8 @@ const articleData = {
                 '13.1 可分性：本协议各条款如因任何原因被有管辖权之法院判定为全部或部分无效，不影响其他条款的效力。',
                 '13.2 完整协议：本协议构成您与开发者之间关于本套件之完整协议，取代此前任何口头或书面的协商与协议（但不影响对第三方组件原始许可的约束力）。如本协议与适用于特定开源组件、第三方库、模型权重或其他第三方内容的原始许可证发生冲突，就该特定内容而言，以其原始许可证及适用法律的强制性规定为准；本协议仅在不冲突的范围内补充适用。',
                 '13.3 协议接受：本套件启动时显示的任何版本更新信息、公告或本协议的更新，对于已进行显著通知的重要变更，用户在相关版本首次启动时点击确认，或在知悉变更后继续使用相关版本的，视为接受更新后的协议。如本协议中英文版本存在歧义，以中文为准。',
-                '13.4 儿童隐私：ChatAI 服务不面向未满 14 周岁的未成年人。开发者不会故意收集未满 14 周岁未成年人的个人信息。如监护人认为未成年人在未获监护人同意的情况下向开发者提供了个人信息，请联系开发者，开发者将在核实后及时删除相关信息。',
-                '13.5 数据安全措施：开发者采用行业标准安全措施保护 ChatAI 服务中存储的用户数据，包括但不限于 HTTPS 加密传输、数据库访问控制、行级安全策略（RLS）等。但任何安全措施均无法提供绝对保证。如开发者发现可能影响用户个人信息安全的数据泄露事件，将依据《个人信息保护法》及时通知受影响用户，并向相关监管机构报告。',
+                '13.4 儿童隐私：NexusVAI 服务不面向未满 14 周岁的未成年人。开发者不会故意收集未满 14 周岁未成年人的个人信息。如监护人认为未成年人在未获监护人同意的情况下向开发者提供了个人信息，请联系开发者，开发者将在核实后及时删除相关信息。',
+                '13.5 数据安全措施：开发者采用行业标准安全措施保护 NexusVAI 服务中存储的用户数据，包括但不限于 HTTPS 加密传输、数据库访问控制、行级安全策略（RLS）等。但任何安全措施均无法提供绝对保证。如开发者发现可能影响用户个人信息安全的数据泄露事件，将依据《个人信息保护法》及时通知受影响用户，并向相关监管机构报告。',
                 '13.6 公开透明与安全审计：Sentience 模块已开源，开发者邀请并鼓励用户及第三方机构对其网络请求行为、数据处理逻辑及代码实现进行安全审计。开发者致力于保持代码透明度，接受社区监督，以确保本套件的安全性与合规性。'
             ]
         },
@@ -1634,24 +1759,24 @@ const articleData = {
                 'Important Notice (Recommended to Read First)',
                 'This Suite contains two distinct product types with fundamentally different data handling — please note each separately:',
                 '[Game Mods (TACTFR / NexusV Modifier / Sentience)] use built-in SFT fine-tuned Qwen model by default (with one-click installer). Strongly recommend running locally — in default local inference mode, AI dialogue context is NOT sent to Developer-operated servers. If you choose cloud inference (DeepSeek, OpenAI, etc.), you must provide your own API Key (stored in local config.ini); all data transmission risks and costs are your responsibility.',
-                '[ChatAI Service] is a cloud-based AI dialogue platform requiring email OTP login. Developer operates a cloud gateway and stores conversation history, usage records, device fingerprints, and other data (see Section 4.6). By using ChatAI Service you consent to the personal information processing practices described in this Agreement. If you do not consent, do not register or use ChatAI Service.',
+                '[NexusVAI Service] is a cloud-based AI dialogue platform requiring email OTP login. Developer operates a cloud gateway and stores conversation history, usage records, device fingerprints, and other data (see Section 4.6). By using NexusVAI Service you consent to the personal information processing practices described in this Agreement. If you do not consent, do not register or use NexusVAI Service.',
                 'Sentience core code is fully open source. Open Source Repository: https://github.com/NexusVAI/SENTIENCE',
                 'Game mod components are for single-player entertainment only, strictly prohibited for illegal or commercial use.',
                 'Using any component of this Suite means you have read and agreed to all terms of this Agreement.',
                 '',
                 'Last Updated: May 26, 2026',
-                'This Agreement is effective as of May 26, 2026. Previous versions shall be governed by their original effective terms. This update primarily corrects the ChatAI Service privacy section (Section 4.6) to accurately reflect currently deployed data processing practices.',
+                'This Agreement is effective as of May 26, 2026. Previous versions shall be governed by their original effective terms. This update primarily corrects the NexusVAI Service privacy section (Section 4.6) to accurately reflect currently deployed data processing practices.',
                 'This Terms of Use Agreement ("Agreement") primarily governs the license scope, usage restrictions, risk notifications, and liability boundaries of each module of the NexusV Suite; descriptions related to personal information and data flow apply to the currently provided functions of this Suite and do not constitute commitments to future unreleased cloud services.',
                 '1. Definitions & Product Description',
-                '1.1 "Suite" refers to the NexusV series content published by Developer, currently including: (1) TACTFR: A police gameplay enhancement mod for GTA V single-player offline environment; (2) NexusV Modifier: A numerical and experience adjustment tool for GTA V single-player offline environment; (3) Sentience: An AI mod for NPC dialogue generation and interaction enhancement within GTA V gameplay; (4) ChatAI: An AI aggregation dialogue service platform for users (hereinafter "ChatAI Service"), offering both free and paid tiers (Pro / Pro+ / Pro Max subscriptions and top-up credits).',
+                '1.1 "Suite" refers to the NexusV series content published by Developer, currently including: (1) TACTFR: A police gameplay enhancement mod for GTA V single-player offline environment; (2) NexusV Modifier: A numerical and experience adjustment tool for GTA V single-player offline environment; (3) Sentience: An AI mod for NPC dialogue generation and interaction enhancement within GTA V gameplay; (4) NexusVAI: An AI aggregation dialogue service platform for users (hereinafter "NexusVAI Service"), offering both free and paid tiers (Pro / Pro+ / Pro Max subscriptions and top-up credits).',
                 '1.2 The current version of Sentience primarily provides AI dialogue generation functionality, supporting local model inference and third-party cloud model interfaces configured by users themselves. Unless otherwise explicitly stated in subsequent versions, the current version does not directly implement real-time control of NPC autonomous behavior, movement, combat, or task execution.',
                 '1.3 This Suite is an unofficial third-party mod, with no authorization, recognition, cooperation, or co-branding relationship with Rockstar Games, Take-Two Interactive, or the original rights holders of Grand Theft Auto V. This Suite is provided solely for technical demonstration and entertainment purposes, and does not constitute an official extension or co-branded product of any of the aforementioned parties.',
                 '1.4 This Suite adopts a hybrid licensing structure: Parts of Sentience source code explicitly released under MIT License are subject to MIT License; TACTFR and NexusV Modifier current versions and other clearly marked closed-source programs, resources, UI designs, installers, and configuration content within this Suite are subject to the restrictions set forth in this Agreement; third-party components, model weights, and related resources are subject to their respective original licenses.',
                 '1.5 TACTFR, NexusV Modifier, and Sentience have relatively independent functional modules and risk boundaries, applicable to corresponding terms in this Agreement.',
-                '1.6 ChatAI Service is entirely independent from the above game mod products (TACTFR, NexusV Modifier, Sentience) in technical architecture, product positioning, and target audience. ChatAI Service does not depend on any game environment, does not involve modification or injection of game files, and does not fall within the scope of game mods. As a generative AI dialogue platform, ChatAI Service is subject to the corresponding terms in this Agreement, including but not limited to Section 4.6 (ChatAI Privacy) and provisions related to generative AI in Section 5. With respect to ChatAI Service, Developer acts as cloud gateway operator and platform provider, bearing corresponding obligations as data processor and service provider under applicable laws.',
+                '1.6 NexusVAI Service is entirely independent from the above game mod products (TACTFR, NexusV Modifier, Sentience) in technical architecture, product positioning, and target audience. NexusVAI Service does not depend on any game environment, does not involve modification or injection of game files, and does not fall within the scope of game mods. As a generative AI dialogue platform, NexusVAI Service is subject to the corresponding terms in this Agreement, including but not limited to Section 4.6 (NexusVAI Privacy) and provisions related to generative AI in Section 5. With respect to NexusVAI Service, Developer acts as cloud gateway operator and platform provider, bearing corresponding obligations as data processor and service provider under applicable laws.',
                 '1.7 "Third-Party Components" means libraries, tools, or binaries from other authors/organizations embedded in or referenced by the Suite (see Section 3).',
                 '1.8 "Personal Information" means any information recorded electronically or by other means that relates to an identified or identifiable natural person, excluding anonymized information.',
-                '1.9 "Personal Information Processor" means an organization or individual that independently determines the purposes and means of processing personal information. Developer is the Personal Information Processor for personal information processed in connection with ChatAI Service.',
+                '1.9 "Personal Information Processor" means an organization or individual that independently determines the purposes and means of processing personal information. Developer is the Personal Information Processor for personal information processed in connection with NexusVAI Service.',
                 '⚠️ Rockstar/GTA V Risk Independent Warning: Even in single-player offline mode, using any injection-based mod (including but not limited to TACTFR, NexusV Modifier, and Sentience modules in this Suite) still carries a very low probability risk of save file corruption, game abnormal operation, account anomaly, or ban due to Rockstar\'s future policy changes, anti-cheat detection mechanism updates, or game version iterations. To the maximum extent permitted by applicable law, except for damages caused by Developer\'s intentional acts or gross negligence, Developer assumes NO responsibility for the aforementioned risks. It is strongly recommended that before using this Suite: (1) Fully back up the entire GTA V game root directory and all save files; (2) Use only in completely offline single-player mode with network disconnected; (3) Avoid using on accounts associated with important game progress or paid content.',
                 '2. License Grant',
                 '2.1 Sentience source code parts explicitly released under MIT License are subject to MIT License text; this Agreement shall NOT be interpreted as diminishing users\' rights lawfully enjoyed under MIT License.',
@@ -1662,46 +1787,46 @@ const articleData = {
                 '3.1 Game mod components: The Suite uses ScriptHookV (NOT included in package, please download from official website), ScriptHookVDotNet, NAudio, Newtonsoft.Json. The Suite only runs as a script patch, does NOT include, modify, or distribute any core binary files of the original game (GTA V) or any copyrighted game assets. Users bear full responsibility for any software conflicts or system instability caused by installing third-party injection tools such as ScriptHookV.',
                 '3.2 Sentience default model: SFT fine-tuned Qwen series weights (such as Qwen2.5/Qwen3), subject to original model license (see LICENSE in model folder), using means you agree to that license.',
                 '3.3 Game mod cloud mode requires user-provided: OpenAI API, DeepSeek API, etc., using means you agree to their Terms of Service and AUP. LM Studio is an optional local tool.',
-                '3.4 ChatAI Service third-party components: ChatAI Service backend depends on: (1) Supabase (supabase.com): provides user authentication, database hosting and storage; data processing is governed by Supabase Privacy Policy (supabase.com/privacy); servers located in Singapore. (2) Cloudflare: Workers at chat.nexusvai.xyz host chat-gateway and api-gateway streaming inference, plus Turnstile login CAPTCHA; governed by Cloudflare Privacy Policy (cloudflare.com/privacypolicy). (3) Third-party AI model providers: provide actual inference services; see Section 4.6 item (9). Developer is not responsible for data processing by the above third parties.',
+                '3.4 NexusVAI Service third-party components: NexusVAI Service backend depends on: (1) Supabase (supabase.com): provides user authentication, database hosting and storage; data processing is governed by Supabase Privacy Policy (supabase.com/privacy); servers located in Singapore. (2) Cloudflare: Workers at chat.nexusvai.xyz host chat-gateway and api-gateway streaming inference, plus Turnstile login CAPTCHA; governed by Cloudflare Privacy Policy (cloudflare.com/privacypolicy). (3) Third-party AI model providers: provide actual inference services; see Section 4.6 item (9). Developer is not responsible for data processing by the above third parties.',
                 '4. Privacy & Data Processing',
                 '4.1 Default Local Mode (Strongly Recommended): Sentience uses built-in SFT fine-tuned Qwen model, all inference runs on your PC locally, does NOT send any game data or player input to any third party. Developer does not collect any personal data.',
                 '4.2 Cloud API Mode (Requires User Initiative): After you enter your own API Key in local config.ini, the Suite sends NPC dialogue context directly to your designated service provider. Developer does NOT intercept, store, or view your API Key or dialogue content. API Key is stored in plain text in locally accessible config file, do NOT share this file or upload to public repositories, strongly recommend using local mode to avoid data transmission and cost risks. When using cloud mode, your IP address and device info will be sent directly to your chosen API service provider by your PC, governed by their privacy policy.',
                 '4.3 Data Minimization: Only sends necessary context, will NOT intentionally send real name, ID number, payment info or other sensitive personal information. Users should avoid inputting highly sensitive personal information such as real name, ID number, address, phone number, payment info, etc. in conversations with Sentience; any consequences arising from user\'s voluntary input (including but not limited to information leakage, model memorization, legal risks, etc.) shall be borne by the user.',
                 '4.4 Data Processing Role Definition: This Suite is essentially a locally running client tool software. Developer has NOT established, nor operates any cloud server for processing mod data. Therefore, Developer is NOT a personal information processor under the Personal Information Protection Law (PIPL). When you use local models, data does NOT leave your local device; when using cloud APIs, data is transmitted directly from your local device to third-party service providers (such as OpenAI, DeepSeek) end-to-end. If subsequent versions of this Suite provide Developer-operated cloud services, a separate Privacy Policy will be published and users will be required to check and agree before use. This Agreement does not cover such services not currently provided. Local logs on your PC can be deleted by yourself.',
-                '4.5 Deployed Cloud Services Notice: ChatAI Service has deployed Developer-operated cloud inference gateway (chat-gateway), account system (based on Supabase Auth, using email OTP login), and paid subscription system (Pro / Pro+ / Pro Max monthly subscriptions + top-up credits). Specific data processing practices for these services are detailed in Section 4.6. Users may delete local logs on their own devices.',
-                '4.6 ChatAI Service Privacy: ChatAI Service uses a cloud processing architecture. User conversation requests are forwarded through Developer-operated cloud gateway (chat-gateway) to third-party AI models for inference, with results returned to the user interface via the gateway. Specific data processing practices: (1) Conversation content storage: User conversation history generated through ChatAI Service is stored in Developer-operated cloud database (Supabase), including conversation titles, message content, and model used. Conversation history is associated with user accounts to support cross-device sync, conversation continuation, and history review. Developer does not use user conversation content for training AI models. Users can proactively delete conversation history in the ChatAI interface; once deleted, Developer no longer retains such data. (2) Usage records: Developer records usage details for each AI model call (including user ID, model ID, input/output token counts, call time, and whether the call succeeded), used for quota management, usage statistics, and billing settlement. Usage records do not contain original conversation content. (3) Account and identity information: Using ChatAI Service requires email OTP login (based on Supabase Auth). Developer obtains and stores user registration email addresses. During paid order processing, Developer obtains and stores user-submitted email and QQ number for order review and activation code delivery. Developer does not require phone numbers, real names, or ID numbers. (4) Device fingerprinting and anti-abuse: To prevent multi-account abuse and ensure service fairness, Developer collects device/browser fingerprint information after user login (including but not limited to Canvas/WebGL/Audio fingerprints, WebRTC IP, User-Agent, screen resolution, timezone, language, hardware parameters, etc.), generates a composite visitor_id stored server-side for cross-account association detection. Developer also records user IP addresses and caches geolocation information for security auditing and anti-abuse. (5) Error telemetry: With user consent, ChatAI Service collects uncaught browser exception information (including UA, current URL, viewport dimensions, exception message and stack, URLs and status codes of the last 10 fetch requests) for troubleshooting and product improvement. Users may decline telemetry without affecting normal usage. (6) User memory feature: ChatAI Service provides an optional user memory feature, allowing users to set personalized preference information (up to 5 entries per user, each no more than 100 characters), stored in the cloud database to provide context for AI in subsequent conversations. Users may disable or delete memory content at any time. (7) Arena: ChatAI Service provides a model comparison arena feature. User-submitted prompts and model responses are stored server-side for vote tallying and model evaluation. Arena data is associated with user accounts. (8) Encrypted transmission: All data transmission between users and ChatAI Service is completed through HTTPS encrypted channels. (9) Third-party models: AI models aggregated by ChatAI are provided by third parties; Developer forwards user conversation requests to third-party model service providers via cloud gateway for inference. User conversation content is processed by third-party model service provider servers during inference, governed by their respective privacy policies and terms of service. Developer does not assume responsibility for third-party data processing practices; users should independently understand and agree to relevant third-party terms. (10) Paid system: ChatAI Service offers Pro / Pro+ / Pro Max monthly subscriptions and top-up credit purchases. Subscription status, monthly quota consumption, top-up credit balance, and usage ledger are stored server-side for billing and entitlement management. Payment is processed via manual order review + activation code redemption; Developer does not directly process payment information. (11) Bans and appeals: If users violate this Agreement or are detected as abusers by the system, Developer reserves the right to ban accounts. Banned users may submit appeal requests through the appeal process; appeal information is stored server-side. (12) Sensitive information: Users should not input real names, ID numbers, bank card information, addresses, phone numbers, payment credentials, passwords, or other highly sensitive information in ChatAI conversations; consequences arising from voluntarily inputting sensitive information shall be borne by the user.',
+                '4.5 Deployed Cloud Services Notice: NexusVAI Service has deployed Developer-operated cloud inference gateway (chat-gateway), account system (based on Supabase Auth, using email OTP login), and paid subscription system (Pro / Pro+ / Pro Max monthly subscriptions + top-up credits). Specific data processing practices for these services are detailed in Section 4.6. Users may delete local logs on their own devices.',
+                '4.6 NexusVAI Service Privacy: NexusVAI Service uses a cloud processing architecture. User conversation requests are forwarded through Developer-operated cloud gateway (chat-gateway) to third-party AI models for inference, with results returned to the user interface via the gateway. Specific data processing practices: (1) Conversation content storage: User conversation history generated through NexusVAI Service is stored in Developer-operated cloud database (Supabase), including conversation titles, message content, and model used. Conversation history is associated with user accounts to support cross-device sync, conversation continuation, and history review. Developer does not use user conversation content for training AI models. Users can proactively delete conversation history in the NexusVAI interface; once deleted, Developer no longer retains such data. (2) Usage records: Developer records usage details for each AI model call (including user ID, model ID, input/output token counts, call time, and whether the call succeeded), used for quota management, usage statistics, and billing settlement. Usage records do not contain original conversation content. (3) Account and identity information: Using NexusVAI Service requires email OTP login (based on Supabase Auth). Developer obtains and stores user registration email addresses. During paid order processing, Developer obtains and stores user-submitted email and QQ number for order review and activation code delivery. Developer does not require phone numbers, real names, or ID numbers. (4) Device fingerprinting and anti-abuse: To prevent multi-account abuse and ensure service fairness, Developer collects device/browser fingerprint information after user login (including but not limited to Canvas/WebGL/Audio fingerprints, WebRTC IP, User-Agent, screen resolution, timezone, language, hardware parameters, etc.), generates a composite visitor_id stored server-side for cross-account association detection. Developer also records user IP addresses and caches geolocation information for security auditing and anti-abuse. (5) Error telemetry: With user consent, NexusVAI Service collects uncaught browser exception information (including UA, current URL, viewport dimensions, exception message and stack, URLs and status codes of the last 10 fetch requests) for troubleshooting and product improvement. Users may decline telemetry without affecting normal usage. (6) User memory feature: NexusVAI Service provides an optional user memory feature, allowing users to set personalized preference information (up to 5 entries per user, each no more than 100 characters), stored in the cloud database to provide context for AI in subsequent conversations. Users may disable or delete memory content at any time. (7) Arena: NexusVAI Service provides a model comparison arena feature. User-submitted prompts and model responses are stored server-side for vote tallying and model evaluation. Arena data is associated with user accounts. (8) Encrypted transmission: All data transmission between users and NexusVAI Service is completed through HTTPS encrypted channels. (9) Third-party models: AI models aggregated by NexusVAI are provided by third parties; Developer forwards user conversation requests to third-party model service providers via cloud gateway for inference. User conversation content is processed by third-party model service provider servers during inference, governed by their respective privacy policies and terms of service. Developer does not assume responsibility for third-party data processing practices; users should independently understand and agree to relevant third-party terms. (10) Paid system: NexusVAI Service offers Pro / Pro+ / Pro Max monthly subscriptions and top-up credit purchases. Subscription status, monthly quota consumption, top-up credit balance, and usage ledger are stored server-side for billing and entitlement management. Payment is processed via manual order review + activation code redemption; Developer does not directly process payment information. (11) Bans and appeals: If users violate this Agreement or are detected as abusers by the system, Developer reserves the right to ban accounts. Banned users may submit appeal requests through the appeal process; appeal information is stored server-side. (12) Sensitive information: Users should not input real names, ID numbers, bank card information, addresses, phone numbers, payment credentials, passwords, or other highly sensitive information in NexusVAI conversations; consequences arising from voluntarily inputting sensitive information shall be borne by the user.',
                 '(13) Data retention: Conversation history is retained until proactively deleted by the user; once deleted, Developer will remove it from production databases within 30 days and purge backup copies within 90 days. Usage records are retained for 12 months after the corresponding subscription period ends, for billing reconciliation and dispute resolution. Device fingerprint data is retained for 180 days after the user\'s last login. Ban and appeal records are retained for 12 months after the ban is lifted. Longer retention periods required by applicable law shall prevail.',
-                '(14) Cross-border transfer: ChatAI Service backend database is hosted on Supabase with servers in Singapore. User data transmitted to Singapore is protected by HTTPS encryption. Developer has assessed the necessity of such cross-border transfers and confirmed that Supabase\'s data security measures meet applicable legal requirements.',
-                '(15) Cookies and local storage: ChatAI Service uses the following local storage in your browser: (a) Supabase Auth session token (localStorage key: cancri_supabase_auth), to maintain login state; (b) Anonymous identifier (localStorage key: cancri_anon_id), for telemetry and fingerprint association; (c) Telemetry consent status (localStorage key: cancri_telemetry_consent); (d) User preferences (localStorage keys: theme, lang, etc.). ChatAI Service does NOT use tracking cookies. You may clear this local data via browser settings at any time.',
+                '(14) Cross-border transfer: NexusVAI Service backend database is hosted on Supabase with servers in Singapore. User data transmitted to Singapore is protected by HTTPS encryption. Developer has assessed the necessity of such cross-border transfers and confirmed that Supabase\'s data security measures meet applicable legal requirements.',
+                '(15) Cookies and local storage: NexusVAI Service uses the following local storage in your browser: (a) Supabase Auth session token (localStorage key: cancri_supabase_auth), to maintain login state; (b) Anonymous identifier (localStorage key: cancri_anon_id), for telemetry and fingerprint association; (c) Telemetry consent status (localStorage key: cancri_telemetry_consent); (d) User preferences (localStorage keys: theme, lang, etc.). NexusVAI Service does NOT use tracking cookies. You may clear this local data via browser settings at any time.',
                 '5. AI-Generated Content & User Responsibility',
                 '5.1 Game Mod (Sentience) Tool Attribute: This Suite (Sentience module) only provides local model runtime environment and cloud API calling interface. Developer is NOT a "Generative AI Service Provider" for the game mod components. When using this Suite to generate content, users should comply with relevant laws and regulations of their country/region on their own (including but not limited to Provisions on the Management of Deep Synthesis of Internet Information Services, etc.).',
-                '5.2 ChatAI Service Generative AI Compliance: ChatAI Service output is automatically generated by third-party AI models based on user input. Developer operates the cloud gateway for request forwarding, quota management, and usage recording, but does not participate in the actual AI inference process, having no copyright or editorial control over any specific output. Developer fulfills the following obligations: (1) Content labeling: AI-generated content in the ChatAI interface is clearly marked to distinguish it from human-authored content; (2) Reporting mechanism: Users may report illegal or inappropriate AI outputs through the ChatAI interface or via Section 10 contact methods; Developer will process within a reasonable time; (3) User-generated content management: Users must independently judge the legality, accuracy, and applicability of content generated through ChatAI, and bear legal consequences arising from such use. Users shall not use ChatAI to generate content that violates local laws, including but not limited to false information, infringing content, or illegal harmful content. Developer reserves the right to apply content filtering, restrict, or terminate user access to ChatAI upon discovering illegal or violating usage.',
+                '5.2 NexusVAI Service Generative AI Compliance: NexusVAI Service output is automatically generated by third-party AI models based on user input. Developer operates the cloud gateway for request forwarding, quota management, and usage recording, but does not participate in the actual AI inference process, having no copyright or editorial control over any specific output. Developer fulfills the following obligations: (1) Content labeling: AI-generated content in the NexusVAI interface is clearly marked to distinguish it from human-authored content; (2) Reporting mechanism: Users may report illegal or inappropriate AI outputs through the NexusVAI interface or via Section 10 contact methods; Developer will process within a reasonable time; (3) User-generated content management: Users must independently judge the legality, accuracy, and applicability of content generated through NexusVAI, and bear legal consequences arising from such use. Users shall not use NexusVAI to generate content that violates local laws, including but not limited to false information, infringing content, or illegal harmful content. Developer reserves the right to apply content filtering, restrict, or terminate user access to NexusVAI upon discovering illegal or violating usage.',
                 '5.3 Independence of AI Outputs: All dialogues, storylines, opinions generated by the Suite are produced in real-time by the model used, representing only model outputs, not positions or statements of Developer or any third party.',
                 '5.4 Unpredictability: Model outputs are uncertain and may contain errors, fictional, offensive, or inappropriate content. Any advice generated by the model regarding medical, legal, investment, or other professional fields is purely fictional and shall not be treated as real-world reference.',
                 '5.5 Deep Synthesis Identification: NPC dialogues generated by Sentience are AI-synthesized content. When sharing related videos, you must clearly mark "This video contains AI-generated dialogue/fictional content" in the description or a prominent position; you shall not use game recordings/dialogues to impersonate real persons, impersonate officials, or use in news or government affairs scenarios that may mislead the public.',
                 '5.6 TACTFR police/suspect AI is for game entertainment simulation only, must NOT be used for real law enforcement training or impersonating real agencies.',
                 '5.7 Prohibited Uses: It is strictly prohibited to use this Suite to generate and publicly disseminate on the internet any content that violates local laws and regulations, including but not limited to pornography, violent terrorism, hate speech, privacy infringement, or defamation.',
                 '6. Usage Restrictions',
-                '6.1 Age Restriction: This Suite is for adults only. If the laws of your jurisdiction require a higher age for similar content or game mods, those requirements apply. You must confirm compliance before first use; if you are under 18 or lack full civil capacity, stop using and delete this Suite immediately. ChatAI Service does not provide personal information processing services to users under 14 years of age; if Developer discovers a user is under 14, it will notify the guardian and seek ratification, or delete the personal information.',
+                '6.1 Age Restriction: This Suite is for adults only. If the laws of your jurisdiction require a higher age for similar content or game mods, those requirements apply. You must confirm compliance before first use; if you are under 18 or lack full civil capacity, stop using and delete this Suite immediately. NexusVAI Service does not provide personal information processing services to users under 14 years of age; if Developer discovers a user is under 14, it will notify the guardian and seek ratification, or delete the personal information.',
                 '6.2 Game Mod Online Restriction: STRICTLY PROHIBITED from using any part of this Suite in GTA Online or any Rockstar official multiplayer service. Any resulting account bans are your sole responsibility. Export Control: When using cloud API mode, ensure your network environment and calling behavior comply with applicable export control laws. Developer assumes no joint liability for bans or legal repercussions caused by non-compliant API calls.',
                 '6.3 Commercial Monetization Prohibition: The Suite shall not be used for any illegal purpose or commercial monetization in any form unless prior written authorization is obtained from Developer.',
                 '6.4 Reverse Engineering Restriction: Unless permitted by original licenses of third-party components, you shall not reverse engineer, decompile, or disassemble the proprietary parts of Developer (except Sentience under MIT License).',
                 '6.5 Game Mod Offline Recommendation: Recommended to use in single-player/offline mode to reduce risk of bans; Developer does not guarantee safety in online multiplayer mode.',
-                '6.6 ChatAI Service Usage Restrictions: (1) Account sharing prohibited: Each ChatAI account is for personal use only; do not share credentials with third parties. Developer may detect and handle shared accounts. (2) Quota abuse prohibited: Do not circumvent free quota limits or paid subscription caps via multi-account registration, fingerprint spoofing, automated scripts, or other technical means. (3) Automated access prohibited: Do not use bots, scrapers, or unauthorized automated scripts to bulk-access ChatAI Service APIs. (4) Service abuse prohibited: Do not engage in behavior that damages service stability, fairness, or other users\' experience.',
+                '6.6 NexusVAI Service Usage Restrictions: (1) Account sharing prohibited: Each NexusVAI account is for personal use only; do not share credentials with third parties. Developer may detect and handle shared accounts. (2) Quota abuse prohibited: Do not circumvent free quota limits or paid subscription caps via multi-account registration, fingerprint spoofing, automated scripts, or other technical means. (3) Automated access prohibited: Do not use bots, scrapers, or unauthorized automated scripts to bulk-access NexusVAI Service APIs. (4) Service abuse prohibited: Do not engage in behavior that damages service stability, fairness, or other users\' experience.',
                 '7. Disclaimer of Warranties & Limitation of Liability',
                 '7.1 Provided "As Is": The Suite is provided "AS IS"; Developer makes no express or implied warranties including but not limited to merchantability, fitness for a particular purpose, non-infringement, or defect-free.',
                 '7.2 No Guarantee of Availability: Developer does not guarantee the Suite will continue uninterrupted, secure, error-free, or fully meet expectations; nor does it guarantee the availability or stability of any third-party services or models.',
                 '7.3 Risk Self-Assumed: To the maximum extent permitted by applicable law, except for damages caused by Developer\'s intentional acts or gross negligence, Developer shall not be liable for indirect, incidental, consequential, or profit losses, account risks (including bans), save corruption, or unavailability of third-party services arising from downloading, installing, or using the Suite.',
                 '7.4 Unofficial Channel Risk: This Suite is only released for free on Developer-specified official channels. Developer assumes no responsibility for losses, malware infections, or data breaches from Suite obtained through unauthorized channels.',
-                '7.5 Limitation of Liability: To the maximum extent permitted by applicable law, except for damages caused by Developer\'s intentional acts or gross negligence, Developer shall not be liable for any indirect, special, punitive, or consequential damages. For ChatAI paid users, maximum liability for direct damages attributable to Developer is limited to subscription fees actually paid by the user to Developer in the prior 12 months; for free users, maximum liability shall not exceed RMB 100 or the statutory minimum compensation, whichever is higher.',
-                '7.6 ChatAI Paid Subscription Refund Policy: ChatAI subscriptions are activated via activation codes and take effect immediately; unused remaining quota is non-refundable as cash. If service experiences a serious defect attributable to Developer (single continuous outage exceeding 72 hours without compensation), users may request pro-rated compensation. Top-up credits once activated and consumed are non-refundable; if completely unused, users may request a refund within 7 days of activation. Statutory consumer rights are not limited by this policy.',
+                '7.5 Limitation of Liability: To the maximum extent permitted by applicable law, except for damages caused by Developer\'s intentional acts or gross negligence, Developer shall not be liable for any indirect, special, punitive, or consequential damages. For NexusVAI paid users, maximum liability for direct damages attributable to Developer is limited to subscription fees actually paid by the user to Developer in the prior 12 months; for free users, maximum liability shall not exceed RMB 100 or the statutory minimum compensation, whichever is higher.',
+                '7.6 NexusVAI Paid Subscription Refund Policy: NexusVAI subscriptions are activated via activation codes and take effect immediately; unused remaining quota is non-refundable as cash. If service experiences a serious defect attributable to Developer (single continuous outage exceeding 72 hours without compensation), users may request pro-rated compensation. Top-up credits once activated and consumed are non-refundable; if completely unused, users may request a refund within 7 days of activation. Statutory consumer rights are not limited by this policy.',
                 '7.7 Installer & Security Software: The one-click installer may be flagged by antivirus software (e.g., Windows Defender). This is common for unsigned game patches. Users must judge and decide whether to trust. Developer assumes NO responsibility for game failure or file damage caused by installer or antivirus interference. Back up your GTA V root directory before use.',
                 '7.8 API Key Security: API Key is stored in plain text in local config.ini. Do NOT share this file or configure cloud API on public/shared devices. Developer will not collect your Key, but cannot prevent you from self-leaking. Any charges or losses from leakage are your full responsibility.',
                 '7.9 This limitation of liability is not intended to circumvent statutory non-excludable liability for intentional or gross negligence.',
                 '7.10 User Indemnification: You agree to indemnify Developer for any third-party claims, administrative penalties, lawsuits, or economic losses (including reasonable attorney fees) caused by your violation of this Agreement.',
                 '8. Maintenance, Updates & Agreement Changes',
                 '8.1 Developer may update, maintain, or change Suite functions from time to time. For modifications to this Agreement, Developer will publish change descriptions on the Mod release page/repository and mark the effective date. For material changes affecting user rights and obligations, Developer will provide prominent notice via release page announcement, update log, or first-launch prompt. Continued use after changes take effect constitutes acceptance of the updated Agreement.',
-                '8.2 For material changes to ChatAI Service personal information processing practices (including adding new data types, changing purposes, or changing cross-border transfer destinations), Developer will separately notify users via ChatAI interface popup or registered email, and will only continue processing after users re-confirm consent; if users do not consent, they may stop using ChatAI Service and request deletion of their personal information.',
+                '8.2 For material changes to NexusVAI Service personal information processing practices (including adding new data types, changing purposes, or changing cross-border transfer destinations), Developer will separately notify users via NexusVAI interface popup or registered email, and will only continue processing after users re-confirm consent; if users do not consent, they may stop using NexusVAI Service and request deletion of their personal information.',
                 '8.3 If you do not agree to any changes, stop using and delete the Suite.',
                 '9. Intellectual Property',
                 '9.1 Sentience source code copyright belongs to Developer, its use is subject to MIT License, you may freely copy, modify, distribute under MIT terms.',
@@ -1713,11 +1838,11 @@ const articleData = {
                 'Or email: nexusvai@139.com / nexusvai@foxmail.com (subject: "NexusV — Issue Report/Data Request");',
                 'Do NOT send API Keys, passwords, ID numbers or other sensitive information via email or Issue.',
                 'Developer will confirm receipt within a reasonable time (typically within 15 business days) and handle or provide a plan within feasible scope. If legal issues are involved, Developer reserves the right to transfer information to law enforcement or rights holders.',
-                '10.2 ChatAI User Data Rights: ChatAI Service users have the following rights regarding their personal information, exercisable via the above contact methods: (1) Right to know and decide; (2) Right of access; (3) Right to copy (in electronic readable format); (4) Right to correction; (5) Right to erasure: when processing purpose is achieved, consent is withdrawn, or Developer processes unlawfully; (6) Right to withdraw consent (without affecting lawfulness of prior processing); (7) Right to data portability (where technically feasible). Developer will respond within 15 business days of receiving a request.',
+                '10.2 NexusVAI User Data Rights: NexusVAI Service users have the following rights regarding their personal information, exercisable via the above contact methods: (1) Right to know and decide; (2) Right of access; (3) Right to copy (in electronic readable format); (4) Right to correction; (5) Right to erasure: when processing purpose is achieved, consent is withdrawn, or Developer processes unlawfully; (6) Right to withdraw consent (without affecting lawfulness of prior processing); (7) Right to data portability (where technically feasible). Developer will respond within 15 business days of receiving a request.',
                 '11. Termination',
                 '11.1 Termination for User Breach: If a user violates any terms of this Agreement, Developer has the right to terminate the user\'s license to use the closed-source components of the Suite and request deletion of all copies; Developer may also take further technical or legal measures.',
                 '11.2 Termination Due to Copyright Holder Requests: If Developer receives a Cease & Desist notice from Take-Two Interactive or Rockstar Games, Developer has the right to permanently cease maintenance, remove files, and terminate cloud services at any time, unconditionally, and without prior notice, without liability to users except as required by mandatory law.',
-                '11.3 ChatAI Service Termination and Data Handling: When terminating ChatAI Service, Developer will notify users at least 30 days in advance via registered email or ChatAI interface, and provide a means to export conversation history before termination. After termination, Developer will process user data per the retention periods in Section 4.6 item (13) and delete after expiry. Paid users with unexpired subscriptions will receive pro-rated refunds (for activation code subscriptions, refund method to be negotiated).',
+                '11.3 NexusVAI Service Termination and Data Handling: When terminating NexusVAI Service, Developer will notify users at least 30 days in advance via registered email or NexusVAI interface, and provide a means to export conversation history before termination. After termination, Developer will process user data per the retention periods in Section 4.6 item (13) and delete after expiry. Paid users with unexpired subscriptions will receive pro-rated refunds (for activation code subscriptions, refund method to be negotiated).',
                 '11.4 Termination of this Agreement does not affect liabilities and obligations that have arisen before termination.',
                 '12. Governing Law & Dispute Resolution',
                 '12.1 Governing Law: The establishment, execution, and interpretation of this Agreement shall be governed by the laws of the People\'s Republic of China; however, if the mandatory laws of the user\'s judicial district conflict with this Agreement, the mandatory laws of the user\'s location shall prevail.',
@@ -1726,8 +1851,8 @@ const articleData = {
                 '13.1 Severability: If any terms of this Agreement are ruled wholly or partially invalid by a court with jurisdiction, it does not affect the validity of other terms.',
                 '13.2 Entire Agreement: This Agreement constitutes the complete agreement between you and Developer regarding the Suite, superseding any prior negotiations and agreements (but not affecting the binding force of original licenses of third-party components).',
                 '13.3 Acceptance: Any version update information, announcements, or Agreement updates displayed when the Suite starts — for material changes with prominent notice, your clicking confirm on first launch or continued use after becoming aware constitutes acceptance. In case of any discrepancy between the Chinese and English versions, the Chinese version shall prevail.',
-                '13.4 Children\'s Privacy: ChatAI Service is not directed to users under 14 years of age. Developer does NOT knowingly collect personal information from users under 14. If a guardian believes a minor has provided personal information without consent, please contact Developer for prompt deletion after verification.',
-                '13.5 Data Security Measures: Developer uses industry-standard security measures to protect user data in ChatAI Service, including HTTPS encrypted transmission, database access controls, and row-level security (RLS) policies. No security measures can provide absolute guarantees. In the event of a data breach that may affect user personal information security, Developer will notify affected users and report to relevant regulatory authorities as required by applicable law.',
+                '13.4 Children\'s Privacy: NexusVAI Service is not directed to users under 14 years of age. Developer does NOT knowingly collect personal information from users under 14. If a guardian believes a minor has provided personal information without consent, please contact Developer for prompt deletion after verification.',
+                '13.5 Data Security Measures: Developer uses industry-standard security measures to protect user data in NexusVAI Service, including HTTPS encrypted transmission, database access controls, and row-level security (RLS) policies. No security measures can provide absolute guarantees. In the event of a data breach that may affect user personal information security, Developer will notify affected users and report to relevant regulatory authorities as required by applicable law.',
                 '13.6 Transparency & Security Audit: Sentience module is open source. Developer invites and encourages users and third parties to audit its network request behavior, data processing logic, and code implementation. Developer is committed to code transparency and community oversight to ensure the security and compliance of this Suite.'
             ]
         }
@@ -2227,8 +2352,15 @@ function sanitizeArticleNode(node) {
 }
 
 function renderArticleParagraph(p, html) {
+    let safeHtml = html;
+    if (typeof DOMPurify !== 'undefined') {
+        safeHtml = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['a', 'br', 'code', 'em', 'i', 'strong', 'b'],
+            ALLOWED_ATTR: ['href'],
+        });
+    }
     const template = document.createElement('template');
-    template.innerHTML = html;
+    template.innerHTML = safeHtml;
     template.content.childNodes.forEach(child => {
         p.appendChild(sanitizeArticleNode(child));
     });
@@ -2327,6 +2459,53 @@ function initArticlePage() {
         if (bodyEl) {
             bodyEl.replaceChildren();
             (data.paragraphs || []).forEach(t => {
+                if (typeof t === 'string' && t.startsWith('__FIGURE__|')) {
+                    const parts = t.split('|');
+                    const src = parts[1] || '';
+                    const caption = parts[2] || '';
+                    const fig = document.createElement('figure');
+                    fig.className = 'article-figure';
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.alt = caption;
+                    img.loading = 'lazy';
+                    img.decoding = 'async';
+                    fig.appendChild(img);
+                    if (caption) {
+                        const cap = document.createElement('figcaption');
+                        cap.textContent = caption;
+                        fig.appendChild(cap);
+                    }
+                    bodyEl.appendChild(fig);
+                    return;
+                }
+                if (typeof t === 'string' && t.startsWith('__PDF__|')) {
+                    const parts = t.split('|');
+                    const src = parts[1] || '';
+                    const caption = parts[2] || '';
+                    const wrap = document.createElement('div');
+                    wrap.className = 'article-pdf-embed';
+                    const iframe = document.createElement('iframe');
+                    iframe.src = src;
+                    iframe.title = caption || 'PDF';
+                    iframe.loading = 'lazy';
+                    wrap.appendChild(iframe);
+                    if (caption) {
+                        const cap = document.createElement('p');
+                        cap.className = 'article-pdf-caption';
+                        cap.textContent = caption;
+                        wrap.appendChild(cap);
+                    }
+                    const link = document.createElement('a');
+                    link.href = src;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.className = 'article-pdf-link';
+                    link.textContent = lang === 'en' ? 'Open PDF in new tab ↗' : '在新窗口打开 PDF ↗';
+                    wrap.appendChild(link);
+                    bodyEl.appendChild(wrap);
+                    return;
+                }
                 const p = document.createElement('p');
                 renderArticleParagraph(p, t);
                 bodyEl.appendChild(p);
@@ -2444,11 +2623,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (sentienceV52mens, tactfr627, news3)
+        // Scrollable List (blackboardPhase0 first, then sentienceV52mens, tactfr627)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['sentienceV52mens', 'tactfr627', 'news3'];
-            const linkTargets = ['sentienceV52mens', 'tactfr627', 'news3'];
+            const listIds = ['blackboardPhase0', 'sentienceV52mens', 'tactfr627'];
+            const linkTargets = ['blackboardPhase0', 'sentienceV52mens', 'tactfr627'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
@@ -2495,7 +2674,7 @@ function initIndexPage() {
         // News Grid (n2, news1...news8)
         if (newsGrid) {
             newsGrid.innerHTML = '';
-            ['news10', 'n2', 'news9', 'news1', 'news2', 'sentienceOriginal', 'news4', 'news5', 'n1', 'news7', 'news8'].forEach(id => {
+            ['news3', 'news10', 'n2', 'news9', 'news1', 'news2', 'sentienceOriginal', 'news4', 'news5', 'n1', 'news7', 'news8'].forEach(id => {
                 const item = articleData[id];
                 if (!item) return;
                 const data = item[lang] || item.zh;
@@ -2524,7 +2703,7 @@ function initIndexPage() {
 
         if (featureStrip) {
             featureStrip.innerHTML = '';
-            ['news9', 'n2', 'n1', 'sentienceOriginal'].forEach(id => {
+            ['news9', 'blackboardPhase0', 'n1', 'sentienceOriginal'].forEach(id => {
                 const item = articleData[id];
                 if (!item) return;
                 const data = item[lang] || item.zh;
@@ -2532,7 +2711,9 @@ function initIndexPage() {
                 card.className = 'latest-news-feature-card';
                 card.href = `article.html?id=${id}`;
 
-                const fallbackImg = (item.media && item.media.src) || 'Logo/I2.webp';
+                const fallbackImg = (item.media && item.media.type === 'video' && item.media.poster)
+                    ? item.media.poster
+                    : (item.media && item.media.src) || 'Logo/I2.webp';
                 const onError = `this.onerror=null;this.src='Logo/I2.webp'`;
 
                 card.innerHTML = `

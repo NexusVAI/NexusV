@@ -27,7 +27,7 @@
   window.__cancri_fingerprint_loaded = true;
 
   // ── 配置 ──────────────────────────────────────────────────────────
-  var SUPABASE_URL = window.__SUPABASE_URL__ || 'https://diusqgphvybnzazgopor.supabase.co';
+  var SUPABASE_URL = window.__SUPABASE_URL__ || 'https://chat.nexusvai.xyz';
   var SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
   var GW = SUPABASE_URL + '/functions/v1/chat-gateway';
 

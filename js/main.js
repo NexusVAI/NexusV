@@ -460,18 +460,30 @@ window.initLazyVideo = initLazyVideo;
 
 // AI Hero 功能
 const AI_HERO = {
-    placeholders: [
-        "TACTFR 6.0.0 Beta.2.7 有哪些新功能？",
-        "SentienceV5.2 Mens 有什么新能力？",
-        "如何安装 NexusV 模组？",
-        "NexusV 支持哪些游戏？",
-        "解释 TACTFR 的 AI 驱动 NPC 系统",
-        "Sentience 的实时对话能力如何使用？",
-        "TACTFR 模组的最佳配置是什么？",
-        "如何在游戏中启用 Sentience 功能？"
-    ],
+    placeholderKeys: ['ai.ph.1', 'ai.ph.2', 'ai.ph.3', 'ai.ph.4', 'ai.ph.5', 'ai.ph.6', 'ai.ph.7', 'ai.ph.8'],
     currentIndex: 0,
     intervalId: null,
+    lastLang: null,
+
+    getPlaceholders(lang) {
+        const resolvedLang = lang || localStorage.getItem('lang') || 'zh';
+        const dict = window.translations && window.translations[resolvedLang];
+        if (!dict) return [];
+        return this.placeholderKeys.map((key) => dict[key]).filter(Boolean);
+    },
+
+    refreshLang(input, lang) {
+        const resolvedLang = lang || localStorage.getItem('lang') || 'zh';
+        if (resolvedLang !== this.lastLang) {
+            this.currentIndex = 0;
+            this.lastLang = resolvedLang;
+        }
+        const placeholders = this.getPlaceholders(resolvedLang);
+        if (!placeholders.length || !input || input.value) return;
+        this.stopRotation();
+        input.placeholder = placeholders[this.currentIndex];
+        this.startRotation(input, resolvedLang);
+    },
 
     init() {
         const input = document.getElementById('aiInput');
@@ -480,8 +492,8 @@ const AI_HERO = {
 
         if (!input) return;
 
-        // 开始占位文案轮换
-        this.startRotation(input);
+        this.lastLang = localStorage.getItem('lang') || 'zh';
+        this.refreshLang(input);
 
         // 发送按钮点击
         if (sendBtn) {
@@ -511,7 +523,7 @@ const AI_HERO = {
                 this.stopRotation();
                 input.placeholder = '';
             } else {
-                this.startRotation(input);
+                this.refreshLang(input);
             }
         });
 
@@ -519,20 +531,28 @@ const AI_HERO = {
         input.addEventListener('focus', () => this.stopRotation());
         input.addEventListener('blur', () => {
             if (!input.value) {
-                this.startRotation(input);
+                this.refreshLang(input);
             }
+        });
+
+        window.addEventListener('languageChanged', (e) => {
+            this.refreshLang(input, e.detail && e.detail.lang);
         });
     },
 
-    startRotation(input) {
+    startRotation(input, lang) {
         if (this.intervalId) return;
 
-        // 立即设置第一个
-        input.placeholder = this.placeholders[this.currentIndex];
+        const placeholders = this.getPlaceholders(lang);
+        if (!placeholders.length) return;
+
+        input.placeholder = placeholders[this.currentIndex];
 
         this.intervalId = setInterval(() => {
-            this.currentIndex = (this.currentIndex + 1) % this.placeholders.length;
-            input.placeholder = this.placeholders[this.currentIndex];
+            const list = this.getPlaceholders();
+            if (!list.length) return;
+            this.currentIndex = (this.currentIndex + 1) % list.length;
+            input.placeholder = list[this.currentIndex];
         }, 3000);
     },
 
@@ -557,9 +577,15 @@ const AI_HERO = {
     }
 };
 
+window.AI_HERO = AI_HERO;
+
 window.addEventListener('nexus:components-injected', refreshInjectedUi);
 
 whenDocumentReady(() => {
     bootstrapApp();
     AI_HERO.init();
+    const input = document.getElementById('aiInput');
+    if (input && window.AI_HERO) {
+        window.AI_HERO.refreshLang(input, localStorage.getItem('lang') || 'zh');
+    }
 });
