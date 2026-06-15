@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>NexusV</title>
     <meta name="description" content="NexusV - 前沿游戏模组制作工作室，打造最具沉浸感的开放世界交互体验。">
     <meta name="keywords" content="NexusV,SentienceV4,游戏模组,开放世界,AI">
@@ -56,12 +57,12 @@
         <!-- AI 对话 Hero 区域 -->
         <section class="ai-hero" id="hero">
             <div class="ai-hero-content">
-                <h1 class="ai-hero-title">有什么可以帮你的？</h1>
+                <h1 class="ai-hero-title" data-i18n="ai.hero.title">有什么可以帮你的？</h1>
                 
                 <div class="ai-composer-wrap">
                     <div class="ai-composer">
-                        <input type="text" class="ai-composer-input" id="aiInput" placeholder="" aria-label="向 AI 提问">
-                        <button class="ai-send-btn" id="aiSendBtn" aria-label="发送">
+                        <input type="text" class="ai-composer-input" id="aiInput" placeholder="" aria-label="向 AI 提问" data-i18n-aria="ai.hero.input_label">
+                        <button class="ai-send-btn" id="aiSendBtn" aria-label="发送" data-i18n-aria="ai.hero.send">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M5 12h14M12 5l7 7-7 7"/>
                             </svg>
@@ -70,10 +71,10 @@
                 </div>
 
                 <div class="ai-chips">
-                    <button class="ai-chip" data-question="TACTFR 6.0.0 Beta.2.7 有哪些新功能？">了解 TACTFR 6.0 Beta.2.7</button>
-                    <button class="ai-chip" data-question="Sentience V4.1 什么时候发布？">探索 Sentience</button>
-                    <button class="ai-chip" data-question="如何安装 NexusV 模组？">安装指南</button>
-                    <button class="ai-chip" data-question="NexusV 支持哪些游戏？">查看支持</button>
+                    <button class="ai-chip" data-i18n="ai.chip.tactfr" data-i18n-question="ai.chip.tactfr.q">了解 TACTFR 6.0 Beta.2.7</button>
+                    <button class="ai-chip" data-i18n="ai.chip.sentience" data-i18n-question="ai.chip.sentience.q">探索 Sentience</button>
+                    <button class="ai-chip" data-i18n="ai.chip.install" data-i18n-question="ai.chip.install.q">安装指南</button>
+                    <button class="ai-chip" data-i18n="ai.chip.support" data-i18n-question="ai.chip.support.q">查看支持</button>
                 </div>
             </div>
         </section>
@@ -82,13 +83,13 @@
         <div class="content-grid">
             <!-- 左侧大卡片 (Sticky) -->
             <div class="left-column sticky-container">
-                <a href="article.html?id=cancriCode" class="card-link hero-card">
+                <a href="article.html?id=cancriV1" class="card-link hero-card">
                     <div class="image-wrapper hero-image">
-                        <img src="Logo/15933dbaacdc5cfed5b7f9fc0f14cf96.png" alt="Cancri Code" data-fallback-src="Logo/I2.webp">
+                        <img src="Logo/CancriV1-0.1B-Hero.png" alt="CancriV1-0.1B" data-fallback-src="Logo/I2.webp">
                     </div>
                     <div class="card-text">
-                        <h3 class="card-title" data-i18n="hero.title">介绍你的 AI 助理 Cancri Code</h3>
-                        <p class="card-meta"><span>产品</span> <span class="meta-time">14分钟阅读</span></p>
+                        <h3 class="card-title" data-i18n="hero.title">隆重介绍 CancriV1-0.1B</h3>
+                        <p class="card-meta"><span>研究</span> <span class="meta-time">18分钟阅读</span></p>
                     </div>
                 </a>
             </div>
@@ -134,6 +135,7 @@
     <script src="js/theme.js" defer></script>
     <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
     <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+    <script src="js/cancri_site_config.js"></script>
     <script src="js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
     <script src="js/main.js" defer></script>
     <script src="js/search.js" defer></script>
