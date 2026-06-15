@@ -124,28 +124,8 @@
 }
 
 @media (max-width: 768px) {
-    .ai-hero {
-        min-height: 300px;
-        padding: 40px 16px 30px;
-    }
-    
-    .ai-hero-title {
-        font-size: 26px;
-        margin-bottom: 24px;
-    }
-    
     .ai-composer {
         padding: 4px 4px 4px 16px;
-    }
-    
-    .ai-chips {
-        gap: 8px;
-    }
-    
-    .ai-chip {
-        font-size: 12px;
-        padding: 0 12px;
-        height: 32px;
     }
 }
 
@@ -373,13 +353,13 @@
 }
 
 @media (max-width: 768px) {
-    .main-container { padding: 58px 16px 24px; }
+    .main-container { padding: 54px 16px 24px; }
     
     /* Mobile: Vertical stack */
     .right-column.scrollable-list {
         display: flex;
         flex-direction: column;
-        gap: 32px;
+        gap: 24px;
     }
     
     /* Mobile: All images 1:1 Square */
@@ -387,21 +367,28 @@
         aspect-ratio: 1 / 1; 
         width: 100%;
         height: auto;
+        border-radius: 6px;
     }
     
-    .hero-card .card-title { font-size: 22px; }
-    .card-title { font-size: 18px; }
+    .hero-card .card-title { font-size: 22px; line-height: 1.2; }
+    .card-title { font-size: 16px; }
+    .card-meta { font-size: 12px; }
     .hero-overlay-text { font-size: 20px; }
     .card-text { padding-right: 0; }
+    .card-link .image-wrapper { margin-bottom: 12px; }
+    
+    .content-grid {
+        gap: 24px;
+    }
     
     .ai-hero {
         min-height: auto;
-        padding: 60px 16px;
+        padding: 32px 0 24px;
     }
     
     .ai-hero-title {
         font-size: 26px;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
     
     .ai-composer {
@@ -410,6 +397,7 @@
     
     .ai-chips {
         gap: 8px;
+        margin-top: 16px;
     }
     
     .ai-chip {

@@ -579,6 +579,7 @@
     .nav-links { display: none; }
     .nav-right .login-btn, .nav-right .btn-pill { display: none; }
     .nav-right { gap: 10px; }
+    .navbar-inner { padding: 0 16px; }
     .search-container--nav { display: none; }
     .search-container--mobile { display: flex; }
     .nav-right .search-container {

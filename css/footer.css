@@ -171,24 +171,24 @@
 
 @media (max-width: 768px) {
     .openai-footer {
-        padding: 48px 20px 32px;
+        padding: 40px 16px 28px;
     }
 
     .footer-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 32px 16px;
-        margin-bottom: 48px;
+        gap: 28px 12px;
+        margin-bottom: 40px;
     }
     
-    /* Increase footer text size for mobile */
     .footer-label {
-        font-size: 16px; /* Larger than desktop */
-        margin-bottom: 20px;
+        font-size: 14px;
+        margin-bottom: 12px;
     }
     
     .footer-column a {
-        font-size: 16px; /* Larger than desktop */
-        padding: 6px 0;
+        font-size: 14px;
+        padding: 4px 0;
+        margin-bottom: 8px;
     }
 
     .footer-bottom {

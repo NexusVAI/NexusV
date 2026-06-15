@@ -193,66 +193,115 @@
 
 @media (max-width: 768px) {
     .latest-news-section {
-        margin-top: 60px;
+        margin-top: 48px;
+        padding-top: 32px;
     }
 
     .latest-research-section {
-        margin-top: 60px;
+        margin-top: 48px;
         padding-top: 32px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        margin-bottom: 16px;
+        align-items: baseline;
     }
 
     .section-title {
         font-size: 16px;
+        line-height: 1.35;
+        letter-spacing: -0.01em;
+    }
+
+    .view-all-link {
+        font-size: 12px;
+        padding-bottom: 1px;
     }
 
     .news-grid-2-col {
         grid-template-columns: 1fr;
-        gap: 24px;
+        gap: 0;
+    }
+
+    .news-item-row {
+        gap: 16px;
+        padding: 12px 0;
     }
 
     .news-thumb {
-        width: 100px;
-        height: 100px;
+        width: 7.5rem;
+        height: 7.5rem;
+        border-radius: 6px;
     }
     
     .news-info {
-        height: 100px;
+        height: 7.5rem;
+        justify-content: center;
     }
 
     .news-info h3 {
-        font-size: 16px;
-        margin-bottom: 8px;
+        font-size: 15px;
+        margin-bottom: 6px;
+        line-height: 1.35;
+        -webkit-line-clamp: 3;
     }
 
     .news-info p {
-        font-size: 13px;
-    }
-
-    .latest-news-feature-strip {
-        grid-template-columns: 1fr;
-        gap: 28px;
-        margin-top: 32px;
-    }
-
-    /* OpenAI 移动端：封面保持 1:1 正方形，与桌面/粘性方格一致 */
-    .latest-news-feature-thumb {
-        aspect-ratio: 1 / 1;
-        border-radius: 8px;
-    }
-
-    .latest-news-feature-info h3 {
-        font-size: 16px;
-        line-height: 1.35;
-    }
-
-    .latest-news-feature-info p {
         font-size: 12px;
+    }
+
+    /* OpenAI 移动端：最新研究 = 横向 snap 滚动，约 3 张卡片同屏 */
+    .latest-research-section .latest-news-feature-strip {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        gap: 12px;
+        margin-top: 0;
+        margin-left: -16px;
+        margin-right: -16px;
+        padding: 0 16px 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .latest-research-section .latest-news-feature-strip::-webkit-scrollbar {
+        display: none;
+    }
+
+    .latest-research-section .latest-news-feature-card {
+        flex: 0 0 calc((100% - 24px) / 3);
+        min-width: calc((100% - 24px) / 3);
+        max-width: calc((100% - 24px) / 3);
+        scroll-snap-align: start;
+        gap: 8px;
+    }
+
+    .latest-research-section .latest-news-feature-thumb {
+        aspect-ratio: 1 / 1;
+        border-radius: 6px;
+    }
+
+    .latest-research-section .latest-news-feature-info h3 {
+        font-size: 13px;
+        line-height: 1.35;
+        letter-spacing: -0.01em;
+        -webkit-line-clamp: 3;
+    }
+
+    .latest-research-section .latest-news-feature-info p {
+        font-size: 11px;
+        line-height: 1.3;
     }
 }
 
 @media (min-width: 769px) and (max-width: 1100px) {
     .latest-news-feature-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 24px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
     }
 }
