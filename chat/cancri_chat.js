@@ -7449,6 +7449,125 @@ const ARENA_MODE_MIGRATIONS = {
 
   // 2026-06-15: Hunyuan MT 7B 消息翻译 utility（SiliconFlow，免费限速）。
   const TRANSLATE_MODEL_ID = "hunyuan-mt-7b";
+  const TRANSLATE_TARGET_PREF_KEY = "cancri.translate.targetLang";
+  const TRANSLATE_LANGUAGES = [
+    { code: "auto", label: "自动", promptName: "" },
+    { code: "ar", label: "阿拉伯语", promptName: "Arabic", rtl: true },
+    { code: "bn", label: "孟加拉语", promptName: "Bengali" },
+    { code: "bo", label: "藏语", promptName: "Tibetan" },
+    { code: "cs", label: "捷克语", promptName: "Czech" },
+    { code: "de", label: "德语", promptName: "German" },
+    { code: "en", label: "英语", promptName: "English" },
+    { code: "es", label: "西班牙语", promptName: "Spanish" },
+    { code: "fa", label: "波斯语", promptName: "Persian", rtl: true },
+    { code: "fr", label: "法语", promptName: "French" },
+    { code: "gu", label: "古吉拉特语", promptName: "Gujarati" },
+    { code: "he", label: "希伯来语", promptName: "Hebrew", rtl: true },
+    { code: "hi", label: "印地语", promptName: "Hindi" },
+    { code: "id", label: "印尼语", promptName: "Indonesian" },
+    { code: "ii", label: "彝语", promptName: "Yi" },
+    { code: "it", label: "意大利语", promptName: "Italian" },
+    { code: "ja", label: "日语", promptName: "Japanese" },
+    { code: "kk", label: "哈萨克语", promptName: "Kazakh" },
+    { code: "km", label: "高棉语", promptName: "Khmer" },
+    { code: "ko", label: "韩语", promptName: "Korean" },
+    { code: "mn", label: "蒙古语", promptName: "Mongolian" },
+    { code: "mr", label: "马拉地语", promptName: "Marathi" },
+    { code: "ms", label: "马来语", promptName: "Malay" },
+    { code: "my", label: "缅甸语", promptName: "Burmese" },
+    { code: "nl", label: "荷兰语", promptName: "Dutch" },
+    { code: "pl", label: "波兰语", promptName: "Polish" },
+    { code: "pt", label: "葡萄牙语", promptName: "Portuguese" },
+    { code: "ru", label: "俄语", promptName: "Russian" },
+    { code: "ta", label: "泰米尔语", promptName: "Tamil" },
+    { code: "te", label: "泰卢固语", promptName: "Telugu" },
+    { code: "th", label: "泰语", promptName: "Thai" },
+    { code: "tl", label: "菲律宾语", promptName: "Filipino" },
+    { code: "tr", label: "土耳其语", promptName: "Turkish" },
+    { code: "ug", label: "维吾尔语", promptName: "Uyghur", rtl: true },
+    { code: "uk", label: "乌克兰语", promptName: "Ukrainian" },
+    { code: "ur", label: "乌尔都语", promptName: "Urdu", rtl: true },
+    { code: "vi", label: "越南语", promptName: "Vietnamese" },
+    { code: "zh", label: "中文（简体）", promptName: "Chinese" },
+    { code: "zh-Hant", label: "繁体中文", promptName: "Traditional Chinese" },
+  ];
+  const TRANSLATE_LANG_BY_CODE = new Map(
+    TRANSLATE_LANGUAGES.map((item) => [item.code, item]),
+  );
+
+  function getSavedTranslateTargetLang() {
+    try {
+      const saved = localStorage.getItem(TRANSLATE_TARGET_PREF_KEY);
+      if (saved && TRANSLATE_LANG_BY_CODE.has(saved)) return saved;
+    } catch {
+      /* ignore */
+    }
+    return "auto";
+  }
+
+  function saveTranslateTargetLang(code) {
+    if (!TRANSLATE_LANG_BY_CODE.has(code)) return;
+    try {
+      localStorage.setItem(TRANSLATE_TARGET_PREF_KEY, code);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function buildTranslateLangSelectOptions(selectedCode) {
+    return TRANSLATE_LANGUAGES.map((lang) => {
+      const selected = lang.code === selectedCode ? " selected" : "";
+      return `<option value="${escapeHtml(lang.code)}"${selected}>${escapeHtml(lang.label)}</option>`;
+    }).join("");
+  }
+
+  function resolveTranslateTargetCode(targetLang, sourceText) {
+    if (targetLang === "auto") return detectAutoTranslateTarget(sourceText);
+    return TRANSLATE_LANG_BY_CODE.has(targetLang) ? targetLang : "en";
+  }
+
+  function resolveTranslateTargetLabel(targetLang, sourceText) {
+    const code = resolveTranslateTargetCode(targetLang, sourceText);
+    return TRANSLATE_LANG_BY_CODE.get(code)?.label || code;
+  }
+
+  function isTranslateTargetRtl(targetLang, sourceText) {
+    const code = resolveTranslateTargetCode(targetLang, sourceText);
+    return Boolean(TRANSLATE_LANG_BY_CODE.get(code)?.rtl);
+  }
+
+  function getTranslateCacheKey(sourceText, targetLang) {
+    return `${targetLang}\u0000${sourceText}`;
+  }
+
+  function getTranslateCache(messageDiv, sourceText, targetLang) {
+    const cache = messageDiv?._translateCache;
+    if (!cache) return null;
+    return cache.get(getTranslateCacheKey(sourceText, targetLang)) || null;
+  }
+
+  function setTranslateCache(messageDiv, sourceText, targetLang, payload) {
+    if (!messageDiv._translateCache) messageDiv._translateCache = new Map();
+    messageDiv._translateCache.set(getTranslateCacheKey(sourceText, targetLang), payload);
+  }
+
+  function createTranslateButtonHtml() {
+    return `
+      <button class="message-action-btn message-action-btn-translate" data-action="translate" title="翻译">
+        <span class="translate-action-icon" aria-hidden="true"><span class="translate-action-char">文</span><span class="translate-action-sub">A</span></span>
+      </button>
+    `;
+  }
+
+  function wireTranslateButton(messageDiv, answerBody = null) {
+    const btn = messageDiv.querySelector('[data-action="translate"]');
+    if (!btn || btn.dataset.translateWired === "1") return;
+    btn.dataset.translateWired = "1";
+    btn.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await handleMessageTranslate(messageDiv, { answerBody, forceRefresh: false });
+    });
+  }
 
   function resolveVoicePreset() {
     const key = String(state.voicePreset || "steady");
@@ -7716,7 +7835,7 @@ const ARENA_MODE_MIGRATIONS = {
       .trim();
   }
 
-  function detectTranslateTargetLang(text) {
+  function detectAutoTranslateTarget(text) {
     const sample = String(text || "").slice(0, 4000);
     const cjk = (sample.match(/[\u4e00-\u9fff]/g) || []).length;
     const latin = (sample.match(/[A-Za-z]/g) || []).length;
@@ -7726,18 +7845,22 @@ const ARENA_MODE_MIGRATIONS = {
     return "zh";
   }
 
-  function buildHunyuanTranslatePrompt(text, targetLang) {
-    const body = String(text || "").trim();
-    const lang = targetLang === "auto" ? detectTranslateTargetLang(body) : targetLang;
-    if (lang === "zh") {
-      return `Translate the following segment into Chinese, without additional explanation.\n\n${body}`;
-    }
-    return `把下面的文本翻译成English，不要额外解释。\n\n${body}`;
+  function isPrimarilyChineseSource(text) {
+    const sample = String(text || "").slice(0, 4000);
+    const cjk = (sample.match(/[\u4e00-\u9fff]/g) || []).length;
+    const latin = (sample.match(/[A-Za-z]/g) || []).length;
+    return cjk > 0 && cjk >= latin;
   }
 
-  function resolveTranslateTargetLabel(targetLang, sourceText) {
-    const lang = targetLang === "auto" ? detectTranslateTargetLang(sourceText) : targetLang;
-    return lang === "zh" ? "中文" : "English";
+  function buildHunyuanTranslatePrompt(text, targetLang) {
+    const body = String(text || "").trim();
+    const targetCode = resolveTranslateTargetCode(targetLang, body);
+    const promptName =
+      TRANSLATE_LANG_BY_CODE.get(targetCode)?.promptName || "English";
+    if (isPrimarilyChineseSource(body)) {
+      return `把下面的文本翻译成${promptName}，不要额外解释。\n\n${body}`;
+    }
+    return `Translate the following segment into ${promptName}, without additional explanation.\n\n${body}`;
   }
 
   function getAssistantTranslateSource(messageDiv, answerBody) {
@@ -7748,12 +7871,61 @@ const ARENA_MODE_MIGRATIONS = {
     return stripMarkdownForTranslate(raw);
   }
 
+  function getMessageTranslateSource(messageDiv, answerBody) {
+    if (messageDiv?.classList?.contains("user")) {
+      return stripMarkdownForTranslate(messageDiv.dataset.userText || "");
+    }
+    return getAssistantTranslateSource(messageDiv, answerBody);
+  }
+
   function removeTranslatePanel(messageDiv) {
     messageDiv?.querySelector?.(".translate-compare-panel")?.remove();
   }
 
-  function renderTranslatePanel(messageDiv, { sourceText, translatedText, targetLabel }) {
+  function bindTranslatePanelControls(
+    panel,
+    messageDiv,
+    { sourceText, targetLang, answerBody },
+  ) {
+    const select = panel.querySelector(".translate-compare-lang-select");
+    const retryBtn = panel.querySelector(".translate-compare-retry");
+    const closeBtn = panel.querySelector(".translate-compare-close");
+
+    select?.addEventListener("change", async (event) => {
+      event.stopPropagation();
+      const nextLang = String(select.value || "auto");
+      saveTranslateTargetLang(nextLang);
+      await handleMessageTranslate(messageDiv, {
+        answerBody,
+        targetLang: nextLang,
+        forceRefresh: false,
+      });
+    });
+
+    retryBtn?.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const activeLang = String(select?.value || targetLang || "auto");
+      saveTranslateTargetLang(activeLang);
+      await handleMessageTranslate(messageDiv, {
+        answerBody,
+        targetLang: activeLang,
+        forceRefresh: true,
+      });
+    });
+
+    closeBtn?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      panel.remove();
+    });
+  }
+
+  function renderTranslatePanel(
+    messageDiv,
+    { sourceText, translatedText, targetLang, targetLabel, answerBody },
+  ) {
     removeTranslatePanel(messageDiv);
+    const activeLang = targetLang || getSavedTranslateTargetLang();
+    const rtl = isTranslateTargetRtl(activeLang, sourceText);
     const panel = document.createElement("div");
     panel.className = "translate-compare-panel";
     panel.innerHTML = `
@@ -7763,7 +7935,16 @@ const ARENA_MODE_MIGRATIONS = {
           <span class="translate-compare-title">Hunyuan MT 7B</span>
           <span class="translate-compare-target">→ ${escapeHtml(targetLabel)}</span>
         </div>
-        <button type="button" class="translate-compare-close" aria-label="关闭翻译">×</button>
+        <div class="translate-compare-controls">
+          <label class="translate-compare-lang-wrap">
+            <span class="translate-compare-lang-label">译为</span>
+            <select class="translate-compare-lang-select" aria-label="选择目标语言">
+              ${buildTranslateLangSelectOptions(activeLang)}
+            </select>
+          </label>
+          <button type="button" class="translate-compare-retry" title="重新翻译">重试</button>
+          <button type="button" class="translate-compare-close" aria-label="关闭翻译">×</button>
+        </div>
       </div>
       <div class="translate-compare-grid">
         <div class="translate-compare-col">
@@ -7777,17 +7958,24 @@ const ARENA_MODE_MIGRATIONS = {
       </div>
     `;
     panel.querySelector(".translate-compare-source").textContent = sourceText;
-    panel.querySelector(".translate-compare-result").textContent = translatedText;
-    panel.querySelector(".translate-compare-close").addEventListener("click", (event) => {
-      event.stopPropagation();
-      panel.remove();
+    const resultEl = panel.querySelector(".translate-compare-result");
+    resultEl.textContent = translatedText;
+    if (rtl) resultEl.setAttribute("dir", "rtl");
+    bindTranslatePanelControls(panel, messageDiv, {
+      sourceText,
+      targetLang: activeLang,
+      answerBody,
     });
     messageDiv.appendChild(panel);
     panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 
-  function renderTranslateLoadingPanel(messageDiv, { sourceText, targetLabel }) {
+  function renderTranslateLoadingPanel(
+    messageDiv,
+    { sourceText, targetLabel, targetLang },
+  ) {
     removeTranslatePanel(messageDiv);
+    const activeLang = targetLang || getSavedTranslateTargetLang();
     const panel = document.createElement("div");
     panel.className = "translate-compare-panel is-loading";
     panel.innerHTML = `
@@ -7796,6 +7984,14 @@ const ARENA_MODE_MIGRATIONS = {
           <img src="./yuanbao-color.svg" alt="" class="translate-compare-icon" loading="lazy" decoding="async" />
           <span class="translate-compare-title">Hunyuan MT 7B</span>
           <span class="translate-compare-target">→ ${escapeHtml(targetLabel)}</span>
+        </div>
+        <div class="translate-compare-controls">
+          <label class="translate-compare-lang-wrap">
+            <span class="translate-compare-lang-label">译为</span>
+            <select class="translate-compare-lang-select" disabled aria-label="选择目标语言">
+              ${buildTranslateLangSelectOptions(activeLang)}
+            </select>
+          </label>
         </div>
       </div>
       <div class="translate-compare-grid">
@@ -7848,23 +8044,65 @@ const ARENA_MODE_MIGRATIONS = {
     return content.trim();
   }
 
-  async function handleAssistantTranslate(messageDiv, answerBody, targetLang = "auto") {
-    const sourceText = getAssistantTranslateSource(messageDiv, answerBody);
+  async function handleMessageTranslate(
+    messageDiv,
+    { answerBody = null, targetLang, forceRefresh = false } = {},
+  ) {
+    const sourceText = getMessageTranslateSource(messageDiv, answerBody);
     if (!sourceText || sourceText === "正在思考中…") {
       showToast("没有可翻译的内容");
       return;
     }
-    const targetLabel = resolveTranslateTargetLabel(targetLang, sourceText);
-    const loadingPanel = renderTranslateLoadingPanel(messageDiv, { sourceText, targetLabel });
+    const effectiveTarget = targetLang || getSavedTranslateTargetLang();
+    saveTranslateTargetLang(effectiveTarget);
+    const targetLabel = resolveTranslateTargetLabel(effectiveTarget, sourceText);
+
+    if (!forceRefresh) {
+      const cached = getTranslateCache(messageDiv, sourceText, effectiveTarget);
+      if (cached) {
+        renderTranslatePanel(messageDiv, {
+          sourceText: cached.sourceText,
+          translatedText: cached.translatedText,
+          targetLang: cached.targetLang,
+          targetLabel: cached.targetLabel,
+          answerBody,
+        });
+        return;
+      }
+    }
+
+    const loadingPanel = renderTranslateLoadingPanel(messageDiv, {
+      sourceText,
+      targetLabel,
+      targetLang: effectiveTarget,
+    });
     const translateBtn = messageDiv.querySelector('[data-action="translate"]');
     if (translateBtn) translateBtn.disabled = true;
     try {
-      const translatedText = await requestHunyuanTranslation(sourceText, targetLang);
+      const translatedText = await requestHunyuanTranslation(
+        sourceText,
+        effectiveTarget,
+      );
       loadingPanel.remove();
-      renderTranslatePanel(messageDiv, { sourceText, translatedText, targetLabel });
+      setTranslateCache(messageDiv, sourceText, effectiveTarget, {
+        sourceText,
+        targetLang: effectiveTarget,
+        translatedText,
+        targetLabel,
+      });
+      renderTranslatePanel(messageDiv, {
+        sourceText,
+        translatedText,
+        targetLang: effectiveTarget,
+        targetLabel,
+        answerBody,
+      });
     } catch (error) {
       loadingPanel.remove();
-      const reason = normalizeErrorMessage(error, "翻译服务暂时不可用，请稍后重试。");
+      const reason = normalizeErrorMessage(
+        error,
+        "翻译服务暂时不可用，请稍后重试。",
+      );
       showToast(`翻译失败：${reason}`);
     } finally {
       if (translateBtn) translateBtn.disabled = false;
@@ -11643,7 +11881,10 @@ const ARENA_MODE_MIGRATIONS = {
   
     actionsBar.appendChild(tsSpan);
     actionsBar.appendChild(copyBtn);
+    actionsBar.insertAdjacentHTML("beforeend", createTranslateButtonHtml());
     actionsBar.appendChild(retryBtn);
+
+    wireTranslateButton(messageDiv);
   
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
@@ -11931,9 +12172,7 @@ const ARENA_MODE_MIGRATIONS = {
               <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
             </svg>
           </button>
-          <button class="message-action-btn message-action-btn-translate" data-action="translate" title="翻译">
-            <span class="translate-action-icon" aria-hidden="true"><span class="translate-action-char">文</span><span class="translate-action-sub">A</span></span>
-          </button>
+          ${createTranslateButtonHtml()}
         `;
   
     thinkBlock.appendChild(thinkHeader);
@@ -12000,12 +12239,7 @@ const ARENA_MODE_MIGRATIONS = {
         await speakTextWithMimo(text);
       });
 
-    messageActions
-      .querySelector('[data-action="translate"]')
-      .addEventListener("click", async (event) => {
-        event.stopPropagation();
-        await handleAssistantTranslate(messageDiv, answerBody, "auto");
-      });
+    wireTranslateButton(messageDiv, answerBody);
   
     messageDiv._parts = {
       thinkBlock,
