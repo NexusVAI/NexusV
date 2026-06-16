@@ -7852,15 +7852,22 @@ const ARENA_MODE_MIGRATIONS = {
     return cjk > 0 && cjk >= latin;
   }
 
+  function resolveTranslatePromptLabelZh(label) {
+    return String(label || "")
+      .replace(/（[^）]*）/g, "")
+      .trim();
+  }
+
   function buildHunyuanTranslatePrompt(text, targetLang) {
     const body = String(text || "").trim();
     const targetCode = resolveTranslateTargetCode(targetLang, body);
-    const promptName =
-      TRANSLATE_LANG_BY_CODE.get(targetCode)?.promptName || "English";
+    const langMeta = TRANSLATE_LANG_BY_CODE.get(targetCode);
+    const targetNameZh = resolveTranslatePromptLabelZh(langMeta?.label || "英语");
+    const targetNameEn = langMeta?.promptName || "English";
     if (isPrimarilyChineseSource(body)) {
-      return `把下面的文本翻译成${promptName}，不要额外解释。\n\n${body}`;
+      return `把下面的文本翻译成${targetNameZh}，不要额外解释。只输出译文，不要添加原文没有的词语。\n\n${body}`;
     }
-    return `Translate the following segment into ${promptName}, without additional explanation.\n\n${body}`;
+    return `Translate the following segment into ${targetNameEn}, without additional explanation. Only output the translation; do not add words not present in the source.\n\n${body}`;
   }
 
   function getAssistantTranslateSource(messageDiv, answerBody) {
@@ -8012,7 +8019,6 @@ const ARENA_MODE_MIGRATIONS = {
 
   async function requestHunyuanTranslation(text, targetLang = "auto") {
     const session = await ensureAuthSession();
-    const prompt = buildHunyuanTranslatePrompt(text, targetLang);
     const response = await proxyFetchWithTimeout(
       EDGE_FUNCTION_URL,
       {
@@ -8020,13 +8026,9 @@ const ARENA_MODE_MIGRATIONS = {
         headers: await proxyHeaders(),
         body: JSON.stringify({
           __auth_token: session.access_token,
-          endpoint: "chat",
-          model: TRANSLATE_MODEL_ID,
-          messages: [{ role: "user", content: prompt }],
-          stream: false,
-          max_tokens: 4096,
-          temperature: 0.7,
-          top_p: 0.6,
+          endpoint: "translate",
+          text,
+          target_lang: targetLang,
         }),
       },
       60000,
