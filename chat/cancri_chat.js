@@ -11884,11 +11884,10 @@ const ARENA_MODE_MIGRATIONS = {
     actionsBar.insertAdjacentHTML("beforeend", createTranslateButtonHtml());
     actionsBar.appendChild(retryBtn);
 
-    wireTranslateButton(messageDiv);
-  
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
     messageDiv.appendChild(actionsBar);
+    wireTranslateButton(messageDiv);
     chatMessages.appendChild(messageDiv);
     setupUserMessageCollapse(bubble, textBlock);
     scrollChatToBottom(false);
