@@ -248,6 +248,8 @@ const BRAND_LOGO = {
     bilibili: "./bilibili-color.svg",
     antgroup: "./antgroup-color.svg",
     spark: "./spark-color.svg",
+    tencent: "./yuanbao-color.svg",
+    hunyuan: "./yuanbao-color.svg",
     yuanbao: "./yuanbao-color.svg",
     kling: "./kling-color.svg",
     xiaomimimo: "./xiaomimimo-color.svg",
@@ -488,6 +490,7 @@ const MODEL_ICON_OVERRIDE = {
     "kat-coder-pro-v2": "./kwaikat.svg",
     "cancriv1-0.1b": "../Logo/Cancri1.jpg",
     "nex-n2-pro-welfare": "./NEX_logo.svg",
+    "hunyuan-mt-7b": "./yuanbao-color.svg",
 };
 
 function brandLogoHtml(brand, modelId) {
