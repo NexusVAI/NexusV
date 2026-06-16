@@ -7446,6 +7446,10 @@ const ARENA_MODE_MIGRATIONS = {
         "用温柔亲切的年轻女声朗读：气息轻柔，语速舒缓，尾音微微上扬，像在耳边轻声细语；情绪温暖、不急不躁，让人感到放松。",
     },
   };
+
+  // 2026-06-15: Hunyuan MT 7B 消息翻译 utility（SiliconFlow，免费限速）。
+  const TRANSLATE_MODEL_ID = "hunyuan-mt-7b";
+
   function resolveVoicePreset() {
     const key = String(state.voicePreset || "steady");
     return VOICE_PRESETS[key] || VOICE_PRESETS.steady;
@@ -7695,6 +7699,176 @@ const ARENA_MODE_MIGRATIONS = {
     };
     __mimoCurrentSource = source;
     source.start();
+  }
+
+  function stripMarkdownForTranslate(text) {
+    if (!text || typeof text !== "string") return "";
+    return text
+      .replace(/```[\s\S]*?```/g, (block) => block.replace(/```[^\n]*\n?/g, "").replace(/```/g, ""))
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/^\s*[-*+]\s+/gm, "")
+      .replace(/^\s*\d+\.\s+/gm, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .trim();
+  }
+
+  function detectTranslateTargetLang(text) {
+    const sample = String(text || "").slice(0, 4000);
+    const cjk = (sample.match(/[\u4e00-\u9fff]/g) || []).length;
+    const latin = (sample.match(/[A-Za-z]/g) || []).length;
+    if (cjk === 0 && latin > 0) return "zh";
+    if (latin === 0 && cjk > 0) return "en";
+    if (cjk >= latin) return "en";
+    return "zh";
+  }
+
+  function buildHunyuanTranslatePrompt(text, targetLang) {
+    const body = String(text || "").trim();
+    const lang = targetLang === "auto" ? detectTranslateTargetLang(body) : targetLang;
+    if (lang === "zh") {
+      return `Translate the following segment into Chinese, without additional explanation.\n\n${body}`;
+    }
+    return `把下面的文本翻译成English，不要额外解释。\n\n${body}`;
+  }
+
+  function resolveTranslateTargetLabel(targetLang, sourceText) {
+    const lang = targetLang === "auto" ? detectTranslateTargetLang(sourceText) : targetLang;
+    return lang === "zh" ? "中文" : "English";
+  }
+
+  function getAssistantTranslateSource(messageDiv, answerBody) {
+    const raw =
+      messageDiv?._parts?.answerStreamState?.text ||
+      answerBody?.textContent ||
+      "";
+    return stripMarkdownForTranslate(raw);
+  }
+
+  function removeTranslatePanel(messageDiv) {
+    messageDiv?.querySelector?.(".translate-compare-panel")?.remove();
+  }
+
+  function renderTranslatePanel(messageDiv, { sourceText, translatedText, targetLabel }) {
+    removeTranslatePanel(messageDiv);
+    const panel = document.createElement("div");
+    panel.className = "translate-compare-panel";
+    panel.innerHTML = `
+      <div class="translate-compare-header">
+        <div class="translate-compare-brand">
+          <img src="./yuanbao-color.svg" alt="" class="translate-compare-icon" loading="lazy" decoding="async" />
+          <span class="translate-compare-title">Hunyuan MT 7B</span>
+          <span class="translate-compare-target">→ ${escapeHtml(targetLabel)}</span>
+        </div>
+        <button type="button" class="translate-compare-close" aria-label="关闭翻译">×</button>
+      </div>
+      <div class="translate-compare-grid">
+        <div class="translate-compare-col">
+          <div class="translate-compare-label">原文</div>
+          <div class="translate-compare-body translate-compare-source"></div>
+        </div>
+        <div class="translate-compare-col">
+          <div class="translate-compare-label">译文</div>
+          <div class="translate-compare-body translate-compare-result"></div>
+        </div>
+      </div>
+    `;
+    panel.querySelector(".translate-compare-source").textContent = sourceText;
+    panel.querySelector(".translate-compare-result").textContent = translatedText;
+    panel.querySelector(".translate-compare-close").addEventListener("click", (event) => {
+      event.stopPropagation();
+      panel.remove();
+    });
+    messageDiv.appendChild(panel);
+    panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function renderTranslateLoadingPanel(messageDiv, { sourceText, targetLabel }) {
+    removeTranslatePanel(messageDiv);
+    const panel = document.createElement("div");
+    panel.className = "translate-compare-panel is-loading";
+    panel.innerHTML = `
+      <div class="translate-compare-header">
+        <div class="translate-compare-brand">
+          <img src="./yuanbao-color.svg" alt="" class="translate-compare-icon" loading="lazy" decoding="async" />
+          <span class="translate-compare-title">Hunyuan MT 7B</span>
+          <span class="translate-compare-target">→ ${escapeHtml(targetLabel)}</span>
+        </div>
+      </div>
+      <div class="translate-compare-grid">
+        <div class="translate-compare-col">
+          <div class="translate-compare-label">原文</div>
+          <div class="translate-compare-body translate-compare-source"></div>
+        </div>
+        <div class="translate-compare-col">
+          <div class="translate-compare-label">译文</div>
+          <div class="translate-compare-body translate-compare-result translate-compare-loading">翻译中…</div>
+        </div>
+      </div>
+    `;
+    panel.querySelector(".translate-compare-source").textContent = sourceText;
+    messageDiv.appendChild(panel);
+    return panel;
+  }
+
+  async function requestHunyuanTranslation(text, targetLang = "auto") {
+    const session = await ensureAuthSession();
+    const prompt = buildHunyuanTranslatePrompt(text, targetLang);
+    const response = await proxyFetchWithTimeout(
+      EDGE_FUNCTION_URL,
+      {
+        method: "POST",
+        headers: await proxyHeaders(),
+        body: JSON.stringify({
+          __auth_token: session.access_token,
+          endpoint: "chat",
+          model: TRANSLATE_MODEL_ID,
+          messages: [{ role: "user", content: prompt }],
+          stream: false,
+          max_tokens: 4096,
+          temperature: 0.7,
+          top_p: 0.6,
+        }),
+      },
+      60000,
+      "translate",
+    );
+    if (!response.ok) {
+      const errPayload = await response.json().catch(() => ({}));
+      throw new Error(friendlyMessageFromBackend(errPayload, response.status));
+    }
+    const json = await response.json();
+    const content = json?.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || !content.trim()) {
+      throw new Error("翻译结果为空，请稍后重试。");
+    }
+    return content.trim();
+  }
+
+  async function handleAssistantTranslate(messageDiv, answerBody, targetLang = "auto") {
+    const sourceText = getAssistantTranslateSource(messageDiv, answerBody);
+    if (!sourceText || sourceText === "正在思考中…") {
+      showToast("没有可翻译的内容");
+      return;
+    }
+    const targetLabel = resolveTranslateTargetLabel(targetLang, sourceText);
+    const loadingPanel = renderTranslateLoadingPanel(messageDiv, { sourceText, targetLabel });
+    const translateBtn = messageDiv.querySelector('[data-action="translate"]');
+    if (translateBtn) translateBtn.disabled = true;
+    try {
+      const translatedText = await requestHunyuanTranslation(sourceText, targetLang);
+      loadingPanel.remove();
+      renderTranslatePanel(messageDiv, { sourceText, translatedText, targetLabel });
+    } catch (error) {
+      loadingPanel.remove();
+      const reason = normalizeErrorMessage(error, "翻译服务暂时不可用，请稍后重试。");
+      showToast(`翻译失败：${reason}`);
+    } finally {
+      if (translateBtn) translateBtn.disabled = false;
+    }
   }
   
   async function speakTextWithMimo(text) {
@@ -11757,6 +11931,9 @@ const ARENA_MODE_MIGRATIONS = {
               <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
             </svg>
           </button>
+          <button class="message-action-btn message-action-btn-translate" data-action="translate" title="翻译">
+            <span class="translate-action-icon" aria-hidden="true"><span class="translate-action-char">文</span><span class="translate-action-sub">A</span></span>
+          </button>
         `;
   
     thinkBlock.appendChild(thinkHeader);
@@ -11821,6 +11998,13 @@ const ARENA_MODE_MIGRATIONS = {
           return;
         }
         await speakTextWithMimo(text);
+      });
+
+    messageActions
+      .querySelector('[data-action="translate"]')
+      .addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await handleAssistantTranslate(messageDiv, answerBody, "auto");
       });
   
     messageDiv._parts = {
