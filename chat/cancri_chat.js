@@ -1730,6 +1730,9 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-5.5-welfare",
     "gemini-3.5-flash-welfare",
     "gemini-3-flash-preview",
+    // 2026-06-16: Gemini 3.1 Flash Lite 系列 — Pro 起付费。
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.1-flash-lite-welfare",
   ]);
   // 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
   // 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
@@ -1759,6 +1762,9 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-5.5-welfare",
     "gemini-3.5-flash-welfare",
     "gemini-3-flash-preview",
+    // 2026-06-16: Gemini 3.1 Flash Lite 系列 — Pro 起付费。
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.1-flash-lite-welfare",
   ]);
   
   const PRO_MAX_GATE_IDS = new Set([
@@ -2397,7 +2403,6 @@ const ARENA_MODE_MIGRATIONS = {
     // 2026-06-03: Grok 4.20 统一迁到 grok-4.20-0309-console
     "grok-4.20-0309": DEFAULT_MODEL_ID,
     "grok-4.20-0309-non-reasoning": DEFAULT_MODEL_ID,
-    "deepseek-v3.2": DEFAULT_MODEL_ID,
     "deepseek-v3.2-exp": DEFAULT_MODEL_ID,
     "qwen3.6-flash": DEFAULT_MODEL_ID,
     "qwen3.6-flash-2026-04-16": DEFAULT_MODEL_ID,
@@ -2492,10 +2497,12 @@ const ARENA_MODE_MIGRATIONS = {
   const MODEL_DEPRIORITY = new Map();
   const MODEL_CATALOG = [
     {"id": "gemini-3.1-pro", "name": "Gemini 3.1 Pro", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
-    {"id": "gemini-3.1-flash-lite-preview", "name": "Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "gemini-3.1-flash-lite-preview", "name": "Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 3.5},
     {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 3.0},
-    {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
-    {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 6.5},
+    {"id": "gpt-5.4-mini", "name": "GPT-5.4 Mini", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
+    {"id": "gpt-5.4-mini-0603", "name": "GPT-5.4 Mini 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 6.0},
+    {"id": "gpt-5.4", "name": "GPT-5.4", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
+    {"id": "hunyuan-mt-7b", "name": "Hunyuan MT 7B", "brand": "Tencent", "kind": "translate", "vision": false, "thinking": false, "tools": false, "costTier": "free", "freeLimitNote": "消息翻译"},
     {"id": "step-3.5-flash", "name": "Step 3.5 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "cheap"},
     {"id": "step-3.7-flash", "name": "Step 3.7 Flash", "brand": "Stepfun", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "cancriv1-0.1b", "name": "CancriV1-0.1B", "brand": "Cancri", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cancriv1_studio"},
@@ -2550,36 +2557,37 @@ const ARENA_MODE_MIGRATIONS = {
     // 2026-05-25: 福利档 Claude Haiku 4.5（xuedingtoken.com 上游）— 全用户免费，但 per-user 并发 1 + 全局 100 RPM。
     {"id": "claude-sonnet-4.5", "name": "【福利】Claude Sonnet 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
     {"id": "nex-n2-pro-welfare", "name": "【福利】Nex-N2-Pro", "brand": "Nex", "kind": "chat", "vision": false, "thinking": true, "tools": false, "costTier": "free"},
-    {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
+    {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 10.0},
     {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
-    {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 18.0},
+    {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
     // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
     {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 0.5, "proPlusOnly": true},
     // 2026-06-15: GLM-5.2 — cheap-host1.cheapyun.com 上游。
     {"id": "glm-5.2", "name": "GLM 5.2", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     // 2026-06-09: 【订阅福利】composer-2.5-fast — newapi.makelove.cloud 上游，Pro+ 免费。
     {"id": "composer-2.5-fast", "name": "【订阅福利】composer-2.5-fast", "brand": "Cursor", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-    {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 8.0},
-    {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 4.0},
-    {"id": "gemini-3.1-flash-lite-welfare", "name": "Gemini 3.1 Flash Lite 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 9.0},
+    {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+    {"id": "gemini-3.1-flash-lite-welfare", "name": "Gemini 3.1 Flash Lite 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 3.5},
     // Google AI Studio free models
-    {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 1.0},
     {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gemini-3-flash-preview", "name": "Gemini 3 Flash", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 3.0},
     {"id": "gemma-4-31b-it", "name": "Gemma 4 31B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gemma-4-26b-a4b-it", "name": "Gemma 4 26B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-    {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-    {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "fuka"},
-    {"id": "deepseek-v4-pro-0608", "name": "DeepSeek V4 Pro 0608", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "fuka"},
+    {"id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 2.7},
+    {"id": "deepseek-v4-pro", "name": "DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "fuka", "customMultiplier": 3.0},
+    {"id": "deepseek-v4-pro-0608", "name": "DeepSeek V4 Pro 0608", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "pytn", "customMultiplier": 3.0},
     // 2026-06-12: DeepSeek V4 Pro (NVIDIA 显示名) — 上游已切魔塔 ModelScope。
-    {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "modelscope"},
+    {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "modelscope", "customMultiplier": 3.0},
     {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
-    {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-    {"id": "deepseek-r1-0528", "name": "DeepSeek R1 0528", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-    {"id": "deepseek-r1", "name": "DeepSeek R1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
-    {"id": "deepseek-v3.1", "name": "DeepSeek V3.1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+    {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 1.5},
+    {"id": "deepseek-r1-0528", "name": "DeepSeek R1 0528", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "customMultiplier": 2.5},
+    {"id": "deepseek-r1", "name": "DeepSeek R1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "customMultiplier": 2.5},
+    {"id": "deepseek-v3.1", "name": "DeepSeek V3.1", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 2.0},
+    {"id": "deepseek-v3.2", "name": "DeepSeek V3.2", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "jiuyoumao", "customMultiplier": 2.5},
     {"id": "qwen3.7-max", "name": "Qwen 3.7 Max", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
     {"id": "qwen3.7-max-2026-05-20", "name": "Qwen 3.7 Max (0520)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
     // 2026-06-09: 订阅福利模型 — Pro+ 完全免费不扣积分
@@ -2613,7 +2621,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "qwen3-32b", "name": "Qwen3 32B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
     {"id": "qwen3.5-27b", "name": "Qwen 3.5 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
     {"id": "qwen3-8b", "name": "Qwen3 8B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
-    {"id": "deepseek-r1-distill-qwen-32b", "name": "DeepSeek R1 Distill Qwen 32B", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
+    {"id": "deepseek-r1-distill-qwen-32b", "name": "DeepSeek R1 Distill Qwen 32B", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap", "customMultiplier": 0.5},
     {"id": "qwen-math-plus-0919", "name": "Qwen Math Plus (0919)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
     {"id": "qwen-plus-2025-12-01", "name": "Qwen Plus (2025-12-01)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "qwen3-max-2025-09-23", "name": "Qwen3 Max (2025-09-23)", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2655,7 +2663,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "cf:qwen3-30b-a3b", "name": "Qwen3 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "free", "lineLabel": "cloudflare"},
     // HuggingFace Router — free serverless
     {"id": "hf:qwen3.5-9b", "name": "Qwen 3.5 9B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
-    {"id": "hf:deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+    {"id": "hf:deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface", "customMultiplier": 2.7},
     {"id": "hf:gemma-3-27b", "name": "Gemma 3 27B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:llama-3.1-8b", "name": "Llama 3.1 8B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:glm-5", "name": "GLM 5", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
@@ -2705,6 +2713,7 @@ const ARENA_MODE_MIGRATIONS = {
     "Swiss AI": "./huggingface-color.svg",
     "utter-project": "./huggingface-color.svg",
     "Baichuan": "./baichuan-color.svg",
+    "Tencent": "./yuanbao-color.svg",
     "小米 MiMo": "./xiaomimimo-color.svg",
     "Nex": "./NEX_logo.svg",
   };
@@ -2720,6 +2729,7 @@ const ARENA_MODE_MIGRATIONS = {
     "kat-coder-pro-v2": "./kwaikat.svg",
     "cancriv1-0.1b": "../Logo/Cancri1.jpg",
     "nex-n2-pro-welfare": "./NEX_logo.svg",
+    "hunyuan-mt-7b": "./yuanbao-color.svg",
   };
 
   const THEME_ADAPTIVE_ICON_BRANDS = new Set(["OpenAI", "Clawto", "Cancri"]);
@@ -2759,6 +2769,7 @@ const ARENA_MODE_MIGRATIONS = {
     if (entry.thinking) tags.push("思考");
     if (entry.kind === "image") tags.push("图像");
     if (entry.kind === "video") tags.push("视频");
+    if (entry.kind === "translate") tags.push("翻译");
     if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
     const meta = {
       id: entry.id,
@@ -2770,6 +2781,7 @@ const ARENA_MODE_MIGRATIONS = {
       multimodal: !!entry.vision,
       imageOnly: entry.kind === "image",
       videoOnly: entry.kind === "video",
+      translateOnly: entry.kind === "translate",
       available: entry.available !== false,
       unavailableMessage: entry.unavailableMessage || "",
       disabled: entry.disabled === true,
@@ -6620,7 +6632,7 @@ const ARENA_MODE_MIGRATIONS = {
           cost_tier: "expensive",
           multiplier: 10,
           examples:
-            "GPT-5.2 / GPT-5.3 Codex / GPT-5.4 / GPT-5.5 / GPT-5.5 High (12x) / Mistral Large (Claude Sonnet 4.6 特惠降为 5x，Grok 4.20 特惠降为 3x！)",
+            "GPT-5.4 Mini / 0603 (6x) / GPT-5.4 (8x) / GPT-5.5 (10x) / GPT-5.5 0603 (9x) / GPT-5.5 High & XHigh (12x) / Mistral Large (Claude Sonnet 4.6 特惠降为 5x，Grok 4.20 特惠降为 3x！)",
         },
         {
           cost_tier: "vip",
@@ -15946,6 +15958,7 @@ const ARENA_MODE_MIGRATIONS = {
       state.arenaMode === "side_by_side" || state.arenaMode === "anonymous";
     const grouped = new Map();
     SELECTABLE_MODELS.forEach((model) => {
+      if (model.translateOnly) return;
       if (isArenaMode && (model.imageOnly || model.videoOnly)) return;
       const brand = model.brand || getModelBrandName(model.id);
       if (!grouped.has(brand)) grouped.set(brand, []);
