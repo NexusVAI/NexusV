@@ -18,7 +18,7 @@
     var ONBOARDING_TASK_IDS = ['importMemory', 'community', 'cancriCode'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
     var CANCRI_CODE_URL = 'https://pan.baidu.com/s/1f65FMHdo2TenrwG7gBWQhg';
-    var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/';
+    var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/status.html';
     var CANCRI_CODE_PAN_CODE = 'Nexu';
     var MEMORY_IMPORT_TEXT_LIMIT = 12000;
     var memoryImportCandidates = [];
