@@ -66,7 +66,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-18-ui-fixes" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-18-claude-layout2" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -106,7 +106,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-13-memory-slots"
+            href="./claude.css?v=2026-06-18-claude-layout5"
         />
         <link
             rel="stylesheet"
@@ -1270,6 +1270,7 @@
                             </span>
                             <span class="hero-text">你好</span>
                         </h1>
+                        <div class="composer-sticky-shell">
                         <div class="composer-wrap">
                             <div class="composer" data-workbench-composer>
                                 <div
@@ -1470,6 +1471,10 @@
                                 multiple
                                 hidden
                             />
+                        </div>
+                        <div class="composer-disclaimer" role="note" data-disclaimer="true">
+                            Cancri 是 AI，可能会犯错。请仔细核对回复。
+                        </div>
                         </div>
                         <!-- T7：免费消息额度耗尽时在输入框下方提示恢复时间。
                              由 cancri_chat.js renderFreeQuotaBanner() 控制显隐与文案。 -->
@@ -3217,7 +3222,7 @@
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=2026-06-18-ui-fixes"></script>
+        <script defer src="./cancri_chat.js?v=2026-06-18-claude-layout5"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>

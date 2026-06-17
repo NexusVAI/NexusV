@@ -109,7 +109,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-13-memory-slots"
+            href="./claude.css?v=2026-06-18-claude-layout5"
         />
         <link
             rel="stylesheet"
@@ -408,7 +408,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <span class="sidebar-label">新聊天</span>
+                                <span class="sidebar-label">New chat</span>
                                 <span class="nav-kbd-hint" aria-hidden="true">Ctrl+&#8679;+O</span>
                             </div>
                         </div>
@@ -428,7 +428,7 @@
                                         <path d="m20 20-3.5-3.5"></path>
                                     </svg>
                                 </div>
-                                <span class="sidebar-label">搜索</span>
+                                <span class="sidebar-label">Search</span>
                                 <span class="nav-kbd-hint" aria-hidden="true">Ctrl+K</span>
                             </div>
                         </div>
@@ -482,7 +482,7 @@
                                 <div class="nav-icon-slot">
                                     <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe039;</span>
                                 </div>
-                                <span class="sidebar-label">聊天</span>
+                                <span class="sidebar-label">Chats</span>
                             </div>
                         </div>
                         <div class="nav-row" id="claudeProjectsNavBtn" data-view-target="claudeProjects">
@@ -490,7 +490,7 @@
                                 <div class="nav-icon-slot">
                                     <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe0c9;</span>
                                 </div>
-                                <span class="sidebar-label">项目</span>
+                                <span class="sidebar-label">Projects</span>
                             </div>
                         </div>
                         <a
@@ -503,7 +503,7 @@
                                 <div class="nav-icon-slot">
                                     <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe017;</span>
                                 </div>
-                                <span class="sidebar-label">开放平台</span>
+                                <span class="sidebar-label">Artifacts</span>
                             </div>
                         </a>
                         <a
@@ -522,7 +522,7 @@
                                         <path class="group-hover:-translate-x-[1px] transition" d="M6.25293 6.06542C6.45509 5.95025 6.71675 5.98908 6.87598 6.17089C7.03513 6.35279 7.03933 6.6176 6.89844 6.80273L6.8291 6.87597L3.25879 10L6.8291 13.124C7.03682 13.3059 7.05771 13.6213 6.87598 13.8291C6.69413 14.0369 6.37869 14.0578 6.1709 13.876L2.1709 10.376L2.09863 10.2979C2.03528 10.2124 2 10.1082 2 10C2.00005 9.85591 2.06247 9.71893 2.1709 9.62402L6.1709 6.12402L6.25293 6.06542Z"></path>
                                     </svg>
                                 </div>
-                                <span class="sidebar-label">Cancri Code</span>
+                                <span class="sidebar-label">Code</span>
                             </div>
                         </a>
                         <a
@@ -555,7 +555,7 @@
                                 <div class="nav-icon-slot">
                                     <span class="claude-anthropicon" data-cds-anim aria-hidden="true">&#xe100;</span>
                                 </div>
-                                <span class="sidebar-label">自定义</span>
+                                <span class="sidebar-label">Customize</span>
                             </div>
                         </div>
                         </div>
@@ -585,7 +585,7 @@
                              3-dot 菜单仅占位（未来可绑批量操作）。 -->
                         <div class="claude-recent-header" data-collapsed="false">
                             <h2 class="claude-recent-title" id="claudeRecentTitle" tabindex="0" role="button" aria-expanded="true">
-                                <span class="claude-recent-title-label">最近</span>
+                                <span class="claude-recent-title-label">Recents</span>
                                 <svg class="claude-recent-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="m9 18 6-6-6-6"/>
                                 </svg>
@@ -721,7 +721,7 @@
                             <div class="account-name">未登录</div>
                             <div class="account-plan">请先登录</div>
                         </div>
-                        <button class="upgrade-btn" id="donateBtn">升级</button>
+                        <button class="upgrade-btn" id="donateBtn">Upgrade</button>
                         <!-- 2026-05-22 真 Claude 对齐：账户按钮右侧 "获取应用和扩展" 入口。
                              指向 ./code/ 桌面客户端，配 animate-ping 红点提示新功能。 -->
                         <a class="account-download-btn" id="accountDownloadBtn"
@@ -927,15 +927,15 @@
                 <div class="main-header">
                     <!-- Claude 风格中央 pill：免费计划 · 升级 -->
                     <a class="claude-plan-pill" id="claudePlanPill" href="./pricing.html" aria-label="查看 API 套餐页">
-                        <span class="claude-plan-label">免费计划</span>
+                        <span class="claude-plan-label">Free plan</span>
                         <span class="claude-plan-divider" aria-hidden="true">·</span>
-                        <span class="claude-plan-cta">升级</span>
+                        <span class="claude-plan-cta">Upgrade</span>
                     </a>
                     <div class="header-left">
                         <!-- Claude 风格当前聊天标题：仅 chatting 状态显示，by claude.css。
                              文本由 claude_ui.js 的 bindChatTitleSync 同步。 -->
                         <button class="claude-chat-title" id="claudeChatTitle" type="button">
-                            <span class="claude-chat-title-text">新聊天</span>
+                            <span class="claude-chat-title-text">New chat</span>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg>
                         </button>
                         <button
@@ -1253,6 +1253,7 @@
                             </span>
                             <span class="hero-text">你好</span>
                         </h1>
+                        <div class="composer-sticky-shell">
                         <div class="composer-wrap">
                             <div class="composer" data-workbench-composer>
                                 <div
@@ -1453,6 +1454,10 @@
                                 multiple
                                 hidden
                             />
+                        </div>
+                        <div class="composer-disclaimer" role="note" data-disclaimer="true">
+                            Cancri 是 AI，可能会犯错。请仔细核对回复。
+                        </div>
                         </div>
                         <!-- Claude 1:1 composer 顶部额度条由 claude_upgrade_quota_ui.js 注入；
                              旧 #freeQuotaBanner 保留作兼容占位。 -->
@@ -2942,7 +2947,7 @@
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=2026-06-18-ui-fixes"></script>
+        <script defer src="./cancri_chat.js?v=2026-06-18-claude-layout5"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>

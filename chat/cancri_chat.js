@@ -5415,7 +5415,14 @@ const ARENA_MODE_MIGRATIONS = {
             if (!event || !event.type) return;
             if (event.type === "reasoning") {
               const block = createReasoningBlock();
-              updateReasoningBlock(block, { text: event.text || "", thinking: false });
+              updateReasoningBlock(block, {
+                text: event.text || "",
+                thinking: false,
+              });
+              block.thinkBlock.classList.remove("is-collapsed");
+              if (block.thinkHeader) {
+                block.thinkHeader.setAttribute("aria-expanded", "true");
+              }
               parts.timelineContainer.appendChild(block.thinkBlock);
               parts.timeline.push(event);
             } else if (event.type === "tool_call") {
@@ -7707,7 +7714,7 @@ const ARENA_MODE_MIGRATIONS = {
 
   function createTranslateButtonHtml() {
     return `
-      <button class="message-action-btn message-action-btn-translate" data-action="translate" title="翻译">
+      <button class="message-action-btn message-action-btn-translate" type="button" data-action="translate" title="翻译" aria-label="Translate">
         <span class="translate-action-icon" aria-hidden="true"><span class="translate-action-char">文</span><span class="translate-action-sub">A</span></span>
       </button>
     `;
@@ -7721,6 +7728,275 @@ const ARENA_MODE_MIGRATIONS = {
       event.stopPropagation();
       await handleMessageTranslate(messageDiv, { answerBody, forceRefresh: false });
     });
+  }
+
+  function normalizeThinkDisplayText(text) {
+    return String(text || "")
+      .replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1")
+      .replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1")
+      .replace(/([，。！？；：、])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
+  }
+
+  const CLAUDE_ACTION_ICON = {
+    copy: "\uE056",
+    retry: "\uE11D",
+    edit: "\uE064",
+    speak: "\uE0C1",
+    branch: "\uE03B",
+    thumbUp: "\uE0FB",
+    thumbDown: "\uE0F9",
+  };
+
+  function formatMessageActionDate(date = new Date()) {
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  }
+
+  function claudeActionIconHtml(icon) {
+    return `<span class="claude-anthropicon message-action-icon" aria-hidden="true">${icon}</span>`;
+  }
+
+  const MESSAGE_ACTION_SVG = {
+    copy: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
+    retry: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"></path><path d="M21 3v5h-5"></path><path d="M3 12a9 9 0 1 1 2.64 6.36L3 16"></path><path d="M8 16H3v5"></path></svg>`,
+    edit: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+    speak: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`,
+    branch: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 9v6a3 3 0 0 0 3 3h3"></path></svg>`,
+    "download-md": `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+    "thumb-up": `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg>`,
+    "thumb-down": `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg>`,
+  };
+
+  function messageActionIconHtml(action, fallbackIcon) {
+    return MESSAGE_ACTION_SVG[action] || claudeActionIconHtml(fallbackIcon);
+  }
+
+  function createClaudeActionButton({ action, label, title, icon }) {
+    return `<button class="message-action-btn" type="button" data-action="${action}" aria-label="${label}" title="${title || label}">${messageActionIconHtml(action, icon)}</button>`;
+  }
+
+  function buildUserMessageActionsBar(messageDiv, resolvedIndex) {
+    const actionsBar = document.createElement("div");
+    actionsBar.className = "message-actions";
+    actionsBar.setAttribute("role", "group");
+    actionsBar.setAttribute("aria-label", "Message actions");
+
+    const inner = document.createElement("div");
+    inner.className = "message-actions-inner";
+
+    const tsSpan = document.createElement("span");
+    tsSpan.className = "message-action-ts";
+    tsSpan.textContent = formatMessageActionDate();
+
+    const btnGroup = document.createElement("div");
+    btnGroup.className = "message-actions-buttons";
+    btnGroup.innerHTML = [
+      createClaudeActionButton({
+        action: "retry",
+        label: "Retry",
+        title: "重新发送",
+        icon: CLAUDE_ACTION_ICON.retry,
+      }),
+      createClaudeActionButton({
+        action: "edit",
+        label: "Edit",
+        title: "编辑消息",
+        icon: CLAUDE_ACTION_ICON.edit,
+      }),
+      createClaudeActionButton({
+        action: "copy",
+        label: "Copy",
+        title: "复制消息",
+        icon: CLAUDE_ACTION_ICON.copy,
+      }),
+      createClaudeActionButton({
+        action: "branch",
+        label: "Branch in new chat",
+        title: "在新对话中继续",
+        icon: CLAUDE_ACTION_ICON.branch,
+      }),
+      createTranslateButtonHtml(),
+    ].join("");
+
+    inner.appendChild(tsSpan);
+    inner.appendChild(btnGroup);
+    actionsBar.appendChild(inner);
+
+    btnGroup.querySelector('[data-action="retry"]')?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const idx = Number(messageDiv.dataset.messageIndex);
+      undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+      const originalText = messageDiv.dataset.userText || "";
+      if (originalText && homeInput) {
+        homeInput.value = originalText;
+        autoResizeComposerInput();
+        updateComposerSendButton();
+        homeInput.focus();
+      }
+    });
+
+    btnGroup.querySelector('[data-action="edit"]')?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const originalText = messageDiv.dataset.userText || "";
+      if (!originalText) {
+        showToast("没有可编辑的内容");
+        return;
+      }
+      if (homeInput) {
+        homeInput.value = originalText;
+        autoResizeComposerInput();
+        updateComposerSendButton();
+        homeInput.focus();
+      }
+    });
+
+    btnGroup.querySelector('[data-action="copy"]')?.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const text = messageDiv.dataset.userText || "";
+      if (!text) {
+        showToast("没有可复制的内容");
+        return;
+      }
+      const ok = await writeTextToClipboard(text);
+      showToast(ok ? "已复制" : "复制失败");
+    });
+
+    btnGroup.querySelector('[data-action="branch"]')?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const originalText = messageDiv.dataset.userText || "";
+      if (!originalText) {
+        showToast("没有可继续的内容");
+        return;
+      }
+      if (typeof newChat === "function") {
+        newChat();
+      }
+      if (homeInput) {
+        homeInput.value = originalText;
+        autoResizeComposerInput();
+        updateComposerSendButton();
+        homeInput.focus();
+      }
+    });
+
+    wireTranslateButton(messageDiv);
+
+    return actionsBar;
+  }
+
+  function buildAssistantMessageActionsHtml() {
+    return `
+      ${createClaudeActionButton({
+        action: "copy",
+        label: "Copy",
+        title: "复制",
+        icon: CLAUDE_ACTION_ICON.copy,
+      })}
+      ${createClaudeActionButton({
+        action: "download-md",
+        label: "Download",
+        title: "下载 Markdown",
+        icon: CLAUDE_ACTION_ICON.branch,
+      })}
+      ${createClaudeActionButton({
+        action: "speak",
+        label: "Read aloud",
+        title: "朗读",
+        icon: CLAUDE_ACTION_ICON.speak,
+      })}
+      ${createClaudeActionButton({
+        action: "thumb-up",
+        label: "Give positive feedback",
+        title: "好评",
+        icon: CLAUDE_ACTION_ICON.thumbUp,
+      })}
+      ${createClaudeActionButton({
+        action: "thumb-down",
+        label: "Give negative feedback",
+        title: "差评",
+        icon: CLAUDE_ACTION_ICON.thumbDown,
+      })}
+      ${createClaudeActionButton({
+        action: "retry",
+        label: "Retry",
+        title: "重新生成",
+        icon: CLAUDE_ACTION_ICON.retry,
+      })}
+      ${createTranslateButtonHtml()}
+    `;
+  }
+
+  function retryAssistantFromMessage(messageDiv) {
+    let prev = messageDiv?.previousElementSibling;
+    while (prev && !prev.classList.contains("user")) {
+      prev = prev.previousElementSibling;
+    }
+    if (!prev) {
+      showToast("找不到对应用户消息");
+      return;
+    }
+    const idx = Number(prev.dataset.messageIndex);
+    if (!Number.isFinite(idx)) {
+      showToast("无法重新生成");
+      return;
+    }
+    undoUserMessage(idx);
+  }
+
+  function wireAssistantMessageActions(messageDiv, messageActions, answerBody) {
+    messageActions
+      .querySelector('[data-action="copy"]')
+      ?.addEventListener("click", async () => {
+        const text = answerBody.textContent || "";
+        if (!text || text === "正在思考中…") {
+          showToast("没有可复制的内容");
+          return;
+        }
+        const ok = await writeTextToClipboard(text);
+        showToast(ok ? "已复制" : "复制失败");
+      });
+
+    messageActions
+      .querySelector('[data-action="download-md"]')
+      ?.addEventListener("click", () => {
+        const md =
+          messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
+        if (!md.trim() || md === "正在思考中…") {
+          showToast("没有可下载的内容");
+          return;
+        }
+        downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
+      });
+
+    messageActions
+      .querySelector('[data-action="speak"]')
+      ?.addEventListener("click", async () => {
+        const text = getAssistantSpeakText(messageDiv, answerBody);
+        if (!text || text === "正在思考中…") {
+          showToast("没有可朗读的内容");
+          return;
+        }
+        await speakTextWithMimo(text);
+      });
+
+    messageActions
+      .querySelector('[data-action="thumb-up"]')
+      ?.addEventListener("click", () => {
+        showToast("感谢反馈");
+      });
+
+    messageActions
+      .querySelector('[data-action="thumb-down"]')
+      ?.addEventListener("click", () => {
+        showToast("感谢反馈");
+      });
+
+    messageActions
+      .querySelector('[data-action="retry"]')
+      ?.addEventListener("click", () => {
+        retryAssistantFromMessage(messageDiv);
+      });
+
+    wireTranslateButton(messageDiv, answerBody);
   }
 
   function resolveVoicePreset() {
@@ -10493,7 +10769,9 @@ const ARENA_MODE_MIGRATIONS = {
     }
   
     blockElement.classList.toggle("is-streaming", Boolean(thinking));
-    blockElement.innerHTML = renderMarkdown(nextText);
+    const isThinkBody = blockElement.classList.contains("think-body");
+    const renderText = isThinkBody ? normalizeThinkDisplayText(nextText) : nextText;
+    blockElement.innerHTML = renderMarkdown(renderText);
     // 流式输出期间 debounce KaTeX 渲染，避免每帧全量扫描导致卡顿。
     // 流结束后立即渲染一次。
     if (!thinking) {
@@ -11871,7 +12149,8 @@ const ARENA_MODE_MIGRATIONS = {
     avatar.textContent = "U";
   
     const bubble = document.createElement("div");
-    bubble.className = "message-content md-content";
+    bubble.className = "message-content md-content user-message-bubble";
+    bubble.setAttribute("data-user-message-bubble", "true");
     const normalizedContent = Array.isArray(content)
       ? extractUserMessageParts(content)
       : null;
@@ -11973,77 +12252,11 @@ const ARENA_MODE_MIGRATIONS = {
     }
     bubble.appendChild(textBlock);
   
-    // Claude-style message actions bar (timestamp + retry)
-    const actionsBar = document.createElement("div");
-    actionsBar.className = "message-actions";
-    actionsBar.setAttribute("role", "group");
-    actionsBar.setAttribute("aria-label", "Message actions");
-  
-    const tsSpan = document.createElement("span");
-    tsSpan.className = "message-action-ts";
-    const now = new Date();
-    tsSpan.textContent = now.toLocaleTimeString("zh-CN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  
-    const retryBtn = document.createElement("button");
-    retryBtn.type = "button";
-    retryBtn.className = "message-action-btn";
-    retryBtn.setAttribute("aria-label", "Retry");
-    retryBtn.title = "重新发送";
-    retryBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="1 4 1 10 7 10"></polyline>
-        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-      </svg>
-    `;
-    retryBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const idx = Number(messageDiv.dataset.messageIndex);
-      undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
-      // Also re-populate the composer with the original text
-      const originalText = messageDiv.dataset.userText || "";
-      if (originalText && homeInput) {
-        homeInput.value = originalText;
-        autoResizeComposerInput();
-        updateComposerSendButton();
-        homeInput.focus();
-      }
-    });
-  
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.className = "message-action-btn";
-    copyBtn.setAttribute("aria-label", "复制");
-    copyBtn.title = "复制消息";
-    copyBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-      </svg>
-    `;
-    copyBtn.addEventListener("click", async (event) => {
-      event.stopPropagation();
-      const text = messageDiv.dataset.userText || "";
-      if (!text) {
-        showToast("没有可复制的内容");
-        return;
-      }
-      const ok = await writeTextToClipboard(text);
-      showToast(ok ? "已复制" : "复制失败");
-    });
-  
-    actionsBar.appendChild(tsSpan);
-    actionsBar.appendChild(copyBtn);
-    actionsBar.insertAdjacentHTML("beforeend", createTranslateButtonHtml());
-    actionsBar.appendChild(retryBtn);
+    const actionsBar = buildUserMessageActionsBar(messageDiv, resolvedIndex);
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
     messageDiv.appendChild(actionsBar);
-    wireTranslateButton(messageDiv);
     chatMessages.appendChild(messageDiv);
     setupUserMessageCollapse(bubble, textBlock);
     scrollChatToBottom(false);
@@ -12179,13 +12392,30 @@ const ARENA_MODE_MIGRATIONS = {
     };
   }
 
-  // 工具链中间轮 assistant（仅 tool_calls、无 UI metadata）与 tool 消息只用于 API 续聊，不在历史回放里单独成泡。
+  // 工具链中间轮 assistant（仅 tool_calls、无可展示正文）只用于 API 续聊，不在历史回放里单独成泡。
+  // sanitizeHistoryMessage 会给所有 assistant 补 metadata，不能再用「无 metadata」判断。
   function isInternalAssistantHistoryMessage(message) {
     if (!message || message.role !== "assistant") return false;
-    if (message.metadata || message.modelMetadata) return false;
-    if (Array.isArray(message.timeline) && message.timeline.length) return false;
-    if (Array.isArray(message.tool_calls) && message.tool_calls.length) return true;
-    return false;
+    const hasToolCalls =
+      Array.isArray(message.tool_calls) && message.tool_calls.length > 0;
+    if (!hasToolCalls) return false;
+    if (message.metadata?.errorCard) return false;
+    const content =
+      typeof message.content === "string"
+        ? message.content.trim()
+        : Array.isArray(message.content)
+          ? describeContentForCompression(message.content)
+          : "";
+    if (
+      typeof content === "string" &&
+      /^!\[generated (image|video)\]\(/.test(content)
+    ) {
+      return false;
+    }
+    const hasReasoning = Boolean(String(message.reasoning || "").trim());
+    const hasTimeline =
+      Array.isArray(message.timeline) && message.timeline.length > 0;
+    return !content && !hasReasoning && !hasTimeline;
   }
 
   function cloneTimelineEvents(events) {
@@ -12264,10 +12494,35 @@ const ARENA_MODE_MIGRATIONS = {
 
   function getAssistantMessageTimeline(history, index, message) {
     const saved = cloneTimelineEvents(message?.timeline);
-    const timeline = saved.length
-      ? saved
-      : reconstructAssistantTimeline(history, index, message);
-    return timeline.map(normalizeTimelineEventForRestore);
+    const fullReasoning = String(message?.reasoning || "").trim();
+    const toolEvents = saved
+      .filter((ev) => ev?.type === "tool_call")
+      .map(normalizeTimelineEventForRestore);
+
+    // message.reasoning 是完整思考正文；timeline 里 reasoning 事件可能只存了首块 delta。
+    if (fullReasoning) {
+      const segments = fullReasoning
+        .split(/\n\n---\n\n/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      if (!toolEvents.length) {
+        return segments.map((text) => ({ type: "reasoning", text }));
+      }
+      const timeline = [];
+      const maxPairs = Math.max(segments.length, toolEvents.length + 1);
+      for (let i = 0; i < maxPairs; i += 1) {
+        if (segments[i]) timeline.push({ type: "reasoning", text: segments[i] });
+        if (toolEvents[i]) timeline.push(toolEvents[i]);
+      }
+      return timeline;
+    }
+
+    if (saved.length) {
+      return saved.map(normalizeTimelineEventForRestore);
+    }
+    return reconstructAssistantTimeline(history, index, message).map(
+      normalizeTimelineEventForRestore,
+    );
   }
 
   function captureTimelineFromDom(assistantMessageId) {
@@ -12419,7 +12674,7 @@ const ARENA_MODE_MIGRATIONS = {
     avatar.textContent = "A";
   
     const bubble = document.createElement("div");
-    bubble.className = "message-content md-content";
+    bubble.className = "message-content md-content assistant-message-bubble";
   
     const generatingIndicator = document.createElement("div");
     generatingIndicator.className = "generating-indicator";
@@ -12447,40 +12702,14 @@ const ARENA_MODE_MIGRATIONS = {
     timelineContainer.className = "assistant-timeline";
 
     const answerBody = document.createElement("div");
-    answerBody.className = "answer-body md-content";
+    answerBody.className = "answer-body md-content standard-markdown font-claude-response";
     answerBody.innerHTML = "";
 
     const messageActions = document.createElement("div");
     messageActions.className = "message-actions";
-    messageActions.innerHTML = `
-          <button class="message-action-btn" data-action="copy" title="复制">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-          </button>
-          <button class="message-action-btn" data-action="download-md" title="下载 Markdown">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-          </button>
-          <button class="message-action-btn" data-action="speak" title="朗读">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-            </svg>
-          </button>
-          <button class="message-action-btn" data-action="quote" title="引用">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
-              <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
-            </svg>
-          </button>
-          ${createTranslateButtonHtml()}
-        `;
+    messageActions.setAttribute("role", "group");
+    messageActions.setAttribute("aria-label", "Message actions");
+    messageActions.innerHTML = `<div class="message-actions-inner"><div class="message-actions-buttons">${buildAssistantMessageActionsHtml()}</div></div>`;
   
     bubble.appendChild(modelLabel);
     bubble.appendChild(generatingIndicator);
@@ -12490,60 +12719,7 @@ const ARENA_MODE_MIGRATIONS = {
     messageDiv.appendChild(bubble);
     messageDiv.appendChild(messageActions);
   
-    messageActions
-      .querySelector('[data-action="copy"]')
-      .addEventListener("click", async () => {
-        const text = answerBody.textContent || "";
-        if (!text || text === "正在思考中…") {
-          showToast("没有可复制的内容");
-          return;
-        }
-        const ok = await writeTextToClipboard(text);
-        showToast(ok ? "已复制" : "复制失败");
-      });
-  
-    messageActions
-      .querySelector('[data-action="download-md"]')
-      .addEventListener("click", () => {
-        // 优先下载原始 Markdown 源码（answerStreamState.text 保留了未渲染的
-        // markdown）；流式/历史回放都会写入它。兜底用渲染后的纯文本。
-        const md =
-          messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
-        if (!md.trim() || md === "正在思考中…") {
-          showToast("没有可下载的内容");
-          return;
-        }
-        downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
-      });
-  
-    messageActions
-      .querySelector('[data-action="quote"]')
-      .addEventListener("click", () => {
-        const text = answerBody.textContent || "";
-        if (!text || text === "正在思考中…") {
-          showToast("没有可引用的内容");
-          return;
-        }
-        // 截取前200字符作为引用
-        const quoteText = text.length > 200 ? text.slice(0, 200) + "…" : text;
-        const quotedContent = `> ${quoteText.replace(/\n/g, "\n> ")}\n\n`;
-        homeInput.value = quotedContent + homeInput.value;
-        homeInput.focus();
-        showToast("已引用到输入框");
-      });
-  
-    messageActions
-      .querySelector('[data-action="speak"]')
-      .addEventListener("click", async () => {
-        const text = getAssistantSpeakText(messageDiv, answerBody);
-        if (!text || text === "正在思考中…") {
-          showToast("没有可朗读的内容");
-          return;
-        }
-        await speakTextWithMimo(text);
-      });
-
-    wireTranslateButton(messageDiv, answerBody);
+    wireAssistantMessageActions(messageDiv, messageActions, answerBody);
   
     messageDiv._parts = {
       timelineContainer,
@@ -12868,13 +13044,18 @@ const ARENA_MODE_MIGRATIONS = {
       if (delta) {
         if (!parts.currentReasoningBlock) {
           const block = createReasoningBlock();
+          const event = { type: "reasoning", text: delta };
           block.segmentText = delta;
+          block._timelineEvent = event;
           timelineContainer.appendChild(block.thinkBlock);
-          timeline.push({ type: "reasoning", text: delta });
+          timeline.push(event);
           parts.currentReasoningBlock = block;
         } else {
           const block = parts.currentReasoningBlock;
           block.segmentText = `${block.segmentText}\n\n${delta}`.trim();
+          if (block._timelineEvent) {
+            block._timelineEvent.text = block.segmentText;
+          }
         }
       }
     }
@@ -13048,13 +13229,18 @@ const ARENA_MODE_MIGRATIONS = {
       if (!messageDiv || !messageDiv._parts) return { reasoning: "", answer: "" };
       const parts = messageDiv._parts;
       const answer = String(parts.answerStreamState?.text || "");
-      const reasoningEvents = (parts.timeline || []).filter(
-        (ev) => ev && ev.type === "reasoning",
-      );
-      const reasoning = reasoningEvents
-        .map((ev) => String(ev.text || "").trim())
-        .filter(Boolean)
-        .join("\n\n---\n\n");
+      const segments = [];
+      for (const ev of parts.timeline || []) {
+        if (!ev || ev.type !== "reasoning") continue;
+        const text = String(ev.text || "").trim();
+        if (text) segments.push(text);
+      }
+      const live = String(parts.currentReasoningBlock?.segmentText || "").trim();
+      if (live) {
+        const last = segments[segments.length - 1] || "";
+        if (last !== live) segments.push(live);
+      }
+      const reasoning = segments.join("\n\n---\n\n");
       return { reasoning, answer };
     } catch (_) {
       return { reasoning: "", answer: "" };
@@ -13204,8 +13390,8 @@ const ARENA_MODE_MIGRATIONS = {
     const partial = getPartialAssistantContent(messageId);
     const answer = String(partial.answer || "").trim() || content;
     const mergedReasoning =
-      String(partial.reasoning || "").trim() ||
-      String(reasoning || "").trim();
+      String(reasoning || "").trim() ||
+      String(partial.reasoning || "").trim();
     const messageDiv = document.getElementById(messageId);
     const timeline = messageDiv?._parts?.timeline || [];
     const timelineSnapshot = timeline.map((ev) => ({ ...ev }));

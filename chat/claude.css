@@ -8379,3 +8379,433 @@ body.claude-upgrade-modal-open {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+
+/* ───────────────────────────────────────────────────────────
+   §29. Claude.ai 参考页对齐（2026-06-18）
+   参考：1940年前数据训练的模型 - Claude (2026_6_18).html
+   ─────────────────────────────────────────────────────────── */
+html[data-theme] {
+    --composer-radius: 20px;
+    --header-h: 48px;
+}
+
+.composer-sticky-shell {
+    width: 100%;
+    max-width: var(--c-main-col);
+    margin: 0 auto;
+    padding-top: 24px;
+}
+
+#homeView:not(.chatting) .composer-disclaimer {
+    display: none !important;
+}
+
+#homeView.chatting .composer-disclaimer {
+    display: block;
+    text-align: center;
+    color: hsl(var(--text-500));
+    font-size: 12px;
+    line-height: 1.25;
+    padding: 8px 16px 0;
+    margin: 0;
+}
+
+.composer-disclaimer-link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 150ms ease;
+}
+
+.composer-disclaimer-link:hover {
+    color: hsl(var(--text-300));
+}
+
+#homeView.chatting::after {
+    display: none !important;
+    content: none !important;
+}
+
+#homeView.chatting:has(.composer-disclaimer)::after {
+    display: none !important;
+    content: none !important;
+}
+
+#homeView.chatting .composer-sticky-shell {
+    padding-top: 0;
+}
+
+#homeView.chatting .composer {
+    border-radius: 20px !important;
+    min-height: 102px !important;
+    padding: 12px 14px !important;
+    box-shadow:
+        0 0.25rem 1.25rem hsl(0 0% 0% / 3.5%),
+        0 0 0 0.5px hsl(var(--border-300) / 15%) !important;
+}
+
+#homeView.chatting .composer:hover {
+    box-shadow:
+        0 0.25rem 1.25rem hsl(0 0% 0% / 3.5%),
+        0 0 0 0.5px hsl(var(--border-200) / 30%) !important;
+}
+
+#homeView.chatting .composer:focus-within {
+    box-shadow:
+        0 0.25rem 1.25rem hsl(0 0% 0% / 7.5%),
+        0 0 0 0.5px hsl(var(--border-200) / 30%) !important;
+}
+
+#homeView.chatting .composer-wrap {
+    width: 100%;
+    margin: 0 auto;
+}
+
+#homeView.chatting .composer {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+@media (min-width: 768px) {
+    #homeView.chatting .composer {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+    }
+}
+
+#homeView.chatting .composer-input {
+    min-height: 24px !important;
+    padding: 2px 4px !important;
+}
+
+#homeView.chatting .composer-bottom {
+    gap: 4px !important;
+    padding-top: 2px !important;
+}
+
+#homeView.chatting .composer-tools-row {
+    align-items: center !important;
+    min-height: 36px !important;
+}
+
+#homeView.chatting .composer-tools,
+#homeView.chatting .composer-actions {
+    gap: 4px !important;
+}
+
+#homeView.chatting .claude-model-selector-inline .model-current {
+    min-height: 32px !important;
+    padding: 6px 10px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+}
+
+.answer-body.standard-markdown,
+.standard-markdown.answer-body {
+    display: block !important;
+    line-height: 1.65rem;
+}
+
+.answer-body.standard-markdown > *,
+.standard-markdown.answer-body > * {
+    min-width: 0;
+    margin: 0;
+}
+
+.answer-body.standard-markdown > * + *,
+.standard-markdown.answer-body > * + * {
+    margin-top: 0.35em;
+}
+
+.answer-body.standard-markdown ul,
+.answer-body.standard-markdown ol,
+.standard-markdown.answer-body ul,
+.standard-markdown.answer-body ol {
+    margin: 0.25em 0 0.5em;
+    padding-left: 1.35em;
+}
+
+.answer-body.standard-markdown li + li,
+.standard-markdown.answer-body li + li {
+    margin-top: 0.15em;
+}
+
+.answer-body.standard-markdown hr,
+.standard-markdown.answer-body hr,
+.message.assistant .answer-body hr,
+.message.assistant .message-content hr {
+    border: 0 !important;
+    border-top: 0.5px solid hsl(var(--border-200)) !important;
+    margin: 12px 6px !important;
+    height: 0 !important;
+    background: transparent !important;
+}
+
+.message.assistant .assistant-timeline .tool-call-block {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.message.assistant .assistant-timeline .tool-call-header {
+    padding: 4px 0 !important;
+    font-size: 13px !important;
+    color: hsl(var(--text-500)) !important;
+}
+
+.message.assistant .assistant-timeline .tool-call-status.done {
+    color: hsl(var(--text-500)) !important;
+    font-size: 12px !important;
+}
+
+.chat-messages .message.assistant + .message.user,
+.chat-messages .message.user + .message.assistant {
+    margin-top: 20px !important;
+}
+
+.font-claude-response {
+    font-family: var(--c-font-serif) !important;
+}
+
+.chat-messages .message.assistant .message-content {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+}
+
+.message.user .message-actions,
+.message.assistant .message-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 2px !important;
+    margin-top: 4px !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    transform: none !important;
+    transition: opacity 150ms ease !important;
+}
+
+.message.user {
+    align-items: flex-end !important;
+}
+
+.message.user .message-actions {
+    justify-content: flex-end !important;
+    width: auto !important;
+    max-width: 70%;
+}
+
+.message-actions-inner {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    color: hsl(var(--text-300));
+}
+
+.message.user .message-actions-inner {
+    min-width: 146px;
+}
+
+.message-actions-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.message.user .message-undo-btn {
+    display: none !important;
+}
+
+.message.user:hover .message-actions,
+.message.assistant:hover .message-actions,
+.message-actions:focus-within {
+    opacity: 1 !important;
+}
+
+.message-action-ts {
+    font-size: 12px !important;
+    color: hsl(var(--text-500)) !important;
+    margin-right: 8px !important;
+    line-height: 32px !important;
+    flex-shrink: 0;
+}
+
+.message-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: hsl(var(--text-400)) !important;
+}
+
+.message-action-btn:hover {
+    background: hsl(var(--bg-200) / 0.55) !important;
+    color: hsl(var(--text-100)) !important;
+}
+
+.message-action-icon,
+.message-action-btn .claude-anthropicon {
+    font-family: Anthropicons-Variable, var(--font-anthropicons, Anthropicons-Variable), sans-serif !important;
+    font-feature-settings: "liga" 0 !important;
+    font-optical-sizing: auto !important;
+    font-variation-settings: normal !important;
+    font-size: 20px !important;
+    font-weight: 433.3 !important;
+    line-height: 1 !important;
+    width: 1em !important;
+    height: 1em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.message-action-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.sidebar .nav-row {
+    min-height: 32px !important;
+    border-radius: 9px !important;
+    padding: 6px 16px !important;
+}
+
+.sidebar .nav-row-inner {
+    gap: 12px !important;
+}
+
+.sidebar .sidebar-label {
+    font-size: 14px !important;
+    line-height: 20px !important;
+}
+
+.sidebar-topbar {
+    min-height: 48px !important;
+    padding: 8px !important;
+}
+
+.account-strip {
+    min-height: 64px !important;
+    padding: 8px 12px !important;
+}
+
+.account-strip .avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+}
+
+.account-strip .account-name {
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+}
+
+.account-strip .account-plan {
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+}
+
+.main-header {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+}
+
+.claude-chat-title-text {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+#chatHistoryList .recent-item,
+#chatHistoryList .conversation-item {
+    min-height: 32px !important;
+    border-radius: 9px !important;
+    padding: 6px 16px !important;
+    font-size: 14px !important;
+}
+
+@media (pointer: coarse) {
+    .message.user .message-actions,
+    .message.assistant .message-actions {
+        opacity: 1 !important;
+    }
+}
+
+/* 思考正文：展开时可滚动；收起时必须完全折叠 */
+.message.assistant .think-block.is-collapsed .think-body {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+}
+
+.message.assistant .think-block:not(.is-collapsed) .think-body {
+    max-height: 260px;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    line-height: 1.65 !important;
+    padding: 0 0 8px !important;
+    overflow-y: auto !important;
+}
+
+.message.assistant .think-body p,
+.message.assistant .think-body li {
+    margin: 0 0 0.45em !important;
+}
+
+.message.assistant .think-body p:last-child,
+.message.assistant .think-body li:last-child {
+    margin-bottom: 0 !important;
+}
+
+.message.user .message-content {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    max-width: min(75ch, 85%) !important;
+    background: hsl(var(--bg-300)) !important;
+    color: hsl(var(--text-100)) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 10px 16px !important;
+    box-shadow: none !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    font-weight: 400 !important;
+}
+
+.message.user .user-message-text {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+}
+
+.message.assistant .message-content {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.message.assistant .answer-body.font-claude-response {
+    font-family: var(--c-font-serif) !important;
+    font-size: 15px !important;
+    line-height: 1.65rem !important;
+    color: hsl(var(--text-100)) !important;
+}
+
+.message.assistant .answer-body.font-claude-response p {
+    margin: 0 0 0.35em !important;
+}
+
+.message.assistant .answer-body.font-claude-response p:last-child {
+    margin-bottom: 0 !important;
+}
