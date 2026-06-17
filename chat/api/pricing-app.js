@@ -22,18 +22,18 @@
 //
 // 沿用 admin-*-app.js 同款做法：全部 addEventListener，无 inline onclick。
 
-// ────────── 2026-05-22 限时倍率 5 折促销 ──────────
-// 必须与后端 chat-gateway.ts / api-gateway.ts 的 PROMO_MULTIPLIER_DISCOUNT_*
-// 三个常量完全同步。窗口（UTC+8）：05-22 20:30 → 05-24 00:00。
-const PROMO_START_MS = 1779453000000; // 2026-05-22T12:30:00Z = 2026-05-22 20:30 UTC+8
-const PROMO_END_MS = 1779552000000;   // 2026-05-23T16:00:00Z = 2026-05-24 00:00 UTC+8
+// ────────── 全局模型倍率促销（已过期，618 不做全站倍率折扣）──────────
+// 窗口外 #promo-banner 自动 hidden。618 仅套餐降价，见 SUB_PROMO_*。
+const PROMO_START_MS = 1779453000000; // 2026-05-22 20:30 UTC+8（已过期）
+const PROMO_END_MS = 1779552000000;   // 2026-05-24 00:00 UTC+8（已过期）
 const PROMO_DISCOUNT = 0.5;
 
-// ────────── 2026-06-03 订阅限时折扣（4 天）──────────
-// Pro 8折 / Pro+ 85折 / Pro Max 不打折。窗口（UTC+8）：06-03 → 06-07。
-const SUB_PROMO_START_MS = 1780416000000; // 2026-06-03T00:00:00+08:00
-const SUB_PROMO_END_MS   = 1780761600000; // 2026-06-07T00:00:00+08:00
-const SUB_PROMO_DISCOUNTS = { pro: 0.8, pro_plus: 0.85 };
+// ────────── 2026-06-18 618 套餐限时折扣（3 天）──────────
+// Pro 6.18折 / Pro+ 7折 / Pro Max 8折。与 celebrate_config.subscription_discount 同步。
+// 后端 RPC 为主；此处作横幅倒计时 + RPC 失败时的展示兜底。
+const SUB_PROMO_START_MS = 1781712000000; // 2026-06-18T00:00:00+08:00
+const SUB_PROMO_END_MS   = 1781971200000; // 2026-06-21T00:00:00+08:00
+const SUB_PROMO_DISCOUNTS = { pro: 0.618, pro_plus: 0.7, pro_max: 0.8 };
 
 function isPromoActive(now) {
     return now >= PROMO_START_MS && now < PROMO_END_MS;
@@ -170,9 +170,9 @@ const CC = window.CancriCredits || {
 // 订单提交仍由 server 端重算金额，前端值不可信。
 const CLIENT_CATALOG = {
     subscription: {
-        pro: { amount: 7.92, amount_original: 9.9, discount: 0.8, label: "Pro", desc: "月 2000 积分" },
-        pro_plus: { amount: 24.65, amount_original: 29, discount: 0.85, label: "Pro+", desc: "月 8000 积分 + Opus" },
-        pro_max: { amount: 99, amount_original: 99, discount: 1.0, label: "Pro Max", desc: "月 30000 积分" },
+        pro: { amount: 6.12, amount_original: 9.9, discount: 0.618, label: "Pro", desc: "月 2000 积分" },
+        pro_plus: { amount: 20.3, amount_original: 29, discount: 0.7, label: "Pro+", desc: "月 8000 积分 + Opus" },
+        pro_max: { amount: 79.2, amount_original: 99, discount: 0.8, label: "Pro Max", desc: "月 30000 积分" },
     },
     topup: {
         topup_small: { amount: 10, label: "加油包 ¥10", desc: "1500 积分" },
@@ -235,11 +235,11 @@ async function loadPricing() {
         });
         pricingMeta = data.discount_window || pricingMeta;
 
-        // 2026-06-03: 客户端订阅折扣（后端 RPC 未覆盖时生效）。
+        // 2026-06-18 618：客户端订阅折扣（后端 RPC 未覆盖时生效）。
         // 同时修改 data 和 CLIENT_CATALOG，确保 renderPlanCards 读到折后价。
         const subNow = Date.now();
         if (subNow >= SUB_PROMO_START_MS && subNow < SUB_PROMO_END_MS) {
-            ["pro", "pro_plus"].forEach((code) => {
+            ["pro", "pro_plus", "pro_max"].forEach((code) => {
                 const d = SUB_PROMO_DISCOUNTS[code];
                 if (!d || d >= 1) return;
                 const s = sub[code];
@@ -327,7 +327,7 @@ function renderPricingSubtitle() {
         // source: 'window' = 满月一次性窗口；'weekly' = 每周末自动折扣
         const promoLabel = pricingMeta.source === "weekly"
             ? "周末限时折扣进行中"
-            : "满月折扣并未结束";
+            : (pricingMeta.active_from === "2026-06-18" ? "618 大促限时折扣" : "限时折扣进行中");
         el.innerHTML =
             '<span style="color:var(--accent);font-weight:600">' + esc(promoLabel) + '</span> · ' +
             "Pro ¥" + esc(fmtPrice(pro.amount)) +
