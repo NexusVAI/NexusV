@@ -148,6 +148,7 @@ const ARENA_MODE_MIGRATIONS = {
   const settingPanels = Array.from(document.querySelectorAll(".settings-panel"));
   
   let conversationHistory = [];
+  let loadedChatModel = "";
   const CONTEXT_TOKEN_LIMIT = 128 * 1024;
   const CONTEXT_COMPRESSION_TRIGGER = Math.floor(CONTEXT_TOKEN_LIMIT * 0.92);
   const MAX_ATTACHMENT_COUNT = 4;
@@ -2528,7 +2529,7 @@ const ARENA_MODE_MIGRATIONS = {
     // 2026-06-12: claude-opus-4-8 — prorisehub 上游（$0.7/$3.5/M），倍率 12×。
     {"id": "claude-opus-4-8", "name": "Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 12.0},
     // 2026-06-03: 【特价】claude-opus-4-7 — newapi_qwqtao 上游，normal 档 3x。
-    {"id": "claude-opus-4-7-special", "name": "【特价】Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+    {"id": "claude-opus-4-7-special", "name": "【特价】Claude Opus 4.7", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "newapi_qwqtao"},
     // 2026-05-29: deepsb 模型。
     {"id": "gpt-5.4-nano", "name": "GPT-5.4 Nano", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     // 2026-06-02: Mimo 聊天模型全部下线。
@@ -5244,6 +5245,7 @@ const ARENA_MODE_MIGRATIONS = {
     const liveGen = getGenerationByChatId(chatId);
     if (liveGen) {
       currentChatId = chatId;
+      loadedChatModel = String(liveGen.modelId || "").trim();
       conversationHistory = genCurrentMessages(liveGen);
       setActiveView("home");
       homeView.classList.add("chatting");
@@ -5272,8 +5274,11 @@ const ARENA_MODE_MIGRATIONS = {
       const chat = await loadChatHistory(chatId);
       if (chat && chat.messages) {
         currentChatId = chatId;
+        loadedChatModel = String(chat.model || "").trim();
         conversationHistory = Array.isArray(chat.messages)
-          ? chat.messages.map(sanitizeHistoryMessage)
+          ? chat.messages.map((message) =>
+              sanitizeHistoryMessage(message, loadedChatModel),
+            )
           : [];
 
         renderMessages();
@@ -5310,6 +5315,7 @@ const ARENA_MODE_MIGRATIONS = {
   function newChat() {
     exitSharedConversationMode();
     currentChatId = null;
+    loadedChatModel = "";
     conversationHistory = [];
     chatMessages.innerHTML = "";
     homeCenter.style.display = "flex";
@@ -5337,9 +5343,14 @@ const ARENA_MODE_MIGRATIONS = {
         // conversationHistory it represents (for rollback truncation).
         createUserMessage(message.content, [], i);
       } else if (message.role === "assistant") {
+        if (isInternalAssistantHistoryMessage(message)) return;
+
         const content =
           typeof message.content === "string" ? message.content : "";
-        const metadata = message.metadata || message.modelMetadata || createModelMetadata(currentModel);
+        const metadata = normalizeAssistantMetadata(
+          message.metadata || message.modelMetadata || null,
+          loadedChatModel,
+        );
 
         // 检测对战卡片格式：【模型 A】...【模型 B】...
         const duelMatch = content.match(
@@ -5398,8 +5409,9 @@ const ARENA_MODE_MIGRATIONS = {
         const id = createAssistantMessage(metadata);
         const messageDiv = document.getElementById(id);
         const parts = messageDiv?._parts;
-        if (Array.isArray(message.timeline) && message.timeline.length && parts) {
-          message.timeline.forEach((event) => {
+        const timeline = getAssistantMessageTimeline(conversationHistory, i, message);
+        if (timeline.length && parts) {
+          timeline.forEach((event) => {
             if (!event || !event.type) return;
             if (event.type === "reasoning") {
               const block = createReasoningBlock();
@@ -5415,7 +5427,7 @@ const ARENA_MODE_MIGRATIONS = {
           });
         }
         const restoredReasoning =
-          typeof message.reasoning === "string" && !message.timeline?.length
+          typeof message.reasoning === "string" && !timeline.length
             ? message.reasoning
             : "";
         updateAssistantMessage(id, {
@@ -6030,7 +6042,10 @@ const ARENA_MODE_MIGRATIONS = {
       state.sharedConversation = true;
       document.body.dataset.sharedConversation = "true";
       currentChatId = null;
-      conversationHistory = messages.map(sanitizeHistoryMessage);
+      loadedChatModel = String(payload.model || "").trim();
+      conversationHistory = messages.map((message) =>
+        sanitizeHistoryMessage(message, loadedChatModel),
+      );
       setActiveView("home");
       homeView?.classList.add("chatting");
       chatMessages?.classList.add("active");
@@ -12145,26 +12160,114 @@ const ARENA_MODE_MIGRATIONS = {
     if (homeInput) homeInput.focus();
   }
   
-  function normalizeAssistantMetadata(metadata) {
-    if (metadata === null) {
-      return {
-        modelId: "unknown",
-        modelName: "未知模型",
-        iconPath: "./openai.svg",
-      };
+  function normalizeAssistantMetadata(metadata, fallbackModelId = "") {
+    const fallback = String(
+      fallbackModelId || loadedChatModel || currentModel || DEFAULT_MODEL_ID,
+    ).trim();
+    if (metadata === null || metadata === undefined) {
+      return createModelMetadata(fallback);
     }
-    const base = metadata?.modelId ? metadata : createModelMetadata(currentModel);
+    const base = metadata?.modelId ? metadata : createModelMetadata(fallback);
     return {
-      modelId: base.modelId || "unknown",
+      modelId: base.modelId || fallback,
       modelName:
-        base.modelName || getModelDisplayName(base.modelId) || "未知模型",
-      iconPath: base.iconPath || getModelIconPath(base.modelId),
+        base.modelName || getModelDisplayName(base.modelId || fallback) || "未知模型",
+      iconPath: base.iconPath || getModelIconPath(base.modelId || fallback),
+      brand: base.brand || getModelMeta(base.modelId || fallback).brand,
       errorCard: Boolean(base.errorCard),
       retryable: Boolean(base.retryable),
     };
   }
+
+  // 工具链中间轮 assistant（仅 tool_calls、无 UI metadata）与 tool 消息只用于 API 续聊，不在历史回放里单独成泡。
+  function isInternalAssistantHistoryMessage(message) {
+    if (!message || message.role !== "assistant") return false;
+    if (message.metadata || message.modelMetadata) return false;
+    if (Array.isArray(message.timeline) && message.timeline.length) return false;
+    if (Array.isArray(message.tool_calls) && message.tool_calls.length) return true;
+    return false;
+  }
+
+  function cloneTimelineEvents(events) {
+    if (!Array.isArray(events)) return [];
+    return events
+      .filter((ev) => ev && ev.type)
+      .map((ev) => ({ ...ev }));
+  }
+
+  function extractToolCallFromHistoryPair(assistantMessage, toolMessage) {
+    const calls = Array.isArray(assistantMessage?.tool_calls)
+      ? assistantMessage.tool_calls
+      : [];
+    const toolCallId = String(toolMessage?.tool_call_id || "").trim();
+    const matched =
+      calls.find((call) => String(call?.id || "").trim() === toolCallId) ||
+      calls[0];
+    const fn = matched?.function || matched || {};
+    const result =
+      typeof toolMessage?.content === "string"
+        ? toolMessage.content
+        : JSON.stringify(toolMessage?.content ?? "");
+    return {
+      type: "tool_call",
+      id: String(matched?.id || toolCallId || "").trim(),
+      name: String(fn?.name || toolMessage?.name || "").trim(),
+      arguments: String(fn?.arguments || matched?.arguments || "").trim(),
+      status: "done",
+      result,
+    };
+  }
+
+  // 旧历史没有 timeline 时，从 reasoning 分段 + 紧邻的 tool 链重建交错时间线。
+  function reconstructAssistantTimeline(history, assistantIndex, message) {
+    const saved = cloneTimelineEvents(message?.timeline);
+    if (saved.length) return saved;
+
+    const reasoning = String(message?.reasoning || "").trim();
+    const segments = reasoning
+      ? reasoning.split(/\n\n---\n\n/).map((part) => part.trim()).filter(Boolean)
+      : [];
+
+    const toolEvents = [];
+    let cursor = assistantIndex - 1;
+    while (cursor >= 0 && history[cursor]?.role !== "user") {
+      const entry = history[cursor];
+      if (entry?.role === "tool") {
+        const prev = history[cursor - 1];
+        if (prev?.role === "assistant" && Array.isArray(prev.tool_calls) && prev.tool_calls.length) {
+          toolEvents.unshift(extractToolCallFromHistoryPair(prev, entry));
+          cursor -= 2;
+          continue;
+        }
+      }
+      cursor -= 1;
+    }
+
+    if (!segments.length && !toolEvents.length) return [];
+
+    const timeline = [];
+    const maxPairs = Math.max(segments.length, toolEvents.length + 1);
+    for (let i = 0; i < maxPairs; i += 1) {
+      if (segments[i]) timeline.push({ type: "reasoning", text: segments[i] });
+      if (toolEvents[i]) timeline.push(toolEvents[i]);
+    }
+    return timeline;
+  }
+
+  function getAssistantMessageTimeline(history, index, message) {
+    const saved = cloneTimelineEvents(message?.timeline);
+    if (saved.length) return saved;
+    return reconstructAssistantTimeline(history, index, message);
+  }
+
+  function captureTimelineFromDom(assistantMessageId) {
+    const messageDiv = document.getElementById(assistantMessageId);
+    const timeline = messageDiv?._parts?.timeline;
+    if (!Array.isArray(timeline) || !timeline.length) return null;
+    return cloneTimelineEvents(timeline);
+  }
   
-  function sanitizeHistoryMessage(message) {
+  function sanitizeHistoryMessage(message, fallbackModelId = "") {
     if (!message || typeof message !== "object") {
       return { role: "assistant", content: "" };
     }
@@ -12172,10 +12275,14 @@ const ARENA_MODE_MIGRATIONS = {
     if (sanitized.role === "assistant") {
       sanitized.metadata = normalizeAssistantMetadata(
         sanitized.metadata || sanitized.modelMetadata || null,
+        fallbackModelId,
       );
       const reasoning = String(sanitized.reasoning || "").trim();
       if (reasoning) sanitized.reasoning = reasoning;
       else delete sanitized.reasoning;
+      const timeline = cloneTimelineEvents(sanitized.timeline);
+      if (timeline.length) sanitized.timeline = timeline;
+      else delete sanitized.timeline;
     } else {
       delete sanitized.metadata;
       delete sanitized.reasoning;
@@ -13066,11 +13173,15 @@ const ARENA_MODE_MIGRATIONS = {
     const message = {
       role: "assistant",
       content,
-      metadata: normalizeAssistantMetadata(metadata),
+      metadata: normalizeAssistantMetadata(
+        metadata,
+        metadata?.modelId || loadedChatModel,
+      ),
     };
     const reasoningText = String(reasoning || "").trim();
     if (reasoningText) message.reasoning = reasoningText;
-    if (Array.isArray(timeline) && timeline.length) message.timeline = timeline;
+    const timelineSnapshot = cloneTimelineEvents(timeline);
+    if (timelineSnapshot.length) message.timeline = timelineSnapshot;
     return message;
   }
 
@@ -14649,10 +14760,12 @@ const ARENA_MODE_MIGRATIONS = {
     const out = gen.baseMessages.slice();
     if (gen.userMessage) out.push(gen.userMessage);
     for (const m of gen.turnMessages) out.push(m);
-    if (gen.partialAnswer || gen.partialReasoning) {
+    const timeline = captureTimelineFromDom(gen.assistantMessageId);
+    if (gen.partialAnswer || gen.partialReasoning || timeline?.length) {
       out.push(
         assistantHistoryMessage(gen.partialAnswer || "", gen.modelMetadata, {
           reasoning: gen.partialReasoning || "",
+          timeline,
         }),
       );
     }
@@ -15236,9 +15349,12 @@ const ARENA_MODE_MIGRATIONS = {
               });
               await commitGeneration(
                 turnGen,
-                assistantHistoryMessage(repeatedAnswer, turnModelMetadata, {
-                  reasoning: accumulatedReasoningText,
-                }),
+                assistantHistoryMessageFromDom(
+                  assistantMessageId,
+                  repeatedAnswer,
+                  turnModelMetadata,
+                  { reasoning: accumulatedReasoningText },
+                ),
               );
               return;
             }
@@ -15292,9 +15408,12 @@ const ARENA_MODE_MIGRATIONS = {
   
         await commitGeneration(
           turnGen,
-          assistantHistoryMessage(resolvedAnswer, turnModelMetadata, {
-            reasoning: accumulatedReasoningText,
-          }),
+          assistantHistoryMessageFromDom(
+            assistantMessageId,
+            resolvedAnswer,
+            turnModelMetadata,
+            { reasoning: accumulatedReasoningText },
+          ),
         );
         return;
       }

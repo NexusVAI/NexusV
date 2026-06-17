@@ -3378,6 +3378,8 @@ html[data-theme="light"] .claude-accent-dot {
 .think-block {
     margin: 0 0 4px;
     position: relative;
+    width: 100%;
+    min-width: 0;
 }
 
 .think-block[hidden] {
@@ -3385,9 +3387,11 @@ html[data-theme="light"] .claude-accent-dot {
 }
 
 .think-header {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 5px;
+    width: 100%;
+    min-width: 0;
     padding: 0 0 2px;
     border: 0;
     background: transparent;
@@ -3482,6 +3486,8 @@ html[data-theme="light"] .claude-accent-dot {
 }
 
 .think-body {
+    width: 100%;
+    min-width: 0;
     max-height: 260px;
     padding: 0 0 4px;
     font-size: 12.5px;
@@ -4144,6 +4150,9 @@ html[data-theme="light"] .claude-accent-dot {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    width: 100%;
+    min-width: 0;
+    align-self: stretch;
 }
 
 .tool-call-block {
@@ -4151,6 +4160,8 @@ html[data-theme="light"] .claude-accent-dot {
     border-radius: 10px;
     overflow: hidden;
     background: var(--panel-2);
+    width: 100%;
+    min-width: 0;
 }
 
 .tool-call-header {
