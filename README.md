@@ -103,6 +103,8 @@ API Key 在 [API 管理页](https://www.nexusvai.xyz/chat/api_keys.html) 生成�
 
 ## 项目结构（本仓库 / 前端）
 
+更详细的目录职责、提交前检查清单和第三方示例说明见 [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)。
+
 ```
 ├── index.html              # 官网首页
 ├── about.html / research.html / article.html   # 内容页
