@@ -8,6 +8,8 @@
  * ============================================================ */
 (function () {
   "use strict";
+  // 2026-06-18: Fable5 进入弹窗已下线
+  return;
 
   var SEEN_KEY = "cancri_fable5_launch_v1";
   var KILL_KEY = "cancri_fable5_launch_off";

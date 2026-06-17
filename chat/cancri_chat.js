@@ -12195,6 +12195,14 @@ const ARENA_MODE_MIGRATIONS = {
       .map((ev) => ({ ...ev }));
   }
 
+  // 历史回放里工具调用早已结束；避免 timeline 仍带 running 导致转圈常驻。
+  function normalizeTimelineEventForRestore(event) {
+    if (!event || event.type !== "tool_call") return event;
+    const copy = { ...event };
+    if (copy.status !== "failed") copy.status = "done";
+    return copy;
+  }
+
   function extractToolCallFromHistoryPair(assistantMessage, toolMessage) {
     const calls = Array.isArray(assistantMessage?.tool_calls)
       ? assistantMessage.tool_calls
@@ -12256,8 +12264,10 @@ const ARENA_MODE_MIGRATIONS = {
 
   function getAssistantMessageTimeline(history, index, message) {
     const saved = cloneTimelineEvents(message?.timeline);
-    if (saved.length) return saved;
-    return reconstructAssistantTimeline(history, index, message);
+    const timeline = saved.length
+      ? saved
+      : reconstructAssistantTimeline(history, index, message);
+    return timeline.map(normalizeTimelineEventForRestore);
   }
 
   function captureTimelineFromDom(assistantMessageId) {
@@ -14503,10 +14513,17 @@ const ARENA_MODE_MIGRATIONS = {
       status = "running",
       result = "",
     } = event || {};
+    const hasResult = Boolean(String(result || "").trim());
+    const resolvedStatus =
+      status === "failed"
+        ? "failed"
+        : status === "done" || hasResult
+          ? "done"
+          : "running";
     const block = document.createElement("div");
     block.className = "tool-call-block";
-    if (status === "running") block.classList.add("is-running");
-    if (status === "failed") block.classList.add("failed", "expanded");
+    if (resolvedStatus === "running") block.classList.add("is-running");
+    if (resolvedStatus === "failed") block.classList.add("failed", "expanded");
     block.dataset.toolCallId = id || "";
 
     const header = document.createElement("div");
@@ -14543,32 +14560,33 @@ const ARENA_MODE_MIGRATIONS = {
       "";
     nameSpan.textContent = argHint ? `${displayName}：${argHint}` : displayName;
 
-    const spinner = document.createElement("div");
-    spinner.className = "tool-call-spinner";
-
     const statusEl = document.createElement("span");
     statusEl.className = "tool-call-status";
-    if (status === "running") {
+    if (resolvedStatus === "running") {
+      const spinner = document.createElement("div");
+      spinner.className = "tool-call-spinner";
+      header.appendChild(icon);
+      header.appendChild(nameSpan);
+      header.appendChild(spinner);
       statusEl.textContent = "调用中…";
       statusEl.style.display = "none";
     } else {
-      statusEl.textContent = status === "failed" ? "失败" : "已完成";
-      statusEl.classList.add(status === "failed" ? "failed" : "done");
+      header.appendChild(icon);
+      header.appendChild(nameSpan);
+      statusEl.textContent = resolvedStatus === "failed" ? "失败" : "已完成";
+      statusEl.classList.add(resolvedStatus === "failed" ? "failed" : "done");
       statusEl.style.display = "";
     }
 
     const resultDiv = document.createElement("div");
     resultDiv.className = "tool-call-result";
-    if (status !== "running" && result) {
+    if (resolvedStatus !== "running" && result) {
       let preview = String(result || "").trim();
       if (preview.length > 800)
         preview = preview.slice(0, 800) + "\n…（结果已截断）";
       resultDiv.textContent = preview;
     }
 
-    header.appendChild(icon);
-    header.appendChild(nameSpan);
-    header.appendChild(spinner);
     header.appendChild(statusEl);
 
     header.addEventListener("click", () => {
@@ -17440,7 +17458,7 @@ const ARENA_MODE_MIGRATIONS = {
   const dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
   const openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
   // 2026-05-17 Phase A grandfather：升一版 key，所有用户重新看到公告红点。
-  const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0603_618_special_v1";
+  const NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0618_promo_v1";
   
   function openAnnouncementModal() {
     if (!announcementModal) return;
