@@ -336,6 +336,12 @@
             document.body.classList.toggle('is-chatting', isChatting);
             if (!isChatting) {
                 titleEl.textContent = '新聊天';
+                delete titleEl.dataset.savedTitle;
+                return;
+            }
+            const saved = titleEl.dataset.savedTitle;
+            if (saved) {
+                titleEl.textContent = saved;
                 return;
             }
             const t = pickFirstUserText();
@@ -343,6 +349,17 @@
         }
 
         update();
+
+        document.addEventListener('cancri:title-updated', function (e) {
+            const title = (e.detail && e.detail.title) || '';
+            if (title) {
+                titleEl.dataset.savedTitle = title;
+                titleEl.textContent = title;
+            } else {
+                delete titleEl.dataset.savedTitle;
+                update();
+            }
+        });
 
         if (typeof MutationObserver !== 'undefined') {
             // 监听 homeView class 变化（chatting 切换）

@@ -2553,7 +2553,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "doubao-seed-2-0-code-preview-260215", "name": "Doubao Seed 2.0 Code", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-    {"id": "kimi-k2.7-code", "name": "Kimi K2.7 Code", "brand": "Moonshot", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
+    {"id": "kimi-k2.7-code", "name": "Kimi K2.7 Code", "brand": "Moonshot", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "lineLabel": "bailian", "customMultiplier": 5.0},
     {"id": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
     // 2026-06-12: 【特价】Claude Opus 4.8 — newapi.qwqtao.com 上游，normal 档。
     {"id": "claude-opus-4-8-special", "name": "【特价】Claude Opus 4.8", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "normal"},
@@ -2565,8 +2565,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
     // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
     {"id": "gpt-5.5-special", "name": "【特价】GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 0.5, "proPlusOnly": true},
-    // 2026-06-15: GLM-5.2 — cheap-host1.cheapyun.com 上游。
-    {"id": "glm-5.2", "name": "GLM 5.2", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
+    // 2026-06-17: GLM-5.2 — 阿里云百炼（同 Qwen3.7 Max）。
+    {"id": "glm-5.2", "name": "GLM 5.2", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "bailian", "customMultiplier": 2.5},
     // 2026-06-09: 【订阅福利】composer-2.5-fast — newapi.makelove.cloud 上游，Pro+ 免费。
     {"id": "composer-2.5-fast", "name": "【订阅福利】composer-2.5-fast", "brand": "Cursor", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 9.0},
@@ -2583,7 +2583,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "deepseek-v4-pro-0608", "name": "DeepSeek V4 Pro 0608", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "pytn", "customMultiplier": 3.0},
     // 2026-06-12: DeepSeek V4 Pro (NVIDIA 显示名) — 上游已切魔塔 ModelScope。
     {"id": "deepseek-v4-pro-0603", "name": "DeepSeek V4 Pro (NVIDIA)", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal", "lineLabel": "modelscope", "customMultiplier": 3.0},
-    {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "glm-5.1", "name": "GLM 5.1", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 1.5},
     {"id": "ling-2.6-flash", "name": "Ling 2.6 Flash", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "ling-2.6-1t", "name": "Ling 2.6 1T", "brand": "Inclusion AI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v3", "name": "DeepSeek V3", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 1.5},
@@ -2642,8 +2642,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "qwen3.6-27b", "name": "Qwen 3.6 27B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "cheap"},
     {"id": "qwen3-next-80b-a3b-thinking", "name": "Qwen3 Next 80B Thinking", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "normal"},
     {"id": "sensenova-6.7-flash-lite", "name": "SenseNova 6.7 Flash Lite", "brand": "SenseNova", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "free"},
-    {"id": "glm-4.7", "name": "GLM 4.7", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
-    {"id": "glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "glm-4.7", "name": "GLM 4.7", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 0.8},
+    {"id": "glm-4.7-flash", "name": "GLM 4.7 Flash", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 0.5},
     {"id": "or:nvidia/nemotron-3-super-120b-a12b", "name": "Nemotron 3 Super 120B", "brand": "NVIDIA", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "or:inclusionai/ring-2.6-1t", "name": "Ring 2.6 1T", "brand": "InclusionAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "or:openai/gpt-oss-120b", "name": "GPT OSS 120B", "brand": "OpenAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
@@ -2669,7 +2669,7 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "hf:deepseek-v4-flash", "name": "DeepSeek V4 Flash", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface", "customMultiplier": 2.7},
     {"id": "hf:gemma-3-27b", "name": "Gemma 3 27B", "brand": "Google", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:llama-3.1-8b", "name": "Llama 3.1 8B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
-    {"id": "hf:glm-5", "name": "GLM 5", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+    {"id": "hf:glm-5", "name": "GLM 5", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface", "customMultiplier": 1.0},
     {"id": "hf:qwen3-coder-30b", "name": "Qwen3 Coder 30B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:qwen3.5-35b", "name": "Qwen 3.5 35B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:qwen3.5-122b", "name": "Qwen 3.5 122B A10B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
@@ -5339,8 +5339,8 @@ const ARENA_MODE_MIGRATIONS = {
       } else if (message.role === "assistant") {
         const content =
           typeof message.content === "string" ? message.content : "";
-        const metadata = message.metadata || message.modelMetadata || null;
-  
+        const metadata = message.metadata || message.modelMetadata || createModelMetadata(currentModel);
+
         // 检测对战卡片格式：【模型 A】...【模型 B】...
         const duelMatch = content.match(
           /【模型\s*A】\s*([\s\S]*?)【模型\s*B】\s*([\s\S]*)$/,
@@ -5396,8 +5396,28 @@ const ARENA_MODE_MIGRATIONS = {
         }
   
         const id = createAssistantMessage(metadata);
+        const messageDiv = document.getElementById(id);
+        const parts = messageDiv?._parts;
+        if (Array.isArray(message.timeline) && message.timeline.length && parts) {
+          message.timeline.forEach((event) => {
+            if (!event || !event.type) return;
+            if (event.type === "reasoning") {
+              const block = createReasoningBlock();
+              updateReasoningBlock(block, { text: event.text || "", thinking: false });
+              parts.timelineContainer.appendChild(block.thinkBlock);
+              parts.timeline.push(event);
+            } else if (event.type === "tool_call") {
+              const block = createToolCallBlock(event);
+              block._timelineEvent = event;
+              parts.timelineContainer.appendChild(block);
+              parts.timeline.push(event);
+            }
+          });
+        }
         const restoredReasoning =
-          typeof message.reasoning === "string" ? message.reasoning : "";
+          typeof message.reasoning === "string" && !message.timeline?.length
+            ? message.reasoning
+            : "";
         updateAssistantMessage(id, {
           answer: content,
           reasoning: restoredReasoning,
@@ -12206,7 +12226,66 @@ const ARENA_MODE_MIGRATIONS = {
       : 1;
     label.textContent = thinking ? "思考中" : `思考 ${seconds} 秒`;
   }
-  
+
+  function stripReasoningSeparator(text) {
+    return String(text || "")
+      .replace(/^(\s*[\r\n]\s*)*---(\s*[\r\n]\s*)*/, "")
+      .trim();
+  }
+
+  function createReasoningBlock() {
+    const thinkBlock = document.createElement("div");
+    thinkBlock.className = "think-block";
+    thinkBlock.hidden = true;
+    const thinkHeader = createThinkHeaderElement(thinkBlock);
+    const thinkBody = document.createElement("div");
+    thinkBody.className = "think-body md-content";
+    thinkBlock.appendChild(thinkHeader);
+    thinkBlock.appendChild(thinkBody);
+    const thinkStreamState = {
+      text: "",
+      ready: false,
+      startedAt: 0,
+      wasThinking: false,
+      autoCollapsed: false,
+    };
+    return { thinkBlock, thinkHeader, thinkBody, thinkStreamState };
+  }
+
+  function updateReasoningBlock(block, { text = "", thinking = false } = {}) {
+    if (!block) return;
+    const { thinkBlock, thinkHeader, thinkBody, thinkStreamState } = block;
+    const hasText = Boolean(String(text || "").trim());
+    thinkBlock.hidden = !hasText && !thinking;
+    if (thinking && !thinkStreamState.wasThinking) {
+      thinkStreamState.startedAt = Date.now();
+      thinkStreamState.autoCollapsed = false;
+      thinkBlock.classList.remove("is-collapsed");
+      if (thinkHeader) thinkHeader.setAttribute("aria-expanded", "true");
+    }
+    if (hasText) {
+      syncStreamingMarkdownBlock(thinkBody, thinkStreamState, text, { thinking });
+    } else if (!thinking) {
+      thinkBody.innerHTML = "";
+      thinkStreamState.text = "";
+      thinkStreamState.ready = false;
+    }
+    if (thinking) thinkBlock.classList.add("is-thinking");
+    else thinkBlock.classList.remove("is-thinking");
+    setThinkHeaderLabel(thinkHeader, { thinking, startedAt: thinkStreamState.startedAt });
+    if (
+      !thinking &&
+      hasText &&
+      thinkStreamState.wasThinking &&
+      !thinkStreamState.autoCollapsed
+    ) {
+      thinkBlock.classList.add("is-collapsed");
+      if (thinkHeader) thinkHeader.setAttribute("aria-expanded", "false");
+      thinkStreamState.autoCollapsed = true;
+    }
+    thinkStreamState.wasThinking = Boolean(thinking);
+  }
+
   function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const messageDiv = document.createElement("div");
@@ -12247,22 +12326,13 @@ const ARENA_MODE_MIGRATIONS = {
     modelName.textContent = modelMetadata.modelName;
     modelLabel.appendChild(modelName);
   
-    const thinkBlock = document.createElement("div");
-    thinkBlock.className = "think-block";
-    thinkBlock.hidden = true;
-  
-    const thinkHeader = createThinkHeaderElement(thinkBlock);
-
-    const thinkBody = document.createElement("div");
-    thinkBody.className = "think-body md-content";
+    const timelineContainer = document.createElement("div");
+    timelineContainer.className = "assistant-timeline";
 
     const answerBody = document.createElement("div");
     answerBody.className = "answer-body md-content";
     answerBody.innerHTML = "";
-  
-    const toolCallsContainer = document.createElement("div");
-    toolCallsContainer.className = "tool-calls-container";
-  
+
     const messageActions = document.createElement("div");
     messageActions.className = "message-actions";
     messageActions.innerHTML = `
@@ -12295,12 +12365,9 @@ const ARENA_MODE_MIGRATIONS = {
           ${createTranslateButtonHtml()}
         `;
   
-    thinkBlock.appendChild(thinkHeader);
-    thinkBlock.appendChild(thinkBody);
     bubble.appendChild(modelLabel);
     bubble.appendChild(generatingIndicator);
-    bubble.appendChild(thinkBlock);
-    bubble.appendChild(toolCallsContainer);
+    bubble.appendChild(timelineContainer);
     bubble.appendChild(answerBody);
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
@@ -12362,20 +12429,13 @@ const ARENA_MODE_MIGRATIONS = {
     wireTranslateButton(messageDiv, answerBody);
   
     messageDiv._parts = {
-      thinkBlock,
-      thinkHeader,
-      thinkBody,
+      timelineContainer,
       answerBody,
-      toolCallsContainer,
       messageActions,
       modelMetadata,
-      thinkStreamState: {
-        text: "",
-        ready: false,
-        startedAt: 0,
-        wasThinking: false,
-        autoCollapsed: false,
-      },
+      timeline: [],
+      currentReasoningBlock: null,
+      committedReasoningLength: 0,
       answerStreamState: { text: "", ready: false },
     };
     chatMessages.appendChild(messageDiv);
@@ -12656,22 +12716,20 @@ const ARENA_MODE_MIGRATIONS = {
   ) {
     const messageDiv = document.getElementById(messageId);
     if (!messageDiv || !messageDiv._parts) return;
-  
+
+    const parts = messageDiv._parts;
     const {
-      thinkBlock,
-      thinkHeader,
-      thinkBody,
+      timelineContainer,
       answerBody,
-      toolCallsContainer,
       messageActions,
-      thinkStreamState,
       answerStreamState,
-    } = messageDiv._parts;
-    const reasoningText = String(reasoning ?? "");
+    } = parts;
+    const timeline = parts.timeline;
+    const fullReasoning = String(reasoning ?? "");
     const answerText = String(answer ?? "");
-    const hasReasoning = Boolean(reasoningText.trim());
+    const hasReasoning = Boolean(fullReasoning.trim());
     const hasAnswer = Boolean(answerText.trim());
-  
+
     messageDiv.classList.remove("is-error");
     // 2026-05-21：白色脉冲圆球只在"刚创建、还没收到任何 reasoning/answer"
     // 阶段显示。一旦有任何内容流入，或流式结束（thinking=false），就移除
@@ -12681,41 +12739,41 @@ const ARENA_MODE_MIGRATIONS = {
     }
     answerBody.classList.remove("assistant-error-card");
     if (messageActions) messageActions.hidden = false;
-  
-    thinkBlock.hidden = !hasReasoning && !thinking;
-    if (thinking && !thinkStreamState.wasThinking) {
-      thinkStreamState.startedAt = Date.now();
-      thinkStreamState.autoCollapsed = false;
-      thinkBlock.classList.remove("is-collapsed");
-      if (thinkHeader) thinkHeader.setAttribute("aria-expanded", "true");
+
+    // 把新增的 reasoning 文本追加到当前 thinking 块；如果遇到工具调用，
+    // currentReasoningBlock 会被清空，下一次 reasoning 会新建块，从而按时间线交错。
+    let newCommitted = parts.committedReasoningLength;
+    if (fullReasoning.length > parts.committedReasoningLength) {
+      const delta = stripReasoningSeparator(
+        fullReasoning.slice(parts.committedReasoningLength),
+      );
+      newCommitted = fullReasoning.length;
+      if (delta) {
+        if (!parts.currentReasoningBlock) {
+          const block = createReasoningBlock();
+          block.segmentText = delta;
+          timelineContainer.appendChild(block.thinkBlock);
+          timeline.push({ type: "reasoning", text: delta });
+          parts.currentReasoningBlock = block;
+        } else {
+          const block = parts.currentReasoningBlock;
+          block.segmentText = `${block.segmentText}\n\n${delta}`.trim();
+        }
+      }
     }
-    if (hasReasoning) {
-      syncStreamingMarkdownBlock(thinkBody, thinkStreamState, reasoningText, {
+    parts.committedReasoningLength = newCommitted;
+
+    const block = parts.currentReasoningBlock;
+    if (block) {
+      updateReasoningBlock(block, {
+        text: block.segmentText || "",
         thinking,
       });
-    } else if (!thinking) {
-      thinkBody.innerHTML = "";
-      thinkStreamState.text = "";
-      thinkStreamState.ready = false;
+      if (!thinking) {
+        // 该段 reasoning 结束（后续工具调用或最终答案），下一段新建块。
+        parts.currentReasoningBlock = null;
+      }
     }
-  
-    if (thinking) thinkBlock.classList.add("is-thinking");
-    else thinkBlock.classList.remove("is-thinking");
-    setThinkHeaderLabel(thinkHeader, {
-      thinking,
-      startedAt: thinkStreamState.startedAt,
-    });
-    if (
-      !thinking &&
-      hasReasoning &&
-      thinkStreamState.wasThinking &&
-      !thinkStreamState.autoCollapsed
-    ) {
-      thinkBlock.classList.add("is-collapsed");
-      if (thinkHeader) thinkHeader.setAttribute("aria-expanded", "false");
-      thinkStreamState.autoCollapsed = true;
-    }
-    thinkStreamState.wasThinking = Boolean(thinking);
 
     if (hasAnswer) {
       syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, {
@@ -12731,12 +12789,12 @@ const ARENA_MODE_MIGRATIONS = {
       answerStreamState.text = "";
       answerStreamState.ready = false;
     }
-  
+
     // 渲染数学公式
     if (hasAnswer || hasReasoning) {
       renderMathInMessage(messageId);
     }
-  
+
     scrollChatToBottom();
   }
   
@@ -12800,15 +12858,17 @@ const ARENA_MODE_MIGRATIONS = {
   function renderAssistantErrorCard(messageId, text, { retryUserIndex = null } = {}) {
     const messageDiv = document.getElementById(messageId);
     if (!messageDiv || !messageDiv._parts) return;
-    const { thinkBlock, answerBody, toolCallsContainer, messageActions } = messageDiv._parts;
+    const { timelineContainer, answerBody, messageActions } = messageDiv._parts;
     if (Number.isFinite(retryUserIndex)) {
       tagAssistantRetryUserIndex(messageId, retryUserIndex);
     }
     messageDiv.classList.add("is-error");
     // 错误卡 = 流式收尾的另一种终态，白色脉冲圆球必须消失。
     messageDiv.classList.remove("is-generating");
-    if (thinkBlock) thinkBlock.hidden = true;
-    if (toolCallsContainer) toolCallsContainer.innerHTML = "";
+    if (timelineContainer) {
+      timelineContainer.hidden = true;
+      timelineContainer.innerHTML = "";
+    }
     if (messageActions) {
       messageActions.hidden = true;
       messageActions.setAttribute("aria-hidden", "true");
@@ -12869,8 +12929,15 @@ const ARENA_MODE_MIGRATIONS = {
     try {
       const messageDiv = document.getElementById(messageId);
       if (!messageDiv || !messageDiv._parts) return { reasoning: "", answer: "" };
-      const reasoning = String(messageDiv._parts.thinkStreamState?.text || "");
-      const answer = String(messageDiv._parts.answerStreamState?.text || "");
+      const parts = messageDiv._parts;
+      const answer = String(parts.answerStreamState?.text || "");
+      const reasoningEvents = (parts.timeline || []).filter(
+        (ev) => ev && ev.type === "reasoning",
+      );
+      const reasoning = reasoningEvents
+        .map((ev) => String(ev.text || "").trim())
+        .filter(Boolean)
+        .join("\n\n---\n\n");
       return { reasoning, answer };
     } catch (_) {
       return { reasoning: "", answer: "" };
@@ -12991,7 +13058,11 @@ const ARENA_MODE_MIGRATIONS = {
     updateContextMeter();
   }
   
-  function assistantHistoryMessage(content, metadata, { reasoning = "" } = {}) {
+  function assistantHistoryMessage(
+    content,
+    metadata,
+    { reasoning = "", timeline = null } = {},
+  ) {
     const message = {
       role: "assistant",
       content,
@@ -12999,6 +13070,7 @@ const ARENA_MODE_MIGRATIONS = {
     };
     const reasoningText = String(reasoning || "").trim();
     if (reasoningText) message.reasoning = reasoningText;
+    if (Array.isArray(timeline) && timeline.length) message.timeline = timeline;
     return message;
   }
 
@@ -13013,8 +13085,12 @@ const ARENA_MODE_MIGRATIONS = {
     const mergedReasoning =
       String(partial.reasoning || "").trim() ||
       String(reasoning || "").trim();
+    const messageDiv = document.getElementById(messageId);
+    const timeline = messageDiv?._parts?.timeline || [];
+    const timelineSnapshot = timeline.map((ev) => ({ ...ev }));
     return assistantHistoryMessage(answer, metadata, {
       reasoning: mergedReasoning,
+      timeline: timelineSnapshot,
     });
   }
   
@@ -14308,18 +14384,23 @@ const ARENA_MODE_MIGRATIONS = {
     get_open_platform: "查询开放平台信息",
   };
   
-  function addToolCallUI(messageId, toolCall) {
-    const messageDiv = document.getElementById(messageId);
-    if (!messageDiv || !messageDiv._parts) return null;
-    const container = messageDiv._parts.toolCallsContainer;
-  
+  function createToolCallBlock(event) {
+    const {
+      id = "",
+      name = "",
+      arguments: argsStr = "",
+      status = "running",
+      result = "",
+    } = event || {};
     const block = document.createElement("div");
-    block.className = "tool-call-block is-running";
-    block.dataset.toolCallId = toolCall.id || "";
-  
+    block.className = "tool-call-block";
+    if (status === "running") block.classList.add("is-running");
+    if (status === "failed") block.classList.add("failed", "expanded");
+    block.dataset.toolCallId = id || "";
+
     const header = document.createElement("div");
     header.className = "tool-call-header";
-  
+
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     icon.setAttribute("width", "14");
     icon.setAttribute("height", "14");
@@ -14333,11 +14414,11 @@ const ARENA_MODE_MIGRATIONS = {
       "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z",
     );
     icon.appendChild(path);
-  
+
     const nameSpan = document.createElement("span");
     nameSpan.className = "tool-call-name";
-    const displayName = TOOL_DISPLAY_NAMES[toolCall.name] || toolCall.name;
-    const args = parseToolArguments(toolCall.arguments);
+    const displayName = TOOL_DISPLAY_NAMES[name] || name || "工具";
+    const args = parseToolArguments(argsStr);
     const argHint =
       args.search_query ||
       args.query ||
@@ -14350,42 +14431,82 @@ const ARENA_MODE_MIGRATIONS = {
       args.id ||
       "";
     nameSpan.textContent = argHint ? `${displayName}：${argHint}` : displayName;
-  
+
     const spinner = document.createElement("div");
     spinner.className = "tool-call-spinner";
-  
-    const status = document.createElement("span");
-    status.className = "tool-call-status";
-    status.textContent = "调用中…";
-    status.style.display = "none";
-  
+
+    const statusEl = document.createElement("span");
+    statusEl.className = "tool-call-status";
+    if (status === "running") {
+      statusEl.textContent = "调用中…";
+      statusEl.style.display = "none";
+    } else {
+      statusEl.textContent = status === "failed" ? "失败" : "已完成";
+      statusEl.classList.add(status === "failed" ? "failed" : "done");
+      statusEl.style.display = "";
+    }
+
     const resultDiv = document.createElement("div");
     resultDiv.className = "tool-call-result";
-  
+    if (status !== "running" && result) {
+      let preview = String(result || "").trim();
+      if (preview.length > 800)
+        preview = preview.slice(0, 800) + "\n…（结果已截断）";
+      resultDiv.textContent = preview;
+    }
+
     header.appendChild(icon);
     header.appendChild(nameSpan);
     header.appendChild(spinner);
-    header.appendChild(status);
-  
+    header.appendChild(statusEl);
+
     header.addEventListener("click", () => {
       block.classList.toggle("expanded");
     });
-  
+
     block.appendChild(header);
     block.appendChild(resultDiv);
-    container.appendChild(block);
-    scrollChatToBottom();
-  
     return block;
   }
-  
+
+  function addToolCallUI(messageId, toolCall) {
+    const messageDiv = document.getElementById(messageId);
+    if (!messageDiv || !messageDiv._parts) return null;
+    const parts = messageDiv._parts;
+
+    // 工具调用到来前，先把当前 thinking 段收尾，确保时间线交错。
+    if (parts.currentReasoningBlock) {
+      updateReasoningBlock(parts.currentReasoningBlock, {
+        text: parts.currentReasoningBlock.segmentText || "",
+        thinking: false,
+      });
+      parts.currentReasoningBlock = null;
+    }
+
+    const event = {
+      type: "tool_call",
+      id: toolCall.id || "",
+      name: toolCall.name || "",
+      arguments: toolCall.arguments || "",
+      status: "running",
+      result: "",
+    };
+    const block = createToolCallBlock(event);
+    block._timelineEvent = event;
+    parts.timelineContainer.appendChild(block);
+    parts.timeline.push(event);
+    scrollChatToBottom();
+
+    return block;
+  }
+
   function completeToolCallUI(block, resultText) {
     if (!block) return;
     block.classList.remove("is-running");
     const spinner = block.querySelector(".tool-call-spinner");
     const status = block.querySelector(".tool-call-status");
     const resultDiv = block.querySelector(".tool-call-result");
-  
+
     if (spinner) spinner.remove();
     if (status) {
       status.textContent = "已完成";
@@ -14398,16 +14519,20 @@ const ARENA_MODE_MIGRATIONS = {
         preview = preview.slice(0, 800) + "\n…（结果已截断）";
       resultDiv.textContent = preview;
     }
+    if (block._timelineEvent) {
+      block._timelineEvent.status = "done";
+      block._timelineEvent.result = String(resultText || "");
+    }
     scrollChatToBottom();
   }
-  
+
   function failToolCallUI(block, resultText) {
     if (!block) return;
     block.classList.remove("is-running");
     const spinner = block.querySelector(".tool-call-spinner");
     const status = block.querySelector(".tool-call-status");
     const resultDiv = block.querySelector(".tool-call-result");
-  
+
     block.classList.add("failed", "expanded");
     if (spinner) spinner.remove();
     if (status) {
@@ -14420,6 +14545,10 @@ const ARENA_MODE_MIGRATIONS = {
       if (preview.length > 800)
         preview = preview.slice(0, 800) + "\n…（结果已截断）";
       resultDiv.textContent = preview;
+    }
+    if (block._timelineEvent) {
+      block._timelineEvent.status = "failed";
+      block._timelineEvent.result = String(resultText || "");
     }
     scrollChatToBottom();
   }

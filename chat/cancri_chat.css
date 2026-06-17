@@ -4140,6 +4140,12 @@ html[data-theme="light"] .claude-accent-dot {
     gap: 4px;
 }
 
+.assistant-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 .tool-call-block {
     border: 1px solid var(--line);
     border-radius: 10px;
