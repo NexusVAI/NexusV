@@ -66,6 +66,9 @@ const ARENA_MODE_MIGRATIONS = {
     userMemoryEnabled: true,
     // 对话内 Mermaid 图表（设置「内联可视化」）
     inlineMermaidEnabled: true,
+    // 2026-06-17：对话完成通知（浏览器系统通知 + 页面 toast）。后台生成完成、
+    // 或用户不在该对话页面时触发，设置面板可关闭。
+    completionNotifyEnabled: true,
   };
   
   const root = document.documentElement;
@@ -2679,6 +2682,15 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "hf:eurollm-22b", "name": "EuroLLM 22B", "brand": "utter-project", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:tiny-aya-earth", "name": "Tiny Aya Earth", "brand": "Cohere", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
     {"id": "hf:llama-3.2-1b", "name": "Llama 3.2 1B", "brand": "Meta", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "lineLabel": "huggingface"},
+    // 2026-06-17: jiuyoumao 渠道 — Qwen3 小模型 + Doubao Seed OSS + DeepSeek V4 Flash 0617
+    {"id": "qwen3-30b-a3b-instruct-2507", "name": "Qwen3 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "qwen3-coder-30b-a3b-instruct", "name": "Qwen3 Coder 30B A3B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "qwen3-vl-30b-a3b-thinking", "name": "Qwen3 VL 30B A3B", "brand": "Qwen", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
+    {"id": "qwen3.5-4b", "name": "Qwen3.5 4B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "qwen3.5-9b", "name": "Qwen3.5 9B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "qwen3-8b-jiuyoumao", "name": "Qwen 3.5 8B", "brand": "Qwen", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "doubao-seed-oss", "name": "Doubao Seed OSS", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    {"id": "deepseek-v4-flash-0617", "name": "DeepSeek V4 Flash 0617", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   ];
   
   // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
@@ -3139,6 +3151,9 @@ const ARENA_MODE_MIGRATIONS = {
       if (typeof prefs.inlineMermaidEnabled === "boolean") {
         state.inlineMermaidEnabled = prefs.inlineMermaidEnabled;
       }
+      if (typeof prefs.completionNotifyEnabled === "boolean") {
+        state.completionNotifyEnabled = prefs.completionNotifyEnabled;
+      }
     } catch (error) {
       console.warn("恢复主题偏好失败:", error);
     }
@@ -3161,6 +3176,7 @@ const ARENA_MODE_MIGRATIONS = {
           fullName: state.fullName,
           profession: state.profession,
           inlineMermaidEnabled: state.inlineMermaidEnabled,
+          completionNotifyEnabled: state.completionNotifyEnabled,
           // 2026-05-31：标记已执行「默认纯黑」一次性迁移，避免重复覆盖用户后续选择。
           blackDefaultMigrated: true,
           accentOrangeDefaultMigrated: true,
@@ -3439,6 +3455,14 @@ const ARENA_MODE_MIGRATIONS = {
     if (chatMessages && conversationHistory.length) {
       renderMessages();
     }
+  }
+
+  // 2026-06-17：对话完成通知开关（设置面板）。打开时顺手申请一次浏览器通知权限。
+  function setCompletionNotifyEnabled(enabled) {
+    const next = Boolean(enabled);
+    state.completionNotifyEnabled = next;
+    persistUiPreferences();
+    if (next) ensureNotificationPermission();
   }
   
   function updateVoiceButtonState() {
@@ -4047,6 +4071,8 @@ const ARENA_MODE_MIGRATIONS = {
     `${window.location.origin}/api/supabase`;
   const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
   const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
+  // 2026-06-17：网页端对话「智能标题」生成端点（后端直连 DeepSeek deepseek-v4-flash）。
+  const GEN_TITLE_URL = `${SUPABASE_URL}/functions/v1/gen-title`;
   const USER_MEMORY_URL = `${SUPABASE_URL}/functions/v1/user-memory`;
   const MEMORY_IMPORT_TEXT_LIMIT = 1000;
   const MANUAL_MEMORY_MAX_LENGTH = 20;
@@ -4225,7 +4251,9 @@ const ARENA_MODE_MIGRATIONS = {
     const accountPlan = document.querySelector(".account-strip .account-plan");
     const avatarEl = document.querySelector(".account-strip .avatar");
     if (accountName) accountName.textContent = displayName;
-    if (accountPlan) accountPlan.textContent = email ? "已登录" : "已登录";
+    // 2026-06-17：account-plan（计划档位文案）改由 claude_ui.js updateAccountPlanText 统一渲染，
+    // 此处不再写「已登录」覆盖，避免与档位文案互相打架导致 Pro 用户被显示成「免费计划」。
+    void accountPlan;
     if (avatarEl) avatarEl.textContent = initials;
     refreshNicknameUI();
     // 同步刷新hero区域的个性化问候语
@@ -4653,6 +4681,8 @@ const ARENA_MODE_MIGRATIONS = {
         updateAccountInfo(session.user);
         hideAuthOverlay();
         authInitialized = true;
+        // 通知 claude_ui.js：登录就绪，去拉真实订阅档位（修首屏 token 未就绪时误判免费计划）。
+        try { window.dispatchEvent(new CustomEvent("cancri:auth-changed", { detail: { signedIn: true } })); } catch (_) {}
         if (event === "SIGNED_IN") {
           void maybeShowExpirySoonBanner();
           void fetchUserMemories();
@@ -4664,6 +4694,8 @@ const ARENA_MODE_MIGRATIONS = {
         state.userMemoryEnabled = true;
         renderMemoriesInSettings();
         showAuthOverlay();
+        // 通知 claude_ui.js：已登出，档位回到免费 / 「请先登录」。
+        try { window.dispatchEvent(new CustomEvent("cancri:auth-changed", { detail: { signedIn: false } })); } catch (_) {}
       }
     });
   }
@@ -4800,6 +4832,15 @@ const ARENA_MODE_MIGRATIONS = {
   let currentChatId = null;
   let chatHistoryList = [];
   let chatHistoryListRenderSeq = 0;
+
+  // 2026-06-17 后台生成追踪：让对话在「页内切换其他对话 / 回首页 / 进设置」时
+  // 不中断生成，支持侧栏转圈 + 完成通知 + 增量保存（整页刷新也不丢已生成内容）。
+  // key = 服务端 chat_history.id（拿到 id 前用临时 key），value = generation 对象。
+  // 同一时刻只允许一个进行中的生成（沿用 state.isStreaming + hasActiveGeneration 守门）。
+  const activeGenerations = new Map();
+  const INCREMENTAL_SAVE_INTERVAL_MS = 1500;
+  const VISIBLE_RERENDER_INTERVAL_MS = 600;
+  let notificationPermissionAsked = false;
   const CHAT_HISTORY_LIST_CACHE_KEY = "cancri_chat_history_list_cache_v1";
   
   function readCachedChatHistoryList() {
@@ -5039,6 +5080,34 @@ const ARENA_MODE_MIGRATIONS = {
     container.appendChild(wrap);
   }
 
+  // 2026-06-17：点击进入某条聊天记录、等待服务端返回期间，在对话区显示骨架屏，
+  // 避免白屏或停留在旧内容。renderMessages() 会在真实消息到达后整页替换掉它。
+  function renderChatMessagesSkeleton() {
+    if (!chatMessages) return;
+    chatMessages.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.className = "chat-skeleton";
+    wrap.setAttribute("aria-hidden", "true");
+    const rows = [
+      { role: "user", lines: [42] },
+      { role: "assistant", lines: [90, 96, 68] },
+      { role: "user", lines: [54] },
+      { role: "assistant", lines: [92, 78] },
+    ];
+    rows.forEach((row) => {
+      const msg = document.createElement("div");
+      msg.className = "chat-skeleton-msg chat-skeleton-" + row.role;
+      row.lines.forEach((w) => {
+        const line = document.createElement("span");
+        line.className = "chat-skeleton-line cancri-skeleton-shimmer";
+        line.style.width = w + "%";
+        msg.appendChild(line);
+      });
+      wrap.appendChild(msg);
+    });
+    chatMessages.appendChild(wrap);
+  }
+
   function chatHistoryListHasRenderedItems(container) {
     return Boolean(
       container?.querySelector(".recent-item, .recent-placeholder"),
@@ -5092,6 +5161,10 @@ const ARENA_MODE_MIGRATIONS = {
         const item = document.createElement("div");
         item.className =
           "recent-item" + (isPinned ? " recent-item-pinned" : "");
+        item.dataset.chatId = chat.id;
+        if (chat.id === currentChatId) item.classList.add("active");
+        const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
+        if (isStreamingItem) item.classList.add("recent-item-streaming");
   
         const modelId = String(chat.model || "").trim();
         const modelMeta = modelId ? getModelMeta(modelId) : null;
@@ -5122,6 +5195,12 @@ const ARENA_MODE_MIGRATIONS = {
   
         item.appendChild(modelIcon);
         item.appendChild(titleSpan);
+        if (isStreamingItem) {
+          const spinner = document.createElement("span");
+          spinner.className = "recent-item-spinner";
+          spinner.setAttribute("aria-hidden", "true");
+          item.appendChild(spinner);
+        }
         item.appendChild(actionsBtn);
         item.addEventListener("click", () => loadChat(chat.id));
         listContainer.appendChild(item);
@@ -5160,6 +5239,35 @@ const ARENA_MODE_MIGRATIONS = {
   // 加载特定聊天记录
   async function loadChat(chatId, { silent = false } = {}) {
     exitSharedConversationMode();
+    // 2026-06-17：回到一个正在后台生成的对话——用内存实时快照立即渲染并重新接管显示，
+    // 不必等服务端（增量保存最多落后 ~1.5s）。
+    const liveGen = getGenerationByChatId(chatId);
+    if (liveGen) {
+      currentChatId = chatId;
+      conversationHistory = genCurrentMessages(liveGen);
+      setActiveView("home");
+      homeView.classList.add("chatting");
+      chatMessages.classList.add("active");
+      if (contextMeter) contextMeter.classList.remove("hidden");
+      renderMessages();
+      updateContextMeter();
+      setComposerBusy(true);
+      state.activeRequestController = liveGen.controller;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+      });
+      refreshSidebarSpinners();
+      persistSessionNav();
+      return;
+    }
+    // 2026-06-17：先立刻进入对话视图并显示骨架屏，等待服务端返回期间不再白屏 / 卡旧内容。
+    setActiveView("home");
+    homeView.classList.add("chatting");
+    chatMessages.classList.add("active");
+    if (contextMeter) contextMeter.classList.remove("hidden");
+    renderChatMessagesSkeleton();
     try {
       const chat = await loadChatHistory(chatId);
       if (chat && chat.messages) {
@@ -5167,18 +5275,11 @@ const ARENA_MODE_MIGRATIONS = {
         conversationHistory = Array.isArray(chat.messages)
           ? chat.messages.map(sanitizeHistoryMessage)
           : [];
-        setActiveView("home");
-        homeView.classList.add("chatting");
-        chatMessages.classList.add("active");
-  
-        if (contextMeter) {
-          contextMeter.classList.remove("hidden");
-        }
-  
+
         renderMessages();
         updateContextMeter();
         setComposerBusy(false);
-  
+
         // 进入对话后强制定位到最新一轮：scrollChatToBottom 在容器从
         // display:none 切换出来的瞬间 clientHeight 仍为 0，会被它的
         // 120px 阈值挡掉；这里用双 rAF 等布局完成后再硬性归位。
@@ -5189,12 +5290,18 @@ const ARENA_MODE_MIGRATIONS = {
             }
           });
         });
-  
+
         if (!silent) showToast("已加载聊天记录");
         persistSessionNav();
+      } else {
+        // 没拿到记录：清掉骨架，渲染当前（可能为空）会话。
+        renderMessages();
+        if (!silent) showToast("加载失败");
       }
     } catch (error) {
       console.error("加载聊天记录失败:", error);
+      // 失败兜底：清掉骨架，避免一直停在加载态。
+      renderMessages();
       if (!silent) showToast("加载失败");
     }
   }
@@ -12852,7 +12959,9 @@ const ARENA_MODE_MIGRATIONS = {
   function clearConversation() {
     exitSharedConversationMode();
     stopVoiceRecognition();
-    if (state.activeRequestController) {
+    // 2026-06-17：有后台生成在进行时不中断它（转入后台继续 + 侧栏转圈 + 完成通知）；
+    // 否则按原逻辑取消当前请求。
+    if (!hasActiveGeneration() && state.activeRequestController) {
       state.activeRequestController.abort(createAbortError("已切换会话。"));
       state.activeRequestController = null;
     }
@@ -13815,6 +13924,7 @@ const ARENA_MODE_MIGRATIONS = {
       requestKind = "direct_chat",
       webSearchEnabled = state.webSearchEnabled,
       queueSessionIdOverride = null,
+      gen = null,
     } = {},
   ) {
     let finalAnswer = "";
@@ -13926,7 +14036,7 @@ const ARENA_MODE_MIGRATIONS = {
         if (passed) {
           return await streamChatCompletionRound(messages, assistantMessageId, controller, {
             enableTools, turnId, modelId, priorReasoning, requestKind, webSearchEnabled,
-            queueSessionIdOverride: queueSessionId,
+            queueSessionIdOverride: queueSessionId, gen,
           });
         }
         throw new Error("人机校验未通过，无法继续发送。");
@@ -13937,7 +14047,7 @@ const ARENA_MODE_MIGRATIONS = {
         if (joined) {
           return await streamChatCompletionRound(messages, assistantMessageId, controller, {
             enableTools, turnId, modelId, priorReasoning, requestKind, webSearchEnabled,
-            queueSessionIdOverride: queueSessionId,
+            queueSessionIdOverride: queueSessionId, gen,
           });
         }
         throw new Error("已取消排队。");
@@ -13979,6 +14089,7 @@ const ARENA_MODE_MIGRATIONS = {
               priorReasoning,
               requestKind,
               webSearchEnabled,
+              gen,
             },
           );
         throw new Error("需要完成安全验证才能继续。");
@@ -14133,6 +14244,14 @@ const ARENA_MODE_MIGRATIONS = {
           }
         }
   
+        // 2026-06-17：把本轮已累积内容同步给 generation 对象，触发增量保存 +
+        // （用户已离开又回到该对话时的）低频重绘。
+        if (gen) {
+          gen.partialAnswer = finalAnswer;
+          gen.partialReasoning = composeReasoningText(priorReasoning, reasoningText);
+          onGenerationProgress(gen);
+        }
+
         // 重复输出检测：每 8 个 chunk 检查一次，>200 字符后才启用
         if (finalAnswer.length > 200 && ++_repCheckCounter % 8 === 0) {
           if (isDegenerateRepetition(finalAnswer)) {
@@ -14305,6 +14424,364 @@ const ARENA_MODE_MIGRATIONS = {
     scrollChatToBottom();
   }
   
+  // ===== 2026-06-17 后台生成 / 持久化 / 完成通知 / 智能标题 =====
+  function snapshotMessages(list) {
+    return Array.isArray(list) ? list.map((m) => ({ ...m })) : [];
+  }
+
+  function deriveLocalTitle(messages) {
+    try { return generateChatTitle(messages); } catch (_) { return "新对话"; }
+  }
+
+  // 从消息 content（字符串或多模态数组）里抽纯文本，供智能标题用（不上传图片 base64）。
+  function extractMessageText(content) {
+    if (typeof content === "string") return content;
+    if (Array.isArray(content)) {
+      return content
+        .map((p) => (p && p.type === "text" ? String(p.text || "") : ""))
+        .filter(Boolean)
+        .join("\n");
+    }
+    return "";
+  }
+
+  // 聊天对话容器当前是否真的显示在屏幕上（切到设置/其它视图时 offsetParent 为 null）。
+  function isChatViewVisible() {
+    return Boolean(
+      chatMessages && chatMessages.offsetParent !== null &&
+      homeView && homeView.classList.contains("chatting"),
+    );
+  }
+
+  // 某个生成所属的对话是否正是用户当前看着的对话（用于决定是否同步全局/DOM、是否通知）。
+  function isGenVisible(gen) {
+    if (!gen) return false;
+    if (gen.chatId) return currentChatId === gen.chatId && isChatViewVisible();
+    // 新对话还没拿到 id：仅当没切到其它已存对话、且仍在聊天态时算可见。
+    return !currentChatId && isChatViewVisible();
+  }
+
+  function hasActiveGeneration() {
+    for (const g of activeGenerations.values()) if (g.status === "streaming") return true;
+    return false;
+  }
+
+  function getGenerationByChatId(chatId) {
+    if (!chatId) return null;
+    for (const g of activeGenerations.values()) {
+      if (g.status === "streaming" && g.chatId === chatId) return g;
+    }
+    return null;
+  }
+
+  function clearGenSaveTimer(gen) {
+    if (gen._saveTimer) { clearTimeout(gen._saveTimer); gen._saveTimer = null; }
+  }
+
+  function unregisterGeneration(gen) {
+    clearGenSaveTimer(gen);
+    if (gen._rerenderTimer) { clearTimeout(gen._rerenderTimer); gen._rerenderTimer = null; }
+    activeGenerations.delete(gen.tempKey);
+  }
+
+  // 低层持久化：不触碰任何全局（currentChatId / conversationHistory），供后台生成专用。
+  async function createChatHistoryRow(messages, model, title) {
+    const response = await proxyFetch(EDGE_FUNCTION_URL, {
+      method: "POST",
+      headers: await proxyHeaders(),
+      body: JSON.stringify({
+        endpoint: "chat_history",
+        action: "create",
+        title: title || deriveLocalTitle(messages),
+        messages,
+        model: model || currentModel,
+      }),
+    });
+    if (!response.ok) throw new Error("创建聊天记录失败");
+    const { data } = await response.json();
+    return data;
+  }
+
+  async function updateChatHistoryRow(chatId, messages, title) {
+    const body = { endpoint: "chat_history", action: "update", id: chatId, messages };
+    if (typeof title === "string" && title.trim()) body.title = title.trim();
+    const response = await proxyFetch(EDGE_FUNCTION_URL, {
+      method: "POST",
+      headers: await proxyHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error("更新聊天记录失败");
+    const { data } = await response.json();
+    return data;
+  }
+
+  // 当前这轮的完整消息快照（基础历史 + 本轮 user + 工具消息 + 当前 assistant 部分内容）。
+  function genCurrentMessages(gen) {
+    const out = gen.baseMessages.slice();
+    if (gen.userMessage) out.push(gen.userMessage);
+    for (const m of gen.turnMessages) out.push(m);
+    if (gen.partialAnswer || gen.partialReasoning) {
+      out.push(
+        assistantHistoryMessage(gen.partialAnswer || "", gen.modelMetadata, {
+          reasoning: gen.partialReasoning || "",
+        }),
+      );
+    }
+    return out;
+  }
+
+  function beginGeneration({ modelMetadata, modelId, assistantMessageId, controller, baseMessages, userMessage }) {
+    const gen = {
+      tempKey: "gen-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      chatId: currentChatId || null,
+      isNewConversation: !currentChatId,
+      modelMetadata,
+      modelId: modelId || currentModel,
+      assistantMessageId,
+      controller,
+      baseMessages: Array.isArray(baseMessages) ? baseMessages : [],
+      userMessage,
+      turnMessages: [],
+      partialAnswer: "",
+      partialReasoning: "",
+      status: "streaming",
+      visible: true,
+      startedAt: Date.now(),
+      lastSavedAt: 0,
+      localTitle: "",
+      _saveTimer: null,
+      _saving: false,
+      _rerenderTimer: null,
+      _creating: null,
+      _titleUpgraded: false,
+    };
+    activeGenerations.set(gen.tempKey, gen);
+    if (gen.chatId) refreshSidebarSpinners();
+    return gen;
+  }
+
+  // 拿到（或惰性创建）服务端 chat_history 行 id。新对话首次增量保存时创建一行，
+  // 这样侧栏立即出现该对话 + 转圈，整页刷新也能从服务端恢复已生成内容。
+  function ensureGenChatRow(gen) {
+    if (gen.chatId) return Promise.resolve(gen.chatId);
+    if (gen._creating) return gen._creating;
+    gen._creating = (async () => {
+      try {
+        const msgs = genCurrentMessages(gen);
+        gen.localTitle = deriveLocalTitle(msgs);
+        const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
+        if (data && data.id) {
+          gen.chatId = data.id;
+          upsertCachedChatSummary(data);
+          if (gen.visible && !currentChatId) {
+            currentChatId = gen.chatId;
+            persistSessionNav();
+          }
+          renderChatHistoryList();
+        }
+      } catch (error) {
+        console.error("后台创建聊天记录失败:", error);
+      }
+      return gen.chatId;
+    })();
+    return gen._creating;
+  }
+
+  function scheduleGenSave(gen) {
+    if (gen.status !== "streaming") return;
+    if (gen._saveTimer) return;
+    const wait = Math.max(0, INCREMENTAL_SAVE_INTERVAL_MS - (Date.now() - gen.lastSavedAt));
+    gen._saveTimer = setTimeout(() => {
+      gen._saveTimer = null;
+      flushGenSave(gen);
+    }, wait);
+  }
+
+  async function flushGenSave(gen) {
+    if (gen._saving) return;
+    gen._saving = true;
+    try {
+      const chatId = await ensureGenChatRow(gen);
+      if (chatId && gen.status === "streaming") {
+        await updateChatHistoryRow(chatId, genCurrentMessages(gen));
+        gen.lastSavedAt = Date.now();
+      }
+    } catch (error) {
+      // 增量保存失败不影响生成，下个 chunk 会再排一次
+    } finally {
+      gen._saving = false;
+    }
+  }
+
+  function scheduleVisibleRerender(gen) {
+    if (gen._rerenderTimer) return;
+    gen._rerenderTimer = setTimeout(() => {
+      gen._rerenderTimer = null;
+      if (gen.status !== "streaming" || !isGenVisible(gen)) return;
+      // 仅在「实时流式 DOM 元素已不在」（即用户离开后又回到该对话）时按快照重绘。
+      if (document.getElementById(gen.assistantMessageId)) return;
+      try {
+        conversationHistory = genCurrentMessages(gen);
+        renderMessages();
+        scrollChatToBottom();
+      } catch (_) {}
+    }, VISIBLE_RERENDER_INTERVAL_MS);
+  }
+
+  // 每个网络 chunk 调一次：增量保存 + 回到该对话时的低频重绘。
+  function onGenerationProgress(gen) {
+    if (!gen) return;
+    scheduleGenSave(gen);
+    if (isGenVisible(gen) && !document.getElementById(gen.assistantMessageId)) {
+      scheduleVisibleRerender(gen);
+    }
+  }
+
+  // 一轮对话结束：把最终消息存到「这轮归属的对话」（而不是当前全局对话），
+  // 只有当这轮对话仍是用户正在看的对话时才同步全局状态 / DOM。
+  async function commitGeneration(gen, assistantMessage) {
+    gen.status = "done";
+    clearGenSaveTimer(gen);
+    if (gen._rerenderTimer) { clearTimeout(gen._rerenderTimer); gen._rerenderTimer = null; }
+
+    const finalMessages = gen.baseMessages.slice();
+    if (gen.userMessage) finalMessages.push(gen.userMessage);
+    for (const m of gen.turnMessages) finalMessages.push(m);
+    finalMessages.push(assistantMessage);
+
+    let savedChat = null;
+    try {
+      if (gen._creating) { try { await gen._creating; } catch (_) {} }
+      if (gen.chatId) {
+        savedChat = await updateChatHistoryRow(gen.chatId, finalMessages);
+      } else {
+        gen.localTitle = gen.localTitle || deriveLocalTitle(finalMessages);
+        savedChat = await createChatHistoryRow(finalMessages, gen.modelId, gen.localTitle);
+        if (savedChat && savedChat.id) gen.chatId = savedChat.id;
+      }
+      if (savedChat) upsertCachedChatSummary(savedChat);
+    } catch (error) {
+      console.error("保存对话失败:", error);
+    }
+
+    const visible = isGenVisible(gen);
+    if (visible) {
+      if (gen.chatId) currentChatId = gen.chatId;
+      conversationHistory = snapshotMessages(finalMessages);
+      updateContextMeter();
+      // 用户离开后又回到该对话时，实时流式元素已不在，需要按最终内容整页重绘。
+      if (!document.getElementById(gen.assistantMessageId)) {
+        renderMessages();
+        scrollChatToBottom();
+      }
+      persistSessionNav();
+    }
+
+    // 与旧版 finalizeConversationTurn 行为一致：分享按钮 + 附件清理始终执行。
+    updateChatShareButtonVisibility();
+    clearPendingAttachments();
+    unregisterGeneration(gen);
+    refreshSidebarSpinners();
+    renderChatHistoryList();
+    try {
+      window.dispatchEvent(
+        new CustomEvent("cancri:chat-history-saved", {
+          detail: { chat: savedChat, chatId: gen.chatId },
+        }),
+      );
+    } catch (_) {}
+    notifyGenerationComplete(gen, visible);
+    maybeUpgradeSmartTitle(gen, finalMessages);
+  }
+
+  // 侧栏对话项转圈：进行中的对话加 .recent-item-streaming + spinner，结束后移除。
+  function refreshSidebarSpinners() {
+    const items = document.querySelectorAll(".recent-item[data-chat-id]");
+    items.forEach((item) => {
+      const id = item.getAttribute("data-chat-id");
+      const active = Boolean(getGenerationByChatId(id));
+      item.classList.toggle("recent-item-streaming", active);
+      let spinner = item.querySelector(".recent-item-spinner");
+      if (active && !spinner) {
+        spinner = document.createElement("span");
+        spinner.className = "recent-item-spinner";
+        spinner.setAttribute("aria-hidden", "true");
+        const titleSpan = item.querySelector(".recent-item-title");
+        if (titleSpan && titleSpan.nextSibling) item.insertBefore(spinner, titleSpan.nextSibling);
+        else if (titleSpan) item.appendChild(spinner);
+        else item.appendChild(spinner);
+      } else if (!active && spinner) {
+        spinner.remove();
+      }
+    });
+  }
+
+  function ensureNotificationPermission() {
+    if (state.completionNotifyEnabled === false) return;
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission !== "default" || notificationPermissionAsked) return;
+    notificationPermissionAsked = true;
+    try {
+      const result = Notification.requestPermission();
+      if (result && typeof result.then === "function") result.catch(() => {});
+    } catch (_) {}
+  }
+
+  function notifyGenerationComplete(gen, wasVisible) {
+    if (state.completionNotifyEnabled === false) return;
+    // 用户正盯着这个对话（页面可见且就是当前对话）时不打扰。
+    if (wasVisible && !document.hidden) return;
+    const summary = (gen.partialAnswer || "").replace(/\s+/g, " ").trim().slice(0, 60);
+    const titleText = gen.localTitle || "对话已完成";
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      try {
+        const n = new Notification("Cancri · 回复完成", {
+          body: summary ? `${titleText}：${summary}` : titleText,
+          tag: "cancri-gen-" + (gen.chatId || gen.tempKey),
+        });
+        n.onclick = () => {
+          try { window.focus(); } catch (_) {}
+          if (gen.chatId) { try { loadChat(gen.chatId); } catch (_) {} }
+          try { n.close(); } catch (_) {}
+        };
+      } catch (_) {}
+    }
+    try { showToast("对话已完成回复", "success"); } catch (_) {}
+  }
+
+  // 新对话首轮：调后端 DeepSeek 端点生成简洁标题，替换掉「取首句」的本地快速标题。
+  async function maybeUpgradeSmartTitle(gen, finalMessages) {
+    try {
+      if (!gen.chatId) return;
+      if (!gen.isNewConversation) return;
+      if (gen.baseMessages.length > 0) return;
+      if (gen._titleUpgraded) return;
+      gen._titleUpgraded = true;
+      // 只挑首条 user + 首条 assistant 的纯文本上传，避免把多模态图片 base64 发给标题端点。
+      const compact = finalMessages
+        .filter((m) => m && (m.role === "user" || m.role === "assistant"))
+        .slice(0, 2)
+        .map((m) => ({ role: m.role, content: extractMessageText(m.content).slice(0, 1500) }))
+        .filter((m) => m.content);
+      if (!compact.length) return;
+      const response = await proxyFetch(GEN_TITLE_URL, {
+        method: "POST",
+        headers: await proxyHeaders(),
+        body: JSON.stringify({ messages: compact }),
+      });
+      if (!response.ok) return;
+      const { title } = await response.json();
+      const clean = String(title || "").trim();
+      if (!clean || clean === gen.localTitle) return;
+      await updateChatHistoryRow(gen.chatId, finalMessages, clean);
+      upsertCachedChatSummary({ id: gen.chatId, title: clean, model: gen.modelId });
+      renderChatHistoryList();
+    } catch (error) {
+      // 标题升级失败时保留本地快速标题，不影响其它功能
+    }
+  }
+  // ===== /后台生成 / 持久化 / 完成通知 / 智能标题 =====
+
   async function sendMessage(content) {
     // 检查速率限制
     const rateCheck = checkRateLimit();
@@ -14317,6 +14794,13 @@ const ARENA_MODE_MIGRATIONS = {
     const attachmentsForSend = pendingAttachments.slice();
     const webSearchEnabledForTurn = Boolean(state.webSearchEnabled);
     if ((!query && !attachmentsForSend.length) || state.isStreaming) return;
+    // 同一时刻只允许一个进行中的生成（可能在后台运行的对话）。
+    if (hasActiveGeneration()) {
+      showToast("上一条还在生成中，请稍候");
+      return;
+    }
+    // 在用户手势内尝试申请通知权限（首次发送时弹一次），用于「完成后台生成」通知。
+    ensureNotificationPermission();
   
     const turnModelId = currentModel;
     const turnModelMetadata = createModelMetadata(turnModelId);
@@ -14523,6 +15007,17 @@ const ARENA_MODE_MIGRATIONS = {
     const turnId = createChatTurnId();
     state.activeRequestController = controller;
     const turnMessages = [];
+    // 这轮生成的「身份」：归属对话 + 基础历史快照。即使用户随后切换对话 / 刷新，
+    // 这轮也会自包含地保存到它自己的对话，不污染当前正在看的对话。
+    const turnGen = beginGeneration({
+      modelMetadata: turnModelMetadata,
+      modelId: turnModelId,
+      assistantMessageId,
+      controller,
+      baseMessages: snapshotMessages(conversationHistory),
+      userMessage: userHistoryMessage,
+    });
+    turnGen.turnMessages = turnMessages;
   
     try {
       const baseMessages = await buildApiMessages(
@@ -14566,6 +15061,7 @@ const ARENA_MODE_MIGRATIONS = {
             priorReasoning: accumulatedReasoningText,
             requestKind: round === 0 ? "direct_chat" : "tool_followup_chat",
             webSearchEnabled: webSearchEnabledForTurn,
+            gen: turnGen,
           },
         );
         accumulatedReasoningText = composeReasoningText(
@@ -14609,14 +15105,12 @@ const ARENA_MODE_MIGRATIONS = {
                 answer: repeatedAnswer,
                 thinking: false,
               });
-              pushHistory(userHistoryMessage);
-              turnMessages.forEach((message) => pushHistory(message));
-              pushHistory(
+              await commitGeneration(
+                turnGen,
                 assistantHistoryMessage(repeatedAnswer, turnModelMetadata, {
                   reasoning: accumulatedReasoningText,
                 }),
               );
-              await finalizeConversationTurn();
               return;
             }
             const uiBlock = addToolCallUI(assistantMessageId, toolCall);
@@ -14667,14 +15161,12 @@ const ARENA_MODE_MIGRATIONS = {
           thinking: false,
         });
   
-        pushHistory(userHistoryMessage);
-        turnMessages.forEach((message) => pushHistory(message));
-        pushHistory(
+        await commitGeneration(
+          turnGen,
           assistantHistoryMessage(resolvedAnswer, turnModelMetadata, {
             reasoning: accumulatedReasoningText,
           }),
         );
-        await finalizeConversationTurn();
         return;
       }
 
@@ -14685,9 +15177,8 @@ const ARENA_MODE_MIGRATIONS = {
         answer: fallbackAnswer,
         thinking: false,
       });
-      pushHistory(userHistoryMessage);
-      turnMessages.forEach((message) => pushHistory(message));
-      pushHistory(
+      await commitGeneration(
+        turnGen,
         assistantHistoryMessageFromDom(
           assistantMessageId,
           fallbackAnswer,
@@ -14695,7 +15186,6 @@ const ARENA_MODE_MIGRATIONS = {
           { reasoning: accumulatedReasoningText },
         ),
       );
-      await finalizeConversationTurn();
     } catch (error) {
       // DIAGNOSTIC（2026-05-13f）：用户报告"Assignment to constant variable"
       // 在每次回复完触发，但全量 AST 扫描未在自家 .js 里找到 const 重新赋
@@ -14715,14 +15205,13 @@ const ARENA_MODE_MIGRATIONS = {
           answer: "登录已过期，请重新登录后再试。",
           thinking: false,
         });
-        pushHistory(userHistoryMessage);
-        pushHistory(
+        await commitGeneration(
+          turnGen,
           assistantHistoryMessage(
             "登录已过期，请重新登录后再试。",
             turnModelMetadata,
           ),
-        );
-        await finalizeConversationTurn().catch(() => {});
+        ).catch(() => {});
         state.sendLocked = false;
         setComposerBusy(false);
         return;
@@ -14735,14 +15224,13 @@ const ARENA_MODE_MIGRATIONS = {
           answer: "登录会话异常，请刷新页面后重试。",
           thinking: false,
         });
-        pushHistory(userHistoryMessage);
-        pushHistory(
+        await commitGeneration(
+          turnGen,
           assistantHistoryMessage(
             "登录会话异常，请刷新页面后重试。",
             turnModelMetadata,
           ),
-        );
-        await finalizeConversationTurn().catch(() => {});
+        ).catch(() => {});
         state.sendLocked = false;
         setComposerBusy(false);
         return;
@@ -14767,9 +15255,8 @@ const ARENA_MODE_MIGRATIONS = {
         });
       }
       try {
-        pushHistory(userHistoryMessage);
-        turnMessages.forEach((historyMessage) => pushHistory(historyMessage));
-        pushHistory(
+        await commitGeneration(
+          turnGen,
           isUserStopped
             ? assistantHistoryMessageFromDom(
                 assistantMessageId,
@@ -14778,7 +15265,6 @@ const ARENA_MODE_MIGRATIONS = {
               )
             : assistantErrorHistoryMessage(turnModelMetadata, turnModelId),
         );
-        await finalizeConversationTurn();
       } catch (saveError) {
         console.error("保存失败回合失败:", saveError);
       }
@@ -16654,6 +17140,20 @@ const ARENA_MODE_MIGRATIONS = {
   updateChatShareButtonVisibility();
   window.addEventListener("beforeunload", persistSessionNav);
   window.addEventListener("pagehide", persistSessionNav);
+
+  // 2026-06-17：页面进入后台 / 即将卸载时，尽力把进行中的生成增量保存一次，
+  // 收紧「整页刷新最多丢约 1.5s 已生成内容」的窗口。
+  function flushActiveGenerationsBestEffort() {
+    for (const gen of activeGenerations.values()) {
+      if (gen.status === "streaming") {
+        try { flushGenSave(gen); } catch (_) {}
+      }
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) flushActiveGenerationsBestEffort();
+  });
+  window.addEventListener("pagehide", flushActiveGenerationsBestEffort);
   
   // 加载并渲染聊天记录列表
   if (!hasSharedConversationHash()) {
@@ -16775,6 +17275,7 @@ const ARENA_MODE_MIGRATIONS = {
     setCustomInstructions,
     setWebSearchEnabled,
     setInlineMermaidEnabled,
+    setCompletionNotifyEnabled,
     setFullName,
     setProfession,
     getNickname,

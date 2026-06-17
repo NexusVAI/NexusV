@@ -25,6 +25,7 @@
     var latestTierSubscription = null;
     var accountPlanObserverMuted = false;
     var accountPlanRefreshTimer = 0;
+    var tierAuthWaitTimer = 0;
 
     // 等待 DOM ready，避免脚本在 cancri_chat.js 初始化前 query 不到 DOM。
     if (document.readyState === 'loading') {
@@ -45,6 +46,7 @@
             bindArtifactsNav,
             bindPlanPill,
             bindAccountPlanSync,
+            bindTierAuthEvents,
             bindGettingStartedChecklist,
             bindCodePromoCard,
             bindExternalSidebarLinks,
@@ -670,11 +672,25 @@
     async function applyTierUI() {
         const token = getCancriAccessToken();
         if (!token) {
-            // 未登录：默认 free（不算 fail，因为这是确定结论）
-            clearTierCache();
-            applyTierState({ tier: 'free', days_remaining: 0, expires_at: null }, false);
+            // 2026-06-17 fix：首屏 token 可能还没从 Supabase 异步恢复。此时绝不能清缓存 /
+            // 误判 free——否则 Pro Max 用户会闪成「免费计划」且不再被纠正（需手动刷新）。
+            // 先用缓存即时显示；无缓存则保持骨架，最多等 1.5s，之后若仍无 token 才判为登出。
+            const cached0 = readTierCache();
+            if (cached0) { applyTierState(cached0, true); return; }
+            if (!tierAuthWaitTimer) {
+                tierAuthWaitTimer = setTimeout(function () {
+                    tierAuthWaitTimer = 0;
+                    if (getCancriAccessToken()) {
+                        applyTierUI().catch(function () {});
+                    } else {
+                        clearTierCache();
+                        applyTierState({ tier: 'free', days_remaining: 0, expires_at: null }, false);
+                    }
+                }, 1500);
+            }
             return;
         }
+        if (tierAuthWaitTimer) { clearTimeout(tierAuthWaitTimer); tierAuthWaitTimer = 0; }
         const SUPABASE_URL = window.__SUPABASE_URL__ || '';
         const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || '';
         if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -759,14 +775,14 @@
     }
 
     function bindAccountPlanSync() {
-        updateAccountPlanText(latestTierSubscription || readTierCache() || { tier: getCancriAccessToken() ? 'free' : 'signed_out' });
+        updateAccountPlanText(latestTierSubscription || readTierCache() || null);
         var strip = document.getElementById('accountTrigger');
         if (strip && typeof MutationObserver !== 'undefined') {
             new MutationObserver(function () {
                 if (accountPlanObserverMuted) return;
                 clearTimeout(accountPlanRefreshTimer);
                 accountPlanRefreshTimer = setTimeout(function () {
-                    updateAccountPlanText(latestTierSubscription || readTierCache() || { tier: getCancriAccessToken() ? 'free' : 'signed_out' });
+                    updateAccountPlanText(latestTierSubscription || readTierCache() || null);
                     if (getCancriAccessToken()) {
                         applyTierUI().catch(function () {});
                     }
@@ -775,23 +791,65 @@
         }
     }
 
+    function setAccountPlanText(planEl, text) {
+        accountPlanObserverMuted = true;
+        planEl.textContent = text;
+        setTimeout(function () { accountPlanObserverMuted = false; }, 0);
+    }
+
     function updateAccountPlanText(sub) {
         var planEl = document.querySelector('.account-strip .account-plan');
         if (!planEl) return;
         var token = getCancriAccessToken();
-        var text = '请先登录';
-        if (token) {
-            if (sub && sub.tier === 'paid') {
-                var plan = sub.plan_code || 'pro';
-                var label = PLAN_LABEL_FOR_BILLING[plan] || 'Pro';
-                text = label + ' plan';
+        if (!token) {
+            document.body.classList.remove('is-account-tier-loading');
+            setAccountPlanText(planEl, '请先登录');
+            return;
+        }
+        if (sub && sub.tier === 'paid') {
+            var plan = sub.plan_code || 'pro';
+            var label = PLAN_LABEL_FOR_BILLING[plan] || 'Pro';
+            document.body.classList.remove('is-account-tier-loading');
+            setAccountPlanText(planEl, label + ' plan');
+            return;
+        }
+        if (sub && sub.tier === 'free') {
+            document.body.classList.remove('is-account-tier-loading');
+            setAccountPlanText(planEl, 'Free plan');
+            return;
+        }
+        // 2026-06-17 fix：已登录但订阅档位尚未拿到（未知）——保持骨架，绝不写「Free plan」误导付费用户。
+        document.body.classList.add('is-account-tier-loading');
+    }
+
+    // 监听 cancri_chat.js 在 Supabase auth 状态变化时派发的事件，确保登录就绪后
+    // 一定会重新拉取真实档位（修首屏 token 未就绪的竞态），并兜底重试卡住的骨架。
+    function bindTierAuthEvents() {
+        window.addEventListener('cancri:auth-changed', function (e) {
+            var signedIn = !!(e && e.detail && e.detail.signedIn);
+            if (signedIn) {
+                // 仅在档位尚未知时显示骨架；已知档位的路由 token 刷新静默重拉，避免名字/档位闪烁。
+                if (!latestTierSubscription) {
+                    document.body.classList.add('is-tier-loading');
+                    document.body.classList.add('is-account-tier-loading');
+                }
+                if (tierAuthWaitTimer) { clearTimeout(tierAuthWaitTimer); tierAuthWaitTimer = 0; }
+                applyTierUI().catch(function () {});
             } else {
-                text = 'Free plan';
+                clearTierCache();
+                latestTierSubscription = null;
+                applyTierState({ tier: 'free', days_remaining: 0, expires_at: null }, false);
+            }
+        });
+        function retryIfLoading() {
+            if (document.body.classList.contains('is-tier-loading') && getCancriAccessToken()) {
+                applyTierUI().catch(function () {});
             }
         }
-        accountPlanObserverMuted = true;
-        planEl.textContent = text;
-        setTimeout(function () { accountPlanObserverMuted = false; }, 0);
+        window.addEventListener('focus', retryIfLoading);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) retryIfLoading();
+        });
     }
 
     function readOnboardingCompleted() {
@@ -2405,6 +2463,10 @@
             if (capInlineViz) {
                 capInlineViz.checked = app.state.inlineMermaidEnabled !== false;
             }
+            const capNotify = document.getElementById('claudeCompletionNotify');
+            if (capNotify) {
+                capNotify.checked = app.state.completionNotifyEnabled !== false;
+            }
         }
 
         // ─── 工具：把当前 state 写入表单控件 ───
@@ -2549,6 +2611,15 @@
             capInlineViz.addEventListener('change', function () {
                 if (app && typeof app.setInlineMermaidEnabled === 'function') {
                     app.setInlineMermaidEnabled(capInlineViz.checked);
+                }
+            });
+        }
+
+        const capNotify = document.getElementById('claudeCompletionNotify');
+        if (capNotify) {
+            capNotify.addEventListener('change', function () {
+                if (app && typeof app.setCompletionNotifyEnabled === 'function') {
+                    app.setCompletionNotifyEnabled(capNotify.checked);
                 }
             });
         }

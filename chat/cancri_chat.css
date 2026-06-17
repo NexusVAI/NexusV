@@ -803,6 +803,68 @@ svg {
     color: var(--text);
 }
 
+/* 2026-06-17：对话后台生成中——侧栏对应对话项显示转圈指示 */
+.recent-item-spinner {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+    border-top-color: var(--accent, currentColor);
+    animation: recent-item-spin 0.8s linear infinite;
+    opacity: 0.85;
+}
+.recent-item-streaming .recent-item-title {
+    /* 生成中略微高亮标题，配合转圈更醒目 */
+    color: var(--text);
+}
+@keyframes recent-item-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .recent-item-spinner {
+        animation-duration: 1.6s;
+    }
+}
+
+/* 2026-06-17：点击聊天记录、等待服务端返回时的对话区骨架屏 */
+.chat-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px 8px;
+    box-sizing: border-box;
+}
+.chat-skeleton-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+}
+.chat-skeleton-assistant {
+    align-items: flex-start;
+}
+.chat-skeleton-user {
+    align-items: flex-end;
+}
+.chat-skeleton-line {
+    display: block;
+    height: 14px;
+    border-radius: 7px;
+    min-width: 28%;
+}
+.chat-skeleton-user .chat-skeleton-line {
+    height: 34px;
+    border-radius: 16px;
+    max-width: 62%;
+}
+
 .chat-item-menu {
     position: fixed;
     z-index: 300;
