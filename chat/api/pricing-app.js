@@ -350,6 +350,10 @@ let selection = null; // { kind: 'subscription'|'topup', code: 'pro'|...|'topup_
 // 与后端 handleSubmitPaymentOrder 同口径（原价做差、最低 ¥1）。仅预览，真实金额以提交后订单为准。
 let currentSub = null;
 const PLAN_RANK = { pro: 1, pro_plus: 2, pro_max: 3 };
+// 2026-06-18 与后端 ORDER_CATALOG.subscription.monthly_quota 同步（token / 10000 = 积分）。
+// 升级补差价时配额也按剩余天数比例发（DB cancri_activate_paid_code_v2 upgrade 分支），
+// 前端规格行必须按同口径显示，否则会误导成「¥7 拿满月 8000 积分」。
+const PLAN_FULL_CREDITS = { pro: 2000, pro_plus: 8000, pro_max: 30000 };
 // 2026-06-04 与后端同步：剩余 < 此天数不给 proration 升级（防临到期薅），改满价买新周期。
 const UPGRADE_MIN_REMAINING_DAYS = 7;
 function planLabelOf(code) {
@@ -367,7 +371,20 @@ function computeUpgradePreview(planCode) {
     const curMonth = Number((CLIENT_CATALOG.subscription[cur] || {}).amount_original) || 0;
     const prorated = ((tgt - curMonth) / 30) * days;
     const amount = Math.max(1, Math.round(prorated * 100) / 100);
-    return { amount, days, fromLabel: planLabelOf(cur), toLabel: planLabelOf(planCode) };
+    // 配额按 DB 同口径折算：new = old + floor((target_full - old) * days / 30)，
+    // 钳制在 [old, target_full]；剩余 ≥30 天给满。下周期 reset 恢复 target_full。
+    const oldCredits = PLAN_FULL_CREDITS[cur] || 0;
+    const targetCredits = PLAN_FULL_CREDITS[planCode] || 0;
+    const ratioDays = Math.min(30, days);
+    const newCredits = Math.max(
+        oldCredits,
+        Math.min(targetCredits, oldCredits + Math.floor((targetCredits - oldCredits) * ratioDays / 30))
+    );
+    const deltaCredits = Math.max(0, newCredits - oldCredits);
+    return {
+        amount, days, fromLabel: planLabelOf(cur), toLabel: planLabelOf(planCode),
+        newCredits, deltaCredits, targetCredits,
+    };
 }
 
 async function getSession() {
@@ -510,7 +527,13 @@ function renderSelectedSummary() {
             "</div>" +
             '<div class="selected-summary__row">' +
                 '<span class="selected-summary__label">规格</span>' +
-                '<span class="selected-summary__value">' + esc(catalog.desc) + "</span>" +
+                '<span class="selected-summary__value">' +
+                    (upg
+                        ? "升级后月配额 " + esc(String(upg.newCredits).replace(/(\d)(?=(\d{3})+$)/g, "$1,")) +
+                          " 积分（剩余 " + esc(String(upg.days)) + " 天按比例，下周期恢复 " +
+                          esc(String(upg.targetCredits).replace(/(\d)(?=(\d{3})+$)/g, "$1,")) + "）"
+                        : esc(catalog.desc)) +
+                "</span>" +
             "</div>" +
             upgradeNote +
             '<div class="selected-summary__row">' +
