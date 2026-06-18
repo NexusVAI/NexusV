@@ -2543,7 +2543,10 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "minimax-m3", "name": "MiniMax M3", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "gemini-3.5-flash-thinking", "name": "Gemini 3.5 Flash High", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
+    {"id": "grok-3-mini", "name": "Grok 3 Mini", "brand": "xAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "futureppo"},
     {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "dgbmc"},
+    {"id": "grok-imagine-image", "name": "Grok Imagine Image", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo"},
+    {"id": "grok-imagine-video", "name": "Grok Imagine Video", "brand": "xAI", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo"},
     {"id": "grok-imagine-image-pro", "name": "Grok Image Pro", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "gemai.cc"},
     {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
     {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
@@ -2552,6 +2555,9 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "z-image-turbo", "name": "【订阅福利】造相-Z-Image-Turbo", "brand": "Qwen", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
     {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "doubao-seed-2.0-pro", "name": "Doubao Seed 2.0 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
+    {"id": "doubao-seed-1-6", "name": "Doubao Seed 1.6", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "futureppo"},
+    {"id": "doubao-seed-1-8", "name": "Doubao Seed 1.8", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "futureppo"},
+    {"id": "doubao-seedream-4-5", "name": "Doubao Seedream 4.5", "brand": "Doubao", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo"},
     {"id": "doubao-seed-2-0-code-preview-260215", "name": "Doubao Seed 2.0 Code", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.6", "name": "Kimi K2.6", "brand": "Moonshot", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     {"id": "kimi-k2.7-code", "name": "Kimi K2.7 Code", "brand": "Moonshot", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "lineLabel": "bailian", "customMultiplier": 5.0},
@@ -11427,6 +11433,22 @@ const ARENA_MODE_MIGRATIONS = {
   function setImageGenerationBusy(isBusy, _statusText) {
     state.isImageGenerating = isBusy;
   }
+
+  /** OpenAI Images API b64_json → data URL（按 magic 选 MIME，Grok 多为 JPEG）。 */
+  function openAiB64JsonToDataUrl(b64Json) {
+    const b64 = String(b64Json || "").trim();
+    if (!b64) return "";
+    if (b64.startsWith("/9j/") || b64.startsWith("9j/")) {
+      return `data:image/jpeg;base64,${b64}`;
+    }
+    if (b64.startsWith("iVBORw0KG")) {
+      return `data:image/png;base64,${b64}`;
+    }
+    if (b64.startsWith("UklGR")) {
+      return `data:image/webp;base64,${b64}`;
+    }
+    return `data:image/jpeg;base64,${b64}`;
+  }
   
   async function generateImageFromPrompt(
     prompt,
@@ -11443,10 +11465,12 @@ const ARENA_MODE_MIGRATIONS = {
     // grok-imagine-image-lite，走 OpenAI-style 同步返回。
     const isOpenAIImage =
       imageModel === "grok-imagine-image-lite" ||
+      imageModel === "grok-imagine-image" ||
       imageModel === "grok-imagine-image-pro" ||
       imageModel === "gpt-image-2-all" ||
       imageModel === "gpt-image-2-pro" ||
       imageModel === "gpt-image-2" ||
+      imageModel === "doubao-seedream-4-5" ||
       imageModel === "z-image-turbo";
     // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
     const imageSize = "1024x1024";
@@ -11470,7 +11494,7 @@ const ARENA_MODE_MIGRATIONS = {
   
     // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
     // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-    const noI2iModels = new Set(["grok-imagine-image-lite", "grok-imagine-image-pro", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "z-image-turbo"]);
+    const noI2iModels = new Set(["grok-imagine-image-lite", "grok-imagine-image", "grok-imagine-image-pro", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "doubao-seedream-4-5", "z-image-turbo"]);
     if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
       setImageGenerationBusy(false);
       showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
@@ -11557,7 +11581,7 @@ const ARENA_MODE_MIGRATIONS = {
         // 2026-06-15: 优先 b64_json（内嵌数据，不过期），url 可能是临时地址会过期。
         const imageUrl =
           (data?.data?.[0]?.b64_json
-            ? `data:image/png;base64,${data.data[0].b64_json}`
+            ? openAiB64JsonToDataUrl(data.data[0].b64_json)
             : "") ||
           data?.data?.[0]?.url || "";
         if (!imageUrl) {
