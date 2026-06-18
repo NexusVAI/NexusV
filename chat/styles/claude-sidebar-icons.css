@@ -518,6 +518,29 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   display: grid !important;
   place-items: center !important;
   border-radius: 8px !important;
+  box-sizing: border-box !important;
+}
+
+/* ── 收起动画修复 ────────────────────────────────────────── */
+
+/* FIX 1: 动画期间禁用 topbar 的 padding 过渡，避免按钮在宽度动画过程中
+   被 padding 变化持续重新居中而产生"颤动"。padding 直接 snap 到 0。 */
+.sidebar.is-rail-animating .sidebar-topbar {
+  transition: none !important;
+}
+
+/* FIX 2: 最终收起态补上 max-height:0，与 is-rail-collapsing 动画态一致。
+   否则动画类移除时 max-height 从 0 snap 回 auto，列表垂直撑开一帧 = 抖动。 */
+.sidebar.collapsed:not(.is-rail-collapsing) .recent-wrap,
+.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .recent-wrap,
+.sidebar.collapsed:not(.is-rail-collapsing) #chatHistoryList,
+.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) #chatHistoryList,
+.sidebar.collapsed:not(.is-rail-collapsing) .sidebar-search-wrap,
+.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .sidebar-search-wrap,
+.sidebar.collapsed:not(.is-rail-collapsing) #sidebarSearchWrap,
+.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) #sidebarSearchWrap {
+  max-height: 0 !important;
+  overflow: hidden !important;
 }
 
 .sidebar.collapsed .sidebar-nav-primary,
