@@ -1911,6 +1911,9 @@ const ARENA_MODE_MIGRATIONS = {
     // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
     // 2026-06-03: 移除 gpt-5.5-welfare / gemini-3.5-flash-welfare /
     //            gemini-3.1-flash-lite-welfare / gpt-5.4-mini-welfare，退出福利档改为付费专属。
+    // 2026-06-18: 新增 deepseek-v4-pro-welfare（全档位免扣额度，含 FREE 用户）。
+    //   注意 composer-2.5-fast 虽在后端 WELFARE_MODEL_IDS（免扣额度），
+    //   但它对 FREE 用户硬挡（Pro+ 福利），不在全档位福利白名单里。
     // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
     if (
       modelId === "claude-sonnet-4.5" ||
@@ -1918,7 +1921,8 @@ const ARENA_MODE_MIGRATIONS = {
       modelId === "baichuan-m2-welfare" ||
       modelId === "baichuan4-air-welfare" ||
       modelId === "baichuan3-turbo-welfare" ||
-      modelId === "baichuan2-turbo-welfare"
+      modelId === "baichuan2-turbo-welfare" ||
+      modelId === "deepseek-v4-pro-welfare"
     ) return null;
     // 2026-05-19：FREE 用户买了加油包后，后端 cancri_consume_paid_quota_v2
     // 会在 free_pool / 当日 15 次耗尽时回退 user_topup_credits。前端预阻挡
@@ -2591,6 +2595,9 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "glm-5.2", "name": "GLM 5.2", "brand": "Zhipu", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "bailian", "customMultiplier": 2.5},
     // 2026-06-09: 【订阅福利】composer-2.5-fast — newapi.makelove.cloud 上游，Pro+ 免费。
     {"id": "composer-2.5-fast", "name": "【订阅福利】composer-2.5-fast", "brand": "Cursor", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
+    // 2026-06-18: 【福利】DeepSeek V4 Pro — newapi.makelove.cloud 上游，全档位免扣额度。
+    // 仅受并发(每用户1)+全局RPM限流，付费用户绕过限流。上游请求体仍发 deepseek-v4-pro。
+    {"id": "deepseek-v4-pro-welfare", "name": "【福利】DeepSeek V4 Pro", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": true, "tools": true, "costTier": "free"},
     {"id": "gpt-5.5-welfare", "name": "GPT-5.5 0603", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 9.0},
     {"id": "gemini-3.5-flash-welfare", "name": "Gemini 3.5 Flash 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "gemini-3.1-flash-lite-welfare", "name": "Gemini 3.1 Flash Lite 0603", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 3.5},
