@@ -1773,7 +1773,16 @@ const ARENA_MODE_MIGRATIONS = {
   
   const PRO_MAX_GATE_IDS = new Set([
     "gpt-image-2-pro",
+    "grok-imagine-video",
   ]);
+
+  // 2026-06-18: Grok Imagine Video 限时 — Pro 起可用；2026-07-19 00:00 UTC+8 起 Pro Max + 300 积分/次。
+  const GROK_IMAGINE_VIDEO_PROMO_START_MS = Date.parse("2026-06-18T00:00:00+08:00");
+  const GROK_IMAGINE_VIDEO_PROMO_END_MS = Date.parse("2026-07-19T00:00:00+08:00");
+
+  function isGrokImagineVideoPromoActive(now = Date.now()) {
+    return now >= GROK_IMAGINE_VIDEO_PROMO_START_MS && now < GROK_IMAGINE_VIDEO_PROMO_END_MS;
+  }
   
   // 2026-05-18 fix：tier 默认 null（未知），而不是 "free"。
   // 之前默认 "free" + planCode null 的组合让首次进入聊天页时（refreshQuotaState
@@ -1859,6 +1868,9 @@ const ARENA_MODE_MIGRATIONS = {
   }
   
   function isProMaxGateModel(modelId) {
+    if (modelId === "grok-imagine-video" && isGrokImagineVideoPromoActive()) {
+      return false;
+    }
     const meta = getModelMeta(modelId);
     return Boolean((meta && meta.proMaxOnly === true) || PRO_MAX_GATE_IDS.has(modelId));
   }
@@ -2435,6 +2447,7 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-5.5-b": DEFAULT_MODEL_ID,
     "gpt-5.5-c": DEFAULT_MODEL_ID,
     "claude-opus-4-5": DEFAULT_MODEL_ID,
+    "claude-opus-4-6": DEFAULT_MODEL_ID,
     "claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
     "claude-opus-4-6-thinking": DEFAULT_MODEL_ID,
     "claude-sonnet-4-6-thinking": DEFAULT_MODEL_ID,
@@ -2515,6 +2528,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "minimax-m2.5", "name": "MiniMax M2.5", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal"},
     // 2026-05-25: claude-opus-4-5 重新上线（supxh.xin 上游，Pro+ 专享）。
     {"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip", "customMultiplier": 15.0},
+    // 2026-06-18: claude-opus-4-6 — api.xstx.info（pytn 上游），Pro+ 专享。
+    {"id": "claude-opus-4-6", "name": "Claude Opus 4.6", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "vip", "customMultiplier": 15.0},
     // 2026-05-26: 百川官方 API（baichuan-ai.com）8 模型。
     {"id": "baichuan-m3", "name": "Baichuan M3", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": false, "costTier": "cheap"},
     {"id": "baichuan4", "name": "Baichuan 4", "brand": "Baichuan", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
@@ -2544,10 +2559,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "gemini-3.5-flash-thinking", "name": "Gemini 3.5 Flash High", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 5.0},
     {"id": "grok-4.3", "name": "Grok 4.3", "brand": "xAI", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive"},
     {"id": "grok-3-mini", "name": "Grok 3 Mini", "brand": "xAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "futureppo"},
-    {"id": "grok-imagine-image-lite", "name": "Grok Imagine (Image)", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "dgbmc"},
-    {"id": "grok-imagine-image", "name": "Grok Imagine Image", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo"},
-    {"id": "grok-imagine-video", "name": "Grok Imagine Video", "brand": "xAI", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo"},
-    {"id": "grok-imagine-image-pro", "name": "Grok Image Pro", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "gemai.cc"},
+    {"id": "grok-imagine-image", "name": "Grok Imagine Image", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo", "customMultiplier": 100, "creditPerUse": 10},
+    {"id": "grok-imagine-video", "name": "Grok Imagine Video", "brand": "xAI", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo", "proMaxOnly": true, "customMultiplier": 3000, "creditPerUse": 300, "promoLimited": true, "promoTooltip": "2026/06/18-2026/07/18 Pro起步均可用"},
     {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
     {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
     {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
@@ -2568,6 +2581,8 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "claude-sonnet-4.5", "name": "【福利】Claude Sonnet 4.5", "brand": "Anthropic", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "free"},
     {"id": "nex-n2-pro-welfare", "name": "【福利】Nex-N2-Pro", "brand": "Nex", "kind": "chat", "vision": false, "thinking": true, "tools": false, "costTier": "free"},
     {"id": "gpt-5.5", "name": "GPT-5.5", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 10.0},
+    // 2026-06-18: gemini-3.5-agent — newapi.prorisehub.com 上游，倍率 7×。
+    {"id": "gemini-3.5-agent", "name": "Gemini 3.5 Agent", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "expensive", "customMultiplier": 7.0},
     {"id": "gpt-5.5-high", "name": "GPT-5.5 High", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
     {"id": "gpt-5.5-xhigh", "name": "GPT 5.5 XHigh", "brand": "OpenAI", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "expensive", "customMultiplier": 12.0},
     // 2026-06-02: 【特价】GPT-5.5 — newapi.makelove.cloud 上游，normal 档。
@@ -2808,6 +2823,10 @@ const ARENA_MODE_MIGRATIONS = {
       kind: entry.kind || "chat",
       costTier: entry.costTier || "normal",
       proMaxOnly: entry.proMaxOnly === true,
+      creditPerUse: Number(entry.creditPerUse) || 0,
+      promoLimited: entry.promoLimited === true,
+      promoTooltip: entry.promoTooltip || "",
+      customMultiplier: entry.customMultiplier,
     };
     MODEL_META_MAP.set(entry.id, meta);
     MODEL_IDS[entry.id] = entry.id;
@@ -5377,12 +5396,15 @@ const ARENA_MODE_MIGRATIONS = {
           return;
         }
   
-        // 检测生成图片格式：![generated image](url)
+        // 检测生成图片格式：![generated image](url|data:...)
         const imageMatch = content.match(
-          /^!\[generated image\]\((https?:\/\/[^\)]+)\)$/,
+          /^!\[generated image\]\(([^)]+)\)$/,
         );
         if (imageMatch) {
           const imageUrl = imageMatch[1];
+          if (!/^(https?:\/\/|data:image\/)/i.test(imageUrl)) {
+            // 非图片 URL，走普通文本回放
+          } else {
           const id = createAssistantMessage(metadata);
           const messageDiv = document.getElementById(id);
           // 历史回放：图片/视频消息已是终态，移除脉冲圆球占位
@@ -5393,6 +5415,7 @@ const ARENA_MODE_MIGRATIONS = {
             answerBody.appendChild(createRestoredImageElement(imageUrl));
           }
           return;
+          }
         }
   
         // 检测生成视频格式：![generated video](url)
@@ -7738,6 +7761,12 @@ const ARENA_MODE_MIGRATIONS = {
 
   function normalizeThinkDisplayText(text) {
     return String(text || "")
+      // 流式 reasoning_content 的 chunk 之间常带裸 \n/\n\n（历史恢复路径用
+      // \n\n---\n\n 分段所以无此问题）。renderMarkdown 把每个 \n\n 当段落分隔，
+      // 导致 think-body 里每个词单独成 <p> 挤成一列。这里把"非句末标点
+      // (.!?) 后的换行"全部合并成空格；句末标点后的换行保留作真实段落分隔。
+      // CJK 间换行合并出的空格再交给下面三条规则去除。
+      .replace(/([^.!?])\n+([^\n\r])/g, "$1 $2")
       .replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1")
       .replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1")
       .replace(/([，。！？；：、])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
@@ -7883,8 +7912,6 @@ const ARENA_MODE_MIGRATIONS = {
         homeInput.focus();
       }
     });
-
-    wireTranslateButton(messageDiv);
 
     return actionsBar;
   }
@@ -10035,6 +10062,37 @@ const ARENA_MODE_MIGRATIONS = {
   //
   // `kind` is informational only ("image" | "video"); the gateway picks the
   // extension from the upstream Content-Type header.
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () =>
+        reject(reader.error || new Error("read_blob_failed"));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  /** 临时 https 图链 → data URL，避免 Grok 等短链过期后历史回放失败。 */
+  async function ensurePersistentImageUrl(imageUrl) {
+    const trimmed = String(imageUrl || "").trim();
+    if (!trimmed) return "";
+    if (/^data:image\//i.test(trimmed)) return trimmed;
+    if (!/^https?:\/\//i.test(trimmed)) return trimmed;
+    const response = await proxyFetch(EDGE_FUNCTION_URL, {
+      method: "POST",
+      headers: await proxyHeaders(),
+      body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
+    });
+    if (!response.ok) {
+      throw new Error(`image_persist_${response.status}`);
+    }
+    const blob = await response.blob();
+    if (blob.type && !blob.type.toLowerCase().startsWith("image/")) {
+      throw new Error("invalid_media_type");
+    }
+    return blobToDataUrl(blob);
+  }
+
   async function downloadViaMediaProxy(url, kind) {
     const trimmed = String(url || "").trim();
     // ── data: URI 直接下载 ─────────────────────────────────
@@ -11464,9 +11522,7 @@ const ARENA_MODE_MIGRATIONS = {
     // and polls /task until SUCCEED/FAILED. 当前下拉里唯一的图像模型是
     // grok-imagine-image-lite，走 OpenAI-style 同步返回。
     const isOpenAIImage =
-      imageModel === "grok-imagine-image-lite" ||
       imageModel === "grok-imagine-image" ||
-      imageModel === "grok-imagine-image-pro" ||
       imageModel === "gpt-image-2-all" ||
       imageModel === "gpt-image-2-pro" ||
       imageModel === "gpt-image-2" ||
@@ -11494,7 +11550,7 @@ const ARENA_MODE_MIGRATIONS = {
   
     // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
     // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-    const noI2iModels = new Set(["grok-imagine-image-lite", "grok-imagine-image", "grok-imagine-image-pro", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "doubao-seedream-4-5", "z-image-turbo"]);
+    const noI2iModels = new Set(["grok-imagine-image", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "doubao-seedream-4-5", "z-image-turbo"]);
     if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
       setImageGenerationBusy(false);
       showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
@@ -11508,7 +11564,7 @@ const ARENA_MODE_MIGRATIONS = {
         prompt: value,
         n: 1,
         size: imageSize,
-        response_format: "url",
+        response_format: "b64_json",
       };
       if (imageAttachments.length) {
         // Shrink every attachment before it joins the JSON body. A typical
@@ -11579,17 +11635,22 @@ const ARENA_MODE_MIGRATIONS = {
       // OpenAI-compatible API returns images directly
       if (isOpenAIImage) {
         // 2026-06-15: 优先 b64_json（内嵌数据，不过期），url 可能是临时地址会过期。
-        const imageUrl =
+        const rawUrl = String(data?.data?.[0]?.url || "").trim();
+        let imageUrl =
           (data?.data?.[0]?.b64_json
             ? openAiB64JsonToDataUrl(data.data[0].b64_json)
             : "") ||
-          data?.data?.[0]?.url || "";
+          (/^data:image\//i.test(rawUrl) ? rawUrl : "") ||
+          rawUrl;
         if (!imageUrl) {
           // 200 OK 但没返回图 → 走 image_generation_failed 模板，不读上游
           // data.error.message / data.message。revised_prompt 是 OpenAI
           // Images API 契约内的“安全修正后提示词”字段——但我们也
           // 不明文透露「原始 prompt 被过滤」这种业务信息，统一“未返回有效图像”。
           throw new Error(KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
+        }
+        if (/^https?:\/\//i.test(imageUrl)) {
+          imageUrl = await ensurePersistentImageUrl(imageUrl);
         }
         // 图片工作台已下线 —— 真实图片由调用方（sendImageGenerationMessage）
         // 渲染到聊天气泡里，这里只返回 URL。
@@ -11915,6 +11976,7 @@ const ARENA_MODE_MIGRATIONS = {
   
       const data = await response.json();
       const taskId = data.task_id;
+      const billingCallId = String(data.billing_call_id || "").trim();
       if (!taskId) throw new Error("未返回 task_id。");
   
       setImageGenerationBusy(true, "任务已提交，正在生成视频...");
@@ -11931,14 +11993,16 @@ const ARENA_MODE_MIGRATIONS = {
           throw new Error("视频生成等待超时，请稍后重新提交。");
         }
   
+        const pollBody = {
+          endpoint: "video-task",
+          model: modelId,
+          taskId: taskId,
+        };
+        if (billingCallId) pollBody.billing_call_id = billingCallId;
         const resultResponse = await proxyFetch(EDGE_FUNCTION_URL, {
           method: "POST",
           headers: await proxyHeaders(),
-          body: JSON.stringify({
-            endpoint: "video-task",
-            model: modelId,
-            taskId: taskId,
-          }),
+          body: JSON.stringify(pollBody),
           signal: controller.signal,
         });
   
@@ -12281,6 +12345,7 @@ const ARENA_MODE_MIGRATIONS = {
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
     messageDiv.appendChild(actionsBar);
+    wireTranslateButton(messageDiv);
     chatMessages.appendChild(messageDiv);
     setupUserMessageCollapse(bubble, textBlock);
     scrollChatToBottom(false);
@@ -16976,19 +17041,30 @@ const ARENA_MODE_MIGRATIONS = {
   
           const name = document.createElement("span");
           name.className = "model-label-text";
-          name.textContent = model.displayName || model.id;
+          const showPromoTag =
+            model.promoLimited && isGrokImagineVideoPromoActive();
+          name.textContent = showPromoTag
+            ? `【限时】${model.displayName || model.id}`
+            : model.displayName || model.id;
+          if (showPromoTag && model.promoTooltip) {
+            name.title = model.promoTooltip;
+          }
           textWrap.appendChild(name);
-  
+
           const subtext = document.createElement("span");
           subtext.className = "model-label-subtext";
-          subtext.textContent = [
-            model.lineLabel,
-            model.canonicalId && model.canonicalId !== model.id
-              ? model.canonicalId
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" · ");
+          const subParts = [];
+          if (model.creditPerUse) {
+            subParts.push(`${model.creditPerUse}积分/次`);
+          }
+          if (model.proMaxOnly && !showPromoTag) {
+            subParts.push("Pro Max 专属");
+          }
+          if (model.lineLabel) subParts.push(model.lineLabel);
+          if (model.canonicalId && model.canonicalId !== model.id) {
+            subParts.push(model.canonicalId);
+          }
+          subtext.textContent = subParts.filter(Boolean).join(" · ");
           if (subtext.textContent) textWrap.appendChild(subtext);
           label.appendChild(textWrap);
           option.appendChild(label);
