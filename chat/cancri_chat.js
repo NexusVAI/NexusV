@@ -259,6 +259,7 @@ const ARENA_MODE_MIGRATIONS = {
     payload_too_large: "请求内容过大，请减少内容后重试。",
     invalid_session: "登录已失效，请重新登录。",
     origin_not_allowed: "访问被拒绝，请从官方页面访问。",
+    gateway_required: "服务网关暂时不可用，请刷新页面后重试。",
     vip_required: null, // backend supplies a specific Chinese message — keep it
     video_quota_exhausted: null, // ditto — has a per-week count in message
     model_temporarily_unavailable: "该模型当前不可用，请稍后或切换其他模型。",
@@ -1689,11 +1690,19 @@ const ARENA_MODE_MIGRATIONS = {
   // 立刻看见的反馈，避免「点了发现被挡」的迷惑。
   // ════════════════════════════════════════════════════════════════════════
   
-  const PAID_GATE_IDS = new Set([
+  let PAID_GATE_IDS = new Set([
     "gpt-5.4",
     "gpt-5.4-mini",
     "gpt-5.5",
     "gpt-5.5-high",
+    "gpt-5.5-xhigh",
+    "gpt-5.5-special",
+    "glm-5.2",
+    "claude-opus-4-8-special",
+    "claude-opus-4-7-special",
+    "gpt-5.3-codex",
+    "gpt-5.3-codex-spark",
+    "gpt-5.2",
     "grok-4.20-0309-console",
     "grok-4.20-multi-agent-xhigh",
     "grok-4.3-high",
@@ -1702,7 +1711,6 @@ const ARENA_MODE_MIGRATIONS = {
     "gemini-3.1-pro",
     "gemini-3.1-pro-preview",
     "glm-5.1",
-    "glm-5.2",
     "deepseek-v4-pro",
     "deepseek-v4-pro-0608",
     "qwen3.7-max",
@@ -1721,14 +1729,20 @@ const ARENA_MODE_MIGRATIONS = {
     "qwen3.5-flash",
     "qwen3-coder-flash",
     "qwen3-coder-plus-2025-09-23",
-    "minimax-m2.7",
+    "minimax-m3",
     "kimi-k2.6",
     "kimi-k2.7-code",
     "gpt-image-2-all",
     "gpt-image-2-pro",
     "gpt-image-2",
-    "claude-haiku-4-5-20251001",
-    "claude-opus-4-7-special",
+    "doubao-seed-2.0-pro",
+    "doubao-seed-2-0-code-preview-260215",
+    "doubao-seed-1-6",
+    "doubao-seed-1-8",
+    "grok-3-mini",
+    "grok-imagine-image",
+    "grok-imagine-video",
+    "doubao-seedream-4-5",
     // 2026-06-03: 退出福利档，改为付费专属。
     "gpt-5.4-mini-welfare",
     "gpt-5.5-welfare",
@@ -1741,12 +1755,15 @@ const ARENA_MODE_MIGRATIONS = {
   // 2026-05-18：gemini-3.1-pro 加入 FREE 硬挡（与 gpt-5.5 系列同款）；
   // 让 FREE 用户在模型菜单里直接看到「不可用」灰底+横杠样式，
   // 后端 chat-gateway / api-gateway / modelscope-proxy 三处也已同步。
-  const FREE_USER_BLOCKED_GATE_IDS = new Set([
+  let FREE_USER_BLOCKED_GATE_IDS = new Set([
     "gpt-5.4-mini",
     "gpt-5.5",
     "gpt-5.5-high",
     "gpt-5.5-special",
     "glm-5.2",
+    "composer-2.5-fast",
+    "claude-opus-4-8-special",
+    "claude-opus-4-7-special",
     "grok-4.3",
     "qwen3.7-max",
     "qwen3.7-max-2026-05-20",
@@ -1757,10 +1774,15 @@ const ARENA_MODE_MIGRATIONS = {
     "gpt-image-2-all",
     "gpt-image-2-pro",
     "gpt-image-2",
-    "claude-opus-4-7-special",
-    "composer-2.5-fast",
-    "claude-opus-4-8-special",
     "doubao-seed-2.0-pro",
+    "doubao-seed-2-0-code-preview-260215",
+    "doubao-seed-1-6",
+    "doubao-seed-1-8",
+    "grok-3-mini",
+    "grok-imagine-image",
+    "grok-imagine-video",
+    "doubao-seedream-4-5",
+    "z-image-turbo",
     // 2026-06-03: 退出福利档，free 用户硬挡。
     "gpt-5.4-mini-welfare",
     "gpt-5.5-welfare",
@@ -1804,6 +1826,7 @@ const ARENA_MODE_MIGRATIONS = {
     // 所以前端 pool_exhausted / daily_limit 预阻挡也必须放行 topup>0 的用户，
     // 否则 chat 页 UI 上还是横杠所有模型。null = 未知（不阻挡）。
     topupBalance: null,
+    topupDebt: null,
     // 2026-05-31 T7：免费共享池重置时间（period_end），用于输入框下方「免费额度耗尽」提示。
     freePoolPeriodEnd: null,
     // 2026-06-03：免费用户滚动 token 窗口
@@ -1908,6 +1931,17 @@ const ARENA_MODE_MIGRATIONS = {
     // 上面 isProPlusGateModel 分支因 planCode===null 跳过了 free 用户，这里补上。
     if (isProPlusGateModel(modelId)) return "pro_plus_only";
     if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
+    // 2026-06-18: 免费用户滚动 token 窗口 — 与 chat-gateway enforceTokenWindow 同步。
+    if (
+      quotaState.tokenWindow5hUsed !== null &&
+      quotaState.tokenWindow5hLimit !== null &&
+      quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit
+    ) return "token_window_5h_exceeded";
+    if (
+      quotaState.tokenWindowWeekUsed !== null &&
+      quotaState.tokenWindowWeekLimit !== null &&
+      quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit
+    ) return "token_window_week_exceeded";
     // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
     // 2026-06-03: 移除 gpt-5.5-welfare / gemini-3.5-flash-welfare /
     //            gemini-3.1-flash-lite-welfare / gpt-5.4-mini-welfare，退出福利档改为付费专属。
@@ -1961,6 +1995,10 @@ const ARENA_MODE_MIGRATIONS = {
         return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
       case "daily_limit":
         return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
+      case "token_window_5h_exceeded":
+        return "5 小时内 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
+      case "token_window_week_exceeded":
+        return "本周 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
       default:
         return "";
     }
@@ -2025,6 +2063,11 @@ const ARENA_MODE_MIGRATIONS = {
             typeof data.topup_balance === "number" ||
             typeof data.topup_balance === "string"
               ? Number(data.topup_balance) || 0
+              : null;
+          quotaState.topupDebt =
+            typeof data.topup_debt === "number" ||
+            typeof data.topup_debt === "string"
+              ? Number(data.topup_debt) || 0
               : null;
           quotaState.freePoolPeriodEnd =
             data.free_pool && data.free_pool.period_end
@@ -2516,7 +2559,7 @@ const ARENA_MODE_MIGRATIONS = {
     MODEL_PRIORITY_IDS.map((id, index) => [id, index]),
   );
   const MODEL_DEPRIORITY = new Map();
-  const MODEL_CATALOG = [
+  const MODEL_CATALOG_FALLBACK = [
     {"id": "gemini-3.1-pro", "name": "Gemini 3.1 Pro", "brand": "Google", "kind": "chat", "vision": true, "thinking": true, "tools": true, "costTier": "vip"},
     {"id": "gemini-3.1-flash-lite-preview", "name": "Gemini 3.1 Flash Lite", "brand": "Google", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal", "customMultiplier": 3.5},
     {"id": "minimax-m2.7", "name": "MiniMax M2.7", "brand": "MiniMax", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free", "customMultiplier": 3.0},
@@ -2565,9 +2608,9 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "grok-3-mini", "name": "Grok 3 Mini", "brand": "xAI", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "normal", "lineLabel": "futureppo"},
     {"id": "grok-imagine-image", "name": "Grok Imagine Image", "brand": "xAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo", "customMultiplier": 100, "creditPerUse": 10},
     {"id": "grok-imagine-video", "name": "Grok Imagine Video", "brand": "xAI", "kind": "video", "vision": false, "thinking": false, "tools": false, "costTier": "normal", "lineLabel": "futureppo", "proMaxOnly": true, "customMultiplier": 3000, "creditPerUse": 300, "promoLimited": true, "promoTooltip": "2026/06/18-2026/07/18 Pro起步均可用"},
-    {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive"},
-    {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true},
-    {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true},
+    {"id": "gpt-image-2-all", "name": "GPT Image 2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "customMultiplier": 1500, "creditPerUse": 150},
+    {"id": "gpt-image-2-pro", "name": "GPT Image 2 Pro", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proMaxOnly": true, "customMultiplier": 3000, "creditPerUse": 300},
+    {"id": "gpt-image-2", "name": "【特价】gpt-image-2", "brand": "OpenAI", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "expensive", "proPlusOnly": true, "customMultiplier": 100, "creditPerUse": 10},
     // 2026-06-09: 【订阅福利】造相-Z-Image-Turbo — ModelScope 异步生图，Pro+ 免费不扣积分。
     {"id": "z-image-turbo", "name": "【订阅福利】造相-Z-Image-Turbo", "brand": "Qwen", "kind": "image", "vision": false, "thinking": false, "tools": false, "costTier": "free"},
     {"id": "doubao-1.5-pro", "name": "Doubao 1.5 Pro", "brand": "Doubao", "kind": "chat", "vision": true, "thinking": false, "tools": true, "costTier": "normal"},
@@ -2721,6 +2764,155 @@ const ARENA_MODE_MIGRATIONS = {
     {"id": "doubao-seed-oss", "name": "Doubao Seed OSS", "brand": "Doubao", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "free"},
     {"id": "deepseek-v4-flash-0617", "name": "DeepSeek V4 Flash 0617", "brand": "DeepSeek", "kind": "chat", "vision": false, "thinking": false, "tools": true, "costTier": "cheap"},
   ];
+  // 运行时目录：启动时用 FALLBACK，随后 merge model_ui_catalog（后端权威源）。
+  let MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
+  const LOCAL_ONLY_CATALOG_PREFIXES = ["cf:", "or:", "hf:"];
+  const LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
+  const MODEL_UI_CATALOG_TTL_MS = 5 * 60 * 1000;
+  let modelUiCatalogFetchedAt = 0;
+  let modelUiCatalogInflight = null;
+
+  function isLocalOnlyCatalogId(modelId) {
+    if (LOCAL_ONLY_CATALOG_IDS.has(modelId)) return true;
+    return LOCAL_ONLY_CATALOG_PREFIXES.some((prefix) => modelId.startsWith(prefix));
+  }
+
+  function mapServerModelToCatalogEntry(serverModel, localOverlay) {
+    const local = localOverlay || {};
+    const kind = serverModel.video
+      ? "video"
+      : serverModel.image
+        ? "image"
+        : local.kind || "chat";
+    return {
+      id: serverModel.id,
+      name: local.name || serverModel.displayName || serverModel.id,
+      brand: serverModel.brand || local.brand || "Other",
+      kind,
+      vision: local.vision ?? Boolean(serverModel.multimodal),
+      thinking: local.thinking ?? Boolean(serverModel.enableThinking),
+      tools: local.tools ?? kind === "chat",
+      costTier: serverModel.costTier || local.costTier || "normal",
+      customMultiplier:
+        typeof serverModel.customMultiplier === "number"
+          ? serverModel.customMultiplier
+          : local.customMultiplier,
+      lineLabel: serverModel.lineLabel || local.lineLabel || "",
+      proMaxOnly: serverModel.proMaxOnly === true || local.proMaxOnly === true,
+      proPlusOnly: serverModel.proPlusOnly === true || local.proPlusOnly === true,
+      creditPerUse: local.creditPerUse,
+      promoLimited: local.promoLimited,
+      promoTooltip: local.promoTooltip,
+      freeLimitNote: local.freeLimitNote,
+      available: serverModel.available !== false && local.available !== false,
+      unavailableMessage:
+        serverModel.unavailableMessage || local.unavailableMessage || "",
+      disabled: serverModel.disabled === true,
+      gateCostTier: serverModel.gateCostTier || null,
+      freeUserBlocked: serverModel.freeUserBlocked === true,
+    };
+  }
+
+  function syncGateIdsFromMergedCatalog() {
+    const paid = new Set();
+    const blocked = new Set();
+    for (const entry of MODEL_CATALOG) {
+      if (entry.gateCostTier === "paid") paid.add(entry.id);
+      if (entry.freeUserBlocked) blocked.add(entry.id);
+    }
+    if (paid.size > 0) PAID_GATE_IDS = paid;
+    if (blocked.size > 0) FREE_USER_BLOCKED_GATE_IDS = blocked;
+  }
+
+  function mergeServerUiCatalog(serverModels) {
+    if (!Array.isArray(serverModels) || serverModels.length === 0) return false;
+    const fallbackById = new Map(
+      MODEL_CATALOG_FALLBACK.map((entry) => [entry.id, entry]),
+    );
+    const merged = new Map();
+    for (const sm of serverModels) {
+      merged.set(sm.id, mapServerModelToCatalogEntry(sm, fallbackById.get(sm.id)));
+    }
+    for (const [id, local] of fallbackById) {
+      if (merged.has(id) || !isLocalOnlyCatalogId(id)) continue;
+      merged.set(id, { ...local });
+    }
+    MODEL_CATALOG = Array.from(merged.values());
+    rebuildModelCatalogDerived();
+    syncGateIdsFromMergedCatalog();
+    modelUiCatalogFetchedAt = Date.now();
+    return true;
+  }
+
+  function fetchModelUiCatalog(force) {
+    if (
+      !force &&
+      modelUiCatalogFetchedAt &&
+      Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS
+    ) {
+      return Promise.resolve(true);
+    }
+    if (modelUiCatalogInflight) return modelUiCatalogInflight;
+    const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
+    const anon = window.__SUPABASE_ANON_KEY__ || "";
+    if (!url || !anon) return Promise.resolve(false);
+    modelUiCatalogInflight = fetch(`${url}/functions/v1/chat-gateway`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: anon,
+      },
+      body: JSON.stringify({ endpoint: "model_ui_catalog" }),
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const ok = mergeServerUiCatalog(data && data.models);
+        if (ok) {
+          if (!isModelEnabled(currentModel)) {
+            try {
+              setModel(getFallbackModelId(currentModel));
+            } catch (e) {
+              /* ignore */
+            }
+          }
+          try {
+            if (typeof updateModelDropdownIndicators === "function") {
+              updateModelDropdownIndicators();
+            }
+          } catch (e) {
+            /* ignore */
+          }
+          try {
+            renderModelDropdownFromCatalog();
+          } catch (e) {
+            /* ignore */
+          }
+          try {
+            updateModelSelectorIcons();
+          } catch (e) {
+            /* ignore */
+          }
+          try {
+            syncComposerForModel(currentModel);
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        return ok;
+      })
+      .catch(() => false)
+      .finally(() => {
+        modelUiCatalogInflight = null;
+      });
+    return modelUiCatalogInflight;
+  }
+
+  function initModelCatalogFromServer(force) {
+    return fetchModelUiCatalog(force);
+  }
   
   // ===== 从 MODEL_CATALOG 派生的查询表与 helper（被下拉/路由/状态层引用） =====
   const BRAND_ICON_MAP = {
@@ -2802,43 +2994,60 @@ const ARENA_MODE_MIGRATIONS = {
     return BRAND_ICON_MAP[brand] || "./openai.svg";
   }
   
-  const MODEL_META_MAP = new Map();
-  const MODEL_IDS = {};
-  const SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
-    const tags = [];
-    if (entry.vision) tags.push("多模态");
-    if (entry.thinking) tags.push("思考");
-    if (entry.kind === "image") tags.push("图像");
-    if (entry.kind === "video") tags.push("视频");
-    if (entry.kind === "translate") tags.push("翻译");
-    if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
-    const meta = {
-      id: entry.id,
-      canonicalId: entry.id,
-      displayName: entry.name,
-      brand: entry.brand,
-      lineLabel: entry.lineLabel || "",
-      tags,
-      multimodal: !!entry.vision,
-      imageOnly: entry.kind === "image",
-      videoOnly: entry.kind === "video",
-      translateOnly: entry.kind === "translate",
-      available: entry.available !== false,
-      unavailableMessage: entry.unavailableMessage || "",
-      disabled: entry.disabled === true,
-      iconPath: getModelIconPath(entry.brand, entry.id),
-      kind: entry.kind || "chat",
-      costTier: entry.costTier || "normal",
-      proMaxOnly: entry.proMaxOnly === true,
-      creditPerUse: Number(entry.creditPerUse) || 0,
-      promoLimited: entry.promoLimited === true,
-      promoTooltip: entry.promoTooltip || "",
-      customMultiplier: entry.customMultiplier,
-    };
-    MODEL_META_MAP.set(entry.id, meta);
-    MODEL_IDS[entry.id] = entry.id;
-    return meta;
-  });
+  let MODEL_META_MAP = new Map();
+  let MODEL_IDS = {};
+  let SELECTABLE_MODELS = [];
+  let MODEL_CATALOG_BY_ID = MODEL_META_MAP;
+  let ARENA_MODELS = [];
+
+  function rebuildModelCatalogDerived() {
+    MODEL_META_MAP = new Map();
+    MODEL_IDS = {};
+    SELECTABLE_MODELS = MODEL_CATALOG.map((entry) => {
+      const tags = [];
+      if (entry.vision) tags.push("多模态");
+      if (entry.thinking) tags.push("思考");
+      if (entry.kind === "image") tags.push("图像");
+      if (entry.kind === "video") tags.push("视频");
+      if (entry.kind === "translate") tags.push("翻译");
+      if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
+      const meta = {
+        id: entry.id,
+        canonicalId: entry.id,
+        displayName: entry.name,
+        brand: entry.brand,
+        lineLabel: entry.lineLabel || "",
+        tags,
+        multimodal: !!entry.vision,
+        imageOnly: entry.kind === "image",
+        videoOnly: entry.kind === "video",
+        translateOnly: entry.kind === "translate",
+        available: entry.available !== false,
+        unavailableMessage: entry.unavailableMessage || "",
+        disabled: entry.disabled === true,
+        iconPath: getModelIconPath(entry.brand, entry.id),
+        kind: entry.kind || "chat",
+        costTier: entry.costTier || "normal",
+        proMaxOnly: entry.proMaxOnly === true,
+        proPlusOnly: entry.proPlusOnly === true,
+        creditPerUse: Number(entry.creditPerUse) || 0,
+        promoLimited: entry.promoLimited === true,
+        promoTooltip: entry.promoTooltip || "",
+        customMultiplier: entry.customMultiplier,
+        gateCostTier: entry.gateCostTier || null,
+        freeUserBlocked: entry.freeUserBlocked === true,
+      };
+      MODEL_META_MAP.set(entry.id, meta);
+      MODEL_IDS[entry.id] = entry.id;
+      return meta;
+    });
+    MODEL_CATALOG_BY_ID = MODEL_META_MAP;
+    ARENA_MODELS = SELECTABLE_MODELS.filter(
+      (m) => !m.imageOnly && !m.videoOnly && m.kind === "chat",
+    ).map((m) => m.id);
+  }
+
+  rebuildModelCatalogDerived();
   
   function getModelMeta(modelId) {
     const cached = MODEL_META_MAP.get(modelId);
@@ -2998,13 +3207,9 @@ const ARENA_MODE_MIGRATIONS = {
   const pendingAttachments = [];
   
   // Arena（双模型对比）默认可用的池子：纯 chat 模型，排除图像/视频/思考型。
-  const ARENA_MODELS = SELECTABLE_MODELS.filter(
-    (m) => !m.imageOnly && !m.videoOnly && m.kind === "chat",
-  ).map((m) => m.id);
+  // 由 rebuildModelCatalogDerived() 维护，随 model_ui_catalog 刷新。
   
   // isImageOnlyModel(...) 用的 raw 目录索引；和 MODEL_META_MAP 字段对齐
-  // （imageOnly / videoOnly 两个布尔字段是 meta 里就有的），直接复用即可。
-  const MODEL_CATALOG_BY_ID = MODEL_META_MAP;
   
   // 模型选择器当前作用对象："primary" = 主对话；"compare" = Arena 对照模型 B。
   let modelSelectTarget = "primary";
@@ -7773,10 +7978,10 @@ const ARENA_MODE_MIGRATIONS = {
       // 导致 think-body 里每个词单独成 <p> 挤成一列。这里把"非句末标点
       // (.!?) 后的换行"全部合并成空格；句末标点后的换行保留作真实段落分隔。
       // CJK 间换行合并出的空格再交给下面三条规则去除。
-      .replace(/([^.!?])\n+([^\n\r])/g, "$1 $2")
+      .replace(/([^.!?。！？…])\n+([^\n\r])/g, "$1 $2")
       .replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1")
       .replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1")
-      .replace(/([，。！？；：、])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
+      .replace(/([，。！？；：、])[ \t]+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
   }
 
   const CLAUDE_ACTION_ICON = {
@@ -14531,6 +14736,15 @@ const ARENA_MODE_MIGRATIONS = {
         }
         throw new Error("已取消排队。");
       }
+      if (
+        parsed429?.code === "welfare_concurrent_limit" ||
+        parsed429?.code === "welfare_global_rpm_exceeded"
+      ) {
+        throw new Error(
+          parsed429.message ||
+            "福利模型当前繁忙，请稍后再试。",
+        );
+      }
       const parsedLimit = parseBackendErrorPayload(errorText);
       if (parsedLimit.code === "model_free_hour_limit") {
         applyBackendModelBlock(parsedLimit, modelId);
@@ -17488,6 +17702,7 @@ const ARENA_MODE_MIGRATIONS = {
     });
   }
   renderModelDropdownFromCatalog();
+  try { initModelCatalogFromServer(false); } catch (e) { /* ignore */ }
   
   // 2026-05-17：登录态下首次进入聊天页时拉一次配额状态，让 PAID 模型 disabled
   // 状态在用户打开 dropdown 之前就准备好（避免「先看到 enabled、点了又被挡」的

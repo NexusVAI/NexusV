@@ -5,7 +5,7 @@
 // 进度条。后端 cancri_get_quota_status_v2 顶层字段：
 //   tier / plan_code / expires_at / days_remaining
 //   monthly_quota / monthly_consumed / monthly_remaining / monthly_percent
-//   topup_balance / topup_total_purchased / topup_total_consumed
+//   topup_balance / topup_total_purchased / topup_total_consumed / topup_debt
 //   free_pool: {budget,consumed,remaining,percent,period_start,period_end}
 //   daily_paid: {day, used, limit, remaining}
 //
@@ -192,6 +192,7 @@
     var dailyPercent = dailyLimit > 0 ? Math.min(100, (dailyUsed / dailyLimit) * 100) : 0;
     var dailyBarClass = dailyUsed >= dailyLimit ? 'is-exhausted' : dailyUsed >= dailyLimit * 0.8 ? 'is-warn' : '';
     var topupBalance = Number(data.topup_balance) || 0;
+    var topupDebt = Number(data.topup_debt) || 0;
 
     // 2026-06-03: 滚动 token 窗口
     var tw = data.token_window || null;
@@ -234,7 +235,7 @@
       ].join('');
     }
 
-    var topupCard = topupBalance > 0 ? [
+    var topupCard = (topupBalance > 0 || topupDebt > 0) ? [
       '<div class="claude-quota-card">',
       '  <div class="claude-quota-card-head">',
       '    <span class="claude-quota-card-title">加油包余额</span>',
@@ -242,8 +243,9 @@
       '  </div>',
       '  <div class="claude-quota-stat">',
       '    <span>剩余 <b>' + CC.num(topupBalance) + '</b> 积分</span>',
+      (topupDebt > 0 ? '    <span>待偿还 <b>' + CC.num(topupDebt) + '</b> 积分</span>' : ''),
       '  </div>',
-      '  <p class="claude-quota-note">加油包余额独立于订阅档位，订阅过期后也可继续消耗。</p>',
+      (topupDebt > 0 ? '  <p class="claude-quota-note">待偿还积分会在下次充值或奖励到账时优先扣减，不影响当前可用余额。</p>' : '  <p class="claude-quota-note">加油包余额独立于订阅档位，订阅过期后也可继续消耗。</p>'),
       '</div>',
     ].join('') : '';
 
@@ -323,6 +325,7 @@
     var topupBalance = Number(data.topup_balance) || 0;
     var topupTotalPurchased = Number(data.topup_total_purchased) || 0;
     var topupTotalConsumed = Number(data.topup_total_consumed) || 0;
+    var topupDebt = Number(data.topup_debt) || 0;
 
     var planLabel = PLAN_LABEL[planCode] || 'Pro';
     var planChip = PLAN_CHIP[planCode] || 'PAID';
@@ -366,7 +369,7 @@
         '</div>';
     }).join('');
 
-    var topupCard = (topupBalance > 0 || topupTotalPurchased > 0) ? [
+    var topupCard = (topupBalance > 0 || topupTotalPurchased > 0 || topupDebt > 0) ? [
       '<div class="claude-quota-card">',
       '  <div class="claude-quota-card-head">',
       '    <span class="claude-quota-card-title">加油包余额</span>',
@@ -376,7 +379,10 @@
       '    <span>剩余 <b>' + CC.num(topupBalance) + '</b> 积分</span>',
       '    <span>累计购买 ' + CC.num(topupTotalPurchased) + ' · 已用 ' + CC.num(topupTotalConsumed) + ' 积分</span>',
       '  </div>',
-      '  <p class="claude-quota-note">月度配额用完后自动从加油包扣减。前往 <a href="./pricing.html">套餐页</a> 购买。</p>',
+      (topupDebt > 0 ? '  <div class="claude-quota-stat"><span>待偿还 <b>' + CC.num(topupDebt) + '</b> 积分</span></div>' : ''),
+      '  <p class="claude-quota-note">月度配额用完后自动从加油包扣减。' +
+        (topupDebt > 0 ? '待偿还积分会在下次充值或奖励到账时优先扣减。' : '') +
+        '前往 <a href="./pricing.html">套餐页</a> 购买。</p>',
       '</div>',
     ].join('') : [
       '<div class="claude-quota-card">',
