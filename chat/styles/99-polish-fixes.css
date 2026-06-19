@@ -186,6 +186,10 @@
     border-radius: 999px !important;
     flex: 0 0 34px !important;
 }
+.composer-actions .send-btn.is-streaming,
+#sendChatBtn.is-streaming {
+    border-radius: 8px !important;
+}
 
 [data-workbench-composer]:focus-within {
     border-color: var(--line-2) !important;

@@ -57,14 +57,8 @@
   white-space: nowrap;
 }
 
-.sidebar.is-rail-collapsing .sidebar-label,
-.sidebar.is-rail-collapsing .sidebar-footer-text,
-.sidebar.is-rail-collapsing .account-meta,
-.sidebar.is-rail-collapsing .upgrade-btn,
-.sidebar.is-rail-collapsing .account-arrow {
-  visibility: hidden;
-  transition: none;
-}
+/* 折叠期间文字/元信息保持可过渡，由覆盖层（claude-sidebar-icons.css）负责 opacity 淡出，
+   不再用 visibility:hidden 硬切，避免「没有渐隐」。 */
 
 .sidebar-footer {
   padding: 10px;

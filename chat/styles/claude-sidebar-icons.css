@@ -117,7 +117,7 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 }
 
 .sidebar.is-rail-expanding {
-  transition: width 280ms cubic-bezier(0, 0, 0.2, 1) !important;
+  transition: width 240ms cubic-bezier(0, 0, 0.2, 1) !important;
 }
 
 .sidebar .sidebar-body,
@@ -355,6 +355,7 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar .account-meta,
 .sidebar .upgrade-btn,
 .sidebar .account-arrow,
+.sidebar .account-download-btn,
 .sidebar .sidebar-search-wrap,
 .sidebar .sidebar-promo-card,
 .sidebar .claude-onboarding-card {
@@ -363,21 +364,34 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
     transform 220ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
-.sidebar.is-rail-collapsing .claude-recent-header,
-.sidebar.is-rail-collapsing .recent-wrap,
-.sidebar.is-rail-collapsing #chatHistoryList,
-.sidebar.is-rail-collapsing .sidebar-search-wrap,
-.sidebar.is-rail-collapsing #sidebarSearchWrap,
-.sidebar.is-rail-collapsing .sidebar-promo-card,
-.sidebar.is-rail-collapsing .claude-onboarding-card,
-.sidebar.is-rail-expanding .claude-recent-header,
-.sidebar.is-rail-expanding .recent-wrap,
-.sidebar.is-rail-expanding #chatHistoryList,
-.sidebar.is-rail-expanding .sidebar-search-wrap,
-.sidebar.is-rail-expanding #sidebarSearchWrap,
-.sidebar.is-rail-expanding .sidebar-promo-card,
-.sidebar.is-rail-expanding .claude-onboarding-card {
+/* ════════ 收起动画 · 统一模型（2026-06-20 重写）════════════════════
+   所有收起态由 .collapsed 驱动，动画期间只改「连续属性」：
+   面板 width + 文字 opacity + 内边距 padding。
+   nav-row 的网格结构 / 宽度在收起前后完全一致，因此动画结束瞬间
+   不会发生几何 snap —— 即彻底消除：
+     · 文字「先瞬移再收起」  · 图标抖动
+     · hover 背景被裁切      · 聊天记录「上滑又回弹」
+   is-rail-expanding 仅保留：展开时让内容瞬显（不淡入），维持原手感。
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 次要内容（最近标题 / 聊天记录 / 搜索框 / 推广卡）收起即隐藏，
+   钉死在 .collapsed 上——动画类移除后不再回弹（修复列表回弹）。 */
+.sidebar.collapsed .claude-recent-header,
+.sidebar[data-collapsed="true"] .claude-recent-header,
+.sidebar.collapsed .recent-wrap,
+.sidebar[data-collapsed="true"] .recent-wrap,
+.sidebar.collapsed #chatHistoryList,
+.sidebar[data-collapsed="true"] #chatHistoryList,
+.sidebar.collapsed .sidebar-search-wrap,
+.sidebar[data-collapsed="true"] .sidebar-search-wrap,
+.sidebar.collapsed #sidebarSearchWrap,
+.sidebar[data-collapsed="true"] #sidebarSearchWrap,
+.sidebar.collapsed .sidebar-promo-card,
+.sidebar[data-collapsed="true"] .sidebar-promo-card,
+.sidebar.collapsed .claude-onboarding-card,
+.sidebar[data-collapsed="true"] .claude-onboarding-card {
   max-height: 0 !important;
+  min-height: 0 !important;
   opacity: 0 !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
@@ -387,49 +401,7 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   pointer-events: none !important;
 }
 
-/* COLLAPSE: keep the 3-column grid + zero padding while collapsing so the
-   labels keep their box and can visibly fade out as the panel narrows,
-   while the icon (col 1) stays left-anchored (never flies to center).
-   Must be comprehensive to beat claude.css's old flex/36px/margin:auto
-   centered-box rule that also matches `.sidebar.collapsed .nav-row`. */
-.sidebar.is-rail-collapsing .nav-row,
-.sidebar.is-rail-collapsing[data-collapsed="true"] .nav-row {
-  display: grid !important;
-  grid-template-columns: 20px minmax(0, 1fr) auto !important;
-  column-gap: 12px !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  height: 32px !important;
-  min-height: 32px !important;
-  max-height: 32px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  justify-content: unset !important;
-  align-items: center !important;
-}
-
-/* COLLAPSE: content fades out (follows the narrowing panel) instead of
-   the old instant width:0 hide. */
-.sidebar.is-rail-collapsing .nav-row .sidebar-label,
-.sidebar.is-rail-collapsing .nav-row .claude-nav-tag,
-.sidebar.is-rail-collapsing .nav-row .nav-kbd-hint,
-.sidebar.is-rail-collapsing .sidebar-footer-text,
-.sidebar.is-rail-collapsing .account-strip .account-meta,
-.sidebar.is-rail-collapsing .account-strip .upgrade-btn,
-.sidebar.is-rail-collapsing .account-strip .account-arrow {
-  opacity: 0 !important;
-  visibility: visible !important;
-  width: auto !important;
-  max-width: none !important;
-  transform: none !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
-  transition: opacity 150ms cubic-bezier(0.4, 0, 1, 1) !important;
-}
-
-/* EXPAND: no fade — content is revealed by the widening panel. Snap to
-   opacity 1 (transition:none) so it never fades in. */
+/* EXPAND：展开时内容轻微淡入，速度比收起稍快，避免「没有渐隐」。 */
 .sidebar.is-rail-expanding .nav-row .sidebar-label,
 .sidebar.is-rail-expanding .nav-row .claude-nav-tag,
 .sidebar.is-rail-expanding .nav-row .nav-kbd-hint,
@@ -437,6 +409,7 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar.is-rail-expanding .account-strip .account-meta,
 .sidebar.is-rail-expanding .account-strip .upgrade-btn,
 .sidebar.is-rail-expanding .account-strip .account-arrow,
+.sidebar.is-rail-expanding .account-strip .account-download-btn,
 .sidebar.is-rail-expanding .claude-recent-header,
 .sidebar.is-rail-expanding .recent-wrap,
 .sidebar.is-rail-expanding #chatHistoryList,
@@ -446,47 +419,58 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar.is-rail-expanding .claude-onboarding-card {
   opacity: 1 !important;
   visibility: visible !important;
-  transition: none !important;
+  transition: opacity 140ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
-.sidebar.collapsed:not(.is-rail-collapsing) .nav-row,
-.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .nav-row {
-  grid-template-columns: 20px !important;
-  column-gap: 0 !important;
-}
-
-@container sidebar-panel (max-width: 120px) {
-  .sidebar .nav-row {
-    grid-template-columns: 20px !important;
-    column-gap: 0 !important;
-  }
-}
-
-/* ── 收起：grid 图标列不动，文字淡出（不碰 topbar Cancri ::before） ── */
+/* 收起：图标列不动，文字「只淡出」（不再过渡 width/transform，杜绝瞬移） */
 .sidebar .nav-row .sidebar-label,
 .sidebar .nav-row .claude-nav-tag,
 .sidebar .nav-row .nav-kbd-hint {
-  transition:
-    opacity 200ms cubic-bezier(0.32, 0.72, 0, 1),
-    transform 220ms cubic-bezier(0.32, 0.72, 0, 1),
-    max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
-    width 240ms cubic-bezier(0.32, 0.72, 0, 1),
-    flex 240ms cubic-bezier(0.32, 0.72, 0, 1),
-    margin 200ms ease,
-    padding 200ms ease;
+  transition: opacity 180ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 .sidebar .sidebar-footer-text,
 .sidebar .account-strip .account-meta,
 .sidebar .account-strip .upgrade-btn,
-.sidebar .account-strip .account-arrow {
+.sidebar .account-strip .account-arrow,
+.sidebar .account-strip .account-download-btn {
   transition:
     opacity 200ms cubic-bezier(0.32, 0.72, 0, 1),
-    transform 220ms cubic-bezier(0.32, 0.72, 0, 1),
     max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
     width 240ms cubic-bezier(0.32, 0.72, 0, 1),
     flex 240ms cubic-bezier(0.32, 0.72, 0, 1),
     margin 200ms ease,
     padding 200ms ease;
+}
+
+/* 账户条容器本身的几何过渡：防止收起/展开时大小/位置瞬移 */
+.sidebar .account-strip {
+  width: 100% !important;
+  position: relative !important;
+  transition:
+    width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    height 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    min-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    min-height 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    max-height 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    padding 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    gap 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    margin 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.sidebar.is-rail-collapsing .nav-row .sidebar-label,
+.sidebar.is-rail-collapsing .nav-row .claude-nav-tag,
+.sidebar.is-rail-collapsing .nav-row .nav-kbd-hint,
+.sidebar.is-rail-collapsing .sidebar-footer-text,
+.sidebar.is-rail-collapsing .account-strip .account-meta,
+.sidebar.is-rail-collapsing .account-strip .upgrade-btn,
+.sidebar.is-rail-collapsing .account-strip .account-arrow,
+.sidebar.is-rail-collapsing .account-strip .account-download-btn,
+.sidebar.is-rail-collapsing .claude-onboarding-card {
+  opacity: 0 !important;
 }
 
 .sidebar.collapsed:not(.is-rail-animating) .sidebar-topbar,
@@ -504,6 +488,14 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar.collapsed .sidebar-body,
 .sidebar[data-collapsed="true"] .sidebar-body {
   padding: 4px 8px 8px !important;
+}
+
+/* 面板内边距过渡：收起/展开时 body 与 nav 容器的 padding 平滑变化，
+   不在动画起点瞬跳（杜绝「起手瞬移」）。 */
+.sidebar .sidebar-body,
+.sidebar .sidebar-nav-primary,
+.sidebar .sidebar-nav-secondary {
+  transition: padding 240ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
 .sidebar.collapsed .sidebar-toggle,
@@ -547,27 +539,31 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar.collapsed .sidebar-nav-secondary,
 .sidebar[data-collapsed="true"] .sidebar-nav-primary,
 .sidebar[data-collapsed="true"] .sidebar-nav-secondary {
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-.sidebar.collapsed:not(.is-rail-collapsing) .nav-row,
-.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .nav-row {
+/* nav-row 收起几何：与「展开 / 动画中」同构——永远 3 列 grid + width:100%，
+   绝不切成 32px 居中盒子（那一刀就是抖动的根源）。
+   · 图标用 padding-left 在 rail 内精确居中（padding 由 .sidebar 过渡平滑变化）
+   · hover 背景 = 整行盒子：rail 内左右各留 8px（来自 sidebar-body），完整不裁切 */
+.sidebar.collapsed .nav-row,
+.sidebar[data-collapsed="true"] .nav-row {
   display: grid !important;
-  grid-template-columns: 1fr !important;
-  column-gap: 0 !important;
-  width: 32px !important;
-  min-width: 32px !important;
-  max-width: 32px !important;
+  grid-template-columns: 20px minmax(0, 1fr) auto !important;
+  column-gap: 12px !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
   height: 32px !important;
   min-height: 32px !important;
   max-height: 32px !important;
-  margin: 0 auto !important;
-  padding: 0 !important;
+  margin: 0 !important;
+  padding: 0 0 0 calc((var(--workbench-rail-width, 56px) - 36px) / 2) !important;
   overflow: hidden !important;
   position: relative !important;
-  justify-content: center !important;
-  align-items: center !important;
+  justify-content: unset !important;
   border-radius: 9px !important;
 }
 
@@ -584,7 +580,7 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   transform: none !important;
   grid-column: 1 !important;
   grid-row: 1 !important;
-  justify-self: center !important;
+  justify-self: start !important;
   align-self: center !important;
 }
 
@@ -599,30 +595,18 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   margin: 0 !important;
 }
 
-.sidebar.collapsed:not(.is-rail-collapsing) .nav-row .sidebar-label,
-.sidebar.collapsed:not(.is-rail-collapsing) .nav-row .claude-nav-tag,
-.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .nav-row .sidebar-label,
-.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .nav-row .claude-nav-tag {
-  display: block !important;
+/* 文字 / 标签 / 快捷键：收起「只淡出」（opacity:0），保持原宽度与位置，
+   靠面板 overflow 自然裁切——不再 width:0 + translateX，杜绝瞬移。 */
+.sidebar.collapsed .nav-row .sidebar-label,
+.sidebar.collapsed .nav-row .claude-nav-tag,
+.sidebar.collapsed .nav-row .nav-kbd-hint,
+.sidebar[data-collapsed="true"] .nav-row .sidebar-label,
+.sidebar[data-collapsed="true"] .nav-row .claude-nav-tag,
+.sidebar[data-collapsed="true"] .nav-row .nav-kbd-hint {
   opacity: 0 !important;
-  transform: translateX(-8px) !important;
-  width: 0 !important;
-  max-width: 0 !important;
-  flex: 0 0 0 !important;
-  overflow: hidden !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  pointer-events: none !important;
-}
-
-.sidebar.collapsed:not(.is-rail-collapsing) .nav-row .nav-kbd-hint,
-.sidebar[data-collapsed="true"]:not(.is-rail-collapsing) .nav-row .nav-kbd-hint {
-  display: block !important;
-  opacity: 0 !important;
-  transform: translateX(-8px) !important;
-  width: 0 !important;
-  max-width: 0 !important;
-  flex: 0 0 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -656,7 +640,6 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 .sidebar.collapsed .sidebar-footer-text,
 .sidebar[data-collapsed="true"] .sidebar-footer-text {
   opacity: 0 !important;
-  transform: translateX(-8px) !important;
   width: 0 !important;
   max-width: 0 !important;
   overflow: hidden !important;
@@ -665,41 +648,55 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   pointer-events: none !important;
 }
 
+/* 收起态：与展开态保持同构（全宽圆角容器），仅隐藏文字、居中头像。
+   避免 38px 圆形容器在展开瞬间发生大小/位置 snap。 */
 .sidebar.collapsed .account-strip,
 .sidebar[data-collapsed="true"] .account-strip {
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
-  height: 52px !important;
-  min-height: 52px !important;
-  max-height: 52px !important;
-  padding: 8px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: none !important;
   margin: 0 !important;
-  justify-content: flex-start !important;
-  gap: 10px !important;
-  overflow: hidden !important;
+  padding: 0 !important;
   border-radius: 10px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
 .sidebar.collapsed .account-strip .avatar,
 .sidebar[data-collapsed="true"] .account-strip .avatar {
   width: 32px !important;
   height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  border-radius: 50% !important;
   margin: 0 !important;
   flex-shrink: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  line-height: 1 !important;
+  font-size: 14px !important;
 }
 
 .sidebar.collapsed .account-strip .account-meta,
 .sidebar.collapsed .account-strip .upgrade-btn,
 .sidebar.collapsed .account-strip .account-arrow,
+.sidebar.collapsed .account-strip .account-download-btn,
 .sidebar[data-collapsed="true"] .account-strip .account-meta,
 .sidebar[data-collapsed="true"] .account-strip .upgrade-btn,
-.sidebar[data-collapsed="true"] .account-strip .account-arrow {
-  display: block !important;
+.sidebar[data-collapsed="true"] .account-strip .account-arrow,
+.sidebar[data-collapsed="true"] .account-strip .account-download-btn {
   opacity: 0 !important;
-  transform: translateX(-8px) !important;
   width: 0 !important;
   max-width: 0 !important;
+  min-width: 0 !important;
   flex: 0 0 0 !important;
   overflow: hidden !important;
   margin: 0 !important;
@@ -753,7 +750,8 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   .sidebar .sidebar-footer-text,
   .sidebar .account-strip .account-meta,
   .sidebar .account-strip .upgrade-btn,
-  .sidebar .account-strip .account-arrow {
+  .sidebar .account-strip .account-arrow,
+  .sidebar .account-strip .account-download-btn {
     transition: none !important;
   }
   .sidebar.collapsed .nav-row .sidebar-label,
@@ -762,7 +760,8 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   .sidebar.collapsed .sidebar-footer-text,
   .sidebar.collapsed .account-strip .account-meta,
   .sidebar.collapsed .account-strip .upgrade-btn,
-  .sidebar.collapsed .account-strip .account-arrow {
+  .sidebar.collapsed .account-strip .account-arrow,
+  .sidebar.collapsed .account-strip .account-download-btn {
     transform: none !important;
   }
 }
