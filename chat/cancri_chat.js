@@ -13383,9 +13383,9 @@
 				option.dataset.model = model.id;
 				option.dataset.brand = brand;
 				option.dataset.canonical = model.canonicalId || model.id;
-				option.dataset.lineLabel = model.lineLabel || "";
+				option.dataset.lineLabel = "";
 				option.dataset.multimodal = model.multimodal ? "true" : "false";
-				option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
+				option.title = model.displayName || model.id;
 				const speedDot = document.createElement("span");
 				speedDot.className = "model-speed-dot speed-unknown";
 				option.appendChild(speedDot);
@@ -13410,8 +13410,6 @@
 				const subParts = [];
 				if (model.creditPerUse) subParts.push(`${model.creditPerUse}积分/次`);
 				if (model.proMaxOnly && !showPromoTag) subParts.push("Pro Max 专属");
-				if (model.lineLabel) subParts.push(model.lineLabel);
-				if (model.canonicalId && model.canonicalId !== model.id) subParts.push(model.canonicalId);
 				subtext.textContent = subParts.filter(Boolean).join(" · ");
 				if (subtext.textContent) textWrap.appendChild(subtext);
 				label.appendChild(textWrap);
