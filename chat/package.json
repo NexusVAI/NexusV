@@ -1,0 +1,23 @@
+{
+  "name": "cancri-chat-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cancri chat 前端（GitHub Pages 静态站）。src/ 为 ESM 模块源码，经 Vite 库模式打包成单文件 cancri_chat.js（IIFE），保持 claude.html / index.html 的 <script defer src> 标签不变。",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "lint": "eslint src",
+    "format": "prettier --write \"src/**/*.js\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
+  }
+}
