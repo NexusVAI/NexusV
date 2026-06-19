@@ -125,6 +125,9 @@ const FALLBACK_PAID_IDS = new Set([
     "gemini-3.1-pro-preview",
     "glm-5.1",
     "deepseek-v4-pro",
+    "deepseek-v4-pro-0608",
+    // 2026-06-18: gemini-3.5-agent — prorisehub 上游，7× 倍率，PAID。
+    "gemini-3.5-agent",
     // 2026-05-23 批次：10 个百炼 PAID 模型
     "qwen3.5-omni-plus-2026-03-15",
     "qwen3-coder-480b-a35b-instruct",

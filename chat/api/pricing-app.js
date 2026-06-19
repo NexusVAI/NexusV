@@ -360,31 +360,11 @@ function planLabelOf(code) {
     return code === "pro_plus" ? "Pro+" : (code === "pro_max" ? "Pro Max" : "Pro");
 }
 function computeUpgradePreview(planCode) {
-    if (!currentSub || currentSub.tier !== "paid" || !currentSub.plan_code) return null;
-    const cur = currentSub.plan_code;
-    if (!PLAN_RANK[cur] || !PLAN_RANK[planCode]) return null;
-    if (PLAN_RANK[planCode] <= PLAN_RANK[cur]) return null; // 同档/降档不是升级
-    const days = Math.max(1, Math.floor(Number(currentSub.days_remaining) || 0));
-    // 剩余不足阈值：后端不会按差价升级（改满价新周期）→ 前端也不显示升级差价预览，避免误导。
-    if (days < UPGRADE_MIN_REMAINING_DAYS) return null;
-    const tgt = Number((CLIENT_CATALOG.subscription[planCode] || {}).amount_original) || 0;
-    const curMonth = Number((CLIENT_CATALOG.subscription[cur] || {}).amount_original) || 0;
-    const prorated = ((tgt - curMonth) / 30) * days;
-    const amount = Math.max(1, Math.round(prorated * 100) / 100);
-    // 配额按 DB 同口径折算：new = old + floor((target_full - old) * days / 30)，
-    // 钳制在 [old, target_full]；剩余 ≥30 天给满。下周期 reset 恢复 target_full。
-    const oldCredits = PLAN_FULL_CREDITS[cur] || 0;
-    const targetCredits = PLAN_FULL_CREDITS[planCode] || 0;
-    const ratioDays = Math.min(30, days);
-    const newCredits = Math.max(
-        oldCredits,
-        Math.min(targetCredits, oldCredits + Math.floor((targetCredits - oldCredits) * ratioDays / 30))
-    );
-    const deltaCredits = Math.max(0, newCredits - oldCredits);
-    return {
-        amount, days, fromLabel: planLabelOf(cur), toLabel: planLabelOf(planCode),
-        newCredits, deltaCredits, targetCredits,
-    };
+    // 2026-06-19: 已取消「补差价升级」。买更高档一律满价整月（server 端裁决：立即升档 +
+    // 配额回满 + 到期顺延 30 天，无 90 天上限）。不再显示补差价预览，按普通满价订阅展示
+    // （含促销折扣）。保留函数签名供调用点引用，恒返回 null。
+    void planCode;
+    return null;
 }
 
 async function getSession() {
