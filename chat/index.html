@@ -2728,6 +2728,36 @@
             </div>
         </div>
 
+        <div class="modal large" id="htmlPreviewModal" aria-hidden="true">
+            <div class="modal-header">
+                <div class="modal-title">HTML 预览</div>
+                <button
+                    class="modal-close"
+                    data-close-modal="htmlPreviewModal"
+                    aria-label="关闭 HTML 预览"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body html-preview-modal-body">
+                <iframe
+                    class="html-preview-modal-frame"
+                    id="htmlPreviewFrame"
+                    title="HTML 预览"
+                    sandbox="allow-scripts allow-same-origin"
+                ></iframe>
+            </div>
+        </div>
+
         <div class="modal small" id="tempChatModal" aria-hidden="true">
             <div class="modal-header">
                 <div class="modal-title">临时聊天</div>
@@ -3140,7 +3170,6 @@
         <!-- 2026-05-26 满月庆典 D-1：主站顶部 banner。
              5/28 起预热倒计时 → 5/29-5/31 主活动 → 6/1-6/4 长尾 → 6/5 自动隐藏。
              纯客户端时间判断，0 网络请求；用户可 × 关闭（本会话），URL ?nomoon=1 永久关。 -->
-        <script defer src="./maintenance_banner.js?v=2026-06-19-maint"></script>
         <script defer src="./celebrate_banner.js?v=2026-05-26-banner"></script>
         <!-- 2026-05-26 满月庆典欢迎弹窗：所有用户首次进站统一弹一次九重福利导览。
              看过后写 localStorage cancri_welcome_modal_v1_seen 不再触发；

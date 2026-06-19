@@ -5284,8 +5284,7 @@ const ARENA_MODE_MIGRATIONS = {
         upsertCachedChatSummary(data);
       }
       if (currentChatId === chatId) {
-        const msg = chat.messages?.[0];
-        if (msg) msg.content = newTitle;
+        dispatchChatTitleUpdated(newTitle, chatId);
       }
       renderChatHistoryList();
       showToast("已重命名");
@@ -5499,6 +5498,10 @@ const ARENA_MODE_MIGRATIONS = {
       });
       refreshSidebarSpinners();
       persistSessionNav();
+      dispatchChatTitleUpdated(
+        resolveChatTitleForDisplay(chatId, liveGen.localTitle),
+        chatId,
+      );
       return;
     }
     // 2026-06-17：先立刻进入对话视图并显示骨架屏，等待服务端返回期间不再白屏 / 卡旧内容。
@@ -5535,6 +5538,10 @@ const ARENA_MODE_MIGRATIONS = {
 
         if (!silent) showToast("已加载聊天记录");
         persistSessionNav();
+        dispatchChatTitleUpdated(
+          resolveChatTitleForDisplay(chatId, chat.title),
+          chatId,
+        );
       } else {
         // 没拿到记录：清掉骨架，渲染当前（可能为空）会话。
         renderMessages();
@@ -15187,6 +15194,30 @@ const ARENA_MODE_MIGRATIONS = {
     try { return generateChatTitle(messages); } catch (_) { return "新对话"; }
   }
 
+  function resolveChatTitleForDisplay(chatId, fallbackTitle) {
+    const direct = String(fallbackTitle || "").trim();
+    if (direct) return direct;
+    if (!chatId) return "";
+    const cached = readCachedChatHistoryList().find((item) => item?.id === chatId);
+    return String(cached?.title || "").trim();
+  }
+
+  function dispatchChatTitleUpdated(title, chatId) {
+    const normalized = String(title || "").trim();
+    if (chatId && currentChatId && chatId !== currentChatId) return;
+    if (!homeView?.classList.contains("chatting")) return;
+    try {
+      window.dispatchEvent(
+        new CustomEvent("cancri:title-updated", {
+          detail: {
+            title: normalized,
+            chatId: chatId || currentChatId || null,
+          },
+        }),
+      );
+    } catch (_) {}
+  }
+
   // 从消息 content（字符串或多模态数组）里抽纯文本，供智能标题用（不上传图片 base64）。
   function extractMessageText(content) {
     if (typeof content === "string") return content;
@@ -15334,6 +15365,9 @@ const ARENA_MODE_MIGRATIONS = {
             persistSessionNav();
           }
           renderChatHistoryList();
+          if (isGenVisible(gen)) {
+            dispatchChatTitleUpdated(gen.localTitle, gen.chatId);
+          }
         }
       } catch (error) {
         console.error("后台创建聊天记录失败:", error);
@@ -15532,6 +15566,7 @@ const ARENA_MODE_MIGRATIONS = {
       await updateChatHistoryRow(gen.chatId, finalMessages, clean);
       upsertCachedChatSummary({ id: gen.chatId, title: clean, model: gen.modelId });
       renderChatHistoryList();
+      dispatchChatTitleUpdated(clean, gen.chatId);
     } catch (error) {
       // 标题升级失败时保留本地快速标题，不影响其它功能
     }

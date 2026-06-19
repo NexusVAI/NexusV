@@ -2478,6 +2478,36 @@
             </div>
         </div>
 
+        <div class="modal large" id="htmlPreviewModal" aria-hidden="true">
+            <div class="modal-header">
+                <div class="modal-title">HTML 预览</div>
+                <button
+                    class="modal-close"
+                    data-close-modal="htmlPreviewModal"
+                    aria-label="关闭 HTML 预览"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body html-preview-modal-body">
+                <iframe
+                    class="html-preview-modal-frame"
+                    id="htmlPreviewFrame"
+                    title="HTML 预览"
+                    sandbox="allow-scripts allow-same-origin"
+                ></iframe>
+            </div>
+        </div>
+
         <div class="modal small" id="tempChatModal" aria-hidden="true">
             <div class="modal-header">
                 <div class="modal-title">临时聊天</div>
@@ -2870,7 +2900,6 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <script defer src="./maintenance_banner.js?v=2026-06-19-maint"></script>
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <script defer src="./cancri_chat.js?v=2026-06-19-think-newline"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
