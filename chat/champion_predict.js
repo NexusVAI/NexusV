@@ -264,9 +264,9 @@
       '<div class="cp-supported-body">' +
       '<p class="cp-supported-label">我的主队</p>' +
       '<p class="cp-supported-name">' +
-      team.name +
+      escapeHtml(team.name) +
       ' <span class="cp-supported-code">' +
-      team.code +
+      escapeHtml(team.code) +
       "</span></p>" +
       '<p class="cp-supported-stats">主队已赢 <strong>' +
       wins +

@@ -2,7 +2,9 @@
 	//#region src/utils/url.js
 	function safeUrl(url) {
 		const trimmed = String(url || "").trim();
-		if (/^(https?:|\/)/i.test(trimmed)) return trimmed;
+		// 2026-06-20 安全修复：拒绝协议相对 URL `//evil.com`（见 src/utils/url.js）。
+		if (/^https?:/i.test(trimmed)) return trimmed;
+		if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
 		if (/^data:image\/(png|jpe?g|webp|gif|bmp|x-icon|vnd\.microsoft\.icon)[;,]/i.test(trimmed)) return trimmed;
 		if (/^data:video\/(mp4|webm|ogg|quicktime)[;,]/i.test(trimmed)) return trimmed;
 		if (/^data:audio\/(mpeg|mp4|wav|ogg|webm)[;,]/i.test(trimmed)) return trimmed;
@@ -11,7 +13,9 @@
 	function safeMediaUrl(url) {
 		const trimmed = String(url || "").trim();
 		if (!trimmed) return "";
-		if (/^(https?:|blob:|\/)/i.test(trimmed)) return trimmed;
+		// 2026-06-20 安全修复：拒绝协议相对 URL `//evil.com`。
+		if (/^(https?:|blob:)/i.test(trimmed)) return trimmed;
+		if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
 		if (/^data:image\/(png|jpe?g|webp|gif|bmp|x-icon|vnd\.microsoft\.icon)[;,]/i.test(trimmed)) return trimmed;
 		if (/^data:video\/(mp4|webm|ogg|quicktime)[;,]/i.test(trimmed)) return trimmed;
 		if (/^data:audio\/(mpeg|mp4|wav|ogg|webm)[;,]/i.test(trimmed)) return trimmed;
@@ -270,10 +274,20 @@
 			"brand": "xAI",
 			"kind": "chat",
 			"vision": true,
-			"thinking": true,
-			"tools": true,
+			"thinking": false,
+			"tools": false,
 			"costTier": "expensive",
 			"customMultiplier": 6
+		},
+		{
+			"id": "grok-4.20-fast",
+			"name": "Grok 4.20 Fast",
+			"brand": "xAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
 		},
 		{
 			"id": "minimax-m3",
@@ -286,6 +300,26 @@
 			"costTier": "free"
 		},
 		{
+			"id": "minimax-m2.5",
+			"name": "MiniMax M2.5",
+			"brand": "MiniMax",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "minimax-m2.7",
+			"name": "MiniMax M2.7",
+			"brand": "MiniMax",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
 			"id": "grok-4.3",
 			"name": "Grok 4.3",
 			"brand": "xAI",
@@ -296,8 +330,31 @@
 			"costTier": "expensive"
 		},
 		{
+			"id": "grok-3-mini",
+			"name": "Grok 3 Mini",
+			"brand": "xAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
 			"id": "grok-imagine-image",
 			"name": "Grok Imagine Image",
+			"brand": "xAI",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "normal",
+			"lineLabel": "futureppo",
+			"customMultiplier": 100,
+			"creditPerUse": 10
+		},
+		{
+			"id": "grok-imagine-image-lite",
+			"name": "Grok Imagine Image Lite",
 			"brand": "xAI",
 			"kind": "image",
 			"vision": false,
@@ -414,6 +471,36 @@
 			"costTier": "normal"
 		},
 		{
+			"id": "doubao-seed-1-6",
+			"name": "Doubao Seed 1.6",
+			"brand": "Doubao",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "doubao-seed-1-8",
+			"name": "Doubao Seed 1.8",
+			"brand": "Doubao",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "glm-5.2",
+			"name": "GLM 5.2",
+			"brand": "Zhipu",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
 			"id": "kimi-k2.6",
 			"name": "Kimi K2.6",
 			"brand": "Moonshot",
@@ -421,7 +508,19 @@
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "normal"
+			"costTier": "normal",
+			"lineLabel": "futureppo"
+		},
+		{
+			"id": "kimi-k2.7",
+			"name": "Kimi K2.7",
+			"brand": "Moonshot",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "futureppo"
 		},
 		{
 			"id": "kimi-k2.7-code",
@@ -510,6 +609,36 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": 3.5
+		},
+		{
+			"id": "gemini-3.1-pro-welfare",
+			"name": "【福利】Gemini 3.1 Pro",
+			"brand": "Google",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "grok-4.3-welfare",
+			"name": "【福利】Grok 4.3",
+			"brand": "xAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "gpt-5.5-high-fast",
+			"name": "【福利B】GPT 5.5 High Fast",
+			"brand": "OpenAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
 		},
 		{
 			"id": "gemini-2.5-flash-lite",
@@ -2622,7 +2751,10 @@
 		"qwen3-coder-flash",
 		"qwen3-coder-plus-2025-09-23",
 		"minimax-m3",
+		"minimax-m2.5",
+		"minimax-m2.7",
 		"kimi-k2.6",
+		"kimi-k2.7",
 		"kimi-k2.7-code",
 		"gpt-image-2-all",
 		"gpt-image-2-pro",
@@ -2630,11 +2762,15 @@
 		"doubao-seed-2.0-pro",
 		"doubao-seed-2-0-code-preview-260215",
 		"grok-imagine-image",
+		"grok-imagine-image-lite",
 		"grok-imagine-video",
 		"doubao-seedream-4-5",
 		"gemini-3-flash-preview",
 		"gemini-3.1-flash-lite-preview",
-		"gemini-3.1-flash-lite-welfare"
+		"gemini-3.1-flash-lite-welfare",
+		"gemini-3.1-pro-welfare",
+		"grok-4.3-welfare",
+		"gpt-5.5-high-fast"
 	]);
 	var FREE_USER_BLOCKED_GATE_IDS = new Set([
 		"gpt-5.5",
@@ -2652,7 +2788,14 @@
 		"gpt-image-2",
 		"doubao-seed-2.0-pro",
 		"doubao-seed-2-0-code-preview-260215",
+		"doubao-seed-1-6",
+		"doubao-seed-1-8",
+		"grok-3-mini",
+		"minimax-m2.5",
+		"minimax-m2.7",
+		"kimi-k2.7",
 		"grok-imagine-image",
+		"grok-imagine-image-lite",
 		"grok-imagine-video",
 		"doubao-seedream-4-5",
 		"z-image-turbo",
@@ -2661,7 +2804,10 @@
 		"gemini-3.1-flash-lite-welfare",
 		"gemini-3.5-agent",
 		"glm-5.1",
-		"deepseek-v4-pro"
+		"deepseek-v4-pro",
+		"gemini-3.1-pro-welfare",
+		"grok-4.3-welfare",
+		"gpt-5.5-high-fast"
 	]);
 	var PRO_MAX_GATE_IDS = new Set(["gpt-image-2-pro", "grok-imagine-video"]);
 	var GROK_IMAGINE_VIDEO_PROMO_START_MS = Date.parse("2026-06-18T00:00:00+08:00");
@@ -9195,7 +9341,7 @@
 	async function generateImageFromPrompt(prompt, imageModel, attachments = []) {
 		const value = String(prompt || "").trim();
 		if (!value || state.isImageGenerating) return;
-		const isOpenAIImage = imageModel === "grok-imagine-image" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2-pro" || imageModel === "gpt-image-2" || imageModel === "doubao-seedream-4-5" || imageModel === "z-image-turbo";
+		const isOpenAIImage = imageModel === "grok-imagine-image" || imageModel === "grok-imagine-image-lite" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2-pro" || imageModel === "gpt-image-2" || imageModel === "doubao-seedream-4-5" || imageModel === "z-image-turbo";
 		const imageSize = "1024x1024";
 		const controller = new AbortController();
 		state.activeRequestController = controller;
@@ -9205,6 +9351,7 @@
 		const imageAttachments = (attachments || []).filter((a) => !a.isTextFile && (a.dataUrl || a.url));
 		const noI2iModels = new Set([
 			"grok-imagine-image",
+			"grok-imagine-image-lite",
 			"gpt-image-2-all",
 			"gpt-image-2-pro",
 			"gpt-image-2",
@@ -11026,6 +11173,10 @@
 		};
 		armStreamIdle();
 		function applyDelta(parsed) {
+			if (parsed?.error) {
+				const errMsg = parsed.error?.message || parsed.message || "模型请求失败，请稍后重试。";
+				throw new Error(errMsg);
+			}
 			const delta = parsed?.choices?.[0]?.delta || {};
 			const reasoning = delta.reasoning_content || "";
 			const answer = delta.content || "";
