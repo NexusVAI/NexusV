@@ -68,28 +68,6 @@
 			"customMultiplier": 3.5
 		},
 		{
-			"id": "minimax-m2.7",
-			"name": "MiniMax M2.7",
-			"brand": "MiniMax",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"customMultiplier": 3
-		},
-		{
-			"id": "gpt-5.4-mini",
-			"name": "GPT-5.4 Mini",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 6
-		},
-		{
 			"id": "gpt-5.4-mini-0603",
 			"name": "GPT-5.4 Mini 0603",
 			"brand": "OpenAI",
@@ -99,17 +77,6 @@
 			"tools": true,
 			"costTier": "expensive",
 			"customMultiplier": 6
-		},
-		{
-			"id": "gpt-5.4",
-			"name": "GPT-5.4",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 8
 		},
 		{
 			"id": "hunyuan-mt-7b",
@@ -162,26 +129,6 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "free"
-		},
-		{
-			"id": "ernie-4.5-turbo-20260402",
-			"name": "ERNIE 4.5 Turbo",
-			"brand": "Baidu",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "minimax-m2.5",
-			"name": "MiniMax M2.5",
-			"brand": "MiniMax",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
 		},
 		{
 			"id": "claude-opus-4-5",
@@ -286,17 +233,6 @@
 			"costTier": "free"
 		},
 		{
-			"id": "gpt-5.4-mini-welfare",
-			"name": "GPT 5.4 Mini 0603",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 4
-		},
-		{
 			"id": "claude-opus-4-8",
 			"name": "Claude Opus 4.8",
 			"brand": "Anthropic",
@@ -329,28 +265,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "claude-fable-5",
-			"name": "Claude Fable 5",
-			"brand": "Anthropic",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "vip",
-			"customMultiplier": 250
-		},
-		{
-			"id": "grok-4.20-0309-console",
-			"name": "Grok 4.20",
-			"brand": "xAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 3
-		},
-		{
 			"id": "grok-4.20-multi-agent-xhigh",
 			"name": "Grok-4.20-Agent",
 			"brand": "xAI",
@@ -360,17 +274,6 @@
 			"tools": true,
 			"costTier": "expensive",
 			"customMultiplier": 6
-		},
-		{
-			"id": "grok-4.3-high",
-			"name": "Grok-4.3-Thinking",
-			"brand": "xAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 5
 		},
 		{
 			"id": "minimax-m3",
@@ -383,17 +286,6 @@
 			"costTier": "free"
 		},
 		{
-			"id": "gemini-3.5-flash-thinking",
-			"name": "Gemini 3.5 Flash High",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 5
-		},
-		{
 			"id": "grok-4.3",
 			"name": "Grok 4.3",
 			"brand": "xAI",
@@ -402,17 +294,6 @@
 			"thinking": true,
 			"tools": true,
 			"costTier": "expensive"
-		},
-		{
-			"id": "grok-3-mini",
-			"name": "Grok 3 Mini",
-			"brand": "xAI",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
 		},
 		{
 			"id": "grok-imagine-image",
@@ -512,28 +393,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "doubao-seed-1-6",
-			"name": "Doubao Seed 1.6",
-			"brand": "Doubao",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
-		},
-		{
-			"id": "doubao-seed-1-8",
-			"name": "Doubao Seed 1.8",
-			"brand": "Doubao",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
-		},
-		{
 			"id": "doubao-seedream-4-5",
 			"name": "Doubao Seedream 4.5",
 			"brand": "Doubao",
@@ -597,26 +456,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "claude-sonnet-4.5",
-			"name": "【福利】Claude Sonnet 4.5",
-			"brand": "Anthropic",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "nex-n2-pro-welfare",
-			"name": "【福利】Nex-N2-Pro",
-			"brand": "Nex",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": false,
-			"costTier": "free"
-		},
-		{
 			"id": "gpt-5.5",
 			"name": "GPT-5.5",
 			"brand": "OpenAI",
@@ -639,28 +478,6 @@
 			"customMultiplier": 7
 		},
 		{
-			"id": "gpt-5.5-high",
-			"name": "GPT-5.5 High",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 12
-		},
-		{
-			"id": "gpt-5.5-xhigh",
-			"name": "GPT 5.5 XHigh",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 12
-		},
-		{
 			"id": "gpt-5.5-special",
 			"name": "【特价】GPT-5.5",
 			"brand": "OpenAI",
@@ -668,31 +485,9 @@
 			"vision": true,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free",
+			"costTier": "cheap",
 			"customMultiplier": .5,
 			"proPlusOnly": true
-		},
-		{
-			"id": "glm-5.2",
-			"name": "GLM 5.2",
-			"brand": "Zhipu",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "bailian",
-			"customMultiplier": 2.5
-		},
-		{
-			"id": "composer-2.5-fast",
-			"name": "【订阅福利】composer-2.5-fast",
-			"brand": "Cursor",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
 		},
 		{
 			"id": "deepseek-v4-pro-welfare",
@@ -705,28 +500,6 @@
 			"costTier": "free"
 		},
 		{
-			"id": "gpt-5.5-welfare",
-			"name": "GPT-5.5 0603",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 9
-		},
-		{
-			"id": "gemini-3.5-flash-welfare",
-			"name": "Gemini 3.5 Flash 0603",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 5
-		},
-		{
 			"id": "gemini-3.1-flash-lite-welfare",
 			"name": "Gemini 3.1 Flash Lite 0603",
 			"brand": "Google",
@@ -736,17 +509,6 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": 3.5
-		},
-		{
-			"id": "gemini-2.5-flash",
-			"name": "Gemini 2.5 Flash",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"customMultiplier": 1
 		},
 		{
 			"id": "gemini-2.5-flash-lite",
@@ -772,16 +534,6 @@
 		{
 			"id": "gemma-4-31b-it",
 			"name": "Gemma 4 31B",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "gemma-4-26b-a4b-it",
-			"name": "Gemma 4 26B",
 			"brand": "Google",
 			"kind": "chat",
 			"vision": false,
@@ -844,28 +596,8 @@
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free",
+			"costTier": "normal",
 			"customMultiplier": 1.5
-		},
-		{
-			"id": "ling-2.6-flash",
-			"name": "Ling 2.6 Flash",
-			"brand": "Inclusion AI",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "ling-2.6-1t",
-			"name": "Ling 2.6 1T",
-			"brand": "Inclusion AI",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
 		},
 		{
 			"id": "deepseek-v3",
@@ -877,28 +609,6 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": 1.5
-		},
-		{
-			"id": "deepseek-r1-0528",
-			"name": "DeepSeek R1 0528",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 2.5
-		},
-		{
-			"id": "deepseek-r1",
-			"name": "DeepSeek R1",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 2.5
 		},
 		{
 			"id": "deepseek-v3.1",
@@ -1165,16 +875,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "qwen3.5-omni-plus-2026-03-15",
-			"name": "Qwen3.5 Omni Plus（视频/音频/图像）",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
 			"id": "qwen3-coder-480b-a35b-instruct",
 			"name": "Qwen3 Coder 480B",
 			"brand": "Qwen",
@@ -1195,28 +895,8 @@
 			"costTier": "cheap"
 		},
 		{
-			"id": "qwen3-32b",
-			"name": "Qwen3 32B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
 			"id": "qwen3.5-27b",
 			"name": "Qwen 3.5 27B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-8b",
-			"name": "Qwen3 8B",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
@@ -1326,16 +1006,6 @@
 			"costTier": "cheap"
 		},
 		{
-			"id": "qwen3-30b-a3b",
-			"name": "Qwen3 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
 			"id": "qwen3-vl-8b-instruct",
 			"name": "Qwen3 VL 8B Instruct",
 			"brand": "Qwen",
@@ -1396,16 +1066,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "sensenova-6.7-flash-lite",
-			"name": "SenseNova 6.7 Flash Lite",
-			"brand": "SenseNova",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
 			"id": "glm-4.7",
 			"name": "GLM 4.7",
 			"brand": "Zhipu",
@@ -1417,30 +1077,9 @@
 			"customMultiplier": .8
 		},
 		{
-			"id": "glm-4.7-flash",
-			"name": "GLM 4.7 Flash",
-			"brand": "Zhipu",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"customMultiplier": .5
-		},
-		{
 			"id": "or:nvidia/nemotron-3-super-120b-a12b",
 			"name": "Nemotron 3 Super 120B",
 			"brand": "NVIDIA",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "or:inclusionai/ring-2.6-1t",
-			"name": "Ring 2.6 1T",
-			"brand": "InclusionAI",
 			"kind": "chat",
 			"vision": false,
 			"thinking": false,
@@ -1456,77 +1095,6 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "free"
-		},
-		{
-			"id": "or:nvidia/nemotron-3-nano-30b-a3b",
-			"name": "Nemotron 3 Nano 30B",
-			"brand": "NVIDIA",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "or:openai/gpt-oss-20b",
-			"name": "GPT OSS 20B",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "or:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-			"name": "Nemotron 3 Nano Omni 30B Reasoning",
-			"brand": "NVIDIA",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "or:qwen/qwen3-coder",
-			"name": "Qwen3 Coder (OR)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "or:qwen/qwen3-next-80b-a3b-instruct",
-			"name": "Qwen3 Next 80B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "or:meta-llama/llama-3.3-70b-instruct",
-			"name": "Llama 3.3 70B Instruct",
-			"brand": "Meta",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "cf:phi-2",
-			"name": "Phi-2",
-			"brand": "Microsoft",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
 		},
 		{
 			"id": "cf:gemma-2b-it",
@@ -1551,30 +1119,8 @@
 			"lineLabel": "cloudflare"
 		},
 		{
-			"id": "cf:llama-2-7b-chat",
-			"name": "Llama 2 7B Chat",
-			"brand": "Meta",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
 			"id": "cf:mistral-7b-instruct-v02",
 			"name": "Mistral 7B v0.2",
-			"brand": "Mistral",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "cf:hermes-2-pro-mistral-7b",
-			"name": "Hermes 2 Pro Mistral 7B",
 			"brand": "Mistral",
 			"kind": "chat",
 			"vision": false,
@@ -1626,195 +1172,6 @@
 			"tools": false,
 			"costTier": "free",
 			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "hf:qwen3.5-9b",
-			"name": "Qwen 3.5 9B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:deepseek-v4-flash",
-			"name": "DeepSeek V4 Flash",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface",
-			"customMultiplier": 2.7
-		},
-		{
-			"id": "hf:gemma-3-27b",
-			"name": "Gemma 3 27B",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:llama-3.1-8b",
-			"name": "Llama 3.1 8B",
-			"brand": "Meta",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:glm-5",
-			"name": "GLM 5",
-			"brand": "Zhipu",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface",
-			"customMultiplier": 1
-		},
-		{
-			"id": "hf:qwen3-coder-30b",
-			"name": "Qwen3 Coder 30B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:qwen3.5-35b",
-			"name": "Qwen 3.5 35B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:qwen3.5-122b",
-			"name": "Qwen 3.5 122B A10B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:command-a-plus",
-			"name": "Command A Plus",
-			"brand": "Cohere",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:qwen3-4b-thinking",
-			"name": "Qwen3 4B Thinking",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:deepseek-r1-distill-1.5b",
-			"name": "DeepSeek R1 Distill 1.5B",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:qwen3.5-27b",
-			"name": "Qwen 3.5 27B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:qwen3-8b",
-			"name": "Qwen3 8B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:apertus-8b",
-			"name": "Apertus 8B",
-			"brand": "Swiss AI",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:eurollm-22b",
-			"name": "EuroLLM 22B",
-			"brand": "utter-project",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:tiny-aya-earth",
-			"name": "Tiny Aya Earth",
-			"brand": "Cohere",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
-		},
-		{
-			"id": "hf:llama-3.2-1b",
-			"name": "Llama 3.2 1B",
-			"brand": "Meta",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free",
-			"lineLabel": "huggingface"
 		},
 		{
 			"id": "qwen3-30b-a3b-instruct-2507",
@@ -2250,7 +1607,7 @@
 	var INDEPENDENT_MODEL_PING_INTERVAL_MS = 3600 * 1e3;
 	var MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
 	var DEFAULT_MODEL_ID = "deepseek-v4-flash";
-	var DEFAULT_COMPARE_MODEL_ID = "minimax-m2.7";
+	var DEFAULT_COMPARE_MODEL_ID = "claude-opus-4-8";
 	var RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
 	var INDEPENDENT_QUOTA_MODEL_IDS = /* @__PURE__ */ new Set();
 	var rateLimitRefreshToken = 0;
@@ -3237,21 +2594,11 @@
 		}, HEALTH_STATUS_REFRESH_MS);
 	}
 	var PAID_GATE_IDS = new Set([
-		"gpt-5.4",
-		"gpt-5.4-mini",
 		"gpt-5.5",
-		"gpt-5.5-high",
-		"gpt-5.5-xhigh",
 		"gpt-5.5-special",
-		"glm-5.2",
 		"claude-opus-4-8-special",
 		"claude-opus-4-7-special",
-		"gpt-5.3-codex",
-		"gpt-5.3-codex-spark",
-		"gpt-5.2",
-		"grok-4.20-0309-console",
 		"grok-4.20-multi-agent-xhigh",
-		"grok-4.3-high",
 		"grok-4.3",
 		"mistral-large-2512",
 		"gemini-3.1-pro",
@@ -3264,7 +2611,6 @@
 		"qwen3.7-max-2026-05-20",
 		"qwen3.7-plus",
 		"qwen3.7-max-2026-05-17",
-		"qwen3.5-omni-plus-2026-03-15",
 		"qwen3-coder-480b-a35b-instruct",
 		"qwen-plus-2025-12-01",
 		"qwen3-max-2025-09-23",
@@ -3282,26 +2628,16 @@
 		"gpt-image-2",
 		"doubao-seed-2.0-pro",
 		"doubao-seed-2-0-code-preview-260215",
-		"doubao-seed-1-6",
-		"doubao-seed-1-8",
-		"grok-3-mini",
 		"grok-imagine-image",
 		"grok-imagine-video",
 		"doubao-seedream-4-5",
-		"gpt-5.4-mini-welfare",
-		"gpt-5.5-welfare",
-		"gemini-3.5-flash-welfare",
 		"gemini-3-flash-preview",
 		"gemini-3.1-flash-lite-preview",
 		"gemini-3.1-flash-lite-welfare"
 	]);
 	var FREE_USER_BLOCKED_GATE_IDS = new Set([
-		"gpt-5.4-mini",
 		"gpt-5.5",
-		"gpt-5.5-high",
 		"gpt-5.5-special",
-		"glm-5.2",
-		"composer-2.5-fast",
 		"claude-opus-4-8-special",
 		"claude-opus-4-7-special",
 		"grok-4.3",
@@ -3315,16 +2651,10 @@
 		"gpt-image-2",
 		"doubao-seed-2.0-pro",
 		"doubao-seed-2-0-code-preview-260215",
-		"doubao-seed-1-6",
-		"doubao-seed-1-8",
-		"grok-3-mini",
 		"grok-imagine-image",
 		"grok-imagine-video",
 		"doubao-seedream-4-5",
 		"z-image-turbo",
-		"gpt-5.4-mini-welfare",
-		"gpt-5.5-welfare",
-		"gemini-3.5-flash-welfare",
 		"gemini-3-flash-preview",
 		"gemini-3.1-flash-lite-preview",
 		"gemini-3.1-flash-lite-welfare",
@@ -3408,12 +2738,21 @@
 				if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
 			}
 		}
+		// 2026-06-19: 配额未加载（tier 未知，无缓存的新会话）时，对已知 Pro 专属模型
+		// fail-closed，免费用户首屏不再看到/点选 Pro 模型后被后端 403。登录用户配额
+		// 加载后（seedQuotaStateFromTierCache / refreshQuotaState）tier 即确定，自动解除。
+		if (quotaState.tier !== "free" && quotaState.tier !== "paid") {
+			if (isProMaxGateModel(modelId)) return "pro_max_only";
+			if (isProPlusGateModel(modelId)) return "pro_plus_only";
+			if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
+			return null;
+		}
 		if (quotaState.tier !== "free") return null;
 		if (isProPlusGateModel(modelId)) return "pro_plus_only";
 		if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
 		if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 		if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
-		if (modelId === "claude-sonnet-4.5" || modelId === "nex-n2-pro-welfare" || modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "deepseek-v4-pro-welfare") return null;
+		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "deepseek-v4-pro-welfare" || modelId === "nex-n2-pro-welfare" || modelId === "cancriv1-0.1b") return null;
 		const hasTopup = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
 		if (!hasTopup && quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
 		if (!isPaidGateModel(modelId)) return null;
@@ -3761,7 +3100,6 @@
 		"gpt-4": DEFAULT_MODEL_ID
 	};
 	new Map([
-		"grok-4.20-0309-console",
 		"claude-opus-4-8",
 		"deepseek-v4-pro",
 		"kimi-k2.6",
@@ -4566,7 +3904,7 @@
 		return modelId === "happyhorse-1.0-r2v";
 	}
 	function isOmniVideoModel(modelId) {
-		return modelId === "qwen3.5-omni-plus-2026-03-15" || modelId === "kimi-k2.7-code";
+		return modelId === "kimi-k2.7-code";
 	}
 	function getAttachmentLimitForModel(modelId = currentModel) {
 		if (isReferenceVideoModel(modelId)) return 9;
@@ -5858,7 +5196,7 @@
 		} catch (error) {
 			console.error("加载聊天记录失败:", error);
 			renderMessages();
-			if (!silent) showToast("加载失败");
+			if (!silent) showToast(error instanceof Error ? error.message : "加载失败");
 		}
 	}
 	function newChat() {
@@ -6501,6 +5839,13 @@
 			console.error("更新聊天记录失败:", error);
 		}
 	}
+	async function readProxyFailureMessage(response) {
+		const parsed = parseBackendErrorPayload(await response.text().catch(() => ""));
+		const code = String(parsed.code || "").trim();
+		if (code === "challenge_required" || code === "access_blocked" || code === "anonymous_not_allowed" || code === "captcha_required") return formatSecurityGuardMessage(parsed, friendlyMessageFromBackend(parsed, response.status));
+		if (code === "invalid_session") authSessionPromise = null;
+		return friendlyMessageFromBackend(parsed, response.status) || `请求失败 (${response.status})`;
+	}
 	async function loadChatHistoryList() {
 		try {
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
@@ -6511,13 +5856,18 @@
 					action: "list"
 				})
 			});
-			if (!response.ok) throw new Error("加载聊天记录列表失败");
+			if (!response.ok) {
+				const msg = await readProxyFailureMessage(response);
+				throw new Error(msg || "加载聊天记录列表失败");
+			}
 			const { data } = await response.json();
 			chatHistoryList = data || [];
 			writeCachedChatHistoryList(chatHistoryList);
 			return chatHistoryList;
 		} catch (error) {
 			console.error("加载聊天记录列表失败:", error);
+			const msg = error instanceof Error ? error.message : "加载聊天记录列表失败";
+			if (msg && msg !== "请先登录后再使用。") showToast(msg);
 			const cached = readCachedChatHistoryList();
 			if (cached.length) {
 				chatHistoryList = cached;
@@ -6537,12 +5887,15 @@
 					id: chatId
 				})
 			});
-			if (!response.ok) throw new Error("加载聊天记录失败");
+			if (!response.ok) {
+				const msg = await readProxyFailureMessage(response);
+				throw new Error(msg || "加载聊天记录失败");
+			}
 			const { data } = await response.json();
 			return data;
 		} catch (error) {
 			console.error("加载聊天记录失败:", error);
-			return null;
+			throw error;
 		}
 	}
 	async function deleteChatHistory(chatId) {
@@ -7103,7 +6456,7 @@
 				base_url: "https://chat.nexusvai.xyz/functions/v1/api-gateway/v1",
 				wire_api: "responses（默认）或 chat（兼容性更好）",
 				env_key: "CANCRI_API_KEY",
-				recommended_models: ["gpt-5.4", "claude-opus-4-8"]
+				recommended_models: ["gpt-5.5", "claude-opus-4-8"]
 			},
 			{
 				name: "Claude Code",
@@ -7111,11 +6464,7 @@
 				env_ANTHROPIC_BASE_URL: "https://chat.nexusvai.xyz/functions/v1/api-gateway",
 				env_ANTHROPIC_API_KEY: "cancri_sk_...（推荐，走 x-api-key 头）",
 				env_ANTHROPIC_AUTH_TOKEN_note: "ANTHROPIC_API_KEY 比 ANTHROPIC_AUTH_TOKEN 稳，避开 anthropics/claude-code#39013 的 Authorization 头偶尔不发送的 bug",
-				recommended_models: [
-					"claude-fable-5",
-					"claude-opus-4-8",
-					"claude-haiku-4-5-20251001"
-				]
+				recommended_models: ["claude-opus-4-8", "claude-haiku-4-5-20251001"]
 			},
 			{
 				name: "OpenCode",
@@ -13383,9 +12732,9 @@
 				option.dataset.model = model.id;
 				option.dataset.brand = brand;
 				option.dataset.canonical = model.canonicalId || model.id;
-				option.dataset.lineLabel = "";
+				option.dataset.lineLabel = model.lineLabel || "";
 				option.dataset.multimodal = model.multimodal ? "true" : "false";
-				option.title = model.displayName || model.id;
+				option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
 				const speedDot = document.createElement("span");
 				speedDot.className = "model-speed-dot speed-unknown";
 				option.appendChild(speedDot);
@@ -13410,6 +12759,8 @@
 				const subParts = [];
 				if (model.creditPerUse) subParts.push(`${model.creditPerUse}积分/次`);
 				if (model.proMaxOnly && !showPromoTag) subParts.push("Pro Max 专属");
+				if (model.lineLabel) subParts.push(model.lineLabel);
+				if (model.canonicalId && model.canonicalId !== model.id) subParts.push(model.canonicalId);
 				subtext.textContent = subParts.filter(Boolean).join(" · ");
 				if (subtext.textContent) textWrap.appendChild(subtext);
 				label.appendChild(textWrap);
