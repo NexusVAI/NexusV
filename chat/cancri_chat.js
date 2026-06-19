@@ -453,7 +453,9 @@
 			"vision": true,
 			"thinking": true,
 			"tools": true,
-			"costTier": "normal"
+			"costTier": "normal",
+			"customMultiplier": 2,
+			"proPlusOnly": true
 		},
 		{
 			"id": "gpt-5.5",
@@ -485,9 +487,8 @@
 			"vision": true,
 			"thinking": false,
 			"tools": true,
-			"costTier": "cheap",
-			"customMultiplier": .5,
-			"proPlusOnly": true
+			"costTier": "free",
+			"customMultiplier": .5
 		},
 		{
 			"id": "deepseek-v4-pro-welfare",

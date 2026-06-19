@@ -31,6 +31,16 @@
     return n.toLocaleString("zh-CN");
   }
 
+  // 服务端字段（team_name 等）注入 innerHTML/属性前必须转义，防 stored-XSS。
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function flagSrc(team) {
     if (!team || !team.flag) return "./assets/wc-flags/unknown.png";
     return "./assets/wc-flags/" + team.flag + ".png";
@@ -45,7 +55,7 @@
       '" src="' +
       flagSrc(team) +
       '" alt="' +
-      name +
+      escapeHtml(name) +
       '" width="48" height="36" loading="lazy" decoding="async" />'
     );
   }
@@ -227,7 +237,7 @@
 
     if (!status || !status.supported) {
       var perWin = status && status.tokens_per_win ? status.tokens_per_win : 100000;
-      var pts = status && status.points_per_win ? status.points_per_win : 10;
+      var pts = Number(status && status.points_per_win) || 10;
       panel.innerHTML =
         '<p class="cp-support-msg">点击国旗选择主队。每赢一场，你获得 <strong>' +
         formatTokens(perWin) +

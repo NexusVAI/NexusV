@@ -2499,11 +2499,12 @@
                 </button>
             </div>
             <div class="modal-body html-preview-modal-body">
+                <!-- 安全：preview iframe 仅 allow-scripts，禁止 allow-same-origin。二者并存时预览的模型输出 HTML 可移除自身 sandbox、读父页 localStorage(JWT) → stored-XSS。 -->
                 <iframe
                     class="html-preview-modal-frame"
                     id="htmlPreviewFrame"
                     title="HTML 预览"
-                    sandbox="allow-scripts allow-same-origin"
+                    sandbox="allow-scripts"
                 ></iframe>
             </div>
         </div>
