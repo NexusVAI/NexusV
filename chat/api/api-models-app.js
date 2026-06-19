@@ -33,9 +33,9 @@ const esc = (s) => {
 // 后端 catalog 仍包含这些（聊天页 / api-gateway 计费仍按原状），仅模型广场
 // UI 隐藏。下面 9 条来自用户 2026-05-17 09:50 UTC+08 指令。
 // 模型广场置顶：旗舰模型固定排在最前（其余保持原 catalog 顺序）。
+// 仅列后端 catalog 仍存在的 id；已下线模型勿写死，避免与 model_public_catalog 漂移。
 const FEATURED_MODEL_ORDER = [
     "gpt-5.5",
-    "claude-fable-5",
     "claude-opus-4-8",
     "grok-4.3",
     "gpt-image-2-pro",
@@ -52,29 +52,9 @@ const GRID_COLLAPSE_MIN_ITEMS = 12;
 let gridListExpanded = false;
 let gridAnimating = false;
 
-// 2026-06-10：catalog 偶发落后（如 QQ 走 Supabase 回退且 Edge 未部署）时，
-// 前端兜底补全已上线模型，避免模型广场缺卡。字段与 chat-gateway catalog 对齐。
-const CATALOG_ENSURE_MODELS = [
-    {
-        id: "claude-fable-5",
-        displayName: "Claude Fable 5",
-        brand: "Anthropic",
-        canonicalId: "claude-fable-5",
-        lineLabel: "aspirin",
-        available: true,
-        disabled: false,
-        chat: true,
-        arena: true,
-        multimodal: true,
-        maxInputTokens: 200000,
-        maxOutputTokens: 32000,
-        costTier: "vip",
-        customMultiplier: 250.0,
-        gateCostTier: "paid",
-        freeUserBlocked: true,
-        enableThinking: false,
-    },
-];
+// 2026-06-10：catalog 偶发落后时的兜底补全（字段与 chat-gateway catalog 对齐）。
+// 2026-06-19：不再硬编码已下线模型；模型广场以 model_public_catalog 为唯一权威源。
+const CATALOG_ENSURE_MODELS = [];
 
 function mergeEnsuredCatalogModels(byCanonical) {
     for (const patch of CATALOG_ENSURE_MODELS) {
@@ -583,7 +563,6 @@ async function fetchModelCatalog() {
     if (!urls.length) throw new Error("网关地址未配置");
 
     // 2026-06-10：QQ 与其它浏览器统一优先 CF（chat.nexusvai.xyz）。
-    // 旧逻辑把 Supabase 置顶 → Supabase catalog 未同步时模型广场缺新模型（如 Fable 5）。
     // Supabase 仅作 CF 超时/失败后的回退。
 
     let lastErr = null;
