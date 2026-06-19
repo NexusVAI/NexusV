@@ -2447,6 +2447,98 @@
         const sysPromptCount = document.getElementById('claudeFormSystemPromptCount');
         const avatarEl = document.getElementById('claudeFormAvatar');
 
+        var CUSTOM_AVATAR_KEY = 'cancri_custom_avatar_v1';
+        var customAvatarInput = null;
+
+        function loadCustomAvatarDataUrl() {
+            try {
+                return localStorage.getItem(CUSTOM_AVATAR_KEY) || '';
+            } catch (_e) {
+                return '';
+            }
+        }
+
+        function saveCustomAvatarDataUrl(dataUrl) {
+            try {
+                if (dataUrl) localStorage.setItem(CUSTOM_AVATAR_KEY, dataUrl);
+                else localStorage.removeItem(CUSTOM_AVATAR_KEY);
+            } catch (_e) {}
+        }
+
+        function applyCustomAvatarToElement(el, dataUrl) {
+            if (!el) return;
+            if (dataUrl) {
+                el.classList.add('has-custom-image');
+                el.style.backgroundImage = 'url("' + dataUrl.replace(/"/g, '%22') + '")';
+                el.textContent = '';
+            } else {
+                el.classList.remove('has-custom-image');
+                el.style.backgroundImage = '';
+            }
+        }
+
+        function applyCustomAvatar(dataUrl) {
+            applyCustomAvatarToElement(document.querySelector('.account-strip .avatar'), dataUrl);
+            applyCustomAvatarToElement(avatarEl, dataUrl);
+        }
+
+        function clearCustomAvatar() {
+            saveCustomAvatarDataUrl('');
+            applyCustomAvatar('');
+            refreshAvatar();
+        }
+
+        function bindCustomAvatarUpload() {
+            if (!avatarEl) return;
+            customAvatarInput = document.createElement('input');
+            customAvatarInput.type = 'file';
+            customAvatarInput.accept = 'image/png,image/jpeg,image/webp,image/gif';
+            customAvatarInput.hidden = true;
+            document.body.appendChild(customAvatarInput);
+
+            avatarEl.setAttribute('role', 'button');
+            avatarEl.setAttribute('tabindex', '0');
+            avatarEl.setAttribute('title', '点击更换头像（保存在本地浏览器）');
+
+            function openPicker() {
+                customAvatarInput.value = '';
+                customAvatarInput.click();
+            }
+
+            avatarEl.addEventListener('click', function () {
+                openPicker();
+            });
+            avatarEl.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openPicker();
+                }
+            });
+
+            customAvatarInput.addEventListener('change', function () {
+                var file = customAvatarInput.files && customAvatarInput.files[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('头像图片请小于 2MB');
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var dataUrl = String(reader.result || '');
+                    if (!dataUrl) return;
+                    saveCustomAvatarDataUrl(dataUrl);
+                    applyCustomAvatar(dataUrl);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.CancriCustomAvatar = {
+            load: loadCustomAvatarDataUrl,
+            apply: applyCustomAvatar,
+            clear: clearCustomAvatar
+        };
+
         // ─── 工具：取首字母初始作为头像兜底 ───
         function pickAvatarInitial() {
             const fullName = (app && app.state && app.state.fullName) || '';
@@ -2462,13 +2554,17 @@
         }
 
         function refreshAvatar() {
+            var custom = loadCustomAvatarDataUrl();
+            if (custom) {
+                applyCustomAvatar(custom);
+                return;
+            }
             if (avatarEl) avatarEl.textContent = pickAvatarInitial();
             // 同步顶层 .account-strip .avatar（cancri_chat.js 也写它，但用户改了
             // 全名 / 昵称之后那边不主动刷新，这里兜底）。
             const stripAvatar = document.querySelector('.account-strip .avatar');
             if (stripAvatar) {
-                // 不动后台头像图（如果是 <img>）；只接管纯文字 initials 那种。
-                if (!stripAvatar.querySelector('img')) {
+                if (!stripAvatar.classList.contains('has-custom-image')) {
                     stripAvatar.textContent = pickAvatarInitial();
                 }
             }
@@ -2643,6 +2739,7 @@
 
         // 初始化一次：state 在 cancri_chat.js 顶层已 restore + applyTheme，
         // 这时表单第一次显示时填进去。
+        bindCustomAvatarUpload();
         populateOverviewForm();
         populateCapabilitiesForm();
 

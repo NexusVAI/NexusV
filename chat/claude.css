@@ -596,7 +596,13 @@ html[data-theme="light"] .nav-row.active {
 .sidebar.collapsed .account-strip .account-meta,
 .sidebar.collapsed .account-strip .upgrade-btn,
 .sidebar.collapsed .account-strip .account-arrow {
-    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
 }
 
 /* 隐藏原侧栏里的 sidebarLeaderboardPanel（Phase 1 已 display:none，重申） */
@@ -769,13 +775,21 @@ html[data-theme="light"] .conversation-item:hover {
     width: 32px !important;
     height: 32px !important;
     border-radius: 50% !important;
-    background: var(--accent) !important;
+    background-color: var(--accent) !important;
     color: white !important;
     font-size: 14px !important;
     font-weight: 600 !important;
     display: grid;
     place-items: center;
     flex-shrink: 0;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    line-height: 1;
+}
+.account-strip .avatar.has-custom-image {
+    background-color: hsl(var(--bg-300)) !important;
+    color: transparent !important;
 }
 .account-strip .account-meta {
     flex: 1;
@@ -1104,7 +1118,13 @@ html[data-theme="light"] .conversation-item:hover {
 .sidebar[data-collapsed="true"] .claude-onboarding-card,
 .sidebar.collapsed .claude-code-promo-card,
 .sidebar[data-collapsed="true"] .claude-code-promo-card {
-    display: none !important;
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-color: transparent !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
 }
 
 /* sidebar 底部"账户/升级"按钮 —— 2026-05-31：参考图已去掉"升级"文字，
@@ -2907,6 +2927,21 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     font-weight: 600;
     display: grid;
     place-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 160ms ease;
+}
+.claude-avatar-circle:hover {
+    opacity: 0.9;
+}
+.claude-avatar-circle.has-custom-image,
+.account-strip .avatar.has-custom-image {
+    color: transparent !important;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .claude-segmented {
@@ -8501,9 +8536,16 @@ html[data-theme] {
 }
 
 .answer-body.standard-markdown,
-.standard-markdown.answer-body {
-    display: block !important;
-    line-height: 1.65rem;
+.standard-markdown.answer-body,
+.message.assistant .answer-body.standard-markdown {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    font-family: var(--c-font-serif) !important;
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    color: hsl(var(--text-100)) !important;
 }
 
 .answer-body.standard-markdown > *,
@@ -8512,17 +8554,32 @@ html[data-theme] {
     margin: 0;
 }
 
+.answer-body.standard-markdown :is(p, blockquote, h1, h2, h3, h4, h5, h6),
+.standard-markdown.answer-body :is(p, blockquote, h1, h2, h3, h4, h5, h6) {
+    padding-left: 8px;
+    padding-right: 32px;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 400;
+    line-height: 1.7;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    margin: 0;
+}
+
 .answer-body.standard-markdown > * + *,
 .standard-markdown.answer-body > * + * {
-    margin-top: 0.35em;
+    margin-top: 0;
 }
 
 .answer-body.standard-markdown ul,
 .answer-body.standard-markdown ol,
 .standard-markdown.answer-body ul,
 .standard-markdown.answer-body ol {
-    margin: 0.25em 0 0.5em;
-    padding-left: 1.35em;
+    margin: 0;
+    padding-left: calc(8px + 1.35em);
+    padding-right: 32px;
 }
 
 .answer-body.standard-markdown li + li,
@@ -8801,13 +8858,14 @@ html[data-theme] {
 
 .message.assistant .answer-body.font-claude-response {
     font-family: var(--c-font-serif) !important;
-    font-size: 15px !important;
-    line-height: 1.65rem !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
     color: hsl(var(--text-100)) !important;
 }
 
 .message.assistant .answer-body.font-claude-response p {
-    margin: 0 0 0.35em !important;
+    margin: 0 !important;
+    line-height: 1.7 !important;
 }
 
 .message.assistant .answer-body.font-claude-response p:last-child {

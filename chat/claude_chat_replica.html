@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="claude" data-mode="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Claude 聊天页 · UI 复刻</title>
+    <meta
+      name="description"
+      content="claude.ai 聊天页面 1:1 UI 复刻（布局 / 字体 / 配色），文案为占位示例。"
+    />
+    <link rel="stylesheet" href="./claude_chat_replica.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- ───────── 顶栏 ───────── -->
+      <header class="topbar">
+        <button class="topbar-title" type="button">
+          配色与 CSS 变量
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+        <div class="topbar-spacer"></div>
+        <button class="icon-btn" type="button" aria-label="分享">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" x2="12" y1="2" y2="15" /></svg>
+        </button>
+        <button class="icon-btn" type="button" aria-label="更多">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
+        </button>
+      </header>
+
+      <!-- ───────── 对话滚动区 ───────── -->
+      <main class="scroll">
+        <div class="conv">
+          <!-- ===== 用户回合 1（带图片附件）===== -->
+          <div class="turn-user group">
+            <h2 class="sr-only">You said: 帮我看看这个登录页的配色</h2>
+            <div class="attachments">
+              <div class="attachment" role="button" tabindex="0" aria-label="图片附件">
+                <img
+                  alt="占位预览图"
+                  src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e7d9c7'/%3E%3Cstop offset='1' stop-color='%23d9a98a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='240' height='240' fill='url(%23g)'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.7' stroke-width='6'%3E%3Crect x='62' y='66' width='116' height='90' rx='10'/%3E%3Ccircle cx='96' cy='100' r='12'/%3E%3Cpath d='M70 150 L108 116 L132 138 L160 110 L170 150 Z' fill='%23ffffff' fill-opacity='0.55' stroke='none'/%3E%3C/g%3E%3C/svg%3E"
+                />
+              </div>
+            </div>
+            <div class="user-stack">
+              <div class="user-bubble" data-user-message-bubble="true">
+                <p>帮我看看这个登录页的配色，整体偏冷，我想换成更柔和的暖色调，最好和 Claude 那种奶油底色接近。给几个方向就行。</p>
+              </div>
+              <div class="msg-actions" role="group" aria-label="Message actions">
+                <div class="msg-actions-inner">
+                  <span class="timestamp">01:05</span>
+                  <button class="action-btn" type="button" aria-label="重试" data-tip="重试">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                  </button>
+                  <button class="action-btn" type="button" aria-label="编辑" data-tip="编辑">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Claude 回合 1（思考块 + 衬线正文）===== -->
+          <div class="turn-assistant group">
+            <h2 class="sr-only">Claude responded: 暖色调方向</h2>
+            <div class="assistant-body">
+              <div class="thinking">
+                <button class="thinking-toggle" type="button" aria-expanded="false">
+                  <span class="thinking-summary">分析当前冷色配色，准备给出三套柔和暖色方向。</span>
+                  <span class="thinking-chev">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M14.128 7.165a.502.502 0 0 1 .744.67l-4.5 5-.078.07a.5.5 0 0 1-.666-.07l-4.5-5-.06-.082a.501.501 0 0 1 .729-.656l.075.068L10 11.752z" /></svg>
+                  </span>
+                </button>
+                <div class="thinking-panel">
+                  <div class="thinking-panel-inner">
+                    <div class="thinking-text">
+                      <p>用户当前页面偏冷（大概率是蓝灰系），目标是 Claude 那种暖奶油底。核心是把背景从冷灰挪到低饱和的暖米色，再配一个陶土色作为强调。</p>
+                      <p>给三个梯度方向，从"最稳"到"更有个性"，让用户自己挑，而不是只给一套。</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="md">
+                <p>你这套现在偏冷，主要是底色和强调色都落在蓝灰区间。要往柔和暖色走，关键是<strong>把背景挪到低饱和的暖米色</strong>，强调色用一个不刺眼的陶土橘，这样既温暖又不会显廉价。给你三个方向：</p>
+                <h3>三套暖色方向</h3>
+                <ul>
+                  <li><strong>奶油 + 陶土（最接近 Claude）</strong>：底色 <code>hsl(48 33% 97%)</code>，强调 <code>#d97757</code>，正文近黑。稳、耐看。</li>
+                  <li><strong>燕麦 + 焦糖</strong>：底色再压暗半档，强调换成 <code>#c98a5e</code>，更"纸感"，适合阅读型页面。</li>
+                  <li><strong>暖白 + 玫瑰金</strong>：底色接近纯白带一丝暖，强调用 <code>#c08552</code> 偏金，更精致一点点。</li>
+                </ul>
+                <p>如果你只是想"快速变暖"，直接套第一套就行——背景、卡片、描边三层拉开 2~3% 的明度差，层次就出来了。</p>
+                <p>要不要我把第一套直接整理成一组可以复制的 CSS 变量？</p>
+              </div>
+            </div>
+            <div class="msg-actions" role="group" aria-label="Message actions">
+              <div class="msg-actions-inner">
+                <button class="action-btn js-copy" type="button" aria-label="复制">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="13" height="13" x="9" y="9" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                </button>
+                <button class="action-btn js-thumb" type="button" aria-label="赞">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" /></svg>
+                </button>
+                <button class="action-btn js-thumb" type="button" aria-label="踩">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" /></svg>
+                </button>
+                <button class="action-btn" type="button" aria-label="重试">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== 用户回合 2 ===== -->
+          <div class="turn-user group">
+            <h2 class="sr-only">You said: 给我第一套的 CSS 变量</h2>
+            <div class="user-stack">
+              <div class="user-bubble" data-user-message-bubble="true">
+                <p>第一套就很好，给我整理成 CSS 变量吧，顺便把卡片和描边也带上。</p>
+              </div>
+              <div class="msg-actions" role="group" aria-label="Message actions">
+                <div class="msg-actions-inner">
+                  <span class="timestamp">01:07</span>
+                  <button class="action-btn" type="button" aria-label="重试">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                  </button>
+                  <button class="action-btn" type="button" aria-label="编辑">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== Claude 回合 2（代码块）===== -->
+          <div class="turn-assistant group">
+            <h2 class="sr-only">Claude responded: CSS 变量</h2>
+            <div class="assistant-body">
+              <div class="thinking">
+                <button class="thinking-toggle" type="button" aria-expanded="false">
+                  <span class="thinking-summary">整理奶油 + 陶土方案的设计令牌。</span>
+                  <span class="thinking-chev">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M14.128 7.165a.502.502 0 0 1 .744.67l-4.5 5-.078.07a.5.5 0 0 1-.666-.07l-4.5-5-.06-.082a.501.501 0 0 1 .729-.656l.075.068L10 11.752z" /></svg>
+                  </span>
+                </button>
+                <div class="thinking-panel">
+                  <div class="thinking-panel-inner">
+                    <div class="thinking-text">
+                      <p>用 HSL 三元组方便后面做明暗联动；背景分 000/100/200 三层，描边给一个低透明度的近黑，强调单列出来。</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="md">
+                <p>给你一组可以直接粘的变量，背景分三层、描边和强调都拆开了，方便后面统一调：</p>
+                <pre><code>:root {
+  --bg-base:    48 33% 97%;   /* 页面奶油底 */
+  --bg-card:    48 25% 92%;   /* 卡片 / 气泡 */
+  --bg-sunken:  50 21% 89%;   /* 凹陷 / 分隔 */
+  --text-main:  60 3% 8%;     /* 正文近黑 */
+  --text-mute:  51 3% 44%;    /* 次要文字 */
+  --border:     30 3% 12%;    /* 配 /0.12 透明度用 */
+  --accent:     #d97757;      /* 陶土强调 */
+}</code></pre>
+                <p>用的时候记得套 <code>hsl()</code>，比如 <code>background: hsl(var(--bg-base));</code>；描边推荐 <code>hsl(var(--border) / 0.12)</code>，比纯灰线更自然。</p>
+              </div>
+            </div>
+            <div class="msg-actions" role="group" aria-label="Message actions">
+              <div class="msg-actions-inner">
+                <button class="action-btn js-copy" type="button" aria-label="复制">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="13" height="13" x="9" y="9" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                </button>
+                <button class="action-btn js-thumb" type="button" aria-label="赞">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" /></svg>
+                </button>
+                <button class="action-btn js-thumb" type="button" aria-label="踩">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" /></svg>
+                </button>
+                <button class="action-btn" type="button" aria-label="重试">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ───────── 底部输入框 ───────── -->
+      <div class="composer-wrap">
+        <form class="composer" onsubmit="return false">
+          <textarea class="composer-input" rows="1" placeholder="给 Claude 发送消息…"></textarea>
+          <div class="composer-bar">
+            <button class="plus-btn" type="button" aria-label="添加">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+            </button>
+            <button class="pill-btn" type="button">
+              Claude Sonnet 4.5
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            <span class="spacer"></span>
+            <button class="send-btn" type="submit" aria-label="发送">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </button>
+          </div>
+        </form>
+        <p class="disclaimer">Claude 也可能会犯错，请核查重要信息。（这是纯前端 UI 复刻演示）</p>
+      </div>
+    </div>
+
+    <script>
+      // 思考块：点击 toggle 在父级 .thinking 上切换 open（CSS 用 [open] 做
+      // grid-rows: 0fr→1fr 动画 + chevron 旋转）。
+      document.querySelectorAll(".thinking-toggle").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const box = btn.closest(".thinking");
+          const open = box.hasAttribute("open");
+          if (open) box.removeAttribute("open");
+          else box.setAttribute("open", "");
+          btn.setAttribute("aria-expanded", String(!open));
+        });
+      });
+
+      // 点赞 / 踩：高亮切换（互斥）。
+      document.querySelectorAll(".msg-actions-inner").forEach((row) => {
+        const thumbs = row.querySelectorAll(".js-thumb");
+        thumbs.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const on = btn.classList.contains("is-active");
+            thumbs.forEach((b) => b.classList.remove("is-active"));
+            if (!on) btn.classList.add("is-active");
+          });
+        });
+      });
+
+      // 复制：复制同一条消息的正文，给个短反馈。
+      document.querySelectorAll(".js-copy").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const body = btn
+            .closest(".turn-assistant")
+            ?.querySelector(".md");
+          const text = body ? body.innerText.trim() : "";
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch (_e) {}
+          btn.classList.add("is-active");
+          setTimeout(() => btn.classList.remove("is-active"), 900);
+        });
+      });
+
+      // 输入框：自动撑高。
+      const ta = document.querySelector(".composer-input");
+      if (ta) {
+        const grow = () => {
+          ta.style.height = "auto";
+          ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+        };
+        ta.addEventListener("input", grow);
+      }
+    </script>
+  </body>
+</html>

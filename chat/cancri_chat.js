@@ -4494,7 +4494,13 @@
 		document.querySelector(".account-strip .account-plan");
 		const avatarEl = document.querySelector(".account-strip .avatar");
 		if (accountName) accountName.textContent = displayName;
-		if (avatarEl) avatarEl.textContent = initials;
+		if (avatarEl && !avatarEl.classList.contains("has-custom-image")) {
+			avatarEl.textContent = initials;
+		}
+		if (window.CancriCustomAvatar && typeof window.CancriCustomAvatar.load === "function") {
+			const custom = window.CancriCustomAvatar.load();
+			if (custom) window.CancriCustomAvatar.apply(custom);
+		}
 		refreshNicknameUI();
 		updateHomeHeroText();
 	}
@@ -4646,7 +4652,7 @@
 		const avatarEl = document.querySelector(".account-strip .avatar");
 		if (accountName) accountName.textContent = "未登录";
 		if (accountPlan) accountPlan.textContent = "请先登录";
-		if (avatarEl) avatarEl.textContent = "--";
+		if (avatarEl && !avatarEl.classList.contains("has-custom-image")) avatarEl.textContent = "--";
 	}
 	function initAuthOverlay() {
 		if (!document.getElementById("authOverlay")) return;
@@ -12394,7 +12400,7 @@
 	}
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindInviteCopyBtn, { once: true });
 	else bindInviteCopyBtn();
-	var SIDEBAR_RAIL_ANIM_MS = 260;
+	var SIDEBAR_RAIL_ANIM_MS = 240;
 	var sidebarRailAnimTimer = 0;
 	function beginSidebarRailAnimation(mode) {
 		if (!sidebar) return;
