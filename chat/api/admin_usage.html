@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-13 审查：抽离内�?script admin-usage-app.js，删 'unsafe-inline' script-src-->
+    <!-- 2026-05-13 审查：抽离内聊script admin-usage-app.js，删 'unsafe-inline' script-src-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理�?· API 调用日志 · Cancri</title>
+    <title>管理台· API 调用日志 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
@@ -188,7 +188,7 @@
   <body>
     <div class="container">
       <nav class="nav">
-        <a href="./admin_dashboard.html">仪表�?/a>
+        <a href="./admin_dashboard.html">仪表盘</a>
         <a href="./admin_users.html">用户</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_usage.html" class="active">调用日志</a>
@@ -196,40 +196,40 @@
         <a href="./admin.html">API 申请</a>
         <a href="./admin_appeals.html">申诉</a>
         <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审�?/a>
+        <a href="./admin_orbit.html">百万亿审核</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
         <a href="../" style="color: var(--text-faint)"
-          >�?返回聊天</a
+          >←返回聊天</a
         >
       </nav>
 
-      <div id="loading" class="loading">检查权限中�?/div>
+      <div id="loading" class="loading">检查权限中</div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登�?/h2>
-        <p>请先登录账号，验证你的管理员身份�?/p>
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份</p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
       <div id="deny-gate" class="gate deny" style="display: none">
         <h2>无权访问</h2>
-        <p>这个页面仅站点管理员可见�?/p>
+        <p>这个页面仅站点管理员可见</p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
       <div id="main" style="display: none">
         <header>
           <h1>API 调用日志</h1>
-          <p>所有通过 cancri_sk_* key 进入 api-gateway 的调用，按时间倒序�?/p>
+          <p>所有通过 cancri_sk_* key 进入 api-gateway 的调用，按时间倒序</p>
         </header>
 
         <div class="toolbar">
           <div class="filter-group" id="windowFilter">
             <button class="filter-btn" data-window="3600000">最1 小时</button>
             <button class="filter-btn" data-window="86400000">24 小时</button>
-            <button class="filter-btn active" data-window="604800000">7 �?/button>
-            <button class="filter-btn" data-window="2592000000">30 �?/button>
+            <button class="filter-btn active" data-window="604800000">7 处</button>
+            <button class="filter-btn" data-window="2592000000">30 处</button>
           </div>
           <button class="reload-btn" id="reload-btn">刷新</button>
           <label style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; color: var(--text-soft); padding: 6px 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; margin-left: 8px; user-select: none;">
@@ -241,34 +241,34 @@
 
         <div class="stats" id="stats" style="display: none">
           <div class="stat-card calls">
-            <div class="label">总调�?/div>
-            <div class="value" id="stat-calls">�?/div>
+            <div class="label">总调甜</div>
+            <div class="value" id="stat-calls"></div>
             <div class="sub" id="stat-calls-sub"></div>
           </div>
           <div class="stat-card errors">
             <div class="label">错误调用</div>
-            <div class="value" id="stat-errors">�?/div>
+            <div class="value" id="stat-errors"></div>
             <div class="sub" id="stat-errors-sub"></div>
           </div>
           <div class="stat-card tokens">
             <div class="label">输入 Token</div>
-            <div class="value" id="stat-tin">�?/div>
+            <div class="value" id="stat-tin"></div>
           </div>
           <div class="stat-card tokens">
             <div class="label">输出 Token</div>
-            <div class="value" id="stat-tout">�?/div>
+            <div class="value" id="stat-tout"></div>
           </div>
           <div class="stat-card">
             <div class="label">独立用户</div>
-            <div class="value" id="stat-users">�?/div>
+            <div class="value" id="stat-users"></div>
           </div>
           <div class="stat-card">
             <div class="label">独立 IP</div>
-            <div class="value" id="stat-ips">�?/div>
+            <div class="value" id="stat-ips"></div>
           </div>
           <div class="stat-card">
             <div class="label">使用模型</div>
-            <div class="value" id="stat-models">�?/div>
+            <div class="value" id="stat-models"></div>
           </div>
         </div>
 
@@ -292,7 +292,7 @@
             id="search"
             class="search-box"
             type="search"
-            placeholder="搜邮�?/ IP / model / user_id / key prefix
+            placeholder="搜邮简/ IP / model / user_id / key prefix
             autocomplete="off"
           />
           <span style="flex: 1"></span>
@@ -310,14 +310,14 @@
                 <th style="width: 130px">IP</th>
                 <th style="width: 160px">模型</th>
                 <th style="width: 110px">Tokens</th>
-                <th style="width: 70px">状�?/th>
+                <th style="width: 70px">状态</th>
                 <th style="width: 130px">Key</th>
                 <th style="width: 140px">时间</th>
               </tr>
             </thead>
             <tbody id="rows">
               <tr>
-                <td colspan="8" class="empty">加载中�?/td>
+                <td colspan="8" class="empty">加载中</td>
               </tr>
             </tbody>
           </table>

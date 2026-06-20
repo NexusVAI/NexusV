@@ -6,13 +6,13 @@
     <meta name="robots" content="noindex,nofollow" />
     <!-- 内联 script 抽离admin-models-app.js，不'unsafe-inline' script-src-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理�?· 模型配置 · Cancri</title>
+    <title>管理台· 模型配置 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
-      /* 模型配置页专有：配置卡片 / 配置�?/ 保存按钮 / 促销预览 */
+      /* 模型配置页专有：配置卡片 / 配置額/ 保存按钮 / 促销预览 */
       .cfg-card {
         background: var(--bg-card);
         border: 1px solid var(--border);
@@ -169,7 +169,7 @@
   <body>
     <div class="container">
       <nav class="nav">
-        <a href="./admin_dashboard.html">仪表�?/a>
+        <a href="./admin_dashboard.html">仪表盘</a>
         <a href="./admin.html">审核</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_usage.html">调用日志</a>
@@ -179,17 +179,17 @@
         <a href="./admin_users.html">用户</a>
         <a href="./admin_appeals.html">申诉</a>
         <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审�?/a>
+        <a href="./admin_orbit.html">百万亿审核</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
-        <a href="../" style="color: var(--text-faint)">�?返回聊天</a>
+        <a href="../" style="color: var(--text-faint)">←返回聊天</a>
       </nav>
 
-      <div id="loading" class="loading">检查权限中�?/div>
+      <div id="loading" class="loading">检查权限中</div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登�?/h2>
-        <p>请先登录账号，验证你的管理员身份�?/p>
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份</p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
@@ -197,7 +197,7 @@
         <h2>无权访问</h2>
         <p>
           这个页面仅站点管理员可见。如果你认为这是误判，请联系
-          <code>站主</code>�?/p>
+          <code>站主</code></p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
@@ -214,13 +214,13 @@
           <div class="cfg-head">
             <h2>倍率档位</h2>
             <p>
-              每个模型costTier 归到一档，扣分 = token × 该档 factor。改一档会影响所有该档模�?             （Opus 等走 customMultiplier 的模型不受档位影响，单独压平。）
+              每个模型costTier 归到一档，扣分 = token × 该档 factor。改一档会影响所有该档模垂             （Opus 等走 customMultiplier 的模型不受档位影响，单独压平。）
             </p>
           </div>
           <div class="cfg-body">
             <div id="tiers"></div>
             <div class="hint">
-              参考：free 让国产免费模型真便宜；normal 是主力付费档；vip Pro+ 可用的高价模�?             数值越大，同样 token 扣得越多            </div>
+              参考：free 让国产免费模型真便宜；normal 是主力付费档；vip Pro+ 可用的高价模垂             数值越大，同样 token 扣得越多            </div>
           </div>
         </div>
 
@@ -228,7 +228,7 @@
         <div class="cfg-card">
           <div class="cfg-head">
             <h2>限时倍率促销</h2>
-            <p>窗口内全站倍率统一乘以折扣系数（如 0.5 = 五折）。窗口外自动恢复 1.0�?/p>
+            <p>窗口内全站倍率统一乘以折扣系数（如 0.5 = 五折）。窗口外自动恢复 1.0</p>
           </div>
           <div class="cfg-body">
             <div class="promo-grid">
@@ -236,11 +236,11 @@
               <div class="promo-toggle">
                 <input type="checkbox" id="promo-enabled" />
                 <span style="font-size: 12px; color: var(--text-faint)"
-                  >关闭后即使在时间窗口内也不打�?/span>
+                  >关闭后即使在时间窗口内也不打技</span>
                 >
               </div>
 
-              <label for="promo-start">开始时�?/label>
+              <label for="promo-start">开始时门</label>
               <input type="datetime-local" id="promo-start" />
 
               <label for="promo-end">结束时间</label>
@@ -255,10 +255,10 @@
                 placeholder="0.5"
               />
             </div>
-            <div id="promo-preview" class="preview off">状态：�?/div>
+            <div id="promo-preview" class="preview off">状态：兀</div>
             <div class="hint">
               时间按你当前浏览器本地时区。系数仅影响扣分，proPlusOnly / proMaxOnly
-              等准入门槛仍按原 costTier 判断，不会因打折被绕�?           </div>
+              等准入门槛仍按原 costTier 判断，不会因打折被绕迁           </div>
             <div class="cfg-actions">
               <button class="btn-save" id="promo-save">保存促销窗口</button>
             </div>
@@ -269,7 +269,7 @@
         <div class="cfg-card">
           <div class="cfg-head">
             <h2>默认聊天模型</h2>
-            <p>请求未带 model 字段时使用。必须是 SERVER_MODEL_REGISTRY 中存在的 ID�?/p>
+            <p>请求未带 model 字段时使用。必须是 SERVER_MODEL_REGISTRY 中存在的 ID</p>
           </div>
           <div class="cfg-body">
             <div class="cfg-row">
@@ -297,7 +297,7 @@
     </div>
 
     <script src="../cancri_config.js"></script>
-    <!-- 设备 / 浏览器指纹（反多账号信号采集�?->
+    <!-- 设备 / 浏览器指纹（反多账号信号采集！->
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
