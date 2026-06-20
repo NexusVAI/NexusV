@@ -66,12 +66,13 @@
   function initThemeEarly() {
     // 在 DOMContentLoaded 之前已经执行（脚本放在 <head> 里且
     // defer/未指定时按顺序解析），尽快避免主题闪烁。
+    // 2026-06-20：开放平台默认 Claude 深色优雅；仅尊重用户已保存的选择。
     var saved = readSavedTheme();
     if (saved) {
       applyTheme(saved);
       return;
     }
-    applyTheme(systemPrefersLight() ? LIGHT : DARK);
+    applyTheme(DARK);
   }
 
   // 跟随系统切换（仅在用户未显式选择时）
@@ -302,7 +303,7 @@
     keys: {
       sideLabel: "常用操作",
       main: [
-        { self: true, label: "我的 Keys" },
+        { self: true, label: "控制台" },
         { nav: /api_docs/, hash: "auth", label: "Bearer 认证" },
         { nav: /api_docs/, hash: "quickstart", label: "调用示例" },
       ],
@@ -871,6 +872,77 @@
     brandHost.appendChild(nav);
   }
 
+  function injectClaudeDocsTheme() {
+    if (isAdminShellPage()) return;
+    if (document.getElementById("cancri-claude-docs-theme")) return;
+    var scripts = document.getElementsByTagName("script");
+    var base = "./api/";
+    for (var i = scripts.length - 1; i >= 0; i--) {
+      var src = scripts[i].src || "";
+      if (src.indexOf("api-platform.js") !== -1) {
+        base = src.replace(/api-platform\.js.*$/, "");
+        break;
+      }
+    }
+    var link = document.createElement("link");
+    link.id = "cancri-claude-docs-theme";
+    link.rel = "stylesheet";
+    link.href = base + "claude-docs-theme.css?v=20260620-claude-ui";
+    document.head.appendChild(link);
+  }
+
+  function chatRootPrefix() {
+    var path = location.pathname || "";
+    if (/\/api\/?$/.test(path) || /\/api\/index\.html$/i.test(path)) {
+      return "../";
+    }
+    return "./";
+  }
+
+  function enhanceTopbarChrome() {
+    if (isAdminShellPage()) return;
+    var inner = document.querySelector(".topbar__inner");
+    if (!inner) return;
+
+    var brand = inner.querySelector(".brand");
+    if (brand && !brand.querySelector(".brand__wordmark")) {
+      var wordmark = document.createElement("span");
+      wordmark.className = "brand__wordmark";
+      wordmark.textContent = "Cancri API Docs";
+      brand.appendChild(wordmark);
+    }
+
+    inner.querySelectorAll('.topnav a[href*="api_keys"]').forEach(function (a) {
+      if (/^keys$/i.test((a.textContent || "").trim())) {
+        a.textContent = "控制台";
+      }
+    });
+
+    if (inner.querySelector(".topbar__actions")) return;
+    var actions = document.createElement("div");
+    actions.className = "topbar__actions";
+
+    var root = chatRootPrefix();
+    var consoleLink = document.createElement("a");
+    consoleLink.className = "topbar__console-btn";
+    consoleLink.href = root + "api_keys.html";
+    consoleLink.textContent = "Console";
+    if (/api_keys\.html/i.test(location.pathname || "")) {
+      consoleLink.classList.add("is-active");
+    }
+    actions.appendChild(consoleLink);
+
+    var themeBtn =
+      inner.querySelector("[data-theme-toggle]") ||
+      inner.querySelector(".theme-toggle") ||
+      inner.querySelector(".theme-picker");
+    if (themeBtn) {
+      inner.insertBefore(actions, themeBtn);
+    } else {
+      inner.appendChild(actions);
+    }
+  }
+
   function loadPlatformSearch() {
     if (isAdminShellPage()) return;
     if (!document.querySelector(".topbar")) return;
@@ -889,13 +961,27 @@
     document.head.appendChild(s);
   }
 
+  function wireDocsHomeSearch() {
+    var pill = document.getElementById("docsSearchPill");
+    if (!pill) return;
+    pill.addEventListener("click", function () {
+      var trigger =
+        document.querySelector("[data-platform-search-trigger]") ||
+        document.querySelector(".platform-search-trigger");
+      if (trigger) trigger.click();
+    });
+  }
+
   function ready() {
+    injectClaudeDocsTheme();
     initAdminShell();
     initTopbarMegaMenu();
+    enhanceTopbarChrome();
     wireThemeToggles();
     initTopbarMobileMenu();
     injectSiteFooterSocials();
     loadPlatformSearch();
+    wireDocsHomeSearch();
     syncTopbarOffset();
     window.addEventListener("resize", syncTopbarOffset);
     wireCopyButtons();

@@ -287,6 +287,88 @@ async function loadUsage() {
     }
 }
 
+function renderMonitorChart(days, tokenByDay) {
+    const svg = document.getElementById("monitor-chart-svg");
+    const wrap = document.getElementById("monitor-chart-wrap");
+    const tooltip = document.getElementById("monitor-tooltip");
+    if (!svg || !wrap) return;
+
+    const W = 800;
+    const H = 200;
+    const pad = { t: 16, r: 16, b: 8, l: 16 };
+    const innerW = W - pad.l - pad.r;
+    const innerH = H - pad.t - pad.b;
+
+    const calls = days.map(([, v]) => v);
+    const tokens = days.map(([k]) => tokenByDay.get(k) || 0);
+    const maxCalls = Math.max(1, ...calls);
+    const maxTokens = Math.max(1, ...tokens);
+
+    const pointsCalls = calls.map((v, i) => {
+        const x = pad.l + (i / Math.max(1, calls.length - 1)) * innerW;
+        const y = pad.t + innerH - (v / maxCalls) * innerH;
+        return { x, y, v, day: days[i][0], tokens: tokens[i] };
+    });
+
+    const pointsTokens = tokens.map((v, i) => {
+        const x = pad.l + (i / Math.max(1, tokens.length - 1)) * innerW;
+        const y = pad.t + innerH - (v / maxTokens) * innerH * 0.85;
+        return { x, y };
+    });
+
+    const lineCalls = pointsCalls.map((p) => `${p.x},${p.y}`).join(" ");
+    const lineTokens = pointsTokens.map((p) => `${p.x},${p.y}`).join(" ");
+    const areaCalls =
+        `${pointsCalls[0].x},${pad.t + innerH} ` +
+        lineCalls +
+        ` ${pointsCalls[pointsCalls.length - 1].x},${pad.t + innerH}`;
+
+    const gridLines = [0.25, 0.5, 0.75].map((f) => {
+        const y = pad.t + innerH * (1 - f);
+        return `<line class="monitor-chart__grid-line" x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}"/>`;
+    });
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="monitor-area-gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4ade80" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+        </linearGradient>
+        <pattern id="monitor-inactive-pattern" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+        </pattern>
+      </defs>
+      <rect x="${pad.l}" y="${pad.t}" width="${innerW}" height="${innerH}" class="monitor-chart__inactive" rx="4"/>
+      ${gridLines.join("")}
+      <polygon class="monitor-chart__area" points="${areaCalls}"/>
+      <polyline class="monitor-chart__line" points="${lineTokens}" stroke="#6f6d66" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <polyline class="monitor-chart__line" points="${lineCalls}"/>
+      ${pointsCalls
+          .map(
+              (p, i) =>
+                  `<circle data-idx="${i}" cx="${p.x}" cy="${p.y}" r="4" fill="#4ade80" stroke="#141413" stroke-width="2" style="cursor:pointer"/>`,
+          )
+          .join("")}
+    `;
+
+    svg.querySelectorAll("circle[data-idx]").forEach((c) => {
+        c.addEventListener("mouseenter", (e) => {
+            const idx = Number(c.getAttribute("data-idx"));
+            const p = pointsCalls[idx];
+            if (!tooltip || !p) return;
+            tooltip.hidden = false;
+            tooltip.innerHTML = `<strong>${p.day}</strong>调用 ${p.v} 次 · Token ${p.tokens.toLocaleString()}`;
+            const rect = wrap.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            tooltip.style.left = Math.min(rect.width - 160, Math.max(8, cx - 80)) + "px";
+            tooltip.style.top = "24px";
+        });
+        c.addEventListener("mouseleave", () => {
+            if (tooltip) tooltip.hidden = true;
+        });
+    });
+}
+
 function renderUsage(rows) {
     const chart = document.getElementById("usage-chart");
     const axis = document.getElementById("usage-axis");
@@ -296,6 +378,8 @@ function renderUsage(rows) {
         chart.innerHTML = "";
         axis.innerHTML = "";
         byModelEl.innerHTML = "";
+        const svg = document.getElementById("monitor-chart-svg");
+        if (svg) svg.innerHTML = "";
         empty.style.display = "block";
         document.getElementById("u-total").textContent = "0";
         document.getElementById("u-tokens-in").textContent = "0";
@@ -307,6 +391,7 @@ function renderUsage(rows) {
 
     // Aggregate per day for last 30 days
     const dayBuckets = new Map();
+    const dayTokenBuckets = new Map();
     const modelBuckets = new Map();
     let totalIn = 0,
         totalOut = 0,
@@ -323,6 +408,7 @@ function renderUsage(rows) {
             "-" +
             String(d.getDate()).padStart(2, "0");
         dayBuckets.set(k, 0);
+        dayTokenBuckets.set(k, 0);
     }
     rows.forEach((r) => {
         const d = new Date(r.created_at);
@@ -332,7 +418,15 @@ function renderUsage(rows) {
             String(d.getMonth() + 1).padStart(2, "0") +
             "-" +
             String(d.getDate()).padStart(2, "0");
-        if (dayBuckets.has(k)) dayBuckets.set(k, dayBuckets.get(k) + 1);
+        if (dayBuckets.has(k)) {
+            dayBuckets.set(k, dayBuckets.get(k) + 1);
+            dayTokenBuckets.set(
+                k,
+                dayTokenBuckets.get(k) +
+                    (Number(r.tokens_in) || 0) +
+                    (Number(r.tokens_out) || 0),
+            );
+        }
         const m = r.model || "unknown";
         if (!modelBuckets.has(m))
             modelBuckets.set(m, { calls: 0, tin: 0, tout: 0 });
@@ -357,6 +451,7 @@ function renderUsage(rows) {
             return `<div class="usage-chart-bar${count > 0 ? "" : " is-empty"}" title="${day}: ${count} 次" style="height:${h}px"></div>`;
         })
         .join("");
+    renderMonitorChart(days, dayTokenBuckets);
     axis.innerHTML =
         `<span>${days[0][0].slice(5)}</span>` +
         `<span>${days[Math.floor(days.length / 2)][0].slice(5)}</span>` +
@@ -718,6 +813,15 @@ function bindUI() {
     if (saveBtn) saveBtn.addEventListener("click", saveKeyLimits);
     const resetBtn = document.getElementById("kd-reset-usage");
     if (resetBtn) resetBtn.addEventListener("click", resetKeyUsage);
+    const refreshBtn = document.getElementById("usage-refresh-btn");
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", () => {
+            refreshBtn.disabled = true;
+            loadUsage().finally(() => {
+                refreshBtn.disabled = false;
+            });
+        });
+    }
 }
 
 bindUI();

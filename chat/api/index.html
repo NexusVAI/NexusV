@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content="#141413" />
   <title>Cancri 开放平台 · Open Platform</title>
   <meta
     name="description"
@@ -18,8 +18,9 @@
   <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high" />
   <link rel="preload" as="image" href="../../Logo/Cancri.png" />
 
-  <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
-  <script src="./api-platform.js?v=20260607-account-fix"></script>
+  <link rel="stylesheet" href="./api-platform.css?v=20260620-claude-ui" />
+  <link rel="stylesheet" href="./claude-docs-theme.css?v=20260620-claude-ui" />
+  <script src="./api-platform.js?v=20260620-claude-ui"></script>
   <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
        img.cancri-logo 的 src（黑/白），实现主题切换时 logo 跟随翻转。 -->
   <script src="../cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
@@ -801,7 +802,7 @@
   </style>
 </head>
 
-<body>
+<body class="docs-home has-topbar">
   <header class="topbar">
     <div class="topbar__inner">
       <a class="brand" href="./" aria-label="Cancri 开放平台">
@@ -818,7 +819,7 @@
       <nav class="topnav" aria-label="开放平台导航">
         <a href="./" class="is-active">概览</a>
         <a href="../api_apply.html">申请</a>
-        <a href="../api_keys.html">Keys</a>
+        <a href="../api_keys.html">控制台</a>
         <a href="../api_models.html">模型</a>
         <a href="../api_docs.html">文档</a>
         <a href="../pricing.html">套餐</a>
@@ -845,313 +846,72 @@
   </header>
 
   <main>
-    <svg class="api-liquid-glass-defs" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-      <defs>
-        <filter
-          id="api-liquid-glass-filter"
-          x="0" y="0" width="100%" height="100%"
-          filterUnits="objectBoundingBox"
-          primitiveUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
-        >
-          <feImage id="api-lg-feimage" href="" result="MAP" preserveAspectRatio="xMidYMid slice" />
-          <feColorMatrix in="MAP" type="matrix" result="EDGE_GREY"
-            values="0.3 0.3 0.3 0 0
-                    0.3 0.3 0.3 0 0
-                    0.3 0.3 0.3 0 0
-                    0   0   0   1 0" />
-          <feComponentTransfer in="EDGE_GREY" result="EDGE_MASK">
-            <feFuncA type="discrete" tableValues="0 0.15 1" />
-          </feComponentTransfer>
-          <feDisplacementMap id="api-lg-disp-r" in="SourceGraphic" in2="MAP" scale="70" xChannelSelector="R" yChannelSelector="G" result="DISP_R" />
-          <feColorMatrix in="DISP_R" type="matrix" result="CH_R"
-            values="1 0 0 0 0
-                    0 0 0 0 0
-                    0 0 0 0 0
-                    0 0 0 1 0" />
-          <feDisplacementMap id="api-lg-disp-g" in="SourceGraphic" in2="MAP" scale="67" xChannelSelector="R" yChannelSelector="G" result="DISP_G" />
-          <feColorMatrix in="DISP_G" type="matrix" result="CH_G"
-            values="0 0 0 0 0
-                    0 1 0 0 0
-                    0 0 0 0 0
-                    0 0 0 1 0" />
-          <feDisplacementMap id="api-lg-disp-b" in="SourceGraphic" in2="MAP" scale="64" xChannelSelector="R" yChannelSelector="G" result="DISP_B" />
-          <feColorMatrix in="DISP_B" type="matrix" result="CH_B"
-            values="0 0 0 0 0
-                    0 0 0 0 0
-                    0 0 1 0 0
-                    0 0 0 1 0" />
-          <feBlend in="CH_G" in2="CH_B" mode="screen" result="GB" />
-          <feBlend in="CH_R" in2="GB" mode="screen" result="ABERRATED" />
-          <feComposite in="ABERRATED" in2="EDGE_MASK" operator="in" result="RIM_CHROMA" />
-          <feComponentTransfer in="EDGE_MASK" result="INV_MASK">
-            <feFuncA type="table" tableValues="1 0" />
-          </feComponentTransfer>
-          <feComposite in="DISP_G" in2="INV_MASK" operator="in" result="CENTER_CLEAN" />
-          <feComposite in="RIM_CHROMA" in2="CENTER_CLEAN" operator="over" result="COMBINED" />
-          <feGaussianBlur in="COMBINED" stdDeviation="0.5" />
-        </filter>
-      </defs>
-    </svg>
-
-    <!-- HERO -->
-    <section class="hero">
-      <!-- 装饰层：斜向滚动的生态合作伙伴 logo 条带。aria-hidden
-           不参与无障碍朗读；prefers-reduced-motion 自动停止动画。
-           每行 14 个 svg × 2 段拼接，确保 0→-50% 无缝循环。 -->
-      <div class="hero__marquee" aria-hidden="true">
-        <div class="hero__marquee-rotor">
-          <div class="marquee-row" data-dir="left" style="--speed: 52s">
-            <div class="marquee-row__track">
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-            </div>
-          </div>
-          <div class="marquee-row" data-dir="right" style="--speed: 44s">
-            <div class="marquee-row__track">
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-            </div>
-          </div>
-          <div class="marquee-row" data-dir="left" style="--speed: 62s">
-            <div class="marquee-row__track">
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-            </div>
-          </div>
-          <div class="marquee-row" data-dir="right" style="--speed: 48s">
-            <div class="marquee-row__track">
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../bailian-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../poe-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../claudecode-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openrouter.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../lmstudio.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../githubcopilot.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../modelscope-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../ollama.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../openclaw-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../copilot-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../trae-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../qoder-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../codebuddy-color.svg" alt="" loading="lazy" decoding="async" />
-              <img src="../alibabacloud-color.svg" alt="" loading="lazy" decoding="async" />
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 2026-05-17：自适应填充 marquee track。原 HTML 每段 14 svg × 2 段，
-           在大屏上 track 宽度 < 2× row 可见宽 → translateX(-50%) 出现右侧
-           露白 → 看起来「瞬间跳」。这里按实际 row 宽度动态复制原始 14 svg，
-           且每次成对追加（确保 track 段数始终为偶数，2 段拼接的接续点恰好
-           落在周期起点），直到 track.scrollWidth ≥ 2.2× row.width，
-           保证跨屏幕完美无缝。 -->
-      <script>
-        (function () {
-          const BASE_LEN = 14;
-          function fill() {
-            const rows = document.querySelectorAll(".hero__marquee .marquee-row");
-            rows.forEach(function (row) {
-              const track = row.querySelector(".marquee-row__track");
-              if (!track) return;
-              // 只取前 14 个作为「原始周期」复制份。HTML 里每行写了 28 个
-              // （14×2 拼接）作为默认填充，以防 JS 失败时仍有基本效果。
-              const base = Array.from(track.children).slice(0, BASE_LEN);
-              if (base.length === 0) return;
-              // 用 offsetWidth 拿 layout 宽度，避免父级 rotate(22deg) 让
-              // getBoundingClientRect 返回缩水的投影宽度而填不够。
-              const rowWidth = row.offsetWidth || row.getBoundingClientRect().width || 0;
-              let safety = 0;
-              // 每次追加 2 × base（即一对完整周期），让 track 总段数永远
-              // 为偶数。translateX(-50%) 把 track 走过整段数的一半，正好
-              // 落到下一周期起点 → 数学上完美无缝。
-              while (track.scrollWidth < rowWidth * 2.2 && safety < 12) {
-                for (let i = 0; i < 2; i++) {
-                  base.forEach(function (node) {
-                    track.appendChild(node.cloneNode(true));
-                  });
-                }
-                safety += 1;
-              }
-            });
-          }
-          if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", fill, { once: true });
-          } else {
-            fill();
-          }
-          // 窗口变大时补填（不缩减）；反复调用安全，带 safety 限。
-          let resizeTimer = null;
-          window.addEventListener("resize", function () {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(fill, 200);
-          });
-        })();
-      </script>
-      <div class="hero__inner">
-        <div class="hero__layout">
-          <div class="hero__copy">
-            <div class="hero__eyebrow">Cancri Open Platform</div>
-            <h1 class="hero__h1">
-              一个端点，<br />
-              多种<em>协议</em>，<br />
-              一把密钥。
-            </h1>
-            <p class="hero__lede">
-              Cancri 开放平台把 OpenAI、Anthropic 与 Codex 三套原生协议归一化到同一个
-              API 网关。在你的代码里，<code>import</code> 不变，把
-              <code>base_url</code> 替换即可。
-            </p>
-            <div class="hero__cta">
-              <a class="btn btn--primary" href="../api_apply.html"
-                >申请密钥<span class="arrow">→</span></a
-              >
-              <a class="btn btn--ghost" href="../api_docs.html">阅读文档</a>
-            </div>
-            <div class="endpoint-strip" aria-label="API base URL">
-              <span class="endpoint-strip__label">Base&nbsp;URL</span>
-              <span class="endpoint-strip__url" id="endpoint-url"
-                >https://chat.nexusvai.xyz/functions/v1/api-gateway</span
-              >
-              <button
-                class="endpoint-strip__copy"
-                id="endpoint-copy"
-                type="button"
-                aria-label="复制 base URL"
-              >
-                复制
+    <!-- HERO · Claude Docs 风格 -->
+    <section class="docs-hero">
+      <div class="docs-hero__inner">
+        <div class="docs-hero__grid">
+          <div class="docs-hero__copy">
+            <div class="docs-eyebrow">Cancri Platform</div>
+            <h1>开始使用 Cancri 进行构建</h1>
+            <p class="docs-hero__lede">将 Cancri 集成到您的应用程序中所需的一切。从首次 API 调用到生产部署。</p>
+            <div class="docs-hero__search">
+              <button type="button" class="docs-search-pill" id="docsSearchPill" aria-label="搜索文档">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                搜索文档
+                <kbd>Ctrl K</kbd>
               </button>
             </div>
-            <div class="api-glass-ask">
-              <a
-                class="api-glass-pill"
-                id="apiGlassPill"
-                href="../?q=%E4%BD%BF%E7%94%A8%E7%AB%99%E5%86%85%E5%B7%A5%E5%85%B7%E5%91%8A%E8%AF%89%E6%88%91%E7%AB%99%E5%86%85%E7%9A%84%20API%20%E5%A4%9A%E5%B0%91%E9%92%B1%EF%BC%9F"
-                aria-label="跳转到聊天页并询问 Cancri API 价格"
-                data-liquid-glass
-                data-lg-filter="api-liquid-glass-filter"
-                data-lg-feimage="api-lg-feimage"
-                data-lg-disp-r="api-lg-disp-r"
-                data-lg-disp-g="api-lg-disp-g"
-                data-lg-disp-b="api-lg-disp-b"
-                data-lg-stretch="true"
-              >
-                <span class="api-glass-pill__warp"></span>
-                <span class="api-glass-pill__rim"></span>
-                <span class="api-glass-pill__content">
-                  <span class="api-glass-pill__badge">Ask Cancri</span>
-                  <span class="api-glass-pill__main">
-                    <span class="api-glass-pill__prompt">使用站内工具告诉我站内的 API 多少钱？</span>
-                    <span class="api-glass-pill__variants">也可以问：套餐怎么选 · 免费额度怎么算 · 调用价格贵不贵</span>
-                  </span>
-                  <span class="api-glass-pill__arrow" aria-hidden="true">→</span>
-                </span>
+            <div class="docs-quick-actions">
+              <a class="docs-quick-btn" href="../api_docs.html#quickstart">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                快速入门
+              </a>
+              <a class="docs-quick-btn" href="../api_apply.html">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                获取 API 密钥
+              </a>
+              <a class="docs-quick-btn" href="../api_docs.html">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                API 参考
               </a>
             </div>
+            <div class="endpoint-strip" aria-label="API base URL" style="margin-top:28px">
+              <span class="endpoint-strip__label">Base&nbsp;URL</span>
+              <span class="endpoint-strip__url" id="endpoint-url">https://chat.nexusvai.xyz/functions/v1/api-gateway</span>
+              <button class="endpoint-strip__copy" id="endpoint-copy" type="button" aria-label="复制 base URL">复制</button>
+            </div>
           </div>
-          <div class="hero__media">
-            <figure class="hero__video-wrap">
-              <video
-                src="../../Logo/Nexusai.mp4"
-                autoplay
-                muted
-                loop
-                playsinline
-                preload="metadata"
-                aria-label="Cancri 开放平台介绍视频"
-              ></video>
-            </figure>
+          <div class="docs-hero__code">
+            <div class="code-tabs">
+              <div class="code-tabs__head" role="tablist">
+                <button class="code-tabs__btn is-active" data-tab="cli" type="button">CLI</button>
+                <button class="code-tabs__btn" data-tab="curl" type="button">cURL</button>
+                <button class="code-tabs__btn" data-tab="python" type="button">Python</button>
+              </div>
+              <div class="code-tabs__body">
+<pre class="code-tabs__pre is-active" data-tab="cli"><span class="c-cmt"># Cancri CLI 示例</span>
+cancri chat \
+  --model <span class="c-str">gpt-5.4-mini</span> \
+  --max-tokens <span class="c-str">1024</span> \
+  --message <span class="c-str">'{ role: user, content: "Hello, Cancri" }'</span></pre>
+<pre class="code-tabs__pre" data-tab="curl"><span class="c-cmt"># OpenAI 兼容协议</span>
+curl <span class="c-str">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions"</span> \
+  -H <span class="c-str">"Authorization: Bearer $CANCRI_KEY"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{"model":"gpt-5.4-mini","messages":[{"role":"user","content":"Hello"}]}'</span></pre>
+<pre class="code-tabs__pre" data-tab="python"><span class="c-key">from</span> openai <span class="c-key">import</span> OpenAI
+
+client = <span class="c-fn">OpenAI</span>(
+    api_key=<span class="c-str">"cancri_sk_..."</span>,
+    base_url=<span class="c-str">"https://chat.nexusvai.xyz/functions/v1/api-gateway/v1"</span>,
+)
+resp = client.chat.completions.<span class="c-fn">create</span>(
+    model=<span class="c-str">"gpt-5.4-mini"</span>,
+    messages=[{<span class="c-str">"role"</span>: <span class="c-str">"user"</span>, <span class="c-str">"content"</span>: <span class="c-str">"Hello"</span>}],
+)
+<span class="c-fn">print</span>(resp.choices[<span class="c-str">0</span>].message.content)</pre>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1259,52 +1019,50 @@ console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>]
       </div>
     </section>
 
-    <!-- 03 — Console -->
-    <section class="chapter">
-      <div class="chapter__inner">
-        <div class="chapter__head">
-          <div class="chapter__num">03 — Console</div>
-          <h2 class="chapter__title">从这里<em>开始</em>。</h2>
-          <p class="chapter__sub">
-            四个入口，覆盖从首次申请到日常运维的完整链路。
-          </p>
-        </div>
-        <div class="chapter__body">
-          <div class="entry-grid">
-            <a class="entry-card" href="../api_apply.html">
-              <div class="entry-card__num">3.1</div>
-              <div class="entry-card__name">申请&nbsp;<em>API</em></div>
-              <div class="entry-card__desc">
-                首次使用？提交申请进入白名单，通常 24 小时内审核完成。
-              </div>
-              <div class="entry-card__arrow">→</div>
-            </a>
-            <a class="entry-card" href="../api_keys.html">
-              <div class="entry-card__num">3.2</div>
-              <div class="entry-card__name">我的&nbsp;<em>Keys</em></div>
-              <div class="entry-card__desc">
-                创建、查看、撤销密钥；掌握每一把密钥的用量曲线。
-              </div>
-              <div class="entry-card__arrow">→</div>
-            </a>
-            <a class="entry-card" href="../api_models.html">
-              <div class="entry-card__num">3.3</div>
-              <div class="entry-card__name">模型&nbsp;<em>广场</em></div>
-              <div class="entry-card__desc">
-                浏览所有可调用模型，按品牌筛选，查看上下文长度与 FREE / PAID 档位。
-              </div>
-              <div class="entry-card__arrow">→</div>
-            </a>
-            <a class="entry-card" href="../api_docs.html">
-              <div class="entry-card__num">3.4</div>
-              <div class="entry-card__name">开发者&nbsp;<em>文档</em></div>
-              <div class="entry-card__desc">
-                端点参考、鉴权约定与 SDK 集成指南。
-              </div>
-              <div class="entry-card__arrow">→</div>
-            </a>
+    <!-- 03 — Platform cards (Claude Docs 风格) -->
+    <section class="docs-section">
+      <div class="docs-section__head">
+        <div class="docs-eyebrow">平台</div>
+        <h2>选择您的构建方式</h2>
+        <p>选择与您的开发方式相匹配的开发者界面，以及适合您技术栈的基础设施。</p>
+      </div>
+      <div class="docs-platform-grid">
+        <a class="docs-platform-card" href="../api_docs.html">
+          <div class="docs-platform-card__visual">
+            <svg class="docs-platform-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 9l3 3-3 3M13 15h3M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 1 4 6.5v13z"/></svg>
           </div>
-        </div>
+          <div class="docs-platform-card__body">
+            <h3>Messages API</h3>
+            <p>通过 Cancri Messages 协议构建对话式应用，兼容 Anthropic SDK 与工具链。</p>
+          </div>
+        </a>
+        <a class="docs-platform-card" href="../api_keys.html">
+          <div class="docs-platform-card__visual">
+            <svg class="docs-platform-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 3v3M6 9h12v11H6zM9 9V6a3 3 0 0 1 6 0v3"/></svg>
+          </div>
+          <div class="docs-platform-card__body">
+            <h3>控制台</h3>
+            <p>管理 API Keys、查看用量波图与按模型分布，一站式运维你的接入。</p>
+          </div>
+        </a>
+        <a class="docs-platform-card" href="../api_models.html">
+          <div class="docs-platform-card__visual">
+            <svg class="docs-platform-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </div>
+          <div class="docs-platform-card__body">
+            <h3>模型广场</h3>
+            <p>浏览全部可用模型，按品牌与能力筛选，一键复制 model ID。</p>
+          </div>
+        </a>
+        <a class="docs-platform-card" href="../pricing.html">
+          <div class="docs-platform-card__visual">
+            <svg class="docs-platform-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="docs-platform-card__body">
+            <h3>套餐与计费</h3>
+            <p>选择 FREE / PAID 档位与加油包，透明定价，随用随扩。</p>
+          </div>
+        </a>
       </div>
     </section>
   </main>
@@ -1356,6 +1114,5 @@ console.<span class="c-fn">log</span>(resp.choices[<span class="c-str">0</span>]
       });
     })();
   </script>
-  <script src="./liquid-glass-pill.js?v=20260607-lg-stretch"></script>
 </body>
 </html>
