@@ -1173,27 +1173,32 @@ html[data-theme="light"] .conversation-item:hover {
     );
 }
 
-/* 聊天态：消息区上探到顶栏下方，滚动时经毛玻璃虚化（对齐 claude.ai 顶栏） */
+/* 聊天态：消息区在 #homeView 内滚动；禁止负 margin 上探（会在顶部制造
+   可无限上滑空白，进入对话时常白屏需下滑才看到内容）。 */
 body.is-chatting #homeView.chatting {
-    margin-top: calc(-1 * var(--header-h, 56px));
+    margin-top: 0;
     position: relative;
     z-index: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
 body.is-chatting #homeView.chatting .chat-messages.active {
-    padding-top: calc(var(--header-h, 56px) + 12px) !important;
+    padding-top: 16px !important;
+    overscroll-behavior-y: contain;
     -webkit-mask-image: linear-gradient(
         to bottom,
         transparent 0,
-        rgba(0, 0, 0, 0.35) 20px,
-        #000 56px,
+        rgba(0, 0, 0, 0.35) 12px,
+        #000 32px,
         #000 100%
     );
     mask-image: linear-gradient(
         to bottom,
         transparent 0,
-        rgba(0, 0, 0, 0.35) 20px,
-        #000 56px,
+        rgba(0, 0, 0, 0.35) 12px,
+        #000 32px,
         #000 100%
     );
 }

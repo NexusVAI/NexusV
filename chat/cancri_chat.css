@@ -1099,11 +1099,13 @@ svg {
 .main {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     position: relative;
     width: 100%;
     background: var(--main-bg);
+    overflow: hidden;
 }
 
 .main-header {
@@ -5515,12 +5517,12 @@ body {
     min-height: 0;
 }
 
-/* 初始态输入框不要被压到屏幕外 */
+/* 初始态：居中区占满剩余高度，避免 min-height + 大 padding 叠出顶部可滚空白 */
 #homeView:not(.chatting) .home-center {
-    flex: 0 0 auto;
-    min-height: calc(100dvh - var(--header-h) - var(--top-site-banner-h, 0px));
+    flex: 1 1 auto;
+    min-height: 0;
     justify-content: flex-start;
-    padding: min(22dvh, 200px) 24px clamp(20px, 8vh, 56px) !important;
+    padding: min(12dvh, 96px) 24px clamp(20px, 8vh, 56px) !important;
 }
 
 /* 聊天态：消息区滚动，输入框固定在底部区域 */
