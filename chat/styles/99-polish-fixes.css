@@ -162,7 +162,7 @@
        Pinning shrink:0 + a real min-height keeps the action row always
        visible. */
     flex-shrink: 0 !important;
-    min-height: 36px !important;
+    min-height: 32px !important;
 }
 
 .composer-tools {
