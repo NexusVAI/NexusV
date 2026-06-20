@@ -787,6 +787,41 @@ html[data-theme="black"] .auth-overlay {
     background: hsl(var(--bg-300));
 }
 
+/* Platform login pages (index / claude / desktop-login): single-column scroll page.
+   Without this, grid-template-columns: 1fr 1fr above 880px leaves footer on left half only. */
+.auth-overlay:has(.auth-page-shell),
+html.auth-platform-page .auth-overlay {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.auth-overlay:has(.auth-page-shell) > .auth-topnav-spacer,
+.auth-overlay:has(.auth-page-shell) > .auth-page-shell,
+html.auth-platform-page .auth-overlay > .auth-topnav-spacer,
+html.auth-platform-page .auth-overlay > .auth-page-shell {
+    grid-column: unset !important;
+    width: 100% !important;
+    max-width: none !important;
+    align-self: stretch !important;
+}
+
 .auth-bg {
     position: absolute;
     inset: 0;

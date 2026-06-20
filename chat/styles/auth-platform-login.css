@@ -1,0 +1,703 @@
+/*
+ * Auth platform login chrome — layout cloned from platform.claude.com/login
+ * (fixed nav + dot-grid hero + login card + partner logo row + site footer).
+ * Form/card styles stay in cancri_motion.css; this file only handles page shell.
+ */
+
+/* ── Full-viewport backdrop + document scroll (not #authOverlay scroll) ──
+   Internal overlay scroll leaves a ~15px classic scrollbar gutter on Windows;
+   default track color reads as a permanent right-edge white strip. */
+html.auth-platform-page {
+    background: hsl(var(--bg-300));
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html.auth-platform-page::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+html.auth-platform-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -9999;
+    background: hsl(var(--bg-300));
+    pointer-events: none;
+}
+
+html.auth-platform-page body {
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+    background: hsl(var(--bg-300));
+}
+
+/* ── Cancri nav brand (from Cancri官网/css/cancri.css) ─────────── */
+.cancri-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: hsl(var(--text-000));
+    text-decoration: none;
+}
+
+.cancri-brand__icon {
+    display: block;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 4px;
+}
+
+.cancri-brand__word-wrap {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(10px);
+    transition:
+        max-width 280ms cubic-bezier(0, 0, 0.2, 1),
+        opacity 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.cancri-brand__word-wrap.is-in {
+    max-width: 5.2em;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+html.is-auth-nav-scrolled .auth-topnav .cancri-brand__word-wrap.is-in {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.cancri-brand__word {
+    display: inline-block;
+    padding-right: 0.04em;
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 1.125rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.cancri-brand--footer .cancri-brand__word-wrap,
+html.is-auth-nav-scrolled .cancri-brand--footer .cancri-brand__word-wrap {
+    max-width: 5.2em;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cancri-brand__word-wrap {
+        transition: none !important;
+    }
+}
+
+/* ── Overlay shell: Claude Platform vertical page, not 2-col grid ─ */
+.auth-overlay {
+    display: flex !important;
+    flex-direction: column;
+    grid-template-columns: unset !important;
+    grid-template-rows: unset !important;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0 !important;
+    padding: 0 !important;
+    position: relative;
+    inset: auto;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+    overscroll-behavior: auto;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* cancri_motion.css keeps 2-col grid above 880px — kill it for platform login */
+@media (min-width: 881px) {
+    .auth-overlay {
+        display: flex !important;
+        grid-template-columns: unset !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+}
+
+.auth-overlay > .auth-topnav-spacer,
+.auth-overlay > .auth-page-shell {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+    flex: 0 0 auto;
+    align-self: stretch;
+    box-sizing: border-box;
+}
+
+.auth-overlay.visible {
+    justify-content: flex-start;
+    align-items: stretch;
+    overflow: visible;
+}
+
+html[data-theme="dark"] .auth-overlay,
+html[data-theme="black"] .auth-overlay {
+    background: hsl(var(--bg-300));
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* index/claude: overlay blocks chat when visible — fixed + hidden scrollbar (no gutter strip) */
+html.auth-platform-page .auth-overlay.visible {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+html.auth-platform-page .auth-overlay.visible::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.auth-showcase,
+.auth-mobile-poster,
+.auth-brand {
+    display: none !important;
+}
+
+.auth-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    z-index: 0;
+    pointer-events: none;
+    background: hsl(var(--bg-300));
+}
+
+/* ── Fixed top nav (platform.claude.com/login nav) ─────────────── */
+.auth-topnav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    z-index: 20;
+    background: hsl(var(--bg-100));
+    border-bottom: 1px solid hsl(var(--border-300) / 0.12);
+    box-sizing: border-box;
+}
+
+html[data-theme="dark"] .auth-topnav,
+html[data-theme="black"] .auth-topnav {
+    background: hsl(var(--bg-300));
+}
+
+.auth-topnav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 90rem;
+    margin: 0 auto;
+    width: calc(100% - (2 * clamp(2rem, 1.43rem + 2.86vw, 4rem)));
+    min-height: 4.5rem;
+}
+
+.auth-topnav-brand {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.auth-topnav-links {
+    display: none;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.auth-topnav-links a {
+    font-size: 0.875rem;
+    color: hsl(var(--text-300));
+    text-decoration: none;
+    transition: color 150ms ease;
+    white-space: nowrap;
+}
+
+.auth-topnav-links a:hover {
+    color: hsl(var(--text-100));
+}
+
+.auth-topnav-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-200));
+    color: hsl(var(--text-100));
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease;
+}
+
+.auth-topnav-cta:hover {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.55);
+}
+
+.auth-topnav-spacer {
+    flex: 0 0 4.5rem;
+    width: 100%;
+    max-width: none;
+}
+
+@media (min-width: 640px) {
+    .auth-topnav-links {
+        display: flex;
+    }
+}
+
+@media (min-width: 69rem) {
+    .auth-topnav-inner {
+        min-height: 5.25rem;
+    }
+    .auth-topnav-spacer {
+        flex-basis: 5.25rem;
+    }
+}
+
+/* ── Scrollable page body ──────────────────────────────────────── */
+.auth-page-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: none;
+    min-height: min-content;
+    padding-bottom: 3.5rem;
+    box-sizing: border-box;
+}
+
+.auth-login-panel {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    box-sizing: border-box;
+    min-height: min(calc(100svh - 4.5rem), 920px);
+    padding: 2rem 1.5rem 2.5rem;
+    background: hsl(var(--bg-300));
+}
+
+@media (min-width: 69rem) {
+    .auth-login-panel {
+        min-height: min(calc(100svh - 5.25rem), 920px);
+    }
+}
+
+.auth-dot-grid {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(hsl(var(--text-500) / 0.3) 1px, transparent 1.2px);
+    background-size: 14px 14px;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+}
+
+.auth-stage {
+    width: 100%;
+    max-width: 768px;
+    margin: 0 auto;
+    padding: 0 0 1rem;
+    align-self: center;
+}
+
+@media (max-width: 639px) {
+    .auth-topnav-inner {
+        width: calc(100% - 2rem);
+        gap: 10px;
+    }
+
+    .auth-topnav-cta {
+        min-height: 2rem;
+        padding: 0 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .auth-login-panel {
+        min-height: auto;
+        padding: 1.25rem 1rem 1.75rem;
+    }
+
+    .auth-partners {
+        padding-top: 2rem;
+        padding-bottom: 1.75rem;
+    }
+
+    .auth-site-footer-links {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem 1rem;
+    }
+}
+
+/* ── Partner logos + footer bottom band (full-width bg) ─────────── */
+.auth-partners,
+.auth-site-footer {
+    --auth-band-bg: hsl(var(--bg-000));
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    box-sizing: border-box;
+    background: var(--auth-band-bg);
+}
+
+html[data-theme="light"] .auth-partners,
+html[data-theme="light"] .auth-site-footer {
+    --auth-band-bg: hsl(60 3% 8%);
+    background: var(--auth-band-bg);
+}
+
+html[data-theme="light"] .auth-partners-title {
+    color: hsl(48 33.3% 97.1%);
+}
+
+html[data-theme="light"] .auth-site-footer .cancri-brand {
+    color: hsl(48 33.3% 97.1%);
+}
+
+.auth-partners {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 2.5rem clamp(1rem, 1.43rem + 2.86vw, 4rem) 2rem;
+    flex: 0 0 auto;
+    border-top: 1px solid hsl(var(--border-300) / 0.14);
+}
+
+.auth-partners-title {
+    margin: 0;
+    padding: 0 clamp(0.5rem, 2vw, 1rem);
+    font-family:
+        "Anthropic Serif", "AnthropicSerif",
+        "Source Serif 4", "Noto Serif SC", Georgia, serif;
+    font-size: clamp(1rem, 2.8vw, 1.125rem);
+    line-height: 1.4;
+    color: hsl(var(--text-100));
+    text-align: center;
+}
+
+.auth-partners-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.875rem 1rem;
+    width: 100%;
+    max-width: 90rem;
+    margin: 0 auto;
+}
+
+.auth-partner-slot {
+    --slot: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 calc(50% - 0.625rem);
+    width: calc(50% - 0.625rem);
+    max-width: 148px;
+    height: 44px;
+    min-height: 44px;
+    opacity: 0;
+    animation: auth-partner-enter 0.75s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+    animation-delay: calc(var(--slot) * 0.1s);
+}
+
+@media (min-width: 480px) {
+    .auth-partner-slot {
+        flex: 0 0 calc(25% - 0.875rem);
+        width: calc(25% - 0.875rem);
+        max-width: 156px;
+        height: 48px;
+        min-height: 48px;
+    }
+}
+
+@media (min-width: 768px) {
+    .auth-partners-grid {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 1.25rem 1rem;
+    }
+
+    .auth-partner-slot {
+        flex: unset;
+        width: 100%;
+        max-width: none;
+        height: 56px;
+        min-height: 56px;
+    }
+}
+
+.auth-partner-logo {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+}
+
+.auth-partner-logo img {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain;
+    object-position: center;
+    opacity: 0.9;
+}
+
+html[data-theme="light"] .auth-partner-logo img {
+    opacity: 0.85;
+}
+
+.auth-partner-logo.is-out,
+.auth-partner-logo.is-in {
+    position: absolute;
+    inset: 0;
+}
+
+.auth-partner-logo.is-out {
+    animation: auth-partner-fade-out 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.auth-partner-logo.is-in {
+    animation: auth-partner-fade-in 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+@keyframes auth-partner-enter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes auth-partner-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes auth-partner-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-partner-slot {
+        opacity: 1;
+        animation: none;
+    }
+    .auth-partner-logo.is-out,
+    .auth-partner-logo.is-in {
+        animation: none;
+    }
+}
+
+/* ── Site footer (simplified Cancri官网 footer) ────────────────── */
+.auth-site-footer {
+    color: hsl(var(--text-200));
+    border-top: none;
+    padding: clamp(2rem, 2vw, 3rem) clamp(1rem, 1.43rem + 2.86vw, 4rem)
+        clamp(4.5rem, 3rem + 2vw, 5rem);
+    flex: 0 0 auto;
+}
+
+html[data-theme="light"] .auth-site-footer {
+    color: hsl(60 5% 78%);
+}
+
+.auth-site-footer-inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem 2.5rem;
+    max-width: 90rem;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .auth-site-footer-inner {
+        grid-template-columns: minmax(220px, 1.1fr) minmax(0, 2fr);
+        align-items: start;
+    }
+}
+
+.auth-site-footer-brand {
+    display: inline-block;
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 1.25rem;
+}
+
+.auth-site-footer-copy {
+    margin: 0 0 1rem;
+    font-size: 0.8125rem;
+    color: hsl(var(--text-400));
+}
+
+html[data-theme="light"] .auth-site-footer-copy {
+    color: hsl(60 4% 58%);
+}
+
+.auth-site-footer-socials {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.auth-site-footer-socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    color: inherit;
+    opacity: 0.72;
+    transition: opacity 150ms ease, background-color 150ms ease;
+}
+
+.auth-site-footer-socials a:hover {
+    opacity: 1;
+    background: hsl(var(--text-000) / 0.08);
+}
+
+.auth-site-footer-socials svg,
+.auth-site-footer-socials img {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.auth-site-footer-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem 2rem;
+}
+
+.auth-site-footer-links h3 {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: hsl(var(--text-400));
+}
+
+html[data-theme="light"] .auth-site-footer-links h3 {
+    color: hsl(60 4% 52%);
+}
+
+.auth-site-footer-links ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.auth-site-footer-links a {
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    opacity: 0.88;
+    transition: opacity 150ms ease;
+}
+
+.auth-site-footer-links a:hover {
+    opacity: 1;
+}
