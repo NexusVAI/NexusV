@@ -3,19 +3,19 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- 2026-05-15 审查：抽离内�?script �?./api/orders-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）�?-->
+        <!-- 2026-05-15 审查：抽离内聊script 刀./api/orders-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）　-->
         <meta
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>我的订单 · Cancri 开放平�?/title>
+        <title>我的订单 · Cancri 开放平台</title>
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
         <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
         <link rel="preload" as="image" href="../Logo/Cancri.png" />
         <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
         <script src="./api/api-platform.js?v=20260607-account-fix"></script>
-        <!-- Cancri 双主�?logo 同步 -->
+        <!-- Cancri 双主预logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
         <style>
             .sub-card {
@@ -46,7 +46,7 @@
                 background: rgba(148, 163, 184, 0.18);
                 color: var(--text-mute);
             }
-            /* 2026-05-17 Phase A：三�?plan_code 颜色（与 pricing.html 一致） */
+            /* 2026-05-17 Phase A：三框plan_code 颜色（与 pricing.html 一致） */
             .badge-tier.paid,
             .badge-tier.pro {
                 background: rgba(245, 158, 11, 0.18);
@@ -71,7 +71,7 @@
                 font-size: 13px;
                 color: var(--text-mute);
             }
-            /* 2026-05-17 Phase A：月度配�?+ 加油包余额面�?*/
+            /* 2026-05-17 Phase A：月度配预+ 加油包余额面杂*/
             .quota-panel {
                 margin-top: 18px;
                 display: grid;
@@ -228,7 +228,7 @@
     <body>
         <header class="topbar">
             <div class="topbar__inner">
-                <a class="brand" href="./api/" aria-label="Cancri 开放平�?>
+                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
                     <img
                         class="brand__logo cancri-logo"
                         src="../Logo/Cancri1.jpg"
@@ -239,7 +239,7 @@
                         height="28"
                     />
                 </a>
-                <nav class="topnav" aria-label="开放平台导�?>
+                <nav class="topnav" aria-label="开放平台导航">
                     <a href="./api/">概览</a>
                     <a href="./api_apply.html">申请</a>
                     <a href="./api_keys.html">Keys</a>
@@ -247,7 +247,7 @@
                     <a href="./api_docs.html">文档</a>
                     <a href="./pricing.html">套餐</a>
                     <a href="./orders.html" class="is-active">我的订单</a>
-                    <a href="./" class="topnav__back">�?返回聊天</a>
+                    <a href="./" class="topnav__back">←返回聊天</a>
                 </nav>
                 <button
                     class="theme-toggle"
@@ -301,45 +301,45 @@
 
             <div id="login-gate" style="display: none">
                 <div class="card">
-                    <div class="alert alert-info">请先登录账号�?/div>
+                    <div class="alert alert-info">请先登录账号</div>
                     <a class="btn btn-primary" href="./">前往登录</a>
                 </div>
             </div>
 
             <div id="main-section" style="display: none">
                 <div class="card" data-sensitive>
-                    <h2>当前订阅状�?/h2>
+                    <h2>当前订阅状态</h2>
                     <div id="sub-card" class="sub-card">
                         <span id="sub-badge" class="badge-tier free">FREE</span>
                         <div class="sub-meta">
-                            <h3 id="sub-title">免费�?/h3>
-                            <p id="sub-desc">高峰期可能要排队，每�?PAID 模型试用 15 次�?/p>
+                            <h3 id="sub-title">免费框</h3>
+                            <p id="sub-desc">高峰期可能要排队，每旁PAID 模型试用 15 次</p>
                         </div>
                         <a class="btn btn-primary" id="upgrade-btn" href="./pricing.html">
-                            升级套餐 �?
+                            升级套餐 ←
                         </a>
                     </div>
 
-                    <!-- 2026-05-17 Phase A：月度配�?+ 加油包余额面�?-->
+                    <!-- 2026-05-17 Phase A：月度配预+ 加油包余额面杂-->
                     <div class="quota-panel" id="quota-panel">
                         <div class="quota-box" id="quota-monthly">
                             <div class="quota-box__head">
-                                <span class="quota-box__title">本周期套餐配�?/span>
-                                <span class="quota-box__value" id="quota-monthly-text">�?/span>
+                                <span class="quota-box__title">本周期套餐配预</span>
+                                <span class="quota-box__value" id="quota-monthly-text"></span>
                             </div>
                             <div class="quota-bar">
                                 <div class="quota-bar__fill" id="quota-monthly-fill" style="width:0%"></div>
                             </div>
-                            <p class="quota-box__hint" id="quota-monthly-hint">�?30 天订阅周期自动重置�?/p>
+                            <p class="quota-box__hint" id="quota-monthly-hint">毁30 天订阅周期自动重置</p>
                         </div>
                         <div class="quota-box" id="quota-topup">
                             <div class="quota-box__head">
-                                <span class="quota-box__title">加油包余�?/span>
-                                <span class="quota-box__value" id="quota-topup-text">�?/span>
+                                <span class="quota-box__title">加油包余预</span>
+                                <span class="quota-box__value" id="quota-topup-text"></span>
                             </div>
-                            <p class="quota-box__hint">永不过期，月度配额耗尽后自动启用�?/p>
+                            <p class="quota-box__hint">永不过期，月度配额耗尽后自动启用</p>
                             <a class="btn btn-secondary" href="./pricing.html" style="margin-top: 8px; font-size: 12px; padding: 6px 12px">
-                                购买加油�?�?
+                                购买加油匀←
                             </a>
                         </div>
                     </div>
@@ -366,8 +366,8 @@
                 <div class="card" data-sensitive>
                     <h2>订单列表</h2>
                     <div id="orders-empty" class="empty" style="display: none">
-                        还没有订单�?
-                        <a href="./pricing.html">去下�?/a>
+                        还没有订单　
+                        <a href="./pricing.html">去下十</a>
                     </div>
                     <div id="orders-wrap" style="display: none; overflow-x: auto">
                         <table class="orders-table">
@@ -376,7 +376,7 @@
                                     <th>提交时间</th>
                                     <th>类型 / 规格</th>
                                     <th>金额</th>
-                                    <th>状�?/th>
+                                    <th>状态</th>
                                     <th>激活码</th>
                                     <th>站主备注</th>
                                 </tr>
@@ -396,17 +396,17 @@
         </footer>
 
         <script src="./cancri_config.js"></script>
-        <!-- 2026-05-29 积分化：全站统一 token→积分换算（1 积分 = 1 �?token），�?orders-app.js 之前定义�?->
+        <!-- 2026-05-29 积分化：全站统一 token→积分换算（1 积分 = 1 一token），圆orders-app.js 之前定义　->
         <script src="./cancri_credits.js?v=2026-06-07-credits-fix"></script>
-        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动�?bug�?->
+        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动立bug　->
         <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
-        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详�?js/fingerprint.js 顶部注释�?-->
+        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见js/fingerprint.js 顶部注释　-->
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <!-- 2026-05-15 审查：原 inline <script> 抽离�?./api/orders-app.js，并�?CSP �?'unsafe-inline' script-src�?-->
+        <!-- 2026-05-15 审查：原 inline <script> 抽离刀./api/orders-app.js，并什CSP 刀'unsafe-inline' script-src　-->
         <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
         <script src="./api/orders-app.js?v=2026-06-12-skeleton-light"></script>
     </body>

@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<!-- 2026-06-20 安全加固：原�?CSP（测试页，noindex）�?-->
+<!-- 2026-06-20 安全加固：原旁CSP（测试页，noindex）　-->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz">
-<title>Grok 编辑图像�?Loader</title>
+<title>Grok 编辑图像一Loader</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -57,7 +57,7 @@
       0 6px 20px rgba(0, 0, 0, 0.35),
       0 2px 6px rgba(0, 0, 0, 0.30);
   }
-  /* refraction layer �?reads the dot field behind it through the SVG filter */
+  /* refraction layer  reads the dot field behind it through the SVG filter */
   .glass-warp {
     position: absolute;
     inset: 0;
@@ -143,8 +143,8 @@
       <div class="glass-warp"></div>
       <div class="glass-rim"></div>
       <div class="badge-content">
-        <span class="badge-base">编辑图像中�?/span>
-        <span class="badge-shimmer">编辑图像中�?/span>
+        <span class="badge-base">编辑图像中</span>
+        <span class="badge-shimmer">编辑图像中</span>
       </div>
     </div>
   </div>
@@ -279,7 +279,7 @@
     }
   }
 
-  // 高度场波浪（叠加正弦），用于�?3D：高�?+ 解析法线做明�?+ 视差
+  // 高度场波浪（叠加正弦），用于企3D：高庆+ 解析法线做明暂+ 视差
   const waves = [
     { kx: 0.0110, ky: 0.0140, v: 0.0016, a: 9 },
     { kx: 0.0190, ky: -0.0090, v: 0.0023, a: 6 },
@@ -287,17 +287,17 @@
   ];
   const MAX_A = waves.reduce((s, w) => s + w.a, 0);
 
-  // 光照方向（左上前方），归一�?
+  // 光照方向（左上前方），归一匀
   const Lx = -0.45, Ly = -0.65, Lz = 0.62;
   const Llen = Math.hypot(Lx, Ly, Lz);
   const lx = Lx / Llen, ly = Ly / Llen, lz = Lz / Llen;
 
-  const HEIGHT_LIFT = 1.5;     // 高度抬升像素（伪 3D 起伏�?
+  const HEIGHT_LIFT = 1.5;     // 高度抬升像素（伪 3D 起伏！
   const SLOPE_PARALLAX = 30;   // 斜率水平视差
   const NORMAL_SLOPE = 7;      // 法线斜率放大（明暗强度）
 
   // 点阵流光
-  const SWEEP_PERIOD = 3200;   // ms 扫一足周�?
+  const SWEEP_PERIOD = 3200;   // ms 扫一足周最
   const SWEEP_WIDTH = 160;     // 亮带宽度(px)
 
   let time = 0;
@@ -311,7 +311,7 @@
     const sweepSigma2 = 2 * (SWEEP_WIDTH / 2.4) ** 2;
 
     for (const d of dots) {
-      // 高度场及其偏导（解析�?
+      // 高度场及其偏导（解析！
       let hgt = 0, dhdx = 0, dhdy = 0;
       for (const w of waves) {
         const ph = d.ox * w.kx + d.oy * w.ky + time * w.v;
@@ -321,17 +321,17 @@
         dhdy += w.a * w.ky * co;
       }
 
-      // 屏幕坐标：高度抬�?+ 斜率视差（产�?3D 倾斜感）
+      // 屏幕坐标：高度抬十+ 斜率视差（产甜3D 倾斜感）
       const sx = d.ox + dhdx * SLOPE_PARALLAX;
       const sy = d.oy - hgt * HEIGHT_LIFT;
 
-      // 法线 �?明暗
+      // 法线 ←明暗
       const nx = -dhdx * NORMAL_SLOPE;
       const ny = -dhdy * NORMAL_SLOPE;
       const ninv = 1 / Math.sqrt(nx * nx + ny * ny + 1);
       const shade = Math.max(0, (nx * lx + ny * ly + lz) * ninv);
 
-      // 深度：越高越�?�?越大越亮
+      // 深度：越高越迁←越大越亮
       const depth = (hgt + MAX_A) / (2 * MAX_A); // 0..1
 
       // 流光扫过（高斯衰减）
@@ -341,7 +341,7 @@
       let alpha = 0.10 + 0.30 * shade + 0.18 * depth + sweepGlow * 0.55;
       alpha = Math.min(alpha, 0.96);
 
-      // 扫过光的点明显变�?
+      // 扫过光的点明显变处
       const r = DOT_RADIUS * (0.7 + depth * 0.55 + shade * 0.25 + sweepGlow * 1.8);
 
       const ch = Math.round(165 + shade * 40 + depth * 20 + sweepGlow * 50);

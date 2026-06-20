@@ -20,7 +20,7 @@
     <script src="./api/api-platform.js?v=20260601"></script>
     <script src="./cancri_config.js"></script>
     <script>
-        // 与主�?cancri_theme_mode 保持一致（api-platform.js 只读 cancri_open_platform_theme�?
+        // 与主立cancri_theme_mode 保持一致（api-platform.js 只读 cancri_open_platform_theme！
         (function () {
             var mode;
             try { mode = localStorage.getItem('cancri_theme_mode'); } catch (_) {}
@@ -28,7 +28,7 @@
                 document.documentElement.setAttribute('data-theme', 'light');
                 document.documentElement.style.colorScheme = 'light';
             } else if (mode === 'black') {
-                // api-platform.css �?black 定义，回退�?dark（默认）
+                // api-platform.css 旁black 定义，回退刀dark（默认）
                 document.documentElement.removeAttribute('data-theme');
                 document.documentElement.style.colorScheme = 'dark';
             } else if (mode === 'system') {
@@ -216,7 +216,7 @@
         .hidden {
             display: none !important;
         }
-        /* 移动�?*/
+        /* 移动立*/
         @media (max-width: 768px) {
             .settings-layout {
                 flex-direction: column;
@@ -267,32 +267,32 @@
                     <div class="section-row">
                         <div>
                             <div class="row-title">邮箱</div>
-                            <div class="row-desc" id="account-email">加载中�?/div>
+                            <div class="row-desc" id="account-email">加载中</div>
                         </div>
-                        <span class="row-meta" id="account-uid" title="用户 ID">�?/span>
+                        <span class="row-meta" id="account-uid" title="用户 ID"></span>
                     </div>
                     <div class="section-row">
                         <div>
                             <div class="row-title">注册时间</div>
-                            <div class="row-desc" id="account-created">加载中�?/div>
+                            <div class="row-desc" id="account-created">加载中</div>
                         </div>
                     </div>
                     <div class="section-row">
                         <div>
                             <div class="row-title">上次登录</div>
-                            <div class="row-desc" id="account-last-signin">加载中�?/div>
+                            <div class="row-desc" id="account-last-signin">加载中</div>
                         </div>
                     </div>
                     <div class="section-row">
                         <div>
                             <div class="row-title">本次在线时长</div>
-                            <div class="row-desc" id="account-online">加载中�?/div>
+                            <div class="row-desc" id="account-online">加载中</div>
                         </div>
                     </div>
                     <div class="section-row">
                         <div>
                             <div class="row-title">当前 IP</div>
-                            <div class="row-desc" id="account-ip">加载中�?/div>
+                            <div class="row-desc" id="account-ip">加载中</div>
                         </div>
                     </div>
                 </div>
@@ -308,7 +308,7 @@
                             </tr>
                         </thead>
                         <tbody id="device-list">
-                            <tr><td colspan="3" class="td-empty">加载中�?/td></tr>
+                            <tr><td colspan="3" class="td-empty">加载中</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -331,8 +331,8 @@
                 <div class="section">
                     <div class="section-row">
                         <div>
-                            <div class="row-title">导出所有聊天记�?/div>
-                            <div class="row-desc">下载 JSON 格式的全部对话备份。数据量较大时可能需要一些时间�?/div>
+                            <div class="row-title">导出所有聊天记归</div>
+                            <div class="row-desc">下载 JSON 格式的全部对话备份。数据量较大时可能需要一些时间</div>
                         </div>
                         <button class="btn btn-primary" id="btn-export">导出</button>
                     </div>
