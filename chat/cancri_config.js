@@ -1,9 +1,10 @@
-// 2026-06-04 迁移到 Cloudflare 边缘网关（cf-chat-gateway）：chat-gateway 原生处理省 egress，
-// 其余 /auth /rest /storage /functions 由 worker 透明反代回 Supabase（已验证一致）。
-// ⏪ 回滚：把下面这行改回 'https://diusqgphvybnzazgopor.supabase.co' 重新部署即可（秒级恢复）。
-// window.__SUPABASE_URL__ = 'https://diusqgphvybnzazgopor.supabase.co'; // 旧：Supabase 直连
+// 2026-06-20 全量切 Neon：前端仍走 chat.nexusvai.xyz，CF Worker 反代 Auth/Data API → Neon。
+// ⏪ 紧急回滚 Supabase：cf-gateway wrangler USE_NEON=0 + 改回 supabase.co origin。
 window.__SUPABASE_URL__ = 'https://chat.nexusvai.xyz';
-window.__SUPABASE_ANON_KEY__ = 'sb_publishable_zK_fV6gwNta8Ne8aFL_n4g_cm8HP4lY';
+// supabase-js 初始化仍需 apikey；Neon 侧只校验 Authorization JWT，此值作占位。
+window.__SUPABASE_ANON_KEY__ = 'neon-auth-via-cf-shim';
+window.__NEON_AUTH_URL__ = 'https://ep-autumn-hat-aonzk396.neonauth.c-2.ap-southeast-1.aws.neon.tech/neondb/auth';
+window.__NEON_DATA_API_URL__ = 'https://ep-autumn-hat-aonzk396.apirest.c-2.ap-southeast-1.aws.neon.tech/neondb/rest/v1';
 // Cloudflare Turnstile site key for the Supabase Auth captcha widget.
 // Site keys are PUBLIC by design. The matching SECRET key is configured in
 // Supabase Auth (`security_captcha_secret`) and never leaves the server.

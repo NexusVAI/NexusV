@@ -3,10 +3,10 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- 2026-05-17 Phase A 改版：三档订阅 + 加油包 + 模型倍率。脚本仍走外联 pricing-app.js。 -->
+        <!-- 2026-05-17 Phase A 改版：三档订�?+ 加油�?+ 模型倍率。脚本仍走外�?pricing-app.js�?-->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+            content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
         <title>套餐订阅 · NexusV / Cancri</title>
         <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
@@ -15,10 +15,10 @@
         <link rel="preload" as="image" href="../Logo/Cancri.png" />
         <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
         <script src="./api/api-platform.js?v=20260607-account-fix"></script>
-        <!-- Cancri 双主题 logo 同步 -->
+        <!-- Cancri 双主�?logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
         <style>
-            /* ── Claude 风定价页（参考 claude.ai/upgrade）── */
+            /* ── Claude 风定价页（参�?claude.ai/upgrade）── */
             .pricing-page.page-shell {
                 max-width: 72rem;
             }
@@ -460,7 +460,7 @@
                 font-size: 12px;
             }
 
-            /* ────────── 订单区（沿用） ────────── */
+            /* ────────── 订单区（沿用�?────────── */
             .order-card {
                 display: grid;
                 grid-template-columns: 1.3fr 1fr;
@@ -653,10 +653,10 @@
             }
 
             /* ────────── 2026-05-22 限时倍率 5 折促销横幅 ────────── */
-            /* 窗口（UTC+8）：05-22 20:30 → 05-24 00:00。倒计时由
-               pricing-app.js 维护；过期后 #promo-banner 自动 hidden。
-               2026-05-22 v2：去掉红色辉光 + 脉冲动画，改成 Claude 风克制
-               accent 色 + 1px 边框，与 plan-tier 卡片同视觉语言。 */
+            /* 窗口（UTC+8）：05-22 20:30 �?05-24 00:00。倒计时由
+               pricing-app.js 维护；过期后 #promo-banner 自动 hidden�?
+               2026-05-22 v2：去掉红色辉�?+ 脉冲动画，改�?Claude 风克�?
+               accent �?+ 1px 边框，与 plan-tier 卡片同视觉语言�?*/
             .promo-banner {
                 position: relative;
                 margin: 0 0 20px;
@@ -671,8 +671,8 @@
                 gap: 14px;
                 flex-wrap: wrap;
             }
-            /* display:flex 会盖掉浏览器默认 [hidden] { display: none }，
-               所以显式声明一下，确保窗口外（或 JS 关掉后）真的隐藏。 */
+            /* display:flex 会盖掉浏览器默认 [hidden] { display: none }�?
+               所以显式声明一下，确保窗口外（�?JS 关掉后）真的隐藏�?*/
             .promo-banner[hidden] {
                 display: none !important;
             }
@@ -782,7 +782,7 @@
                 font-size: 12px;
             }
 
-            /* ────────── 2026-05-29 满月折扣：plan/topup 卡片价格上的删除线 + 折扣徽章 ────────── */
+            /* ────────── 2026-05-29 满月折扣：plan/topup 卡片价格上的删除�?+ 折扣徽章 ────────── */
             .price-original {
                 color: var(--text-faint);
                 text-decoration: line-through;
@@ -843,7 +843,7 @@
     <body>
         <header class="topbar">
             <div class="topbar__inner">
-                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+                <a class="brand" href="./api/" aria-label="Cancri 开放平�?>
                     <img
                         class="brand__logo cancri-logo"
                         src="../Logo/Cancri1.jpg"
@@ -854,7 +854,7 @@
                         height="28"
                     />
                 </a>
-                <nav class="topnav" aria-label="开放平台导航">
+                <nav class="topnav" aria-label="开放平台导�?>
                     <a href="./api/">概览</a>
                     <a href="./api_apply.html">申请</a>
                     <a href="./api_keys.html">Keys</a>
@@ -862,7 +862,7 @@
                     <a href="./api_docs.html">文档</a>
                     <a href="./pricing.html" class="is-active">套餐</a>
                     <a href="./orders.html">我的订单</a>
-                    <a href="./" class="topnav__back">← 返回聊天</a>
+                    <a href="./" class="topnav__back">�?返回聊天</a>
                 </nav>
                 <button
                     class="theme-toggle"
@@ -905,8 +905,8 @@
 
         <main class="page-shell pricing-page">
             <!-- 2026-05-22 限时倍率 5 折促销横幅。窗口（UTC+8）：
-                 05-22 20:30 → 05-24 00:00。pricing-app.js 在窗口外把整个
-                 banner 隐藏；用户也能手动 × 关闭（仅本会话）。 -->
+                 05-22 20:30 �?05-24 00:00。pricing-app.js 在窗口外把整�?
+                 banner 隐藏；用户也能手�?× 关闭（仅本会话）�?-->
             <div
                 class="promo-banner"
                 id="promo-banner"
@@ -915,9 +915,9 @@
                 hidden
             >
                 <div class="promo-banner__body">
-                    <p class="promo-banner__title">限时倍率 5 折</p>
+                    <p class="promo-banner__title">限时倍率 5 �?/p>
                     <p class="promo-banner__sub">
-                        所有付费模型 token 倍率 <strong>× 0.5</strong> · 订阅配额翻倍耐用 · 加油包同样享折扣。
+                        所有付费模�?token 倍率 <strong>× 0.5</strong> · 订阅配额翻倍耐用 · 加油包同样享折扣�?
                     </p>
                 </div>
                 <div class="promo-banner__countdown" aria-live="off">
@@ -932,10 +932,10 @@
                     id="promo-banner-close"
                     aria-label="关闭促销横幅"
                     title="关闭"
-                >✕</button>
+                >�?/button>
             </div>
 
-            <!-- 回馈礼 banner -->
+            <!-- 回馈�?banner -->
             <div
                 class="promo-banner"
                 id="sub-promo-banner"
@@ -946,8 +946,8 @@
                     <div class="promo-banner__body">
                         <p class="promo-banner__title">🛒 618 大促 · 订阅限时折扣</p>
                         <p class="promo-banner__sub">
-                            6/18–6/20 三天 · Pro <strong>6.18 折 ¥6.12</strong> · Pro+ <strong>7 折 ¥20.30</strong> · Pro Max <strong>8 折 ¥79.20</strong><br>
-                            模型调用倍率不变 · 【特价】旗舰模型照常在售
+                            6/18�?/20 三天 · Pro <strong>6.18 �?¥6.12</strong> · Pro+ <strong>7 �?¥20.30</strong> · Pro Max <strong>8 �?¥79.20</strong><br>
+                            模型调用倍率不变 · 【特价】旗舰模型照常在�?
                         </p>
                     </div>
                     <div class="promo-banner__countdown" aria-live="off">
@@ -962,7 +962,7 @@
                         id="sub-promo-banner-close"
                         aria-label="关闭促销横幅"
                         title="关闭"
-                    >✕</button>
+                    >�?/button>
             </div>
 
             <header class="pricing-hero">
@@ -976,7 +976,7 @@
                 <div id="current-tier"></div>
                 <div class="pricing-segment" role="group" aria-label="套餐类型">
                     <button type="button" class="is-active" data-pricing-tab="subscription">月度订阅</button>
-                    <button type="button" data-pricing-tab="topup">加油包</button>
+                    <button type="button" data-pricing-tab="topup">加油�?/button>
                 </div>
             </header>
 
@@ -997,10 +997,10 @@
                         </div>
                         <div>
                             <h3 class="claude-plan-name">Pro</h3>
-                            <p class="claude-plan-tagline">入门 · 日常对话与编码</p>
+                            <p class="claude-plan-tagline">入门 · 日常对话与编�?/p>
                         </div>
                         <div class="plan-tier__price" data-price-slot="pro">
-                            <span class="currency">¥</span>9.9<span class="period">/ 月</span>
+                            <span class="currency">¥</span>9.9<span class="period">/ �?/span>
                         </div>
                         <p class="plan-tier__quota" data-quota-slot="pro">月度配额 2000 积分</p>
                         <button type="button" class="claude-plan-btn btn btn-secondary" data-plan-select="pro">
@@ -1009,10 +1009,10 @@
                     </div>
                     <div class="claude-plan-features">
                         <ul class="plan-tier__features">
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>解锁非 Opus 全模型（GPT-5.4、Sonnet、Grok-4.20、Kimi 等）</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重置</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>免并发排队，付费用户优先直通</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预付 90 天</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>解锁�?Opus 全模型（GPT-5.4、Sonnet、Grok-4.20、Kimi 等）</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重�?/li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>免并发排队，付费用户优先直�?/li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预�?90 �?/li>
                             <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>完全使用 Cancri Code</li>
                         </ul>
                     </div>
@@ -1029,7 +1029,7 @@
                             <p class="claude-plan-tagline">研究、编码与重度使用</p>
                         </div>
                         <div class="plan-tier__price" data-price-slot="pro_plus">
-                            <span class="currency">¥</span>29<span class="period">/ 月</span>
+                            <span class="currency">¥</span>29<span class="period">/ �?/span>
                         </div>
                         <p class="plan-tier__quota" data-quota-slot="pro_plus">月度配额 8000 积分</p>
                         <button type="button" class="claude-plan-btn btn btn-primary" data-plan-select="pro_plus">
@@ -1039,10 +1039,10 @@
                     <div class="claude-plan-features">
                         <p class="claude-plan-features__lead">包含 Pro 全部权益，以及：</p>
                         <ul class="plan-tier__features">
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg><strong>解锁 Claude Opus 全系</strong>（4.5 / 4.6 / 4.6 Thinking）</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重置</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>模型选择器优先标识</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预付 90 天</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg><strong>解锁 Claude Opus 全系</strong>�?.5 / 4.6 / 4.6 Thinking�?/li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重�?/li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>模型选择器优先标�?/li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预�?90 �?/li>
                             <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>完全使用 Cancri Code</li>
                         </ul>
                     </div>
@@ -1055,39 +1055,39 @@
                         </div>
                         <div>
                             <h3 class="claude-plan-name">Pro Max</h3>
-                            <p class="claude-plan-tagline">更高配额 · 全模型优先</p>
+                            <p class="claude-plan-tagline">更高配额 · 全模型优�?/p>
                         </div>
                         <div class="plan-tier__price" data-price-slot="pro_max">
-                            <span class="currency">¥</span>99<span class="period">/ 月</span>
+                            <span class="currency">¥</span>99<span class="period">/ �?/span>
                         </div>
                         <p class="plan-tier__quota" data-quota-slot="pro_max">月度配额 30000 积分</p>
                         <button type="button" class="claude-plan-btn btn btn-secondary" data-plan-select="pro_max">
                             选择 Pro Max
                         </button>
-                        <p class="plan-tier__quota" style="margin-top:-4px;font-size:0.75rem;text-align:center">无长期绑定 · 随时可续</p>
+                        <p class="plan-tier__quota" style="margin-top:-4px;font-size:0.75rem;text-align:center">无长期绑�?· 随时可续</p>
                     </div>
                     <div class="claude-plan-features">
                         <p class="claude-plan-features__lead">包含 Pro+ 全部权益，以及：</p>
                         <ul class="plan-tier__features">
                             <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>解锁全部模型，含图像 / 视频生成（vip 级）</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重置</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>重度开发 / 内容创作友好</li>
-                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预付 90 天</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>月度配额内不限次调用，每 30 天重�?/li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>重度开�?/ 内容创作友好</li>
+                            <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>可叠加续费，最长预�?90 �?/li>
                             <li><svg class="claude-check" viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>完全使用 Cancri Code</li>
                         </ul>
                     </div>
                 </article>
             </div>
-            <p class="pricing-footnote">* 用量受月度积分与模型权重限制。价格与活动以页面实时显示为准。</p>
+            <p class="pricing-footnote">* 用量受月度积分与模型权重限制。价格与活动以页面实时显示为准�?/p>
             </div>
 
-            <!-- ──── 加油包 ──── -->
+            <!-- ──── 加油�?──── -->
             <div class="pricing-panel" id="pricing-panel-topup" hidden>
             <div class="topup-section">
                 <div class="topup-section__head">
-                    <h2>加油包（永不过期）</h2>
+                    <h2>加油包（永不过期�?/h2>
                     <p class="subtitle" style="margin: 0">
-                        任何档位（含 Free）都可买加油包补足配额。永不清零，可累积。
+                        任何档位（含 Free）都可买加油包补足配额。永不清零，可累积�?
                     </p>
                 </div>
                 <div class="topup-grid" id="topup-grid">
@@ -1101,9 +1101,9 @@
                             </div>
                             <div class="topup-card__tokens" data-topup-tokens-slot="topup_small">1500 积分</div>
                         </div>
-                        <p class="topup-card__hint">轻量补足，约够标准模型 5000 段对话</p>
+                        <p class="topup-card__hint">轻量补足，约够标准模�?5000 段对�?/p>
                         <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_small">
-                            选这个
+                            选这�?
                         </button>
                     </article>
                     <article class="topup-card" data-topup="topup_medium">
@@ -1116,9 +1116,9 @@
                             </div>
                             <div class="topup-card__tokens" data-topup-tokens-slot="topup_medium">9000 积分</div>
                         </div>
-                        <p class="topup-card__hint">中量补足，性价比最高，相当于一个 Pro+ 月配额</p>
+                        <p class="topup-card__hint">中量补足，性价比最高，相当于一�?Pro+ 月配�?/p>
                         <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_medium">
-                            选这个
+                            选这�?
                         </button>
                     </article>
                     <article class="topup-card" data-topup="topup_large">
@@ -1131,9 +1131,9 @@
                             </div>
                             <div class="topup-card__tokens" data-topup-tokens-slot="topup_large">40000 积分</div>
                         </div>
-                        <p class="topup-card__hint">重度备货，Opus 重度也可撑数月</p>
+                        <p class="topup-card__hint">重度备货，Opus 重度也可撑数�?/p>
                         <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_large">
-                            选这个
+                            选这�?
                         </button>
                     </article>
                     <article class="topup-card" data-topup="topup_custom">
@@ -1156,28 +1156,28 @@
                             </div>
                             <div class="topup-card__tokens" id="topup-custom-tokens">输入 ¥1~1000</div>
                         </div>
-                        <p class="topup-card__hint">按量充值 · ¥1 = 150 积分 · 永不过期、可累积</p>
+                        <p class="topup-card__hint">按量充�?· ¥1 = 150 积分 · 永不过期、可累积</p>
                         <button type="button" class="claude-plan-btn btn btn-secondary topup-card__cta" data-topup-select="topup_custom">
-                            选这个
+                            选这�?
                         </button>
                     </article>
                 </div>
 
                 <div class="multiplier-info" id="multiplier-info">
-                    <strong>模型权重说明：</strong>
-                    实际扣减积分 = (输入 + 输出 token) × 模型权重 ÷ 1 万。
-                    <span data-promo-mult="0.5">轻量模型（GLM Flash 等）<code>0.5x</code></span>，
-                    <span data-promo-mult="1">标准（GPT-4）<code>1x</code></span>，
-                    <span data-promo-mult="2">中端（Kimi、Doubao、Haiku）<code>2x</code></span>，
-                    <span data-promo-mult="5">高端（GPT-5.4、GPT-5.5、Grok 4.3 等）<code>5x</code></span>，
-                    <span data-promo-mult="15">顶级（Gemini 3.1 Pro、视频等）<code>15x</code></span>
-                    （Grok 4.20 仅 <strong>3x</strong>，Sonnet 4.6 <strong>5x</strong>，Claude Opus 4.5~4.8 仅 <strong>12~20x</strong>）。
-                    日常对话主要消耗在前 3 档，配额很经用。
+                    <strong>模型权重说明�?/strong>
+                    实际扣减积分 = (输入 + 输出 token) × 模型权重 ÷ 1 万�?
+                    <span data-promo-mult="0.5">轻量模型（GLM Flash 等）<code>0.5x</code></span>�?
+                    <span data-promo-mult="1">标准（GPT-4�?code>1x</code></span>�?
+                    <span data-promo-mult="2">中端（Kimi、Doubao、Haiku�?code>2x</code></span>�?
+                    <span data-promo-mult="5">高端（GPT-5.4、GPT-5.5、Grok 4.3 等）<code>5x</code></span>�?
+                    <span data-promo-mult="15">顶级（Gemini 3.1 Pro、视频等�?code>15x</code></span>
+                    （Grok 4.20 �?<strong>3x</strong>，Sonnet 4.6 <strong>5x</strong>，Claude Opus 4.5~4.8 �?<strong>12~20x</strong>）�?
+                    日常对话主要消耗在�?3 档，配额很经用�?
                 </div>
             </div>
             </div>
 
-            <!-- ──── 订单提交（选档后展开） ──── -->
+            <!-- ──── 订单提交（选档后展开�?──── -->
             <div class="card" id="order-card">
                 <h2>提交订单</h2>
 
@@ -1185,14 +1185,14 @@
 
                 <div id="order-login-gate" style="display: none">
                     <div class="alert alert-info" style="margin-bottom: 12px">
-                        提交订单需要先登录 Cancri 账号（用同样的邮箱）。
+                        提交订单需要先登录 Cancri 账号（用同样的邮箱）�?
                     </div>
                     <a class="btn btn-primary" href="./">前往登录</a>
                 </div>
 
                 <div id="order-empty" style="display: none">
                     <div class="alert alert-info">
-                        请先在上方选择一个套餐档位或加油包规格。
+                        请先在上方选择一个套餐档位或加油包规格�?
                     </div>
                 </div>
 
@@ -1200,7 +1200,7 @@
                     <div class="order-card">
                         <div>
                             <div class="selected-summary" id="selected-summary">
-                                <!-- 由 pricing-app.js 注入 -->
+                                <!-- �?pricing-app.js 注入 -->
                             </div>
                             <form id="order-form" class="order-form" autocomplete="off">
                                 <div class="form-row">
@@ -1212,11 +1212,11 @@
                                         required
                                     />
                                     <div class="hint">
-                                        需要和付款备注里写的邮箱一致，便于对单。
+                                        需要和付款备注里写的邮箱一致，便于对单�?
                                     </div>
                                 </div>
                                 <div class="form-row">
-                                    <label for="of-qq">付款时备注的 QQ 号</label>
+                                    <label for="of-qq">付款时备注的 QQ �?/label>
                                     <input
                                         type="text"
                                         id="of-qq"
@@ -1229,9 +1229,9 @@
                                 <div class="form-row">
                                     <label for="of-method">付款方式</label>
                                     <select id="of-method">
-                                        <option value="unspecified">不确定 / 二者其一</option>
+                                        <option value="unspecified">不确�?/ 二者其一</option>
                                         <option value="wechat">微信支付</option>
-                                        <option value="alipay">支付宝</option>
+                                        <option value="alipay">支付�?/option>
                                     </select>
                                 </div>
                                 <div>
@@ -1243,7 +1243,7 @@
                                         提交订单
                                     </button>
                                     <a class="btn btn-secondary" href="./orders.html"
-                                        >我的订单 →</a
+                                        >我的订单 �?/a
                                     >
                                 </div>
                             </form>
@@ -1253,16 +1253,16 @@
                             <h3>扫码付款</h3>
                             <div class="pay-method-tabs" id="pay-method-tabs">
                                 <button type="button" data-pay-method="wechat" class="is-active">微信支付</button>
-                                <button type="button" data-pay-method="alipay">支付宝</button>
+                                <button type="button" data-pay-method="alipay">支付�?/button>
                             </div>
                             <img
                                 id="qr-img"
                                 src="../Logo/1107.jpg"
-                                alt="微信收款码"
+                                alt="微信收款�?
                                 loading="lazy"
                             />
                             <p class="qr-note" id="qr-note">
-                                <span id="qr-recommend">推荐使用微信支付</span>，金额 <code id="qr-amount">—</code><br />
+                                <span id="qr-recommend">推荐使用微信支付</span>，金�?<code id="qr-amount">�?/code><br />
                                 付款备注请务必填 <code>邮箱 + QQ</code>
                             </p>
                         </div>
@@ -1275,10 +1275,10 @@
                 <ol class="step-list">
                     <li>
                         <div>
-                            <h4>选择档位 / 加油包</h4>
+                            <h4>选择档位 / 加油�?/h4>
                             <p>
-                                上方点 <code>选择 Pro+</code> 或 <code>选这个</code>，
-                                右侧二维码会显示对应金额。
+                                上方�?<code>选择 Pro+</code> �?<code>选这�?/code>�?
+                                右侧二维码会显示对应金额�?
                             </p>
                         </div>
                     </li>
@@ -1286,8 +1286,8 @@
                         <div>
                             <h4>扫码支付</h4>
                             <p>
-                                微信或支付宝任一即可。请在<strong>付款备注 / 留言</strong>里填写你的
-                                邮箱 + QQ（用空格分隔），以便对单。
+                                微信或支付宝任一即可。请�?strong>付款备注 / 留言</strong>里填写你�?
+                                邮箱 + QQ（用空格分隔），以便对单�?
                             </p>
                         </div>
                     </li>
@@ -1295,8 +1295,8 @@
                         <div>
                             <h4>提交订单</h4>
                             <p>
-                                在下方表单填写同样的邮箱和 QQ，点提交。
-                                你需要先登录 Cancri 账号。
+                                在下方表单填写同样的邮箱�?QQ，点提交�?
+                                你需要先登录 Cancri 账号�?
                             </p>
                         </div>
                     </li>
@@ -1304,18 +1304,18 @@
                         <div>
                             <h4>等待审核</h4>
                             <p>
-                                站主收到付款后会人工对照备注，通常 1~24 小时内完成。
-                                通过后会生成一个一次性激活码。
+                                站主收到付款后会人工对照备注，通常 1~24 小时内完成�?
+                                通过后会生成一个一次性激活码�?
                             </p>
                         </div>
                     </li>
                     <li>
                         <div>
-                            <h4>激活</h4>
+                            <h4>激�?/h4>
                             <p>
-                                在
+                                �?
                                 <a href="./orders.html">我的订单</a>
-                                页面输入激活码 → 立刻升级到对应档位 / 加油包到账。
+                                页面输入激活码 �?立刻升级到对应档�?/ 加油包到账�?
                             </p>
                         </div>
                     </li>
@@ -1332,33 +1332,33 @@
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>到期日完全不变。从今天起按 Pro 档位（月 2000 积分）计费，且<strong>本订阅周期内继续可调 Claude Opus 全系</strong>（Phase A 老用户福利，Opus 权重照常生效，月度配额受 2000 积分限制）。</p>
-                            <p>续费时根据用量自行选择档位（Pro 续费 / Pro+ 升级 / Pro Max 重度），<strong>续费后老用户福利失效</strong>，按所选新档位的明码规则计费。</p>
+                            <p>到期日完全不变。从今天起按 Pro 档位（月 2000 积分）计费，�?strong>本订阅周期内继续可调 Claude Opus 全系</strong>（Phase A 老用户福利，Opus 权重照常生效，月度配额受 2000 积分限制）�?/p>
+                            <p>续费时根据用量自行选择档位（Pro 续费 / Pro+ 升级 / Pro Max 重度），<strong>续费后老用户福利失�?/strong>，按所选新档位的明码规则计费�?/p>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
                         <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
                             <span class="pricing-faq-num">02</span>
-                            <span class="pricing-faq-text">有 Pro 怎么升级 Pro+？续费 / 到期怎么算？</span>
+                            <span class="pricing-faq-text">�?Pro 怎么升级 Pro+？续�?/ 到期怎么算？</span>
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
                             <p>系统按你订阅<strong>剩余天数</strong>自动判定，无需手动选「升级」还是「续费」：</p>
                             <ul>
-                                <li><strong>升级</strong>（有效期内买更高档，且剩余 ≥ 7 天）：只补差价 <code>(目标月价 − 当前月价) ÷ 30 × 剩余天数</code>（最低 ¥1），立即生效、到期日不变；配额按剩余天数比例提升。</li>
-                                <li><strong>续费</strong>（买当前同档，或剩余不足 7 天买更高档）：按满价购买，到期日顺延 30 天（封顶 90 天）。</li>
-                                <li><strong>到期后</strong>：订阅整体过期 → 回到免费档，不会自动降到更低的付费档。</li>
+                                <li><strong>升级</strong>（有效期内买更高档，且剩�?�?7 天）：只补差�?<code>(目标月价 �?当前月价) ÷ 30 × 剩余天数</code>（最�?¥1），立即生效、到期日不变；配额按剩余天数比例提升�?/li>
+                                <li><strong>续费</strong>（买当前同档，或剩余不足 7 天买更高档）：按满价购买，到期日顺延 30 天（封顶 90 天）�?/li>
+                                <li><strong>到期�?/strong>：订阅整体过�?�?回到免费档，不会自动降到更低的付费档�?/li>
                             </ul>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
                         <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
                             <span class="pricing-faq-num">03</span>
-                            <span class="pricing-faq-text">为什么要分档？</span>
+                            <span class="pricing-faq-text">为什么要分档�?/span>
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>站开了几天烧了 10 亿+ token，订阅转化不足 10%，再不分档单位经济撑不下去。Opus 系列上游成本是普通模型的几十倍，必须靠 Pro+ 档位的对等收入覆盖。这是为了能继续做下去，请各位理解。</p>
+                            <p>站开了几天烧�?10 �? token，订阅转化不�?10%，再不分档单位经济撑不下去。Opus 系列上游成本是普通模型的几十倍，必须�?Pro+ 档位的对等收入覆盖。这是为了能继续做下去，请各位理解�?/p>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
@@ -1368,7 +1368,7 @@
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>是的。加油包余额独立于订阅档位，任何时候都能用，订阅过期后也能继续消耗。</p>
+                            <p>是的。加油包余额独立于订阅档位，任何时候都能用，订阅过期后也能继续消耗�?/p>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
@@ -1378,17 +1378,17 @@
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>可以叠加续费，但到期时间最长预付 90 天（从当前算起）。超出部分不会丢失，只是无法一次性囤积超过 90 天的会员时长。</p>
+                            <p>可以叠加续费，但到期时间最长预�?90 天（从当前算起）。超出部分不会丢失，只是无法一次性囤积超�?90 天的会员时长�?/p>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
                         <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
                             <span class="pricing-faq-num">06</span>
-                            <span class="pricing-faq-text">没收到激活码？</span>
+                            <span class="pricing-faq-text">没收到激活码�?/span>
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>审核完成后激活码会显示在 <a href="./orders.html">我的订单</a> 页面，不发邮件。</p>
+                            <p>审核完成后激活码会显示在 <a href="./orders.html">我的订单</a> 页面，不发邮件�?/p>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
@@ -1398,18 +1398,18 @@
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>这是人工对单的流程：付款 → 提交订单 → 站主对账 → 生成激活码 → 你手动兑换。请耐心等 1~24 小时。</p>
+                            <p>这是人工对单的流程：付款 �?提交订单 �?站主对账 �?生成激活码 �?你手动兑换。请耐心�?1~24 小时�?/p>
                         </div>
                     </div>
                     <div class="pricing-faq-item">
                         <div class="pricing-faq-q" role="button" tabindex="0" aria-expanded="false">
                             <span class="pricing-faq-num">08</span>
-                            <span class="pricing-faq-text">付费后能退款吗？</span>
+                            <span class="pricing-faq-text">付费后能退款吗�?/span>
                             <svg class="pricing-faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                         </div>
                         <div class="pricing-faq-a">
-                            <p>本服务所有费用用于覆盖上游 API 成本，一旦激活恕不退款。</p>
-                            <p>例外情形：（1）付款后未提交订单、未领取激活码；（2）服务明显故障导致付费期不可用且超过订单期间的 50%。退款请通过 <a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub Issues</a> 或邮箱 nexusvai@139.com 提交。</p>
+                            <p>本服务所有费用用于覆盖上�?API 成本，一旦激活恕不退款�?/p>
+                            <p>例外情形：（1）付款后未提交订单、未领取激活码；（2）服务明显故障导致付费期不可用且超过订单期间�?50%。退款请通过 <a href="https://github.com/NexusVAI" target="_blank" rel="noopener">GitHub Issues</a> 或邮�?nexusvai@139.com 提交�?/p>
                         </div>
                     </div>
                 </div>
@@ -1424,17 +1424,17 @@
         </footer>
 
         <script src="./cancri_config.js"></script>
-        <!-- 2026-05-29 积分化：全站统一 token→积分换算（1 积分 = 1 万 token），在 pricing-app.js 之前定义。-->
+        <!-- 2026-05-29 积分化：全站统一 token→积分换算（1 积分 = 1 �?token），�?pricing-app.js 之前定义�?->
         <script src="./cancri_credits.js?v=2026-06-07-credits-fix"></script>
-        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动�?bug�?->
         <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
-        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
+        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详�?js/fingerprint.js 顶部注释�?-->
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
+        <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三�?+ 加油包选择 + server �?amount 校验�?-->
         <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
         <script src="./api/pricing-app.js?v=2026-06-18-618-promo"></script>
     </body>
