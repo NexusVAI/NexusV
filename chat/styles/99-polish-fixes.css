@@ -141,7 +141,7 @@
 [data-workbench-composer] .composer-input {
     flex: 0 1 auto !important;
     width: 100% !important;
-    min-height: 44px !important;
+    min-height: 48px !important;
     max-height: 220px !important;
     resize: none !important;
     overflow-y: hidden;
