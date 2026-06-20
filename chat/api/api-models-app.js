@@ -9,9 +9,9 @@ function coalesce(value, fallback) {
 
 const GW =
     (window.__SUPABASE_URL__ || "") + "/functions/v1/chat-gateway";
-// cf-migration-handoff §5：CF 入口异常时可秒级回退 Supabase 直连（catalog 为小 JSON）
+// 2026-06-20：Supabase egress 已封，紧急回退请改 wrangler USE_NEON=0 而非直连 supabase.co
 const GW_SUPABASE_DIRECT =
-    "https://diusqgphvybnzazgopor.supabase.co/functions/v1/chat-gateway";
+    (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
 const ANON = window.__SUPABASE_ANON_KEY__ || "";
 let MODELS = [];
 let activeCap = "all";

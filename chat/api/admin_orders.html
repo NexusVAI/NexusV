@@ -6,9 +6,9 @@
         <meta name="robots" content="noindex,nofollow" />
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+            content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>管理员 · 订单审核 · Cancri</title>
+        <title>管理�?· 订单审核 · Cancri</title>
         <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
         <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
@@ -200,7 +200,7 @@
     <body>
         <div class="container">
             <nav class="nav">
-                <a href="./admin_dashboard.html">仪表盘</a>
+                <a href="./admin_dashboard.html">仪表�?/a>
                 <a href="./admin_users.html">用户</a>
                 <a href="./admin_orders.html" class="active">订单</a>
                 <a href="./admin_usage.html">调用日志</a>
@@ -208,17 +208,17 @@
                 <a href="./admin.html">API 申请</a>
                 <a href="./admin_appeals.html">申诉</a>
                 <a href="./admin_stories.html">满月故事</a>
-                <a href="./admin_orbit.html">百万亿审核</a>
+                <a href="./admin_orbit.html">百万亿审�?/a>
                 <span class="badge-admin">ADMIN</span>
                 <span class="spacer"></span>
-                <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+                <a href="../" style="color: var(--text-faint)">�?返回聊天</a>
             </nav>
 
-            <div id="loading" class="loading">检查权限中…</div>
+            <div id="loading" class="loading">检查权限中�?/div>
 
             <div id="login-gate" class="gate" style="display: none">
-                <h2>需要登录</h2>
-                <p>请先登录账号，验证你的管理员身份。</p>
+                <h2>需要登�?/h2>
+                <p>请先登录账号，验证你的管理员身份�?/p>
                 <a class="btn-primary" href="../">前往登录</a>
             </div>
 
@@ -226,7 +226,7 @@
                 <h2>无权访问</h2>
                 <p>
                     这个页面仅站点管理员可见。如果你认为这是误判，请联系
-                    <code>站主</code>。</p>
+                    <code>站主</code>�?/p>
                 <a class="btn-primary" href="../">返回聊天</a>
             </div>
 
@@ -242,26 +242,26 @@
                 <div class="stats" id="stats">
                     <div class="stat-card pending">
                         <div class="label">待审</div>
-                        <div class="value" id="stat-submitted">—</div>
+                        <div class="value" id="stat-submitted">�?/div>
                     </div>
                     <div class="stat-card approved">
-                        <div class="label">已通过 · 待激活</div>
-                        <div class="value" id="stat-approved">—</div>
+                        <div class="label">已通过 · 待激�?/div>
+                        <div class="value" id="stat-approved">�?/div>
                     </div>
                     <div class="stat-card">
-                        <div class="label">已激活</div>
-                        <div class="value" id="stat-activated">—</div>
+                        <div class="label">已激�?/div>
+                        <div class="value" id="stat-activated">�?/div>
                     </div>
                     <div class="stat-card rejected">
-                        <div class="label">已驳回</div>
-                        <div class="value" id="stat-rejected">—</div>
+                        <div class="label">已驳�?/div>
+                        <div class="value" id="stat-rejected">�?/div>
                     </div>
                 </div>
 
                 <div class="grant-panel">
                     <div class="grant-panel-title">指定邮箱赠送激活码</div>
                     <p class="grant-panel-hint">
-                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用                    </p>
+                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使�?                   </p>
                     <div class="grant-form">
                         <input
                             type="email"
@@ -271,12 +271,12 @@
                             maxlength="200"
                         />
                         <select id="grantSku" class="grant-form-select">
-                            <option value="plan:pro">订阅 · Pro（.9 / 2,000 积分 / 30 天）</option>
-                            <option value="plan:pro_plus">订阅 · Pro+（9 / 8,000 积分 / 30 天）</option>
-                            <option value="plan:pro_max">订阅 · Pro Max（9 / 30,000 积分 / 30 天）</option>
-                            <option value="topup:topup_small">加油包 · 1,500 积分（¥10）</option>
-                            <option value="topup:topup_medium">加油包 · 9,000 积分（¥10）</option>
-                            <option value="topup:topup_large">加油包 · 40,000 积分（¥100）</option>
+                            <option value="plan:pro">订阅 · Pro�?9 / 2,000 积分 / 30 天）</option>
+                            <option value="plan:pro_plus">订阅 · Pro+�? / 8,000 积分 / 30 天）</option>
+                            <option value="plan:pro_max">订阅 · Pro Max�? / 30,000 积分 / 30 天）</option>
+                            <option value="topup:topup_small">加油�?· 1,500 积分（�?0�?/option>
+                            <option value="topup:topup_medium">加油�?· 9,000 积分（�?0�?/option>
+                            <option value="topup:topup_large">加油�?· 40,000 积分（�?00�?/option>
                         </select>
                         <textarea
                             id="grantNote"
@@ -290,7 +290,7 @@
 
                 <div class="filter-group" id="statusFilter">
                     <button class="filter-btn active" data-status="">全部</button>
-                    <button class="filter-btn" data-status="submitted">待审核</button>
+                    <button class="filter-btn" data-status="submitted">待审�?/button>
                     <button class="filter-btn" data-status="approved">已通过</button>
                     <button class="filter-btn" data-status="activated">已激</button>
                     <button class="filter-btn" data-status="rejected">已拒</button>
@@ -302,7 +302,7 @@
                 <div id="orders"></div>
 
                 <div id="empty-msg" class="empty" style="display: none">
-                    没有匹配的订单                </div>
+                    没有匹配的订�?               </div>
             </div>
 
             <div id="toast" class="toast"></div>

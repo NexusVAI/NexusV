@@ -6,9 +6,9 @@
     <meta name="robots" content="noindex,nofollow" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
     />
-    <title>管理员 · 世界杯主队 · Cancri</title>
+    <title>管理�?· 世界杯主�?· Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-11-wc" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
@@ -189,65 +189,65 @@
   <body>
     <div class="container">
       <nav class="nav">
-        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin_dashboard.html">仪表�?/a>
         <a href="./admin_users.html">用户</a>
         <a href="./admin_orders.html">订单</a>
         <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_wc2026.html" class="active">世界杯主队</a>
+        <a href="./admin_wc2026.html" class="active">世界杯主�?/a>
         <a href="./admin.html">API 申请</a>
         <span class="badge-admin">ADMIN</span>
         <span class="spacer"></span>
-        <a href="../champion_predict.html" style="color: var(--text-faint)">活动页 ↗</a>
-        <a href="../" style="color: var(--text-faint)">← 聊天</a>
+        <a href="../champion_predict.html" style="color: var(--text-faint)">活动�?�?/a>
+        <a href="../" style="color: var(--text-faint)">�?聊天</a>
       </nav>
 
-      <div id="loading" class="loading">检查权限中…</div>
+      <div id="loading" class="loading">检查权限中�?/div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登录</h2>
-        <p>请先登录管理员账号。</p>
+        <h2>需要登�?/h2>
+        <p>请先登录管理员账号�?/p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
       <div id="deny-gate" class="gate deny" style="display: none">
         <h2>无权访问</h2>
-        <p>这个页面仅站点管理员可见。</p>
+        <p>这个页面仅站点管理员可见�?/p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
       <div id="main" style="display: none">
         <header>
-          <h1>世界杯 2026 · 主队胜场录入</h1>
+          <h1>世界�?2026 · 主队胜场录入</h1>
           <p>
-            某队比赛获胜后，点 <strong>+1 胜场</strong>：全体支持者各得
-            <strong>10 万 Token</strong>（10 积分 × 1 万）。走 CF 模块
-            <code>wc2026-support</code>。
+            某队比赛获胜后，�?<strong>+1 胜场</strong>：全体支持者各�?
+            <strong>10 �?Token</strong>�?0 积分 × 1 万）。走 CF 模块
+            <code>wc2026-support</code>�?
           </p>
         </header>
 
         <div class="wc-summary">
           <div class="wc-summary-card">
-            <div class="label">总支持者</div>
-            <div class="value" id="stat-supporters">—</div>
+            <div class="label">总支持�?/div>
+            <div class="value" id="stat-supporters">�?/div>
           </div>
           <div class="wc-summary-card">
-            <div class="label">已录入胜场</div>
-            <div class="value" id="stat-wins">—</div>
+            <div class="label">已录入胜�?/div>
+            <div class="value" id="stat-wins">�?/div>
           </div>
           <div class="wc-summary-card">
             <div class="label">累计发放 Token</div>
-            <div class="value" id="stat-tokens">—</div>
+            <div class="value" id="stat-tokens">�?/div>
           </div>
           <div class="wc-summary-card">
             <div class="label">单次奖励</div>
-            <div class="value" id="stat-per-win" style="font-size: 15px">—</div>
+            <div class="value" id="stat-per-win" style="font-size: 15px">�?/div>
           </div>
         </div>
 
         <div class="wc-toolbar">
           <div>
             <label for="match-label">本场备注（可选）</label>
-            <input id="match-label" type="text" placeholder="如：小组赛 A 组 第2场" />
+            <input id="match-label" type="text" placeholder="如：小组�?A �?�?�? />
           </div>
           <button type="button" class="btn-primary" id="reload-btn">刷新数据</button>
         </div>
@@ -255,7 +255,7 @@
         <div id="team-admin-grid" class="wc-admin-grid"></div>
 
         <div class="wc-recent">
-          <h3>最近录入</h3>
+          <h3>最近录�?/h3>
           <div id="recent-wins"></div>
         </div>
       </div>
