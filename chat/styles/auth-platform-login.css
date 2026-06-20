@@ -125,20 +125,34 @@ html.is-auth-nav-scrolled .cancri-brand--footer .cancri-brand__word-wrap {
     justify-content: flex-start;
     gap: 0 !important;
     padding: 0 !important;
-    position: relative;
-    inset: auto;
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
     width: 100%;
     max-width: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* desktop-login: normal document scroll login page */
+html.auth-platform-page .auth-overlay:not(:has(+ #appRoot)) {
+    position: relative;
+    inset: auto;
     min-height: 100dvh;
     height: auto;
     overflow: visible;
-    overscroll-behavior: auto;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+}
+
+/* index/claude: logged-in overlay must not reserve layout space */
+html.auth-platform-page .auth-overlay:not(.visible):has(+ #appRoot) {
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
 }
 
 /* cancri_motion.css keeps 2-col grid above 880px — kill it for platform login */
@@ -174,8 +188,8 @@ html[data-theme="black"] .auth-overlay {
     -webkit-backdrop-filter: none !important;
 }
 
-/* index/claude: overlay blocks chat when visible — fixed + hidden scrollbar (no gutter strip) */
-html.auth-platform-page .auth-overlay.visible {
+/* index/claude: full-viewport login when visible */
+html.auth-platform-page .auth-overlay.visible:has(+ #appRoot) {
     position: fixed !important;
     inset: 0 !important;
     top: 0 !important;
@@ -185,14 +199,19 @@ html.auth-platform-page .auth-overlay.visible {
     width: auto !important;
     min-height: 0 !important;
     height: auto !important;
+    max-height: none !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     scroll-padding-top: var(--auth-nav-h) !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 9999 !important;
 }
 
-html.auth-platform-page .auth-overlay.visible::-webkit-scrollbar {
+html.auth-platform-page .auth-overlay.visible:has(+ #appRoot)::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
@@ -567,6 +586,7 @@ html[data-theme="light"] .auth-site-footer .cancri-brand {
     height: 100%;
     padding: 0 4px;
     box-sizing: border-box;
+    color: hsl(48 33% 96%);
 }
 
 .auth-partner-logo img {

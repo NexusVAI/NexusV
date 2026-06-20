@@ -790,7 +790,8 @@ html[data-theme="black"] .auth-overlay {
 /* Platform login pages (index / claude / desktop-login): single-column scroll page.
    Without this, grid-template-columns: 1fr 1fr above 880px leaves footer on left half only. */
 .auth-overlay:has(.auth-page-shell),
-html.auth-platform-page .auth-overlay {
+html.auth-platform-page .auth-overlay:has(+ #appRoot).visible,
+html.auth-platform-page .auth-overlay:not(:has(+ #appRoot)) {
     display: flex !important;
     flex-direction: column !important;
     grid-template-columns: none !important;
@@ -799,17 +800,29 @@ html.auth-platform-page .auth-overlay {
     justify-content: flex-start !important;
     gap: 0 !important;
     padding: 0 !important;
-    position: relative !important;
-    inset: auto !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
     width: 100% !important;
     max-width: none !important;
+    overflow: visible !important;
+}
+
+html.auth-platform-page .auth-overlay:not(.visible):has(+ #appRoot) {
+    position: fixed !important;
+    inset: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+}
+
+html.auth-platform-page .auth-overlay:not(:has(+ #appRoot)) {
+    position: relative !important;
+    inset: auto !important;
     min-height: 100dvh !important;
     height: auto !important;
-    overflow: visible !important;
 }
 
 .auth-overlay:has(.auth-page-shell) > .auth-topnav-spacer,
