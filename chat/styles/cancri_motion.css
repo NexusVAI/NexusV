@@ -822,6 +822,11 @@ html.auth-platform-page .auth-overlay > .auth-page-shell {
     align-self: stretch !important;
 }
 
+html.auth-platform-page .auth-stage {
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem) 1rem !important;
+    max-width: min(768px, calc(100% - 0.5rem)) !important;
+}
+
 .auth-bg {
     position: absolute;
     inset: 0;

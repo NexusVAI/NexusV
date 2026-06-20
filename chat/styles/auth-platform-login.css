@@ -8,11 +8,19 @@
    Internal overlay scroll leaves a ~15px classic scrollbar gutter on Windows;
    default track color reads as a permanent right-edge white strip. */
 html.auth-platform-page {
+    --auth-nav-h: 4.5rem;
     background: hsl(var(--bg-300));
     overflow-x: hidden;
     overflow-y: auto;
+    scroll-padding-top: var(--auth-nav-h);
     scrollbar-width: none;
     -ms-overflow-style: none;
+}
+
+@media (min-width: 69rem) {
+    html.auth-platform-page {
+        --auth-nav-h: 5.25rem;
+    }
 }
 
 html.auth-platform-page::-webkit-scrollbar {
@@ -179,6 +187,7 @@ html.auth-platform-page .auth-overlay.visible {
     height: auto !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
+    scroll-padding-top: var(--auth-nav-h) !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
 }
@@ -208,7 +217,12 @@ html.auth-platform-page .auth-overlay.visible::-webkit-scrollbar {
     background: hsl(var(--bg-300));
 }
 
-/* ── Fixed top nav (platform.claude.com/login nav) ─────────────── */
+/* ── Sticky top nav — content stays below nav when scrolling (no overlap) ─ */
+html.auth-platform-page .auth-topnav {
+    position: sticky;
+    top: 0;
+}
+
 .auth-topnav {
     position: fixed;
     top: 0;
@@ -235,7 +249,10 @@ html[data-theme="black"] .auth-topnav {
     max-width: 90rem;
     margin: 0 auto;
     width: calc(100% - (2 * clamp(2rem, 1.43rem + 2.86vw, 4rem)));
-    min-height: 4.5rem;
+    min-height: var(--auth-nav-h, 4.5rem);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    box-sizing: border-box;
 }
 
 .auth-topnav-brand {
@@ -288,6 +305,13 @@ html[data-theme="black"] .auth-topnav {
     border-color: hsl(var(--border-300) / 0.55);
 }
 
+html.auth-platform-page .auth-topnav-spacer {
+    display: none !important;
+    flex: 0 0 0 !important;
+    height: 0 !important;
+    overflow: hidden;
+}
+
 .auth-topnav-spacer {
     flex: 0 0 4.5rem;
     width: 100%;
@@ -302,10 +326,7 @@ html[data-theme="black"] .auth-topnav {
 
 @media (min-width: 69rem) {
     .auth-topnav-inner {
-        min-height: 5.25rem;
-    }
-    .auth-topnav-spacer {
-        flex-basis: 5.25rem;
+        min-height: var(--auth-nav-h, 5.25rem);
     }
 }
 
@@ -318,9 +339,13 @@ html[data-theme="black"] .auth-topnav {
     flex: 1 0 auto;
     width: 100%;
     max-width: none;
-    min-height: min-content;
-    padding-bottom: 3.5rem;
+    min-height: 0;
+    padding-bottom: clamp(3rem, 6vw, 3.5rem);
     box-sizing: border-box;
+}
+
+html.auth-platform-page .auth-page-shell {
+    min-height: auto;
 }
 
 .auth-login-panel {
@@ -329,21 +354,16 @@ html[data-theme="black"] .auth-topnav {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex: 0 0 auto;
     width: 100%;
     max-width: none;
     align-self: stretch;
     box-sizing: border-box;
-    min-height: min(calc(100svh - 4.5rem), 920px);
-    padding: 2rem 1.5rem 2.5rem;
+    min-height: auto;
+    padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1rem, 3vw, 1.5rem)
+        clamp(1.5rem, 4vw, 2.5rem);
     background: hsl(var(--bg-300));
-}
-
-@media (min-width: 69rem) {
-    .auth-login-panel {
-        min-height: min(calc(100svh - 5.25rem), 920px);
-    }
 }
 
 .auth-dot-grid {
@@ -359,10 +379,51 @@ html[data-theme="black"] .auth-topnav {
 
 .auth-stage {
     width: 100%;
-    max-width: 768px;
+    max-width: min(768px, calc(100% - 0.5rem));
     margin: 0 auto;
-    padding: 0 0 1rem;
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem) 1rem;
     align-self: center;
+    box-sizing: border-box;
+}
+
+html.auth-platform-page .auth-stage {
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem) 1rem;
+}
+
+html.auth-platform-page .auth-hero {
+    margin-bottom: clamp(1rem, 3vw, 2rem);
+}
+
+html.auth-platform-page .auth-hero-title {
+    font-size: clamp(1.75rem, 5.5vw, 3.25rem);
+    line-height: 1.08;
+}
+
+html.auth-platform-page .auth-hero-subtitle {
+    font-size: clamp(0.875rem, 2.2vw, 1.125rem);
+    line-height: 1.45;
+    padding: 0 clamp(0.25rem, 2vw, 1rem);
+}
+
+html.auth-platform-page .auth-card {
+    max-width: min(448px, calc(100vw - 2rem));
+    padding: clamp(16px, 3vw, 20px) clamp(14px, 3vw, 22px) clamp(14px, 2.5vw, 18px);
+    border-radius: clamp(20px, 4vw, 32px);
+}
+
+@media (max-height: 780px) {
+    html.auth-platform-page .auth-login-panel {
+        padding-top: 1rem;
+        padding-bottom: 1.25rem;
+    }
+
+    html.auth-platform-page .auth-hero {
+        margin-bottom: 0.75rem;
+    }
+
+    html.auth-platform-page .auth-hero-title {
+        font-size: clamp(1.5rem, 6vw, 2.25rem);
+    }
 }
 
 @media (max-width: 639px) {
@@ -378,8 +439,7 @@ html[data-theme="black"] .auth-topnav {
     }
 
     .auth-login-panel {
-        min-height: auto;
-        padding: 1.25rem 1rem 1.75rem;
+        padding: 1rem 0.75rem 1.5rem;
     }
 
     .auth-partners {
