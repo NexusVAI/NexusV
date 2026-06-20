@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="black">
+<html lang="zh-CN" data-theme="black" class="auth-platform-page">
     <head>
         <meta charset="UTF-8" />
         <meta
@@ -103,7 +103,11 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-06-03-auth-compact"
+            href="./styles/cancri_motion.css?v=2026-06-20-platform-login-fix13"
+        />
+        <link
+            rel="stylesheet"
+            href="./styles/auth-platform-login.css?v=2026-06-20-platform-login-fix13"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -149,30 +153,57 @@
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
         <div class="auth-overlay" id="authOverlay">
-            <!-- 2026-05-16 minimal redo：登录页改极简风（白底/黑字/灰边/黑按钮），
-                 删掉 island/islandt/hatch/auth-bg-sheen + inline SVG fractalNoise +
-                 inline <style>。auth_bg_bake.js 不再被引用（dead code 文件保留，
-                 cancri_motion.css 内 .island/.islandt/.auth-bg-sheen 规则一并清理）。
-                 .auth-bg 仅作为背景色层，由 cancri_motion.css 控制。 -->
             <div class="auth-bg" aria-hidden="true"></div>
-            <div class="auth-stage">
-                <a
-                    class="auth-brand"
-                    href="/"
-                    aria-label="Cancri"
-                >
-                    <img
-                        src="../Logo/Cancri1.jpg"
-                        data-dark-src="../Logo/Cancri1.jpg"
-                        data-light-src="../Logo/Cancri.png"
-                        alt="Cancri"
-                        width="22"
-                        height="22"
-                        class="auth-brand-mark cancri-logo"
-                    />
-                    <span class="auth-brand-name">Cancri</span>
-                </a>
 
+            <header class="auth-topnav">
+                <div class="auth-topnav-inner">
+                    <a
+                        href="https://www.nexusvai.xyz/"
+                        class="auth-topnav-brand cancri-nav-brand"
+                        data-cancri-brand
+                        aria-label="NexusVAI 首页"
+                    >
+                        <span class="cancri-brand">
+                            <span class="cancri-brand__word-wrap"
+                                ><span class="cancri-brand__word">Nexus</span></span
+                            >
+                            <img
+                                class="cancri-brand__icon"
+                                src="./assets/VAI-logo.svg"
+                                alt="VAI"
+                                width="32"
+                                height="32"
+                                decoding="async"
+                            />
+                        </span>
+                    </a>
+                    <nav class="auth-topnav-links" aria-label="站点导航">
+                        <a href="./api_docs.html">API 文档</a>
+                        <a href="./api_keys.html">API Keys</a>
+                        <a href="./pricing.html">定价</a>
+                        <a href="./celebrate.html">博客</a>
+                        <a
+                            href="https://www.nexusvai.xyz/article.html?id=cancriCode"
+                            target="_blank"
+                            rel="noopener"
+                            >Cancri Code</a
+                        >
+                    </nav>
+                    <a
+                        class="auth-topnav-cta"
+                        href="https://www.nexusvai.xyz/"
+                        target="_blank"
+                        rel="noopener"
+                        >访问官网</a
+                    >
+                </div>
+            </header>
+            <div class="auth-topnav-spacer" aria-hidden="true"></div>
+
+            <div class="auth-page-shell">
+                <section class="auth-login-panel">
+                    <div class="auth-dot-grid" aria-hidden="true"></div>
+                    <div class="auth-stage">
                 <div class="auth-hero">
                     <h1 class="auth-hero-title">思如闪电，<br />构建更快</h1>
                     <p class="auth-hero-subtitle">
@@ -270,31 +301,179 @@
                         >。
                     </p>
                 </div>
+                    </div>
+                </section>
 
-                <div class="auth-mobile-poster" aria-hidden="true">
-                    <img
-                        class="auth-mobile-poster-img"
-                        src="../Logo/CCODE-1.5.16.9.png"
-                        alt="Cancri Code"
-                        width="960"
-                        height="540"
-                        loading="lazy"
-                        decoding="async"
-                    />
-                </div>
+                <section class="auth-partners" aria-labelledby="authPartnersTitle">
+                    <p id="authPartnersTitle" class="auth-partners-title">
+                        与 NexusVAI 共建智能应用
+                    </p>
+                    <div class="auth-partners-grid" id="authPartnersGrid"></div>
+                </section>
+
+                <footer class="auth-site-footer">
+                    <div class="auth-site-footer-inner">
+                        <div class="auth-site-footer-brand-col">
+                            <a
+                                href="https://www.nexusvai.xyz/"
+                                class="auth-site-footer-brand"
+                                aria-label="NexusVAI"
+                            >
+                                <span class="cancri-brand cancri-brand--footer">
+                                    <span class="cancri-brand__word-wrap is-in"
+                                        ><span class="cancri-brand__word">Nexus</span></span
+                                    >
+                                    <img
+                                        class="cancri-brand__icon"
+                                        src="./assets/VAI-logo.svg"
+                                        alt="VAI"
+                                        width="32"
+                                        height="32"
+                                        decoding="async"
+                                    />
+                                </span>
+                            </a>
+                            <div class="auth-site-footer-meta">
+                                <p class="auth-site-footer-copy">
+                                    © <span data-year>2026</span> NexusVAI
+                                </p>
+                                <ul class="auth-site-footer-socials">
+                                    <li>
+                                        <a
+                                            aria-label="GitHub"
+                                            rel="noopener noreferrer"
+                                            href="https://github.com/NexusVAI"
+                                            target="_blank"
+                                            ><svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="currentColor"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                    d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                                                ></path></svg
+                                        ></a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            aria-label="Hugging Face"
+                                            rel="noopener noreferrer"
+                                            href="https://huggingface.co/xingy555888"
+                                            target="_blank"
+                                            ><img
+                                                src="./huggingface-color.svg"
+                                                alt=""
+                                                width="20"
+                                                height="20"
+                                                loading="lazy"
+                                                decoding="async"
+                                        /></a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            aria-label="Bilibili"
+                                            rel="noopener noreferrer"
+                                            href="https://space.bilibili.com/3691002594331274"
+                                            target="_blank"
+                                            ><img
+                                                src="./bilibili-color.svg"
+                                                alt=""
+                                                width="20"
+                                                height="20"
+                                                loading="lazy"
+                                                decoding="async"
+                                        /></a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            aria-label="X (Twitter)"
+                                            rel="noopener noreferrer"
+                                            href="https://x.com/NexusVAI"
+                                            target="_blank"
+                                            ><svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill="currentColor"
+                                                aria-hidden="true"
+                                            >
+                                                <path
+                                                    d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+                                                ></path></svg
+                                        ></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="auth-site-footer-links">
+                            <section>
+                                <h3>产品</h3>
+                                <ul>
+                                    <li>
+                                        <a
+                                            href="https://www.nexusvai.xyz/article.html?id=tactfr627"
+                                            >TACTFR 6.0.0 Beta.2.7</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            href="https://www.nexusvai.xyz/article.html?id=sentienceV52mens"
+                                            >SentienceV5.2 Mens</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            href="https://www.nexusvai.xyz/article.html?id=nexusv5"
+                                            >NexusV V5</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            href="https://www.nexusvai.xyz/article.html?id=cancriCode"
+                                            >Cancri Code</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            href="https://www.nexusvai.xyz/article.html?id=chatai"
+                                            >NexusVAI</a
+                                        >
+                                    </li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h3>Models</h3>
+                                <ul>
+                                    <li>
+                                        <a
+                                            href="https://www.nexusvai.xyz/article.html?id=cancriV1"
+                                            >CancriV1-0.1B</a
+                                        >
+                                    </li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h3>友情链接</h3>
+                                <ul>
+                                    <li>
+                                        <a href="https://www.nexusvai.xyz/privacy.html"
+                                            >隐私政策</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a href="../terms.html">服务条款</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://www.nexusvai.xyz/chat/celebrate.html#wall"
+                                            >社区墙</a
+                                        >
+                                    </li>
+                                </ul>
+                            </section>
+                        </div>
+                    </div>
+                </footer>
             </div>
-
-            <aside class="auth-showcase" aria-hidden="true">
-                <img
-                    class="auth-showcase-poster"
-                    src="../Logo/CCODE-1.5.16.9.png"
-                    alt="Cancri Code"
-                    width="960"
-                    height="540"
-                    loading="lazy"
-                    decoding="async"
-                />
-            </aside>
 
             <!-- 2026-05-15：登录页左下角 theme switch。fixed 定位独立于
                  .auth-stage flow，brutalist 米白圆按钮跟卡片同语言。
@@ -2894,6 +3073,7 @@
         <script defer src="./cancri_image_loader.js?v=img-loader-0531"></script>
         <script defer src="./cancri_chat_nav.js?v=chat-nav-0531"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
+        <script defer src="./js/auth-login-chrome.js?v=2026-06-20-platform-login-fix13"></script>
         <script defer src="./cancri_auth_captcha.js?v=auth-captcha-0601"></script>
         <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
              所有 img.cancri-logo 的 src，主题切换时黑白 logo 同步反转。 -->

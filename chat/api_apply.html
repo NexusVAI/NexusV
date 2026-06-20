@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 2026-05-15 审查：抽离内聊script 刀./api/api-apply-app.js，删 unsafe-inline script-src -->
+  <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-apply-app.js，删 unsafe-inline script-src -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
   <title>申请 API · Cancri 开放平台</title>
   <link rel="icon" type="image/png" href="../Logo/Cancri.png">
@@ -49,7 +49,7 @@
     <div class="apply-page-stack">
       <div class="apply-card">
         <h1 class="page-title">API 申请</h1>
-        <p class="subtitle">首次使用？提交申请进入白名单，审核通过后即可创廉API Key</p>
+        <p class="subtitle">首次使用？提交申请进入白名单，审核通过后即可创建 API Key</p>
         <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
         <div id="login-section" style="display:none">
           <p style="margin-bottom:12px">请先登录后再申请 API Key</p>
@@ -63,15 +63,15 @@
               <input type="email" id="email" readonly>
             </div>
             <div class="form-group">
-              <label>用途说昂</label>
-              <textarea id="purpose" placeholder="请简要说明你的应用场景、预计调用量等，便于我们审核　></textarea>
+              <label>用途说明</label>
+              <textarea id="purpose" placeholder="请简要说明你的应用场景、预计调用量等，便于我们审核。"></textarea>
             </div>
             <button id="submit-btn" class="btn-primary full-btn">提交申请</button>
             <div class="msg" id="msg"></div>
           </div>
         </div>
         <div id="key-section" style="display:none">
-          <p style="margin-bottom:12px; color: var(--ok)">你的申请已通过审核，可以开始创廉API Key 了</p>
+          <p style="margin-bottom:12px; color: var(--ok)">你的申请已通过审核，可以开始创建 API Key 了</p>
           <button id="manage-keys-btn" class="btn-primary full-btn">管理 API Keys</button>
         </div>
         <button id="back-to-chat-btn" class="btn-secondary secondary-btn">返回聊天</button>
