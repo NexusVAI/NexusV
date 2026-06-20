@@ -4832,6 +4832,7 @@
 				if (event === "SIGNED_IN") {
 					maybeShowExpirySoonBanner();
 					fetchUserMemories();
+					renderChatHistoryList();
 				}
 			} else if (event === "SIGNED_OUT") {
 				authSessionPromise = null;
@@ -5293,6 +5294,8 @@
 		} catch (error) {
 			console.error("加载聊天记录列表失败:", error);
 			listContainer.innerHTML = "<div class=\"recent-placeholder\">加载失败</div>";
+		} finally {
+			listContainer.removeAttribute("aria-busy");
 		}
 	}
 	async function loadChat(chatId, { silent = false } = {}) {
@@ -6001,14 +6004,14 @@
 	}
 	async function loadChatHistoryList() {
 		try {
-			const response = await proxyFetch(EDGE_FUNCTION_URL, {
+			const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: await proxyHeaders(),
 				body: JSON.stringify({
 					endpoint: "chat_history",
 					action: "list"
 				})
-			});
+			}, FETCH_TIMEOUT_MS, "聊天记录列表");
 			if (!response.ok) {
 				const msg = await readProxyFailureMessage(response);
 				throw new Error(msg || "加载聊天记录列表失败");
@@ -6031,7 +6034,7 @@
 	}
 	async function loadChatHistory(chatId) {
 		try {
-			const response = await proxyFetch(EDGE_FUNCTION_URL, {
+			const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: await proxyHeaders(),
 				body: JSON.stringify({
@@ -6039,7 +6042,7 @@
 					action: "get",
 					id: chatId
 				})
-			});
+			}, FETCH_TIMEOUT_MS, "聊天记录");
 			if (!response.ok) {
 				const msg = await readProxyFailureMessage(response);
 				throw new Error(msg || "加载聊天记录失败");
