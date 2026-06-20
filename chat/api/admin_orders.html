@@ -245,15 +245,15 @@
                         <div class="value" id="stat-submitted"></div>
                     </div>
                     <div class="stat-card approved">
-                        <div class="label">已通过 · 待激洁</div>
+                        <div class="label">已通过 · 待激活</div>
                         <div class="value" id="stat-approved"></div>
                     </div>
                     <div class="stat-card">
-                        <div class="label">已激洁</div>
+                        <div class="label">已激活</div>
                         <div class="value" id="stat-activated"></div>
                     </div>
                     <div class="stat-card rejected">
-                        <div class="label">已驳囊</div>
+                        <div class="label">已驳回</div>
                         <div class="value" id="stat-rejected"></div>
                     </div>
                 </div>
@@ -261,26 +261,26 @@
                 <div class="grant-panel">
                     <div class="grant-panel-title">指定邮箱赠送激活码</div>
                     <p class="grant-panel-hint">
-                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使甜                   </p>
+                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用                   </p>
                     <div class="grant-form">
                         <input
                             type="email"
                             id="grantEmail"
-                            placeholder="对方邮箱（QQ / Foxmail
+                            placeholder="对方邮箱（QQ / Foxmail）"
                             autocomplete="off"
                             maxlength="200"
                         />
                         <select id="grantSku" class="grant-form-select">
-                            <option value="plan:pro">订阅 · Pro！9 / 2,000 积分 / 30 天）</option>
-                            <option value="plan:pro_plus">订阅 · Pro+！ / 8,000 积分 / 30 天）</option>
-                            <option value="plan:pro_max">订阅 · Pro Max！ / 30,000 积分 / 30 天）</option>
-                            <option value="topup:topup_small">加油匀· 1,500 积分（0！</option>
-                            <option value="topup:topup_medium">加油匀· 9,000 积分（0！</option>
-                            <option value="topup:topup_large">加油匀· 40,000 积分（00！</option>
+                            <option value="plan:pro">订阅 · Pro（.9 / 2,000 积分 / 30 天）</option>
+                            <option value="plan:pro_plus">订阅 · Pro+（9 / 8,000 积分 / 30 天）</option>
+                            <option value="plan:pro_max">订阅 · Pro Max（9 / 30,000 积分 / 30 天）</option>
+                            <option value="topup:topup_small">加油包· 1,500 积分（¥10）</option>
+                            <option value="topup:topup_medium">加油包· 9,000 积分（¥10）</option>
+                            <option value="topup:topup_large">加油包· 40,000 积分（¥100）</option>
                         </select>
                         <textarea
                             id="grantNote"
-                            placeholder="备注（可· 仅站主可见，比如 'abc 一个月'
+                            placeholder="备注（可选）仅站主可见，比如 'abc 一个月'"
                             maxlength="500"
                         ></textarea>
                         <button class="btn-grant" id="grantBtn" type="button">生成激活码</button>
@@ -302,7 +302,7 @@
                 <div id="orders"></div>
 
                 <div id="empty-msg" class="empty" style="display: none">
-                    没有匹配的订十               </div>
+                    没有匹配的订单               </div>
             </div>
 
             <div id="toast" class="toast"></div>

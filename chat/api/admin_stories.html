@@ -254,10 +254,10 @@
         <header>
           <h1>满月内容管理</h1>
           <p>
-            管理 <code>celebrate.html</code> 的故事墙、编年史评论与禁言名单            通过 = 上故事墙；精退= 上故事墙 + 1,000 积分；驳囊= 写理由不上墙            删除 = 物理删除；禁言 = 拉黑 user_id 或指纹，全局或单 scope　         </p>
+            管理 <code>celebrate.html</code> 的故事墙、编年史评论与禁言名单            通过 = 上故事墙；精选 = 上故事墙 + 1,000 积分；驳回 = 写理由不上墙            删除 = 物理删除；禁言 = 拉黑 user_id 或指纹，全局或单 scope　         </p>
         </header>
 
-        <!-- 视图切换：故了/ 评论 / 禁言 -->
+        <!-- 视图切换：故事 / 评论 / 禁言 -->
         <div class="view-tabs" id="viewTabs">
           <button data-view="stories" class="active">故事</button>
           <button data-view="comments">评论</button>
@@ -270,7 +270,7 @@
             <!-- 默认进入「全部」，避免"通过后什么都看不的错-->
             <button class="filter-btn" data-filter="pending">待审<span class="count-badge" data-count-for="pending">·</span></button>
             <button class="filter-btn" data-filter="approved">已通过 <span class="count-badge" data-count-for="approved">·</span></button>
-            <button class="filter-btn" data-filter="featured">粒span class="count-badge" data-count-for="featured">·</span></button>
+            <button class="filter-btn" data-filter="featured">精<span class="count-badge" data-count-for="featured">·</span></button>
             <button class="filter-btn" data-filter="rejected">已驳<span class="count-badge" data-count-for="rejected">·</span></button>
             <button class="filter-btn active" data-filter="all">全部 <span class="count-badge" data-count-for="all">·</span></button>
           </div>
@@ -280,8 +280,8 @@
         <!-- 评论 toolbar -->
         <div class="toolbar" id="commentsToolbar" style="display:none">
           <div class="filter-group" id="commentScopeFilter">
-            <button class="filter-btn active" data-scope="wall">故事境</button>
-            <button class="filter-btn" data-scope="chronicle">编年参</button>
+            <button class="filter-btn active" data-scope="wall">故事墙</button>
+            <button class="filter-btn" data-scope="chronicle">编年史</button>
           </div>
           <button class="reload-btn" id="comments-reload-btn">刷新</button>
         </div>
@@ -294,7 +294,7 @@
 
         <!-- 批量操作栏（仅故view 显示-->
         <div class="bulk-bar is-hidden" id="bulkBar">
-          <span id="bulkCount">已退0 杂</span>
+          <span id="bulkCount">已选 0 条</span>
           <button class="btn-approve" data-bulk="approve">批量通过</button>
           <button class="btn-reject" data-bulk="reject">批量驳回</button>
           <button class="btn-delete" data-bulk="delete">批量删除</button>

@@ -194,8 +194,8 @@
         <header>
           <h1>用户申诉审核</h1>
           <p>
-            用户被自力/ 手动封禁后通过 <code>./appeal.html</code>
-            提交申诉。通过会自unban 并发邮件通知；驳回也会发邮件并随附备泄         </p>
+            用户被自动 / 手动封禁后通过 <code>./appeal.html</code>
+            提交申诉。通过会自unban 并发邮件通知；驳回也会发邮件并随附备注         </p>
         </header>
 
         <div class="stats">
@@ -204,7 +204,7 @@
             <div class="value" id="stat-total"></div>
           </div>
           <div class="stat-card">
-            <div class="label">待处球</div>
+            <div class="label">待处理</div>
             <div class="value" id="stat-pending"></div>
           </div>
           <div class="stat-card">
@@ -212,16 +212,16 @@
             <div class="value" id="stat-approved"></div>
           </div>
           <div class="stat-card">
-            <div class="label">已驳囊</div>
+            <div class="label">已驳回</div>
             <div class="value" id="stat-rejected"></div>
           </div>
         </div>
 
         <div class="toolbar">
           <div class="filter-group" id="statusFilter">
-            <button class="filter-btn active" data-filter="pending">待处球</button>
+            <button class="filter-btn active" data-filter="pending">待处理</button>
             <button class="filter-btn" data-filter="approved">已通过</button>
-            <button class="filter-btn" data-filter="rejected">已驳囊</button>
+            <button class="filter-btn" data-filter="rejected">已驳回</button>
             <button class="filter-btn" data-filter="all">全部</button>
           </div>
           <button class="reload-btn" id="reload-btn">刷新</button>

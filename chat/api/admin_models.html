@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
-      /* 模型配置页专有：配置卡片 / 配置額/ 保存按钮 / 促销预览 */
+      /* 模型配置页专有：配置卡片 / 配置项 / 保存按钮 / 促销预览 */
       .cfg-card {
         background: var(--bg-card);
         border: 1px solid var(--border);
@@ -214,13 +214,13 @@
           <div class="cfg-head">
             <h2>倍率档位</h2>
             <p>
-              每个模型costTier 归到一档，扣分 = token × 该档 factor。改一档会影响所有该档模垂             （Opus 等走 customMultiplier 的模型不受档位影响，单独压平。）
+              每个模型costTier 归到一档，扣分 = token × 该档 factor。改一档会影响所有该档模型             （Opus 等走 customMultiplier 的模型不受档位影响，单独压平。）
             </p>
           </div>
           <div class="cfg-body">
             <div id="tiers"></div>
             <div class="hint">
-              参考：free 让国产免费模型真便宜；normal 是主力付费档；vip Pro+ 可用的高价模垂             数值越大，同样 token 扣得越多            </div>
+              参考：free 让国产免费模型真便宜；normal 是主力付费档；vip Pro+ 可用的高价模型             数值越大，同样 token 扣得越多            </div>
           </div>
         </div>
 
@@ -236,11 +236,11 @@
               <div class="promo-toggle">
                 <input type="checkbox" id="promo-enabled" />
                 <span style="font-size: 12px; color: var(--text-faint)"
-                  >关闭后即使在时间窗口内也不打技</span>
+                  >关闭后即使在时间窗口内也不打折</span>
                 >
               </div>
 
-              <label for="promo-start">开始时门</label>
+              <label for="promo-start">开始时间</label>
               <input type="datetime-local" id="promo-start" />
 
               <label for="promo-end">结束时间</label>
@@ -255,10 +255,10 @@
                 placeholder="0.5"
               />
             </div>
-            <div id="promo-preview" class="preview off">状态：兀</div>
+            <div id="promo-preview" class="preview off">状态：关</div>
             <div class="hint">
               时间按你当前浏览器本地时区。系数仅影响扣分，proPlusOnly / proMaxOnly
-              等准入门槛仍按原 costTier 判断，不会因打折被绕迁           </div>
+              等准入门槛仍按原 costTier 判断，不会因打折被绕过           </div>
             <div class="cfg-actions">
               <button class="btn-save" id="promo-save">保存促销窗口</button>
             </div>
@@ -297,7 +297,7 @@
     </div>
 
     <script src="../cancri_config.js"></script>
-    <!-- 设备 / 浏览器指纹（反多账号信号采集！->
+    <!-- 设备 / 浏览器指纹（反多账号信号采集）-->
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script
       src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"

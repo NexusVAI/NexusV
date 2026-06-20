@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-13 审查：抽离内聊script admin-users-app.js，删 'unsafe-inline' script-src-->
+    <!-- 2026-05-13 审查：抽离内联 script admin-users-app.js，删 'unsafe-inline' script-src-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>管理台· 用户 · Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
@@ -287,7 +287,7 @@
         <div class="panel">
           <div class="panel-head">
             搜索 + 封禁
-            <span class="hint">支持邮箱片段、user_id 前缀（≥3 字符！</span>
+            <span class="hint">支持邮箱片段、user_id 前缀（≥3 字符）</span>
           </div>
           <div class="panel-body">
             <div class="form-row full">
@@ -353,7 +353,7 @@
                 <div class="value" id="quota-plan" style="font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px;"></div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">月配额（积分！</div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">月配额（积分）</div>
                 <div class="value" id="quota-monthly" style="font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px;"></div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
@@ -361,7 +361,7 @@
                 <div class="value" id="quota-consumed" style="font-size: 16px; font-weight: 700; color: var(--err); margin-top: 4px;"></div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">加油包余额（积分！</div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">加油包余额（积分）</div>
                 <div class="value" id="quota-topup" style="font-size: 16px; font-weight: 700; color: var(--ok); margin-top: 4px;"></div>
               </div>
             </div>
@@ -374,9 +374,9 @@
               <div>
                 <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">1. 快捷赠更新订阅(Add/Upgrade Subscription)</h4>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); color: var(--accent);" id="btnGrant30Pro">Pro +30处</button>
-                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); color: #f59e0b;" id="btnGrant30ProPlus">Pro+ +30处</button>
-                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); color: #a855f7;" id="btnGrant30ProMax">ProMax +30处</button>
+                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); color: var(--accent);" id="btnGrant30Pro">Pro +30天</button>
+                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); color: #f59e0b;" id="btnGrant30ProPlus">Pro+ +30天</button>
+                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); color: #a855f7;" id="btnGrant30ProMax">ProMax +30天</button>
                 </div>
               </div>
               <div>
@@ -388,7 +388,7 @@
             </div>
 
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">3. 加油包积分调整（1 积分 = 1 一token！</h4>
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">3. 加油包积分调整（1 积分 = 1 万 token）</h4>
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup10">+1,000 积分</button>
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup50">+5,000 积分</button>
@@ -406,11 +406,11 @@
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
               <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">4. 精细调整 PRO 天数 (Fine-tune Subscription Days)</h4>
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; margin-bottom: 8px;">
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays7">+7 处</button>
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays15">+15 处</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays7">-7 处</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays15">-15 处</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.15);" id="btnReduceDays30">-30 处</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays7">+7 天</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays15">+15 天</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays7">-7 天</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays15">-15 天</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.15);" id="btnReduceDays30">-30 天</button>
               </div>
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%;">
                 <span style="font-size: 11.5px; color: var(--text-mute);">自定义天数（-365 +365，非零）:</span>
@@ -432,7 +432,7 @@
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
               <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">5. 精细化月已用量（积分</h4>
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus10M">+1,000 已用（扣额度！</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus10M">+1,000 已用（扣额度）</button>
                 <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus50M">+5,000 已用</button>
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumeMinus10M">-1,000 已用（回补）</button>
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumeMinus50M">-5,000 已用</button>
@@ -460,10 +460,10 @@
             📊 调用日志与统            <span class="hint" id="usagePanelUserEmail" style="color: #a855f7; font-weight: 600;">已选择用户</span>
             <span class="spacer" style="flex: 1"></span>
             <select id="usageWindowSelect" style="padding: 4px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
-              <option value="86400000">最迁1 处</option>
-              <option value="604800000" selected>最迁7 处</option>
-              <option value="2592000000">最迁30 处</option>
-              <option value="7776000000">最迁90 处</option>
+              <option value="86400000">最近 1 天</option>
+              <option value="604800000" selected>最近 7 天</option>
+              <option value="2592000000">最近 30 天</option>
+              <option value="7776000000">最近 90 天</option>
             </select>
             <button class="reload-btn" id="usageReloadBtn">刷新</button>
           </div>
@@ -516,7 +516,7 @@
             当前封禁
             <span class="hint">按封禁时间倒序</span>
             <span class="spacer" style="flex: 1"></span>
-            <input id="banSearch" type="search" placeholder="搜邮简/ user_id / 原因 autocomplete="off" style="padding:5px 10px;font-size:12.5px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;color:var(--text);width:200px" />
+            <input id="banSearch" type="search" placeholder="搜邮箱 / user_id / 原因" autocomplete="off" style="padding:5px 10px;font-size:12.5px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;color:var(--text);width:200px" />
             <button class="reload-btn" id="reload-btn">刷新</button>
           </div>
           <div id="bansList"></div>

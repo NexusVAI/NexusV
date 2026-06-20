@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-23 新建：管理员管理员仪表盘 - 大盘 + 圆环 + 折线 + Top10 单页　        CSP 严格：无 inline script，纯 inline SVG 渲染图表（不甜Chart.js）　->
+    <!-- 2026-05-23 新建：管理员管理员仪表盘 - 大盘 + 圆环 + 折线 + Top10 单页　        CSP 严格：无 inline script，纯 inline SVG 渲染图表（不用 Chart.js）-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>管理台· 仪表盘· Cancri</title>
     <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
@@ -248,7 +248,7 @@
       <div id="main" style="display: none">
         <header>
           <h1>仪表盘</h1>
-          <p>站点运营关键指标 · 毁30 秒自动刷文· <span id="last-updated" style="color:var(--text-faint)"></span></p>
+          <p>站点运营关键指标 · 每 30 秒自动刷新· <span id="last-updated" style="color:var(--text-faint)"></span></p>
         </header>
 
         <!-- 顶部 8 张数据卡 -->
@@ -256,17 +256,17 @@
           <div class="dash-card accent">
             <div class="dash-card__label">用户总数</div>
             <div class="dash-card__value" id="m-users-total"></div>
-            <div class="dash-card__sub" id="m-users-sub">含匿吃</div>
+            <div class="dash-card__sub" id="m-users-sub">含匿名</div>
           </div>
           <div class="dash-card success">
             <div class="dash-card__label">今日活跃</div>
             <div class="dash-card__value" id="m-active-today"></div>
-            <div class="dash-card__sub">UTC+8 自然旁</div>
+            <div class="dash-card__sub">UTC+8 自然日</div>
           </div>
           <div class="dash-card accent">
             <div class="dash-card__label">24h 调用</div>
             <div class="dash-card__value" id="m-calls-24h"></div>
-            <div class="dash-card__sub" id="m-calls-users"> 个独立用成</div>
+            <div class="dash-card__sub" id="m-calls-users"> 个独立用户</div>
           </div>
           <div class="dash-card">
             <div class="dash-card__label">24h Tokens</div>
@@ -314,7 +314,7 @@
           </div>
           <div class="dash-panel">
             <h3>🔥 模型 Top 10 · 24h</h3>
-            <div class="dash-panel__hint">按调用次数排庆</div>
+            <div class="dash-panel__hint">按调用次数排序</div>
             <div id="top-models"></div>
           </div>
         </div>
@@ -353,7 +353,7 @@
             </a>
             <a class="dash-nav-card" href="./admin_descriptions.html">
               <div class="dash-nav-card__title">模型描述</div>
-              <div class="dash-nav-card__desc">模型广场卡片简什· ≀5s 生效</div>
+              <div class="dash-nav-card__desc">模型广场卡片简介 · ≤5s 生效</div>
             </a>
           </div>
         </div>
