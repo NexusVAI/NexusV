@@ -255,6 +255,17 @@
     }
 
     function init() {
+        var WALL_CLOSED = window.__CELEBRATE_WALL_CLOSED__ !== false;
+        if (WALL_CLOSED) {
+            var box = document.getElementById("wallUploads");
+            if (box) box.setAttribute("hidden", "");
+            window.__CELEBRATE_UPLOADS__ = {
+                collect: function () { return Promise.resolve([]); },
+                reset: function () {},
+                count: function () { return 0; },
+            };
+            return;
+        }
         bindUi();
         renderThumbs();
         updateAddBtnState();

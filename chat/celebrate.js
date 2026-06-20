@@ -419,18 +419,36 @@
 
     // ---------- 5. 故事墙 ----------
     function initWall() {
+        var WALL_CLOSED = window.__CELEBRATE_WALL_CLOSED__ !== false;
         var input = $("#wallInput");
         var counter = $("#wallCharCount");
         var submitBtn = $("#wallSubmitBtn");
         var grid = $("#wallGrid");
 
-        if (input && counter) {
+        if (WALL_CLOSED) {
+            var composer = document.querySelector(".celebrate-wall-composer");
+            if (composer) composer.setAttribute("hidden", "");
+            var wallSection = document.getElementById("wall");
+            if (wallSection) wallSection.classList.add("celebrate-wall-section--closed");
+            var sub = document.querySelector("#wall .celebrate-section-sub");
+            if (sub) sub.textContent = "满月活动已结束。以下为已通过审核的故事存档（只读）。";
+            if (!document.getElementById("wallClosedNotice")) {
+                var notice = document.createElement("p");
+                notice.id = "wallClosedNotice";
+                notice.className = "celebrate-wall-closed-notice";
+                notice.textContent = "故事墙已关闭，不再接受新故事、图片、点赞与评论。";
+                var header = document.querySelector("#wall .celebrate-section-header");
+                if (header) header.insertAdjacentElement("afterend", notice);
+            }
+        }
+
+        if (input && counter && !WALL_CLOSED) {
             input.addEventListener("input", function () {
                 counter.textContent = String(input.value.length);
             });
         }
 
-        if (submitBtn && input) {
+        if (submitBtn && input && !WALL_CLOSED) {
             submitBtn.addEventListener("click", function () {
                 var content = (input.value || "").trim();
                 if (!content) {

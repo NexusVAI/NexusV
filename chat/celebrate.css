@@ -3283,6 +3283,21 @@ html[data-theme="dark"] .celebrate-wall-card-badge {
   color: var(--cel-text);
 }
 
+.celebrate-wall-closed-notice {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  color: var(--cel-text, #e8e6e3);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.celebrate-wall-section--closed .celebrate-wall-composer {
+  display: none !important;
+}
+
 /* ------------------------------------------------------------
  * 17. Wheel modal (created by JS at runtime)
  * ------------------------------------------------------------ */

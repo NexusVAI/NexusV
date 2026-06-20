@@ -16,6 +16,7 @@
 (function () {
     "use strict";
     window.__CANCRI_WALL_V2__ = true;
+    var WALL_CLOSED = window.__CELEBRATE_WALL_CLOSED__ !== false;
 
     var SUPABASE_FUNCTIONS_BASE = ((window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz").replace(/\/+$/, "") + "/functions/v1");
     var STATS_URL = SUPABASE_FUNCTIONS_BASE + "/celebrate-stats";
@@ -172,6 +173,7 @@
     }
 
     function toggleLike(storyId) {
+        if (WALL_CLOSED) { toast("故事墙活动已结束"); return Promise.resolve(null); }
         return getAccessToken().then(function (token) {
             if (!token) { toast("请先登录后再点赞"); return null; }
             return fetch(SIGNIN_URL, {
@@ -192,6 +194,7 @@
     }
 
     function submitComment(storyId, content, displayName) {
+        if (WALL_CLOSED) { toast("故事墙活动已结束"); return Promise.resolve(null); }
         return getAccessToken().then(function (token) {
             if (!token) { toast("请先登录后再评论"); return null; }
             return fetch(SIGNIN_URL, {
@@ -262,14 +265,23 @@
                 badge +
               '</div>' +
               '<div class="celebrate-wall-card-actions">' +
-                '<button class="celebrate-wall-act' + likedClass + '" data-act="like" type="button" aria-pressed="' + (s.my_liked ? "true" : "false") + '" title="' + (s.my_liked ? "取消点赞" : "点赞") + '">' +
-                  '<span class="celebrate-wall-act-icon" aria-hidden="true">' + (s.my_liked ? "♥" : "♡") + '</span>' +
-                  '<span class="celebrate-wall-act-num" data-num="like">' + formatNum(s.like_count) + '</span>' +
-                '</button>' +
-                '<button class="celebrate-wall-act" data-act="comment" type="button" title="评论">' +
-                  '<span class="celebrate-wall-act-icon" aria-hidden="true">💬</span>' +
-                  '<span class="celebrate-wall-act-num" data-num="comment">' + formatNum(s.comment_count) + '</span>' +
-                '</button>' +
+                (WALL_CLOSED
+                  ? ('<span class="celebrate-wall-act celebrate-wall-act--readonly" title="点赞">' +
+                      '<span class="celebrate-wall-act-icon" aria-hidden="true">♥</span>' +
+                      '<span class="celebrate-wall-act-num" data-num="like">' + formatNum(s.like_count) + '</span>' +
+                    '</span>' +
+                    '<span class="celebrate-wall-act celebrate-wall-act--readonly" title="评论">' +
+                      '<span class="celebrate-wall-act-icon" aria-hidden="true">💬</span>' +
+                      '<span class="celebrate-wall-act-num" data-num="comment">' + formatNum(s.comment_count) + '</span>' +
+                    '</span>')
+                  : ('<button class="celebrate-wall-act' + likedClass + '" data-act="like" type="button" aria-pressed="' + (s.my_liked ? "true" : "false") + '" title="' + (s.my_liked ? "取消点赞" : "点赞") + '">' +
+                      '<span class="celebrate-wall-act-icon" aria-hidden="true">' + (s.my_liked ? "♥" : "♡") + '</span>' +
+                      '<span class="celebrate-wall-act-num" data-num="like">' + formatNum(s.like_count) + '</span>' +
+                    '</button>' +
+                    '<button class="celebrate-wall-act" data-act="comment" type="button" title="评论">' +
+                      '<span class="celebrate-wall-act-icon" aria-hidden="true">💬</span>' +
+                      '<span class="celebrate-wall-act-num" data-num="comment">' + formatNum(s.comment_count) + '</span>' +
+                    '</button>')) +
                 '<span class="celebrate-wall-act celebrate-wall-act--readonly" title="浏览">' +
                   '<span class="celebrate-wall-act-icon" aria-hidden="true">👁</span>' +
                   '<span class="celebrate-wall-act-num" data-num="view">' + formatNum(s.view_count) + '</span>' +

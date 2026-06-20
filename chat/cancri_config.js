@@ -5,6 +5,8 @@ window.__SUPABASE_URL__ = 'https://chat.nexusvai.xyz';
 window.__SUPABASE_ANON_KEY__ = 'neon-auth-via-cf-shim';
 window.__NEON_AUTH_URL__ = 'https://ep-autumn-hat-aonzk396.neonauth.c-2.ap-southeast-1.aws.neon.tech/neondb/auth';
 window.__NEON_DATA_API_URL__ = 'https://ep-autumn-hat-aonzk396.apirest.c-2.ap-southeast-1.aws.neon.tech/neondb/rest/v1';
+// 2026-06-20 满月故事墙活动已结束（只读存档）
+window.__CELEBRATE_WALL_CLOSED__ = true;
 // Cloudflare Turnstile site key for the Supabase Auth captcha widget.
 // Site keys are PUBLIC by design. The matching SECRET key is configured in
 // Supabase Auth (`security_captcha_secret`) and never leaves the server.
