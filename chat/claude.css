@@ -2060,6 +2060,95 @@ html[data-theme="black"] .claude-suggest:hover {
 }
 
 /* ───────────────────────────────────────────────────────────
+   7.5. CLAUDE USER MENU（左下角 #accountPopover 1:1 复刻 01_43_26）
+   - w-[17rem]=272 / min-w 128 / max-w 320
+   - rounded-card=10 / bg-surface-3 / shadow-panel
+   - 内层 p-1=4 / overflow-y-auto
+   - header px-2.5=10 py-1=4 text-footnote=12 text-muted truncate
+   - item h-control=32 px-2.5=10 gap-xs=4 text-body=14 rounded=6
+     hover/aria-highlighted → bg-fill-ghost-hover
+   - icon size-icon=20 (svg 18)
+   - separator mx-2.5=10 my-1=4 h-px bg-border
+   保留 .popover.account-popover 兜底，新增 .claude-user-menu 覆盖。 */
+.claude-user-menu {
+    width: 272px !important;
+    min-width: 128px !important;
+    max-width: 320px !important;
+    border-radius: 10px !important;
+    background: var(--c-bg-elev) !important;
+    border: 1px solid var(--c-line) !important;
+    box-shadow: 0 0 0 1px var(--c-line), 0 8px 24px rgba(0, 0, 0, 0.14) !important;
+    padding: 4px !important;
+    color: var(--c-text) !important;
+}
+.claude-user-menu-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    border-radius: inherit;
+    padding: 0;
+}
+.claude-user-menu-header {
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--c-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.claude-user-menu-item {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 6px;
+    color: var(--c-text) !important;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+    transition: background 120ms ease, color 120ms ease;
+}
+.claude-user-menu-item:hover,
+.claude-user-menu-item[data-highlighted] {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
+}
+.claude-user-menu-icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-soft);
+}
+.claude-user-menu-icon svg {
+    width: 18px;
+    height: 18px;
+}
+.claude-user-menu-label {
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.claude-user-menu-sep {
+    height: 1px;
+    margin: 4px 10px;
+    background: var(--c-line);
+}
+#clearBtn.claude-user-menu-item,
+.claude-user-menu-item#clearBtn {
+    color: #ef4444 !important;
+}
+#clearBtn.claude-user-menu-item .claude-user-menu-icon {
+    color: #ef4444;
+}
+
+/* ───────────────────────────────────────────────────────────
    8. CHAT MESSAGES — 用户右块、助手左裸
    ─────────────────────────────────────────────────────────── */
 .chat-messages {
@@ -2942,6 +3031,13 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 .claude-form-textarea:focus { border-color: var(--c-line-strong); }
 .claude-form-textarea::placeholder { color: var(--c-text-dim); }
 
+/* 2026-06-21 §B 头像模块 1:1 复刻 Claude 01_41_23：
+   - .claude-avatar-group: relative w-fit，承载 avatar btn + circle-X
+   - .claude-avatar-btn: 40x40 rounded-full overflow-hidden，hover 内层 opacity-40 blur-3 scale-1.15
+   - .claude-avatar-inner: 默认字母 / 选中时 SVG；transition duration-fast
+   - .claude-avatar-cross: pointer-events-none absolute inset-0 居中，opacity-0→100 hover
+   - .claude-avatar-clear: absolute -top-1.5 -left-1.5，18x18 rounded-full bg-popover ring-1，opacity-0→100 hover
+   保留 .claude-avatar-circle 兼容老引用（已无 DOM，但 cancri_chat.js 可能 querySelector）。 */
 .claude-avatar-circle {
     width: 36px;
     height: 36px;
@@ -2967,6 +3063,115 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+.claude-avatar-group {
+    position: relative;
+    width: fit-content;
+}
+.claude-avatar-btn {
+    position: relative;
+    display: block;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--c-bg-elev-3);
+    color: var(--c-text);
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    transition: box-shadow 120ms ease;
+}
+.claude-avatar-btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--c-bg-elev), 0 0 0 4px color-mix(in srgb, var(--c-accent) 50%, transparent);
+}
+.claude-avatar-inner {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--c-bg-elev-3);
+    color: var(--c-text);
+    font-size: 15px;
+    font-weight: 600;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    transition: opacity 120ms ease, filter 120ms ease, transform 120ms ease;
+}
+.claude-avatar-inner svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+.claude-avatar-group:hover .claude-avatar-inner,
+.claude-avatar-btn:focus-visible .claude-avatar-inner {
+    opacity: 0.4;
+    filter: blur(3px);
+    transform: scale(1.15);
+}
+.claude-avatar-cross {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--c-text-soft);
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+.claude-avatar-cross svg {
+    width: 18px;
+    height: 18px;
+}
+.claude-avatar-group:hover .claude-avatar-cross,
+.claude-avatar-btn:focus-visible .claude-avatar-cross {
+    opacity: 1;
+}
+.claude-avatar-clear {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--c-bg-elev);
+    box-shadow: 0 0 0 1px var(--c-line);
+    color: var(--c-text-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+    z-index: 2;
+}
+.claude-avatar-clear svg {
+    width: 11px;
+    height: 11px;
+}
+.claude-avatar-group:hover .claude-avatar-clear {
+    opacity: 1;
+}
+.claude-avatar-clear:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+/* 侧边栏 account-strip 头像也跟随 SVG 样式（has-style 时隐藏字母） */
+.account-strip .avatar.has-style {
+    color: transparent !important;
+    background: transparent !important;
+}
+.account-strip .avatar.has-style svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .claude-segmented {
@@ -6939,14 +7144,15 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     align-items: center !important;
     justify-content: center !important;
     padding: 16px !important;
-    background: rgba(20, 20, 18, 0.36);
+    /* 2026-06-21 对齐 Claude 01_41_23：bg-backdrop=#0006 + backdrop-blur-[2px] */
+    background: rgba(0, 0, 0, 0.375);
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     overflow: hidden !important;
-    animation: claude-settings-modal-fade 180ms ease-out;
+    animation: claude-settings-modal-fade 200ms ease-out;
 }
 html[data-theme="light"] #claudeSettingsView.active {
-    background: rgba(31, 30, 28, 0.32);
+    background: rgba(0, 0, 0, 0.375);
 }
 @keyframes claude-settings-modal-fade {
     from { opacity: 0; }
@@ -6961,6 +7167,9 @@ html[data-theme="light"] #claudeSettingsView.active {
     pointer-events: none !important;
 }
 #claudeSettingsView.active .claude-settings-page {
+    /* 2026-06-21 对齐 Claude 01_41_23：w/h calc(100vw/100vh - 2rem)、max-w 960、
+       max-h 45rem(720)、rounded-card=10、bg-surface-2、shadow-panel-sm、
+       starting scale-[0.98] opacity-0 → scale-1 opacity-1 duration-base(.2s)。 */
     width: min(960px, calc(100vw - 32px));
     height: calc(100vh - 32px);
     max-height: 720px;
@@ -6969,26 +7178,27 @@ html[data-theme="light"] #claudeSettingsView.active {
     position: relative;
     background: var(--c-bg-elev);
     border: 1px solid var(--c-line);
-    border-radius: 18px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px var(--c-line), 0 12px 32px rgba(0, 0, 0, 0.18);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     animation: claude-settings-modal-pop 200ms cubic-bezier(0.32, 0.72, 0.4, 1);
 }
 #claudeSettingsView.active .claude-settings-close-btn {
+    /* 对齐 Claude：h-control aspect-square w-control=32px，aria-label=Close */
     position: absolute;
     top: 8px;
     right: 8px;
     z-index: 200;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     pointer-events: auto !important;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
 @keyframes claude-settings-modal-pop {
-    from { transform: scale(0.96); opacity: 0; }
+    from { transform: scale(0.98); opacity: 0; }
     to   { transform: scale(1); opacity: 1; }
 }
 @keyframes claude-settings-modal-pop-out {
@@ -7009,10 +7219,12 @@ html[data-theme="light"] #claudeSettingsView.active {
     overflow: hidden !important;
 }
 #claudeSettingsView.active .claude-settings-nav {
+    /* 2026-06-21 对齐 Claude：p-md=12、bg-surface-1(浅灰)、border-alpha-2、gap-sm=8 */
     border-right: 1px solid var(--c-line);
-    padding: 14px 12px !important;
+    padding: 12px !important;
+    gap: 8px !important;
     overflow-y: auto;
-    background: color-mix(in srgb, var(--c-bg) 88%, var(--c-bg-elev));
+    background: color-mix(in srgb, var(--c-bg) 92%, var(--c-bg-elev));
     position: static !important;
     flex: 0 0 192px !important;
     width: 192px !important;
@@ -7020,6 +7232,30 @@ html[data-theme="light"] #claudeSettingsView.active {
 #claudeSettingsView.active .claude-settings-main {
     min-height: 0;
     flex: 1 1 auto;
+}
+/* 2026-06-21 对齐 Claude 01_41_23：nav item h-control=32、px-sm=8、gap-sm=8、text-body=14；
+   search h-control=32、px-sm=8；active 项 bg-alpha-2(=text 8% mix) font-medium。 */
+#claudeSettingsView.active .claude-settings-search {
+    height: 32px !important;
+    padding: 0 8px !important;
+    margin: 0 0 8px !important;
+    border-radius: 6px !important;
+}
+#claudeSettingsView.active .claude-snav-item {
+    height: 32px !important;
+    padding: 0 8px !important;
+    gap: 8px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+}
+#claudeSettingsView.active .claude-snav-item.active {
+    background: color-mix(in srgb, var(--c-text) 10%, transparent) !important;
+    color: var(--c-text) !important;
+    font-weight: 500 !important;
+}
+#claudeSettingsView.active .claude-snav-item:not(.active):hover {
+    background: var(--c-hover) !important;
+    color: var(--c-text) !important;
 }
 #claudeSettingsView.active .claude-settings-content {
     /* 2026-05-22 fix(mobile-settings-fix)：把 height:100% 换成 flex:1 1 auto + min-height:0。
@@ -7031,7 +7267,8 @@ html[data-theme="light"] #claudeSettingsView.active {
     min-width: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 8px 28px 32px !important;
+    /* 2026-06-21 对齐 Claude：px-xl=16、pb-lg=24、pt-2=8；header px-md pt-md pb-sm */
+    padding: 8px 16px 24px !important;
 }
 #claudeSettingsView.active .claude-settings-main-header {
     display: none;

@@ -2446,97 +2446,107 @@
         const sysPromptArea = document.getElementById('claudeFormSystemPrompt');
         const sysPromptCount = document.getElementById('claudeFormSystemPromptCount');
         const avatarEl = document.getElementById('claudeFormAvatar');
+        const avatarInnerEl = document.getElementById('claudeAvatarInner');
+        const avatarClearEl = document.getElementById('claudeAvatarClear');
 
-        var CUSTOM_AVATAR_KEY = 'cancri_custom_avatar_v1';
-        var customAvatarInput = null;
+        // 2026-06-21 §B：取消上传图片做头像，改仿 Claude 01_41_23 直绘 SVG 切换。
+        //   - AVATAR_STYLES_KEY 存选中索引（-1=默认字母，0..N-1=SVG 样式）
+        //   - 点击 #claudeFormAvatar 轮播 idx → idx+1，到末尾回 -1（字母）
+        //   - 点击 #claudeAvatarClear 直接回 -1
+        //   - 8 个 Claude 风格直绘：圆底 + 抽象路径，配色各异
+        var AVATAR_STYLES_KEY = 'cancri_avatar_style_idx';
+        var AVATAR_SVGS = [
+            // 0 — 苔绿圆 + 抽象卷曲路径（仿快照那一个）
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#BCD1CA"/><path d="M15.16 7.05C15.26 7.19 15.41 7.49 15.45 7.68C15.56 8.17 15.26 8.97 14.89 9.26C14.76 9.37 14.69 9.37 14.59 9.47C14.36 9.83 14.42 10.25 14.43 10.66C14.43 10.92 14.45 11.42 14.48 12.22C14.57 12.55 14.83 12.59 14.94 12.62C15.34 12.76 15.72 12.3 15.97 12.04C16.71 11.26 17.47 10.45 18.22 9.7C18.35 9.57 18.48 9.46 18.49 9.28C18.53 8.98 18.32 8.79 18.27 8.51C18.21 8.17 18.3 7.67 18.49 7.4C18.87 6.89 19.62 6.45 20.21 6.74C20.89 7.01 21.11 7.29 21.2 7.75C21.33 8.31 21.24 8.76 20.93 9.25C20.7 9.67 20.18 9.83 19.69 9.78C19.32 9.73 18.77 14.95 18.58 14.64C18.49 14.5 17.43 14.47 15.73 14.5C15.54 14.59 15.49 14.73 15.56 14.88C15.59 14.93 15.79 15.07 15.84 15.13C16.54 15.83 17.54 16.76 18.86 18.02C18.88 18.07 19.01 18.15 19.02 18.15C19.18 18.24 19.34 18.22 19.38 18.22C20.33 18.14 21.39 18.96 21.39 18.96C21.77 19.75 21.34 21 20.47 21.26C19.86 21.45 19.02 21.01 18.44 19.24C18.24 18.62 18.11 18.07 17.76 17.55C17.1 16.55 16.4 15.89 15.78 15.28C15.64 15.14 14.92 15.44 14.71 15.44C14.32 15.83 14.36 16.14 14.36 16.39C14.32 17.5 14.36 17.88 14.48 18.28C14.59 18.48 14.92 18.57 15.67 19.05C15.64 19.93 15.08 21.3 13.73 21.52C12.7 21.65 11.7 21.11 12.3 20.14C12.33 19.43 12.49 18.92 13.07 18.52C13.27 18.42 13.57 18.24 13.77 17.35C13.79 16.93 13.76 16.05 13.72 15.39C13.62 14.55 13.11 14.37 12.67 14.45C11.9 14.42 10.48 14.35 9.79 14.37C9.56 14.37 9.47 14.55 9.32 14.78C9.19 14.93 9.08 15.17 8.76 15.49C7.81 15.31 6.55 14.32 6.87 13.06C7.16 12.26 8.18 11.5 9.32 13.35C9.46 13.56 9.79 13.75 9.96 13.72C10.57 13.76 11.52 13.76 12.68 13.56C12.78 13.4 12.67 12.67 12.27 12.06C11.27 10.76 10.17 9.79 9.56 9.79C9.12 9.35 8.19 9.57 7.58 9.35C6.75 9.03 6.23 8.13 6.8 7.31C7.16 6.73 8.18 6.35 8.79 6.8C8.95 6.93 9.27 7.34 9.36 7.55C9.47 7.91 9.32 8.18 9.36 8.55C9.46 9.07 10.28 9.74 11.8 11.26C12.09 11.54 12.41 11.82 12.7 12.1C13.11 12.5 13.77 12.5 13.77 12.02C13.82 11.62 13.76 10.72 13.76 9.67C13.58 9.17 12.78 8.85 12.27 8.76C11.21 7.87 12.02 6.52 14.04 6.6C14.48 6.61 14.83 6.69 15.16 7.05Z" fill="#788C5D"/></svg>',
+            // 1 — 暖砂圆 + 流线
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#E8D9C4"/><path d="M6 18c2-4 5-6 8-6s6 2 8 6M9 9c1-1 3-1 5 0s4 1 5 0M14 6v16" stroke="#A67B5B" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>',
+            // 2 — 雾蓝圆 + 同心弧
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#C4D7E8"/><path d="M14 6a8 8 0 1 0 0.01 0M14 9.5a4.5 4.5 0 1 0 0.01 0M14 13a1 1 0 1 0 0.01 0" stroke="#5B7FA6" stroke-width="1.5" fill="none"/></svg>',
+            // 3 — 粉陶圆 + 花瓣
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#E8C4D0"/><path d="M14 7c1.5 2 1.5 4 0 6-1.5-2-1.5-4 0-6M14 15c1.5 2 1.5 4 0 6-1.5-2-1.5-4 0-6M7 14c2-1.5 4-1.5 6 0-2 1.5-4 1.5-6 0M15 14c2-1.5 4-1.5 6 0-2 1.5-4 1.5-6 0" fill="#A65B7A"/></svg>',
+            // 4 — 鼠尾草绿圆 + 山脊
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#C9D4BC"/><path d="M4 20l5-7 4 5 3-4 8 6z" fill="#5F7A4A"/></svg>',
+            // 5 — 暮紫圆 + 星轨
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#D4C4E8"/><path d="M14 5l1.5 5.5L21 12l-5.5 1.5L14 19l-1.5-5.5L7 12l5.5-1.5z" fill="#6B5BA6"/></svg>',
+            // 6 — 陶土圆 + 涡卷
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#E8D0BC"/><path d="M14 8c3 0 5 2 5 5s-2 5-5 5-5-2-5-5c0-1 1-2 2-2s2 1 2 2" stroke="#A6684A" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>',
+            // 7 — 青灰圆 + 网格
+            '<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="14" fill="#C4D0D4"/><path d="M9 9h10v10H9zM14 9v10M9 14h10" stroke="#4A6B73" stroke-width="1.4" fill="none"/></svg>'
+        ];
 
-        function loadCustomAvatarDataUrl() {
+        function loadAvatarStyleIdx() {
             try {
-                return localStorage.getItem(CUSTOM_AVATAR_KEY) || '';
+                var raw = localStorage.getItem(AVATAR_STYLES_KEY);
+                if (raw === null || raw === '') return -1;
+                var n = parseInt(raw, 10);
+                if (isNaN(n)) return -1;
+                if (n < -1) n = -1;
+                if (n >= AVATAR_SVGS.length) n = AVATAR_SVGS.length - 1;
+                return n;
             } catch (_e) {
-                return '';
+                return -1;
             }
         }
 
-        function saveCustomAvatarDataUrl(dataUrl) {
+        function saveAvatarStyleIdx(idx) {
             try {
-                if (dataUrl) localStorage.setItem(CUSTOM_AVATAR_KEY, dataUrl);
-                else localStorage.removeItem(CUSTOM_AVATAR_KEY);
+                if (idx < 0) localStorage.removeItem(AVATAR_STYLES_KEY);
+                else localStorage.setItem(AVATAR_STYLES_KEY, String(idx));
             } catch (_e) {}
         }
 
-        function applyCustomAvatarToElement(el, dataUrl) {
+        function applyAvatarStyleToElement(el, idx) {
             if (!el) return;
-            if (dataUrl) {
-                el.classList.add('has-custom-image');
-                el.style.backgroundImage = 'url("' + dataUrl.replace(/"/g, '%22') + '")';
-                el.textContent = '';
+            if (idx >= 0 && idx < AVATAR_SVGS.length) {
+                el.classList.add('has-style');
+                el.classList.remove('has-custom-image');
+                el.style.backgroundImage = '';
+                el.innerHTML = AVATAR_SVGS[idx];
             } else {
+                el.classList.remove('has-style');
                 el.classList.remove('has-custom-image');
                 el.style.backgroundImage = '';
             }
         }
 
-        function applyCustomAvatar(dataUrl) {
-            applyCustomAvatarToElement(document.querySelector('.account-strip .avatar'), dataUrl);
-            applyCustomAvatarToElement(avatarEl, dataUrl);
+        function applyAvatarStyle(idx) {
+            applyAvatarStyleToElement(avatarInnerEl, idx);
+            applyAvatarStyleToElement(document.querySelector('.account-strip .avatar'), idx);
         }
 
-        function clearCustomAvatar() {
-            saveCustomAvatarDataUrl('');
-            applyCustomAvatar('');
+        function clearAvatarStyle() {
+            saveAvatarStyleIdx(-1);
+            applyAvatarStyle(-1);
             refreshAvatar();
         }
 
-        function bindCustomAvatarUpload() {
-            if (!avatarEl) return;
-            customAvatarInput = document.createElement('input');
-            customAvatarInput.type = 'file';
-            customAvatarInput.accept = 'image/png,image/jpeg,image/webp,image/gif';
-            customAvatarInput.hidden = true;
-            document.body.appendChild(customAvatarInput);
-
-            avatarEl.setAttribute('role', 'button');
-            avatarEl.setAttribute('tabindex', '0');
-            avatarEl.setAttribute('title', '点击更换头像（保存在本地浏览器）');
-
-            function openPicker() {
-                customAvatarInput.value = '';
-                customAvatarInput.click();
+        function bindAvatarSwitch() {
+            if (avatarEl) {
+                avatarEl.setAttribute('title', '点击切换头像样式（保存在本地浏览器）');
+                avatarEl.addEventListener('click', function (e) {
+                    // 防止点到 clear 按钮时也触发
+                    if (e.target.closest('#claudeAvatarClear')) return;
+                    var idx = loadAvatarStyleIdx();
+                    idx = idx + 1;
+                    if (idx >= AVATAR_SVGS.length) idx = -1; // 到末尾回字母
+                    saveAvatarStyleIdx(idx);
+                    applyAvatarStyle(idx);
+                    if (idx < 0) refreshAvatar();
+                });
             }
-
-            avatarEl.addEventListener('click', function () {
-                openPicker();
-            });
-            avatarEl.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openPicker();
-                }
-            });
-
-            customAvatarInput.addEventListener('change', function () {
-                var file = customAvatarInput.files && customAvatarInput.files[0];
-                if (!file) return;
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('头像图片请小于 2MB');
-                    return;
-                }
-                var reader = new FileReader();
-                reader.onload = function () {
-                    var dataUrl = String(reader.result || '');
-                    if (!dataUrl) return;
-                    saveCustomAvatarDataUrl(dataUrl);
-                    applyCustomAvatar(dataUrl);
-                };
-                reader.readAsDataURL(file);
-            });
+            if (avatarClearEl) {
+                avatarClearEl.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    clearAvatarStyle();
+                });
+            }
         }
 
+        // 兼容老 API（cancri_chat.js 可能调用 CancriCustomAvatar.clear）
         window.CancriCustomAvatar = {
-            load: loadCustomAvatarDataUrl,
-            apply: applyCustomAvatar,
-            clear: clearCustomAvatar
+            load: function () { return loadAvatarStyleIdx() >= 0 ? 'style' : ''; },
+            apply: function () { applyAvatarStyle(loadAvatarStyleIdx()); },
+            clear: clearAvatarStyle
         };
 
         // ─── 工具：取首字母初始作为头像兜底 ───
@@ -2554,19 +2564,23 @@
         }
 
         function refreshAvatar() {
-            var custom = loadCustomAvatarDataUrl();
-            if (custom) {
-                applyCustomAvatar(custom);
+            var idx = loadAvatarStyleIdx();
+            if (idx >= 0) {
+                applyAvatarStyle(idx);
                 return;
             }
-            if (avatarEl) avatarEl.textContent = pickAvatarInitial();
-            // 同步顶层 .account-strip .avatar（cancri_chat.js 也写它，但用户改了
-            // 全名 / 昵称之后那边不主动刷新，这里兜底）。
+            // 字母兜底
+            if (avatarInnerEl) {
+                avatarInnerEl.classList.remove('has-style');
+                avatarInnerEl.style.backgroundImage = '';
+                avatarInnerEl.textContent = pickAvatarInitial();
+            }
+            // 同步顶层 .account-strip .avatar
             const stripAvatar = document.querySelector('.account-strip .avatar');
-            if (stripAvatar) {
-                if (!stripAvatar.classList.contains('has-custom-image')) {
-                    stripAvatar.textContent = pickAvatarInitial();
-                }
+            if (stripAvatar && !stripAvatar.classList.contains('has-style')) {
+                stripAvatar.classList.remove('has-style');
+                stripAvatar.style.backgroundImage = '';
+                stripAvatar.textContent = pickAvatarInitial();
             }
         }
 
@@ -2739,7 +2753,7 @@
 
         // 初始化一次：state 在 cancri_chat.js 顶层已 restore + applyTheme，
         // 这时表单第一次显示时填进去。
-        bindCustomAvatarUpload();
+        bindAvatarSwitch();
         populateOverviewForm();
         populateCapabilitiesForm();
 
