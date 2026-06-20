@@ -4483,6 +4483,8 @@
 		if (window.NexusLoginCaptcha?.suspend) try {
 			window.NexusLoginCaptcha.suspend();
 		} catch (_e) {}
+		window.scrollTo(0, 0);
+		if (overlay) overlay.scrollTop = 0;
 		initSessionNavRestore();
 	}
 	function updateAccountInfo(user) {
@@ -4509,7 +4511,18 @@
 		authSessionInflight = (async () => {
 			try {
 				const { data: sessionData, error: sessionError } = await getSupabaseClient().auth.getSession();
-				if (sessionError) throw sessionError;
+				if (sessionError) {
+					const errText = String(sessionError.message || sessionError.error_description || sessionError);
+					if (/invalid.?grant|invalid refresh token|refresh.?token/i.test(errText)) {
+						try { localStorage.removeItem("cancri_supabase_auth"); } catch (_) {}
+						try { await getSupabaseClient().auth.signOut({ scope: "local" }); } catch (_) {}
+						authSessionPromise = null;
+						authInitialized = false;
+						showAuthOverlay();
+						throw new Error("登录已过期，请重新验证码登录。");
+					}
+					throw sessionError;
+				}
 				if (sessionData?.session?.access_token) {
 					const user = sessionData.session.user;
 					updateAccountInfo(user);
