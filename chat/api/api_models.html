@@ -1,0 +1,1312 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-models-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）　-->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>模型广场 · Cancri 开放平台</title>
+    <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+    <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
+    <link rel="preload" as="image" href="../Logo/Cancri.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://chat.nexusvai.xyz" crossorigin />
+    <link rel="dns-prefetch" href="https://chat.nexusvai.xyz" />
+    <script src="./cancri_config.js?v=2026-06-04-cf"></script>
+    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
+    <script src="./api/api-platform.js?v=20260607-account-fix"></script>
+    <!-- Cancri 双主预logo 同步 -->
+    <script src="./cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
+    <style>
+      /* ─────────────────────────────────────────────────────────────────
+         模型广场！026-05-17 重构！
+         - 字体：Anthropic Serif 用于标题 + 卡片名；Anthropic Sans
+                 甜api-platform.css 全局已注册，body 继承即可
+         - 双主题：暗主题（默认！ 浅主题，浅主题跟 api-platform.css 的
+                   [data-theme="light"] 联动
+         - 档位：仅 FREE / PAID 两档，色相分别用 ink-2（中性）和clay
+                 （Anthropic 招牌橘），让 PAID 在卡海里自然脱颖而出
+         - 卡片：圆见16px、subtle hover-lift、specs 用细分隔条不再用框
+         ───────────────────────────────────────────────────────────── */
+
+      /* @font-face: Anthropic Serif Roman + Italic
+         Anthropic Sans 已经圆api/api-platform.css 注册，所以这里只行Serif　
+         路径相对 HTML 文件本身（chat/api_models.html ←./fonts/）　*/
+      @font-face {
+        font-family: "Anthropic Serif";
+        src: url("./fonts/AnthropicSerif-Roman-Variable.ttf") format("truetype");
+        font-weight: 100 900;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Anthropic Serif";
+        src: url("./fonts/AnthropicSerif-Italic-Variable.ttf") format("truetype");
+        font-weight: 100 900;
+        font-style: italic;
+        font-display: swap;
+      }
+
+      :root {
+        --c-serif:
+          "Anthropic Serif", "Source Serif 4", "Source Serif Pro",
+          "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+      }
+
+      /* ── 页面 hero ─────────────────────────────────────────────── */
+      .page-shell > header.models-hero {
+        margin: 0 0 28px;
+      }
+      .models-hero__eyebrow {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+      .models-hero h1 {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 44px;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+        color: var(--text);
+        margin: 0 0 12px;
+      }
+      .models-hero p.lede {
+        font-size: 15px;
+        line-height: 1.55;
+        color: var(--text-mute);
+        max-width: 60ch;
+      }
+
+      /* ── stats 条：放在 hero 下面！ 个圆角小十──────────────── */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .stats__item {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .stats__num {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 28px;
+        line-height: 1;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .stats__label {
+        font-size: 12px;
+        color: var(--text-mute);
+        letter-spacing: 0.02em;
+      }
+      @media (max-width: 720px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      /* ── toolbar：搜素+ 两组 segmented filter ────────────────── */
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding: 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
+      .search {
+        flex: 1 1 260px;
+        min-width: 200px;
+        padding: 10px 14px;
+        background: var(--bg-input, var(--bg-elev));
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        font-size: 13px;
+        font-family: inherit;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .search::placeholder {
+        color: var(--text-faint);
+      }
+      .search:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: var(--bg-card);
+      }
+      .filter-group {
+        position: relative;
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      .filter-slider {
+        position: absolute;
+        top: 3px;
+        left: 0;
+        height: calc(100% - 6px);
+        border-radius: 7px;
+        background: var(--bg-card);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+        pointer-events: none;
+        z-index: 0;
+        transition:
+          transform 0.32s cubic-bezier(0.33, 1, 0.68, 1),
+          width 0.32s cubic-bezier(0.33, 1, 0.68, 1);
+        will-change: transform, width;
+      }
+      .filter-btn {
+        position: relative;
+        z-index: 1;
+        appearance: none;
+        background: transparent;
+        border: 0;
+        color: var(--text-mute);
+        padding: 7px 14px;
+        border-radius: 7px;
+        font-size: 12.5px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color 0.2s ease;
+      }
+      .filter-btn:hover {
+        color: var(--text);
+      }
+      .filter-btn.active {
+        color: var(--text);
+      }
+
+      /* ── 品牌筛选 chip 行────────────────────────────────────────
+         独立成块，放圆toolbar 一grid 之间。chip 可换行、可横向滚到！
+         每个 chip = [logo] + [name] + [count]；active 态用 clay 描边
+         区分（不用实心fill 避免跃PAID badge 视觉撞）　*/
+      .brand-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+        padding: 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        min-height: 60px;
+      }
+      .brand-chip {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px 6px 6px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 500;
+        line-height: 1.2;
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease,
+          transform 0.15s ease;
+      }
+      .brand-chip:hover {
+        border-color: var(--border-strong);
+        transform: translateY(-1px);
+      }
+      .brand-chip.is-active {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+        box-shadow: 0 0 0 1px var(--accent) inset;
+      }
+      .brand-chip .card-logo {
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        background: transparent;
+        border: 0;
+      }
+      .brand-chip .card-logo img {
+        width: 18px;
+        height: 18px;
+      }
+      .brand-chip .card-logo--fallback {
+        font-size: 13px;
+      }
+      .brand-chip-all {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .brand-chip-name {
+        white-space: nowrap;
+      }
+      .brand-chip-count {
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: var(--bg-card);
+        color: var(--text-mute);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+      }
+      .brand-chip.is-active .brand-chip-count {
+        background: var(--accent);
+        color: var(--cream, #f5f4ed);
+      }
+      :root[data-theme="light"] .brand-chip.is-active .brand-chip-count {
+        color: #fffaf2;
+      }
+
+      /* ── 模型 grid：外局stage 控高 + 动画，内局wrap 滚动，fade 贝stage 庆── */
+      .grid-stage {
+        position: relative;
+        overflow: hidden;
+      }
+      .grid-stage.is-animating {
+        transition: height 0.62s cubic-bezier(0.33, 1, 0.68, 1);
+        will-change: height;
+      }
+      .grid-scroll-wrap {
+        overflow-y: visible;
+      }
+      .grid-stage.is-collapsed .grid-scroll-wrap,
+      .grid-stage.is-expanded .grid-scroll-wrap {
+        height: 100%;
+      }
+      .grid-stage.is-collapsed .grid-scroll-wrap {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
+      .grid-stage.is-expanded .grid-scroll-wrap {
+        overflow-y: visible;
+      }
+      .grid-scroll-fade {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 140px;
+        pointer-events: none;
+        z-index: 3;
+        opacity: 0;
+        transition: opacity 0.35s ease;
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0) 0%,
+          var(--bg) 82%,
+          var(--bg) 100%
+        );
+      }
+      @supports (background: color-mix(in srgb, white 50%, transparent)) {
+        .grid-scroll-fade {
+          background: linear-gradient(
+            180deg,
+            transparent 0%,
+            color-mix(in srgb, var(--bg) 10%, transparent) 16%,
+            color-mix(in srgb, var(--bg) 52%, transparent) 46%,
+            color-mix(in srgb, var(--bg) 88%, transparent) 74%,
+            var(--bg) 100%
+          );
+        }
+      }
+      .grid-stage.is-collapsed:not(.is-scrolled-end) .grid-scroll-fade,
+      .grid-stage.is-animating.is-expanding .grid-scroll-fade,
+      .grid-stage.is-animating.is-collapsing .grid-scroll-fade {
+        opacity: 1;
+      }
+      .grid-stage.is-animating.is-expanding .grid-scroll-fade {
+        transition: opacity 0.42s ease 0.18s;
+      }
+      .grid-stage.is-expanded:not(.is-animating) .grid-scroll-fade {
+        opacity: 0;
+      }
+      .grid-expand-btn {
+        display: block;
+        width: 100%;
+        max-width: 280px;
+        margin: 8px auto 28px;
+        padding: 10px 18px;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: var(--bg-card);
+        color: var(--text);
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s,
+          color 0.15s,
+          transform 0.2s ease;
+      }
+      .grid-expand-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .grid-expand-btn:active {
+        transform: scale(0.98);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .grid-stage,
+        .grid-scroll-fade,
+        .filter-slider {
+          transition: none;
+        }
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        position: relative;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px 18px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition:
+          border-color 0.18s ease;
+      }
+      .card:hover {
+        border-color: var(--border-strong);
+      }
+      .card.is-disabled {
+        opacity: 0.58;
+        border-color: color-mix(in srgb, var(--err) 35%, var(--border));
+      }
+      .card.is-disabled:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      .card.is-disabled .card-name,
+      .card.is-disabled .card-id {
+        text-decoration: line-through;
+      }
+      /* 左侧描边已移除，改为标签显示 */
+      .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .card-head-text {
+        min-width: 110px;
+        flex: 1;
+      }
+      /* badge 子容器：多个 badge（PAID/30×/PRO+/FREE不可用）打包在一起，
+         换行时整体换行而非散成竖列　*/
+      .card-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+        align-items: center;
+        flex-shrink: 1;
+        min-width: 0;
+        max-width: 55%;
+      }
+      .card-name {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 18px;
+        line-height: 1.2;
+        letter-spacing: -0.005em;
+        color: var(--text);
+      }
+      /* brand sub-title：放圆name 下、id 上。Sans 字体、mute 色、稍小，
+         逻辑上跟 logo 互补，跟 model id（小内mono）也有清晰层级差　*/
+      .card-brand {
+        margin-top: 2px;
+        font-size: 12px;
+        line-height: 1.2;
+        color: var(--text-mute);
+        font-weight: 500;
+      }
+      .card-id {
+        margin-top: 4px;
+        font-family: var(--mono, ui-monospace, "SF Mono", Consolas, monospace);
+        font-size: 11.5px;
+        color: var(--text-faint);
+        word-break: break-all;
+      }
+      .card-desc {
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--text-mute);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* ── card-logo！6×36 圆角小盒装品片SVG ───────────────────
+         所最SVG 来自 chat/ 根（claude-color.svg / openai.svg / gemini-color.svg
+         …），由 api-models-app.js 的BRAND_LOGO 反查。SVG 内部尺寸不一！
+         统一外盒 + object-fit:contain 让所最logo 视觉占位等大。fallback
+         版（cancri / happyhorse 等未收录品牌）展示品牌首字母　*/
+      .card-logo {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .card-logo img {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        display: block;
+      }
+      html[data-theme="light"] .card-logo img.model-icon-theme-adaptive {
+        filter: brightness(0);
+      }
+      html:not([data-theme="light"]) .card-logo img.model-icon-theme-adaptive {
+        filter: brightness(0) invert(1);
+      }
+      .card-logo--fallback {
+        font-family: var(--c-serif);
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--accent);
+      }
+
+      /* ── tier badge：FREE = 中性、PAID = clay 描边 ────────────── */
+      .tier {
+        flex-shrink: 0;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        padding: 4px 9px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .tier-free {
+        background: var(--bg-elev);
+        color: var(--text-mute);
+        border: 1px solid var(--border);
+      }
+      .tier-paid {
+        background: var(--accent);
+        color: var(--cream, #f5f4ed);
+        border: 1px solid var(--accent);
+      }
+      :root[data-theme="light"] .tier-paid {
+        color: #fffaf2;
+      }
+      /* 2026-05-24: 福利框badge  clay/amber 描边色，区分 FREE（中性）
+         和PAID（实心accent）。welfare 模型免费，但最per-user 并发 1 +
+         全局 100 RPM 上限；视觉上是「限量」语义　*/
+      .tier-welfare {
+        background: color-mix(in srgb, #d4a04d 16%, transparent);
+        color: #d4a04d;
+        border: 1px solid color-mix(in srgb, #d4a04d 40%, transparent);
+      }
+      /* 福利卡片左侧描边已移除，改为标签显示 */
+      .tier-disabled {
+        background: color-mix(in srgb, var(--err) 14%, transparent);
+        color: var(--err);
+        border: 1px solid color-mix(in srgb, var(--err) 36%, transparent);
+      }
+
+      /* ── meta badges ──────────────────────────────────────────── */
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 11px;
+      }
+      .badge {
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        padding: 3px 8px;
+        border-radius: 999px;
+        color: var(--text-mute);
+        line-height: 1.4;
+      }
+      .badge.brand {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .badge.cap {
+        color: var(--accent);
+        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+      .badge-disabled {
+        color: var(--err);
+        border-color: color-mix(in srgb, var(--err) 35%, transparent);
+        background: color-mix(in srgb, var(--err) 8%, transparent);
+      }
+
+      /* ── specs：极简两栏，输兀/ 输出 ─────────────────────────── */
+      .specs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 11.5px;
+      }
+      .spec {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .spec + .spec {
+        padding-left: 12px;
+        border-left: 1px solid var(--border);
+        margin-left: 12px;
+      }
+      .spec-key {
+        color: var(--text-faint);
+      }
+      .spec b {
+        color: var(--text);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ── 复制按钮 ─────────────────────────────────────────────── */
+      .copy-btn {
+        margin-top: 2px;
+        padding: 8px 12px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        color: var(--text-mute);
+        font-size: 11.5px;
+        font-weight: 500;
+        font-family: inherit;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .copy-btn:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+        background: var(--bg-card);
+      }
+      .copy-btn.copied {
+        color: var(--accent);
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+
+      /* ── 状态/ 究/ 错误 ──────────────────────────────────────── */
+      .empty,
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-mute);
+        font-size: 14px;
+      }
+      .err-box {
+        background: color-mix(in srgb, var(--err) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--err) 35%, transparent);
+        color: var(--err);
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+
+      /* ── legend：两档说明─────────────────────────────────────── */
+      .legend {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        align-items: center;
+        font-size: 12px;
+        color: var(--text-mute);
+        padding: 14px 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin-top: 24px;
+      }
+      .legend-title {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* ── 模型卡片右侧抽屉 (2026-05-22 新增) ───────────────────────
+         点击卡片任意位置（不吃.copy-btn）后从右侧滑入。包含：
+           1) 模型 head：logo / name / brand / id + tier/multiplier badges
+           2) 定价倍率：大字号显示 multiplier × + 解释
+           3) 近期状态：成功率/ 平均延迟 / 请求数 + 24h sparkline（来自
+              chat-gateway model_health 端点！
+           4) 调用代码：curl / Node.js / Python tab + 复制；自动从
+              sessionStorage('cancri_recent_api_key') 读取最近一次在 Keys
+              页生成的完整 Key（仅当前会话有效），未有则留 cancri_sk_YOUR_KEY
+              占位符　*/
+      .model-drawer[hidden] { display: none; }
+      .model-drawer {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: block;
+        pointer-events: none;
+      }
+      .model-drawer__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(8, 8, 8, 0.42);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        transition: opacity 0.22s ease;
+        pointer-events: auto;
+      }
+      .model-drawer.is-open .model-drawer__backdrop { opacity: 1; }
+      .model-drawer__panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: min(560px, calc(100vw - 24px));
+        background: var(--bg);
+        border-left: 1px solid var(--border);
+        box-shadow: -28px 0 80px rgba(0, 0, 0, 0.32);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transform: translateX(102%);
+        transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
+        pointer-events: auto;
+        font-family: var(--sans);
+      }
+      :root[data-theme="light"] .model-drawer__panel {
+        box-shadow: -22px 0 60px rgba(82, 55, 38, 0.18);
+        background: #fffdf8;
+      }
+      .model-drawer.is-open .model-drawer__panel { transform: translateX(0); }
+
+      .model-drawer__head {
+        position: relative;
+        padding: 22px 22px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: var(--bg-card);
+      }
+      .model-drawer__close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        color: var(--text-mute);
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s, background 0.15s, border-color 0.15s;
+      }
+      .model-drawer__close:hover {
+        color: var(--text);
+        border-color: var(--border-strong);
+        background: var(--bg-card);
+      }
+      .model-drawer__close svg { width: 14px; height: 14px; }
+
+      .model-drawer__head-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-right: 40px;
+      }
+      .model-drawer__head-row .card-logo {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+      }
+      .model-drawer__head-row .card-logo img {
+        width: 28px;
+        height: 28px;
+      }
+      .model-drawer__head-text {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .model-drawer__head-text h3 {
+        margin: 0;
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 22px;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        color: var(--text);
+      }
+      .model-drawer__head-text p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.3;
+      }
+      .model-drawer__head-text code {
+        margin-top: 2px;
+        font-family: var(--mono, ui-monospace, "SF Mono", Consolas, monospace);
+        font-size: 11.5px;
+        color: var(--text-faint);
+        word-break: break-all;
+        background: transparent;
+        padding: 0;
+      }
+      .model-drawer__badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .model-drawer__body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 18px 22px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .drawer-section h4 {
+        margin: 0 0 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+      }
+
+      /* 定价 */
+      .drawer-pricing {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
+      .drawer-pricing-num {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 36px;
+        line-height: 1;
+        color: var(--accent);
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        flex-shrink: 0;
+      }
+      .drawer-pricing-text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .drawer-pricing-tier {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+      }
+      .drawer-pricing-explain {
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.5;
+      }
+      .drawer-pricing-explain code {
+        font-family: var(--mono, ui-monospace, monospace);
+        font-size: 11.5px;
+        background: var(--bg-elev);
+        padding: 1px 5px;
+        border-radius: 4px;
+        color: var(--accent);
+      }
+
+      /* 状态*/
+      .drawer-status-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .drawer-stat {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .drawer-stat-num {
+        font-family: var(--c-serif);
+        font-weight: 400;
+        font-size: 22px;
+        line-height: 1;
+        color: var(--text);
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+      }
+      .drawer-stat-num[data-state="good"] { color: var(--ok); }
+      .drawer-stat-num[data-state="warn"] { color: var(--warn); }
+      .drawer-stat-num[data-state="bad"] { color: var(--err); }
+      .drawer-stat-label {
+        font-size: 11px;
+        color: var(--text-mute);
+      }
+      .drawer-spark {
+        width: 100%;
+        height: 64px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px;
+        display: block;
+      }
+      .drawer-spark-bar { fill: var(--accent); }
+      .drawer-spark-bar--down { fill: var(--err); opacity: 0.7; }
+      .drawer-status-hint {
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.5;
+        margin-top: 8px;
+      }
+      .drawer-status-hint--err {
+        color: var(--err);
+      }
+
+      /* 调用代码 */
+      .drawer-code-tabs {
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--bg-elev);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+      .drawer-code-tab {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        color: var(--text-mute);
+        padding: 6px 12px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .drawer-code-tab:hover { color: var(--text); }
+      .drawer-code-tab.is-active {
+        background: var(--bg-card);
+        color: var(--text);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+      }
+      .drawer-code-wrap {
+        position: relative;
+        background: #0d0d0d;
+        border: 1px solid #1f1f1f;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      :root[data-theme="light"] .drawer-code-wrap {
+        background: #1c1c1a;
+        border-color: #2a2a26;
+      }
+      .drawer-code {
+        margin: 0;
+        padding: 14px 16px 14px 16px;
+        font-family: var(--mono, ui-monospace, "SF Mono", Consolas, monospace);
+        font-size: 12.5px;
+        line-height: 1.65;
+        color: #e3e2dc;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .drawer-code-copy {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #e3e2dc;
+        font-size: 11.5px;
+        font-family: inherit;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .drawer-code-copy:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      .drawer-code-copy.is-copied {
+        color: var(--ok);
+        border-color: rgba(74, 222, 128, 0.4);
+      }
+      .drawer-code-hint {
+        margin: 8px 0 0;
+        font-size: 11.5px;
+        color: var(--text-faint);
+        line-height: 1.55;
+      }
+      .drawer-code-hint a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .drawer-code-hint a:hover { text-decoration: underline; }
+
+      @media (max-width: 720px) {
+        .model-drawer__panel { width: 100vw; border-left: none; }
+        .model-drawer__head { padding: 18px 18px 14px; }
+        .model-drawer__body { padding: 14px 18px 24px; }
+        .drawer-status-grid { grid-template-columns: 1fr 1fr; }
+      }
+
+      /* 让卡片整体可点（提示性指针），但 .copy-btn 内仍按按钮反馈处球*/
+      .grid .card { cursor: pointer; }
+      .grid .card.is-disabled { cursor: not-allowed; }
+      .grid .card .copy-btn { cursor: copy; }
+
+      /* ── footer note：API 调用提示 ────────────────────────────── */
+      .footer-note {
+        margin-top: 24px;
+        padding: 18px 20px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        font-size: 13.5px;
+        color: var(--text-mute);
+        line-height: 1.65;
+      }
+      .footer-note strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .footer-note code {
+        font-family: var(--mono, ui-monospace, "SF Mono", Consolas, monospace);
+        background: var(--bg-elev);
+        padding: 2px 8px;
+        border-radius: 6px;
+        color: var(--accent);
+        font-size: 12.5px;
+      }
+      .footer-note a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .footer-note a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+          <img
+            class="brand__logo cancri-logo"
+            src="../Logo/Cancri1.jpg"
+            data-dark-src="../Logo/Cancri1.jpg"
+            data-light-src="../Logo/Cancri.png"
+            alt="Cancri"
+            width="28"
+            height="28"
+          />
+        </a>
+        <nav class="topnav" aria-label="开放平台导航">
+          <a href="./api/">概览</a>
+          <a href="./api_apply.html">申请</a>
+          <a href="./api_keys.html">Keys</a>
+          <a href="./api_models.html" class="is-active">模型</a>
+          <a href="./api_docs.html">文档</a>
+          <a href="./pricing.html">套餐</a>
+          <a href="./orders.html">我的订单</a>
+          <a href="./" class="topnav__back">←返回聊天</a>
+        </nav>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
+          <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-toggle__black" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-shell" style="max-width: 1080px;">
+      <header class="models-hero">
+        <div class="models-hero__eyebrow">Models</div>
+        <h1>模型广场</h1>
+        <p class="lede">
+          Cancri API 当前可用的全部公开模型。双协议兼容、一一Key
+          调通全场。<strong style="color: var(--text); font-weight: 500">免费 / 付费</strong>
+          两档划分，点净model ID 即可复制　
+        </p>
+      </header>
+
+      <!-- 2026-06-18 618 大促正式开吃-->
+      <div style="max-width:1080px;margin:0 auto 20px;padding:14px 20px;border-radius:10px;background:linear-gradient(135deg,rgba(255,120,50,.15),rgba(255,60,30,.08));border:1px solid rgba(255,120,50,.3);color:var(--ink,#ededec);font-size:14px;line-height:1.7;">
+        <strong>🛒 618 大促正式开吃</strong><br>
+        6/18 /20 订阅限时折扣：Pro <strong>6.18 技¥6.12</strong> · Pro+ <strong>7 技¥20.30</strong> · Pro Max <strong>8 技¥79.20</strong><br>
+        【特价】旗舰模型持续在售：Claude Opus 4.7 · GPT-5.5 什3× 倍率，Pro+ 用户专享 🎁
+      </div>
+
+      <div id="error" class="err-box" style="display: none"></div>
+
+      <!-- stats 按需求：总数 / 免费 / 付费 / 思考。原 聊天 / 图像 计数一
+           二档化后的价值走向不再匹配　-->
+      <section class="stats" id="stats" aria-label="模型总览">
+        <div class="stats__item">
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="total" style="min-width:48px;min-height:28px">&nbsp;</div>
+          <div class="stats__label">总模型数</div>
+        </div>
+        <div class="stats__item">
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="ct-free" style="min-width:48px;min-height:28px">&nbsp;</div>
+          <div class="stats__label">FREE 免费</div>
+        </div>
+        <div class="stats__item">
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="ct-paid" style="min-width:48px;min-height:28px">&nbsp;</div>
+          <div class="stats__label">PAID 付费</div>
+        </div>
+        <div class="stats__item">
+          <div class="stats__num platform-skeleton-block platform-skeleton-shimmer" id="ct-thinking" style="min-width:48px;min-height:28px">&nbsp;</div>
+          <div class="stats__label">支持思考</div>
+        </div>
+      </section>
+
+      <!-- toolbar：搜素+ 两组 segmented filter　
+           - capFilter：能力维度（聊天 / 多模态 / 思考）；以 原「图像　
+             按钮下接后端 catalog 里的 m.image。用成2026-05-17 指定移除了
+             grok-imagine-image-lite / gpt-image-2 后，广场里现阶段无图像生成
+             模型，但按钮保留以便后续上架　
+           - tierFilter：仅 all / free / paid 三选项（二档化）　-->
+      <div class="toolbar">
+        <input
+          class="search"
+          id="search"
+          type="search"
+          placeholder="搜索模型 ID、名称或品牌"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="filter-group" id="capFilter" role="group" aria-label="能力筛选">
+          <span class="filter-slider" aria-hidden="true"></span>
+          <button class="filter-btn active" type="button" data-cap="all">全部</button>
+          <button class="filter-btn" type="button" data-cap="chat">聊天</button>
+          <button class="filter-btn" type="button" data-cap="multimodal">多模态</button>
+          <button class="filter-btn" type="button" data-cap="thinking">思考</button>
+        </div>
+        <div class="filter-group" id="tierFilter" role="group" aria-label="档位筛选">
+          <span class="filter-slider" aria-hidden="true"></span>
+          <button class="filter-btn active" type="button" data-tier="all">全部</button>
+          <button class="filter-btn" type="button" data-tier="free">FREE</button>
+          <button class="filter-btn" type="button" data-tier="welfare">福利</button>
+          <button class="filter-btn" type="button" data-tier="paid">PAID</button>
+        </div>
+      </div>
+
+      <!-- 品牌筛选行：api-models-app.js 加载后扫 distinct brand 动态填充，
+           按模型数降序，默认选中「全部品牌」。所以初始招仅作占位
+           不填入文本　-->
+      <div id="brandFilter" class="brand-filter" role="group" aria-label="按品牌筛选"></div>
+
+      <div id="loading" class="loading" data-platform-skeleton="model-grid" aria-busy="true"></div>
+      <div id="empty" class="empty" style="display: none">没有匹配的模型</div>
+      <div class="grid-stage" id="gridStage">
+        <div class="grid-scroll-wrap" id="gridScrollWrap">
+          <div id="grid" class="grid" style="display: none"></div>
+        </div>
+        <div class="grid-scroll-fade" id="gridScrollFade" aria-hidden="true"></div>
+      </div>
+      <button
+        type="button"
+        class="grid-expand-btn"
+        id="gridExpandBtn"
+        hidden
+        aria-expanded="false"
+      >展开全部</button>
+
+      <!-- legend：两档说明。重复使甜.tier badge 同样的外观，保证语义一致　
+           2026-05-17 Phase A：FREE 用户每日 15 次PAID 试用 + 1了月共享池！
+           PAID 用户持plan_code (pro/pro_plus/pro_max) 各自月度配额　-->
+      <div class="legend">
+        <span class="legend-title">档位说明</span>
+        <span class="legend-item">
+          <span class="tier tier-free">FREE</span>
+          所有用户免费使用，受免费档限速（10 RPM / 60 RPH / 1000 RPD，并参2 路）　
+        </span>
+        <span class="legend-item">
+          <span class="tier tier-welfare">福利</span>
+          限量福利档：所有用户免费使用，但每用户同时只能跃1 个福利请求（付费用户绕过），且全站每分钟合计 100 次。超限时返回 429 + Retry-After，下一分钟自动恢复　
+        </span>
+        <span class="legend-item">
+          <span class="tier tier-paid">PAID</span>
+          FREE 用户每日 15 次试甜+ 全站共享 1了token/月；PAID 用户按档位享月度配额（Pro 2000 一/ Pro+ 8000 一/ Pro Max 3 亿）。GPT-5.5 系列什Pro 以上可用，Claude Opus 什Pro+ 以上。详见<a href="./api_docs.html#quota" style="color:var(--accent)">配额文档</a>　
+        </span>
+      </div>
+
+      <div class="footer-note">
+        <strong style="color: var(--text)">如何调用：</strong> 拿到 API Key
+        后，甜OpenAI 兼容格式发请求到
+        <code>https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions</code>
+        ，把上面任意一个模型ID 填到请求 body 的<code>model</code> 字段即可。详见
+        <a href="./api_docs.html">完整 API 文档</a>　
+      </div>
+
+    </main>
+
+    <!-- 模型卡片右侧抽屉 (2026-05-22 新增)
+         点击模型卡片任意非按钮区域时甜api-models-app.js 的openDrawer()
+         填入数据并把 .is-open 加到 .model-drawer 上。fade in / slide in
+         甜CSS transition 处理　-->
+    <aside class="model-drawer" id="modelDrawer" hidden aria-hidden="true">
+      <div class="model-drawer__backdrop" id="modelDrawerBackdrop"></div>
+      <div class="model-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="modelDrawerName">
+        <header class="model-drawer__head">
+          <button
+            class="model-drawer__close"
+            type="button"
+            id="modelDrawerClose"
+            aria-label="关闭"
+            title="关闭 (Esc)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+              <path d="M6 6 L18 18 M6 18 L18 6"></path>
+            </svg>
+          </button>
+          <div class="model-drawer__head-row">
+            <div class="model-drawer__logo" id="modelDrawerLogo"></div>
+            <div class="model-drawer__head-text">
+              <h3 id="modelDrawerName"></h3>
+              <p id="modelDrawerBrand"></p>
+              <code id="modelDrawerId"></code>
+            </div>
+          </div>
+          <div class="model-drawer__badges" id="modelDrawerBadges"></div>
+        </header>
+
+        <div class="model-drawer__body">
+          <section class="drawer-section">
+            <h4>定价 / 倍率</h4>
+            <div class="drawer-pricing">
+              <div class="drawer-pricing-num" id="drawerMultNum"></div>
+              <div class="drawer-pricing-text">
+                <div class="drawer-pricing-tier" id="drawerTierLabel"></div>
+                <div class="drawer-pricing-explain" id="drawerPricingExplain"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="drawer-section">
+            <h4>近期状态(24h)</h4>
+            <div class="drawer-status-grid">
+              <div class="drawer-stat">
+                <div class="drawer-stat-num" id="dsSuccessRate"></div>
+                <div class="drawer-stat-label">成功率</div>
+              </div>
+              <div class="drawer-stat">
+                <div class="drawer-stat-num" id="dsLatency"></div>
+                <div class="drawer-stat-label">平均延迟</div>
+              </div>
+              <div class="drawer-stat">
+                <div class="drawer-stat-num" id="dsRequests"></div>
+                <div class="drawer-stat-label">请求数</div>
+              </div>
+            </div>
+            <svg class="drawer-spark" id="drawerSpark" viewBox="0 0 320 60" preserveAspectRatio="none" aria-label="近24 小时请求数"></svg>
+            <div class="drawer-status-hint" id="drawerStatusHint">数据加载中</div>
+          </section>
+
+          <section class="drawer-section">
+            <h4>调用代码</h4>
+            <div class="drawer-code-tabs" id="drawerCodeTabs" role="tablist">
+              <button class="drawer-code-tab is-active" type="button" data-lang="curl" role="tab">curl</button>
+              <button class="drawer-code-tab" type="button" data-lang="js" role="tab">Node.js</button>
+              <button class="drawer-code-tab" type="button" data-lang="py" role="tab">Python</button>
+            </div>
+            <div class="drawer-code-wrap">
+              <pre class="drawer-code" id="drawerCode"></pre>
+              <button class="drawer-code-copy" type="button" id="drawerCodeCopy">复制</button>
+            </div>
+            <p class="drawer-code-hint" id="drawerCodeHint"></p>
+          </section>
+        </div>
+      </div>
+    </aside>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div class="site-footer__sig">Built with care · Cancri</div>
+        <div>&copy; 2026 NexusV / Cancri Open Platform</div>
+      </div>
+    </footer>
+
+    <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+    <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
+    <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见js/fingerprint.js 顶部注释　-->
+    <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+    <!-- 2026-05-17 重构：模型广场二档化（FREE/PAID！ 移除 9 条用户指定模型+
+         Claude 风UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）　
+         2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态+
+         调用代码区，sessionStorage 自动填入用户最迁Key）　-->
+    <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+    <script src="./api/api-models-app.js?v=2026-06-16-history-timeline-fix"></script>
+    <!-- 2026-06-10：Claude Fable 5 上线推广弹窗 -->
+    <script src="./fable5_launch_modal.js?v=2026-06-18-off"></script>
+  </body>
+</html>

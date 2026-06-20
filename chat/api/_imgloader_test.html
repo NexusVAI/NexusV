@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="black">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow" />
+<!-- 2026-06-20 安全加固：原旁CSP（测试页，noindex）　-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz" />
+<title>Part1+2 验证</title>
+<link rel="stylesheet" href="./cancri_chat.css" />
+<style>
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  .controls { position: fixed; top: 8px; left: 8px; display: flex; gap: 6px; z-index: 99; }
+  .controls button { padding: 6px 10px; }
+  .main-header { display: flex; justify-content: flex-end; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .header-right { display: flex; gap: 6px; }
+  .icon-btn { width: 34px; height: 34px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; cursor: pointer; display: grid; place-items: center; }
+  .icon-btn:hover { background: var(--hover); }
+  #homeView { padding: 24px; }
+  .loaders { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+  .slot { width: 300px; }
+  .chat-messages { display: flex; flex-direction: column; gap: 80px; max-width: 720px; margin: 0 auto; }
+  .message.user { background: var(--msg-ai-bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .message.user .message-content { color: var(--text); }
+</style>
+</head>
+<body>
+  <div class="controls">
+    <button onclick="document.documentElement.dataset.theme='black'">black</button>
+    <button onclick="document.documentElement.dataset.theme='dark'">dark</button>
+    <button onclick="document.documentElement.dataset.theme='light'">light</button>
+    <button onclick="document.documentElement.dataset.theme='yellow'">yellow</button>
+    <button onclick="document.documentElement.dataset.theme='blue'">blue</button>
+  </div>
+
+  <header class="main-header">
+    <div class="header-right"></div>
+  </header>
+
+  <section id="homeView" class="chatting">
+    <div class="loaders">
+      <div class="slot" id="slot1"></div>
+      <div class="slot" id="slot2"></div>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <aside class="chat-nav" id="chatNav" aria-label="对话跳转">
+      <div class="chat-nav-list" id="chatNavList"></div>
+    </aside>
+  </section>
+
+  <script src="./cancri_image_loader.js"></script>
+  <script src="./cancri_chat_nav.js"></script>
+  <script>
+    // 图像 loader：两张占位卡
+    const a = window.CancriImageLoader.create({ caption: "正在生成图片  });
+    document.getElementById("slot1").appendChild(a.element);
+    const b = window.CancriImageLoader.create({ caption: "编辑图像中  });
+    document.getElementById("slot2").appendChild(b.element);
+
+    // mock CancriApp.newChat（铅笔按钮）
+    window.CancriApp = { newChat: () => alert("newChat() called") };
+
+    // mock 多轮对话 ←触发右侧导航杂
+    const cm = document.getElementById("chatMessages");
+    const prompts = [
+      "帮我写一个快速排序", "解释一下闭包是什么", "用 Python 画爱心",
+      "推荐几本科幻小说", "什么是 metaball 效果", "把这段话翻译成英文",
+    ];
+    const navList = document.getElementById("chatNavList");
+    prompts.forEach((p, i) => {
+      const m = document.createElement("div");
+      m.className = "message user";
+      m.dataset.messageIndex = String(i);
+      m.innerHTML = '<div class="message-content">' + p + '</div>';
+      cm.appendChild(m);
+
+      // mock 现有 updateChatNav 产物！chat-nav-item(text + tick)
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "chat-nav-item" + (i === 1 ? " is-active" : "");
+      const text = document.createElement("span");
+      text.className = "chat-nav-item-text";
+      text.textContent = p;
+      const tick = document.createElement("span");
+      tick.className = "chat-nav-item-tick";
+      item.appendChild(text);
+      item.appendChild(tick);
+      item.addEventListener("click", () =>
+        m.scrollIntoView({ behavior: "smooth", block: "center" }),
+      );
+      navList.appendChild(item);
+    });
+  </script>
+</body>
+</html>

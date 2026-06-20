@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-keys-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）　-->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+        <title>API Keys · Cancri 开放平台</title>
+        <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+        <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+        <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
+        <link rel="preload" as="image" href="../Logo/Cancri.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
+        <script src="./api/api-platform.js?v=20260607-account-fix"></script>
+        <!-- Cancri 双主题 logo 同步 -->
+        <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+        <style>
+            /* 页面专有：用量图表、文档卡 */
+            .usage-summary {
+                display: flex;
+                gap: 16px;
+                font-size: 12px;
+                color: var(--text-mute);
+                margin-bottom: 12px;
+                flex-wrap: wrap;
+            }
+            .usage-summary b {
+                color: var(--text);
+                font-weight: 600;
+            }
+            .usage-chart {
+                display: flex;
+                align-items: flex-end;
+                gap: 4px;
+                height: 80px;
+                padding: 6px 0;
+                border-bottom: 1px solid var(--border-mute);
+                margin-bottom: 6px;
+            }
+            .usage-axis {
+                display: flex;
+                justify-content: space-between;
+                font-size: 10px;
+                color: var(--text-faint);
+            }
+            .doc-card-text {
+                font-size: 13px;
+                color: var(--text-mute);
+                line-height: 1.6;
+            }
+            .doc-card-text + .doc-card-text {
+                margin-top: 8px;
+            }
+            .doc-card-text code {
+                color: var(--accent);
+            }
+            .doc-snippet {
+                background: #0d0d0d;
+                border: 1px solid #1f1f1f;
+                border-radius: 8px;
+                padding: 12px;
+                margin-top: 12px;
+                font-size: 12px;
+                color: #d8d8d8;
+                overflow-x: auto;
+                white-space: pre-wrap;
+            }
+            .key-tier {
+                font-size: 11px;
+                color: var(--text-faint);
+            }
+            .model-bar-title {
+                font-size: 12px;
+                color: var(--text-mute);
+                margin-bottom: 6px;
+            }
+            .model-bar-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+            .model-bar-name {
+                flex: 0 0 110px;
+                font-family: var(--font-mono);
+                color: var(--accent);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .model-bar-track {
+                flex: 1;
+                height: 6px;
+                background: var(--border-mute);
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .model-bar-fill {
+                height: 100%;
+                background: var(--accent-strong);
+            }
+            .model-bar-stat {
+                flex: 0 0 90px;
+                text-align: right;
+                color: var(--text-mute);
+            }
+            .usage-chart-bar {
+                flex: 1;
+                min-width: 4px;
+                background: var(--accent-strong);
+                border-radius: 2px 2px 0 0;
+            }
+            .usage-chart-bar.is-empty {
+                background: var(--border-mute);
+            }
+            /* 2026-05-23：高级限额与 Key 详情面板 */
+            .advanced-config {
+                margin-top: 12px;
+                padding: 10px 12px;
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+            .advanced-config__summary {
+                cursor: pointer;
+                font-size: 12.5px;
+                color: var(--text-mute);
+                font-weight: 500;
+                outline: none;
+            }
+            .advanced-config[open] .advanced-config__summary {
+                color: var(--text);
+                margin-bottom: 10px;
+            }
+            .advanced-config__body { padding-top: 6px; }
+            .advanced-config__hint {
+                font-size: 11px;
+                color: var(--text-faint);
+                margin-top: 8px;
+                line-height: 1.5;
+            }
+            .config-row, .config-grid { margin-bottom: 10px; }
+            .config-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 10px;
+            }
+            .config-label {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                font-size: 11.5px;
+                color: var(--text-mute);
+            }
+            .config-label input,
+            .config-label select {
+                padding: 7px 9px;
+                font-size: 12.5px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-family: inherit;
+            }
+            .config-label select[multiple] {
+                font-family: var(--font-mono);
+                min-height: 110px;
+            }
+            /* Key 卡片：用量条 + 详情按钮 */
+            .key-usage-bars {
+                display: grid;
+                gap: 6px;
+                margin: 8px 0 2px;
+            }
+            .key-usage-bar {
+                font-size: 11px;
+                color: var(--text-mute);
+            }
+            .key-usage-bar__label {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 2px;
+            }
+            .key-usage-bar__track {
+                height: 5px;
+                background: var(--border-mute);
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .key-usage-bar__fill {
+                height: 100%;
+                background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+                transition: width 0.3s;
+            }
+            .key-usage-bar__fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
+            .key-usage-bar__fill.danger { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+            .key-detail-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+            }
+            .key-detail-stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .key-detail-stats .stat-card {
+                padding: 10px;
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+            .key-detail-stats .label {
+                font-size: 11px;
+                color: var(--text-faint);
+            }
+            .key-detail-stats .value {
+                font-size: 18px;
+                font-weight: 700;
+                margin-top: 4px;
+                color: var(--accent);
+            }
+            .key-detail-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .key-detail-panel-card {
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 10px 12px;
+            }
+            .key-detail-panel-card h3 {
+                font-size: 12.5px;
+                margin: 0 0 8px;
+                color: var(--text-soft);
+            }
+            .kd-bar { margin-bottom: 6px; }
+            .kd-bar__top {
+                display: flex;
+                justify-content: space-between;
+                font-size: 11.5px;
+                margin-bottom: 2px;
+            }
+            .kd-bar__name {
+                font-family: var(--font-mono);
+                color: var(--text);
+            }
+            .kd-bar__stat { color: var(--text-mute); }
+            .kd-bar__track {
+                height: 5px;
+                background: var(--border-mute);
+                border-radius: 3px;
+                overflow: hidden;
+            }
+            .kd-bar__fill { height: 100%; }
+            .kd-bar__fill.model { background: linear-gradient(90deg, var(--accent), #a855f7); }
+            .kd-bar__fill.day { background: linear-gradient(90deg, #22c55e, #4ade80); }
+            .key-detail-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-top: 8px;
+            }
+            .kd-detail-list {
+                max-height: 320px;
+                overflow-y: auto;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--bg-elev);
+                font-size: 11.5px;
+            }
+            .kd-detail-row {
+                padding: 7px 11px;
+                border-bottom: 1px solid var(--border);
+                display: grid;
+                grid-template-columns: 1fr 90px 60px 130px;
+                gap: 8px;
+                align-items: center;
+            }
+            .kd-detail-row:last-child { border-bottom: none; }
+            .kd-detail-row .model { font-family: var(--font-mono); color: var(--text); }
+            .kd-detail-row .tok { font-family: var(--font-mono); text-align: right; }
+            .kd-detail-row .sc { text-align: center; font-weight: 600; }
+            .kd-detail-row .sc.ok { color: var(--ok); }
+            .kd-detail-row .sc.err { color: var(--err); }
+            .kd-detail-row .sc.warn { color: #f59e0b; }
+            .kd-detail-row .when { color: var(--text-mute); text-align: right; font-size: 11px; }
+            @media (max-width: 720px) {
+                .key-detail-grid { grid-template-columns: 1fr; }
+                .kd-detail-row { grid-template-columns: 1fr; row-gap: 2px; }
+            }
+        </style>
+    </head>
+    <body>
+        <header class="topbar">
+            <div class="topbar__inner">
+                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+                    <img
+                        class="brand__logo cancri-logo"
+                        src="../Logo/Cancri1.jpg"
+                        data-dark-src="../Logo/Cancri1.jpg"
+                        data-light-src="../Logo/Cancri.png"
+                        alt="Cancri"
+                        width="28"
+                        height="28"
+                    />
+                </a>
+                <nav class="topnav" aria-label="开放平台导航">
+                    <a href="./api/">概览</a>
+                    <a href="./api_apply.html">申请</a>
+                    <a href="./api_keys.html" class="is-active">Keys</a>
+                    <a href="./api_models.html">模型</a>
+                    <a href="./api_docs.html">文档</a>
+                    <a href="./pricing.html">套餐</a>
+                    <a href="./orders.html">我的订单</a>
+                    <a href="./" class="topnav__back">←返回聊天</a>
+                </nav>
+                <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
+                    <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-toggle__black" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="page-shell page-shell--narrow">
+            <div class="top-bar">
+                <div>
+                    <h1 class="page-title">API Key 管理</h1>
+                    <p class="subtitle">查看和管理你的API Keys</p>
+                </div>
+            </div>
+
+            <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
+
+            <div id="login-section" style="display: none">
+                <div class="card">
+                    <p style="margin-bottom: 12px">请先登录</p>
+                    <button
+                        id="login-redirect-btn"
+                        class="btn btn-primary"
+                    >
+                        前往登录
+                    </button>
+                </div>
+            </div>
+
+            <div id="no-approval" style="display: none">
+                <div class="card">
+                    <p style="margin-bottom: 12px">
+                        你还没有通过 API 申请审核　
+                    </p>
+                    <button
+                        id="apply-redirect-btn"
+                        class="btn btn-primary"
+                    >
+                        去申请
+                    </button>
+                </div>
+            </div>
+
+            <div id="main-section" style="display: none">
+                <!-- Generate new key -->
+                <div class="card">
+                    <h2>生成新 Key</h2>
+                    <div class="input-row">
+                        <input
+                            type="text"
+                            id="key-name"
+                            placeholder="Key 名称（可选，如：my-project）"
+                        />
+                        <button id="generate-key-btn" class="btn btn-primary">
+                            生成
+                        </button>
+                    </div>
+
+                    <!-- 2026-05-23 新增：高级限额配置（折叠） -->
+                    <details class="advanced-config" id="adv-config">
+                        <summary class="advanced-config__summary">高级限额（可选） 模型白名单 / Token 上限 / 调用次数上限 / RPM</summary>
+                        <div class="advanced-config__body">
+                            <div class="config-row">
+                                <label class="config-label">
+                                    <span>模型白名单（留空 = 所有模型，多选用 Ctrl/Cmd 点击）</span>
+                                    <select id="adv-models" multiple size="6"></select>
+                                </label>
+                            </div>
+                            <div class="config-grid">
+                                <label class="config-label">
+                                    <span>总 token 上限（留空 = 不限）</span>
+                                    <input type="number" id="adv-max-tokens" min="0" placeholder="例如：1000000" />
+                                </label>
+                                <label class="config-label">
+                                    <span>总调用次数上限（留空 = 不限）</span>
+                                    <input type="number" id="adv-max-requests" min="0" placeholder="例如：10000" />
+                                </label>
+                                <label class="config-label">
+                                    <span>RPM (每分钟调用上限，不超过档位上限)</span>
+                                    <input type="number" id="adv-rpm" min="1" max="600" placeholder="留空 = 用档位默认" />
+                                </label>
+                            </div>
+                            <div class="advanced-config__hint">
+                                这些限制只对此 Key 生效；生成后可在「我的Keys」里编辑或重置已用计数　
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="new-key-reveal" id="new-key-box" data-sensitive>
+                        <div>你的新 API Key：</div>
+                        <code id="new-key-value"></code>
+                        <div class="warn">
+                            请立即复制保存，此 key 不会再次显示　
+                        </div>
+                        <button
+                            id="copy-key-btn"
+                            class="btn btn-secondary"
+                            style="margin-top: 8px"
+                        >
+                            复制
+                        </button>
+                    </div>
+                    <div class="msg" id="gen-msg"></div>
+                </div>
+
+                <!-- My keys -->
+                <div class="card" data-sensitive>
+                    <h2>我的 Keys</h2>
+                    <div id="keys-list"><div class="empty">暂无 Key</div></div>
+                </div>
+
+                <!-- Key 详情面板（隐藏，选中 key 后弹出） -->
+                <div class="card" id="key-detail-panel" style="display:none">
+                    <div class="key-detail-head">
+                        <h2 id="key-detail-title">Key 详情</h2>
+                        <button id="key-detail-close" class="btn btn-secondary">关闭</button>
+                    </div>
+                    <div class="key-detail-stats">
+                        <div class="stat-card">
+                            <div class="label">总调用</div>
+                            <div class="value" id="kd-calls"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">输入 tokens</div>
+                            <div class="value" id="kd-tin"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">输出 tokens</div>
+                            <div class="value" id="kd-tout"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">错误请求</div>
+                            <div class="value" id="kd-err"></div>
+                        </div>
+                    </div>
+                    <div class="key-detail-grid">
+                        <div class="key-detail-panel-card">
+                            <h3>按模型</h3>
+                            <div id="kd-by-model"></div>
+                        </div>
+                        <div class="key-detail-panel-card">
+                            <h3>按天 (UTC+8)</h3>
+                            <div id="kd-by-day"></div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 18px 0 10px; font-size: 14px;">编辑限额</h3>
+                    <div class="config-row">
+                        <label class="config-label">
+                            <span>模型白名单（留空 = 所有）</span>
+                            <select id="kd-edit-models" multiple size="6"></select>
+                        </label>
+                    </div>
+                    <div class="config-grid">
+                        <label class="config-label">
+                            <span>总 token 上限</span>
+                            <input type="number" id="kd-edit-max-tokens" min="0" />
+                        </label>
+                        <label class="config-label">
+                            <span>总调用次数上限</span>
+                            <input type="number" id="kd-edit-max-requests" min="0" />
+                        </label>
+                        <label class="config-label">
+                            <span>RPM</span>
+                            <input type="number" id="kd-edit-rpm" min="1" max="600" />
+                        </label>
+                    </div>
+                    <div class="key-detail-actions">
+                        <button id="kd-save" class="btn btn-primary">保存限额</button>
+                        <button id="kd-reset-usage" class="btn btn-secondary">重置已用计数</button>
+                        <div class="msg" id="kd-msg"></div>
+                    </div>
+
+                    <h3 style="margin: 18px 0 10px; font-size: 14px;">最近 100 条调用</h3>
+                    <div id="kd-detail-list" class="kd-detail-list"></div>
+                </div>
+
+                <!-- Usage -->
+                <div class="card">
+                    <h2>最近 30 天用量</h2>
+                    <div id="usage-summary" class="usage-summary">
+                        <span>总调用 <b id="u-total"></b></span>
+                        <span>总输入 tokens <b id="u-tokens-in"></b></span>
+                        <span>总输出 tokens <b id="u-tokens-out"></b></span>
+                        <span>失败率<b id="u-error-rate"></b></span>
+                    </div>
+                    <div id="usage-chart" class="usage-chart"></div>
+                    <div id="usage-axis" class="usage-axis"></div>
+                    <div id="usage-by-model" style="margin-top: 14px"></div>
+                    <div id="usage-empty" class="empty" style="display: none">
+                        最近 30 天内没有调用记录
+                    </div>
+                </div>
+
+                <!-- API Docs -->
+                <div class="card">
+                    <h2>使用文档</h2>
+                    <p class="doc-card-text">
+                        Base URL:
+                        <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>
+                    </p>
+                    <p class="doc-card-text">
+                        认证方式:
+                        <code>Authorization: Bearer cancri_sk_xxx</code>
+                    </p>
+                    <pre class="doc-snippet"><code>curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions \
+  -H "Authorization: Bearer cancri_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "deepseek-v4-pro",
+    "messages": [{"role":"user","content":"hello"}],
+    "stream": true
+  }'</code></pre>
+                    <a class="doc-link" href="./api_docs.html"
+                        >查看完整 API 文档 ←/a
+                    >
+                </div>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="site-footer__inner">
+                <div class="site-footer__sig">Built with care · Cancri</div>
+                <div>&copy; 2026 NexusV / Cancri Open Platform</div>
+            </div>
+        </footer>
+
+        <script src="./cancri_config.js"></script>
+        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+        <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
+        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见js/fingerprint.js 顶部注释　-->
+        <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+            crossorigin="anonymous"
+        ></script>
+        <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
+        <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+        <script src="./api/api-keys-app.js?v=2026-06-12-skeleton-light"></script>
+    </body>
+</html>
