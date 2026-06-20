@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="./styles/00-tokens.css" />
   <link rel="stylesheet" href="./styles/01-claude-tokens.css" />
   <link rel="stylesheet" href="./styles/02-themes.css" />
-  <link rel="stylesheet" href="./styles/cancri_motion.css?v=2026-06-20-platform-login-fix13" />
-  <link rel="stylesheet" href="./styles/auth-platform-login.css?v=2026-06-20-platform-login-fix13" />
+  <link rel="stylesheet" href="./styles/cancri_motion.css?v=2026-06-20-platform-login-fix14" />
+  <link rel="stylesheet" href="./styles/auth-platform-login.css?v=2026-06-20-platform-login-fix14" />
   <style>
     html.auth-platform-page,
     html.auth-platform-page body {
@@ -76,12 +76,19 @@
       background: hsl(var(--bg-300)) !important;
     }
     #authOverlay .auth-topnav {
+      position: sticky !important;
+      top: 0 !important;
       left: 0 !important;
       right: 0 !important;
       width: auto !important;
       max-width: none !important;
+      z-index: 20 !important;
     }
-    #authOverlay > .auth-topnav-spacer,
+    #authOverlay > .auth-topnav-spacer {
+      display: none !important;
+      height: 0 !important;
+      flex: 0 0 0 !important;
+    }
     #authOverlay > .auth-page-shell,
     #authOverlay .auth-login-panel,
     #authOverlay .auth-partners,
@@ -93,16 +100,11 @@
     #authOverlay .auth-login-panel {
       background: hsl(var(--bg-300)) !important;
     }
-    @media (min-width: 69rem) {
-      .auth-page-shell {
-        min-height: calc(100dvh - 5.25rem);
-      }
-    }
     .auth-page-shell {
       flex: 1 0 auto;
       width: 100%;
       max-width: none;
-      min-height: calc(100dvh - 4.5rem);
+      min-height: auto;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
@@ -379,7 +381,7 @@
     </div>
   </div>
 
-  <script defer src="./js/auth-login-chrome.js?v=2026-06-20-platform-login-fix13"></script>
+  <script defer src="./js/auth-login-chrome.js?v=2026-06-20-platform-login-fix14"></script>
   <script>
     (function () {
       "use strict";
