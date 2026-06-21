@@ -13242,7 +13242,7 @@
 	var closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 	var dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 	var openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
-	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0618_promo_v1";
+	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0620_migration_v1";
 	function openAnnouncementModal() {
 		if (!announcementModal) return;
 		announcementModal.setAttribute("aria-hidden", "false");

@@ -783,35 +783,6 @@
                 font-size: 12px;
             }
 
-            /* ────────── 2026-05-29 满月折扣：plan/topup 卡片价格上的删除线 + 折扣徽章 ────────── */
-            .price-original {
-                color: var(--text-faint);
-                text-decoration: line-through;
-                font-size: 0.55em;
-                margin-right: 6px;
-                font-weight: 400;
-                opacity: 0.75;
-            }
-            .price-discount-badge {
-                display: inline-block;
-                margin-left: 8px;
-                padding: 1px 7px;
-                border-radius: 8px;
-                background: var(--accent);
-                color: #fff;
-                font-size: 0.32em;
-                font-family: var(--font-mono);
-                font-weight: 600;
-                vertical-align: middle;
-                letter-spacing: 0.04em;
-            }
-            .topup-card__amount .price-original {
-                font-size: 0.65em;
-            }
-            .topup-card__amount .price-discount-badge {
-                font-size: 0.55em;
-            }
-
             /* ────────── 支付方式切换胶囊 ────────── */
             .pay-method-tabs {
                 display: inline-flex;
@@ -905,17 +876,6 @@
         </header>
 
         <main class="page-shell pricing-page">
-            <!-- 2026-06-02 Claude Opus 系列倍率调整公告 -->
-            <div class="promo-banner" role="status" aria-live="polite" style="background:linear-gradient(135deg,rgba(217,119,87,.12),rgba(184,90,62,.08));border:1px solid rgba(217,119,87,.25);">
-                <div class="promo-banner__body">
-                    <p class="promo-banner__title">📢 Claude Opus 系列倍率调整公告</p>
-                    <p class="promo-banner__sub">
-                        由于 Claude Opus 系列模型<strong>上游成本极为高昂</strong>，为保障平台可持续运营，迫于无奈对以下模型倍率进行调整：<br>
-                        <strong>Opus 4.6</strong> 150× · <strong>Opus 4.7</strong> 200× · <strong>Opus 4.7 Thinking</strong> 210× · <strong>Opus 4.8</strong> 250×<br>
-                        <span style="opacity:.7">其他模型倍率不变。感谢您的理解与支持 🙏</span>
-                    </p>
-                </div>
-            </div>
             <!-- 2026-05-22 限时倍率 5 折促销横幅。窗口（UTC+8）：
                  05-22 20:30 → 05-24 00:00。pricing-app.js 在窗口外把整个
                  banner 隐藏；用户也能手动 × 关闭（仅本会话）。 -->
@@ -945,36 +905,6 @@
                     aria-label="关闭促销横幅"
                     title="关闭"
                 >✕</button>
-            </div>
-
-            <!-- 回馈礼 banner -->
-            <div
-                class="promo-banner"
-                id="sub-promo-banner"
-                role="status"
-                aria-live="polite"
-                style="margin:0 0 16px;background:linear-gradient(135deg,rgba(99,179,237,.12),rgba(66,153,225,.08));border:1px solid rgba(99,179,237,.25)"
-            >
-                    <div class="promo-banner__body">
-                        <p class="promo-banner__title">🎁 回馈礼 · 订阅限时折扣</p>
-                        <p class="promo-banner__sub">
-                            限时 4 天 · Pro <strong>8 折 ¥7.92</strong> · Pro+ <strong>85 折 ¥24.65</strong><br>
-                            <strong>GPT-5.5 砍到 0.5x</strong> · Opus 4.7 全部特价
-                        </p>
-                    </div>
-                    <div class="promo-banner__countdown" aria-live="off">
-                        <div>
-                            <small>剩余</small>
-                            <span class="promo-banner__time" id="sub-promo-countdown">--:--:--</span>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        class="promo-banner__close"
-                        id="sub-promo-banner-close"
-                        aria-label="关闭促销横幅"
-                        title="关闭"
-                    >✕</button>
             </div>
 
             <header class="pricing-hero">
@@ -1422,6 +1352,6 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-17 Phase A：pricing-app.js 大改，支持三档 + 加油包选择 + server 端 amount 校验。 -->
-        <script src="./api/pricing-app.js?v=20260608-pricing-faq"></script>
+        <script src="./api/pricing-app.js?v=20260621-no-discount"></script>
     </body>
 </html>

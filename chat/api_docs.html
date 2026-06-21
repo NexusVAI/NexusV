@@ -2606,8 +2606,8 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           <h2>配额机制</h2>
           <p>
             Cancri 模型分为 <b>FREE</b> 与 <b>PAID</b> 两档（见 <a href="./api_models.html">模型广场</a>
-            每张卡片右上角的 badge）。FREE 档对所有用户始终免费；PAID 档对免费用户
-            提供有限的试用额度，对付费订阅用户按月度配额计费。订阅分三档：
+            每张卡片右上角的 badge）。FREE 档对付费用户始终免费；对免费用户优先从全站共享池扣费，
+            共享池耗尽且无加油包时才会被阻断。PAID 档对免费用户提供有限的试用额度，对付费订阅用户按月度配额计费。订阅分三档：
             <b>Pro</b>（¥9.9 / 30 天 / 2000 万 token）、
             <b>Pro+</b>（¥29 / 30 天 / 8000 万 token，解锁 Claude Opus 全系）、
             <b>Pro Max</b>（¥99 / 30 天 / 3 亿 token，全模型 + 图像视频）。
@@ -2634,12 +2634,14 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           <ul>
             <li>
               <b>全站共享池：</b> 每月 1 亿 token（按折算后的有效 token 计），所有免费用户共享。
-              每月 1 号 00:00（UTC+8）重置。池内余额耗尽后，当月所有免费用户调用付费模型都会返回
+              每月 1 号 00:00（UTC+8）重置。池内余额耗尽后，如账号还有加油包余额则优先扣加油包继续放行；
+              加油包余额也为 0 时，当月所有免费用户调用付费模型都会返回
               <code>429 free_pool_exhausted</code>，直到下月初。
             </li>
             <li>
-              <b>每日个人限额：</b> 每个免费用户每天最多 <b>15 次</b> 付费模型成功调用
-              （UTC+8 自然日，每天 00:00 重置）。用满会返回 <code>429 daily_paid_limit_reached</code>。
+              <b>每日个人限额：</b> 每个免费用户每天有 <b>15 次</b> 付费模型试用额度
+              （UTC+8 自然日，每天 00:00 重置）。试用额度用满后，如有加油包余额可继续用加油包调用付费模型；
+              无加油包时返回 <code>429 daily_paid_limit_reached</code>。
             </li>
             <li>
               <b>失败不计数：</b> 上游返回 HTTP 4xx/5xx 的失败请求会自动退还额度，不计入 15 次/日，也不扣共享池。
@@ -2905,7 +2907,8 @@ Authorization: Bearer &lt;WEB_USER_SESSION_TOKEN&gt;
               <li>两者都为 0 时返回 <code>429 monthly_quota_exhausted</code>。</li>
             </ol>
             <p>
-              <b>加油包永不过期</b>，也不会因订阅到期而清零。但加油包只在套餐配额耗尽后启用，不能替代套餐配额。
+              <b>加油包永不过期</b>，也不会因订阅到期而清零。对付费用户，加油包只在月度套餐配额耗尽后启用，不能替代套餐配额。
+              对免费用户，加油包还可在全站共享池或每日 15 次试用额度耗尽后续接使用付费模型。
             </p>
           </div>
 
@@ -2932,7 +2935,7 @@ Authorization: Bearer &lt;WEB_USER_SESSION_TOKEN&gt;
             </tbody>
           </table>
           <p>
-            <b>计算方式：</b> 每次成功调用实际消耗的 token（有效 token 数 × 模型权重）会进入窗口。
+            <b>计算方式：</b> 每次成功调用实际消耗的原始 token（input + output 之和，不计模型权重与缓存折扣）会进入窗口。
             后续请求前，系统对窗口内记录求和并与上限比对。失败调用不计入窗口。
           </p>
           <p>
@@ -2976,12 +2979,12 @@ Authorization: Bearer &lt;WEB_USER_SESSION_TOKEN&gt;
               <tr>
                 <td>429</td>
                 <td><code>free_pool_exhausted</code></td>
-                <td>本月免费共享池已耗尽，下月 1 号 00:00（UTC+8）重置</td>
+                <td>本月免费共享池已耗尽且加油包余额不足，下月 1 号 00:00（UTC+8）重置</td>
               </tr>
               <tr>
                 <td>429</td>
                 <td><code>daily_paid_limit_reached</code></td>
-                <td>FREE 用户当日 15 次免费 PAID 试用已用完，明日 00:00（UTC+8）重置</td>
+                <td>FREE 用户当日 15 次试用额度已用完且加油包余额不足，明日 00:00（UTC+8）重置</td>
               </tr>
               <tr>
                 <td>429</td>
@@ -3031,13 +3034,15 @@ Authorization: Bearer &lt;WEB_USER_SESSION_TOKEN&gt;
 
           <h3>1. 全站共享池</h3>
           <p>
-            所有免费用户共享每月 1 亿 token 预算。池子耗尽后，当月所有免费用户调用付费模型都会返回
+            所有免费用户共享每月 1 亿 token 预算。池子耗尽后，如有加油包余额则先扣加油包继续放行；
+            加油包余额也为 0 时，当月所有免费用户调用付费模型都会返回
             <code>429 free_pool_exhausted</code>，下月 1 号 00:00（UTC+8）重置。
           </p>
 
           <h3>2. 每日 15 次付费模型试用</h3>
           <p>
-            每个免费用户每天最多 15 次成功调用付费模型。用满返回 <code>429 daily_paid_limit_reached</code>，
+            每个免费用户每天有 15 次付费模型试用额度。试用额度用满后，如有加油包余额可继续用加油包调用；
+            无加油包时返回 <code>429 daily_paid_limit_reached</code>，
             次日 00:00（UTC+8）重置。失败调用（上游 4xx/5xx）不计入次数。
           </p>
 
@@ -3078,9 +3083,9 @@ Authorization: Bearer &lt;WEB_USER_SESSION_TOKEN&gt;
 
           <h3>总结</h3>
           <p>
-            免费用户单日最多 15 次付费模型调用，且受 5h/100K + 7d/500K token 窗口约束；
-            单月受 1 亿全站共享池约束。如果用量超出此范围，说明已超出「免费尝鲜」范畴，
-            订阅 Pro（¥9.9/30 天）可解除上述限制。
+            免费用户单日有 15 次付费模型试用额度，且受 5h/100K + 7d/500K token 窗口约束；
+            单月受 1 亿全站共享池约束。试用额度、共享池耗尽后可用加油包余额继续调用；
+            加油包也为 0 或想解除窗口/排队限制时，订阅 Pro（¥9.9/30 天）即可。
           </p>
         </section>
 
@@ -3508,8 +3513,9 @@ Authorization: Bearer &lt;WEB_USER_SESSION_TOKEN&gt;
           <h3>计费怎么算？</h3>
           <p>
             按「有效 token 数 × 模型权重」扣减（见上面「模型权重表」）：
-            <b>Free 档</b>使用全站 1 亿/月共享池 + 每日 15 次付费模型试用 +
-            5h 滚动窗口 100K token + 7d 滚动窗口 500K token；
+            <b>Free 档</b>优先使用全站 1 亿/月共享池 + 每日 15 次付费模型试用 +
+            5h 滚动窗口 100K token + 7d 滚动窗口 500K token；额度耗尽后可用加油包余额继续，
+            加油包也为 0 时被阻断；
             <b>Pro ¥9.9 / 30 天</b> 个人周期配额 2000 万 token，
             <b>Pro+ ¥29 / 30 天</b> 8000 万 token + Claude Opus，
             <b>Pro Max ¥99 / 30 天</b> 3 亿 token + 图像视频优先，加油包 ¥10 起永不过期，见

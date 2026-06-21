@@ -422,23 +422,30 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        gap: 12px;
+        flex-wrap: wrap;
+        gap: 10px 12px;
       }
       .card-head-text {
         min-width: 110px;
-        flex: 1;
+        flex: 1 1 0;
       }
-      /* badge 子容器：多个 badge（PAID/30×/PRO+/FREE不可用）打包在一起，
-         换行时整体换行而非散成竖列。 */
-      .card-badges {
+      /* 2026-06-21：将头部所有徽章合并为一条 status bar，放在名称右侧。
+         统一间距和尺寸，避免多徽章堆叠显得杂乱。 */
+      .card-status {
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
+        gap: 6px;
         justify-content: flex-end;
         align-items: center;
-        flex-shrink: 1;
-        min-width: 0;
+        flex: 0 1 auto;
         max-width: 55%;
+      }
+      @media (max-width: 480px) {
+        .card-status {
+          justify-content: flex-start;
+          max-width: 100%;
+          order: 3;
+        }
       }
       .card-name {
         font-family: var(--c-serif);
@@ -553,15 +560,26 @@
         color: var(--text);
         font-weight: 500;
       }
-      .badge.cap {
-        color: var(--accent);
-        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-        background: color-mix(in srgb, var(--accent) 8%, transparent);
-      }
       .badge-disabled {
         color: var(--err);
         border-color: color-mix(in srgb, var(--err) 35%, transparent);
         background: color-mix(in srgb, var(--err) 8%, transparent);
+      }
+      /* 2026-06-21：能力标签从 meta 移出，作为独立浅灰小 pill 行，
+         与状态徽章和 specs 形成清晰层级。 */
+      .caps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .caps .cap {
+        font-size: 11px;
+        color: var(--text-mute);
+        border: 1px solid var(--border);
+        background: var(--bg-elev);
+        padding: 3px 8px;
+        border-radius: 999px;
+        line-height: 1.4;
       }
 
       /* ── specs：极简两栏，输入 / 输出 ─────────────────────────── */
@@ -1084,15 +1102,6 @@
         </p>
       </header>
 
-      <!-- 2026-06-03 618 特价档位首发预告 -->
-      <div style="max-width:1080px;margin:0 auto 20px;padding:14px 20px;border-radius:10px;background:linear-gradient(135deg,rgba(255,120,50,.15),rgba(255,60,30,.08));border:1px solid rgba(255,120,50,.3);color:var(--ink,#ededec);font-size:14px;line-height:1.7;">
-        <strong>🎉 618 特价档位首发预告</strong><br>
-        618 大促即将开启，平台新增「特价」档位，首批上线两款旗舰模型：<br>
-        🔥 <strong>【特价】Claude Opus 4.7</strong> — 3× 倍率（原价 200×）<br>
-        🔥 <strong>【特价】GPT-5.5</strong> — 3× 倍率<br>
-        以不到原价 2% 的倍率体验顶级模型，Pro+ 用户专享。618 期间还将推出更多惊喜，敬请期待 🎁
-      </div>
-
       <div id="error" class="err-box" style="display: none"></div>
 
       <!-- stats 按需求：总数 / 免费 / 付费 / 思考。原 聊天 / 图像 计数与
@@ -1292,6 +1301,6 @@
          Claude 风 UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）。
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态 +
          调用代码区，sessionStorage 自动填入用户最近 Key）。 -->
-    <script src="./api/api-models-app.js?v=20260608-qq-catalog"></script>
+    <script src="./api/api-models-app.js?v=20260621-model-tags"></script>
   </body>
 </html>
