@@ -1,94 +1,107 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-apply-app.js，删 unsafe-inline script-src -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
-  <title>申请 API · Cancri 开放平台</title>
-  <link rel="icon" type="image/png" href="../Logo/Cancri.png">
-  <link rel="apple-touch-icon" href="../Logo/Cancri.png">
-  <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high">
-  <link rel="preload" as="image" href="../Logo/Cancri.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./api/api-platform.css?v=20260620-claude-ui">
-  <script src="./api/api-platform.js?v=20260620-claude-ui"></script>
-  <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
-  <style>
-    .apply-page-stack { width: 100%; max-width: 480px; margin: 12px auto 0; display: flex; flex-direction: column; gap: 14px; }
-    .apply-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; width: 100%; }
-    .apply-card .full-btn { width: 100%; padding: 11px; margin-top: 8px; font-size: 14px; }
-    .apply-card .secondary-btn { width: 100%; padding: 10px; margin-top: 16px; font-size: 13px; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+  <title>联系销售人员 · NexusV 开放平台</title>
+  <meta name="description" content="联系 NexusV 销售团队，申请 API 访问权限。告诉我们你的业务需求与挑战。" />
+  <base href="../" />
+  <script>
+    (() => {
+      let theme = 'warm';
+      try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+      if (theme === 'light') document.documentElement.classList.add('light-theme');
+      if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+      if (theme === 'blue') document.documentElement.classList.add('blue-theme');
+      if (theme === 'dark') document.documentElement.classList.add('dark-theme');
+    })();
+  </script>
+  <link rel="icon" type="image/png" href="Logo/Cancri.png" />
+  <link rel="preconnect" href="https://chat.nexusvai.xyz" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/navbar.css" />
+  <link rel="stylesheet" href="css/mobile-menu.css" />
+  <link rel="stylesheet" href="css/footer.css" />
+  <link rel="stylesheet" href="css/inter-fonts.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/display-fonts.css" />
+  <link rel="stylesheet" href="chat/api/oai-home.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="./api/" aria-label="Cancri 开放平台">
-        <img class="brand__logo cancri-logo" src="../Logo/Cancri1.jpg" data-dark-src="../Logo/Cancri1.jpg" data-light-src="../Logo/Cancri.png" alt="Cancri" width="28" height="28" />
-      </a>
-      <nav class="topnav" aria-label="开放平台导航">
-        <a href="./api/">概览</a>
-        <a href="./api_apply.html" class="is-active">申请</a>
-        <a href="./api_keys.html">控制台</a>
-        <a href="./api_models.html">模型</a>
-        <a href="./api_docs.html">文档</a>
-        <a href="./pricing.html">套餐</a>
-        <a href="./orders.html">我的订单</a>
-        <a href="./" class="topnav__back">←返回聊天</a>
-      </nav>
-      <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
-        <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg class="theme-toggle__black" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>
-      </button>
-    </div>
-  </header>
-  <main class="page-shell page-shell--narrow">
-    <div class="apply-page-stack">
-      <div class="apply-card">
-        <h1 class="page-title">API 申请</h1>
-        <p class="subtitle">首次使用？提交申请进入白名单，审核通过后即可创建 API Key</p>
-        <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
-        <div id="login-section" style="display:none">
-          <p style="margin-bottom:12px">请先登录后再申请 API Key</p>
-          <button id="login-redirect-btn" class="btn-primary full-btn">前往登录</button>
-        </div>
-        <div id="apply-section" style="display:none">
-          <div id="existing-status" style="display:none"></div>
-          <div id="apply-form">
-            <div class="form-group">
-              <label>邮箱</label>
-              <input type="email" id="email" readonly>
+  <main class="api-home">
+    <div class="cs-wrap">
+      <div class="cs-head">
+        <h1 class="cs-head__title">联系销售人员</h1>
+        <p class="cs-head__sub">告诉我们你的业务需求与面临的挑战，NexusV 团队会尽快与你联系并开通 API 访问。</p>
+      </div>
+
+      <div id="loading" class="cs-state">正在加载…</div>
+
+      <!-- 未登录 -->
+      <div id="login-section" class="cs-state" style="display:none">
+        <p data-cs-login-msg style="margin-bottom:16px">请先登录 NexusV 账号后再提交申请。</p>
+        <button id="login-redirect-btn" class="cs-btn">前往登录 / 返回聊天</button>
+      </div>
+
+      <!-- 已登录：申请区 -->
+      <div id="apply-section" style="display:none">
+        <div id="existing-status" style="display:none"></div>
+
+        <form id="apply-form" class="cs-card" onsubmit="return false">
+          <div class="cs-grid">
+            <div class="cs-field">
+              <label class="cs-label" for="cs-firstname">名字 <span class="opt">（选填）</span></label>
+              <input id="cs-firstname" class="cs-input" type="text" autocomplete="given-name" />
             </div>
-            <div class="form-group">
-              <label>用途说明</label>
-              <textarea id="purpose" placeholder="请简要说明你的应用场景、预计调用量等，便于我们审核。"></textarea>
+            <div class="cs-field">
+              <label class="cs-label" for="cs-lastname">姓氏 <span class="opt">（选填）</span></label>
+              <input id="cs-lastname" class="cs-input" type="text" autocomplete="family-name" />
             </div>
-            <button id="submit-btn" class="btn-primary full-btn">提交申请</button>
-            <div class="msg" id="msg"></div>
+            <div class="cs-field cs-field--full">
+              <label class="cs-label" for="email">电子邮件 <span class="opt">（自动带入登录邮箱）</span></label>
+              <input id="email" class="cs-input" type="email" autocomplete="email" disabled />
+            </div>
+            <div class="cs-field cs-field--full">
+              <label class="cs-label" for="cs-company">公司 / 团队 <span class="opt">（选填）</span></label>
+              <input id="cs-company" class="cs-input" type="text" autocomplete="organization" />
+            </div>
+            <div class="cs-field cs-field--full">
+              <label class="cs-label" for="cs-need">能否详细介绍你的业务需求和面临的挑战？<span class="req">*</span></label>
+              <textarea id="cs-need" class="cs-textarea" required aria-required="true" placeholder="例如：我们正在构建一个客服自动化系统，预计每天 X 万次调用，需要长上下文与多模态能力……"></textarea>
+            </div>
           </div>
+
+          <label class="cs-consent">
+            <input id="cs-consent" type="checkbox" checked />
+            <span>我希望通过电子邮件接收来自 NexusV 的关于其产品、服务和活动的营销信息。如果你不想接收此类营销信息，请取消勾选此框。</span>
+          </label>
+
+          <button id="submit-btn" type="button" class="cs-btn">提交</button>
+          <div id="msg" class="cs-msg"></div>
+        </form>
+
+        <!-- 申请通过后展示 -->
+        <div id="key-section" class="cs-state" style="display:none;margin-top:16px">
+          <p style="margin-bottom:14px">你的申请已通过，现在可以在控制台创建 API 密钥。</p>
+          <button id="manage-keys-btn" class="cs-btn">前往控制台 · API 密钥</button>
         </div>
-        <div id="key-section" style="display:none">
-          <p style="margin-bottom:12px; color: var(--ok)">你的申请已通过审核，可以开始创建 API Key 了</p>
-          <button id="manage-keys-btn" class="btn-primary full-btn">管理 API Keys</button>
-        </div>
-        <button id="back-to-chat-btn" class="btn-secondary secondary-btn">返回聊天</button>
       </div>
     </div>
   </main>
-  <footer class="site-footer">
-    <div class="site-footer__inner">
-      <div class="site-footer__sig">Built with care · Cancri</div>
-      <div>&copy; 2026 NexusV / Cancri Open Platform</div>
-    </div>
-  </footer>
-  <script src="./cancri_config.js"></script>
-  <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
-  <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE" crossorigin="anonymous"></script>
-  <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-  <script src="./api/api-apply-app.js?v=2026-06-12-skeleton-light"></script>
+
+  <div data-page-footer></div>
+
+  <script src="js/components.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/theme.js" defer></script>
+  <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+  <script src="chat/cancri_config.js?v=2026-05-13e"></script>
+  <script src="chat/api/oai-apply.js?v=20260621-oai" defer></script>
+  <script>document.addEventListener('DOMContentLoaded', function () { if (window.injectComponents) injectComponents({}); });</script>
 </body>
 </html>
