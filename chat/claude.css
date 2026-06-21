@@ -143,7 +143,10 @@ html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"
               "Noto Color Emoji";
     --c-font-serif: "Anthropic Serif", ui-serif, Georgia, Cambria,
                     "Times New Roman", Times,
-                    "Hiragino Mincho ProN", "Songti SC", "Noto Serif CJK SC",
+                    "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC",
+                    "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC",
+                    "Hiragino Sans", "Yu Gothic", Meiryo, "Noto Sans CJK JP",
+                    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR",
                     serif;
 }
 
@@ -2180,22 +2183,39 @@ html[data-theme="black"] .claude-suggest:hover {
 .chat-messages .message.user-message .message-content,
 .chat-messages .message.user .message-content,
 .chat-messages .message[data-role="user"] .message-content {
+    /* 2026-06-21 对齐 Claude 11:33:04 user bubble：
+       bg-bg-300 rounded-xl(12px) pl-2.5 py-2.5 !px-4(=10px 16px) max-w-[85%]
+       font-large(16px/430/1.4) text-text-100 */
     background: var(--c-bg-elev-3) !important;
     color: var(--c-text) !important;
-    border-radius: 16px !important;
-    padding: 12px 16px !important;
-    max-width: 70%;
-    font-size: 15px !important;
-    line-height: 1.55 !important;
+    border-radius: 12px !important;
+    padding: 10px 16px !important;
+    max-width: 85%;
+    font-size: 16px !important;
+    font-weight: 430 !important;
+    line-height: 1.4 !important;
     border: 0 !important;
-    /* 2026-05-15 essence: 去除 cancri_chat.css:3046 的橙色发光阴影。
-       Claude 真站 user bubble 是干净的圆角矩形，底部无 elevation。 */
     box-shadow: none !important;
 }
 html[data-theme="light"] .chat-messages .message.user-message .message-content,
 html[data-theme="light"] .chat-messages .message.user .message-content,
 html[data-theme="light"] .chat-messages .message[data-role="user"] .message-content {
-    background: #efeeeb !important;
+    /* bg-bg-300 light = hsl(48 25% 92.2%) ≈ #F0EAD9 暖砂色 */
+    background: hsl(48 25% 92.2%) !important;
+}
+/* 2026-06-21 对齐 Claude 11:33:04 字体链：
+   - 用户消息: --font-user-message = var(--font-sans-serif) = Anthropic Sans (sans)
+   - 助手消息: --font-claude-response = var(--font-serif) = Anthropic Serif (serif)
+   源码 html style: --font-user-message:var(--font-sans-serif);--font-claude-response:var(--font-serif) */
+.chat-messages .message.user-message .message-content,
+.chat-messages .message.user .message-content,
+.chat-messages .message[data-role="user"] .message-content {
+    font-family: var(--c-font) !important;
+}
+.chat-messages .message.assistant-message .message-content,
+.chat-messages .message.assistant .message-content,
+.chat-messages .message[data-role="assistant"] .message-content {
+    font-family: var(--c-font-serif) !important;
 }
 .chat-messages .message.assistant-message,
 .chat-messages .message.assistant,
@@ -2205,16 +2225,21 @@ html[data-theme="light"] .chat-messages .message[data-role="user"] .message-cont
 .chat-messages .message.assistant-message .message-content,
 .chat-messages .message.assistant .message-content,
 .chat-messages .message[data-role="assistant"] .message-content {
-    /* 仅保留 reset 性质属性（防 cancri 老规则把 AI 消息包成卡片）。
-       2026-05-16 PR ·prose 1:1：font-size/line-height/max-width 已移至 §17
-       Claude .prose 1:1 接管（root: 1rem / 1.75 / max-width 65ch，源
-       main_window/index.html:900-903, 1230-1231）。code/pre 颜色与 radius
-       同理由 §17 接管（Claude 真站 pre = #1f2937 暗底 + radius 6px，源
-       main_window/index.html:1113-1127）。 */
+    /* 2026-06-21 对齐 Claude 11:33:04 assistant message：
+       font-claude-response-body = serif / 1rem(16px) / 400 / line-height 1.5
+       容器 leading-[1.65rem] = 26.4px（但 response-body 段落自身 lh 1.5 覆盖）
+       standard-markdown gap-3 = 12px（段落间距）
+       无 border / 无 shadow / 无 padding / 无 radius（裸文本） */
     background: transparent !important;
     color: var(--c-text) !important;
     border: 0 !important;
+    border-radius: 0 !important;
     padding: 0 !important;
+    box-shadow: none !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    gap: 12px !important;
 }
 
 .chat-messages .message.assistant.is-error .message-content {
@@ -2245,19 +2270,32 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
     margin-top: 8px !important;
 }
 
-.message.assistant .message-action-btn {
-    height: 28px !important;
+/* 2026-06-21 对齐 Claude 11:33:04 message action buttons：
+   h-control w-control = 32px, icon 20px, text-muted hover:text-primary,
+   timestamp text-text-500 text-xs mr-2。
+   源码：button class="h-control aspect-square w-control px-0 !text-muted hover:!text-primary"
+   icon style="font-size:20px" / timestamp class="text-text-500 text-xs mr-2" */
+.message-action-btn {
+    width: 32px !important;
+    height: 32px !important;
     padding: 0 !important;
     border-radius: 8px !important;
     background: transparent !important;
     color: var(--c-text-dim) !important;
-    font-size: 12px !important;
-    font-weight: 500 !important;
+    transition: background 120ms ease, color 120ms ease !important;
 }
-
-.message.assistant .message-action-btn:hover {
+.message-action-btn:hover {
     background: var(--c-hover) !important;
     color: var(--c-text) !important;
+}
+.message-action-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+}
+.message-action-ts {
+    font-size: 12px !important;
+    color: var(--c-text-dim) !important;
+    margin-right: 8px !important;
 }
 
 .chat-messages .message.assistant.is-error .assistant-error-title {
@@ -2276,6 +2314,31 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-error-text,
 html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-error-api-hint {
     color: #fecaca !important;
+}
+
+/* 2026-06-21 对齐 Claude 11:33:04 thinking block：
+   摘要按钮: text-sm(14px) text-text-500 hover:text-text-300
+   摘要文本: truncate font-base(14px/430/1.4)
+   箭头: -rotate-90(折叠态朝右) transition-transform duration-200
+   源码：button class="group/status flex items-center gap-2 py-1 text-sm text-text-500 hover:text-text-300"
+   summary span class="truncate font-base" */
+.think-label {
+    font-size: 14px !important;
+    font-weight: 430 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0 !important;
+    color: var(--c-text-dim) !important;
+}
+.think-header:hover .think-label {
+    color: var(--c-text-soft) !important;
+}
+.think-caret {
+    transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.think-body {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    color: var(--c-text-dim) !important;
 }
 /* code/pre 容器样式块已移至 §17 (line ~3140+)，让 Claude .prose 1:1 统一接管。
    pre overflow-x: auto 在 §17 line 3178 已包含。 */
@@ -2327,8 +2390,14 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     gap: 4px !important;
 }
 #homeView.chatting .composer-input {
-    min-height: 32px !important;
-    padding: 2px 4px 0 !important;
+    /* 2026-06-21 对齐 Claude 11:33:04 chatting input：
+       font-large(16px/430/1.4) max-h-96(384px) min-h-[1.5rem](24px) pl-[6px] pt-[6px] */
+    min-height: 24px !important;
+    max-height: 384px !important;
+    padding: 6px 0 0 6px !important;
+    font-size: 16px !important;
+    font-weight: 430 !important;
+    line-height: 1.4 !important;
 }
 
 /* 对话进行中底部一行小字"Cancri 错错的，会忘错..." */
@@ -8732,9 +8801,13 @@ html[data-theme] {
 }
 
 #homeView.chatting .composer {
+    /* 2026-06-21 对齐 Claude 11:33:04 chatting composer：
+       rounded-[20px] / bg-bg-000 / 内层 m-3.5(14px) gap-3(12px)。
+       去掉 min-height 硬底（content-driven，同 welcome）。 */
     border-radius: 20px !important;
-    min-height: 102px !important;
-    padding: 12px 14px !important;
+    min-height: 0 !important;
+    padding: 14px !important;
+    gap: 12px !important;
     box-shadow:
         0 0.25rem 1.25rem hsl(0 0% 0% / 3.5%),
         0 0 0 0.5px hsl(var(--border-300) / 15%) !important;
