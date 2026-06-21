@@ -898,7 +898,17 @@ function card(m) {
     // brand 从 .meta badge 升级为名称下面的 sub-title，逻辑上与 logo 互补，
     // 避免 brand badge 与 logo 重复。
     const unavailableMessage = m.unavailableMessage || "该模型线路当前不可用，请稍后重试或切换其他模型。";
+    const metaHtml = (m._lineCount > 1 || disabled)
+        ? `<div class="meta">
+            ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
+            ${disabled ? `<span class="badge badge-disabled">${esc(unavailableMessage)}</span>` : ""}
+          </div>`
+        : "";
+    const capsHtml = caps.length
+        ? `<div class="caps">${caps.map((c) => `<span class="cap">${esc(c)}</span>`).join("")}</div>`
+        : "";
     // 2026-05-22 增 data-model-id：抽屉点击委托靠它从 MODELS 反查模型对象。
+    // 2026-06-21：将头部所有徽章合并为一条 status bar，能力标签移到 specs 下方。
     return `<div class="card${disabled ? " is-disabled" : ""}" data-tier="${displayTier}" data-model-id="${esc(m.id)}" tabindex="0" role="button" aria-label="${esc(m.displayName || m.id)} — 查看详情"${disabled ? ` title="${esc(unavailableMessage)}"` : ""}>
           <div class="card-head">
             ${brandLogoHtml(m.brand, m.id)}
@@ -908,17 +918,21 @@ function card(m) {
               <div class="card-id" title="点击复制">${esc(m.id)}</div>
               ${m.publicDescription ? `<div class="card-desc">${esc(m.publicDescription)}</div>` : ""}
             </div>
-            <span class="card-badges"><span class="tier ${tierClass}">${tierLabel}</span>${multiplierBadge}${proPlusBadge}${proMaxBadge}${freeBlockedBadge}${disabledBadge}</span>
+            <div class="card-status">
+              <span class="tier ${tierClass}">${tierLabel}</span>
+              ${multiplierBadge}
+              ${proPlusBadge}
+              ${proMaxBadge}
+              ${freeBlockedBadge}
+              ${disabledBadge}
+            </div>
           </div>
-          <div class="meta">
-            ${m._lineCount > 1 ? `<span class="badge" title="多条上游冷备，后端自动选最优">${m._lineCount} 条冷备</span>` : ""}
-            ${disabled ? `<span class="badge badge-disabled">${esc(unavailableMessage)}</span>` : ""}
-            ${caps.map((c) => `<span class="badge cap">${c}</span>`).join("")}
-          </div>
+          ${metaHtml}
           <div class="specs">
             <span class="spec"><span class="spec-key">输入</span><b>${inputK}</b></span>
             <span class="spec"><span class="spec-key">输出</span><b>${outputK}</b></span>
           </div>
+          ${capsHtml}
           <button class="copy-btn" data-copy="${esc(m.id)}">复制 model ID</button>
         </div>`;
 }
