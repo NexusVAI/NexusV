@@ -2155,14 +2155,17 @@ html[data-theme="black"] .claude-suggest:hover {
    8. CHAT MESSAGES — 用户右块、助手左裸
    ─────────────────────────────────────────────────────────── */
 .chat-messages {
-    padding: 4px 24px 120px !important;
+    /* 2026-06-21 对齐 Claude 11:33:04 消息区域：
+       px-4(16px) pt-1(4px) max-w-3xl(768px)，bottom 留 composer 空间 */
+    padding: 4px 16px 120px !important;
     max-width: var(--c-main-col) !important;
     margin: 0 auto !important;
     width: 100% !important;
     position: relative;
 }
 .chat-messages .message {
-    margin: 16px 0 !important;
+    /* Claude 消息间距：mt-6(24px) mb-1(4px) */
+    margin: 24px 0 4px !important;
     border: 0 !important;
     background: transparent !important;
 }
