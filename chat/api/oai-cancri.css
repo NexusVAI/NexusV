@@ -1,0 +1,176 @@
+/* Cancri overrides on top of the ported OpenAI stylesheet (oai-platform.css).
+ * Kept intentionally minimal — layout/colors/typography all come from the
+ * OpenAI tokens + Tailwind utilities. This file only adds the few things
+ * utility classes can't express: <details> disclosure chevron, the model
+ * card's logo thumbnail (centered display-name over a logo image) and the
+ * Model ID / price spec rows shown below each card.
+ * Uses OpenAI's own CSS custom properties so light/dark theming stays 1:1. */
+
+/* The base `bg-white` utility was tree-shaken from the extracted stylesheet
+ * (only the `dark:bg-black` variant survived). The fixed header / sidebar /
+ * drawer use `bg-white dark:bg-black`; scope this to light theme only so it
+ * never competes with `dark:bg-black` in dark mode. */
+:root[data-theme="light"] .bg-white {
+  background-color: #fff;
+}
+
+/* ── sidebar collapsible groups (native <details>) ───────────────── */
+.nav-disclosure > summary {
+  list-style: none;
+}
+.nav-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.nav-disclosure[open] > summary .nav-disclosure-chevron {
+  transform: rotate(90deg);
+}
+
+/* ── model card thumbnail: logo image + centered display name ────── */
+.cancri-thumb {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center center;
+  background-color: var(--color-background-primary-soft);
+}
+/* flat legibility scrim (NOT a drop shadow) so the white name reads on the
+ * mid-tone logo art. Remove this rule if you want the raw logo with no veil. */
+.cancri-thumb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.26);
+}
+.cancri-thumb__name {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-weight: 600;
+  font-size: clamp(22px, 2.3vw, 32px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-align: center;
+  padding: 0 18px;
+  max-width: 100%;
+}
+
+/* ── spec rows below the card (Model ID + price) ─────────────────── */
+.cancri-spec {
+  display: flex;
+  flex-direction: column;
+}
+.cancri-spec__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+.cancri-spec__key {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.cancri-spec__val {
+  font-size: 13px;
+  color: var(--color-text-emphasis);
+  text-align: right;
+}
+/* mono id pill, doubles as the copy button */
+.cancri-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-text-emphasis);
+  background: var(--color-background-primary-soft);
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  max-width: 100%;
+}
+.cancri-id:hover {
+  background: var(--color-background-primary-soft-alpha, rgba(127, 127, 127, 0.16));
+}
+.cancri-id__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cancri-id svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.cancri-id.is-copied {
+  color: #16a34a;
+}
+
+/* price value emphasis */
+.cancri-price__num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.cancri-price__unit {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+/* ── full model grid (model square page) ─────────────────────────── */
+.cancri-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 24px;
+}
+@media (min-width: 768px) {
+  .cancri-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 40px;
+  }
+}
+@media (min-width: 1280px) {
+  .cancri-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* search overlay backdrop (Tailwind didn't compile bg-black/35 + /70 in the
+ * extracted stylesheet, so define the dim layer explicitly, theme-aware). */
+.cancri-overlay-backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .cancri-overlay-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* search overlay results */
+.cancri-search-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: var(--color-text-emphasis);
+  text-decoration: none;
+  cursor: pointer;
+}
+.cancri-search-result:hover,
+.cancri-search-result.is-active {
+  background: var(--color-background-primary-soft);
+}
+.cancri-search-result__sub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* small helper to hide elements until JS toggles them */
+[data-cancri-hidden] {
+  display: none !important;
+}

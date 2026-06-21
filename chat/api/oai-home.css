@@ -1,0 +1,332 @@
+/* NexusV 开放平台 — 首页（对标 openai.com/api 营销页 + 主站导航）。
+ * 复用主站设计令牌（css/variables.css）以跟随 warm/dark/light/blue 主题，
+ * 不引入 openai 文档站的 oai-platform.css（两套设计系统会打架）。 */
+
+.api-home {
+  padding-top: var(--nav-height, 54px);
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── HERO ───────────────────────────────────────────────── */
+.api-hero {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(72px, 12vh, 160px) 24px clamp(40px, 6vh, 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.api-hero__title {
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: var(--type-h1-size);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-track);
+  color: var(--text-color);
+  max-width: 16ch;
+  text-wrap: balance;
+}
+.api-hero__actions {
+  margin-top: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.api-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 2.5rem;
+  padding: 0 20px;
+  border-radius: 2.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+/* filled = inverted (white-on-dark / black-on-light), like OpenAI primary */
+.api-btn--solid {
+  background: var(--text-color);
+  color: var(--bg-color);
+}
+.api-btn--solid:hover {
+  opacity: 0.85;
+}
+.api-btn--ghost {
+  background: var(--pill-bg);
+  color: var(--text-color);
+}
+.api-btn--ghost:hover {
+  background: var(--pill-hover);
+}
+.api-btn__chevron {
+  width: 10px;
+  height: 10px;
+}
+
+/* ── ANIMATED LOGO STRIP (customer / ecosystem logos) ───── */
+.logo-strip {
+  width: 100%;
+  margin: clamp(16px, 4vh, 48px) 0 clamp(40px, 8vh, 96px);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+}
+.logo-strip__track {
+  display: flex;
+  align-items: center;
+  gap: clamp(40px, 6vw, 88px);
+  width: max-content;
+  animation: logo-marquee 46s linear infinite;
+  will-change: transform;
+}
+.logo-strip:hover .logo-strip__track {
+  animation-play-state: paused;
+}
+.logo-strip__item {
+  height: 30px;
+  width: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: grayscale(1);
+  opacity: 0.55;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.logo-strip__item:hover {
+  filter: grayscale(0);
+  opacity: 1;
+}
+@keyframes logo-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-strip__track { animation: none; }
+}
+
+/* ── "由前沿模型驱动" SECTION ─────────────────────────────── */
+.models-section {
+  padding: clamp(40px, 8vh, 96px) 0 clamp(56px, 10vh, 120px);
+}
+.models-section__head {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+.models-section__title {
+  font-weight: 600;
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-track);
+  color: var(--text-color);
+  text-wrap: balance;
+}
+.models-section__sub {
+  margin-top: 16px;
+  font-size: var(--type-p1-size);
+  line-height: var(--type-p1-line);
+  color: var(--secondary-text);
+  text-wrap: balance;
+}
+.models-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 40px;
+  padding: 0 clamp(24px, 6vw, 96px) 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.models-row::-webkit-scrollbar { display: none; }
+
+.model-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  width: clamp(260px, 26vw, 320px);
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-card);
+  text-decoration: none;
+  color: #fff;
+  isolation: isolate;
+}
+.model-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.28) 42%, rgba(0, 0, 0, 0.05) 100%);
+}
+.model-card__body {
+  position: relative;
+  z-index: 1;
+  padding: 22px 22px 24px;
+}
+.model-card__name {
+  font-size: var(--type-h3-size);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.model-card__specs {
+  margin-top: 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.86);
+}
+.model-card__cta {
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 2rem;
+  padding: 0 14px;
+  border-radius: 2rem;
+  background: #fff;
+  color: #000;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  width: max-content;
+}
+.models-row__loading,
+.models-row__error {
+  padding: 24px clamp(24px, 6vw, 96px);
+  color: var(--secondary-text);
+  font-size: var(--type-p2-size);
+}
+[data-home-hidden] { display: none !important; }
+
+/* ── Contact Sales / API 申请 ────────────────────────────── */
+.cs-wrap {
+  padding-top: var(--nav-height, 54px);
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-bottom: clamp(48px, 8vh, 96px);
+}
+.cs-head {
+  padding: clamp(48px, 9vh, 96px) 0 28px;
+}
+.cs-head__title {
+  font-weight: 600;
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-track);
+  color: var(--text-color);
+}
+.cs-head__sub {
+  margin-top: 12px;
+  font-size: var(--type-p1-size);
+  color: var(--secondary-text);
+  max-width: 56ch;
+}
+.cs-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: clamp(20px, 4vw, 36px);
+}
+.cs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 560px) { .cs-grid { grid-template-columns: 1fr; } }
+.cs-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.cs-field--full { grid-column: 1 / -1; }
+.cs-label {
+  font-size: var(--type-p2-size);
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cs-label .req { color: #e5484d; }
+.cs-label .opt { color: var(--tertiary-text); font-size: 12px; }
+.cs-input,
+.cs-textarea {
+  width: 100%;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-color);
+  font: inherit;
+  font-size: var(--type-p2-size);
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cs-input:focus,
+.cs-textarea:focus {
+  border-color: var(--text-color);
+  box-shadow: 0 0 0 3px var(--pill-bg);
+}
+.cs-input:disabled { opacity: 0.6; }
+.cs-textarea { resize: vertical; min-height: 130px; line-height: 1.55; }
+.cs-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 0 20px;
+  font-size: var(--type-p2-size);
+  color: var(--secondary-text);
+  line-height: 1.5;
+}
+.cs-consent input { margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--accent-color); }
+.cs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 24px;
+  border-radius: 2.5rem;
+  border: 0;
+  background: var(--text-color);
+  color: var(--bg-color);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.cs-btn:hover { opacity: 0.85; }
+.cs-btn:disabled { opacity: 0.5; cursor: default; }
+.cs-msg { margin-top: 14px; font-size: var(--type-p2-size); display: none; }
+.cs-msg.ok { color: #2e9e5b; display: block; }
+.cs-msg.err { color: #e5484d; display: block; }
+.cs-state {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+  color: var(--secondary-text);
+}
+.cs-status-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.cs-status-badge.status-pending { background: rgba(212,160,77,.16); color: #d4a04d; }
+.cs-status-badge.status-approved { background: rgba(46,158,91,.16); color: #2e9e5b; }
+.cs-status-badge.status-rejected { background: rgba(229,72,77,.16); color: #e5484d; }

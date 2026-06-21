@@ -1,0 +1,178 @@
+/* NexusV 开放平台控制台 — 对标 platform.openai.com 的 home/usage/logs/api-keys。
+ * 左侧固定侧栏 + 内容区，复用主站设计令牌（css/variables.css）随主题变化。
+ * 侧栏 / 内容由 console.js 注入并按 data-console-page 渲染。 */
+
+.cs-console {
+  min-height: 100dvh;
+  display: flex;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-main);
+}
+
+/* ── sidebar ─────────────────────────────────────────────── */
+.csb {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 252px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-color);
+  z-index: 30;
+  overflow-y: auto;
+}
+.csb__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 16px;
+  font-weight: 600;
+  color: var(--text-color);
+  text-decoration: none;
+}
+.csb__brand img { width: 24px; height: 24px; border-radius: 6px; }
+.csb__section {
+  margin: 14px 10px 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tertiary-text);
+}
+.csb__nav { display: flex; flex-direction: column; gap: 2px; }
+.csb__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--secondary-text);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.csb__item:hover { background: var(--pill-bg); color: var(--text-color); }
+.csb__item.is-active { background: var(--pill-bg); color: var(--text-color); font-weight: 500; }
+.csb__item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.csb__spacer { flex: 1; }
+.csb__foot { padding: 10px; border-top: 1px solid var(--border-color); margin-top: 10px; font-size: 12px; color: var(--tertiary-text); }
+.csb__user { display: flex; align-items: center; gap: 8px; }
+.csb__avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-color); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+/* ── content ─────────────────────────────────────────────── */
+.csc {
+  flex: 1;
+  margin-left: 252px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.csc__top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-color) 86%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.csc__title { font-size: 18px; font-weight: 600; }
+.csc__actions { display: flex; align-items: center; gap: 10px; }
+.csc__body { padding: 28px; max-width: 1080px; width: 100%; }
+.csc__lead { color: var(--secondary-text); font-size: 14px; margin-top: 2px; }
+
+/* buttons */
+.csbtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 16px; border-radius: 8px;
+  font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent;
+  text-decoration: none; transition: background 0.15s, opacity 0.15s;
+}
+.csbtn--primary { background: var(--text-color); color: var(--bg-color); }
+.csbtn--primary:hover { opacity: 0.85; }
+.csbtn--ghost { background: transparent; border-color: var(--border-color); color: var(--text-color); }
+.csbtn--ghost:hover { background: var(--pill-bg); }
+
+/* stat cards */
+.cs-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 900px) { .cs-cards { grid-template-columns: repeat(2, 1fr); } }
+.cs-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--bg-card);
+}
+.cs-card__label { font-size: 13px; color: var(--secondary-text); }
+.cs-card__value { font-size: 28px; font-weight: 600; margin-top: 8px; letter-spacing: -0.02em; }
+.cs-card__sub { font-size: 12px; color: var(--tertiary-text); margin-top: 4px; }
+
+/* panel */
+.cs-panel {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+  margin-top: 24px;
+  overflow: hidden;
+}
+.cs-panel__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--border-color);
+}
+.cs-panel__title { font-size: 15px; font-weight: 600; }
+.cs-panel__body { padding: 18px; }
+
+/* usage chart */
+.cs-chart-wrap { position: relative; width: 100%; }
+.cs-chart-svg { width: 100%; height: 240px; display: block; overflow: visible; }
+.cs-chart__grid { stroke: var(--border-color); stroke-width: 1; }
+.cs-chart__area-stroke { fill: none; stroke: var(--accent-color); stroke-width: 2; }
+.cs-chart__tokens { fill: none; stroke: var(--tertiary-text); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.cs-chart__dot { fill: var(--accent-color); stroke: var(--bg-card); stroke-width: 2; cursor: pointer; }
+.cs-chart__axis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--tertiary-text); }
+.cs-chart__legend { display: flex; gap: 16px; font-size: 12px; color: var(--secondary-text); }
+.cs-chart__legend i { display: inline-block; width: 12px; height: 0; border-top: 2px solid var(--accent-color); vertical-align: middle; margin-right: 5px; }
+.cs-chart__legend i.dash { border-top: 2px dashed var(--tertiary-text); }
+.cs-tooltip {
+  position: absolute; pointer-events: none; background: var(--text-color); color: var(--bg-color);
+  font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; transform: translateX(-50%); z-index: 5;
+}
+.cs-tooltip strong { display: block; margin-bottom: 2px; }
+
+/* tables */
+.cs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cs-table th, .cs-table td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border-color); }
+.cs-table th { color: var(--secondary-text); font-weight: 500; font-size: 12px; }
+.cs-table td.num, .cs-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.cs-table tr:last-child td { border-bottom: 0; }
+.cs-mono { font-family: var(--font-mono); font-size: 12px; }
+.cs-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.cs-pill--ok { background: rgba(46,158,91,.16); color: #2e9e5b; }
+.cs-pill--err { background: rgba(229,72,77,.16); color: #e5484d; }
+.cs-bar { height: 6px; border-radius: 3px; background: var(--border-color); overflow: hidden; }
+.cs-bar > i { display: block; height: 100%; background: var(--accent-color); }
+
+/* states */
+.cs-state { padding: 48px 24px; text-align: center; color: var(--secondary-text); }
+.cs-empty { padding: 36px; text-align: center; color: var(--tertiary-text); font-size: 14px; }
+.cs-login { max-width: 420px; margin: 8vh auto; text-align: center; border: 1px solid var(--border-color); border-radius: 14px; padding: 36px; background: var(--bg-card); }
+.cs-login h2 { font-size: 20px; margin-bottom: 10px; }
+.cs-login p { color: var(--secondary-text); font-size: 14px; margin-bottom: 20px; }
+[data-cs-hidden] { display: none !important; }
+
+/* code/key copy */
+.cs-keyrow { display: flex; align-items: center; gap: 8px; }
+.cs-copy { cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--secondary-text); border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+.cs-copy:hover { background: var(--pill-bg); color: var(--text-color); }
+
+@media (max-width: 760px) {
+  .csb { transform: translateX(-100%); transition: transform 0.2s; }
+  .csb.is-open { transform: none; }
+  .csc { margin-left: 0; }
+  .cs-cards { grid-template-columns: 1fr 1fr; }
+}
