@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>管理台 · 按量定价 · Cancri</title>
+    <link rel="icon" type="image/png" href="../../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../../Logo/Cancri.png" />
+    <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
+    <script src="./api-platform.js?v=20260607-account-fix"></script>
+    <style>
+      .mode-card {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 12px; margin-bottom: 18px; padding: 14px 18px;
+        display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      }
+      .mode-pill {
+        font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 20px;
+        border: 1px solid var(--border);
+      }
+      .mode-pill.quota { color: var(--text-mute); background: var(--bg-elev); }
+      .mode-pill.wallet { color: var(--ok, #4ade80); border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.1); }
+      .mode-card .desc { flex: 1; font-size: 12px; color: var(--text-mute); line-height: 1.6; min-width: 240px; }
+      .btn-save {
+        padding: 7px 14px; font-size: 12.5px; font-weight: 600;
+        border: 1px solid rgba(99,102,241,.35); background: rgba(99,102,241,.1);
+        color: var(--accent, #818cf8); border-radius: 6px; cursor: pointer; white-space: nowrap;
+      }
+      .btn-save:hover { background: rgba(99,102,241,.18); }
+      .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+      .btn-danger { border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.12); color: #f87171; }
+      .toolbar2 { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+      .toolbar2 input[type="text"] {
+        flex: 1; min-width: 200px; padding: 8px 12px; font-size: 13px;
+        border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); color: var(--text);
+      }
+      .toolbar2 label { font-size: 12.5px; color: var(--text-mute); display: flex; align-items: center; gap: 5px; }
+      .summary { font-size: 12.5px; color: var(--text-mute); margin-bottom: 10px; }
+      .summary b { color: var(--text); }
+      .summary .warn { color: #fbbf24; }
+      table.price-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+      table.price-tbl th, table.price-tbl td {
+        padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle;
+      }
+      table.price-tbl th { font-weight: 600; color: var(--text-mute); position: sticky; top: 0; background: var(--bg-card); }
+      .price-tbl input[type="number"] {
+        width: 78px; padding: 5px 7px; font-size: 12.5px; border: 1px solid var(--border);
+        border-radius: 5px; background: var(--bg-elev); color: var(--text); font-variant-numeric: tabular-nums;
+      }
+      .price-tbl select {
+        padding: 5px 6px; font-size: 12px; border: 1px solid var(--border);
+        border-radius: 5px; background: var(--bg-elev); color: var(--text);
+      }
+      .mid { font-weight: 600; }
+      .mid .sub { font-size: 11px; color: var(--text-faint); font-weight: 400; }
+      .badge { font-size: 10.5px; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+      .badge.free { color: var(--text-mute); background: var(--bg-elev); }
+      .badge.paid { color: #818cf8; background: rgba(99,102,241,.12); }
+      .badge.unpriced { color: #f87171; background: rgba(248,113,113,.14); }
+      .badge.ok { color: #4ade80; background: rgba(74,222,128,.12); }
+      tr.row-unpriced td { background: rgba(248,113,113,.05); }
+      tr.is-free { opacity: .62; }
+      .toast { right: auto; left: 50%; transform: translateX(-50%) translateY(8px); }
+      .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="./admin_dashboard.html">仪表盘</a>
+        <a href="./admin.html">审核</a>
+        <a href="./admin_orders.html">订单</a>
+        <a href="./admin_usage.html">调用日志</a>
+        <a href="./admin_lines.html">线路</a>
+        <a href="./admin_models.html">模型配置</a>
+        <a href="./admin_pricing.html" aria-current="page">按量定价</a>
+        <a href="./admin_descriptions.html">模型描述</a>
+        <a href="./admin_users.html">用户</a>
+        <a href="./admin_appeals.html">申诉</a>
+        <span class="badge-admin">ADMIN</span>
+        <span class="spacer"></span>
+        <a href="../" style="color: var(--text-faint)">← 返回聊天</a>
+      </nav>
+
+      <div id="loading" class="loading">检查权限中…</div>
+
+      <div id="login-gate" class="gate" style="display: none">
+        <h2>需要登录</h2>
+        <p>请先登录账号，验证你的管理员身份</p>
+        <a class="btn-primary" href="../">前往登录</a>
+      </div>
+
+      <div id="deny-gate" class="gate deny" style="display: none">
+        <h2>无权访问</h2>
+        <p>这个页面仅站点管理员可见。</p>
+        <a class="btn-primary" href="../">返回聊天</a>
+      </div>
+
+      <div id="main" style="display: none">
+        <header>
+          <h1>按量定价</h1>
+          <p>
+            每个模型设「<strong>按量</strong>（输入/输出 元/M token）」或「<strong>按次</strong>（元/次）」。
+            <strong>付费模型未正确定价 = 不可用（402）</strong>；改价即时生效（v3 RPC 每次直读 DB，无缓存）。
+            免费模型不计费，无需定价。
+          </p>
+        </header>
+
+        <!-- 计费模式开关（cutover） -->
+        <div class="mode-card">
+          <span>当前计费模式：</span>
+          <span id="mode-pill" class="mode-pill quota">—</span>
+          <span class="desc">
+            <code>quota_v2</code>=旧订阅/积分；<code>wallet_v3</code>=按量充值（¥钱包）。
+            切到 wallet_v3 即对全站启用按量计费——请先确认付费模型都已定价、充值入口与限速已就绪。
+          </span>
+          <button class="btn-save" id="mode-toggle">切换模式</button>
+        </div>
+
+        <div class="toolbar2">
+          <input type="text" id="filter" placeholder="搜索模型 ID / 名称 / 品牌…" autocomplete="off" spellcheck="false" />
+          <label><input type="checkbox" id="only-paid" /> 只看付费</label>
+          <label><input type="checkbox" id="only-unpriced" /> 只看未定价</label>
+          <button class="btn-save" id="reload-btn">重新加载</button>
+        </div>
+        <div class="summary" id="summary"></div>
+
+        <div style="overflow-x:auto">
+          <table class="price-tbl">
+            <thead>
+              <tr>
+                <th>模型</th>
+                <th>档位</th>
+                <th>计费方式</th>
+                <th>输入 ¥/M</th>
+                <th>输出 ¥/M</th>
+                <th>缓存×</th>
+                <th>¥/次</th>
+                <th>状态</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <script src="../cancri_config.js"></script>
+    <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="./admin-pricing-app.js?v=2026-06-22-payg"></script>
+  </body>
+</html>

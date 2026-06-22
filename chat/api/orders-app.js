@@ -222,8 +222,33 @@ function renderOrders(orders) {
 
 async function loadAll() {
     const data = await callGateway("list_my_orders", {});
-    renderSubscription(data.subscription);
+    // 2026-06-22 按量计费：wallet_v3 模式下渲染¥钱包余额而非订阅配额。
+    const billingMode = data.billing_mode || (data.subscription && data.subscription.billing_mode) || "quota_v2";
+    if (billingMode === "wallet_v3" && data.wallet) {
+        renderWalletBalance(data.wallet);
+    } else {
+        renderSubscription(data.subscription);
+    }
     renderOrders(data.orders || []);
+}
+
+// ────────── 2026-06-22 ¥钱包余额卡（wallet_v3）──────────
+function renderWalletBalance(wallet) {
+    const badge = document.getElementById("sub-badge");
+    const title = document.getElementById("sub-title");
+    const desc = document.getElementById("sub-desc");
+    const quotaTopupText = document.getElementById("quota-topup-text");
+    const monthlyBox = document.getElementById("quota-monthly");
+    const quotaMonthlyText = document.getElementById("quota-monthly-text");
+    if (badge) { badge.className = "badge-tier pro_max"; badge.textContent = "WALLET"; }
+    if (title) title.textContent = "按量充值账户";
+    const bal = Number(wallet.balance_cny || 0).toFixed(2);
+    const cum = Number(wallet.cumulative_recharge_cny || 0).toFixed(2);
+    const tier = wallet.tier || 0;
+    if (desc) desc.innerHTML = "累计充值 ¥" + esc(cum) + " · 限速档位 Tier" + esc(String(tier));
+    if (quotaTopupText) quotaTopupText.textContent = "¥" + bal;
+    if (monthlyBox) monthlyBox.style.display = "none";
+    if (quotaMonthlyText) quotaMonthlyText.textContent = "—";
 }
 
 // ────────── 兑换激活码 ──────────

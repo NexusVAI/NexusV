@@ -538,6 +538,13 @@ async function init() {
     try {
         await loadPricing();
 
+        // 2026-06-22 按量计费：检测 billing_mode。wallet_v3 时切换为充值入口。
+        const billingMode = await detectBillingMode();
+        if (billingMode === "wallet_v3") {
+            setupWalletRechargeMode(loading);
+            return;
+        }
+
         const { data: { session } } = await sb.auth.getSession();
         if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
         else if (loading) loading.style.display = "none";
@@ -581,6 +588,243 @@ async function init() {
                 '<p style="color:var(--err);margin-bottom:12px">页面加载失败，请刷新重试。</p>' +
                 '<a href="./" class="btn-secondary">返回聊天</a>';
         }
+    }
+}
+
+// ────────── 2026-06-22 按量充值模式（wallet_v3）──────────
+// 检测 billing_mode：调 model_public_catalog 端点拿 billing_mode 字段。
+let __billingModeCache = null;
+async function detectBillingMode() {
+    if (__billingModeCache) return __billingModeCache;
+    try {
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: window.__SUPABASE_ANON_KEY__ },
+            body: JSON.stringify({ endpoint: "model_public_catalog" }),
+        });
+        if (resp.ok) {
+            const d = await resp.json();
+            __billingModeCache = d.billing_mode || "quota_v2";
+            return __billingModeCache;
+        }
+    } catch (e) { console.warn("detectBillingMode:", e); }
+    __billingModeCache = "quota_v2";
+    return __billingModeCache;
+}
+
+// wallet_v3 模式：隐藏旧订阅/加油包区块，注入充值表单 + ¥余额显示。
+function setupWalletRechargeMode(loadingEl) {
+    // 隐藏旧套餐相关区块
+    const hideSelectors = [
+        "[data-plan-select]", ".plan-tier", ".topup-card",
+        "#order-form-section", "#order-empty", "#order-card",
+        ".pricing-faq", "#promo-banner",
+    ];
+    hideSelectors.forEach((sel) => {
+        document.querySelectorAll(sel).forEach((el) => { el.style.display = "none"; });
+    });
+
+    // 在 main 区域顶部插入充值面板
+    const main = document.querySelector("main.pricing-page") || document.querySelector("main");
+    if (main && !document.getElementById("wallet-recharge-section")) {
+        const section = document.createElement("section");
+        section.id = "wallet-recharge-section";
+        section.style.cssText = "max-width:640px;margin:0 auto 40px;padding:0 20px;";
+        section.innerHTML =
+            '<h2 style="text-align:center;font-size:28px;margin-bottom:8px">按量充值</h2>' +
+            '<p style="text-align:center;color:var(--text-mute);margin-bottom:24px">¥1 = ¥1 钱包额度，按模型实际用量计费，永不过期</p>' +
+            '<div id="wallet-balance-card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;text-align:center">' +
+                '<div style="font-size:13px;color:var(--text-mute);margin-bottom:4px">当前余额</div>' +
+                '<div id="wallet-balance-display" style="font-size:36px;font-weight:700">¥ --</div>' +
+                '<div id="wallet-tier-display" style="font-size:12px;color:var(--text-mute);margin-top:4px"></div>' +
+            '</div>' +
+            '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px">' +
+                '<label style="display:block;font-size:14px;margin-bottom:8px">充值金额（¥1 ~ ¥2000）</label>' +
+                '<div style="display:flex;gap:8px;margin-bottom:16px">' +
+                    '<input id="recharge-amount" type="number" min="1" max="2000" step="1" placeholder="输入金额" ' +
+                        'style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:16px;background:var(--bg);color:var(--text)" />' +
+                    '<button id="recharge-quick-10" class="btn btn-secondary" style="padding:10px 16px">¥10</button>' +
+                    '<button id="recharge-quick-50" class="btn btn-secondary" style="padding:10px 16px">¥50</button>' +
+                    '<button id="recharge-quick-100" class="btn btn-secondary" style="padding:10px 16px">¥100</button>' +
+                '</div>' +
+                '<label style="display:block;font-size:14px;margin-bottom:8px">联系方式</label>' +
+                '<input id="recharge-email" type="email" placeholder="邮箱" ' +
+                    'style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;box-sizing:border-box" />' +
+                '<input id="recharge-qq" type="text" placeholder="QQ 号（5-15 位）" ' +
+                    'style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;box-sizing:border-box" />' +
+                '<label style="display:block;font-size:14px;margin-bottom:8px">支付方式</label>' +
+                '<select id="recharge-method" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:16px;box-sizing:border-box">' +
+                    '<option value="wechat">微信</option>' +
+                    '<option value="alipay">支付宝</option>' +
+                '</select>' +
+                '<button id="recharge-submit" class="btn" style="width:100%;padding:12px;font-size:16px">提交充值订单</button>' +
+                '<div id="recharge-msg" style="margin-top:12px"></div>' +
+            '</div>' +
+            '<div style="margin-top:24px;text-align:center">' +
+                '<a href="./orders.html" style="color:var(--text-mute);font-size:13px">查看我的订单 →</a>' +
+            '</div>' +
+            '<div style="margin-top:32px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px">' +
+                '<h3 style="font-size:16px;margin-bottom:12px">代金券兑换</h3>' +
+                '<div style="display:flex;gap:8px">' +
+                    '<input id="voucher-code" type="text" placeholder="输入代金券码" ' +
+                        'style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);text-transform:uppercase" />' +
+                    '<button id="voucher-submit" class="btn btn-secondary" style="padding:10px 20px">兑换</button>' +
+                '</div>' +
+                '<div id="voucher-msg" style="margin-top:12px"></div>' +
+            '</div>';
+        main.insertBefore(section, main.firstChild);
+
+        // 快捷金额按钮
+        ["10", "50", "100"].forEach((amt) => {
+            const btn = document.getElementById("recharge-quick-" + amt);
+            if (btn) btn.addEventListener("click", () => {
+                document.getElementById("recharge-amount").value = amt;
+            });
+        });
+
+        // 提交充值订单
+        const submitBtn = document.getElementById("recharge-submit");
+        if (submitBtn) submitBtn.addEventListener("click", async () => {
+            await submitRechargeOrder();
+        });
+
+        // 加载钱包余额
+        loadWalletBalance();
+
+        // 代金券兑换
+        const voucherBtn = document.getElementById("voucher-submit");
+        if (voucherBtn) voucherBtn.addEventListener("click", async () => {
+            await submitVoucherRedemption();
+        });
+    }
+
+    if (window.PlatformSkeleton) PlatformSkeleton.hide(loadingEl);
+    else if (loadingEl) loadingEl.style.display = "none";
+}
+
+const RECHARGE_MIN_CNY = 1;
+const RECHARGE_MAX_CNY = 2000;
+
+async function loadWalletBalance() {
+    const display = document.getElementById("wallet-balance-display");
+    const tierDisplay = document.getElementById("wallet-tier-display");
+    if (!display) return;
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { display.textContent = "¥ 0.00"; return; }
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: window.__SUPABASE_ANON_KEY__ },
+            body: JSON.stringify({ endpoint: "get_quota_status", __auth_token: session.access_token }),
+        });
+        if (!resp.ok) return;
+        const d = await resp.json();
+        if (d.wallet) {
+            display.textContent = "¥" + fmtPrice(d.wallet.balance_cny);
+            if (tierDisplay) {
+                const tier = d.wallet.tier || 0;
+                tierDisplay.textContent = "限速档位 Tier" + tier;
+            }
+        } else {
+            display.textContent = "¥ 0.00";
+        }
+        // 预填邮箱
+        if (session.user && session.user.email) {
+            const emailInput = document.getElementById("recharge-email");
+            if (emailInput) emailInput.value = session.user.email;
+        }
+    } catch (e) { console.warn("loadWalletBalance:", e); display.textContent = "¥ --"; }
+}
+
+async function submitRechargeOrder() {
+    const btn = document.getElementById("recharge-submit");
+    const msg = document.getElementById("recharge-msg");
+    const amount = Number(document.getElementById("recharge-amount").value);
+    const email = document.getElementById("recharge-email").value.trim();
+    const qq = document.getElementById("recharge-qq").value.trim();
+    const method = document.getElementById("recharge-method").value;
+
+    if (!Number.isFinite(amount) || amount < RECHARGE_MIN_CNY || amount > RECHARGE_MAX_CNY) {
+        showMsg(msg, "❌ 充值金额需在 ¥" + RECHARGE_MIN_CNY + " ~ ¥" + RECHARGE_MAX_CNY + " 之间。", "warn");
+        return;
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showMsg(msg, "❌ 请填写有效邮箱。", "warn");
+        return;
+    }
+    if (!qq || !/^[0-9]{5,15}$/.test(qq)) {
+        showMsg(msg, "❌ QQ 号必须是 5-15 位纯数字。", "warn");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "提交中…";
+    msg.innerHTML = "";
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) throw Object.assign(new Error("not_logged_in"), { body: { message: "请先登录" } });
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: window.__SUPABASE_ANON_KEY__ },
+            body: JSON.stringify({
+                endpoint: "submit_payment_order",
+                order_kind: "recharge",
+                amount_cny: amount,
+                email,
+                qq,
+                method,
+                __auth_token: session.access_token,
+            }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw Object.assign(new Error(data.error || resp.statusText), { body: data });
+        showMsg(msg,
+            "✅ 充值订单已提交，订单号 <code>" + esc(data.order && data.order.id) +
+            '</code>。金额 ¥' + esc(data.order && data.order.amount_cny) +
+            '。请扫码付款后等待管理员审核，审核通过后¥额度自动到账。' +
+            ' <a href="./orders.html">查看订单 →</a>',
+            "ok", { html: true });
+        document.getElementById("recharge-qq").value = "";
+        await loadWalletBalance();
+    } catch (err) {
+        const m = (err.body && (err.body.message || err.body.error)) || err.message || "提交失败";
+        showMsg(msg, "❌ " + m, "warn");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "提交充值订单";
+    }
+}
+
+async function submitVoucherRedemption() {
+    const btn = document.getElementById("voucher-submit");
+    const msg = document.getElementById("voucher-msg");
+    const code = document.getElementById("voucher-code").value.trim().toUpperCase();
+    if (!code) { showMsg(msg, "❌ 请输入代金券码。", "warn"); return; }
+    btn.disabled = true;
+    btn.textContent = "兑换中…";
+    msg.innerHTML = "";
+    try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) throw Object.assign(new Error("not_logged_in"), { body: { message: "请先登录" } });
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: window.__SUPABASE_ANON_KEY__ },
+            body: JSON.stringify({ endpoint: "redeem_voucher", code, __auth_token: session.access_token }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw Object.assign(new Error(data.error || resp.statusText), { body: data });
+        showMsg(msg,
+            "✅ 兑换成功！本次到账 <strong>¥" + esc(fmtPrice(data.value_cny)) +
+            "</strong>，当前余额 <strong>¥" + esc(fmtPrice(data.balance_cny)) + "</strong>",
+            "ok", { html: true });
+        document.getElementById("voucher-code").value = "";
+        await loadWalletBalance();
+    } catch (err) {
+        const m = (err.body && (err.body.message || err.body.error)) || err.message || "兑换失败";
+        showMsg(msg, "❌ " + m, "warn");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "兑换";
     }
 }
 
