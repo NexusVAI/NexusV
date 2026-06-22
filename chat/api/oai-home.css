@@ -143,8 +143,9 @@
 .models-row {
   display: flex;
   gap: 24px;
-  margin-top: 40px;
-  padding: 0 clamp(24px, 6vw, 96px) 8px;
+  margin: 40px auto 0;
+  max-width: 1280px;
+  padding: 0 clamp(24px, 5vw, 80px) 8px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
@@ -152,73 +153,7 @@
 }
 .models-row::-webkit-scrollbar { display: none; }
 
-.model-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  flex: 0 0 auto;
-  width: clamp(260px, 26vw, 320px);
-  aspect-ratio: 4 / 5;
-  border-radius: 14px;
-  overflow: hidden;
-  scroll-snap-align: start;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-card);
-  text-decoration: none;
-  color: #fff;
-  isolation: isolate;
-}
-.model-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.28) 42%, rgba(0, 0, 0, 0.05) 100%);
-}
-.model-card__body {
-  position: relative;
-  z-index: 1;
-  padding: 22px 22px 24px;
-}
-.model-card__name {
-  font-size: var(--type-h3-size);
-  line-height: 1.1;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.model-card__specs {
-  margin-top: 12px;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.86);
-}
-.model-card__cta {
-  margin-top: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 2rem;
-  padding: 0 14px;
-  border-radius: 2rem;
-  background: #fff;
-  color: #000;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  width: max-content;
-}
-.models-row__loading,
-.models-row__error {
-  padding: 24px clamp(24px, 6vw, 96px);
-  color: var(--secondary-text);
-  font-size: var(--type-p2-size);
-}
-[data-home-hidden] { display: none !important; }
+/* model-card 样式见下方 "API 首页完整版" 区块 */
 
 /* ── Contact Sales / API 申请 — 1:1 对标 openai.com/contact-sales ── */
 
@@ -533,3 +468,480 @@ body.cs-page:has(.mega-menu-container.active) .navbar {
 .cs-status-badge.status-pending { background: rgba(212,160,77,.16); color: #d4a04d; }
 .cs-status-badge.status-approved { background: rgba(46,158,91,.16); color: #2e9e5b; }
 .cs-status-badge.status-rejected { background: rgba(229,72,77,.16); color: #e5484d; }
+
+/* ════════════════════════════════════════════════════════════════
+ * API 首页完整版 — 对标 openai.com/zh-Hans-CN/api/
+ * 动画/布局对照 OpenAI 源码：
+ *   transition-colors duration-200  → guide card border
+ *   transition-transform duration-300 group-hover:translate-y-0 → model card text slide
+ *   transition-[transform,opacity] duration-300 group-hover:delay-200 → model card CTA reveal
+ *   ease-curve-c duration-medium transition-opacity → agent/usecase image
+ *   ease-curve-d duration-medium transition-[background] → image wrapper
+ * ════════════════════════════════════════════════════════════════ */
+
+/* ── 通用 section ─────────────────────────────────────────────── */
+.api-section {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(56px, 10vh, 120px) clamp(24px, 5vw, 80px);
+}
+.api-section__head {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+.api-section__head--center {
+  text-align: center;
+  align-items: center;
+}
+.api-section__title {
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line);
+  letter-spacing: var(--type-h2-track);
+  color: var(--text-color);
+  text-wrap: balance;
+}
+.api-section__title--center {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.api-section__sub {
+  font-size: var(--type-p1-size);
+  line-height: var(--type-p1-line);
+  color: var(--secondary-text);
+  max-width: 64ch;
+  text-wrap: balance;
+}
+.api-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+@media (min-width: 768px) {
+  .api-section__head {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+/* ── 3. 模型卡片 hover 动画（对照 OpenAI: translate-y + opacity reveal）── */
+.model-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  min-width: 286px;
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  background-size: cover;
+  background-position: center;
+  background-color: #8ad1fd;
+  text-decoration: none;
+  color: #fff;
+  isolation: isolate;
+  transition: transform 0.25s ease;
+}
+/* 桌面端：卡片拉伸填满容器（对照 OpenAI flex-1 + @xl:min-w-0）*/
+@media (min-width: 1024px) {
+  .model-card {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+.model-card:hover { transform: translateY(-4px); }
+.model-card__body {
+  position: relative;
+  z-index: 1;
+  padding: 36px 28px;
+  mask-image: linear-gradient(to bottom, black 0% calc(100% - 36px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0% calc(100% - 36px), transparent 100%);
+}
+/* 文字区：桌面端默认下移，hover 时滑回原位（对照 OpenAI translate-y 动画）*/
+.model-card__slide {
+  transition: transform 0.3s ease;
+}
+@media (min-width: 768px) {
+  .model-card__slide {
+    transform: translateY(52px);
+  }
+  .model-card:hover .model-card__slide,
+  .model-card:focus-visible .model-card__slide {
+    transform: translateY(0);
+  }
+}
+.model-card__name {
+  font-size: var(--type-h3-size);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+  opacity: 0.75;
+}
+.model-card__specs {
+  margin-bottom: 20px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.86);
+  opacity: 0.75;
+}
+/* CTA 按钮：桌面端默认隐藏 + 缩小，hover 时显现（对照 OpenAI scale-90→100 + opacity-0→100 + delay-200）*/
+.model-card__cta {
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 2.5rem;
+  padding: 0 20px;
+  border-radius: 2.5rem;
+  background: #000;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  width: max-content;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition-delay: 0s;
+}
+@media (min-width: 768px) {
+  .model-card__cta {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  .model-card:hover .model-card__cta,
+  .model-card:focus-visible .model-card__cta {
+    transform: scale(1);
+    opacity: 1;
+    transition-delay: 0.2s;
+  }
+}
+.models-row__loading,
+.models-row__error {
+  padding: 24px clamp(24px, 6vw, 96px);
+  color: var(--secondary-text);
+  font-size: var(--type-p2-size);
+}
+[data-home-hidden] { display: none !important; }
+
+/* ── 4. 指南卡片（对照 OpenAI: border-primary-12 + p-6 + transition-colors duration-200）── */
+.guides-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 640px) { .guides-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .guides-grid { grid-template-columns: repeat(3, 1fr); } }
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: border-color 0.2s ease;
+}
+.guide-card:hover {
+  border-color: var(--text-color);
+}
+.guide-card__top {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.guide-card__title {
+  font-size: var(--type-h3-size);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.guide-card__desc {
+  font-size: var(--type-p2-size);
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+.guide-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  text-decoration: none;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  transition: color 0.2s ease;
+}
+.guide-card__link:hover { color: var(--secondary-text); }
+.guide-card__link svg { width: 11px; height: 11px; }
+
+/* ── 5. 智能体平台 3-up（对照 OpenAI: image top + text below, ease-curve-c transition-opacity）── */
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) { .agent-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 768px) { .agent-grid { grid-template-columns: repeat(3, 1fr); gap: 24px 24px 48px; } }
+.agent-card {
+  display: flex;
+  flex-direction: column;
+}
+.agent-card__media {
+  position: relative;
+  width: 100%;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+.agent-card__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+.agent-card__title {
+  font-size: var(--type-h3-size);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.agent-card__desc {
+  font-size: var(--type-p2-size);
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+
+/* ── 6. 语音/图片 Tab（对照 OpenAI: border pill nav + transition-opacity duration-300）── */
+.elevate-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  width: max-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+.elevate-tab {
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--secondary-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.elevate-tab.is-active {
+  background: var(--pill-bg);
+  color: var(--text-color);
+}
+.elevate-tab:hover:not(.is-active) {
+  background: var(--pill-bg);
+}
+.elevate-panel {
+  display: none;
+}
+.elevate-panel.is-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  animation: elevate-fade 0.3s ease;
+}
+@keyframes elevate-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.elevate-panel__desc {
+  font-size: var(--type-p1-size);
+  line-height: var(--type-p1-line);
+  color: var(--text-color);
+  max-width: 56ch;
+  text-align: center;
+  text-wrap: balance;
+}
+.elevate-panel__link {
+  color: var(--text-color);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.elevate-panel__media {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.elevate-panel__media iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.elevate-panel__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── 7. 应用场景 6-up（对照 OpenAI: bg-primary-4 + p-2 + image + px-3 pb-3 body）── */
+.usecase-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) { .usecase-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 768px) { .usecase-grid { grid-template-columns: repeat(3, 1fr); gap: 24px 24px 48px; } }
+.usecase-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--pill-bg);
+  transition: background 0.4s ease;
+}
+.usecase-card:hover {
+  background: var(--pill-hover);
+}
+.usecase-card__media {
+  position: relative;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
+}
+.usecase-card__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+.usecase-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.usecase-card__title {
+  font-size: var(--type-h3-size);
+  font-weight: 600;
+}
+.usecase-card__desc {
+  font-size: var(--type-p2-size);
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+.usecase-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  text-decoration: none;
+  margin-top: 8px;
+  transition: color 0.2s ease;
+}
+.usecase-card__link:hover { color: var(--secondary-text); }
+
+/* ── 8. 企业级功能（对照 OpenAI: border-primary-12 + p-6 + checkmark SVG list）── */
+.enterprise-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 1024px) { .enterprise-grid { grid-template-columns: 1fr 1fr; } }
+.enterprise-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+.enterprise-card__title {
+  font-size: var(--type-h3-size);
+  font-weight: 600;
+}
+.enterprise-card__title--mt { margin-top: 16px; }
+.enterprise-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.enterprise-card__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--type-p2-size);
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+.enterprise-check {
+  flex-shrink: 0;
+  margin-top: 0.4em;
+  opacity: 0.5;
+}
+
+/* ── 9. 开始使用 2-col（对照 OpenAI: border-primary-12 + p-6 + checkmark SVG list）── */
+.get-started-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 1024px) { .get-started-grid { grid-template-columns: 1fr 1fr; } }
+.get-started-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+.get-started-card__title {
+  font-size: var(--type-h3-size);
+  font-weight: 600;
+}
+.get-started-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.get-started-card__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--type-p2-size);
+  line-height: 1.5;
+  color: var(--secondary-text);
+}
+.get-started-card .api-btn { width: max-content; }

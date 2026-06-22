@@ -64,12 +64,13 @@
       '<a class="model-card" href="chat/api_models.html#model-' + escAttr(id) + '" ' +
       'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')">' +
       '<div class="model-card__body">' +
+      '<div class="model-card__slide">' +
       '<div class="model-card__name">' + esc(name) + "</div>" +
       '<ul class="model-card__specs">' + specs.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ul>" +
       '<span class="model-card__cta">了解更多 ' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>' +
       "</span>" +
-      "</div></a>"
+      "</div></div></a>"
     );
   }
 
@@ -123,7 +124,27 @@
     }
   }
 
-  function boot() { buildLogoStrip(); loadModels(); }
+  function boot() { buildLogoStrip(); initElevateTabs(); }
+
+  // ── voice/image tab toggle (section 6) ──────────────────────────
+  function initElevateTabs() {
+    var tabs = document.querySelectorAll("[data-elevate-tab]");
+    var panels = document.querySelectorAll("[data-elevate-panel]");
+    if (!tabs.length) return;
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var key = tab.getAttribute("data-elevate-tab");
+        tabs.forEach(function (t) {
+          t.classList.toggle("is-active", t === tab);
+          t.setAttribute("aria-selected", t === tab ? "true" : "false");
+        });
+        panels.forEach(function (p) {
+          p.classList.toggle("is-active", p.getAttribute("data-elevate-panel") === key);
+        });
+      });
+    });
+  }
+
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
