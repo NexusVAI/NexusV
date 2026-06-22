@@ -8,10 +8,10 @@
     <title>模型 · NexusV 开放平台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
-    <link rel="stylesheet" href="./api/oai-platform.css?v=20260621-oai" />
-    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260621-oai" />
+    <link rel="stylesheet" href="./api/oai-platform.css?v=20260622-models" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260622-models" />
     <!-- 主题在首帧前应用，避免闪烁（CSP 禁 inline，故在 head 同步加载） -->
-    <script src="./api/oai-platform.js?v=20260621-oai"></script>
+    <script src="./api/oai-platform.js?v=20260622-models"></script>
   </head>
 
   <body class="overflow-x-hidden" data-cancri-base="" data-cancri-logobase="../Logo/">
@@ -203,14 +203,48 @@
 
               <div class="h-px w-full bg-primary-soft"></div>
 
-              <div id="cancri-all" class="flex w-full flex-col gap-7">
+              <!-- ─── 专项模型（按提供商分类）─── -->
+              <div class="flex w-full flex-col gap-6">
                 <div class="flex flex-col gap-1">
-                  <h2 class="text-3xl font-semibold tracking-tight">全部模型</h2>
-                  <div class="text-secondary text-sm">共 <span data-cancri-count>—</span> 个可用模型。点击卡片下方的 model ID 可一键复制。</div>
+                  <h2 class="text-3xl font-semibold tracking-tight">专项模型</h2>
+                  <p class="text-sm text-secondary">按提供商分类，为特定场景而生。</p>
                 </div>
+                <div id="cancri-specialized" class="flex flex-col">
+                  <div class="text-sm text-secondary py-6">正在加载模型列表…</div>
+                </div>
+              </div>
+
+              <div class="h-px w-full bg-primary-soft"></div>
+
+              <!-- ─── 浏览完整目录 CTA + 全部模型 ─── -->
+              <div id="cancri-all" class="flex w-full flex-col gap-7">
+                <div class="pt-[40px]">
+                  <div class="w-full">
+                    <div class="flex max-w-[560px] flex-col gap-8">
+                      <div class="flex flex-col gap-2">
+                        <h2 class="text-3xl font-semibold tracking-tight">浏览完整目录</h2>
+                        <p class="text-base text-secondary">共 <span data-cancri-count>—</span> 个可用模型，覆盖多种任务场景</p>
+                      </div>
+                      <div class="flex flex-wrap gap-3">
+                        <a href="#cancri-grid" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="xl"><span class="_ButtonInner_6dmow_4">查看全部模型</span></a>
+                        <a href="./pricing.html" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="xl"><span class="_ButtonInner_6dmow_4">充值</span></a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="h-px w-full bg-primary-soft"></div>
+
                 <div id="cancri-loading" class="text-sm text-secondary py-6">正在加载模型列表…</div>
                 <div id="cancri-error" class="text-sm text-secondary py-6" data-cancri-hidden></div>
                 <div id="cancri-grid" class="cancri-grid"></div>
+
+                <div class="h-px w-full bg-primary-soft"></div>
+                <div class="pt-6">
+                  <a href="./api_docs.html#privacy" class="_TextLink_ssta1_1" data-underline="always">数据使用说明</a>
+                  <span class="mx-2">·</span>
+                  <a href="./api_docs.html#deprecations" class="_TextLink_ssta1_1" data-underline="always">已弃用模型</a>
+                </div>
               </div>
             </div>
           </div>
@@ -220,6 +254,6 @@
 
     <!-- 站点配置（设置 __SUPABASE_URL__ / __SUPABASE_ANON_KEY__），须在 oai-models.js 之前 -->
     <script src="./cancri_config.js?v=2026-05-13e"></script>
-    <script src="./api/oai-models.js?v=20260621-oai"></script>
+    <script src="./api/oai-models.js?v=20260622-models"></script>
   </body>
 </html>
