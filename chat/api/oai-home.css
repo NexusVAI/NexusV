@@ -220,47 +220,205 @@
 }
 [data-home-hidden] { display: none !important; }
 
-/* ── Contact Sales / API 申请 ────────────────────────────── */
-.cs-wrap {
-  padding-top: var(--nav-height, 54px);
-  max-width: 760px;
-  margin: 0 auto;
-  padding-left: 24px;
-  padding-right: 24px;
-  padding-bottom: clamp(48px, 8vh, 96px);
+/* ── Contact Sales / API 申请 — 1:1 对标 openai.com/contact-sales ── */
+
+/* 本页导航栏透明，让 hero 背景图无缝延伸到顶部 */
+body.cs-page .navbar {
+  background: transparent !important;
+  box-shadow: none !important;
 }
+/* mega-menu 打开时恢复导航栏背景（菜单自身有背景，但导航条也需要实色） */
+body.cs-page .mega-menu-container.active ~ .navbar,
+body.cs-page:has(.mega-menu-container.active) .navbar {
+  background: var(--nav-bg) !important;
+}
+
+/* 全宽外层（不再限 1080px，改为 16:9 宽屏感） */
+.cs-wrap {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 clamp(56px, 10vh, 120px);
+  /* 不设 overflow — 让 hero bg 能向上延伸到导航栏后方；水平溢出由 .api-home 的 overflow-x:hidden 兜底 */
+}
+
+/* 顶部渐变背景图：全视口宽，向上延伸到导航栏后方（无缝） */
+.cs-hero-bg {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--nav-height, 54px) * -1);
+  width: 100%;
+  height: 1500px;
+  z-index: -1;
+  overflow: hidden;
+}
+.cs-hero-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../img/form-bg.jpg") center / cover no-repeat;
+  background-position-y: -40vw;
+  -webkit-mask-image: linear-gradient(to bottom, #000 -300px, transparent 300px);
+  mask-image: linear-gradient(to bottom, #000 -300px, transparent 300px);
+}
+
+/* 内层内容容器：1440px 居中（与 navbar-inner 同宽） */
+.cs-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-left: clamp(24px, 5vw, 80px);
+  padding-right: clamp(24px, 5vw, 80px);
+}
+
+/* HERO：标题 + 副标题（左对齐，对标 OpenAI） */
 .cs-head {
-  padding: clamp(48px, 9vh, 96px) 0 28px;
+  padding: clamp(48px, 9vh, 96px) 0 clamp(40px, 6vh, 72px);
+  max-width: 820px;
 }
 .cs-head__title {
   font-weight: 600;
-  font-size: var(--type-h2-size);
-  line-height: var(--type-h2-line);
-  letter-spacing: var(--type-h2-track);
+  font-size: var(--type-h1-size);
+  line-height: var(--type-h1-line);
+  letter-spacing: var(--type-h1-track);
   color: var(--text-color);
+  max-width: 16ch;
+  text-wrap: balance;
 }
 .cs-head__sub {
-  margin-top: 12px;
+  margin-top: 32px;
   font-size: var(--type-p1-size);
+  line-height: var(--type-p1-line);
+  color: var(--text-color);
+  max-width: 64ch;
+  text-wrap: balance;
+}
+.cs-head__sub a {
+  color: var(--text-color);
+  text-decoration: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  transition: color 0.2s ease;
+}
+.cs-head__sub a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0.1px;
+  background: var(--tertiary-text);
+}
+.cs-head__sub a:hover { color: var(--tertiary-text); }
+
+/* 两栏布局：左 4/12 功能，右 8/12 表单 */
+.cs-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(32px, 5vh, 64px);
+}
+@media (min-width: 880px) {
+  .cs-cols {
+    grid-template-columns: 4fr 8fr;
+    gap: clamp(32px, 4vw, 64px);
+  }
+}
+
+/* 左栏：功能列表 */
+.cs-col-left { display: flex; flex-direction: column; gap: clamp(32px, 5vh, 56px); }
+.cs-features-label {
+  font-size: var(--type-p2-size);
   color: var(--secondary-text);
-  max-width: 56ch;
+  margin-bottom: 8px;
 }
-.cs-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: clamp(20px, 4vw, 36px);
+.cs-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.cs-grid {
+.cs-feature {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: var(--type-p2-size);
+  line-height: 1.64;
+  color: var(--text-color);
+}
+.cs-feature svg { flex-shrink: 0; margin-top: 2px; color: var(--text-color); }
+
+/* 左栏：Trusted by — 4 个 logo 槽位，每个循环 4 个 AI 图标（渐变切换） */
+.cs-trusted__label {
+  font-size: var(--type-p2-size);
+  color: var(--secondary-text);
+  margin-bottom: 16px;
+}
+.cs-trusted__logos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 2vw, 24px);
+  max-width: 360px;
+}
+.cs-logo-slot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+.cs-logo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: var(--text-color);
+  opacity: 0;
+  transform: translateY(24px) scale(0.92);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.cs-logo-img svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+.cs-logo-img.is-active {
+  opacity: 0.7;
+  transform: translateY(0) scale(1);
+}
+.cs-logo-slot:hover .cs-logo-img.is-active {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-logo-img { transition: none; transform: none; }
+  .cs-logo-img:not(.is-active) { display: none; }
+}
+
+/* 右栏：表单 */
+.cs-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 20px 16px;
 }
-@media (max-width: 560px) { .cs-grid { grid-template-columns: 1fr; } }
-.cs-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-.cs-field--full { grid-column: 1 / -1; }
+@media (min-width: 880px) { .cs-form { gap: 20px 24px; } }
+@media (max-width: 560px) { .cs-form { grid-template-columns: 1fr; } }
+.cs-field { display: flex; flex-direction: column; gap: 8px; grid-column: span 2; }
+@media (min-width: 560px) { .cs-field--half { grid-column: span 1; } }
 .cs-label {
   font-size: var(--type-p2-size);
+  line-height: 1.64;
   color: var(--text-color);
   display: flex;
   align-items: center;
@@ -269,55 +427,100 @@
 .cs-label .req { color: #e5484d; }
 .cs-label .opt { color: var(--tertiary-text); font-size: 12px; }
 .cs-input,
-.cs-textarea {
+.cs-textarea,
+.cs-select {
   width: 100%;
-  background: var(--bg-color);
+  height: 40px;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 2px;
   color: var(--text-color);
   font: inherit;
   font-size: var(--type-p2-size);
-  padding: 10px 12px;
+  padding: 0 12px;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s;
 }
+.cs-textarea {
+  height: auto;
+  min-height: 80px;
+  padding: 12px;
+  resize: vertical;
+  line-height: 1.55;
+}
+.cs-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 28px;
+}
+.cs-select-wrap { position: relative; display: flex; align-items: center; }
+.cs-select-wrap .cs-select-chevron {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  color: var(--text-color);
+}
+.cs-input:hover,
+.cs-textarea:hover,
+.cs-select:hover { border-color: var(--secondary-text); }
 .cs-input:focus,
-.cs-textarea:focus {
-  border-color: var(--text-color);
-  box-shadow: 0 0 0 3px var(--pill-bg);
+.cs-textarea:focus,
+.cs-select:focus {
+  border-color: var(--secondary-text);
+  box-shadow: 0 0 0 4px var(--border-color);
 }
-.cs-input:disabled { opacity: 0.6; }
-.cs-textarea { resize: vertical; min-height: 130px; line-height: 1.55; }
-.cs-consent {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin: 4px 0 20px;
-  font-size: var(--type-p2-size);
-  color: var(--secondary-text);
-  line-height: 1.5;
+.cs-input::placeholder,
+.cs-textarea::placeholder { color: var(--tertiary-text); }
+.cs-input:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
-.cs-consent input { margin-top: 3px; flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--accent-color); }
+
+/* 提交按钮：胶囊实心反色（对标 OpenAI primary） */
 .cs-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   height: 2.5rem;
-  padding: 0 24px;
+  padding: 0 20px;
   border-radius: 2.5rem;
   border: 0;
   background: var(--text-color);
   color: var(--bg-color);
   font-size: 0.9375rem;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  justify-self: start;
   transition: opacity 0.2s;
 }
 .cs-btn:hover { opacity: 0.85; }
 .cs-btn:disabled { opacity: 0.5; cursor: default; }
-.cs-msg { margin-top: 14px; font-size: var(--type-p2-size); display: none; }
+
+.cs-msg { grid-column: 1 / -1; margin-top: 4px; font-size: var(--type-p2-size); display: none; }
 .cs-msg.ok { color: #2e9e5b; display: block; }
 .cs-msg.err { color: #e5484d; display: block; }
+
+/* 表单下方：帮助中心链接 */
+.cs-help {
+  margin-top: 24px;
+  font-size: 0.8125rem;
+  color: var(--secondary-text);
+  max-width: 50%;
+}
+@media (max-width: 880px) { .cs-help { max-width: 100%; } }
+.cs-help a {
+  color: var(--text-color);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+  text-decoration-thickness: 1px;
+  transition: color 0.2s ease;
+}
+.cs-help a:hover { color: var(--tertiary-text); }
+
+/* 状态卡片（加载 / 未登录 / 已申请） */
 .cs-state {
   background: var(--bg-card);
   border: 1px solid var(--border-color);

@@ -141,6 +141,23 @@
   }
 }
 
+/* ── specialized section: compact 48×48 thumbnail ────────────────── */
+.cancri-thumb-sm {
+  width: 48px;
+  height: 48px;
+  background-size: cover;
+  background-position: center center;
+  background-color: var(--color-background-primary-soft);
+  position: relative;
+}
+.cancri-thumb-sm::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: inherit;
+}
+
 /* search overlay backdrop (Tailwind didn't compile bg-black/35 + /70 in the
  * extracted stylesheet, so define the dim layer explicitly, theme-aware). */
 .cancri-overlay-backdrop {

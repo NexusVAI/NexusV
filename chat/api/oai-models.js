@@ -50,6 +50,25 @@
     "or:arcee-ai/trinity-large-thinking": 1,
   };
 
+  // brand display labels for the specialized section (fallback = raw brand).
+  var BRAND_LABELS = {
+    "Anthropic": "Anthropic",
+    "OpenAI": "OpenAI",
+    "Google": "Google",
+    "DeepSeek": "DeepSeek",
+    "Zhipu": "Zhipu",
+    "Moonshot": "Moonshot",
+    "xAI": "xAI",
+    "MiniMax": "MiniMax",
+    "Alibaba": "Alibaba",
+    "Meta": "Meta",
+    "Mistral": "Mistral",
+    "Nvidia": "NVIDIA",
+    "Microsoft": "Microsoft",
+    "StepFun": "StepFun",
+    "ByteDance": "ByteDance",
+  };
+
   function logoBase() {
     return document.body.getAttribute("data-cancri-logobase") || "../Logo/";
   }
@@ -133,6 +152,74 @@
     );
   }
 
+  /* ── specialized section: compact horizontal cards grouped by brand ── */
+  function specializedCardHtml(m) {
+    var id = m.id || m.canonicalId || "";
+    var name = m.displayName || id;
+    var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
+    return (
+      '<a href="#model-' + escAttr(id) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
+        '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
+          '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg" ' +
+               'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')"></div>' +
+          '<div class="flex flex-col min-w-0">' +
+            '<div class="flex items-center gap-2">' +
+              '<div class="font-semibold truncate">' + esc(name) + '</div>' +
+            '</div>' +
+            (desc ? '<div class="text-sm text-secondary truncate">' + esc(desc) + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+      '</a>'
+    );
+  }
+
+  function renderSpecialized(models) {
+    var container = document.getElementById("cancri-specialized");
+    if (!container) return;
+
+    // exclude featured models (already shown in frontier section)
+    var nonFeatured = models.filter(function (m) {
+      return FEATURED_RANK[(m.id || "").toLowerCase()] == null;
+    });
+
+    // group by brand
+    var byBrand = {};
+    var brandOrder = [];
+    nonFeatured.forEach(function (m) {
+      var brand = m.brand || "其他";
+      if (!byBrand[brand]) {
+        byBrand[brand] = [];
+        brandOrder.push(brand);
+      }
+      byBrand[brand].push(m);
+    });
+    brandOrder.sort();
+
+    var MAX_PER_BRAND = 6;
+    var html = "";
+    brandOrder.forEach(function (brand, i) {
+      var list = byBrand[brand];
+      var label = BRAND_LABELS[brand] || brand;
+      var desc = label + " 系列模型";
+      var shown = list.slice(0, MAX_PER_BRAND);
+
+      html += '<div class="cancri-spec-section flex scroll-mt-24 flex-col gap-4 py-4 md:flex-row md:items-start md:justify-between">';
+      html += '<div class="flex min-w-[220px] max-w-[320px] flex-col gap-1 md:w-[320px] md:min-w-[320px] md:max-w-[320px] md:flex-none md:pr-6">';
+      html += '<div class="text-base font-semibold text-emphasis">' + esc(label) + '</div>';
+      html += '<div class="text-sm text-secondary">' + esc(desc) + '</div>';
+      html += '</div>';
+      html += '<div class="-mx-2 grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">';
+      shown.forEach(function (m) { html += specializedCardHtml(m); });
+      html += '</div>';
+      html += '</div>';
+      if (i < brandOrder.length - 1) {
+        html += '<div class="h-px w-full bg-primary-soft"></div>';
+      }
+    });
+
+    container.innerHTML = html || '<div class="text-sm text-secondary py-6">暂无专项模型</div>';
+  }
+
   function dedupeFeaturedFirst(raw) {
     var byCanonical = {};
     var order = [];
@@ -189,6 +276,8 @@
     if (grid) {
       grid.innerHTML = models.map(function (m) { return cardHtml(m, { flagshipBadge: true, anchor: true }); }).join("");
     }
+
+    renderSpecialized(models);
 
     var counters = document.querySelectorAll("[data-cancri-count]");
     counters.forEach(function (el) { el.textContent = String(models.length); });
