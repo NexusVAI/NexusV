@@ -1511,12 +1511,15 @@
                                         <div class="composer-actions">
                                             <div class="model-selector claude-model-selector-inline" id="modelSelector">
                                                 <button class="model-current" id="modelCurrentBtn" type="button">
-                                                    <span class="model-name" id="currentModelName">DeepSeek-V4-Flash</span>
+                                                    <span class="model-name" id="currentModelName">GPT 5.5</span>
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
                                                 </button>
                                                 <div class="model-dropdown" id="modelDropdown">
                                                     <div class="model-search-panel">
-                                                        <input id="modelSearchInput" type="search" placeholder="搜索模型" autocomplete="off"/>
+                                                        <div class="model-search-input-wrap">
+                                                            <svg class="model-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                                                            <input id="modelSearchInput" type="search" placeholder="搜索模型" autocomplete="off"/>
+                                                        </div>
                                                         <div class="model-filter-row" id="modelFilterRow">
                                                             <button class="model-filter-chip active" data-filter="all" type="button">文本</button>
                                                             <button class="model-filter-chip" data-filter="code" type="button">代码</button>
@@ -1524,6 +1527,20 @@
                                                         </div>
                                                     </div>
                                                     <div class="model-dropdown-content" id="modelDropdownContent"></div>
+                                                    <div class="model-dropdown-footer" id="modelDropdownFooter">
+                                                        <button class="model-see-more" id="modelSeeMoreBtn" type="button">See more</button>
+                                                    </div>
+                                                    <div class="model-hover-popover" id="modelHoverPopover" hidden>
+                                                        <button class="model-popover-pin" id="modelPopoverPinBtn" type="button" aria-label="固定模型">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"></path><path d="m5 5 14 14"></path><path d="M19 7l-7 7"></path></svg>
+                                                        </button>
+                                                        <div class="model-popover-header">
+                                                            <img class="model-popover-icon" src="" alt=""/>
+                                                            <span class="model-popover-name"></span>
+                                                        </div>
+                                                        <div class="model-popover-badges"></div>
+                                                        <div class="model-popover-meta"></div>
+                                                    </div>
                                                     <div class="claude-thinking-toggle">
                                                         <div class="claude-thinking-meta">
                                                             <span class="claude-thinking-title">适应性思考</span>

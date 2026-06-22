@@ -578,30 +578,6 @@
 			"customMultiplier": 3
 		},
 		{
-			"id": "deepseek-v4-pro-0608",
-			"name": "DeepSeek V4 Pro 0608",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "pytn",
-			"customMultiplier": 3
-		},
-		{
-			"id": "deepseek-v4-pro-0603",
-			"name": "DeepSeek V4 Pro (NVIDIA)",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "modelscope",
-			"customMultiplier": 3
-		},
-		{
 			"id": "glm-5.1",
 			"name": "GLM 5.1",
 			"brand": "Zhipu",
@@ -609,8 +585,9 @@
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free",
-			"customMultiplier": 1.5
+			"costTier": "normal",
+			"lineLabel": "fuka",
+			"customMultiplier": 3.5
 		},
 		{
 			"id": "deepseek-v3",
@@ -1268,6 +1245,105 @@
 		}
 	];
 	//#endregion
+	//#region src/data/model-menu-extras.js
+	// TODO: 以下 context window / newUntil 数据为占位值，需根据实际上线时间/官方文档校准。
+	var MODEL_CONTEXT_WINDOWS = {
+		"gpt-5.5": 256000,
+		"gpt-5.5-special": 256000,
+		"gpt-5.4-mini-0603": 128000,
+		"gpt-5.4-nano": 128000,
+		"gpt-image-2-all": 0,
+		"gpt-image-2-pro": 0,
+		"gpt-image-2": 0,
+		"claude-opus-4-8": 200000,
+		"claude-opus-4-8-special": 200000,
+		"claude-opus-4-7-special": 200000,
+		"claude-opus-4-6": 200000,
+		"claude-opus-4-5": 200000,
+		"claude-haiku-4-5-20251001": 200000,
+		"gemini-3.1-pro": 2097152,
+		"gemini-3.1-flash-lite-preview": 1048576,
+		"gemini-3.5-agent": 1048576,
+		"gemini-3.1-flash-lite-welfare": 1048576,
+		"gemini-2.5-flash-lite": 1048576,
+		"gemini-3-flash-preview": 1048576,
+		"deepseek-v4-pro": 64000,
+		"deepseek-v4-flash": 64000,
+		"deepseek-v3": 64000,
+		"deepseek-v3.1": 64000,
+		"deepseek-v3.2": 64000,
+		"deepseek-v4-pro-welfare": 64000,
+		"kimi-k2.6": 200000,
+		"kimi-k2.7-code": 200000,
+		"kimi-k2-thinking": 200000,
+		"glm-5.1": 128000,
+		"qwen3.7-max": 128000,
+		"qwen3.7-max-2026-05-20": 128000,
+		"qwen3.7-max-2026-05-17": 128000
+	};
+	var MODEL_NEW_UNTIL = {
+		"gpt-5.5": 1779753600000,
+		"gpt-5.5-special": 1779753600000,
+		"gemini-3.5-agent": 1779753600000,
+		"deepseek-v4-pro-welfare": 1779753600000,
+		"glm-5.1": 1779753600000,
+		"claude-opus-4-8-special": 1779753600000,
+		"qwen3.7-max-2026-05-17": 1779753600000
+	};
+	var MODEL_PINNED_STORAGE_KEY = "cancri_model_pinned_v1";
+	var MODEL_RECENT_STORAGE_KEY = "cancri_model_recent_v1";
+	var BRAND_PRIORITY_ORDER = ["OpenAI", "Anthropic", "Google"];
+	function normalizeModelDisplayName(name) {
+		if (!name) return "";
+		return String(name)
+			.replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "")
+			.replace(/-/g, " ")
+			.replace(/\s+/g, " ")
+			.trim();
+	}
+	function formatContextWindow(tokens) {
+		if (!tokens || tokens <= 0) return "";
+		if (tokens >= 1e6) return Math.round(tokens / 1e5) / 10 + "M";
+		if (tokens >= 1e3) return Math.round(tokens / 1e3) + "K";
+		return String(tokens);
+	}
+	function getModelContextWindow(modelId) {
+		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
+	}
+	function isModelNew(modelId) {
+		const until = MODEL_NEW_UNTIL[modelId];
+		return !!until && Date.now() < until;
+	}
+	function getPinnedModelIds() {
+		try {
+			const raw = localStorage.getItem(MODEL_PINNED_STORAGE_KEY);
+			const parsed = raw ? JSON.parse(raw) : [];
+			if (Array.isArray(parsed)) return parsed.filter(function(id) { return typeof id === "string"; });
+		} catch (e) {}
+		return [];
+	}
+	function setPinnedModelIds(ids) {
+		try {
+			localStorage.setItem(MODEL_PINNED_STORAGE_KEY, JSON.stringify(ids.slice(0, 10)));
+		} catch (e) {}
+	}
+	function addRecentModelId(id) {
+		if (!id) return;
+		try {
+			const list = getRecentModelIds();
+			const next = [id].concat(list.filter(function(x) { return x !== id; })).slice(0, 6);
+			localStorage.setItem(MODEL_RECENT_STORAGE_KEY, JSON.stringify(next));
+		} catch (e) {}
+	}
+	function getRecentModelIds() {
+		try {
+			const raw = localStorage.getItem(MODEL_RECENT_STORAGE_KEY);
+			const parsed = raw ? JSON.parse(raw) : [];
+			if (Array.isArray(parsed)) return parsed.filter(function(id) { return typeof id === "string"; });
+		} catch (e) {}
+		return [];
+	}
+	//#endregion
 	//#region src/data/translate-languages.js
 	var TRANSLATE_LANGUAGES = [
 		{
@@ -1619,7 +1695,7 @@
 	var MODEL_LOCK_DURATION_MS = 3600 * 1e3;
 	var INDEPENDENT_MODEL_PING_INTERVAL_MS = 3600 * 1e3;
 	var MODEL_STATUS_REFRESH_INTERVAL_MS = INDEPENDENT_MODEL_PING_INTERVAL_MS;
-	var DEFAULT_MODEL_ID = "deepseek-v4-flash";
+	var DEFAULT_MODEL_ID = "gpt-5.5";
 	var DEFAULT_COMPARE_MODEL_ID = "claude-opus-4-8";
 	var RATE_LIMIT_PROBE_MODEL_ID = DEFAULT_MODEL_ID;
 	var INDEPENDENT_QUOTA_MODEL_IDS = /* @__PURE__ */ new Set();
@@ -2618,7 +2694,6 @@
 		"gemini-3.1-pro-preview",
 		"glm-5.1",
 		"deepseek-v4-pro",
-		"deepseek-v4-pro-0608",
 		"gemini-3.5-agent",
 		"qwen3.7-max",
 		"qwen3.7-max-2026-05-20",
@@ -2965,11 +3040,7 @@
 			const modelId = opt.dataset.model;
 			const status = getModelStatus(modelId);
 			let speedDot = opt.querySelector(".model-speed-dot");
-			if (!speedDot) {
-				speedDot = document.createElement("span");
-				speedDot.className = "model-speed-dot";
-				opt.insertBefore(speedDot, opt.firstChild);
-			}
+			if (!speedDot) return;
 			speedDot.className = "model-speed-dot speed-" + (status.speedLevel || "unknown");
 			const h = status._health;
 			if (h && h.successRate !== null) {
@@ -3123,9 +3194,10 @@
 	function mapServerModelToCatalogEntry(serverModel, localOverlay) {
 		const local = localOverlay || {};
 		const kind = serverModel.video ? "video" : serverModel.image ? "image" : local.kind || "chat";
+		const rawName = local.name || serverModel.displayName || serverModel.id;
 		return {
 			id: serverModel.id,
-			name: local.name || serverModel.displayName || serverModel.id,
+			name: normalizeModelDisplayName(rawName),
 			brand: serverModel.brand || local.brand || "Other",
 			kind,
 			vision: local.vision ?? Boolean(serverModel.multimodal),
@@ -3294,6 +3366,10 @@
 	var SELECTABLE_MODELS = [];
 	var MODEL_CATALOG_BY_ID = MODEL_META_MAP;
 	var ARENA_MODELS = [];
+	function computeBrandPriority(brand) {
+		const idx = BRAND_PRIORITY_ORDER.indexOf(brand);
+		return idx >= 0 ? -1000 + idx : 0;
+	}
 	function rebuildModelCatalogDerived() {
 		MODEL_META_MAP = /* @__PURE__ */ new Map();
 		MODEL_IDS = {};
@@ -3305,10 +3381,12 @@
 			if (entry.kind === "video") tags.push("视频");
 			if (entry.kind === "translate") tags.push("翻译");
 			if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
+			const isWelfare = /-welfare/i.test(entry.id) || /订阅福利/.test(entry.name || "");
+			const isSpecial = /-special/i.test(entry.id) || /特价/.test(entry.name || "");
 			const meta = {
 				id: entry.id,
 				canonicalId: entry.id,
-				displayName: entry.name,
+				displayName: normalizeModelDisplayName(entry.name),
 				brand: entry.brand,
 				lineLabel: entry.lineLabel || "",
 				tags,
@@ -3325,15 +3403,25 @@
 				proMaxOnly: entry.proMaxOnly === true,
 				proPlusOnly: entry.proPlusOnly === true,
 				creditPerUse: Number(entry.creditPerUse) || 0,
-				promoLimited: entry.promoLimited === true,
+				promoLimited: entry.promoLimited === true || isSpecial,
 				promoTooltip: entry.promoTooltip || "",
 				customMultiplier: entry.customMultiplier,
 				gateCostTier: entry.gateCostTier || null,
-				freeUserBlocked: entry.freeUserBlocked === true
+				freeUserBlocked: entry.freeUserBlocked === true,
+				isWelfare,
+				isFree: entry.costTier === "free" || isWelfare,
+				isPromo: entry.promoLimited === true || isSpecial,
+				isNew: isModelNew(entry.id),
+				contextWindow: getModelContextWindow(entry.id)
 			};
 			MODEL_META_MAP.set(entry.id, meta);
 			MODEL_IDS[entry.id] = entry.id;
 			return meta;
+		}).sort((a, b) => {
+			const pa = computeBrandPriority(a.brand);
+			const pb = computeBrandPriority(b.brand);
+			if (pa !== pb) return pa - pb;
+			return String(a.displayName || a.id).localeCompare(String(b.displayName || b.id));
 		});
 		MODEL_CATALOG_BY_ID = MODEL_META_MAP;
 		ARENA_MODELS = SELECTABLE_MODELS.filter((m) => !m.imageOnly && !m.videoOnly && m.kind === "chat").map((m) => m.id);
@@ -12699,8 +12787,157 @@
 	});
 	document.addEventListener("scroll", closeCustomContextMenu, true);
 	window.addEventListener("blur", closeCustomContextMenu);
+	var modelDropdownShowAll = false;
+	var modelDropdownHoverTimer = null;
+	var modelDropdownHoveredId = null;
+	function createBadge(text, className) {
+		const span = document.createElement("span");
+		span.className = "model-badge " + className;
+		span.textContent = text;
+		return span;
+	}
+	function createGiftIcon() {
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.setAttribute("width", "14");
+		svg.setAttribute("height", "14");
+		svg.setAttribute("viewBox", "0 0 24 24");
+		svg.setAttribute("fill", "none");
+		svg.setAttribute("stroke", "currentColor");
+		svg.setAttribute("stroke-width", "2");
+		svg.setAttribute("class", "model-gift-icon");
+		svg.innerHTML = '<rect x="3" y="8" width="18" height="12" rx="2"></rect><path d="M12 8v12"></path><path d="M3 12h18"></path><path d="M7 8c0-2.2 1.8-4 4-4s4 1.8 4 4"></path><path d="M17 8c0-2.2-1.8-4-4-4"></path>';
+		return svg;
+	}
+	function createModelOption(model) {
+		const option = document.createElement("div");
+		option.className = "model-option";
+		option.dataset.model = model.id;
+		option.dataset.brand = model.brand || "";
+		option.dataset.canonical = model.canonicalId || model.id;
+		option.dataset.lineLabel = model.lineLabel || "";
+		option.dataset.multimodal = model.multimodal ? "true" : "false";
+		option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
+		const icon = document.createElement("img");
+		icon.src = model.iconPath || "./openai.svg";
+		applyModelIconThemeClass(icon, model.iconPath, model.brand);
+		icon.alt = "";
+		icon.className = "model-option-icon";
+		option.appendChild(icon);
+		const textWrap = document.createElement("span");
+		textWrap.className = "model-label-stack";
+		const nameRow = document.createElement("span");
+		nameRow.className = "model-label-text";
+		nameRow.textContent = model.displayName || model.id;
+		textWrap.appendChild(nameRow);
+		const subtext = document.createElement("span");
+		subtext.className = "model-label-subtext";
+		const subParts = [];
+		if (model.creditPerUse) subParts.push(`${model.creditPerUse}积分/次`);
+		if (model.proMaxOnly) subParts.push("Pro Max");
+		if (model.proPlusOnly) subParts.push("Pro+");
+		if (model.lineLabel) subParts.push(model.lineLabel);
+		subtext.textContent = subParts.filter(Boolean).join(" · ");
+		if (subtext.textContent) textWrap.appendChild(subtext);
+		option.appendChild(textWrap);
+		const badgeWrap = document.createElement("span");
+		badgeWrap.className = "model-badge-wrap";
+		if (model.isWelfare) badgeWrap.appendChild(createGiftIcon());
+		if (model.isFree) badgeWrap.appendChild(createBadge("Free", "free"));
+		if (model.isNew) badgeWrap.appendChild(createBadge("New", "new"));
+		if (model.isPromo) badgeWrap.appendChild(createBadge("Promo", "promo"));
+		if (badgeWrap.children.length > 0) option.appendChild(badgeWrap);
+		option.classList.toggle("active", model.id === currentModel);
+		if (model.available === false) {
+			option.classList.add("disabled");
+			option.title = model.unavailableMessage || option.title;
+		}
+		option.addEventListener("mouseenter", () => scheduleShowModelHoverPopover(option, model));
+		option.addEventListener("mouseleave", () => hideModelHoverPopover());
+		return option;
+	}
+	function renderModelSection(container, title, models, sectionName) {
+		const section = document.createElement("div");
+		section.className = "model-section";
+		section.dataset.section = sectionName;
+		const header = document.createElement("div");
+		header.className = "model-section-header";
+		header.textContent = title;
+		section.appendChild(header);
+		models.forEach((model) => section.appendChild(createModelOption(model)));
+		container.appendChild(section);
+	}
+	function scheduleShowModelHoverPopover(option, model) {
+		clearTimeout(modelDropdownHoverTimer);
+		modelDropdownHoveredId = model.id;
+		modelDropdownHoverTimer = setTimeout(() => showModelHoverPopover(option, model), 120);
+	}
+	function showModelHoverPopover(option, model) {
+		const popover = document.getElementById("modelHoverPopover");
+		if (!popover || !modelDropdown) return;
+		const icon = popover.querySelector(".model-popover-icon");
+		const name = popover.querySelector(".model-popover-name");
+		const badges = popover.querySelector(".model-popover-badges");
+		const meta = popover.querySelector(".model-popover-meta");
+		const pinBtn = document.getElementById("modelPopoverPinBtn");
+		if (icon) {
+			icon.src = model.iconPath || "./openai.svg";
+			applyModelIconThemeClass(icon, model.iconPath, model.brand);
+		}
+		if (name) name.textContent = model.displayName || model.id;
+		if (badges) {
+			const parts = [];
+			if (model.isPromo) parts.push("Promo");
+			if (model.isFree) parts.push("Free");
+			const ctx = formatContextWindow(model.contextWindow);
+			if (ctx) parts.push(`${ctx} context`);
+			badges.textContent = parts.length > 0 ? parts.join(" · ") : "";
+		}
+		if (meta) {
+			const parts = [];
+			if (model.proMaxOnly) parts.push("Pro Max 专属");
+			if (model.proPlusOnly) parts.push("Pro+ 专属");
+			if (model.creditPerUse) parts.push(`${model.creditPerUse} 积分/次`);
+			if (model.lineLabel) parts.push(model.lineLabel);
+			meta.textContent = parts.join(" · ");
+		}
+		if (pinBtn) {
+			const pinned = getPinnedModelIds();
+			const isPinned = pinned.includes(model.id);
+			pinBtn.classList.toggle("is-pinned", isPinned);
+			pinBtn.title = isPinned ? "取消固定" : "固定到菜单开头";
+			pinBtn.dataset.model = model.id;
+		}
+		popover.hidden = false;
+		positionModelHoverPopover(option, popover);
+	}
+	function hideModelHoverPopover() {
+		clearTimeout(modelDropdownHoverTimer);
+		modelDropdownHoverTimer = setTimeout(() => {
+			modelDropdownHoveredId = null;
+			const popover = document.getElementById("modelHoverPopover");
+			if (popover) popover.hidden = true;
+		}, 120);
+	}
+	function positionModelHoverPopover(option, popover) {
+		if (!modelDropdown) return;
+		const dropdownRect = modelDropdown.getBoundingClientRect();
+		const optionRect = option.getBoundingClientRect();
+		const popoverRect = popover.getBoundingClientRect();
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		let left = dropdownRect.width + 8;
+		let top = optionRect.top - dropdownRect.top;
+		if (dropdownRect.right + 8 + popoverRect.width > vw - 8) {
+			left = -popoverRect.width - 8;
+		}
+		if (dropdownRect.top + top + popoverRect.height > vh - 8) top = vh - dropdownRect.top - popoverRect.height - 8;
+		if (top < 8) top = 8;
+		popover.style.left = left + "px";
+		popover.style.top = top + "px";
+	}
 	function renderModelDropdownFromCatalog() {
 		const content = document.getElementById("modelDropdownContent");
+		const seeMoreBtn = document.getElementById("modelSeeMoreBtn");
 		if (!content) return;
 		content.textContent = "";
 		if (!modelCatalogLoaded) {
@@ -12724,78 +12961,78 @@
 			return;
 		}
 		const isArenaMode = state.arenaMode === "side_by_side" || state.arenaMode === "anonymous";
-		const grouped = /* @__PURE__ */ new Map();
-		SELECTABLE_MODELS.forEach((model) => {
-			if (model.translateOnly) return;
-			if (isArenaMode && (model.imageOnly || model.videoOnly)) return;
+		const selectable = SELECTABLE_MODELS.filter((model) => {
+			if (model.translateOnly) return false;
+			if (isArenaMode && (model.imageOnly || model.videoOnly)) return false;
+			return true;
+		});
+		const pinnedIds = getPinnedModelIds();
+		const recentIds = getRecentModelIds();
+		const pinned = [];
+		const recent = [];
+		const recommended = [];
+		const all = [];
+		const used = /* @__PURE__ */ new Set();
+		selectable.forEach((model) => {
+			if (pinnedIds.includes(model.id)) {
+				pinned.push(model);
+				used.add(model.id);
+			}
+		});
+		recentIds.forEach((id) => {
+			const model = MODEL_META_MAP.get(id);
+			if (model && !used.has(id)) {
+				recent.push(model);
+				used.add(id);
+			}
+		});
+		selectable.forEach((model) => {
+			if (used.has(model.id)) return;
+			if (BRAND_PRIORITY_ORDER.includes(model.brand)) {
+				recommended.push(model);
+				used.add(model.id);
+			}
+		});
+		selectable.forEach((model) => {
+			if (used.has(model.id)) return;
+			if (recommended.length < 8) {
+				recommended.push(model);
+				used.add(model.id);
+			}
+		});
+		selectable.forEach((model) => {
+			if (!used.has(model.id)) all.push(model);
+		});
+		const allGrouped = /* @__PURE__ */ new Map();
+		all.forEach((model) => {
 			const brand = model.brand || getModelBrandName(model.id);
-			if (!grouped.has(brand)) grouped.set(brand, []);
-			grouped.get(brand).push(model);
+			if (!allGrouped.has(brand)) allGrouped.set(brand, []);
+			allGrouped.get(brand).push(model);
 		});
-		grouped.forEach((models, brand) => {
-			const header = document.createElement("div");
-			header.className = "model-group-header";
-			header.dataset.brand = brand;
-			header.textContent = brand;
-			content.appendChild(header);
-			models.slice().sort((a, b) => {
-				const canonical = String(a.canonicalId || a.id).localeCompare(String(b.canonicalId || b.id));
-				if (canonical !== 0) return canonical;
-				return String(a.lineLabel || "").localeCompare(String(b.lineLabel || ""));
-			}).forEach((model) => {
-				const option = document.createElement("div");
-				option.className = "model-option";
-				option.dataset.model = model.id;
-				option.dataset.brand = brand;
-				option.dataset.canonical = model.canonicalId || model.id;
-				option.dataset.lineLabel = model.lineLabel || "";
-				option.dataset.multimodal = model.multimodal ? "true" : "false";
-				option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
-				const speedDot = document.createElement("span");
-				speedDot.className = "model-speed-dot speed-unknown";
-				option.appendChild(speedDot);
-				const label = document.createElement("span");
-				label.className = "model-label";
-				const icon = document.createElement("img");
-				icon.src = model.iconPath || "./openai.svg";
-				applyModelIconThemeClass(icon, model.iconPath, model.brand);
-				icon.alt = "";
-				icon.className = "model-option-icon";
-				label.appendChild(icon);
-				const textWrap = document.createElement("span");
-				textWrap.className = "model-label-stack";
-				const name = document.createElement("span");
-				name.className = "model-label-text";
-				const showPromoTag = model.promoLimited && isGrokImagineVideoPromoActive();
-				name.textContent = showPromoTag ? `【限时】${model.displayName || model.id}` : model.displayName || model.id;
-				if (showPromoTag && model.promoTooltip) name.title = model.promoTooltip;
-				textWrap.appendChild(name);
-				const subtext = document.createElement("span");
-				subtext.className = "model-label-subtext";
-				const subParts = [];
-				if (model.creditPerUse) subParts.push(`${model.creditPerUse}积分/次`);
-				if (model.proMaxOnly && !showPromoTag) subParts.push("Pro Max 专属");
-				if (model.lineLabel) subParts.push(model.lineLabel);
-				if (model.canonicalId && model.canonicalId !== model.id) subParts.push(model.canonicalId);
-				subtext.textContent = subParts.filter(Boolean).join(" · ");
-				if (subtext.textContent) textWrap.appendChild(subtext);
-				label.appendChild(textWrap);
-				option.appendChild(label);
-				(model.tags || []).forEach((tagText) => {
-					const tag = document.createElement("span");
-					tag.className = "model-tag";
-					if (String(tagText).includes("多模态")) tag.classList.add("multimodal");
-					tag.textContent = tagText;
-					option.appendChild(tag);
-				});
-				option.classList.toggle("active", model.id === currentModel);
-				if (model.available === false) {
-					option.classList.add("disabled");
-					option.title = model.unavailableMessage || option.title;
-				}
-				content.appendChild(option);
-			});
+		if (pinned.length > 0) renderModelSection(content, "Pinned", pinned, "pinned");
+		if (recent.length > 0) renderModelSection(content, "Recently Used", recent, "recent");
+		if (recommended.length > 0) renderModelSection(content, "Recommended", recommended, "recommended");
+		const allSection = document.createElement("div");
+		allSection.className = "model-section";
+		allSection.dataset.section = "all";
+		const allHeader = document.createElement("div");
+		allHeader.className = "model-section-header";
+		allHeader.textContent = "All models";
+		allSection.appendChild(allHeader);
+		allGrouped.forEach((models, brand) => {
+			const brandHeader = document.createElement("div");
+			brandHeader.className = "model-group-header";
+			brandHeader.dataset.brand = brand;
+			brandHeader.textContent = brand;
+			allSection.appendChild(brandHeader);
+			models.forEach((model) => allSection.appendChild(createModelOption(model)));
 		});
+		allSection.classList.toggle("is-collapsed", !modelDropdownShowAll);
+		content.appendChild(allSection);
+		if (seeMoreBtn) {
+			seeMoreBtn.textContent = modelDropdownShowAll ? "Show less" : "See more";
+			seeMoreBtn.classList.toggle("is-expanded", modelDropdownShowAll);
+		}
 		applyModelDropdownFilters();
 	}
 	function getActiveModelFilter() {
@@ -12810,7 +13047,7 @@
 			meta.displayName,
 			meta.brand,
 			meta.lineLabel,
-			...meta.tags || []
+			...(meta.tags || [])
 		].join(" ").toLowerCase();
 		const q = String(query || "").trim().toLowerCase();
 		if (q && !haystack.includes(q)) return false;
@@ -12821,43 +13058,33 @@
 	function applyModelDropdownFilters() {
 		const filter = getActiveModelFilter();
 		const query = modelSearchInput ? modelSearchInput.value : "";
-		const options = Array.from(modelDropdown?.querySelectorAll(".model-option") || []);
-		let visibleCount = 0;
-		const visibleBrands = /* @__PURE__ */ new Set();
-		options.forEach((option) => {
-			const visible = modelMatchesFilter(option, filter, query);
-			option.dataset.filtered = visible ? "true" : "false";
-			option.style.display = visible ? "flex" : "none";
-			if (visible) {
-				visibleCount += 1;
-				if (option.dataset.brand) visibleBrands.add(option.dataset.brand);
+		const hasQuery = String(query || "").trim().length > 0;
+		const sections = Array.from(modelDropdown?.querySelectorAll(".model-section") || []);
+		const seeMoreBtn = document.getElementById("modelSeeMoreBtn");
+		sections.forEach((section) => {
+			const sectionName = section.dataset.section;
+			const options = Array.from(section.querySelectorAll(".model-option"));
+			let visibleInSection = 0;
+			options.forEach((option) => {
+				const visible = modelMatchesFilter(option, filter, query);
+				option.style.display = visible ? "flex" : "none";
+				option.dataset.filtered = visible ? "true" : "false";
+				if (visible) visibleInSection += 1;
+			});
+			if (sectionName === "all") {
+				section.querySelectorAll(".model-group-header").forEach((bh) => {
+					const brand = bh.dataset.brand;
+					const hasVisible = options.some((opt) => opt.dataset.brand === brand && opt.style.display !== "none");
+					bh.style.display = hasVisible ? "block" : "none";
+				});
+				section.style.display = visibleInSection > 0 ? "block" : "none";
+				if (hasQuery) section.classList.remove("is-collapsed");
+				else section.classList.toggle("is-collapsed", !modelDropdownShowAll);
+			} else {
+				section.style.display = visibleInSection > 0 ? "block" : "none";
 			}
 		});
-		modelDropdown?.querySelectorAll(".model-group-header").forEach((header) => {
-			header.style.display = visibleBrands.has(header.dataset.brand || "") ? "block" : "none";
-		});
-		const pageInfo = document.getElementById("modelPageInfo");
-		const prevBtn = document.getElementById("modelPagePrev");
-		const nextBtn = document.getElementById("modelPageNext");
-		if (pageInfo) pageInfo.textContent = visibleCount ? `${visibleCount} models` : "No match";
-		if (prevBtn) prevBtn.disabled = true;
-		if (nextBtn) nextBtn.disabled = true;
-	}
-	var MODELS_PER_PAGE = 10;
-	var currentModelPage = 1;
-	var totalModelPages = 1;
-	function initModelPagination() {
-		currentModelPage = 1;
-		totalModelPages = 1;
-		applyModelDropdownFilters();
-	}
-	function updateModelPageDisplay() {
-		applyModelDropdownFilters();
-	}
-	function goToModelPage(page) {
-		if (page < 1 || page > totalModelPages) return;
-		currentModelPage = page;
-		updateModelPageDisplay();
+		if (seeMoreBtn) seeMoreBtn.style.display = hasQuery ? "none" : "block";
 	}
 	var modelDropdownTriggerEl = null;
 	var modelDropdownSyncRaf = 0;
@@ -12945,18 +13172,12 @@
 		compareModelSelector?.classList.toggle("is-open", activeRoot === compareModelSelector);
 		document.body.classList.add("header-model-menu-open");
 		if (modelDropdown) modelDropdown.hidden = false;
+		modelDropdownShowAll = false;
+		renderModelDropdownFromCatalog();
 		try {
 			initModelCatalogFromServer(false);
 		} catch (e) {}
 		applyModelDropdownFilters();
-		initModelPagination();
-		const modelOptions = Array.from(modelDropdown?.querySelectorAll(".model-option") || []);
-		const activeModelForTarget = modelSelectTarget === "compare" ? compareModel : currentModel;
-		const activeIndex = modelOptions.findIndex((opt) => opt.dataset.model === activeModelForTarget);
-		if (activeIndex >= 0) {
-			currentModelPage = Math.floor(activeIndex / MODELS_PER_PAGE) + 1;
-			updateModelPageDisplay();
-		}
 		if (modelDropdown) {
 			modelDropdown.classList.add("animating");
 			modelDropdown.querySelectorAll(".model-option").forEach((opt, i) => {
@@ -13016,6 +13237,7 @@
 		currentModel = modelId;
 		isMultimodal = isMultimodalModel(modelId);
 		localStorage.setItem("cancri_current_model", modelId);
+		addRecentModelId(modelId);
 		if (compareModel === currentModel) {
 			compareModel = getFallbackModelId(currentModel);
 			localStorage.setItem("cancri_compare_model", compareModel);
@@ -13092,8 +13314,28 @@
 			if (modelSelectTarget === "compare") setCompareModel(modelId);
 			else setModel(modelId);
 		});
+		const seeMoreBtn = document.getElementById("modelSeeMoreBtn");
+		if (seeMoreBtn) seeMoreBtn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			modelDropdownShowAll = !modelDropdownShowAll;
+			renderModelDropdownFromCatalog();
+		});
+		const popover = document.getElementById("modelHoverPopover");
+		const pinBtn = document.getElementById("modelPopoverPinBtn");
+		if (pinBtn) pinBtn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			const modelId = pinBtn.dataset.model;
+			if (!modelId) return;
+			const pinned = getPinnedModelIds();
+			const idx = pinned.indexOf(modelId);
+			if (idx >= 0) pinned.splice(idx, 1);
+			else pinned.unshift(modelId);
+			setPinnedModelIds(pinned);
+			renderModelDropdownFromCatalog();
+		});
+		if (popover) popover.addEventListener("mouseenter", () => clearTimeout(modelDropdownHoverTimer));
+		if (popover) popover.addEventListener("mouseleave", () => hideModelHoverPopover());
 		if (modelSearchInput) modelSearchInput.addEventListener("input", () => {
-			currentModelPage = 1;
 			applyModelDropdownFilters();
 		});
 		if (modelFilterRow) {
@@ -13119,7 +13361,6 @@
 					e.stopPropagation();
 					modelFilterRow.querySelectorAll(".model-filter-chip").forEach((item) => item.classList.toggle("active", item === chip));
 					moveIndicatorTo(chip);
-					currentModelPage = 1;
 					applyModelDropdownFilters();
 				});
 			});
@@ -13128,16 +13369,7 @@
 				if (a) moveIndicatorTo(a);
 			});
 		}
-		const prevBtn = document.getElementById("modelPagePrev");
-		const nextBtn = document.getElementById("modelPageNext");
-		if (prevBtn) prevBtn.addEventListener("click", (e) => {
-			e.stopPropagation();
-			goToModelPage(currentModelPage - 1);
-		});
-		if (nextBtn) nextBtn.addEventListener("click", (e) => {
-			e.stopPropagation();
-			goToModelPage(currentModelPage + 1);
-		});
+
 	}
 	var themeSwitchers = Array.from(document.querySelectorAll(".theme-switcher"));
 	themeSwitchers.forEach((switcher) => {
