@@ -90,7 +90,7 @@ async function loadDashboard() {
     showToast("加载失败：" + (statsR.data?.message || statsR.status), "err");
     return;
   }
-  renderDashboard(statsR.data);
+  renderDashboard(statsR.data, pricingR.ok ? pricingR.data?.billing_mode : null);
   if (opsR.ok) renderOpsAlerts(opsR.data);
   // 2026-06-23：wallet_v3 指标
   renderWalletCards({ billing_mode: pricingR.ok ? pricingR.data?.billing_mode : null, stats: statsR.data });
@@ -101,8 +101,8 @@ function renderOpsAlerts(d) {
   const box = $("dash-ops-alerts");
   if (!panel || !box || !d) return;
   const dup = d.duplicate_submitted || [];
-  const exp = d.expiring_subscriptions || [];
-  if (dup.length === 0 && exp.length === 0) {
+  // 2026-06-23：wallet_v3 下订阅档已下线，不再渲染「到期订阅」告警。
+  if (dup.length === 0) {
     panel.style.display = "none";
     return;
   }
@@ -114,21 +114,15 @@ function renderOpsAlerts(d) {
       <div style="margin-top:6px;color:var(--text-mute)">请去 <a href="./admin_orders.html">订单审核</a> 删除重复记录</div>
     </div>`;
   }
-  if (exp.length > 0) {
-    html += `<div style="padding:10px 12px;border-radius:10px;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.35);font-size:12.5px;">
-      <strong>${exp.length} 个订阅 7 天内到期</strong>
-      <ul style="margin:6px 0 0;padding-left:18px;color:var(--text-mute)">`;
-    exp.slice(0, 5).forEach((s) => {
-      html += `<li>${esc(String(s.user_id || "").slice(0, 8))}… · ${esc(s.plan_code)} · 剩 ${esc(s.days_remaining)} 天</li>`;
-    });
-    html += `</ul><div style="margin-top:6px"><a href="./admin_users.html">用户管理</a> 可续期/提醒</div></div>`;
-  }
   html += "</div>";
   box.innerHTML = html;
 }
 
-function renderDashboard(d) {
+function renderDashboard(d, billingMode) {
   if (!d) return;
+  // 2026-06-23：wallet_v3 下订阅档已下线，隐藏「订阅分布」圆环面板。
+  const subPanel = $("sub-panel");
+  if (subPanel) subPanel.style.display = (billingMode === "wallet_v3") ? "none" : "block";
   $("last-updated").textContent = d.generated_at
     ? "更新于 " + new Date(d.generated_at).toLocaleString("zh-CN", { hour12: false })
     : "—";

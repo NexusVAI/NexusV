@@ -328,9 +328,12 @@ $("banSearch").addEventListener("input", () => {
 $("banBtn").addEventListener("click", doBan);
 $("reload-btn").addEventListener("click", loadBans);
 
-// ─── Quota Control Panel Logic ───
+// ─── Wallet Control Panel Logic (2026-06-23 wallet_v3) ───
 let selectedQuotaUserId = "";
 let selectedQuotaUserEmail = "";
+
+const fmtCny = (n) => (n == null || isNaN(n) ? "—" : "¥" + Number(n).toFixed(2));
+const TIER_LABELS = ["Tier 0", "Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"];
 
 async function loadUserQuota(userId, email) {
   selectedQuotaUserId = userId;
@@ -345,181 +348,49 @@ async function loadUserQuota(userId, email) {
   loadUserOrders(userId);
   loadCreditLedger(userId);
 
-  $("quota-plan").textContent = "加载中…";
-  $("quota-monthly").textContent = "加载中…";
-  $("quota-consumed").textContent = "加载中…";
-  $("quota-topup").textContent = "加载中…";
-  $("quota-expires").textContent = "加载中…";
+  $("wallet-balance").textContent = "加载中…";
+  $("wallet-debt").textContent = "加载中…";
+  $("wallet-cumulative").textContent = "加载中…";
+  $("wallet-tier").textContent = "加载中…";
 
   const session = await getSession();
-  const r = await callGW({ endpoint: "admin_get_user_quota", user_id: userId }, session);
+  const r = await callGW({ endpoint: "admin_get_user_wallet", user_id: userId }, session);
   if (!r.ok) {
-    showToast("获取额度信息失败：" + (r.data?.message || r.status), "err");
-    $("quota-plan").textContent = "错误";
-    $("quota-monthly").textContent = "错误";
-    $("quota-consumed").textContent = "错误";
-    $("quota-topup").textContent = "错误";
-    $("quota-expires").textContent = "错误";
+    showToast("获取钱包信息失败：" + (r.data?.message || r.status), "err");
+    $("wallet-balance").textContent = "错误";
+    $("wallet-debt").textContent = "错误";
+    $("wallet-cumulative").textContent = "错误";
+    $("wallet-tier").textContent = "错误";
     return;
   }
 
-  const sub = r.data.subscription;
-  const topup = r.data.topup;
-
-  if (sub) {
-    const plans = { pro: "PRO", pro_plus: "PRO+", pro_max: "PRO MAX" };
-    $("quota-plan").textContent = plans[sub.plan_code] || String(sub.plan_code).toUpperCase();
-    $("quota-monthly").textContent = fmtCreditsFromTokens(sub.monthly_quota);
-    $("quota-consumed").textContent = fmtCreditsFromTokens(sub.monthly_consumed);
-    $("quota-expires").textContent = new Date(sub.expires_at).toLocaleString("zh-CN", { hour12: false });
-  } else {
-    $("quota-plan").textContent = "FREE";
-    $("quota-monthly").textContent = "—";
-    $("quota-consumed").textContent = "—";
-    $("quota-expires").textContent = "无有效订阅";
-  }
-
-  $("quota-topup").textContent = topup ? fmtCreditsFromTokens(topup.balance_tokens) : fmtCreditsFromTokens(0);
+  const w = r.data.wallet || {};
+  $("wallet-balance").textContent = fmtCny(w.balance_cny);
+  $("wallet-debt").textContent = fmtCny(w.debt_cny);
+  $("wallet-cumulative").textContent = fmtCny(w.cumulative_recharge_cny);
+  const tierIdx = Math.max(0, Math.min(5, Number(w.tier || 0)));
+  $("wallet-tier").textContent = TIER_LABELS[tierIdx] || ("Tier " + tierIdx);
 }
 
-async function grantSubscription(userId, days, planCode) {
-  const plans = { pro: "PRO", pro_plus: "PRO+", pro_max: "PRO MAX" };
-  if (!confirm(`确认赠送用户 ${selectedQuotaUserEmail} ${days}天 ${plans[planCode]} 订阅？`)) return;
-
-  const session = await getSession();
-  const r = await callGW({
-    endpoint: "admin_grant_subscription",
-    user_id: userId,
-    days: days,
-    plan_code: planCode
-  }, session);
-
-  if (r.ok) {
-    showToast("订阅赠送成功！", "ok");
-    await loadUserQuota(userId, selectedQuotaUserEmail);
-  } else {
-    showToast("赠送失败：" + (r.data?.message || r.status), "err");
-  }
-}
-
-async function resetConsumption(userId) {
-  if (!confirm(`确认清零用户 ${selectedQuotaUserEmail} 本月的已用额度？`)) return;
-
-  const session = await getSession();
-  const r = await callGW({
-    endpoint: "admin_reset_user_consumption",
-    user_id: userId
-  }, session);
-
-  if (r.ok) {
-    showToast("本月已用额度已成功归零！", "ok");
-    await loadUserQuota(userId, selectedQuotaUserEmail);
-  } else {
-    showToast("清空失败：" + (r.data?.message || r.status), "err");
-  }
-}
-
-async function adjustTopup(userId, deltaCredits) {
-  const actionText = deltaCredits > 0 ? `增加 ${fmtCreditInput(deltaCredits)}` : `扣除 ${fmtCreditInput(Math.abs(deltaCredits))}`;
-  if (!confirm(`确认向用户 ${selectedQuotaUserEmail} ${actionText} 加油包？`)) return;
-
-  const session = await getSession();
-  const r = await callGW({
-    endpoint: "admin_adjust_user_topup",
-    user_id: userId,
-    delta_tokens: creditsToTokens(deltaCredits),
-  }, session);
-
-  if (r.ok) {
-    showToast("加油包余额调整成功！", "ok");
-    await loadUserQuota(userId, selectedQuotaUserEmail);
-  } else {
-    showToast("调整失败：" + (r.data?.message || r.status), "err");
-  }
-}
-
-// Bind Quota Control Panel Button Clicks
-$("btnGrant30Pro").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro"));
-$("btnGrant30ProPlus").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro_plus"));
-$("btnGrant30ProMax").addEventListener("click", () => grantSubscription(selectedQuotaUserId, 30, "pro_max"));
-$("btnResetConsumption").addEventListener("click", () => resetConsumption(selectedQuotaUserId));
-$("btnTopup10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 1000));
-$("btnTopup50").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 5000));
-$("btnTopup100").addEventListener("click", () => adjustTopup(selectedQuotaUserId, 10000));
-$("btnTopupMinus10").addEventListener("click", () => adjustTopup(selectedQuotaUserId, -1000));
-$("btnCustomTopup").addEventListener("click", () => {
-  const val = Number($("customTopupInput").value);
-  if (!isFinite(val) || val === 0) {
-    showToast("请输入合法的积分数（可负，非零）！", "err");
-    return;
-  }
-  adjustTopup(selectedQuotaUserId, val);
-  $("customTopupInput").value = "";
-});
-
-// ─── 2026-05-23：精细调整 PRO 天数（增/减/转档） ───
-async function adjustSubscriptionDays(userId, days, planCode) {
+// 2026-06-23：钱包余额调整（¥，可正可负）。复用 admin_adjust_user_topup 的 delta_tokens 字段，
+// 但语义已改为「¥ × 10000 = micro_cny」近似（user_topup_credits 表在 wallet_v3 下不再使用，
+// 此处改为直接调 admin_adjust_user_wallet —— 若后端未部署则回退提示）。
+// 实际生产路径：调用 cancri_recharge_wallet RPC（admin 侧）。此处先实现为前端 → gateway 新端点。
+async function adjustWallet(userId, deltaCny) {
   if (!userId) {
     showToast("请先在搜索结果中选择用户", "err");
     return;
   }
-  const action = days > 0 ? `增加 ${days}` : `减少 ${Math.abs(days)}`;
-  const planLabel = planCode ? `（同时设为 ${planCode.toUpperCase().replace("_", " ")}）` : "";
-  if (!confirm(`确认对用户 ${selectedQuotaUserEmail} ${action} 天 PRO 订阅${planLabel}？`)) return;
-  const session = await getSession();
-  const payload = { endpoint: "admin_adjust_subscription_days", user_id: userId, days };
-  if (planCode) payload.plan_code = planCode;
-  const r = await callGW(payload, session);
-  if (r.ok) {
-    const data = r.data || {};
-    if (data.action === "expired") {
-      showToast("订阅已减到过期，用户已回到 FREE。", "ok");
-    } else {
-      showToast(`订阅调整成功！(${data.action} ${data.days_applied} 天，到期 ${data.expires_at ? new Date(data.expires_at).toLocaleDateString("zh-CN") : "—"})`, "ok");
-    }
-    await loadUserQuota(userId, selectedQuotaUserEmail);
-  } else {
-    showToast("调整失败：" + (r.data?.message || r.status), "err");
-  }
-}
-
-$("btnAddDays7").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, 7, ""));
-$("btnAddDays15").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, 15, ""));
-$("btnReduceDays7").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, -7, ""));
-$("btnReduceDays15").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, -15, ""));
-$("btnReduceDays30").addEventListener("click", () => adjustSubscriptionDays(selectedQuotaUserId, -30, ""));
-$("btnCustomDays").addEventListener("click", () => {
-  const val = parseInt($("customDaysInput").value, 10);
-  if (isNaN(val) || val === 0 || val < -365 || val > 365) {
-    showToast("天数必须是 -365 到 +365 之间的非零整数！", "err");
-    return;
-  }
-  const planCode = $("customDaysPlan").value;
-  adjustSubscriptionDays(selectedQuotaUserId, val, planCode);
-  $("customDaysInput").value = "";
-});
-
-async function adjustMonthlyConsumed(userId, deltaCredits, reason) {
-  if (!userId) {
-    showToast("请先在搜索结果中选择用户", "err");
-    return;
-  }
-  const action = deltaCredits > 0
-    ? "增加已用量 " + fmtCreditInput(deltaCredits)
-    : "减少已用量 " + fmtCreditInput(Math.abs(deltaCredits));
-  if (!confirm(`确认对用户 ${selectedQuotaUserEmail} ${action}？`)) return;
+  const actionText = deltaCny > 0 ? `增加 ${fmtCny(deltaCny)}` : `扣除 ${fmtCny(Math.abs(deltaCny))}`;
+  if (!confirm(`确认向用户 ${selectedQuotaUserEmail} ${actionText} 钱包余额？`)) return;
   const session = await getSession();
   const r = await callGW({
-    endpoint: "admin_adjust_monthly_consumed",
+    endpoint: "admin_adjust_user_wallet",
     user_id: userId,
-    delta_tokens: creditsToTokens(deltaCredits),
-    reason: reason || "admin:manual_adjust",
+    delta_cny: deltaCny,
   }, session);
   if (r.ok) {
-    showToast(
-      `月已用量已调整：${fmtCreditsFromTokens(r.data.previous_consumed)} → ${fmtCreditsFromTokens(r.data.monthly_consumed)}`,
-      "ok",
-    );
+    showToast("钱包余额调整成功！", "ok");
     await loadUserQuota(userId, selectedQuotaUserEmail);
     await loadCreditLedger(userId);
   } else {
@@ -527,18 +398,19 @@ async function adjustMonthlyConsumed(userId, deltaCredits, reason) {
   }
 }
 
-$("btnConsumePlus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 1000, ""));
-$("btnConsumePlus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, 5000, ""));
-$("btnConsumeMinus10M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -1000, ""));
-$("btnConsumeMinus50M").addEventListener("click", () => adjustMonthlyConsumed(selectedQuotaUserId, -5000, ""));
-$("btnCustomConsume").addEventListener("click", () => {
-  const val = Number($("customConsumeInput").value);
+// Bind Wallet Control Panel Button Clicks
+$("btnWalletPlus10").addEventListener("click", () => adjustWallet(selectedQuotaUserId, 10));
+$("btnWalletPlus50").addEventListener("click", () => adjustWallet(selectedQuotaUserId, 50));
+$("btnWalletPlus100").addEventListener("click", () => adjustWallet(selectedQuotaUserId, 100));
+$("btnWalletMinus10").addEventListener("click", () => adjustWallet(selectedQuotaUserId, -10));
+$("btnCustomWallet").addEventListener("click", () => {
+  const val = Number($("customWalletInput").value);
   if (!isFinite(val) || val === 0) {
-    showToast("请输入非零积分数 delta", "err");
+    showToast("请输入合法的金额（¥，可负，非零）！", "err");
     return;
   }
-  adjustMonthlyConsumed(selectedQuotaUserId, val, $("customConsumeReason").value.trim());
-  $("customConsumeInput").value = "";
+  adjustWallet(selectedQuotaUserId, val);
+  $("customWalletInput").value = "";
 });
 
 async function loadUserOrders(userId) {

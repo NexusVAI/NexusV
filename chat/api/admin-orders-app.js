@@ -18,6 +18,9 @@ const GW =
 
 let currentStatusFilter = "";
 let cachedOrders = [];
+// 2026-06-23：wallet_v3 按量计费模式下，订单批准即自动入钱包，无激活码 / 无订阅档。
+let BILLING_MODE = "quota_v2";
+const IS_WALLET_V3 = () => BILLING_MODE === "wallet_v3";
 
 function esc(s) {
     const d = document.createElement("div");
@@ -232,7 +235,9 @@ function renderDeviceBlock(o) {
 
 // tier badge：与 admin_users / pricing 页保持一致的视觉语言。
 // 2026-05-17 Phase A：tier 仍是 'free'/'paid'，但若 plan_code 已知则显示档位（PRO / PRO+ / PRO MAX）。
+// 2026-06-23：wallet_v3 下无订阅档 / 无 free·paid 之分（仅限速档），不再渲染该徽章。
 function renderTierPill(tier, planCode) {
+    if (IS_WALLET_V3()) return "";
     if (tier === "paid") {
         const label = planCode === "pro_max" ? "PRO MAX"
                     : planCode === "pro_plus" ? "PRO+"
@@ -245,9 +250,10 @@ function renderTierPill(tier, planCode) {
 
 // 2026-05-17 Phase A：订单类型 / 规格徽章。订阅显示档位，加油包显示规格。
 // 2026-06-23：新增 recharge（按量充值）类型，显示"充值 ¥X"。
+// 2026-06-23：wallet_v3 下所有 kind 批准即入钱包，统一显示「充值 ¥X」（按用户应付）。
 function renderOrderKindCell(o) {
     const kind = o.order_kind || "subscription";
-    if (kind === "recharge" || kind === "token_plan") {
+    if (IS_WALLET_V3() || kind === "recharge" || kind === "token_plan") {
         const micro = Number(o.wallet_credit_micro || 0);
         const cny = micro > 0 ? (micro / 1000000).toFixed(2) : (Number(o.amount_cny || 0)).toFixed(2);
         return '<span class="status-pill" style="background:rgba(34,197,94,.18);color:#22c55e" title="按量充值 ¥' + esc(cny) + '">充值 ¥' + esc(cny) + '</span>';
@@ -362,7 +368,7 @@ function renderOrders() {
                     '" maxlength="500" />' +
                     '<button class="btn-tiny approve" data-action="approve" data-id="' +
                     esc(o.id) +
-                    '">通过 + 生成激活码</button>' +
+                    '">' + (IS_WALLET_V3() ? "通过 · 入钱包" : "通过 + 生成激活码") + '</button>' +
                     '<button class="btn-tiny reject" data-action="reject" data-id="' +
                     esc(o.id) +
                     '">拒绝</button>' +
@@ -705,8 +711,9 @@ async function loadOpsAlerts() {
     try {
         const data = await callGateway("admin_ops_alerts", {});
         const dup = data.duplicate_submitted || [];
-        const exp = data.expiring_subscriptions || [];
-        if (dup.length === 0 && exp.length === 0) {
+        // 2026-06-23：wallet_v3 下订阅档已下线，后端不再返回 expiring_subscriptions；
+        // 兼容旧响应但不再渲染「到期订阅」告警。
+        if (dup.length === 0) {
             box.style.display = "none";
             box.innerHTML = "";
             return;
@@ -736,23 +743,6 @@ async function loadOpsAlerts() {
                         })
                         .join(" ") +
                     "</li>";
-            });
-            html += "</ul></div>";
-        }
-        if (exp.length > 0) {
-            html +=
-                '<div class="ops-alert ops-alert--info"><strong>📅 7 天内到期订阅</strong> · ' +
-                exp.length +
-                " 人<ul>";
-            exp.slice(0, 6).forEach(function (s) {
-                html +=
-                    "<li><code>" +
-                    esc(String(s.user_id || "").slice(0, 8)) +
-                    "…</code> · " +
-                    esc(s.plan_code || "pro") +
-                    " · 剩 " +
-                    esc(s.days_remaining) +
-                    " 天</li>";
             });
             html += "</ul></div>";
         }
@@ -802,6 +792,12 @@ async function init() {
         if (!r.is_admin) {
             denyGate.style.display = "block";
             return;
+        }
+        BILLING_MODE = r.billing_mode || "quota_v2";
+        // wallet_v3：激活码赠送面板已无意义（无订阅档可赠），隐藏。
+        if (IS_WALLET_V3()) {
+            const gp = document.getElementById("grantPanel");
+            if (gp) gp.style.display = "none";
         }
         main.style.display = "block";
         await loadOrders();

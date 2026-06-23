@@ -221,7 +221,7 @@
                 <header>
                     <h1>付费订单审核</h1>
                     <p>
-                        审核充值、订阅与加油包订单。对账时以每条订单的<strong>用户应付</strong>为准（含升级补差 / 促销），勿按标价默认值核对。充值订单审核通过后自动打入用户钱包（1:1）；订阅 / 加油包订单通过后生成激活码                    </p>
+                        按量计费模式：审核用户提交的充值订单，以每条订单的<strong>用户应付</strong>为准核对。审核通过后自动按实付金额打入用户¥钱包（1:1），即时生效，无激活码环节。                    </p>
                 </header>
 
                 <div id="ops-alerts" style="display: none"></div>
@@ -232,7 +232,7 @@
                         <div class="value" id="stat-submitted"></div>
                     </div>
                     <div class="stat-card approved">
-                        <div class="label">已通过 · 待激活</div>
+                        <div class="label">已通过</div>
                         <div class="value" id="stat-approved"></div>
                     </div>
                     <div class="stat-card">
@@ -245,7 +245,7 @@
                     </div>
                 </div>
 
-                <div class="grant-panel">
+                <div class="grant-panel" id="grantPanel">
                     <div class="grant-panel-title">指定邮箱赠送激活码</div>
                     <p class="grant-panel-hint">
                         无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用                   </p>
@@ -317,6 +317,6 @@
         <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
         <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
         <script src="./admin-nav.js?v=20260623"></script>
-        <script src="./admin-orders-app.js?v=20260623-recharge"></script>
+        <script src="./admin-orders-app.js?v=20260623-walletv3"></script>
     </body>
 </html>
