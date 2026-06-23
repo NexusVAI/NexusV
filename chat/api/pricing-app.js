@@ -554,8 +554,7 @@ async function init() {
         }
 
         const user = session.user;
-        const emailInput = document.getElementById("of-email");
-        if (user.email && emailInput) emailInput.value = user.email;
+        // of-email 已移到 checkout 页（2026-06-23），本页不再预填邮箱。
 
         if (formSection) formSection.style.display = "none";
         if (orderEmpty) orderEmpty.style.display = "block";
@@ -879,58 +878,49 @@ function setupPaymentMethodTabs() {
     switchMethod(initial);
 }
 
-// ────────── 提交订单 ──────────
-document.getElementById("order-form").addEventListener("submit", async (e) => {
+// ────────── 去结账（2026-06-23：改为跳转到 Stripe 风格 checkout 页）──────────
+// 不再在本页直接 submit_payment_order。把当前 selection 编进 query 参数，
+// 跳到 chat/api/checkout.html，由 checkout-app.js 收集邮箱/QQ/微信/备注并提交。
+// 后端 handleSubmitPaymentOrder 会按 ORDER_CATALOG 重算真实金额（含升级补差价），
+// 前端传的 amount 仅作预览，不会造成 client/server 金额不一致。
+document.getElementById("order-form").addEventListener("submit", (e) => {
     e.preventDefault();
+    const msg = document.getElementById("order-msg");
     if (!selection) {
-        const msg = document.getElementById("order-msg");
         showMsg(msg, "❌ 请先在上方选择一个套餐档位或加油包。", "warn");
         return;
     }
-    const btn = document.getElementById("of-submit");
-    const msg = document.getElementById("order-msg");
-    btn.disabled = true;
-    btn.textContent = "提交中…";
-    msg.innerHTML = "";
-    try {
-        const email = document.getElementById("of-email").value.trim();
-        const qq = document.getElementById("of-qq").value.trim();
-        const method = document.getElementById("of-method").value;
-        const payload = {
-            email,
-            qq,
-            method,
-            order_kind: selection.kind,
-        };
-        if (selection.kind === "subscription") {
-            payload.plan_code = selection.code;
-        } else {
-            payload.topup_sku = selection.code;
-            if (selection.code === "topup_custom") {
-                // server 端会按 [MIN,MAX] 钳制并按费率重算 token，此处只是把用户填的金额传过去。
-                payload.amount_cny = selection.customAmount;
-            }
-        }
-        const r = await callGateway("submit_payment_order", payload);
-        showMsg(
-            msg,
-            "✅ 订单已提交，订单号 <code>" +
-                esc(r.order && r.order.id) +
-                '</code>。金额 ¥' + esc(r.order && r.order.amount_cny) +
-                '。请耐心等待管理员审核，审核结果会出现在 <a href="./orders.html">我的订单</a>。',
-            "ok",
-            { html: true },
-        );
-        document.getElementById("of-qq").value = "";
-    } catch (err) {
-        const m = (err.body && (err.body.message || err.body.error)) ||
-                  err.message || "提交失败";
-        // m 走 showMsg 默认转义，无需再 esc()。
-        showMsg(msg, "❌ " + m, "warn");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "提交订单";
+    // 复用 renderSelectedSummary 的 catalog/upg 计算逻辑，拿到 label/desc/amount。
+    let catalog = selection.kind === "subscription"
+        ? CLIENT_CATALOG.subscription[selection.code]
+        : CLIENT_CATALOG.topup[selection.code];
+    if (!catalog) {
+        showMsg(msg, "❌ 当前选择无效，请重新选择。", "warn");
+        return;
     }
+    if (selection.kind === "topup" && selection.code === "topup_custom") {
+        const amt = Number(selection.customAmount) || 0;
+        catalog = {
+            amount: amt,
+            label: "自定义加油包 ¥" + fmtPrice(amt),
+            desc: (amt * TOPUP_CUSTOM_POINTS_PER_CNY) + " 积分（按量充值，永不过期）",
+        };
+    }
+    const upg = selection.kind === "subscription" ? computeUpgradePreview(selection.code) : null;
+    const payAmount = upg ? upg.amount : catalog.amount;
+
+    const params = new URLSearchParams();
+    params.set("kind", selection.kind);
+    if (selection.kind === "subscription") {
+        params.set("plan", selection.code);
+    } else {
+        params.set("sku", selection.code);
+    }
+    params.set("amount", String(payAmount));
+    if (catalog.label) params.set("label", catalog.label);
+    if (catalog.desc) params.set("desc", catalog.desc);
+    // checkout.html 在 chat/api/ 下，本页在 chat/ 下，相对路径 ./api/checkout.html
+    location.href = "./api/checkout.html?" + params.toString();
 });
 
 init();

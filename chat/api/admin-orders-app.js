@@ -393,9 +393,12 @@ function renderOrders() {
                 "<strong>" +
                 esc(o.email) +
                 "</strong>" +
-                "<span>QQ <code>" +
-                esc(o.qq) +
-                "</code></span>" +
+                (o.qq
+                    ? "<span>QQ <code>" + esc(o.qq) + "</code></span>"
+                    : "") +
+                (o.wechat_id
+                    ? "<span>微信 <code>" + esc(o.wechat_id) + "</code></span>"
+                    : "") +
                 '<span style="font-size:11px">' +
                 "user " +
                 "<code>" +
@@ -424,6 +427,11 @@ function renderOrders() {
                 "<span>激活 " +
                 esc(activated) +
                 "</span>" +
+                (o.user_note
+                    ? "<span>用户备注：" +
+                      esc(o.user_note) +
+                      "</span>"
+                    : "") +
                 (o.admin_note
                     ? "<span>站主备注：" +
                       esc(o.admin_note) +
