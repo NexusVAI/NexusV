@@ -100,7 +100,7 @@
     $("subtotal-value").textContent = amountStr;
     $("total-value").textContent = amountStr;
 
-    // 右栏 QR 金额同步
+    // QR 金额同步（QR section 现在在左栏今日应付合计下方）
     $("qr-amount").textContent = amountStr;
 
     // 隐藏左栏骨架屏，显示真实 ProductSummary
@@ -108,6 +108,10 @@
     if (skel) skel.style.display = "none";
     var real = $("real-ps");
     if (real) real.style.display = "flex";
+
+    // 显示 QR section（初始 display:none，渲染时显示）
+    var qrSection = $("ck-qr-section");
+    if (qrSection) qrSection.style.display = "flex";
   }
 
   // ── 支付方式切换（带淡入淡出）──

@@ -611,7 +611,8 @@ async function detectBillingMode() {
     return __billingModeCache;
 }
 
-// wallet_v3 模式：隐藏旧订阅/加油包区块，注入充值表单 + ¥余额显示。
+// wallet_v3 模式：隐藏旧订阅/加油包区块，注入充值入口（金额输入 + 去结账按钮）+ ¥余额显示。
+// 2026-06-23：内联表单已移到 checkout.html，本页只负责金额选择 + 跳转。
 function setupWalletRechargeMode(loadingEl) {
     // 隐藏旧套餐相关区块
     const hideSelectors = [
@@ -646,18 +647,8 @@ function setupWalletRechargeMode(loadingEl) {
                     '<button id="recharge-quick-50" class="btn btn-secondary" style="padding:10px 16px">¥50</button>' +
                     '<button id="recharge-quick-100" class="btn btn-secondary" style="padding:10px 16px">¥100</button>' +
                 '</div>' +
-                '<label style="display:block;font-size:14px;margin-bottom:8px">联系方式</label>' +
-                '<input id="recharge-email" type="email" placeholder="邮箱" ' +
-                    'style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;box-sizing:border-box" />' +
-                '<input id="recharge-qq" type="text" placeholder="QQ 号（5-15 位）" ' +
-                    'style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;box-sizing:border-box" />' +
-                '<label style="display:block;font-size:14px;margin-bottom:8px">支付方式</label>' +
-                '<select id="recharge-method" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:16px;box-sizing:border-box">' +
-                    '<option value="wechat">微信</option>' +
-                    '<option value="alipay">支付宝</option>' +
-                '</select>' +
-                '<button id="recharge-submit" class="btn" style="width:100%;padding:12px;font-size:16px">提交充值订单</button>' +
                 '<div id="recharge-msg" style="margin-top:12px"></div>' +
+                '<button id="recharge-checkout-btn" class="btn" style="width:100%;padding:12px;font-size:16px">去结账 →</button>' +
             '</div>' +
             '<div style="margin-top:24px;text-align:center">' +
                 '<a href="./orders.html" style="color:var(--text-mute);font-size:13px">查看我的订单 →</a>' +
@@ -681,10 +672,21 @@ function setupWalletRechargeMode(loadingEl) {
             });
         });
 
-        // 提交充值订单
-        const submitBtn = document.getElementById("recharge-submit");
-        if (submitBtn) submitBtn.addEventListener("click", async () => {
-            await submitRechargeOrder();
+        // 去结账按钮：校验金额后跳转 checkout.html
+        const checkoutBtn = document.getElementById("recharge-checkout-btn");
+        const msgEl = document.getElementById("recharge-msg");
+        if (checkoutBtn) checkoutBtn.addEventListener("click", () => {
+            const amount = Number(document.getElementById("recharge-amount").value);
+            if (!Number.isFinite(amount) || amount < RECHARGE_MIN_CNY || amount > RECHARGE_MAX_CNY) {
+                showMsg(msgEl, "❌ 充值金额需在 ¥" + RECHARGE_MIN_CNY + " ~ ¥" + RECHARGE_MAX_CNY + " 之间。", "warn");
+                return;
+            }
+            const params = new URLSearchParams();
+            params.set("kind", "recharge");
+            params.set("amount", String(amount));
+            params.set("label", "按量充值 ¥" + fmtPrice(amount));
+            params.set("desc", "¥1 = ¥1 钱包额度，按模型实际用量计费，永不过期");
+            location.href = "./api/checkout.html?" + params.toString();
         });
 
         // 加载钱包余额
@@ -733,65 +735,6 @@ async function loadWalletBalance() {
             if (emailInput) emailInput.value = session.user.email;
         }
     } catch (e) { console.warn("loadWalletBalance:", e); display.textContent = "¥ --"; }
-}
-
-async function submitRechargeOrder() {
-    const btn = document.getElementById("recharge-submit");
-    const msg = document.getElementById("recharge-msg");
-    const amount = Number(document.getElementById("recharge-amount").value);
-    const email = document.getElementById("recharge-email").value.trim();
-    const qq = document.getElementById("recharge-qq").value.trim();
-    const method = document.getElementById("recharge-method").value;
-
-    if (!Number.isFinite(amount) || amount < RECHARGE_MIN_CNY || amount > RECHARGE_MAX_CNY) {
-        showMsg(msg, "❌ 充值金额需在 ¥" + RECHARGE_MIN_CNY + " ~ ¥" + RECHARGE_MAX_CNY + " 之间。", "warn");
-        return;
-    }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showMsg(msg, "❌ 请填写有效邮箱。", "warn");
-        return;
-    }
-    if (!qq || !/^[0-9]{5,15}$/.test(qq)) {
-        showMsg(msg, "❌ QQ 号必须是 5-15 位纯数字。", "warn");
-        return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = "提交中…";
-    msg.innerHTML = "";
-    try {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) throw Object.assign(new Error("not_logged_in"), { body: { message: "请先登录" } });
-        const resp = await fetch(GW, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", apikey: window.__SUPABASE_ANON_KEY__ },
-            body: JSON.stringify({
-                endpoint: "submit_payment_order",
-                order_kind: "recharge",
-                amount_cny: amount,
-                email,
-                qq,
-                method,
-                __auth_token: session.access_token,
-            }),
-        });
-        const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw Object.assign(new Error(data.error || resp.statusText), { body: data });
-        showMsg(msg,
-            "✅ 充值订单已提交，订单号 <code>" + esc(data.order && data.order.id) +
-            '</code>。金额 ¥' + esc(data.order && data.order.amount_cny) +
-            '。请扫码付款后等待管理员审核，审核通过后¥额度自动到账。' +
-            ' <a href="./orders.html">查看订单 →</a>',
-            "ok", { html: true });
-        document.getElementById("recharge-qq").value = "";
-        await loadWalletBalance();
-    } catch (err) {
-        const m = (err.body && (err.body.message || err.body.error)) || err.message || "提交失败";
-        showMsg(msg, "❌ " + m, "warn");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "提交充值订单";
-    }
 }
 
 async function submitVoucherRedemption() {
