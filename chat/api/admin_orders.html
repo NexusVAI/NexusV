@@ -199,20 +199,7 @@
     </head>
     <body>
         <div class="container">
-            <nav class="nav">
-                <a href="./admin_dashboard.html">仪表盘</a>
-                <a href="./admin_users.html">用户</a>
-                <a href="./admin_orders.html" class="active">订单</a>
-                <a href="./admin_usage.html">调用日志</a>
-                <a href="./admin_lines.html">线路</a>
-                <a href="./admin.html">API 申请</a>
-                <a href="./admin_appeals.html">申诉</a>
-                <a href="./admin_stories.html">满月故事</a>
-                <a href="./admin_orbit.html">百万亿审核</a>
-                <span class="badge-admin">ADMIN</span>
-                <span class="spacer"></span>
-                <a href="../" style="color: var(--text-faint)">←返回聊天</a>
-            </nav>
+            <nav id="admin-nav" data-active="orders"></nav>
 
             <div id="loading" class="loading">检查权限中</div>
 
@@ -234,7 +221,7 @@
                 <header>
                     <h1>付费订单审核</h1>
                     <p>
-                        审核三档订阅与加油包订单。对账时以每条订单的<strong>用户应付</strong>为准（含升级补差 / 促销），勿按标价 ¥9.9 等默认值核对。审核通过会自动生成激活码                    </p>
+                        审核充值、订阅与加油包订单。对账时以每条订单的<strong>用户应付</strong>为准（含升级补差 / 促销），勿按标价默认值核对。充值订单审核通过后自动打入用户钱包（1:1）；订阅 / 加油包订单通过后生成激活码                    </p>
                 </header>
 
                 <div id="ops-alerts" style="display: none"></div>
@@ -271,13 +258,24 @@
                             maxlength="200"
                         />
                         <select id="grantSku" class="grant-form-select">
-                            <option value="plan:pro">订阅 · Pro（.9 / 2,000 积分 / 30 天）</option>
-                            <option value="plan:pro_plus">订阅 · Pro+（9 / 8,000 积分 / 30 天）</option>
-                            <option value="plan:pro_max">订阅 · Pro Max（9 / 30,000 积分 / 30 天）</option>
-                            <option value="topup:topup_small">加油包· 1,500 积分（¥10）</option>
-                            <option value="topup:topup_medium">加油包· 9,000 积分（¥10）</option>
-                            <option value="topup:topup_large">加油包· 40,000 积分（¥100）</option>
+                            <option value="recharge:custom">充值 · 按量钱包（¥1-¥2000，1:1 入钱包）</option>
+                            <option value="plan:pro">订阅 · Pro（¥9.9 / 30 天）</option>
+                            <option value="plan:pro_plus">订阅 · Pro+（¥29 / 30 天）</option>
+                            <option value="plan:pro_max">订阅 · Pro Max（¥99 / 30 天）</option>
+                            <option value="topup:topup_small">加油包 · 1,500 万 token（¥10）</option>
+                            <option value="topup:topup_medium">加油包 · 9,000 万 token（¥50）</option>
+                            <option value="topup:topup_large">加油包 · 4 亿 token（¥100）</option>
                         </select>
+                        <input
+                            type="number"
+                            id="grantRechargeAmount"
+                            placeholder="充值金额 ¥（1-2000）"
+                            min="1"
+                            max="2000"
+                            step="0.01"
+                            autocomplete="off"
+                            style="display:none"
+                        />
                         <textarea
                             id="grantNote"
                             placeholder="备注（可选）仅站主可见，比如 'abc 一个月'"
@@ -318,6 +316,7 @@
         <!-- 2026-05-13 审查：原 inline <script> 抽离admin-orders-app.js，并CSP 'unsafe-inline' script-src-->
         <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
         <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
-        <script src="./admin-orders-app.js?v=2026-06-07-credits"></script>
+        <script src="./admin-nav.js?v=20260623"></script>
+        <script src="./admin-orders-app.js?v=20260623-recharge"></script>
     </body>
 </html>

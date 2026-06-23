@@ -188,18 +188,7 @@
   </head>
   <body>
     <div class="container">
-      <nav class="nav">
-        <a href="./admin_dashboard.html">仪表盘</a>
-        <a href="./admin_users.html">用户</a>
-        <a href="./admin_orders.html">订单</a>
-        <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_wc2026.html" class="active">世界杯主页</a>
-        <a href="./admin.html">API 申请</a>
-        <span class="badge-admin">ADMIN</span>
-        <span class="spacer"></span>
-        <a href="../champion_predict.html" style="color: var(--text-faint)">活动額←</a>
-        <a href="../" style="color: var(--text-faint)">←聊天</a>
-      </nav>
+      <nav id="admin-nav" data-active="wc2026"></nav>
 
       <div id="loading" class="loading">检查权限中</div>
 
@@ -266,6 +255,7 @@
     <script src="../cancri_config.js?v=2026-06-11-wc"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
     <script src="../champion_predict_teams.js?v=2026-06-11-staticgrid"></script>
+    <script src="./admin-nav.js?v=20260623"></script>
     <script src="./admin-wc2026-app.js?v=2026-06-11-wc"></script>
   </body>
 </html>

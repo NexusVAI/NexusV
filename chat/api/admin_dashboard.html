@@ -214,22 +214,7 @@
   </head>
   <body>
     <div class="container">
-      <nav class="nav">
-        <a href="./admin_dashboard.html" class="active">仪表盘</a>
-        <a href="./admin_users.html">用户</a>
-        <a href="./admin_orders.html">订单</a>
-        <a href="./admin_usage.html">调用日志</a>
-        <a href="./admin_lines.html">线路</a>
-        <a href="./admin_descriptions.html">模型描述</a>
-        <a href="./admin_appeals.html">申诉</a>
-        <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_wc2026.html">世界杯主页</a>
-        <a href="./admin_orbit.html">百万亿审核</a>
-        <a href="./admin.html">API 申请</a>
-        <span class="badge-admin">ADMIN</span>
-        <span class="spacer"></span>
-        <a href="../" style="color: var(--text-faint)">←返回聊天</a>
-      </nav>
+      <nav id="admin-nav" data-active="dashboard"></nav>
 
       <div id="loading" class="loading">检查权限中</div>
 
@@ -292,6 +277,30 @@
             <div class="dash-card__label">活跃封禁</div>
             <div class="dash-card__value" id="m-bans-active"></div>
             <div class="dash-card__sub" id="m-bans-total">历史</div>
+          </div>
+        </div>
+
+        <!-- 2026-06-23：wallet_v3 按量计费指标 -->
+        <div class="dash-cards" id="dash-wallet-cards" style="margin-top:12px;">
+          <div class="dash-card success">
+            <div class="dash-card__label">钱包总余额</div>
+            <div class="dash-card__value" id="m-wallet-total">—</div>
+            <div class="dash-card__sub" id="m-wallet-users">— 个钱包</div>
+          </div>
+          <div class="dash-card accent">
+            <div class="dash-card__label">24h 充值入账</div>
+            <div class="dash-card__value" id="m-wallet-recharge-24h">—</div>
+            <div class="dash-card__sub" id="m-wallet-recharge-count">— 笔</div>
+          </div>
+          <div class="dash-card warn">
+            <div class="dash-card__label">待审充值订单</div>
+            <div class="dash-card__value" id="m-wallet-pending">—</div>
+            <div class="dash-card__sub">recharge · submitted</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card__label">计费模式</div>
+            <div class="dash-card__value" id="m-billing-mode">—</div>
+            <div class="dash-card__sub" id="m-billing-mode-sub">quota_v2 / wallet_v3</div>
           </div>
         </div>
 
@@ -365,6 +374,7 @@
     <script src="../cancri_config.js"></script>
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE" crossorigin="anonymous"></script>
-    <script src="./admin-dashboard-app.js?v=2026-06-07-admin"></script>
+    <script src="./admin-nav.js?v=20260623"></script>
+    <script src="./admin-dashboard-app.js?v=20260623-wallet"></script>
   </body>
 </html>

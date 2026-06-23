@@ -7,6 +7,7 @@
 //
 // 2026-05-23：扩展高级限额 (model whitelist / max tokens / max requests / RPM)
 // + Key 详情面板 (用量统计 / by_model / by_day / 调用日志 / 编辑限额 / 重置已用)
+// 2026-06-23：全量中文文案、内嵌式生成密钥卡片、内嵌全局日志、页面内确认弹窗、重命名、405 防护。
 
 // IMPORTANT: storageKey must match cancri_chat.js so session is shared with main
 // chat page (otherwise login on chat page won't be visible here).
@@ -112,6 +113,7 @@ async function loadData() {
     currentKeys = data.keys || [];
     renderKeys();
     loadUsage();
+    loadApiLog();
 }
 
 // 2026-05-23：拉可用模型清单，填充 advanced & edit 限额面板的 <select multiple>。
@@ -147,12 +149,12 @@ function renderKeys() {
     const el = document.getElementById("keys-list");
     if (currentKeys.length === 0) {
         el.innerHTML =
-            '<div class="empty">暂无 Key，请点击上方生成。</div>';
+            '<div class="empty">暂无密钥，请点击上方生成。</div>';
         return;
     }
     // 2026-05-17：tier chip 用 effectiveTier（来自 user_subscriptions 权威），
     // 而不是 k.tier（已废弃的 api_keys.tier 列）。所有 key 共享同一 tier。
-    const tierLabel = effectiveTier === "paid" ? "PAID" : "FREE";
+    const tierLabel = effectiveTier === "paid" ? "付费" : "免费";
     const tierClass = effectiveTier === "paid"
         ? "key-tier-chip is-paid"
         : "key-tier-chip is-free";
@@ -222,20 +224,19 @@ function renderKeyRow(k, tierLabel, tierClass) {
         </div>
         <div class="key-actions" style="display:flex;flex-direction:column;gap:6px;">
             <button class="btn btn-secondary" data-action="detail-key" data-key-id="${esc(k.id)}" data-key-name="${esc(k.name)}">详情</button>
-            <button class="btn btn-danger" data-action="delete-key" data-key-id="${esc(k.id)}" data-key-prefix="${esc(k.key_prefix)}" title="撤销此 Key">撤销</button>
+            <button class="btn btn-secondary" data-action="rename-key" data-key-id="${esc(k.id)}" data-key-name="${esc(k.name)}" data-key-prefix="${esc(k.key_prefix)}">重命名</button>
+            <button class="btn btn-danger" data-action="delete-key" data-key-id="${esc(k.id)}" data-key-prefix="${esc(k.key_prefix)}" title="撤销此密钥">撤销</button>
         </div>
     </div>`;
 }
 
 async function deleteKey(keyId, keyPrefix) {
-    if (
-        !confirm(
-            '确认撤销 Key "' +
-                keyPrefix +
-                '"？此操作不可恢复，撤销后该 Key 立即失效。',
-        )
-    )
-        return;
+    const confirmed = await showConfirmDialog(
+        "撤销密钥",
+        `确认撤销密钥 <code>${esc(keyPrefix)}</code>？此操作不可恢复，撤销后该密钥立即失效。`,
+        { danger: true, confirmText: "撤销", cancelText: "取消" },
+    );
+    if (!confirmed) return;
     try {
         const session = await getSession();
         const resp = await fetch(GW, {
@@ -258,7 +259,7 @@ async function deleteKey(keyId, keyPrefix) {
             try {
                 sessionStorage.removeItem("cancri_recent_api_key");
             } catch (_) {}
-            showMsg("Key 已撤销。", false);
+            showMsg("密钥已撤销", false);
             await loadData();
         } else {
             showMsg(data.error || "撤销失败", true);
@@ -493,7 +494,61 @@ function renderUsage(rows) {
     }
 }
 
+// 2026-06-23：全局内嵌 API 调用日志（最近 100 条）。
+async function loadApiLog() {
+    const list = document.getElementById("api-log-list");
+    const empty = document.getElementById("api-log-empty");
+    if (!list) return;
+    try {
+        const session = await getSession();
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                apikey: window.__SUPABASE_ANON_KEY__,
+            },
+            body: JSON.stringify({ endpoint: "api_my_usage", limit: 100, __auth_token: session.access_token }),
+        });
+        if (!resp.ok) {
+            list.innerHTML = '<div style="color:var(--err);padding:14px;text-align:center;">加载失败</div>';
+            if (empty) empty.style.display = "none";
+            return;
+        }
+        const data = await resp.json();
+        renderApiLog(data.usage || []);
+    } catch (e) {
+        if (list) list.innerHTML = '<div style="color:var(--err);padding:14px;text-align:center;">加载失败</div>';
+        if (empty) empty.style.display = "none";
+        console.error(e);
+    }
+}
+
+function renderApiLog(rows) {
+    const list = document.getElementById("api-log-list");
+    const empty = document.getElementById("api-log-empty");
+    if (!list) return;
+    if (rows.length === 0) {
+        list.innerHTML = "";
+        if (empty) empty.style.display = "block";
+        return;
+    }
+    if (empty) empty.style.display = "none";
+    list.innerHTML = rows.slice(0, 100).map((u) => {
+        const sc = u.status_code || 0;
+        const scCls = sc >= 500 ? "err" : sc >= 400 ? "warn" : "ok";
+        return `<div class="kd-detail-row">
+            <div class="model">${esc(u.model || "—")}</div>
+            <div class="tok">${((u.tokens_in || 0) + (u.tokens_out || 0)).toLocaleString()}<div style="font-size:10px;color:var(--text-faint)">↓${(u.tokens_in || 0).toLocaleString()} ↑${(u.tokens_out || 0).toLocaleString()}</div></div>
+            <div class="sc ${scCls}">${sc}</div>
+            <div class="when">${new Date(u.created_at).toLocaleString("zh-CN", { hour12: false })}</div>
+        </div>`;
+    }).join("");
+}
+
+let lastGeneratedKeyId = "";
+
 async function generateKey(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
     const name =
         document.getElementById("key-name").value.trim() ||
         "default";
@@ -539,8 +594,16 @@ async function generateKey(ev) {
         if (resp.ok && data.key) {
             document.getElementById("new-key-value").textContent =
                 data.key;
-            document.getElementById("new-key-box").style.display =
-                "block";
+            const box = document.getElementById("new-key-box");
+            box.style.display = "block";
+            box.classList.add("is-visible");
+            // 记录新密钥 id，方便生成后立即重命名。
+            lastGeneratedKeyId = data.key_data && data.key_data.id ? data.key_data.id : "";
+            // 隐藏重命名输入框，重置其值。
+            const renameBox = document.getElementById("new-key-rename-box");
+            if (renameBox) renameBox.style.display = "none";
+            const renameInput = document.getElementById("new-key-rename-input");
+            if (renameInput) renameInput.value = "";
             // 2026-05-22：把刚生成的完整 Key 存入 sessionStorage（仅当前会话）。
             // 模型广场抽屉里的「调用代码」会读取此 Key 直接填入示例。
             // 关闭浏览器/标签页后会被自动清空，避免 Key 在磁盘里长期残留。
@@ -550,7 +613,7 @@ async function generateKey(ev) {
             } catch (_) {
                 // sessionStorage 不可用（如隐私模式）也不影响主流程
             }
-            showMsg("Key 生成成功！本会话内已自动同步到模型广场代码示例。", false);
+            showMsg("密钥生成成功！本会话内已自动同步到模型广场代码示例。", false);
             await loadData();
         } else {
             showMsg(data.error || "生成失败", true);
@@ -565,9 +628,72 @@ async function generateKey(ev) {
 function copyKey() {
     const key =
         document.getElementById("new-key-value").textContent;
+    const btn = document.getElementById("copy-key-btn");
     navigator.clipboard.writeText(key).then(() => {
         showMsg("已复制到剪贴板", false);
+        if (btn) {
+            const orig = btn.textContent;
+            btn.textContent = "已复制";
+            btn.classList.add("is-ok");
+            setTimeout(() => {
+                btn.textContent = orig;
+                btn.classList.remove("is-ok");
+            }, 1400);
+        }
     });
+}
+
+// 2026-06-23：生成后直接在结果卡片里重命名。
+function showNewKeyRename() {
+    const box = document.getElementById("new-key-rename-box");
+    if (box) {
+        box.style.display = "flex";
+        const input = document.getElementById("new-key-rename-input");
+        if (input) {
+            input.value = "";
+            input.focus();
+        }
+    }
+}
+
+async function saveNewKeyName() {
+    if (!lastGeneratedKeyId) {
+        showMsg("请先生成密钥", true);
+        return;
+    }
+    const input = document.getElementById("new-key-rename-input");
+    const name = input ? input.value.trim() : "";
+    if (!name) {
+        showMsg("请输入名称", true);
+        return;
+    }
+    try {
+        const session = await getSession();
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                apikey: window.__SUPABASE_ANON_KEY__,
+            },
+            body: JSON.stringify({
+                endpoint: "api_update_key",
+                key_id: lastGeneratedKeyId,
+                name,
+                __auth_token: session.access_token,
+            }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok && data.ok) {
+            showMsg("密钥已重命名", false);
+            const box = document.getElementById("new-key-rename-box");
+            if (box) box.style.display = "none";
+            await loadData();
+        } else {
+            showMsg("重命名失败：" + (data.message || data.error || resp.status), true);
+        }
+    } catch (e) {
+        showMsg("网络错误", true);
+    }
 }
 
 function showMsg(text, isErr) {
@@ -586,11 +712,138 @@ function esc(s) {
     return d.innerHTML;
 }
 
+// 2026-06-23：页面内确认 / 输入弹窗（替代原生 confirm / prompt）。
+// 返回 Promise，resolve(true/false) 或 resolve(inputValue/null)。
+function pageDialog(title, body, options) {
+    options = options || {};
+    return new Promise((resolve) => {
+        const overlay = document.getElementById("page-dialog");
+        const titleEl = document.getElementById("page-dialog-title");
+        const bodyEl = document.getElementById("page-dialog-body");
+        const inputEl = document.getElementById("page-dialog-input");
+        const confirmBtn = document.getElementById("page-dialog-confirm");
+        const cancelBtn = document.getElementById("page-dialog-cancel");
+        if (!overlay || !titleEl || !bodyEl || !confirmBtn || !cancelBtn) {
+            resolve(options.input ? null : false);
+            return;
+        }
+        titleEl.textContent = title || "确认";
+        bodyEl.innerHTML = body || "是否继续？";
+        if (options.input) {
+            inputEl.style.display = "block";
+            inputEl.value = options.defaultValue || "";
+            inputEl.placeholder = options.placeholder || "";
+            setTimeout(() => inputEl.focus(), 50);
+        } else {
+            inputEl.style.display = "none";
+            inputEl.value = "";
+        }
+        if (options.confirmText) confirmBtn.textContent = options.confirmText;
+        else confirmBtn.textContent = "确认";
+        if (options.cancelText) cancelBtn.textContent = options.cancelText;
+        else cancelBtn.textContent = "取消";
+        if (options.danger) {
+            confirmBtn.classList.remove("btn-primary", "btn-secondary");
+            confirmBtn.classList.add("btn-danger");
+        } else {
+            confirmBtn.classList.remove("btn-danger", "btn-secondary");
+            confirmBtn.classList.add("btn-primary");
+        }
+        overlay.classList.add("is-visible");
+        overlay.setAttribute("aria-hidden", "false");
+
+        const cleanup = () => {
+            overlay.classList.remove("is-visible");
+            overlay.setAttribute("aria-hidden", "true");
+            confirmBtn.removeEventListener("click", onConfirm);
+            cancelBtn.removeEventListener("click", onCancel);
+            overlay.removeEventListener("click", onOverlay);
+            inputEl.removeEventListener("keydown", onInputKey);
+        };
+        const onConfirm = () => {
+            cleanup();
+            resolve(options.input ? inputEl.value.trim() : true);
+        };
+        const onCancel = () => {
+            cleanup();
+            resolve(options.input ? null : false);
+        };
+        const onOverlay = (e) => {
+            if (e.target === overlay) onCancel();
+        };
+        const onInputKey = (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                onConfirm();
+            } else if (e.key === "Escape") {
+                onCancel();
+            }
+        };
+        confirmBtn.addEventListener("click", onConfirm);
+        cancelBtn.addEventListener("click", onCancel);
+        overlay.addEventListener("click", onOverlay);
+        if (options.input) inputEl.addEventListener("keydown", onInputKey);
+    });
+}
+
+function showConfirmDialog(title, body, options) {
+    return pageDialog(title, body, Object.assign({}, options, { input: false }));
+}
+
+function showPromptDialog(title, body, options) {
+    return pageDialog(title, body, Object.assign({}, options, { input: true }));
+}
+
+// 2026-06-23：重命名密钥。
+async function renameKey(keyId, currentName, keyPrefix) {
+    const label = keyPrefix || currentName || "未命名";
+    const newName = await showPromptDialog(
+        "重命名密钥",
+        `为 <code>${esc(label)}</code> 起个新名称：`,
+        {
+            defaultValue: currentName || "",
+            placeholder: "例如：my-project",
+            confirmText: "保存",
+            cancelText: "取消",
+        },
+    );
+    if (newName === null) return;
+    if (newName === currentName) return;
+    try {
+        const session = await getSession();
+        const resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                apikey: window.__SUPABASE_ANON_KEY__,
+            },
+            body: JSON.stringify({
+                endpoint: "api_update_key",
+                key_id: keyId,
+                name: newName,
+                __auth_token: session.access_token,
+            }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok && data.ok) {
+            showMsg("密钥已重命名", false);
+            await loadData();
+            if (currentDetailKeyId === keyId) {
+                document.getElementById("key-detail-title").textContent = "密钥详情：" + newName;
+            }
+        } else {
+            showMsg("重命名失败：" + (data.message || data.error || resp.status), true);
+        }
+    } catch (e) {
+        showMsg("网络错误", true);
+    }
+}
+
 // 2026-05-23：Key 详情面板逻辑
 async function openKeyDetail(keyId, keyName) {
     currentDetailKeyId = keyId;
     const panel = document.getElementById("key-detail-panel");
-    document.getElementById("key-detail-title").textContent = "Key 详情：" + keyName;
+    document.getElementById("key-detail-title").textContent = "密钥详情：" + keyName;
     panel.style.display = "block";
     panel.scrollIntoView({ behavior: "smooth", block: "start" });
     // 重置内容
@@ -715,7 +968,7 @@ async function saveKeyLimits() {
     const data = await resp.json().catch(() => ({}));
     const msgEl = document.getElementById("kd-msg");
     if (resp.ok && data.ok) {
-        msgEl.textContent = "已保存。";
+        msgEl.textContent = "已保存";
         msgEl.className = "msg ok";
         msgEl.style.display = "block";
         setTimeout(() => { msgEl.style.display = "none"; }, 3000);
@@ -729,7 +982,12 @@ async function saveKeyLimits() {
 
 async function resetKeyUsage() {
     if (!currentDetailKeyId) return;
-    if (!confirm("确认重置此 Key 的已用 token 与调用次数到 0？此操作不影响历史调用日志。")) return;
+    const confirmed = await showConfirmDialog(
+        "重置已用计数",
+        "确认重置此密钥的已用 token 与调用次数到 0？此操作不影响历史调用日志。",
+        { danger: true, confirmText: "重置", cancelText: "取消" },
+    );
+    if (!confirmed) return;
     const session = await getSession();
     const resp = await fetch(GW, {
         method: "POST",
@@ -747,12 +1005,12 @@ async function resetKeyUsage() {
     const data = await resp.json().catch(() => ({}));
     const msgEl = document.getElementById("kd-msg");
     if (resp.ok && data.ok) {
-        msgEl.textContent = "已重置已用计数。";
+        msgEl.textContent = "已重置已用计数";
         msgEl.className = "msg ok";
         msgEl.style.display = "block";
         setTimeout(() => { msgEl.style.display = "none"; }, 3000);
         await loadData();
-        await openKeyDetail(currentDetailKeyId, document.getElementById("key-detail-title").textContent.replace("Key 详情：", ""));
+        await openKeyDetail(currentDetailKeyId, document.getElementById("key-detail-title").textContent.replace("密钥详情：", ""));
     } else {
         msgEl.textContent = "重置失败：" + (data.message || resp.status);
         msgEl.className = "msg err";
@@ -779,11 +1037,37 @@ function bindUI() {
     if (genBtn) {
         genBtn.addEventListener("click", generateKey);
     }
+    const keyNameInput = document.getElementById("key-name");
+    if (keyNameInput) {
+        keyNameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                generateKey();
+            }
+        });
+    }
     const copyBtn = document.getElementById("copy-key-btn");
     if (copyBtn) {
         copyBtn.addEventListener("click", copyKey);
     }
-    // 委托监听器用于 renderKeys() 动态渲染出来的「撤销」/「详情」按钮：
+    const renameBtn = document.getElementById("rename-key-btn");
+    if (renameBtn) {
+        renameBtn.addEventListener("click", showNewKeyRename);
+    }
+    const saveNewNameBtn = document.getElementById("save-new-key-name-btn");
+    if (saveNewNameBtn) {
+        saveNewNameBtn.addEventListener("click", saveNewKeyName);
+    }
+    const newKeyRenameInput = document.getElementById("new-key-rename-input");
+    if (newKeyRenameInput) {
+        newKeyRenameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                saveNewKeyName();
+            }
+        });
+    }
+    // 委托监听器用于 renderKeys() 动态渲染出来的「撤销」/「详情」/「重命名」按钮：
     // 原 inline onclick="deleteKey('id', 'prefix')" 在字符串拼接的 innerHTML 里，
     // CSP 不允许 inline event handler 时同样被拒；改用 data-action 属性 + 单一委托。
     const keysList = document.getElementById("keys-list");
@@ -805,6 +1089,15 @@ function bindUI() {
                 );
                 return;
             }
+            const renBtn = e.target.closest('[data-action="rename-key"]');
+            if (renBtn) {
+                renameKey(
+                    renBtn.getAttribute("data-key-id"),
+                    renBtn.getAttribute("data-key-name"),
+                    renBtn.getAttribute("data-key-prefix"),
+                );
+                return;
+            }
         });
     }
     const closeBtn = document.getElementById("key-detail-close");
@@ -820,6 +1113,22 @@ function bindUI() {
             loadUsage().finally(() => {
                 refreshBtn.disabled = false;
             });
+        });
+    }
+    const logRefreshBtn = document.getElementById("api-log-refresh-btn");
+    if (logRefreshBtn) {
+        logRefreshBtn.addEventListener("click", () => {
+            logRefreshBtn.disabled = true;
+            loadApiLog().finally(() => {
+                logRefreshBtn.disabled = false;
+            });
+        });
+    }
+    const generateForm = document.getElementById("generate-key-form");
+    if (generateForm) {
+        generateForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            return false;
         });
     }
 }

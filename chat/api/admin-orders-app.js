@@ -244,8 +244,14 @@ function renderTierPill(tier, planCode) {
 }
 
 // 2026-05-17 Phase A：订单类型 / 规格徽章。订阅显示档位，加油包显示规格。
+// 2026-06-23：新增 recharge（按量充值）类型，显示"充值 ¥X"。
 function renderOrderKindCell(o) {
     const kind = o.order_kind || "subscription";
+    if (kind === "recharge" || kind === "token_plan") {
+        const micro = Number(o.wallet_credit_micro || 0);
+        const cny = micro > 0 ? (micro / 1000000).toFixed(2) : (Number(o.amount_cny || 0)).toFixed(2);
+        return '<span class="status-pill" style="background:rgba(34,197,94,.18);color:#22c55e" title="按量充值 ¥' + esc(cny) + '">充值 ¥' + esc(cny) + '</span>';
+    }
     if (kind === "topup") {
         const sku = o.topup_sku || "";
         const tokens = Number(o.topup_tokens || 0);
@@ -466,11 +472,20 @@ function renderOrders() {
                             "admin_approve_order",
                             { order_id: id, admin_note: note },
                         );
-                        showToast(
-                            "✅ 通过 · 激活码：" +
-                                (r.activation_code || ""),
-                            "ok",
-                        );
+                        // 2026-06-23：recharge 订单审核后 auto_credited=true，无激活码
+                        if (r.auto_credited) {
+                            showToast(
+                                "✅ 通过 · 已自动充值入钱包 ¥" +
+                                    ((r.credited_micro || 0) / 1000000).toFixed(2),
+                                "ok",
+                            );
+                        } else {
+                            showToast(
+                                "✅ 通过 · 激活码：" +
+                                    (r.activation_code || ""),
+                                "ok",
+                            );
+                        }
                     } else if (action === "reject") {
                         if (
                             !confirm(
@@ -588,7 +603,16 @@ function wireGrantPanel() {
     const skuSelect = document.getElementById("grantSku");
     const noteInput = document.getElementById("grantNote");
     const resultBox = document.getElementById("grantResult");
+    const rechargeAmountInput = document.getElementById("grantRechargeAmount");
     if (!btn || !emailInput || !noteInput || !resultBox) return;
+
+    // 2026-06-23：选择 recharge 时显示金额输入框，其余隐藏
+    if (skuSelect && rechargeAmountInput) {
+        skuSelect.addEventListener("change", () => {
+            const isRecharge = skuSelect.value.startsWith("recharge:");
+            rechargeAmountInput.style.display = isRecharge ? "" : "none";
+        });
+    }
 
     btn.addEventListener("click", async () => {
         const email = emailInput.value.trim().toLowerCase();
@@ -609,8 +633,14 @@ function wireGrantPanel() {
             //   "plan:pro" / "plan:pro_plus" / "plan:pro_max"
             //   "topup:topup_small" / "topup:topup_medium" / "topup:topup_large"
             // 后端 admin_grant_activation_code 接受 plan_code 或 topup_sku，互斥。
+            // 2026-06-23：新增 recharge 选项。后端暂无 admin 直接给目标邮箱充值的 RPC，
+            // 提示管理员让用户自行提交充值订单后审核（admin_approve_order 自动入钱包）。
             const skuRaw = (skuSelect && skuSelect.value) || "plan:pro";
             const [kind, slug] = String(skuRaw).split(":");
+            if (kind === "recharge") {
+                showToast("ℹ️ 充值订单需用户自行提交后审核。请让用户在充值页提交 ¥" + (rechargeAmountInput?.value || "?") + " 订单，您在此页审核通过即可自动入钱包。", "info");
+                return;
+            }
             const grantPayload = { email, admin_note: note };
             if (kind === "topup") {
                 grantPayload.topup_sku = slug;

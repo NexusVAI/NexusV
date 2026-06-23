@@ -80,9 +80,11 @@ async function init() {
 async function loadDashboard() {
   const session = await getSession();
   if (!session) return;
-  const [statsR, opsR] = await Promise.all([
+  const [statsR, opsR, pricingR] = await Promise.all([
     callGW({ endpoint: "admin_dashboard_stats" }, session),
     callGW({ endpoint: "admin_ops_alerts" }, session),
+    // 2026-06-23：用 admin_get_model_pricing 拿 billing_mode（同 RPC 顺带返回）
+    callGW({ endpoint: "admin_get_model_pricing" }, session),
   ]);
   if (!statsR.ok) {
     showToast("加载失败：" + (statsR.data?.message || statsR.status), "err");
@@ -90,6 +92,8 @@ async function loadDashboard() {
   }
   renderDashboard(statsR.data);
   if (opsR.ok) renderOpsAlerts(opsR.data);
+  // 2026-06-23：wallet_v3 指标
+  renderWalletCards({ billing_mode: pricingR.ok ? pricingR.data?.billing_mode : null, stats: statsR.data });
 }
 
 function renderOpsAlerts(d) {
@@ -179,6 +183,39 @@ function renderDashboard(d) {
   renderTopModels(d.top_models_24h || []);
   // 7 天趋势
   renderTrend(d.daily_7d || []);
+}
+
+// ─── 2026-06-23：wallet_v3 指标卡 ──────────────────────────────
+// 数据源有限：billing_mode 来自 admin_get_model_pricing；
+// recharge pending 暂用 orders.pending（不区分 kind，后端无 filter）；
+// wallet 总余额 + 24h 充值后端无 summary RPC，显示 "—" 待后端补。
+function renderWalletCards(info) {
+  const mode = info?.billing_mode || "—";
+  const modeEl = $("m-billing-mode");
+  if (modeEl) {
+    modeEl.textContent = mode === "wallet_v3" ? "wallet_v3" : mode === "quota_v2" ? "quota_v2" : mode;
+    modeEl.style.color = mode === "wallet_v3" ? "var(--ok, #22c55e)" : "var(--text)";
+  }
+  const modeSub = $("m-billing-mode-sub");
+  if (modeSub) {
+    modeSub.textContent = mode === "wallet_v3" ? "按量计费已启用" : "旧订阅模式";
+  }
+  // wallet 总余额：后端无 RPC，显示占位
+  const totalEl = $("m-wallet-total");
+  if (totalEl) totalEl.textContent = "—";
+  const totalSubEl = $("m-wallet-users");
+  if (totalSubEl) totalSubEl.textContent = "需后端 wallet summary RPC";
+  // 24h 充值：后端无 RPC
+  const rechargeEl = $("m-wallet-recharge-24h");
+  if (rechargeEl) rechargeEl.textContent = "—";
+  const rechargeSubEl = $("m-wallet-recharge-count");
+  if (rechargeSubEl) rechargeSubEl.textContent = "需后端 wallet summary RPC";
+  // 待审充值订单：暂用 orders.pending（含所有 kind）
+  const pendingEl = $("m-wallet-pending");
+  if (pendingEl) {
+    const pending = info?.stats?.orders?.pending ?? "—";
+    pendingEl.textContent = String(pending);
+  }
 }
 
 // ─── SVG: 订阅分布圆环 ──────────────────────────────────────────

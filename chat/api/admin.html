@@ -372,22 +372,7 @@
          避免在大屏（>= 1440px）也出现横向滚动。窄(<1440px) 仍由 .table-wrap
          overflow-x: auto 兜底滚动-->
     <div class="container container--wide">
-      <nav class="nav">
-        <a href="./admin_dashboard.html">仪表盘</a>
-        <a href="./admin.html" class="active">审核</a>
-        <a href="./admin_orders.html">订单</a>
-        <a href="./admin_usage.html">调用日志</a>
-        <a href="./admin_lines.html">线路</a>
-        <a href="./admin_users.html">用户</a>
-        <a href="./admin_appeals.html">申诉</a>
-        <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审核</a>
-        <span class="badge-admin">ADMIN</span>
-        <span class="spacer"></span>
-        <a href="../" style="color: var(--text-faint)"
-          >←返回聊天</a
-        >
-      </nav>
+      <nav id="admin-nav" data-active="api_apply"></nav>
 
       <div id="loading" class="loading">检查权限中</div>
 
@@ -514,6 +499,7 @@
       crossorigin="anonymous"
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
+    <script src="./admin-nav.js?v=20260623"></script>
     <script src="./admin-app.js?v=20260607-load-more"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   </body>

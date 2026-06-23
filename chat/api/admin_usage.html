@@ -187,22 +187,7 @@
   </head>
   <body>
     <div class="container">
-      <nav class="nav">
-        <a href="./admin_dashboard.html">仪表盘</a>
-        <a href="./admin_users.html">用户</a>
-        <a href="./admin_orders.html">订单</a>
-        <a href="./admin_usage.html" class="active">调用日志</a>
-        <a href="./admin_lines.html">线路</a>
-        <a href="./admin.html">API 申请</a>
-        <a href="./admin_appeals.html">申诉</a>
-        <a href="./admin_stories.html">满月故事</a>
-        <a href="./admin_orbit.html">百万亿审核</a>
-        <span class="badge-admin">ADMIN</span>
-        <span class="spacer"></span>
-        <a href="../" style="color: var(--text-faint)"
-          >←返回聊天</a
-        >
-      </nav>
+      <nav id="admin-nav" data-active="usage"></nav>
 
       <div id="loading" class="loading">检查权限中</div>
 
@@ -335,6 +320,7 @@
       crossorigin="anonymous"
     ></script>
     <!-- 2026-05-13 审查：原 inline <script> 抽离admin-usage-app.js-->
+    <script src="./admin-nav.js?v=20260623"></script>
     <script src="./admin-usage-app.js?v=2026-05-20-live-refresh"></script>
   </body>
 </html>
