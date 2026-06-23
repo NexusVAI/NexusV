@@ -206,9 +206,11 @@
       (debt > 0 ? '  <div class="claude-quota-stat"><span style="color:#e08585">欠款 ¥' + debt.toFixed(2) + '（下次充值时优先扣减）</span></div>' : ''),
       '  <div class="claude-quota-stat">',
       '    <span>累计充值 <b>¥' + cumRecharge.toFixed(2) + '</b></span>',
-      '    <span>限速档位 <b>' + escHtml(tierLabel) + '</b></span>',
+      '    <span>限速档位 <b>' + escapeHtml(tierLabel) + '</b></span>',
       '  </div>',
-      '  <p class="claude-quota-note">按量计费：每个模型独立定价（¥/M token 或 ¥/次），请求前预扣预估金额，结算时按实际 token 退/补差额。缓存命中按模型配置的折扣系数计费（默认 10%）。<a href="./pricing.html">充值 →</a></p>',
+      (balance <= 0
+        ? '  <p class="claude-quota-note" style="color:var(--accent);font-weight:600;">余额为零，免费模型仍可使用。充值后即可调用所有付费模型（按量计费，用多少扣多少）。<a href="./pricing.html">立即充值 →</a></p>'
+        : '  <p class="claude-quota-note">按量计费：每个模型独立定价（¥/M token 或 ¥/次），请求前预扣预估金额，结算时按实际 token 退/补差额。缓存命中按模型配置的折扣系数计费（默认 10%）。<a href="./pricing.html">充值 →</a></p>'),
       '</div>',
     ].join('');
 
@@ -220,7 +222,7 @@
       '    <span class="claude-quota-card-sub">按累计充值自动升级</span>',
       '  </div>',
       '  <div class="claude-quota-stat">',
-      '    <span>当前档位 <b>' + escHtml(tierLabel) + '</b></span>',
+      '    <span>当前档位 <b>' + escapeHtml(tierLabel) + '</b></span>',
       '  </div>',
       '  <p class="claude-quota-note">仅真实充值计入累计（代金券/折现不计）。充值后最多 60 秒自动升档。各档位并发/RPM/TPM/TPD 上限详见 <a href="./api_docs.html#rate-limit">API 文档</a>。</p>',
       '</div>',
