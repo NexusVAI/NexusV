@@ -311,33 +311,11 @@ function showMsg(el, text, kind, opts) {
         '<div class="alert alert-' + esc(kind || "info") + '">' + body + "</div>";
 }
 
-// ────────── 当前订阅 badge ──────────
-function paintTierBadge(subscription) {
-    const tierEl = document.getElementById("current-tier");
-    if (!subscription || subscription.tier !== "paid") {
-        tierEl.innerHTML = '<span class="badge-tier free">FREE</span>';
-        return;
-    }
-    const plan = subscription.plan_code || "pro";
-    const planLabel = plan === "pro_plus" ? "PRO+" : (plan === "pro_max" ? "PRO MAX" : "PRO");
-    const days = subscription.days_remaining > 0
-        ? subscription.days_remaining + " 天剩余"
-        : "已过期";
-    const exp = subscription.expires_at
-        ? new Date(subscription.expires_at).toLocaleDateString("zh-CN")
-        : "—";
-    tierEl.innerHTML =
-        '<span class="badge-tier ' + esc(plan) + '">' + esc(planLabel) + "</span> " +
-        '<span style="font-size:13px;color:var(--text-mute);margin-left:8px">' +
-        "到期 " + esc(exp) + " · " + esc(days) +
-        "</span>";
-}
-
+// ────────── 当前订阅数据（仅用于升级补差价预览，不再渲染 badge）──────────
 async function loadCurrentSubscription() {
     try {
         const r = await callGateway("get_my_subscription", {});
         currentSub = r.subscription || null;
-        paintTierBadge(r.subscription || {});
     } catch (e) {
         if (e.message === "not_logged_in") return;
         console.error("loadCurrentSubscription:", e);
@@ -633,11 +611,6 @@ function setupWalletRechargeMode(loadingEl) {
         section.innerHTML =
             '<h2 style="text-align:center;font-size:28px;margin-bottom:8px">按量充值</h2>' +
             '<p style="text-align:center;color:var(--text-mute);margin-bottom:24px">¥1 = ¥1 钱包额度，按模型实际用量计费，永不过期</p>' +
-            '<div id="wallet-balance-card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;text-align:center">' +
-                '<div style="font-size:13px;color:var(--text-mute);margin-bottom:4px">当前余额</div>' +
-                '<div id="wallet-balance-display" style="font-size:36px;font-weight:700">¥ --</div>' +
-                '<div id="wallet-tier-display" style="font-size:12px;color:var(--text-mute);margin-top:4px"></div>' +
-            '</div>' +
             '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px">' +
                 '<label style="display:block;font-size:14px;margin-bottom:8px">充值金额（¥1 ~ ¥2000）</label>' +
                 '<div style="display:flex;gap:8px;margin-bottom:16px">' +
@@ -689,9 +662,6 @@ function setupWalletRechargeMode(loadingEl) {
             location.href = "./api/checkout.html?" + params.toString();
         });
 
-        // 加载钱包余额
-        loadWalletBalance();
-
         // 代金券兑换
         const voucherBtn = document.getElementById("voucher-submit");
         if (voucherBtn) voucherBtn.addEventListener("click", async () => {
@@ -705,37 +675,6 @@ function setupWalletRechargeMode(loadingEl) {
 
 const RECHARGE_MIN_CNY = 1;
 const RECHARGE_MAX_CNY = 2000;
-
-async function loadWalletBalance() {
-    const display = document.getElementById("wallet-balance-display");
-    const tierDisplay = document.getElementById("wallet-tier-display");
-    if (!display) return;
-    try {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) { display.textContent = "¥ 0.00"; return; }
-        const resp = await fetch(GW, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", apikey: window.__SUPABASE_ANON_KEY__ },
-            body: JSON.stringify({ endpoint: "get_quota_status", __auth_token: session.access_token }),
-        });
-        if (!resp.ok) return;
-        const d = await resp.json();
-        if (d.wallet) {
-            display.textContent = "¥" + fmtPrice(d.wallet.balance_cny);
-            if (tierDisplay) {
-                const tier = d.wallet.tier || 0;
-                tierDisplay.textContent = "限速档位 Tier" + tier;
-            }
-        } else {
-            display.textContent = "¥ 0.00";
-        }
-        // 预填邮箱
-        if (session.user && session.user.email) {
-            const emailInput = document.getElementById("recharge-email");
-            if (emailInput) emailInput.value = session.user.email;
-        }
-    } catch (e) { console.warn("loadWalletBalance:", e); display.textContent = "¥ --"; }
-}
 
 async function submitVoucherRedemption() {
     const btn = document.getElementById("voucher-submit");
@@ -760,7 +699,6 @@ async function submitVoucherRedemption() {
             "</strong>，当前余额 <strong>¥" + esc(fmtPrice(data.balance_cny)) + "</strong>",
             "ok", { html: true });
         document.getElementById("voucher-code").value = "";
-        await loadWalletBalance();
     } catch (err) {
         const m = (err.body && (err.body.message || err.body.error)) || err.message || "兑换失败";
         showMsg(msg, "❌ " + m, "warn");
