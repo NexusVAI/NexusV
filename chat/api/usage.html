@@ -52,6 +52,61 @@
 
   function fmt(n){ return (Number(n)||0).toLocaleString("en-US"); }
 
+  function setText(el, text){
+    if(!el) return false;
+    if(el.children.length === 0){ el.textContent = text; return true; }
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+    var node, last;
+    while(node = walker.nextNode()){
+      var t = node.textContent.trim();
+      if(t && t !== "Personal" && t !== "Organization") last = node;
+    }
+    if(last){ last.textContent = text; return true; }
+    for(var i = 0; i < el.children.length; i++){
+      if(setText(el.children[i], text)) return true;
+    }
+    return false;
+  }
+
+  function updateWalletBalance(value){
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while(node = walker.nextNode()){
+      if(node.textContent.trim() === "Wallet Balance"){
+        var container = node.parentElement && node.parentElement.parentElement;
+        if(!container) continue;
+        var el = container.querySelector("div.text-xl.font-semibold");
+        if(setText(el, value)) return true;
+      }
+    }
+    return false;
+  }
+
+  function updateCurrentBalance(value){
+    var section = document.querySelector('div[data-testid="organization-spend-summary-section"]');
+    if(section){
+      var el = section.querySelector("div.text-lg.font-semibold");
+      if(setText(el, value)) return true;
+    }
+    // Fallback
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while(node = walker.nextNode()){
+      if(node.textContent.trim() === "Current Balance"){
+        var container = node.parentElement;
+        for(var i = 0; i < 6; i++){
+          if(!container || container.tagName === "BODY") break;
+          var el = container.querySelector("div.text-lg.font-semibold");
+          if(el && el.textContent.trim().indexOf("$") === 0){
+            if(setText(el, value)) return true;
+          }
+          container = container.parentElement;
+        }
+      }
+    }
+    return false;
+  }
+
   function updateSiblingValue(labelText, value, valueSelector){
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
     var node;
@@ -63,11 +118,7 @@
         if(!container) continue;
         var candidates = container.querySelectorAll(valueSelector || "div");
         for(var i = 0; i < candidates.length; i++){
-          var c = candidates[i];
-          if(c !== parent && c !== node && c.children.length === 0){
-            c.textContent = value;
-            return true;
-          }
+          if(setText(candidates[i], value)) return true;
         }
       }
     }
@@ -98,7 +149,7 @@
 
   async function load(){
     var sess = getSession();
-    if(!sess){ return; }
+    if(!sess){ console.warn("usage: no session"); return; }
     try{
       var quotaResp = await fetch(GW, {
         method: "POST",
@@ -113,13 +164,16 @@
       });
       var usage = await usageResp.json().catch(function(){ return {}; });
 
+      console.log("usage quota:", quota);
+      console.log("usage usage:", usage);
+
       var balance = Number((quota && quota.wallet && quota.wallet.balance_cny) || 0).toFixed(2);
       var totalIn = Number((usage && usage.total_tokens_in) || 0);
       var totalOut = Number((usage && usage.total_tokens_out) || 0);
       var totalCalls = Number((usage && usage.total_calls) || 0);
 
-      updateSiblingValue("Wallet Balance", "¥" + balance, "div.text-xl.font-semibold");
-      updateSiblingValue("Current Balance", "¥" + balance, "div.text-xl.font-semibold");
+      updateWalletBalance("¥" + balance);
+      updateCurrentBalance("¥" + balance);
       updateSiblingValue("Total Tokens", fmt(totalIn + totalOut), "div.text-lg.font-semibold");
       updateSiblingValue("Total Requests", fmt(totalCalls), "div.text-lg.font-semibold");
       updateCardByTitle("Chat Completions", fmt(totalCalls) + " requests", fmt(totalIn) + " input tokens");
