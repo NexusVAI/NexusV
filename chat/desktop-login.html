@@ -447,7 +447,7 @@
         authCard.innerHTML =
           '<div class="auth-step">' +
           '<p class="auth-status-line is-ok" style="min-height:auto;padding:12px 0;font-size:14px;">' +
-          (message || "登录成功，正在返回桌面端 ) +
+          (message || "登录成功，正在返回桌面端 ") +
           "</p></div>";
       }
 
@@ -457,18 +457,18 @@
       }
 
       if (!valid) {
-        failInvalid("无效的回调参数。请回到 Cancri Code 桌面端重新点击登录　);
+        failInvalid("无效的回调参数。请回到 Cancri Code 桌面端重新点击登录　");
         return;
       }
 
       const SUPABASE_URL = window.__SUPABASE_URL__ || "";
       const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        failInvalid("Supabase 配置未加载，请刷新页面重试　);
+        failInvalid("Supabase 配置未加载，请刷新页面重试　");
         return;
       }
       if (!window.supabase || !window.supabase.createClient) {
-        failInvalid("Supabase Auth SDK 加载失败，请检查网络后刷新　);
+        failInvalid("Supabase Auth SDK 加载失败，请检查网络后刷新　");
         return;
       }
 
@@ -489,7 +489,7 @@
           user_id: session.user ? session.user.id || "" : "",
           state: state,
         };
-        showDone("登录成功，正在返回桌面端 );
+        showDone("登录成功，正在返回桌面端 ");
         const response = await fetch(cb, {
           method: "POST",
           body: JSON.stringify(body),
@@ -498,7 +498,7 @@
           const text = await response.text().catch(function () {
             return "";
           });
-          throw new Error(text || "桌面端登录回调被拒绝　);
+          throw new Error(text || "桌面端登录回调被拒绝　");
         }
         setTimeout(function () {
           window.close();
@@ -508,16 +508,16 @@
       function localizeAuthError(err, fallback) {
         const msg = (err && (err.message || err.error_description || err.error)) || "";
         const code = (err && (err.code || err.error)) || "";
-        if (code === "over_email_send_rate_limit") return "邮件发送过于频繁，请稍后再试　;
-        if (code === "otp_expired") return "验证码已过期，请重新获取　;
-        if (code === "invalid_credentials") return "验证码错误，请检查后重试　;
-        if (/timeout/i.test(msg)) return "请求超时，请检查网络　;
+        if (code === "over_email_send_rate_limit") return "邮件发送过于频繁，请稍后再试　";
+        if (code === "otp_expired") return "验证码已过期，请重新获取　";
+        if (code === "invalid_credentials") return "验证码错误，请检查后重试　";
+        if (/timeout/i.test(msg)) return "请求超时，请检查网络　";
         return fallback || msg || "未知错误";
       }
 
       emailInput.disabled = true;
       sendBtn.disabled = true;
-      setStatus("正在检查登录状态 );
+      setStatus("正在检查登录状态 ");
 
       (async function bootstrap() {
         let existingSession = null;
@@ -546,11 +546,11 @@
       async function sendOtp() {
         const email = emailInput.value.trim();
         if (!email || !email.includes("@")) {
-          setError("请输入有效邮箱　);
+          setError("请输入有效邮箱　");
           return;
         }
         sendBtn.disabled = true;
-        sendBtn.textContent = "发送中 ;
+        sendBtn.textContent = "发送中 ";
         setError("");
         setStatus("");
         try {
@@ -564,10 +564,10 @@
             timeout,
           ]);
           if (error) throw error;
-          setStatus("验证码已发到邮箱，请查收　, "ok");
+          setStatus("验证码已发到邮箱，请查收　", "ok");
           showOtpStep();
         } catch (err) {
-          setError(localizeAuthError(err, "发送失败，请重试　));
+          setError(localizeAuthError(err, "发送失败，请重试　"));
         } finally {
           sendBtn.disabled = false;
           sendBtn.textContent = "发送验证码";
@@ -578,11 +578,11 @@
         const email = emailInput.value.trim();
         const code = otpInput.value.trim();
         if (!code || code.length < 6) {
-          setError("请输入完整的验证码　);
+          setError("请输入完整的验证码　");
           return;
         }
         verifyBtn.disabled = true;
-        verifyBtn.textContent = "验证中 ;
+        verifyBtn.textContent = "验证中 ";
         setError("");
         try {
           const { data, error } = await supabase.auth.verifyOtp({
@@ -592,11 +592,11 @@
           });
           if (error) throw error;
           if (!data || !data.session || !data.session.access_token) {
-            throw new Error("验证返回旁session，请重试　);
+            throw new Error("请重试　");
           }
           await sendSessionToDesktop(data.session);
         } catch (err) {
-          setError(localizeAuthError(err, "验证失败，请重试　));
+          setError(localizeAuthError(err, "验证失败，请重试　"));
         } finally {
           verifyBtn.disabled = false;
           verifyBtn.textContent = "验证登录";

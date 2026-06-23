@@ -2520,7 +2520,9 @@
 		// 2026-06-23 wallet_v3：按量计费无访问档位，所有模型按 ¥ 钱包计费，
 		// 前端不再做 Pro/Pro+/Pro Max/pool/daily/token-window 档位门控（与后端
 		// enforceWalletGate 行为一致）。仅保留 available===false（线路下线）锁。
-		if (quotaState.billingMode === "wallet_v3") return null;
+		// 2026-06-23 修正：非 quota_v2 一律不上锁（含 billingMode 未拉取到时），
+		// 避免菜单在 quota 首次拉取前把 Pro/Pro+/Pro Max 模型错误上锁。
+		if (quotaState.billingMode !== "quota_v2") return null;
 		if (isProMaxGateModel(modelId)) {
 			const planCode = quotaState.planCode;
 			if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
@@ -2732,6 +2734,9 @@
 		clearExpiredQuotaLocks();
 		if (!isModelEnabled(modelId)) return false;
 		if (getModelMeta(modelId).available === false) return false;
+		// 2026-06-23 wallet_v3：按量计费菜单不上锁（用户按量付费，无访问档位/共享池/锁定）。
+		//   仅 quota_v2 旧模式保留 lockedUntil / quotaRemaining / userLockedUntil 预判。
+		if (quotaState.billingMode !== "quota_v2") return true;
 		const now = Date.now();
 		if (getQuotaBlockReason(modelId)) return false;
 		if (usesSharedQuota(modelId)) {
@@ -13388,17 +13393,22 @@
 	function buildCostCard(m) {
 		const mult = m.multiplier || 1;
 		const free = m.free === true;
-		const lvl = free ? 0.04 : costLevel(mult);
+		const hasMoney = typeof m.inputPricePerM === "number" && typeof m.outputPricePerM === "number";
+		const hasPerCall = typeof m.perCallPrice === "number";
+		// 2026-06-23 wallet_v3：有显式定价（¥/M 或 ¥/次）优先展示价格，不被 free 标签
+		//   盖成"免费"。仅当 free 且无任何定价数据时才显"免费"。修复 doubao-seed-2.0-pro /
+		//   qwen3.7-max 等 costTier='normal'→gateCostTier='free' 但已定价模型被误显"免费"。
+		const showPrice = hasMoney || hasPerCall;
+		const effectiveFree = free && !showPrice;
+		const lvl = effectiveFree ? 0.04 : costLevel(mult);
 		const marker = barMarkerPct(lvl);
 		const labelAlign = barLabelAlign(lvl);
 		const ctxHint = m.contextLabel ? `${escapeHtml(m.contextLabel)} \u4e0a\u4e0b\u6587` : "";
 		const sub = ctxHint;
-		const hasMoney = typeof m.inputPricePerM === "number" && typeof m.outputPricePerM === "number";
-		const hasPerCall = typeof m.perCallPrice === "number";
 		// 2026-06-23 wallet_v3：去积分回退。未定价显"未定价"，按次显¥/次，按量显¥/M。
-		const subFallback = free ? "\u514d\u8d39" : hasMoney ? "\u6309\u91cf\u8ba1\u8d39" : hasPerCall ? "\u6309\u6b21\u8ba1\u8d39" : "\u672a\u5b9a\u4ef7";
+		const subFallback = effectiveFree ? "\u514d\u8d39" : hasMoney ? "\u6309\u91cf\u8ba1\u8d39" : hasPerCall ? "\u6309\u6b21\u8ba1\u8d39" : "\u672a\u5b9a\u4ef7";
 		let chipsHtml;
-		if (free) {
+		if (effectiveFree) {
 			chipsHtml = `${priceChipMoney("\u8f93\u5165", 0, true)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", 0, true)}${priceChipMoney("\u8f93\u51fa", 0, true)}`;
 		} else if (hasMoney) {
 			const cachedPrice = m.inputPricePerM * TOKEN_WEIGHT.cached;
@@ -13578,21 +13588,31 @@
 			void popover.offsetWidth;
 			const pRect = popover.getBoundingClientRect();
 			const gap = 6;
+			const vh = window.innerHeight;
 			// 右对齐触发按钮右缘；右边距不够时贴右 viewport。
 			let right = window.innerWidth - tRect.right;
 			const maxRight = window.innerWidth - 10;
 			if (right > maxRight) right = maxRight;
 			popover.style.right = `${Math.max(10, right)}px`;
 			popover.style.left = "auto";
-			// 向上展开：popover 底缘贴触发按钮顶缘 - gap。
-			let bottom = window.innerHeight - tRect.top + gap;
-			// 若超出顶部 viewport，则贴顶并允许向下覆盖触发区。
-			const topEdge = window.innerHeight - bottom - pRect.height;
-			if (topEdge < 10) {
-				bottom = window.innerHeight - pRect.height - 10;
+			// 2026-06-23：自适应展开方向。输入框居中（下方空间 ≥ 上方）→ 下拉；
+			//   输入框居底/对话中（下方空间 < 上方）→ 上拉。
+			const spaceAbove = tRect.top;
+			const spaceBelow = vh - tRect.bottom;
+			if (spaceBelow >= spaceAbove) {
+				// 下拉：popover 顶缘贴触发按钮底缘 + gap；超出底部则贴底。
+				let top = tRect.bottom + gap;
+				if (top + pRect.height > vh - 10) top = vh - pRect.height - 10;
+				popover.style.top = `${Math.max(10, top)}px`;
+				popover.style.bottom = "auto";
+			} else {
+				// 上拉：popover 底缘贴触发按钮顶缘 + gap；超出顶部则贴顶。
+				let bottom = vh - tRect.top + gap;
+				const topEdge = vh - bottom - pRect.height;
+				if (topEdge < 10) bottom = vh - pRect.height - 10;
+				popover.style.bottom = `${bottom}px`;
+				popover.style.top = "auto";
 			}
-			popover.style.bottom = `${bottom}px`;
-			popover.style.top = "auto";
 		}
 		function openPopover() {
 			popover.hidden = false;
