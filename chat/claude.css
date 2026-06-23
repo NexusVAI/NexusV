@@ -4615,6 +4615,16 @@ button.composer-tool-btn:hover {
         width: min(320px, calc(100vw - 24px));
         right: 0;
         max-height: 50vh;
+        /* 移动端 composer 居屏幕底部，向下展开会出屏。改为向上展开。
+           caret 在展开态由 [aria-expanded="true"] 翻转 180deg 指向上方，
+           恰好与向上展开的菜单方向一致，无需额外覆盖。 */
+        top: auto;
+        bottom: calc(100% + 6px);
+        animation: popover-up-in 0.16s var(--workbench-ease, cubic-bezier(.2,.8,.2,1));
+    }
+    @keyframes popover-up-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
     }
 }
 

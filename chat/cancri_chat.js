@@ -12785,7 +12785,16 @@
 		if (isAccountMenuClickTarget(event.target)) return;
 		closePopover();
 		if (isMobileDrawerOpen()) {
-			if (![document.getElementById("mobileMenuBtn"), document.getElementById("sidebarToggle")].some((el) => el && el.contains(event.target))) closeMobileSidebarDrawer();
+			// 抽屉打开时：
+			//  - 点侧栏外（含汉堡按钮）：收起抽屉
+			//  - 点侧栏内的会话项 .recent-item：选会话后看对话，收起抽屉
+			//  - 点侧栏内其它元素（"最近"标题、搜索框等）：不收起，让用户继续操作
+			//  与 claude_ui.js bindMobileSidebarDrawer 的 document click 守卫语义对齐，
+			//  避免点"最近"标题想展开列表却把抽屉关掉。
+			const inSidebar = sidebar && sidebar.contains(event.target);
+			const clickedRecentItem = inSidebar && event.target.closest && event.target.closest(".recent-item");
+			const clickedDrawerToggle = [document.getElementById("mobileMenuBtn"), document.getElementById("sidebarToggle")].some((el) => el && el.contains(event.target));
+			if (!inSidebar || clickedRecentItem || clickedDrawerToggle) closeMobileSidebarDrawer();
 		} else if (isMobileViewport() && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains("collapsed")) sidebar.classList.add("collapsed");
 		if (!state.modal) updateScrimVisibility();
 	});
