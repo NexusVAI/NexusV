@@ -180,6 +180,119 @@
     } catch (e) { return String(iso); }
   }
 
+  // 2026-06-23 按量计费 wallet_v3：¥ 钱包视图（取代旧积分 free/paid 视图）
+  // data 来自 get_quota_status，附加 billing_mode + wallet 字段。
+  // usage 来自 get_my_chat_usage（30 天用量明细，仍保留 token 口径）。
+  function renderWalletView(data, usage) {
+    var w = data.wallet || {};
+    var balance = Number(w.balance_cny) || 0;
+    var debt = Number(w.debt_cny) || 0;
+    var cumRecharge = Number(w.cumulative_recharge_cny) || 0;
+    var tier = Number(w.tier) || 0;
+
+    var tierLabels = ['Tier 0（免费档）', 'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'];
+    var tierLabel = tierLabels[Math.min(tier, 5)];
+
+    // 余额卡片
+    var balanceCard = [
+      '<div class="claude-quota-card">',
+      '  <div class="claude-quota-card-head">',
+      '    <span class="claude-quota-card-title">钱包余额</span>',
+      '    <span class="claude-tier-chip is-paid">按量计费</span>',
+      '  </div>',
+      '  <div class="claude-quota-stat" style="font-size:16px;">',
+      '    <span><b style="font-size:22px;font-weight:700;">¥' + balance.toFixed(2) + '</b></span>',
+      '  </div>',
+      (debt > 0 ? '  <div class="claude-quota-stat"><span style="color:#e08585">欠款 ¥' + debt.toFixed(2) + '（下次充值时优先扣减）</span></div>' : ''),
+      '  <div class="claude-quota-stat">',
+      '    <span>累计充值 <b>¥' + cumRecharge.toFixed(2) + '</b></span>',
+      '    <span>限速档位 <b>' + escHtml(tierLabel) + '</b></span>',
+      '  </div>',
+      '  <p class="claude-quota-note">按量计费：每个模型独立定价（¥/M token 或 ¥/次），请求前预扣预估金额，结算时按实际 token 退/补差额。缓存命中按模型配置的折扣系数计费（默认 10%）。<a href="./pricing.html">充值 →</a></p>',
+      '</div>',
+    ].join('');
+
+    // 限速档位卡片
+    var tierCard = [
+      '<div class="claude-quota-card">',
+      '  <div class="claude-quota-card-head">',
+      '    <span class="claude-quota-card-title">限速档位</span>',
+      '    <span class="claude-quota-card-sub">按累计充值自动升级</span>',
+      '  </div>',
+      '  <div class="claude-quota-stat">',
+      '    <span>当前档位 <b>' + escHtml(tierLabel) + '</b></span>',
+      '  </div>',
+      '  <p class="claude-quota-note">仅真实充值计入累计（代金券/折现不计）。充值后最多 60 秒自动升档。各档位并发/RPM/TPM/TPD 上限详见 <a href="./api_docs.html#rate-limit">API 文档</a>。</p>',
+      '</div>',
+    ].join('');
+
+    // 30 天用量明细（保留 token 口径，仅供参考）
+    var totalIn = Number(usage && usage.total_tokens_in) || 0;
+    var totalOut = Number(usage && usage.total_tokens_out) || 0;
+    var totalCached = Number(usage && usage.total_tokens_cached) || 0;
+    var totalCalls = Number(usage && usage.total_calls) || 0;
+    var totalAll = totalIn + totalOut;
+
+    var perModel = (usage && usage.per_model) || [];
+    var perDay = (usage && usage.per_day) || [];
+
+    var dayMap = {};
+    for (var i = 0; i < perDay.length; i++) {
+      dayMap[perDay[i].day] = Number(perDay[i].tokens) || 0;
+    }
+    var dayBars = [];
+    var maxTokens = 0;
+    for (var d = 29; d >= 0; d--) {
+      var dt = new Date(Date.now() - d * 86400000);
+      var beijing = new Date(dt.getTime() + 8 * 3600 * 1000);
+      var key = beijing.toISOString().slice(0, 10);
+      var v = dayMap[key] || 0;
+      dayBars.push({ day: key, v: v });
+      if (v > maxTokens) maxTokens = v;
+    }
+    var dayHtml = dayBars.map(function (x) {
+      var pct = maxTokens > 0 ? Math.max(2, Math.round((x.v / maxTokens) * 100)) : 0;
+      var cls = x.v > 0 ? '' : 'is-empty';
+      var title = x.day + '：' + fmtTokens(x.v) + ' tokens';
+      return '<span class="claude-quota-day-bar ' + cls + '" style="height:' + (x.v > 0 ? pct : 100) + '%" title="' + escapeHtml(title) + '"></span>';
+    }).join('');
+
+    var topModels = perModel.slice(0, 10).map(function (m) {
+      return '<div class="claude-quota-usage-row">' +
+        '<span class="claude-quota-usage-name">' + escapeHtml(m.model_id) + '</span>' +
+        '<span class="claude-quota-usage-meta">' + (m.calls || 0) + ' 次 · ' + fmtTokens(m.tokens || 0) + '</span>' +
+        '</div>';
+    }).join('');
+
+    var usageCard = [
+      '<div class="claude-quota-card">',
+      '  <div class="claude-quota-card-head">',
+      '    <span class="claude-quota-card-title">最近 30 天用量</span>',
+      '    <span class="claude-quota-card-sub">共 ' + totalCalls + ' 次成功调用</span>',
+      '  </div>',
+      '  <div class="claude-quota-stat">',
+      '    <span>输入 <b>' + fmtTokens(totalIn) + '</b></span>',
+      '    <span>输出 <b>' + fmtTokens(totalOut) + '</b></span>',
+      '    <span>缓存命中 <b>' + fmtTokens(totalCached) + '</b></span>',
+      '    <span>合计 <b>' + fmtTokens(totalAll) + '</b></span>',
+      '  </div>',
+      '  <div class="claude-quota-day-grid">' + dayHtml + '</div>',
+      '  <p class="claude-quota-note">此处为真实 token 收发量（仅供参考，实际扣费按 ¥ 计）。条形图最右侧为今日（UTC+8）。</p>',
+      '</div>',
+    ].join('');
+
+    var topModelsCard = topModels ? (
+      '<div class="claude-quota-card">' +
+      '  <div class="claude-quota-card-head">' +
+      '    <span class="claude-quota-card-title">Top 10 模型</span>' +
+      '  </div>' +
+      '  <div class="claude-quota-usage-list">' + topModels + '</div>' +
+      '</div>'
+    ) : '';
+
+    return [balanceCard, tierCard, usageCard, topModelsCard].join('');
+  }
+
   // 渲染 FREE 用户视图
   function renderFreeView(data) {
     var pool = data.free_pool || {};
@@ -476,6 +589,16 @@
         panel.setAttribute('data-quota-state', 'error');
         panel.innerHTML = '<div class="claude-quota-err">加载额度信息失败，请稍后重试。</div>';
         return;
+      }
+      // 2026-06-23 按量计费 wallet_v3：优先走 ¥ 钱包视图，跳过旧积分 free/paid 分支
+      if (data.billing_mode === 'wallet_v3') {
+        return fetchMyUsage(false).then(function (usage) {
+          panel.setAttribute('data-quota-state', 'ready');
+          panel.innerHTML = renderWalletView(data, usage || {});
+        }).catch(function () {
+          panel.setAttribute('data-quota-state', 'ready');
+          panel.innerHTML = renderWalletView(data, {});
+        });
       }
       if (data.tier === 'paid') {
         return fetchMyUsage(false).then(function (usage) {

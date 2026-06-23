@@ -117,6 +117,20 @@
   function analyzeExhaustion(snap) {
     if (!snap || !snap.fetchedAt) return null;
 
+    // 2026-06-23 按量计费 wallet_v3：¥ 余额不足时触发充值引导
+    if (snap.billingMode === "wallet_v3") {
+      var balance = Number(snap.walletBalance);
+      if (balance !== null && balance <= 0) {
+        return {
+          kind: "wallet_empty",
+          tier: "wallet",
+          balance: balance,
+          debt: Number(snap.walletDebt) || 0,
+        };
+      }
+      return null;
+    }
+
     var topup = snap.topupBalance;
     var hasTopup = topup !== null && Number(topup) > 0;
 
@@ -201,6 +215,18 @@
         sub: "此外，你还可以通过以下方式使用 Cancri：",
       };
     }
+    // 2026-06-23 按量计费 wallet_v3
+    if (exhaustion.kind === "wallet_empty") {
+      var debt = exhaustion.debt;
+      return {
+        title: "余额不足，请充值",
+        lead:
+          "你的钱包余额已用完" +
+          (debt > 0 ? "，且有欠款 ¥" + debt.toFixed(2) + "（下次充值时优先扣减）" : "") +
+          "。充值后即可继续使用所有已定价模型。",
+        sub: "按量计费，用多少扣多少，余额永不过期：",
+      };
+    }
     if (exhaustion.kind === "paid_monthly") {
       var days = exhaustion.daysRemaining;
       var exp = formatDateZh(exhaustion.expiresAt);
@@ -261,6 +287,13 @@
 
   function buildRibbonCopy(exhaustion) {
     if (!exhaustion) return null;
+    // 2026-06-23 按量计费 wallet_v3
+    if (exhaustion.kind === "wallet_empty") {
+      return {
+        message: "钱包余额已用完，请充值后继续使用",
+        upgradeLabel: "充值",
+      };
+    }
     if (exhaustion.kind === "paid_monthly") {
       var days = exhaustion.daysRemaining;
       var exp = formatDateZh(exhaustion.expiresAt);

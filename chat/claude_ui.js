@@ -733,6 +733,9 @@
                     var data = await resp.json().catch(function () { return null; });
                     var sub = data && data.subscription;
                     if (sub) {
+                        // 2026-06-23 按量计费 wallet_v3：附加 billing_mode + wallet 到 sub
+                        if (data.billing_mode) sub.billing_mode = data.billing_mode;
+                        if (data.wallet) sub.wallet = data.wallet;
                         writeTierCache(sub);
                         applyTierState(sub, false);
                         return;
@@ -762,6 +765,19 @@
     function updateBillingCopy(sub) {
         var copy = document.getElementById('claudeBillingCopy');
         if (!copy) return;
+        // 2026-06-23 按量计费 wallet_v3：显示¥余额取代旧订阅信息
+        if (sub.billing_mode === 'wallet_v3') {
+            var w = sub.wallet || {};
+            var balance = Number(w.balance_cny) || 0;
+            var debt = Number(w.debt_cny) || 0;
+            copy.setAttribute('data-tier-state', 'wallet');
+            copy.innerHTML = '<strong>按量计费</strong>'
+                + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">¥钱包</span>'
+                + '。余额 <strong style="font-size:15px">¥' + balance.toFixed(2) + '</strong>'
+                + (debt > 0 ? '（欠款 ¥' + debt.toFixed(2) + '）' : '')
+                + '。<a href="./pricing.html">充值 →</a>';
+            return;
+        }
         if (sub.tier === 'paid') {
             var days = (sub.days_remaining > 0)
                 ? sub.days_remaining + ' 天剩余'
@@ -3995,7 +4011,7 @@
             }
             var rows = records.map(function (o) {
                 var when = o.activated_at || o.updated_at || o.created_at;
-                var kind = o.order_kind_label || (o.order_kind === 'topup' ? '加油包' : '订阅');
+                var kind = o.order_kind_label || (o.order_kind === 'topup' ? '加油包' : o.order_kind === 'recharge' ? '按量充值' : '订阅');
                 var spec = o.spec_label || o.plan_code || o.topup_sku || '—';
                 var amount = (o.amount_cny != null && o.amount_cny !== '') ? ('¥' + o.amount_cny) : '—';
                 var status = BILLING_STATUS_LABEL[o.status] || o.status_label || o.status || '—';

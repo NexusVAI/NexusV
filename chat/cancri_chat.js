@@ -2773,7 +2773,13 @@
 		monthlyQuota: null,
 		monthlyRemaining: null,
 		expiresAt: null,
-		daysRemaining: null
+		daysRemaining: null,
+		// 2026-06-23 按量计费 wallet_v3：¥ 钱包状态（billing_mode='wallet_v3' 时有值）
+		billingMode: null,
+		walletBalance: null,
+		walletDebt: null,
+		walletCumulativeRecharge: null,
+		walletTier: null
 	};
 	var quotaStateFetchInflight = null;
 	var QUOTA_STATE_TTL_MS = 30 * 1e3;
@@ -2904,6 +2910,19 @@
 				quotaState.monthlyRemaining = typeof data.monthly_remaining === "number" || typeof data.monthly_remaining === "string" ? Number(data.monthly_remaining) : null;
 				quotaState.expiresAt = typeof data.expires_at === "string" ? data.expires_at : null;
 				quotaState.daysRemaining = typeof data.days_remaining === "number" || typeof data.days_remaining === "string" ? Number(data.days_remaining) || 0 : null;
+				// 2026-06-23 按量计费 wallet_v3：读 billing_mode + wallet 钱包状态
+				quotaState.billingMode = data.billing_mode === "wallet_v3" ? "wallet_v3" : "quota_v2";
+				if (data.wallet) {
+					quotaState.walletBalance = Number(data.wallet.balance_cny) || 0;
+					quotaState.walletDebt = Number(data.wallet.debt_cny) || 0;
+					quotaState.walletCumulativeRecharge = Number(data.wallet.cumulative_recharge_cny) || 0;
+					quotaState.walletTier = Number(data.wallet.tier) || 0;
+				} else {
+					quotaState.walletBalance = null;
+					quotaState.walletDebt = null;
+					quotaState.walletCumulativeRecharge = null;
+					quotaState.walletTier = null;
+				}
 				quotaState.fetchedAt = Date.now();
 				if (clearTopupBackedQuotaLocks()) persistModelTelemetryCache();
 			}
@@ -2953,7 +2972,13 @@
 				monthlyQuota: quotaState.monthlyQuota,
 				monthlyRemaining: quotaState.monthlyRemaining,
 				expiresAt: quotaState.expiresAt,
-				daysRemaining: quotaState.daysRemaining
+				daysRemaining: quotaState.daysRemaining,
+				// 2026-06-23 按量计费 wallet_v3
+				billingMode: quotaState.billingMode,
+				walletBalance: quotaState.walletBalance,
+				walletDebt: quotaState.walletDebt,
+				walletCumulativeRecharge: quotaState.walletCumulativeRecharge,
+				walletTier: quotaState.walletTier
 			};
 		},
 		refresh: function(force) {
@@ -12832,7 +12857,8 @@
 		const subtext = document.createElement("span");
 		subtext.className = "model-label-subtext";
 		const subParts = [];
-		if (model.creditPerUse) subParts.push(`${model.creditPerUse}积分/次`);
+		// 2026-06-23 按量计费 wallet_v3：不显示旧积分/次，价格由 model_pricing 表驱动
+		if (model.creditPerUse && quotaState.billingMode !== "wallet_v3") subParts.push(`${model.creditPerUse}积分/次`);
 		if (model.proMaxOnly) subParts.push("Pro Max");
 		if (model.proPlusOnly) subParts.push("Pro+");
 		if (model.lineLabel) subParts.push(model.lineLabel);
@@ -12896,7 +12922,8 @@
 			const parts = [];
 			if (model.proMaxOnly) parts.push("Pro Max 专属");
 			if (model.proPlusOnly) parts.push("Pro+ 专属");
-			if (model.creditPerUse) parts.push(`${model.creditPerUse} 积分/次`);
+			// 2026-06-23 按量计费 wallet_v3：不显示旧积分/次
+			if (model.creditPerUse && quotaState.billingMode !== "wallet_v3") parts.push(`${model.creditPerUse} 积分/次`);
 			if (model.lineLabel) parts.push(model.lineLabel);
 			meta.textContent = parts.join(" · ");
 		}
