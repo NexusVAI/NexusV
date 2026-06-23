@@ -1120,29 +1120,8 @@
                                 <!-- 由 pricing-app.js 注入 -->
                             </div>
                             <form id="order-form" class="order-form" autocomplete="off">
-                                <div class="form-row">
-                                    <label for="of-email">付款时备注的邮箱</label>
-                                    <input
-                                        type="email"
-                                        id="of-email"
-                                        placeholder="you@qq.com"
-                                        required
-                                    />
-                                    <div class="hint">
-                                        需要和付款备注里写的邮箱一致，便于对单。
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <label for="of-qq">付款时备注的 QQ 号</label>
-                                    <input
-                                        type="text"
-                                        id="of-qq"
-                                        placeholder="123456789"
-                                        inputmode="numeric"
-                                        required
-                                    />
-                                    <div class="hint">5~15 位纯数字</div>
-                                </div>
+                                <!-- 2026-06-23：邮箱 / QQ 改到 checkout 页填写（Stripe 风格结账）。
+                                     of-method 保留：setupPaymentMethodTabs 用它驱动右侧扫码 pill 切换预览。 -->
                                 <div class="form-row">
                                     <label for="of-method">付款方式</label>
                                     <select id="of-method">
@@ -1157,7 +1136,7 @@
                                         class="btn btn-primary"
                                         id="of-submit"
                                     >
-                                        提交订单
+                                        去结账 →
                                     </button>
                                     <a class="btn btn-secondary" href="./orders.html"
                                         >我的订单 →</a
@@ -1201,19 +1180,19 @@
                     </li>
                     <li>
                         <div>
-                            <h4>扫码支付</h4>
+                            <h4>去结账</h4>
                             <p>
-                                微信或支付宝任一即可。请在<strong>付款备注 / 留言</strong>里填写你的
-                                邮箱 + QQ（用空格分隔），以便对单。
+                                点 <code>去结账 →</code> 跳到结账页，填写邮箱（必填）、
+                                QQ 号或微信号（二选一）、备注信息，然后提交订单。
                             </p>
                         </div>
                     </li>
                     <li>
                         <div>
-                            <h4>提交订单</h4>
+                            <h4>扫码支付</h4>
                             <p>
-                                在下方表单填写同样的邮箱和 QQ，点提交。
-                                你需要先登录 Cancri 账号。
+                                结账页右侧微信或支付宝任一扫码。请在<strong>付款备注 / 留言</strong>
+                                里填写你的邮箱 + QQ/微信，以便对单。
                             </p>
                         </div>
                     </li>
