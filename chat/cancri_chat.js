@@ -3463,7 +3463,10 @@
 				isFree: entry.costTier === "free" || isWelfare,
 				isPromo: entry.promoLimited === true || isSpecial,
 				isNew: isModelNew(entry.id),
-				contextWindow: entry.maxInputTokens || getModelContextWindow(entry.id)
+				contextWindow: entry.maxInputTokens || getModelContextWindow(entry.id),
+				inputPricePerM: entry.inputPricePerM,
+				outputPricePerM: entry.outputPricePerM,
+				perCallPrice: entry.perCallPrice
 			};
 			MODEL_META_MAP.set(entry.id, meta);
 			MODEL_IDS[entry.id] = entry.id;
@@ -13612,8 +13615,28 @@
 		"\u81ea\u5b9a\u4e49": ICON_CUSTOM
 	};
 
+	const BRAND_INITIAL = {
+		"Qwen": { letter: "Q", bg: "#6b21a8", color: "#fff" },
+		"Moonshot": { letter: "K", bg: "#111827", color: "#fff" },
+		"Zhipu": { letter: "Z", bg: "#2563eb", color: "#fff" },
+		"Doubao": { letter: "D", bg: "#dc2626", color: "#fff" },
+		"MiniMax": { letter: "M", bg: "#4b5563", color: "#fff" },
+		"Baichuan": { letter: "B", bg: "#ea580c", color: "#fff" },
+		"Wan": { letter: "W", bg: "#0891b2", color: "#fff" },
+		"HappyHorse": { letter: "H", bg: "#ca8a04", color: "#fff" },
+		"Stepfun": { letter: "S", bg: "#16a34a", color: "#fff" },
+		"KwaiKAT": { letter: "K", bg: "#db2777", color: "#fff" },
+		"\u5c0f\u7c73 MiMo": { letter: "\u7c73", bg: "#ff6900", color: "#fff" },
+		"Tencent": { letter: "T", bg: "#0052d9", color: "#fff" }
+	};
+
 	function brandIconSvg(brand) {
-		return BRAND_ICON[brand] || ICON_CUSTOM;
+		if (BRAND_ICON[brand]) return BRAND_ICON[brand];
+		const initial = BRAND_INITIAL[brand];
+		if (initial) {
+			return `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" style="border-radius:3px"><rect width="24" height="24" rx="3" fill="${initial.bg}"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="${initial.color}" font-family="system-ui, sans-serif">${initial.letter}</text></svg>`;
+		}
+		return ICON_CUSTOM;
 	}
 
 	function getCostMultiplierFromMeta(meta) {
@@ -13670,23 +13693,34 @@
 		const lvl = free ? 0.04 : costLevel(mult);
 		const marker = barMarkerPct(lvl);
 		const labelAlign = barLabelAlign(lvl);
-		const p = approxPrice(mult);
 		const ctxHint = m.contextLabel ? `${escapeHtml(m.contextLabel)} \u4e0a\u4e0b\u6587` : "";
 		const multHint = free ? "" : `\u00d7${mult}`;
 		const sub = [ctxHint, multHint].filter(Boolean).join(" \u00b7 ");
+		const hasMoney = typeof m.inputPricePerM === "number" && typeof m.outputPricePerM === "number";
+		const subFallback = hasMoney ? "\u6309\u91cf\u8ba1\u8d39" : "1 \u79ef\u5206 = 1 \u4e07 token";
+		const inputPrice = hasMoney ? m.inputPricePerM : 0;
+		const outputPrice = hasMoney ? m.outputPricePerM : 0;
+		const cachedPrice = inputPrice * TOKEN_WEIGHT.cached;
+		let chipsHtml;
+		if (free) {
+			chipsHtml = `${priceChipMoney("\u8f93\u5165", 0, true)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", 0, true)}${priceChipMoney("\u8f93\u51fa", 0, true)}`;
+		} else if (hasMoney) {
+			chipsHtml = `${priceChipMoney("\u8f93\u5165", inputPrice)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", cachedPrice)}${priceChipMoney("\u8f93\u51fa", outputPrice)}`;
+		} else {
+			const p = approxPrice(mult);
+			chipsHtml = `${priceChip("\u8f93\u5165", p.inputCreditsPerM, false)}${priceChip("\u7f13\u5b58\u8f93\u5165", p.cachedCreditsPerM, false)}${priceChip("\u8f93\u51fa", p.outputCreditsPerM, false)}`;
+		}
 		return `<div class="cost-card cost-card-billing">
 			<div class="cost-billing-head">
 				<span class="cost-billing-title">\u8ba1\u8d39</span>
-				<span class="cost-billing-sub">${sub || "1 \u79ef\u5206 = 1 \u4e07 token"}</span>
+				<span class="cost-billing-sub">${sub || subFallback}</span>
 			</div>
 			<div class="cost-bar-wrap">
 				<div class="cost-bar-model cost-bar-model--${labelAlign}" style="left:${marker}%">${escapeHtml(m.displayName)}</div>
 				<div class="cost-bar"><span class="cost-bar-marker" style="left:${marker}%"></span></div>
 			</div>
 			<div class="cost-chips">
-				${priceChip("\u8f93\u5165", p.inputCreditsPerM, free)}
-				${priceChip("\u7f13\u5b58\u8f93\u5165", p.cachedCreditsPerM, free)}
-				${priceChip("\u8f93\u51fa", p.outputCreditsPerM, free)}
+				${chipsHtml}
 			</div>
 		</div>`;
 	}
@@ -13696,6 +13730,20 @@
 			return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val free">\u514d\u8d39</div></div>`;
 		}
 		return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val">${fmtCreditsPerM(creditsPerM)} <span class="cost-chip-unit">\u79ef\u5206 / 1M</span></div></div>`;
+	}
+
+	function priceChipMoney(label, price, free) {
+		if (free) {
+			return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val free">\u514d\u8d39</div></div>`;
+		}
+		return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val">${fmtMoney(price)} <span class="cost-chip-unit">/ 1M</span></div></div>`;
+	}
+
+	function fmtMoney(n) {
+		if (n === 0) return "\u00a50";
+		if (n >= 1) return `\u00a5${n.toFixed(2)}`;
+		if (n >= 0.1) return `\u00a5${n.toFixed(2)}`;
+		return `\u00a5${n.toFixed(3)}`;
 	}
 
 	function renderBrandIconForPicker(brand, modelId) {
@@ -13717,30 +13765,52 @@
 			list.innerHTML = `<div class="model-item is-disabled"><span class="model-item-name">\u52a0\u8f7d\u4e2d...</span></div>`;
 			return;
 		}
-		const frag = document.createDocumentFragment();
-		models.forEach((model) => {
-			const isActive = model.id === currentModel;
-			const isDisabled = typeof isModelAvailable === "function" ? !isModelAvailable(model.id) : false;
-			const newBadge = model.isNew ? `<span class="model-item-new">New</span>` : "";
-			const item = document.createElement("div");
-			item.className = "model-item" + (isActive ? " active" : "") + (isDisabled ? " is-disabled" : "");
-			item.dataset.model = model.id;
-			item.setAttribute("role", "option");
-			item.setAttribute("aria-selected", String(isActive));
-			if (isDisabled) item.setAttribute("aria-disabled", "true");
-			item.innerHTML = `
-				<span class="model-item-icon">${renderBrandIconForPicker(model.brand, model.id)}</span>
-				<span class="model-item-name">${escapeHtml(model.displayName || model.name || model.id)}</span>
-				${newBadge}
-				${isDisabled ? `<span class="model-item-lock" aria-hidden="true"><svg viewBox="0 0 14 14" width="11" height="11" fill="none"><rect x="3" y="6" width="8" height="6" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M4.6 6V4.6a2.4 2.4 0 0 1 4.8 0V6" stroke="currentColor" stroke-width="1.2"/></svg></span>` : ""}
-				<svg class="model-item-check" viewBox="0 0 14 14" aria-hidden="true">
-					<path d="M2.5 7.5 L6 11 L11.5 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-			`;
-			frag.appendChild(item);
-		});
-		list.textContent = "";
-		list.appendChild(frag);
+		const modelMap = new Map();
+		for (const m of models) modelMap.set(m.id, m);
+		const pinnedIds = new Set(getPinnedModelIds());
+		const recentIds = getRecentModelIds().slice(0, 5);
+		const pinned = [];
+		const recent = [];
+		const all = [];
+		for (const id of pinnedIds) {
+			const m = modelMap.get(id);
+			if (m) pinned.push(m);
+		}
+		for (const id of recentIds) {
+			const m = modelMap.get(id);
+			if (m && !pinnedIds.has(id)) recent.push(m);
+		}
+		for (const m of models) {
+			if (!pinnedIds.has(m.id) && !recent.includes(m)) all.push(m);
+		}
+		let html = "";
+		if (pinned.length) html += renderModelSection("Pinned", pinned);
+		if (recent.length) html += renderModelSection("Recently Used", recent);
+		if (all.length) html += renderModelSection("All Models", all);
+		list.innerHTML = html || `<div class="model-item is-disabled"><span class="model-item-name">\u6682\u65e0\u53ef\u7528\u6a21\u578b</span></div>`;
+	}
+
+	function renderModelSection(title, sectionModels) {
+		const items = sectionModels.map((m) => renderModelItemHtml(m)).join("");
+		return `<div class="model-section"><div class="model-section-title">${escapeHtml(title)}</div>${items}</div>`;
+	}
+
+	function renderModelItemHtml(model) {
+		const isActive = model.id === currentModel;
+		const isDisabled = typeof isModelAvailable === "function" ? !isModelAvailable(model.id) : false;
+		const newBadge = model.isNew ? `<span class="model-item-new">New</span>` : "";
+		const freeBadge = model.isFree ? `<span class="model-item-badge" data-kind="free">Free</span>` : "";
+		const multiplier = getCostMultiplierFromMeta(model);
+		const heatBar = !model.isFree ? `<span class="model-item-heat-bar" style="--heat-level:${costLevel(multiplier)}"></span>` : "";
+		const right = isDisabled ? `<span class="model-item-lock" aria-hidden="true"><svg viewBox="0 0 14 14" width="11" height="11" fill="none"><rect x="3" y="6" width="8" height="6" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M4.6 6V4.6a2.4 2.4 0 0 1 4.8 0V6" stroke="currentColor" stroke-width="1.2"/></svg></span>` : `<svg class="model-item-check" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5 L6 11 L11.5 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+		return `<div class="model-item${isActive ? " active" : ""}${isDisabled ? " is-disabled" : ""}" data-model="${escapeAttr(model.id)}" role="option" aria-selected="${isActive}"${isDisabled ? " aria-disabled=\"true\"" : ""}>
+			<span class="model-item-icon">${renderBrandIconForPicker(model.brand, model.id)}</span>
+			<span class="model-item-name">${escapeHtml(model.displayName || model.name || model.id)}</span>
+			${newBadge}
+			${freeBadge}
+			${heatBar}
+			${right}
+		</div>`;
 	}
 	function positionModelCostPop(anchor, menuRect) {
 		const pop = document.getElementById("model-cost-pop");
@@ -13775,7 +13845,9 @@
 			displayName: model.displayName || model.name || model.id,
 			contextLabel: model.contextWindow ? formatContextWindow(model.contextWindow) : "",
 			free,
-			multiplier
+			multiplier,
+			inputPricePerM: model.inputPricePerM,
+			outputPricePerM: model.outputPricePerM
 		});
 		pop.hidden = false;
 		positionModelCostPop(anchor);
