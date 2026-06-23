@@ -13803,7 +13803,7 @@
 		const multiplier = getCostMultiplierFromMeta(model);
 		const heatBar = !model.isFree ? `<span class="model-item-heat-bar" style="--heat-level:${costLevel(multiplier)}"></span>` : "";
 		const right = isDisabled ? `<span class="model-item-lock" aria-hidden="true"><svg viewBox="0 0 14 14" width="11" height="11" fill="none"><rect x="3" y="6" width="8" height="6" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M4.6 6V4.6a2.4 2.4 0 0 1 4.8 0V6" stroke="currentColor" stroke-width="1.2"/></svg></span>` : `<svg class="model-item-check" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5 L6 11 L11.5 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-		return `<div class="model-item${isActive ? " active" : ""}${isDisabled ? " is-disabled" : ""}" data-model="${escapeAttr(model.id)}" role="option" aria-selected="${isActive}"${isDisabled ? " aria-disabled=\"true\"" : ""}>
+		return `<div class="model-item${isActive ? " active" : ""}${isDisabled ? " is-disabled" : ""}" data-model="${escapeHtml(model.id)}" role="option" aria-selected="${isActive}"${isDisabled ? " aria-disabled=\"true\"" : ""}>
 			<span class="model-item-icon">${renderBrandIconForPicker(model.brand, model.id)}</span>
 			<span class="model-item-name">${escapeHtml(model.displayName || model.name || model.id)}</span>
 			${newBadge}
