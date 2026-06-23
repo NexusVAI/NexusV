@@ -81,17 +81,6 @@
 			"customMultiplier": 6
 		},
 		{
-			"id": "hunyuan-mt-7b",
-			"name": "Hunyuan MT 7B",
-			"brand": "Tencent",
-			"kind": "translate",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"freeLimitNote": "消息翻译"
-		},
-		{
 			"id": "step-3.5-flash",
 			"name": "Step 3.5 Flash",
 			"brand": "Stepfun",
@@ -244,17 +233,6 @@
 			"tools": true,
 			"costTier": "vip",
 			"customMultiplier": 15
-		},
-		{
-			"id": "claude-opus-4-7-special",
-			"name": "【特价】Claude Opus 4.7",
-			"brand": "Anthropic",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "newapi_qwqtao"
 		},
 		{
 			"id": "gpt-5.4-nano",
@@ -458,18 +436,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "claude-opus-4-8-special",
-			"name": "【特价】Claude Opus 4.8",
-			"brand": "Anthropic",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 2,
-			"proPlusOnly": true
-		},
-		{
 			"id": "gpt-5.5",
 			"name": "GPT-5.5",
 			"brand": "OpenAI",
@@ -654,16 +620,6 @@
 			"costTier": "free"
 		},
 		{
-			"id": "qwen3.7-max-2026-05-17",
-			"name": "【订阅福利】Qwen3.7 Max 0609",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
 			"id": "qwen3.5-flash-2026-02-23",
 			"name": "Qwen 3.5 Flash (0223)",
 			"brand": "Qwen",
@@ -714,26 +670,6 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "qwen-max",
-			"name": "Qwen Max",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-max-preview",
-			"name": "Qwen 3 Max Preview",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
 			"id": "MiniMax-M2.1",
 			"name": "MiniMax M2.1",
 			"brand": "MiniMax",
@@ -743,26 +679,6 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": 1.5
-		},
-		{
-			"id": "qwen3-max",
-			"name": "Qwen 3 Max",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-vl-max",
-			"name": "Qwen VL Max",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
 		},
 		{
 			"id": "kimi-k2-thinking",
@@ -805,68 +721,8 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "qwen3-coder-plus-2025-07-22",
-			"name": "Qwen3 Coder Plus (0722)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-next",
-			"name": "Qwen3 Coder Next",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-coder-plus",
-			"name": "Qwen Coder Plus",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-coder-turbo",
-			"name": "Qwen Coder Turbo",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-flash-2025-07-28",
-			"name": "Qwen3 Coder Flash (0728)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
 			"id": "qwen3.6-35b-a3b",
 			"name": "Qwen 3.6 35B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-480b-a35b-instruct",
-			"name": "Qwen3 Coder 480B",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
@@ -906,72 +762,12 @@
 			"customMultiplier": .5
 		},
 		{
-			"id": "qwen-math-plus-0919",
-			"name": "Qwen Math Plus (0919)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen-plus-2025-12-01",
-			"name": "Qwen Plus (2025-12-01)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-max-2025-09-23",
-			"name": "Qwen3 Max (2025-09-23)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-vl-plus",
-			"name": "Qwen VL Plus",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen-flash-2025-07-28",
-			"name": "Qwen Flash (2025-07-28)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
 			"id": "qwen3.5-122b-a10b",
 			"name": "Qwen 3.5 122B A10B",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
 			"thinking": true,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-235b-a22b-instruct-2507",
-			"name": "Qwen3 235B A22B (2507)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
 			"tools": true,
 			"costTier": "normal"
 		},
@@ -986,56 +782,6 @@
 			"costTier": "cheap"
 		},
 		{
-			"id": "qwen3-vl-8b-thinking",
-			"name": "Qwen3 VL 8B Thinking",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-vl-8b-instruct",
-			"name": "Qwen3 VL 8B Instruct",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-next-80b-a3b-instruct",
-			"name": "Qwen3 Next 80B Instruct",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-flash",
-			"name": "Qwen3 Coder Flash",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-coder-plus-2025-09-23",
-			"name": "Qwen3 Coder Plus (2025-09-23)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
 			"id": "qwen3.6-27b",
 			"name": "Qwen 3.6 27B",
 			"brand": "Qwen",
@@ -1044,16 +790,6 @@
 			"thinking": true,
 			"tools": true,
 			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-next-80b-a3b-thinking",
-			"name": "Qwen3 Next 80B Thinking",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal"
 		},
 		{
 			"id": "glm-4.7",
@@ -1153,47 +889,6 @@
 			"lineLabel": "cloudflare"
 		},
 		{
-			"id": "cf:qwen3-30b-a3b",
-			"name": "Qwen3 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "qwen3-30b-a3b-instruct-2507",
-			"name": "Qwen3 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3-coder-30b-a3b-instruct",
-			"name": "Qwen3 Coder 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3-vl-30b-a3b-thinking",
-			"name": "Qwen3 VL 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
 			"id": "qwen3.5-4b",
 			"name": "Qwen3.5 4B",
 			"brand": "Qwen",
@@ -1261,8 +956,6 @@
 		"gpt-image-2-pro": 0,
 		"gpt-image-2": 0,
 		"claude-opus-4-8": 200000,
-		"claude-opus-4-8-special": 200000,
-		"claude-opus-4-7-special": 200000,
 		"claude-opus-4-6": 200000,
 		"claude-opus-4-5": 200000,
 		"claude-haiku-4-5-20251001": 200000,
@@ -1296,7 +989,6 @@
 		"gemini-3.5-agent": 1779753600000,
 		"deepseek-v4-pro-welfare": 1779753600000,
 		"glm-5.1": 1779753600000,
-		"claude-opus-4-8-special": 1779753600000,
 		"qwen3.7-max-2026-05-17": 1779753600000
 	};
 	var MODEL_PINNED_STORAGE_KEY = "cancri_model_pinned_v1";
@@ -2694,8 +2386,6 @@
 	var PAID_GATE_IDS = new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
-		"claude-opus-4-8-special",
-		"claude-opus-4-7-special",
 		"grok-4.20-multi-agent-xhigh",
 		"grok-4.3",
 		"mistral-large-2512",
@@ -2735,8 +2425,6 @@
 	var FREE_USER_BLOCKED_GATE_IDS = new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
-		"claude-opus-4-8-special",
-		"claude-opus-4-7-special",
 		"grok-4.3",
 		"qwen3.7-max",
 		"qwen3.7-max-2026-05-20",
@@ -2829,6 +2517,10 @@
 		return Boolean(meta && meta.proMaxOnly === true || PRO_MAX_GATE_IDS.has(modelId));
 	}
 	function getQuotaBlockReason(modelId) {
+		// 2026-06-23 wallet_v3：按量计费无访问档位，所有模型按 ¥ 钱包计费，
+		// 前端不再做 Pro/Pro+/Pro Max/pool/daily/token-window 档位门控（与后端
+		// enforceWalletGate 行为一致）。仅保留 available===false（线路下线）锁。
+		if (quotaState.billingMode === "wallet_v3") return null;
 		if (isProMaxGateModel(modelId)) {
 			const planCode = quotaState.planCode;
 			if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
@@ -3220,7 +2912,7 @@
 		"glm-5.1"
 	].map((id, index) => [id, index]));
 	var MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
-	var LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
+	var LOCAL_ONLY_CATALOG_IDS = new Set([]);
 	var MODEL_UI_CATALOG_TTL_MS = 300 * 1e3;
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
@@ -3388,16 +3080,15 @@
 		"doubao-seedance-2-0-260128": "./jimeng-color.svg",
 		"ernie-4.5-turbo-20260402": "./wenxin-color.svg",
 		"kat-coder-pro-v2": "./kwaikat.svg",
-		"cancriv1-0.1b": "../Logo/Cancri1.jpg",
-		"nex-n2-pro-welfare": "./NEX_logo.svg",
-		"hunyuan-mt-7b": "./yuanbao-color.svg"
+		"cancriv1-0.1b": "./VAI-logo.svg",
+		"nex-n2-pro-welfare": "./NEX_logo.svg"
 	};
 	var THEME_ADAPTIVE_ICON_BRANDS = new Set([
 		"OpenAI",
 		"Clawto",
 		"Cancri"
 	]);
-	var THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "Cancri1.jpg"];
+	var THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg"];
 	function shouldUseThemeAdaptiveIcon(iconPath, brand) {
 		if (window.CancriThemeIcons && window.CancriThemeIcons.shouldUseThemeAdaptiveIcon) return window.CancriThemeIcons.shouldUseThemeAdaptiveIcon(iconPath, brand);
 		if (brand && THEME_ADAPTIVE_ICON_BRANDS.has(brand)) return true;
@@ -12927,10 +12618,7 @@
 		const subtext = document.createElement("span");
 		subtext.className = "model-label-subtext";
 		const subParts = [];
-		// 2026-06-23 按量计费 wallet_v3：不显示旧积分/次，价格由 model_pricing 表驱动
-		if (model.creditPerUse && quotaState.billingMode !== "wallet_v3") subParts.push(`${model.creditPerUse}积分/次`);
-		if (model.proMaxOnly) subParts.push("Pro Max");
-		if (model.proPlusOnly) subParts.push("Pro+");
+		// 2026-06-23 wallet_v3：无访问档位，去 Pro+/Pro Max 标签与积分/次。
 		if (model.lineLabel) subParts.push(model.lineLabel);
 		subtext.textContent = subParts.filter(Boolean).join(" · ");
 		if (subtext.textContent) textWrap.appendChild(subtext);
@@ -12991,10 +12679,7 @@
 		}
 		if (meta) {
 			const parts = [];
-			if (model.proMaxOnly) parts.push("Pro Max 专属");
-			if (model.proPlusOnly) parts.push("Pro+ 专属");
-			// 2026-06-23 按量计费 wallet_v3：不显示旧积分/次
-			if (model.creditPerUse && quotaState.billingMode !== "wallet_v3") parts.push(`${model.creditPerUse} 积分/次`);
+			// 2026-06-23 wallet_v3：无访问档位，去 Pro+/Pro Max 专属标签与积分/次。
 			if (model.lineLabel) parts.push(model.lineLabel);
 			meta.textContent = parts.join(" · ");
 		}
@@ -13641,6 +13326,10 @@
 
 	function brandIconSvg(brand) {
 		if (BRAND_ICON[brand]) return BRAND_ICON[brand];
+		// 2026-06-23: 有真实 SVG 文件的品牌（BRAND_ICON_MAP）→ 返回 null，让
+		// renderBrandIconForPicker 走 <img> 加载真实 logo（百川/豆包/Step/Qwen 等）。
+		// 字母方块仅用于既无内联 SVG 也无 SVG 文件的品牌兜底。
+		if (BRAND_ICON_MAP[brand]) return null;
 		const initial = BRAND_INITIAL[brand];
 		if (initial) {
 			return `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" style="border-radius:3px"><rect width="24" height="24" rx="3" fill="${initial.bg}"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="${initial.color}" font-family="system-ui, sans-serif">${initial.letter}</text></svg>`;
@@ -13703,21 +13392,21 @@
 		const marker = barMarkerPct(lvl);
 		const labelAlign = barLabelAlign(lvl);
 		const ctxHint = m.contextLabel ? `${escapeHtml(m.contextLabel)} \u4e0a\u4e0b\u6587` : "";
-		const multHint = free ? "" : `\u00d7${mult}`;
-		const sub = [ctxHint, multHint].filter(Boolean).join(" \u00b7 ");
+		const sub = ctxHint;
 		const hasMoney = typeof m.inputPricePerM === "number" && typeof m.outputPricePerM === "number";
-		const subFallback = hasMoney ? "\u6309\u91cf\u8ba1\u8d39" : "1 \u79ef\u5206 = 1 \u4e07 token";
-		const inputPrice = hasMoney ? m.inputPricePerM : 0;
-		const outputPrice = hasMoney ? m.outputPricePerM : 0;
-		const cachedPrice = inputPrice * TOKEN_WEIGHT.cached;
+		const hasPerCall = typeof m.perCallPrice === "number";
+		// 2026-06-23 wallet_v3：去积分回退。未定价显"未定价"，按次显¥/次，按量显¥/M。
+		const subFallback = free ? "\u514d\u8d39" : hasMoney ? "\u6309\u91cf\u8ba1\u8d39" : hasPerCall ? "\u6309\u6b21\u8ba1\u8d39" : "\u672a\u5b9a\u4ef7";
 		let chipsHtml;
 		if (free) {
 			chipsHtml = `${priceChipMoney("\u8f93\u5165", 0, true)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", 0, true)}${priceChipMoney("\u8f93\u51fa", 0, true)}`;
 		} else if (hasMoney) {
-			chipsHtml = `${priceChipMoney("\u8f93\u5165", inputPrice)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", cachedPrice)}${priceChipMoney("\u8f93\u51fa", outputPrice)}`;
+			const cachedPrice = m.inputPricePerM * TOKEN_WEIGHT.cached;
+			chipsHtml = `${priceChipMoney("\u8f93\u5165", m.inputPricePerM)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", cachedPrice)}${priceChipMoney("\u8f93\u51fa", m.outputPricePerM)}`;
+		} else if (hasPerCall) {
+			chipsHtml = `<div class="cost-chip"><div class="cost-chip-label">\u6bcf\u6b21</div><div class="cost-chip-val">${fmtMoney(m.perCallPrice)} <span class="cost-chip-unit">/ \u6b21</span></div></div>`;
 		} else {
-			const p = approxPrice(mult);
-			chipsHtml = `${priceChip("\u8f93\u5165", p.inputCreditsPerM, false)}${priceChip("\u7f13\u5b58\u8f93\u5165", p.cachedCreditsPerM, false)}${priceChip("\u8f93\u51fa", p.outputCreditsPerM, false)}`;
+			chipsHtml = `<div class="cost-chip"><div class="cost-chip-label">\u4ef7\u683c</div><div class="cost-chip-val free">\u672a\u5b9a\u4ef7</div></div>`;
 		}
 		return `<div class="cost-card cost-card-billing">
 			<div class="cost-billing-head">
@@ -13856,7 +13545,8 @@
 			free,
 			multiplier,
 			inputPricePerM: model.inputPricePerM,
-			outputPricePerM: model.outputPricePerM
+			outputPricePerM: model.outputPricePerM,
+			perCallPrice: model.perCallPrice
 		});
 		pop.hidden = false;
 		positionModelCostPop(anchor);
@@ -13875,10 +13565,40 @@
 			trigger.removeEventListener("click", handleModelCurrentBtnClickOld);
 		}
 		let costPopTimer = null;
+		// 2026-06-23：composer 居底部 → 模型菜单向上展开。fixed 定位挂 body，
+		// 逃出 #homeView.chatting (z-index:0) 的层叠上下文，避免被 main-header
+		// 下缘渐变 (::after, z-index:1 in header's z-index:100 context) 挡住。
+		if (popover.parentElement !== document.body) {
+			document.body.appendChild(popover);
+		}
+		function positionModelPopover() {
+			if (popover.hidden) return;
+			const tRect = trigger.getBoundingClientRect();
+			popover.style.position = "fixed";
+			void popover.offsetWidth;
+			const pRect = popover.getBoundingClientRect();
+			const gap = 6;
+			// 右对齐触发按钮右缘；右边距不够时贴右 viewport。
+			let right = window.innerWidth - tRect.right;
+			const maxRight = window.innerWidth - 10;
+			if (right > maxRight) right = maxRight;
+			popover.style.right = `${Math.max(10, right)}px`;
+			popover.style.left = "auto";
+			// 向上展开：popover 底缘贴触发按钮顶缘 - gap。
+			let bottom = window.innerHeight - tRect.top + gap;
+			// 若超出顶部 viewport，则贴顶并允许向下覆盖触发区。
+			const topEdge = window.innerHeight - bottom - pRect.height;
+			if (topEdge < 10) {
+				bottom = window.innerHeight - pRect.height - 10;
+			}
+			popover.style.bottom = `${bottom}px`;
+			popover.style.top = "auto";
+		}
 		function openPopover() {
 			popover.hidden = false;
 			trigger.setAttribute("aria-expanded", "true");
 			renderCancriCodeModelList();
+			positionModelPopover();
 			if (typeof scrollToActiveModel === "function") scrollToActiveModel();
 		}
 		function closePopover() {
@@ -13949,6 +13669,9 @@
 		}
 		document.addEventListener("click", handleDocClick);
 		document.addEventListener("keydown", handleKey);
+		// 2026-06-23：fixed 定位跟随触发按钮，滚动/缩放时重定位。
+		window.addEventListener("scroll", positionModelPopover, true);
+		window.addEventListener("resize", positionModelPopover);
 		renderCancriCodeModelList();
 	}
 	window.CancriApp = {
