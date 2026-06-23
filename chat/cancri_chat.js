@@ -1252,6 +1252,7 @@
 		"gpt-5.5-special": 256000,
 		"gpt-5.4-mini-0603": 128000,
 		"gpt-5.4-nano": 128000,
+		"gpt-5.4": 256000,
 		"gpt-image-2-all": 0,
 		"gpt-image-2-pro": 0,
 		"gpt-image-2": 0,
@@ -1267,8 +1268,12 @@
 		"gemini-3.1-flash-lite-welfare": 1048576,
 		"gemini-2.5-flash-lite": 1048576,
 		"gemini-3-flash-preview": 1048576,
-		"deepseek-v4-pro": 64000,
-		"deepseek-v4-flash": 64000,
+		"agnes-2.0-flash": 128000,
+		"grok-4.3": 256000,
+		"grok-4.20-multi-agent-xhigh": 256000,
+		"grok-4.20-fast": 256000,
+		"deepseek-v4-pro": 128000,
+		"deepseek-v4-flash": 128000,
 		"deepseek-v3": 64000,
 		"deepseek-v3.1": 64000,
 		"deepseek-v3.2": 64000,
@@ -3240,6 +3245,7 @@
 			inputPricePerM: typeof serverModel.inputPricePerM === "number" ? serverModel.inputPricePerM : local.inputPricePerM,
 			outputPricePerM: typeof serverModel.outputPricePerM === "number" ? serverModel.outputPricePerM : local.outputPricePerM,
 			perCallPrice: typeof serverModel.perCallPrice === "number" ? serverModel.perCallPrice : local.perCallPrice,
+			maxInputTokens: serverModel.maxInputTokens || local.maxInputTokens || 0,
 			available: serverModel.available !== false && local.available !== false,
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
@@ -3290,6 +3296,14 @@
 			credentials: "omit",
 			cache: "no-store"
 		}).then((r) => r.ok ? r.json() : null).then((data) => {
+			// 2026-06-23: 同步后端倍率档位（与 cancri-code / chat-gateway 保持一致）。
+			if (data && data.multiplier_legend) {
+				for (const key in data.multiplier_legend) {
+					if (Object.prototype.hasOwnProperty.call(data.multiplier_legend, key) && typeof data.multiplier_legend[key] === "number") {
+						COST_TIER_MULTIPLIER[key] = data.multiplier_legend[key];
+					}
+				}
+			}
 			const ok = mergeServerUiCatalog(data && data.models);
 			if (ok) {
 				if (!isModelEnabled(currentModel)) try {
@@ -3449,7 +3463,7 @@
 				isFree: entry.costTier === "free" || isWelfare,
 				isPromo: entry.promoLimited === true || isSpecial,
 				isNew: isModelNew(entry.id),
-				contextWindow: getModelContextWindow(entry.id)
+				contextWindow: entry.maxInputTokens || getModelContextWindow(entry.id)
 			};
 			MODEL_META_MAP.set(entry.id, meta);
 			MODEL_IDS[entry.id] = entry.id;
@@ -13567,6 +13581,123 @@
 		if (currentModelName) currentModelName.textContent = getModelDisplayName(modelId);
 		if (typeof updateAttachBtnVisibility === "function") updateAttachBtnVisibility();
 	}
+	// ============================================================================
+	// Cancri Code 风格模型选择器 — 品牌图标与计费卡（从 cancri-code/src/modelMeta.ts 移植）
+	// ============================================================================
+	const EFFECTIVE_TOKENS_PER_CREDIT = 10000;
+	const TOKEN_WEIGHT = { input: 1.0, cached: 0.1, output: 1.0 };
+	const COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
+
+	const ICON_OPENAI = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071.007L4.41 13.954a4.5 4.5 0 0 1-2.07-6.058zm16.597 3.855-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071-.006l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.66zm2.01-3.025-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zM8.305 12.863l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365 2.602-1.5 2.607 1.5v2.999l-2.602 1.5-2.607-1.5z"></path></svg>`;
+
+	const ICON_ANTHROPIC = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 0 1-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.667-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z" fill="#D97757"></path></svg>`;
+
+	const ICON_XAI = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 0 0-1.829-1A8.975 8.975 0 0 0 5.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815"></path></svg>`;
+
+	const ICON_DEEPSEEK = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 0 1-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 0 0-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 0 1-.465.137 9.597 9.597 0 0 0-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 0 0 1.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 0 1 1.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 0 1 .415-.287.302.302 0 0 1 .2.288.306.306 0 0 1-.31.307.303.303 0 0 1-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 0 1-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 0 1 .016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 0 1-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#4D6BFE"></path></svg>`;
+
+	const ICON_GOOGLE = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M12 0c.69 6.43 5.57 11.31 12 12-6.43.69-11.31 5.57-12 12-.69-6.43-5.57-11.31-12-12C6.43 11.31 11.31 6.43 12 0z" fill="#3186FF"></path></svg>`;
+
+	const ICON_CUSTOM = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"></path><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"></path></svg>`;
+
+	const ICON_AGNES = `<img src="../Logo/Cancri1.jpg" alt="" aria-hidden="true" style="width:1em;height:1em;display:block;border-radius:3px;object-fit:cover" />`;
+
+	const BRAND_ICON = {
+		"OpenAI": ICON_OPENAI,
+		"Anthropic": ICON_ANTHROPIC,
+		"xAI": ICON_XAI,
+		"DeepSeek": ICON_DEEPSEEK,
+		"Google": ICON_GOOGLE,
+		"Agnes": ICON_AGNES,
+		"\u81ea\u5b9a\u4e49": ICON_CUSTOM
+	};
+
+	function brandIconSvg(brand) {
+		return BRAND_ICON[brand] || ICON_CUSTOM;
+	}
+
+	function getCostMultiplierFromMeta(meta) {
+		if (meta && typeof meta.customMultiplier === "number") return meta.customMultiplier;
+		const tier = (meta && meta.costTier) || "normal";
+		return COST_TIER_MULTIPLIER[tier] || 1;
+	}
+
+	function creditsPerMillion(multiplier, kind) {
+		return (1000000 * TOKEN_WEIGHT[kind] * multiplier) / EFFECTIVE_TOKENS_PER_CREDIT;
+	}
+
+	function approxPrice(multiplier) {
+		return {
+			inputCreditsPerM: creditsPerMillion(multiplier, "input"),
+			cachedCreditsPerM: creditsPerMillion(multiplier, "cached"),
+			outputCreditsPerM: creditsPerMillion(multiplier, "output")
+		};
+	}
+
+	function costLevel(multiplier) {
+		if (multiplier <= 0) return 0;
+		const v = Math.log10(multiplier + 1) / Math.log10(300 + 1);
+		return Math.max(0.04, Math.min(1, v));
+	}
+
+	function barMarkerPct(level) {
+		const pct = Math.max(8, Math.min(92, level * 100));
+		return pct.toFixed(1);
+	}
+
+	function barLabelAlign(level) {
+		const pct = level * 100;
+		if (pct <= 14) return "start";
+		if (pct >= 86) return "end";
+		return "center";
+	}
+
+	function fmtCreditsPerM(n) {
+		if (n === 0) return "0";
+		if (n >= 10000) {
+			const wan = n / 10000;
+			return wan >= 10 ? `${Math.round(wan)}\u4e07` : `${wan.toFixed(1)}\u4e07`;
+		}
+		if (n >= 1000) return `${(n / 1000).toFixed(n >= 5000 ? 0 : 1)}k`;
+		if (Number.isInteger(n)) return String(n);
+		if (n >= 10) return n.toFixed(0);
+		return n.toFixed(1);
+	}
+
+	function buildCostCard(m) {
+		const mult = m.multiplier || 1;
+		const free = m.free === true;
+		const lvl = free ? 0.04 : costLevel(mult);
+		const marker = barMarkerPct(lvl);
+		const labelAlign = barLabelAlign(lvl);
+		const p = approxPrice(mult);
+		const ctxHint = m.contextLabel ? `${escapeHtml(m.contextLabel)} \u4e0a\u4e0b\u6587` : "";
+		const multHint = free ? "" : `\u00d7${mult}`;
+		const sub = [ctxHint, multHint].filter(Boolean).join(" \u00b7 ");
+		return `<div class="cost-card cost-card-billing">
+			<div class="cost-billing-head">
+				<span class="cost-billing-title">\u8ba1\u8d39</span>
+				<span class="cost-billing-sub">${sub || "1 \u79ef\u5206 = 1 \u4e07 token"}</span>
+			</div>
+			<div class="cost-bar-wrap">
+				<div class="cost-bar-model cost-bar-model--${labelAlign}" style="left:${marker}%">${escapeHtml(m.displayName)}</div>
+				<div class="cost-bar"><span class="cost-bar-marker" style="left:${marker}%"></span></div>
+			</div>
+			<div class="cost-chips">
+				${priceChip("\u8f93\u5165", p.inputCreditsPerM, free)}
+				${priceChip("\u7f13\u5b58\u8f93\u5165", p.cachedCreditsPerM, free)}
+				${priceChip("\u8f93\u51fa", p.outputCreditsPerM, free)}
+			</div>
+		</div>`;
+	}
+
+	function priceChip(label, creditsPerM, free) {
+		if (free) {
+			return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val free">\u514d\u8d39</div></div>`;
+		}
+		return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val">${fmtCreditsPerM(creditsPerM)} <span class="cost-chip-unit">\u79ef\u5206 / 1M</span></div></div>`;
+	}
+
 	function renderBrandIconForPicker(brand, modelId) {
 		if (typeof brandIconSvg === "function") {
 			try {
@@ -13583,136 +13714,69 @@
 		if (!list) return;
 		const models = Array.isArray(window.CancriApp && window.CancriApp.SELECTABLE_MODELS) ? window.CancriApp.SELECTABLE_MODELS : (Array.isArray(SELECTABLE_MODELS) ? SELECTABLE_MODELS : []);
 		if (!models.length) {
-			list.innerHTML = `<div class="model-item is-disabled"><div class="model-item-body"><div class="model-item-name">加载中...</div></div></div>`;
+			list.innerHTML = `<div class="model-item is-disabled"><span class="model-item-name">\u52a0\u8f7d\u4e2d...</span></div>`;
 			return;
 		}
 		const frag = document.createDocumentFragment();
 		models.forEach((model) => {
 			const isActive = model.id === currentModel;
 			const isDisabled = typeof isModelAvailable === "function" ? !isModelAvailable(model.id) : false;
+			const newBadge = model.isNew ? `<span class="model-item-new">New</span>` : "";
 			const item = document.createElement("div");
 			item.className = "model-item" + (isActive ? " active" : "") + (isDisabled ? " is-disabled" : "");
 			item.dataset.model = model.id;
 			item.setAttribute("role", "option");
 			item.setAttribute("aria-selected", String(isActive));
 			if (isDisabled) item.setAttribute("aria-disabled", "true");
-			const iconWrap = document.createElement("div");
-			iconWrap.className = "model-item-icon";
-			iconWrap.innerHTML = renderBrandIconForPicker(model.brand, model.id);
-			const body = document.createElement("div");
-			body.className = "model-item-body";
-			const row1 = document.createElement("div");
-			row1.className = "model-item-row1";
-			const nameSpan = document.createElement("span");
-			nameSpan.className = "model-item-name";
-			nameSpan.textContent = model.displayName || model.name || model.id;
-			row1.appendChild(nameSpan);
-			if (model.isNew) {
-				const badge = document.createElement("span");
-				badge.className = "model-item-new";
-				badge.textContent = "New";
-				row1.appendChild(badge);
-			}
-			const isFree = model.isFree || model.costTier === "free" || model.gateCostTier === "free";
-			if (isFree) {
-				const badge = document.createElement("span");
-				badge.className = "model-item-badge";
-				badge.dataset.kind = "free";
-				badge.textContent = "Free";
-				row1.appendChild(badge);
-			}
-			if (model.thinking) {
-				const badge = document.createElement("span");
-				badge.className = "model-item-badge";
-				badge.dataset.kind = "thinking";
-				badge.textContent = "思考";
-				row1.appendChild(badge);
-			}
-			if (model.multimodal || model.imageOnly || model.videoOnly) {
-				const badge = document.createElement("span");
-				badge.className = "model-item-badge";
-				badge.dataset.kind = "mult";
-				badge.textContent = model.imageOnly ? "图像" : model.videoOnly ? "视频" : "多模态";
-				row1.appendChild(badge);
-			}
-			if (model.customMultiplier) {
-				const badge = document.createElement("span");
-				badge.className = "model-item-badge";
-				badge.textContent = `×${model.customMultiplier}`;
-				row1.appendChild(badge);
-			}
-			body.appendChild(row1);
-			if (model.brand) {
-				const brand = document.createElement("div");
-				brand.className = "model-item-brand";
-				brand.textContent = model.brand;
-				body.appendChild(brand);
-			}
-			if (model.lineLabel) {
-				const desc = document.createElement("div");
-				desc.className = "model-item-desc";
-				desc.textContent = model.lineLabel;
-				body.appendChild(desc);
-			}
-			const right = document.createElement("div");
-			right.className = isDisabled ? "model-item-lock" : "model-item-check";
-			if (isDisabled) {
-				right.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
-			} else {
-				right.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-			}
-			item.appendChild(iconWrap);
-			item.appendChild(body);
-			item.appendChild(right);
+			item.innerHTML = `
+				<span class="model-item-icon">${renderBrandIconForPicker(model.brand, model.id)}</span>
+				<span class="model-item-name">${escapeHtml(model.displayName || model.name || model.id)}</span>
+				${newBadge}
+				${isDisabled ? `<span class="model-item-lock" aria-hidden="true"><svg viewBox="0 0 14 14" width="11" height="11" fill="none"><rect x="3" y="6" width="8" height="6" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M4.6 6V4.6a2.4 2.4 0 0 1 4.8 0V6" stroke="currentColor" stroke-width="1.2"/></svg></span>` : ""}
+				<svg class="model-item-check" viewBox="0 0 14 14" aria-hidden="true">
+					<path d="M2.5 7.5 L6 11 L11.5 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			`;
 			frag.appendChild(item);
 		});
 		list.textContent = "";
 		list.appendChild(frag);
 	}
-	function positionModelCostPop(anchor) {
+	function positionModelCostPop(anchor, menuRect) {
 		const pop = document.getElementById("model-cost-pop");
 		if (!pop || !anchor) return;
-		const rect = anchor.getBoundingClientRect();
-		const vw = window.innerWidth;
-		const vh = window.innerHeight;
-		let left = rect.right + 8;
-		let top = rect.top;
-		pop.style.visibility = "hidden";
-		pop.hidden = false;
+		const rowRect = anchor.getBoundingClientRect();
+		const modelMenu = document.getElementById("model-popover");
+		const mRect = menuRect || (modelMenu ? modelMenu.getBoundingClientRect() : rowRect);
+		pop.removeAttribute("hidden");
+		pop.style.position = "fixed";
+		void pop.offsetWidth;
 		const popRect = pop.getBoundingClientRect();
-		pop.style.visibility = "";
-		if (left + popRect.width > vw - 8) left = rect.left - popRect.width - 8;
-		if (top + popRect.height > vh - 8) top = vh - popRect.height - 8;
-		if (top < 8) top = 8;
-		pop.style.left = left + "px";
-		pop.style.top = top + "px";
+		const gap = 10;
+		const popW = popRect.width > 0 ? popRect.width : 256;
+		let right = window.innerWidth - mRect.left + gap;
+		if (window.innerWidth - right - popW < 10) {
+			right = window.innerWidth - popW - 10;
+		}
+		pop.style.left = "auto";
+		pop.style.right = `${right}px`;
+		const top = Math.min(
+			window.innerHeight - popRect.height - 10,
+			Math.max(10, rowRect.top + rowRect.height / 2 - popRect.height / 2)
+		);
+		pop.style.top = `${top}px`;
 	}
 	function showModelCostPop(model, anchor) {
 		const pop = document.getElementById("model-cost-pop");
 		if (!pop) return;
-		const input = typeof model.inputPricePerM === "number" ? model.inputPricePerM : null;
-		const output = typeof model.outputPricePerM === "number" ? model.outputPricePerM : null;
-		const perCall = typeof model.perCallPrice === "number" ? model.perCallPrice : null;
-		const priceDisplay = model.priceDisplay || "";
-		const isFree = model.isFree || model.costTier === "free" || model.gateCostTier === "free";
-		const chips = [];
-		if (input !== null) chips.push({ label: "输入", value: `$${input.toFixed(2)}`, unit: "/M tokens" });
-		if (output !== null) chips.push({ label: "输出", value: `$${output.toFixed(2)}`, unit: "/M tokens" });
-		if (perCall !== null) chips.push({ label: "每次", value: `$${perCall.toFixed(2)}`, unit: "/call" });
-		let html = `<div class="cost-card">`;
-		html += `<div class="cost-billing-head"><div class="cost-billing-title">${escapeHtml(model.displayName || model.name || model.id)}</div></div>`;
-		if (priceDisplay) html += `<div class="cost-billing-note">${escapeHtml(priceDisplay)}</div>`;
-		if (isFree) {
-			html += `<div class="cost-chips"><div class="cost-chip"><div class="cost-chip-label">费用</div><div class="cost-chip-val free">免费</div></div></div>`;
-		} else if (chips.length) {
-			html += `<div class="cost-chips">`;
-			chips.forEach((chip) => {
-				html += `<div class="cost-chip"><div class="cost-chip-label">${escapeHtml(chip.label)}</div><div class="cost-chip-val">${escapeHtml(chip.value)}<span class="cost-chip-unit">${escapeHtml(chip.unit)}</span></div></div>`;
-			});
-			html += `</div>`;
-		}
-		html += `</div>`;
-		pop.innerHTML = html;
+		const multiplier = getCostMultiplierFromMeta(model);
+		const free = model.isFree === true || model.costTier === "free" || model.gateCostTier === "free";
+		pop.innerHTML = buildCostCard({
+			displayName: model.displayName || model.name || model.id,
+			contextLabel: model.contextWindow ? formatContextWindow(model.contextWindow) : "",
+			free,
+			multiplier
+		});
 		pop.hidden = false;
 		positionModelCostPop(anchor);
 	}
@@ -13722,6 +13786,10 @@
 		const list = document.getElementById("model-popover-list");
 		const costPop = document.getElementById("model-cost-pop");
 		if (!trigger || !popover || !list) return;
+		// fixed 定位必须挂 body，否则在 chat-card 等祖先内 viewport 坐标会错位
+		if (costPop && costPop.parentElement !== document.body) {
+			document.body.appendChild(costPop);
+		}
 		if (typeof handleModelCurrentBtnClickOld === "function") {
 			trigger.removeEventListener("click", handleModelCurrentBtnClickOld);
 		}

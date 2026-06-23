@@ -4262,7 +4262,7 @@ button.composer-tool-btn:hover {
 /* 模型选择 popover */
 .model-popover {
     position: absolute;
-    bottom: calc(100% + 6px);
+    top: calc(100% + 6px);
     right: 0;
     width: 320px;
     max-width: min(320px, calc(100vw - 24px));
@@ -4275,10 +4275,10 @@ button.composer-tool-btn:hover {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: popover-up-in 0.16s var(--workbench-ease, cubic-bezier(.2,.8,.2,1));
+    animation: popover-down-in 0.16s var(--workbench-ease, cubic-bezier(.2,.8,.2,1));
 }
-@keyframes popover-up-in {
-    from { opacity: 0; transform: translateY(4px); }
+@keyframes popover-down-in {
+    from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 .model-popover-head {
@@ -4406,12 +4406,14 @@ button.composer-tool-btn:hover {
     height: 14px;
     color: var(--c-accent);
     opacity: 0;
+    margin-left: auto;
 }
 .model-item.active .model-item-check { opacity: 1; }
 .model-item-lock {
     flex-shrink: 0;
     display: inline-flex;
     color: var(--c-text-soft);
+    margin-left: auto;
 }
 .model-item-new {
     flex-shrink: 0;
