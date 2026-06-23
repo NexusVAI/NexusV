@@ -13784,13 +13784,13 @@
 			if (!pinnedIds.has(m.id) && !recent.includes(m)) all.push(m);
 		}
 		let html = "";
-		if (pinned.length) html += renderModelSection("Pinned", pinned);
-		if (recent.length) html += renderModelSection("Recently Used", recent);
-		if (all.length) html += renderModelSection("All Models", all);
+		if (pinned.length) html += renderCcModelSection("Pinned", pinned);
+		if (recent.length) html += renderCcModelSection("Recently Used", recent);
+		if (all.length) html += renderCcModelSection("All Models", all);
 		list.innerHTML = html || `<div class="model-item is-disabled"><span class="model-item-name">\u6682\u65e0\u53ef\u7528\u6a21\u578b</span></div>`;
 	}
 
-	function renderModelSection(title, sectionModels) {
+	function renderCcModelSection(title, sectionModels) {
 		const items = sectionModels.map((m) => renderModelItemHtml(m)).join("");
 		return `<div class="model-section"><div class="model-section-title">${escapeHtml(title)}</div>${items}</div>`;
 	}
