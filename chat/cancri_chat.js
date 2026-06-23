@@ -1622,11 +1622,11 @@
 	var attachBtn = document.getElementById("attachBtn");
 	var attachmentInput = document.getElementById("attachmentInput");
 	var modelSelector = document.getElementById("modelSelector");
-	var modelCurrentBtn = document.getElementById("modelCurrentBtn");
-	var modelDropdown = document.getElementById("modelDropdown");
-	var modelSearchInput = document.getElementById("modelSearchInput");
-	var modelFilterRow = document.getElementById("modelFilterRow");
-	var currentModelName = document.getElementById("currentModelName");
+	var modelCurrentBtn = document.getElementById("chat-model");
+	var modelDropdown = document.getElementById("model-popover");
+	var modelSearchInput = null;
+	var modelFilterRow = null;
+	var currentModelName = document.querySelector("#chat-model .chat-model-name");
 	var topArenaModeSelector = document.getElementById("topArenaModeSelector");
 	var topArenaModeBtn = document.getElementById("topArenaModeBtn");
 	var topArenaModeLabel = document.getElementById("topArenaModeLabel");
@@ -3237,6 +3237,9 @@
 			promoLimited: local.promoLimited,
 			promoTooltip: local.promoTooltip,
 			freeLimitNote: local.freeLimitNote,
+			inputPricePerM: typeof serverModel.inputPricePerM === "number" ? serverModel.inputPricePerM : local.inputPricePerM,
+			outputPricePerM: typeof serverModel.outputPricePerM === "number" ? serverModel.outputPricePerM : local.outputPricePerM,
+			perCallPrice: typeof serverModel.perCallPrice === "number" ? serverModel.perCallPrice : local.perCallPrice,
 			available: serverModel.available !== false && local.available !== false,
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
@@ -3299,6 +3302,9 @@
 					renderModelDropdownFromCatalog();
 				} catch (e) {}
 				try {
+					renderCancriCodeModelList();
+				} catch (e) {}
+				try {
 					updateModelSelectorIcons();
 				} catch (e) {}
 			}
@@ -3310,9 +3316,15 @@
 					renderModelDropdownFromCatalog();
 				} catch (e) {}
 			}
+			try {
+				renderCancriCodeModelList();
+			} catch (e) {}
 			return false;
 		}).finally(() => {
 			modelUiCatalogInflight = null;
+			try {
+				renderCancriCodeModelList();
+			} catch (e) {}
 		});
 		return modelUiCatalogInflight;
 	}
@@ -3478,6 +3490,8 @@
 	}
 	function updateModelButtonIcon(button, modelId) {
 		if (!button) return;
+		// Cancri Code 风格主选择器用文字 + caret，不追加图标
+		if (button.classList.contains("chat-model")) return;
 		const meta = getModelMeta(modelId);
 		let icon = button.querySelector(".model-current-icon");
 		if (!icon) {
@@ -3486,7 +3500,7 @@
 			icon.alt = "";
 			icon.loading = "lazy";
 			icon.decoding = "async";
-			const name = button.querySelector(".model-name");
+			const name = button.querySelector(".model-name, .chat-model-name");
 			button.insertBefore(icon, name || button.firstChild);
 		}
 		icon.src = meta.iconPath || "./openai.svg";
@@ -12833,6 +12847,32 @@
 		svg.innerHTML = '<rect x="3" y="8" width="18" height="12" rx="2"></rect><path d="M12 8v12"></path><path d="M3 12h18"></path><path d="M7 8c0-2.2 1.8-4 4-4s4 1.8 4 4"></path><path d="M17 8c0-2.2-1.8-4-4-4"></path>';
 		return svg;
 	}
+	function createCapabilityBars(model) {
+		const bars = document.createElement("span");
+		bars.className = "model-capability-bars";
+		const barColors = getModelPriceBarColors(model);
+		barColors.forEach((color) => {
+			const bar = document.createElement("span");
+			bar.className = "model-capability-bar";
+			bar.style.background = color;
+			bars.appendChild(bar);
+		});
+		return bars;
+	}
+	function getModelPriceBarColors(model) {
+		const pricePerM = (typeof model.perCallPrice === "number" && model.perCallPrice > 0)
+			? model.perCallPrice
+			: (typeof model.outputPricePerM === "number" && model.outputPricePerM > 0)
+				? model.outputPricePerM
+				: (typeof model.inputPricePerM === "number" && model.inputPricePerM > 0)
+					? model.inputPricePerM
+					: 0;
+		if (pricePerM <= 0) return ["#10a37f", "#10a37f", "#10a37f"];
+		if (pricePerM < 2) return ["#10a37f", "#10a37f", "#d1d5db"];
+		if (pricePerM < 10) return ["#10a37f", "#f59e0b", "#d1d5db"];
+		if (pricePerM < 50) return ["#10a37f", "#f59e0b", "#f97316"];
+		return ["#10a37f", "#f59e0b", "#ef4444"];
+	}
 	function createModelOption(model) {
 		const option = document.createElement("div");
 		option.className = "model-option";
@@ -12865,6 +12905,7 @@
 		subtext.textContent = subParts.filter(Boolean).join(" · ");
 		if (subtext.textContent) textWrap.appendChild(subtext);
 		option.appendChild(textWrap);
+		option.appendChild(createCapabilityBars(model));
 		const badgeWrap = document.createElement("span");
 		badgeWrap.className = "model-badge-wrap";
 		if (model.isWelfare) badgeWrap.appendChild(createGiftIcon());
@@ -13046,20 +13087,9 @@
 		allHeader.className = "model-section-header";
 		allHeader.textContent = "All models";
 		allSection.appendChild(allHeader);
-		allGrouped.forEach((models, brand) => {
-			const brandHeader = document.createElement("div");
-			brandHeader.className = "model-group-header";
-			brandHeader.dataset.brand = brand;
-			brandHeader.textContent = brand;
-			allSection.appendChild(brandHeader);
-			models.forEach((model) => allSection.appendChild(createModelOption(model)));
-		});
-		allSection.classList.toggle("is-collapsed", !modelDropdownShowAll);
+		all.forEach((model) => allSection.appendChild(createModelOption(model)));
 		content.appendChild(allSection);
-		if (seeMoreBtn) {
-			seeMoreBtn.textContent = modelDropdownShowAll ? "Show less" : "See more";
-			seeMoreBtn.classList.toggle("is-expanded", modelDropdownShowAll);
-		}
+		if (seeMoreBtn) seeMoreBtn.style.display = "none";
 		applyModelDropdownFilters();
 	}
 	function getActiveModelFilter() {
@@ -13099,14 +13129,7 @@
 				if (visible) visibleInSection += 1;
 			});
 			if (sectionName === "all") {
-				section.querySelectorAll(".model-group-header").forEach((bh) => {
-					const brand = bh.dataset.brand;
-					const hasVisible = options.some((opt) => opt.dataset.brand === brand && opt.style.display !== "none");
-					bh.style.display = hasVisible ? "block" : "none";
-				});
 				section.style.display = visibleInSection > 0 ? "block" : "none";
-				if (hasQuery) section.classList.remove("is-collapsed");
-				else section.classList.toggle("is-collapsed", !modelDropdownShowAll);
 			} else {
 				section.style.display = visibleInSection > 0 ? "block" : "none";
 			}
@@ -13298,7 +13321,7 @@
 			opt.classList.toggle("active", opt.dataset.model === currentModel);
 		});
 	}
-	if (modelCurrentBtn) modelCurrentBtn.addEventListener("click", (e) => {
+	function handleModelCurrentBtnClickOld(e) {
 		e.stopPropagation();
 		modelSelectTarget = "primary";
 		if (modelSelector?.classList.contains("open") && modelSelector.classList.contains("is-open")) closeModelDropdown();
@@ -13306,7 +13329,8 @@
 			openModelDropdown(modelCurrentBtn);
 			modelCurrentBtn.setAttribute("aria-expanded", "true");
 		}
-	});
+	}
+	if (modelCurrentBtn) modelCurrentBtn.addEventListener("click", handleModelCurrentBtnClickOld);
 	if (compareModelCurrentBtn) compareModelCurrentBtn.addEventListener("click", (e) => {
 		e.stopPropagation();
 		modelSelectTarget = "compare";
@@ -13398,6 +13422,7 @@
 		}
 
 	}
+	mountCancriCodeModelPicker();
 	var themeSwitchers = Array.from(document.querySelectorAll(".theme-switcher"));
 	themeSwitchers.forEach((switcher) => {
 		switcher.querySelectorAll(".theme-btn").forEach((btn) => {
@@ -13530,6 +13555,253 @@
 		if (dismissNoticeCheckbox && dismissNoticeCheckbox.checked) localStorage.setItem(NOTICE_DISMISS_KEY, "true");
 		refreshBroadcastDot();
 	});
+	function setCurrentModel(modelId) {
+		if (typeof setModel === "function") {
+			setModel(modelId);
+			return;
+		}
+		if (!isModelSelectable(modelId)) return;
+		currentModel = modelId;
+		isMultimodal = typeof isMultimodalModel === "function" ? isMultimodalModel(modelId) : false;
+		localStorage.setItem("cancri_current_model", modelId);
+		if (currentModelName) currentModelName.textContent = getModelDisplayName(modelId);
+		if (typeof updateAttachBtnVisibility === "function") updateAttachBtnVisibility();
+	}
+	function renderBrandIconForPicker(brand, modelId) {
+		if (typeof brandIconSvg === "function") {
+			try {
+				const svg = brandIconSvg(brand);
+				if (svg) return svg;
+			} catch (e) {}
+		}
+		const iconPath = getModelIconPath(brand, modelId);
+		const themeClass = shouldUseThemeAdaptiveIcon(iconPath, brand) ? " model-icon-theme-adaptive" : "";
+		return `<img src="${escapeHtml(iconPath)}" alt="" class="model-item-icon-img${themeClass}" loading="lazy" decoding="async">`;
+	}
+	function renderCancriCodeModelList() {
+		const list = document.getElementById("model-popover-list");
+		if (!list) return;
+		const models = Array.isArray(window.CancriApp && window.CancriApp.SELECTABLE_MODELS) ? window.CancriApp.SELECTABLE_MODELS : (Array.isArray(SELECTABLE_MODELS) ? SELECTABLE_MODELS : []);
+		if (!models.length) {
+			list.innerHTML = `<div class="model-item is-disabled"><div class="model-item-body"><div class="model-item-name">加载中...</div></div></div>`;
+			return;
+		}
+		const frag = document.createDocumentFragment();
+		models.forEach((model) => {
+			const isActive = model.id === currentModel;
+			const isDisabled = typeof isModelAvailable === "function" ? !isModelAvailable(model.id) : false;
+			const item = document.createElement("div");
+			item.className = "model-item" + (isActive ? " active" : "") + (isDisabled ? " is-disabled" : "");
+			item.dataset.model = model.id;
+			item.setAttribute("role", "option");
+			item.setAttribute("aria-selected", String(isActive));
+			if (isDisabled) item.setAttribute("aria-disabled", "true");
+			const iconWrap = document.createElement("div");
+			iconWrap.className = "model-item-icon";
+			iconWrap.innerHTML = renderBrandIconForPicker(model.brand, model.id);
+			const body = document.createElement("div");
+			body.className = "model-item-body";
+			const row1 = document.createElement("div");
+			row1.className = "model-item-row1";
+			const nameSpan = document.createElement("span");
+			nameSpan.className = "model-item-name";
+			nameSpan.textContent = model.displayName || model.name || model.id;
+			row1.appendChild(nameSpan);
+			if (model.isNew) {
+				const badge = document.createElement("span");
+				badge.className = "model-item-new";
+				badge.textContent = "New";
+				row1.appendChild(badge);
+			}
+			const isFree = model.isFree || model.costTier === "free" || model.gateCostTier === "free";
+			if (isFree) {
+				const badge = document.createElement("span");
+				badge.className = "model-item-badge";
+				badge.dataset.kind = "free";
+				badge.textContent = "Free";
+				row1.appendChild(badge);
+			}
+			if (model.thinking) {
+				const badge = document.createElement("span");
+				badge.className = "model-item-badge";
+				badge.dataset.kind = "thinking";
+				badge.textContent = "思考";
+				row1.appendChild(badge);
+			}
+			if (model.multimodal || model.imageOnly || model.videoOnly) {
+				const badge = document.createElement("span");
+				badge.className = "model-item-badge";
+				badge.dataset.kind = "mult";
+				badge.textContent = model.imageOnly ? "图像" : model.videoOnly ? "视频" : "多模态";
+				row1.appendChild(badge);
+			}
+			if (model.customMultiplier) {
+				const badge = document.createElement("span");
+				badge.className = "model-item-badge";
+				badge.textContent = `×${model.customMultiplier}`;
+				row1.appendChild(badge);
+			}
+			body.appendChild(row1);
+			if (model.brand) {
+				const brand = document.createElement("div");
+				brand.className = "model-item-brand";
+				brand.textContent = model.brand;
+				body.appendChild(brand);
+			}
+			if (model.lineLabel) {
+				const desc = document.createElement("div");
+				desc.className = "model-item-desc";
+				desc.textContent = model.lineLabel;
+				body.appendChild(desc);
+			}
+			const right = document.createElement("div");
+			right.className = isDisabled ? "model-item-lock" : "model-item-check";
+			if (isDisabled) {
+				right.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+			} else {
+				right.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+			}
+			item.appendChild(iconWrap);
+			item.appendChild(body);
+			item.appendChild(right);
+			frag.appendChild(item);
+		});
+		list.textContent = "";
+		list.appendChild(frag);
+	}
+	function positionModelCostPop(anchor) {
+		const pop = document.getElementById("model-cost-pop");
+		if (!pop || !anchor) return;
+		const rect = anchor.getBoundingClientRect();
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		let left = rect.right + 8;
+		let top = rect.top;
+		pop.style.visibility = "hidden";
+		pop.hidden = false;
+		const popRect = pop.getBoundingClientRect();
+		pop.style.visibility = "";
+		if (left + popRect.width > vw - 8) left = rect.left - popRect.width - 8;
+		if (top + popRect.height > vh - 8) top = vh - popRect.height - 8;
+		if (top < 8) top = 8;
+		pop.style.left = left + "px";
+		pop.style.top = top + "px";
+	}
+	function showModelCostPop(model, anchor) {
+		const pop = document.getElementById("model-cost-pop");
+		if (!pop) return;
+		const input = typeof model.inputPricePerM === "number" ? model.inputPricePerM : null;
+		const output = typeof model.outputPricePerM === "number" ? model.outputPricePerM : null;
+		const perCall = typeof model.perCallPrice === "number" ? model.perCallPrice : null;
+		const priceDisplay = model.priceDisplay || "";
+		const isFree = model.isFree || model.costTier === "free" || model.gateCostTier === "free";
+		const chips = [];
+		if (input !== null) chips.push({ label: "输入", value: `$${input.toFixed(2)}`, unit: "/M tokens" });
+		if (output !== null) chips.push({ label: "输出", value: `$${output.toFixed(2)}`, unit: "/M tokens" });
+		if (perCall !== null) chips.push({ label: "每次", value: `$${perCall.toFixed(2)}`, unit: "/call" });
+		let html = `<div class="cost-card">`;
+		html += `<div class="cost-billing-head"><div class="cost-billing-title">${escapeHtml(model.displayName || model.name || model.id)}</div></div>`;
+		if (priceDisplay) html += `<div class="cost-billing-note">${escapeHtml(priceDisplay)}</div>`;
+		if (isFree) {
+			html += `<div class="cost-chips"><div class="cost-chip"><div class="cost-chip-label">费用</div><div class="cost-chip-val free">免费</div></div></div>`;
+		} else if (chips.length) {
+			html += `<div class="cost-chips">`;
+			chips.forEach((chip) => {
+				html += `<div class="cost-chip"><div class="cost-chip-label">${escapeHtml(chip.label)}</div><div class="cost-chip-val">${escapeHtml(chip.value)}<span class="cost-chip-unit">${escapeHtml(chip.unit)}</span></div></div>`;
+			});
+			html += `</div>`;
+		}
+		html += `</div>`;
+		pop.innerHTML = html;
+		pop.hidden = false;
+		positionModelCostPop(anchor);
+	}
+	function mountCancriCodeModelPicker() {
+		const trigger = document.getElementById("chat-model");
+		const popover = document.getElementById("model-popover");
+		const list = document.getElementById("model-popover-list");
+		const costPop = document.getElementById("model-cost-pop");
+		if (!trigger || !popover || !list) return;
+		if (typeof handleModelCurrentBtnClickOld === "function") {
+			trigger.removeEventListener("click", handleModelCurrentBtnClickOld);
+		}
+		let costPopTimer = null;
+		function openPopover() {
+			popover.hidden = false;
+			trigger.setAttribute("aria-expanded", "true");
+			renderCancriCodeModelList();
+			if (typeof scrollToActiveModel === "function") scrollToActiveModel();
+		}
+		function closePopover() {
+			popover.hidden = true;
+			trigger.setAttribute("aria-expanded", "false");
+			if (costPop) costPop.hidden = true;
+		}
+		function togglePopover() {
+			if (popover.hidden) openPopover();
+			else closePopover();
+		}
+		function handleItemClick(e) {
+			const item = e.target.closest(".model-item");
+			if (!item || !list.contains(item)) return;
+			const modelId = item.dataset.model;
+			if (!isModelEnabled(modelId)) return;
+			if (!isModelAvailable(modelId)) {
+				const msg = getQuotaBlockMessage(modelId) || getQuotaLockMessage(modelId) || (getModelStatus(modelId) || {}).error || "当前模型不可用";
+				showToast(`${getModelDisplayName(modelId)}：${msg}`);
+				return;
+			}
+			setCurrentModel(modelId);
+			closePopover();
+		}
+		function handleItemMouseEnter(e) {
+			const item = e.target.closest(".model-item");
+			if (!item || !list.contains(item)) return;
+			clearTimeout(costPopTimer);
+			const modelId = item.dataset.model;
+			const meta = getModelMeta(modelId);
+			if (!meta) return;
+			showModelCostPop(meta, item);
+		}
+		function handleItemMouseLeave() {
+			clearTimeout(costPopTimer);
+			costPopTimer = setTimeout(() => {
+				if (costPop) costPop.hidden = true;
+			}, 200);
+		}
+		function handleCostPopMouseEnter() {
+			clearTimeout(costPopTimer);
+		}
+		function handleCostPopMouseLeave() {
+			clearTimeout(costPopTimer);
+			costPopTimer = setTimeout(() => {
+				if (costPop) costPop.hidden = true;
+			}, 200);
+		}
+		function handleDocClick(e) {
+			if (!popover.hidden && !popover.contains(e.target) && !trigger.contains(e.target)) closePopover();
+		}
+		function handleKey(e) {
+			if (e.key === "Escape" && !popover.hidden) {
+				e.preventDefault();
+				closePopover();
+			}
+		}
+		trigger.addEventListener("click", (e) => {
+			e.stopPropagation();
+			togglePopover();
+		});
+		list.addEventListener("click", handleItemClick);
+		list.addEventListener("mouseenter", handleItemMouseEnter, true);
+		list.addEventListener("mouseleave", handleItemMouseLeave, true);
+		if (costPop) {
+			costPop.addEventListener("mouseenter", handleCostPopMouseEnter);
+			costPop.addEventListener("mouseleave", handleCostPopMouseLeave);
+		}
+		document.addEventListener("click", handleDocClick);
+		document.addEventListener("keydown", handleKey);
+		renderCancriCodeModelList();
+	}
 	window.CancriApp = {
 		state,
 		MODEL_CATALOG,

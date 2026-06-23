@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Model Menu Preview</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --text: #fff;
+    --text-soft: rgba(255,255,255,0.55);
+    --text-dim: rgba(255,255,255,0.45);
+    --hover: rgba(255,255,255,0.06);
+    --hover-strong: rgba(255,255,255,0.09);
+    --accent: #19c59f;
+    --c-line: rgba(255,255,255,0.08);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    min-height: 100vh;
+  }
+  .preview-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-soft);
+  }
+  .model-current {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 9px;
+    gap: 6px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .model-dropdown {
+    background: #212121;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    color: #fff;
+    padding: 8px 0;
+    min-width: 260px;
+    max-width: 340px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .model-search-panel {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 10px 12px 8px;
+  }
+  .model-search-input-wrap {
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+  }
+  .model-search-input-wrap svg {
+    color: rgba(255,255,255,0.45);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .model-search-input-wrap input {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    font-size: 13px;
+    height: 100%;
+    padding: 0 0 0 8px;
+    margin: 0;
+    outline: none;
+    width: 100%;
+  }
+  .model-search-input-wrap input::placeholder { color: rgba(255,255,255,0.4); }
+  .model-dropdown-content {
+    padding: 4px 8px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .model-section-header {
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 8px 4px;
+    margin: 0;
+  }
+  .model-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    margin: 1px 0;
+    color: #fff;
+    font-size: 13px;
+    min-height: 38px;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .model-option:hover { background: rgba(255,255,255,0.06); }
+  .model-option.active { background: rgba(255,255,255,0.09); }
+  .model-option-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+  .model-label-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .model-label-text {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .model-label-subtext {
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  .model-capability-bars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 6px;
+    margin-top: 2px;
+  }
+  .model-capability-bar {
+    width: 12px;
+    height: 3px;
+    border-radius: 1.5px;
+    opacity: 0.85;
+  }
+  .model-badge-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .model-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.75);
+  }
+  .model-badge.free { background: rgba(16,163,127,0.18); color: #19c59f; }
+  .model-badge.new { background: rgba(59,130,246,0.18); color: #60a5fa; }
+  .model-badge.promo { background: rgba(245,158,11,0.18); color: #fbbf24; }
+</style>
+</head>
+<body>
+  <div class="preview-title">Chat Model Menu Preview (OpenAI style)</div>
+  <button class="model-current" id="triggerBtn">
+    <span>GPT 5.5</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"></path></svg>
+  </button>
+  <div class="model-dropdown" id="modelDropdown">
+    <div class="model-search-panel">
+      <div class="model-search-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="search" placeholder="搜索模型" autocomplete="off" id="searchInput"/>
+      </div>
+    </div>
+    <div class="model-dropdown-content" id="dropdownContent"></div>
+  </div>
+
+<script>
+const MOCK_MODELS = [
+  { id: "gpt-5.5", displayName: "GPT 5.5", brand: "OpenAI", iconPath: "./openai.svg", inputPricePerM: 1.5, outputPricePerM: 4.5, isFree: false, active: true },
+  { id: "claude-opus-4-8", displayName: "Claude Opus 4.8", brand: "Anthropic", iconPath: "./claude.svg", inputPricePerM: 6, outputPricePerM: 27, isFree: false },
+  { id: "claude-opus-4-6", displayName: "Claude Opus 4.6", brand: "Anthropic", iconPath: "./claude.svg", inputPricePerM: 3, outputPricePerM: 14, isFree: false },
+  { id: "kimi-k2.7", displayName: "Kimi K2.7", brand: "Moonshot", iconPath: "./kimi.svg", inputPricePerM: 0.4, outputPricePerM: 2, isNew: true },
+  { id: "deepseek-v4", displayName: "DeepSeek V4", brand: "DeepSeek", iconPath: "./deepseek.svg", inputPricePerM: 0.5, outputPricePerM: 2, isFree: false },
+  { id: "glm-5.1", displayName: "GLM 5.1", brand: "Zhipu", iconPath: "./glm.svg", inputPricePerM: 0.5, outputPricePerM: 2, isFree: false },
+  { id: "baichuan-m2-welfare", displayName: "Baichuan M2", brand: "Baichuan", iconPath: "./baichuan.svg", inputPricePerM: 0, outputPricePerM: 0, isFree: true },
+  { id: "gpt-image-2", displayName: "GPT Image 2", brand: "OpenAI", iconPath: "./openai.svg", perCallPrice: 0.3, isFree: false },
+];
+
+function getModelPriceBarColors(model) {
+  const pricePerM = (typeof model.perCallPrice === "number" && model.perCallPrice > 0)
+    ? model.perCallPrice
+    : (typeof model.outputPricePerM === "number" && model.outputPricePerM > 0)
+      ? model.outputPricePerM
+      : (typeof model.inputPricePerM === "number" && model.inputPricePerM > 0)
+        ? model.inputPricePerM
+        : 0;
+  if (pricePerM <= 0) return ["#10a37f", "#10a37f", "#10a37f"];
+  if (pricePerM < 2) return ["#10a37f", "#10a37f", "#d1d5db"];
+  if (pricePerM < 10) return ["#10a37f", "#f59e0b", "#d1d5db"];
+  if (pricePerM < 50) return ["#10a37f", "#f59e0b", "#f97316"];
+  return ["#10a37f", "#f59e0b", "#ef4444"];
+}
+
+function createModelOption(model) {
+  const option = document.createElement("div");
+  option.className = "model-option" + (model.active ? " active" : "");
+  const icon = document.createElement("img");
+  icon.src = model.iconPath || "./openai.svg";
+  icon.className = "model-option-icon";
+  icon.alt = "";
+  option.appendChild(icon);
+  const stack = document.createElement("span");
+  stack.className = "model-label-stack";
+  const name = document.createElement("span");
+  name.className = "model-label-text";
+  name.textContent = model.displayName;
+  stack.appendChild(name);
+  const bars = document.createElement("span");
+  bars.className = "model-capability-bars";
+  getModelPriceBarColors(model).forEach(color => {
+    const bar = document.createElement("span");
+    bar.className = "model-capability-bar";
+    bar.style.background = color;
+    bars.appendChild(bar);
+  });
+  stack.appendChild(bars);
+  option.appendChild(stack);
+  const badges = document.createElement("span");
+  badges.className = "model-badge-wrap";
+  if (model.isFree) {
+    const b = document.createElement("span");
+    b.className = "model-badge free";
+    b.textContent = "Free";
+    badges.appendChild(b);
+  }
+  if (model.isNew) {
+    const b = document.createElement("span");
+    b.className = "model-badge new";
+    b.textContent = "New";
+    badges.appendChild(b);
+  }
+  if (badges.children.length) option.appendChild(badges);
+  return option;
+}
+
+function renderSections() {
+  const content = document.getElementById("dropdownContent");
+  content.innerHTML = "";
+  const recent = [MOCK_MODELS[0], MOCK_MODELS[1]];
+  const recommended = [MOCK_MODELS[2], MOCK_MODELS[3], MOCK_MODELS[4], MOCK_MODELS[5]];
+  const all = MOCK_MODELS;
+  const sections = [
+    { title: "Recently Used", models: recent },
+    { title: "Recommended", models: recommended },
+    { title: "All models", models: all }
+  ];
+  sections.forEach(sec => {
+    const header = document.createElement("div");
+    header.className = "model-section-header";
+    header.textContent = sec.title;
+    content.appendChild(header);
+    sec.models.forEach(m => content.appendChild(createModelOption(m)));
+  });
+}
+
+renderSections();
+
+const searchInput = document.getElementById("searchInput");
+searchInput.addEventListener("input", (e) => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll(".model-option").forEach(opt => {
+    const name = opt.querySelector(".model-label-text").textContent.toLowerCase();
+    opt.style.display = name.includes(q) ? "flex" : "none";
+  });
+});
+</script>
+</body>
+</html>

@@ -4197,6 +4197,391 @@ button.composer-tool-btn:hover {
     }
 }
 
+/* ───────────────────────────────────────────────────────────
+   15. CANCRI-CODE 风格模型选择器（#chat-model / #model-popover）
+   从 cancri-code 移植，适配 chat 页现有的 --c-* / --panel 变量。
+   ─────────────────────────────────────────────────────────── */
+
+/* [hidden] 修复：display:flex 会覆盖原生 [hidden] */
+.model-popover[hidden],
+.model-cost-pop[hidden] {
+    display: none !important;
+}
+
+/* 触发按钮包装 */
+.chat-model-anchor {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+/* 触发按钮 */
+.chat-model {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--c-text-soft);
+    padding: 4px 8px 4px 10px;
+    border: 1px solid var(--c-line);
+    border-radius: 999px;
+    background: transparent;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.chat-model:hover {
+    background: hsla(34, 20%, 100%, 0.06);
+    border-color: var(--c-line-strong);
+    color: var(--c-text);
+}
+.chat-model[aria-expanded="true"] {
+    background: hsla(34, 20%, 100%, 0.08);
+    border-color: var(--c-line-strong);
+    color: var(--c-text);
+}
+.chat-model-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-model-caret {
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: transform 0.15s;
+}
+.chat-model[aria-expanded="true"] .chat-model-caret {
+    transform: rotate(180deg);
+}
+
+/* 模型选择 popover */
+.model-popover {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    width: 320px;
+    max-width: min(320px, calc(100vw - 24px));
+    max-height: 360px;
+    background: var(--c-bg-elev-2);
+    border: 1px solid var(--c-line-strong);
+    border-radius: var(--workbench-radius-md, 12px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: popover-up-in 0.16s var(--workbench-ease, cubic-bezier(.2,.8,.2,1));
+}
+@keyframes popover-up-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.model-popover-head {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--c-line);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.model-popover-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--c-text);
+}
+.model-popover-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+    min-height: 60px;
+    scrollbar-width: none;
+}
+.model-popover-list::-webkit-scrollbar { width: 0; height: 0; }
+
+.model-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: background 0.12s, border-color 0.12s;
+}
+.model-item:hover {
+    background: var(--c-hover);
+    border-left-color: var(--c-accent);
+}
+.model-item.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.model-item.is-disabled:hover {
+    background: transparent;
+    border-left-color: transparent;
+}
+.model-item.active {
+    background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+    border-left-color: var(--c-accent);
+}
+.model-item-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.model-item-icon svg,
+.model-item-icon img {
+    width: 16px;
+    height: 16px;
+    display: block;
+    border-radius: 3px;
+    object-fit: cover;
+}
+.model-item-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.model-item-row1 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.model-item-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.model-item-badge {
+    flex-shrink: 0;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+    color: var(--c-accent);
+    text-transform: none;
+}
+.model-item-badge[data-kind="free"] {
+    background: hsla(145, 60%, 45%, 0.16);
+    color: hsl(145, 55%, 45%);
+}
+.model-item-badge[data-kind="thinking"] {
+    background: hsla(220, 60%, 55%, 0.16);
+    color: hsl(220, 65%, 70%);
+}
+.model-item-badge[data-kind="mult"] {
+    background: hsla(28, 80%, 55%, 0.15);
+    color: hsl(28, 70%, 48%);
+}
+.model-item-brand {
+    font-size: 10.5px;
+    color: var(--c-text-soft);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.model-item-desc {
+    font-size: 11px;
+    color: var(--c-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.model-item-check {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--c-accent);
+    opacity: 0;
+}
+.model-item.active .model-item-check { opacity: 1; }
+.model-item-lock {
+    flex-shrink: 0;
+    display: inline-flex;
+    color: var(--c-text-soft);
+}
+.model-item-new {
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: var(--c-accent);
+    color: #fff;
+    line-height: 1.5;
+}
+
+/* 悬停成本卡 */
+.model-cost-pop {
+    position: fixed;
+    z-index: 4000;
+    width: 256px;
+    max-width: min(320px, calc(100vw - 24px));
+    pointer-events: auto;
+}
+.cost-card {
+    background: var(--panel, #1e1e1e);
+    border: 0.5px solid rgba(15, 17, 20, 0.11);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 17, 20, 0.05);
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--c-text);
+}
+.cost-billing-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+.cost-billing-title {
+    font-size: 13.5px;
+    font-weight: 700;
+}
+.cost-billing-sub {
+    font-size: 11px;
+    color: var(--c-text-soft);
+    text-align: right;
+}
+.cost-billing-note {
+    margin-top: 8px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--c-text-dim);
+}
+.cost-bar-wrap {
+    position: relative;
+    margin-top: 12px;
+    padding: 22px 10px 7px;
+    overflow-x: clip;
+    overflow-y: visible;
+}
+.cost-bar-model {
+    position: absolute;
+    top: 0;
+    max-width: min(140px, calc(100% - 16px));
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+.cost-bar-model--start { transform: translateX(0); }
+.cost-bar-model--center { transform: translateX(-50%); }
+.cost-bar-model--end { transform: translateX(-100%); }
+.cost-bar {
+    position: relative;
+    height: 7px;
+    border-radius: 999px;
+    overflow: visible;
+    background: linear-gradient(90deg, #34c759 0%, #a3d63a 28%, #f7c948 55%, #f0883e 78%, #e5484d 100%);
+}
+.cost-bar-marker {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid rgba(15, 17, 20, 0.22);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 0.5px rgba(15, 17, 20, 0.06);
+}
+.cost-bar-current {
+    font-size: 10px;
+    color: var(--c-text-soft);
+    margin-top: 5px;
+}
+.cost-chips {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.cost-chip {
+    flex: 1;
+    min-width: 0;
+    background: var(--panel-2, rgba(127,127,127,0.08));
+    border: 1px solid var(--c-line);
+    border-radius: 8px;
+    padding: 7px 8px;
+}
+.cost-chip-label {
+    font-size: 10px;
+    color: var(--c-text-soft);
+}
+.cost-chip-val {
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+.cost-chip-val.free {
+    color: hsl(145, 55%, 46%);
+}
+.cost-chip-unit {
+    font-size: 9px;
+    color: var(--c-text-soft);
+    font-weight: 500;
+}
+.cost-chip-was {
+    font-size: 9.5px;
+    color: var(--c-text-soft);
+    text-decoration: line-through;
+    margin-left: 4px;
+    font-weight: 500;
+}
+.cost-card-note {
+    font-size: 10.5px;
+    color: hsl(28, 60%, 52%);
+    margin-top: 9px;
+    line-height: 1.4;
+}
+.cost-card-foot {
+    font-size: 9.5px;
+    color: var(--c-text-soft);
+    margin-top: 8px;
+    line-height: 1.4;
+    border-top: 1px solid var(--c-line);
+    padding-top: 7px;
+}
+
+@media (max-width: 768px) {
+    .chat-model {
+        font-size: 10.5px;
+        padding: 3px 7px 3px 9px;
+    }
+    .chat-model-name {
+        max-width: 86px;
+    }
+    .model-popover {
+        width: min(320px, calc(100vw - 24px));
+        right: 0;
+        max-height: 50vh;
+    }
+}
+
+/* ───────────────────────────────────────────────────────────
+   16. 旧 model-dropdown 相关选择器不再匹配新 DOM，保留不影响样式。
+   ─────────────────────────────────────────────────────────── */
+
 /* 模型 dropdown 简化：去掉视觉噪音，对齐 Claude 图 3 */
 .claude-thinking-toggle {
     display: none !important;  /* 适应性思考我们不需要 */
@@ -9208,4 +9593,256 @@ html[data-theme] {
 
 .message.assistant .answer-body.font-claude-response p:last-child {
     margin-bottom: 0 !important;
+}
+
+
+/* =========================================================
+   MODEL DROPDOWN — OpenAI-style redesign
+   ========================================================= */
+
+/* Dropdown container: dark, compact, rounded */
+.model-dropdown {
+    background: #212121 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+    color: #fff !important;
+    padding: 8px 0 !important;
+    min-width: 260px !important;
+    max-width: 340px !important;
+    overflow: hidden !important;
+}
+
+/* Search panel */
+.model-dropdown .model-search-panel {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    padding: 10px 12px 8px !important;
+    margin-bottom: 0 !important;
+}
+
+.model-dropdown .model-search-input-wrap {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-radius: 8px !important;
+    border: 0 !important;
+    height: 34px !important;
+    display: flex;
+    align-items: center;
+    padding: 0 10px !important;
+}
+
+.model-dropdown .model-search-icon {
+    color: rgba(255, 255, 255, 0.45) !important;
+    width: 14px !important;
+    height: 14px !important;
+}
+
+.model-dropdown #modelSearchInput {
+    background: transparent !important;
+    border: 0 !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    height: 100% !important;
+    padding: 0 0 0 8px !important;
+    margin: 0 !important;
+}
+
+.model-dropdown #modelSearchInput::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Hide filter chips (text/code/image) to match OpenAI */
+.model-dropdown .model-filter-row {
+    display: none !important;
+}
+
+/* Content area */
+.model-dropdown .model-dropdown-content {
+    padding: 4px 8px !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+}
+
+/* Section headers: subtle, small */
+.model-dropdown .model-section-header,
+.model-dropdown .model-group-header {
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 10px 8px 4px !important;
+    margin: 0 !important;
+    background: transparent !important;
+}
+
+/* Model option row */
+.model-dropdown .model-option {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 7px 8px !important;
+    border-radius: 8px !important;
+    margin: 1px 0 !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    min-height: 38px !important;
+    cursor: pointer !important;
+    transition: background 120ms ease !important;
+}
+
+.model-dropdown .model-option:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.model-dropdown .model-option.active,
+.model-dropdown .model-option.selected {
+    background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.model-dropdown .model-option.active::after {
+    right: 10px !important;
+    width: 5px !important;
+    height: 9px !important;
+    border-color: #19c59f !important;
+}
+
+/* Model icon */
+.model-dropdown .model-option-icon {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+    object-fit: contain !important;
+}
+
+/* Model label stack */
+.model-dropdown .model-label-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+}
+
+.model-dropdown .model-label-text {
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.model-dropdown .model-label-subtext {
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+}
+
+/* Capability bars */
+.model-dropdown .model-capability-bars {
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    height: 6px !important;
+    margin-top: 2px !important;
+}
+
+.model-dropdown .model-capability-bar {
+    width: 12px !important;
+    height: 3px !important;
+    border-radius: 1.5px !important;
+    opacity: 0.85 !important;
+}
+
+/* Badges */
+.model-dropdown .model-badge-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+}
+
+.model-dropdown .model-badge {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.model-dropdown .model-badge.free {
+    background: rgba(16, 163, 127, 0.18) !important;
+    color: #19c59f !important;
+}
+
+.model-dropdown .model-badge.new {
+    background: rgba(59, 130, 246, 0.18) !important;
+    color: #60a5fa !important;
+}
+
+.model-dropdown .model-badge.promo {
+    background: rgba(245, 158, 11, 0.18) !important;
+    color: #fbbf24 !important;
+}
+
+/* Hide See more, pagination, thinking toggle, more-row */
+.model-dropdown .model-see-more,
+.model-dropdown .model-dropdown-footer,
+.model-dropdown .claude-thinking-toggle,
+.claude-more-models-row,
+#modelPagePrev,
+#modelPageNext,
+#modelPageInfo {
+    display: none !important;
+}
+
+/* Hide the right-side cascade drawer */
+#claudeModelCascade,
+#claudeModelCascadeBridge,
+.claude-model-cascade,
+.claude-model-cascade-bridge,
+#modelCascade,
+#modelCascadeBridge,
+.model-cascade,
+.model-cascade-bridge {
+    display: none !important;
+}
+
+/* Hide hover popover inside dropdown */
+.model-dropdown .model-hover-popover {
+    display: none !important;
+}
+
+
+/* Current model button (trigger) — OpenAI style */
+.model-current {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 5px 9px !important;
+    gap: 6px !important;
+    transition: background 120ms ease !important;
+}
+
+.model-current:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.model-current .model-name {
+    color: #fff !important;
+}
+
+.model-current svg {
+    color: rgba(255, 255, 255, 0.55) !important;
+    width: 12px !important;
+    height: 12px !important;
 }

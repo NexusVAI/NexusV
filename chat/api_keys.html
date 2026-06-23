@@ -298,6 +298,131 @@
                 .key-detail-grid { grid-template-columns: 1fr; }
                 .kd-detail-row { grid-template-columns: 1fr; row-gap: 2px; }
             }
+
+            /* 2026-06-23：内嵌式生成密钥结果卡片 */
+            .new-key-reveal {
+                background: rgba(74, 222, 128, 0.08);
+                border: 1px solid rgba(74, 222, 128, 0.3);
+                border-radius: 12px;
+                padding: 14px;
+                margin-top: 14px;
+                display: none;
+            }
+            .new-key-reveal.is-visible { display: block; }
+            .new-key-reveal__label {
+                font-size: 12px;
+                color: var(--text-mute);
+                margin-bottom: 6px;
+            }
+            .new-key-reveal__value {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                background: rgba(0, 0, 0, 0.25);
+                border: 1px solid rgba(74, 222, 128, 0.25);
+                border-radius: 8px;
+                padding: 10px 12px;
+            }
+            .new-key-reveal__value code {
+                font-family: var(--font-mono);
+                font-size: 13px;
+                color: var(--ok);
+                word-break: break-all;
+                flex: 1;
+            }
+            .new-key-reveal__warn {
+                color: var(--warn);
+                font-size: 12px;
+                margin-top: 10px;
+            }
+            .new-key-reveal__actions {
+                display: flex;
+                gap: 8px;
+                margin-top: 10px;
+                flex-wrap: wrap;
+            }
+            .new-key-reveal__actions .btn { padding: 6px 12px; font-size: 12px; }
+            .new-key-reveal__inline-rename {
+                display: flex;
+                gap: 8px;
+                margin-top: 10px;
+                align-items: center;
+            }
+            .new-key-reveal__inline-rename input {
+                flex: 1;
+                padding: 7px 9px;
+                font-size: 12.5px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-family: inherit;
+            }
+
+            /* 2026-06-23：全局调用日志卡片 */
+            .api-log-card {
+                margin-top: 14px;
+            }
+            .api-log-card .kd-detail-list {
+                max-height: 420px;
+            }
+
+            /* 2026-06-23：页面内确认/输入卡片（替代浏览器弹窗） */
+            .dialog-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(3px);
+                -webkit-backdrop-filter: blur(3px);
+                z-index: 1000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .dialog-overlay.is-visible { display: flex; }
+            .dialog-card {
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 18px;
+                max-width: 420px;
+                width: 100%;
+                box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+            }
+            .dialog-card__title {
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: var(--text);
+            }
+            .dialog-card__body {
+                font-size: 13px;
+                color: var(--text-mute);
+                line-height: 1.6;
+                margin-bottom: 16px;
+            }
+            .dialog-card__body code {
+                color: var(--accent);
+                font-family: var(--font-mono);
+            }
+            .dialog-card__input {
+                width: 100%;
+                padding: 8px 10px;
+                font-size: 13px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-family: inherit;
+                margin-bottom: 14px;
+            }
+            .dialog-card__actions {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+            .dialog-card__actions .btn { padding: 6px 14px; font-size: 12px; }
         </style>
     </head>
     <body class="has-topbar">
@@ -334,7 +459,7 @@
 
         <main class="page-shell page-shell--console">
             <header class="console-hero">
-                <div class="docs-eyebrow">Console</div>
+                <div class="docs-eyebrow">控制台</div>
                 <h1>API 控制台</h1>
                 <p>管理密钥、监测用量趋势，查看按模型分布与调用明细。</p>
             </header>
@@ -370,17 +495,18 @@
             <div id="main-section" style="display: none">
                 <!-- Generate new key -->
                 <div class="card">
-                    <h2>生成新 Key</h2>
-                    <div class="input-row">
+                    <h2>生成新密钥</h2>
+                    <form class="input-row" id="generate-key-form" autocomplete="off">
                         <input
                             type="text"
                             id="key-name"
-                            placeholder="Key 名称（可选，如：my-project）"
+                            placeholder="密钥名称（可选，如：my-project）"
+                            autocomplete="off"
                         />
-                        <button id="generate-key-btn" class="btn btn-primary">
+                        <button id="generate-key-btn" class="btn btn-primary" type="button">
                             生成
                         </button>
-                    </div>
+                    </form>
 
                     <!-- 2026-05-23 新增：高级限额配置（折叠） -->
                     <details class="advanced-config" id="adv-config">
@@ -407,38 +533,41 @@
                                 </label>
                             </div>
                             <div class="advanced-config__hint">
-                                这些限制只对此 Key 生效；生成后可在「我的 Keys」里编辑或重置已用计数。
+                                这些限制只对此密钥生效；生成后可在「我的密钥」里编辑或重置已用计数。
                             </div>
                         </div>
                     </details>
 
                     <div class="new-key-reveal" id="new-key-box" data-sensitive>
-                        <div>你的新 API Key：</div>
-                        <code id="new-key-value"></code>
-                        <div class="warn">
-                            请立即复制保存，此 key 不会再次显示。
+                        <div class="new-key-reveal__label">你的新 API 密钥：</div>
+                        <div class="new-key-reveal__value">
+                            <code id="new-key-value"></code>
                         </div>
-                        <button
-                            id="copy-key-btn"
-                            class="btn btn-secondary"
-                            style="margin-top: 8px"
-                        >
-                            复制
-                        </button>
+                        <div class="new-key-reveal__warn">
+                            请立即复制保存，此密钥不会再次显示。
+                        </div>
+                        <div class="new-key-reveal__actions">
+                            <button id="copy-key-btn" class="btn btn-secondary">复制</button>
+                            <button id="rename-key-btn" class="btn btn-secondary">重命名</button>
+                        </div>
+                        <div class="new-key-reveal__inline-rename" id="new-key-rename-box" style="display:none">
+                            <input type="text" id="new-key-rename-input" placeholder="给这把密钥起个名字" />
+                            <button id="save-new-key-name-btn" class="btn btn-primary">保存名称</button>
+                        </div>
                     </div>
                     <div class="msg" id="gen-msg"></div>
                 </div>
 
                 <!-- My keys -->
                 <div class="card" data-sensitive>
-                    <h2>我的 Keys</h2>
-                    <div id="keys-list"><div class="empty">暂无 Key</div></div>
+                    <h2>我的密钥</h2>
+                    <div id="keys-list"><div class="empty">暂无密钥</div></div>
                 </div>
 
                 <!-- Key 详情面板（隐藏，选中 key 后弹出） -->
                 <div class="card" id="key-detail-panel" style="display:none">
                     <div class="key-detail-head">
-                        <h2 id="key-detail-title">Key 详情</h2>
+                        <h2 id="key-detail-title">密钥详情</h2>
                         <button id="key-detail-close" class="btn btn-secondary">关闭</button>
                     </div>
                     <div class="key-detail-stats">
@@ -548,6 +677,22 @@
                     </div>
                 </div>
 
+                <!-- API 调用日志（全局内嵌） -->
+                <div class="card api-log-card" data-sensitive>
+                    <div class="console-panel__head" style="margin-bottom:10px">
+                        <h2>API 调用日志</h2>
+                        <button type="button" class="console-refresh" id="api-log-refresh-btn" aria-label="刷新日志">
+                            ↻ 刷新
+                        </button>
+                    </div>
+                    <div id="api-log-list" class="kd-detail-list">
+                        <div style="color:var(--text-mute);padding:14px;text-align:center;">加载中…</div>
+                    </div>
+                    <div id="api-log-empty" class="empty" style="display:none">
+                        最近 30 天内没有调用记录
+                    </div>
+                </div>
+
                 <!-- API Docs -->
                 <div class="card">
                     <h2>使用文档</h2>
@@ -574,9 +719,22 @@
             </div>
         </main>
 
+        <!-- 2026-06-23：页面内确认/输入弹窗（替代原生 confirm/prompt） -->
+        <div class="dialog-overlay" id="page-dialog" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="dialog-card">
+                <div class="dialog-card__title" id="page-dialog-title">确认</div>
+                <div class="dialog-card__body" id="page-dialog-body">是否继续？</div>
+                <input type="text" class="dialog-card__input" id="page-dialog-input" style="display:none" />
+                <div class="dialog-card__actions">
+                    <button class="btn btn-secondary" id="page-dialog-cancel">取消</button>
+                    <button class="btn btn-primary" id="page-dialog-confirm">确认</button>
+                </div>
+            </div>
+        </div>
+
         <footer class="site-footer">
             <div class="site-footer__inner">
-                <div class="site-footer__sig">Built with care · Cancri</div>
+                <div class="site-footer__sig">用心构建 · Cancri</div>
                 <div>&copy; 2026 NexusV / Cancri Open Platform</div>
             </div>
         </footer>
@@ -591,6 +749,6 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/api-keys-app.js?v=2026-05-23-advanced-limits"></script>
+        <script src="./api/api-keys-app.js?v=2026-06-23-inline-key-log-card"></script>
     </body>
 </html>
