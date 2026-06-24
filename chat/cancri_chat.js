@@ -3399,8 +3399,12 @@
 			if (entry.kind === "video") tags.push("视频");
 			if (entry.kind === "translate") tags.push("翻译");
 			if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
-			const isWelfare = /-welfare/i.test(entry.id) || /订阅福利/.test(entry.name || "");
+			const isWelfare = /-welfare/i.test(entry.id) || /福利/.test(entry.name || "");
 			const isSpecial = /-special/i.test(entry.id) || /特价/.test(entry.name || "");
+			const isSubWelfare = /订阅福利/.test(entry.name || "");
+			if (isWelfare && !isSubWelfare) tags.push("福利");
+			if (isSpecial) tags.push("特价");
+			if (isSubWelfare) tags.push("订阅福利");
 			const meta = {
 				id: entry.id,
 				canonicalId: entry.id,
@@ -12891,6 +12895,9 @@
 					const tag = document.createElement("span");
 					tag.className = "model-tag";
 					if (String(tagText).includes("多模态")) tag.classList.add("multimodal");
+					if (tagText === "福利") tag.classList.add("welfare");
+					if (tagText === "特价") tag.classList.add("special");
+					if (tagText === "订阅福利") tag.classList.add("sub-welfare");
 					tag.textContent = tagText;
 					option.appendChild(tag);
 				});

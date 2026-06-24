@@ -1484,9 +1484,9 @@ html:not([data-theme="light"]) .model-icon-theme-adaptive {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
-    min-width: 480px;
-    max-width: 520px;
-    max-height: 70vh;
+    min-width: 340px;
+    max-width: 420px;
+    max-height: 60vh;
     border-radius: var(--radius-lg);
     border: 1px solid var(--line-2);
     background: var(--panel);
@@ -1506,13 +1506,13 @@ html:not([data-theme="light"]) .model-icon-theme-adaptive {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 12px 8px;
+    padding: 10px 10px 6px;
     border-bottom: 1px solid var(--line);
 }
 
 .model-search-panel input {
     width: 100%;
-    height: 42px;
+    height: 36px;
     border: 1px solid var(--line);
     border-radius: 7px;
     background: var(--panel-2);
@@ -1556,7 +1556,7 @@ html:not([data-theme="light"]) .model-icon-theme-adaptive {
 .model-dropdown-content {
     flex: 1;
     overflow-y: auto;
-    max-height: calc(70vh - 50px);
+    max-height: calc(60vh - 50px);
     padding: 6px;
     display: flex;
     flex-direction: column;
@@ -1629,6 +1629,12 @@ html:not([data-theme="light"]) .model-icon-theme-adaptive {
     animation: dropdownFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* 深色主题：增强菜单与背景的区分度 */
+html[data-theme="dark"] .model-dropdown {
+    border-color: rgba(255,255,255,.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+}
+
 @keyframes dropdownFadeIn {
     from {
         opacity: 0;
@@ -1665,10 +1671,10 @@ html:not([data-theme="light"]) .model-icon-theme-adaptive {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
+    padding: 7px 10px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text);
     transition: background var(--transition);
@@ -1799,6 +1805,18 @@ html:not([data-theme="light"]) .model-icon-theme-adaptive {
 .model-tag.warning {
     background: rgba(239, 68, 68, 0.12);
     color: #dc2626;
+}
+.model-tag.welfare {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+.model-tag.special {
+    background: rgba(239, 68, 68, 0.10);
+    color: #dc2626;
+}
+.model-tag.sub-welfare {
+    background: rgba(59, 130, 246, 0.10);
+    color: #2563eb;
 }
 
 /* ── CONTEXT METER ──────────────────────────────────────── */
