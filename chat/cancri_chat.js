@@ -2996,7 +2996,11 @@
 			mode: "cors",
 			credentials: "omit",
 			cache: "no-store"
-		}).then((r) => r.ok ? r.json() : null).then((data) => {
+		}).then((r) => {
+			console.log("[model_ui_catalog] status", r.status, "ok", r.ok, "url", url);
+			return r.ok ? r.json() : null;
+		}).then((data) => {
+			console.log("[model_ui_catalog] models count", data && data.models && data.models.length, "billing_mode", data && data.billing_mode);
 			// 2026-06-23: 同步后端倍率档位（与 cancri-code / chat-gateway 保持一致）。
 			if (data && data.multiplier_legend) {
 				for (const key in data.multiplier_legend) {
@@ -3006,6 +3010,7 @@
 				}
 			}
 			const ok = mergeServerUiCatalog(data && data.models);
+			console.log("[model_ui_catalog] merge ok", ok);
 			if (ok) {
 				if (!isModelEnabled(currentModel)) try {
 					setModel(getFallbackModelId(currentModel));
@@ -3024,7 +3029,8 @@
 				} catch (e) {}
 			}
 			return ok;
-		}).catch(() => {
+		}).catch((err) => {
+			console.error("[model_ui_catalog] fetch error", err);
 			if (!modelCatalogLoaded) {
 				modelCatalogLoaded = true;
 				try {
@@ -13620,6 +13626,11 @@
 			renderCancriCodeModelList();
 			positionModelPopover();
 			if (typeof scrollToActiveModel === "function") scrollToActiveModel();
+			// 2026-06-24：打开模型选择器时刷新后端目录。若页面初始加载失败或兜底未替换，
+			// 这里会重试，避免用户一直看到旧的本地兜底模型/未定价。
+			try {
+				initModelCatalogFromServer(false);
+			} catch (e) {}
 		}
 		function closePopover() {
 			popover.hidden = true;
