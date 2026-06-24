@@ -4886,37 +4886,32 @@
 	}
 	async function submitMediaDownloadForm(url) {
 		const session = await ensureAuthSession();
-		const frameName = `cancri-download-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-		const frame = document.createElement("iframe");
-		frame.name = frameName;
-		frame.style.display = "none";
-		const form = document.createElement("form");
-		form.method = "POST";
-		form.action = EDGE_FUNCTION_URL;
-		form.target = frameName;
-		form.enctype = "application/x-www-form-urlencoded";
-		form.acceptCharset = "UTF-8";
-		form.style.display = "none";
-		const fields = {
-			endpoint: "media-download",
-			url,
-			__auth_token: session.access_token
-		};
-		Object.entries(fields).forEach(([name, value]) => {
-			const input = document.createElement("input");
-			input.type = "hidden";
-			input.name = name;
-			input.value = String(value || "");
-			form.appendChild(input);
-		});
-		document.body.appendChild(frame);
-		document.body.appendChild(form);
-		form.submit();
-		window.setTimeout(() => {
-			form.remove();
-			frame.remove();
-		}, 6e5);
-		return true;
+		try {
+			const resp = await fetchWithTimeout(EDGE_FUNCTION_URL, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					endpoint: "media-download",
+					url,
+					__auth_token: session.access_token
+				})
+			}, 30000, "media-download");
+			if (!resp.ok) return false;
+			const blob = await resp.blob();
+			const blobUrl = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = blobUrl;
+			const disposition = resp.headers.get("Content-Disposition") || "";
+			const match = disposition.match(/filename="?([^";\s]+)"?/);
+			a.download = match ? match[1] : url.split("/").pop() || "download";
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(blobUrl);
+			return true;
+		} catch (_e) {
+			return false;
+		}
 	}
 	function createChatTurnId() {
 		return `turn_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
