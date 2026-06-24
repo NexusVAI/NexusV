@@ -3044,6 +3044,15 @@
         window.addEventListener('resize', sizeDropdownByViewport);
         sizeDropdownByViewport();
 
+        // 2026-06-24: index.html chat 页改为全展开模型列表（IDE 风格），不启用
+        // cascade 折叠 / "更多模型 →" 子菜单。claude.html（Claude 1:1 复刻页）保留
+        // 原有 cascade 交互。判定按 location.pathname：含 claude.html 才走折叠路径。
+        // ⛔ 禁改：去掉此守卫会让 index.html 主 chat 页桌面端只剩 1 个 active 模型，
+        // 其余 63 个被 .claude-collapsed-models 的 display:none 折叠（用户报"只显示一个模型"）。
+        if (!/claude\.html(\?|#|$)/i.test(location.pathname)) {
+            return;
+        }
+
         // ── 2. PC 端 cascade submenu ──
         // 注入 "更多模型 →" 行（cancri 重渲染 content 后会被 observer 重新 append）
         let moreRow = dropdown.querySelector('.claude-more-models-row');
