@@ -81,6 +81,17 @@
 			"customMultiplier": 6
 		},
 		{
+			"id": "hunyuan-mt-7b",
+			"name": "Hunyuan MT 7B",
+			"brand": "Tencent",
+			"kind": "translate",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "free",
+			"freeLimitNote": "消息翻译"
+		},
+		{
 			"id": "step-3.5-flash",
 			"name": "Step 3.5 Flash",
 			"brand": "Stepfun",
@@ -233,6 +244,17 @@
 			"tools": true,
 			"costTier": "vip",
 			"customMultiplier": 15
+		},
+		{
+			"id": "claude-opus-4-7-special",
+			"name": "【特价】Claude Opus 4.7",
+			"brand": "Anthropic",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "newapi_qwqtao"
 		},
 		{
 			"id": "gpt-5.4-nano",
@@ -436,6 +458,18 @@
 			"costTier": "normal"
 		},
 		{
+			"id": "claude-opus-4-8-special",
+			"name": "【特价】Claude Opus 4.8",
+			"brand": "Anthropic",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "normal",
+			"customMultiplier": 2,
+			"proPlusOnly": true
+		},
+		{
 			"id": "gpt-5.5",
 			"name": "GPT-5.5",
 			"brand": "OpenAI",
@@ -544,6 +578,30 @@
 			"customMultiplier": 3
 		},
 		{
+			"id": "deepseek-v4-pro-0608",
+			"name": "DeepSeek V4 Pro 0608",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "pytn",
+			"customMultiplier": 3
+		},
+		{
+			"id": "deepseek-v4-pro-0603",
+			"name": "DeepSeek V4 Pro (NVIDIA)",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "modelscope",
+			"customMultiplier": 3
+		},
+		{
 			"id": "glm-5.1",
 			"name": "GLM 5.1",
 			"brand": "Zhipu",
@@ -551,9 +609,8 @@
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "fuka",
-			"customMultiplier": 3.5
+			"costTier": "free",
+			"customMultiplier": 1.5
 		},
 		{
 			"id": "deepseek-v3",
@@ -620,6 +677,16 @@
 			"costTier": "free"
 		},
 		{
+			"id": "qwen3.7-max-2026-05-17",
+			"name": "【订阅福利】Qwen3.7 Max 0609",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
 			"id": "qwen3.5-flash-2026-02-23",
 			"name": "Qwen 3.5 Flash (0223)",
 			"brand": "Qwen",
@@ -670,6 +737,26 @@
 			"costTier": "normal"
 		},
 		{
+			"id": "qwen-max",
+			"name": "Qwen Max",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-max-preview",
+			"name": "Qwen 3 Max Preview",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
 			"id": "MiniMax-M2.1",
 			"name": "MiniMax M2.1",
 			"brand": "MiniMax",
@@ -679,6 +766,26 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": 1.5
+		},
+		{
+			"id": "qwen3-max",
+			"name": "Qwen 3 Max",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen-vl-max",
+			"name": "Qwen VL Max",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
 		},
 		{
 			"id": "kimi-k2-thinking",
@@ -721,8 +828,68 @@
 			"costTier": "normal"
 		},
 		{
+			"id": "qwen3-coder-plus-2025-07-22",
+			"name": "Qwen3 Coder Plus (0722)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-coder-next",
+			"name": "Qwen3 Coder Next",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen-coder-plus",
+			"name": "Qwen Coder Plus",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen-coder-turbo",
+			"name": "Qwen Coder Turbo",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-coder-flash-2025-07-28",
+			"name": "Qwen3 Coder Flash (0728)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
 			"id": "qwen3.6-35b-a3b",
 			"name": "Qwen 3.6 35B A3B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-coder-480b-a35b-instruct",
+			"name": "Qwen3 Coder 480B",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
@@ -762,12 +929,72 @@
 			"customMultiplier": .5
 		},
 		{
+			"id": "qwen-math-plus-0919",
+			"name": "Qwen Math Plus (0919)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "qwen-plus-2025-12-01",
+			"name": "Qwen Plus (2025-12-01)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-max-2025-09-23",
+			"name": "Qwen3 Max (2025-09-23)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen-vl-plus",
+			"name": "Qwen VL Plus",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "qwen-flash-2025-07-28",
+			"name": "Qwen Flash (2025-07-28)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
 			"id": "qwen3.5-122b-a10b",
 			"name": "Qwen 3.5 122B A10B",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
 			"thinking": true,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-235b-a22b-instruct-2507",
+			"name": "Qwen3 235B A22B (2507)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
 			"tools": true,
 			"costTier": "normal"
 		},
@@ -782,6 +1009,56 @@
 			"costTier": "cheap"
 		},
 		{
+			"id": "qwen3-vl-8b-thinking",
+			"name": "Qwen3 VL 8B Thinking",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "qwen3-vl-8b-instruct",
+			"name": "Qwen3 VL 8B Instruct",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "qwen3-next-80b-a3b-instruct",
+			"name": "Qwen3 Next 80B Instruct",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "qwen3-coder-flash",
+			"name": "Qwen3 Coder Flash",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "qwen3-coder-plus-2025-09-23",
+			"name": "Qwen3 Coder Plus (2025-09-23)",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
 			"id": "qwen3.6-27b",
 			"name": "Qwen 3.6 27B",
 			"brand": "Qwen",
@@ -790,6 +1067,16 @@
 			"thinking": true,
 			"tools": true,
 			"costTier": "cheap"
+		},
+		{
+			"id": "qwen3-next-80b-a3b-thinking",
+			"name": "Qwen3 Next 80B Thinking",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "normal"
 		},
 		{
 			"id": "glm-4.7",
@@ -889,6 +1176,47 @@
 			"lineLabel": "cloudflare"
 		},
 		{
+			"id": "cf:qwen3-30b-a3b",
+			"name": "Qwen3 30B A3B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "free",
+			"lineLabel": "cloudflare"
+		},
+		{
+			"id": "qwen3-30b-a3b-instruct-2507",
+			"name": "Qwen3 30B A3B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "qwen3-coder-30b-a3b-instruct",
+			"name": "Qwen3 Coder 30B A3B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "qwen3-vl-30b-a3b-thinking",
+			"name": "Qwen3 VL 30B A3B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
 			"id": "qwen3.5-4b",
 			"name": "Qwen3.5 4B",
 			"brand": "Qwen",
@@ -939,111 +1267,6 @@
 			"costTier": "cheap"
 		}
 	];
-	//#endregion
-	//#region src/data/model-menu-extras.js
-	// TODO: 以下 context window / newUntil 数据为占位值，需根据实际上线时间/官方文档校准。
-	// Cancri Code 计费卡常量（提前声明，避免 TDZ：fetchModelUiCatalog 在 init 时即引用 COST_TIER_MULTIPLIER）
-	var EFFECTIVE_TOKENS_PER_CREDIT = 10000;
-	var TOKEN_WEIGHT = { input: 1.0, cached: 0.1, output: 1.0 };
-	var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
-	var MODEL_CONTEXT_WINDOWS = {
-		"gpt-5.5": 256000,
-		"gpt-5.5-special": 256000,
-		"gpt-5.4-mini-0603": 128000,
-		"gpt-5.4-nano": 128000,
-		"gpt-5.4": 256000,
-		"gpt-image-2-all": 0,
-		"gpt-image-2-pro": 0,
-		"gpt-image-2": 0,
-		"claude-opus-4-8": 200000,
-		"claude-opus-4-6": 200000,
-		"claude-opus-4-5": 200000,
-		"claude-haiku-4-5-20251001": 200000,
-		"gemini-3.1-pro": 2097152,
-		"gemini-3.1-flash-lite-preview": 1048576,
-		"gemini-3.5-agent": 1048576,
-		"gemini-3.1-flash-lite-welfare": 1048576,
-		"gemini-2.5-flash-lite": 1048576,
-		"gemini-3-flash-preview": 1048576,
-		"agnes-2.0-flash": 128000,
-		"grok-4.3": 256000,
-		"grok-4.20-multi-agent-xhigh": 256000,
-		"grok-4.20-fast": 256000,
-		"deepseek-v4-pro": 128000,
-		"deepseek-v4-flash": 128000,
-		"deepseek-v3": 64000,
-		"deepseek-v3.1": 64000,
-		"deepseek-v3.2": 64000,
-		"deepseek-v4-pro-welfare": 64000,
-		"kimi-k2.6": 200000,
-		"kimi-k2.7-code": 200000,
-		"kimi-k2-thinking": 200000,
-		"glm-5.1": 128000,
-		"qwen3.7-max": 128000,
-		"qwen3.7-max-2026-05-20": 128000,
-		"qwen3.7-max-2026-05-17": 128000
-	};
-	var MODEL_NEW_UNTIL = {
-		"gpt-5.5": 1779753600000,
-		"gpt-5.5-special": 1779753600000,
-		"gemini-3.5-agent": 1779753600000,
-		"deepseek-v4-pro-welfare": 1779753600000,
-		"glm-5.1": 1779753600000,
-		"qwen3.7-max-2026-05-17": 1779753600000
-	};
-	var MODEL_PINNED_STORAGE_KEY = "cancri_model_pinned_v1";
-	var MODEL_RECENT_STORAGE_KEY = "cancri_model_recent_v1";
-	var BRAND_PRIORITY_ORDER = ["OpenAI", "Anthropic", "Google"];
-	function normalizeModelDisplayName(name) {
-		if (!name) return "";
-		return String(name)
-			.replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "")
-			.replace(/-/g, " ")
-			.replace(/\s+/g, " ")
-			.trim();
-	}
-	function formatContextWindow(tokens) {
-		if (!tokens || tokens <= 0) return "";
-		if (tokens >= 1e6) return Math.round(tokens / 1e5) / 10 + "M";
-		if (tokens >= 1e3) return Math.round(tokens / 1e3) + "K";
-		return String(tokens);
-	}
-	function getModelContextWindow(modelId) {
-		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
-	}
-	function isModelNew(modelId) {
-		const until = MODEL_NEW_UNTIL[modelId];
-		return !!until && Date.now() < until;
-	}
-	function getPinnedModelIds() {
-		try {
-			const raw = localStorage.getItem(MODEL_PINNED_STORAGE_KEY);
-			const parsed = raw ? JSON.parse(raw) : [];
-			if (Array.isArray(parsed)) return parsed.filter(function(id) { return typeof id === "string"; });
-		} catch (e) {}
-		return [];
-	}
-	function setPinnedModelIds(ids) {
-		try {
-			localStorage.setItem(MODEL_PINNED_STORAGE_KEY, JSON.stringify(ids.slice(0, 10)));
-		} catch (e) {}
-	}
-	function addRecentModelId(id) {
-		if (!id) return;
-		try {
-			const list = getRecentModelIds();
-			const next = [id].concat(list.filter(function(x) { return x !== id; })).slice(0, 6);
-			localStorage.setItem(MODEL_RECENT_STORAGE_KEY, JSON.stringify(next));
-		} catch (e) {}
-	}
-	function getRecentModelIds() {
-		try {
-			const raw = localStorage.getItem(MODEL_RECENT_STORAGE_KEY);
-			const parsed = raw ? JSON.parse(raw) : [];
-			if (Array.isArray(parsed)) return parsed.filter(function(id) { return typeof id === "string"; });
-		} catch (e) {}
-		return [];
-	}
 	//#endregion
 	//#region src/data/translate-languages.js
 	var TRANSLATE_LANGUAGES = [
@@ -1266,6 +1489,65 @@
 	};
 	//#endregion
 	//#region src/main.js
+	var MODEL_CONTEXT_WINDOWS = {
+		"gpt-5.5": 256e3,
+		"gpt-5.5-special": 256e3,
+		"gpt-5.4-mini-0603": 128e3,
+		"gpt-5.4-nano": 128e3,
+		"gpt-image-2-all": 0,
+		"gpt-image-2-pro": 0,
+		"gpt-image-2": 0,
+		"claude-opus-4-8": 2e5,
+		"claude-opus-4-8-special": 2e5,
+		"claude-opus-4-7-special": 2e5,
+		"claude-opus-4-6": 2e5,
+		"claude-opus-4-5": 2e5,
+		"claude-haiku-4-5-20251001": 2e5,
+		"gemini-3.1-pro": 2097152,
+		"gemini-3.1-flash-lite-preview": 1048576,
+		"gemini-3.5-agent": 1048576,
+		"gemini-3.1-flash-lite-welfare": 1048576,
+		"gemini-2.5-flash-lite": 1048576,
+		"gemini-3-flash-preview": 1048576,
+		"deepseek-v4-pro": 64e3,
+		"deepseek-v4-flash": 64e3,
+		"deepseek-v3": 64e3,
+		"deepseek-v3.1": 64e3,
+		"deepseek-v3.2": 64e3,
+		"deepseek-v4-pro-welfare": 64e3,
+		"kimi-k2.6": 2e5,
+		"kimi-k2.7-code": 2e5,
+		"kimi-k2-thinking": 2e5,
+		"glm-5.1": 128e3,
+		"qwen3.7-max": 128e3,
+		"qwen3.7-max-2026-05-20": 128e3,
+		"qwen3.7-max-2026-05-17": 128e3
+	};
+	var MODEL_NEW_UNTIL = {
+		"gpt-5.5": 17797536e5,
+		"gpt-5.5-special": 17797536e5,
+		"gemini-3.5-agent": 17797536e5,
+		"deepseek-v4-pro-welfare": 17797536e5,
+		"glm-5.1": 17797536e5,
+		"claude-opus-4-8-special": 17797536e5,
+		"qwen3.7-max-2026-05-17": 17797536e5
+	};
+	var BRAND_PRIORITY_ORDER = [
+		"OpenAI",
+		"Anthropic",
+		"Google"
+	];
+	function normalizeModelDisplayName(name) {
+		if (!name) return "";
+		return String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
+	}
+	function getModelContextWindow(modelId) {
+		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
+	}
+	function isModelNew(modelId) {
+		const until = MODEL_NEW_UNTIL[modelId];
+		return !!until && Date.now() < until;
+	}
 	function normalizeArenaMode(_mode) {
 		return "single";
 	}
@@ -1323,11 +1605,11 @@
 	var attachBtn = document.getElementById("attachBtn");
 	var attachmentInput = document.getElementById("attachmentInput");
 	var modelSelector = document.getElementById("modelSelector");
-	var modelCurrentBtn = document.getElementById("chat-model");
-	var modelDropdown = document.getElementById("model-popover");
-	var modelSearchInput = null;
-	var modelFilterRow = null;
-	var currentModelName = document.querySelector("#chat-model .chat-model-name");
+	var modelCurrentBtn = document.getElementById("modelCurrentBtn");
+	var modelDropdown = document.getElementById("modelDropdown");
+	var modelSearchInput = document.getElementById("modelSearchInput");
+	var modelFilterRow = document.getElementById("modelFilterRow");
+	var currentModelName = document.getElementById("currentModelName");
 	var topArenaModeSelector = document.getElementById("topArenaModeSelector");
 	var topArenaModeBtn = document.getElementById("topArenaModeBtn");
 	var topArenaModeLabel = document.getElementById("topArenaModeLabel");
@@ -2386,6 +2668,8 @@
 	var PAID_GATE_IDS = new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
+		"claude-opus-4-8-special",
+		"claude-opus-4-7-special",
 		"grok-4.20-multi-agent-xhigh",
 		"grok-4.3",
 		"mistral-large-2512",
@@ -2393,6 +2677,7 @@
 		"gemini-3.1-pro-preview",
 		"glm-5.1",
 		"deepseek-v4-pro",
+		"deepseek-v4-pro-0608",
 		"gemini-3.5-agent",
 		"qwen3.7-max",
 		"qwen3.7-max-2026-05-20",
@@ -2425,6 +2710,8 @@
 	var FREE_USER_BLOCKED_GATE_IDS = new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
+		"claude-opus-4-8-special",
+		"claude-opus-4-7-special",
 		"grok-4.3",
 		"qwen3.7-max",
 		"qwen3.7-max-2026-05-20",
@@ -2471,7 +2758,6 @@
 		monthlyRemaining: null,
 		expiresAt: null,
 		daysRemaining: null,
-		// 2026-06-23 按量计费 wallet_v3：¥ 钱包状态（billing_mode='wallet_v3' 时有值）
 		billingMode: null,
 		walletBalance: null,
 		walletDebt: null,
@@ -2517,12 +2803,6 @@
 		return Boolean(meta && meta.proMaxOnly === true || PRO_MAX_GATE_IDS.has(modelId));
 	}
 	function getQuotaBlockReason(modelId) {
-		// 2026-06-23 wallet_v3：按量计费无访问档位，所有模型按 ¥ 钱包计费，
-		// 前端不再做 Pro/Pro+/Pro Max/pool/daily/token-window 档位门控（与后端
-		// enforceWalletGate 行为一致）。仅保留 available===false（线路下线）锁。
-		// 2026-06-23 修正：非 quota_v2 一律不上锁（含 billingMode 未拉取到时），
-		// 避免菜单在 quota 首次拉取前把 Pro/Pro+/Pro Max 模型错误上锁。
-		if (quotaState.billingMode !== "quota_v2") return null;
 		if (isProMaxGateModel(modelId)) {
 			const planCode = quotaState.planCode;
 			if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
@@ -2613,7 +2893,6 @@
 				quotaState.monthlyRemaining = typeof data.monthly_remaining === "number" || typeof data.monthly_remaining === "string" ? Number(data.monthly_remaining) : null;
 				quotaState.expiresAt = typeof data.expires_at === "string" ? data.expires_at : null;
 				quotaState.daysRemaining = typeof data.days_remaining === "number" || typeof data.days_remaining === "string" ? Number(data.days_remaining) || 0 : null;
-				// 2026-06-23 按量计费 wallet_v3：读 billing_mode + wallet 钱包状态
 				quotaState.billingMode = data.billing_mode === "wallet_v3" ? "wallet_v3" : "quota_v2";
 				if (data.wallet) {
 					quotaState.walletBalance = Number(data.wallet.balance_cny) || 0;
@@ -2676,7 +2955,6 @@
 				monthlyRemaining: quotaState.monthlyRemaining,
 				expiresAt: quotaState.expiresAt,
 				daysRemaining: quotaState.daysRemaining,
-				// 2026-06-23 按量计费 wallet_v3
 				billingMode: quotaState.billingMode,
 				walletBalance: quotaState.walletBalance,
 				walletDebt: quotaState.walletDebt,
@@ -2734,9 +3012,6 @@
 		clearExpiredQuotaLocks();
 		if (!isModelEnabled(modelId)) return false;
 		if (getModelMeta(modelId).available === false) return false;
-		// 2026-06-23 wallet_v3：按量计费菜单不上锁（用户按量付费，无访问档位/共享池/锁定）。
-		//   仅 quota_v2 旧模式保留 lockedUntil / quotaRemaining / userLockedUntil 预判。
-		if (quotaState.billingMode !== "quota_v2") return true;
 		const now = Date.now();
 		if (getQuotaBlockReason(modelId)) return false;
 		if (usesSharedQuota(modelId)) {
@@ -2917,38 +3192,15 @@
 		"glm-5.1"
 	].map((id, index) => [id, index]));
 	var MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
-	var LOCAL_ONLY_CATALOG_IDS = new Set([]);
-	var MODEL_UI_CATALOG_TTL_MS = 300 * 1e3;
+	var LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
+	var MODEL_UI_CATALOG_TTL_MS = 0;
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
 	var modelCatalogLoaded = false;
-	function readNumberField(obj, keys) {
-		for (const key of keys) {
-			const value = obj && obj[key];
-			if (typeof value === "number" && Number.isFinite(value)) return value;
-			if (typeof value === "string" && value.trim() !== "") {
-				const n = Number(value);
-				if (Number.isFinite(n)) return n;
-			}
-		}
-		return void 0;
-	}
-	function modelPriceFromMultiplier(multiplier, kind) {
-		return creditsPerMillion(multiplier, kind) / 150;
-	}
 	function mapServerModelToCatalogEntry(serverModel, localOverlay) {
 		const local = localOverlay || {};
 		const kind = serverModel.video ? "video" : serverModel.image ? "image" : local.kind || "chat";
 		const rawName = local.name || serverModel.displayName || serverModel.id;
-		const costTier = serverModel.costTier || local.costTier || "normal";
-		const gateCostTier = serverModel.gateCostTier || null;
-		const rawMultiplier = readNumberField(serverModel, ["customMultiplier", "custom_multiplier"]);
-		const customMultiplier = typeof rawMultiplier === "number" ? rawMultiplier : local.customMultiplier;
-		const inputPricePerM = readNumberField(serverModel, ["inputPricePerM", "input_price_per_m", "input_price_cny_per_m"]);
-		const outputPricePerM = readNumberField(serverModel, ["outputPricePerM", "output_price_per_m", "output_price_cny_per_m"]);
-		const perCallPrice = readNumberField(serverModel, ["perCallPrice", "per_call_price", "per_call_price_cny"]);
-		const multiplierForFallback = typeof customMultiplier === "number" ? customMultiplier : COST_TIER_MULTIPLIER[costTier] || 1;
-		const shouldDerivePrice = costTier !== "free" && gateCostTier !== "free";
 		return {
 			id: serverModel.id,
 			name: normalizeModelDisplayName(rawName),
@@ -2957,8 +3209,8 @@
 			vision: local.vision ?? Boolean(serverModel.multimodal),
 			thinking: local.thinking ?? Boolean(serverModel.enableThinking),
 			tools: local.tools ?? kind === "chat",
-			costTier,
-			customMultiplier,
+			costTier: serverModel.costTier || local.costTier || "normal",
+			customMultiplier: typeof serverModel.customMultiplier === "number" ? serverModel.customMultiplier : local.customMultiplier,
 			lineLabel: serverModel.lineLabel || local.lineLabel || "",
 			proMaxOnly: serverModel.proMaxOnly === true || local.proMaxOnly === true,
 			proPlusOnly: serverModel.proPlusOnly === true || local.proPlusOnly === true,
@@ -2966,14 +3218,10 @@
 			promoLimited: local.promoLimited,
 			promoTooltip: local.promoTooltip,
 			freeLimitNote: local.freeLimitNote,
-			inputPricePerM: typeof inputPricePerM === "number" ? inputPricePerM : typeof local.inputPricePerM === "number" ? local.inputPricePerM : shouldDerivePrice ? modelPriceFromMultiplier(multiplierForFallback, "input") : void 0,
-			outputPricePerM: typeof outputPricePerM === "number" ? outputPricePerM : typeof local.outputPricePerM === "number" ? local.outputPricePerM : shouldDerivePrice ? modelPriceFromMultiplier(multiplierForFallback, "output") : void 0,
-			perCallPrice: typeof perCallPrice === "number" ? perCallPrice : local.perCallPrice,
-			maxInputTokens: serverModel.maxInputTokens || local.maxInputTokens || 0,
 			available: serverModel.available !== false && local.available !== false,
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
-			gateCostTier,
+			gateCostTier: serverModel.gateCostTier || null,
 			freeUserBlocked: serverModel.freeUserBlocked === true
 		};
 	}
@@ -3015,19 +3263,11 @@
 				"Content-Type": "application/json",
 				apikey: anon
 			},
-			body: JSON.stringify({ endpoint: "model_public_catalog" }),
+			body: JSON.stringify({ endpoint: "model_ui_catalog" }),
 			mode: "cors",
 			credentials: "omit",
 			cache: "no-store"
 		}).then((r) => r.ok ? r.json() : null).then((data) => {
-			// 2026-06-23: 同步后端倍率档位（与 cancri-code / chat-gateway 保持一致）。
-			if (data && data.multiplier_legend) {
-				for (const key in data.multiplier_legend) {
-					if (Object.prototype.hasOwnProperty.call(data.multiplier_legend, key) && typeof data.multiplier_legend[key] === "number") {
-						COST_TIER_MULTIPLIER[key] = data.multiplier_legend[key];
-					}
-				}
-			}
 			const ok = mergeServerUiCatalog(data && data.models);
 			if (ok) {
 				if (!isModelEnabled(currentModel)) try {
@@ -3038,9 +3278,6 @@
 				} catch (e) {}
 				try {
 					renderModelDropdownFromCatalog();
-				} catch (e) {}
-				try {
-					renderCancriCodeModelList();
 				} catch (e) {}
 				try {
 					updateModelSelectorIcons();
@@ -3054,15 +3291,9 @@
 					renderModelDropdownFromCatalog();
 				} catch (e) {}
 			}
-			try {
-				renderCancriCodeModelList();
-			} catch (e) {}
 			return false;
 		}).finally(() => {
 			modelUiCatalogInflight = null;
-			try {
-				renderCancriCodeModelList();
-			} catch (e) {}
 		});
 		return modelUiCatalogInflight;
 	}
@@ -3108,15 +3339,16 @@
 		"doubao-seedance-2-0-260128": "./jimeng-color.svg",
 		"ernie-4.5-turbo-20260402": "./wenxin-color.svg",
 		"kat-coder-pro-v2": "./kwaikat.svg",
-		"cancriv1-0.1b": "./VAI-logo.svg",
-		"nex-n2-pro-welfare": "./NEX_logo.svg"
+		"cancriv1-0.1b": "../Logo/Cancri1.jpg",
+		"nex-n2-pro-welfare": "./NEX_logo.svg",
+		"hunyuan-mt-7b": "./yuanbao-color.svg"
 	};
 	var THEME_ADAPTIVE_ICON_BRANDS = new Set([
 		"OpenAI",
 		"Clawto",
 		"Cancri"
 	]);
-	var THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg"];
+	var THEME_ADAPTIVE_ICON_SUFFIXES = ["/openai.svg", "Cancri1.jpg"];
 	function shouldUseThemeAdaptiveIcon(iconPath, brand) {
 		if (window.CancriThemeIcons && window.CancriThemeIcons.shouldUseThemeAdaptiveIcon) return window.CancriThemeIcons.shouldUseThemeAdaptiveIcon(iconPath, brand);
 		if (brand && THEME_ADAPTIVE_ICON_BRANDS.has(brand)) return true;
@@ -3142,7 +3374,7 @@
 	var ARENA_MODELS = [];
 	function computeBrandPriority(brand) {
 		const idx = BRAND_PRIORITY_ORDER.indexOf(brand);
-		return idx >= 0 ? -1000 + idx : 0;
+		return idx >= 0 ? -1e3 + idx : 0;
 	}
 	function rebuildModelCatalogDerived() {
 		MODEL_META_MAP = /* @__PURE__ */ new Map();
@@ -3186,10 +3418,7 @@
 				isFree: entry.costTier === "free" || isWelfare,
 				isPromo: entry.promoLimited === true || isSpecial,
 				isNew: isModelNew(entry.id),
-				contextWindow: entry.maxInputTokens || getModelContextWindow(entry.id),
-				inputPricePerM: entry.inputPricePerM,
-				outputPricePerM: entry.outputPricePerM,
-				perCallPrice: entry.perCallPrice
+				contextWindow: getModelContextWindow(entry.id)
 			};
 			MODEL_META_MAP.set(entry.id, meta);
 			MODEL_IDS[entry.id] = entry.id;
@@ -3230,8 +3459,6 @@
 	}
 	function updateModelButtonIcon(button, modelId) {
 		if (!button) return;
-		// Cancri Code 风格主选择器用文字 + caret，不追加图标
-		if (button.classList.contains("chat-model")) return;
 		const meta = getModelMeta(modelId);
 		let icon = button.querySelector(".model-current-icon");
 		if (!icon) {
@@ -3240,7 +3467,7 @@
 			icon.alt = "";
 			icon.loading = "lazy";
 			icon.decoding = "async";
-			const name = button.querySelector(".model-name, .chat-model-name");
+			const name = button.querySelector(".model-name");
 			button.insertBefore(icon, name || button.firstChild);
 		}
 		icon.src = meta.iconPath || "./openai.svg";
@@ -12504,16 +12731,7 @@
 		if (isAccountMenuClickTarget(event.target)) return;
 		closePopover();
 		if (isMobileDrawerOpen()) {
-			// 抽屉打开时：
-			//  - 点侧栏外（含汉堡按钮）：收起抽屉
-			//  - 点侧栏内的会话项 .recent-item：选会话后看对话，收起抽屉
-			//  - 点侧栏内其它元素（"最近"标题、搜索框等）：不收起，让用户继续操作
-			//  与 claude_ui.js bindMobileSidebarDrawer 的 document click 守卫语义对齐，
-			//  避免点"最近"标题想展开列表却把抽屉关掉。
-			const inSidebar = sidebar && sidebar.contains(event.target);
-			const clickedRecentItem = inSidebar && event.target.closest && event.target.closest(".recent-item");
-			const clickedDrawerToggle = [document.getElementById("mobileMenuBtn"), document.getElementById("sidebarToggle")].some((el) => el && el.contains(event.target));
-			if (!inSidebar || clickedRecentItem || clickedDrawerToggle) closeMobileSidebarDrawer();
+			if (![document.getElementById("mobileMenuBtn"), document.getElementById("sidebarToggle")].some((el) => el && el.contains(event.target))) closeMobileSidebarDrawer();
 		} else if (isMobileViewport() && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains("collapsed")) sidebar.classList.add("collapsed");
 		if (!state.modal) updateScrimVisibility();
 	});
@@ -12575,180 +12793,8 @@
 	});
 	document.addEventListener("scroll", closeCustomContextMenu, true);
 	window.addEventListener("blur", closeCustomContextMenu);
-	var modelDropdownShowAll = false;
-	var modelDropdownHoverTimer = null;
-	var modelDropdownHoveredId = null;
-	function createBadge(text, className) {
-		const span = document.createElement("span");
-		span.className = "model-badge " + className;
-		span.textContent = text;
-		return span;
-	}
-	function createGiftIcon() {
-		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-		svg.setAttribute("width", "14");
-		svg.setAttribute("height", "14");
-		svg.setAttribute("viewBox", "0 0 24 24");
-		svg.setAttribute("fill", "none");
-		svg.setAttribute("stroke", "currentColor");
-		svg.setAttribute("stroke-width", "2");
-		svg.setAttribute("class", "model-gift-icon");
-		svg.innerHTML = '<rect x="3" y="8" width="18" height="12" rx="2"></rect><path d="M12 8v12"></path><path d="M3 12h18"></path><path d="M7 8c0-2.2 1.8-4 4-4s4 1.8 4 4"></path><path d="M17 8c0-2.2-1.8-4-4-4"></path>';
-		return svg;
-	}
-	function createCapabilityBars(model) {
-		const bars = document.createElement("span");
-		bars.className = "model-capability-bars";
-		const barColors = getModelPriceBarColors(model);
-		barColors.forEach((color) => {
-			const bar = document.createElement("span");
-			bar.className = "model-capability-bar";
-			bar.style.background = color;
-			bars.appendChild(bar);
-		});
-		return bars;
-	}
-	function getModelPriceBarColors(model) {
-		const pricePerM = (typeof model.perCallPrice === "number" && model.perCallPrice > 0)
-			? model.perCallPrice
-			: (typeof model.outputPricePerM === "number" && model.outputPricePerM > 0)
-				? model.outputPricePerM
-				: (typeof model.inputPricePerM === "number" && model.inputPricePerM > 0)
-					? model.inputPricePerM
-					: 0;
-		if (pricePerM <= 0) return ["#10a37f", "#10a37f", "#10a37f"];
-		if (pricePerM < 2) return ["#10a37f", "#10a37f", "#d1d5db"];
-		if (pricePerM < 10) return ["#10a37f", "#f59e0b", "#d1d5db"];
-		if (pricePerM < 50) return ["#10a37f", "#f59e0b", "#f97316"];
-		return ["#10a37f", "#f59e0b", "#ef4444"];
-	}
-	function createModelOption(model) {
-		const option = document.createElement("div");
-		option.className = "model-option";
-		option.dataset.model = model.id;
-		option.dataset.brand = model.brand || "";
-		option.dataset.canonical = model.canonicalId || model.id;
-		option.dataset.lineLabel = model.lineLabel || "";
-		option.dataset.multimodal = model.multimodal ? "true" : "false";
-		option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
-		const icon = document.createElement("img");
-		icon.src = model.iconPath || "./openai.svg";
-		applyModelIconThemeClass(icon, model.iconPath, model.brand);
-		icon.alt = "";
-		icon.className = "model-option-icon";
-		option.appendChild(icon);
-		const textWrap = document.createElement("span");
-		textWrap.className = "model-label-stack";
-		const nameRow = document.createElement("span");
-		nameRow.className = "model-label-text";
-		nameRow.textContent = model.displayName || model.id;
-		textWrap.appendChild(nameRow);
-		const subtext = document.createElement("span");
-		subtext.className = "model-label-subtext";
-		const subParts = [];
-		// 2026-06-23 wallet_v3：无访问档位，去 Pro+/Pro Max 标签与积分/次。
-		if (model.lineLabel) subParts.push(model.lineLabel);
-		subtext.textContent = subParts.filter(Boolean).join(" · ");
-		if (subtext.textContent) textWrap.appendChild(subtext);
-		option.appendChild(textWrap);
-		option.appendChild(createCapabilityBars(model));
-		const badgeWrap = document.createElement("span");
-		badgeWrap.className = "model-badge-wrap";
-		if (model.isWelfare) badgeWrap.appendChild(createGiftIcon());
-		if (model.isFree) badgeWrap.appendChild(createBadge("Free", "free"));
-		if (model.isNew) badgeWrap.appendChild(createBadge("New", "new"));
-		if (model.isPromo) badgeWrap.appendChild(createBadge("Promo", "promo"));
-		if (badgeWrap.children.length > 0) option.appendChild(badgeWrap);
-		option.classList.toggle("active", model.id === currentModel);
-		if (model.available === false) {
-			option.classList.add("disabled");
-			option.title = model.unavailableMessage || option.title;
-		}
-		option.addEventListener("mouseenter", () => scheduleShowModelHoverPopover(option, model));
-		option.addEventListener("mouseleave", () => hideModelHoverPopover());
-		return option;
-	}
-	function renderModelSection(container, title, models, sectionName) {
-		const section = document.createElement("div");
-		section.className = "model-section";
-		section.dataset.section = sectionName;
-		const header = document.createElement("div");
-		header.className = "model-section-header";
-		header.textContent = title;
-		section.appendChild(header);
-		models.forEach((model) => section.appendChild(createModelOption(model)));
-		container.appendChild(section);
-	}
-	function scheduleShowModelHoverPopover(option, model) {
-		clearTimeout(modelDropdownHoverTimer);
-		modelDropdownHoveredId = model.id;
-		modelDropdownHoverTimer = setTimeout(() => showModelHoverPopover(option, model), 120);
-	}
-	function showModelHoverPopover(option, model) {
-		const popover = document.getElementById("modelHoverPopover");
-		if (!popover || !modelDropdown) return;
-		const icon = popover.querySelector(".model-popover-icon");
-		const name = popover.querySelector(".model-popover-name");
-		const badges = popover.querySelector(".model-popover-badges");
-		const meta = popover.querySelector(".model-popover-meta");
-		const pinBtn = document.getElementById("modelPopoverPinBtn");
-		if (icon) {
-			icon.src = model.iconPath || "./openai.svg";
-			applyModelIconThemeClass(icon, model.iconPath, model.brand);
-		}
-		if (name) name.textContent = model.displayName || model.id;
-		if (badges) {
-			const parts = [];
-			if (model.isPromo) parts.push("Promo");
-			if (model.isFree) parts.push("Free");
-			const ctx = formatContextWindow(model.contextWindow);
-			if (ctx) parts.push(`${ctx} context`);
-			badges.textContent = parts.length > 0 ? parts.join(" · ") : "";
-		}
-		if (meta) {
-			const parts = [];
-			// 2026-06-23 wallet_v3：无访问档位，去 Pro+/Pro Max 专属标签与积分/次。
-			if (model.lineLabel) parts.push(model.lineLabel);
-			meta.textContent = parts.join(" · ");
-		}
-		if (pinBtn) {
-			const pinned = getPinnedModelIds();
-			const isPinned = pinned.includes(model.id);
-			pinBtn.classList.toggle("is-pinned", isPinned);
-			pinBtn.title = isPinned ? "取消固定" : "固定到菜单开头";
-			pinBtn.dataset.model = model.id;
-		}
-		popover.hidden = false;
-		positionModelHoverPopover(option, popover);
-	}
-	function hideModelHoverPopover() {
-		clearTimeout(modelDropdownHoverTimer);
-		modelDropdownHoverTimer = setTimeout(() => {
-			modelDropdownHoveredId = null;
-			const popover = document.getElementById("modelHoverPopover");
-			if (popover) popover.hidden = true;
-		}, 120);
-	}
-	function positionModelHoverPopover(option, popover) {
-		if (!modelDropdown) return;
-		const dropdownRect = modelDropdown.getBoundingClientRect();
-		const optionRect = option.getBoundingClientRect();
-		const popoverRect = popover.getBoundingClientRect();
-		const vw = window.innerWidth;
-		const vh = window.innerHeight;
-		let left = dropdownRect.width + 8;
-		let top = optionRect.top - dropdownRect.top;
-		if (dropdownRect.right + 8 + popoverRect.width > vw - 8) {
-			left = -popoverRect.width - 8;
-		}
-		if (dropdownRect.top + top + popoverRect.height > vh - 8) top = vh - dropdownRect.top - popoverRect.height - 8;
-		if (top < 8) top = 8;
-		popover.style.left = left + "px";
-		popover.style.top = top + "px";
-	}
 	function renderModelDropdownFromCatalog() {
 		const content = document.getElementById("modelDropdownContent");
-		const seeMoreBtn = document.getElementById("modelSeeMoreBtn");
 		if (!content) return;
 		content.textContent = "";
 		if (!modelCatalogLoaded) {
@@ -12772,67 +12818,78 @@
 			return;
 		}
 		const isArenaMode = state.arenaMode === "side_by_side" || state.arenaMode === "anonymous";
-		const selectable = SELECTABLE_MODELS.filter((model) => {
-			if (model.translateOnly) return false;
-			if (isArenaMode && (model.imageOnly || model.videoOnly)) return false;
-			return true;
-		});
-		const pinnedIds = getPinnedModelIds();
-		const recentIds = getRecentModelIds();
-		const pinned = [];
-		const recent = [];
-		const recommended = [];
-		const all = [];
-		const used = /* @__PURE__ */ new Set();
-		selectable.forEach((model) => {
-			if (pinnedIds.includes(model.id)) {
-				pinned.push(model);
-				used.add(model.id);
-			}
-		});
-		recentIds.forEach((id) => {
-			const model = MODEL_META_MAP.get(id);
-			if (model && !used.has(id)) {
-				recent.push(model);
-				used.add(id);
-			}
-		});
-		selectable.forEach((model) => {
-			if (used.has(model.id)) return;
-			if (BRAND_PRIORITY_ORDER.includes(model.brand)) {
-				recommended.push(model);
-				used.add(model.id);
-			}
-		});
-		selectable.forEach((model) => {
-			if (used.has(model.id)) return;
-			if (recommended.length < 8) {
-				recommended.push(model);
-				used.add(model.id);
-			}
-		});
-		selectable.forEach((model) => {
-			if (!used.has(model.id)) all.push(model);
-		});
-		const allGrouped = /* @__PURE__ */ new Map();
-		all.forEach((model) => {
+		const grouped = /* @__PURE__ */ new Map();
+		SELECTABLE_MODELS.forEach((model) => {
+			if (model.translateOnly) return;
+			if (isArenaMode && (model.imageOnly || model.videoOnly)) return;
 			const brand = model.brand || getModelBrandName(model.id);
-			if (!allGrouped.has(brand)) allGrouped.set(brand, []);
-			allGrouped.get(brand).push(model);
+			if (!grouped.has(brand)) grouped.set(brand, []);
+			grouped.get(brand).push(model);
 		});
-		if (pinned.length > 0) renderModelSection(content, "Pinned", pinned, "pinned");
-		if (recent.length > 0) renderModelSection(content, "Recently Used", recent, "recent");
-		if (recommended.length > 0) renderModelSection(content, "Recommended", recommended, "recommended");
-		const allSection = document.createElement("div");
-		allSection.className = "model-section";
-		allSection.dataset.section = "all";
-		const allHeader = document.createElement("div");
-		allHeader.className = "model-section-header";
-		allHeader.textContent = "All models";
-		allSection.appendChild(allHeader);
-		all.forEach((model) => allSection.appendChild(createModelOption(model)));
-		content.appendChild(allSection);
-		if (seeMoreBtn) seeMoreBtn.style.display = "none";
+		grouped.forEach((models, brand) => {
+			const header = document.createElement("div");
+			header.className = "model-group-header";
+			header.dataset.brand = brand;
+			header.textContent = brand;
+			content.appendChild(header);
+			models.slice().sort((a, b) => {
+				const canonical = String(a.canonicalId || a.id).localeCompare(String(b.canonicalId || b.id));
+				if (canonical !== 0) return canonical;
+				return String(a.lineLabel || "").localeCompare(String(b.lineLabel || ""));
+			}).forEach((model) => {
+				const option = document.createElement("div");
+				option.className = "model-option";
+				option.dataset.model = model.id;
+				option.dataset.brand = brand;
+				option.dataset.canonical = model.canonicalId || model.id;
+				option.dataset.lineLabel = model.lineLabel || "";
+				option.dataset.multimodal = model.multimodal ? "true" : "false";
+				option.title = model.lineLabel ? `${model.displayName || model.id} · ${model.lineLabel}` : model.displayName || model.id;
+				const speedDot = document.createElement("span");
+				speedDot.className = "model-speed-dot speed-unknown";
+				option.appendChild(speedDot);
+				const label = document.createElement("span");
+				label.className = "model-label";
+				const icon = document.createElement("img");
+				icon.src = model.iconPath || "./openai.svg";
+				applyModelIconThemeClass(icon, model.iconPath, model.brand);
+				icon.alt = "";
+				icon.className = "model-option-icon";
+				label.appendChild(icon);
+				const textWrap = document.createElement("span");
+				textWrap.className = "model-label-stack";
+				const name = document.createElement("span");
+				name.className = "model-label-text";
+				const showPromoTag = model.promoLimited && isGrokImagineVideoPromoActive();
+				name.textContent = showPromoTag ? `【限时】${model.displayName || model.id}` : model.displayName || model.id;
+				if (showPromoTag && model.promoTooltip) name.title = model.promoTooltip;
+				textWrap.appendChild(name);
+				const subtext = document.createElement("span");
+				subtext.className = "model-label-subtext";
+				const subParts = [];
+				if (model.creditPerUse && quotaState.billingMode !== "wallet_v3") subParts.push(`${model.creditPerUse}积分/次`);
+				if (model.proMaxOnly && !showPromoTag) subParts.push("Pro Max 专属");
+				if (model.lineLabel) subParts.push(model.lineLabel);
+				if (model.canonicalId && model.canonicalId !== model.id) subParts.push(model.canonicalId);
+				subtext.textContent = subParts.filter(Boolean).join(" · ");
+				if (subtext.textContent) textWrap.appendChild(subtext);
+				label.appendChild(textWrap);
+				option.appendChild(label);
+				(model.tags || []).forEach((tagText) => {
+					const tag = document.createElement("span");
+					tag.className = "model-tag";
+					if (String(tagText).includes("多模态")) tag.classList.add("multimodal");
+					tag.textContent = tagText;
+					option.appendChild(tag);
+				});
+				option.classList.toggle("active", model.id === currentModel);
+				if (model.available === false) {
+					option.classList.add("disabled");
+					option.title = model.unavailableMessage || option.title;
+				}
+				content.appendChild(option);
+			});
+		});
 		applyModelDropdownFilters();
 	}
 	function getActiveModelFilter() {
@@ -12847,7 +12904,7 @@
 			meta.displayName,
 			meta.brand,
 			meta.lineLabel,
-			...(meta.tags || [])
+			...meta.tags || []
 		].join(" ").toLowerCase();
 		const q = String(query || "").trim().toLowerCase();
 		if (q && !haystack.includes(q)) return false;
@@ -12858,26 +12915,43 @@
 	function applyModelDropdownFilters() {
 		const filter = getActiveModelFilter();
 		const query = modelSearchInput ? modelSearchInput.value : "";
-		const hasQuery = String(query || "").trim().length > 0;
-		const sections = Array.from(modelDropdown?.querySelectorAll(".model-section") || []);
-		const seeMoreBtn = document.getElementById("modelSeeMoreBtn");
-		sections.forEach((section) => {
-			const sectionName = section.dataset.section;
-			const options = Array.from(section.querySelectorAll(".model-option"));
-			let visibleInSection = 0;
-			options.forEach((option) => {
-				const visible = modelMatchesFilter(option, filter, query);
-				option.style.display = visible ? "flex" : "none";
-				option.dataset.filtered = visible ? "true" : "false";
-				if (visible) visibleInSection += 1;
-			});
-			if (sectionName === "all") {
-				section.style.display = visibleInSection > 0 ? "block" : "none";
-			} else {
-				section.style.display = visibleInSection > 0 ? "block" : "none";
+		const options = Array.from(modelDropdown?.querySelectorAll(".model-option") || []);
+		let visibleCount = 0;
+		const visibleBrands = /* @__PURE__ */ new Set();
+		options.forEach((option) => {
+			const visible = modelMatchesFilter(option, filter, query);
+			option.dataset.filtered = visible ? "true" : "false";
+			option.style.display = visible ? "flex" : "none";
+			if (visible) {
+				visibleCount += 1;
+				if (option.dataset.brand) visibleBrands.add(option.dataset.brand);
 			}
 		});
-		if (seeMoreBtn) seeMoreBtn.style.display = hasQuery ? "none" : "block";
+		modelDropdown?.querySelectorAll(".model-group-header").forEach((header) => {
+			header.style.display = visibleBrands.has(header.dataset.brand || "") ? "block" : "none";
+		});
+		const pageInfo = document.getElementById("modelPageInfo");
+		const prevBtn = document.getElementById("modelPagePrev");
+		const nextBtn = document.getElementById("modelPageNext");
+		if (pageInfo) pageInfo.textContent = visibleCount ? `${visibleCount} models` : "No match";
+		if (prevBtn) prevBtn.disabled = true;
+		if (nextBtn) nextBtn.disabled = true;
+	}
+	var MODELS_PER_PAGE = 10;
+	var currentModelPage = 1;
+	var totalModelPages = 1;
+	function initModelPagination() {
+		currentModelPage = 1;
+		totalModelPages = 1;
+		applyModelDropdownFilters();
+	}
+	function updateModelPageDisplay() {
+		applyModelDropdownFilters();
+	}
+	function goToModelPage(page) {
+		if (page < 1 || page > totalModelPages) return;
+		currentModelPage = page;
+		updateModelPageDisplay();
 	}
 	var modelDropdownTriggerEl = null;
 	var modelDropdownSyncRaf = 0;
@@ -12965,12 +13039,18 @@
 		compareModelSelector?.classList.toggle("is-open", activeRoot === compareModelSelector);
 		document.body.classList.add("header-model-menu-open");
 		if (modelDropdown) modelDropdown.hidden = false;
-		modelDropdownShowAll = false;
-		renderModelDropdownFromCatalog();
 		try {
 			initModelCatalogFromServer(false);
 		} catch (e) {}
 		applyModelDropdownFilters();
+		initModelPagination();
+		const modelOptions = Array.from(modelDropdown?.querySelectorAll(".model-option") || []);
+		const activeModelForTarget = modelSelectTarget === "compare" ? compareModel : currentModel;
+		const activeIndex = modelOptions.findIndex((opt) => opt.dataset.model === activeModelForTarget);
+		if (activeIndex >= 0) {
+			currentModelPage = Math.floor(activeIndex / MODELS_PER_PAGE) + 1;
+			updateModelPageDisplay();
+		}
 		if (modelDropdown) {
 			modelDropdown.classList.add("animating");
 			modelDropdown.querySelectorAll(".model-option").forEach((opt, i) => {
@@ -13030,7 +13110,6 @@
 		currentModel = modelId;
 		isMultimodal = isMultimodalModel(modelId);
 		localStorage.setItem("cancri_current_model", modelId);
-		addRecentModelId(modelId);
 		if (compareModel === currentModel) {
 			compareModel = getFallbackModelId(currentModel);
 			localStorage.setItem("cancri_compare_model", compareModel);
@@ -13064,7 +13143,7 @@
 			opt.classList.toggle("active", opt.dataset.model === currentModel);
 		});
 	}
-	function handleModelCurrentBtnClickOld(e) {
+	if (modelCurrentBtn) modelCurrentBtn.addEventListener("click", (e) => {
 		e.stopPropagation();
 		modelSelectTarget = "primary";
 		if (modelSelector?.classList.contains("open") && modelSelector.classList.contains("is-open")) closeModelDropdown();
@@ -13072,8 +13151,7 @@
 			openModelDropdown(modelCurrentBtn);
 			modelCurrentBtn.setAttribute("aria-expanded", "true");
 		}
-	}
-	if (modelCurrentBtn) modelCurrentBtn.addEventListener("click", handleModelCurrentBtnClickOld);
+	});
 	if (compareModelCurrentBtn) compareModelCurrentBtn.addEventListener("click", (e) => {
 		e.stopPropagation();
 		modelSelectTarget = "compare";
@@ -13108,28 +13186,8 @@
 			if (modelSelectTarget === "compare") setCompareModel(modelId);
 			else setModel(modelId);
 		});
-		const seeMoreBtn = document.getElementById("modelSeeMoreBtn");
-		if (seeMoreBtn) seeMoreBtn.addEventListener("click", (e) => {
-			e.stopPropagation();
-			modelDropdownShowAll = !modelDropdownShowAll;
-			renderModelDropdownFromCatalog();
-		});
-		const popover = document.getElementById("modelHoverPopover");
-		const pinBtn = document.getElementById("modelPopoverPinBtn");
-		if (pinBtn) pinBtn.addEventListener("click", (e) => {
-			e.stopPropagation();
-			const modelId = pinBtn.dataset.model;
-			if (!modelId) return;
-			const pinned = getPinnedModelIds();
-			const idx = pinned.indexOf(modelId);
-			if (idx >= 0) pinned.splice(idx, 1);
-			else pinned.unshift(modelId);
-			setPinnedModelIds(pinned);
-			renderModelDropdownFromCatalog();
-		});
-		if (popover) popover.addEventListener("mouseenter", () => clearTimeout(modelDropdownHoverTimer));
-		if (popover) popover.addEventListener("mouseleave", () => hideModelHoverPopover());
 		if (modelSearchInput) modelSearchInput.addEventListener("input", () => {
+			currentModelPage = 1;
 			applyModelDropdownFilters();
 		});
 		if (modelFilterRow) {
@@ -13155,6 +13213,7 @@
 					e.stopPropagation();
 					modelFilterRow.querySelectorAll(".model-filter-chip").forEach((item) => item.classList.toggle("active", item === chip));
 					moveIndicatorTo(chip);
+					currentModelPage = 1;
 					applyModelDropdownFilters();
 				});
 			});
@@ -13163,9 +13222,17 @@
 				if (a) moveIndicatorTo(a);
 			});
 		}
-
+		const prevBtn = document.getElementById("modelPagePrev");
+		const nextBtn = document.getElementById("modelPageNext");
+		if (prevBtn) prevBtn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			goToModelPage(currentModelPage - 1);
+		});
+		if (nextBtn) nextBtn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			goToModelPage(currentModelPage + 1);
+		});
 	}
-	mountCancriCodeModelPicker();
 	var themeSwitchers = Array.from(document.querySelectorAll(".theme-switcher"));
 	themeSwitchers.forEach((switcher) => {
 		switcher.querySelectorAll(".theme-btn").forEach((btn) => {
@@ -13298,430 +13365,6 @@
 		if (dismissNoticeCheckbox && dismissNoticeCheckbox.checked) localStorage.setItem(NOTICE_DISMISS_KEY, "true");
 		refreshBroadcastDot();
 	});
-	function setCurrentModel(modelId) {
-		if (typeof setModel === "function") {
-			setModel(modelId);
-			return;
-		}
-		if (!isModelSelectable(modelId)) return;
-		currentModel = modelId;
-		isMultimodal = typeof isMultimodalModel === "function" ? isMultimodalModel(modelId) : false;
-		localStorage.setItem("cancri_current_model", modelId);
-		if (currentModelName) currentModelName.textContent = getModelDisplayName(modelId);
-		if (typeof updateAttachBtnVisibility === "function") updateAttachBtnVisibility();
-	}
-	// ============================================================================
-	// Cancri Code 风格模型选择器 — 品牌图标与计费卡（从 cancri-code/src/modelMeta.ts 移植）
-	// ============================================================================
-	const ICON_OPENAI = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071.007L4.41 13.954a4.5 4.5 0 0 1-2.07-6.058zm16.597 3.855-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071-.006l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.66zm2.01-3.025-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zM8.305 12.863l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365 2.602-1.5 2.607 1.5v2.999l-2.602 1.5-2.607-1.5z"></path></svg>`;
-
-	const ICON_ANTHROPIC = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 0 1-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.667-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z" fill="#D97757"></path></svg>`;
-
-	const ICON_XAI = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 0 0-1.829-1A8.975 8.975 0 0 0 5.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815"></path></svg>`;
-
-	const ICON_DEEPSEEK = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 0 1-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 0 0-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 0 1-.465.137 9.597 9.597 0 0 0-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 0 0 1.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 0 1 1.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 0 1 .415-.287.302.302 0 0 1 .2.288.306.306 0 0 1-.31.307.303.303 0 0 1-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 0 1-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 0 1 .016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 0 1-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z" fill="#4D6BFE"></path></svg>`;
-
-	const ICON_GOOGLE = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M12 0c.69 6.43 5.57 11.31 12 12-6.43.69-11.31 5.57-12 12-.69-6.43-5.57-11.31-12-12C6.43 11.31 11.31 6.43 12 0z" fill="#3186FF"></path></svg>`;
-
-	const ICON_CUSTOM = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"></path><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"></path></svg>`;
-
-	const ICON_AGNES = `<img src="../Logo/Cancri1.jpg" alt="" aria-hidden="true" style="width:1em;height:1em;display:block;border-radius:3px;object-fit:cover" />`;
-
-	const BRAND_ICON = {
-		"OpenAI": ICON_OPENAI,
-		"Anthropic": ICON_ANTHROPIC,
-		"xAI": ICON_XAI,
-		"DeepSeek": ICON_DEEPSEEK,
-		"Google": ICON_GOOGLE,
-		"Agnes": ICON_AGNES,
-		"\u81ea\u5b9a\u4e49": ICON_CUSTOM
-	};
-
-	const BRAND_INITIAL = {
-		"Qwen": { letter: "Q", bg: "#6b21a8", color: "#fff" },
-		"Moonshot": { letter: "K", bg: "#111827", color: "#fff" },
-		"Zhipu": { letter: "Z", bg: "#2563eb", color: "#fff" },
-		"Doubao": { letter: "D", bg: "#dc2626", color: "#fff" },
-		"MiniMax": { letter: "M", bg: "#4b5563", color: "#fff" },
-		"Baichuan": { letter: "B", bg: "#ea580c", color: "#fff" },
-		"Wan": { letter: "W", bg: "#0891b2", color: "#fff" },
-		"HappyHorse": { letter: "H", bg: "#ca8a04", color: "#fff" },
-		"Stepfun": { letter: "S", bg: "#16a34a", color: "#fff" },
-		"KwaiKAT": { letter: "K", bg: "#db2777", color: "#fff" },
-		"\u5c0f\u7c73 MiMo": { letter: "\u7c73", bg: "#ff6900", color: "#fff" },
-		"Tencent": { letter: "T", bg: "#0052d9", color: "#fff" }
-	};
-
-	function brandIconSvg(brand) {
-		if (BRAND_ICON[brand]) return BRAND_ICON[brand];
-		// 2026-06-23: 有真实 SVG 文件的品牌（BRAND_ICON_MAP）→ 返回 null，让
-		// renderBrandIconForPicker 走 <img> 加载真实 logo（百川/豆包/Step/Qwen 等）。
-		// 字母方块仅用于既无内联 SVG 也无 SVG 文件的品牌兜底。
-		if (BRAND_ICON_MAP[brand]) return null;
-		const initial = BRAND_INITIAL[brand];
-		if (initial) {
-			return `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" style="border-radius:3px"><rect width="24" height="24" rx="3" fill="${initial.bg}"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="${initial.color}" font-family="system-ui, sans-serif">${initial.letter}</text></svg>`;
-		}
-		return ICON_CUSTOM;
-	}
-
-	function getCostMultiplierFromMeta(meta) {
-		if (meta && typeof meta.customMultiplier === "number") return meta.customMultiplier;
-		const tier = (meta && meta.costTier) || "normal";
-		return COST_TIER_MULTIPLIER[tier] || 1;
-	}
-
-	function creditsPerMillion(multiplier, kind) {
-		return (1000000 * TOKEN_WEIGHT[kind] * multiplier) / EFFECTIVE_TOKENS_PER_CREDIT;
-	}
-
-	function approxPrice(multiplier) {
-		return {
-			inputCreditsPerM: creditsPerMillion(multiplier, "input"),
-			cachedCreditsPerM: creditsPerMillion(multiplier, "cached"),
-			outputCreditsPerM: creditsPerMillion(multiplier, "output")
-		};
-	}
-
-	function costLevel(multiplier) {
-		if (multiplier <= 0) return 0;
-		const v = Math.log10(multiplier + 1) / Math.log10(300 + 1);
-		return Math.max(0.04, Math.min(1, v));
-	}
-
-	function barMarkerPct(level) {
-		const pct = Math.max(8, Math.min(92, level * 100));
-		return pct.toFixed(1);
-	}
-
-	function barLabelAlign(level) {
-		const pct = level * 100;
-		if (pct <= 14) return "start";
-		if (pct >= 86) return "end";
-		return "center";
-	}
-
-	function fmtCreditsPerM(n) {
-		if (n === 0) return "0";
-		if (n >= 10000) {
-			const wan = n / 10000;
-			return wan >= 10 ? `${Math.round(wan)}\u4e07` : `${wan.toFixed(1)}\u4e07`;
-		}
-		if (n >= 1000) return `${(n / 1000).toFixed(n >= 5000 ? 0 : 1)}k`;
-		if (Number.isInteger(n)) return String(n);
-		if (n >= 10) return n.toFixed(0);
-		return n.toFixed(1);
-	}
-
-	function buildCostCard(m) {
-		const mult = m.multiplier || 1;
-		const free = m.free === true;
-		const hasMoney = typeof m.inputPricePerM === "number" && typeof m.outputPricePerM === "number";
-		const hasPerCall = typeof m.perCallPrice === "number";
-		// 2026-06-23 wallet_v3：有显式定价（¥/M 或 ¥/次）优先展示价格，不被 free 标签
-		//   盖成"免费"。仅当 free 且无任何定价数据时才显"免费"。修复 doubao-seed-2.0-pro /
-		//   qwen3.7-max 等 costTier='normal'→gateCostTier='free' 但已定价模型被误显"免费"。
-		const showPrice = hasMoney || hasPerCall;
-		const effectiveFree = free && !showPrice;
-		const lvl = effectiveFree ? 0.04 : costLevel(mult);
-		const marker = barMarkerPct(lvl);
-		const labelAlign = barLabelAlign(lvl);
-		const ctxHint = m.contextLabel ? `${escapeHtml(m.contextLabel)} \u4e0a\u4e0b\u6587` : "";
-		const sub = ctxHint;
-		// 2026-06-23 wallet_v3：去积分回退。未定价显"未定价"，按次显¥/次，按量显¥/M。
-		const subFallback = effectiveFree ? "\u514d\u8d39" : hasMoney ? "\u6309\u91cf\u8ba1\u8d39" : hasPerCall ? "\u6309\u6b21\u8ba1\u8d39" : "\u672a\u5b9a\u4ef7";
-		let chipsHtml;
-		if (effectiveFree) {
-			chipsHtml = `${priceChipMoney("\u8f93\u5165", 0, true)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", 0, true)}${priceChipMoney("\u8f93\u51fa", 0, true)}`;
-		} else if (hasMoney) {
-			const cachedPrice = m.inputPricePerM * TOKEN_WEIGHT.cached;
-			chipsHtml = `${priceChipMoney("\u8f93\u5165", m.inputPricePerM)}${priceChipMoney("\u7f13\u5b58\u8f93\u5165", cachedPrice)}${priceChipMoney("\u8f93\u51fa", m.outputPricePerM)}`;
-		} else if (hasPerCall) {
-			chipsHtml = `<div class="cost-chip"><div class="cost-chip-label">\u6bcf\u6b21</div><div class="cost-chip-val">${fmtMoney(m.perCallPrice)} <span class="cost-chip-unit">/ \u6b21</span></div></div>`;
-		} else {
-			chipsHtml = `<div class="cost-chip"><div class="cost-chip-label">\u4ef7\u683c</div><div class="cost-chip-val free">\u672a\u5b9a\u4ef7</div></div>`;
-		}
-		return `<div class="cost-card cost-card-billing">
-			<div class="cost-billing-head">
-				<span class="cost-billing-title">\u8ba1\u8d39</span>
-				<span class="cost-billing-sub">${sub || subFallback}</span>
-			</div>
-			<div class="cost-bar-wrap">
-				<div class="cost-bar-model cost-bar-model--${labelAlign}" style="left:${marker}%">${escapeHtml(m.displayName)}</div>
-				<div class="cost-bar"><span class="cost-bar-marker" style="left:${marker}%"></span></div>
-			</div>
-			<div class="cost-chips">
-				${chipsHtml}
-			</div>
-		</div>`;
-	}
-
-	function priceChip(label, creditsPerM, free) {
-		if (free) {
-			return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val free">\u514d\u8d39</div></div>`;
-		}
-		return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val">${fmtCreditsPerM(creditsPerM)} <span class="cost-chip-unit">\u79ef\u5206 / 1M</span></div></div>`;
-	}
-
-	function priceChipMoney(label, price, free) {
-		if (free) {
-			return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val free">\u514d\u8d39</div></div>`;
-		}
-		return `<div class="cost-chip"><div class="cost-chip-label">${label}</div><div class="cost-chip-val">${fmtMoney(price)} <span class="cost-chip-unit">/ 1M</span></div></div>`;
-	}
-
-	function fmtMoney(n) {
-		if (n === 0) return "\u00a50";
-		if (n >= 1) return `\u00a5${n.toFixed(2)}`;
-		if (n >= 0.1) return `\u00a5${n.toFixed(2)}`;
-		return `\u00a5${n.toFixed(3)}`;
-	}
-
-	function renderBrandIconForPicker(brand, modelId) {
-		if (typeof brandIconSvg === "function") {
-			try {
-				const svg = brandIconSvg(brand);
-				if (svg) return svg;
-			} catch (e) {}
-		}
-		const iconPath = getModelIconPath(brand, modelId);
-		const themeClass = shouldUseThemeAdaptiveIcon(iconPath, brand) ? " model-icon-theme-adaptive" : "";
-		return `<img src="${escapeHtml(iconPath)}" alt="" class="model-item-icon-img${themeClass}" loading="lazy" decoding="async">`;
-	}
-	function renderCancriCodeModelList() {
-		const list = document.getElementById("model-popover-list");
-		if (!list) return;
-		const models = Array.isArray(window.CancriApp && window.CancriApp.SELECTABLE_MODELS) ? window.CancriApp.SELECTABLE_MODELS : (Array.isArray(SELECTABLE_MODELS) ? SELECTABLE_MODELS : []);
-		if (!models.length) {
-			list.innerHTML = `<div class="model-item is-disabled"><span class="model-item-name">\u52a0\u8f7d\u4e2d...</span></div>`;
-			return;
-		}
-		const modelMap = new Map();
-		for (const m of models) modelMap.set(m.id, m);
-		const pinnedIds = new Set(getPinnedModelIds());
-		const recentIds = getRecentModelIds().slice(0, 5);
-		const pinned = [];
-		const recent = [];
-		const all = [];
-		for (const id of pinnedIds) {
-			const m = modelMap.get(id);
-			if (m) pinned.push(m);
-		}
-		for (const id of recentIds) {
-			const m = modelMap.get(id);
-			if (m && !pinnedIds.has(id)) recent.push(m);
-		}
-		for (const m of models) {
-			if (!pinnedIds.has(m.id) && !recent.includes(m)) all.push(m);
-		}
-		let html = "";
-		if (pinned.length) html += renderCcModelSection("Pinned", pinned);
-		if (recent.length) html += renderCcModelSection("Recently Used", recent);
-		if (all.length) html += renderCcModelSection("All Models", all);
-		list.innerHTML = html || `<div class="model-item is-disabled"><span class="model-item-name">\u6682\u65e0\u53ef\u7528\u6a21\u578b</span></div>`;
-	}
-
-	function renderCcModelSection(title, sectionModels) {
-		const items = sectionModels.map((m) => renderModelItemHtml(m)).join("");
-		return `<div class="model-section"><div class="model-section-title">${escapeHtml(title)}</div>${items}</div>`;
-	}
-
-	function renderModelItemHtml(model) {
-		const isActive = model.id === currentModel;
-		const isDisabled = typeof isModelAvailable === "function" ? !isModelAvailable(model.id) : false;
-		const newBadge = model.isNew ? `<span class="model-item-new">New</span>` : "";
-		const freeBadge = model.isFree ? `<span class="model-item-badge" data-kind="free">Free</span>` : "";
-		const multiplier = getCostMultiplierFromMeta(model);
-		const heatBar = !model.isFree ? `<span class="model-item-heat-bar" style="--heat-level:${costLevel(multiplier)}"></span>` : "";
-		const right = isDisabled ? `<span class="model-item-lock" aria-hidden="true"><svg viewBox="0 0 14 14" width="11" height="11" fill="none"><rect x="3" y="6" width="8" height="6" rx="1.4" stroke="currentColor" stroke-width="1.2"/><path d="M4.6 6V4.6a2.4 2.4 0 0 1 4.8 0V6" stroke="currentColor" stroke-width="1.2"/></svg></span>` : `<svg class="model-item-check" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5 L6 11 L11.5 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-		return `<div class="model-item${isActive ? " active" : ""}${isDisabled ? " is-disabled" : ""}" data-model="${escapeHtml(model.id)}" role="option" aria-selected="${isActive}"${isDisabled ? " aria-disabled=\"true\"" : ""}>
-			<span class="model-item-icon">${renderBrandIconForPicker(model.brand, model.id)}</span>
-			<span class="model-item-name">${escapeHtml(model.displayName || model.name || model.id)}</span>
-			${newBadge}
-			${freeBadge}
-			${heatBar}
-			${right}
-		</div>`;
-	}
-	function positionModelCostPop(anchor, menuRect) {
-		const pop = document.getElementById("model-cost-pop");
-		if (!pop || !anchor) return;
-		const rowRect = anchor.getBoundingClientRect();
-		const modelMenu = document.getElementById("model-popover");
-		const mRect = menuRect || (modelMenu ? modelMenu.getBoundingClientRect() : rowRect);
-		pop.removeAttribute("hidden");
-		pop.style.position = "fixed";
-		void pop.offsetWidth;
-		const popRect = pop.getBoundingClientRect();
-		const gap = 10;
-		const popW = popRect.width > 0 ? popRect.width : 256;
-		let right = window.innerWidth - mRect.left + gap;
-		if (window.innerWidth - right - popW < 10) {
-			right = window.innerWidth - popW - 10;
-		}
-		pop.style.left = "auto";
-		pop.style.right = `${right}px`;
-		const top = Math.min(
-			window.innerHeight - popRect.height - 10,
-			Math.max(10, rowRect.top + rowRect.height / 2 - popRect.height / 2)
-		);
-		pop.style.top = `${top}px`;
-	}
-	function showModelCostPop(model, anchor) {
-		const pop = document.getElementById("model-cost-pop");
-		if (!pop) return;
-		const multiplier = getCostMultiplierFromMeta(model);
-		const free = model.isFree === true || model.costTier === "free" || model.gateCostTier === "free";
-		pop.innerHTML = buildCostCard({
-			displayName: model.displayName || model.name || model.id,
-			contextLabel: model.contextWindow ? formatContextWindow(model.contextWindow) : "",
-			free,
-			multiplier,
-			inputPricePerM: model.inputPricePerM,
-			outputPricePerM: model.outputPricePerM,
-			perCallPrice: model.perCallPrice
-		});
-		pop.hidden = false;
-		positionModelCostPop(anchor);
-	}
-	function mountCancriCodeModelPicker() {
-		const trigger = document.getElementById("chat-model");
-		const popover = document.getElementById("model-popover");
-		const list = document.getElementById("model-popover-list");
-		const costPop = document.getElementById("model-cost-pop");
-		if (!trigger || !popover || !list) return;
-		// fixed 定位必须挂 body，否则在 chat-card 等祖先内 viewport 坐标会错位
-		if (costPop && costPop.parentElement !== document.body) {
-			document.body.appendChild(costPop);
-		}
-		if (typeof handleModelCurrentBtnClickOld === "function") {
-			trigger.removeEventListener("click", handleModelCurrentBtnClickOld);
-		}
-		let costPopTimer = null;
-		// 2026-06-23：composer 居底部 → 模型菜单向上展开。fixed 定位挂 body，
-		// 逃出 #homeView.chatting (z-index:0) 的层叠上下文，避免被 main-header
-		// 下缘渐变 (::after, z-index:1 in header's z-index:100 context) 挡住。
-		if (popover.parentElement !== document.body) {
-			document.body.appendChild(popover);
-		}
-		function positionModelPopover() {
-			if (popover.hidden) return;
-			const tRect = trigger.getBoundingClientRect();
-			popover.style.position = "fixed";
-			void popover.offsetWidth;
-			const pRect = popover.getBoundingClientRect();
-			const gap = 6;
-			const vh = window.innerHeight;
-			// 右对齐触发按钮右缘；右边距不够时贴右 viewport。
-			let right = window.innerWidth - tRect.right;
-			const maxRight = window.innerWidth - 10;
-			if (right > maxRight) right = maxRight;
-			popover.style.right = `${Math.max(10, right)}px`;
-			popover.style.left = "auto";
-			// 2026-06-23：自适应展开方向。输入框居中（下方空间 ≥ 上方）→ 下拉；
-			//   输入框居底/对话中（下方空间 < 上方）→ 上拉。
-			const spaceAbove = tRect.top;
-			const spaceBelow = vh - tRect.bottom;
-			if (spaceBelow >= spaceAbove) {
-				// 下拉：popover 顶缘贴触发按钮底缘 + gap；超出底部则贴底。
-				let top = tRect.bottom + gap;
-				if (top + pRect.height > vh - 10) top = vh - pRect.height - 10;
-				popover.style.top = `${Math.max(10, top)}px`;
-				popover.style.bottom = "auto";
-			} else {
-				// 上拉：popover 底缘贴触发按钮顶缘 + gap；超出顶部则贴顶。
-				let bottom = vh - tRect.top + gap;
-				const topEdge = vh - bottom - pRect.height;
-				if (topEdge < 10) bottom = vh - pRect.height - 10;
-				popover.style.bottom = `${bottom}px`;
-				popover.style.top = "auto";
-			}
-		}
-		function openPopover() {
-			popover.hidden = false;
-			trigger.setAttribute("aria-expanded", "true");
-			renderCancriCodeModelList();
-			positionModelPopover();
-			if (typeof scrollToActiveModel === "function") scrollToActiveModel();
-			// 2026-06-24：打开模型选择器时刷新后端目录。若页面初始加载失败或兜底未替换，
-			// 这里会重试，避免用户一直看到旧的本地兜底模型/未定价。
-			try {
-				initModelCatalogFromServer(false);
-			} catch (e) {}
-		}
-		function closePopover() {
-			popover.hidden = true;
-			trigger.setAttribute("aria-expanded", "false");
-			if (costPop) costPop.hidden = true;
-		}
-		function togglePopover() {
-			if (popover.hidden) openPopover();
-			else closePopover();
-		}
-		function handleItemClick(e) {
-			const item = e.target.closest(".model-item");
-			if (!item || !list.contains(item)) return;
-			const modelId = item.dataset.model;
-			if (!isModelEnabled(modelId)) return;
-			if (!isModelAvailable(modelId)) {
-				const msg = getQuotaBlockMessage(modelId) || getQuotaLockMessage(modelId) || (getModelStatus(modelId) || {}).error || "当前模型不可用";
-				showToast(`${getModelDisplayName(modelId)}：${msg}`);
-				return;
-			}
-			setCurrentModel(modelId);
-			closePopover();
-		}
-		function handleItemMouseEnter(e) {
-			const item = e.target.closest(".model-item");
-			if (!item || !list.contains(item)) return;
-			clearTimeout(costPopTimer);
-			const modelId = item.dataset.model;
-			const meta = getModelMeta(modelId);
-			if (!meta) return;
-			showModelCostPop(meta, item);
-		}
-		function handleItemMouseLeave() {
-			clearTimeout(costPopTimer);
-			costPopTimer = setTimeout(() => {
-				if (costPop) costPop.hidden = true;
-			}, 200);
-		}
-		function handleCostPopMouseEnter() {
-			clearTimeout(costPopTimer);
-		}
-		function handleCostPopMouseLeave() {
-			clearTimeout(costPopTimer);
-			costPopTimer = setTimeout(() => {
-				if (costPop) costPop.hidden = true;
-			}, 200);
-		}
-		function handleDocClick(e) {
-			if (!popover.hidden && !popover.contains(e.target) && !trigger.contains(e.target)) closePopover();
-		}
-		function handleKey(e) {
-			if (e.key === "Escape" && !popover.hidden) {
-				e.preventDefault();
-				closePopover();
-			}
-		}
-		trigger.addEventListener("click", (e) => {
-			e.stopPropagation();
-			togglePopover();
-		});
-		list.addEventListener("click", handleItemClick);
-		list.addEventListener("mouseenter", handleItemMouseEnter, true);
-		list.addEventListener("mouseleave", handleItemMouseLeave, true);
-		if (costPop) {
-			costPop.addEventListener("mouseenter", handleCostPopMouseEnter);
-			costPop.addEventListener("mouseleave", handleCostPopMouseLeave);
-		}
-		document.addEventListener("click", handleDocClick);
-		document.addEventListener("keydown", handleKey);
-		// 2026-06-23：fixed 定位跟随触发按钮，滚动/缩放时重定位。
-		window.addEventListener("scroll", positionModelPopover, true);
-		window.addEventListener("resize", positionModelPopover);
-		renderCancriCodeModelList();
-	}
 	window.CancriApp = {
 		state,
 		MODEL_CATALOG,
