@@ -2922,10 +2922,33 @@
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
 	var modelCatalogLoaded = false;
+	function readNumberField(obj, keys) {
+		for (const key of keys) {
+			const value = obj && obj[key];
+			if (typeof value === "number" && Number.isFinite(value)) return value;
+			if (typeof value === "string" && value.trim() !== "") {
+				const n = Number(value);
+				if (Number.isFinite(n)) return n;
+			}
+		}
+		return void 0;
+	}
+	function modelPriceFromMultiplier(multiplier, kind) {
+		return creditsPerMillion(multiplier, kind) / 150;
+	}
 	function mapServerModelToCatalogEntry(serverModel, localOverlay) {
 		const local = localOverlay || {};
 		const kind = serverModel.video ? "video" : serverModel.image ? "image" : local.kind || "chat";
 		const rawName = local.name || serverModel.displayName || serverModel.id;
+		const costTier = serverModel.costTier || local.costTier || "normal";
+		const gateCostTier = serverModel.gateCostTier || null;
+		const rawMultiplier = readNumberField(serverModel, ["customMultiplier", "custom_multiplier"]);
+		const customMultiplier = typeof rawMultiplier === "number" ? rawMultiplier : local.customMultiplier;
+		const inputPricePerM = readNumberField(serverModel, ["inputPricePerM", "input_price_per_m", "input_price_cny_per_m"]);
+		const outputPricePerM = readNumberField(serverModel, ["outputPricePerM", "output_price_per_m", "output_price_cny_per_m"]);
+		const perCallPrice = readNumberField(serverModel, ["perCallPrice", "per_call_price", "per_call_price_cny"]);
+		const multiplierForFallback = typeof customMultiplier === "number" ? customMultiplier : COST_TIER_MULTIPLIER[costTier] || 1;
+		const shouldDerivePrice = costTier !== "free" && gateCostTier !== "free";
 		return {
 			id: serverModel.id,
 			name: normalizeModelDisplayName(rawName),
@@ -2934,8 +2957,8 @@
 			vision: local.vision ?? Boolean(serverModel.multimodal),
 			thinking: local.thinking ?? Boolean(serverModel.enableThinking),
 			tools: local.tools ?? kind === "chat",
-			costTier: serverModel.costTier || local.costTier || "normal",
-			customMultiplier: typeof serverModel.customMultiplier === "number" ? serverModel.customMultiplier : local.customMultiplier,
+			costTier,
+			customMultiplier,
 			lineLabel: serverModel.lineLabel || local.lineLabel || "",
 			proMaxOnly: serverModel.proMaxOnly === true || local.proMaxOnly === true,
 			proPlusOnly: serverModel.proPlusOnly === true || local.proPlusOnly === true,
@@ -2943,14 +2966,14 @@
 			promoLimited: local.promoLimited,
 			promoTooltip: local.promoTooltip,
 			freeLimitNote: local.freeLimitNote,
-			inputPricePerM: typeof serverModel.inputPricePerM === "number" ? serverModel.inputPricePerM : local.inputPricePerM,
-			outputPricePerM: typeof serverModel.outputPricePerM === "number" ? serverModel.outputPricePerM : local.outputPricePerM,
-			perCallPrice: typeof serverModel.perCallPrice === "number" ? serverModel.perCallPrice : local.perCallPrice,
+			inputPricePerM: typeof inputPricePerM === "number" ? inputPricePerM : typeof local.inputPricePerM === "number" ? local.inputPricePerM : shouldDerivePrice ? modelPriceFromMultiplier(multiplierForFallback, "input") : void 0,
+			outputPricePerM: typeof outputPricePerM === "number" ? outputPricePerM : typeof local.outputPricePerM === "number" ? local.outputPricePerM : shouldDerivePrice ? modelPriceFromMultiplier(multiplierForFallback, "output") : void 0,
+			perCallPrice: typeof perCallPrice === "number" ? perCallPrice : local.perCallPrice,
 			maxInputTokens: serverModel.maxInputTokens || local.maxInputTokens || 0,
 			available: serverModel.available !== false && local.available !== false,
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
-			gateCostTier: serverModel.gateCostTier || null,
+			gateCostTier,
 			freeUserBlocked: serverModel.freeUserBlocked === true
 		};
 	}
@@ -2981,27 +3004,22 @@
 		return true;
 	}
 	function fetchModelUiCatalog(force) {
-		console.warn("[model_ui_catalog v=warn2] called force=", force, "url=", window.__SUPABASE_URL__ || "(empty)", "anon=", window.__SUPABASE_ANON_KEY__ ? "set" : "(empty)", "fetchedAt=", modelUiCatalogFetchedAt, "inflight=", modelUiCatalogInflight ? "yes" : "no");
-		if (!force && modelUiCatalogFetchedAt && Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS) { console.warn("[model_ui_catalog v=warn2] skip: within TTL"); return Promise.resolve(true); }
-		if (modelUiCatalogInflight) { console.warn("[model_ui_catalog v=warn2] skip: inflight"); return modelUiCatalogInflight; }
+		if (!force && modelUiCatalogFetchedAt && Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS) return Promise.resolve(true);
+		if (modelUiCatalogInflight) return modelUiCatalogInflight;
 		const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
 		const anon = window.__SUPABASE_ANON_KEY__ || "";
-		if (!url || !anon) { console.warn("[model_ui_catalog v=warn2] skip: no config"); return Promise.resolve(false); }
+		if (!url || !anon) return Promise.resolve(false);
 		modelUiCatalogInflight = fetch(`${url}/functions/v1/chat-gateway`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				apikey: anon
 			},
-			body: JSON.stringify({ endpoint: "model_ui_catalog" }),
+			body: JSON.stringify({ endpoint: "model_public_catalog" }),
 			mode: "cors",
 			credentials: "omit",
 			cache: "no-store"
-		}).then((r) => {
-			console.warn("[model_ui_catalog] status", r.status, "ok", r.ok, "url", url);
-			return r.ok ? r.json() : null;
-		}).then((data) => {
-			console.warn("[model_ui_catalog] models count", data && data.models && data.models.length, "billing_mode", data && data.billing_mode);
+		}).then((r) => r.ok ? r.json() : null).then((data) => {
 			// 2026-06-23: 同步后端倍率档位（与 cancri-code / chat-gateway 保持一致）。
 			if (data && data.multiplier_legend) {
 				for (const key in data.multiplier_legend) {
@@ -3011,7 +3029,6 @@
 				}
 			}
 			const ok = mergeServerUiCatalog(data && data.models);
-			console.warn("[model_ui_catalog] merge ok", ok);
 			if (ok) {
 				if (!isModelEnabled(currentModel)) try {
 					setModel(getFallbackModelId(currentModel));
@@ -3020,19 +3037,17 @@
 					if (typeof updateModelDropdownIndicators === "function") updateModelDropdownIndicators();
 				} catch (e) {}
 				try {
-			renderModelDropdownFromCatalog();
-			console.warn("[model_ui_catalog v=warn2] render done, selectable=", SELECTABLE_MODELS.length, "has haiku-4-5=", SELECTABLE_MODELS.some(m => /haiku-4-5/.test(m.id)), "has opus-4-8=", SELECTABLE_MODELS.some(m => /opus-4-8/.test(m.id)));
-		} catch (e) { console.warn("[model_ui_catalog v=warn2] render threw:", e); }
-		try {
-			renderCancriCodeModelList();
+					renderModelDropdownFromCatalog();
+				} catch (e) {}
+				try {
+					renderCancriCodeModelList();
 				} catch (e) {}
 				try {
 					updateModelSelectorIcons();
 				} catch (e) {}
 			}
 			return ok;
-		}).catch((err) => {
-			console.error("[model_ui_catalog] fetch error", err);
+		}).catch(() => {
 			if (!modelCatalogLoaded) {
 				modelCatalogLoaded = true;
 				try {
