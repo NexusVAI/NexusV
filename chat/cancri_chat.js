@@ -2997,10 +2997,10 @@
 			credentials: "omit",
 			cache: "no-store"
 		}).then((r) => {
-			console.log("[model_ui_catalog] status", r.status, "ok", r.ok, "url", url);
+			console.warn("[model_ui_catalog] status", r.status, "ok", r.ok, "url", url);
 			return r.ok ? r.json() : null;
 		}).then((data) => {
-			console.log("[model_ui_catalog] models count", data && data.models && data.models.length, "billing_mode", data && data.billing_mode);
+			console.warn("[model_ui_catalog] models count", data && data.models && data.models.length, "billing_mode", data && data.billing_mode);
 			// 2026-06-23: 同步后端倍率档位（与 cancri-code / chat-gateway 保持一致）。
 			if (data && data.multiplier_legend) {
 				for (const key in data.multiplier_legend) {
@@ -3010,7 +3010,7 @@
 				}
 			}
 			const ok = mergeServerUiCatalog(data && data.models);
-			console.log("[model_ui_catalog] merge ok", ok);
+			console.warn("[model_ui_catalog] merge ok", ok);
 			if (ok) {
 				if (!isModelEnabled(currentModel)) try {
 					setModel(getFallbackModelId(currentModel));
