@@ -3257,6 +3257,14 @@
 		const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
 		const anon = window.__SUPABASE_ANON_KEY__ || "";
 		if (!url || !anon) return Promise.resolve(false);
+		const catalogTimeoutId = setTimeout(() => {
+			if (!modelCatalogLoaded) {
+				modelCatalogLoaded = true;
+				try {
+					renderModelDropdownFromCatalog();
+				} catch (e) {}
+			}
+		}, 5e3);
 		modelUiCatalogInflight = fetch(`${url}/functions/v1/chat-gateway`, {
 			method: "POST",
 			headers: {
@@ -3267,7 +3275,10 @@
 			mode: "cors",
 			credentials: "omit",
 			cache: "no-store"
-		}).then((r) => r.ok ? r.json() : null).then((data) => {
+		}).then((r) => {
+			if (!r.ok) throw new Error(`catalog fetch ${r.status}`);
+			return r.json();
+		}).then((data) => {
 			const ok = mergeServerUiCatalog(data && data.models);
 			if (ok) {
 				if (!isModelEnabled(currentModel)) try {
@@ -3293,6 +3304,7 @@
 			}
 			return false;
 		}).finally(() => {
+			clearTimeout(catalogTimeoutId);
 			modelUiCatalogInflight = null;
 		});
 		return modelUiCatalogInflight;
