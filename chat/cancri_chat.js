@@ -2981,11 +2981,12 @@
 		return true;
 	}
 	function fetchModelUiCatalog(force) {
-		if (!force && modelUiCatalogFetchedAt && Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS) return Promise.resolve(true);
-		if (modelUiCatalogInflight) return modelUiCatalogInflight;
+		console.warn("[model_ui_catalog v=warn2] called force=", force, "url=", window.__SUPABASE_URL__ || "(empty)", "anon=", window.__SUPABASE_ANON_KEY__ ? "set" : "(empty)", "fetchedAt=", modelUiCatalogFetchedAt, "inflight=", modelUiCatalogInflight ? "yes" : "no");
+		if (!force && modelUiCatalogFetchedAt && Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS) { console.warn("[model_ui_catalog v=warn2] skip: within TTL"); return Promise.resolve(true); }
+		if (modelUiCatalogInflight) { console.warn("[model_ui_catalog v=warn2] skip: inflight"); return modelUiCatalogInflight; }
 		const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
 		const anon = window.__SUPABASE_ANON_KEY__ || "";
-		if (!url || !anon) return Promise.resolve(false);
+		if (!url || !anon) { console.warn("[model_ui_catalog v=warn2] skip: no config"); return Promise.resolve(false); }
 		modelUiCatalogInflight = fetch(`${url}/functions/v1/chat-gateway`, {
 			method: "POST",
 			headers: {
