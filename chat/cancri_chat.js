@@ -3020,10 +3020,11 @@
 					if (typeof updateModelDropdownIndicators === "function") updateModelDropdownIndicators();
 				} catch (e) {}
 				try {
-					renderModelDropdownFromCatalog();
-				} catch (e) {}
-				try {
-					renderCancriCodeModelList();
+			renderModelDropdownFromCatalog();
+			console.warn("[model_ui_catalog v=warn2] render done, selectable=", SELECTABLE_MODELS.length, "has haiku-4-5=", SELECTABLE_MODELS.some(m => /haiku-4-5/.test(m.id)), "has opus-4-8=", SELECTABLE_MODELS.some(m => /opus-4-8/.test(m.id)));
+		} catch (e) { console.warn("[model_ui_catalog v=warn2] render threw:", e); }
+		try {
+			renderCancriCodeModelList();
 				} catch (e) {}
 				try {
 					updateModelSelectorIcons();
