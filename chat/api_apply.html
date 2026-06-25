@@ -29,7 +29,7 @@
   <link rel="stylesheet" href="css/inter-fonts.css" />
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/display-fonts.css" />
-  <link rel="stylesheet" href="chat/api/oai-home.css" />
+  <link rel="stylesheet" href="chat/api/oai-home.css?v=20260625-apply-fix" />
 </head>
 <body class="cs-page">
   <main class="api-home">
@@ -78,12 +78,40 @@
 
         <!-- 右栏：表单区 -->
         <div class="cs-col-right">
-          <div id="loading" class="cs-state">正在加载…</div>
-
-          <!-- 未登录 -->
-          <div id="login-section" class="cs-state" style="display:none">
-            <p data-cs-login-msg style="margin-bottom:16px">请先登录 NexusV 账号后再提交申请。</p>
-            <button id="login-redirect-btn" class="cs-btn">前往登录 / 返回聊天</button>
+          <div id="loading" class="cs-form-skeleton" aria-busy="true" aria-label="正在加载表单">
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--half">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--full">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field"></span>
+            </div>
+            <div class="cs-form-skeleton__pair cs-form-skeleton__pair--full">
+              <span class="cs-form-skeleton__block cs-form-skeleton__label"></span>
+              <span class="cs-form-skeleton__block cs-form-skeleton__field cs-form-skeleton__field--tall"></span>
+            </div>
+            <span class="cs-form-skeleton__block cs-form-skeleton__btn"></span>
           </div>
 
           <!-- 已登录：申请区 -->
@@ -183,8 +211,8 @@
   <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
   <script src="chat/cancri_config.js?v=2026-05-13e"></script>
-  <script src="chat/api/oai-trusted-logos.js?v=20260625-trusted-theme" defer></script>
-  <script src="chat/api/oai-apply.js?v=20260625-trusted-theme" defer></script>
+  <script src="chat/api/oai-trusted-logos.js?v=20260625-apply-fix" defer></script>
+  <script src="chat/api/oai-apply.js?v=20260625-apply-fix" defer></script>
   <script>document.addEventListener('DOMContentLoaded', function () { if (window.injectComponents) injectComponents({}); });
   window.addEventListener('nexus:components-injected', function () {
     if (window.initMegaMenu) window.initMegaMenu();

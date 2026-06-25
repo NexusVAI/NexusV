@@ -2,6 +2,22 @@
 <html lang="zh-CN" data-theme="light" class="auth-platform-page">
 <head>
   <meta charset="utf-8" />
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem("cancri_ui_prefs");
+        if (!raw) return;
+        var prefs = JSON.parse(raw);
+        var mode = String(prefs.themeMode || prefs.theme || "system");
+        var theme;
+        if (mode === "light" || mode === "dark" || mode === "black") theme = mode;
+        else if (mode === "system") {
+          theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        } else theme = "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (_e) {}
+    })();
+  </script>
   <!-- 2026-06-20 安全加固：原旁CSP。含 unsafe-inline 兼容内联脚本；收素object-src/base-uri/connect-src（含本机回调 127.0.0.1）　-->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://chat.nexusvai.xyz https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz http://127.0.0.1:* http://localhost:* https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -24,8 +40,8 @@
   <link rel="stylesheet" href="./styles/00-tokens.css" />
   <link rel="stylesheet" href="./styles/01-claude-tokens.css" />
   <link rel="stylesheet" href="./styles/02-themes.css" />
-  <link rel="stylesheet" href="./styles/cancri_motion.css?v=2026-06-20-platform-login-fix16" />
-  <link rel="stylesheet" href="./styles/auth-platform-login.css?v=2026-06-20-platform-login-fix16" />
+  <link rel="stylesheet" href="./styles/cancri_motion.css?v=2026-06-25-auth-nav-captcha" />
+  <link rel="stylesheet" href="./styles/auth-platform-login.css?v=2026-06-25-auth-nav-captcha" />
   <style>
     html.auth-platform-page,
     html.auth-platform-page body {
@@ -104,7 +120,8 @@
       flex: 1 0 auto;
       width: 100%;
       max-width: none;
-      min-height: auto;
+      min-height: calc(100dvh - var(--auth-nav-h, 4.5rem));
+      padding-bottom: 0;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
@@ -120,6 +137,11 @@
       flex-shrink: 0;
       box-sizing: border-box;
       background: var(--auth-band-bg) !important;
+    }
+    .auth-site-footer {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
     }
     html, body {
       background: hsl(var(--bg-300));
@@ -199,16 +221,20 @@
 
     <header class="auth-topnav">
       <div class="auth-topnav-inner">
-        <a href="https://www.nexusvai.xyz/" class="auth-topnav-brand cancri-nav-brand" data-cancri-brand aria-label="NexusVAI 首页">
-          <span class="cancri-brand">
-            <span class="cancri-brand__word-wrap"><span class="cancri-brand__word">Nexus</span></span>
-            <img class="cancri-brand__icon" src="./assets/VAI-logo.svg" alt="VAI" width="32" height="32" decoding="async" />
-          </span>
+        <a href="https://www.nexusvai.xyz/" class="auth-topnav-brand cancri-nav-brand" aria-label="NexusVAI 首页">
+          <img
+            class="auth-brand-logo"
+            src="./assets/nexusvai_logo_transparent.svg"
+            alt="NexusVAI"
+            width="320"
+            height="64"
+            decoding="async"
+          />
         </a>
         <nav class="auth-topnav-links" aria-label="站点导航">
-          <a href="./api_docs.html">API 文档</a>
-          <a href="./api_keys.html">API Keys</a>
-          <a href="./pricing.html">定价</a>
+          <a href="./api/index.html">开放平台</a>
+          <a href="./api/keys.html">API Keys</a>
+          <a href="./api/checkout.html">定价</a>
           <a href="./celebrate.html">博客</a>
           <a href="https://www.nexusvai.xyz/article.html?id=cancriCode" target="_blank" rel="noopener">Cancri Code</a>
         </nav>
@@ -291,10 +317,14 @@
         <div class="auth-site-footer-inner">
           <div class="auth-site-footer-brand-col">
             <a href="https://www.nexusvai.xyz/" class="auth-site-footer-brand" aria-label="NexusVAI">
-              <span class="cancri-brand cancri-brand--footer">
-                <span class="cancri-brand__word-wrap is-in"><span class="cancri-brand__word">Nexus</span></span>
-                <img class="cancri-brand__icon" src="./assets/VAI-logo.svg" alt="VAI" width="32" height="32" decoding="async" />
-              </span>
+              <img
+                class="auth-brand-logo auth-brand-logo--footer"
+                src="./assets/nexusvai_logo_transparent.svg"
+                alt="NexusVAI"
+                width="180"
+                height="36"
+                decoding="async"
+              />
             </a>
             <div class="auth-site-footer-meta">
               <p class="auth-site-footer-copy">© <span data-year>2026</span> NexusVAI</p>
@@ -346,9 +376,8 @@
             <section>
               <h3>友情链接</h3>
               <ul>
-                <li><a href="https://www.nexusvai.xyz/privacy.html">隐私政策</a></li>
-                <li><a href="../terms.html">服务条款</a></li>
-                <li><a href="https://www.nexusvai.xyz/chat/celebrate.html#wall">社区墙</a></li>
+                <li><a href="https://agnes-ai.com/" target="_blank" rel="noopener noreferrer">Agens</a></li>
+                <li><a href="https://www.wanjiadongli.com/" target="_blank" rel="noopener noreferrer">玩家动力</a></li>
               </ul>
             </section>
           </div>
@@ -381,7 +410,8 @@
     </div>
   </div>
 
-  <script defer src="./js/auth-login-chrome.js?v=2026-06-20-platform-login-fix16"></script>
+  <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
+  <script defer src="./js/auth-login-chrome.js?v=2026-06-25-brand-logo-theme"></script>
   <script>
     (function () {
       "use strict";

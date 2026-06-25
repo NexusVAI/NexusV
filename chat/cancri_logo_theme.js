@@ -78,6 +78,7 @@
    * 浅色主题压黑、暗色/纯黑/无 data-theme 反白。 */
   var MONO_ICON_FILES = {
     "openai.svg": 1,
+    "openai-text.svg": 1,
     "kwaikat.svg": 1,
     "cursor.svg": 1,
     "ibm.svg": 1,

@@ -425,7 +425,7 @@
             .dialog-card__actions .btn { padding: 6px 14px; font-size: 12px; }
         </style>
     </head>
-    <body class="has-topbar">
+    <body class="has-topbar" data-login-url="index.html">
         <header class="topbar">
             <div class="topbar__inner">
                 <a class="brand" href="./api/" aria-label="Cancri 开放平台">
@@ -464,19 +464,7 @@
                 <p>管理密钥、监测用量趋势，查看按模型分布与调用明细。</p>
             </header>
 
-            <div id="loading" class="loading">加载中...</div>
-
-            <div id="login-section" style="display: none">
-                <div class="card">
-                    <p style="margin-bottom: 12px">请先登录。</p>
-                    <button
-                        id="login-redirect-btn"
-                        class="btn btn-primary"
-                    >
-                        前往登录
-                    </button>
-                </div>
-            </div>
+            <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true" aria-label="正在加载"></div>
 
             <div id="no-approval" style="display: none">
                 <div class="card">
@@ -749,6 +737,8 @@
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/api-keys-app.js?v=2026-06-23-inline-key-log-card"></script>
+        <script src="./api/platform-skeleton.js?v=20260625-auth"></script>
+        <script src="./api/platform-auth.js?v=20260625-auth"></script>
+        <script src="./api/api-keys-app.js?v=20260625-auth"></script>
     </body>
 </html>

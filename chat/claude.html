@@ -2,6 +2,24 @@
 <html lang="zh-CN" data-theme="black" class="auth-platform-page">
     <head>
         <meta charset="UTF-8" />
+        <script>
+            (function () {
+                try {
+                    var raw = localStorage.getItem("cancri_ui_prefs");
+                    if (!raw) return;
+                    var prefs = JSON.parse(raw);
+                    var mode = String(prefs.themeMode || prefs.theme || "system");
+                    var theme;
+                    if (mode === "light" || mode === "dark" || mode === "black") theme = mode;
+                    else if (mode === "system") {
+                        theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+                            ? "dark"
+                            : "light";
+                    } else theme = "light";
+                    document.documentElement.setAttribute("data-theme", theme);
+                } catch (_e) {}
+            })();
+        </script>
         <meta
             name="viewport"
             content="width=device-width, initial-scale=1, viewport-fit=cover"
@@ -103,11 +121,11 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=2026-06-20-platform-login-fix16"
+            href="./styles/cancri_motion.css?v=2026-06-25-download-icons"
         />
         <link
             rel="stylesheet"
-            href="./styles/auth-platform-login.css?v=2026-06-20-platform-login-fix16"
+            href="./styles/auth-platform-login.css?v=2026-06-25-download-icons"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -160,27 +178,21 @@
                     <a
                         href="https://www.nexusvai.xyz/"
                         class="auth-topnav-brand cancri-nav-brand"
-                        data-cancri-brand
                         aria-label="NexusVAI 首页"
                     >
-                        <span class="cancri-brand">
-                            <span class="cancri-brand__word-wrap"
-                                ><span class="cancri-brand__word">Nexus</span></span
-                            >
-                            <img
-                                class="cancri-brand__icon"
-                                src="./assets/VAI-logo.svg"
-                                alt="VAI"
-                                width="32"
-                                height="32"
-                                decoding="async"
-                            />
-                        </span>
+                        <img
+                            class="auth-brand-logo"
+                            src="./assets/nexusvai_logo_transparent.svg"
+                            alt="NexusVAI"
+                            width="320"
+                            height="64"
+                            decoding="async"
+                        />
                     </a>
                     <nav class="auth-topnav-links" aria-label="站点导航">
-                        <a href="./api_docs.html">API 文档</a>
-                        <a href="./api_keys.html">API Keys</a>
-                        <a href="./pricing.html">定价</a>
+                        <a href="./api/index.html">开放平台</a>
+                        <a href="./api/keys.html">API Keys</a>
+                        <a href="./api/checkout.html">定价</a>
                         <a href="./celebrate.html">博客</a>
                         <a
                             href="https://www.nexusvai.xyz/article.html?id=cancriCode"
@@ -301,6 +313,46 @@
                         >。
                     </p>
                 </div>
+                <div class="auth-desktop-download-wrap">
+                    <a
+                        class="auth-desktop-download-btn"
+                        id="authDesktopDownloadBtn"
+                        href="https://pan.baidu.com/s/1f65FMHdo2TenrwG7gBWQhg"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="百度网盘提取码：Nexu"
+                        ><svg
+                            class="auth-desktop-download-btn__icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            aria-hidden="true"
+                            ><path
+                                fill="currentColor"
+                                d="M1 1h6.5v6.5H1V1zm7.5 0H15v6.5H8.5V1zM1 8.5h6.5V15H1V8.5zm7.5 0H15V15H8.5V8.5z"
+                            /></svg
+                        >下载桌面端</a
+                    >
+                    <a
+                        class="auth-desktop-download-btn"
+                        id="authMobileDownloadBtn"
+                        href="https://pan.baidu.com/s/1Q9mm9CnwjtB0tlusgaYlSw"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="百度网盘提取码：Nexu"
+                        ><svg
+                            class="auth-desktop-download-btn__icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            ><path
+                                fill="currentColor"
+                                d="M18.4395 5.5586c-.675 1.1664-1.352 2.3318-2.0274 3.498-.0366-.0155-.0742-.0286-.1113-.043-1.8249-.6957-3.484-.8-4.42-.787-1.8551.0185-3.3544.4643-4.2597.8203-.084-.1494-1.7526-3.021-2.0215-3.4864a1.1451 1.1451 0 0 0-.1406-.1914c-.3312-.364-.9054-.4859-1.379-.203-.475.282-.7136.9361-.3886 1.5019 1.9466 3.3696-.0966-.2158 1.9473 3.3593.0172.031-.4946.2642-1.3926 1.0177C2.8987 12.176.452 14.772 0 18.9902h24c-.119-1.1108-.3686-2.099-.7461-3.0683-.7438-1.9118-1.8435-3.2928-2.7402-4.1836a12.1048 12.1048 0 0 0-2.1309-1.6875c.6594-1.122 1.312-2.2559 1.9649-3.3848.2077-.3615.1886-.7956-.0079-1.1191a1.1001 1.1001 0 0 0-.8515-.5332c-.5225-.0536-.9392.3128-1.0488.5449zm-.0391 8.461c.3944.5926.324 1.3306-.1563 1.6503-.4799.3197-1.188.0985-1.582-.4941-.3944-.5927-.324-1.3307.1563-1.6504.4727-.315 1.1812-.1086 1.582.4941zM7.207 13.5273c.4803.3197.5506 1.0577.1563 1.6504-.394.5926-1.1038.8138-1.584.4941-.48-.3197-.5503-1.0577-.1563-1.6504.4008-.6021 1.1087-.8106 1.584-.4941z"
+                            /></svg
+                        >下载移动端</a
+                    >
+                </div>
                     </div>
                 </section>
 
@@ -319,19 +371,14 @@
                                 class="auth-site-footer-brand"
                                 aria-label="NexusVAI"
                             >
-                                <span class="cancri-brand cancri-brand--footer">
-                                    <span class="cancri-brand__word-wrap is-in"
-                                        ><span class="cancri-brand__word">Nexus</span></span
-                                    >
-                                    <img
-                                        class="cancri-brand__icon"
-                                        src="./assets/VAI-logo.svg"
-                                        alt="VAI"
-                                        width="32"
-                                        height="32"
-                                        decoding="async"
-                                    />
-                                </span>
+                                <img
+                                    class="auth-brand-logo auth-brand-logo--footer"
+                                    src="./assets/nexusvai_logo_transparent.svg"
+                                    alt="NexusVAI"
+                                    width="180"
+                                    height="36"
+                                    decoding="async"
+                                />
                             </a>
                             <div class="auth-site-footer-meta">
                                 <p class="auth-site-footer-copy">
@@ -456,16 +503,19 @@
                                 <h3>友情链接</h3>
                                 <ul>
                                     <li>
-                                        <a href="https://www.nexusvai.xyz/privacy.html"
-                                            >隐私政策</a
+                                        <a
+                                            href="https://agnes-ai.com/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            >Agens</a
                                         >
                                     </li>
                                     <li>
-                                        <a href="../terms.html">服务条款</a>
-                                    </li>
-                                    <li>
-                                        <a href="https://www.nexusvai.xyz/chat/celebrate.html#wall"
-                                            >社区墙</a
+                                        <a
+                                            href="https://www.wanjiadongli.com/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            >玩家动力</a
                                         >
                                     </li>
                                 </ul>
@@ -3011,11 +3061,9 @@
         <script defer src="./cancri_image_loader.js?v=img-loader-0531"></script>
         <script defer src="./cancri_chat_nav.js?v=chat-nav-0531"></script>
         <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
-        <script defer src="./js/auth-login-chrome.js?v=2026-06-20-platform-login-fix16"></script>
+        <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
+        <script defer src="./js/auth-login-chrome.js?v=2026-06-25-download-icons"></script>
         <script defer src="./cancri_auth_captcha.js?v=auth-captcha-0601"></script>
-        <!-- Cancri 双主题 logo 同步：监听 <html data-theme> 变化实时交换
-             所有 img.cancri-logo 的 src，主题切换时黑白 logo 同步反转。 -->
-        <script defer src="./cancri_logo_theme.js?v=2026-05-17-logo-theme"></script>
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->

@@ -9123,6 +9123,15 @@ body.claude-upgrade-modal-open {
 .claude-composer-quota-ribbon[hidden] {
     display: none !important;
 }
+/* 2026-06-25：钱包低余额黄色预警 / 余额用完红色警报 */
+.claude-composer-quota-ribbon.is-warn .claude-composer-quota-ribbon-inner {
+    background: color-mix(in srgb, #ffd84d 22%, hsl(var(--bg-300, 48 25% 92.2%)));
+    color: #8a5a00;
+}
+.claude-composer-quota-ribbon.is-danger .claude-composer-quota-ribbon-inner {
+    background: color-mix(in srgb, #e5484d 16%, hsl(var(--bg-300, 48 25% 92.2%)));
+    color: #b3141a;
+}
 .claude-composer-quota-ribbon-inner {
     width: 100%;
     border: 0.5px solid transparent;

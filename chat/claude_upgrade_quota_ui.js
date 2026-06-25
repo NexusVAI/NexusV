@@ -5,6 +5,8 @@
   "use strict";
 
   var PRICING_URL = "./pricing.html";
+  // 2026-06-25：钱包余额低于此值即触发黄色预警（原阈值 <=0，现提前到 <10）。
+  var WALLET_LOW_THRESHOLD = 10;
   var CARD_IMG_KEYS = { 0: "card0", 1: "ccode", 2: "card2", 3: "n5" };
   var modalEl = null;
   var ribbonEl = null;
@@ -118,11 +120,12 @@
     if (!snap || !snap.fetchedAt) return null;
 
     // 2026-06-23 按量计费 wallet_v3：¥ 余额不足时触发充值引导
+    // 2026-06-25：阈值从 <=0 提前到 <10（WALLET_LOW_THRESHOLD），低余额即黄色预警。
     if (snap.billingMode === "wallet_v3") {
       var balance = Number(snap.walletBalance);
-      if (balance !== null && balance <= 0) {
+      if (balance !== null && balance < WALLET_LOW_THRESHOLD) {
         return {
-          kind: "wallet_empty",
+          kind: balance <= 0 ? "wallet_empty" : "wallet_low",
           tier: "wallet",
           balance: balance,
           debt: Number(snap.walletDebt) || 0,
@@ -216,6 +219,16 @@
       };
     }
     // 2026-06-23 按量计费 wallet_v3
+    if (exhaustion.kind === "wallet_low") {
+      var balLow = exhaustion.balance;
+      return {
+        title: "钱包余额不足 ¥" + WALLET_LOW_THRESHOLD,
+        lead:
+          "你的钱包余额仅剩 ¥" + (Number(balLow) || 0).toFixed(2) +
+          "，即将无法继续调用。请尽快充值，避免中断。",
+        sub: "按量计费，用多少扣多少，余额永不过期：",
+      };
+    }
     if (exhaustion.kind === "wallet_empty") {
       var debt = exhaustion.debt;
       return {
@@ -288,6 +301,12 @@
   function buildRibbonCopy(exhaustion) {
     if (!exhaustion) return null;
     // 2026-06-23 按量计费 wallet_v3
+    if (exhaustion.kind === "wallet_low") {
+      return {
+        message: "钱包余额不足 ¥" + WALLET_LOW_THRESHOLD + "，请尽快充值",
+        upgradeLabel: "充值",
+      };
+    }
     if (exhaustion.kind === "wallet_empty") {
       return {
         message: "钱包余额已用完，请充值后继续使用",
@@ -471,6 +490,10 @@
     var key = exhaustion.kind + "|" + copy.message;
     if (key === lastRibbonKey && !ribbon.hidden) return;
     lastRibbonKey = key;
+    // 2026-06-25：低余额黄色预警 / 余额用完红色警报，靠修饰类着色。
+    ribbon.classList.remove("is-warn", "is-danger");
+    if (exhaustion.kind === "wallet_low") ribbon.classList.add("is-warn");
+    else if (exhaustion.kind === "wallet_empty") ribbon.classList.add("is-danger");
     ribbon.innerHTML =
       '<div class="claude-composer-quota-ribbon-inner">' +
       '<div class="claude-composer-quota-ribbon-msg">' +
