@@ -36,19 +36,23 @@ let effectiveTier = "free";
 
 async function init() {
     const loading = document.getElementById("loading");
+    const auth = window.PlatformAuth;
     try {
+        if (!window.supabase || !window.__SUPABASE_URL__ || !auth) {
+            if (auth) auth.showAuthError("依赖脚本加载失败，请检查网络后刷新。", document.querySelector(".page-shell"));
+            else if (loading) loading.textContent = "依赖脚本加载失败，请检查网络后刷新。";
+            return;
+        }
         const {
             data: { user },
         } = await sb.auth.getUser();
         if (!user || user.is_anonymous) {
-            if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
-            else if (loading) loading.style.display = "none";
-            document.getElementById("login-section").style.display = "block";
+            auth.redirectToLogin();
             return;
         }
         await loadData();
     } finally {
-        if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+        if (auth) auth.hide(loading);
         else if (loading) loading.style.display = "none";
     }
 }
@@ -82,7 +86,7 @@ async function getSession() {
 async function loadData() {
     const session = await getSession();
     if (!session) {
-        document.getElementById("login-section").style.display = "block";
+        if (window.PlatformAuth) PlatformAuth.redirectToLogin();
         return;
     }
     // 并行拉 keys、effective tier、可用模型清单
@@ -1021,12 +1025,6 @@ async function resetKeyUsage() {
 // 绑定 UI 监听器（替代原 inline onclick="..." 属性，因为 CSP 删除 'unsafe-inline'
 // 后这些 inline handler 会被浏览器拒绝执行）。
 function bindUI() {
-    const loginBtn = document.getElementById("login-redirect-btn");
-    if (loginBtn) {
-        loginBtn.addEventListener("click", () => {
-            location.href = "./";
-        });
-    }
     const applyBtn = document.getElementById("apply-redirect-btn");
     if (applyBtn) {
         applyBtn.addEventListener("click", () => {

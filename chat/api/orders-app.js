@@ -294,15 +294,21 @@ document.getElementById("activate-form").addEventListener("submit", async (e) =>
 
 async function init() {
     const loading = document.getElementById("loading");
-    const gate = document.getElementById("login-gate");
+    const auth = window.PlatformAuth;
     const main = document.getElementById("main-section");
     const loadErr = document.getElementById("orders-load-error");
     try {
+        if (!window.supabase || !window.__SUPABASE_URL__ || !auth) {
+            if (auth) {
+                auth.showAuthError("依赖脚本加载失败，请检查网络后刷新。", document.querySelector(".page-shell"));
+            } else if (loading) {
+                loading.textContent = "依赖脚本加载失败，请检查网络后刷新。";
+            }
+            return;
+        }
         const { data: { session } } = await sb.auth.getSession();
         if (!session || !session.user || session.user.is_anonymous) {
-            if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
-            else if (loading) loading.style.display = "none";
-            if (gate) gate.style.display = "block";
+            auth.redirectToLogin();
             return;
         }
         if (main) main.style.display = "block";
@@ -319,7 +325,7 @@ async function init() {
             showMsg(document.getElementById("activate-msg"), "订单加载失败，请刷新页面。", "warn");
         }
     } finally {
-        if (window.PlatformSkeleton) PlatformSkeleton.hide(loading);
+        if (auth) auth.hide(loading);
         else if (loading) loading.style.display = "none";
     }
 }

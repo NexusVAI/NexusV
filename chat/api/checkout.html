@@ -394,9 +394,18 @@
     .ck-alert--ok { background: #f0f9f4; color: var(--ck-green); }
     .ck-alert code { font-family: var(--ck-font); font-weight: 600; }
     .ck-alert a { color: var(--ck-blue); }
+    .cs-auth-error {
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(229, 72, 77, 0.35);
+      background: rgba(229, 72, 77, 0.08);
+      color: var(--ck-gray800);
+      font-size: 13px;
+      line-height: 1.5;
+    }
   </style>
 </head>
-<body>
+<body data-login-url="chat/index.html">
   <main class="checkout-page">
     <div class="ck-container">
       <div class="ck-app">
@@ -562,6 +571,7 @@
   <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
   <script src="chat/cancri_config.js?v=2026-05-13e"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
-  <script src="chat/api/checkout-app.js?v=20260623-checkout-v4"></script>
+  <script src="chat/api/platform-auth.js?v=20260625-auth"></script>
+  <script src="chat/api/checkout-app.js?v=20260625-auth"></script>
 </body>
 </html>

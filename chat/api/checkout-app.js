@@ -215,17 +215,16 @@
     var sel = readSelection();
     renderSummary(sel);
     setupPayMethodTabs();
+    var auth = window.PlatformAuth;
+    var skelPay = $("skel-payment");
+    var payMount = skelPay && skelPay.parentElement;
 
     try {
+      if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       getSupabase();
-      var session = await getSession();
-      // 隐藏右栏骨架屏
-      var skelPay = $("skel-payment");
+      var session = await PlatformAuth.requireSession({ timeoutMs: 6000 });
       if (skelPay) skelPay.style.display = "none";
-      if (!session || !session.user || session.user.is_anonymous) {
-        $("ck-login").style.display = "block";
-        return;
-      }
+      if (!session) return;
       var emailEl = $("cf-email");
       if (emailEl) {
         emailEl.value = session.user.email || "";
@@ -233,9 +232,12 @@
       }
       $("ck-body").style.display = "block";
     } catch (e) {
-      var skelPay2 = $("skel-payment");
-      if (skelPay2) skelPay2.style.display = "none";
-      $("ck-login").style.display = "block";
+      if (skelPay) skelPay.style.display = "none";
+      if (e && e.message === "supabase_not_loaded") {
+        if (auth) auth.showAuthError("依赖脚本加载失败，请检查网络后刷新。", payMount);
+        return;
+      }
+      if (auth) auth.redirectToLogin();
     }
 
     var form = $("checkout-form");

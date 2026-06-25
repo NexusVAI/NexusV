@@ -908,7 +908,7 @@
     if (brand && !brand.querySelector(".brand__wordmark")) {
       var wordmark = document.createElement("span");
       wordmark.className = "brand__wordmark";
-      wordmark.textContent = "Cancri API Docs";
+      wordmark.textContent = "NexusVAI API Docs";
       brand.appendChild(wordmark);
     }
 

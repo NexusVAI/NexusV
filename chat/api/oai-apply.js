@@ -7,6 +7,7 @@
   "use strict";
 
   var GW = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
+  var LOGIN_URL = "chat/index.html";
   var sb = null;
   function $(id) { return document.getElementById(id); }
 
@@ -43,21 +44,49 @@
   function hide(id) { var el = $(id); if (el) el.style.display = "none"; }
   function show(id, disp) { var el = $(id); if (el) el.style.display = disp || "block"; }
 
+  function hideLoading() {
+    var el = $("loading");
+    if (!el) return;
+    el.style.display = "none";
+    el.removeAttribute("aria-busy");
+  }
+
+  function redirectToLogin() {
+    location.replace(LOGIN_URL);
+  }
+
+  function showAuthError(text) {
+    hideLoading();
+    var host = $("auth-error");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "auth-error";
+      host.className = "cs-auth-error";
+      var col = document.querySelector(".cs-col-right");
+      if (col) col.insertBefore(host, col.firstChild);
+    }
+    host.textContent = text;
+    host.style.display = "block";
+  }
+
   async function init() {
     try {
       getSupabase();
       var session = await getSession();
-      hide("loading");
-      if (!session || !session.user || session.user.is_anonymous) { show("login-section"); return; }
+      if (!session || !session.user || session.user.is_anonymous) {
+        redirectToLogin();
+        return;
+      }
+      hideLoading();
       var emailEl = $("email"); if (emailEl) emailEl.value = session.user.email || "";
       show("apply-section");
       await checkExisting();
     } catch (e) {
-      hide("loading");
-      show("login-section");
-      var ls = $("login-section");
-      if (ls) ls.querySelector("[data-cs-login-msg]") && (ls.querySelector("[data-cs-login-msg]").textContent =
-        e && e.message === "supabase_not_loaded" ? "依赖脚本加载失败，请检查网络后刷新。" : "请先登录后再申请。");
+      if (e && e.message === "supabase_not_loaded") {
+        showAuthError("依赖脚本加载失败，请检查网络后刷新。");
+        return;
+      }
+      redirectToLogin();
     }
   }
 
@@ -134,9 +163,7 @@
   }
 
   function bindUI() {
-    // 本页使用 <base href="../">（站点根），跳转路径以站点根为基准。
     var s = $("submit-btn"); if (s) s.addEventListener("click", submitApplication);
-    var lb = $("login-redirect-btn"); if (lb) lb.addEventListener("click", function () { location.href = "chat/index.html"; });
     var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "chat/api/keys.html"; });
     var bc = $("back-to-chat-btn"); if (bc) bc.addEventListener("click", function () { location.href = "chat/index.html"; });
     if (window.OaiTrustedLogos) {

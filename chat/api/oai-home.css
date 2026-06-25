@@ -75,8 +75,8 @@
 /* ── Trusted logos grid — 5 logos visible at once ─────────────── */
 .trusted-logos {
   --trusted-gap-x: clamp(1rem, 3vw, 4rem);
-  --trusted-text-h: clamp(1rem, 2.2vw, 1.5rem);
-  --trusted-vai-size: clamp(2.5rem, 6vw, 4rem);
+  --trusted-text-h: clamp(1rem, 2.1vw, 1.35rem);
+  --trusted-vai-size: clamp(3rem, 7vw, 4.75rem);
   width: 100%;
   margin: clamp(16px, 4vh, 48px) 0 clamp(40px, 8vh, 96px);
   padding: 0 clamp(16px, 4vw, 48px);
@@ -106,12 +106,19 @@
   align-items: center;
   justify-content: center;
   min-height: var(--trusted-vai-size);
+  cursor: default;
 }
 .trusted-logos__inner {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+}
+.trusted-logos__inner--sized {
+  height: var(--mark-h, var(--trusted-text-h));
+  width: min(100%, calc(var(--mark-h, var(--trusted-text-h)) * var(--mark-aspect, 1)));
+  max-width: 100%;
+  flex-shrink: 0;
 }
 .trusted-logos__inner--vai {
   width: var(--trusted-vai-size);
@@ -128,6 +135,7 @@
   background-color: var(--text-color);
   opacity: 0.72;
   filter: grayscale(1);
+  transition: opacity 0.2s ease, filter 0.2s ease;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
@@ -137,17 +145,28 @@
   -webkit-mask-mode: alpha;
   mask-mode: alpha;
 }
+/* 悬停整行：周围暗淡（与 nav-links:hover 一致，无默认固定高亮） */
+.trusted-logos__grid:hover .trusted-logos__mark {
+  opacity: 0.38;
+  filter: grayscale(1);
+}
+.trusted-logos__grid:hover .trusted-logos__slot:hover .trusted-logos__mark {
+  opacity: 0.92 !important;
+  filter: grayscale(0) !important;
+}
 .trusted-logos--apply {
   margin: 0;
   padding: 0;
   max-width: 100%;
+  --trusted-gap-x: clamp(8px, 1.5vw, 14px);
+  --trusted-vai-size: clamp(2.5rem, 6vw, 3.25rem);
 }
 .trusted-logos--apply .trusted-logos__grid {
   width: 100%;
   max-width: none;
-  --trusted-gap-x: clamp(6px, 1.2vw, 14px);
-  --trusted-text-h: clamp(0.75rem, 1.6vw, 1rem);
-  --trusted-vai-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+.trusted-logos--apply .trusted-logos__inner--brand {
+  --mark-h: clamp(2rem, 4.8vw, 2.85rem) !important;
 }
 
 /* ── "由前沿模型驱动" SECTION ─────────────────────────────── */
@@ -172,7 +191,7 @@
   margin-top: 16px;
   font-size: var(--type-p1-size);
   line-height: var(--type-p1-line);
-  color: var(--secondary-text);
+  color: var(--text-color);
   text-wrap: balance;
 }
 .models-row {
@@ -448,7 +467,69 @@ body.cs-page:has(.mega-menu-container.active) .navbar {
 }
 .cs-help a:hover { color: var(--tertiary-text); }
 
-/* 状态卡片（加载 / 未登录 / 已申请） */
+/* 申请页表单骨架屏（鉴权检查期间） */
+.cs-form-skeleton {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 16px;
+}
+@media (min-width: 880px) { .cs-form-skeleton { gap: 20px 24px; } }
+@media (max-width: 560px) { .cs-form-skeleton { grid-template-columns: 1fr; } }
+.cs-form-skeleton__block {
+  display: block;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--border-color) 55%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.cs-form-skeleton__block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--text-color) 6%, transparent) 42%,
+    color-mix(in srgb, var(--text-color) 14%, transparent) 50%,
+    color-mix(in srgb, var(--text-color) 6%, transparent) 58%,
+    transparent 100%
+  );
+  animation: cs-form-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes cs-form-skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-form-skeleton__block::after { animation: none; opacity: 0; }
+}
+.cs-form-skeleton__label {
+  height: 14px;
+  width: 42%;
+  margin-bottom: 8px;
+}
+.cs-form-skeleton__field {
+  height: 44px;
+  width: 100%;
+}
+.cs-form-skeleton__field--tall { height: 120px; }
+.cs-form-skeleton__btn {
+  height: 44px;
+  width: 120px;
+  border-radius: 999px;
+  grid-column: span 2;
+}
+@media (max-width: 560px) { .cs-form-skeleton__btn { grid-column: span 1; } }
+.cs-form-skeleton__pair {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (min-width: 560px) { .cs-form-skeleton__pair--half { grid-column: span 1; } }
+.cs-form-skeleton__pair--full { grid-column: span 2; }
+@media (max-width: 560px) { .cs-form-skeleton__pair--full { grid-column: span 1; } }
+
+/* 状态卡片（已申请 / 已通过） */
 .cs-state {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -456,6 +537,15 @@ body.cs-page:has(.mega-menu-container.active) .navbar {
   padding: 28px;
   text-align: center;
   color: var(--secondary-text);
+}
+.cs-auth-error {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #e5484d 35%, var(--border-color));
+  background: color-mix(in srgb, #e5484d 10%, var(--bg-card));
+  color: var(--text-color);
+  font-size: var(--type-p2-size);
+  line-height: 1.5;
 }
 .cs-status-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .cs-status-badge.status-pending { background: rgba(212,160,77,.16); color: #d4a04d; }

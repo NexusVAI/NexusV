@@ -10,27 +10,19 @@
 
   var PAGE = document.body.getAttribute("data-console-page") || "overview";
   var GW = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
-  var sb = null, _usage = null, _keys = null;
+  var sb = null, _usage = null, _keys = null, _wallet = null;
+  var WALLET_LOW_THRESHOLD = 10; // 余额 < ¥10 触发黄色警报
   function $(s, r) { return (r || document).querySelector(s); }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
   function nf(n) { return (Number(n) || 0).toLocaleString(); }
 
-  // ── auth ───────────────────────────────────────────────
+  // ── auth（共享 PlatformAuth）────────────────────────────────
   function getSupabase() {
-    if (sb) return sb;
-    if (!window.supabase || !window.__SUPABASE_URL__ || !window.__SUPABASE_ANON_KEY__) throw new Error("supabase_not_loaded");
-    sb = window.supabase.createClient(window.__SUPABASE_URL__, window.__SUPABASE_ANON_KEY__, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: "cancri_supabase_auth" },
-    });
-    return sb;
+    return window.PlatformAuth.getSupabase();
   }
   async function getSession() {
-    // 超时保护：极少数浏览器隐私设置会阻塞 storage 导致 getSession 永不返回，
-    // 这里 6s 兜底，超时按"未登录"处理，避免控制台一直卡在加载态。
-    var p = getSupabase().auth.getSession().then(function (r) { return r && r.data ? r.data.session : null; });
-    var timeout = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 6000); });
-    return Promise.race([p, timeout]);
+    return window.PlatformAuth.getSession(6000);
   }
   async function call(endpoint, payload) {
     var s = await getSession();
@@ -78,7 +70,7 @@
         '<nav class="csb__nav">' +
           navItem("_m", "../api_models.html", "models", "模型广场") +
           navItem("_r", "../pricing.html", "recharge", "充值") +
-          navItem("_d", "../api_docs.html", "docs", "文档") +
+          navItem("_d", "../api_docs_detail.html", "docs", "文档") +
           navItem("_h", "index.html", "home", "返回首页") +
         "</nav>" +
         '<div class="csb__spacer"></div>' +
@@ -95,16 +87,62 @@
     root.innerHTML = shell;
   }
 
-  function loginPrompt() {
-    var root = document.getElementById("console-root");
-    root.className = "cs-console";
-    root.innerHTML =
-      '<div style="flex:1"><div class="cs-login"><h2>请登录后查看控制台</h2>' +
-      "<p>控制台需要 NexusV 账号会话。请先在聊天页登录，然后返回本页。</p>" +
-      '<a class="csbtn csbtn--primary" href="../index.html">前往登录 / 返回聊天</a></div></div>';
+  function viewSkeletonHtml() {
+    return '<div class="cs-console-view-skeleton" aria-busy="true">' +
+      '<div class="cs-console-skeleton__cards">' +
+      "<span></span><span></span><span></span><span></span>" +
+      "</div>" +
+      '<span class="cs-console-skeleton__chart"></span>' +
+      '<span class="cs-console-skeleton__table"></span></div>';
   }
 
-  // ── usage aggregation ──────────────────────────────────
+  // ── boot ───────────────────────────────────────────────
+  async function boot() {
+    var root = document.getElementById("console-root");
+    try {
+      if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
+      var session = await PlatformAuth.requireSession({
+        errorParent: root,
+        loadingId: "console-boot-skeleton",
+      });
+      if (!session) return;
+      if (root) root.removeAttribute("aria-busy");
+      buildShell(session.user.email);
+      var view = document.getElementById("cs-view");
+      if (view) view.innerHTML = viewSkeletonHtml();
+      // 并行拉钱包余额（所有页共享）+ 用量（keys 页也要指标）+ 密钥（仅 keys 页）。
+      // 任一失败不阻断其他：_usage/_wallet 保持 null 时渲染降级（不画指标/钱包卡）。
+      var tasks = [];
+      tasks.push(call("get_quota_status", {}).then(function (d) {
+        if (d && d.ok && d.wallet) _wallet = d.wallet;
+      }).catch(function () {}));
+      tasks.push(call("api_my_usage", {}).then(function (d) { _usage = (d && d.usage) || []; }).catch(function () {}));
+      if (PAGE === "keys") {
+        tasks.push(call("api_my_keys", {}).then(function (d) { _keys = d; }).catch(function () {}));
+      }
+      await Promise.all(tasks);
+      if (PAGE === "keys") renderKeys();
+      else if (PAGE === "usage") renderUsage();
+      else if (PAGE === "logs") renderLogs();
+      else renderOverview();
+    } catch (e) {
+      if (e && e.message === "not_logged_in") {
+        PlatformAuth.redirectToLogin();
+        return;
+      }
+      if (root) root.removeAttribute("aria-busy");
+      if (e && e.message === "supabase_not_loaded") {
+        PlatformAuth.showAuthError("依赖脚本加载失败，请检查网络后刷新。", root);
+        return;
+      }
+      var v = document.getElementById("cs-view");
+      if (v) v.innerHTML = '<div class="cs-auth-error">加载失败：' + esc(e && e.message ? e.message : String(e)) + "</div>";
+      else if (root) {
+        root.className = "cs-console";
+        root.innerHTML = '<div class="cs-auth-error" style="margin:24px">加载失败，请刷新或重新登录。</div>';
+      }
+    }
+  }
   function aggregate(rows) {
     var days = [], dayCalls = {}, dayTok = {}, byModel = {}, totIn = 0, totOut = 0, err = 0;
     var now = Date.now(), DAY = 86400000;
@@ -138,6 +176,27 @@
   }
   function card(label, val, sub) {
     return '<div class="cs-card"><div class="cs-card__label">' + esc(label) + '</div><div class="cs-card__value">' + esc(val) + '</div><div class="cs-card__sub">' + esc(sub) + "</div></div>";
+  }
+
+  // 钱包余额卡：余额 < ¥10 触发黄色警报（is-warn）。_wallet 为 null（端点失败/非 wallet_v3）时不渲染。
+  function walletCard() {
+    if (!_wallet) return "";
+    var bal = Number(_wallet.balance_cny);
+    if (!(bal >= 0)) return ""; // NaN / 缺字段 → 不画，避免误导
+    var debt = Number(_wallet.debt_cny) || 0;
+    var low = bal < WALLET_LOW_THRESHOLD;
+    var sub = low ? "余额不足 ¥" + WALLET_LOW_THRESHOLD + "，请尽快充值" : "按量计费 · 余额充足";
+    return '<div class="cs-wallet' + (low ? " is-warn" : "") + '">' +
+      '<div class="cs-wallet__main"><div class="cs-wallet__label">钱包余额</div>' +
+      '<div class="cs-wallet__value">¥' + bal.toFixed(2) + '</div>' +
+      '<div class="cs-wallet__sub">' + esc(sub) + (debt > 0 ? '（欠款 ¥' + debt.toFixed(2) + '）' : '') + '</div></div>' +
+      '<a class="csbtn csbtn--ghost" href="../pricing.html">充值 →</a></div>';
+  }
+
+  // statCards + 波浪图组合（keys/logs/overview/usage 复用）。_usage 为 null 时降级为空。
+  function metricsHtml(a, chartTitle) {
+    if (!_usage) return "";
+    return statCards(a) + chartPanel(a, chartTitle || "每日调用 / Token");
   }
 
   // SVG area "wave" chart: per-day calls (area+line) + per-day tokens (dashed)
@@ -199,20 +258,22 @@
     var a = aggregate(_usage || []);
     var view = document.getElementById("cs-view");
     view.innerHTML = '<p class="csc__lead">最近 30 天的 API 使用概览。数据来自你账号下所有密钥的真实调用。</p>' +
-      statCards(a) + chartPanel(a, "每日调用 / Token") + modelTable(a);
+      walletCard() + metricsHtml(a, "每日调用 / Token") + modelTable(a);
     drawChart(a);
   }
   function renderUsage() {
     var a = aggregate(_usage || []);
     var view = document.getElementById("cs-view");
     view.innerHTML = '<p class="csc__lead">用量与计费明细（近 30 天）。Token 计费以倍率结算，详见充值页。</p>' +
-      statCards(a) + chartPanel(a, "每日调用 / Token") + modelTable(a);
+      walletCard() + metricsHtml(a, "每日调用 / Token") + modelTable(a);
     drawChart(a);
   }
   function renderLogs() {
+    var a = aggregate(_usage || []);
     var rows = (_usage || []).slice().sort(function (x, y) { return new Date(y.created_at) - new Date(x.created_at); }).slice(0, 200);
     var view = document.getElementById("cs-view");
-    if (!rows.length) { view.innerHTML = '<div class="cs-panel"><div class="cs-empty">近 30 天暂无调用日志</div></div>'; return; }
+    var head = '<p class="csc__lead">最近 200 条调用日志。</p>' + walletCard() + metricsHtml(a, "每日调用 / Token");
+    if (!rows.length) { view.innerHTML = head + '<div class="cs-panel"><div class="cs-empty">近 30 天暂无调用日志</div></div>'; drawChart(a); return; }
     var body = rows.map(function (r) {
       var ok = !(r.status_code && Number(r.status_code) >= 400);
       return "<tr><td class='cs-mono'>" + esc(new Date(r.created_at).toLocaleString("zh-CN")) + "</td>" +
@@ -220,15 +281,63 @@
         "<td class='num'>" + nf(r.tokens_in) + "</td><td class='num'>" + nf(r.tokens_out) + "</td>" +
         "<td><span class='cs-pill " + (ok ? "cs-pill--ok'>" + (r.status_code || 200) : "cs-pill--err'>" + r.status_code) + "</span></td></tr>";
     }).join("");
-    view.innerHTML = '<p class="csc__lead">最近 200 条调用日志。</p><div class="cs-panel">' +
+    view.innerHTML = head + '<div class="cs-panel">' +
       '<table class="cs-table"><thead><tr><th>时间</th><th>模型</th><th class="num">输入</th><th class="num">输出</th><th>状态</th></tr></thead><tbody>' + body + "</tbody></table></div>";
+    drawChart(a);
   }
+  // ── 自制 modal（替换浏览器原生 prompt/alert/confirm，控制台风格）─────────
+  // opts: { title, body(html), input:{label,placeholder,value}, confirmText, confirmKind, onConfirm }
+  function showModal(opts) {
+    opts = opts || {};
+    closeCsModal();
+    var backdrop = el("div", "cs-modal__backdrop");
+    var card = el("div", "cs-modal" + (opts.kind ? " cs-modal--" + opts.kind : ""));
+    var head = '<div class="cs-modal__head"><div class="cs-modal__title">' + esc(opts.title || "") + '</div></div>';
+    var bodyHtml = opts.body ? '<div class="cs-modal__body">' + opts.body + "</div>" : "";
+    var inputHtml = "";
+    if (opts.input) {
+      inputHtml = '<label class="cs-modal__field"><span>' + esc(opts.input.label || "") + "</span>" +
+        '<input id="cs-modal-input" type="text" placeholder="' + esc(opts.input.placeholder || "") + '" value="' + esc(opts.input.value || "") + '" /></label>';
+    }
+    var foot = '<div class="cs-modal__foot">' +
+      '<button class="csbtn csbtn--ghost" id="cs-modal-cancel">' + esc(opts.cancelText || "取消") + "</button>" +
+      '<button class="csbtn ' + (opts.confirmKind === "danger" ? "csbtn--danger" : "csbtn--primary") + '" id="cs-modal-ok">' + esc(opts.confirmText || "确认") + "</button>" +
+      "</div>";
+    card.innerHTML = head + bodyHtml + inputHtml + foot;
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener("click", function (e) { if (e.target === backdrop) closeCsModal(); });
+    var cancelBtn = card.querySelector("#cs-modal-cancel");
+    var okBtn = card.querySelector("#cs-modal-ok");
+    cancelBtn.addEventListener("click", closeCsModal);
+    var inp = card.querySelector("#cs-modal-input");
+    function submit() {
+      var val = inp ? inp.value : null;
+      if (opts.onConfirm) opts.onConfirm(val, card, okBtn);
+    }
+    okBtn.addEventListener("click", submit);
+    if (inp) {
+      inp.focus();
+      inp.select();
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+    }
+    document.addEventListener("keydown", csModalEsc);
+    return card;
+  }
+  function csModalEsc(e) { if (e.key === "Escape") closeCsModal(); }
+  function closeCsModal() {
+    document.querySelectorAll(".cs-modal__backdrop").forEach(function (b) { b.remove(); });
+    document.removeEventListener("keydown", csModalEsc);
+  }
+
   function renderKeys() {
+    var a = aggregate(_usage || []);
     var view = document.getElementById("cs-view");
     var keys = (_keys && _keys.keys) || [];
     var apps = (_keys && _keys.applications) || [];
     var approved = apps.some(function (x) { return x.status === "approved"; });
-    var head = '<p class="csc__lead">管理你的 API 密钥。一把密钥即可调用全部模型；请妥善保管，泄露后请立即撤销。</p>';
+    var head = '<p class="csc__lead">管理你的 API 密钥。一把密钥即可调用全部模型；请妥善保管，泄露后请立即撤销。</p>' +
+      walletCard() + metricsHtml(a, "每日调用 / Token");
     var createBar = '<div class="cs-panel"><div class="cs-panel__head"><div class="cs-panel__title">密钥</div>' +
       '<button class="csbtn csbtn--primary" id="cs-newkey"' + (approved ? "" : " disabled title=\"申请通过后可创建\"") + '>+ 创建新密钥</button></div>';
     if (!keys.length) {
@@ -245,53 +354,86 @@
       view.innerHTML = head + createBar +
         '<table class="cs-table"><thead><tr><th>名称</th><th>前缀</th><th>创建时间</th><th class="num">已用 Token</th><th></th></tr></thead><tbody>' + body + "</tbody></table></div>";
     }
+    drawChart(a);
     var nk = document.getElementById("cs-newkey");
     if (nk && approved) nk.addEventListener("click", createKey);
     view.querySelectorAll("[data-del]").forEach(function (b) { b.addEventListener("click", function () { deleteKey(b.getAttribute("data-del")); }); });
   }
 
   async function createKey() {
-    var name = prompt("给新密钥起个名字（可留空）：", "default");
-    if (name === null) return;
-    try {
-      var d = await call("api_generate_key", { name: name || "default" });
-      if (d && d.key) window.alert("新密钥（仅显示一次，请立即复制）：\n\n" + d.key);
-      _keys = await call("api_my_keys", {});
-      renderKeys();
-    } catch (e) { window.alert("创建失败：" + (e.message || e)); }
-  }
-  async function deleteKey(id) {
-    if (!id || !window.confirm("确认撤销这把密钥？此操作不可恢复。")) return;
-    try { await call("api_delete_key", { key_id: id, id: id }); _keys = await call("api_my_keys", {}); renderKeys(); }
-    catch (e) { window.alert("撤销失败：" + (e.message || e)); }
+    var card = showModal({
+      title: "创建新密钥",
+      input: { label: "密钥名称（可留空）", placeholder: "default", value: "default" },
+      confirmText: "创建",
+      onConfirm: function (name, cardEl, okBtn) {
+        okBtn.disabled = true;
+        okBtn.textContent = "创建中…";
+        call("api_generate_key", { name: name || "default" }).then(function (d) {
+          closeCsModal();
+          if (d && d.key) showNewKeyModal(d.key);
+          return call("api_my_keys", {}).then(function (kk) { _keys = kk; renderKeys(); });
+        }).catch(function (e) {
+          okBtn.disabled = false;
+          okBtn.textContent = "创建";
+          var errEl = cardEl.querySelector(".cs-modal__err");
+          if (!errEl) { errEl = el("div", "cs-modal__err"); cardEl.querySelector(".cs-modal__foot").before(errEl); }
+          errEl.textContent = "创建失败：" + (e && e.message ? e.message : e);
+        });
+      },
+    });
   }
 
-  // ── boot ───────────────────────────────────────────────
-  async function boot() {
-    try {
-      getSupabase();
-      var session = await getSession();
-      if (!session || !session.user || session.user.is_anonymous) { loginPrompt(); return; }
-      buildShell(session.user.email);
-      var view = document.getElementById("cs-view");
-      view.innerHTML = '<div class="cs-state">正在加载数据…</div>';
-      if (PAGE === "keys") {
-        _keys = await call("api_my_keys", {});
-        renderKeys();
-      } else {
-        var d = await call("api_my_usage", {});
-        _usage = (d && d.usage) || [];
-        if (PAGE === "usage") renderUsage();
-        else if (PAGE === "logs") renderLogs();
-        else renderOverview();
-      }
-    } catch (e) {
-      if (e && e.message === "not_logged_in") { loginPrompt(); return; }
-      var v = document.getElementById("cs-view");
-      if (v) v.innerHTML = '<div class="cs-state">加载失败：' + esc(e && e.message ? e.message : String(e)) + "</div>";
-      else { var r = document.getElementById("console-root"); if (r) r.innerHTML = '<div class="cs-state" style="flex:1">加载失败，请刷新或重新登录。</div>'; r.className = "cs-console"; }
+  function showNewKeyModal(key) {
+    showModal({
+      title: "密钥已创建",
+      kind: "success",
+      body: '<p class="cs-modal__hint">这把密钥仅显示一次，请立即复制并妥善保管。关闭后将无法再次查看。</p>' +
+        '<div class="cs-modal__keybox"><code id="cs-new-key-code">' + esc(key) + "</code></div>",
+      confirmText: "我已复制",
+      cancelText: "关闭",
+      onConfirm: function () { closeCsModal(); },
+    });
+    // 复制按钮单独挂（body 里的 code 点击即复制）
+    setTimeout(function () {
+      var codeEl = document.getElementById("cs-new-key-code");
+      if (codeEl) codeEl.addEventListener("click", function () { copyText(key); });
+    }, 0);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {});
+    } else {
+      var t = el("textarea"); t.value = text; document.body.appendChild(t); t.select();
+      try { document.execCommand("copy"); } catch (e) {} t.remove();
     }
   }
+
+  async function deleteKey(id) {
+    if (!id) return;
+    showModal({
+      title: "撤销密钥",
+      kind: "danger",
+      body: '<p class="cs-modal__hint">确认撤销这把密钥？此操作不可恢复，撤销后该密钥立即失效。</p>',
+      confirmText: "确认撤销",
+      confirmKind: "danger",
+      onConfirm: function (val, cardEl, okBtn) {
+        okBtn.disabled = true;
+        okBtn.textContent = "撤销中…";
+        call("api_delete_key", { key_id: id, id: id }).then(function () {
+          closeCsModal();
+          return call("api_my_keys", {}).then(function (kk) { _keys = kk; renderKeys(); });
+        }).catch(function (e) {
+          okBtn.disabled = false;
+          okBtn.textContent = "确认撤销";
+          var errEl = cardEl.querySelector(".cs-modal__err");
+          if (!errEl) { errEl = el("div", "cs-modal__err"); cardEl.querySelector(".cs-modal__foot").before(errEl); }
+          errEl.textContent = "撤销失败：" + (e && e.message ? e.message : e);
+        });
+      },
+    });
+  }
+
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();

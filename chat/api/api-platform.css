@@ -1,5 +1,5 @@
 /*
- * Cancri API 平台共享样式
+ * NexusVAI API 平台共享样式
  *
  * 适用页面：
  *   chat/api_apply.html      （申请 API）
@@ -2981,4 +2981,16 @@ body.admin-shell .order-row.is-submitted {
   .docs-search-modal.is-visible.is-closing .docs-search-panel {
     transform: none;
   }
+}
+
+/* 开放平台 — 鉴权失败提示（platform-auth.js） */
+.cs-auth-error {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #e5484d 35%, var(--border, var(--line)));
+  background: color-mix(in srgb, #e5484d 10%, var(--bg-card, var(--bg-1)));
+  color: var(--text, var(--ink));
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 14px;
 }
