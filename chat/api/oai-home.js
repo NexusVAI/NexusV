@@ -4,23 +4,11 @@
 (function () {
   "use strict";
 
-  // ── animated ecosystem logo strip (chat/*.svg, rendered grayscale) ──
-  var BRAND_LOGOS = [
-    "claude-color.svg", "gemini-color.svg", "openai.svg", "qwen-color.svg",
-    "grok.svg", "minimax-color.svg", "moonshot.svg", "zhipu-color.svg",
-    "meta-color.svg", "mistral-color.svg", "microsoft-color.svg", "nvidia-color.svg",
-    "huggingface-color.svg", "doubao-color.svg", "kling-color.svg", "stepfun-color.svg",
-    "spark-color.svg", "wenxin-color.svg", "modelscope-color.svg", "cohere-color.svg",
-  ];
-
-  function buildLogoStrip() {
-    var track = document.getElementById("logo-strip-track");
-    if (!track) return;
-    var one = BRAND_LOGOS.map(function (f) {
-      return '<img class="logo-strip__item" src="chat/' + f + '" alt="" loading="lazy" decoding="async" />';
-    }).join("");
-    // duplicate for a seamless -50% marquee loop
-    track.innerHTML = one + one;
+  // ── OpenAI-style trusted logo grid (mask + vertical crossfade) ──
+  function initTrustedLogos() {
+    var host = document.getElementById("api-home-trusted-logos");
+    if (!host || !window.OaiTrustedLogos) return;
+    window.OaiTrustedLogos.init(host);
   }
 
   // ── frontier model cards ───────────────────────────────────────────
@@ -124,7 +112,7 @@
     }
   }
 
-  function boot() { buildLogoStrip(); initElevateTabs(); }
+  function boot() { initTrustedLogos(); initElevateTabs(); }
 
   // ── voice/image tab toggle (section 6) ──────────────────────────
   function initElevateTabs() {

@@ -72,47 +72,117 @@
   height: 10px;
 }
 
-/* ── ANIMATED LOGO STRIP (customer / ecosystem logos) ───── */
-.logo-strip {
+/* ── Trusted logos grid (OpenAI contact-sales mask carousel) ─────
+ * Tokens from openai.com live: duration-long 400ms, ease-primary,
+ * interval 3000ms, layer stagger 120ms, translate-y-10 = 2.5rem. */
+.trusted-logos {
+  --trusted-duration-long: 400ms;
+  --trusted-ease-primary: cubic-bezier(0.16, 1, 0.3, 1);
+  --trusted-translate-y: 2.5rem;
+  --trusted-gap-x: 4rem;
+  --trusted-mark-max: 10rem;
   width: 100%;
   margin: clamp(16px, 4vh, 48px) 0 clamp(40px, 8vh, 96px);
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+  padding: 0 clamp(16px, 4vw, 48px);
+  box-sizing: border-box;
 }
-.logo-strip__track {
+.trusted-logos__grid {
+  display: grid;
+  width: 100%;
+  max-width: 68rem;
+  margin: 0 auto;
+  place-items: center;
+  column-gap: var(--trusted-gap-x);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 767px) {
+  .trusted-logos__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 1.5rem;
+  }
+  .trusted-logos__slot:nth-child(n + 4) {
+    display: none;
+  }
+}
+.trusted-logos__slot {
+  position: relative;
   display: flex;
+  width: 100%;
+  flex-direction: column;
   align-items: center;
-  gap: clamp(40px, 6vw, 88px);
-  width: max-content;
-  animation: logo-marquee 46s linear infinite;
-  will-change: transform;
+  justify-content: center;
+  aspect-ratio: 3 / 1;
 }
-.logo-strip:hover .logo-strip__track {
-  animation-play-state: paused;
+.trusted-logos__layer {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(var(--trusted-translate-y));
+  transition:
+    opacity var(--trusted-duration-long) var(--trusted-ease-primary),
+    transform var(--trusted-duration-long) var(--trusted-ease-primary);
+  pointer-events: none;
 }
-.logo-strip__item {
-  height: 30px;
-  width: auto;
-  flex-shrink: 0;
-  object-fit: contain;
-  filter: grayscale(1);
-  opacity: 0.55;
-  transition: opacity 0.25s ease, filter 0.25s ease;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-.logo-strip__item:hover {
-  filter: grayscale(0);
+.trusted-logos__layer.is-active {
   opacity: 1;
+  transform: translateY(0);
 }
-@keyframes logo-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+.trusted-logos__layer.is-next {
+  opacity: 0;
+  transform: translateY(var(--trusted-translate-y));
+}
+.trusted-logos__layer.is-prev {
+  opacity: 0;
+  transform: translateY(calc(var(--trusted-translate-y) * -1));
+}
+.trusted-logos__layer.is-hidden {
+  opacity: 0;
+  transform: translateY(var(--trusted-translate-y));
+}
+.trusted-logos__inner {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: var(--trusted-mark-max);
+}
+.trusted-logos__mark {
+  position: absolute;
+  inset: 0;
+  background-color: var(--text-color);
+  filter: grayscale(1);
+  -webkit-mask-image: var(--trusted-mask);
+  mask-image: var(--trusted-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.trusted-logos--apply {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+}
+.trusted-logos--apply .trusted-logos__grid {
+  width: 100%;
+  max-width: none;
+  --trusted-gap-x: clamp(8px, 1.5vw, 16px);
+  --trusted-mark-max: clamp(2.75rem, 8vw, 4.5rem);
 }
 @media (prefers-reduced-motion: reduce) {
-  .logo-strip__track { animation: none; }
+  .trusted-logos__layer {
+    transition: none;
+  }
+  .trusted-logos__layer:not(.is-active) {
+    visibility: hidden;
+  }
 }
 
 /* ── "由前沿模型驱动" SECTION ─────────────────────────────── */
@@ -289,56 +359,14 @@ body.cs-page:has(.mega-menu-container.active) .navbar {
 }
 .cs-feature svg { flex-shrink: 0; margin-top: 2px; color: var(--text-color); }
 
-/* 左栏：Trusted by — 4 个 logo 槽位，每个循环 4 个 AI 图标（渐变切换） */
+/* 左栏：Trusted by — OpenAI 同款 5 列 mask 轮播 */
 .cs-trusted__label {
   font-size: var(--type-p2-size);
   color: var(--secondary-text);
   margin-bottom: 16px;
 }
 .cs-trusted__logos {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(12px, 2vw, 24px);
-  max-width: 360px;
-}
-.cs-logo-slot {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-}
-.cs-logo-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  color: var(--text-color);
-  opacity: 0;
-  transform: translateY(24px) scale(0.92);
-  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-.cs-logo-img svg {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-}
-.cs-logo-img.is-active {
-  opacity: 0.7;
-  transform: translateY(0) scale(1);
-}
-.cs-logo-slot:hover .cs-logo-img.is-active {
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .cs-logo-img { transition: none; transform: none; }
-  .cs-logo-img:not(.is-active) { display: none; }
+  max-width: none;
 }
 
 /* 右栏：表单 */

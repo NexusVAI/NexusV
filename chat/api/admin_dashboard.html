@@ -307,15 +307,15 @@
         <!-- 2026-06-07：运营预-->
         <div class="dash-panel" id="ops-panel" style="margin-bottom: 12px; display: none;">
           <h3>🚨 运营预警</h3>
-          <div class="dash-panel__hint">重复待审订单 · 7 天内到期订阅</div>
+          <div class="dash-panel__hint">重复待审订单</div>
           <div id="dash-ops-alerts"></div>
         </div>
 
-        <!-- 第二行：订阅圆环 + 模型 Top10 -->
+        <!-- 第二行：订阅分布（quota_v2）/ 模型 Top10（wallet_v3 下订阅面板隐藏） -->
         <div class="dash-two-col" style="margin-bottom: 12px;">
-          <div class="dash-panel">
+          <div class="dash-panel" id="sub-panel">
             <h3>📊 订阅分布</h3>
-            <div class="dash-panel__hint" id="sub-hint">活跃付费订阅</div>
+            <div class="dash-panel__hint" id="sub-hint">活跃付费订阅（仅 quota_v2）</div>
             <div class="donut-wrap">
               <svg class="donut-svg" id="sub-donut" viewBox="0 0 140 140" aria-hidden="true"></svg>
               <div class="donut-legend" id="sub-legend"></div>
@@ -342,11 +342,11 @@
           <div class="dash-nav-row">
             <a class="dash-nav-card" href="./admin_users.html">
               <div class="dash-nav-card__title">用户管理</div>
-              <div class="dash-nav-card__desc">搜索 · 封禁 · 增减 PRO · 调用日志</div>
+              <div class="dash-nav-card__desc">搜索 · 封禁 · 钱包余额 · 调用日志</div>
             </a>
             <a class="dash-nav-card" href="./admin_orders.html">
               <div class="dash-nav-card__title">订单审核 <span class="dash-nav-card__badge" id="nav-orders-badge" style="display:none">0</span></div>
-              <div class="dash-nav-card__desc">支付订单 · 邮箱赠码</div>
+              <div class="dash-nav-card__desc">支付订单 · 钱包充值</div>
             </a>
             <a class="dash-nav-card" href="./admin.html">
               <div class="dash-nav-card__title">API 申请 <span class="dash-nav-card__badge" id="nav-apps-badge" style="display:none">0</span></div>
@@ -375,6 +375,6 @@
     <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE" crossorigin="anonymous"></script>
     <script src="./admin-nav.js?v=20260623"></script>
-    <script src="./admin-dashboard-app.js?v=20260623-wallet"></script>
+    <script src="./admin-dashboard-app.js?v=20260623-walletv3"></script>
   </body>
 </html>

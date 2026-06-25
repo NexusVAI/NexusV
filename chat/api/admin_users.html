@@ -253,9 +253,9 @@
 
       <div id="main" style="display: none">
         <header>
-          <h1>用户管理与额度控制中心</h1>
+          <h1>用户管理与钱包控制中心</h1>
           <p>
-            搜索用户后可进行订阅赠送、减天、月配额精细化扣回补、加油包调整、订单删除、额度审计与封禁解封          </p>
+            搜索用户后可查看钱包余额与限速档、手动调整余额、审计订单与额度流水、封禁解封          </p>
         </header>
 
         <div class="stats">
@@ -328,111 +328,54 @@
 
         <div class="panel" id="quotaPanel" style="display: none; border-color: rgba(96, 165, 250, 0.4);">
           <div class="panel-head" style="background: rgba(96, 165, 250, 0.05); border-bottom: 1px solid rgba(96, 165, 250, 0.15);">
-            成员额度与订阅控制面(Quota & Subscription Control)
+            成员钱包与限速档(Wallet & Rate-Limit Tier)
             <span class="hint" id="quotaPanelUserEmail" style="color: var(--accent); font-weight: 600;">已选择用户</span>
           </div>
           <div class="panel-body">
             <div class="stats" style="margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">订阅规格 (Plan)</div>
-                <div class="value" id="quota-plan" style="font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px;"></div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">钱包余额（¥）</div>
+                <div class="value" id="wallet-balance" style="font-size: 16px; font-weight: 700; color: var(--ok); margin-top: 4px;">—</div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">月配额（积分）</div>
-                <div class="value" id="quota-monthly" style="font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px;"></div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">欠款（¥）</div>
+                <div class="value" id="wallet-debt" style="font-size: 16px; font-weight: 700; color: var(--err); margin-top: 4px;">—</div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">月已用量（积分）</div>
-                <div class="value" id="quota-consumed" style="font-size: 16px; font-weight: 700; color: var(--err); margin-top: 4px;"></div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">累计充值（¥）</div>
+                <div class="value" id="wallet-cumulative" style="font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">加油包余额（积分）</div>
-                <div class="value" id="quota-topup" style="font-size: 16px; font-weight: 700; color: var(--ok); margin-top: 4px;"></div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">限速档位 (Tier)</div>
+                <div class="value" id="wallet-tier" style="font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px;">—</div>
               </div>
             </div>
 
-            <div style="font-size: 12.5px; color: var(--text-mute); margin-bottom: 12px; line-height: 1.5;" id="quota-expires-line">
-              📅 到期时间: <strong id="quota-expires" style="font-family: var(--font-mono); font-size: 12px;"></strong>
-            </div>
-
-            <div class="form-row" style="grid-template-columns: 1.2fr 1fr; gap: 14px; border-top: 1px solid var(--border); padding-top: 14px;">
-              <div>
-                <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">1. 快捷赠更新订阅(Add/Upgrade Subscription)</h4>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); color: var(--accent);" id="btnGrant30Pro">Pro +30天</button>
-                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); color: #f59e0b;" id="btnGrant30ProPlus">Pro+ +30天</button>
-                  <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); color: #a855f7;" id="btnGrant30ProMax">ProMax +30天</button>
-                </div>
-              </div>
-              <div>
-                <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">2. 月度额度管理 (Monthly Reset)</h4>
-                <div>
-                  <button class="btn-ban" style="padding: 6px 14px; font-size: 11.5px; font-weight: 600; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); color: var(--err);" id="btnResetConsumption">一键清零本月已用量 (Reset Consumed)</button>
-                </div>
-              </div>
+            <div style="font-size: 11.5px; color: var(--text-faint); margin-bottom: 12px; line-height: 1.5;">
+              按量计费：余额按真实 token 用量结算，限速档由累计充值自动决定（Tier 0-5，越高 RPM/TPM/并发上限越高）。
             </div>
 
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">3. 加油包积分调整（1 积分 = 1 万 token）</h4>
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">1. 钱包余额调整（¥，可正可负）</h4>
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup10">+1,000 积分</button>
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup50">+5,000 积分</button>
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopup100">+10,000 积分</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnTopupMinus10">-1,000 积分</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletPlus10">+¥10</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletPlus50">+¥50</button>
+                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletPlus100">+¥100</button>
+                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletMinus10">-¥10</button>
                 <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-                  <span style="font-size: 11.5px; color: var(--text-mute);">自定义（积分，可负）:</span>
-                  <input type="number" id="customTopupInput" placeholder="例如" style="width: 120px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" step="any" />
-                  <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomTopup">执行</button>
+                  <span style="font-size: 11.5px; color: var(--text-mute);">自定义（¥，可负）:</span>
+                  <input type="number" id="customWalletInput" placeholder="例如 25.5 或 -30" style="width: 140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" step="0.01" />
+                  <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomWallet">执行</button>
                 </div>
-              </div>
-            </div>
-
-            <!-- 2026-05-23：新精细调整 PRO 天数"区块（支+/-N + 转档-->
-            <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">4. 精细调整 PRO 天数 (Fine-tune Subscription Days)</h4>
-              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; margin-bottom: 8px;">
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays7">+7 天</button>
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnAddDays15">+15 天</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays7">-7 天</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnReduceDays15">-15 天</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px; border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.15);" id="btnReduceDays30">-30 天</button>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%;">
-                <span style="font-size: 11.5px; color: var(--text-mute);">自定义天数（-365 +365，非零）:</span>
-                <input type="number" id="customDaysInput" placeholder="例如0 -7" style="width: 100px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
-                <span style="font-size: 11.5px; color: var(--text-mute);">档位:</span>
-                <select id="customDaysPlan" style="padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
-                  <option value="">保持当前</option>
-                  <option value="pro">Pro</option>
-                  <option value="pro_plus">Pro+</option>
-                  <option value="pro_max">Pro Max</option>
-                </select>
-                <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomDays">执行</button>
               </div>
               <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
-                提示：正数加天、负数减天；减天减到 当前时间会直接删订阅回到 FREE0 horizon 上限仍生效（加天超过 NOW+90d 不允许）              </div>
-            </div>
-
-            <!-- 2026-06-07：精细化月已用量（非清零-->
-            <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">5. 精细化月已用量（积分</h4>
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus10M">+1,000 已用（扣额度）</button>
-                <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumePlus50M">+5,000 已用</button>
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumeMinus10M">-1,000 已用（回补）</button>
-                <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnConsumeMinus50M">-5,000 已用</button>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span style="font-size: 11.5px; color: var(--text-mute);">自定delta（积分，加已扣额度，减已回补</span>
-                <input type="number" id="customConsumeInput" placeholder="例如 500 -2000" style="width: 160px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" step="any" />
-                <input type="text" id="customConsumeReason" placeholder="备注（写入审计流水）" maxlength="200" style="flex:1; min-width:140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" />
-                <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600;" id="btnCustomConsume">执行</button>
+                提示：正数增加余额（相当于手动充值，会同步累计充值并可能提升限速档）；负数扣减余额（用于退款/纠错）。
               </div>
             </div>
 
-            <!-- 2026-06-07：用户订+ 额度审计 -->
+            <!-- 2026-06-07：用户订单 + 额度审计 -->
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">6. 订单历史 & 额度审计</h4>
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">2. 订单历史 & 额度审计</h4>
               <div id="userOrdersList" style="font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); margin-bottom: 10px;">选择用户后加载</div>
               <div id="creditLedgerList" style="font-size: 11.5px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev);">选择用户后加载</div>
             </div>
@@ -522,6 +465,6 @@
     <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
     <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
     <script src="./admin-nav.js?v=20260623"></script>
-    <script src="./admin-users-app.js?v=2026-06-07-credits"></script>
+    <script src="./admin-users-app.js?v=20260623-walletv3"></script>
   </body>
 </html>
