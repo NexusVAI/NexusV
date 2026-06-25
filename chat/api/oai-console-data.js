@@ -31,6 +31,14 @@
 
   var LANG = detectLang();
 
+  var LABELS = {
+    credit: ["Credit remaining", "剩余额度"],
+    requests: ["Total requests", "总请求数"],
+    tokens: ["Total tokens", "总 Token 数"],
+    responses: ["Responses and Chat Completions"],
+    balance: ["Current balance", "当前余额", "Wallet Balance", "钱包余额"],
+  };
+
   var I18N = {
     en: {
       cancel: "Cancel",
@@ -208,28 +216,52 @@
   }
 
   function setValueNearLabel(label, value) {
-    findTextNodes(label).forEach(function (textNode) {
-      var card =
-        textNode.parentElement &&
-        (textNode.parentElement.closest(".flex.h-full.flex-col") ||
-          textNode.parentElement.closest("[class*='flex-col']") ||
-          textNode.parentElement.closest("[data-testid='organization-spend-summary-section']"));
-      if (!card) return;
-      var valEl =
-        card.querySelector(".text-lg.font-semibold") ||
-        card.querySelector(".text-xl.font-semibold") ||
-        card.querySelector(".font-semibold");
-      if (!valEl) return;
-      var textChild = null;
-      for (var i = 0; i < valEl.childNodes.length; i++) {
-        if (valEl.childNodes[i].nodeType === 3) {
-          textChild = valEl.childNodes[i];
-          break;
+    return setValueNearLabels([label], value);
+  }
+
+  function setValueNearLabels(labels, value) {
+    var applied = false;
+    for (var li = 0; li < labels.length; li++) {
+      findTextNodes(labels[li]).forEach(function (textNode) {
+        var card =
+          textNode.parentElement &&
+          (textNode.parentElement.closest(".flex.h-full.flex-col") ||
+            textNode.parentElement.closest("[class*='flex-col']") ||
+            textNode.parentElement.closest(
+              "[data-testid='organization-spend-summary-section']"
+            ));
+        if (!card) return;
+        var valEl =
+          card.querySelector(".text-lg.font-semibold") ||
+          card.querySelector(".text-xl.font-semibold") ||
+          card.querySelector(".font-semibold");
+        if (!valEl) return;
+        var textChild = null;
+        for (var i = 0; i < valEl.childNodes.length; i++) {
+          if (valEl.childNodes[i].nodeType === 3) {
+            textChild = valEl.childNodes[i];
+            break;
+          }
         }
+        if (textChild) textChild.nodeValue = String(value) + " ";
+        else valEl.textContent = String(value);
+        applied = true;
+      });
+    }
+    return applied;
+  }
+
+  function findStatCard(labels) {
+    for (var li = 0; li < labels.length; li++) {
+      var nodes = findTextNodes(labels[li]);
+      for (var i = 0; i < nodes.length; i++) {
+        var root =
+          nodes[i].parentElement &&
+          nodes[i].parentElement.closest(".flex.h-full.flex-col");
+        if (root) return root;
       }
-      if (textChild) textChild.nodeValue = String(value) + " ";
-      else valEl.textContent = String(value);
-    });
+    }
+    return null;
   }
 
   function replaceAllText(oldText, newText) {
@@ -251,18 +283,21 @@
   }
 
   function findCreditCard() {
-    var nodes = findTextNodes("Credit remaining");
-    for (var i = 0; i < nodes.length; i++) {
-      var el = nodes[i].parentElement;
-      while (el && el !== document.body) {
-        if (
-          el.classList &&
-          (el.classList.contains("p-4") ||
-            el.className.indexOf("bg-yellow") >= 0)
-        ) {
-          return el;
+    var labels = LABELS.credit;
+    for (var li = 0; li < labels.length; li++) {
+      var nodes = findTextNodes(labels[li]);
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i].parentElement;
+        while (el && el !== document.body) {
+          if (
+            el.classList &&
+            (el.classList.contains("p-4") ||
+              el.className.indexOf("bg-yellow") >= 0)
+          ) {
+            return el;
+          }
+          el = el.parentElement;
         }
-        el = el.parentElement;
       }
     }
     return null;
@@ -270,12 +305,13 @@
 
   function applyWallet(wallet) {
     if (!wallet) return;
-    var bal = Number(wallet.balance_cny != null ? wallet.balance_cny : wallet.balance);
+    var bal = Number(
+      wallet.balance_cny != null ? wallet.balance_cny : wallet.balance
+    );
     if (!isFinite(bal)) return;
     var money = fmtMoney(bal);
-    setValueNearLabel("Credit remaining", money);
-    setValueNearLabel("Current balance", money);
-    setValueNearLabel("Wallet Balance", money);
+    setValueNearLabels(LABELS.credit, money);
+    setValueNearLabels(LABELS.balance, money);
 
     var card = findCreditCard();
     if (!card) return;
@@ -287,18 +323,35 @@
     }
   }
 
-  function hideOverviewTokenStat() {
-    if (PAGE !== "overview") return;
-    findTextNodes("Total tokens").forEach(function (textNode) {
-      var cell = textNode.parentElement;
-      while (cell && cell !== document.body) {
-        if (cell.classList && cell.classList.contains("col-span-1")) {
-          cell.style.display = "none";
-          return;
-        }
-        cell = cell.parentElement;
-      }
+  function aggregateDaily(rows) {
+    var dayCalls = {};
+    var dayTok = {};
+    var days = [];
+    for (var i = 29; i >= 0; i--) {
+      var d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      var key = d.toISOString().slice(0, 10);
+      days.push(key);
+      dayCalls[key] = 0;
+      dayTok[key] = 0;
+    }
+    (rows || []).forEach(function (r) {
+      var key = new Date(r.created_at).toISOString().slice(0, 10);
+      if (dayCalls[key] == null) return;
+      dayCalls[key] += 1;
+      dayTok[key] +=
+        (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0);
     });
+    return {
+      days: days,
+      calls: days.map(function (k) {
+        return dayCalls[k];
+      }),
+      tokens: days.map(function (k) {
+        return dayTok[k];
+      }),
+    };
   }
 
   function aggregate(rows) {
@@ -314,6 +367,117 @@
       totalRequests: totalRequests,
       totalTokens: totIn + totOut,
     };
+  }
+
+  function sampleSeries(values, count) {
+    if (!count || count < 1) return [];
+    if (!values || !values.length) return new Array(count).fill(0);
+    if (values.length === count) return values.slice();
+    var out = [];
+    for (var i = 0; i < count; i++) {
+      var idx = Math.floor((i / Math.max(1, count - 1)) * (values.length - 1));
+      out.push(values[idx] || 0);
+    }
+    return out;
+  }
+
+  function buildSparklinePath(values, width, height) {
+    var pad = { l: 6, r: 6, t: 6, b: 6 };
+    var innerW = width - pad.l - pad.r;
+    var innerH = height - pad.t - pad.b;
+    var max = Math.max(1, Math.max.apply(null, values));
+    var n = values.length;
+    var pts = [];
+    for (var i = 0; i < n; i++) {
+      var x = pad.l + (i / Math.max(1, n - 1)) * innerW;
+      var y = pad.t + innerH - (values[i] / max) * innerH;
+      pts.push({ x: x, y: y });
+    }
+    if (!pts.length) return "";
+    var d = "M" + pts[0].x + "," + pts[0].y;
+    for (var j = 1; j < pts.length; j++) {
+      d += "L" + pts[j].x + "," + pts[j].y;
+    }
+    return { d: d, last: pts[pts.length - 1] };
+  }
+
+  function updateLineSparkline(card, values) {
+    if (!card) return;
+    var path = card.querySelector(".recharts-line-curve");
+    var dot = card.querySelector(".recharts-line-dots circle");
+    if (!path) return;
+    var width = 897;
+    var height = 44;
+    var built = buildSparklinePath(values, width, height);
+    path.setAttribute("d", built.d);
+    if (dot && built.last) {
+      dot.setAttribute("cx", String(built.last.x));
+      dot.setAttribute("cy", String(built.last.y));
+    }
+  }
+
+  function updateBarSparkline(card, values) {
+    if (!card) return;
+    var bars = card.querySelectorAll(".recharts-bar-rectangle path");
+    if (!bars.length) return;
+    var series = sampleSeries(values, bars.length);
+    var max = Math.max(1, Math.max.apply(null, series));
+    for (var i = 0; i < bars.length; i++) {
+      var bar = bars[i];
+      var h = Math.max(2, Math.round((series[i] / max) * 32));
+      var y = 44 - h;
+      var x = bar.getAttribute("x");
+      if (x == null) continue;
+      bar.setAttribute("height", String(h));
+      bar.setAttribute("y", String(y));
+      var xn = parseFloat(x);
+      var w = parseFloat(bar.getAttribute("width") || "14");
+      var r = 1;
+      bar.setAttribute(
+        "d",
+        "M" +
+          xn +
+          "," +
+          (y + r) +
+          "A " +
+          r +
+          "," +
+          r +
+          ",0,0,1," +
+          (xn + r) +
+          "," +
+          y +
+          "L" +
+          (xn + w - r) +
+          "," +
+          y +
+          "A " +
+          r +
+          "," +
+          r +
+          ",0,0,1," +
+          (xn + w) +
+          "," +
+          (y + r) +
+          "L" +
+          (xn + w) +
+          "," +
+          (y + h) +
+          "L" +
+          xn +
+          "," +
+          (y + h) +
+          "Z"
+      );
+    }
+  }
+
+  function drawOverviewCharts(rows) {
+    if (PAGE !== "overview") return;
+    var daily = aggregateDaily(rows);
+    updateLineSparkline(findStatCard(LABELS.requests), daily.calls);
+    updateBarSparkline(findStatCard(LABELS.tokens), daily.tokens);
+    updateBarSparkline(findStatCard(LABELS.responses), daily.calls);
   }
 
   function closeCsModal() {
@@ -417,19 +581,28 @@
   }
 
   function wireCreateKeyButton(onCreate) {
+    var needles = ["Create new secret key", "创建新密钥", "Create an API key"];
     document.querySelectorAll("button").forEach(function (btn) {
-      var t = (btn.textContent || "").replace(/\s+/g, " ").trim();
-      if (t.indexOf("Create new secret key") >= 0) {
-        btn.addEventListener(
-          "click",
-          function (e) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            onCreate();
-          },
-          true
-        );
+      var txt = (btn.textContent || "").replace(/\s+/g, " ").trim();
+      var hit = false;
+      for (var i = 0; i < needles.length; i++) {
+        if (txt.indexOf(needles[i]) >= 0) {
+          hit = true;
+          break;
+        }
       }
+      if (!hit) return;
+      if (btn.dataset.cncKeyWired === "1") return;
+      btn.dataset.cncKeyWired = "1";
+      btn.addEventListener(
+        "click",
+        function (e) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          onCreate();
+        },
+        true
+      );
     });
   }
 
@@ -584,13 +757,11 @@
   async function boot() {
     ensureConsoleCss();
     trimSidebar();
-    applyPageLocale();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
       if (!session) return;
       updateUserChip(session.user);
-      hideOverviewTokenStat();
 
       var walletP = call("get_quota_status", {}).catch(function () {
         return null;
@@ -613,13 +784,11 @@
 
       var usage = (usageRes && usageRes.usage) || [];
       var agg = aggregate(usage);
-      setValueNearLabel("Total requests", nf(agg.totalRequests));
-      if (PAGE !== "overview") {
-        setValueNearLabel("Total tokens", nf(agg.totalTokens));
-      }
+      setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
+      setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
+      drawOverviewCharts(usage);
 
       if (PAGE === "keys") {
-        renderKeysList(keysRes);
         wireCreateKeyButton(function () {
           showModal({
             title: t("createKeyTitle"),
@@ -653,8 +822,11 @@
             },
           });
         });
+        renderKeysList(keysRes);
       }
       if (PAGE === "logs") renderLogsList(usage);
+
+      applyPageLocale();
     } catch (e) {
       if (e && e.message === "supabase_not_loaded") {
         PlatformAuth.showAuthError(t("authLoadFail"));
