@@ -1,5 +1,5 @@
 /**
- * OpenAI-style console pages — auth + live wallet/usage/keys/logs on SingleFile snapshots.
+ * NexusVAI API console — auth + wallet/usage/keys/logs on SingleFile snapshots.
  */
 (function () {
   "use strict";
@@ -9,6 +9,112 @@
     (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") +
     "/functions/v1/chat-gateway";
   var WALLET_LOW_THRESHOLD = 10;
+  var HIDE_NAV = [
+    "Chat",
+    "Audio",
+    "Images",
+    "Codex",
+    "Batches",
+    "Storage",
+    "ChatGPT Apps",
+    "Settings",
+  ];
+
+  function detectLang() {
+    try {
+      var saved = localStorage.getItem("lang");
+      if (saved === "zh" || saved === "en") return saved;
+    } catch (e) {}
+    var nav = (navigator.language || navigator.userLanguage || "en").toLowerCase();
+    return nav.indexOf("zh") >= 0 ? "zh" : "en";
+  }
+
+  var LANG = detectLang();
+
+  var I18N = {
+    en: {
+      cancel: "Cancel",
+      confirm: "Confirm",
+      create: "Create",
+      creating: "Creating…",
+      createKeyTitle: "Create new secret key",
+      keyNameLabel: "Key name (optional)",
+      keyCreatedTitle: "Secret key created",
+      keyCreatedHint: "Copy now — you won't see it again.",
+      copy: "Copy",
+      close: "Close",
+      revokeTitle: "Revoke key",
+      revokeHint: "Revoke this key? This cannot be undone.",
+      revoke: "Revoke",
+      revoking: "Revoking…",
+      revokeFailed: "Revoke failed: ",
+      createFailed: "Create failed: ",
+      time: "Time",
+      model: "Model",
+      status: "Status",
+      authLoadFail: "Failed to load auth scripts. Check network and refresh.",
+    },
+    zh: {
+      cancel: "取消",
+      confirm: "确认",
+      create: "创建",
+      creating: "创建中…",
+      createKeyTitle: "创建新密钥",
+      keyNameLabel: "密钥名称（可选）",
+      keyCreatedTitle: "密钥已创建",
+      keyCreatedHint: "请立即复制，关闭后将无法再次查看。",
+      copy: "复制",
+      close: "关闭",
+      revokeTitle: "撤销密钥",
+      revokeHint: "确认撤销此密钥？此操作不可恢复。",
+      revoke: "撤销",
+      revoking: "撤销中…",
+      revokeFailed: "撤销失败：",
+      createFailed: "创建失败：",
+      time: "时间",
+      model: "模型",
+      status: "状态",
+      authLoadFail: "依赖脚本加载失败，请检查网络后刷新。",
+    },
+  };
+
+  function t(key) {
+    var pack = I18N[LANG] || I18N.en;
+    return pack[key] || I18N.en[key] || key;
+  }
+
+  function applyPageLocale() {
+    document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en-US";
+    if (LANG !== "zh") return;
+    var pairs = [
+      ["Credit remaining", "剩余额度"],
+      ["Total requests", "总请求数"],
+      ["Total tokens", "总 Token 数"],
+      ["Current balance", "当前余额"],
+      ["Wallet Balance", "钱包余额"],
+      ["API Keys", "API 密钥"],
+      ["Usage", "用量"],
+      ["Logs", "日志"],
+      ["Home", "首页"],
+      ["Default project", "默认项目"],
+      ["Create new secret key", "创建新密钥"],
+      ["Add credits", "充值"],
+      ["Overview", "概览"],
+    ];
+    pairs.forEach(function (p) {
+      replaceAllText(p[0], p[1]);
+    });
+  }
+
+  function trimSidebar() {
+    document.querySelectorAll("a.HPtRB.O3ygq").forEach(function (a) {
+      var label = (a.textContent || "").replace(/\s+/g, " ").trim();
+      if (HIDE_NAV.indexOf(label) >= 0) a.remove();
+    });
+    document.querySelectorAll('button.HPtRB.O3ygq[aria-label*="More"]').forEach(function (b) {
+      b.remove();
+    });
+  }
 
   function ensureConsoleCss() {
     if (document.querySelector('link[href*="console.css"]')) return;
@@ -250,12 +356,12 @@
     var foot =
       '<div class="cs-modal__foot">' +
       '<button type="button" class="csbtn csbtn--ghost" id="cs-modal-cancel">' +
-      esc(opts.cancelText || "Cancel") +
+      esc(opts.cancelText || t("cancel")) +
       "</button>" +
       '<button type="button" class="csbtn ' +
       (opts.confirmKind === "danger" ? "csbtn--danger" : "csbtn--primary") +
       '" id="cs-modal-ok">' +
-      esc(opts.confirmText || "Confirm") +
+      esc(opts.confirmText || t("confirm")) +
       "</button></div>";
     card.innerHTML = head + bodyHtml + inputHtml + foot;
     backdrop.appendChild(card);
@@ -286,15 +392,15 @@
 
   function showNewKeyModal(key) {
     showModal({
-      title: "Secret key created",
+      title: t("keyCreatedTitle"),
       kind: "success",
       body:
-        '<p class="cs-modal__hint">Copy now — you won\'t see it again.</p>' +
+        '<p class="cs-modal__hint">' + esc(t("keyCreatedHint")) + "</p>" +
         '<div class="cs-modal__keybox"><code id="cs-new-key-code">' +
         esc(key) +
         "</code></div>",
-      confirmText: "Copy",
-      cancelText: "Close",
+      confirmText: t("copy"),
+      cancelText: t("close"),
       onConfirm: function () {
         copyText(key);
         closeCsModal();
@@ -385,15 +491,15 @@
         var id = btn.getAttribute("data-del-key");
         if (!id) return;
         showModal({
-          title: "Revoke key",
+          title: t("revokeTitle"),
           kind: "danger",
           body:
-            '<p class="cs-modal__hint">Revoke this key? This cannot be undone.</p>',
-          confirmText: "Revoke",
+            '<p class="cs-modal__hint">' + esc(t("revokeHint")) + "</p>",
+          confirmText: t("revoke"),
           confirmKind: "danger",
           onConfirm: function (val, cardEl, okBtn) {
             okBtn.disabled = true;
-            okBtn.textContent = "Revoking…";
+            okBtn.textContent = t("revoking");
             call("api_delete_key", { key_id: id, id: id })
               .then(function () {
                 closeCsModal();
@@ -402,14 +508,14 @@
               .then(renderKeysList)
               .catch(function (e) {
                 okBtn.disabled = false;
-                okBtn.textContent = "Revoke";
+                okBtn.textContent = t("revoke");
                 var errEl = cardEl.querySelector(".cs-modal__err");
                 if (!errEl) {
                   errEl = el("div", "cs-modal__err");
                   cardEl.querySelector(".cs-modal__foot").before(errEl);
                 }
                 errEl.textContent =
-                  "Revoke failed: " + (e && e.message ? e.message : e);
+                  t("revokeFailed") + (e && e.message ? e.message : e);
               });
           },
         });
@@ -443,11 +549,17 @@
     }
     list.innerHTML =
       '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-      "<thead><tr><th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">Time</th>" +
-      "<th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">Model</th>" +
+      "<thead><tr><th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">" +
+      esc(t("time")) +
+      "</th>" +
+      "<th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">" +
+      esc(t("model")) +
+      "</th>" +
       "<th style=\"text-align:right;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">In</th>" +
       "<th style=\"text-align:right;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">Out</th>" +
-      "<th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">Status</th></tr></thead><tbody>" +
+      "<th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">" +
+      esc(t("status")) +
+      "</th></tr></thead><tbody>" +
       sorted
         .slice(0, 200)
         .map(function (r) {
@@ -471,6 +583,8 @@
 
   async function boot() {
     ensureConsoleCss();
+    trimSidebar();
+    applyPageLocale();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
@@ -508,16 +622,16 @@
         renderKeysList(keysRes);
         wireCreateKeyButton(function () {
           showModal({
-            title: "Create new secret key",
+            title: t("createKeyTitle"),
             input: {
-              label: "Key name (optional)",
+              label: t("keyNameLabel"),
               placeholder: "default",
               value: "default",
             },
-            confirmText: "Create",
+            confirmText: t("create"),
             onConfirm: function (name, cardEl, okBtn) {
               okBtn.disabled = true;
-              okBtn.textContent = "Creating…";
+              okBtn.textContent = t("creating");
               call("api_generate_key", { name: name || "default" })
                 .then(function (d) {
                   closeCsModal();
@@ -527,14 +641,14 @@
                 .then(renderKeysList)
                 .catch(function (e) {
                   okBtn.disabled = false;
-                  okBtn.textContent = "Create";
+                  okBtn.textContent = t("create");
                   var errEl = cardEl.querySelector(".cs-modal__err");
                   if (!errEl) {
                     errEl = el("div", "cs-modal__err");
                     cardEl.querySelector(".cs-modal__foot").before(errEl);
                   }
                   errEl.textContent =
-                    "Create failed: " + (e && e.message ? e.message : e);
+                    t("createFailed") + (e && e.message ? e.message : e);
                 });
             },
           });
@@ -543,9 +657,7 @@
       if (PAGE === "logs") renderLogsList(usage);
     } catch (e) {
       if (e && e.message === "supabase_not_loaded") {
-        PlatformAuth.showAuthError(
-          "依赖脚本加载失败，请检查网络后刷新。"
-        );
+        PlatformAuth.showAuthError(t("authLoadFail"));
       }
     }
   }

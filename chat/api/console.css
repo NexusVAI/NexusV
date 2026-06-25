@@ -1,6 +1,4 @@
-/* NexusV 开放平台控制台 — 对标 platform.openai.com 的 home/usage/logs/api-keys。
- * 左侧固定侧栏 + 内容区，复用主站设计令牌（css/variables.css）随主题变化。
- * 侧栏 / 内容由 console.js 注入并按 data-console-page 渲染。 */
+/* NexusVAI API 控制台 — 弹窗 / 钱包警报样式（oai-console-data.js 按需加载） */
 
 .cs-console {
   min-height: 100dvh;
