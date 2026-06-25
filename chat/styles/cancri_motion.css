@@ -1079,8 +1079,10 @@ html[data-theme="light"] .auth-hero-subtitle {
     width: 100%;
     max-width: 448px;
     min-width: min(100%, 320px);
-    padding: 20px 22px 18px;
-    border-radius: 32px;
+    --auth-card-radius: 32px;
+    --auth-field-radius: max(10px, calc(var(--auth-card-radius) - 20px));
+    padding: 18px 20px 16px;
+    border-radius: var(--auth-card-radius);
     background: hsl(var(--bg-100));
     border: 1px solid hsl(var(--border-300) / 0.14);
     box-shadow: 0 4px 24px hsl(var(--black) / 0.04);
@@ -1098,7 +1100,7 @@ html[data-theme="light"] .auth-card {
 .auth-step {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
 }
 
@@ -1139,7 +1141,7 @@ html[data-theme="light"] .auth-card {
         "Anthropic Sans", "AnthropicSans",
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "PingFang SC", "Microsoft YaHei", sans-serif;
-    border-radius: 9.6px;
+    border-radius: var(--auth-field-radius, 12px);
     background: hsl(var(--bg-000));
     color: hsl(var(--text-000));
     border: 1px solid hsl(var(--border-300) / 0.30);
@@ -1197,7 +1199,7 @@ html[data-theme="light"] .auth-input:focus {
     height: 44px;
     margin-top: 0;
     padding: 0 20px;
-    border-radius: 9.6px;
+    border-radius: var(--auth-field-radius, 12px);
     border: 1px solid transparent;
     background: hsl(var(--text-000));
     color: hsl(var(--bg-000));
@@ -1254,6 +1256,85 @@ html[data-theme="light"] .auth-btn:disabled {
 }
 
 /* .auth-btn-primary 沿用 .auth-btn 全部样式 */
+
+.auth-desktop-download-wrap {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 448px;
+    margin: 1.5rem auto 0;
+    padding: 0;
+    /* 与 .auth-card 同级，不在 card 内 — Claude「Download desktop app」布局 */
+    align-self: center;
+}
+
+.auth-desktop-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 44px;
+    min-width: 0;
+    flex: 1 1 9.5rem;
+    max-width: 100%;
+    padding: 0 1.25rem;
+    border-radius: 0.6rem;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-000));
+    font-size: 16px;
+    font-weight: 600;
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition:
+        background-color 100ms ease,
+        border-color 100ms ease,
+        transform 100ms ease;
+}
+
+.auth-desktop-download-btn__icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.55);
+    color: hsl(var(--text-000));
+}
+
+.auth-desktop-download-btn:active {
+    transform: scale(0.98);
+}
+
+.auth-desktop-download-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.14);
+}
+
+html[data-theme="light"] .auth-desktop-download-btn {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.35);
+    color: hsl(var(--text-000));
+}
+
+html[data-theme="light"] .auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.55);
+}
 
 .auth-password-section {
     display: flex;
@@ -1383,6 +1464,10 @@ html[data-theme="light"] .auth-error {
     text-align: center;
     letter-spacing: 4px;
     font-variant-numeric: tabular-nums;
+}
+.auth-captcha-input::placeholder {
+    text-align: center;
+    opacity: 1;
 }
 .auth-captcha-refresh {
     display: flex;

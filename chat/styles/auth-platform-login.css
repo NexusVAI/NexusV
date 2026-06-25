@@ -45,74 +45,38 @@ html.auth-platform-page body {
     background: hsl(var(--bg-300));
 }
 
-/* ── Cancri nav brand (from Cancri官网/css/cancri.css) ─────────── */
-.cancri-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    color: hsl(var(--text-000));
-    text-decoration: none;
+/* 登录页底带：与主题无关，始终深色（避免 black 主题下 --bg-000 仍为白） */
+html.auth-platform-page {
+    --auth-footer-band: hsl(60 3% 8%);
+    --auth-footer-text: hsl(48 33.3% 97.1%);
+    --auth-footer-muted: hsl(60 5% 78%);
+    --auth-footer-dim: hsl(60 4% 58%);
 }
 
-.cancri-brand__icon {
+/* ── Auth brand logo (nexusvai_logo_transparent.svg, 白字 SVG) ─── */
+.auth-topnav .auth-brand-logo {
     display: block;
-    width: 32px;
-    height: 32px;
+    width: auto;
+    height: 3.75rem;
+    max-width: min(22rem, 68vw);
     object-fit: contain;
-    flex-shrink: 0;
-    border-radius: 4px;
+    object-position: left center;
+    /* 默认黑字：顶栏在 :root/light 下是浅色底；勿用 :not([data-theme=light]) 反白（black 主题会白字贴白底） */
+    filter: brightness(0);
 }
 
-.cancri-brand__word-wrap {
-    display: inline-block;
-    overflow: hidden;
-    vertical-align: bottom;
-    max-width: 0;
-    opacity: 0;
-    transform: translateX(10px);
-    transition:
-        max-width 280ms cubic-bezier(0, 0, 0.2, 1),
-        opacity 240ms cubic-bezier(0.32, 0.72, 0, 1),
-        transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+/* 仅 dark 顶栏（深色底）反白；black/light 顶栏为浅色底 → 默认黑字 */
+html[data-theme="dark"] .auth-topnav .auth-brand-logo {
+    filter: brightness(0) invert(1);
 }
 
-.cancri-brand__word-wrap.is-in {
-    max-width: 5.2em;
-    opacity: 1;
-    transform: translateX(0);
-}
-
-html.is-auth-nav-scrolled .auth-topnav .cancri-brand__word-wrap.is-in {
-    max-width: 0;
-    opacity: 0;
-    transform: translateX(10px);
-}
-
-.cancri-brand__word {
-    display: inline-block;
-    padding-right: 0.04em;
-    font-family:
-        "Anthropic Sans", "AnthropicSans",
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 1.125rem;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    line-height: 1;
-    white-space: nowrap;
-}
-
-.cancri-brand--footer .cancri-brand__word-wrap,
-html.is-auth-nav-scrolled .cancri-brand--footer .cancri-brand__word-wrap {
-    max-width: 5.2em;
-    opacity: 1;
-    transform: translateX(0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .cancri-brand__word-wrap {
-        transition: none !important;
-    }
+.auth-brand-logo--footer {
+    display: block;
+    width: auto;
+    height: 2rem;
+    max-width: min(12rem, 55vw);
+    object-fit: contain;
+    object-position: left center;
 }
 
 /* ── Overlay shell: Claude Platform vertical page, not 2-col grid ─ */
@@ -255,8 +219,7 @@ html.auth-platform-page .auth-topnav {
     box-sizing: border-box;
 }
 
-html[data-theme="dark"] .auth-topnav,
-html[data-theme="black"] .auth-topnav {
+html[data-theme="dark"] .auth-topnav {
     background: hsl(var(--bg-300));
 }
 
@@ -358,13 +321,13 @@ html.auth-platform-page .auth-topnav-spacer {
     flex: 1 0 auto;
     width: 100%;
     max-width: none;
-    min-height: 0;
-    padding-bottom: clamp(3rem, 6vw, 3.5rem);
+    min-height: calc(100dvh - var(--auth-nav-h, 4.5rem));
+    padding-bottom: 0;
     box-sizing: border-box;
 }
 
 html.auth-platform-page .auth-page-shell {
-    min-height: auto;
+    min-height: calc(100dvh - var(--auth-nav-h, 4.5rem));
 }
 
 .auth-login-panel {
@@ -382,7 +345,8 @@ html.auth-platform-page .auth-page-shell {
     min-height: auto;
     padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1rem, 3vw, 1.5rem)
         clamp(1.5rem, 4vw, 2.5rem);
-    background: hsl(var(--bg-300));
+    /* Claude Platform：登录区 page bg-100，卡片白底独立浮于其上 */
+    background: hsl(var(--bg-100));
 }
 
 .auth-dot-grid {
@@ -425,9 +389,56 @@ html.auth-platform-page .auth-hero-subtitle {
 }
 
 html.auth-platform-page .auth-card {
+    --auth-card-radius: clamp(24px, 4vw, 32px);
+    --auth-field-radius: max(10px, calc(var(--auth-card-radius) - 20px));
     max-width: min(448px, calc(100vw - 2rem));
-    padding: clamp(16px, 3vw, 20px) clamp(14px, 3vw, 22px) clamp(14px, 2.5vw, 18px);
-    border-radius: clamp(20px, 4vw, 32px);
+    padding: clamp(14px, 2.5vw, 18px) clamp(14px, 3vw, 20px) clamp(12px, 2vw, 16px);
+    border-radius: var(--auth-card-radius);
+    background: hsl(var(--bg-000));
+    border-color: hsl(var(--border-300) / 0.12);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.06);
+}
+
+html.auth-platform-page .auth-desktop-download-wrap {
+    max-width: min(448px, calc(100vw - 2rem));
+    margin-top: 1.5rem;
+}
+
+html.auth-platform-page .auth-desktop-download-btn {
+    background: hsl(var(--bg-100));
+    border: 0.5px solid hsl(var(--border-300) / 0.28);
+    box-shadow: none;
+}
+
+html.auth-platform-page .auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.45);
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-login-panel {
+    background: hsl(var(--bg-300));
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-card {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.18);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.24);
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-desktop-download-btn {
+    background: hsl(var(--bg-300));
+    border-color: hsl(var(--border-300) / 0.35);
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.5);
+}
+
+html.auth-platform-page .auth-input,
+html.auth-platform-page .auth-btn,
+html.auth-platform-page .auth-captcha-input {
+    border-radius: var(--auth-field-radius);
 }
 
 @media (max-height: 780px) {
@@ -475,7 +486,7 @@ html.auth-platform-page .auth-card {
 /* ── Partner logos + footer bottom band (full-width bg) ─────────── */
 .auth-partners,
 .auth-site-footer {
-    --auth-band-bg: hsl(var(--bg-000));
+    --auth-band-bg: var(--auth-footer-band);
     position: relative;
     z-index: 0;
     width: 100%;
@@ -483,20 +494,6 @@ html.auth-platform-page .auth-card {
     align-self: stretch;
     box-sizing: border-box;
     background: var(--auth-band-bg);
-}
-
-html[data-theme="light"] .auth-partners,
-html[data-theme="light"] .auth-site-footer {
-    --auth-band-bg: hsl(60 3% 8%);
-    background: var(--auth-band-bg);
-}
-
-html[data-theme="light"] .auth-partners-title {
-    color: hsl(48 33.3% 97.1%);
-}
-
-html[data-theme="light"] .auth-site-footer .cancri-brand {
-    color: hsl(48 33.3% 97.1%);
 }
 
 .auth-partners {
@@ -507,7 +504,7 @@ html[data-theme="light"] .auth-site-footer .cancri-brand {
     margin: 0;
     padding: 2.5rem clamp(1rem, 1.43rem + 2.86vw, 4rem) 2rem;
     flex: 0 0 auto;
-    border-top: 1px solid hsl(var(--border-300) / 0.14);
+    border-top: 1px solid hsl(0 0% 100% / 0.08);
 }
 
 .auth-partners-title {
@@ -518,7 +515,7 @@ html[data-theme="light"] .auth-site-footer .cancri-brand {
         "Source Serif 4", "Noto Serif SC", Georgia, serif;
     font-size: clamp(1rem, 2.8vw, 1.125rem);
     line-height: 1.4;
-    color: hsl(var(--text-100));
+    color: var(--auth-footer-text);
     text-align: center;
 }
 
@@ -597,11 +594,7 @@ html[data-theme="light"] .auth-site-footer .cancri-brand {
     max-height: 100% !important;
     object-fit: contain;
     object-position: center;
-    opacity: 0.9;
-}
-
-html[data-theme="light"] .auth-partner-logo img {
-    opacity: 0.85;
+    opacity: 0.92;
 }
 
 .auth-partner-logo.is-out,
@@ -662,17 +655,21 @@ html[data-theme="light"] .auth-partner-logo img {
     }
 }
 
+/* 底带恒为深色：单色 partner logo 统一反白 */
+.auth-partners .model-icon-theme-adaptive {
+    filter: brightness(0) invert(1);
+}
+
 /* ── Site footer (simplified Cancri官网 footer) ────────────────── */
 .auth-site-footer {
-    color: hsl(var(--text-200));
+    color: var(--auth-footer-muted);
     border-top: none;
     padding: clamp(2rem, 2vw, 3rem) clamp(1rem, 1.43rem + 2.86vw, 4rem)
         clamp(4.5rem, 3rem + 2vw, 5rem);
-    flex: 0 0 auto;
-}
-
-html[data-theme="light"] .auth-site-footer {
-    color: hsl(60 5% 78%);
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--auth-footer-band);
 }
 
 .auth-site-footer-inner {
@@ -682,6 +679,7 @@ html[data-theme="light"] .auth-site-footer {
     max-width: 90rem;
     margin: 0 auto;
     width: 100%;
+    flex: 1 0 auto;
 }
 
 @media (min-width: 768px) {
@@ -701,11 +699,7 @@ html[data-theme="light"] .auth-site-footer {
 .auth-site-footer-copy {
     margin: 0 0 1rem;
     font-size: 0.8125rem;
-    color: hsl(var(--text-400));
-}
-
-html[data-theme="light"] .auth-site-footer-copy {
-    color: hsl(60 4% 58%);
+    color: var(--auth-footer-dim);
 }
 
 .auth-site-footer-socials {
@@ -731,7 +725,7 @@ html[data-theme="light"] .auth-site-footer-copy {
 
 .auth-site-footer-socials a:hover {
     opacity: 1;
-    background: hsl(var(--text-000) / 0.08);
+    background: hsl(0 0% 100% / 0.08);
 }
 
 .auth-site-footer-socials svg,
@@ -753,11 +747,7 @@ html[data-theme="light"] .auth-site-footer-copy {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: hsl(var(--text-400));
-}
-
-html[data-theme="light"] .auth-site-footer-links h3 {
-    color: hsl(60 4% 52%);
+    color: var(--auth-footer-dim);
 }
 
 .auth-site-footer-links ul {
