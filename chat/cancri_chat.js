@@ -49,16 +49,6 @@
 	//#region src/data/model-catalog-fallback.js
 	var MODEL_CATALOG_FALLBACK = [
 		{
-			"id": "gemini-3.1-pro",
-			"name": "Gemini 3.1 Pro",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "vip"
-		},
-		{
 			"id": "gemini-3.1-flash-lite-preview",
 			"name": "Gemini 3.1 Flash Lite",
 			"brand": "Google",
@@ -70,26 +60,46 @@
 			"customMultiplier": 3.5
 		},
 		{
-			"id": "gpt-5.4-mini-0603",
-			"name": "GPT-5.4 Mini 0603",
-			"brand": "OpenAI",
+			"id": "gemini-3.1-flash-lite-welfare",
+			"name": "Gemini 3.1 Flash Lite 0603",
+			"brand": "Google",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"customMultiplier": 3.5
+		},
+		{
+			"id": "gemini-2.5-flash-lite",
+			"name": "Gemini 2.5 Flash Lite",
+			"brand": "Google",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "gemini-3-flash-preview",
+			"name": "Gemini 3 Flash",
+			"brand": "Google",
 			"kind": "chat",
 			"vision": true,
 			"thinking": false,
 			"tools": true,
 			"costTier": "expensive",
-			"customMultiplier": 6
+			"customMultiplier": 3
 		},
 		{
-			"id": "hunyuan-mt-7b",
-			"name": "Hunyuan MT 7B",
-			"brand": "Tencent",
-			"kind": "translate",
+			"id": "gemma-4-31b-it",
+			"name": "Gemma 4 31B",
+			"brand": "Google",
+			"kind": "chat",
 			"vision": false,
 			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"freeLimitNote": "消息翻译"
+			"tools": true,
+			"costTier": "free"
 		},
 		{
 			"id": "step-3.5-flash",
@@ -112,17 +122,6 @@
 			"costTier": "free"
 		},
 		{
-			"id": "cancriv1-0.1b",
-			"name": "CancriV1-0.1B",
-			"brand": "Cancri",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cancriv1_studio"
-		},
-		{
 			"id": "kat-coder-pro-v2",
 			"name": "KwaiKAT Coder Pro V2",
 			"brand": "KwaiKAT",
@@ -131,17 +130,6 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "free"
-		},
-		{
-			"id": "claude-opus-4-5",
-			"name": "Claude Opus 4.5",
-			"brand": "Anthropic",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "vip",
-			"customMultiplier": 12
 		},
 		{
 			"id": "claude-opus-4-6",
@@ -153,6 +141,17 @@
 			"tools": true,
 			"costTier": "vip",
 			"customMultiplier": 15
+		},
+		{
+			"id": "claude-opus-4-5",
+			"name": "Claude Opus 4.5",
+			"brand": "Anthropic",
+			"kind": "chat",
+			"vision": true,
+			"thinking": true,
+			"tools": true,
+			"costTier": "vip",
+			"customMultiplier": 12
 		},
 		{
 			"id": "baichuan-m3",
@@ -235,6 +234,17 @@
 			"costTier": "free"
 		},
 		{
+			"id": "claude-opus-4-7",
+			"name": "Claude Opus 4.7",
+			"brand": "Anthropic",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "vip",
+			"customMultiplier": 15
+		},
+		{
 			"id": "claude-opus-4-8",
 			"name": "Claude Opus 4.8",
 			"brand": "Anthropic",
@@ -246,15 +256,14 @@
 			"customMultiplier": 15
 		},
 		{
-			"id": "claude-opus-4-7-special",
-			"name": "【特价】Claude Opus 4.7",
+			"id": "claude-opus-4-8-thinking",
+			"name": "Claude Opus 4.8 Thinking",
 			"brand": "Anthropic",
 			"kind": "chat",
 			"vision": true,
 			"thinking": true,
 			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "newapi_qwqtao"
+			"costTier": "normal"
 		},
 		{
 			"id": "gpt-5.4-nano",
@@ -288,14 +297,15 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "minimax-m3",
-			"name": "MiniMax M3",
-			"brand": "MiniMax",
+			"id": "grok-4.3-high",
+			"name": "Grok 4.3 High",
+			"brand": "xAI",
 			"kind": "chat",
-			"vision": false,
+			"vision": true,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free"
+			"costTier": "expensive",
+			"customMultiplier": 2
 		},
 		{
 			"id": "grok-4.3",
@@ -305,36 +315,8 @@
 			"vision": true,
 			"thinking": true,
 			"tools": true,
-			"costTier": "expensive"
-		},
-		{
-			"id": "grok-imagine-image",
-			"name": "Grok Imagine Image",
-			"brand": "xAI",
-			"kind": "image",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "normal",
-			"lineLabel": "futureppo",
-			"customMultiplier": 100,
-			"creditPerUse": 10
-		},
-		{
-			"id": "grok-imagine-video",
-			"name": "Grok Imagine Video",
-			"brand": "xAI",
-			"kind": "video",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "normal",
-			"lineLabel": "futureppo",
-			"proMaxOnly": true,
-			"customMultiplier": 3e3,
-			"creditPerUse": 300,
-			"promoLimited": true,
-			"promoTooltip": "2026/06/18-2026/07/18 Pro起步均可用"
+			"costTier": "expensive",
+			"customMultiplier": 2
 		},
 		{
 			"id": "gpt-image-2-all",
@@ -357,8 +339,8 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "expensive",
-			"proMaxOnly": true,
 			"customMultiplier": 3e3,
+			"proMaxOnly": true,
 			"creditPerUse": 300
 		},
 		{
@@ -370,19 +352,9 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "expensive",
-			"proPlusOnly": true,
 			"customMultiplier": 100,
+			"proPlusOnly": true,
 			"creditPerUse": 10
-		},
-		{
-			"id": "z-image-turbo",
-			"name": "【订阅福利】造相-Z-Image-Turbo",
-			"brand": "Qwen",
-			"kind": "image",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free"
 		},
 		{
 			"id": "doubao-1.5-pro",
@@ -405,69 +377,26 @@
 			"costTier": "normal"
 		},
 		{
-			"id": "doubao-seedream-4-5",
-			"name": "Doubao Seedream 4.5",
-			"brand": "Doubao",
-			"kind": "image",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
-		},
-		{
-			"id": "doubao-seed-2-0-code-preview-260215",
-			"name": "Doubao Seed 2.0 Code",
-			"brand": "Doubao",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "kimi-k2.6",
-			"name": "Kimi K2.6",
-			"brand": "Moonshot",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "kimi-k2.7-code",
-			"name": "Kimi K2.7 Code",
+			"id": "kimi-k2.7-code-highspeed",
+			"name": "Kimi K2.7 Code HighSpeed",
 			"brand": "Moonshot",
 			"kind": "chat",
 			"vision": true,
 			"thinking": true,
 			"tools": true,
 			"costTier": "expensive",
-			"lineLabel": "bailian",
 			"customMultiplier": 5
 		},
 		{
-			"id": "claude-haiku-4-5-20251001",
-			"name": "Claude Haiku 4.5",
-			"brand": "Anthropic",
+			"id": "gpt-5.4-mini-0620",
+			"name": "GPT 5.4 Mini 0620",
+			"brand": "OpenAI",
 			"kind": "chat",
 			"vision": true,
-			"thinking": true,
+			"thinking": false,
 			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "claude-opus-4-8-special",
-			"name": "【特价】Claude Opus 4.8",
-			"brand": "Anthropic",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 2,
-			"proPlusOnly": true
+			"costTier": "expensive",
+			"customMultiplier": 3.5
 		},
 		{
 			"id": "gpt-5.5",
@@ -481,17 +410,6 @@
 			"customMultiplier": 10
 		},
 		{
-			"id": "gemini-3.5-agent",
-			"name": "Gemini 3.5 Agent",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "expensive",
-			"customMultiplier": 7
-		},
-		{
 			"id": "gpt-5.5-special",
 			"name": "【特价】GPT-5.5",
 			"brand": "OpenAI",
@@ -503,56 +421,37 @@
 			"customMultiplier": .5
 		},
 		{
-			"id": "deepseek-v4-pro-welfare",
-			"name": "【福利】DeepSeek V4 Pro",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "gemini-3.1-flash-lite-welfare",
-			"name": "Gemini 3.1 Flash Lite 0603",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 3.5
-		},
-		{
-			"id": "gemini-2.5-flash-lite",
-			"name": "Gemini 2.5 Flash Lite",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "gemini-3-flash-preview",
-			"name": "Gemini 3 Flash",
-			"brand": "Google",
+			"id": "gpt-5.4",
+			"name": "GPT-5.4",
+			"brand": "OpenAI",
 			"kind": "chat",
 			"vision": true,
 			"thinking": false,
 			"tools": true,
 			"costTier": "expensive",
-			"customMultiplier": 3
+			"customMultiplier": 3.5
 		},
 		{
-			"id": "gemma-4-31b-it",
-			"name": "Gemma 4 31B",
-			"brand": "Google",
+			"id": "gpt-5.5-2026-04-23",
+			"name": "GPT-5.5-20260423",
+			"brand": "OpenAI",
 			"kind": "chat",
-			"vision": false,
+			"vision": true,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free"
+			"costTier": "expensive",
+			"customMultiplier": 10
+		},
+		{
+			"id": "doubao-seedream-4-5",
+			"name": "Doubao Seedream 4.5",
+			"brand": "Doubao",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "normal",
+			"lineLabel": "futureppo"
 		},
 		{
 			"id": "deepseek-v4-flash",
@@ -574,32 +473,18 @@
 			"thinking": true,
 			"tools": true,
 			"costTier": "normal",
-			"lineLabel": "fuka",
-			"customMultiplier": 3
+			"customMultiplier": 3,
+			"lineLabel": "fuka"
 		},
 		{
-			"id": "deepseek-v4-pro-0608",
-			"name": "DeepSeek V4 Pro 0608",
-			"brand": "DeepSeek",
+			"id": "gemini-3.1-pro",
+			"name": "Gemini 3.1 Pro",
+			"brand": "Google",
 			"kind": "chat",
-			"vision": false,
+			"vision": true,
 			"thinking": true,
 			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "pytn",
-			"customMultiplier": 3
-		},
-		{
-			"id": "deepseek-v4-pro-0603",
-			"name": "DeepSeek V4 Pro (NVIDIA)",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "modelscope",
-			"customMultiplier": 3
+			"costTier": "vip"
 		},
 		{
 			"id": "glm-5.1",
@@ -609,8 +494,60 @@
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free",
-			"customMultiplier": 1.5
+			"costTier": "normal",
+			"customMultiplier": 3.5
+		},
+		{
+			"id": "deepseek-v4-welfare",
+			"name": "【福利】DeepSeek V4",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "gemini-3.1-pro-welfare",
+			"name": "【福利】Gemini 3.1 Pro",
+			"brand": "Google",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "gpt-5.5-high-fast",
+			"name": "【福利】GPT-5.5",
+			"brand": "OpenAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "minimax-m2.7",
+			"name": "MiniMax M2.7",
+			"brand": "MiniMax",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"customMultiplier": 3
+		},
+		{
+			"id": "kimi-k2.7",
+			"name": "Kimi K2.7",
+			"brand": "Moonshot",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"customMultiplier": 3.5
 		},
 		{
 			"id": "deepseek-v3",
@@ -633,18 +570,6 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": 2
-		},
-		{
-			"id": "deepseek-v3.2",
-			"name": "DeepSeek V3.2",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "jiuyoumao",
-			"customMultiplier": 2.5
 		},
 		{
 			"id": "qwen3.7-max",
@@ -675,227 +600,6 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "free"
-		},
-		{
-			"id": "qwen3.7-max-2026-05-17",
-			"name": "【订阅福利】Qwen3.7 Max 0609",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3.5-flash-2026-02-23",
-			"name": "Qwen 3.5 Flash (0223)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3.5-plus-2026-04-20",
-			"name": "Qwen 3.5 Plus (0420)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3.5-plus-2026-02-15",
-			"name": "Qwen 3.5 Plus (0215)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3.5-397b-a17b",
-			"name": "Qwen 3.5 397B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3.5-plus",
-			"name": "Qwen 3.5 Plus",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-max",
-			"name": "Qwen Max",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-max-preview",
-			"name": "Qwen 3 Max Preview",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "MiniMax-M2.1",
-			"name": "MiniMax M2.1",
-			"brand": "MiniMax",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 1.5
-		},
-		{
-			"id": "qwen3-max",
-			"name": "Qwen 3 Max",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-vl-max",
-			"name": "Qwen VL Max",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "kimi-k2-thinking",
-			"name": "Kimi K2 Thinking",
-			"brand": "Moonshot",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "Moonshot-Kimi-K2-Instruct",
-			"name": "Moonshot Kimi K2 Instruct",
-			"brand": "Moonshot",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "glm-4.5-air",
-			"name": "GLM 4.5 Air",
-			"brand": "Zhipu",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "glm-4.5",
-			"name": "GLM 4.5",
-			"brand": "Zhipu",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-plus-2025-07-22",
-			"name": "Qwen3 Coder Plus (0722)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-next",
-			"name": "Qwen3 Coder Next",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-coder-plus",
-			"name": "Qwen Coder Plus",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-coder-turbo",
-			"name": "Qwen Coder Turbo",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-flash-2025-07-28",
-			"name": "Qwen3 Coder Flash (0728)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3.6-35b-a3b",
-			"name": "Qwen 3.6 35B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-480b-a35b-instruct",
-			"name": "Qwen3 Coder 480B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
 		},
 		{
 			"id": "qwen3.5-35b-a3b",
@@ -929,72 +633,12 @@
 			"customMultiplier": .5
 		},
 		{
-			"id": "qwen-math-plus-0919",
-			"name": "Qwen Math Plus (0919)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen-plus-2025-12-01",
-			"name": "Qwen Plus (2025-12-01)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-max-2025-09-23",
-			"name": "Qwen3 Max (2025-09-23)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen-vl-plus",
-			"name": "Qwen VL Plus",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen-flash-2025-07-28",
-			"name": "Qwen Flash (2025-07-28)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
 			"id": "qwen3.5-122b-a10b",
 			"name": "Qwen 3.5 122B A10B",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
 			"thinking": true,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-235b-a22b-instruct-2507",
-			"name": "Qwen3 235B A22B (2507)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
 			"tools": true,
 			"costTier": "normal"
 		},
@@ -1009,56 +653,6 @@
 			"costTier": "cheap"
 		},
 		{
-			"id": "qwen3-vl-8b-thinking",
-			"name": "Qwen3 VL 8B Thinking",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-vl-8b-instruct",
-			"name": "Qwen3 VL 8B Instruct",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-next-80b-a3b-instruct",
-			"name": "Qwen3 Next 80B Instruct",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
-			"id": "qwen3-coder-flash",
-			"name": "Qwen3 Coder Flash",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-coder-plus-2025-09-23",
-			"name": "Qwen3 Coder Plus (2025-09-23)",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal"
-		},
-		{
 			"id": "qwen3.6-27b",
 			"name": "Qwen 3.6 27B",
 			"brand": "Qwen",
@@ -1067,16 +661,6 @@
 			"thinking": true,
 			"tools": true,
 			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3-next-80b-a3b-thinking",
-			"name": "Qwen3 Next 80B Thinking",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "normal"
 		},
 		{
 			"id": "glm-4.7",
@@ -1088,6 +672,46 @@
 			"tools": true,
 			"costTier": "normal",
 			"customMultiplier": .8
+		},
+		{
+			"id": "mistral-medium-3-5",
+			"name": "Mistral Medium 3.5",
+			"brand": "Mistral",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal"
+		},
+		{
+			"id": "mistral-small-2603",
+			"name": "Mistral Small (2603)",
+			"brand": "Mistral",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "mistral-large-2512",
+			"name": "Mistral Large (2512)",
+			"brand": "Mistral",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "expensive"
+		},
+		{
+			"id": "ministral-14b-2512",
+			"name": "Ministral 14B (2512)",
+			"brand": "Mistral",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
 		},
 		{
 			"id": "or:nvidia/nemotron-3-super-120b-a12b",
@@ -1110,111 +734,27 @@
 			"costTier": "free"
 		},
 		{
-			"id": "cf:gemma-2b-it",
-			"name": "Gemma 2B IT",
-			"brand": "Google",
+			"id": "cancriv1-0.1b",
+			"name": "CancriV1-0.1B",
+			"brand": "Cancri",
 			"kind": "chat",
 			"vision": false,
 			"thinking": false,
 			"tools": false,
 			"costTier": "free",
-			"lineLabel": "cloudflare"
+			"lineLabel": "cancriv1_studio"
 		},
 		{
-			"id": "cf:gemma-7b-it",
-			"name": "Gemma 7B IT",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "cf:mistral-7b-instruct-v02",
-			"name": "Mistral 7B v0.2",
-			"brand": "Mistral",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "cf:llama-3.2-1b-instruct",
-			"name": "Llama 3.2 1B",
-			"brand": "Meta",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "cf:llama-3.2-3b-instruct",
-			"name": "Llama 3.2 3B",
-			"brand": "Meta",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "cf:granite-4.0-h-micro",
-			"name": "Granite 4.0 H Micro",
-			"brand": "IBM",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "cf:qwen3-30b-a3b",
-			"name": "Qwen3 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "free",
-			"lineLabel": "cloudflare"
-		},
-		{
-			"id": "qwen3-30b-a3b-instruct-2507",
-			"name": "Qwen3 30B A3B",
-			"brand": "Qwen",
+			"id": "deepseek-v3.2",
+			"name": "DeepSeek V3.2",
+			"brand": "DeepSeek",
 			"kind": "chat",
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3-coder-30b-a3b-instruct",
-			"name": "Qwen3 Coder 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3-vl-30b-a3b-thinking",
-			"name": "Qwen3 VL 30B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": true,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
+			"costTier": "normal",
+			"customMultiplier": 2.5,
+			"lineLabel": "jiuyoumao"
 		},
 		{
 			"id": "qwen3.5-4b",
@@ -1265,6 +805,56 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "cheap"
+		},
+		{
+			"id": "hunyuan-mt-7b",
+			"name": "Hunyuan MT 7B",
+			"brand": "Tencent",
+			"kind": "translate",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "free",
+			"freeLimitNote": "消息翻译"
+		},
+		{
+			"id": "grok-imagine-image",
+			"name": "Grok Imagine Image",
+			"brand": "xAI",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "normal",
+			"lineLabel": "futureppo",
+			"customMultiplier": 100,
+			"creditPerUse": 10
+		},
+		{
+			"id": "grok-imagine-video",
+			"name": "Grok Imagine Video",
+			"brand": "xAI",
+			"kind": "video",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "normal",
+			"lineLabel": "futureppo",
+			"proMaxOnly": true,
+			"customMultiplier": 3e3,
+			"creditPerUse": 300,
+			"promoLimited": true,
+			"promoTooltip": "2026/06/18-2026/07/18 Pro起步均可用"
+		},
+		{
+			"id": "z-image-turbo",
+			"name": "【订阅福利】造相-Z-Image-Turbo",
+			"brand": "Qwen",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "free"
 		}
 	];
 	//#endregion
