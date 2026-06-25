@@ -1585,7 +1585,8 @@
 		userMemories: [],
 		userMemoryEnabled: true,
 		inlineMermaidEnabled: true,
-		completionNotifyEnabled: true
+		completionNotifyEnabled: true,
+		chatDataUploadEnabled: true
 	};
 	var root = document.documentElement;
 	var sidebar = document.getElementById("sidebar");
@@ -3399,12 +3400,8 @@
 			if (entry.kind === "video") tags.push("视频");
 			if (entry.kind === "translate") tags.push("翻译");
 			if (entry.freeLimitNote) tags.push(entry.freeLimitNote);
-			const isWelfare = /-welfare/i.test(entry.id) || /福利/.test(entry.name || "");
+			const isWelfare = /-welfare/i.test(entry.id) || /订阅福利/.test(entry.name || "");
 			const isSpecial = /-special/i.test(entry.id) || /特价/.test(entry.name || "");
-			const isSubWelfare = /订阅福利/.test(entry.name || "");
-			if (isWelfare && !isSubWelfare) tags.push("福利");
-			if (isSpecial) tags.push("特价");
-			if (isSubWelfare) tags.push("订阅福利");
 			const meta = {
 				id: entry.id,
 				canonicalId: entry.id,
@@ -3691,6 +3688,7 @@
 			if (typeof prefs.profession === "string") state.profession = prefs.profession.slice(0, 30);
 			if (typeof prefs.inlineMermaidEnabled === "boolean") state.inlineMermaidEnabled = prefs.inlineMermaidEnabled;
 			if (typeof prefs.completionNotifyEnabled === "boolean") state.completionNotifyEnabled = prefs.completionNotifyEnabled;
+			if (typeof prefs.chatDataUploadEnabled === "boolean") state.chatDataUploadEnabled = prefs.chatDataUploadEnabled;
 		} catch (error) {
 			console.warn("恢复主题偏好失败:", error);
 		}
@@ -3710,6 +3708,7 @@
 				profession: state.profession,
 				inlineMermaidEnabled: state.inlineMermaidEnabled,
 				completionNotifyEnabled: state.completionNotifyEnabled,
+				chatDataUploadEnabled: state.chatDataUploadEnabled,
 				blackDefaultMigrated: true,
 				accentOrangeDefaultMigrated: true
 			}));
@@ -3892,6 +3891,61 @@
 		state.completionNotifyEnabled = next;
 		persistUiPreferences();
 		if (next) ensureNotificationPermission();
+	}
+	async function setChatDataUploadEnabled(enabled) {
+		const next = Boolean(enabled);
+		if (state.chatDataUploadEnabled === next) return;
+		state.chatDataUploadEnabled = next;
+		persistUiPreferences();
+		syncChatDataUploadConsent(next);
+	}
+	async function syncChatDataUploadConsent(enabled) {
+		try {
+			const { data } = await getSupabaseClient().auth.getSession();
+			const token = data?.session?.access_token;
+			if (!token) return;
+			const baseUrl = (window.__SUPABASE_URL__ || "").trim();
+			if (!baseUrl) return;
+			await fetch(`${baseUrl}/functions/v1/chat-gateway`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					apikey: window.__SUPABASE_ANON_KEY__ || "",
+					authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					endpoint: "data_consent",
+					action: "set",
+					enabled
+				})
+			});
+		} catch (e) {
+			console.warn("[data_consent] sync failed:", e);
+		}
+	}
+	async function fetchChatDataUploadConsent() {
+		try {
+			const { data } = await getSupabaseClient().auth.getSession();
+			const token = data?.session?.access_token;
+			if (!token) return true;
+			const baseUrl = (window.__SUPABASE_URL__ || "").trim();
+			if (!baseUrl) return true;
+			return (await (await fetch(`${baseUrl}/functions/v1/chat-gateway`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					apikey: window.__SUPABASE_ANON_KEY__ || "",
+					authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					endpoint: "data_consent",
+					action: "get"
+				})
+			})).json().catch(() => ({}))).data_upload_enabled !== false;
+		} catch (e) {
+			console.warn("[data_consent] fetch failed:", e);
+			return state.chatDataUploadEnabled;
+		}
 	}
 	function updateVoiceButtonState() {
 		if (!voiceInputBtn) return;
@@ -4895,14 +4949,13 @@
 					url,
 					__auth_token: session.access_token
 				})
-			}, 30000, "media-download");
+			}, 3e4, "media-download");
 			if (!resp.ok) return false;
 			const blob = await resp.blob();
 			const blobUrl = URL.createObjectURL(blob);
 			const a = document.createElement("a");
 			a.href = blobUrl;
-			const disposition = resp.headers.get("Content-Disposition") || "";
-			const match = disposition.match(/filename="?([^";\s]+)"?/);
+			const match = (resp.headers.get("Content-Disposition") || "").match(/filename="?([^";\s]+)"?/);
 			a.download = match ? match[1] : url.split("/").pop() || "download";
 			document.body.appendChild(a);
 			a.click();
@@ -12890,9 +12943,6 @@
 					const tag = document.createElement("span");
 					tag.className = "model-tag";
 					if (String(tagText).includes("多模态")) tag.classList.add("multimodal");
-					if (tagText === "福利") tag.classList.add("welfare");
-					if (tagText === "特价") tag.classList.add("special");
-					if (tagText === "订阅福利") tag.classList.add("sub-welfare");
 					tag.textContent = tagText;
 					option.appendChild(tag);
 				});
@@ -13419,6 +13469,8 @@
 		setWebSearchEnabled,
 		setInlineMermaidEnabled,
 		setCompletionNotifyEnabled,
+		setChatDataUploadEnabled,
+		fetchChatDataUploadConsent,
 		setFullName,
 		setProfession,
 		getNickname,

@@ -2117,6 +2117,18 @@
                                     <h2 class="claude-settings-h2">隐私</h2>
                                     <div class="claude-form-row">
                                         <div class="claude-form-stacked">
+                                            <span class="claude-form-label-strong">上传对话数据用于改进模型</span>
+                                            <span class="claude-form-help">开启后，您的对话记录可能被用于改进 Cancri 模型。关闭后仍会保存聊天记录供您查看，但相关数据不会被用于模型训练。<a href="../privacy.html" target="_blank" rel="noopener">了解更多</a></span>
+                                        </div>
+                                        <div class="claude-form-control">
+                                            <label class="claude-switch">
+                                                <input type="checkbox" id="claudeDataUploadToggle" checked />
+                                                <span class="claude-switch-track"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <div class="claude-form-stacked">
                                             <span class="claude-form-label-strong">导出所有聊天记录</span>
                                             <span class="claude-form-help">下载 JSON 格式的全部对话备份。数据量较大时可能需要一些时间。</span>
                                         </div>
@@ -3362,11 +3374,11 @@
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=20260624-model-public-catalog"></script>
+        <script defer src="./cancri_chat.js?v=20260625-data-consent"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=20260624-chat-fullmodel-list"></script>
+        <script defer src="./claude_ui.js?v=20260625-data-consent"></script>
     </body>
 </html>

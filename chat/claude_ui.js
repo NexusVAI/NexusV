@@ -28,6 +28,16 @@
     var tierAuthWaitTimer = 0;
 
     // 等待 DOM ready，避免脚本在 cancri_chat.js 初始化前 query 不到 DOM。
+    function syncDataUploadConsentFromServer() {
+        var app = window.CancriApp;
+        if (!app || typeof app.fetchChatDataUploadConsent !== 'function') return;
+        app.fetchChatDataUploadConsent().then(function (enabled) {
+            if (app.state) app.state.chatDataUploadEnabled = enabled;
+            var toggle = document.getElementById('claudeDataUploadToggle');
+            if (toggle) toggle.checked = enabled !== false;
+        }).catch(function () { /* ignore */ });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });
     } else {
@@ -70,7 +80,8 @@
             bindGroupByDropdown,
             bindVoiceHoverAnimation,
             bindClaudeAccountPanel,
-            bindClaudePasswordPanel
+            bindClaudePasswordPanel,
+            syncDataUploadConsentFromServer
         ].forEach(function (step) {
             try {
                 step();
@@ -2643,6 +2654,10 @@
                     sysPromptCount.textContent = String((st.customInstructions || '').length);
                 }
             }
+            const dataUploadToggle = document.getElementById('claudeDataUploadToggle');
+            if (dataUploadToggle) {
+                dataUploadToggle.checked = st.chatDataUploadEnabled !== false;
+            }
             refreshAvatar();
         }
 
@@ -2763,6 +2778,16 @@
             capNotify.addEventListener('change', function () {
                 if (app && typeof app.setCompletionNotifyEnabled === 'function') {
                     app.setCompletionNotifyEnabled(capNotify.checked);
+                }
+            });
+        }
+
+        // 2026-06-25：对话数据上传/模型改进训练同意开关
+        const dataUploadToggle = document.getElementById('claudeDataUploadToggle');
+        if (dataUploadToggle) {
+            dataUploadToggle.addEventListener('change', function () {
+                if (app && typeof app.setChatDataUploadEnabled === 'function') {
+                    app.setChatDataUploadEnabled(dataUploadToggle.checked);
                 }
             });
         }
