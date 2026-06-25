@@ -72,15 +72,11 @@
   height: 10px;
 }
 
-/* ── Trusted logos grid (OpenAI contact-sales mask carousel) ─────
- * Tokens from openai.com live: duration-long 400ms, ease-primary,
- * interval 3000ms, layer stagger 120ms, translate-y-10 = 2.5rem. */
+/* ── Trusted logos grid — 5 logos visible at once ─────────────── */
 .trusted-logos {
-  --trusted-duration-long: 400ms;
-  --trusted-ease-primary: cubic-bezier(0.16, 1, 0.3, 1);
-  --trusted-translate-y: 2.5rem;
-  --trusted-gap-x: 4rem;
-  --trusted-mark-max: 10rem;
+  --trusted-gap-x: clamp(1rem, 3vw, 4rem);
+  --trusted-text-h: clamp(1rem, 2.2vw, 1.5rem);
+  --trusted-vai-size: clamp(2.5rem, 6vw, 4rem);
   width: 100%;
   margin: clamp(16px, 4vh, 48px) 0 clamp(40px, 8vh, 96px);
   padding: 0 clamp(16px, 4vw, 48px);
@@ -98,72 +94,56 @@
 @media (max-width: 767px) {
   .trusted-logos__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    column-gap: 1.5rem;
+    column-gap: 1rem;
   }
   .trusted-logos__slot:nth-child(n + 4) {
     display: none;
   }
 }
 .trusted-logos__slot {
-  position: relative;
   display: flex;
   width: 100%;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 3 / 1;
-}
-.trusted-logos__layer {
-  position: absolute;
-  inset-inline-start: 0;
-  top: 0;
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: translateY(var(--trusted-translate-y));
-  transition:
-    opacity var(--trusted-duration-long) var(--trusted-ease-primary),
-    transform var(--trusted-duration-long) var(--trusted-ease-primary);
-  pointer-events: none;
-}
-.trusted-logos__layer.is-active {
-  opacity: 1;
-  transform: translateY(0);
-}
-.trusted-logos__layer.is-next {
-  opacity: 0;
-  transform: translateY(var(--trusted-translate-y));
-}
-.trusted-logos__layer.is-prev {
-  opacity: 0;
-  transform: translateY(calc(var(--trusted-translate-y) * -1));
-}
-.trusted-logos__layer.is-hidden {
-  opacity: 0;
-  transform: translateY(var(--trusted-translate-y));
+  min-height: var(--trusted-vai-size);
 }
 .trusted-logos__inner {
-  position: relative;
-  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  max-width: var(--trusted-mark-max);
+}
+.trusted-logos__inner--vai {
+  width: var(--trusted-vai-size);
+  height: var(--trusted-vai-size);
+  flex-shrink: 0;
+}
+.trusted-logos__inner--wide {
+  max-width: 100%;
+  height: var(--trusted-text-h);
 }
 .trusted-logos__mark {
-  position: absolute;
-  inset: 0;
+  width: 100%;
+  height: 100%;
   background-color: var(--text-color);
   filter: grayscale(1);
-  -webkit-mask-image: var(--trusted-mask);
-  mask-image: var(--trusted-mask);
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
   -webkit-mask-size: contain;
   mask-size: contain;
+}
+.trusted-logos__img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: grayscale(1);
+  opacity: 0.72;
+  color: var(--text-color);
 }
 .trusted-logos--apply {
   margin: 0;
@@ -173,16 +153,9 @@
 .trusted-logos--apply .trusted-logos__grid {
   width: 100%;
   max-width: none;
-  --trusted-gap-x: clamp(8px, 1.5vw, 16px);
-  --trusted-mark-max: clamp(2.75rem, 8vw, 4.5rem);
-}
-@media (prefers-reduced-motion: reduce) {
-  .trusted-logos__layer {
-    transition: none;
-  }
-  .trusted-logos__layer:not(.is-active) {
-    visibility: hidden;
-  }
+  --trusted-gap-x: clamp(6px, 1.2vw, 14px);
+  --trusted-text-h: clamp(0.75rem, 1.6vw, 1rem);
+  --trusted-vai-size: clamp(1.75rem, 4vw, 2.5rem);
 }
 
 /* ── "由前沿模型驱动" SECTION ─────────────────────────────── */
