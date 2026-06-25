@@ -117,7 +117,107 @@ const translations = {
         'about.vision_title': '打造我们未来的愿景',
         'about.vision_text': '最具沉浸感的开放世界交互体验。',
         'about.btn1': '加入我们',
-        'about.btn2': '协议'
+        'about.btn2': '协议',
+
+        // API Open Platform home (chat/api/index.html)
+        'api.home.doc_title': 'NexusV 开放平台',
+        'api.home.doc_desc': '在 NexusV 平台上开发领先的 AI 产品。一个端点，多种协议，一把密钥——把 OpenAI、Anthropic 与 Codex 原生协议归一到同一个 API 网关。',
+        'api.home.hero.title': '在 NexusV 平台上开发领先的 AI 产品',
+        'api.home.hero.contact_sales': '联系销售人员',
+        'api.home.hero.start_build': '开始构建',
+        'api.home.trusted_aria': '生态模型品牌',
+        'api.home.models.title': '由前沿模型驱动',
+        'api.home.models.sub': '我们实力强劲的模型专为真实场景而设计，提供先进的智能与多模态能力。一个端点接入全部模型。',
+        'api.home.model.learn_more': '了解更多',
+        'api.home.card.opus.spec1': '输入：¥6.00 / 输出：¥27.00 每百万标记',
+        'api.home.card.opus.spec2': '100万 上下文长度 · 3.2万 最大输出',
+        'api.home.card.opus.spec3': '知识截止日期：2026年1月',
+        'api.home.card.gpt55.spec1': '输入：¥0.50 / 输出：¥3.00 每百万标记',
+        'api.home.card.gpt55.spec2': '100万 上下文长度 · 3.2万 最大输出',
+        'api.home.card.gpt55.spec3': '知识截止日期：2025年12月',
+        'api.home.card.grok.spec1': '输入：¥0.70 / 输出：¥1.00 每百万标记',
+        'api.home.card.grok.spec2': '100万 上下文长度 · 3.2万 最大输出',
+        'api.home.card.grok.spec3': '知识截止日期：2025年12月',
+        'api.home.guides.title': '开始构建',
+        'api.home.guides.view_all': '查看全部模型',
+        'api.home.guide.docs.title': 'API Docs',
+        'api.home.guide.docs.desc': '了解我们的文档以便接入你的工作流',
+        'api.home.guide.docs.link': '查看文档',
+        'api.home.guide.console.title': 'API Home',
+        'api.home.guide.console.desc': '进入属于你的控制台查看密钥或日志',
+        'api.home.guide.console.link': '查看控制台',
+        'api.home.guide.migrate.title': '迁移支持',
+        'api.home.guide.migrate.desc': '了解如何从其他平台迁移到 NexusV 网关。',
+        'api.home.guide.migrate.link': '查看迁移指南',
+        'api.home.agent.title': '一站式智能体平台',
+        'api.home.agent.sub': '使用预构建组件或从零开始，更快速地开发、部署并优化可投入生产的智能体。',
+        'api.home.agent.learn_more': '了解更多',
+        'api.home.agent.build.title': '构建',
+        'api.home.agent.build.desc': '在可视化画布中使用智能体构建器快速创建智能体，或在代码优先的环境中借助智能体 SDK 灵活开发。',
+        'api.home.agent.ground.desc': '通过内置工具（如网页搜索、文件搜索和远程 MCP 服务器）为智能体提供相关上下文。',
+        'api.home.agent.optimize.title': '优化',
+        'api.home.agent.optimize.desc': '运行评测以衡量智能体表现，并通过提示词优化改进结果。',
+        'api.home.elevate.title': '让 AI 体验更上一层楼',
+        'api.home.elevate.tab.voice': '语音',
+        'api.home.elevate.tab.image': '图片',
+        'api.home.elevate.voice.desc': '利用 <a href="chat/api_docs_oai.html#realtime" class="elevate-panel__link">Realtime API</a> 构建自然流畅的语音智能体，为客户带来更出色体验与支持。',
+        'api.home.elevate.voice.iframe_title': 'Realtime API 语音演示',
+        'api.home.elevate.image.desc': '利用 <a href="chat/api_docs_oai.html#image" class="elevate-panel__link">Image API</a> 生成高质量图像，为创意工作流和产品体验注入视觉智能。',
+        'api.home.elevate.image.alt': 'Image API 生成示例',
+        'api.home.usecases.title': '由我们平台驱动的应用场景',
+        'api.home.usecases.contact': '联系销售团队',
+        'api.home.usecase.coding.title': '编程',
+        'api.home.usecase.coding.desc': '利用能够编写、审查、调试、重构和迁移代码的模型，缩短开发周期。',
+        'api.home.usecase.coding.link': '查看客户案例',
+        'api.home.usecase.support.title': '客户支持',
+        'api.home.usecase.support.desc': '借助能够自主解决问题并处理客户咨询的模型，更高效地提供客户支持。',
+        'api.home.usecase.recommend.title': '个性化推荐',
+        'api.home.usecase.recommend.desc': '呈现为客户量身定制的推荐，提升参与度、留存率和收益。',
+        'api.home.usecase.research.title': '研究与数据分析',
+        'api.home.usecase.research.desc': '将复杂数据转化为清晰洞察与综合结论。',
+        'api.home.usecase.content.title': '内容生成',
+        'api.home.usecase.content.desc': '生成高质量的文本和图像等内容，以契合品牌的风格与调性。',
+        'api.home.usecase.education.title': 'Education 版',
+        'api.home.usecase.education.desc': '借助 AI 工具提升教学效果，用于课程规划、辅导与支持。',
+        'api.home.enterprise.title': '适用于大规模运营的企业级功能',
+        'api.home.enterprise.learn_more': '了解更多',
+        'api.home.enterprise.security.title': '安全与数据隐私',
+        'api.home.enterprise.security.l1': '不会使用你的数据训练模型',
+        'api.home.enterprise.security.l2': '可按请求启用零数据保留策略',
+        'api.home.enterprise.security.l3': '商业合作协议 (BAA)，符合 HIPAA 合规要求',
+        'api.home.enterprise.security.l4': 'SOC 2 Type 2 合规认证',
+        'api.home.enterprise.security.l5': '数据驻留控制',
+        'api.home.enterprise.security.l6': 'IP 白名单与 mTLS 网络控制',
+        'api.home.enterprise.security.l7': '单点登录 (SSO) 与多因素认证 (MFA)',
+        'api.home.enterprise.security.l8': '数据静态加密 (AES-256) 与传输加密 (TLS 1.2+)',
+        'api.home.enterprise.admin.title': '管理控制',
+        'api.home.enterprise.admin.l1': '通过基于角色的访问控制，管理工具、模型和项目的使用权限',
+        'api.home.enterprise.admin.l2': '设置账单与使用量提醒，避免超额',
+        'api.home.enterprise.admin.l3': '按项目查看详细的使用情况与成本活动',
+        'api.home.enterprise.support.title': '获取 NexusV 专业支持',
+        'api.home.enterprise.support.l1': '专属客户团队与优先级支持',
+        'api.home.enterprise.support.l2': '来自解决方案架构师的 AI 部署与最佳实践指导',
+        'api.home.enterprise.support.l3': '与研究人员合作，共同构建定制 AI 模型',
+        'api.home.getstarted.title': '开始使用',
+        'api.home.getstarted.strategy.title': '与我们携手制定 AI 战略',
+        'api.home.getstarted.strategy.l1': '与 AI 顾问合作，解决复杂挑战',
+        'api.home.getstarted.strategy.l2': '获得实操部署指导',
+        'api.home.getstarted.strategy.l3': '解锁优先处理与定价优惠',
+        'api.home.getstarted.self.title': '自主构建',
+        'api.home.getstarted.self.l1': '访问我们的前沿模型和 API',
+        'api.home.getstarted.self.l2': '简单的即用即付定价',
+        'api.home.getstarted.self.l3': '在 Playground 中进行测试',
+        'api.home.getstarted.self.l4': '利用我们的 API 文档和开发者资源进行构建',
+        'api.home.agent.build.alt': '智能体构建器可视化画布',
+        'api.home.agent.ground.alt': '内置工具图标：代码、搜索、图像等',
+        'api.home.agent.optimize.alt': 'Slack、Gmail、Salesforce、GitHub 应用图标',
+        'api.home.usecase.coding.alt': '编程场景',
+        'api.home.usecase.support.alt': '客户支持场景',
+        'api.home.usecase.recommend.alt': '个性化推荐场景',
+        'api.home.usecase.research.alt': '研究与数据分析场景',
+        'api.home.usecase.content.alt': '内容生成场景',
+        'api.home.usecase.education.alt': '教育场景',
+        'api.home.elevate.tabs_aria': '模态'
     },
     'en': {
         'nav.research': 'Research',
@@ -239,7 +339,107 @@ const translations = {
         'about.vision_title': 'Crafting Our Vision for Tomorrow',
         'about.vision_text': 'The most immersive open-world interactive experience.',
         'about.btn1': 'Join Us',
-        'about.btn2': 'Terms'
+        'about.btn2': 'Terms',
+
+        // API Open Platform home (chat/api/index.html)
+        'api.home.doc_title': 'NexusV Open Platform',
+        'api.home.doc_desc': 'Build leading AI products on NexusV. One endpoint, multiple protocols, one key—OpenAI, Anthropic, and Codex native APIs unified through a single gateway.',
+        'api.home.hero.title': 'Build leading AI products on the NexusV platform',
+        'api.home.hero.contact_sales': 'Contact sales',
+        'api.home.hero.start_build': 'Start building',
+        'api.home.trusted_aria': 'Ecosystem model brands',
+        'api.home.models.title': 'Powered by frontier models',
+        'api.home.models.sub': 'Our powerful models are built for real-world scenarios with advanced intelligence and multimodal capabilities. One endpoint for every model.',
+        'api.home.model.learn_more': 'Learn more',
+        'api.home.card.opus.spec1': 'Input: ¥6.00 / Output: ¥27.00 per 1M tokens',
+        'api.home.card.opus.spec2': '1M context · 32K max output',
+        'api.home.card.opus.spec3': 'Knowledge cutoff: Jan 2026',
+        'api.home.card.gpt55.spec1': 'Input: ¥0.50 / Output: ¥3.00 per 1M tokens',
+        'api.home.card.gpt55.spec2': '1M context · 32K max output',
+        'api.home.card.gpt55.spec3': 'Knowledge cutoff: Dec 2025',
+        'api.home.card.grok.spec1': 'Input: ¥0.70 / Output: ¥1.00 per 1M tokens',
+        'api.home.card.grok.spec2': '1M context · 32K max output',
+        'api.home.card.grok.spec3': 'Knowledge cutoff: Dec 2025',
+        'api.home.guides.title': 'Start building',
+        'api.home.guides.view_all': 'View all models',
+        'api.home.guide.docs.title': 'API Docs',
+        'api.home.guide.docs.desc': 'Explore our documentation to integrate into your workflow.',
+        'api.home.guide.docs.link': 'View docs',
+        'api.home.guide.console.title': 'API Home',
+        'api.home.guide.console.desc': 'Open your console to manage keys and view logs.',
+        'api.home.guide.console.link': 'View console',
+        'api.home.guide.migrate.title': 'Migration support',
+        'api.home.guide.migrate.desc': 'Learn how to migrate from other platforms to the NexusV gateway.',
+        'api.home.guide.migrate.link': 'View migration guide',
+        'api.home.agent.title': 'All-in-one agent platform',
+        'api.home.agent.sub': 'Build, deploy, and optimize production-ready agents faster—with prebuilt components or from scratch.',
+        'api.home.agent.learn_more': 'Learn more',
+        'api.home.agent.build.title': 'Build',
+        'api.home.agent.build.desc': 'Create agents quickly on a visual canvas with Agent Builder, or develop flexibly in a code-first environment with the Agents SDK.',
+        'api.home.agent.ground.desc': 'Ground agents with built-in tools such as web search, file search, and remote MCP servers.',
+        'api.home.agent.optimize.title': 'Optimize',
+        'api.home.agent.optimize.desc': 'Run evaluations to measure agent performance and improve results with prompt optimization.',
+        'api.home.elevate.title': 'Elevate your AI experiences',
+        'api.home.elevate.tab.voice': 'Voice',
+        'api.home.elevate.tab.image': 'Image',
+        'api.home.elevate.voice.desc': 'Build natural voice agents with the <a href="chat/api_docs_oai.html#realtime" class="elevate-panel__link">Realtime API</a> for better customer experiences and support.',
+        'api.home.elevate.voice.iframe_title': 'Realtime API voice demo',
+        'api.home.elevate.image.desc': 'Generate high-quality images with the <a href="chat/api_docs_oai.html#image" class="elevate-panel__link">Image API</a> to power creative workflows and product experiences.',
+        'api.home.elevate.image.alt': 'Image API generation example',
+        'api.home.usecases.title': 'Use cases powered by our platform',
+        'api.home.usecases.contact': 'Contact sales',
+        'api.home.usecase.coding.title': 'Coding',
+        'api.home.usecase.coding.desc': 'Shorten development cycles with models that write, review, debug, refactor, and migrate code.',
+        'api.home.usecase.coding.link': 'View customer stories',
+        'api.home.usecase.support.title': 'Customer support',
+        'api.home.usecase.support.desc': 'Resolve issues and handle inquiries more efficiently with models that work autonomously.',
+        'api.home.usecase.recommend.title': 'Personalized recommendations',
+        'api.home.usecase.recommend.desc': 'Deliver tailored recommendations that boost engagement, retention, and revenue.',
+        'api.home.usecase.research.title': 'Research & data analysis',
+        'api.home.usecase.research.desc': 'Turn complex data into clear insights and comprehensive conclusions.',
+        'api.home.usecase.content.title': 'Content generation',
+        'api.home.usecase.content.desc': 'Generate high-quality text, images, and more aligned with your brand voice.',
+        'api.home.usecase.education.title': 'Education',
+        'api.home.usecase.education.desc': 'Enhance teaching with AI tools for lesson planning, tutoring, and support.',
+        'api.home.enterprise.title': 'Enterprise capabilities at scale',
+        'api.home.enterprise.learn_more': 'Learn more',
+        'api.home.enterprise.security.title': 'Security & data privacy',
+        'api.home.enterprise.security.l1': 'Your data is not used to train models',
+        'api.home.enterprise.security.l2': 'Zero data retention available on request',
+        'api.home.enterprise.security.l3': 'Business Associate Agreement (BAA) for HIPAA compliance',
+        'api.home.enterprise.security.l4': 'SOC 2 Type 2 certified',
+        'api.home.enterprise.security.l5': 'Data residency controls',
+        'api.home.enterprise.security.l6': 'IP allowlisting and mTLS network controls',
+        'api.home.enterprise.security.l7': 'Single sign-on (SSO) and multi-factor authentication (MFA)',
+        'api.home.enterprise.security.l8': 'Encryption at rest (AES-256) and in transit (TLS 1.2+)',
+        'api.home.enterprise.admin.title': 'Administration controls',
+        'api.home.enterprise.admin.l1': 'Manage access to tools, models, and projects with role-based access control',
+        'api.home.enterprise.admin.l2': 'Set billing and usage alerts to avoid overages',
+        'api.home.enterprise.admin.l3': 'View detailed usage and cost activity by project',
+        'api.home.enterprise.support.title': 'Get dedicated NexusV support',
+        'api.home.enterprise.support.l1': 'Dedicated customer team and priority support',
+        'api.home.enterprise.support.l2': 'AI deployment guidance and best practices from solution architects',
+        'api.home.enterprise.support.l3': 'Collaborate with researchers to build custom AI models',
+        'api.home.getstarted.title': 'Get started',
+        'api.home.getstarted.strategy.title': 'Partner on your AI strategy',
+        'api.home.getstarted.strategy.l1': 'Work with AI advisors to solve complex challenges',
+        'api.home.getstarted.strategy.l2': 'Get hands-on deployment guidance',
+        'api.home.getstarted.strategy.l3': 'Unlock priority handling and pricing benefits',
+        'api.home.getstarted.self.title': 'Build on your own',
+        'api.home.getstarted.self.l1': 'Access our frontier models and APIs',
+        'api.home.getstarted.self.l2': 'Simple pay-as-you-go pricing',
+        'api.home.getstarted.self.l3': 'Test in the Playground',
+        'api.home.getstarted.self.l4': 'Build with our API docs and developer resources',
+        'api.home.agent.build.alt': 'Agent Builder visual canvas',
+        'api.home.agent.ground.alt': 'Built-in tools: code, search, image, and more',
+        'api.home.agent.optimize.alt': 'Slack, Gmail, Salesforce, and GitHub app icons',
+        'api.home.usecase.coding.alt': 'Coding use case',
+        'api.home.usecase.support.alt': 'Customer support use case',
+        'api.home.usecase.recommend.alt': 'Personalized recommendations use case',
+        'api.home.usecase.research.alt': 'Research and data analysis use case',
+        'api.home.usecase.content.alt': 'Content generation use case',
+        'api.home.usecase.education.alt': 'Education use case',
+        'api.home.elevate.tabs_aria': 'Modalities'
     }
 };
 
@@ -297,6 +497,46 @@ function translate(root = document) {
             el.setAttribute('aria-label', translations[lang][key]);
         }
     });
+
+    const contentElements = root.querySelectorAll('[data-i18n-content]');
+    contentElements.forEach(el => {
+        const key = el.getAttribute('data-i18n-content');
+        if (translations[lang] && translations[lang][key]) {
+            el.setAttribute('content', translations[lang][key]);
+        }
+    });
+
+    const altElements = root.querySelectorAll('[data-i18n-alt]');
+    altElements.forEach(el => {
+        const key = el.getAttribute('data-i18n-alt');
+        if (translations[lang] && translations[lang][key]) {
+            el.setAttribute('alt', translations[lang][key]);
+        }
+    });
+
+    const htmlElements = root.querySelectorAll('[data-i18n-html]');
+    htmlElements.forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        if (translations[lang] && translations[lang][key]) {
+            el.innerHTML = translations[lang][key];
+        }
+    });
+
+    const titleAttrElements = root.querySelectorAll('[data-i18n-title]');
+    titleAttrElements.forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        if (translations[lang] && translations[lang][key]) {
+            el.setAttribute('title', translations[lang][key]);
+        }
+    });
+
+    const titleEl = document.querySelector('title[data-i18n]');
+    if (titleEl) {
+        const titleKey = titleEl.getAttribute('data-i18n');
+        if (translations[lang] && translations[lang][titleKey]) {
+            document.title = translations[lang][titleKey];
+        }
+    }
 }
 
 function setLanguage(lang) {
