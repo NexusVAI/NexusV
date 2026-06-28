@@ -168,7 +168,9 @@
       '<div><label style="font-size:13px;display:block;margin-bottom:4px;">端点地址（必含 /v1）</label><input type="text" id="mm-f-baseurl" style="' + inputStyle() + '" placeholder="https://api.openai.com/v1"></div>' +
       '<div><label style="font-size:13px;display:block;margin-bottom:4px;">API Key（加密存储）</label><input type="password" id="mm-f-key" style="' + inputStyle() + '" placeholder="sk-..." autocomplete="off"></div>' +
       '<div><label style="font-size:13px;display:block;margin-bottom:4px;">描述（可选）</label><textarea id="mm-f-desc" style="' + inputStyle() + 'height:60px;" maxlength="500"></textarea></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">卖家倍率</label><input type="number" id="mm-f-mult" style="' + inputStyle() + '" step="0.1" min="0.1" max="100" value="1.0"></div>' +
+      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">输入价（元/百万 token）</label><input type="number" id="mm-f-inprice" style="' + inputStyle() + '" step="0.01" min="0" placeholder="如 0.15"></div>' +
+      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">输出价（元/百万 token）</label><input type="number" id="mm-f-outprice" style="' + inputStyle() + '" step="0.01" min="0" placeholder="如 0.60"></div>' +
+      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">缓存输入倍数（默认 0.1）</label><input type="number" id="mm-f-cached" style="' + inputStyle() + '" step="0.01" min="0" max="1" value="0.1"></div>' +
       '<label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="mm-f-disclaim" style="margin-top:2px;"><span>因上游内容问题导致的一切后果由卖家承担，平台有权随时下架违规 listing 并封禁账号。</span></label>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;"><button type="button" id="mm-lm-cancel" style="' + btnStyle() + '">取消</button><button type="button" id="mm-lm-submit" style="' + btnStyle("primary") + '">发布上架</button></div>' +
       '</div>';
@@ -204,8 +206,8 @@
 
     // 上架弹窗逻辑
     function openListing() {
-      ["mm-f-name", "mm-f-models", "mm-f-baseurl", "mm-f-key", "mm-f-desc"].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
-      document.getElementById("mm-f-mult").value = "1.0";
+      ["mm-f-name", "mm-f-models", "mm-f-baseurl", "mm-f-key", "mm-f-desc", "mm-f-inprice", "mm-f-outprice"].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
+      document.getElementById("mm-f-cached").value = "0.1";
       document.getElementById("mm-f-disclaim").checked = false;
       document.getElementById("mm-lm-error").style.display = "none";
       selPlatform("openai");
@@ -220,15 +222,19 @@
       var baseUrl = document.getElementById("mm-f-baseurl").value.trim();
       var key = document.getElementById("mm-f-key").value;
       var desc = document.getElementById("mm-f-desc").value.trim();
-      var mult = parseFloat(document.getElementById("mm-f-mult").value) || 1.0;
+      var inPrice = parseFloat(document.getElementById("mm-f-inprice").value);
+      var outPrice = parseFloat(document.getElementById("mm-f-outprice").value);
+      var cachedFactor = parseFloat(document.getElementById("mm-f-cached").value) || 0.1;
       var disclaim = document.getElementById("mm-f-disclaim").checked;
       if (!name) return fail("请填写模型名称");
       if (models.length === 0) return fail("请填写至少一个模型 ID");
       if (!baseUrl || !baseUrl.includes("/v1")) return fail("端点地址必须包含 /v1");
       if (!key) return fail("请填写 API Key");
+      if (isNaN(inPrice) || inPrice < 0) return fail("请填写有效的输入价");
+      if (isNaN(outPrice) || outPrice < 0) return fail("请填写有效的输出价");
       if (!disclaim) return fail("必须勾选免责声明");
       var btn = document.getElementById("mm-lm-submit"); btn.disabled = true; btn.textContent = "提交中…";
-      try { await apiPost("/listings", { platform: state.selectedPlatform, base_url: baseUrl, key: key, model_whitelist: models, rate_multiplier: mult, display_name: name, description: desc }, state.token); lm.style.display = "none"; await refreshOverview(); } catch (e) { fail("上架失败：" + (e.message || e) + (e.payload && e.payload.detail ? "（" + e.payload.detail + "）" : "")); } finally { btn.disabled = false; btn.textContent = "发布上架"; }
+      try { await apiPost("/listings", { platform: state.selectedPlatform, base_url: baseUrl, key: key, model_whitelist: models, rate_multiplier: 1.0, display_name: name, description: desc, input_price_per_m: inPrice, output_price_per_m: outPrice, cached_input_factor: cachedFactor }, state.token); lm.style.display = "none"; await refreshOverview(); } catch (e) { fail("上架失败：" + (e.message || e) + (e.payload && e.payload.detail ? "（" + e.payload.detail + "）" : "")); } finally { btn.disabled = false; btn.textContent = "发布上架"; }
     });
 
     // 提现弹窗逻辑

@@ -1,12 +1,7 @@
 /* Cancri 螃蟹市场 — market.html 页面逻辑。
- *
- * 复用 api-models-app.js / api-keys-app.js 的鉴权与 catalog 模式：
- *   1. supabase 会话 + PlatformAuth 登录校验
- *   2. chat-gateway api_my_keys → applications.some(status==='approved') 校验 API 开通
- *   3. cancri-market /listings (GET) → 渲染挂单卡片（卖家邮箱脱敏，不暴露 UUID/Key）
- *   4. 首次进入免责声明弹窗（localStorage 记住"下次不再显示"）
- *
- * 卡片样式沿用 oai-models.js 的 cancri-thumb/cancri-grid，保证与模型广场视觉一致。
+ * 复用 oai-models.js 的 cancri-thumb/cancri-grid 卡片样式，与模型广场视觉一致。
+ * 显隐用 data-cancri-hidden 属性模式（oai-cancri.css [data-cancri-hidden]{display:none!important}）。
+ * 定价显示 V3 口径：输入/输出/缓存 元/1M token。
  */
 (function () {
   "use strict";
@@ -15,8 +10,6 @@
   var GW = (window.__SUPABASE_URL__ || "") + "/functions/v1/chat-gateway";
   var ANON = window.__SUPABASE_ANON_KEY__ || "";
 
-  // 卖家可选模型图标库（复用 api-models-app.js BRAND_LOGO，按 platform 归一化查表）
-  // 这里只列前端展示用的几个常见 platform；未命中的用通用占位图标。
   var PLATFORM_ICON = {
     openai: "./openai.svg",
     anthropic: "./claude-color.svg",
@@ -33,38 +26,46 @@
     cancri: "../Logo/Cancri1.jpg",
   };
 
-  function esc(s) {
-    var d = document.createElement("div");
-    d.textContent = s == null ? "" : String(s);
-    return d.innerHTML;
-  }
+  var PLATFORM_LABEL = {
+    openai: "OpenAI",
+    anthropic: "Anthropic",
+    google: "Google",
+    deepseek: "DeepSeek",
+    xai: "xAI",
+    moonshot: "Moonshot",
+    zhipu: "智谱",
+    qwen: "通义千问",
+    minimax: "MiniMax",
+    doubao: "豆包",
+    meta: "Meta",
+    mistral: "Mistral",
+    cancri: "Cancri",
+  };
+
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
   function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
 
-  function platformIcon(platform) {
-    var key = String(platform || "").toLowerCase().replace(/[\s_-]/g, "");
-    return PLATFORM_ICON[key] || "../Logo/Cancri1.jpg";
-  }
+  function platformIcon(p) { var k = String(p || "").toLowerCase().replace(/[\s_-]/g, ""); return PLATFORM_ICON[k] || "../Logo/Cancri1.jpg"; }
+  function platformLabel(p) { var k = String(p || "").toLowerCase().replace(/[\s_-]/g, ""); return PLATFORM_LABEL[k] || p || "自定义"; }
 
-  function fmtMult(n) {
-    n = Number(n) || 0;
-    if (n === Math.round(n)) return n + "×";
-    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
-  }
-
-  // micro(¥*1e6) → ¥显示
-  function fmtCny(micro) {
-    var v = (Number(micro) || 0) / 1e6;
-    if (v === 0) return "¥0.00";
-    if (v < 0.01) return "¥" + v.toFixed(6);
-    return "¥" + v.toFixed(2);
+  // V3 定价：元/1M token → 显示
+  function fmtPrice(n) {
+    n = Number(n);
+    if (!isFinite(n) || n === null) return "—";
+    if (n === 0) return "免费";
+    if (n < 0.01) return "¥" + n.toFixed(4);
+    if (n < 1) return "¥" + n.toFixed(2);
+    return "¥" + n.toFixed(2);
   }
 
   function listingCardHtml(l) {
-    var name = l.display_name || l.platform || "匿名挂单";
-    var desc = l.description || (l.platform ? l.platform + " 上游 Key" : "");
+    var name = l.display_name || platformLabel(l.platform);
+    var desc = l.description || "";
     var icon = platformIcon(l.platform);
     var models = Array.isArray(l.model_whitelist) ? l.model_whitelist : [];
     var modelsTxt = models.slice(0, 4).map(esc).join("、") + (models.length > 4 ? " 等" : "");
+    var inPrice = fmtPrice(l.input_price_per_m);
+    var outPrice = fmtPrice(l.output_price_per_m);
     return (
       '<div class="flex flex-col text-emphasis" data-listing-id="' + escAttr(l.id) + '">' +
         '<div class="h-[180px] w-full">' +
@@ -84,16 +85,16 @@
               '<span class="cancri-spec__val">' + esc(l.seller_email || "匿名卖家") + "</span>" +
             "</div>" +
             '<div class="cancri-spec__row">' +
-              '<span class="cancri-spec__key">平台</span>' +
-              '<span class="cancri-spec__val">' + esc(l.platform || "—") + "</span>" +
-            "</div>" +
-            '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">支持模型</span>' +
               '<span class="cancri-spec__val">' + esc(modelsTxt || "—") + "</span>" +
             "</div>" +
             '<div class="cancri-spec__row">' +
-              '<span class="cancri-spec__key">卖家倍率</span>' +
-              '<span class="cancri-spec__val cancri-price"><span class="cancri-price__num">' + esc(fmtMult(l.rate_multiplier)) + '</span><span class="cancri-price__unit">卖家自定义</span></span>' +
+              '<span class="cancri-spec__key">输入价</span>' +
+              '<span class="cancri-spec__val cancri-price"><span class="cancri-price__num">' + esc(inPrice) + '</span><span class="cancri-price__unit">/百万 token</span></span>' +
+            "</div>" +
+            '<div class="cancri-spec__row">' +
+              '<span class="cancri-spec__key">输出价</span>' +
+              '<span class="cancri-spec__val cancri-price"><span class="cancri-price__num">' + esc(outPrice) + '</span><span class="cancri-price__unit">/百万 token</span></span>' +
             "</div>" +
           "</div>" +
         "</div>" +
@@ -101,8 +102,9 @@
     );
   }
 
-  function show(el) { if (el) el.classList.remove("hidden"); el && (el.style.display !== "none" ? null : (el.style.display = "")); }
-  function hide(el) { if (el) el.classList.add("hidden"); }
+  // data-cancri-hidden 模式（oai-cancri.css 权威：[data-cancri-hidden]{display:none!important}）
+  function show(el) { if (el) el.removeAttribute("data-cancri-hidden"); }
+  function hide(el) { if (el) el.setAttribute("data-cancri-hidden", ""); }
 
   var sb;
   function getClient() {
@@ -112,33 +114,19 @@
     });
     return sb;
   }
-
-  async function getSession() {
-    var c = getClient();
-    var d = await c.auth.getSession();
-    return d.data && d.data.session;
-  }
-
-  // 校验 API 开通（与 api-keys-app.js 一致：api_my_keys → applications.some(approved)）
+  async function getSession() { var d = await getClient().auth.getSession(); return d.data && d.data.session; }
   async function hasApiAccess(token) {
     try {
-      var resp = await fetch(GW, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: ANON },
-        body: JSON.stringify({ endpoint: "api_my_keys", __auth_token: token }),
-      });
-      if (!resp.ok) return false;
-      var data = await resp.json();
-      return !!(data && data.applications && data.applications.some(function (a) { return a.status === "approved"; }));
+      var r = await fetch(GW, { method: "POST", headers: { "Content-Type": "application/json", apikey: ANON }, body: JSON.stringify({ endpoint: "api_my_keys", __auth_token: token }) });
+      if (!r.ok) return false;
+      var d = await r.json();
+      return !!(d && d.applications && d.applications.some(function (a) { return a.status === "approved"; }));
     } catch (e) { return false; }
   }
-
   async function loadListings(token) {
-    var resp = await fetch(MARKET_BASE + "/listings", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    if (!resp.ok) throw new Error("load_listings_failed_" + resp.status);
-    return await resp.json();
+    var r = await fetch(MARKET_BASE + "/listings", { headers: { Authorization: "Bearer " + token } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
   }
 
   function renderListings(listings) {
@@ -149,33 +137,25 @@
     hide(loading);
     if (!Array.isArray(listings) || listings.length === 0) {
       if (countEl) countEl.textContent = "0";
-      errBox.textContent = "当前市场暂无在售挂单。";
-      errBox.removeAttribute("data-cancri-hidden");
-      show(errBox);
+      if (errBox) { errBox.textContent = "当前市场暂无在售挂单。"; show(errBox); }
       return;
     }
     if (countEl) countEl.textContent = String(listings.length);
+    if (errBox) hide(errBox);
     grid.innerHTML = listings.map(listingCardHtml).join("");
   }
 
   function maybeShowDisclaimer() {
-    try {
-      if (localStorage.getItem("cancri_market_disclaimer_done") === "1") return;
-    } catch (e) {}
+    try { if (localStorage.getItem("cancri_market_disclaimer_done") === "1") return; } catch (e) {}
     var dlg = document.getElementById("market-disclaimer");
     if (!dlg) return;
     dlg.style.display = "flex";
-    dlg.setAttribute("data-open", "true");
-    dlg.setAttribute("aria-hidden", "false");
     var ok = document.getElementById("market-disclaimer-ok");
     var remember = document.getElementById("market-disclaimer-remember");
-    function close() {
+    if (ok) ok.addEventListener("click", function () {
       try { if (remember && remember.checked) localStorage.setItem("cancri_market_disclaimer_done", "1"); } catch (e) {}
       dlg.style.display = "none";
-      dlg.setAttribute("data-open", "false");
-      dlg.setAttribute("aria-hidden", "true");
-    }
-    if (ok) ok.addEventListener("click", close, { once: true });
+    }, { once: true });
   }
 
   async function init() {
@@ -186,25 +166,17 @@
     var errBox = document.getElementById("market-error");
 
     if (!window.supabase || !window.__SUPABASE_URL__ || !window.PlatformAuth) {
-      if (errBox) { errBox.textContent = "依赖脚本加载失败，请检查网络后刷新。"; show(errBox); }
       hide(loading);
+      if (errBox) { errBox.textContent = "依赖脚本加载失败，请检查网络后刷新。"; show(errBox); }
       return;
     }
 
     var session;
     try { session = await getSession(); } catch (e) { session = null; }
-    if (!session) {
-      hide(loading);
-      show(notLoggedIn);
-      return;
-    }
+    if (!session) { hide(loading); show(notLoggedIn); return; }
 
     var approved = await hasApiAccess(session.access_token);
-    if (!approved) {
-      hide(loading);
-      show(noAccess);
-      return;
-    }
+    if (!approved) { hide(loading); show(noAccess); return; }
 
     show(accessible);
     try {
@@ -213,13 +185,10 @@
       maybeShowDisclaimer();
     } catch (e) {
       hide(loading);
-      if (errBox) { errBox.textContent = "加载市场挂单失败：" + (e && e.message ? e.message : e); show(errBox); }
+      if (errBox) { errBox.textContent = "加载失败：" + (e && e.message ? e.message : e); show(errBox); }
     }
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();
