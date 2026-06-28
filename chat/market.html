@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN" class="dark" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- CSP 沿用模型广场：外联脚本（禁 inline JS），允许 inline style 与 data: 字体。 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>螃蟹市场 · NexusV 开放平台</title>
+    <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+    <link rel="stylesheet" href="./api/oai-platform.css?v=20260622-models" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260622-models" />
+    <!-- 主题在首帧前应用，避免闪烁（CSP 禁 inline，故在 head 同步加载） -->
+    <script src="./api/oai-platform.js?v=20260622-models"></script>
+  </head>
+
+  <body class="overflow-x-hidden" data-cancri-base="" data-cancri-logobase="../Logo/">
+    <!-- ───────── Top header（与 api_models.html 一致）───────── -->
+    <header id="header" class="fixed top-0 w-full h-16 z-50 bg-white dark:bg-black border-b border-primary-surface">
+      <div class="flex items-center h-full px-4 md:px-8 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-6">
+        <a href="./api/index.html" class="flex items-center gap-2 font-semibold ml-0 md:-ml-1 md:justify-self-start">
+          <img class="h-6 w-6 rounded-md" src="../Logo/Cancri1.jpg" data-dark-src="../Logo/Cancri1.jpg" data-light-src="../Logo/Cancri.png" alt="NexusV" width="24" height="24" />
+          <span class="text-default">NexusV 开放平台</span>
+        </a>
+        <nav class="hidden md:flex items-center justify-center gap-1">
+          <div class="relative group">
+            <a href="./api/index.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">概览</a>
+          </div>
+          <div class="relative group">
+            <a href="./api_models.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">模型</a>
+          </div>
+          <div class="relative group">
+            <a href="./api_docs.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">文档
+              <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5 text-tertiary"><path d="M11.2929 16.2929C11.6834 16.6834 12.3166 16.6834 12.7071 16.2929L18.7071 10.2929C19.0976 9.90237 19.0976 9.26921 18.7071 8.87868C18.3166 8.48816 17.6834 8.48816 17.2929 8.87868L12 14.1716L6.70711 8.87868C6.31658 8.48816 5.68342 8.48816 5.29289 8.87868C4.90237 9.26921 4.90237 9.90237 5.29289 10.2929L11.2929 16.2929Z" fill="currentColor"></path></svg>
+            </a>
+            <div class="invisible opacity-0 absolute left-0 top-full z-50 mt-2 min-w-full w-max transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2" role="menu">
+              <div class="overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10">
+                <a role="menuitem" href="./api_docs.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">文档中心</div><div class="text-sm text-secondary">接入指南与示例</div></div></a>
+                <a role="menuitem" href="./api_docs.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">快速开始</div><div class="text-sm text-secondary">5 分钟完成首次调用</div></div></a>
+              </div>
+            </div>
+          </div>
+          <div class="relative group">
+            <a href="./api/console.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">控制台
+              <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5 text-tertiary"><path d="M11.2929 16.2929C11.6834 16.6834 12.3166 16.6834 12.7071 16.2929L18.7071 10.2929C19.0976 9.90237 19.0976 9.26921 18.7071 8.87868C18.3166 8.48816 17.6834 8.48816 17.2929 8.87868L12 14.1716L6.70711 8.87868C6.31658 8.48816 5.68342 8.48816 5.29289 8.87868C4.90237 9.26921 4.90237 9.90237 5.29289 10.2929L11.2929 16.2929Z" fill="currentColor"></path></svg>
+            </a>
+            <div class="invisible opacity-0 absolute left-0 top-full z-50 mt-2 min-w-full w-max transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2" role="menu">
+              <div class="overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10">
+                <a role="menuitem" href="./api/keys.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">API 密钥</div><div class="text-sm text-secondary">生成与管理密钥</div></div></a>
+                <a role="menuitem" href="./pricing.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">充值</div><div class="text-sm text-secondary">按量充值，永不过期</div></div></a>
+                <a role="menuitem" href="./orders.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">我的订单</div><div class="text-sm text-secondary">充值与订单记录</div></div></a>
+              </div>
+            </div>
+          </div>
+          <div class="relative group">
+            <a href="./api_apply.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">资源
+              <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5 text-tertiary"><path d="M11.2929 16.2929C11.6834 16.6834 12.3166 16.6834 12.7071 16.2929L18.7071 10.2929C19.0976 9.90237 19.0976 9.26921 18.7071 8.87868C18.3166 8.48816 17.6834 8.48816 17.2929 8.87868L12 14.1716L6.70711 8.87868C6.31658 8.48816 5.68342 8.48816 5.29289 8.87868C4.90237 9.26921 4.90237 9.90237 5.29289 10.2929L11.2929 16.2929Z" fill="currentColor"></path></svg>
+            </a>
+            <div class="invisible opacity-0 absolute left-0 top-full z-50 mt-2 min-w-full w-max transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2" role="menu">
+              <div class="overflow-hidden rounded-md border border-primary-surface bg-surface shadow-md ring-1 ring-black/5 dark:ring-white/10">
+                <a role="menuitem" href="./api_apply.html" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">申请接入</div><div class="text-sm text-secondary">申请 API 访问权限</div></div></a>
+                <a role="menuitem" href="./" class="block px-4 py-3 text-sm text-default transition-colors hover:bg-primary-soft-alpha hover:text-default"><div class="flex flex-col gap-1"><div class="font-medium">返回聊天</div><div class="text-sm text-secondary">回到 NexusV 对话</div></div></a>
+              </div>
+            </div>
+          </div>
+        </nav>
+        <!-- Right actions -->
+        <div class="ml-auto flex items-center gap-4 md:gap-5 md:ml-0 md:justify-end md:justify-self-end">
+          <button type="button" data-header-search-button aria-controls="header-search-overlay" aria-expanded="false" class="hidden min-w-52 items-center justify-between gap-3 rounded-full border border-primary-surface bg-surface px-4 py-2 text-sm text-secondary transition-colors hover:bg-primary-soft-alpha hover:text-default xl:flex">
+            <span class="truncate">开始搜索</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+          <div class="hidden md:flex">
+            <a href="./api/console.html" class="_Button_6dmow_1 not-prose !h-9 !w-9 justify-center !px-0 min-[1000px]:!w-auto min-[1000px]:!px-4" data-color="primary" data-variant="solid" data-pill data-size="md">
+              <span class="_ButtonInner_6dmow_4"><span class="sr-only min-[1000px]:not-sr-only">控制台</span>
+              </span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ───────── Header search overlay（与 api_models.html 一致）───────── -->
+    <div id="header-search-overlay" data-open="false" aria-hidden="true" class="fixed inset-0 z-[70] hidden bg-black/40 backdrop-blur-sm">
+      <div class="mx-auto mt-16 w-full max-w-2xl rounded-b-xl border border-primary-surface bg-surface shadow-2xl">
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-primary-surface">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 shrink-0 text-secondary"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="cancri-search-input" type="text" placeholder="搜索模型、文档、控制台…" autocomplete="off" class="flex-1 bg-transparent outline-none text-base text-default placeholder:text-secondary" />
+          <button type="button" data-header-search-dismiss class="text-secondary hover:text-default text-xs border border-primary-surface rounded-md px-2 py-1">Esc</button>
+        </div>
+        <div id="cancri-search-results" class="max-h-[60vh] overflow-y-auto p-2"></div>
+      </div>
+    </div>
+
+    <!-- ───────── Mobile drawer（与 api_models.html 一致）───────── -->
+    <div id="drawer" data-open="false" aria-hidden="true" class="fixed inset-0 z-[60] hidden flex-col bg-white dark:bg-black pt-16 md:hidden">
+      <nav class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 text-sm">
+        <a href="./api/index.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">概览</a>
+        <a href="./api_models.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">模型广场</a>
+        <a href="./market.html" class="px-3 py-2 rounded-lg text-default bg-primary-soft">螃蟹市场</a>
+        <a href="./api_docs.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">文档</a>
+        <a href="./api/keys.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">API 密钥</a>
+        <a href="./pricing.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">充值</a>
+        <a href="./orders.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">我的订单</a>
+        <a href="./api_apply.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">申请接入</a>
+        <a href="./" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">返回聊天</a>
+      </nav>
+    </div>
+
+    <!-- ───────── Layout: sidebar + main（与 api_models.html 一致，模型组新增 2 入口）───────── -->
+    <div class="min-h-dvh">
+      <div class="flex pt-16">
+        <div class="hidden md:flex md:flex-col w-[218px] px-3 pb-6 pt-2 md:fixed md:top-16 md:bottom-0 md:z-40 bg-surface dark:bg-black">
+          <nav class="flex-1 overflow-y-auto overflow-x-visible pt-4">
+            <ul class="flex flex-col gap-0.25 text-sm text-default w-full mb-2">
+              <li><a href="./api/index.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">概览</span></a></li>
+            </ul>
+            <details class="nav-disclosure" open>
+              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
+                <span class="flex-1 min-w-0 line-clamp-2">模型</span>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
+              </summary>
+              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
+                <li><a href="./api_models.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">模型广场</span></a></li>
+                <!-- 蟹市入口：图标 1:1 取自 OpenAI 控制台源文件 [9] ChatGPT Apps -->
+                <li><a href="./market.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default bg-primary-soft block" aria-current="page"><span class="line-clamp-2">螃蟹市场</span></a></li>
+                <li><a href="./api_docs.html#pricing" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">计费倍率</span></a></li>
+              </ul>
+            </details>
+            <details class="nav-disclosure" open>
+              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
+                <span class="flex-1 min-w-0 line-clamp-2">API</span>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
+              </summary>
+              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
+                <li><a href="./api_docs.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">快速开始</span></a></li>
+                <li><a href="./api_docs.html#chat" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">Chat Completions</span></a></li>
+                <li><a href="./api_docs.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">文档中心</span></a></li>
+              </ul>
+            </details>
+            <details class="nav-disclosure" open>
+              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
+                <span class="flex-1 min-w-0 line-clamp-2">控制台</span>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
+              </summary>
+              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
+                <li><a href="./api/keys.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">API 密钥</span></a></li>
+                <li><a href="./api/usage.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">用量</span></a></li>
+                <li><a href="./pricing.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">充值</span></a></li>
+                <li><a href="./orders.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">我的订单</span></a></li>
+              </ul>
+            </details>
+            <div>
+              <h3 class="mb-2 ml-3 mt-6 text-sm font-semibold select-none">资源</h3>
+              <ul class="flex flex-col gap-0.25 text-sm text-default w-full">
+                <li><a href="./api_apply.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">申请接入</span></a></li>
+                <li><a href="./" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover flex items-center justify-between gap-1"><span class="line-clamp-2 min-w-0 flex-1">返回聊天</span>
+                  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-2 h-2 inline-block shrink-0 text-current"><path d="M10.2426 0.757385C10.7949 0.757385 11.2426 1.2051 11.2426 1.75739V8.82843C11.2426 9.38071 10.7949 9.82843 10.2426 9.82843C9.69036 9.82843 9.24264 9.38071 9.24264 8.82843V4.17157L2.46447 10.9497C2.07394 11.3403 1.44078 11.3403 1.05025 10.9497C0.659728 10.5592 0.659728 9.92606 1.05025 9.53553L7.82843 2.75736H3.17157C2.61929 2.75736 2.17157 2.30964 2.17157 1.75736C2.17157 1.20507 2.61929 0.757385 3.17157 0.757385H10.2426Z" fill="currentColor"></path></svg>
+                </a></li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+
+        <!-- ───────── Main：螃蟹市场内容 ───────── -->
+        <main class="min-w-0 flex-1 md:pl-[240px]">
+          <div class="relative mx-4 flex flex-col gap-8 px-4 pt-20 pb-10 sm:mx-8 md:mx-auto md:w-full md:max-w-6xl md:px-12 xl:px-4">
+            <div class="flex flex-col gap-[60px]">
+              <div class="flex flex-col gap-12">
+                <div><div><h1 class="_ModelsTitle_163e7_1">螃蟹市场</h1></div></div>
+                <div class="flex flex-col gap-4">
+                  <h2 class="text-3xl font-semibold tracking-tight">二手 API 额度市场</h2>
+                  <p class="text-base text-emphasis">卖家将闲置的第三方 API Key 上架，买家选购额度后按实际消耗结算。卖家得 95%，平台抽 5%。</p>
+                  <p class="text-base text-emphasis">所有 Key 经 AES-256 加密存储，明文绝不对外暴露。结算按买家实付金额分账，自买自卖亏 5% 不可刷收益。</p>
+                </div>
+              </div>
+
+              <!-- 权限未开通提示 -->
+              <div id="market-no-access" class="hidden flex flex-col gap-3 rounded-lg border border-primary-surface bg-surface p-6">
+                <div class="text-lg font-semibold text-default">需先开通 API</div>
+                <div class="text-sm text-secondary">螃蟹市与我的上架仅对已通过 API 申请的用户开放。请先申请接入。</div>
+                <div><a href="./api_apply.html" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">去申请接入</span></a></div>
+              </div>
+
+              <!-- 未登录提示 -->
+              <div id="market-not-logged-in" class="hidden flex flex-col gap-3 rounded-lg border border-primary-surface bg-surface p-6">
+                <div class="text-lg font-semibold text-default">请先登录</div>
+                <div class="text-sm text-secondary">浏览螃蟹市场需登录 NexusV 账号。</div>
+                <div><a href="./" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">返回登录</span></a></div>
+              </div>
+
+              <div id="market-accessible" class="hidden mb-7 flex w-full flex-col gap-7">
+                <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <div class="flex max-w-[980px] flex-col gap-1 pr-2">
+                    <h2 class="text-3xl font-semibold tracking-tight">在售挂单</h2>
+                    <div class="text-secondary text-sm">共 <span data-market-count>—</span> 个挂单，卖家邮箱已脱敏（不显示 UUID）</div>
+                  </div>
+                  <div class="mt-2 md:mt-0">
+                    <a href="./market_mine.html" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="xl"><span class="_ButtonInner_6dmow_4">我的上架</span></a>
+                  </div>
+                </div>
+                <div id="market-loading" class="text-sm text-secondary py-6">正在加载市场挂单…</div>
+                <div id="market-error" class="text-sm text-secondary py-6" data-cancri-hidden></div>
+                <div id="market-grid" class="cancri-grid"></div>
+                <div class="h-px w-full bg-primary-soft"></div>
+                <div class="pt-6 text-sm text-secondary">
+                  蟹市 Key 由第三方卖家提供，平台不对上游内容质量负责。
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- ───────── 首次进入免责声明弹窗 ───────── -->
+    <div id="market-disclaimer" data-open="false" aria-hidden="true" class="fixed inset-0 z-[80] hidden bg-black/50 backdrop-blur-sm items-center justify-center p-4">
+      <div class="w-full max-w-md rounded-2xl border border-primary-surface bg-surface shadow-2xl p-6 flex flex-col gap-4">
+        <h2 class="text-xl font-semibold text-default">蟹市免责声明</h2>
+        <p class="text-base text-emphasis">蟹市 Key 由第三方卖家提供，平台不对上游内容质量负责。</p>
+        <p class="text-sm text-secondary">因上游内容问题导致的一切后果由卖家承担，平台有权随时下架违规 listing 并封禁账号。</p>
+        <label class="flex items-center gap-2 text-sm text-default cursor-pointer select-none">
+          <input type="checkbox" id="market-disclaimer-remember" class="accent-current" />
+          下次不再显示
+        </label>
+        <div class="flex justify-end gap-2 mt-2">
+          <button type="button" id="market-disclaimer-ok" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">我知道了</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 站点配置（设置 __SUPABASE_URL__ / __SUPABASE_ANON_KEY__），须在 oai-market.js 之前 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
+    <script src="./cancri_config.js?v=2026-05-13e"></script>
+    <script src="./api/platform-auth.js?v=20260625-auth"></script>
+    <script src="./api/oai-market.js?v=20260628-market"></script>
+  </body>
+</html>

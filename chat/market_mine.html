@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN" class="dark" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <title>我的上架 · NexusV 开放平台</title>
+    <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
+    <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
+    <link rel="stylesheet" href="./api/oai-platform.css?v=20260622-models" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260622-models" />
+    <script src="./api/oai-platform.js?v=20260622-models"></script>
+  </head>
+
+  <body class="overflow-x-hidden" data-cancri-base="" data-cancri-logobase="../Logo/">
+    <!-- ───────── Top header（与 market.html 一致）───────── -->
+    <header id="header" class="fixed top-0 w-full h-16 z-50 bg-white dark:bg-black border-b border-primary-surface">
+      <div class="flex items-center h-full px-4 md:px-8 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-6">
+        <a href="./api/index.html" class="flex items-center gap-2 font-semibold ml-0 md:-ml-1 md:justify-self-start">
+          <img class="h-6 w-6 rounded-md" src="../Logo/Cancri1.jpg" data-dark-src="../Logo/Cancri1.jpg" data-light-src="../Logo/Cancri.png" alt="NexusV" width="24" height="24" />
+          <span class="text-default">NexusV 开放平台</span>
+        </a>
+        <nav class="hidden md:flex items-center justify-center gap-1">
+          <div class="relative group"><a href="./api/index.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">概览</a></div>
+          <div class="relative group"><a href="./api_models.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">模型</a></div>
+          <div class="relative group">
+            <a href="./api_docs.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">文档
+              <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5 text-tertiary"><path d="M11.2929 16.2929C11.6834 16.6834 12.3166 16.6834 12.7071 16.2929L18.7071 10.2929C19.0976 9.90237 19.0976 9.26921 18.7071 8.87868C18.3166 8.48816 17.6834 8.48816 17.2929 8.87868L12 14.1716L6.70711 8.87868C6.31658 8.48816 5.68342 8.48816 5.29289 8.87868C4.90237 9.26921 4.90237 9.90237 5.29289 10.2929L11.2929 16.2929Z" fill="currentColor"></path></svg>
+            </a>
+          </div>
+          <div class="relative group">
+            <a href="./api/console.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">控制台
+              <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5 text-tertiary"><path d="M11.2929 16.2929C11.6834 16.6834 12.3166 16.6834 12.7071 16.2929L18.7071 10.2929C19.0976 9.90237 19.0976 9.26921 18.7071 8.87868C18.3166 8.48816 17.6834 8.48816 17.2929 8.87868L12 14.1716L6.70711 8.87868C6.31658 8.48816 5.68342 8.48816 5.29289 8.87868C4.90237 9.26921 4.90237 9.90237 5.29289 10.2929L11.2929 16.2929Z" fill="currentColor"></path></svg>
+            </a>
+          </div>
+          <div class="relative group">
+            <a href="./api_apply.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha" aria-haspopup="menu">资源
+              <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5 text-tertiary"><path d="M11.2929 16.2929C11.6834 16.6834 12.3166 16.6834 12.7071 16.2929L18.7071 10.2929C19.0976 9.90237 19.0976 9.26921 18.7071 8.87868C18.3166 8.48816 17.6834 8.48816 17.2929 8.87868L12 14.1716L6.70711 8.87868C6.31658 8.48816 5.68342 8.48816 5.29289 8.87868C4.90237 9.26921 4.90237 9.90237 5.29289 10.2929L11.2929 16.2929Z" fill="currentColor"></path></svg>
+            </a>
+          </div>
+        </nav>
+        <div class="ml-auto flex items-center gap-4 md:gap-5 md:ml-0 md:justify-end md:justify-self-end">
+          <div class="hidden md:flex">
+            <a href="./api/console.html" class="_Button_6dmow_1 not-prose !h-9 !w-9 justify-center !px-0 min-[1000px]:!w-auto min-[1000px]:!px-4" data-color="primary" data-variant="solid" data-pill data-size="md">
+              <span class="_ButtonInner_6dmow_4"><span class="sr-only min-[1000px]:not-sr-only">控制台</span></span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ───────── Mobile drawer ───────── -->
+    <div id="drawer" data-open="false" aria-hidden="true" class="fixed inset-0 z-[60] hidden flex-col bg-white dark:bg-black pt-16 md:hidden">
+      <nav class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 text-sm">
+        <a href="./api/index.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">概览</a>
+        <a href="./api_models.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">模型广场</a>
+        <a href="./market.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">螃蟹市场</a>
+        <a href="./api/keys.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">API 密钥</a>
+        <a href="./api_apply.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">申请接入</a>
+        <a href="./" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">返回聊天</a>
+      </nav>
+    </div>
+
+    <!-- ───────── Layout: sidebar + main（与 market.html 一致，我的上架高亮）───────── -->
+    <div class="min-h-dvh">
+      <div class="flex pt-16">
+        <div class="hidden md:flex md:flex-col w-[218px] px-3 pb-6 pt-2 md:fixed md:top-16 md:bottom-0 md:z-40 bg-surface dark:bg-black">
+          <nav class="flex-1 overflow-y-auto overflow-x-visible pt-4">
+            <ul class="flex flex-col gap-0.25 text-sm text-default w-full mb-2">
+              <li><a href="./api/index.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">概览</span></a></li>
+            </ul>
+            <details class="nav-disclosure" open>
+              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
+                <span class="flex-1 min-w-0 line-clamp-2">模型</span>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
+              </summary>
+              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
+                <li><a href="./api_models.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">模型广场</span></a></li>
+                <li><a href="./market.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">螃蟹市场</span></a></li>
+                
+                <li><a href="./api_docs.html#pricing" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">计费倍率</span></a></li>
+              </ul>
+            </details>
+            <details class="nav-disclosure" open>
+              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
+                <span class="flex-1 min-w-0 line-clamp-2">控制台</span>
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
+              </summary>
+              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
+                <li><a href="./api/keys.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">API 密钥</span></a></li>
+                <li><a href="./api/usage.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">用量</span></a></li>
+                <li><a href="./pricing.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">充值</span></a></li>
+                <li><a href="./orders.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">我的订单</span></a></li>
+              </ul>
+            </details>
+          </nav>
+        </div>
+
+        <!-- ───────── Main：我的上架（镜像 usage.html 结构：顶部统计卡 + Tab 日志 + 上架按钮）───────── -->
+        <main class="min-w-0 flex-1 md:pl-[240px]">
+          <div class="relative mx-4 flex flex-col gap-6 px-4 pt-20 pb-10 sm:mx-8 md:mx-auto md:w-full md:max-w-6xl md:px-12 xl:px-4">
+
+            <!-- 权限/登录 提示 -->
+            <div id="mine-not-logged-in" class="hidden flex flex-col gap-3 rounded-lg border border-primary-surface bg-surface p-6">
+              <div class="text-lg font-semibold text-default">请先登录</div>
+              <div class="text-sm text-secondary">我的上架需登录 NexusV 账号。</div>
+              <div><a href="./" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">返回登录</span></a></div>
+            </div>
+            <div id="mine-no-access" class="hidden flex flex-col gap-3 rounded-lg border border-primary-surface bg-surface p-6">
+              <div class="text-lg font-semibold text-default">需先开通 API</div>
+              <div class="text-sm text-secondary">我的上架仅对已通过 API 申请的用户开放。请先申请接入。</div>
+              <div><a href="./api_apply.html" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">去申请接入</span></a></div>
+            </div>
+
+            <div id="mine-accessible" class="hidden flex flex-col gap-8">
+              <!-- 标题 + 新增上架按钮 -->
+              <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-1">
+                  <h1 class="text-3xl font-semibold tracking-tight text-default">我的上架</h1>
+                  <div class="text-sm text-secondary">管理你上架的蟹市 Key、查看收益与调用日志、申请提现。</div>
+                </div>
+                <div class="flex gap-2">
+                  <button type="button" id="btn-refresh" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">刷新</span></button>
+                  <button type="button" id="btn-new-listing" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">新增上架</span></button>
+                </div>
+              </div>
+
+              <!-- 顶部统计卡（镜像 usage.html Total Spend 卡片，改为卖家收益口径） -->
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div class="flex flex-col gap-2 rounded-lg border border-primary-surface bg-surface p-4">
+                  <div class="text-sm text-secondary">可提现收益</div>
+                  <div class="text-2xl font-semibold text-default" id="stat-available">¥0.00</div>
+                  <div class="text-xs text-tertiary">可提现到站内余额或微信</div>
+                </div>
+                <div class="flex flex-col gap-2 rounded-lg border border-primary-surface bg-surface p-4">
+                  <div class="text-sm text-secondary">冻结中（微信提现审批）</div>
+                  <div class="text-2xl font-semibold text-default" id="stat-frozen">¥0.00</div>
+                  <div class="text-xs text-tertiary">审批通过后出账，驳回则解冻回可提现</div>
+                </div>
+                <div class="flex flex-col gap-2 rounded-lg border border-primary-surface bg-surface p-4">
+                  <div class="text-sm text-secondary">累计已提现</div>
+                  <div class="text-2xl font-semibold text-default" id="stat-withdrawn">¥0.00</div>
+                  <div class="text-xs text-tertiary">累计结算收益 <span id="stat-total-credit">¥0.00</span></div>
+                </div>
+              </div>
+
+              <!-- 提现按钮 -->
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="btn-withdraw-site" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">提现到站内余额</span></button>
+                <button type="button" id="btn-withdraw-wechat" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">提现到微信（提交工单）</span></button>
+              </div>
+
+              <!-- 我的挂单列表 -->
+              <div class="flex flex-col gap-2">
+                <h2 class="text-xl font-semibold text-default">我的挂单</h2>
+                <div id="mine-listings" class="flex flex-col gap-2"></div>
+              </div>
+
+              <!-- Tab：调用日志 / 提现工单 -->
+              <div class="flex flex-col gap-2">
+                <div class="flex gap-2 border-b border-primary-surface">
+                  <button type="button" class="px-4 py-2 text-sm font-semibold text-default border-b-2 border-current mine-tab-btn" data-tab="calls">调用日志</button>
+                  <button type="button" class="px-4 py-2 text-sm text-secondary hover:text-default mine-tab-btn" data-tab="tickets">提现工单</button>
+                </div>
+                <div id="mine-tab-calls" class="mine-tab-panel">
+                  <div id="mine-calls-loading" class="text-sm text-secondary py-4">正在加载调用日志…</div>
+                  <div class="overflow-x-auto rounded-lg border border-primary-surface">
+                    <table class="w-full text-sm">
+                      <thead class="bg-primary-soft text-secondary">
+                        <tr>
+                          <th class="px-3 py-2 text-left">时间</th>
+                          <th class="px-3 py-2 text-left">买家</th>
+                          <th class="px-3 py-2 text-left">模型</th>
+                          <th class="px-3 py-2 text-right">入 tokens</th>
+                          <th class="px-3 py-2 text-right">出 tokens</th>
+                          <th class="px-3 py-2 text-right">买家实付</th>
+                          <th class="px-3 py-2 text-right">你的收益</th>
+                        </tr>
+                      </thead>
+                      <tbody id="mine-calls-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="mine-tab-tickets" class="mine-tab-panel hidden">
+                  <div class="overflow-x-auto rounded-lg border border-primary-surface">
+                    <table class="w-full text-sm">
+                      <thead class="bg-primary-soft text-secondary">
+                        <tr>
+                          <th class="px-3 py-2 text-left">时间</th>
+                          <th class="px-3 py-2 text-left">渠道</th>
+                          <th class="px-3 py-2 text-right">金额</th>
+                          <th class="px-3 py-2 text-left">微信/QQ</th>
+                          <th class="px-3 py-2 text-left">状态</th>
+                          <th class="px-3 py-2 text-left">备注</th>
+                        </tr>
+                      </thead>
+                      <tbody id="mine-tickets-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- ───────── 上架卡片弹窗 ───────── -->
+    <div id="listing-modal" data-open="false" aria-hidden="true" class="fixed inset-0 z-[80] hidden bg-black/50 backdrop-blur-sm items-center justify-center p-4">
+      <div class="w-full max-w-lg rounded-2xl border border-primary-surface bg-surface shadow-2xl p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-semibold text-default">新增上架</h2>
+        <div id="listing-modal-error" class="hidden text-sm text-red-500 bg-red-50 dark:bg-red-900/30 rounded-md p-2"></div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm text-default">模型图标（从现有 SVG 库选择）</label>
+          <div id="icon-picker" class="flex flex-wrap gap-2"></div>
+          <input type="hidden" id="f-platform" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">模型名称 <span class="text-tertiary">（展示用）</span></label>
+          <input type="text" id="f-display-name" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" placeholder="如 我的 GPT-4o" maxlength="80" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">模型 ID <span class="text-tertiary">（支持买家请求的 model，可多个用逗号分隔）</span></label>
+          <input type="text" id="f-model-whitelist" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" placeholder="如 gpt-4o-mini,gpt-4o" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">端点地址 <span class="text-tertiary">（必含 /v1）</span></label>
+          <input type="text" id="f-base-url" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" placeholder="https://api.openai.com/v1" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">API Key <span class="text-tertiary">（仅本次提交传输，AES-256 加密存储）</span></label>
+          <input type="password" id="f-key" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" placeholder="sk-..." autocomplete="off" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">模型描述 <span class="text-tertiary">（可选）</span></label>
+          <textarea id="f-description" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" rows="2" maxlength="500" placeholder="简要描述这个 Key 支持的能力"></textarea>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">卖家倍率 <span class="text-tertiary">（展示用，默认 1.0）</span></label>
+          <input type="number" id="f-rate-multiplier" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" step="0.1" min="0.1" max="100" value="1.0" />
+        </div>
+        <label class="flex items-start gap-2 text-sm text-default cursor-pointer select-none">
+          <input type="checkbox" id="f-disclaimer" class="accent-current mt-0.5" />
+          <span>我已确认：因上游内容问题导致的一切后果由卖家承担，平台有权随时下架违规 listing 并封禁账号。</span>
+        </label>
+        <div class="flex justify-end gap-2 mt-2">
+          <button type="button" id="listing-modal-cancel" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">取消</span></button>
+          <button type="button" id="listing-modal-submit" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">发布上架</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── 提现弹窗（通用：站内/微信）───────── -->
+    <div id="withdraw-modal" data-open="false" aria-hidden="true" class="fixed inset-0 z-[80] hidden bg-black/50 backdrop-blur-sm items-center justify-center p-4">
+      <div class="w-full max-w-md rounded-2xl border border-primary-surface bg-surface shadow-2xl p-6 flex flex-col gap-4">
+        <h2 class="text-xl font-semibold text-default" id="withdraw-modal-title">提现</h2>
+        <div id="withdraw-modal-error" class="hidden text-sm text-red-500 bg-red-50 dark:bg-red-900/30 rounded-md p-2"></div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm text-default">提现金额（¥）</label>
+          <input type="number" id="wd-amount" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" step="0.01" min="0.01" placeholder="0.00" />
+          <div class="text-xs text-tertiary">可提现余额：<span id="wd-available">¥0.00</span></div>
+        </div>
+        <div id="wd-wechat-fields" class="hidden flex-col gap-1">
+          <label class="text-sm text-default">微信号 / QQ号 <span class="text-tertiary">（管理员审批后联系你打款）</span></label>
+          <input type="text" id="wd-wechat-id" class="rounded-md border border-primary-surface bg-surface px-3 py-2 text-sm text-default" placeholder="微信号或QQ号" />
+        </div>
+        <div class="flex justify-end gap-2 mt-2">
+          <button type="button" id="withdraw-modal-cancel" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">取消</span></button>
+          <button type="button" id="withdraw-modal-submit" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">确认提现</span></button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
+    <script src="./cancri_config.js?v=2026-05-13e"></script>
+    <script src="./api/platform-auth.js?v=20260625-auth"></script>
+    <script src="./api/oai-market-mine.js?v=20260628-market"></script>
+  </body>
+</html>
