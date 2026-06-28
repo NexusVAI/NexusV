@@ -170,8 +170,8 @@
                 <div><div><h1 class="_ModelsTitle_163e7_1">螃蟹市场</h1></div></div>
                 <div class="flex flex-col gap-4">
                   <h2 class="text-3xl font-semibold tracking-tight">二手 API 额度市场</h2>
-                  <p class="text-base text-emphasis">卖家将闲置的第三方 API Key 上架，买家选购额度后按实际消耗结算。卖家得 95%，平台抽 5%。</p>
-                  <p class="text-base text-emphasis">所有 Key 经 AES-256 加密存储，明文绝不对外暴露。结算按买家实付金额分账，自买自卖亏 5% 不可刷收益。</p>
+                  <p class="text-base text-emphasis">卖家将闲置的第三方 API Key 上架，买家选购额度后按实际消耗结算。</p>
+                  <p class="text-base text-emphasis">经 AES-256 加密存储，若有问题可以前往社区反馈。</p>
                 </div>
               </div>
 
@@ -193,7 +193,7 @@
                 <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                   <div class="flex max-w-[980px] flex-col gap-1 pr-2">
                     <h2 class="text-3xl font-semibold tracking-tight">在售挂单</h2>
-                    <div class="text-secondary text-sm">共 <span data-market-count>—</span> 个挂单，卖家邮箱已脱敏（不显示 UUID）</div>
+                    <div class="text-secondary text-sm">共 <span data-market-count>—</span> 个挂单</div>
                   </div>
                   <div class="mt-2 md:mt-0">
                     <a href="./market_mine.html" class="_Button_6dmow_1" data-color="primary" data-variant="outline" data-pill data-size="xl"><span class="_ButtonInner_6dmow_4">我的上架</span></a>
@@ -214,17 +214,17 @@
     </div>
 
     <!-- ───────── 首次进入免责声明弹窗 ───────── -->
-    <div id="market-disclaimer" data-open="false" aria-hidden="true" class="fixed inset-0 z-[80] hidden bg-black/50 backdrop-blur-sm items-center justify-center p-4">
-      <div class="w-full max-w-md rounded-2xl border border-primary-surface bg-surface shadow-2xl p-6 flex flex-col gap-4">
-        <h2 class="text-xl font-semibold text-default">蟹市免责声明</h2>
-        <p class="text-base text-emphasis">蟹市 Key 由第三方卖家提供，平台不对上游内容质量负责。</p>
-        <p class="text-sm text-secondary">因上游内容问题导致的一切后果由卖家承担，平台有权随时下架违规 listing 并封禁账号。</p>
-        <label class="flex items-center gap-2 text-sm text-default cursor-pointer select-none">
-          <input type="checkbox" id="market-disclaimer-remember" class="accent-current" />
+    <div id="market-disclaimer" data-open="false" aria-hidden="true" style="position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);">
+      <div style="width:100%;max-width:28rem;border-radius:16px;border:1px solid var(--border-mute,var(--gray-200,#e5e7eb));background:var(--bg-surface,#fff);box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);padding:24px;display:flex;flex-direction:column;gap:16px;">
+        <h2 style="font-size:20px;font-weight:600;margin:0;color:var(--text-default,inherit);">蟹市免责声明</h2>
+        <p style="font-size:16px;margin:0;color:var(--text-default,inherit);">蟹市 Key 由第三方卖家提供，平台不对上游内容质量负责。</p>
+        <p style="font-size:14px;margin:0;color:var(--text-mute,#888);">因上游内容问题导致的一切后果由卖家承担，平台有权随时下架违规 listing 并封禁账号。</p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;user-select:none;color:var(--text-default,inherit);">
+          <input type="checkbox" id="market-disclaimer-remember" />
           下次不再显示
         </label>
-        <div class="flex justify-end gap-2 mt-2">
-          <button type="button" id="market-disclaimer-ok" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">我知道了</span></button>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+          <button type="button" id="market-disclaimer-ok" style="padding:8px 16px;border-radius:9999px;border:none;background:#0080f7;color:#fff;font-size:14px;cursor:pointer;">我知道了</button>
         </div>
       </div>
     </div>
