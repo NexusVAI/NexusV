@@ -164,16 +164,14 @@
     } catch (e) {}
     var dlg = document.getElementById("market-disclaimer");
     if (!dlg) return;
-    dlg.classList.remove("hidden");
-    dlg.classList.add("flex");
+    dlg.style.display = "flex";
     dlg.setAttribute("data-open", "true");
     dlg.setAttribute("aria-hidden", "false");
     var ok = document.getElementById("market-disclaimer-ok");
     var remember = document.getElementById("market-disclaimer-remember");
     function close() {
       try { if (remember && remember.checked) localStorage.setItem("cancri_market_disclaimer_done", "1"); } catch (e) {}
-      dlg.classList.add("hidden");
-      dlg.classList.remove("flex");
+      dlg.style.display = "none";
       dlg.setAttribute("data-open", "false");
       dlg.setAttribute("aria-hidden", "true");
     }
