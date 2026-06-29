@@ -48,6 +48,19 @@
   function platformIcon(p) { var k = String(p || "").toLowerCase().replace(/[\s_-]/g, ""); return PLATFORM_ICON[k] || "../Logo/Cancri1.jpg"; }
   function platformLabel(p) { var k = String(p || "").toLowerCase().replace(/[\s_-]/g, ""); return PLATFORM_LABEL[k] || p || "自定义"; }
 
+  // 与模型广场一致的复制按钮：model id pill（买家调用时需加 px: 前缀）
+  var COPY_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="9" y="9" width="13" height="13" rx="2"></rect>' +
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+  function modelPills(models) {
+    if (!Array.isArray(models) || !models.length) return "—";
+    return '<span class="cancri-id-row">' + models.map(function (m) {
+      return '<button type="button" class="cancri-id" data-copy="' + escAttr(m) + '" title="点击复制 model id（买家调用时前缀 px:）">' +
+        '<span class="cancri-id__text">' + esc(m) + "</span>" + COPY_SVG + "</button>";
+    }).join("") + "</span>";
+  }
+
   // V3 定价：元/1M token → 显示
   function fmtPrice(n) {
     n = Number(n);
@@ -63,7 +76,6 @@
     var desc = l.description || "";
     var icon = platformIcon(l.platform);
     var models = Array.isArray(l.model_whitelist) ? l.model_whitelist : [];
-    var modelsTxt = models.slice(0, 4).map(esc).join("、") + (models.length > 4 ? " 等" : "");
     var inPrice = fmtPrice(l.input_price_per_m);
     var outPrice = fmtPrice(l.output_price_per_m);
     return (
@@ -84,9 +96,9 @@
               '<span class="cancri-spec__key">卖家</span>' +
               '<span class="cancri-spec__val">' + esc(l.seller_email || "匿名卖家") + "</span>" +
             "</div>" +
-            '<div class="cancri-spec__row">' +
+            '<div class="cancri-spec__row" style="align-items:flex-start;">' +
               '<span class="cancri-spec__key">支持模型</span>' +
-              '<span class="cancri-spec__val">' + esc(modelsTxt || "—") + "</span>" +
+              '<span class="cancri-spec__val">' + modelPills(models) + "</span>" +
             "</div>" +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">输入价</span>' +
@@ -145,6 +157,18 @@
     grid.innerHTML = listings.map(listingCardHtml).join("");
   }
 
+  // 复制 model id（事件委托，与卡片重渲染解耦）
+  function setupCopy() {
+    document.addEventListener("click", function (e) {
+      var btn = e.target.closest && e.target.closest(".cancri-id[data-copy]");
+      if (!btn) return;
+      var text = btn.getAttribute("data-copy");
+      var done = function () { btn.classList.add("is-copied"); setTimeout(function () { btn.classList.remove("is-copied"); }, 1200); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(done);
+      else done();
+    });
+  }
+
   function maybeShowDisclaimer() {
     try { if (localStorage.getItem("cancri_market_disclaimer_done") === "1") return; } catch (e) {}
     var dlg = document.getElementById("market-disclaimer");
@@ -179,6 +203,7 @@
     if (!approved) { hide(loading); show(noAccess); return; }
 
     show(accessible);
+    setupCopy();
     try {
       var data = await loadListings(session.access_token);
       renderListings(data.listings || []);

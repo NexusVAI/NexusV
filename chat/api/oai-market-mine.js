@@ -1,324 +1,443 @@
-/* Cancri 我的上架 — market_mine.html 页面逻辑（基于 usage.html UI 框架填数据）。
- * 复用 usage.html 的统计卡/图表/Tab/汇总区 DOM，只填我的上架数据：
- *   - 统计卡 #mm-stat-value → 待结算收益（available_micro）
- *   - 汇总区 #mm-summary-value → 累计收益（total_credit_micro）
- *   - 图表 #mm-chart → 按天结算柱状图（复用 recharts 既有结构，简化为文本柱）
- *   - Tab "调用日志"/"提现工单" → 切换显示对应内容
- * 弹窗（上架/提现）用 inline style，因 usage.html 是 SingleFile 无 oai-platform.css。
- * 鉴权与 api-keys-app.js 一致；接口走 cancri-market。
+/* Cancri 螃蟹市场 — market_mine.html「我的上架」页面逻辑（2026-06-28 重写）。
+ *
+ * 设计目标（对照用户反馈）：
+ *   - 与模型广场一致的卡片：平台图标缩略图 + 展示名 + 可复制 model id pill +
+ *     V3 输入/输出价（不再显示「倍率」）。
+ *   - 挂单支持：编辑 / 启用·禁用 / 下架 / 删除。
+ *   - 收益统计卡 + 我的挂单 / 调用日志 / 提现工单 三个可切换 Tab（筛选真正生效）。
+ *   - 提现到站内（即时）/ 提现到微信（走审批）。
+ *   - 全中文；按钮使用平台 _Button_ 风格，不再用裸蓝色。
+ *   - 不再用骨架屏占位：加载态明确，失败可重试。
+ *
+ * 后端契约（cf-gateway 的 cancri-market 路由，见 docs/cancri-market-backend.md）：
+ *   GET    /me/overview            -> { balance:{available_micro,frozen_micro,withdrawn_micro}, listings:[...], summary:{total_credit_micro,total_fee_micro,total_tx} }
+ *   GET    /me/calls               -> { calls:[...] }
+ *   GET    /me/tickets             -> { tickets:[...] }
+ *   POST   /listings   {platform,base_url,key,model_whitelist,display_name,description,input_price_per_m,output_price_per_m,cached_input_factor}
+ *   PATCH  /listings/:id {display_name?,description?,model_whitelist?,input_price_per_m?,output_price_per_m?,base_url?,key?,status?}
+ *   DELETE /listings/:id
+ *   POST   /me/withdraw {channel:'site'|'wechat', amount_micro, wechat_id?}
+ * 鉴权：Authorization: Bearer <jwt>，apikey: ANON。
  */
 (function () {
   "use strict";
+
   var MARKET_BASE = (window.__SUPABASE_URL__ || "") + "/functions/v1/cancri-market";
   var GW = (window.__SUPABASE_URL__ || "") + "/functions/v1/chat-gateway";
   var ANON = window.__SUPABASE_ANON_KEY__ || "";
 
-  // 上架图标选择器（复用 api-models-app.js BRAND_LOGO 子集）
-  var ICON_OPTIONS = [
-    { key: "openai", label: "OpenAI", icon: "./api/openai.svg" },
-    { key: "anthropic", label: "Anthropic", icon: "./api/claude-color.svg" },
-    { key: "google", label: "Google", icon: "./api/gemini-color.svg" },
-    { key: "deepseek", label: "DeepSeek", icon: "./api/" + encodeURI("deepseek-color (1).svg") },
-    { key: "xai", label: "xAI", icon: "./api/grok.svg" },
-    { key: "moonshot", label: "Moonshot", icon: "./api/moonshot.svg" },
-    { key: "zhipu", label: "Zhipu", icon: "./api/zhipu-color.svg" },
-    { key: "qwen", label: "Qwen", icon: "./api/qwen-color.svg" },
-    { key: "minimax", label: "MiniMax", icon: "./api/minimax-color.svg" },
-    { key: "doubao", label: "Doubao", icon: "./api/doubao-color.svg" },
-    { key: "meta", label: "Meta", icon: "./api/meta-color.svg" },
-    { key: "mistral", label: "Mistral", icon: "./api/mistral-color.svg" },
-    { key: "cancri", label: "Cancri", icon: "./Logo/Cancri1.jpg" },
+  var PLATFORM_ICON = {
+    openai: "./openai.svg", anthropic: "./claude-color.svg", google: "./gemini-color.svg",
+    deepseek: encodeURI("./deepseek-color (1).svg"), xai: "./grok.svg", moonshot: "./moonshot.svg",
+    zhipu: "./zhipu-color.svg", qwen: "./qwen-color.svg", minimax: "./minimax-color.svg",
+    doubao: "./doubao-color.svg", meta: "./meta-color.svg", mistral: "./mistral-color.svg",
+  };
+  var PLATFORM_LABEL = {
+    openai: "OpenAI", anthropic: "Anthropic", google: "Google", deepseek: "DeepSeek",
+    xai: "xAI", moonshot: "Moonshot", zhipu: "智谱", qwen: "通义千问", minimax: "MiniMax",
+    doubao: "豆包", meta: "Meta", mistral: "Mistral",
+  };
+  var PLATFORM_OPTIONS = [
+    ["openai", "OpenAI"], ["anthropic", "Anthropic"], ["google", "Google"],
+    ["deepseek", "DeepSeek"], ["xai", "xAI"], ["moonshot", "Moonshot"],
+    ["zhipu", "智谱 Zhipu"], ["qwen", "通义千问 Qwen"], ["minimax", "MiniMax"],
+    ["doubao", "豆包 Doubao"], ["meta", "Meta"], ["mistral", "Mistral"], ["custom", "自定义"],
   ];
+  function pkey(p) { return String(p || "").toLowerCase().replace(/[\s_-]/g, ""); }
+  function platformIcon(p) { return PLATFORM_ICON[pkey(p)] || "../Logo/Cancri1.jpg"; }
+  function platformLabel(p) { return PLATFORM_LABEL[pkey(p)] || p || "自定义"; }
+
+  var STATUS_LABEL = { active: "已上架", disabled: "已禁用", pending: "审核中", failed: "校验失败", depleted: "已下架" };
 
   function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
-  function fmtCny(micro) { var v = (Number(micro) || 0) / 1e6; if (v === 0) return "¥0.00"; if (v < 0.01) return "¥" + v.toFixed(6); return "¥" + v.toFixed(2); }
-  function fmtTime(s) { if (!s) return "—"; try { var d = new Date(s); return isNaN(d.getTime()) ? String(s) : d.toLocaleString("zh-CN", { hour12: false }); } catch (e) { return String(s); } }
-  function setText(id, t) { var el = document.getElementById(id); if (el) el.textContent = t; }
+  function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
 
-  var sb;
-  function getClient() { if (sb) return sb; sb = window.supabase.createClient(window.__SUPABASE_URL__, ANON, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: "cancri_supabase_auth" } }); return sb; }
-  async function getSession() { var d = await getClient().auth.getSession(); return d.data && d.data.session; }
-  async function hasApiAccess(token) {
-    try { var r = await fetch(GW, { method: "POST", headers: { "Content-Type": "application/json", apikey: ANON }, body: JSON.stringify({ endpoint: "api_my_keys", __auth_token: token }) }); if (!r.ok) return false; var d = await r.json(); return !!(d && d.applications && d.applications.some(function (a) { return a.status === "approved"; })); } catch (e) { return false; }
+  function fmtCny(micro) {
+    var v = (Number(micro) || 0) / 1e6;
+    if (v === 0) return "¥0.00";
+    return "¥" + (Math.abs(v) < 0.01 ? v.toFixed(6) : v.toFixed(2));
   }
-  async function apiGet(path, token) { var r = await fetch(MARKET_BASE + path, { headers: { Authorization: "Bearer " + token } }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
-  async function apiPost(path, body, token) { var r = await fetch(MARKET_BASE + path, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify(body) }); var d = await r.json().catch(function () { return {}; }); if (!r.ok) throw Object.assign(new Error(d.error || ("HTTP " + r.status)), { code: d.code, payload: d }); return d; }
-  async function apiDelete(path, token) { var r = await fetch(MARKET_BASE + path, { method: "DELETE", headers: { Authorization: "Bearer " + token } }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
-
-  var state = { token: null, overview: null, withdrawChannel: null, selectedPlatform: "openai" };
-
-  // 填统计卡 + 汇总区
-  function renderOverview(o) {
-    state.overview = o;
-    var b = (o && o.balance) || {};
-    var s = (o && o.summary) || {};
-    setText("mm-stat-value", fmtCny(b.available_micro));
-    setText("mm-summary-value", fmtCny(s.total_credit_micro));
-    renderListings(o.listings || []);
+  function fmtPrice(n) {
+    n = Number(n);
+    if (n == null || !isFinite(n)) return "—";
+    if (n === 0) return "免费";
+    return "¥" + (n < 1 ? n.toFixed(2) : n.toFixed(2));
+  }
+  function fmtTime(s) {
+    if (!s) return "—";
+    try { var d = new Date(s); return isNaN(d.getTime()) ? String(s) : d.toLocaleString("zh-CN", { hour12: false }); }
+    catch (e) { return String(s); }
   }
 
-  // 我的挂单：塞进 Tab 内容区（替换原 recharts 图表区下方）
-  function renderListings(listings) {
+  var COPY_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="9" y="9" width="13" height="13" rx="2"></rect>' +
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+
+  function toast(text, isErr) {
+    var t = document.getElementById("mm-toast");
+    if (!t) { t = document.createElement("div"); t.id = "mm-toast"; t.className = "mm-toast"; document.body.appendChild(t); }
+    t.textContent = text;
+    t.className = "mm-toast" + (isErr ? " err" : "");
+    requestAnimationFrame(function () { t.classList.add("show"); });
+    clearTimeout(t.__timer);
+    t.__timer = setTimeout(function () { t.classList.remove("show"); }, 3200);
+  }
+
+  function show(id) { var el = document.getElementById(id); if (el) el.removeAttribute("data-cancri-hidden"); }
+  function hide(id) { var el = document.getElementById(id); if (el) el.setAttribute("data-cancri-hidden", ""); }
+
+  // ── 鉴权 + 接口 ────────────────────────────────────────────
+  var state = { token: null, listings: [], calls: [], tickets: [], balance: {}, summary: {} };
+
+  function authHeaders(extra) {
+    var h = { apikey: ANON, Authorization: "Bearer " + state.token };
+    if (extra) for (var k in extra) h[k] = extra[k];
+    return h;
+  }
+  function api(method, path, body) {
+    var opts = { method: method, headers: authHeaders(body ? { "Content-Type": "application/json" } : null) };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(MARKET_BASE + path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) throw Object.assign(new Error(data.error || ("HTTP " + r.status)), { status: r.status });
+        return data;
+      });
+    });
+  }
+
+  // ── 渲染：收益统计 + 挂单 ──────────────────────────────────
+  function renderOverview() {
+    var b = state.balance || {};
+    var s = state.summary || {};
+    document.getElementById("mm-available").textContent = fmtCny(b.available_micro);
+    document.getElementById("mm-frozen").textContent = fmtCny(b.frozen_micro);
+    document.getElementById("mm-withdrawn").textContent = fmtCny(b.withdrawn_micro);
+    document.getElementById("mm-total-credit").textContent = fmtCny(s.total_credit_micro);
+    document.getElementById("mm-total-tx").textContent = "共 " + (s.total_tx || 0) + " 笔成交";
+    renderListings();
+  }
+
+  function modelPills(models) {
+    if (!Array.isArray(models) || !models.length) return "";
+    return '<div class="mm-id-row">' + models.map(function (m) {
+      return '<button type="button" class="cancri-id" data-copy="' + escAttr(m) + '" title="点击复制 model id（买家调用时前缀 px:）">' +
+        '<span class="cancri-id__text">' + esc(m) + "</span>" + COPY_SVG + "</button>";
+    }).join("") + "</div>";
+  }
+
+  function listingCardHtml(l) {
+    var name = l.display_name || platformLabel(l.platform);
+    var st = l.status || "active";
+    var models = Array.isArray(l.model_whitelist) ? l.model_whitelist : [];
+    var actToggle = st === "disabled"
+      ? '<button type="button" class="mm-act" data-act="enable" data-id="' + escAttr(l.id) + '">启用</button>'
+      : '<button type="button" class="mm-act" data-act="disable" data-id="' + escAttr(l.id) + '">禁用</button>';
+    var actDelist = st === "depleted" ? "" :
+      '<button type="button" class="mm-act" data-act="delist" data-id="' + escAttr(l.id) + '">下架</button>';
+    return (
+      '<div class="flex flex-col text-emphasis" data-listing-id="' + escAttr(l.id) + '">' +
+        '<div class="h-[180px] w-full">' +
+          '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg" ' +
+               'style="background-image:url(\'' + escAttr(platformIcon(l.platform)) + '\')">' +
+            '<span class="cancri-thumb__name">' + esc(name) + "</span>" +
+          "</div>" +
+        "</div>" +
+        '<div class="mt-5 flex flex-col gap-1">' +
+          '<div class="flex items-center justify-between gap-2">' +
+            '<div class="text-base font-semibold text-emphasis">' + esc(name) + "</div>" +
+            '<span class="mm-card-status" data-s="' + escAttr(st) + '">' + esc(STATUS_LABEL[st] || st) + "</span>" +
+          "</div>" +
+          (l.description ? '<div class="text-sm text-secondary">' + esc(l.description) + "</div>" : "") +
+          (l.status_detail ? '<div class="text-sm text-secondary">' + esc(l.status_detail) + "</div>" : "") +
+          '<div class="cancri-spec mt-3">' +
+            '<div class="cancri-spec__row"><span class="cancri-spec__key">平台</span><span class="cancri-spec__val">' + esc(platformLabel(l.platform)) + "</span></div>" +
+            '<div class="cancri-spec__row" style="align-items:flex-start;"><span class="cancri-spec__key">支持模型</span><span class="cancri-spec__val">' + (models.length ? modelPills(models) : "—") + "</span></div>" +
+            '<div class="cancri-spec__row"><span class="cancri-spec__key">输入价</span><span class="cancri-spec__val cancri-price"><span class="cancri-price__num">' + esc(fmtPrice(l.input_price_per_m)) + '</span><span class="cancri-price__unit">/百万 token</span></span></div>' +
+            '<div class="cancri-spec__row"><span class="cancri-spec__key">输出价</span><span class="cancri-spec__val cancri-price"><span class="cancri-price__num">' + esc(fmtPrice(l.output_price_per_m)) + '</span><span class="cancri-price__unit">/百万 token</span></span></div>' +
+          "</div>" +
+          '<div class="mm-actions">' +
+            '<button type="button" class="mm-act" data-act="edit" data-id="' + escAttr(l.id) + '">编辑</button>' +
+            actToggle + actDelist +
+            '<button type="button" class="mm-act mm-act--danger" data-act="delete" data-id="' + escAttr(l.id) + '">删除</button>' +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function renderListings() {
     var box = document.getElementById("mm-listings");
-    if (!box) return;
-    if (!Array.isArray(listings) || listings.length === 0) { box.innerHTML = '<div style="padding:16px;color:var(--gray-500,#888);">你还没有上架任何挂单。点上方"新增上架"开始。</div>'; return; }
-    box.innerHTML = listings.map(function (l) {
-      var sc = { active: "#4ade80", pending: "#f59e0b", failed: "#f87171", depleted: "#888" }[l.status] || "#888";
-      var models = Array.isArray(l.model_whitelist) ? l.model_whitelist.join("、") : "—";
-      return '<div style="display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--gray-200,#e5e7eb);border-radius:8px;margin-bottom:8px;">' +
-        '<div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:600;">' + esc(l.display_name || l.platform) + '</span><span style="font-size:11px;color:' + sc + ';">' + esc(l.status) + '</span></div>' +
-        '<div style="font-size:12px;color:var(--gray-500,#888);">平台 ' + esc(l.platform) + ' · 倍率 ' + esc(l.rate_multiplier) + '× · 模型 ' + esc(models) + '</div>' +
-        (l.status_detail ? '<div style="font-size:11px;color:var(--gray-400,#aaa);">' + esc(l.status_detail) + '</div>' : "") +
-        '<button type="button" style="align-self:flex-start;font-size:12px;color:#f87171;background:none;border:none;cursor:pointer;" data-delist="' + esc(l.id) + '">下架</button>' +
-        '</div>';
-    }).join("");
-    box.querySelectorAll("[data-delist]").forEach(function (btn) {
-      btn.addEventListener("click", async function () {
-        if (!confirm("确认下架此挂单？")) return;
-        try { await apiDelete("/listings/" + btn.getAttribute("data-delist"), state.token); await refreshOverview(); } catch (e) { alert("下架失败：" + e.message); }
-      });
-    });
+    var empty = document.getElementById("mm-listings-empty");
+    var count = document.getElementById("mm-listings-count");
+    var list = state.listings || [];
+    count.textContent = String(list.length);
+    if (!list.length) { box.innerHTML = ""; show("mm-listings-empty"); return; }
+    hide("mm-listings-empty");
+    if (empty) empty.setAttribute("data-cancri-hidden", "");
+    box.innerHTML = list.map(listingCardHtml).join("");
   }
 
-  // 调用日志表
-  function renderCalls(calls) {
+  function renderCalls() {
     var box = document.getElementById("mm-calls");
-    if (!box) return;
-    if (!Array.isArray(calls) || calls.length === 0) { box.innerHTML = '<div style="padding:16px;color:var(--gray-500,#888);">暂无调用日志</div>'; return; }
-    box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:var(--gray-75,rgba(0,0,0,0.05));">' +
-      ["时间", "买家", "模型", "入tokens", "出tokens", "买家实付", "你的收益"].map(function (t) { return '<th style="padding:8px;text-align:' + (t.includes("tokens") || t.includes("实付") || t.includes("收益") ? "right" : "left") + ';border-bottom:1px solid var(--gray-200,#e5e7eb);">' + t + "</th>"; }).join("") +
+    var list = state.calls || [];
+    if (!list.length) { box.innerHTML = '<div class="mm-empty">还没有买家通过你的挂单发起调用。</div>'; return; }
+    box.innerHTML =
+      '<div class="mm-table-wrap"><table class="mm-table"><thead><tr>' +
+      "<th>时间</th><th>买家</th><th>模型</th><th class='num'>输入 token</th><th class='num'>输出 token</th><th class='num'>买家实付</th><th class='num'>我的收益</th>" +
       "</tr></thead><tbody>" +
-      calls.map(function (c) {
-        return '<tr style="border-bottom:1px solid var(--gray-100,#f3f4f6);">' +
-          '<td style="padding:8px;">' + esc(fmtTime(c.created_at)) + "</td>" +
-          '<td style="padding:8px;">' + esc(c.buyer_email || "匿名") + "</td>" +
-          '<td style="padding:8px;">' + esc(c.model_id) + "</td>" +
-          '<td style="padding:8px;text-align:right;">' + esc(c.tokens_in) + "</td>" +
-          '<td style="padding:8px;text-align:right;">' + esc(c.tokens_out) + "</td>" +
-          '<td style="padding:8px;text-align:right;color:var(--gray-500,#888);">' + esc(fmtCny(c.buyer_charged_micro)) + "</td>" +
-          '<td style="padding:8px;text-align:right;font-weight:600;">' + esc(fmtCny(c.seller_credit_micro)) + "</td>" +
-        "</tr>";
-      }).join("") + "</tbody></table>";
+      list.map(function (c) {
+        return "<tr>" +
+          "<td>" + esc(fmtTime(c.created_at)) + "</td>" +
+          "<td>" + esc(c.buyer_email || "—") + "</td>" +
+          "<td><code>" + esc(c.model_id) + "</code></td>" +
+          "<td class='num'>" + esc(c.tokens_in) + "</td>" +
+          "<td class='num'>" + esc(c.tokens_out) + "</td>" +
+          "<td class='num'>" + esc(fmtCny(c.buyer_charged_micro)) + "</td>" +
+          "<td class='num'>" + esc(fmtCny(c.seller_credit_micro)) + "</td>" +
+          "</tr>";
+      }).join("") +
+      "</tbody></table></div>";
   }
 
-  // 提现工单表
-  function renderTickets(tickets) {
+  function ticketStatusLabel(s) { return { pending: "待审核", approved: "已通过", rejected: "已驳回", done: "已到账" }[s] || s; }
+  function renderTickets() {
     var box = document.getElementById("mm-tickets");
-    if (!box) return;
-    if (!Array.isArray(tickets) || tickets.length === 0) { box.innerHTML = '<div style="padding:16px;color:var(--gray-500,#888);">暂无提现工单</div>'; return; }
-    var sl = { pending: "审核中", approved: "已通过", rejected: "已驳回", done: "已到账" };
-    var sc = { pending: "#f59e0b", approved: "#4ade80", rejected: "#f87171", done: "#4ade80" };
-    box.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:var(--gray-75,rgba(0,0,0,0.05));">' +
-      ["时间", "渠道", "金额", "微信/QQ", "状态", "备注"].map(function (t) { return '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--gray-200,#e5e7eb);">' + t + "</th>"; }).join("") +
+    var list = state.tickets || [];
+    if (!list.length) { box.innerHTML = '<div class="mm-empty">还没有提现工单。点上方「提现到站内 / 微信」发起提现。</div>'; return; }
+    box.innerHTML =
+      '<div class="mm-table-wrap"><table class="mm-table"><thead><tr>' +
+      "<th>申请时间</th><th>渠道</th><th class='num'>金额</th><th>微信/QQ</th><th>状态</th><th>备注</th>" +
       "</tr></thead><tbody>" +
-      tickets.map(function (t) {
-        return '<tr style="border-bottom:1px solid var(--gray-100,#f3f4f6);">' +
-          '<td style="padding:8px;">' + esc(fmtTime(t.created_at)) + "</td>" +
-          '<td style="padding:8px;">' + esc(t.channel === "site" ? "站内余额" : "微信") + "</td>" +
-          '<td style="padding:8px;">' + esc(fmtCny(t.amount_micro)) + "</td>" +
-          '<td style="padding:8px;">' + esc(t.wechat_id || "—") + "</td>" +
-          '<td style="padding:8px;color:' + (sc[t.status] || "#888") + ';">' + esc(sl[t.status] || t.status) + "</td>" +
-          '<td style="padding:8px;color:var(--gray-500,#888);">' + esc(t.review_note || (t.reviewed_at ? fmtTime(t.reviewed_at) : "—")) + "</td>" +
-        "</tr>";
-      }).join("") + "</tbody></table>";
+      list.map(function (t) {
+        return "<tr>" +
+          "<td>" + esc(fmtTime(t.created_at)) + "</td>" +
+          "<td>" + (t.channel === "site" ? "站内余额" : "微信") + "</td>" +
+          "<td class='num'>" + esc(fmtCny(t.amount_micro)) + "</td>" +
+          "<td>" + esc(t.wechat_id || "—") + "</td>" +
+          "<td>" + esc(ticketStatusLabel(t.status)) + "</td>" +
+          "<td>" + esc(t.review_note || "—") + "</td>" +
+          "</tr>";
+      }).join("") +
+      "</tbody></table></div>";
   }
 
-  async function refreshOverview() { var o = await apiGet("/me/overview", state.token); renderOverview(o); }
-  async function loadCalls() { var d = await apiGet("/me/calls?limit=50", state.token); renderCalls(d.calls || []); }
-  async function loadTickets() { var d = await apiGet("/me/tickets", state.token); renderTickets(d.tickets || []); }
-
-  // ── Tab 切换（复用 usage.html 的 Tab 按钮，切换显示我的内容区）──
+  // ── Tab ────────────────────────────────────────────────────
   function setupTabs() {
-    var tabs = document.querySelectorAll('[data-radix-collection-item]');
-    var panels = { calls: document.getElementById("mm-panel-calls"), tickets: document.getElementById("mm-panel-tickets") };
-    tabs.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var txt = btn.textContent || "";
-        tabs.forEach(function (b) { b.setAttribute("data-state", "off"); b.setAttribute("aria-checked", "false"); });
-        btn.setAttribute("data-state", "on"); btn.setAttribute("aria-checked", "true");
-        if (txt.indexOf("调用日志") >= 0) { if (panels.calls) panels.calls.style.display = ""; if (panels.tickets) panels.tickets.style.display = "none"; }
-        else if (txt.indexOf("提现工单") >= 0) { if (panels.calls) panels.calls.style.display = "none"; if (panels.tickets) panels.tickets.style.display = ""; }
+    var tabs = document.querySelectorAll(".mm-tab");
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        tabs.forEach(function (t) { t.classList.remove("is-active"); });
+        tab.classList.add("is-active");
+        var name = tab.getAttribute("data-tab");
+        ["listings", "calls", "tickets"].forEach(function (n) {
+          var panel = document.getElementById("mm-panel-" + n);
+          if (panel) panel.hidden = n !== name;
+        });
+        if (name === "calls" && !state.calls.length) loadCalls();
+        if (name === "tickets") loadTickets();
       });
     });
   }
 
-  // ── 弹窗：用 inline style（usage.html 无 oai-platform.css）──
-  function modalStyle() {
-    return 'position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);';
+  // ── 复制 model id ──────────────────────────────────────────
+  function setupCopy() {
+    document.addEventListener("click", function (e) {
+      var btn = e.target.closest && e.target.closest(".cancri-id[data-copy]");
+      if (!btn) return;
+      var text = btn.getAttribute("data-copy");
+      var done = function () { btn.classList.add("is-copied"); toast("已复制：" + text); setTimeout(function () { btn.classList.remove("is-copied"); }, 1200); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(done);
+      else done();
+    });
   }
-  function cardStyle() {
-    return 'width:100%;max-width:32rem;border-radius:16px;border:1px solid var(--gray-200,#e5e7eb);background:var(--gray-0,#fff);box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);padding:24px;display:flex;flex-direction:column;gap:16px;max-height:90vh;overflow-y:auto;';
+
+  // ── 挂单操作（编辑/启用/禁用/下架/删除）────────────────────
+  function findListing(id) {
+    for (var i = 0; i < state.listings.length; i++) if (String(state.listings[i].id) === String(id)) return state.listings[i];
+    return null;
   }
-  function inputStyle() { return 'width:100%;padding:8px 12px;border:1px solid var(--gray-200,#e5e7eb);border-radius:8px;font-size:14px;background:var(--gray-0,#fff);color:var(--gray-900,#111);box-sizing:border-box;'; }
-  function btnStyle(kind) { return 'padding:8px 16px;border-radius:9999px;border:none;font-size:14px;cursor:pointer;' + (kind === "primary" ? "background:#0080f7;color:#fff;" : "background:var(--gray-100,#f3f4f6);color:var(--gray-900,#111);"); }
+  function setupListingActions() {
+    document.getElementById("mm-listings").addEventListener("click", function (e) {
+      var btn = e.target.closest && e.target.closest(".mm-act[data-act]");
+      if (!btn) return;
+      var id = btn.getAttribute("data-id");
+      var act = btn.getAttribute("data-act");
+      if (act === "edit") return openListingModal(findListing(id));
+      if (act === "enable") return patchStatus(id, "active", "已启用");
+      if (act === "disable") return patchStatus(id, "disabled", "已禁用");
+      if (act === "delist") {
+        if (!confirm("确认下架该挂单？下架后买家将无法再选用，已结算收益不受影响。")) return;
+        return patchStatus(id, "depleted", "已下架");
+      }
+      if (act === "delete") {
+        if (!confirm("确认删除该挂单？此操作不可恢复（历史成交记录保留）。")) return;
+        api("DELETE", "/listings/" + id).then(function () { toast("已删除"); loadOverview(); }).catch(apiErr);
+      }
+    });
+  }
+  function patchStatus(id, status, okMsg) {
+    api("PATCH", "/listings/" + id, { status: status }).then(function () { toast(okMsg); loadOverview(); }).catch(apiErr);
+  }
+  function apiErr(e) { toast("操作失败：" + (e && e.message ? e.message : e), true); }
 
-  function ensureModals() {
-    if (document.getElementById("mm-listing-modal")) return;
-    // 上架弹窗
-    var lm = document.createElement("div");
-    lm.id = "mm-listing-modal";
-    lm.setAttribute("data-open", "false");
-    lm.style.cssText = modalStyle();
-    lm.innerHTML = '<div style="' + cardStyle() + '">' +
-      '<h2 style="font-size:20px;font-weight:600;margin:0;">新增上架</h2>' +
-      '<div id="mm-lm-error" style="display:none;font-size:13px;color:#f87171;background:rgba(248,113,113,0.1);padding:8px;border-radius:6px;"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">模型图标</label><div id="mm-icon-picker" style="display:flex;flex-wrap:wrap;gap:6px;"></div></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">模型名称</label><input type="text" id="mm-f-name" style="' + inputStyle() + '" placeholder="如 我的 GPT-4o" maxlength="80"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">模型 ID（多个用逗号分隔）</label><input type="text" id="mm-f-models" style="' + inputStyle() + '" placeholder="gpt-4o-mini,gpt-4o"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">端点地址（必含 /v1）</label><input type="text" id="mm-f-baseurl" style="' + inputStyle() + '" placeholder="https://api.openai.com/v1"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">API Key（加密存储）</label><input type="password" id="mm-f-key" style="' + inputStyle() + '" placeholder="sk-..." autocomplete="off"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">描述（可选）</label><textarea id="mm-f-desc" style="' + inputStyle() + 'height:60px;" maxlength="500"></textarea></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">输入价（元/百万 token）</label><input type="number" id="mm-f-inprice" style="' + inputStyle() + '" step="0.01" min="0" placeholder="如 0.15"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">输出价（元/百万 token）</label><input type="number" id="mm-f-outprice" style="' + inputStyle() + '" step="0.01" min="0" placeholder="如 0.60"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">缓存输入倍数（默认 0.1）</label><input type="number" id="mm-f-cached" style="' + inputStyle() + '" step="0.01" min="0" max="1" value="0.1"></div>' +
-      '<label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="mm-f-disclaim" style="margin-top:2px;"><span>因上游内容问题导致的一切后果由卖家承担，平台有权随时下架违规 listing 并封禁账号。</span></label>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;"><button type="button" id="mm-lm-cancel" style="' + btnStyle() + '">取消</button><button type="button" id="mm-lm-submit" style="' + btnStyle("primary") + '">发布上架</button></div>' +
-      '</div>';
-    document.body.appendChild(lm);
+  // ── 弹窗基础 ───────────────────────────────────────────────
+  function openModal(node) {
+    var bd = document.createElement("div");
+    bd.className = "mm-modal-backdrop";
+    bd.appendChild(node);
+    bd.addEventListener("click", function (e) { if (e.target === bd) document.body.removeChild(bd); });
+    document.body.appendChild(bd);
+    var esc = function (e) { if (e.key === "Escape") { if (bd.parentNode) document.body.removeChild(bd); document.removeEventListener("keydown", esc); } };
+    document.addEventListener("keydown", esc);
+    return function close() { if (bd.parentNode) document.body.removeChild(bd); document.removeEventListener("keydown", esc); };
+  }
+  function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
 
-    // 提现弹窗
-    var wm = document.createElement("div");
-    wm.id = "mm-withdraw-modal";
-    wm.setAttribute("data-open", "false");
-    wm.style.cssText = modalStyle();
-    wm.innerHTML = '<div style="' + cardStyle() + 'max-width:28rem;">' +
-      '<h2 id="mm-wm-title" style="font-size:20px;font-weight:600;margin:0;">提现</h2>' +
-      '<div id="mm-wm-error" style="display:none;font-size:13px;color:#f87171;background:rgba(248,113,113,0.1);padding:8px;border-radius:6px;"></div>' +
-      '<div><label style="font-size:13px;display:block;margin-bottom:4px;">金额（¥）</label><input type="number" id="mm-wd-amount" style="' + inputStyle() + '" step="0.01" min="0.01" placeholder="0.00"><div style="font-size:11px;color:var(--gray-500,#888);margin-top:4px;">可提现：<span id="mm-wd-avail">¥0.00</span></div></div>' +
-      '<div id="mm-wd-wechat" style="display:none;flex-direction:column;gap:4px;"><label style="font-size:13px;">微信号/QQ号</label><input type="text" id="mm-wd-wechatid" style="' + inputStyle() + '" placeholder="微信号或QQ号"></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;"><button type="button" id="mm-wm-cancel" style="' + btnStyle() + '">取消</button><button type="button" id="mm-wm-submit" style="' + btnStyle("primary") + '">确认提现</button></div>' +
-      '</div>';
-    document.body.appendChild(wm);
-
-    // 图标选择器
-    var picker = document.getElementById("mm-icon-picker");
-    picker.innerHTML = ICON_OPTIONS.map(function (o) {
-      return '<button type="button" data-platform="' + esc(o.key) + '" style="display:flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid var(--gray-200,#e5e7eb);border-radius:6px;background:var(--gray-0,#fff);cursor:pointer;font-size:12px;"><img src="' + esc(o.icon) + '" style="width:16px;height:16px;border-radius:3px;">' + esc(o.label) + '</button>';
+  // ── 新增 / 编辑挂单 ────────────────────────────────────────
+  function openListingModal(listing) {
+    var isEdit = !!listing;
+    var m = el("div", "mm-modal");
+    var platOpts = PLATFORM_OPTIONS.map(function (p) {
+      var sel = listing && pkey(listing.platform) === p[0] ? " selected" : "";
+      return '<option value="' + p[0] + '"' + sel + ">" + esc(p[1]) + "</option>";
     }).join("");
-    function selPlatform(k) {
-      state.selectedPlatform = k;
-      picker.querySelectorAll("button").forEach(function (b) {
-        b.style.borderColor = b.getAttribute("data-platform") === k ? "#0080f7" : "var(--gray-200,#e5e7eb)";
-      });
-    }
-    picker.querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { selPlatform(b.getAttribute("data-platform")); }); });
-    selPlatform("openai");
-
-    // 上架弹窗逻辑
-    function openListing() {
-      ["mm-f-name", "mm-f-models", "mm-f-baseurl", "mm-f-key", "mm-f-desc", "mm-f-inprice", "mm-f-outprice"].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
-      document.getElementById("mm-f-cached").value = "0.1";
-      document.getElementById("mm-f-disclaim").checked = false;
-      document.getElementById("mm-lm-error").style.display = "none";
-      selPlatform("openai");
-      lm.style.display = "flex";
-    }
-    document.getElementById("mm-lm-cancel").addEventListener("click", function () { lm.style.display = "none"; });
-    document.getElementById("mm-lm-submit").addEventListener("click", async function () {
-      var err = document.getElementById("mm-lm-error"); err.style.display = "none";
-      function fail(m) { err.textContent = m; err.style.display = "block"; }
-      var name = document.getElementById("mm-f-name").value.trim();
-      var models = document.getElementById("mm-f-models").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
-      var baseUrl = document.getElementById("mm-f-baseurl").value.trim();
-      var key = document.getElementById("mm-f-key").value;
-      var desc = document.getElementById("mm-f-desc").value.trim();
-      var inPrice = parseFloat(document.getElementById("mm-f-inprice").value);
-      var outPrice = parseFloat(document.getElementById("mm-f-outprice").value);
-      var cachedFactor = parseFloat(document.getElementById("mm-f-cached").value) || 0.1;
-      var disclaim = document.getElementById("mm-f-disclaim").checked;
-      if (!name) return fail("请填写模型名称");
-      if (models.length === 0) return fail("请填写至少一个模型 ID");
-      if (!baseUrl || !baseUrl.includes("/v1")) return fail("端点地址必须包含 /v1");
-      if (!key) return fail("请填写 API Key");
-      if (isNaN(inPrice) || inPrice < 0) return fail("请填写有效的输入价");
-      if (isNaN(outPrice) || outPrice < 0) return fail("请填写有效的输出价");
-      if (!disclaim) return fail("必须勾选免责声明");
-      var btn = document.getElementById("mm-lm-submit"); btn.disabled = true; btn.textContent = "提交中…";
-      try { await apiPost("/listings", { platform: state.selectedPlatform, base_url: baseUrl, key: key, model_whitelist: models, rate_multiplier: 1.0, display_name: name, description: desc, input_price_per_m: inPrice, output_price_per_m: outPrice, cached_input_factor: cachedFactor }, state.token); lm.style.display = "none"; await refreshOverview(); } catch (e) { fail("上架失败：" + (e.message || e) + (e.payload && e.payload.detail ? "（" + e.payload.detail + "）" : "")); } finally { btn.disabled = false; btn.textContent = "发布上架"; }
+    m.innerHTML =
+      "<h2>" + (isEdit ? "编辑挂单" : "新增上架") + "</h2>" +
+      '<div class="mm-modal__sub">买家调用时会被强制加 <code>px:</code> 前缀（如 <code>px:gpt-4o</code>）以区分蟹市线路并计费。</div>' +
+      '<div class="mm-modal__err" id="mm-modal-err"></div>' +
+      '<div class="mm-field"><label>展示名称</label><input class="mm-input" id="f-name" placeholder="如：我的 GPT-4o 通道" value="' + escAttr(listing ? listing.display_name : "") + '"></div>' +
+      '<div class="mm-grid2">' +
+        '<div class="mm-field"><label>平台</label><select class="mm-select" id="f-platform">' + platOpts + "</select></div>" +
+        '<div class="mm-field"><label>Base URL</label><input class="mm-input" id="f-baseurl" placeholder="https://api.openai.com/v1" value="' + escAttr(listing ? listing.base_url : "") + '"></div>' +
+      "</div>" +
+      '<div class="mm-field"><label>API Key' + (isEdit ? "（留空＝不修改）" : "") + '</label><input class="mm-input" id="f-key" type="password" placeholder="' + (isEdit ? "••••••（不修改请留空）" : "sk-...") + '"><div class="mm-hint">Key 经 AES-256-GCM 加密存储，明文绝不回传浏览器。</div></div>' +
+      '<div class="mm-field"><label>支持模型（每行一个，或逗号分隔）</label><textarea class="mm-textarea" id="f-models" placeholder="gpt-4o\ngpt-4o-mini">' + esc(listing && listing.model_whitelist ? listing.model_whitelist.join("\n") : "") + "</textarea></div>" +
+      '<div class="mm-grid2">' +
+        '<div class="mm-field"><label>输入价（元 / 百万 token）</label><input class="mm-input" id="f-in" type="number" step="0.0001" min="0" placeholder="0.15" value="' + escAttr(listing && listing.input_price_per_m != null ? listing.input_price_per_m : "") + '"></div>' +
+        '<div class="mm-field"><label>输出价（元 / 百万 token）</label><input class="mm-input" id="f-out" type="number" step="0.0001" min="0" placeholder="0.60" value="' + escAttr(listing && listing.output_price_per_m != null ? listing.output_price_per_m : "") + '"></div>' +
+      "</div>" +
+      '<div class="mm-field"><label>简介（可选）</label><input class="mm-input" id="f-desc" placeholder="如：官方直连，余额充足" value="' + escAttr(listing ? listing.description : "") + '"></div>' +
+      '<div class="mm-modal__actions">' +
+        '<button type="button" class="_Button_6dmow_1" data-color="secondary" data-variant="ghost" data-pill data-size="md" id="f-cancel"><span class="_ButtonInner_6dmow_4">取消</span></button>' +
+        '<button type="button" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md" id="f-submit"><span class="_ButtonInner_6dmow_4">' + (isEdit ? "保存修改" : "确认上架") + "</span></button>" +
+      "</div>";
+    var close = openModal(m);
+    m.querySelector("#f-cancel").addEventListener("click", close);
+    m.querySelector("#f-submit").addEventListener("click", function () {
+      var errBox = m.querySelector("#mm-modal-err");
+      var name = m.querySelector("#f-name").value.trim();
+      var platform = m.querySelector("#f-platform").value;
+      var baseUrl = m.querySelector("#f-baseurl").value.trim();
+      var key = m.querySelector("#f-key").value.trim();
+      var models = m.querySelector("#f-models").value.split(/[\n,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var inP = parseFloat(m.querySelector("#f-in").value);
+      var outP = parseFloat(m.querySelector("#f-out").value);
+      var desc = m.querySelector("#f-desc").value.trim();
+      errBox.textContent = "";
+      if (!name) return (errBox.textContent = "请填写展示名称。");
+      if (!baseUrl || !/\/v1\/?$/.test(baseUrl)) return (errBox.textContent = "Base URL 必须以 /v1 结尾。");
+      if (!isEdit && !key) return (errBox.textContent = "请填写 API Key。");
+      if (!models.length) return (errBox.textContent = "请至少填写一个支持的模型 id。");
+      if (!isFinite(inP) || inP < 0 || !isFinite(outP) || outP < 0) return (errBox.textContent = "请填写有效的输入/输出价。");
+      var body = { platform: platform, base_url: baseUrl, model_whitelist: models, display_name: name, description: desc, input_price_per_m: inP, output_price_per_m: outP, cached_input_factor: 0.1 };
+      if (key) body.key = key;
+      var p = isEdit ? api("PATCH", "/listings/" + listing.id, body) : api("POST", "/listings", body);
+      var submitBtn = m.querySelector("#f-submit");
+      submitBtn.setAttribute("disabled", "");
+      p.then(function () { close(); toast(isEdit ? "已保存" : "上架成功"); loadOverview(); })
+        .catch(function (e) { submitBtn.removeAttribute("disabled"); errBox.textContent = "提交失败：" + (e && e.message ? e.message : e); });
     });
-
-    // 提现弹窗逻辑
-    function openWithdraw(channel) {
-      state.withdrawChannel = channel;
-      document.getElementById("mm-wm-title").textContent = channel === "site" ? "提现到站内余额" : "提现到微信（提交工单）";
-      document.getElementById("mm-wd-amount").value = "";
-      document.getElementById("mm-wd-wechatid").value = "";
-      document.getElementById("mm-wd-wechat").style.display = channel === "wechat" ? "flex" : "none";
-      var avail = (state.overview && state.overview.balance && state.overview.balance.available_micro) || 0;
-      document.getElementById("mm-wd-avail").textContent = fmtCny(avail);
-      document.getElementById("mm-wm-error").style.display = "none";
-      wm.style.display = "flex";
-    }
-    document.getElementById("mm-wm-cancel").addEventListener("click", function () { wm.style.display = "none"; });
-    document.getElementById("mm-wm-submit").addEventListener("click", async function () {
-      var err = document.getElementById("mm-wm-error"); err.style.display = "none";
-      function fail(m) { err.textContent = m; err.style.display = "block"; }
-      var amt = parseFloat(document.getElementById("mm-wd-amount").value);
-      if (!amt || amt <= 0) return fail("请输入有效金额");
-      var micro = Math.floor(amt * 1e6);
-      var wid = document.getElementById("mm-wd-wechatid").value.trim();
-      if (state.withdrawChannel === "wechat" && !wid) return fail("请填写微信号/QQ号");
-      var btn = document.getElementById("mm-wm-submit"); btn.disabled = true; btn.textContent = "处理中…";
-      try { await apiPost("/me/withdraw", { channel: state.withdrawChannel, amount_micro: micro, wechat_id: state.withdrawChannel === "wechat" ? wid : null }, state.token); wm.style.display = "none"; await Promise.all([refreshOverview(), loadTickets()]); } catch (e) { fail("提现失败：" + (e.message || e)); } finally { btn.disabled = false; btn.textContent = "确认提现"; }
-    });
-
-    // 暴露打开函数
-    window.__mmOpenListing = openListing;
-    window.__mmOpenWithdraw = openWithdraw;
   }
 
-  // 注入操作按钮（新增上架 / 提现）+ Tab 内容面板到 usage.html 主区
-  function injectControls() {
-    // 在 h1 标题区附近加按钮。usage.html h1 是 <h1 ...>我的上架</h1>
-    var h1 = document.querySelector('h1');
-    if (h1 && h1.textContent.indexOf("我的上架") >= 0 && !document.getElementById("mm-controls")) {
-      var ctrl = document.createElement("div");
-      ctrl.id = "mm-controls";
-      ctrl.style.cssText = "display:flex;gap:8px;margin-top:16px;";
-      ctrl.innerHTML = '<button type="button" id="mm-btn-new" style="' + btnStyle("primary") + '">新增上架</button>' +
-        '<button type="button" id="mm-btn-wsite" style="' + btnStyle() + '">提现到站内</button>' +
-        '<button type="button" id="mm-btn-wwechat" style="' + btnStyle() + '">提现到微信</button>' +
-        '<button type="button" id="mm-btn-refresh" style="' + btnStyle() + '">刷新</button>';
-      h1.parentNode.insertBefore(ctrl, h1.nextSibling);
-      document.getElementById("mm-btn-new").addEventListener("click", function () { window.__mmOpenListing(); });
-      document.getElementById("mm-btn-wsite").addEventListener("click", function () { window.__mmOpenWithdraw("site"); });
-      document.getElementById("mm-btn-wwechat").addEventListener("click", function () { window.__mmOpenWithdraw("wechat"); });
-      document.getElementById("mm-btn-refresh").addEventListener("click", function () { Promise.all([refreshOverview(), loadCalls(), loadTickets()]).catch(function (e) { alert("刷新失败：" + e.message); }); });
-    }
-    // 在 Tab 内容区注入我的面板（调用日志 / 提现工单 / 我的挂单）
-    // usage.html 的 Tab 下方是 <div class="grid grid-cols-1 gap-4 p-4 pb-20 lg:grid-cols-2">
-    var grid = document.querySelector('.grid.grid-cols-1.gap-4.p-4.pb-20');
-    if (grid && !document.getElementById("mm-panels")) {
-      var panels = document.createElement("div");
-      panels.id = "mm-panels";
-      panels.style.cssText = "padding:0 16px 80px;";
-      panels.innerHTML =
-        '<div id="mm-panel-calls"><h3 style="font-size:16px;font-weight:600;margin:12px 0 8px;">调用日志</h3><div id="mm-calls"></div></div>' +
-        '<div id="mm-panel-tickets" style="display:none;"><h3 style="font-size:16px;font-weight:600;margin:12px 0 8px;">提现工单</h3><div id="mm-tickets"></div></div>' +
-        '<div id="mm-panel-listings"><h3 style="font-size:16px;font-weight:600;margin:24px 0 8px;">我的挂单</h3><div id="mm-listings"></div></div>';
-      grid.parentNode.insertBefore(panels, grid.nextSibling);
-    }
+  // ── 提现 ───────────────────────────────────────────────────
+  function openWithdrawModal(channel) {
+    var avail = (Number(state.balance.available_micro) || 0) / 1e6;
+    var m = el("div", "mm-modal");
+    m.innerHTML =
+      "<h2>" + (channel === "site" ? "提现到站内余额" : "提现到微信") + "</h2>" +
+      '<div class="mm-modal__sub">' + (channel === "site" ? "即时到账到你的平台钱包，可用于消费。" : "提交工单，管理员审核通过后线下打款。") + "可提现余额 <b>" + fmtCny(state.balance.available_micro) + "</b>。</div>" +
+      '<div class="mm-modal__err" id="mm-wd-err"></div>' +
+      '<div class="mm-field"><label>提现金额（元）</label><input class="mm-input" id="wd-amount" type="number" step="0.01" min="0" max="' + avail + '" placeholder="0.00"></div>' +
+      (channel === "wechat" ? '<div class="mm-field"><label>微信号 / QQ 号</label><input class="mm-input" id="wd-wechat" placeholder="用于线下打款联系"></div>' : "") +
+      '<div class="mm-modal__actions">' +
+        '<button type="button" class="_Button_6dmow_1" data-color="secondary" data-variant="ghost" data-pill data-size="md" id="wd-cancel"><span class="_ButtonInner_6dmow_4">取消</span></button>' +
+        '<button type="button" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md" id="wd-submit"><span class="_ButtonInner_6dmow_4">确认提现</span></button>' +
+      "</div>";
+    var close = openModal(m);
+    m.querySelector("#wd-cancel").addEventListener("click", close);
+    m.querySelector("#wd-submit").addEventListener("click", function () {
+      var errBox = m.querySelector("#mm-wd-err");
+      var amount = parseFloat(m.querySelector("#wd-amount").value);
+      errBox.textContent = "";
+      if (!isFinite(amount) || amount <= 0) return (errBox.textContent = "请输入有效金额。");
+      if (amount > avail + 1e-9) return (errBox.textContent = "超出可提现余额。");
+      var body = { channel: channel, amount_micro: Math.round(amount * 1e6) };
+      if (channel === "wechat") {
+        var wx = m.querySelector("#wd-wechat").value.trim();
+        if (!wx) return (errBox.textContent = "请填写微信号 / QQ 号。");
+        body.wechat_id = wx;
+      }
+      var btn = m.querySelector("#wd-submit"); btn.setAttribute("disabled", "");
+      api("POST", "/me/withdraw", body).then(function () {
+        close(); toast(channel === "site" ? "已提现到站内余额" : "提现工单已提交，等待审核"); loadOverview(); loadTickets();
+      }).catch(function (e) { btn.removeAttribute("disabled"); errBox.textContent = "提现失败：" + (e && e.message ? e.message : e); });
+    });
   }
 
-  async function init() {
-    if (!window.supabase || !window.__SUPABASE_URL__) { console.error("market-mine: deps missing"); return; }
-    var session = await getSession().catch(function () { return null; });
-    if (!session) { if (window.PlatformAuth) window.PlatformAuth.redirectToLogin(); return; }
+  // ── 数据加载 ───────────────────────────────────────────────
+  function loadOverview() {
+    return api("GET", "/me/overview").then(function (d) {
+      state.balance = d.balance || {};
+      state.summary = d.summary || {};
+      state.listings = Array.isArray(d.listings) ? d.listings : [];
+      renderOverview();
+    }).catch(function (e) {
+      toast("加载我的上架失败：" + (e && e.message ? e.message : e), true);
+    });
+  }
+  function loadCalls() {
+    return api("GET", "/me/calls").then(function (d) { state.calls = d.calls || []; renderCalls(); }).catch(apiErr);
+  }
+  function loadTickets() {
+    return api("GET", "/me/tickets").then(function (d) { state.tickets = d.tickets || []; renderTickets(); }).catch(apiErr);
+  }
+
+  // ── 访问门禁：登录 + 已开通 API ────────────────────────────
+  function hasApiAccess(token) {
+    return fetch(GW, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON, Authorization: "Bearer " + token },
+      body: JSON.stringify({ endpoint: "api_my_keys" }),
+    }).then(function (r) { return r.ok ? r.json() : { applications: [] }; })
+      .then(function (d) {
+        var apps = (d && d.applications) || [];
+        return apps.some(function (a) { return a && (a.status === "approved" || a.status === "active"); });
+      }).catch(function () { return false; });
+  }
+
+  async function boot() {
+    if (!window.supabase || !window.__SUPABASE_URL__ || !ANON) { show("mm-not-logged-in"); return; }
+    var session = await PlatformAuth.getSession(6000).catch(function () { return null; });
+    if (!PlatformAuth.isValidSession(session)) { show("mm-not-logged-in"); return; }
     state.token = session.access_token;
-    var approved = await hasApiAccess(session.access_token);
-    if (!approved) {
-      var h1 = document.querySelector("h1");
-      if (h1) h1.textContent = "需先开通 API";
-      var main = document.querySelector(".yaYrI") || document.querySelector("main");
-      if (main) main.innerHTML += '<div style="padding:40px;text-align:center;"><a href="./api_apply.html" style="' + btnStyle("primary") + 'display:inline-block;text-decoration:none;line-height:32px;">去申请接入</a></div>';
-      return;
-    }
-    ensureModals();
-    injectControls();
+
+    var ok = await hasApiAccess(state.token);
+    if (!ok) { show("mm-no-access"); return; }
+    show("mm-accessible");
+
     setupTabs();
-    try { await Promise.all([refreshOverview(), loadCalls(), loadTickets()]); } catch (e) { console.error("market-mine load:", e); }
+    setupCopy();
+    setupListingActions();
+    document.getElementById("mm-btn-new").addEventListener("click", function () { openListingModal(null); });
+    document.getElementById("mm-btn-wsite").addEventListener("click", function () { openWithdrawModal("site"); });
+    document.getElementById("mm-btn-wwechat").addEventListener("click", function () { openWithdrawModal("wechat"); });
+    document.getElementById("mm-btn-refresh").addEventListener("click", function () { loadOverview(); toast("已刷新"); });
+
+    await loadOverview();
+    await loadTickets();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();

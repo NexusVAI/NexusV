@@ -112,6 +112,15 @@
   color: #16a34a;
 }
 
+/* model-id pills row (wraps when a listing supports several models) */
+.cancri-id-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
 /* price value emphasis */
 .cancri-price__num {
   font-family: var(--font-mono);

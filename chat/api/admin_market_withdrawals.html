@@ -31,7 +31,8 @@
   </head>
   <body>
     <div class="page-shell">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <nav id="admin-nav" data-active="market_wd"></nav>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:20px 0;">
         <div>
           <h1 style="font-size:22px;font-weight:600;margin:0;">蟹市提现审批</h1>
           <div style="font-size:13px;color:var(--text-mute);margin-top:4px;">卖家微信提现工单审批 · 通过后出账 / 驳回后解冻</div>
@@ -73,6 +74,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
     <script src="../cancri_config.js?v=20260625-console"></script>
+    <script src="./admin-nav.js?v=20260628-market"></script>
     <script src="./admin-market-withdrawals.js?v=20260628-market"></script>
   </body>
 </html>

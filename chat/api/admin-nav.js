@@ -16,7 +16,7 @@
  *
  * data-active 取值：
  *   dashboard | users | orders | usage | lines | models | pricing |
- *   descriptions | appeals | stories | wc2026 | orbit | api_apply
+ *   descriptions | appeals | stories | wc2026 | orbit | market_wd | api_apply
  */
 (function () {
   "use strict";
@@ -34,6 +34,7 @@
     { key: "stories",      href: "./admin_stories.html",     label: "满月故事" },
     { key: "wc2026",       href: "./admin_wc2026.html",      label: "世界杯主页" },
     { key: "orbit",        href: "./admin_orbit.html",       label: "百万亿审核" },
+    { key: "market_wd",    href: "./admin_market_withdrawals.html", label: "蟹市提现" },
     { key: "api_apply",    href: "./admin.html",             label: "API 申请" },
   ];
 
