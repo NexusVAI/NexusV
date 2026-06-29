@@ -5,171 +5,223 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- CSP 沿用 market.html / 模型广场：外联脚本（禁 inline JS），允许 inline style 与 data: 字体。 -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://diusqgphvybnzazgopor.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>我的上架 · 螃蟹市场 · NexusV 开放平台</title>
+    <title>我的上架 · 螃蟹市场 · NexusV 控制台</title>
     <link rel="icon" type="image/png" href="../Logo/Cancri.png" />
     <link rel="apple-touch-icon" href="../Logo/Cancri.png" />
-    <link rel="stylesheet" href="./api/oai-platform.css?v=20260628-mine" />
-    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260628-mine" />
-    <link rel="stylesheet" href="./api/oai-market-mine.css?v=20260628-mine" />
-    <script src="./api/oai-platform.js?v=20260628-mine"></script>
+    <link rel="stylesheet" href="./api/oai-platform.css?v=20260629-mine" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260629-mine" />
+    <link rel="stylesheet" href="./api/oai-market-mine.css?v=20260629-mine" />
+    <script src="./api/oai-platform.js?v=20260629-mine"></script>
   </head>
 
-  <body class="overflow-x-hidden" data-cancri-base="" data-cancri-logobase="../Logo/">
-    <!-- ───────── Top header（与 market.html / api_models.html 一致）───────── -->
-    <header id="header" class="fixed top-0 w-full h-16 z-50 bg-white dark:bg-black border-b border-primary-surface">
-      <div class="flex items-center h-full px-4 md:px-8 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-6">
-        <a href="./api/index.html" class="flex items-center gap-2 font-semibold ml-0 md:-ml-1 md:justify-self-start">
-          <img class="h-6 w-6 rounded-md" src="../Logo/Cancri1.jpg" data-dark-src="../Logo/Cancri1.jpg" data-light-src="../Logo/Cancri.png" alt="NexusV" width="24" height="24" />
-          <span class="text-default">NexusV 开放平台</span>
-        </a>
-        <nav class="hidden md:flex items-center justify-center gap-1">
-          <a href="./api/index.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">概览</a>
-          <a href="./api_models.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">模型</a>
-          <a href="./market.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">螃蟹市场</a>
-          <a href="./api_docs.html" class="flex items-center gap-1 text-sm px-2.5 py-1 rounded-md text-primary-soft hover:text-default hover:bg-primary-soft-alpha">文档</a>
+  <body class="mmc" data-cancri-base="" data-cancri-logobase="../Logo/">
+    <!-- ════════════ 控制台外壳（套 api/usage.html 的壳）════════════ -->
+    <div class="mmc-shell">
+      <!-- ───── 左侧侧边栏 ───── -->
+      <aside class="mmc-aside" id="mmc-aside">
+        <div class="mmc-aside__top">
+          <button type="button" class="mmc-proj" id="mmc-proj">
+            <span class="mmc-proj__name">默认项目</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" class="mmc-collapse" id="mmc-collapse" aria-label="折叠侧边栏" title="折叠侧边栏">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="9" y1="4" x2="9" y2="20" stroke="currentColor" stroke-width="1.8"/></svg>
+          </button>
+        </div>
+        <nav class="mmc-nav">
+          <a class="mmc-nav__item" href="./api/console.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>首页</span>
+          </a>
+          <a class="mmc-nav__item" href="./api/keys.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8a4 4 0 11-3.5 6H7v3H4v-3l6.5-6.5A4 4 0 0114 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>API 密钥</span>
+          </a>
+          <a class="mmc-nav__item" href="./api/usage.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 16l3-4 3 2 4-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>用量</span>
+          </a>
+          <a class="mmc-nav__item" href="./api/logs.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14M5 9h14M5 14h14M5 19h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>日志</span>
+          </a>
+          <a class="mmc-nav__item" href="./market.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13a7 4 0 0014 0M3 9l3 2m15-2l-3 2M8 17l-2 3m12-3l2 3M9 11V9m6 2V9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>螃蟹市场</span>
+          </a>
+          <a class="mmc-nav__item is-active" href="./market_mine.html" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span>我的上架</span>
+          </a>
         </nav>
-        <div class="ml-auto flex items-center gap-4 md:gap-5 md:ml-0 md:justify-end md:justify-self-end">
-          <div class="hidden md:flex">
-            <a href="./api/console.html" class="_Button_6dmow_1 not-prose !h-9 !w-9 justify-center !px-0 min-[1000px]:!w-auto min-[1000px]:!px-4" data-color="primary" data-variant="solid" data-pill data-size="md">
-              <span class="_ButtonInner_6dmow_4"><span class="sr-only min-[1000px]:not-sr-only">控制台</span></span>
-            </a>
-          </div>
+        <div class="mmc-aside__foot">
+          <button type="button" class="mmc-user" id="mmc-user">
+            <span class="mmc-user__avatar" id="mmc-user-avatar">S</span>
+            <span class="mmc-user__meta">
+              <span class="mmc-user__name" id="mmc-user-name">卖家</span>
+              <span class="mmc-user__org">Organization</span>
+            </span>
+          </button>
         </div>
-      </div>
-    </header>
+      </aside>
 
-    <!-- ───────── Mobile drawer ───────── -->
-    <div id="drawer" data-open="false" aria-hidden="true" class="fixed inset-0 z-[60] hidden flex-col bg-white dark:bg-black pt-16 md:hidden">
-      <nav class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 text-sm">
-        <a href="./api/index.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">概览</a>
-        <a href="./api_models.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">模型广场</a>
-        <a href="./market.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">螃蟹市场</a>
-        <a href="./market_mine.html" class="px-3 py-2 rounded-lg text-default bg-primary-soft">我的上架</a>
-        <a href="./api_docs.html" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">文档</a>
-        <a href="./" class="px-3 py-2 rounded-lg text-default hover:bg-primary-ghost-hover">返回聊天</a>
-      </nav>
-    </div>
-
-    <!-- ───────── Layout: sidebar + main ───────── -->
-    <div class="min-h-dvh">
-      <div class="flex pt-16">
-        <div class="hidden md:flex md:flex-col w-[218px] px-3 pb-6 pt-2 md:fixed md:top-16 md:bottom-0 md:z-40 bg-surface dark:bg-black">
-          <nav class="flex-1 overflow-y-auto overflow-x-visible pt-4">
-            <ul class="flex flex-col gap-0.25 text-sm text-default w-full mb-2">
-              <li><a href="./api/index.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">概览</span></a></li>
-            </ul>
-            <details class="nav-disclosure" open>
-              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
-                <span class="flex-1 min-w-0 line-clamp-2">模型</span>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
-              </summary>
-              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
-                <li><a href="./api_models.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">模型广场</span></a></li>
-                <li><a href="./market.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">螃蟹市场</span></a></li>
-                <li><a href="./market_mine.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default bg-primary-soft block" aria-current="page"><span class="line-clamp-2">我的上架</span></a></li>
-                <li><a href="./api_docs.html#pricing" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">计费倍率</span></a></li>
-              </ul>
-            </details>
-            <details class="nav-disclosure" open>
-              <summary class="list-none cursor-pointer select-none px-3 py-2 rounded-lg transition-colors flex items-center justify-between gap-2 text-default font-semibold hover:text-default hover:bg-primary-ghost-hover">
-                <span class="flex-1 min-w-0 line-clamp-2">控制台</span>
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="nav-disclosure-chevron w-3 h-3 inline-block ml-1 text-secondary transition-transform duration-150" aria-hidden="true"><path d="M8.29289 4.29289C8.68342 3.90237 9.31658 3.90237 9.70711 4.29289L16.7071 11.2929C17.0976 11.6834 17.0976 12.3166 16.7071 12.7071L9.70711 19.7071C9.31658 20.0976 8.68342 20.0976 8.29289 19.7071C7.90237 19.3166 7.90237 18.6834 8.29289 18.2929L14.5858 12L8.29289 5.70711C7.90237 5.31658 7.90237 4.68342 8.29289 4.29289Z" fill="currentColor"></path></svg>
-              </summary>
-              <ul class="mt-1 ml-3 flex flex-col gap-0.5 text-sm text-default w-full mb-2">
-                <li><a href="./api/keys.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">API 密钥</span></a></li>
-                <li><a href="./api/usage.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">用量</span></a></li>
-                <li><a href="./pricing.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">充值</span></a></li>
-                <li><a href="./orders.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">我的订单</span></a></li>
-              </ul>
-            </details>
-            <div>
-              <h3 class="mb-2 ml-3 mt-6 text-sm font-semibold select-none">资源</h3>
-              <ul class="flex flex-col gap-0.25 text-sm text-default w-full">
-                <li><a href="./api_apply.html" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover"><span class="line-clamp-2">申请接入</span></a></li>
-                <li><a href="./" class="px-3 py-1.5 w-full rounded-[8px] transition-colors text-default block hover:text-default hover:bg-primary-ghost-hover flex items-center justify-between gap-1"><span class="line-clamp-2 min-w-0 flex-1">返回聊天</span></a></li>
-              </ul>
+      <!-- ───── 主内容区 ───── -->
+      <main class="mmc-main">
+        <!-- 顶部标题 + 胶囊行 -->
+        <header class="mmc-head">
+          <h1 class="mmc-h1">我的上架</h1>
+          <div class="mmc-head__row">
+            <div class="mmc-pills">
+              <span class="mmc-pill mmc-pill--proj">
+                <span>默认项目</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </span>
+              <button type="button" class="mmc-pill" id="mm-range">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                <span id="mm-range-label">全部时间</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <!-- 用户要求：和「默认项目」同款胶囊：上传模型 / 管理模型 -->
+              <button type="button" class="mmc-pill mmc-pill--action" id="mm-btn-new">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span>上传模型</span>
+              </button>
+              <button type="button" class="mmc-pill mmc-pill--action" id="mm-btn-manage">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span>管理模型</span>
+              </button>
             </div>
-          </nav>
+            <div class="mmc-head__tools">
+              <button type="button" class="mmc-icon-btn" id="mm-btn-refresh" aria-label="刷新" title="刷新">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 11a8 8 0 10-2.3 5.7M20 5v6h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- 登录 / 权限 提示态 -->
+        <div id="mm-not-logged-in" data-cancri-hidden class="mmc-notice">
+          <div class="mmc-notice__title">请先登录</div>
+          <div class="mmc-notice__desc">管理我的上架需登录 NexusV 账号。</div>
+          <a href="./" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">返回登录</span></a>
+        </div>
+        <div id="mm-no-access" data-cancri-hidden class="mmc-notice">
+          <div class="mmc-notice__title">需先开通 API</div>
+          <div class="mmc-notice__desc">我的上架仅对已通过 API 申请的用户开放。</div>
+          <a href="./api_apply.html" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">去申请接入</span></a>
+        </div>
+        <div id="mm-load-error" data-cancri-hidden class="mmc-notice mmc-notice--error">
+          <div class="mmc-notice__title">加载失败</div>
+          <div class="mmc-notice__desc" id="mm-load-error-msg"></div>
+          <button type="button" class="_Button_6dmow_1" data-color="secondary" data-variant="outline" data-pill data-size="md" id="mm-error-retry"><span class="_ButtonInner_6dmow_4">重试</span></button>
         </div>
 
-        <!-- ───────── Main：我的上架 ───────── -->
-        <main class="min-w-0 flex-1 md:pl-[240px]">
-          <div class="relative mx-4 flex flex-col gap-8 px-4 pt-20 pb-10 sm:mx-8 md:mx-auto md:w-full md:max-w-6xl md:px-12 xl:px-4">
-
-            <!-- 标题 + 操作 -->
-            <div class="flex flex-col gap-4">
-              <div class="flex flex-col gap-1 md:flex-row md:items-start md:justify-between">
+        <!-- 主体 -->
+        <div id="mm-body" data-cancri-hidden>
+          <!-- 概览：收益面板 + 被调用数据 -->
+          <section class="mmc-overview">
+            <div class="mmc-panel mmc-panel--main">
+              <div class="mmc-panel__head">
                 <div>
-                  <h1 class="_ModelsTitle_163e7_1">我的上架</h1>
-                  <p class="mt-2 text-base text-emphasis">把闲置的第三方 API Key 上架到螃蟹市场，按买家实际消耗结算，平台抽 5%。</p>
+                  <div class="mmc-panel__label">累计收益（到手 95%）</div>
+                  <div class="mmc-bignum" id="mm-total-credit">¥0.00</div>
+                  <div class="mmc-subnum">冻结中（微信工单审核）<b id="mm-frozen">¥0.00</b></div>
                 </div>
-                <div class="mt-3 flex flex-wrap items-center gap-2 md:mt-1">
-                  <button type="button" id="mm-btn-new" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">新增上架</span></button>
-                  <button type="button" id="mm-btn-wsite" class="_Button_6dmow_1" data-color="secondary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">提现到站内</span></button>
-                  <button type="button" id="mm-btn-wwechat" class="_Button_6dmow_1" data-color="secondary" data-variant="outline" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">提现到微信</span></button>
-                  <button type="button" id="mm-btn-refresh" class="_Button_6dmow_1" data-color="secondary" data-variant="ghost" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">刷新</span></button>
+                <button type="button" class="mmc-pill mmc-pill--withdraw" id="mm-btn-withdraw">
+                  <span>提现</span>
+                  <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <div class="mmc-chart" id="mm-earn-chart" aria-label="每日收益"></div>
+              <div class="mmc-chart__axis"><span id="mm-axis-start">—</span><span id="mm-axis-end">—</span></div>
+            </div>
+
+            <div class="mmc-panel mmc-panel--side">
+              <div class="mmc-side-block">
+                <div class="mmc-side-block__head">
+                  <span>被调用的数据</span>
+                  <span class="mmc-side-block__sub" id="mm-side-email">—</span>
+                </div>
+                <div class="mmc-side-block__num" id="mm-available">¥0.00</div>
+                <div class="mmc-side-block__cap">待结算可提现余额</div>
+              </div>
+              <div class="mmc-side-block">
+                <div class="mmc-side-block__cap">总 Token 数</div>
+                <div class="mmc-side-block__num" id="mm-total-tokens">0</div>
+                <div class="mmc-spark" id="mm-spark"></div>
+              </div>
+              <div class="mmc-side-block">
+                <div class="mmc-side-block__cap">总请求数</div>
+                <div class="mmc-side-block__num" id="mm-total-requests">0</div>
+                <div class="mmc-dashline"></div>
+              </div>
+              <div class="mmc-side-block">
+                <div class="mmc-side-block__cap">累计已提现</div>
+                <div class="mmc-side-block__num mmc-side-block__num--sm" id="mm-withdrawn">¥0.00</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 详细信息 / 工单信息 -->
+          <section class="mmc-tabsec">
+            <div class="mmc-tabsec__left">
+              <div class="mmc-tabs" role="tablist">
+                <button type="button" class="mmc-tab is-active" data-tab="detail" role="tab">详细信息</button>
+                <button type="button" class="mmc-tab" data-tab="tickets" role="tab">工单信息</button>
+              </div>
+
+              <div class="mmc-tabpanel" data-panel="detail">
+                <div class="mmc-cards2">
+                  <div class="mmc-card">
+                    <div class="mmc-card__title">你的 API 被调用了多少次（每个模型独立）</div>
+                    <div id="mm-calls-by-model" class="mmc-barlist"></div>
+                  </div>
+                  <div class="mmc-card">
+                    <div class="mmc-card__title">你赚了多少钱（每个模型独立）</div>
+                    <div id="mm-earn-by-model" class="mmc-barlist"></div>
+                  </div>
+                </div>
+                <div class="mmc-card">
+                  <div class="mmc-card__title">最近调用日志</div>
+                  <div id="mm-calls-log" class="mmc-calls"></div>
+                </div>
+              </div>
+
+              <div class="mmc-tabpanel" data-panel="tickets" hidden>
+                <div class="mmc-card">
+                  <div class="mmc-card__title">提现工单（申请记录 + 处理结果 + 留言）</div>
+                  <div id="mm-tickets-full" class="mmc-tickets"></div>
                 </div>
               </div>
             </div>
 
-            <!-- 提示态 -->
-            <div id="mm-not-logged-in" data-cancri-hidden class="flex flex-col gap-3 rounded-lg border border-primary-surface bg-surface p-6">
-              <div class="text-lg font-semibold text-default">请先登录</div>
-              <div class="text-sm text-secondary">管理我的上架需登录 NexusV 账号。</div>
-              <div><a href="./" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">返回登录</span></a></div>
+            <aside class="mmc-tabsec__right">
+              <div class="mmc-card__title">最近工单</div>
+              <div id="mm-tickets-recent" class="mmc-tickets mmc-tickets--mini"></div>
+            </aside>
+          </section>
+
+          <!-- 管理模型 -->
+          <section class="mmc-manage" id="mm-manage">
+            <div class="mmc-manage__head">
+              <h2 class="mmc-h2">管理模型</h2>
+              <span class="mmc-manage__count" id="mm-listings-count">共 0 个上架模型</span>
             </div>
-            <div id="mm-no-access" data-cancri-hidden class="flex flex-col gap-3 rounded-lg border border-primary-surface bg-surface p-6">
-              <div class="text-lg font-semibold text-default">需先开通 API</div>
-              <div class="text-sm text-secondary">我的上架仅对已通过 API 申请的用户开放。请先申请接入。</div>
-              <div><a href="./api_apply.html" class="_Button_6dmow_1" data-color="primary" data-variant="solid" data-pill data-size="md"><span class="_ButtonInner_6dmow_4">去申请接入</span></a></div>
-            </div>
-
-            <div id="mm-accessible" data-cancri-hidden class="flex flex-col gap-10">
-              <!-- 收益统计卡 -->
-              <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <div class="mm-stat"><div class="mm-stat__key">待结算收益</div><div class="mm-stat__val" id="mm-available">¥0.00</div><div class="mm-stat__sub">可提现余额</div></div>
-                <div class="mm-stat"><div class="mm-stat__key">冻结中</div><div class="mm-stat__val" id="mm-frozen">¥0.00</div><div class="mm-stat__sub">微信提现工单审核中</div></div>
-                <div class="mm-stat"><div class="mm-stat__key">累计已提现</div><div class="mm-stat__val" id="mm-withdrawn">¥0.00</div><div class="mm-stat__sub">站内 + 微信</div></div>
-                <div class="mm-stat"><div class="mm-stat__key">累计收益</div><div class="mm-stat__val" id="mm-total-credit">¥0.00</div><div class="mm-stat__sub" id="mm-total-tx">共 0 笔成交</div></div>
-              </div>
-
-              <!-- Tab 切换 -->
-              <div class="flex flex-col gap-6">
-                <div class="mm-tabs" role="tablist">
-                  <button type="button" class="mm-tab is-active" data-tab="listings" role="tab">我的挂单（<span id="mm-listings-count">0</span>）</button>
-                  <button type="button" class="mm-tab" data-tab="calls" role="tab">调用日志</button>
-                  <button type="button" class="mm-tab" data-tab="tickets" role="tab">提现工单</button>
-                </div>
-
-                <!-- 我的挂单 -->
-                <section id="mm-panel-listings" class="mm-panel">
-                  <div id="mm-listings-empty" data-cancri-hidden class="rounded-lg border border-primary-surface bg-surface p-6 text-sm text-secondary">你还没有上架任何挂单。点上方「新增上架」开始。</div>
-                  <div id="mm-listings" class="cancri-grid"></div>
-                </section>
-
-                <!-- 调用日志 -->
-                <section id="mm-panel-calls" class="mm-panel" hidden>
-                  <div id="mm-calls"></div>
-                </section>
-
-                <!-- 提现工单 -->
-                <section id="mm-panel-tickets" class="mm-panel" hidden>
-                  <div id="mm-tickets"></div>
-                </section>
-              </div>
-
-              <div class="h-px w-full bg-primary-soft"></div>
-              <div class="text-sm text-secondary">蟹市 Key 由你提供，平台对买家实付额抽 5% 手续费，其余 95% 实时入你的待结算余额。因上游内容问题导致的后果由卖家承担。</div>
-            </div>
-          </div>
-        </main>
-      </div>
+            <div id="mm-listings-empty" data-cancri-hidden class="mmc-empty">你还没有上架任何模型。点上方「上传模型」开始。</div>
+            <div id="mm-listings" class="mmc-modellist"></div>
+          </section>
+        </div>
+      </main>
     </div>
+
+    <!-- 模态根（JS 注入内容） -->
+    <div id="mm-modal-root"></div>
+    <div id="mm-toast" class="mmc-toast" aria-live="polite"></div>
 
     <!-- 站点配置 + 依赖 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
     <script src="./cancri_config.js?v=2026-05-13e"></script>
     <script src="./api/platform-auth.js?v=20260625-auth"></script>
-    <script src="./api/oai-market-mine.js?v=20260628-mine"></script>
+    <script src="./api/oai-market-mine.js?v=20260629-mine"></script>
   </body>
 </html>
