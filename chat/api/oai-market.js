@@ -48,7 +48,24 @@
   function platformIcon(p) { var k = String(p || "").toLowerCase().replace(/[\s_-]/g, ""); return PLATFORM_ICON[k] || "../Logo/Cancri1.jpg"; }
   function platformLabel(p) { var k = String(p || "").toLowerCase().replace(/[\s_-]/g, ""); return PLATFORM_LABEL[k] || p || "自定义"; }
 
-  // 与模型广场一致的复制按钮：model id pill（买家调用时需加 px: 前缀）
+  // 蟹市统一前缀：买家调用时必须用 px:<模型id> 区分自有模型，由网关识别后转发并计费。
+  var PX_PREFIX = "px:";
+  function withPx(m) { m = String(m || ""); return m.indexOf(PX_PREFIX) === 0 ? m : PX_PREFIX + m; }
+
+  // model_whitelist 可能是数组，也可能是 RPC 直出的 JSON 字符串/逗号串——统一规整成数组，
+  // 否则会出现「支持模型 —」（用户反馈：填了模型 id 却不显示）。
+  function normalizeModels(v) {
+    if (Array.isArray(v)) return v.map(function (x) { return String(x).trim(); }).filter(Boolean);
+    if (typeof v === "string") {
+      var s = v.trim();
+      if (!s) return [];
+      if (s[0] === "[") { try { var a = JSON.parse(s); if (Array.isArray(a)) return a.map(function (x) { return String(x).trim(); }).filter(Boolean); } catch (e) {} }
+      return s.split(/[,\s]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    }
+    return [];
+  }
+
+  // 与模型广场一致的复制按钮：model id pill。蟹市卡片直接展示 px: 前缀，买家点一下即复制可用调用名。
   var COPY_SVG =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="9" y="9" width="13" height="13" rx="2"></rect>' +
@@ -56,8 +73,9 @@
   function modelPills(models) {
     if (!Array.isArray(models) || !models.length) return "—";
     return '<span class="cancri-id-row">' + models.map(function (m) {
-      return '<button type="button" class="cancri-id" data-copy="' + escAttr(m) + '" title="点击复制 model id（买家调用时前缀 px:）">' +
-        '<span class="cancri-id__text">' + esc(m) + "</span>" + COPY_SVG + "</button>";
+      var pid = withPx(m);
+      return '<button type="button" class="cancri-id" data-copy="' + escAttr(pid) + '" title="点击复制调用名 ' + escAttr(pid) + '">' +
+        '<span class="cancri-id__text">' + esc(pid) + "</span>" + COPY_SVG + "</button>";
     }).join("") + "</span>";
   }
 
@@ -75,7 +93,7 @@
     var name = l.display_name || platformLabel(l.platform);
     var desc = l.description || "";
     var icon = platformIcon(l.platform);
-    var models = Array.isArray(l.model_whitelist) ? l.model_whitelist : [];
+    var models = normalizeModels(l.model_whitelist);
     var inPrice = fmtPrice(l.input_price_per_m);
     var outPrice = fmtPrice(l.output_price_per_m);
     return (
