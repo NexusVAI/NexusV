@@ -1068,7 +1068,8 @@ html[data-theme="light"] .conversation-item:hover {
     line-height: 0;
     background: hsla(34, 20%, 100%, 0.03);
 }
-.claude-code-promo-media img {
+.claude-code-promo-media img,
+.claude-code-promo-media video {
     display: block;
     width: 100%;
     height: auto;
@@ -1118,6 +1119,15 @@ html[data-theme="light"] .conversation-item:hover {
 }
 .claude-code-promo-download:active {
     transform: scale(0.99);
+}
+/* 2026-06-30：disabled 占位态，等接入百度网盘下载链接后启用。 */
+.claude-code-promo-download:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.25);
+}
+.claude-code-promo-download:disabled:hover {
+    filter: grayscale(0.25);
 }
 .claude-code-promo-hint {
     margin: 0;

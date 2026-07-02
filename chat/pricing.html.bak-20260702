@@ -2,9 +2,6 @@
 <html lang="zh-CN">
     <head>
         <meta charset="UTF-8" />
-        <!-- 2026-07-02：定价页已退役，整页跳转到按量充值结账页。旧三档订阅/加油包内容不再展示。 -->
-        <meta http-equiv="refresh" content="0; url=api/checkout.html" />
-        <script>location.replace("api/checkout.html");</script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <!-- 2026-05-17 Phase A 改版：三档订阅 + 加油包 + 模型倍率。脚本仍走外联 pricing-app.js。 -->
         <meta
@@ -813,14 +810,6 @@
         </style>
     </head>
     <body>
-        <noscript>
-            <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui;background:#fff">
-                <div style="text-align:center">
-                    <p style="font-size:1.1rem;margin-bottom:12px">正在跳转到充值页…</p>
-                    <a href="api/checkout.html" style="color:#0074d4;font-size:1rem">点这里手动前往 →</a>
-                </div>
-            </div>
-        </noscript>
         <header class="topbar">
             <div class="topbar__inner">
                 <a class="brand" href="./api/" aria-label="Cancri 开放平台">
