@@ -48,11 +48,10 @@
   }
 
   // ── 解析订单选择（来自 pricing 页跳转的 query params）──
-  // 2026-07-02：定价页已退役为跳转，默认 kind=recharge（按量充值），用户在页面输入金额。
   function readSelection() {
     var p = new URLSearchParams(location.search);
-    var kind = (p.get("kind") || "recharge").toLowerCase();
-    if (kind !== "subscription" && kind !== "topup" && kind !== "recharge") kind = "recharge";
+    var kind = (p.get("kind") || "subscription").toLowerCase();
+    if (kind !== "subscription" && kind !== "topup" && kind !== "recharge") kind = "subscription";
     var plan = p.get("plan") || "";
     var sku = p.get("sku") || "";
     var amount = Number(p.get("amount"));
@@ -149,71 +148,6 @@
     window.__checkoutMethod = function () { return current; };
   }
 
-  // ── 按量充值金额输入框联动（2026-07-02）──
-  // 用户输入/选 chip → 校验 ¥1-2000 → 更新 sel.amount → 重新渲染所有金额显示。
-  var AMOUNT_MIN = 1, AMOUNT_MAX = 2000;
-
-  function setupAmountInput(sel) {
-    var input = $("ck-amount-input");
-    var hint = $("ck-amount-hint");
-    var chipsWrap = $("ck-amount-chips");
-    if (!input) return;
-
-    function syncChips(val) {
-      if (!chipsWrap) return;
-      var chips = chipsWrap.querySelectorAll(".ck-amount-chip");
-      chips.forEach(function (c) {
-        c.classList.toggle("is-active", Number(c.getAttribute("data-amount")) === val);
-      });
-    }
-
-    function apply(val, fromChip) {
-      var v = Number(val);
-      if (!Number.isFinite(v)) v = 0;
-      var clamped = Math.round(v);
-      var valid = clamped >= AMOUNT_MIN && clamped <= AMOUNT_MAX;
-      if (valid) {
-        sel.amount = clamped;
-        renderSummary(sel);
-        input.classList.remove("is-invalid");
-        hint.textContent = "¥1 - ¥2000，到账 1:1（¥1 = 100 万 token 积分）";
-        hint.classList.remove("is-warn");
-        syncChips(clamped);
-      } else {
-        input.classList.add("is-invalid");
-        hint.textContent = clamped < AMOUNT_MIN
-          ? "最少充值 ¥1。"
-          : "最多充值 ¥2000，如需更大额度请联系客服。";
-        hint.classList.add("is-warn");
-        syncChips(-1);
-      }
-      return valid;
-    }
-
-    // 初始：若 URL 没带 amount，用输入框默认值（value=10）
-    if (sel.amount == null) {
-      sel.amount = Number(input.value) || AMOUNT_MIN;
-    } else {
-      input.value = sel.amount;
-    }
-    apply(sel.amount, true);
-
-    input.addEventListener("input", function () { apply(input.value, false); });
-
-    if (chipsWrap) {
-      chipsWrap.addEventListener("click", function (e) {
-        var chip = e.target.closest(".ck-amount-chip");
-        if (!chip) return;
-        var val = Number(chip.getAttribute("data-amount"));
-        input.value = val;
-        apply(val, true);
-      });
-    }
-
-    // 暴露校验结果给 submitOrder
-    window.__checkoutAmountValid = function () { return apply(input.value, false); };
-  }
-
   function showMsg(text, kind) {
     var el = $("ck-msg");
     if (!el) return;
@@ -241,10 +175,6 @@
   async function submitOrder(sel) {
     var err = validate();
     if (err) { showMsg(esc(err), "warn"); return; }
-    // 金额校验（按量充值）
-    if (window.__checkoutAmountValid && !window.__checkoutAmountValid()) {
-      showMsg(esc("请输入有效的充值金额（¥1 - ¥2000）。"), "warn"); return;
-    }
     var btn = $("cf-submit");
     btn.disabled = true; var orig = btn.textContent; btn.textContent = "提交中…";
     var payload = {
@@ -285,7 +215,6 @@
     var sel = readSelection();
     renderSummary(sel);
     setupPayMethodTabs();
-    setupAmountInput(sel);
     var auth = window.PlatformAuth;
     var skelPay = $("skel-payment");
     var payMount = skelPay && skelPay.parentElement;

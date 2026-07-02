@@ -403,66 +403,6 @@
       font-size: 13px;
       line-height: 1.5;
     }
-
-    /* ═══ 按量充值金额输入框（2026-07-02）═══ */
-    .ck-amount-section {
-      display: flex; flex-direction: column; gap: 6px;
-      padding: 16px 0 4px;
-    }
-    .ck-amount-label {
-      font-size: 14px; font-weight: 500; color: var(--ck-gray800);
-    }
-    .ck-amount-input-wrap {
-      position: relative; display: flex; align-items: center;
-      width: 100%; height: var(--ck-input-h);
-    }
-    .ck-amount-prefix {
-      position: absolute; left: 14px; font-size: 16px; font-weight: 600;
-      color: var(--ck-gray500); pointer-events: none;
-    }
-    .ck-amount-input {
-      width: 100%; height: 100%;
-      padding: 0 14px 0 30px;
-      border: 1px solid var(--ck-gray50);
-      border-radius: var(--ck-radius-sm);
-      background: var(--ck-input-bg);
-      color: var(--ck-gray800);
-      font-size: 16px; font-weight: 600;
-      font-family: var(--ck-font);
-      font-variant-numeric: tabular-nums;
-      outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .ck-amount-input:focus {
-      border-color: var(--ck-blue);
-      box-shadow: var(--ck-focus-shadow);
-    }
-    .ck-amount-input::-webkit-outer-spin-button,
-    .ck-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .ck-amount-input { -moz-appearance: textfield; }
-    .ck-amount-input.is-invalid {
-      border-color: var(--ck-red);
-      box-shadow: 0 0 0 1px rgba(220,39,39,0.5);
-    }
-    .ck-amount-hint {
-      font-size: 12px; color: var(--ck-gray400); line-height: 1.5;
-    }
-    .ck-amount-hint.is-warn { color: var(--ck-red); }
-    /* 快捷金额 chips */
-    .ck-amount-chips {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
-    }
-    .ck-amount-chip {
-      border: 1px solid var(--ck-gray50); border-radius: 999px;
-      background: var(--ck-white); color: var(--ck-gray800);
-      font-size: 13px; font-weight: 500; font-family: var(--ck-font);
-      padding: 6px 14px; cursor: pointer;
-      transition: border-color 0.15s, background 0.15s, color 0.15s;
-    }
-    .ck-amount-chip:hover { border-color: var(--ck-blue); color: var(--ck-blue); }
-    .ck-amount-chip.is-active {
-      border-color: var(--ck-blue); background: rgba(0,116,212,0.08); color: var(--ck-blue);
-    }
   </style>
 </head>
 <body data-login-url="chat/index.html">
@@ -489,26 +429,6 @@
               <div class="ck-ps__total">
                 <span class="ck-ps__amount" id="ps-amount">¥—</span>
                 <span class="ck-ps__interval" id="ps-interval"></span>
-              </div>
-            </div>
-
-            <!-- 按量充值金额输入（2026-07-02：定价页跳转后，用户在此输入付多少）-->
-            <div class="ck-amount-section" id="ck-amount-section">
-              <label class="ck-amount-label" for="ck-amount-input">充值金额</label>
-              <div class="ck-amount-input-wrap">
-                <span class="ck-amount-prefix">¥</span>
-                <input class="ck-amount-input" type="number" id="ck-amount-input"
-                       min="1" max="2000" step="1" value="10" inputmode="numeric"
-                       placeholder="1 - 2000" autocomplete="off" />
-              </div>
-              <div class="ck-amount-hint" id="ck-amount-hint">¥1 - ¥2000，到账 1:1（¥1 = 100 万 token 积分）</div>
-              <div class="ck-amount-chips" id="ck-amount-chips">
-                <button type="button" class="ck-amount-chip" data-amount="10">¥10</button>
-                <button type="button" class="ck-amount-chip" data-amount="30">¥30</button>
-                <button type="button" class="ck-amount-chip" data-amount="50">¥50</button>
-                <button type="button" class="ck-amount-chip" data-amount="100">¥100</button>
-                <button type="button" class="ck-amount-chip" data-amount="200">¥200</button>
-                <button type="button" class="ck-amount-chip" data-amount="500">¥500</button>
               </div>
             </div>
 
@@ -652,6 +572,6 @@
   <script src="chat/cancri_config.js?v=2026-05-13e"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
   <script src="chat/api/platform-auth.js?v=20260625-auth"></script>
-  <script src="chat/api/checkout-app.js?v=20260702-recharge"></script>
+  <script src="chat/api/checkout-app.js?v=20260625-auth"></script>
 </body>
 </html>
