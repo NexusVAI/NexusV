@@ -204,47 +204,47 @@ function getDisplayTier(m) {
 
 // 2026-05-17 品牌 logo：从 chat/ 根下的 *-color.svg / *.svg 集反查。
 // key 是品牌名归一化后的 slug（全小写 + 去空格），normalizeBrandKey()
-// 会把 m.brand 转为该 slug 后查表。路径相对于 api_models.html（chat/）。
+// 会把 m.brand 转为该 slug 后查表。路径相对于本页 chat/api/api_models.html。
 // 调试详细详细。
 const BRAND_LOGO = {
-    anthropic: "./claude-color.svg",
-    openai: "./openai.svg",
-    cancri: "../Logo/Cancri1.jpg",
-    kwaikat: "./kwaikat.svg",
-    google: "./gemini-color.svg",
-    minimax: "./minimax-color.svg",
-    stepfun: "./stepfun-color.svg",
-    xai: "./grok.svg",
+    anthropic: "../claude-color.svg",
+    openai: "../openai.svg",
+    cancri: "../../Logo/Cancri1.jpg",
+    kwaikat: "../kwaikat.svg",
+    google: "../gemini-color.svg",
+    minimax: "../minimax-color.svg",
+    stepfun: "../stepfun-color.svg",
+    xai: "../grok.svg",
     // 文件名原本带中间空格 + (1)，用 encodeURI 避免 URL 解析问题。
     // 后续可考虑重命名为 deepseek-color.svg 让路径更干净。
-    deepseek: encodeURI("./deepseek-color (1).svg"),
-    doubao: "./doubao-color.svg",
-    moonshot: "./moonshot.svg",
-    zhipu: "./zhipu-color.svg",
-    qwen: "./qwen-color.svg",
-    meta: "./meta-color.svg",
-    nvidia: "./nvidia-color.svg",
-    sensenova: "./sensenova-color.svg",
-    mistral: "./mistral-color.svg",
-    huggingface: "./huggingface-color.svg",
+    deepseek: encodeURI("../deepseek-color (1).svg"),
+    doubao: "../doubao-color.svg",
+    moonshot: "../moonshot.svg",
+    zhipu: "../zhipu-color.svg",
+    qwen: "../qwen-color.svg",
+    meta: "../meta-color.svg",
+    nvidia: "../nvidia-color.svg",
+    sensenova: "../sensenova-color.svg",
+    mistral: "../mistral-color.svg",
+    huggingface: "../huggingface-color.svg",
     // 可选补充：以下品牌 catalog 里不成商并但可能出现，进 svg 集作为备选。
-    bilibili: "./bilibili-color.svg",
-    antgroup: "./antgroup-color.svg",
-    spark: "./spark-color.svg",
-    tencent: "./yuanbao-color.svg",
-    hunyuan: "./yuanbao-color.svg",
-    yuanbao: "./yuanbao-color.svg",
-    kling: "./kling-color.svg",
-    xiaomimimo: "./xiaomimimo-color.svg",
-    baichuan: "./baichuan-color.svg",
-    nex: "./NEX_logo.svg",
-    microsoft: "./microsoft-color.svg",
-    ibm: "./ibm.svg",
-    cohere: "./cohere-color.svg",
-    cursor: "./cursor.svg",
-    swissai: "./huggingface-color.svg",
-    utterproject: "./huggingface-color.svg",
-    baidu: "./wenxin-color.svg",
+    bilibili: "../bilibili-color.svg",
+    antgroup: "../antgroup-color.svg",
+    spark: "../spark-color.svg",
+    tencent: "../yuanbao-color.svg",
+    hunyuan: "../yuanbao-color.svg",
+    yuanbao: "../yuanbao-color.svg",
+    kling: "../kling-color.svg",
+    xiaomimimo: "../xiaomimimo-color.svg",
+    baichuan: "../baichuan-color.svg",
+    nex: "../NEX_logo.svg",
+    microsoft: "../microsoft-color.svg",
+    ibm: "../ibm.svg",
+    cohere: "../cohere-color.svg",
+    cursor: "../cursor.svg",
+    swissai: "../huggingface-color.svg",
+    utterproject: "../huggingface-color.svg",
+    baidu: "../wenxin-color.svg",
 };
 
 function sortModelsFeaturedFirst(models) {
@@ -471,7 +471,7 @@ function normalizeBrandKey(brand) {
 // per-model 图标覆盖（优先级高于 BRAND_LOGO）
 const MODEL_ICON_OVERRIDE = {
     "kat-coder-pro-v2": "./kwaikat.svg",
-    "cancriv1-0.1b": "../Logo/Cancri1.jpg",
+    "cancriv1-0.1b": "../../Logo/Cancri1.jpg",
     "nex-n2-pro-welfare": "./NEX_logo.svg",
     "hunyuan-mt-7b": "./yuanbao-color.svg",
 };
