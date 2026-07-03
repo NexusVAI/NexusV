@@ -91,7 +91,7 @@
       { name: "文档", sub: "接入指南与 API 参考", href: base + "api_docs.html" },
       { name: "API 密钥", sub: "控制台 · 生成与管理密钥", href: base + "api_keys.html" },
       { name: "用量", sub: "控制台 · 调用与计费", href: base + "api_keys.html" },
-      { name: "充值", sub: "按量充值，永不过期", href: base + "pricing.html" },
+      { name: "充值", sub: "API 按量充值（结算）", href: base + "api/billing.html" },
       { name: "我的订单", sub: "充值与订单记录", href: base + "orders.html" },
       { name: "申请接入", sub: "申请 API 访问", href: base + "api_apply.html" },
     ];
