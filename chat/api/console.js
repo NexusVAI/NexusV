@@ -69,7 +69,7 @@
         '<div class="csb__section">平台</div>' +
         '<nav class="csb__nav">' +
           navItem("_m", "../api_models.html", "models", "模型广场") +
-          navItem("_r", "../pricing.html", "recharge", "充值") +
+          navItem("_r", "./billing.html", "recharge", "充值") +
           navItem("_d", "../api_docs_detail.html", "docs", "文档") +
           navItem("_h", "index.html", "home", "返回首页") +
         "</nav>" +
@@ -78,7 +78,7 @@
       "</aside>" +
       '<div class="csc">' +
         '<div class="csc__top"><div class="csc__title">' + title + "</div>" +
-          '<div class="csc__actions"><a class="csbtn csbtn--ghost" href="../pricing.html">充值</a><a class="csbtn csbtn--primary" href="keys.html">创建密钥</a></div>' +
+          '<div class="csc__actions"><a class="csbtn csbtn--ghost" href="./billing.html">充值</a><a class="csbtn csbtn--primary" href="keys.html">创建密钥</a></div>' +
         "</div>" +
         '<div class="csc__body" id="cs-view"></div>' +
       "</div>";
@@ -190,7 +190,7 @@
       '<div class="cs-wallet__main"><div class="cs-wallet__label">钱包余额</div>' +
       '<div class="cs-wallet__value">¥' + bal.toFixed(2) + '</div>' +
       '<div class="cs-wallet__sub">' + esc(sub) + (debt > 0 ? '（欠款 ¥' + debt.toFixed(2) + '）' : '') + '</div></div>' +
-      '<a class="csbtn csbtn--ghost" href="../pricing.html">充值 →</a></div>';
+      '<a class="csbtn csbtn--ghost" href="./billing.html">充值 →</a></div>';
   }
 
   // statCards + 波浪图组合（keys/logs/overview/usage 复用）。_usage 为 null 时降级为空。

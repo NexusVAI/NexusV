@@ -52,7 +52,7 @@
   function readSelection() {
     var p = new URLSearchParams(location.search);
     var kind = (p.get("kind") || "recharge").toLowerCase();
-    if (kind !== "subscription" && kind !== "topup" && kind !== "recharge") kind = "recharge";
+    if (kind !== "subscription" && kind !== "topup" && kind !== "recharge" && kind !== "plan_v4") kind = "recharge";
     var plan = p.get("plan") || "";
     var sku = p.get("sku") || "";
     var amount = Number(p.get("amount"));
@@ -62,8 +62,11 @@
     return { kind: kind, plan: plan, sku: sku, amount: amount, label: label, desc: desc };
   }
 
-  var KIND_LABEL = { subscription: "订阅", topup: "加油包", recharge: "按量充值" };
+  var KIND_LABEL = { subscription: "订阅", topup: "加油包", recharge: "按量充值", plan_v4: "套餐订阅" };
   var PLAN_LABEL = { pro: "Pro", pro_plus: "Pro+", pro_max: "Pro Max" };
+  // plan_v4 三档（Chat/IDE 套餐制），价格由后端 plan_catalog_v4 裁决，此处仅展示
+  var PLAN_V4_LABEL = { go: "Go", plus: "Plus", pro: "Pro" };
+  var PLAN_V4_PRICE = { go: 9.9, plus: 19, pro: 99 };
   var SKU_LABEL = {
     topup_small: "加油包 1500 万", topup_medium: "加油包 9000 万",
     topup_large: "加油包 4 亿", topup_custom: "自定义加油包",
@@ -77,7 +80,10 @@
     // ProductSummary：订阅名 + 大号金额 + 周期
     var psName = "";
     var interval = "";
-    if (sel.kind === "subscription") {
+    if (sel.kind === "plan_v4") {
+      psName = "订阅 " + (sel.label || (PLAN_V4_LABEL[sel.plan] || "") + " 套餐");
+      interval = "每月";
+    } else if (sel.kind === "subscription") {
       psName = "订阅 " + (sel.label || PLAN_LABEL[sel.plan] || "Pro");
       interval = "每月";
     } else if (sel.kind === "recharge") {
@@ -158,6 +164,17 @@
     var hint = $("ck-amount-hint");
     var chipsWrap = $("ck-amount-chips");
     if (!input) return;
+
+    // 套餐/订阅类订单：金额由后端目录裁决，隐藏自定义金额区
+    if (sel.kind === "plan_v4" || sel.kind === "subscription") {
+      var section = $("ck-amount-section");
+      if (section) section.style.display = "none";
+      if (sel.kind === "plan_v4" && sel.amount == null) {
+        sel.amount = PLAN_V4_PRICE[sel.plan] != null ? PLAN_V4_PRICE[sel.plan] : null;
+        renderSummary(sel);
+      }
+      return;
+    }
 
     function syncChips(val) {
       if (!chipsWrap) return;
@@ -255,7 +272,9 @@
       method: (window.__checkoutMethod && window.__checkoutMethod()) || "unspecified",
       order_kind: sel.kind,
     };
-    if (sel.kind === "subscription") {
+    if (sel.kind === "plan_v4") {
+      payload.plan_code = sel.plan || "go";
+    } else if (sel.kind === "subscription") {
       payload.plan_code = sel.plan || "pro";
     } else if (sel.kind === "topup") {
       payload.topup_sku = sel.sku || "topup_custom";
