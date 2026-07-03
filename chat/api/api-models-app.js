@@ -209,7 +209,7 @@ function getDisplayTier(m) {
 const BRAND_LOGO = {
     anthropic: "./claude-color.svg",
     openai: "./openai.svg",
-    cancri: "../Logo/Cancri1.jpg",
+    cancri: "../../Logo/Cancri1.jpg",
     kwaikat: "./kwaikat.svg",
     google: "./gemini-color.svg",
     minimax: "./minimax-color.svg",
@@ -471,7 +471,7 @@ function normalizeBrandKey(brand) {
 // per-model 图标覆盖（优先级高于 BRAND_LOGO）
 const MODEL_ICON_OVERRIDE = {
     "kat-coder-pro-v2": "./kwaikat.svg",
-    "cancriv1-0.1b": "../Logo/Cancri1.jpg",
+    "cancriv1-0.1b": "../../Logo/Cancri1.jpg",
     "nex-n2-pro-welfare": "./NEX_logo.svg",
     "hunyuan-mt-7b": "./yuanbao-color.svg",
 };
