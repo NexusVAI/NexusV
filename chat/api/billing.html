@@ -134,7 +134,9 @@
 .zN58v .billing-section h3{font-size:16px;font-weight:600;margin:0 0 16px}
 
 #bp-panel-plan[hidden],#bp-panel-api[hidden],#bp-panel-bills[hidden]{display:none}
+#bills-table-wrap{overflow-x:auto}
 .bills-table{width:100%;border-collapse:collapse;font-size:14px}
+.bills-table td code{word-break:break-all}
 .bills-table th,.bills-table td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--color-border-primary-surface,rgba(128,128,128,.25))}
 .bills-table th{color:var(--color-text-secondary);font-weight:600;font-size:13px}
 .bills-status{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
@@ -142,15 +144,16 @@
 .bills-status[data-s="approved"]{background:var(--blue-a50,#e5f3ff);color:var(--blue-600,#004f99)}
 .bills-status[data-s="pending"]{background:var(--yellow-a50,#fff6d9);color:var(--yellow-700,#916f00)}
 .bills-status[data-s="rejected"]{background:var(--red-a50,#ffd9d9);color:var(--red-600,#ba2623)}
-#convert-card{border:1px solid var(--color-border,#e5e5e2);border-radius:12px;padding:16px 18px;background:var(--color-bg-secondary,rgba(0,0,0,.02))}
+#convert-card{border:1px solid var(--color-border,#e5e5e2);border-radius:12px;padding:16px 18px;background:var(--color-background-primary-soft,rgba(128,128,128,.06));color:var(--color-text)}
 #convert-card .convert-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
 #convert-card .convert-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--red-a50,#ffd9d9);color:var(--red-600,#ba2623)}
 #convert-card .convert-desc{margin-top:6px;font-size:13px;color:var(--color-text-secondary)}
 #convert-card .convert-plans{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-#convert-card .convert-plan-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-border,#e5e5e2);border-radius:10px;padding:10px 14px;background:var(--color-bg,#fff)}
-#convert-card .convert-plan-name{font-weight:600;font-size:14px}
+#convert-card .convert-plan-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-border,#e5e5e2);border-radius:10px;padding:10px 14px;background:var(--color-surface,transparent)}
+#convert-card .convert-plan-name{font-weight:600;font-size:14px;color:var(--color-text-emphasis)}
 #convert-card .convert-plan-meta{font-size:12.5px;color:var(--color-text-secondary)}
-#convert-card .convert-btn{border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;background:var(--color-accent,#c96442);color:#fff;white-space:nowrap}
+#convert-card .convert-btn{border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;background:var(--color-background-primary-solid,#0d0d0d);color:var(--color-text-primary-solid,#fff);white-space:nowrap}
+#convert-card .convert-btn:hover:not([disabled]){background:var(--color-background-primary-solid-hover,var(--color-background-primary-solid,#0d0d0d))}
 #convert-card .convert-btn[disabled]{opacity:.55;cursor:not-allowed}
 #convert-card .convert-msg{margin-top:10px;font-size:13px}
 #convert-card .convert-msg[data-s="err"]{color:var(--red-600,#ba2623)}
@@ -202,7 +205,6 @@
 </div>
 </div>
 </div>
-</div></div></div>
 <div id="bp-panel-bills" hidden>
 <div class="billing-section billing-plan">
 <h3>账单记录</h3>
@@ -210,12 +212,13 @@
 <div id="bills-table-wrap"></div>
 </div>
 </div>
+</div></div></div>
 
 </div></div></div></span></div></div></div></div></main><div data-testid="compliance-management-wrapper"><span data-testid="cookie-consent-modal-header"></span></div></div><div class="layers-root"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <script src="../cancri_config.js?v=20260625-console"></script>
 <script src="platform-auth.js?v=20260625-auth"></script>
-<script src="oai-billing.js?v=20260705-convert1"></script>
+<script src="oai-billing.js?v=20260705-sidebar1"></script>
 
 </body></html>

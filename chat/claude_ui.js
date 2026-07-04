@@ -2500,9 +2500,6 @@
                         }
                     }
                     if (key === 'capability') populateCapabilitiesForm();
-                    if (key === 'invite' && typeof window.fetchAndRenderInvitePanel === 'function') {
-                        window.fetchAndRenderInvitePanel();
-                    }
                     if (key === 'account') {
                         loadClaudeAccount();
                     }
@@ -2546,7 +2543,6 @@
         const segBtns = document.querySelectorAll('.claude-segmented .claude-seg-btn[data-theme]');
         const accentSwatches = document.querySelectorAll('.claude-accent-row .claude-accent-swatch[data-accent]');
         const fontSel = document.getElementById('claudeFormFont');
-        const voiceSel = document.getElementById('claudeFormVoice');
         const fullNameInput = document.getElementById('claudeFormFullName');
         const nicknameInput = document.getElementById('claudeFormNickname');
         const professionSel = document.getElementById('claudeFormProfession');
@@ -2722,7 +2718,6 @@
                 });
             }
             if (fontSel) fontSel.value = st.chatFont || 'sans';
-            if (voiceSel) voiceSel.value = st.voicePreset || 'steady';
             if (fullNameInput) fullNameInput.value = st.fullName || '';
             if (nicknameInput && typeof app.getNickname === 'function') {
                 nicknameInput.value = app.getNickname() || '';
@@ -2772,15 +2767,6 @@
             fontSel.addEventListener('change', function () {
                 if (app && typeof app.setChatFont === 'function') {
                     app.setChatFont(fontSel.value);
-                }
-            });
-        }
-
-        // 配音
-        if (voiceSel) {
-            voiceSel.addEventListener('change', function () {
-                if (app && typeof app.setVoicePreset === 'function') {
-                    app.setVoicePreset(voiceSel.value);
                 }
             });
         }

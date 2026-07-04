@@ -85,7 +85,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <link rel="stylesheet" href="./cancri_chat.css?v=2026-06-07-review-fixes" />
+        <link rel="stylesheet" href="./cancri_chat.css?v=20260705-ninefix" />
         <link rel="stylesheet" href="./cancri_arena.css?v=header-final-0507" />
         <link
             rel="stylesheet"
@@ -1972,7 +1972,7 @@
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><span class="claude-snav-label">账单</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="quota"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v9h9"/></svg></span><span class="claude-snav-label">额度</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span class="claude-snav-label">能力</span></button></li>
-                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 1 7.07 0l1.41 1.41a2 2 0 0 1 0 2.83l-1.41 1.41M14 11a5 5 0 0 0-7.07 0L5.52 12.41a2 2 0 0 0 0 2.83l1.41 1.41"/></svg></span><span class="claude-snav-label">邀请</span></button></li>
+                                    
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="password"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span><span class="claude-snav-label">Cancri 密码</span></button></li>
                                 </ul>
                             </nav>
@@ -2067,16 +2067,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="claude-form-row">
-                                        <span class="claude-form-label">配音</span>
-                                        <div class="claude-form-control">
-                                            <select class="claude-form-select" id="claudeFormVoice">
-                                                <option value="oily">菜油味十足</option>
-                                                <option value="steady">沉稳清晰</option>
-                                                <option value="soft">柔和女声</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                    
 
                                     <h2 class="claude-settings-h2 claude-settings-h2-mt">通知</h2>
                                     <div class="claude-form-row">
@@ -2323,107 +2314,6 @@
                                                     <span class="claude-switch-track"></span>
                                                 </label>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="claude-settings-section claude-snav-target" data-snav-target="invite">
-                                    <h2 class="claude-settings-h2">邀请</h2>
-                                    <p class="claude-form-help">复制你的专属邀请链接，也可以查看自己的 UUID 来对照活动页邀请排行榜。</p>
-                                    <div id="claudeInvitePanel" class="invite-settings-panel">
-                                        <div id="claudeInviteLoginPrompt" class="invite-empty" hidden>
-                                            请先登录后再生成专属邀请链接。
-                                        </div>
-
-                                        <div id="claudeInviteContent" class="invite-content" hidden>
-                                            <div class="invite-link-row">
-                                                <label class="invite-field-label" for="claudeInviteLinkInput">你的专属邀请链接</label>
-                                                <div class="invite-link-input-wrap">
-                                                    <input
-                                                        type="text"
-                                                        id="claudeInviteLinkInput"
-                                                        class="invite-link-input"
-                                                        readonly
-                                                        placeholder="加载中..."
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        class="invite-copy-btn"
-                                                        id="claudeInviteCopyBtn"
-                                                        data-invite-copy-target="claudeInviteLinkInput"
-                                                        data-invite-copy-label="邀请链接"
-                                                        aria-label="复制邀请链接"
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                                            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                                        </svg>
-                                                        <span>复制</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div class="invite-link-row">
-                                                <label class="invite-field-label" for="claudeInviteUuidInput">我的 UUID（排行榜显示前 8 位）</label>
-                                                <div class="invite-link-input-wrap">
-                                                    <input
-                                                        type="text"
-                                                        id="claudeInviteUuidInput"
-                                                        class="invite-link-input"
-                                                        readonly
-                                                        placeholder="登录后显示"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        class="invite-copy-btn"
-                                                        id="claudeInviteUuidCopyBtn"
-                                                        data-invite-copy-target="claudeInviteUuidInput"
-                                                        data-invite-copy-label="UUID"
-                                                        aria-label="复制 UUID"
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                                            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                                        </svg>
-                                                        <span>复制</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div class="invite-stats">
-                                                <div class="invite-stat">
-                                                    <div class="invite-stat-value" id="claudeInviteStatTotal">0</div>
-                                                    <div class="invite-stat-label">已邀人数</div>
-                                                </div>
-                                                <div class="invite-stat">
-                                                    <div class="invite-stat-value" id="claudeInviteStatQualified">0</div>
-                                                    <div class="invite-stat-label">合格 / 已结算</div>
-                                                </div>
-                                                <div class="invite-stat">
-                                                    <div class="invite-stat-value" id="claudeInviteStatTokens">0</div>
-                                                    <div class="invite-stat-label">累计到账 token</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="invite-flow-section">
-                                                <div class="invite-flow-title">自动到账流水</div>
-                                                <div class="invite-flow-list" id="claudeInviteFlowList">
-                                                    <div class="invite-flow-empty">暂无到账记录。被邀请人需 ≥3 天活跃后，每小时自动结算。</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="invite-rules">
-                                                <div class="invite-rules-title">规则</div>
-                                                <ul>
-                                                    <li>邀请人 +1,000,000 token / 被邀请人 +500,000 token（每人每次结算）</li>
-                                                    <li>每位邀请人最多结算 <strong>50</strong> 位被邀请人</li>
-                                                    <li>被邀请人需在被邀请后累计 ≥<strong>3</strong> 天对话活跃，系统每小时自动结算</li>
-                                                    <li>活动页排行榜显示 UUID 前 8 位，可用上方 UUID 对照自己的排名</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-
-                                        <div id="claudeInviteErrorState" class="invite-empty" hidden>
-                                            加载邀请信息失败，请稍后重试。
                                         </div>
                                     </div>
                                 </div>
@@ -2788,25 +2678,7 @@
                             <path d="M4 20a8 8 0 1 1 16 0"></path></svg
                         ><span>账户</span>
                     </div>
-                    <!-- 2026-05-25 §12 满月邀请：第 3 个 tab 入口 -->
-                    <div
-                        class="settings-nav-item"
-                        data-settings-panel="invitePanel"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                        >
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M19 8v6M22 11h-6"></path>
-                        </svg>
-                        <span>邀请</span>
-                    </div>
+                    
                 </div>
 
                 <div class="settings-content">
@@ -2885,114 +2757,6 @@
                             </div>
                         </div>
 
-                        <!-- 2026-05-25 §12 满月邀请 panel
-                             首次切到此 tab 时由 cancri_chat.js 拉 celebrate-signin?action=get_invite
-                             并填充链接 / 3 数字卡 / 流水。失败 → 显示 #inviteEmptyState；
-                             未登录（拿不到 token）→ 显示 #inviteLoginPrompt。 -->
-                        <div class="settings-panel invite-settings-panel" id="invitePanel">
-                            <h3 class="settings-heading">邀请</h3>
-
-                            <div id="inviteLoginPrompt" class="invite-empty" hidden>
-                                请先登录后再生成专属邀请链接。
-                            </div>
-
-                            <div id="inviteContent" class="invite-content" hidden>
-                                <!-- 邀请链接 -->
-                                <div class="invite-link-row">
-                                    <label class="invite-field-label" for="inviteLinkInput">你的专属邀请链接</label>
-                                    <div class="invite-link-input-wrap">
-                                        <input
-                                            type="text"
-                                            id="inviteLinkInput"
-                                            class="invite-link-input"
-                                            readonly
-                                            placeholder="加载中..."
-                                        />
-                                        <button
-                                            type="button"
-                                            class="invite-copy-btn"
-                                            id="inviteCopyBtn"
-                                            data-invite-copy-target="inviteLinkInput"
-                                            data-invite-copy-label="邀请链接"
-                                            aria-label="复制邀请链接"
-                                        >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                            </svg>
-                                            <span>复制</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="invite-link-row">
-                                    <label class="invite-field-label" for="inviteUuidInput">我的 UUID（排行榜显示前 8 位）</label>
-                                    <div class="invite-link-input-wrap">
-                                        <input
-                                            type="text"
-                                            id="inviteUuidInput"
-                                            class="invite-link-input"
-                                            readonly
-                                            placeholder="登录后显示"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="invite-copy-btn"
-                                            id="inviteUuidCopyBtn"
-                                            data-invite-copy-target="inviteUuidInput"
-                                            data-invite-copy-label="UUID"
-                                            aria-label="复制 UUID"
-                                        >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                            </svg>
-                                            <span>复制</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- 3 数字卡片 -->
-                                <div class="invite-stats">
-                                    <div class="invite-stat">
-                                        <div class="invite-stat-value" id="inviteStatTotal">0</div>
-                                        <div class="invite-stat-label">已邀人数</div>
-                                    </div>
-                                    <div class="invite-stat">
-                                        <div class="invite-stat-value" id="inviteStatQualified">0</div>
-                                        <div class="invite-stat-label">合格 / 已结算</div>
-                                    </div>
-                                    <div class="invite-stat">
-                                        <div class="invite-stat-value" id="inviteStatTokens">0</div>
-                                        <div class="invite-stat-label">累计到账 token</div>
-                                    </div>
-                                </div>
-
-                                <!-- 流水列表 -->
-                                <div class="invite-flow-section">
-                                    <div class="invite-flow-title">自动到账流水</div>
-                                    <div class="invite-flow-list" id="inviteFlowList">
-                                        <div class="invite-flow-empty">暂无到账记录。被邀请人需 ≥3 天活跃后，每小时自动结算。</div>
-                                    </div>
-                                </div>
-
-                                <!-- 规则说明 -->
-                                <div class="invite-rules">
-                                    <div class="invite-rules-title">规则</div>
-                                    <ul>
-                                        <li>邀请人 +1,000,000 token / 被邀请人 +500,000 token（每人每次结算）</li>
-                                        <li>每位邀请人最多结算 <strong>50</strong> 位被邀请人</li>
-                                        <li>被邀请人需在被邀请后累计 ≥<strong>3</strong> 天对话活跃，系统每小时自动结算</li>
-                                        <li>奖励直接到账 <strong>充值余额</strong>（与购买的加油包共用），可在订阅页查询</li>
-                                        <li>同 IP / 同设备指纹会被去重，刷单的邀请会被驳回（status=rejected）</li>
-                                        <li>活动有效期：<strong>5/25 – 5/31</strong>，请抓紧分享</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div id="inviteErrorState" class="invite-empty" hidden>
-                                加载邀请信息失败，请稍后重试。
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -3452,10 +3216,6 @@
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
              删 .auth-bg 内 SVG fractalNoise filter）。文件保留作为 dead code
              使历史可查，这里不再 include。 -->
-        <!-- 2026-05-26 满月庆典 D-2：邀请关系捕获。
-             URL 带 ?invite=<uuid> 时缓存 + 登录后调 celebrate-signin?action=invite_register。
-             静默运行，对未登录用户无副作用，且 5/25-5/31 活动窗口外后端会拒绝。 -->
-        <script defer src="./celebrate_invite_capture.js?v=2026-06-07-review-fixes"></script>
         <!-- 2026-05-26 满月庆典 D-1：主站顶部 banner。
              5/28 起预热倒计时 → 5/29-5/31 主活动 → 6/1-6/4 长尾 → 6/5 自动隐藏。
              纯客户端时间判断，0 网络请求；用户可 × 关闭（本会话），URL ?nomoon=1 永久关。 -->
@@ -3464,12 +3224,12 @@
              Claude 风小气泡随机说句短话，连点会逐级「微恼 → 生气」。
              几秒自动消散，无 localStorage 记忆。2026-05-31 由满月弹窗改版而来。 -->
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
-        <script defer src="./cancri_chat.js?v=20260625-data-consent"></script>
+        <script defer src="./cancri_chat.js?v=20260705-ninefix"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=20260625-data-consent"></script>
+        <script defer src="./claude_ui.js?v=20260705-ninefix"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260625-wallet-warn"></script>
