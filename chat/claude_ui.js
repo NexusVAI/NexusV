@@ -747,6 +747,9 @@
                         // 2026-06-23 按量计费 wallet_v3：附加 billing_mode + wallet 到 sub
                         if (data.billing_mode) sub.billing_mode = data.billing_mode;
                         if (data.wallet) sub.wallet = data.wallet;
+                        // 2026-07-04 套餐制 plan_v4：附加 billing_mode_chat + plan（套餐额度展示）
+                        if (data.billing_mode_chat) sub.billing_mode_chat = data.billing_mode_chat;
+                        if (data.plan_v4) sub.plan_v4 = data.plan_v4;
                         writeTierCache(sub);
                         applyTierState(sub, false);
                         return;
@@ -770,12 +773,52 @@
     // 现在 HTML 默认是 #claudeBillingCopy data-tier-state="loading" + 占位文案，
     // 我们根据 sub.tier 写两种文案。
     // 2026-05-17 Phase A: plan_code 直接显示为档位标签
-    var PLAN_LABEL_FOR_BILLING = { pro: 'Pro', pro_plus: 'Pro+', pro_max: 'Pro Max' };
-    var PLAN_CHIP_FOR_BILLING = { pro: 'PRO', pro_plus: 'PRO+', pro_max: 'PRO MAX' };
+    var PLAN_LABEL_FOR_BILLING = { go: 'Go', plus: 'Plus', pro: 'Pro' };
+    var PLAN_CHIP_FOR_BILLING = { go: 'GO', plus: 'PLUS', pro: 'PRO' };
+
+    function fmtPlanCny(n) {
+        var v = Number(n);
+        if (!isFinite(v)) return '¥—';
+        return '¥' + v.toFixed(2);
+    }
+
+    // plan_v4 套餐信息（get_my_subscription 附加字段）；无套餐时返 null。
+    function getPlanV4(sub) {
+        var p = sub && sub.plan_v4;
+        return (p && p.active) ? p : null;
+    }
+    function planV4Label(p) {
+        return p.display_name || PLAN_LABEL_FOR_BILLING[p.plan_code] || String(p.plan_code || '').replace(/^\w/, function (c) { return c.toUpperCase(); });
+    }
 
     function updateBillingCopy(sub) {
         var copy = document.getElementById('claudeBillingCopy');
-        if (!copy) return;
+        if (copy) {
+            renderBillingCopyInto(copy, sub);
+        }
+        updateQuotaSection(sub);
+    }
+
+    function renderBillingCopyInto(copy, sub) {
+        // 2026-07-04 套餐制 plan_v4：只显示套餐额度（档位+剩余），不显示 API 额度。
+        if (sub.billing_mode_chat === 'plan_v4') {
+            var p4 = getPlanV4(sub);
+            if (p4) {
+                var lbl = planV4Label(p4);
+                copy.setAttribute('data-tier-state', 'paid');
+                copy.innerHTML = '您当前是<strong>Cancri ' + lbl + '</strong>'
+                    + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">' + lbl.toUpperCase() + '</span>'
+                    + '。套餐额度剩余 <strong style="font-size:15px">' + fmtPlanCny(p4.remaining_cny) + '</strong>'
+                    + '（月度 ' + fmtPlanCny(p4.allowance_cny) + '）'
+                    + (p4.period_end ? '。本期至 ' + new Date(p4.period_end).toLocaleDateString('zh-CN') : '');
+            } else {
+                copy.setAttribute('data-tier-state', 'free');
+                copy.innerHTML = '您当前<strong>未订阅套餐</strong>'
+                    + '<span class="claude-tier-chip is-free" style="margin-left:8px;vertical-align:middle">FREE</span>'
+                    + '。<a href="./pricing.html">订阅套餐 →</a>';
+            }
+            return;
+        }
         // 2026-06-23 按量计费 wallet_v3：显示¥余额取代旧订阅信息
         if (sub.billing_mode === 'wallet_v3') {
             var w = sub.wallet || {};
@@ -818,6 +861,31 @@
         }
     }
 
+    // 设置页「额度」页：当前档位 + 剩余套餐额度。
+    function updateQuotaSection(sub) {
+        var nameEl = document.getElementById('claudeQuotaPlanName');
+        var remainEl = document.getElementById('claudeQuotaRemaining');
+        var metaEl = document.getElementById('claudeQuotaMeta');
+        var barEl = document.getElementById('claudeQuotaBar');
+        if (!nameEl) return;
+        var p4 = getPlanV4(sub);
+        if (p4) {
+            var total = Number(p4.allowance_cny) || 0;
+            var remain = Math.max(0, Number(p4.remaining_cny) || 0);
+            nameEl.textContent = planV4Label(p4) + ' 套餐';
+            if (remainEl) remainEl.textContent = fmtPlanCny(remain);
+            if (metaEl) metaEl.textContent = '月度额度 ' + fmtPlanCny(total)
+                + '（已用 ' + fmtPlanCny(p4.used_cny) + '）'
+                + (p4.period_end ? ' · 本期至 ' + new Date(p4.period_end).toLocaleDateString('zh-CN') : '');
+            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, remain / total * 100)) : 0) + '%';
+        } else {
+            nameEl.textContent = '未订阅套餐';
+            if (remainEl) remainEl.textContent = '¥0.00';
+            if (metaEl) metaEl.textContent = '订阅套餐后，付费模型将从套餐月度额度扣费。';
+            if (barEl) barEl.style.width = '0%';
+        }
+    }
+
     function bindAccountPlanSync() {
         updateAccountPlanText(latestTierSubscription || readTierCache() || null);
         var strip = document.getElementById('accountTrigger');
@@ -848,6 +916,18 @@
         if (!token) {
             document.body.classList.remove('is-account-tier-loading');
             setAccountPlanText(planEl, '请先登录');
+            return;
+        }
+        // 2026-07-04 套餐制 plan_v4：左下角显示真实套餐档位（Go/Plus/Pro）
+        var p4strip = getPlanV4(sub);
+        if (p4strip) {
+            document.body.classList.remove('is-account-tier-loading');
+            setAccountPlanText(planEl, planV4Label(p4strip) + ' plan');
+            return;
+        }
+        if (sub && sub.billing_mode_chat === 'plan_v4') {
+            document.body.classList.remove('is-account-tier-loading');
+            setAccountPlanText(planEl, 'Free plan');
             return;
         }
         if (sub && sub.tier === 'paid') {
