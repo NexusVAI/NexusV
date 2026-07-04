@@ -84,6 +84,102 @@
     window.addEventListener("hashchange", function () { setTab(tabFromHash()); });
   }
 
+  // ── 限时：API 余额换购套餐（wallet_convert 窗口内才展示）──
+  var convertState = { info: null, catalog: [], plan: null, balance: null, timer: null };
+
+  function fmtCountdown(endsAt) {
+    var ms = new Date(endsAt).getTime() - Date.now();
+    if (!(ms > 0)) return null;
+    var d = Math.floor(ms / 86400000);
+    var h = Math.floor((ms % 86400000) / 3600000);
+    var m = Math.floor((ms % 3600000) / 60000);
+    return d > 0 ? d + " 天 " + h + " 小时" : h > 0 ? h + " 小时 " + m + " 分钟" : m + " 分钟";
+  }
+
+  function setConvertMsg(text, kind) {
+    var el = document.getElementById("convert-msg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.dataset.s = kind || "";
+  }
+
+  function renderConvert() {
+    var card = $("convert-card");
+    if (!card) return;
+    var info = convertState.info;
+    var countdown = info && info.enabled && info.ends_at ? fmtCountdown(info.ends_at) : null;
+    if (!countdown || !convertState.catalog.length) {
+      card.hidden = true;
+      card.innerHTML = "";
+      if (convertState.timer) { clearInterval(convertState.timer); convertState.timer = null; }
+      return;
+    }
+    var bal = Number(convertState.balance);
+    var activeCode = convertState.plan && convertState.plan.active ? convertState.plan.plan_code : null;
+    var activeRank = 0;
+    convertState.catalog.forEach(function (p) { if (p.plan_code === activeCode) activeRank = Number(p.rank) || 0; });
+    var rows = convertState.catalog.map(function (p) {
+      var price = Number(p.price_cny);
+      var enough = Number.isFinite(bal) && bal >= price;
+      var isDowngrade = activeCode && Number(p.rank) < activeRank;
+      var label = activeCode === p.plan_code ? "用余额续费" : "用余额换购";
+      var meta = "月度额度 " + fmtCny(p.allowance_cny) + " · " + p.duration_days + " 天";
+      if (!enough && Number.isFinite(bal)) meta += " · 还差 " + fmtCny(price - bal) + "，可充值凑单";
+      if (isDowngrade) meta += " · 有效期内不可换低档";
+      return '<div class="convert-plan-row"><div><div class="convert-plan-name">' + esc(p.display_name || p.plan_code) +
+        " 套餐 · " + fmtCny(price) + '</div><div class="convert-plan-meta">' + esc(meta) + "</div></div>" +
+        '<button type="button" class="convert-btn" data-plan="' + esc(p.plan_code) + '" data-price="' + price + '"' +
+        ((enough && !isDowngrade) ? "" : " disabled") + ">" + label + "</button></div>";
+    }).join("");
+    card.innerHTML =
+      '<div class="convert-title"><span class="convert-badge">限时</span>API 余额换购套餐<span style="font-weight:400;font-size:13px;color:var(--color-text-secondary)">· 剩余 ' + esc(countdown) + "</span></div>" +
+      '<div class="convert-desc">限时窗口内，钱包余额可等值换购订阅套餐：扣除对应套餐价，剩余余额继续用于 API 按量；余额不足可先<a href="./checkout.html?kind=recharge">充值</a>凑单。</div>' +
+      '<div class="convert-plans">' + rows + "</div>" +
+      '<div class="convert-msg" id="convert-msg"></div>';
+    card.hidden = false;
+    Array.prototype.forEach.call(card.querySelectorAll(".convert-btn"), function (btn) {
+      btn.addEventListener("click", function () { doConvert(btn); });
+    });
+    if (!convertState.timer) {
+      convertState.timer = setInterval(renderConvert, 60000);
+    }
+  }
+
+  async function doConvert(btn) {
+    var planCode = btn.dataset.plan;
+    var price = Number(btn.dataset.price);
+    var p = null;
+    convertState.catalog.forEach(function (x) { if (x.plan_code === planCode) p = x; });
+    var name = p ? (p.display_name || planCode) : planCode;
+    if (!window.confirm("确认用钱包余额换购 " + name + " 套餐？将扣除 " + fmtCny(price) + "，剩余余额继续用于 API 按量。")) return;
+    btn.disabled = true;
+    setConvertMsg("正在换购…", "");
+    try {
+      var res = await callGateway("buy_plan_v4_with_wallet", { plan_code: planCode });
+      var balCny = Number(res.balance_micro) / 1000000;
+      setConvertMsg("换购成功！套餐已生效，钱包剩余 " + fmtCny(balCny) + "。", "ok");
+      try {
+        var results = await Promise.allSettled([callGateway("plan_v4_status", {}), callGateway("list_my_orders", {})]);
+        if (results[0].status === "fulfilled") { renderPlan(results[0].value); applyConvertStatus(results[0].value); }
+        if (results[1].status === "fulfilled") { renderWallet(results[1].value); renderBills(results[1].value); convertState.balance = results[1].value && results[1].value.wallet ? results[1].value.wallet.balance_cny : null; }
+      } catch (e2) { /* ignore refresh errors */ }
+    } catch (e) {
+      btn.disabled = false;
+      var code = e && e.body && (e.body.code || e.body.error);
+      var msg = (e && e.body && e.body.message) || "换购失败，请稍后重试。";
+      if (code === "insufficient_balance") msg = "钱包余额不足，可先充值凑单后再换购。";
+      if (code === "convert_window_closed") msg = "限时换购窗口已结束。";
+      setConvertMsg(msg, "err");
+    }
+  }
+
+  function applyConvertStatus(data) {
+    convertState.info = data && data.wallet_convert ? data.wallet_convert : null;
+    convertState.catalog = (data && data.catalog) || [];
+    convertState.plan = data && data.plan;
+    renderConvert();
+  }
+
   // ── API 额度（钱包）──
   function renderWallet(data) {
     var wallet = data && data.wallet;
@@ -170,10 +266,12 @@
       if (results[1].status === "fulfilled") {
         renderWallet(results[1].value);
         renderBills(results[1].value);
+        convertState.balance = results[1].value && results[1].value.wallet ? results[1].value.wallet.balance_cny : null;
       } else {
         renderWallet(null);
         var bm = $("bills-meta"); if (bm) bm.textContent = "账单记录加载失败，请刷新重试。";
       }
+      if (results[0].status === "fulfilled") applyConvertStatus(results[0].value);
     } catch (e) {
       var metaEl = $("billing-meta");
       var planMeta = $("plan-meta");
