@@ -49,13 +49,25 @@
   }
 
   // ── Tabs（hash 记忆：#plan / #api）──
+  function moveThumb(tab) {
+    var thumb = $("bp-tab-thumb");
+    var btn = $("bp-tab-" + tab);
+    if (!thumb || !btn) return;
+    thumb.style.width = btn.offsetWidth + "px";
+    thumb.style.transform = "translateX(" + btn.offsetLeft + "px)";
+  }
   function setTab(tab) {
     ["plan", "api"].forEach(function (t) {
+      var on = t === tab;
       var btn = $("bp-tab-" + t);
       var panel = $("bp-panel-" + t);
-      if (btn) btn.dataset.active = String(t === tab);
-      if (panel) panel.dataset.active = String(t === tab);
+      if (btn) {
+        btn.dataset.state = on ? "on" : "off";
+        btn.setAttribute("aria-checked", String(on));
+      }
+      if (panel) panel.hidden = !on;
     });
+    moveThumb(tab);
     try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
   }
   function initTabs() {
@@ -71,7 +83,7 @@
   function renderWallet(data) {
     var wallet = data && data.wallet;
     var balEl = $("billing-balance");
-    var metaEl = $("billing-balance-meta");
+    var metaEl = $("billing-meta");
     if (balEl) balEl.textContent = wallet ? fmtCny(wallet.balance_cny) : "¥0.00";
     if (metaEl) {
       if (wallet) {
@@ -90,39 +102,22 @@
   function renderPlan(data) {
     var plan = data && data.plan;
     var nameEl = $("plan-name");
-    var badgeEl = $("plan-badge");
+    var remainEl = $("plan-remaining");
     var metaEl = $("plan-meta");
     var ctaEl = $("plan-cta");
-    var progWrap = $("plan-progress");
-    var progFill = $("plan-progress-fill");
     if (plan && plan.active) {
       var label = plan.display_name || { go: "Go", plus: "Plus", pro: "Pro" }[plan.plan_code] || plan.plan_code || "";
       if (nameEl) nameEl.textContent = label + " 套餐";
-      if (badgeEl) { badgeEl.textContent = "有效期至 " + fmtDate(plan.period_end); badgeEl.hidden = false; }
       var total = Number(plan.allowance_cny);
       var remain = Number(plan.remaining_cny);
-      if (metaEl) metaEl.textContent = "本月剩余额度 " + fmtCny(remain) + " / " + fmtCny(total) + "（已用 " + fmtCny(plan.used_cny) + "）";
-      if (progWrap && progFill && total > 0) {
-        progWrap.hidden = false;
-        progFill.style.width = Math.max(0, Math.min(100, (remain / total) * 100)).toFixed(1) + "%";
-      }
-      if (ctaEl) ctaEl.textContent = "续费 / 升级套餐";
+      if (remainEl) remainEl.textContent = fmtCny(remain);
+      if (metaEl) metaEl.textContent = "月度额度 " + fmtCny(total) + "（已用 " + fmtCny(plan.used_cny) + "）· 有效期至 " + fmtDate(plan.period_end);
+      if (ctaEl) { var s = ctaEl.querySelector(".NBPKZ"); (s || ctaEl).textContent = "续费 / 升级套餐"; }
     } else {
       if (nameEl) nameEl.textContent = "未订阅";
-      if (badgeEl) badgeEl.hidden = true;
+      if (remainEl) remainEl.textContent = "¥0.00";
       if (metaEl) metaEl.textContent = "订阅套餐后，Web Chat 与 Cancri Code IDE 的付费模型将从套餐月度额度扣费。";
-      if (ctaEl) ctaEl.textContent = "选择套餐";
-    }
-    var catEl = $("plan-catalog");
-    var catalog = (data && Array.isArray(data.catalog)) ? data.catalog : [];
-    if (catEl && catalog.length) {
-      catEl.innerHTML = catalog.map(function (c) {
-        var current = plan && plan.active && plan.plan_code === c.plan_code;
-        return '<a class="bp-tile" href="../pricing.html">' +
-          '<div class="bp-tile-title">' + esc(c.display_name || c.plan_code) + ' · ¥' + esc(c.price_cny) + '/月' + (current ? "（当前）" : "") + "</div>" +
-          '<div class="bp-tile-desc">月度额度 ' + fmtCny(c.allowance_cny) + (Number(c.overflow_discount) < 1 ? " · 溢出按量 " + Math.round(Number(c.overflow_discount) * 100) / 10 + "折" : "") + "</div>" +
-          "</a>";
-      }).join("");
+      if (ctaEl) { var s2 = ctaEl.querySelector(".NBPKZ"); (s2 || ctaEl).textContent = "选择套餐"; }
     }
   }
 
@@ -142,7 +137,7 @@
       if (results[1].status === "fulfilled") renderWallet(results[1].value);
       else renderWallet(null);
     } catch (e) {
-      var metaEl = $("billing-balance-meta");
+      var metaEl = $("billing-meta");
       var planMeta = $("plan-meta");
       if (e && e.message === "supabase_not_loaded") {
         if (metaEl) metaEl.textContent = "依赖脚本加载失败，请检查网络后刷新。";
