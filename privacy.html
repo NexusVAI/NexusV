@@ -41,7 +41,7 @@
         <div class="legal-header">
             <div class="legal-category">法律文档</div>
             <h1 class="legal-title">隐私协议</h1>
-            <p class="legal-effective">最后更新：2026 年 6 月 25 日 · 生效日期：2026 年 6 月 25 日</p>
+            <p class="legal-effective">最后更新：2026 年 7 月 4 日 · 生效日期：2026 年 7 月 4 日</p>
         </div>
 
         <div class="legal-content">
@@ -132,8 +132,9 @@
 
             <h3>4.2 服务运营商</h3>
             <ul>
-                <li><strong>Supabase</strong>：用于账户认证（OTP 邮箱验证码）、PostgreSQL 数据库存储，以及 chat-history、user-memory 等非流式边缘函数。Supabase 为独立第三方服务商，其服务器部署位置、数据处理实践遵从其自有隐私政策（<a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>）；</li>
-                <li><strong>Cloudflare</strong>：通过 Workers 自定义域名 <code>chat.nexusvai.xyz</code> 承载聊天推理网关（chat-gateway）与公开 API 网关（api-gateway），流式 LLM 响应经 Cloudflare 边缘返回客户端以降低 Supabase 出站流量；其余 <code>/auth</code>、<code>/rest</code>、<code>/storage</code> 及部分 Edge Functions 由该 Worker 透明反代至 Supabase。Cloudflare Turnstile 用于登录与人机验证（防脚本滥用），Turnstile widget 不进行跨站广告追踪；</li>
+                <li><strong>Neon</strong>：本服务的<strong>主数据库与身份认证</strong>提供方。账户认证（邮箱一次性验证码 OTP，基于 Neon Auth）、PostgreSQL 数据库（账户信息、对话历史、使用与计费记录、对话记忆等）均托管于 Neon（PG18，生产分支部署于新加坡 <code>ap-southeast-1</code> 区域）。Neon 为独立第三方服务商，遵从其自有隐私政策（<a href="https://neon.tech/privacy-policy" target="_blank" rel="noopener">neon.tech/privacy-policy</a>）；</li>
+                <li><strong>Cloudflare</strong>：通过 Workers 自定义域名 <code>chat.nexusvai.xyz</code> 承载聊天推理网关（chat-gateway）、公开 API 网关（api-gateway）与上游模型代理（modelscope-proxy）；流式 LLM 响应经 Cloudflare 边缘返回客户端，数据库连接经 Cloudflare Hyperdrive 连接池访问 Neon。<strong>对象存储（Cloudflare R2）</strong>用于保存图像生成结果与（经您同意的）桌面端轨迹数据。Cloudflare Turnstile 用于登录与人机验证（防脚本滥用），Turnstile widget 不进行跨站广告追踪；</li>
+                <li><strong>Supabase</strong>：本服务早期使用的后端平台；自 2026 年 6 月起，数据库与认证已全量迁移至 Neon，Supabase 现<strong>仅作为紧急回切的备用源保留</strong>，正常生产流量不再经过 Supabase（其隐私政策见 <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>）；</li>
                 <li><strong>jsdelivr CDN</strong>：加载 <code>@supabase/supabase-js</code> 等公开的前端依赖库，仅传送网络请求必要的 IP / UA。本服务不向 CDN 提交任何个人信息；</li>
                 <li><strong>付款收款</strong>：不接入任何第三方支付平台。您通过微信 / 支付宝扫码直接转账至站主个人收款账户，由站主人工对账。您的付款账户信息仅在微信 / 支付宝 与站主账户之间交互，<strong>本服务后端不接收任何支付令牌、不保存银行卡号</strong>。</li>
             </ul>
@@ -148,18 +149,19 @@
             <p>我们仅在为您提供服务所需的合理期间内保留您的数据，原则如下：</p>
             <ul>
                 <li><strong>账户信息</strong>：在您账户存活期间保留。您提交注销申请并经核实后，我们将在合理期限内删除您的账户信息；</li>
-                <li><strong>对话历史</strong>：默认保留于 Supabase 数据库，方便您随时回查。<strong>您可在聊天页面主动删除任意对话</strong>（前端通过 chat-history Edge Function 执行服务端删除）；</li>
+                <li><strong>对话历史</strong>：默认保留于 Neon 数据库，方便您随时回查。<strong>您可在聊天页面主动删除任意对话</strong>（前端经 Cloudflare 网关调用 chat-history 接口执行服务端删除）；</li>
+                <li><strong>图像与桌面轨迹数据</strong>：图像生成结果与（经您同意上传的）桌面端轨迹数据存于 Cloudflare R2 对象存储；</li>
                 <li><strong>使用与计费记录</strong>：用于配额控制、反滥用审计与付费对账，保留期限不短于法律法规所要求的最低期限；</li>
                 <li><strong>客户端诊断日志（telemetry）</strong>：保留期限以诊断完成、问题修复后清理为度，不长期沉淀；</li>
                 <li><strong>设备指纹（visitor_id）</strong>：保留期限以反多账号识别有效性为度。当您账户注销后，绑定您账号的指纹关联将一并解除；</li>
-                <li><strong>备份数据</strong>：依托 Supabase 自有备份策略，主数据删除后备份将依其滚动覆盖周期同步淘汰。</li>
+                <li><strong>备份数据</strong>：依托 Neon 自有备份与时间点恢复（PITR）策略，主数据删除后备份将依其滚动保留窗口同步淘汰。</li>
             </ul>
             <p>法律法规明确要求更长保留期的（如付费交易记录），我们将依法保留至要求期满。</p>
 
             <h2 id="p6">6. Cookie 与本地存储</h2>
             <p>本服务使用浏览器 <strong>本地存储（localStorage）</strong> 保存以下信息，所有内容仅留在您本机，不会发往第三方分析平台：</p>
             <ul>
-                <li><strong>登录态</strong>：Supabase 颁发的 access / refresh token（由 supabase-js 客户端管理）；</li>
+                <li><strong>登录态</strong>：由 Neon Auth 签发的 access / refresh token（前端经兼容 supabase-js 的客户端管理，storageKey 为 <code>cancri_supabase_auth</code>）；</li>
                 <li><strong>主题与语言偏好</strong>：<code>theme</code>、<code>lang</code>；</li>
                 <li><strong>界面偏好</strong>：侧边栏展开状态、当前选中模型、最近使用模型；</li>
                 <li><strong>遥测同意决策</strong>：<code>cancri_telemetry_consent</code>（值仅为 <code>granted</code> / <code>denied</code>）；</li>
@@ -177,15 +179,15 @@
             <p>我们采用业界通行的安全实践保护您的数据：</p>
             <ul>
                 <li><strong>传输加密</strong>：所有客户端与服务端通信均通过 HTTPS（TLS 1.3）加密；</li>
-                <li><strong>身份鉴权</strong>：基于 Supabase JWT 的无状态鉴权，访问后端 API 必须携带有效 token；</li>
+                <li><strong>身份鉴权</strong>：基于 Neon Auth 签发的 JWT 的无状态鉴权，访问后端 API 必须携带有效 token；</li>
                 <li><strong>OTP 防滥用</strong>：邮箱验证码使用密码学随机生成，单次有效且有时效；登录尝试有频率限制；</li>
-                <li><strong>网关与边缘隔离</strong>：聊天推理与公开 API 在 Cloudflare Workers（<code>chat.nexusvai.xyz</code>）执行；认证、配额 RPC、对话历史存储等仍由 Supabase 提供，经 HTTPS 与受控接口通信；</li>
+                <li><strong>网关与边缘隔离</strong>：聊天推理与公开 API 在 Cloudflare Workers（<code>chat.nexusvai.xyz</code>）执行；认证、配额 RPC、对话历史存储等由 Neon 提供（经 Cloudflare Hyperdrive 连接池访问），经 HTTPS 与受控接口通信；</li>
                 <li><strong>最小权限原则</strong>：仅在必要范围内授予内部人员访问数据的权限，所有敏感操作均有审计日志。</li>
             </ul>
             <p>尽管我们已尽合理的安全努力，但互联网传输不存在绝对安全。<strong>如发生数据泄露事件，我们将在事故发生与确认后及时通过站点公告与注册邮箱通知受影响用户</strong>，并配合您减小损失。</p>
 
             <h2 id="p8">8. 跨境数据传输</h2>
-            <p>本服务依托 Supabase、Cloudflare、jsdelivr 等全球化基础设施，部分上游模型供应方（如 OpenAI、Anthropic）的服务器位于中国大陆境外。这意味着您在使用本服务时：</p>
+            <p>本服务依托 Neon、Cloudflare、jsdelivr 等全球化基础设施；主数据库与身份认证部署于 Neon 新加坡（<code>ap-southeast-1</code>）区域，位于中国大陆境外；部分上游模型供应方（如 OpenAI、Anthropic）的服务器也位于中国大陆境外。这意味着您在使用本服务时：</p>
             <ul>
                 <li>您的账户信息、对话历史、使用记录等数据 <strong>可能存储或经由位于中国大陆境外的服务器</strong>，具体地点由相关服务运营商确定；</li>
                 <li>当您选择海外模型供应方（如 OpenAI、Anthropic）时，您的对话内容将被实时转发至对应供应方位于其本国 / 区域的服务器。</li>
