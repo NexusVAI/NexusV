@@ -48,6 +48,57 @@
     return data;
   }
 
+  // ── 侧边栏本地化 + 用户芯片（与 oai-console-data.js 同步）──
+  function detectLang() {
+    try {
+      var saved = localStorage.getItem("lang");
+      if (saved === "zh" || saved === "en") return saved;
+    } catch (e) {}
+    var nav = (navigator.language || navigator.userLanguage || "en").toLowerCase();
+    return nav.indexOf("zh") >= 0 ? "zh" : "en";
+  }
+
+  function findTextNodes(text, root) {
+    var out = [];
+    var walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT, null);
+    while (walker.nextNode()) {
+      var n = walker.currentNode;
+      if (n.nodeValue && n.nodeValue.trim() === text) out.push(n);
+    }
+    return out;
+  }
+
+  function replaceAllText(oldText, newText) {
+    findTextNodes(oldText).forEach(function (n) { n.nodeValue = newText; });
+  }
+
+  function applyPageLocale() {
+    var lang = detectLang();
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en-US";
+    if (lang !== "zh") return;
+    [
+      ["Home", "首页"],
+      ["API Keys", "API 密钥"],
+      ["Usage", "用量"],
+      ["Logs", "日志"],
+      ["Billing", "结算"],
+      ["Default project", "默认项目"],
+      ["Organization", "个人版"],
+    ].forEach(function (p) { replaceAllText(p[0], p[1]); });
+  }
+
+  function updateUserChip(user) {
+    var email = (user && user.email) || "";
+    var name = email.split("@")[0] || "User";
+    var initial = name.charAt(0).toUpperCase() || "U";
+    replaceAllText("Personal", name);
+    document.querySelectorAll("span, div").forEach(function (node) {
+      if (node.childNodes.length === 1 && node.textContent === "P") {
+        node.textContent = initial;
+      }
+    });
+  }
+
   // ── Tabs（hash 记忆：#plan / #api / #bills）──
   function moveThumb(tab) {
     var thumb = $("bp-tab-thumb");
@@ -257,6 +308,8 @@
       getSupabase();
       var session = await PlatformAuth.requireSession({ timeoutMs: 6000 });
       if (!session) return;
+      updateUserChip(session.user);
+      applyPageLocale();
       var results = await Promise.allSettled([
         callGateway("plan_v4_status", {}),
         callGateway("list_my_orders", {}),

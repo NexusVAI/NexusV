@@ -35,17 +35,6 @@
 		return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 	}
 	//#endregion
-	//#region src/utils/lang.js
-	function detectAutoTranslateTarget(text) {
-		const sample = String(text || "").slice(0, 4e3);
-		const cjk = (sample.match(/[\u4e00-\u9fff]/g) || []).length;
-		const latin = (sample.match(/[A-Za-z]/g) || []).length;
-		if (cjk === 0 && latin > 0) return "zh";
-		if (latin === 0 && cjk > 0) return "en";
-		if (cjk >= latin) return "en";
-		return "zh";
-	}
-	//#endregion
 	//#region src/data/model-catalog-fallback.js
 	var MODEL_CATALOG_FALLBACK = [
 		{
@@ -858,211 +847,6 @@
 		}
 	];
 	//#endregion
-	//#region src/data/translate-languages.js
-	var TRANSLATE_LANGUAGES = [
-		{
-			code: "auto",
-			label: "自动",
-			promptName: ""
-		},
-		{
-			code: "ar",
-			label: "阿拉伯语",
-			promptName: "Arabic",
-			rtl: true
-		},
-		{
-			code: "bn",
-			label: "孟加拉语",
-			promptName: "Bengali"
-		},
-		{
-			code: "bo",
-			label: "藏语",
-			promptName: "Tibetan"
-		},
-		{
-			code: "cs",
-			label: "捷克语",
-			promptName: "Czech"
-		},
-		{
-			code: "de",
-			label: "德语",
-			promptName: "German"
-		},
-		{
-			code: "en",
-			label: "英语",
-			promptName: "English"
-		},
-		{
-			code: "es",
-			label: "西班牙语",
-			promptName: "Spanish"
-		},
-		{
-			code: "fa",
-			label: "波斯语",
-			promptName: "Persian",
-			rtl: true
-		},
-		{
-			code: "fr",
-			label: "法语",
-			promptName: "French"
-		},
-		{
-			code: "gu",
-			label: "古吉拉特语",
-			promptName: "Gujarati"
-		},
-		{
-			code: "he",
-			label: "希伯来语",
-			promptName: "Hebrew",
-			rtl: true
-		},
-		{
-			code: "hi",
-			label: "印地语",
-			promptName: "Hindi"
-		},
-		{
-			code: "id",
-			label: "印尼语",
-			promptName: "Indonesian"
-		},
-		{
-			code: "ii",
-			label: "彝语",
-			promptName: "Yi"
-		},
-		{
-			code: "it",
-			label: "意大利语",
-			promptName: "Italian"
-		},
-		{
-			code: "ja",
-			label: "日语",
-			promptName: "Japanese"
-		},
-		{
-			code: "kk",
-			label: "哈萨克语",
-			promptName: "Kazakh"
-		},
-		{
-			code: "km",
-			label: "高棉语",
-			promptName: "Khmer"
-		},
-		{
-			code: "ko",
-			label: "韩语",
-			promptName: "Korean"
-		},
-		{
-			code: "mn",
-			label: "蒙古语",
-			promptName: "Mongolian"
-		},
-		{
-			code: "mr",
-			label: "马拉地语",
-			promptName: "Marathi"
-		},
-		{
-			code: "ms",
-			label: "马来语",
-			promptName: "Malay"
-		},
-		{
-			code: "my",
-			label: "缅甸语",
-			promptName: "Burmese"
-		},
-		{
-			code: "nl",
-			label: "荷兰语",
-			promptName: "Dutch"
-		},
-		{
-			code: "pl",
-			label: "波兰语",
-			promptName: "Polish"
-		},
-		{
-			code: "pt",
-			label: "葡萄牙语",
-			promptName: "Portuguese"
-		},
-		{
-			code: "ru",
-			label: "俄语",
-			promptName: "Russian"
-		},
-		{
-			code: "ta",
-			label: "泰米尔语",
-			promptName: "Tamil"
-		},
-		{
-			code: "te",
-			label: "泰卢固语",
-			promptName: "Telugu"
-		},
-		{
-			code: "th",
-			label: "泰语",
-			promptName: "Thai"
-		},
-		{
-			code: "tl",
-			label: "菲律宾语",
-			promptName: "Filipino"
-		},
-		{
-			code: "tr",
-			label: "土耳其语",
-			promptName: "Turkish"
-		},
-		{
-			code: "ug",
-			label: "维吾尔语",
-			promptName: "Uyghur",
-			rtl: true
-		},
-		{
-			code: "uk",
-			label: "乌克兰语",
-			promptName: "Ukrainian"
-		},
-		{
-			code: "ur",
-			label: "乌尔都语",
-			promptName: "Urdu",
-			rtl: true
-		},
-		{
-			code: "vi",
-			label: "越南语",
-			promptName: "Vietnamese"
-		},
-		{
-			code: "zh",
-			label: "中文（简体）",
-			promptName: "Chinese"
-		},
-		{
-			code: "zh-Hant",
-			label: "繁体中文",
-			promptName: "Traditional Chinese"
-		}
-	];
-	var TRANSLATE_LANG_BY_CODE = new Map(TRANSLATE_LANGUAGES.map((item) => [item.code, item]));
-	//#endregion
 	//#region src/data/tool-display-names.js
 	var TOOL_DISPLAY_NAMES = {
 		get_article_list: "获取站内文章列表",
@@ -1153,7 +937,6 @@
 		language: "自动检测",
 		speech: "自动检测",
 		chatFont: "sans",
-		voicePreset: "steady",
 		fullName: "",
 		profession: "",
 		customInstructions: "",
@@ -1340,7 +1123,7 @@
 		internal_error: "服务出现异常，请稍后重试。",
 		db_error: "数据写入失败，请稍后重试。"
 	};
-	var QUOTA_REFRESH_TRIGGER_CODES = new Set([
+	var QUOTA_REFRESH_TRIGGER_CODES = /* @__PURE__ */ new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
@@ -1350,19 +1133,19 @@
 		"model_pro_max_required",
 		"model_pro_required"
 	]);
-	var UPGRADE_MODAL_TRIGGER_CODES = new Set([
+	var UPGRADE_MODAL_TRIGGER_CODES = /* @__PURE__ */ new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
 		"token_window_5h_exceeded",
 		"token_window_week_exceeded"
 	]);
-	var USER_QUOTA_ERROR_CODES = new Set([
+	var USER_QUOTA_ERROR_CODES = /* @__PURE__ */ new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted"
 	]);
-	var PROVIDER_QUOTA_ERROR_CODES = new Set(["model_quota_exceeded", "model_free_hour_limit"]);
+	var PROVIDER_QUOTA_ERROR_CODES = /* @__PURE__ */ new Set(["model_quota_exceeded", "model_free_hour_limit"]);
 	function friendlyMessageFromBackend(parsed, status) {
 		const code = String(parsed?.code || "").trim();
 		if (code && QUOTA_REFRESH_TRIGGER_CODES.has(code) && typeof invalidateQuotaState === "function") try {
@@ -1590,7 +1373,9 @@
 					countdownEl.style.color = "#ef4444";
 					return false;
 				}
-				countdownEl.textContent = `剩余 ${Math.floor(remainMs / 6e4)}:${Math.floor(remainMs % 6e4 / 1e3).toString().padStart(2, "0")}`;
+				const m = Math.floor(remainMs / 6e4);
+				const s = Math.floor(remainMs % 6e4 / 1e3);
+				countdownEl.textContent = `剩余 ${m}:${s.toString().padStart(2, "0")}`;
 				return true;
 			}
 			renderCountdown();
@@ -2256,7 +2041,7 @@
 			fetchModelHealthStatus().catch(() => {});
 		}, HEALTH_STATUS_REFRESH_MS);
 	}
-	var PAID_GATE_IDS = new Set([
+	var PAID_GATE_IDS = /* @__PURE__ */ new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
 		"claude-opus-4-8-special",
@@ -2298,7 +2083,7 @@
 		"gemini-3.1-flash-lite-preview",
 		"gemini-3.1-flash-lite-welfare"
 	]);
-	var FREE_USER_BLOCKED_GATE_IDS = new Set([
+	var FREE_USER_BLOCKED_GATE_IDS = /* @__PURE__ */ new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
 		"claude-opus-4-8-special",
@@ -2325,7 +2110,7 @@
 		"glm-5.1",
 		"deepseek-v4-pro"
 	]);
-	var PRO_MAX_GATE_IDS = new Set(["gpt-image-2-pro", "grok-imagine-video"]);
+	var PRO_MAX_GATE_IDS = /* @__PURE__ */ new Set(["gpt-image-2-pro", "grok-imagine-video"]);
 	var GROK_IMAGINE_VIDEO_PROMO_START_MS = Date.parse("2026-06-18T00:00:00+08:00");
 	var GROK_IMAGINE_VIDEO_PROMO_END_MS = Date.parse("2026-07-19T00:00:00+08:00");
 	function isGrokImagineVideoPromoActive(now = Date.now()) {
@@ -2386,7 +2171,7 @@
 	function isFreeUserBlockedGateModel(modelId) {
 		return FREE_USER_BLOCKED_GATE_IDS.has(modelId);
 	}
-	var FREE_WELFARE_MODEL_IDS = new Set([
+	var FREE_WELFARE_MODEL_IDS = /* @__PURE__ */ new Set([
 		"baichuan-m2-welfare",
 		"baichuan4-air-welfare",
 		"baichuan3-turbo-welfare",
@@ -2771,8 +2556,6 @@
 		"wan2.6-t2i": DEFAULT_MODEL_ID,
 		"z-image-turbo": DEFAULT_MODEL_ID,
 		"wanx-poster-generation-v1": DEFAULT_MODEL_ID,
-		"mimo-v2.5-tts": DEFAULT_MODEL_ID,
-		"mimo-v2.5-tts-voicedesign": DEFAULT_MODEL_ID,
 		"gemini-3-flash": DEFAULT_MODEL_ID,
 		"gemini-3-flash-supxh": DEFAULT_MODEL_ID,
 		"glm-5.1-alt": DEFAULT_MODEL_ID,
@@ -2815,7 +2598,7 @@
 		"glm-5.1"
 	].map((id, index) => [id, index]));
 	var MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
-	var LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
+	var LOCAL_ONLY_CATALOG_IDS = /* @__PURE__ */ new Set(["hunyuan-mt-7b"]);
 	var MODEL_UI_CATALOG_TTL_MS = 0;
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
@@ -2978,7 +2761,7 @@
 		"nex-n2-pro-welfare": "./NEX_logo.svg",
 		"hunyuan-mt-7b": "./yuanbao-color.svg"
 	};
-	var THEME_ADAPTIVE_ICON_BRANDS = new Set([
+	var THEME_ADAPTIVE_ICON_BRANDS = /* @__PURE__ */ new Set([
 		"OpenAI",
 		"Clawto",
 		"Cancri"
@@ -3262,15 +3045,10 @@
 		if (mode === "black") return "black";
 		return mode === "dark" ? "dark" : "light";
 	}
-	var VALID_CHAT_FONTS = new Set([
+	var VALID_CHAT_FONTS = /* @__PURE__ */ new Set([
 		"serif",
 		"sans",
 		"mono"
-	]);
-	var VALID_VOICE_PRESETS = new Set([
-		"oily",
-		"steady",
-		"soft"
 	]);
 	function restoreUiPreferences() {
 		try {
@@ -3311,7 +3089,6 @@
 			}
 			if (isUnreadableAccentOnLight(state.accentValue)) applyDefaultAccent();
 			if (typeof prefs.chatFont === "string" && VALID_CHAT_FONTS.has(prefs.chatFont)) state.chatFont = prefs.chatFont;
-			if (typeof prefs.voicePreset === "string" && VALID_VOICE_PRESETS.has(prefs.voicePreset)) state.voicePreset = prefs.voicePreset;
 			if (typeof prefs.customInstructions === "string") state.customInstructions = prefs.customInstructions.slice(0, 100);
 			if (typeof prefs.fullName === "string") state.fullName = prefs.fullName.slice(0, 60);
 			if (typeof prefs.profession === "string") state.profession = prefs.profession.slice(0, 30);
@@ -3331,7 +3108,6 @@
 				accentName: state.accentName,
 				accentValue: state.accentValue,
 				chatFont: state.chatFont,
-				voicePreset: state.voicePreset,
 				customInstructions: state.customInstructions,
 				fullName: state.fullName,
 				profession: state.profession,
@@ -4147,7 +3923,7 @@
 		document.querySelector(".account-strip .account-plan");
 		const avatarEl = document.querySelector(".account-strip .avatar");
 		if (accountName) accountName.textContent = displayName;
-		if (avatarEl) avatarEl.textContent = initials;
+		if (avatarEl && !avatarEl.classList.contains("has-style") && !avatarEl.classList.contains("has-custom-image")) avatarEl.textContent = initials;
 		refreshNicknameUI();
 		updateHomeHeroText();
 	}
@@ -6772,83 +6548,6 @@
 			return "";
 		}
 	}
-	var VOICE_PRESETS = {
-		oily: {
-			voice: "苏打",
-			style: "用东北话味十足的中年男声朗读：声音粗犷略带烟酒嗓，自带磁性与江湖气，语速从容不紧不慢，咬字带北方喉音和卷舌韵味，像一个走南闯北、阅历很深的老炮儿在跟你唠嗑。"
-		},
-		steady: {
-			voice: "白桦",
-			style: "用沉稳醇厚的成熟男声朗读：节奏从容，咬字清晰，气息平稳，带着可靠的播音腔；语调平缓但富有质感，听感专业、不浮夸。"
-		},
-		soft: {
-			voice: "茉莉",
-			style: "用温柔亲切的年轻女声朗读：气息轻柔，语速舒缓，尾音微微上扬，像在耳边轻声细语；情绪温暖、不急不躁，让人感到放松。"
-		}
-	};
-	var TRANSLATE_TARGET_PREF_KEY = "cancri.translate.targetLang";
-	function getSavedTranslateTargetLang() {
-		try {
-			const saved = localStorage.getItem(TRANSLATE_TARGET_PREF_KEY);
-			if (saved && TRANSLATE_LANG_BY_CODE.has(saved)) return saved;
-		} catch {}
-		return "auto";
-	}
-	function saveTranslateTargetLang(code) {
-		if (!TRANSLATE_LANG_BY_CODE.has(code)) return;
-		try {
-			localStorage.setItem(TRANSLATE_TARGET_PREF_KEY, code);
-		} catch {}
-	}
-	function buildTranslateLangSelectOptions(selectedCode) {
-		return TRANSLATE_LANGUAGES.map((lang) => {
-			const selected = lang.code === selectedCode ? " selected" : "";
-			return `<option value="${escapeHtml(lang.code)}"${selected}>${escapeHtml(lang.label)}</option>`;
-		}).join("");
-	}
-	function resolveTranslateTargetCode(targetLang, sourceText) {
-		if (targetLang === "auto") return detectAutoTranslateTarget(sourceText);
-		return TRANSLATE_LANG_BY_CODE.has(targetLang) ? targetLang : "en";
-	}
-	function resolveTranslateTargetLabel(targetLang, sourceText) {
-		const code = resolveTranslateTargetCode(targetLang, sourceText);
-		return TRANSLATE_LANG_BY_CODE.get(code)?.label || code;
-	}
-	function isTranslateTargetRtl(targetLang, sourceText) {
-		const code = resolveTranslateTargetCode(targetLang, sourceText);
-		return Boolean(TRANSLATE_LANG_BY_CODE.get(code)?.rtl);
-	}
-	function getTranslateCacheKey(sourceText, targetLang) {
-		return `${targetLang}\u0000${sourceText}`;
-	}
-	function getTranslateCache(messageDiv, sourceText, targetLang) {
-		const cache = messageDiv?._translateCache;
-		if (!cache) return null;
-		return cache.get(getTranslateCacheKey(sourceText, targetLang)) || null;
-	}
-	function setTranslateCache(messageDiv, sourceText, targetLang, payload) {
-		if (!messageDiv._translateCache) messageDiv._translateCache = /* @__PURE__ */ new Map();
-		messageDiv._translateCache.set(getTranslateCacheKey(sourceText, targetLang), payload);
-	}
-	function createTranslateButtonHtml() {
-		return `
-      <button class="message-action-btn message-action-btn-translate" type="button" data-action="translate" title="翻译" aria-label="Translate">
-        <span class="translate-action-icon" aria-hidden="true"><span class="translate-action-char">文</span><span class="translate-action-sub">A</span></span>
-      </button>
-    `;
-	}
-	function wireTranslateButton(messageDiv, answerBody = null) {
-		const btn = messageDiv.querySelector("[data-action=\"translate\"]");
-		if (!btn || btn.dataset.translateWired === "1") return;
-		btn.dataset.translateWired = "1";
-		btn.addEventListener("click", async (event) => {
-			event.stopPropagation();
-			await handleMessageTranslate(messageDiv, {
-				answerBody,
-				forceRefresh: false
-			});
-		});
-	}
 	function normalizeThinkDisplayText(text) {
 		return String(text || "").replace(/([^.!?。！？…])\n+([^\n\r])/g, "$1 $2").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1").replace(/([，。！？；：、])[ \t]+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
 	}
@@ -6915,8 +6614,7 @@
 				label: "Branch in new chat",
 				title: "在新对话中继续",
 				icon: CLAUDE_ACTION_ICON.branch
-			}),
-			createTranslateButtonHtml()
+			})
 		].join("");
 		inner.appendChild(tsSpan);
 		inner.appendChild(btnGroup);
@@ -6988,18 +6686,11 @@
 			icon: CLAUDE_ACTION_ICON.branch
 		})}
       ${createClaudeActionButton({
-			action: "speak",
-			label: "Read aloud",
-			title: "朗读",
-			icon: CLAUDE_ACTION_ICON.speak
-		})}
-      ${createClaudeActionButton({
 			action: "retry",
 			label: "Retry",
 			title: "重新生成",
 			icon: CLAUDE_ACTION_ICON.retry
 		})}
-      ${createTranslateButtonHtml()}
     `;
 	}
 	function retryAssistantFromMessage(messageDiv) {
@@ -7033,467 +6724,9 @@
 			}
 			downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
 		});
-		messageActions.querySelector("[data-action=\"speak\"]")?.addEventListener("click", async () => {
-			const text = getAssistantSpeakText(messageDiv, answerBody);
-			if (!text || text === "正在思考中…") {
-				showToast("没有可朗读的内容");
-				return;
-			}
-			await speakTextWithMimo(text);
-		});
 		messageActions.querySelector("[data-action=\"retry\"]")?.addEventListener("click", () => {
 			retryAssistantFromMessage(messageDiv);
 		});
-		wireTranslateButton(messageDiv, answerBody);
-	}
-	function resolveVoicePreset() {
-		return VOICE_PRESETS[String(state.voicePreset || "steady")] || VOICE_PRESETS.steady;
-	}
-	var __mimoAudioCtx = null;
-	function getMimoAudioContext() {
-		const Ctor = window.AudioContext || window.webkitAudioContext;
-		if (!Ctor) return null;
-		if (!__mimoAudioCtx || __mimoAudioCtx.state === "closed") __mimoAudioCtx = new Ctor({ sampleRate: 24e3 });
-		return __mimoAudioCtx;
-	}
-	var __mimoCurrentSource = null;
-	function stopCurrentMimoPlayback() {
-		if (__mimoCurrentSource) {
-			try {
-				__mimoCurrentSource.stop();
-			} catch {}
-			__mimoCurrentSource = null;
-		}
-		if ("speechSynthesis" in window) try {
-			speechSynthesis.cancel();
-		} catch {}
-	}
-	function markdownToSpeakableText(input) {
-		let text = String(input || "");
-		if (!text.trim()) return "";
-		text = text.replace(/```[\s\S]*?```/g, " ");
-		text = text.replace(/`([^`\n]+)`/g, "$1");
-		text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1");
-		text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-		text = text.replace(/^#{1,6}\s+/gm, "");
-		text = text.replace(/^\s*[-*+]\s+/gm, "");
-		text = text.replace(/^\s*\d+\.\s+/gm, "");
-		text = text.replace(/[*_~>#]/g, "");
-		return text.replace(/\s+/g, " ").trim();
-	}
-	function getAssistantSpeakText(messageDiv, answerBody) {
-		const fromRaw = markdownToSpeakableText(messageDiv?._parts?.answerStreamState?.text || "");
-		const fromDom = String(answerBody?.textContent || "").replace(/\s+/g, " ").trim();
-		if (fromRaw && fromDom) return fromRaw.length >= fromDom.length ? fromRaw : fromDom;
-		return fromRaw || fromDom;
-	}
-	function decodeBase64ToBytes(base64) {
-		const bin = atob(String(base64 || ""));
-		const bytes = new Uint8Array(bin.length);
-		for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-		return bytes;
-	}
-	function extractTtsAudioBase64(json) {
-		if (!json || typeof json !== "object") return "";
-		const choice = json.choices?.[0];
-		if (!choice) return "";
-		const audio = choice.message?.audio ?? choice.delta?.audio;
-		if (typeof audio === "string") return audio;
-		if (audio && typeof audio === "object" && typeof audio.data === "string") return audio.data;
-		return "";
-	}
-	function splitSpeakTextChunks(text, maxLen = 480) {
-		const normalized = String(text || "").replace(/\s+/g, " ").trim();
-		if (!normalized) return [];
-		if (normalized.length <= maxLen) return [normalized];
-		const chunks = [];
-		let rest = normalized;
-		while (rest.length > maxLen) {
-			let cut = -1;
-			for (const mark of [
-				"。",
-				"！",
-				"？",
-				"；",
-				"，",
-				" "
-			]) {
-				const idx = rest.lastIndexOf(mark, maxLen);
-				if (idx > Math.floor(maxLen * .25)) {
-					cut = idx + 1;
-					break;
-				}
-			}
-			if (cut < 0) cut = maxLen;
-			const piece = rest.slice(0, cut).trim();
-			if (!piece) break;
-			chunks.push(piece);
-			rest = rest.slice(cut).trim();
-		}
-		if (rest) chunks.push(rest);
-		return chunks.length ? chunks : [normalized.slice(0, maxLen)];
-	}
-	function appendTtsPcmFromSseBuffer(buffer, pcmChunks, totalRef) {
-		let sepIdx;
-		while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
-			const eventBlock = buffer.slice(0, sepIdx);
-			buffer = buffer.slice(sepIdx + 2);
-			for (const line of eventBlock.split("\n")) {
-				if (!line.startsWith("data:")) continue;
-				const payload = line.slice(5).trim();
-				if (!payload || payload === "[DONE]") continue;
-				let json;
-				try {
-					json = JSON.parse(payload);
-				} catch {
-					continue;
-				}
-				if (json?.error) throw new Error("朗读服务暂时不可用，请稍后重试。");
-				const b64 = extractTtsAudioBase64(json);
-				if (!b64) continue;
-				const bytes = decodeBase64ToBytes(b64);
-				pcmChunks.push(bytes);
-				totalRef.value += bytes.length;
-			}
-		}
-		return buffer;
-	}
-	async function collectTtsPcmFromSseStream(body) {
-		const reader = body.getReader();
-		const decoder = new TextDecoder();
-		const pcmChunks = [];
-		const totalRef = { value: 0 };
-		let buffer = "";
-		while (true) {
-			const { done, value } = await reader.read();
-			if (value) {
-				buffer += decoder.decode(value, { stream: !done }).replace(/\r\n/g, "\n");
-				buffer = appendTtsPcmFromSseBuffer(buffer, pcmChunks, totalRef);
-			}
-			if (done) {
-				buffer += decoder.decode().replace(/\r\n/g, "\n");
-				buffer = appendTtsPcmFromSseBuffer(buffer, pcmChunks, totalRef);
-				if (buffer.trim()) for (const line of buffer.split("\n")) {
-					if (!line.startsWith("data:")) continue;
-					const payload = line.slice(5).trim();
-					if (!payload || payload === "[DONE]") continue;
-					let json;
-					try {
-						json = JSON.parse(payload);
-					} catch {
-						continue;
-					}
-					if (json?.error) throw new Error("朗读服务暂时不可用，请稍后重试。");
-					const b64 = extractTtsAudioBase64(json);
-					if (!b64) continue;
-					const bytes = decodeBase64ToBytes(b64);
-					pcmChunks.push(bytes);
-					totalRef.value += bytes.length;
-				}
-				break;
-			}
-		}
-		if (totalRef.value === 0) throw new Error("无法获取音频数据");
-		const pcm = new Uint8Array(totalRef.value);
-		let offset = 0;
-		for (const chunk of pcmChunks) {
-			pcm.set(chunk, offset);
-			offset += chunk.length;
-		}
-		return pcm;
-	}
-	async function requestMimoTtsPcmOnce(text, preset, session) {
-		const response = await fetch(EDGE_FUNCTION_URL, {
-			method: "POST",
-			headers: await proxyHeaders(),
-			body: JSON.stringify({
-				__auth_token: session.access_token,
-				endpoint: "chat",
-				model: "mimo-v2.5-tts",
-				messages: [{
-					role: "user",
-					content: preset.style
-				}, {
-					role: "assistant",
-					content: text
-				}],
-				audio: {
-					format: "pcm16",
-					voice: preset.voice
-				},
-				stream: false
-			})
-		});
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		if ((response.headers.get("content-type") || "").includes("text/event-stream") && response.body) return collectTtsPcmFromSseStream(response.body);
-		const json = await response.json();
-		if (json?.error) throw new Error("朗读服务暂时不可用，请稍后重试。");
-		const b64 = extractTtsAudioBase64(json);
-		if (!b64) throw new Error("无法获取音频数据");
-		return decodeBase64ToBytes(b64);
-	}
-	function playPcm16Buffer(audioCtx, pcm) {
-		if (!audioCtx) throw new Error("当前浏览器不支持 Web Audio API");
-		if (!pcm || pcm.length === 0) throw new Error("无法获取音频数据");
-		if (pcm.length % 2 !== 0) throw new Error(`PCM 字节数非偶数 (${pcm.length})，可能流被截断`);
-		const sampleCount = pcm.length / 2;
-		const audioBuffer = audioCtx.createBuffer(1, sampleCount, 24e3);
-		const channel = audioBuffer.getChannelData(0);
-		const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
-		for (let i = 0; i < sampleCount; i++) channel[i] = view.getInt16(i * 2, true) / 32768;
-		const source = audioCtx.createBufferSource();
-		source.buffer = audioBuffer;
-		source.connect(audioCtx.destination);
-		source.onended = () => {
-			if (__mimoCurrentSource === source) __mimoCurrentSource = null;
-		};
-		__mimoCurrentSource = source;
-		source.start();
-	}
-	function stripMarkdownForTranslate(text) {
-		if (!text || typeof text !== "string") return "";
-		return text.replace(/```[\s\S]*?```/g, (block) => block.replace(/```[^\n]*\n?/g, "").replace(/```/g, "")).replace(/`([^`]+)`/g, "$1").replace(/!\[[^\]]*\]\([^)]+\)/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/^\s*[-*+]\s+/gm, "").replace(/^\s*\d+\.\s+/gm, "").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1").trim();
-	}
-	function getAssistantTranslateSource(messageDiv, answerBody) {
-		return stripMarkdownForTranslate(messageDiv?._parts?.answerStreamState?.text || answerBody?.textContent || "");
-	}
-	function getMessageTranslateSource(messageDiv, answerBody) {
-		if (messageDiv?.classList?.contains("user")) return stripMarkdownForTranslate(messageDiv.dataset.userText || "");
-		return getAssistantTranslateSource(messageDiv, answerBody);
-	}
-	function removeTranslatePanel(messageDiv) {
-		messageDiv?.querySelector?.(".translate-compare-panel")?.remove();
-	}
-	function bindTranslatePanelControls(panel, messageDiv, { sourceText, targetLang, answerBody }) {
-		const select = panel.querySelector(".translate-compare-lang-select");
-		const retryBtn = panel.querySelector(".translate-compare-retry");
-		const closeBtn = panel.querySelector(".translate-compare-close");
-		select?.addEventListener("change", async (event) => {
-			event.stopPropagation();
-			const nextLang = String(select.value || "auto");
-			saveTranslateTargetLang(nextLang);
-			await handleMessageTranslate(messageDiv, {
-				answerBody,
-				targetLang: nextLang,
-				forceRefresh: false
-			});
-		});
-		retryBtn?.addEventListener("click", async (event) => {
-			event.stopPropagation();
-			const activeLang = String(select?.value || targetLang || "auto");
-			saveTranslateTargetLang(activeLang);
-			await handleMessageTranslate(messageDiv, {
-				answerBody,
-				targetLang: activeLang,
-				forceRefresh: true
-			});
-		});
-		closeBtn?.addEventListener("click", (event) => {
-			event.stopPropagation();
-			panel.remove();
-		});
-	}
-	function renderTranslatePanel(messageDiv, { sourceText, translatedText, targetLang, targetLabel, answerBody }) {
-		removeTranslatePanel(messageDiv);
-		const activeLang = targetLang || getSavedTranslateTargetLang();
-		const rtl = isTranslateTargetRtl(activeLang, sourceText);
-		const panel = document.createElement("div");
-		panel.className = "translate-compare-panel";
-		panel.innerHTML = `
-      <div class="translate-compare-header">
-        <div class="translate-compare-brand">
-          <img src="./yuanbao-color.svg" alt="" class="translate-compare-icon" loading="lazy" decoding="async" />
-          <span class="translate-compare-title">Hunyuan MT 7B</span>
-          <span class="translate-compare-target">→ ${escapeHtml(targetLabel)}</span>
-        </div>
-        <div class="translate-compare-controls">
-          <label class="translate-compare-lang-wrap">
-            <span class="translate-compare-lang-label">译为</span>
-            <select class="translate-compare-lang-select" aria-label="选择目标语言">
-              ${buildTranslateLangSelectOptions(activeLang)}
-            </select>
-          </label>
-          <button type="button" class="translate-compare-retry" title="重新翻译">重试</button>
-          <button type="button" class="translate-compare-close" aria-label="关闭翻译">×</button>
-        </div>
-      </div>
-      <div class="translate-compare-grid">
-        <div class="translate-compare-col">
-          <div class="translate-compare-label">原文</div>
-          <div class="translate-compare-body translate-compare-source"></div>
-        </div>
-        <div class="translate-compare-col">
-          <div class="translate-compare-label">译文</div>
-          <div class="translate-compare-body translate-compare-result"></div>
-        </div>
-      </div>
-    `;
-		panel.querySelector(".translate-compare-source").textContent = sourceText;
-		const resultEl = panel.querySelector(".translate-compare-result");
-		resultEl.textContent = translatedText;
-		if (rtl) resultEl.setAttribute("dir", "rtl");
-		bindTranslatePanelControls(panel, messageDiv, {
-			sourceText,
-			targetLang: activeLang,
-			answerBody
-		});
-		messageDiv.appendChild(panel);
-		panel.scrollIntoView({
-			block: "nearest",
-			behavior: "smooth"
-		});
-	}
-	function renderTranslateLoadingPanel(messageDiv, { sourceText, targetLabel, targetLang }) {
-		removeTranslatePanel(messageDiv);
-		const activeLang = targetLang || getSavedTranslateTargetLang();
-		const panel = document.createElement("div");
-		panel.className = "translate-compare-panel is-loading";
-		panel.innerHTML = `
-      <div class="translate-compare-header">
-        <div class="translate-compare-brand">
-          <img src="./yuanbao-color.svg" alt="" class="translate-compare-icon" loading="lazy" decoding="async" />
-          <span class="translate-compare-title">Hunyuan MT 7B</span>
-          <span class="translate-compare-target">→ ${escapeHtml(targetLabel)}</span>
-        </div>
-        <div class="translate-compare-controls">
-          <label class="translate-compare-lang-wrap">
-            <span class="translate-compare-lang-label">译为</span>
-            <select class="translate-compare-lang-select" disabled aria-label="选择目标语言">
-              ${buildTranslateLangSelectOptions(activeLang)}
-            </select>
-          </label>
-        </div>
-      </div>
-      <div class="translate-compare-grid">
-        <div class="translate-compare-col">
-          <div class="translate-compare-label">原文</div>
-          <div class="translate-compare-body translate-compare-source"></div>
-        </div>
-        <div class="translate-compare-col">
-          <div class="translate-compare-label">译文</div>
-          <div class="translate-compare-body translate-compare-result translate-compare-loading">翻译中…</div>
-        </div>
-      </div>
-    `;
-		panel.querySelector(".translate-compare-source").textContent = sourceText;
-		messageDiv.appendChild(panel);
-		return panel;
-	}
-	async function requestHunyuanTranslation(text, targetLang = "auto") {
-		const session = await ensureAuthSession();
-		const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
-			method: "POST",
-			headers: await proxyHeaders(),
-			body: JSON.stringify({
-				__auth_token: session.access_token,
-				endpoint: "translate",
-				text,
-				target_lang: targetLang
-			})
-		}, 6e4, "translate");
-		if (!response.ok) {
-			const errPayload = await response.json().catch(() => ({}));
-			throw new Error(friendlyMessageFromBackend(errPayload, response.status));
-		}
-		const content = (await response.json())?.choices?.[0]?.message?.content;
-		if (typeof content !== "string" || !content.trim()) throw new Error("翻译结果为空，请稍后重试。");
-		return content.trim();
-	}
-	async function handleMessageTranslate(messageDiv, { answerBody = null, targetLang, forceRefresh = false } = {}) {
-		const sourceText = getMessageTranslateSource(messageDiv, answerBody);
-		if (!sourceText || sourceText === "正在思考中…") {
-			showToast("没有可翻译的内容");
-			return;
-		}
-		const effectiveTarget = targetLang || getSavedTranslateTargetLang();
-		saveTranslateTargetLang(effectiveTarget);
-		const targetLabel = resolveTranslateTargetLabel(effectiveTarget, sourceText);
-		if (!forceRefresh) {
-			const cached = getTranslateCache(messageDiv, sourceText, effectiveTarget);
-			if (cached) {
-				renderTranslatePanel(messageDiv, {
-					sourceText: cached.sourceText,
-					translatedText: cached.translatedText,
-					targetLang: cached.targetLang,
-					targetLabel: cached.targetLabel,
-					answerBody
-				});
-				return;
-			}
-		}
-		const loadingPanel = renderTranslateLoadingPanel(messageDiv, {
-			sourceText,
-			targetLabel,
-			targetLang: effectiveTarget
-		});
-		const translateBtn = messageDiv.querySelector("[data-action=\"translate\"]");
-		if (translateBtn) translateBtn.disabled = true;
-		try {
-			const translatedText = await requestHunyuanTranslation(sourceText, effectiveTarget);
-			loadingPanel.remove();
-			setTranslateCache(messageDiv, sourceText, effectiveTarget, {
-				sourceText,
-				targetLang: effectiveTarget,
-				translatedText,
-				targetLabel
-			});
-			renderTranslatePanel(messageDiv, {
-				sourceText,
-				translatedText,
-				targetLang: effectiveTarget,
-				targetLabel,
-				answerBody
-			});
-		} catch (error) {
-			loadingPanel.remove();
-			showToast(`翻译失败：${normalizeErrorMessage(error, "翻译服务暂时不可用，请稍后重试。")}`);
-		} finally {
-			if (translateBtn) translateBtn.disabled = false;
-		}
-	}
-	async function speakTextWithMimo(text) {
-		if (!text || text.trim().length === 0) {
-			showToast("没有可朗读的内容");
-			return;
-		}
-		stopCurrentMimoPlayback();
-		const audioCtx = getMimoAudioContext();
-		if (audioCtx && audioCtx.state === "suspended") try {
-			await audioCtx.resume();
-		} catch {}
-		const preset = resolveVoicePreset();
-		const speakChunks = splitSpeakTextChunks(text.slice(0, 2e3));
-		if (!speakChunks.length) {
-			showToast("没有可朗读的内容");
-			return;
-		}
-		showToast("正在生成语音...");
-		try {
-			const session = await ensureAuthSession();
-			const pcmParts = [];
-			for (let i = 0; i < speakChunks.length; i++) {
-				if (i > 0) showToast(`正在生成语音 (${i + 1}/${speakChunks.length})…`);
-				pcmParts.push(await requestMimoTtsPcmOnce(speakChunks[i], preset, session));
-			}
-			const totalPcmBytes = pcmParts.reduce((sum, part) => sum + part.length, 0);
-			const pcm = new Uint8Array(totalPcmBytes);
-			let offset = 0;
-			for (const part of pcmParts) {
-				pcm.set(part, offset);
-				offset += part.length;
-			}
-			playPcm16Buffer(audioCtx, pcm);
-			showToast("开始朗读");
-		} catch (error) {
-			console.error("TTS 错误:", error);
-			showToast(`朗读失败：${normalizeErrorMessage(error, "朗读服务暂时不可用，请稍后重试。")}（已切换系统语音）`);
-			if ("speechSynthesis" in window) {
-				speechSynthesis.cancel();
-				const utterance = new SpeechSynthesisUtterance(text.slice(0, 4e3));
-				utterance.lang = "zh-CN";
-				speechSynthesis.speak(utterance);
-			}
-		}
 	}
 	function insertTextIntoEditable(target, text) {
 		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -8116,7 +7349,8 @@
 			const href = safeUrl(url);
 			if (href === "#") return alt;
 			const escHref = escapeHtml(href);
-			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
+			const escAlt = escapeHtml(alt);
+			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
 		}).replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
 			const href = safeUrl(url);
 			if (href === "#") return label;
@@ -9005,7 +8239,7 @@
 		showToast("图片生成已开始，请稍等。");
 		let finalStatusText = "等待输入提示词";
 		const imageAttachments = (attachments || []).filter((a) => !a.isTextFile && (a.dataUrl || a.url));
-		const noI2iModels = new Set([
+		const noI2iModels = /* @__PURE__ */ new Set([
 			"grok-imagine-image",
 			"gpt-image-2-all",
 			"gpt-image-2-pro",
@@ -9525,7 +8759,6 @@
 		messageDiv.appendChild(avatar);
 		messageDiv.appendChild(bubble);
 		messageDiv.appendChild(actionsBar);
-		wireTranslateButton(messageDiv);
 		chatMessages.appendChild(messageDiv);
 		setupUserMessageCollapse(bubble, textBlock);
 		scrollChatToBottom(false);
@@ -11850,11 +11083,6 @@
 		state.chatFont = font;
 		applyTheme();
 	}
-	function setVoicePreset(preset) {
-		if (!VALID_VOICE_PRESETS.has(preset)) return;
-		state.voicePreset = preset;
-		persistUiPreferences();
-	}
 	function setCustomInstructions(text) {
 		state.customInstructions = String(text || "").slice(0, 100);
 		persistUiPreferences();
@@ -11876,175 +11104,7 @@
 	function activateSettingsPanel(panelId) {
 		settingTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.settingsPanel === panelId));
 		settingPanels.forEach((panel) => panel.classList.toggle("active", panel.id === panelId));
-		if (panelId === "invitePanel") fetchAndRenderInvitePanel();
 	}
-	var INVITE_SIGNIN_URL_PATH = "/functions/v1/celebrate-signin";
-	async function fetchAndRenderInvitePanel() {
-		const targets = getInvitePanelTargets();
-		if (!targets.length) return;
-		targets.forEach((target) => {
-			target.loginPrompt.hidden = true;
-			target.errorState.hidden = true;
-			target.content.hidden = true;
-		});
-		let token = null;
-		try {
-			const { data } = await getSupabaseClient().auth.getSession();
-			token = data?.session?.access_token || null;
-		} catch (_e) {}
-		if (!token) {
-			targets.forEach((target) => {
-				target.loginPrompt.hidden = false;
-			});
-			return;
-		}
-		const baseUrl = (window.__SUPABASE_URL__ || "").trim();
-		const anon = (window.__SUPABASE_ANON_KEY__ || "").trim();
-		if (!baseUrl || !anon) {
-			targets.forEach((target) => {
-				target.errorState.hidden = false;
-			});
-			return;
-		}
-		try {
-			const res = await fetch(baseUrl + INVITE_SIGNIN_URL_PATH, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: "Bearer " + token,
-					apikey: anon
-				},
-				body: JSON.stringify({ action: "get_invite" })
-			});
-			const json = await res.json().catch(() => ({}));
-			if (!res.ok || !json?.ok || !json?.invite) {
-				console.warn("[invite-panel] get_invite failed", res.status, json);
-				targets.forEach((target) => {
-					target.errorState.hidden = false;
-				});
-				return;
-			}
-			targets.forEach((target) => {
-				renderInvitePanel(json.invite, target);
-				target.content.hidden = false;
-			});
-		} catch (e) {
-			console.warn("[invite-panel] fetch exception", e);
-			targets.forEach((target) => {
-				target.errorState.hidden = false;
-			});
-		}
-	}
-	function getInvitePanelTargets() {
-		return [{
-			loginPrompt: document.getElementById("inviteLoginPrompt"),
-			content: document.getElementById("inviteContent"),
-			errorState: document.getElementById("inviteErrorState"),
-			linkInput: document.getElementById("inviteLinkInput"),
-			uuidInput: document.getElementById("inviteUuidInput"),
-			statTotal: document.getElementById("inviteStatTotal"),
-			statQualified: document.getElementById("inviteStatQualified"),
-			statTokens: document.getElementById("inviteStatTokens"),
-			flowList: document.getElementById("inviteFlowList")
-		}, {
-			loginPrompt: document.getElementById("claudeInviteLoginPrompt"),
-			content: document.getElementById("claudeInviteContent"),
-			errorState: document.getElementById("claudeInviteErrorState"),
-			linkInput: document.getElementById("claudeInviteLinkInput"),
-			uuidInput: document.getElementById("claudeInviteUuidInput"),
-			statTotal: document.getElementById("claudeInviteStatTotal"),
-			statQualified: document.getElementById("claudeInviteStatQualified"),
-			statTokens: document.getElementById("claudeInviteStatTokens"),
-			flowList: document.getElementById("claudeInviteFlowList")
-		}].filter((target) => target.loginPrompt && target.content && target.errorState);
-	}
-	window.fetchAndRenderInvitePanel = fetchAndRenderInvitePanel;
-	function renderInvitePanel(invite, target) {
-		const linkInput = target.linkInput;
-		const uuidInput = target.uuidInput;
-		const statTotal = target.statTotal;
-		const statQualified = target.statQualified;
-		const statTokens = target.statTokens;
-		const flowList = target.flowList;
-		if (linkInput) linkInput.value = String(invite.invite_url || "");
-		if (uuidInput) uuidInput.value = extractInviteUuid(invite);
-		const s = invite.summary || {
-			total: 0,
-			qualified: 0,
-			paid: 0
-		};
-		if (statTotal) statTotal.textContent = String(s.total || 0);
-		if (statQualified) statQualified.textContent = String(s.qualified || 0);
-		if (statTokens) statTokens.textContent = formatInviteTokens(Number(invite.total_tokens_received || 0));
-		if (flowList) {
-			const grants = Array.isArray(invite.grants) ? invite.grants : [];
-			if (!grants.length) flowList.innerHTML = "<div class=\"invite-flow-empty\">暂无到账记录。被邀请人需 ≥3 天活跃后，每小时自动结算。</div>";
-			else flowList.innerHTML = grants.map((g) => {
-				const side = g.side === "inviter" ? "inviter" : "invitee";
-				const label = side === "inviter" ? "我邀请的" : "受邀奖励";
-				const peer = String(g.peer_id_masked || "—");
-				const tokens = Number(g.delta_tokens || 0);
-				const at = g.granted_at ? new Date(g.granted_at).toLocaleString("zh-CN", { hour12: false }) : "—";
-				return "<div class=\"invite-flow-row\"><span class=\"invite-flow-side\" data-side=\"" + side + "\">" + label + "</span><span class=\"invite-flow-meta\">" + escapeInviteHtml(peer) + " · " + escapeInviteHtml(at) + "</span><span class=\"invite-flow-tokens\">+" + formatInviteTokens(tokens) + "</span></div>";
-			}).join("");
-		}
-	}
-	function extractInviteUuid(invite) {
-		if (invite && invite.inviter_id) return String(invite.inviter_id);
-		const match = String(invite && invite.invite_url || "").match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
-		return match ? match[0] : "";
-	}
-	function formatInviteTokens(n) {
-		if (!Number.isFinite(n) || n <= 0) return "0";
-		if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M";
-		if (n >= 1e3) return Math.round(n / 1e3) + "K";
-		return String(n);
-	}
-	function escapeInviteHtml(s) {
-		return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-	}
-	function bindInviteCopyBtn() {
-		document.querySelectorAll("[data-invite-copy-target]").forEach((btn) => {
-			if (btn.dataset.inviteCopyWired === "true") return;
-			btn.dataset.inviteCopyWired = "true";
-			btn.addEventListener("click", async () => {
-				const input = document.getElementById(btn.dataset.inviteCopyTarget || "");
-				const label = btn.dataset.inviteCopyLabel || "内容";
-				const value = input ? input.value || "" : "";
-				if (!value) {
-					showToast(label + "尚未加载");
-					return;
-				}
-				let ok = false;
-				try {
-					if (navigator.clipboard && navigator.clipboard.writeText) {
-						await navigator.clipboard.writeText(value);
-						ok = true;
-					}
-				} catch (_e) {
-					ok = false;
-				}
-				if (!ok && input) try {
-					input.select();
-					ok = document.execCommand("copy");
-					input.blur();
-				} catch (_e) {}
-				if (ok) {
-					btn.classList.add("is-copied");
-					const span = btn.querySelector("span");
-					const old = span ? span.textContent : null;
-					if (span) span.textContent = "已复制";
-					showToast(label + "已复制");
-					setTimeout(() => {
-						btn.classList.remove("is-copied");
-						if (span && old != null) span.textContent = old;
-					}, 1800);
-				} else showToast("复制失败，请手动选中" + label + "复制");
-			});
-		});
-	}
-	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindInviteCopyBtn, { once: true });
-	else bindInviteCopyBtn();
 	var SIDEBAR_RAIL_ANIM_MS = 240;
 	var sidebarRailAnimTimer = 0;
 	function beginSidebarRailAnimation(mode) {
@@ -12585,6 +11645,9 @@
 			});
 		});
 		applyModelDropdownFilters();
+		try {
+			updateModelDropdownIndicators();
+		} catch (e) {}
 	}
 	function getActiveModelFilter() {
 		return modelFilterRow?.querySelector(".model-filter-chip.active")?.dataset.filter || "all";
@@ -13094,7 +12157,6 @@
 		setAccent,
 		syncModelDropdownPosition,
 		setChatFont,
-		setVoicePreset,
 		setCustomInstructions,
 		setWebSearchEnabled,
 		setInlineMermaidEnabled,
@@ -13106,7 +12168,6 @@
 		getNickname,
 		setNickname,
 		refreshNicknameUI,
-		speakTextWithMimo,
 		getModelRequestOptions,
 		mergeToolCallDeltas,
 		syncStreamingMarkdownBlock,
