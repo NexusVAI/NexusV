@@ -58,45 +58,79 @@
 .bp-tile-desc{font-size:13px;color:var(--gray-600,#6e6e80)}
 .bp-pricing-link{display:inline-block;margin-top:20px;font-size:13px;color:var(--color-primary,#10a37f);text-decoration:none}
 .bp-pricing-link:hover{text-decoration:underline}
+.bp-tabs{display:flex;gap:24px;border-bottom:1px solid var(--gray-200,#e5e5e5);margin-bottom:24px}
+.bp-tab{appearance:none;background:none;border:none;padding:10px 2px 12px;font-size:14px;font-weight:500;color:var(--gray-600,#6e6e80);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.bp-tab:hover{color:var(--color-text,inherit)}
+.bp-tab[data-active="true"]{color:var(--color-text,inherit);border-bottom-color:var(--color-text,currentColor)}
+.bp-panel{display:none}
+.bp-panel[data-active="true"]{display:block}
+.bp-plan-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.bp-plan-name{font-size:28px;font-weight:600;line-height:1.2}
+.bp-plan-badge{font-size:12px;border:1px solid var(--gray-300,#d9d9e3);border-radius:999px;padding:2px 10px;color:var(--gray-600,#6e6e80)}
+.bp-progress{height:8px;border-radius:999px;background:var(--gray-200,#e5e5e5);margin:14px 0 6px;overflow:hidden;max-width:420px}
+.bp-progress-fill{height:100%;border-radius:999px;background:var(--color-primary,#10a37f);width:0%}
 </style>
 <div class="bp-wrap">
   <h1 class="bp-h1">结算</h1>
-  <div class="bp-card">
-    <div class="bp-card-label">钱包余额（API 按量）</div>
-    <div class="bp-balance" id="billing-balance">¥—</div>
-    <div class="bp-meta" id="billing-balance-meta">加载中…</div>
-    <div class="bp-plan" id="billing-plan"></div>
-    <div class="bp-actions">
-      <a class="bp-btn bp-btn--primary" href="./checkout.html?kind=recharge">充值余额</a>
-      <a class="bp-btn bp-btn--outline" href="./usage.html">查看用量</a>
+  <div class="bp-tabs" role="tablist">
+    <button type="button" class="bp-tab" id="bp-tab-plan" data-tab="plan" role="tab">套餐</button>
+    <button type="button" class="bp-tab" id="bp-tab-api" data-tab="api" role="tab">API 额度</button>
+  </div>
+
+  <div class="bp-panel" id="bp-panel-plan" data-panel="plan" role="tabpanel">
+    <div class="bp-card">
+      <div class="bp-card-label">Chat / IDE 套餐</div>
+      <div class="bp-plan-row">
+        <div class="bp-plan-name" id="plan-name">—</div>
+        <span class="bp-plan-badge" id="plan-badge" hidden></span>
+      </div>
+      <div class="bp-progress" id="plan-progress" hidden><div class="bp-progress-fill" id="plan-progress-fill"></div></div>
+      <div class="bp-meta" id="plan-meta">加载中…</div>
+      <div class="bp-actions">
+        <a class="bp-btn bp-btn--primary" id="plan-cta" href="../pricing.html">选择套餐</a>
+        <a class="bp-btn bp-btn--outline" href="../orders.html">账单记录</a>
+      </div>
+      <div class="bp-note">套餐额度用于 Web Chat 与 Cancri Code IDE；额度用尽后自动按量溢出到钱包（按档位折扣）。</div>
     </div>
-    <div class="bp-note">注意：此余额仅用于 API 按量计费，Chat / IDE 请使用套餐订阅。</div>
+    <div class="bp-grid" id="plan-catalog"></div>
   </div>
-  <div class="bp-grid">
-    <a class="bp-tile" href="./checkout.html?kind=recharge">
-      <div class="bp-tile-title">按量充值</div>
-      <div class="bp-tile-desc">为钱包充值，¥1 - ¥2000，1:1 到账</div>
-    </a>
-    <a class="bp-tile" href="../orders.html">
-      <div class="bp-tile-title">账单记录</div>
-      <div class="bp-tile-desc">查看历史订单与审核状态</div>
-    </a>
-    <a class="bp-tile" href="../pricing.html">
-      <div class="bp-tile-title">套餐订阅</div>
-      <div class="bp-tile-desc">Chat / IDE 月度套餐（Go · Plus · Pro）</div>
-    </a>
-    <a class="bp-tile" href="./usage.html">
-      <div class="bp-tile-title">用量限额</div>
-      <div class="bp-tile-desc">查看用量明细与当前限速档</div>
-    </a>
+
+  <div class="bp-panel" id="bp-panel-api" data-panel="api" role="tabpanel">
+    <div class="bp-card">
+      <div class="bp-card-label">API 额度（按量钱包）</div>
+      <div class="bp-balance" id="billing-balance">¥—</div>
+      <div class="bp-meta" id="billing-balance-meta">加载中…</div>
+      <div class="bp-actions">
+        <a class="bp-btn bp-btn--primary" href="./checkout.html?kind=recharge">充值</a>
+        <a class="bp-btn bp-btn--outline" href="./usage.html">查看用量</a>
+      </div>
+      <div class="bp-note">此余额仅用于开放平台 API（cancri_sk_）按量计费，也可用于套餐额度用尽后的溢出扣费。</div>
+    </div>
+    <div class="bp-grid">
+      <a class="bp-tile" href="./checkout.html?kind=recharge">
+        <div class="bp-tile-title">按量充值</div>
+        <div class="bp-tile-desc">为钱包充值，¥1 - ¥2000，1:1 到账</div>
+      </a>
+      <a class="bp-tile" href="../orders.html">
+        <div class="bp-tile-title">账单记录</div>
+        <div class="bp-tile-desc">查看历史订单与审核状态</div>
+      </a>
+      <a class="bp-tile" href="./usage.html">
+        <div class="bp-tile-title">用量限额</div>
+        <div class="bp-tile-desc">查看用量明细与当前限速档</div>
+      </a>
+      <a class="bp-tile" href="../api_models.html">
+        <div class="bp-tile-title">模型定价</div>
+        <div class="bp-tile-desc">查看各模型价格与说明</div>
+      </a>
+    </div>
   </div>
-  <a class="bp-pricing-link" href="../api_models.html">模型定价 · 查看各模型价格与说明 →</a>
 </div>
 </div></div></div></span></div></div></div></div></main><div data-testid="compliance-management-wrapper"><span data-testid="cookie-consent-modal-header"></span></div></div><div class="layers-root"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <script src="../cancri_config.js?v=20260625-console"></script>
 <script src="platform-auth.js?v=20260625-auth"></script>
-<script src="oai-billing.js?v=20260703-billing"></script>
+<script src="oai-billing.js?v=20260704-billing2"></script>
 
 </body></html>

@@ -13,8 +13,9 @@
       document.documentElement.getAttribute("data-login-url");
     if (custom) return custom;
     var p = (location.pathname || "").replace(/\\/g, "/");
-    if (/\/api\//.test(p)) return "../index.html";
-    return "index.html";
+    // 用绝对 URL 解析，避免页面 <base href> 把相对登录地址错解到上层目录
+    if (/\/api\//.test(p)) return new URL("../index.html", location.href).href;
+    return new URL("index.html", location.href).href;
   }
 
   function redirectToLogin() {
@@ -91,8 +92,16 @@
     }
     var session = await getSession(opts.timeoutMs);
     if (!isValidSession(session)) {
-      redirectToLogin();
-      return null;
+      // 本地 file:// 预览：返回 stub session 让页面 UI 渲染，不跳转登录页
+      if (location.protocol === 'file:') {
+        session = {
+          user: { email: 'preview@local', is_anonymous: false },
+          access_token: 'preview-token',
+        };
+      } else {
+        redirectToLogin();
+        return null;
+      }
     }
     if (opts.loadingId) hide(opts.loadingId);
     return session;
