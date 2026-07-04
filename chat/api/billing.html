@@ -142,6 +142,19 @@
 .bills-status[data-s="approved"]{background:var(--blue-a50,#e5f3ff);color:var(--blue-600,#004f99)}
 .bills-status[data-s="pending"]{background:var(--yellow-a50,#fff6d9);color:var(--yellow-700,#916f00)}
 .bills-status[data-s="rejected"]{background:var(--red-a50,#ffd9d9);color:var(--red-600,#ba2623)}
+#convert-card{border:1px solid var(--color-border,#e5e5e2);border-radius:12px;padding:16px 18px;background:var(--color-bg-secondary,rgba(0,0,0,.02))}
+#convert-card .convert-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+#convert-card .convert-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--red-a50,#ffd9d9);color:var(--red-600,#ba2623)}
+#convert-card .convert-desc{margin-top:6px;font-size:13px;color:var(--color-text-secondary)}
+#convert-card .convert-plans{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+#convert-card .convert-plan-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-border,#e5e5e2);border-radius:10px;padding:10px 14px;background:var(--color-bg,#fff)}
+#convert-card .convert-plan-name{font-weight:600;font-size:14px}
+#convert-card .convert-plan-meta{font-size:12.5px;color:var(--color-text-secondary)}
+#convert-card .convert-btn{border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;background:var(--color-accent,#c96442);color:#fff;white-space:nowrap}
+#convert-card .convert-btn[disabled]{opacity:.55;cursor:not-allowed}
+#convert-card .convert-msg{margin-top:10px;font-size:13px}
+#convert-card .convert-msg[data-s="err"]{color:var(--red-600,#ba2623)}
+#convert-card .convert-msg[data-s="ok"]{color:var(--green-600,#008635)}
 </style>
 <div class="zN58v"><div class="qmuXe"><div class="MGXR7">结算</div><div class="JfaJ8"><div class="flex"><div role="group" dir="ltr" class="r2DuD NDzF0" data-block="false" data-tab-switcher aria-label="Navigation tabs" tabindex="0" style="outline:none"><div class="PXVXS" data-tab-switcher-thumb id="bp-tab-thumb" style="width:60px;transform:translateX(2px);transition:width var(--segmented-control-transition-duration) var(--cubic-enter),transform var(--segmented-control-transition-duration) var(--cubic-enter)"></div><button type="button" id="bp-tab-plan" data-state="on" role="radio" aria-checked="true" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">套餐</span><span class="k-Psc">套餐</span></button><button type="button" id="bp-tab-api" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">API 额度</span><span class="k-Psc">API 额度</span></button><button type="button" id="bp-tab-bills" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">账单记录</span><span class="k-Psc">账单记录</span></button></div></div></div></div><div class="oNUrP"><div class="qU2tu" style="--page-content-wrapper-max-width:900px">
 <div id="bp-panel-plan">
@@ -178,6 +191,7 @@
 <a href="./checkout.html?kind=recharge" class="lkCln" data-color="primary" data-variant="solid" data-size="md"><span class="NBPKZ">充值</span></a>
 <a href="./usage.html" class="lkCln" data-color="secondary" data-variant="solid" data-size="md"><span class="NBPKZ">查看用量</span></a>
 </div>
+<div id="convert-card" hidden></div>
 <div class="az2qq" data-variant="outline" data-color="primary" data-actions-placement="end"><div class="rlGOC"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12a1 1 0 1 0-2 0v4a1 1 0 1 0 2 0v-4Zm-1-2.5A1.25 1.25 0 1 0 12 7a1.25 1.25 0 0 0 0 2.5Z"></path><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2ZM4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0Z" clip-rule="evenodd"></path></svg></div><div class="nCOFE"><div class="QoPCW"><div class="VZYeX"><strong>注意：</strong>API 额度仅用于开放平台 API（cancri_sk_）按量计费，与套餐完全隔离，不可互相抵扣或充值。</div></div></div></div>
 </div>
 <div class="billing-footer-nav">
@@ -202,6 +216,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <script src="../cancri_config.js?v=20260625-console"></script>
 <script src="platform-auth.js?v=20260625-auth"></script>
-<script src="oai-billing.js?v=20260704-billing4"></script>
+<script src="oai-billing.js?v=20260705-convert1"></script>
 
 </body></html>
