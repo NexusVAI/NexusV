@@ -48,7 +48,7 @@
     return data;
   }
 
-  // ── Tabs（hash 记忆：#plan / #api）──
+  // ── Tabs（hash 记忆：#plan / #api / #bills）──
   function moveThumb(tab) {
     var thumb = $("bp-tab-thumb");
     var btn = $("bp-tab-" + tab);
@@ -57,7 +57,7 @@
     thumb.style.transform = "translateX(" + btn.offsetLeft + "px)";
   }
   function setTab(tab) {
-    ["plan", "api"].forEach(function (t) {
+    ["plan", "api", "bills"].forEach(function (t) {
       var on = t === tab;
       var btn = $("bp-tab-" + t);
       var panel = $("bp-panel-" + t);
@@ -70,13 +70,18 @@
     moveThumb(tab);
     try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
   }
+  function tabFromHash() {
+    if (location.hash === "#api") return "api";
+    if (location.hash === "#bills") return "bills";
+    return "plan";
+  }
   function initTabs() {
-    var initial = location.hash === "#api" ? "api" : "plan";
-    setTab(initial);
-    ["plan", "api"].forEach(function (t) {
+    setTab(tabFromHash());
+    ["plan", "api", "bills"].forEach(function (t) {
       var btn = $("bp-tab-" + t);
       if (btn) btn.addEventListener("click", function () { setTab(t); });
     });
+    window.addEventListener("hashchange", function () { setTab(tabFromHash()); });
   }
 
   // ── API 额度（钱包）──
@@ -121,6 +126,34 @@
     }
   }
 
+  // ── 账单记录 ──
+  function renderBills(data) {
+    var orders = (data && data.orders) || [];
+    var metaEl = $("bills-meta");
+    var wrapEl = $("bills-table-wrap");
+    if (!wrapEl) return;
+    if (!orders.length) {
+      if (metaEl) metaEl.textContent = "暂无账单记录。";
+      wrapEl.innerHTML = "";
+      return;
+    }
+    if (metaEl) metaEl.textContent = "共 " + orders.length + " 条记录";
+    var rows = orders.map(function (o) {
+      var created = fmtDate(o.created_at);
+      var kind = o.order_kind_label || (o.order_kind === "topup" ? "充值" : "订阅");
+      var spec = o.spec_label || "—";
+      var status = o.status || "pending";
+      var statusLabel = o.status_label || status;
+      var code = o.activation_code ? "<code>" + esc(o.activation_code) + "</code>" : "—";
+      var note = o.admin_note ? esc(o.admin_note) : "—";
+      return "<tr><td>" + esc(created) + "</td><td>" + esc(kind) + "</td><td>" + esc(spec) +
+        "</td><td>" + fmtCny(o.amount_cny) +
+        '</td><td><span class="bills-status" data-s="' + esc(status) + '">' + esc(statusLabel) + "</span></td><td>" +
+        code + "</td><td>" + note + "</td></tr>";
+    }).join("");
+    wrapEl.innerHTML = '<table class="bills-table"><thead><tr><th>日期</th><th>类型</th><th>规格</th><th>金额</th><th>工单状态</th><th>激活码</th><th>备注</th></tr></thead><tbody>' + rows + "</tbody></table>";
+  }
+
   async function init() {
     initTabs();
     try {
@@ -134,8 +167,13 @@
       ]);
       if (results[0].status === "fulfilled") renderPlan(results[0].value);
       else { var pm = $("plan-meta"); if (pm) pm.textContent = "套餐状态加载失败，请刷新重试。"; }
-      if (results[1].status === "fulfilled") renderWallet(results[1].value);
-      else renderWallet(null);
+      if (results[1].status === "fulfilled") {
+        renderWallet(results[1].value);
+        renderBills(results[1].value);
+      } else {
+        renderWallet(null);
+        var bm = $("bills-meta"); if (bm) bm.textContent = "账单记录加载失败，请刷新重试。";
+      }
     } catch (e) {
       var metaEl = $("billing-meta");
       var planMeta = $("plan-meta");

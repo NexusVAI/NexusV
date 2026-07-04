@@ -2350,6 +2350,8 @@
 		expiresAt: null,
 		daysRemaining: null,
 		billingMode: null,
+		planV4Active: null,
+		planV4Code: null,
 		walletBalance: null,
 		walletDebt: null,
 		walletCumulativeRecharge: null,
@@ -2384,6 +2386,16 @@
 	function isFreeUserBlockedGateModel(modelId) {
 		return FREE_USER_BLOCKED_GATE_IDS.has(modelId);
 	}
+	var FREE_WELFARE_MODEL_IDS = new Set([
+		"baichuan-m2-welfare",
+		"baichuan4-air-welfare",
+		"baichuan3-turbo-welfare",
+		"baichuan2-turbo-welfare",
+		"deepseek-v4-pro-welfare"
+	]);
+	function isFreeWelfareModel(modelId) {
+		return FREE_WELFARE_MODEL_IDS.has(modelId);
+	}
 	function isProPlusGateModel(modelId) {
 		const meta = getModelMeta(modelId);
 		return Boolean(meta && (meta.costTier === "vip" || meta.proPlusOnly));
@@ -2394,6 +2406,15 @@
 		return Boolean(meta && meta.proMaxOnly === true || PRO_MAX_GATE_IDS.has(modelId));
 	}
 	function getQuotaBlockReason(modelId) {
+		if (quotaState.billingMode === "plan_v4") {
+			if (isFreeWelfareModel(modelId)) {
+				if (quotaState.planV4Active === false && quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
+				if (quotaState.planV4Active === false && quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
+				return null;
+			}
+			if (quotaState.planV4Active === false) return "plan_required";
+			return null;
+		}
 		if (isProMaxGateModel(modelId)) {
 			const planCode = quotaState.planCode;
 			if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
@@ -2420,6 +2441,7 @@
 	}
 	function getQuotaBlockMessage(modelId) {
 		switch (getQuotaBlockReason(modelId)) {
+			case "plan_required": return "该模型需订阅套餐后使用（免费模型不受限）。前往定价页订阅套餐。";
 			case "pro_only": return "该模型仅向 Cancri Pro 及以上订阅用户开放，请升级或选择其他模型。";
 			case "pro_plus_only": return "该模型仅向 Cancri Pro+ 及以上订阅用户开放（Claude Opus / Gemini 3.1 Pro / 视频生成），请升级或选择其他模型。";
 			case "pro_max_only": return "该模型仅向 Cancri Pro Max 订阅用户开放，请升级或选择其他模型。";
@@ -2484,7 +2506,17 @@
 				quotaState.monthlyRemaining = typeof data.monthly_remaining === "number" || typeof data.monthly_remaining === "string" ? Number(data.monthly_remaining) : null;
 				quotaState.expiresAt = typeof data.expires_at === "string" ? data.expires_at : null;
 				quotaState.daysRemaining = typeof data.days_remaining === "number" || typeof data.days_remaining === "string" ? Number(data.days_remaining) || 0 : null;
-				quotaState.billingMode = data.billing_mode === "wallet_v3" ? "wallet_v3" : "quota_v2";
+				quotaState.billingMode = data.billing_mode === "plan_v4" || data.billing_mode === "wallet_v3" ? data.billing_mode : "quota_v2";
+				if (data.plan_v4 && typeof data.plan_v4 === "object") {
+					quotaState.planV4Active = data.plan_v4.active === true;
+					quotaState.planV4Code = typeof data.plan_v4.plan_code === "string" ? data.plan_v4.plan_code : null;
+				} else if (quotaState.billingMode === "plan_v4") {
+					quotaState.planV4Active = false;
+					quotaState.planV4Code = null;
+				} else {
+					quotaState.planV4Active = null;
+					quotaState.planV4Code = null;
+				}
 				if (data.wallet) {
 					quotaState.walletBalance = Number(data.wallet.balance_cny) || 0;
 					quotaState.walletDebt = Number(data.wallet.debt_cny) || 0;
@@ -3244,15 +3276,22 @@
 		try {
 			const raw = localStorage.getItem(UI_PREFS_STORAGE_KEY);
 			if (!raw) {
-				state.themeMode = "black";
-				state.theme = "black";
+				state.themeMode = "light";
+				state.theme = "light";
 				applyDefaultAccent();
 				return;
 			}
 			const prefs = JSON.parse(raw);
+			if (!prefs.lightResetMigrated) {
+				prefs.lightResetMigrated = true;
+				prefs.themeMode = "light";
+				prefs.theme = "light";
+				try {
+					localStorage.setItem(UI_PREFS_STORAGE_KEY, JSON.stringify(prefs));
+				} catch (_e) {}
+			}
 			const rawMode = String(prefs.themeMode || prefs.theme || "system");
-			if (!prefs.blackDefaultMigrated && rawMode === "system") state.themeMode = "black";
-			else if (rawMode === "system" || rawMode === "light" || rawMode === "dark" || rawMode === "black") state.themeMode = rawMode;
+			if (rawMode === "system" || rawMode === "light" || rawMode === "dark" || rawMode === "black") state.themeMode = rawMode;
 			else state.themeMode = "light";
 			state.theme = resolveEffectiveTheme(state.themeMode);
 			const nextThemeIndex = themeCycle.findIndex((item) => item.value === state.theme);
@@ -3300,7 +3339,8 @@
 				completionNotifyEnabled: state.completionNotifyEnabled,
 				chatDataUploadEnabled: state.chatDataUploadEnabled,
 				blackDefaultMigrated: true,
-				accentOrangeDefaultMigrated: true
+				accentOrangeDefaultMigrated: true,
+				lightResetMigrated: true
 			}));
 		} catch (error) {
 			console.warn("保存主题偏好失败:", error);
@@ -12643,7 +12683,7 @@
 		const width = Math.round(isCompact ? Math.min(320, vw - 24) : Math.min(320, Math.max(280, Math.min(420, vw - 24))));
 		const spaceAbove = Math.round(rect.top - 24);
 		const spaceBelow = Math.round(vh - rect.bottom - 16);
-		const openUp = spaceBelow < spaceAbove;
+		const openUp = isCompact ? spaceBelow < spaceAbove : spaceBelow < 260 && spaceAbove > spaceBelow;
 		const maxDropdownHeight = Math.min(Math.round(vh * .7), 520);
 		const availableHeight = Math.min(maxDropdownHeight, Math.max(openUp ? spaceAbove : spaceBelow, 240));
 		const cb = getFixedContainingBlock(modelDropdown);

@@ -37,7 +37,7 @@
       { url: root + "api_models.html", label: "模型" },
       { url: root + "api_docs.html", label: "文档" },
       { url: root + "pricing.html", label: "套餐" },
-      { url: root + "orders.html", label: "我的订单" },
+      { url: root + "api/billing.html#bills", label: "账单记录" },
     ];
   }
 

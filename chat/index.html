@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="black" class="auth-platform-page">
+<html lang="zh-CN" data-theme="light" class="auth-platform-page">
     <head>
         <meta charset="UTF-8" />
         <script>
@@ -8,6 +8,7 @@
                     var raw = localStorage.getItem("cancri_ui_prefs");
                     if (!raw) return;
                     var prefs = JSON.parse(raw);
+                if (!prefs.lightResetMigrated) { prefs.lightResetMigrated = true; prefs.themeMode = "light"; prefs.theme = "light"; try { localStorage.setItem("cancri_ui_prefs", JSON.stringify(prefs)); } catch (_e2) {} }
                     var mode = String(prefs.themeMode || prefs.theme || "system");
                     var theme;
                     if (mode === "light" || mode === "dark" || mode === "black") theme = mode;
@@ -1969,6 +1970,7 @@
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="account"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span><span class="claude-snav-label">账号</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="privacy"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.4 3 8.5 7 9 4-.5 7-4.6 7-9V6l-7-3z"/></svg></span><span class="claude-snav-label">隐私</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><span class="claude-snav-label">账单</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="quota"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v9h9"/></svg></span><span class="claude-snav-label">额度</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span class="claude-snav-label">能力</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 1 7.07 0l1.41 1.41a2 2 0 0 1 0 2.83l-1.41 1.41M14 11a5 5 0 0 0-7.07 0L5.52 12.41a2 2 0 0 0 0 2.83l1.41 1.41"/></svg></span><span class="claude-snav-label">邀请</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="password"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span><span class="claude-snav-label">Cancri 密码</span></button></li>
@@ -2210,6 +2212,35 @@
                                         <h3 class="claude-billing-activations-title">激活记录</h3>
                                         <div id="claudeBillingActivations" class="claude-billing-table-wrap">
                                             <p class="claude-billing-empty">正在加载…</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 额度 section：当前套餐档位 + 剩余套餐额度（claude_ui.js updateQuotaSection 注入） -->
+                                <div class="claude-settings-section claude-snav-target" data-snav-target="quota">
+                                    <h2 class="claude-settings-h2">套餐额度</h2>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">当前档位</span>
+                                        <div class="claude-form-control">
+                                            <span class="claude-form-label-strong" id="claudeQuotaPlanName">加载中…</span>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">剩余额度</span>
+                                        <div class="claude-form-control">
+                                            <span class="claude-form-label-strong" id="claudeQuotaRemaining" style="font-size:18px">¥—</span>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <div class="claude-form-stacked" style="width:100%">
+                                            <div style="height:8px;border-radius:999px;background:var(--border-default,rgba(128,128,128,.2));overflow:hidden">
+                                                <div id="claudeQuotaBar" style="height:100%;width:0%;border-radius:999px;background:var(--accent,#c96442);transition:width .3s"></div>
+                                            </div>
+                                            <span class="claude-form-help" id="claudeQuotaMeta">正在加载套餐状态…</span>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <div class="claude-form-control">
+                                            <a class="claude-secondary-btn" href="./pricing.html" style="text-decoration:none">管理套餐</a>
                                         </div>
                                     </div>
                                 </div>
@@ -3228,6 +3259,17 @@
                 <div class="modal-body">
                     <ol class="announcement-timeline" id="announcementTimeline">
                         <li class="timeline-item timeline-item--latest">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">蟹市（蟹蟹市场）功能下架公告</div>
+                                <p class="timeline-body">
+                                    因产品调整，<strong>蟹市（创作者市场）功能已于今日下架</strong>。原控制台入口已改为「模型广场」，可浏览全部在线模型。给您带来的不便敬请谅解。
+                                    <a href="./api_models.html" class="timeline-link">模型广场 →</a>
+                                </p>
+                                <time class="timeline-date" datetime="2026-07-04">2026-07-04</time>
+                            </div>
+                        </li>
+                        <li class="timeline-item">
                             <div class="timeline-dot"></div>
                             <div class="timeline-content">
                                 <div class="timeline-title">2026/06/20 迁移完成</div>

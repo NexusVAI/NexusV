@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="black" class="auth-platform-page">
+<html lang="zh-CN" data-theme="light" class="auth-platform-page">
     <head>
         <meta charset="UTF-8" />
         <script>
@@ -8,6 +8,7 @@
                     var raw = localStorage.getItem("cancri_ui_prefs");
                     if (!raw) return;
                     var prefs = JSON.parse(raw);
+                if (!prefs.lightResetMigrated) { prefs.lightResetMigrated = true; prefs.themeMode = "light"; prefs.theme = "light"; try { localStorage.setItem("cancri_ui_prefs", JSON.stringify(prefs)); } catch (_e2) {} }
                     var mode = String(prefs.themeMode || prefs.theme || "system");
                     var theme;
                     if (mode === "light" || mode === "dark" || mode === "black") theme = mode;

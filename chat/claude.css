@@ -9903,3 +9903,80 @@ html[data-theme] {
     width: 12px !important;
     height: 12px !important;
 }
+
+/* =========================================================
+   MODEL DROPDOWN — 浅色主题适配（2026-07-04）
+   上面 OpenAI-style 重设计块硬编码了深色（#212121/#fff），
+   浅色模式下菜单仍是黑底。这里按主题覆写为浅色配色。
+   ========================================================= */
+html[data-theme="light"] .model-dropdown {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+    color: #1a1a1a !important;
+}
+html[data-theme="light"] .model-dropdown .model-search-panel {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+html[data-theme="light"] .model-dropdown .model-search-input-wrap {
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+html[data-theme="light"] .model-dropdown .model-search-icon {
+    color: rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme="light"] .model-dropdown #modelSearchInput {
+    color: #1a1a1a !important;
+}
+html[data-theme="light"] .model-dropdown #modelSearchInput::placeholder {
+    color: rgba(0, 0, 0, 0.4) !important;
+}
+html[data-theme="light"] .model-dropdown .model-section-header,
+html[data-theme="light"] .model-dropdown .model-group-header {
+    color: rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme="light"] .model-dropdown .model-option {
+    color: #1a1a1a !important;
+}
+html[data-theme="light"] .model-dropdown .model-option:hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+html[data-theme="light"] .model-dropdown .model-option.active,
+html[data-theme="light"] .model-dropdown .model-option.selected {
+    background: rgba(0, 0, 0, 0.07) !important;
+}
+html[data-theme="light"] .model-dropdown .model-label-text {
+    color: #1a1a1a !important;
+}
+html[data-theme="light"] .model-dropdown .model-label-subtext {
+    color: rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme="light"] .model-dropdown .model-badge {
+    background: rgba(0, 0, 0, 0.07) !important;
+    color: rgba(0, 0, 0, 0.6) !important;
+}
+html[data-theme="light"] .model-dropdown .model-badge.free {
+    background: rgba(16, 163, 127, 0.14) !important;
+    color: #0d8a6c !important;
+}
+html[data-theme="light"] .model-dropdown .model-badge.new {
+    background: rgba(59, 130, 246, 0.14) !important;
+    color: #2563eb !important;
+}
+html[data-theme="light"] .model-dropdown .model-badge.promo {
+    background: rgba(245, 158, 11, 0.16) !important;
+    color: #b45309 !important;
+}
+html[data-theme="light"] .model-current {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: #1a1a1a !important;
+}
+html[data-theme="light"] .model-current:hover {
+    background: rgba(0, 0, 0, 0.08) !important;
+}
+html[data-theme="light"] .model-current .model-name {
+    color: #1a1a1a !important;
+}
+html[data-theme="light"] .model-current svg {
+    color: rgba(0, 0, 0, 0.55) !important;
+}
