@@ -170,15 +170,24 @@
     var activeRank = 0;
     convertState.catalog.forEach(function (p) { if (p.plan_code === activeCode) activeRank = Number(p.rank) || 0; });
     var rows = convertState.catalog.map(function (p) {
-      var price = Number(p.price_cny);
+      var listPrice = Number(p.price_cny);
+      var q = p.quote || null;
+      var isDowngrade = (q && q.downgrade_not_allowed) || (activeCode && Number(p.rank) < activeRank);
+      // 升级按天折价：实付 = server 报价（旧套餐剩余时间折抵）
+      var price = q && Number.isFinite(Number(q.pay_price_cny)) ? Number(q.pay_price_cny) : listPrice;
+      var credit = q ? Number(q.credit_cny) || 0 : 0;
       var enough = Number.isFinite(bal) && bal >= price;
-      var isDowngrade = activeCode && Number(p.rank) < activeRank;
-      var label = activeCode === p.plan_code ? "用余额续费" : "用余额换购";
+      var label = activeCode === p.plan_code ? "用余额续费" : (q && q.is_upgrade ? "折价升级" : "用余额换购");
       var meta = "月度额度 " + fmtCny(p.allowance_cny) + " · " + p.duration_days + " 天";
+      if (Number(p.burn_multiplier) > 1) meta += " · 套餐内 ×" + Number(p.burn_multiplier) + " 计扣";
+      if (credit > 0) meta += " · 已折抵旧套餐剩余 " + fmtCny(credit);
       if (!enough && Number.isFinite(bal)) meta += " · 还差 " + fmtCny(price - bal) + "，可充值凑单";
       if (isDowngrade) meta += " · 有效期内不可换低档";
+      var priceHtml = price < listPrice
+        ? fmtCny(price) + ' <s style="opacity:.55;font-weight:400">' + fmtCny(listPrice) + "</s>"
+        : fmtCny(price);
       return '<div class="convert-plan-row"><div><div class="convert-plan-name">' + esc(p.display_name || p.plan_code) +
-        " 套餐 · " + fmtCny(price) + '</div><div class="convert-plan-meta">' + esc(meta) + "</div></div>" +
+        " 套餐 · " + priceHtml + '</div><div class="convert-plan-meta">' + esc(meta) + "</div></div>" +
         '<button type="button" class="convert-btn" data-plan="' + esc(p.plan_code) + '" data-price="' + price + '"' +
         ((enough && !isDowngrade) ? "" : " disabled") + ">" + label + "</button></div>";
     }).join("");
@@ -202,7 +211,8 @@
     var p = null;
     convertState.catalog.forEach(function (x) { if (x.plan_code === planCode) p = x; });
     var name = p ? (p.display_name || planCode) : planCode;
-    if (!window.confirm("确认用钱包余额换购 " + name + " 套餐？将扣除 " + fmtCny(price) + "，剩余余额继续用于 API 按量。")) return;
+    var isUp = p && p.quote && p.quote.is_upgrade;
+    if (!window.confirm("确认用钱包余额换购 " + name + " 套餐？将扣除 " + fmtCny(price) + (isUp ? "（升级价已按旧套餐剩余天数折抵）" : "") + "，剩余余额继续用于 API 按量。")) return;
     btn.disabled = true;
     setConvertMsg("正在换购…", "");
     try {
@@ -263,7 +273,8 @@
       var total = Number(plan.allowance_cny);
       var remain = Number(plan.remaining_cny);
       if (remainEl) remainEl.textContent = fmtCny(remain);
-      if (metaEl) metaEl.textContent = "月度额度 " + fmtCny(total) + "（已用 " + fmtCny(plan.used_cny) + "）· 有效期至 " + fmtDate(plan.period_end);
+      var multNote = Number(plan.burn_multiplier) > 1 ? " · 套餐内按模型定价 ×" + Number(plan.burn_multiplier) + " 计扣" : "";
+      if (metaEl) metaEl.textContent = "月度额度 " + fmtCny(total) + "（已用 " + fmtCny(plan.used_cny) + "）· 有效期至 " + fmtDate(plan.period_end) + multNote;
       if (ctaEl) { var s = ctaEl.querySelector(".NBPKZ"); (s || ctaEl).textContent = "续费 / 升级套餐"; }
     } else {
       if (nameEl) nameEl.textContent = "未订阅";
