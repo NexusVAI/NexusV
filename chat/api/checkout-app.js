@@ -347,7 +347,19 @@
     if (Number.isFinite(amount) && amount > 0) {
       state.selection.amount = amount;
       renderSummary(state.selection);
-      updatePreview();
+      updatePreviewMeta();
+    }
+  }
+
+  function updatePreviewMeta() {
+    if (!state.selection) return;
+    const shell = el('nexusv-payment-preview');
+    if (!shell) return;
+    const metaNode = q('[data-testid="payment-preview-meta"]', shell);
+    if (metaNode) {
+      metaNode.textContent = state.selection.kind === 'recharge'
+        ? `按量充值 · ${formatCurrency(state.selection.amount)}`
+        : `${resolveSelectionText(state.selection).summaryName} · ${resolveSelectionText(state.selection).amount}`;
     }
   }
 
