@@ -1,0 +1,285 @@
+/*
+ * admin-console.css — 管理台 console 风格皮肤（2026-07-05）
+ *
+ * 目标：让 admin_*.html 的布局与 chat/api/console.html（OpenAI 控制台）一致：
+ *   · 左侧固定侧边栏导航（≥961px），取代顶部横向 .nav
+ *   · 控制台式排版：细边框卡片、分段控件（segmented control）、胶囊搜索框
+ *   · 完全基于 api-platform.css 既有 token（--bg / --line / --ink…），
+ *     自动跟随明暗主题，无需重复定义调色板
+ *
+ * 用法：在 api-platform.css 之后引入，并给 <body> 加 class="admin-console"。
+ * 页面结构（#admin-nav / .container / .toolbar / .filter-group…）不变，
+ * 纯 CSS 换肤，不依赖 JS 改动。
+ */
+
+/* ─── 桌面：侧边栏布局 ─────────────────────────────────────── */
+@media (min-width: 961px) {
+  body.admin-console #admin-nav.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 200;
+    width: 224px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 2px;
+    margin: 0;
+    padding: 18px 12px 16px;
+    overflow-y: auto;
+    background: var(--bg-1, #111);
+    border-bottom: none;
+    border-right: 1px solid var(--line);
+  }
+
+  body.admin-console #admin-nav.nav a {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+
+  body.admin-console #admin-nav.nav a:hover {
+    background: var(--bg-2, rgba(255, 255, 255, 0.05));
+    color: var(--ink);
+  }
+
+  /* console 侧边栏选中态：整块高亮而非下划线 */
+  body.admin-console #admin-nav.nav a.active {
+    background: var(--bg-2, rgba(255, 255, 255, 0.07));
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: none;
+    border-radius: 8px;
+  }
+
+  body.admin-console #admin-nav.nav .badge-admin {
+    order: -1;
+    align-self: flex-start;
+    margin: 0 0 12px 12px;
+  }
+
+  body.admin-console #admin-nav.nav .spacer {
+    flex: 1;
+  }
+
+  body.admin-console #admin-nav.nav a[href="../"] {
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 8px 8px;
+    padding-top: 12px;
+  }
+
+  body.admin-console .container,
+  body.admin-console .container--wide {
+    max-width: none;
+    margin: 0;
+    padding: 36px 48px 64px calc(224px + 48px);
+  }
+}
+
+/* ─── 排版：console 式页头 ─────────────────────────────────── */
+body.admin-console header h1 {
+  font-family: var(--sans);
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+body.admin-console header p {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink-2);
+  max-width: 720px;
+}
+
+/* ─── 分段控件（segmented control）：filter-group 换肤 ────── */
+body.admin-console .filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-1, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+body.admin-console .filter-group .filter-btn {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+body.admin-console .filter-group .filter-btn:hover {
+  color: var(--ink);
+  background: var(--bg-2, rgba(255, 255, 255, 0.05));
+}
+
+body.admin-console .filter-group .filter-btn.active {
+  background: var(--bg-2, #1c1c1c);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* ─── 胶囊搜索框 ───────────────────────────────────────────── */
+body.admin-console .search-box {
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: var(--bg-1, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--line-2);
+}
+
+body.admin-console .search-box:focus {
+  border-color: var(--ink-3);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+body.admin-console .reload-btn {
+  border-radius: 999px;
+}
+
+/* ─── 卡片 / 表格：细边框 hairline 风 ─────────────────────── */
+body.admin-console .stat-card,
+body.admin-console .panel,
+body.admin-console .grant-panel,
+body.admin-console .order-row,
+body.admin-console .gate {
+  border-radius: 12px;
+  border-color: var(--line);
+}
+
+body.admin-console .table-wrap {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+body.admin-console table th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+body.admin-console table td {
+  border-bottom: 1px solid var(--line);
+}
+
+body.admin-console table tbody tr:hover {
+  background: var(--bg-1, rgba(255, 255, 255, 0.02));
+}
+
+/* ─── 日志页：IP 多账号报警横幅 ───────────────────────────── */
+.ip-alarm-bar {
+  display: none;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--text, var(--ink));
+}
+
+.ip-alarm-bar.show {
+  display: block;
+}
+
+.ip-alarm-bar .ip-alarm-title {
+  font-weight: 700;
+  color: var(--err);
+}
+
+.ip-alarm-bar .ip-alarm-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 8px 0 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--err);
+  cursor: pointer;
+}
+
+.ip-alarm-bar .ip-alarm-item:hover {
+  background: rgba(248, 113, 113, 0.22);
+}
+
+.ip-alarm-bar .ip-alarm-item .n {
+  font-weight: 700;
+}
+
+td.ip a.ip-multi {
+  color: var(--err);
+  font-weight: 600;
+}
+
+/* ─── 工单页：联系信息突出块 ──────────────────────────────── */
+.order-contact {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(96, 165, 250, 0.07);
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  font-size: 12.5px;
+}
+
+.order-contact .oc-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #60a5fa;
+}
+
+.order-contact .oc-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text, var(--ink));
+}
+
+.order-contact .oc-item code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  user-select: all;
+  color: var(--accent, #60a5fa);
+}
+
+.order-contact .oc-note {
+  width: 100%;
+  color: var(--text-soft, var(--ink-2));
+}
+
+.order-contact .oc-note strong {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+/* ─── 工单页：审批倒计时撤销按钮 ──────────────────────────── */
+.btn-tiny.undo {
+  background: rgba(251, 191, 36, 0.18);
+  color: var(--warn, #fbbf24);
+}
+
+.btn-tiny.undo:hover {
+  background: rgba(251, 191, 36, 0.3);
+}

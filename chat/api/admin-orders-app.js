@@ -396,21 +396,32 @@ function renderOrders() {
                     : "—";
             }
 
+            // 联系信息 + 用户备注突出展示（审单时需要直接看到，不用在 meta 里找）
+            const contactBlock =
+                '<div class="order-contact">' +
+                '<span class="oc-label">联系</span>' +
+                '<span class="oc-item">邮箱 <code>' + esc(o.email || "—") + "</code></span>" +
+                (o.qq
+                    ? '<span class="oc-item">QQ <code>' + esc(o.qq) + "</code></span>"
+                    : "") +
+                (o.wechat_id
+                    ? '<span class="oc-item">微信 <code>' + esc(o.wechat_id) + "</code></span>"
+                    : "") +
+                (o.user_note
+                    ? '<span class="oc-note"><strong>用户备注：</strong>' + esc(o.user_note) + "</span>"
+                    : "") +
+                "</div>";
+
             return (
                 '<div class="order-row' +
                 (o.status === "submitted" ? " is-submitted" : "") +
                 '">' +
                 renderPayableBlock(o) +
+                contactBlock +
                 '<div class="order-meta-block">' +
                 "<strong>" +
                 esc(o.email) +
                 "</strong>" +
-                (o.qq
-                    ? "<span>QQ <code>" + esc(o.qq) + "</code></span>"
-                    : "") +
-                (o.wechat_id
-                    ? "<span>微信 <code>" + esc(o.wechat_id) + "</code></span>"
-                    : "") +
                 '<span style="font-size:11px">' +
                 "user " +
                 "<code>" +
@@ -439,11 +450,6 @@ function renderOrders() {
                 "<span>激活 " +
                 esc(activated) +
                 "</span>" +
-                (o.user_note
-                    ? "<span>用户备注：" +
-                      esc(o.user_note) +
-                      "</span>"
-                    : "") +
                 (o.admin_note
                     ? "<span>站主备注：" +
                       esc(o.admin_note) +
@@ -471,28 +477,85 @@ function renderOrders() {
                 const note = noteInput
                     ? noteInput.value.trim()
                     : "";
+                if (action === "approve") {
+                    // 防手滑：点击后进入 5 秒倒计时，按钮变为「撤销」，
+                    // 再点一次即取消；倒计时结束才真正调后端。
+                    if (btn.dataset.undoTimer) {
+                        clearInterval(Number(btn.dataset.undoTimer));
+                        delete btn.dataset.undoTimer;
+                        btn.classList.remove("undo");
+                        btn.classList.add("approve");
+                        btn.textContent = btn.dataset.origLabel || "通过";
+                        showToast("已撤销，未提交", "ok");
+                        return;
+                    }
+                    btn.dataset.origLabel = btn.textContent;
+                    btn.classList.remove("approve");
+                    btn.classList.add("undo");
+                    let left = 5;
+                    btn.textContent = "撤销（" + left + "s）";
+                    const timer = setInterval(async () => {
+                        left -= 1;
+                        if (left > 0) {
+                            btn.textContent = "撤销（" + left + "s）";
+                            return;
+                        }
+                        clearInterval(timer);
+                        delete btn.dataset.undoTimer;
+                        btn.disabled = true;
+                        btn.textContent = "提交中…";
+                        try {
+                            const r = await callGateway(
+                                "admin_approve_order",
+                                { order_id: id, admin_note: note },
+                            );
+                            // 2026-06-23：recharge 订单审核后 auto_credited=true，无激活码
+                            if (r.auto_credited) {
+                                showToast(
+                                    "✅ 通过 · 已自动充值入钱包 ¥" +
+                                        ((r.credited_micro || 0) / 1000000).toFixed(2),
+                                    "ok",
+                                );
+                            } else {
+                                showToast(
+                                    "✅ 通过 · 激活码：" +
+                                        (r.activation_code || ""),
+                                    "ok",
+                                );
+                            }
+                            // 先本地更新状态并重渲染（即时反馈），
+                            // 后台再静默拉一次全量对齐服务端。
+                            patchLocalOrder(id, {
+                                status: r.auto_credited ? "activated" : "approved",
+                                activation_code: r.activation_code || null,
+                                admin_note: note || null,
+                                reviewed_at: new Date().toISOString(),
+                                activated_at: r.auto_credited
+                                    ? new Date().toISOString()
+                                    : null,
+                            });
+                            loadOrders();
+                            loadOpsAlerts();
+                        } catch (err) {
+                            const m =
+                                (err.body &&
+                                    (err.body.message || err.body.error)) ||
+                                err.message ||
+                                "操作失败";
+                            showToast("❌ " + m, "err");
+                            btn.disabled = false;
+                            btn.classList.remove("undo");
+                            btn.classList.add("approve");
+                            btn.textContent = btn.dataset.origLabel || "通过";
+                        }
+                    }, 1000);
+                    btn.dataset.undoTimer = String(timer);
+                    showToast("⏳ 5 秒后提交通过，点「撤销」可取消", "ok");
+                    return;
+                }
                 btn.disabled = true;
                 try {
-                    if (action === "approve") {
-                        const r = await callGateway(
-                            "admin_approve_order",
-                            { order_id: id, admin_note: note },
-                        );
-                        // 2026-06-23：recharge 订单审核后 auto_credited=true，无激活码
-                        if (r.auto_credited) {
-                            showToast(
-                                "✅ 通过 · 已自动充值入钱包 ¥" +
-                                    ((r.credited_micro || 0) / 1000000).toFixed(2),
-                                "ok",
-                            );
-                        } else {
-                            showToast(
-                                "✅ 通过 · 激活码：" +
-                                    (r.activation_code || ""),
-                                "ok",
-                            );
-                        }
-                    } else if (action === "reject") {
+                    if (action === "reject") {
                         if (
                             !confirm(
                                 "确认拒绝？建议先在备注里写明原因（用户能看到）。",
@@ -506,6 +569,11 @@ function renderOrders() {
                             admin_note: note || "未通过审核",
                         });
                         showToast("✅ 已拒绝", "ok");
+                        patchLocalOrder(id, {
+                            status: "rejected",
+                            admin_note: note || "未通过审核",
+                            reviewed_at: new Date().toISOString(),
+                        });
                     } else if (action === "delete") {
                         if (
                             !confirm(
@@ -520,9 +588,13 @@ function renderOrders() {
                         }
                         await callGateway("admin_delete_order", { order_id: id });
                         showToast("✅ 订单已删除", "ok");
+                        cachedOrders = cachedOrders.filter((o) => o.id !== id);
+                        updateStats();
+                        renderOrders();
                     }
-                    await loadOrders();
-                    await loadOpsAlerts();
+                    // 本地已即时更新，后台静默对齐服务端（不 await，不阻塞 UI）
+                    loadOrders();
+                    loadOpsAlerts();
                 } catch (err) {
                     const m =
                         (err.body &&
@@ -546,6 +618,15 @@ function renderOrders() {
             });
         });
     });
+}
+
+// 局部乐观更新：审批后立刻把结果反映到列表，不等全量 reload。
+function patchLocalOrder(id, patch) {
+    const o = cachedOrders.find((x) => x.id === id);
+    if (!o) return;
+    Object.assign(o, patch);
+    updateStats();
+    renderOrders();
 }
 
 function updateStats() {
