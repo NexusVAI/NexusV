@@ -316,7 +316,29 @@ function showToast(text, kind) {
     setTimeout(() => t.classList.remove("show"), 3500);
 }
 
+// 正在倒计时的待提交审批：order_id → interval 计时器。
+// 存在模块级 Map 而非按钮 DOM 上，避免 renderOrders() 重建 innerHTML
+// 后旧按钮被销毁、计时器却继续跑完静默提交且无法取消。
+const UNDO_TIMERS = new Map();
+
+function cancelAllUndoTimers() {
+    if (UNDO_TIMERS.size === 0) return 0;
+    const n = UNDO_TIMERS.size;
+    UNDO_TIMERS.forEach((timer) => clearInterval(timer));
+    UNDO_TIMERS.clear();
+    return n;
+}
+
 function renderOrders() {
+    // 重渲染会销毁倒计时按钮，先取消所有待提交审批并提醒，
+    // 绝不在管理员无法撤销的情况下静默提交。
+    const cancelled = cancelAllUndoTimers();
+    if (cancelled > 0) {
+        showToast(
+            "⚠️ 列表已刷新，" + cancelled + " 个待提交的通过已自动取消，请重新操作",
+            "err",
+        );
+    }
     const filtered = currentStatusFilter
         ? cachedOrders.filter(
               (o) => o.status === currentStatusFilter,
@@ -480,9 +502,9 @@ function renderOrders() {
                 if (action === "approve") {
                     // 防手滑：点击后进入 5 秒倒计时，按钮变为「撤销」，
                     // 再点一次即取消；倒计时结束才真正调后端。
-                    if (btn.dataset.undoTimer) {
-                        clearInterval(Number(btn.dataset.undoTimer));
-                        delete btn.dataset.undoTimer;
+                    if (UNDO_TIMERS.has(id)) {
+                        clearInterval(UNDO_TIMERS.get(id));
+                        UNDO_TIMERS.delete(id);
                         btn.classList.remove("undo");
                         btn.classList.add("approve");
                         btn.textContent = btn.dataset.origLabel || "通过";
@@ -495,13 +517,19 @@ function renderOrders() {
                     let left = 5;
                     btn.textContent = "撤销（" + left + "s）";
                     const timer = setInterval(async () => {
+                        // 重渲染会 cancelAllUndoTimers() 清掉本计时器；双重保险：
+                        // 若 Map 里已不是本计时器，说明已被取消，直接停止。
+                        if (UNDO_TIMERS.get(id) !== timer) {
+                            clearInterval(timer);
+                            return;
+                        }
                         left -= 1;
                         if (left > 0) {
                             btn.textContent = "撤销（" + left + "s）";
                             return;
                         }
                         clearInterval(timer);
-                        delete btn.dataset.undoTimer;
+                        UNDO_TIMERS.delete(id);
                         btn.disabled = true;
                         btn.textContent = "提交中…";
                         try {
@@ -549,7 +577,7 @@ function renderOrders() {
                             btn.textContent = btn.dataset.origLabel || "通过";
                         }
                     }, 1000);
-                    btn.dataset.undoTimer = String(timer);
+                    UNDO_TIMERS.set(id, timer);
                     showToast("⏳ 5 秒后提交通过，点「撤销」可取消", "ok");
                     return;
                 }
