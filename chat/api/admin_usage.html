@@ -6,10 +6,11 @@
     <meta name="robots" content="noindex,nofollow" />
     <!-- 2026-05-13 审查：抽离内联 script admin-usage-app.js，删 'unsafe-inline' script-src-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理台· API 调用日志 · Cancri</title>
+    <title>管理台 · API 调用日志 · NexusVAI</title>
     <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
+    <link rel="stylesheet" href="./admin-console.css?v=20260705-console" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       .container {
@@ -185,7 +186,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="admin-console">
     <div class="container">
       <nav id="admin-nav" data-active="usage"></nav>
 
@@ -257,6 +258,8 @@
           </div>
         </div>
 
+        <div class="ip-alarm-bar" id="ipAlarmBar"></div>
+
         <div class="panels" id="panels" style="display: none">
           <div class="panel">
             <h3>Top 模型</h3>
@@ -321,6 +324,6 @@
     ></script>
     <!-- 2026-05-13 审查：原 inline <script> 抽离admin-usage-app.js-->
     <script src="./admin-nav.js?v=20260623"></script>
-    <script src="./admin-usage-app.js?v=2026-05-20-live-refresh"></script>
+    <script src="./admin-usage-app.js?v=20260705-ip-alarm"></script>
   </body>
 </html>

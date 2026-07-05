@@ -397,13 +397,25 @@ function rowHtml(a) {
     <td><span class="status status-${statusKey}">${statusLabel}</span></td>
     <td class="created">${esc(created)}</td>
     <td>
-      <div class="actions">
-        <button class="btn-approve" data-action="approved" data-id="${esc(a.id)}" ${isPending ? "" : "disabled"}>通过</button>
-        <button class="btn-reject" data-action="rejected" data-id="${esc(a.id)}" ${isPending ? "" : "disabled"}>拒绝</button>
+      <div class="actions">${actionButtonsHtml(a, statusKey)}
         <button class="btn-details" data-action="toggle-details" data-id="${esc(a.id)}">${detailsBtnLabel}</button>
       </div>
     </td>
   </tr>`;
+}
+
+// 审核操作按钮：待审可通过/拒绝；已通过可撤销（改判拒绝）；已拒绝可改判通过。
+// 后端 admin_review_api_application 允许对非 pending 申请重复审核（直接 update status）。
+function actionButtonsHtml(a, statusKey) {
+  const id = esc(a.id);
+  if (statusKey === "approved") {
+    return `<button class="btn-reject" data-action="rejected" data-revoke="1" data-id="${id}">撤销通过</button>`;
+  }
+  if (statusKey === "rejected") {
+    return `<button class="btn-approve" data-action="approved" data-revoke="1" data-id="${id}">改判通过</button>`;
+  }
+  return `<button class="btn-approve" data-action="approved" data-id="${id}">通过</button>
+        <button class="btn-reject" data-action="rejected" data-id="${id}">拒绝</button>`;
 }
 
 // 展开详情 sub-row：完整设备指纹 + 同 IP / 同邮箱 / 同设备 的其他 user_id
@@ -535,8 +547,20 @@ async function batchDecide(newStatus) {
 async function decide(btn) {
   const action = btn.dataset.action;
   const id = btn.dataset.id;
-  const verb = action === "approved" ? "通过" : "拒绝";
-  if (!confirm(`确认${verb}这个申请？`)) return;
+  const isRevoke = btn.dataset.revoke === "1";
+  const verb = isRevoke
+    ? action === "approved"
+      ? "改判通过"
+      : "撤销通过"
+    : action === "approved"
+      ? "通过"
+      : "拒绝";
+  const tip = isRevoke
+    ? action === "rejected"
+      ? `确认撤销这个申请的通过状态？（改为已拒绝）`
+      : `确认将这个已拒绝的申请改判为通过？`
+    : `确认${verb}这个申请？`;
+  if (!confirm(tip)) return;
   const row = btn.closest("tr");
   row.querySelectorAll("button").forEach((b) => (b.disabled = true));
   try {

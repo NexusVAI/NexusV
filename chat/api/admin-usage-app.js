@@ -255,8 +255,57 @@ function renderChips() {
   });
 }
 
+// IP → 使用过它的 user_id 集合（跨全窗口，不受筛选影响）。
+// 同一 IP 出现 ≥2 个不同账号 = 疑似一人多号，需要报警。
+let IP_USERS = new Map();
+
+function computeIpUsers() {
+  IP_USERS = new Map();
+  USAGE.forEach((r) => {
+    if (!r.ip || !r.user_id) return;
+    let set = IP_USERS.get(r.ip);
+    if (!set) {
+      set = new Set();
+      IP_USERS.set(r.ip, set);
+    }
+    set.add(r.user_id);
+  });
+}
+
+function renderIpAlarm() {
+  const bar = $("ipAlarmBar");
+  if (!bar) return;
+  const dups = [];
+  IP_USERS.forEach((users, ip) => {
+    if (users.size >= 2) dups.push({ ip, n: users.size });
+  });
+  if (dups.length === 0) {
+    bar.classList.remove("show");
+    bar.innerHTML = "";
+    return;
+  }
+  dups.sort((a, b) => b.n - a.n);
+  bar.classList.add("show");
+  bar.innerHTML =
+    `<span class="ip-alarm-title">🚨 IP 多账号报警</span> · ` +
+    `${dups.length} 个 IP 被多个账号使用（疑似一人多号），点击 IP 仅看该 IP 的调用：<br/>` +
+    dups
+      .slice(0, 20)
+      .map(
+        (d) =>
+          `<span class="ip-alarm-item" data-ip="${esc(d.ip)}">${esc(d.ip)} <span class="n">×${d.n} 账号</span></span>`,
+      )
+      .join("") +
+    (dups.length > 20 ? ` <span style="color:var(--text-mute)">…共 ${dups.length} 个</span>` : "");
+  bar.querySelectorAll(".ip-alarm-item").forEach((el) => {
+    el.addEventListener("click", () => addFilter("ip", el.dataset.ip));
+  });
+}
+
 function render() {
   renderChips();
+  computeIpUsers();
+  renderIpAlarm();
   const filtered = applyFilters(USAGE);
   $("row-count").textContent = `共 ${filtered.length} 条`;
   const tbody = $("rows");
@@ -303,8 +352,10 @@ function rowHtml(r) {
   const userCell = r.user_id
     ? `<a class="user-link" href="#" data-uid="${esc(r.user_id)}">${esc(r.email || r.user_id.slice(0, 13) + "…")}</a><span class="uid" title="${esc(r.user_id)}">${esc(r.user_id.slice(0, 13))}…</span>`
     : `<span style="color:var(--text-faint)">—</span>`;
+  const ipUsers = r.ip ? (IP_USERS.get(r.ip)?.size || 0) : 0;
+  const ipMulti = ipUsers >= 2;
   const ipCell = r.ip
-    ? `<a class="ip-link" href="#" data-ip="${esc(r.ip)}">${esc(r.ip)}</a>`
+    ? `<a class="ip-link${ipMulti ? " ip-multi" : ""}" href="#" data-ip="${esc(r.ip)}" title="${ipMulti ? "该 IP 被 " + ipUsers + " 个账号使用（疑似多号）" : "点击仅看这条 IP"}">${esc(r.ip)}${ipMulti ? " ⚠" : ""}</a>`
     : `<span style="color:var(--text-faint)">—</span>`;
   return `<tr${isErr ? ' class="row-error"' : ""}>
     <td class="email">${userCell}</td>

@@ -6,10 +6,11 @@
     <meta name="robots" content="noindex,nofollow" />
     <!-- 2026-05-13 审查：抽离内联 script admin-app.js，删 'unsafe-inline'　        style-src 仍保'unsafe-inline'因为 row 渲染中用了少量内联 style 属性-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理台· API 审核 · Cancri</title>
+    <title>管理台 · API 审核 · NexusVAI</title>
     <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
+    <link rel="stylesheet" href="./admin-console.css?v=20260705-console" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       /* 页面专有：IP 标签 / 批量操作栏 / 行复核 / 审核按钮 */
@@ -367,7 +368,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="admin-console">
     <!-- admin.html wide container400px）容enrichment 后的 1100px 宽表格，
          避免在大屏（>= 1440px）也出现横向滚动。窄(<1440px) 仍由 .table-wrap
          overflow-x: auto 兜底滚动-->
@@ -393,7 +394,7 @@
       <div id="main" style="display: none">
         <header>
           <h1>API 申请审核</h1>
-          <p>查看待审核的 API Key 申请，一键 approve / reject</p>
+          <p>查看 API Key 申请：待审核可一键通过 / 驳回；已通过可撤销、已拒绝可改判。</p>
         </header>
 
         <div class="stats" id="stats">
@@ -500,7 +501,7 @@
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
     <script src="./admin-nav.js?v=20260623"></script>
-    <script src="./admin-app.js?v=20260607-load-more"></script>
+    <script src="./admin-app.js?v=20260705-revoke"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   </body>
 </html>
