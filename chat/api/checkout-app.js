@@ -703,6 +703,10 @@
       event.preventDefault();
       setStatus('', 'info');
 
+      if (state.planDowngradeBlocked) {
+        setStatus('当前套餐仍在有效期内，不能换购更低档套餐。', 'error');
+        return;
+      }
       if (!validateForm(state.selection)) return;
       if (button.disabled) return;
 
@@ -733,11 +737,18 @@
       const quote = cat && cat.quote;
       if (quote && quote.downgrade_not_allowed) {
         setStatus('当前套餐仍在有效期内，不能换购更低档套餐。', 'error');
+        state.planDowngradeBlocked = true;
+        const submitBtn = q('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.remove('nexusv-submit-ready');
+        }
         return;
       }
       if (quote && Number.isFinite(Number(quote.pay_price_cny)) && Number(quote.pay_price_cny) !== sel.amount) {
         sel.amount = Number(quote.pay_price_cny);
         renderSummary(sel);
+        updateAmountField();
         if (Number(quote.credit_cny) > 0) {
           setStatus(`升级已按旧套餐剩余天数折抵 ¥${formatAmount(quote.credit_cny)}，实付 ¥${formatAmount(sel.amount)}。`, 'info');
         }
