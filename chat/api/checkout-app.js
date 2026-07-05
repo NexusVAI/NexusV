@@ -330,9 +330,25 @@
     input.inputMode = 'decimal';
     input.autocomplete = 'off';
     input.setAttribute('aria-label', editable ? '充值金额' : '订单金额');
-    input.placeholder = editable ? '充值金额，如果是投量可以调整，' : '订单金额';
-    input.value = editable ? '' : formatAmount(state.selection.amount);
+    input.placeholder = editable ? '充值金额（1 - 2000 元，可自由调整）' : '订单金额';
+    input.value = formatAmount(state.selection.amount);
     input.setCustomValidity('');
+    if (editable && input.dataset.nexusvAmountSyncBound !== '1') {
+      input.dataset.nexusvAmountSyncBound = '1';
+      input.addEventListener('input', syncEditableAmount);
+    }
+  }
+
+  // 可编辑金额（按量充值 / 自定义加油包）：输入时同步左侧订单摘要与付款码 meta
+  function syncEditableAmount() {
+    const input = el('cardNumber');
+    if (!input || !state.selection) return;
+    const amount = Number(input.value.trim());
+    if (Number.isFinite(amount) && amount > 0) {
+      state.selection.amount = amount;
+      renderSummary(state.selection);
+      updatePreview();
+    }
   }
 
   function updateContactFieldHints() {
