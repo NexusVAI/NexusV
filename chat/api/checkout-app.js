@@ -723,6 +723,28 @@
     });
   }
 
+  // plan_v4 升级按天折价：以 server 报价（plan_v4_status.catalog[].quote）覆盖 URL 金额。
+  async function refreshPlanQuote() {
+    const sel = state.selection;
+    if (!sel || sel.kind !== 'plan_v4') return;
+    try {
+      const data = await callGateway('plan_v4_status', {});
+      const cat = (data && Array.isArray(data.catalog) ? data.catalog : []).find((c) => c.plan_code === sel.plan);
+      const quote = cat && cat.quote;
+      if (quote && quote.downgrade_not_allowed) {
+        setStatus('当前套餐仍在有效期内，不能换购更低档套餐。', 'error');
+        return;
+      }
+      if (quote && Number.isFinite(Number(quote.pay_price_cny)) && Number(quote.pay_price_cny) !== sel.amount) {
+        sel.amount = Number(quote.pay_price_cny);
+        renderSummary(sel);
+        if (Number(quote.credit_cny) > 0) {
+          setStatus(`升级已按旧套餐剩余天数折抵 ¥${formatAmount(quote.credit_cny)}，实付 ¥${formatAmount(sel.amount)}。`, 'info');
+        }
+      }
+    } catch (err) { /* 报价失败回落 URL 金额；server 下单仍按 RPC 报价裁决 */ }
+  }
+
   async function init() {
     ensureStyles();
     state.selection = readSelection();
@@ -760,6 +782,9 @@
 
       // 异步自动填充 IP/国家，不阻塞提交表单渲染
       autoFillGeo();
+
+      // plan_v4：拉 server 报价（升级按天折价），用实付价刷新订单摘要
+      refreshPlanQuote();
     } catch (err) {
       if (err && err.message === 'supabase_not_loaded') {
         window.PlatformAuth.showAuthError('依赖脚本加载失败，请检查网络后刷新。');
