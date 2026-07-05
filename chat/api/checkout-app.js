@@ -675,6 +675,10 @@
   function updateSubmitButtonState() {
     const button = q('button[type="submit"]');
     if (!button) return;
+    if (state.planDowngradeBlocked) {
+      button.classList.remove('nexusv-submit-ready');
+      return;
+    }
     if (checkRequiredValid()) {
       button.classList.add('nexusv-submit-ready');
     } else {
