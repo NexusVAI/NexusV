@@ -65,7 +65,7 @@
   }
 
   function formatCurrency(value) {
-    return `US$${formatAmount(value)}`;
+    return `¥${formatAmount(value)}`;
   }
 
   function readSelection() {
@@ -121,11 +121,13 @@
     const style = document.createElement('style');
     style.id = 'nexusv-checkout-style';
     style.textContent = `
-      .nexusv-method-picker{display:flex;gap:10px;flex-wrap:wrap;width:100%}
-      .nexusv-method-pill{appearance:none;border:1px solid rgba(17,24,39,.14);border-radius:999px;background:#fff;color:#111827;display:inline-flex;align-items:center;gap:8px;justify-content:center;padding:10px 14px;min-width:126px;font:inherit;font-weight:600;cursor:pointer;transition:border-color .18s ease,background-color .18s ease,box-shadow .18s ease,transform .18s ease}
-      .nexusv-method-pill img{width:18px;height:18px;object-fit:contain;flex:none}
-      .nexusv-method-pill:hover{transform:translateY(-1px);border-color:#1677ff}
-      .nexusv-method-pill.is-active{border-color:#1677ff;background:rgba(22,119,255,.08);box-shadow:0 0 0 2px rgba(22,119,255,.08) inset}
+      .nexusv-method-picker{position:relative;display:flex;width:100%;max-width:320px;padding:4px;border-radius:999px;background:#ececec;isolation:isolate}
+      .nexusv-method-thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .22s cubic-bezier(.4,0,.2,1);z-index:0}
+      .nexusv-method-picker[data-active-index="1"] .nexusv-method-thumb{transform:translateX(100%)}
+      .nexusv-method-pill{appearance:none;border:0;background:transparent;color:#6b7280;display:inline-flex;align-items:center;gap:8px;justify-content:center;padding:9px 14px;flex:1 1 0;font:inherit;font-weight:600;cursor:pointer;position:relative;z-index:1;border-radius:999px;transition:color .18s ease}
+      .nexusv-method-pill img{width:18px;height:18px;object-fit:contain;flex:none;opacity:.75;transition:opacity .18s ease}
+      .nexusv-method-pill.is-active{color:#111827}
+      .nexusv-method-pill.is-active img{opacity:1}
       .nexusv-payment-preview{margin:32px auto 0;max-width:320px;width:calc(100% - 32px);border:1px solid rgba(17,24,39,.12);border-radius:24px;background:#fff;padding:18px;box-sizing:border-box;box-shadow:0 1px 4px rgba(0,0,0,.04)}
       .nexusv-payment-preview__title{font-size:14px;line-height:1.4;font-weight:700;color:#111827}
       .nexusv-payment-preview__meta{margin-top:6px;font-size:12px;line-height:1.4;color:#6b7280}
@@ -416,7 +418,8 @@
 
     titleRow.dataset.nexusvMethodPickerMounted = '1';
     titleRow.innerHTML = `
-      <div class="nexusv-method-picker" role="radiogroup" aria-label="支付方式">
+      <div class="nexusv-method-picker" role="radiogroup" aria-label="支付方式" data-active-index="${Math.max(METHOD_ORDER.indexOf(state.method), 0)}">
+        <span class="nexusv-method-thumb" aria-hidden="true"></span>
         ${METHOD_ORDER.map((method) => buildMethodButton(method, method === state.method)).join('')}
       </div>
     `;
@@ -486,6 +489,7 @@
   function updateMethodButtons() {
     const picker = q('.nexusv-method-picker');
     if (!picker) return;
+    picker.setAttribute('data-active-index', String(Math.max(METHOD_ORDER.indexOf(state.method), 0)));
     qa('[data-method]', picker).forEach((button) => {
       const method = button.getAttribute('data-method') || DEFAULT_METHOD;
       const active = method === state.method;
