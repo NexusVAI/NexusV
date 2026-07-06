@@ -22,8 +22,11 @@ let cachedOrders = [];
 let BILLING_MODE = "quota_v2";
 const IS_WALLET_V3 = () => BILLING_MODE === "wallet_v3";
 
-// 套餐标价表（与 plan_catalog_v4 保持同步），用于对账核查
-const PLAN_PRICE_CNY = { go: 9.9, plus: 19, pro: 99 };
+// 套餐标价表（与 plan_catalog_v4 保持同步；pro_plus/pro_max 为历史档位），用于对账核查
+const PLAN_PRICE_CNY = { go: 9.9, plus: 19, pro: 99, pro_plus: 29, pro_max: 99 };
+// 2026-07-01 前的历史订单中 pro 档标价为 ¥9.9（旧档位体系），避免误报
+const LEGACY_PLAN_CUTOFF = Date.parse("2026-07-01T00:00:00Z");
+const LEGACY_PLAN_PRICE_CNY = { pro: 9.9, pro_plus: 29, pro_max: 99 };
 
 // 检测同一用户一小时内是否提交超过 2 张订单
 function getRecentOrderCount(userId) {
@@ -36,9 +39,14 @@ function getRecentOrderCount(userId) {
 }
 
 // 对账：付款金额是否低于所申请套餐的标价
-function isUnderpaid(o) {
+function getExpectedPrice(o) {
     const planCode = o.plan_code || "";
-    const expectedPrice = PLAN_PRICE_CNY[planCode];
+    const isLegacy = new Date(o.created_at).getTime() < LEGACY_PLAN_CUTOFF;
+    return (isLegacy ? LEGACY_PLAN_PRICE_CNY[planCode] : undefined) ?? PLAN_PRICE_CNY[planCode];
+}
+
+function isUnderpaid(o) {
+    const expectedPrice = getExpectedPrice(o);
     if (expectedPrice == null) return false;
     const paid = Number(o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny);
     if (!Number.isFinite(paid)) return false;
@@ -462,7 +470,7 @@ function renderOrders() {
             const recentCount = o.status === "submitted" ? getRecentOrderCount(o.user_id) : 0;
             const riskFlags = [];
             if (underpaid) {
-                const expected = PLAN_PRICE_CNY[o.plan_code] || "?";
+                const expected = getExpectedPrice(o) ?? "?";
                 const paid = Number(o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny);
                 riskFlags.push(
                     '<span class="dev-flag danger" style="font-size:12px;padding:3px 10px">⚠ 金额不符：付 ¥' +
