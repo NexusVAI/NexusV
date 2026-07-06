@@ -357,17 +357,22 @@ function rowHtml(r) {
   const ipCell = r.ip
     ? `<a class="ip-link${ipMulti ? " ip-multi" : ""}" href="#" data-ip="${esc(r.ip)}" title="${ipMulti ? "该 IP 被 " + ipUsers + " 个账号使用（疑似多号）" : "点击仅看这条 IP"}">${esc(r.ip)}${ipMulti ? " ⚠" : ""}</a>`
     : `<span style="color:var(--text-faint)">—</span>`;
+  const src = r.source || 'api';
+  const srcBadge = src === 'chat'
+    ? '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(34,197,94,.15);color:#22c55e;margin-right:4px;">Chat</span>'
+    : '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(96,165,250,.15);color:#60a5fa;margin-right:4px;">API</span>';
+  const keyCol = src === 'chat' ? '<span style="color:var(--text-faint)">web chat</span>' : esc(r.key_prefix || "—");
   return `<tr${isErr ? ' class="row-error"' : ""}>
     <td class="email">${userCell}</td>
     <td>${tierCell(r.tier)}</td>
     <td class="ip">${ipCell}</td>
-    <td class="model">${esc(r.model || "—")}</td>
+    <td class="model">${srcBadge}${esc(r.model || r.model_id || "—")}</td>
     <td class="tokens">
       ${fmt((r.tokens_in || 0) + (r.tokens_out || 0))}
       <div class="in-out">↓${fmt(r.tokens_in)} ↑${fmt(r.tokens_out)}</div>
     </td>
     <td><span class="status-pill ${sClass}">${sc}</span></td>
-    <td class="tokens" title="${esc(r.key_name || "")}">${esc(r.key_prefix || "—")}</td>
+    <td class="tokens" title="${esc(r.key_name || '')}">${keyCol}</td>
     <td class="created">${esc(fmtTime(r.created_at))}</td>
   </tr>`;
 }
