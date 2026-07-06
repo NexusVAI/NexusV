@@ -10,6 +10,7 @@
     <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
+    <link rel="stylesheet" href="./admin-console.css?v=20260706-console" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       .stat-card.danger {
@@ -139,6 +140,24 @@
         background: rgba(154, 154, 154, 0.12);
         color: var(--text-mute);
       }
+      .btn-quick-ban {
+        padding: 3px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid rgba(248, 113, 113, 0.5);
+        background: rgba(248, 113, 113, 0.12);
+        color: var(--err);
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn-quick-ban:hover {
+        background: rgba(248, 113, 113, 0.25);
+      }
+      .btn-quick-ban:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
       .btn-ban {
         padding: 8px 18px;
         font-size: 13px;
@@ -231,7 +250,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="admin-console">
     <div class="container">
       <nav id="admin-nav" data-active="users"></nav>
 
