@@ -8,11 +8,11 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>管理台 · 订单审核 · NexusVAI</title>
+        <title>管理台 · 订单审核 · Cancri</title>
         <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
         <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
-        <link rel="stylesheet" href="./admin-console.css?v=20260705-console" />
+        <link rel="stylesheet" href="./admin-console.css?v=20260706-theme" />
         <script src="./api-platform.js?v=20260607-account-fix"></script>
         <style>
             /* 页面专有：状pill / 设备指纹 / 用户上下文（共用 order-row 样式api-platform.css*/
@@ -29,8 +29,8 @@
                 color: #60a5fa;
             }
             .status-pill.approved {
-                background: rgba(245, 158, 11, 0.18);
-                color: #f59e0b;
+                background: rgba(96, 165, 250, 0.15);
+                color: #60a5fa;
             }
             .status-pill.activated {
                 background: rgba(74, 222, 128, 0.18);
@@ -85,7 +85,7 @@
             }
             .dev-flag.warn {
                 background: rgba(245, 158, 11, 0.15);
-                color: #f59e0b;
+                color: #94a3b8;
                 border: 1px solid rgba(245, 158, 11, 0.35);
             }
             .dev-flag.danger {
@@ -150,14 +150,14 @@
             .ctx-pill.ctx-warn {
                 background: rgba(245, 158, 11, 0.12);
                 border-color: rgba(245, 158, 11, 0.35);
-                color: #f59e0b;
+                color: #94a3b8;
             }
             .ctx-pill.ctx-danger {
                 background: rgba(248, 113, 113, 0.14);
                 border-color: rgba(248, 113, 113, 0.40);
                 color: #f87171;
             }
-            .ctx-warn { color: #f59e0b; }
+            .ctx-warn { color: #94a3b8; }
             .ctx-danger { color: #f87171; }
             #statusFilter.filter-group {
                 margin-bottom: 12px;
@@ -323,7 +323,7 @@
         <!-- 2026-05-13 审查：原 inline <script> 抽离admin-orders-app.js，并CSP 'unsafe-inline' script-src-->
         <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
         <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
-        <script src="./admin-nav.js?v=20260623"></script>
+        <script src="./admin-nav.js?v=20260706"></script>
         <script src="./admin-orders-app.js?v=20260705-undo2"></script>
     </body>
 </html>

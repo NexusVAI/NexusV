@@ -1,16 +1,23 @@
 /*
- * admin-console.css — 管理台 console 风格皮肤（2026-07-05）
+ * admin-console.css — 管理台 console 风格皮肤（2026-07-06）
  *
- * 目标：让 admin_*.html 的布局与 chat/api/console.html（OpenAI 控制台）一致：
- *   · 左侧固定侧边栏导航（≥961px），取代顶部横向 .nav
- *   · 控制台式排版：细边框卡片、分段控件（segmented control）、胶囊搜索框
- *   · 完全基于 api-platform.css 既有 token（--bg / --line / --ink…），
- *     自动跟随明暗主题，无需重复定义调色板
+ * 目标：
+ *   - 左侧固定侧边栏导航（≥961px），统一所有 admin_*.html
+ *   - 深色/白色主题，去除黄/橙色调，使用蓝灰中性色
+ *   - 降低信息密度，增加间距
  *
- * 用法：在 api-platform.css 之后引入，并给 <body> 加 class="admin-console"。
- * 页面结构（#admin-nav / .container / .toolbar / .filter-group…）不变，
- * 纯 CSS 换肤，不依赖 JS 改动。
+ * 用法：在 api-platform.css 之后引入，给 <body> 加 class="admin-console"。
  */
+
+/* ─── 管理台调色覆盖：去黄/橙，改蓝灰 ──────────────────────── */
+body.admin-console {
+  --accent: #60a5fa;
+  --accent-strong: #3b82f6;
+  --accent-strong-hover: #2563eb;
+  --warn: #94a3b8;
+  --ok: #4ade80;
+  --err: #f87171;
+}
 
 /* ─── 桌面：侧边栏布局 ─────────────────────────────────────── */
 @media (min-width: 961px) {
@@ -37,8 +44,8 @@
   body.admin-console #admin-nav.nav a {
     display: flex;
     align-items: center;
-    min-height: 34px;
-    padding: 6px 12px;
+    min-height: 36px;
+    padding: 7px 12px;
     border-radius: 8px;
     font-size: 13px;
     color: var(--ink-2);
@@ -49,7 +56,6 @@
     color: var(--ink);
   }
 
-  /* console 侧边栏选中态：整块高亮而非下划线 */
   body.admin-console #admin-nav.nav a.active {
     background: var(--bg-2, rgba(255, 255, 255, 0.07));
     color: var(--ink);
@@ -79,7 +85,7 @@
   body.admin-console .container--wide {
     max-width: none;
     margin: 0;
-    padding: 36px 48px 64px calc(224px + 48px);
+    padding: 40px 56px 72px calc(224px + 56px);
   }
 }
 
@@ -97,6 +103,7 @@ body.admin-console header p {
   font-size: 13.5px;
   color: var(--ink-2);
   max-width: 720px;
+  margin-bottom: 8px;
 }
 
 /* ─── 分段控件（segmented control）：filter-group 换肤 ────── */
@@ -114,7 +121,7 @@ body.admin-console .filter-group .filter-btn {
   border: none;
   background: transparent;
   border-radius: 999px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   font-size: 12.5px;
   color: var(--ink-2);
 }
@@ -134,14 +141,14 @@ body.admin-console .filter-group .filter-btn.active {
 /* ─── 胶囊搜索框 ───────────────────────────────────────────── */
 body.admin-console .search-box {
   border-radius: 999px;
-  padding: 8px 16px;
+  padding: 9px 18px;
   background: var(--bg-1, rgba(255, 255, 255, 0.03));
   border: 1px solid var(--line-2);
 }
 
 body.admin-console .search-box:focus {
-  border-color: var(--ink-3);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
 }
 
 body.admin-console .reload-btn {
@@ -156,6 +163,10 @@ body.admin-console .order-row,
 body.admin-console .gate {
   border-radius: 12px;
   border-color: var(--line);
+}
+
+body.admin-console .stat-card {
+  padding: 16px 18px;
 }
 
 body.admin-console .table-wrap {
@@ -173,17 +184,24 @@ body.admin-console table th {
 
 body.admin-console table td {
   border-bottom: 1px solid var(--line);
+  padding: 12px 14px;
 }
 
 body.admin-console table tbody tr:hover {
   background: var(--bg-1, rgba(255, 255, 255, 0.02));
 }
 
+/* ─── 订单页：status pill 色调覆盖（去黄） ─────────────────── */
+body.admin-console .status-pill.approved {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
 /* ─── 日志页：IP 多账号报警横幅 ───────────────────────────── */
 .ip-alarm-bar {
   display: none;
-  margin-bottom: 14px;
-  padding: 12px 14px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
   border-radius: 12px;
   font-size: 12.5px;
   line-height: 1.6;
@@ -235,8 +253,8 @@ td.ip a.ip-multi {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  padding: 8px 12px;
+  gap: 8px 12px;
+  padding: 10px 14px;
   border-radius: 10px;
   background: rgba(96, 165, 250, 0.07);
   border: 1px solid rgba(96, 165, 250, 0.22);
@@ -276,10 +294,30 @@ td.ip a.ip-multi {
 
 /* ─── 工单页：审批倒计时撤销按钮 ──────────────────────────── */
 .btn-tiny.undo {
-  background: rgba(251, 191, 36, 0.18);
-  color: var(--warn, #fbbf24);
+  background: rgba(96, 165, 250, 0.18);
+  color: var(--accent, #60a5fa);
 }
 
 .btn-tiny.undo:hover {
-  background: rgba(251, 191, 36, 0.3);
+  background: rgba(96, 165, 250, 0.3);
+}
+
+/* ─── 降低信息密度：增加间距 ──────────────────────────────── */
+body.admin-console .toolbar {
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+body.admin-console .stats {
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+body.admin-console .order-row {
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+
+body.admin-console header {
+  margin-bottom: 24px;
 }

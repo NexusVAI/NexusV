@@ -214,7 +214,7 @@ function renderWalletCards(info) {
 
 // ─── SVG: 订阅分布圆环 ──────────────────────────────────────────
 const PLAN_LABELS = { pro: "Pro", pro_plus: "Pro+", pro_max: "Pro Max" };
-const PLAN_COLORS = { pro: "#60a5fa", pro_plus: "#f59e0b", pro_max: "#a855f7" };
+const PLAN_COLORS = { pro: "#60a5fa", pro_plus: "#818cf8", pro_max: "#a855f7" };
 
 function renderSubDonut(dist, total) {
   const svg = $("sub-donut");

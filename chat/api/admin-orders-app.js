@@ -293,7 +293,7 @@ function renderOrderKindCell(o) {
                 : "Pro";
     const color = plan === "pro_max" ? "#a855f7"
                 : plan === "pro_plus" ? "#60a5fa"
-                : "#f59e0b";
+                : "#94a3b8";
     const bg = plan === "pro_max" ? "rgba(168,85,247,.18)"
              : plan === "pro_plus" ? "rgba(96,165,250,.18)"
              : "rgba(245,158,11,.18)";
