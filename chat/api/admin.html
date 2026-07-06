@@ -6,11 +6,11 @@
     <meta name="robots" content="noindex,nofollow" />
     <!-- 2026-05-13 审查：抽离内联 script admin-app.js，删 'unsafe-inline'　        style-src 仍保'unsafe-inline'因为 row 渲染中用了少量内联 style 属性-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理台 · API 审核 · NexusVAI</title>
+    <title>管理台 · API 审核 · Cancri</title>
     <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
-    <link rel="stylesheet" href="./admin-console.css?v=20260705-console" />
+    <link rel="stylesheet" href="./admin-console.css?v=20260706-theme" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       /* 页面专有：IP 标签 / 批量操作栏 / 行复核 / 审核按钮 */
@@ -300,7 +300,7 @@
       }
       .risk-pill.warn {
         background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
+        color: #94a3b8;
         border: 1px solid rgba(245, 158, 11, 0.35);
       }
       .risk-pill.danger {
@@ -314,7 +314,7 @@
         color: var(--text-mute);
         line-height: 1.5;
       }
-      .ctx-warn { color: #f59e0b; }
+      .ctx-warn { color: #94a3b8; }
       .ip-geo {
         font-size: 10.5px;
         color: var(--text-mute);
@@ -500,7 +500,7 @@
       crossorigin="anonymous"
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
-    <script src="./admin-nav.js?v=20260623"></script>
+    <script src="./admin-nav.js?v=20260706"></script>
     <script src="./admin-app.js?v=20260705-revoke"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   </body>

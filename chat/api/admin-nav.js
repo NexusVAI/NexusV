@@ -1,21 +1,15 @@
 /**
- * admin-nav.js — 管理员共享导航栏（2026-06-23）
+ * admin-nav.js — 管理员共享左侧栏导航（2026-07-06）
  *
- * 问题：13 个 admin_*.html 每页 <nav> 内链接数不一致（6~12 项），
- * 切换页面时用户感知"导航项消失/出现"。模型费用配置（admin_pricing）
- * 在多数页面也缺失。
- *
- * 解决：抽离统一导航组件，所有页面用 <nav id="admin-nav" data-active="X">
- * 占位，本脚本注入 13 项 + ADMIN badge + 返回聊天。
- *
- * 风格：沿用 api-platform.css .nav（已是控制台同款简洁风）。
+ * 所有 admin_*.html 页面用 <nav id="admin-nav" data-active="X"> 占位，
+ * 本脚本注入统一导航项 + ADMIN badge + 返回聊天链接。
  *
  * 用法：
  *   <nav id="admin-nav" data-active="dashboard"></nav>
- *   <script src="./admin-nav.js?v=20260623"></script>
+ *   <script src="./admin-nav.js?v=20260706"></script>
  *
  * data-active 取值：
- *   dashboard | users | orders | lines | models | pricing |
+ *   dashboard | users | orders | usage | lines | models | pricing |
  *   descriptions | appeals | stories | api_apply
  */
 (function () {
@@ -25,6 +19,7 @@
     { key: "dashboard",    href: "./admin_dashboard.html",   label: "仪表盘" },
     { key: "users",        href: "./admin_users.html",       label: "用户" },
     { key: "orders",       href: "./admin_orders.html",      label: "订单" },
+    { key: "usage",        href: "./admin_usage.html",       label: "调用日志" },
     { key: "lines",        href: "./admin_lines.html",       label: "线路" },
     { key: "models",       href: "./admin_models.html",      label: "模型配置" },
     { key: "pricing",      href: "./admin_pricing.html",     label: "按量定价" },

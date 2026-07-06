@@ -594,7 +594,7 @@ async function loadUserUsage(userId) {
   } else {
     $("usage-detail").innerHTML = usage.map((u) => {
       const sc = u.status_code || 0;
-      const scColor = sc >= 500 ? "var(--err)" : sc >= 400 ? "#f59e0b" : "var(--ok)";
+      const scColor = sc >= 500 ? "var(--err)" : sc >= 400 ? "#94a3b8" : "var(--ok)";
       const totalTok = (u.tokens_in || 0) + (u.tokens_out || 0);
       return `<div style="padding:7px 11px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 90px 70px 130px;gap:8px;align-items:center;font-size:11.5px;">
         <div style="font-family:ui-monospace,monospace;">
