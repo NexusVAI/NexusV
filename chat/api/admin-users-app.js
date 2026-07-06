@@ -547,6 +547,14 @@ async function loadUserUsage(userId) {
   $("usage-uniq-models").textContent = fmtN(stats.unique_models);
   $("usage-uniq-ips").textContent = fmtN(stats.unique_ips);
 
+  // source breakdown (API vs Chat)
+  const breakdownEl = $("usage-source-breakdown");
+  if (breakdownEl) {
+    const apiCalls = stats.api_calls || 0;
+    const chatCalls = stats.chat_calls || 0;
+    breakdownEl.textContent = `API: ${fmtN(apiCalls)} 次 · Chat: ${fmtN(chatCalls)} 次`;
+  }
+
   // by_model top 10：横向条形图（百分比 width）
   const byModel = Array.isArray(data.by_model) ? data.by_model.slice(0, 10) : [];
   const maxModelCount = byModel.reduce((m, r) => Math.max(m, r.count), 0) || 1;
@@ -596,10 +604,17 @@ async function loadUserUsage(userId) {
       const sc = u.status_code || 0;
       const scColor = sc >= 500 ? "var(--err)" : sc >= 400 ? "#f59e0b" : "var(--ok)";
       const totalTok = (u.tokens_in || 0) + (u.tokens_out || 0);
+      const src = u.source || 'api';
+      const srcBadge = src === 'chat'
+        ? '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(34,197,94,.15);color:#22c55e;margin-right:4px;">Chat</span>'
+        : '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(96,165,250,.15);color:#60a5fa;margin-right:4px;">API</span>';
+      const subInfo = src === 'chat'
+        ? `cached: ${fmtN(u.tokens_cached || 0)} tok`
+        : `${esc(u.key_prefix || "—")} · ${esc(u.ip || "—")}`;
       return `<div style="padding:7px 11px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 90px 70px 130px;gap:8px;align-items:center;font-size:11.5px;">
         <div style="font-family:ui-monospace,monospace;">
-          <div style="color:var(--text);">${esc(u.model || "—")}</div>
-          <div style="color:var(--text-faint);font-size:10.5px;">${esc(u.key_prefix || "—")} · ${esc(u.ip || "—")}</div>
+          <div style="color:var(--text);">${srcBadge}${esc(u.model || u.model_id || "—")}</div>
+          <div style="color:var(--text-faint);font-size:10.5px;">${subInfo}</div>
         </div>
         <div style="font-family:ui-monospace,monospace;text-align:right;">
           ${fmtN(totalTok)}
