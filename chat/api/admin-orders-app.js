@@ -300,11 +300,11 @@ function renderOrderKindCell(o) {
                 : plan === "pro_plus" ? "Pro+"
                 : "Pro";
     const color = plan === "pro_max" ? "#a855f7"
-                : plan === "pro_plus" ? "#60a5fa"
-                : "#94a3b8";
+                : plan === "pro_plus" ? "#818cf8"
+                : "#60a5fa";
     const bg = plan === "pro_max" ? "rgba(168,85,247,.18)"
-             : plan === "pro_plus" ? "rgba(96,165,250,.18)"
-             : "rgba(245,158,11,.18)";
+             : plan === "pro_plus" ? "rgba(129,140,248,.18)"
+             : "rgba(96,165,250,.18)";
     return '<span class="status-pill" style="background:' + bg + ';color:' + color + '" title="订阅 ' + esc(plan) + '">订阅 ' + esc(label) + '</span>';
 }
 
@@ -674,6 +674,8 @@ function renderOrders() {
                         cachedOrders = cachedOrders.filter((o) => o.id !== id);
                         updateStats();
                         renderOrders();
+                        loadOpsAlerts();
+                        return;
                     }
                     // 本地已即时更新，后台静默对齐服务端（不 await，不阻塞 UI）
                     loadOrders();

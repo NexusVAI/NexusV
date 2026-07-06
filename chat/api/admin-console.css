@@ -14,7 +14,7 @@ body.admin-console {
   --accent: #60a5fa;
   --accent-strong: #3b82f6;
   --accent-strong-hover: #2563eb;
-  --warn: #94a3b8;
+  --warn: #f59e0b;
   --ok: #4ade80;
   --err: #f87171;
 }
@@ -193,8 +193,8 @@ body.admin-console table tbody tr:hover {
 
 /* ─── 订单页：status pill 色调覆盖（去黄） ─────────────────── */
 body.admin-console .status-pill.approved {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 
 /* ─── 日志页：IP 多账号报警横幅 ───────────────────────────── */
@@ -321,3 +321,64 @@ body.admin-console .order-row {
 body.admin-console header {
   margin-bottom: 24px;
 }
+
+/* ─── 骨架屏（流光加载） ──────────────────────────────────── */
+.admin-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 0;
+}
+
+.admin-skeleton .sk-row {
+  display: flex;
+  gap: 16px;
+}
+
+.admin-skeleton .sk-block {
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-1, rgba(255, 255, 255, 0.04));
+}
+
+.admin-skeleton .sk-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 42%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 58%,
+    transparent 100%
+  );
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+
+:root[data-theme="light"] .admin-skeleton .sk-block {
+  background: #e8e8e5;
+}
+
+:root[data-theme="light"] .admin-skeleton .sk-block::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 42%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.4) 58%,
+    transparent 100%
+  );
+}
+
+@keyframes sk-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.admin-skeleton .sk-title  { width: 180px; height: 28px; border-radius: 8px; }
+.admin-skeleton .sk-sub    { width: 320px; height: 14px; border-radius: 6px; }
+.admin-skeleton .sk-card   { flex: 1; height: 88px; }
+.admin-skeleton .sk-table  { width: 100%; height: 240px; }
+.admin-skeleton .sk-line   { width: 100%; height: 48px; }
