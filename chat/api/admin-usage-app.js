@@ -218,7 +218,7 @@ function applyFilters(rows) {
     else if (f.type === "user_id")
       out = out.filter((r) => r.user_id === f.value);
     else if (f.type === "model")
-      out = out.filter((r) => r.model === f.value);
+      out = out.filter((r) => (r.model || r.model_id) === f.value);
     else if (f.type === "tier")
       out = out.filter((r) => (r.tier || "") === f.value);
   }
@@ -228,7 +228,7 @@ function applyFilters(rows) {
       (r) =>
         (r.email || "").toLowerCase().includes(q) ||
         (r.ip || "").toLowerCase().includes(q) ||
-        (r.model || "").toLowerCase().includes(q) ||
+        (r.model || r.model_id || "").toLowerCase().includes(q) ||
         (r.user_id || "").toLowerCase().includes(q) ||
         (r.key_prefix || "").toLowerCase().includes(q) ||
         (r.tier || "").toLowerCase().includes(q),
