@@ -202,13 +202,15 @@ async function doSearch() {
         <div class="email">${esc(m.email || "(无邮箱)")}</div>
         ${anonPill}
         ${banPill}
+        ${isBanned ? '' : `<button class="btn-quick-ban" data-uid="${esc(m.user_id)}" data-email="${esc(m.email || '')}" title="立即封禁此用户">封禁</button>`}
         <div class="uid">${esc(m.user_id.slice(0, 8))}…</div>
         <div class="meta">${esc(shortTime(m.last_sign_in_at || m.created_at))}</div>
       </div>`;
     })
     .join("");
   matchesEl.querySelectorAll(".match-row[data-uid]").forEach((row) => {
-    row.addEventListener("click", () => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".btn-quick-ban")) return;
       $("userIdInput").value = row.dataset.uid;
       matchesEl
         .querySelectorAll(".match-row")
@@ -216,6 +218,29 @@ async function doSearch() {
       row.classList.add("selected");
       // Load selected user's quota details into the Control Panel
       loadUserQuota(row.dataset.uid, row.dataset.email || row.dataset.uid);
+    });
+  });
+  matchesEl.querySelectorAll(".btn-quick-ban").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const uid = btn.dataset.uid;
+      const email = btn.dataset.email;
+      if (!confirm("确定立即封禁 " + (email || uid) + " ？")) return;
+      btn.disabled = true;
+      btn.textContent = "封禁中…";
+      const session = await getSession();
+      const r = await callGW(
+        { endpoint: "admin_ban_user", user_id: uid, reason: "admin_quick_ban", notes: "管理员快速封禁（" + email + "）" },
+        session,
+      );
+      if (!r.ok) {
+        showToast("封禁失败：" + (r.data?.message || r.status), "err");
+        btn.disabled = false;
+        btn.textContent = "封禁";
+        return;
+      }
+      showToast("已封禁 " + (email || uid.slice(0, 8) + "…"), "ok");
+      await loadBans();
     });
   });
 }

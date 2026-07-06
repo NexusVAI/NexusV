@@ -22,6 +22,29 @@ let cachedOrders = [];
 let BILLING_MODE = "quota_v2";
 const IS_WALLET_V3 = () => BILLING_MODE === "wallet_v3";
 
+// 套餐标价表（与 plan_catalog_v4 保持同步），用于对账核查
+const PLAN_PRICE_CNY = { go: 9.9, plus: 19, pro: 99 };
+
+// 检测同一用户一小时内是否提交超过 2 张订单
+function getRecentOrderCount(userId) {
+    const oneHourAgo = Date.now() - 3600_000;
+    return cachedOrders.filter(
+        (o) => o.user_id === userId &&
+               o.status === "submitted" &&
+               new Date(o.created_at).getTime() > oneHourAgo,
+    ).length;
+}
+
+// 对账：付款金额是否低于所申请套餐的标价
+function isUnderpaid(o) {
+    const planCode = o.plan_code || "";
+    const expectedPrice = PLAN_PRICE_CNY[planCode];
+    if (expectedPrice == null) return false;
+    const paid = Number(o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny);
+    if (!Number.isFinite(paid)) return false;
+    return paid < expectedPrice;
+}
+
 function esc(s) {
     const d = document.createElement("div");
     d.textContent = String(s == null ? "" : s);
@@ -434,10 +457,34 @@ function renderOrders() {
                     : "") +
                 "</div>";
 
+            // 风险标记：欠款 / 高频提交
+            const underpaid = isUnderpaid(o);
+            const recentCount = o.status === "submitted" ? getRecentOrderCount(o.user_id) : 0;
+            const riskFlags = [];
+            if (underpaid) {
+                const expected = PLAN_PRICE_CNY[o.plan_code] || "?";
+                const paid = Number(o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny);
+                riskFlags.push(
+                    '<span class="dev-flag danger" style="font-size:12px;padding:3px 10px">⚠ 金额不符：付 ¥' +
+                    esc(fmtPayable(paid)) + '，' + esc(o.plan_code) + ' 套餐标价 ¥' + esc(String(expected)) + '</span>',
+                );
+            }
+            if (recentCount > 2) {
+                riskFlags.push(
+                    '<span class="dev-flag danger" style="font-size:12px;padding:3px 10px">⚠ 1h 内提交 ' +
+                    recentCount + ' 张订单</span>',
+                );
+            }
+            const riskHtml = riskFlags.length
+                ? '<div class="dev-flags" style="margin:6px 0">' + riskFlags.join("") + '</div>'
+                : "";
+
             return (
                 '<div class="order-row' +
                 (o.status === "submitted" ? " is-submitted" : "") +
+                (underpaid ? " is-underpaid" : "") +
                 '">' +
+                riskHtml +
                 renderPayableBlock(o) +
                 contactBlock +
                 '<div class="order-meta-block">' +

@@ -15,8 +15,8 @@
  *   <script src="./admin-nav.js?v=20260623"></script>
  *
  * data-active 取值：
- *   dashboard | users | orders | usage | lines | models | pricing |
- *   descriptions | appeals | stories | wc2026 | orbit | market_wd | api_apply
+ *   dashboard | users | orders | lines | models | pricing |
+ *   descriptions | appeals | stories | api_apply
  */
 (function () {
   "use strict";
@@ -25,16 +25,12 @@
     { key: "dashboard",    href: "./admin_dashboard.html",   label: "仪表盘" },
     { key: "users",        href: "./admin_users.html",       label: "用户" },
     { key: "orders",       href: "./admin_orders.html",      label: "订单" },
-    { key: "usage",        href: "./admin_usage.html",       label: "调用日志" },
     { key: "lines",        href: "./admin_lines.html",       label: "线路" },
     { key: "models",       href: "./admin_models.html",      label: "模型配置" },
     { key: "pricing",      href: "./admin_pricing.html",     label: "按量定价" },
     { key: "descriptions", href: "./admin_descriptions.html", label: "模型描述" },
     { key: "appeals",      href: "./admin_appeals.html",     label: "申诉" },
     { key: "stories",      href: "./admin_stories.html",     label: "满月故事" },
-    { key: "wc2026",       href: "./admin_wc2026.html",      label: "世界杯主页" },
-    { key: "orbit",        href: "./admin_orbit.html",       label: "百万亿审核" },
-    { key: "market_wd",    href: "./admin_market_withdrawals.html", label: "蟹市提现" },
     { key: "api_apply",    href: "./admin.html",             label: "API 申请" },
   ];
 
