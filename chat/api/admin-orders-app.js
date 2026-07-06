@@ -300,10 +300,10 @@ function renderOrderKindCell(o) {
                 : plan === "pro_plus" ? "Pro+"
                 : "Pro";
     const color = plan === "pro_max" ? "#a855f7"
-                : plan === "pro_plus" ? "#60a5fa"
+                : plan === "pro_plus" ? "#818cf8"
                 : "#60a5fa";
     const bg = plan === "pro_max" ? "rgba(168,85,247,.18)"
-             : plan === "pro_plus" ? "rgba(96,165,250,.18)"
+             : plan === "pro_plus" ? "rgba(129,140,248,.18)"
              : "rgba(96,165,250,.18)";
     return '<span class="status-pill" style="background:' + bg + ';color:' + color + '" title="订阅 ' + esc(plan) + '">订阅 ' + esc(label) + '</span>';
 }
