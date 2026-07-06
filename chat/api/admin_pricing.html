@@ -9,7 +9,7 @@
     <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
-    <link rel="stylesheet" href="./admin-console.css?v=20260706-theme" />
+    <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       .mode-card {
@@ -40,7 +40,7 @@
       .toolbar2 label { font-size: 12.5px; color: var(--text-mute); display: flex; align-items: center; gap: 5px; }
       .summary { font-size: 12.5px; color: var(--text-mute); margin-bottom: 10px; }
       .summary b { color: var(--text); }
-      .summary .warn { color: #94a3b8; }
+      .summary .warn { color: #f59e0b; }
       table.price-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
       table.price-tbl th, table.price-tbl td {
         padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle;
@@ -71,7 +71,7 @@
     <div class="container">
       <nav id="admin-nav" data-active="pricing"></nav>
 
-      <div id="loading" class="loading">检查权限中…</div>
+      <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-block sk-table"></div></div></div>
 
       <div id="login-gate" class="gate" style="display: none">
         <h2>需要登录</h2>

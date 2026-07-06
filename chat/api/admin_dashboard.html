@@ -10,7 +10,7 @@
     <link rel="icon" type="image/jpeg" href="../../Logo/Cancri1.jpg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
-    <link rel="stylesheet" href="./admin-console.css?v=20260706-theme" />
+    <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
     <script src="./api-platform.js?v=20260607-account-fix"></script>
     <style>
       /* 大盘 grid */
@@ -53,7 +53,7 @@
       }
       .dash-card.accent .dash-card__value { color: var(--accent); }
       .dash-card.success .dash-card__value { color: var(--ok); }
-      .dash-card.warn .dash-card__value { color: #94a3b8; }
+      .dash-card.warn .dash-card__value { color: #f59e0b; }
       .dash-card.danger .dash-card__value { color: var(--err); }
 
       .dash-two-col {
@@ -217,7 +217,7 @@
     <div class="container">
       <nav id="admin-nav" data-active="dashboard"></nav>
 
-      <div id="loading" class="loading">检查权限中</div>
+      <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-row"><div class="sk-block sk-card"></div><div class="sk-block sk-card"></div><div class="sk-block sk-card"></div><div class="sk-block sk-card"></div></div><div class="sk-block sk-table"></div></div></div>
 
       <div id="login-gate" class="gate" style="display: none">
         <h2>需要登录</h2>
