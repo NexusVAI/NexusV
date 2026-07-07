@@ -810,7 +810,10 @@ function wireGrantPanel() {
             const skuRaw = (skuSelect && skuSelect.value) || "plan:pro";
             const [kind, slug] = String(skuRaw).split(":");
             if (kind === "recharge") {
-                showToast("ℹ️ 充值订单需用户自行提交后审核。请让用户在充值页提交 ¥" + (rechargeAmountInput?.value || "?") + " 订单，您在此页审核通过即可自动入钱包。", "info");
+                // 2026-07-07 审计 C4d：此处无「管理员直充」后端 RPC。直充能力在
+                // 用户管理页（admin_users.html 的「钱包 ±¥」= admin_adjust_user_wallet，真实生效）。
+                // 这里不再假装能充值，明确引导到可用路径，避免死按钮误导。
+                showToast("ℹ️ 本页无直充功能。如需给指定用户加钱包余额，请到「用户管理」页用「钱包 ±¥」操作；或让用户自行提交充值订单后在此审核通过（自动入钱包）。", "info");
                 return;
             }
             const grantPayload = { email, admin_note: note };

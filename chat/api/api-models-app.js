@@ -134,34 +134,53 @@ const COST_TIER_MULTIPLIER = {
     vip: 15,
 };
 
-function getCostMultiplier(m) {
-    if (m && typeof m.customMultiplier === "number") {
-        return m.customMultiplier;
+// 2026-07-07 审计 C4a：旧 getCostMultiplier / PROMO_* / getPromoDiscount /
+// isPromoActive / fmtMult 已随「倍率徽章 → 真实 ¥ 价徽章」改造移除
+// （模型广场按 API 平台 wallet_v3 原价展示，无倍率概念）。
+
+// 2026-07-07 审计 C4a：模型广场 = NexusVAI API 平台（计费轨 wallet_v3 原价按量，
+// 无倍率）。旧「计费倍率 N×」是 quota_v2 概念、对本平台是误导。改为展示后端真实
+// ¥ 价，并严格区分「免费」（gateCostTier=free，本就不计费）与「未定价」（无
+// model_pricing 行/未配置）——正是运营方强调的重点。字段全部来自 chat-gateway
+// model_public_catalog：priceDisplay / inputPricePerM / outputPricePerM / perCallPrice。
+function fmtYuanPerM(n) {
+    const v = Number(n);
+    if (!isFinite(v)) return "";
+    return "￥" + (v === Math.round(v) ? String(v) : v.toFixed(2).replace(/0+$/, "").replace(/\.$/, ""));
+}
+
+function modelPriceInfo(m) {
+    // 返回 { kind: 'free'|'priced'|'unpriced', short, full }
+    const isFree = (m.gateCostTier === "free") || (m.costTier === "free" && !m.priceDisplay);
+    if (isFree) {
+        return { kind: "free", short: "免费", full: "该模型免费使用（受并发 / 速率限流保护），不计费。" };
     }
-    const tier = (m && m.costTier) || "normal";
-    return coalesce(COST_TIER_MULTIPLIER[tier], 1);
+    if (typeof m.perCallPrice === "number") {
+        return { kind: "priced", short: `￥${m.perCallPrice}/次`, full: m.priceDisplay || `￥${m.perCallPrice} / 次` };
+    }
+    if (typeof m.inputPricePerM === "number" && typeof m.outputPricePerM === "number") {
+        return {
+            kind: "priced",
+            short: `入 ${fmtYuanPerM(m.inputPricePerM)} / 出 ${fmtYuanPerM(m.outputPricePerM)} ·M`,
+            full: m.priceDisplay || `输入 ${fmtYuanPerM(m.inputPricePerM)} · 输出 ${fmtYuanPerM(m.outputPricePerM)} ￥/M`,
+        };
+    }
+    // 有 priceDisplay 字符串但无数字字段；'未定价' 归入 unpriced
+    if (m.priceDisplay && m.priceDisplay !== "未定价") {
+        return { kind: "priced", short: m.priceDisplay, full: m.priceDisplay };
+    }
+    return { kind: "unpriced", short: "未定价", full: "该模型尚未配置价格（未定价），暂不可通过 API 计费调用。" };
 }
 
-// 2026-05-22 限时倍率 5 折促销（与 chat-gateway / api-gateway / pricing-app.js
-// 三个 PROMO_* 常量同窗口）。窗口（UTC+8）：05-22 20:30 → 05-24 00:00。
-const PROMO_START_MS = 1779453000000; // 2026-05-22T12:30:00Z = 2026-05-22 20:30 UTC+8
-const PROMO_END_MS = 1779552000000;   // 2026-05-23T16:00:00Z = 2026-05-24 00:00 UTC+8
-const PROMO_DISCOUNT = 0.5;
-
-function getPromoDiscount() {
-    const now = Date.now();
-    if (now >= PROMO_START_MS && now < PROMO_END_MS) return PROMO_DISCOUNT;
-    return 1;
-}
-
-function isPromoActive() {
-    return getPromoDiscount() < 1;
-}
-
-function fmtMult(n) {
-    if (n === Math.round(n)) return n + "×";
-    // 0.25 / 0.5 / 1.5 / 5 / 15 都能精确表达
-    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
+function getPriceBadge(m) {
+    const p = modelPriceInfo(m);
+    if (p.kind === "free") {
+        return `<span class="tier" style="background:rgba(143,166,128,.16);color:#8fa680" title="${esc(p.full)}">免费</span>`;
+    }
+    if (p.kind === "unpriced") {
+        return `<span class="tier" style="background:rgba(232,180,125,.16);color:#e8b87d" title="${esc(p.full)}">未定价</span>`;
+    }
+    return `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="${esc(p.full)}">${esc(p.short)}</span>`;
 }
 
 // 2026-05-24: 限量福利档（welfare）— 独立于 FREE / PAID 的第三类。
@@ -870,12 +889,8 @@ function card(m) {
     // 与 chat-gateway MODEL_COST_MULTIPLIER 一致：free=0.5, cheap=1, normal=2,
     // expensive=5, vip=15（实时还会被 catalog 的 multiplier_legend 覆盖）。样式跟 PRO+ 徽章同位，颜色 amber/clay。
     // 2026-05-22 限时 5 折促销期间：徽章变红，显示折后倍率，title 标明原价。
-    const mult = getCostMultiplier(m);
-    const promoActive = isPromoActive();
-    const effMult = mult * getPromoDiscount();
-    const multiplierBadge = promoActive
-        ? `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d;font-weight:600" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(effMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(effMult)} <span style="opacity:.55;font-size:10px;text-decoration:line-through">${fmtMult(mult)}</span></span>`
-        : `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后进入配额决算">${mult}×</span>`;
+    // 2026-07-07 审计 C4a：真实 ¥ 价徽章（免费 / 价格 / 未定价），替换旧倍率徽章。
+    const priceBadge = getPriceBadge(m);
     // 2026-05-18 FREE 不可用提示：GPT-5.5 系列 / gemini-3.1-pro / gpt-5.4-mini
     // 对 FREE 用户硬挡。freeUserBlocked 字段来自 chat-gateway model_public_catalog。
     const freeBlockedBadge = m && m.freeUserBlocked
@@ -920,7 +935,7 @@ function card(m) {
             </div>
             <div class="card-status">
               <span class="tier ${tierClass}">${tierLabel}</span>
-              ${multiplierBadge}
+              ${priceBadge}
               ${proPlusBadge}
               ${proMaxBadge}
               ${freeBlockedBadge}
@@ -1076,16 +1091,12 @@ function populateDrawer(m) {
 
     // Badges
     const tier = m._displayTier || getDisplayTier(m);
-    const mult = getCostMultiplier(m);
-    const drawerPromoActive = isPromoActive();
-    const drawerEffMult = mult * getPromoDiscount();
     const tierLabel = tier === "paid" ? "PAID" : "FREE";
-    const multBadge = drawerPromoActive
-        ? `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d;font-weight:600" title="限时 5 折：原 ${fmtMult(mult)} → 折后 ${fmtMult(drawerEffMult)}（窗口截止 05-24 00:00 UTC+8）">${fmtMult(drawerEffMult)} <span style="opacity:.55;font-size:10px;text-decoration:line-through">${fmtMult(mult)}</span></span>`
-        : `<span class="tier" style="background:rgba(212,160,77,.16);color:#d4a04d" title="计费倍率：上游 token × ${mult} 后入桶">${mult}×</span>`;
+    // 2026-07-07 审计 C4a：抽屉与卡片一致，展示真实 ¥ 价 / 免费 / 未定价。
+    const priceInfo = modelPriceInfo(m);
     const badges = [
         `<span class="tier tier-${tier}">${tierLabel}</span>`,
-        multBadge,
+        getPriceBadge(m),
     ];
     if (m.costTier === "vip") {
         badges.push(
@@ -1110,44 +1121,29 @@ function populateDrawer(m) {
     const badgeHost = document.getElementById("modelDrawerBadges");
     if (badgeHost) badgeHost.innerHTML = badges.join("");
 
-    // Pricing / multiplier
+    // Pricing：展示真实 ¥ 价 / 免费 / 未定价（替换旧倍率数字，审计 C4a）
     const multNumEl = document.getElementById("drawerMultNum");
     if (multNumEl) {
-        if (drawerPromoActive) {
-            multNumEl.innerHTML =
-                `<span style="color:var(--accent)">${fmtMult(drawerEffMult)}</span>` +
-                ` <span style="font-size:.45em;color:var(--text-faint);text-decoration:line-through;font-weight:400">${fmtMult(mult)}</span>`;
-        } else {
-            multNumEl.textContent = mult + "×";
-        }
+        multNumEl.textContent = priceInfo.short;
+        multNumEl.style.fontSize = priceInfo.kind === "priced" ? "1.1rem" : "";
+        multNumEl.style.color =
+            priceInfo.kind === "free" ? "#8fa680" :
+            priceInfo.kind === "unpriced" ? "#e8b87d" : "";
     }
     const tierLabelEl = document.getElementById("drawerTierLabel");
     if (tierLabelEl) {
-        const promoTag = drawerPromoActive
-            ? ' · <span style="color:var(--accent);font-weight:600">限时 5 折</span>'
-            : "";
-        tierLabelEl.innerHTML = `<span class="tier tier-${tier}">${tierLabel}</span> · costTier <code>${esc(m.costTier || "normal")}</code>${promoTag}`;
+        tierLabelEl.innerHTML = `<span class="tier tier-${tier}">${tierLabel}</span>`;
     }
     const explainEl = document.getElementById("drawerPricingExplain");
     if (explainEl) {
-        let baseExplain = COST_TIER_EXPLAIN[m.costTier || "normal"] || "";
-        if (m && typeof m.customMultiplier === "number") {
-            const defMult = coalesce(
-                COST_TIER_MULTIPLIER[m.costTier || "normal"],
-                1,
-            );
-            if (m.customMultiplier < defMult) {
-                baseExplain += ` (已为您特惠降费：该模型原定为 ${defMult}x 倍率，当前特殊降为 ${m.customMultiplier}x 倍率，高频聊天或 IDE 开发极其经用划算！)`;
-            } else if (m.customMultiplier > defMult) {
-                baseExplain += ` (自定义计费调整：为了对齐昂贵的上游进货成本，该模型特殊调整为 ${m.customMultiplier}x 倍率。)`;
-            }
+        // 2026-07-07 审计 C4a：按 wallet_v3 真实 ¥ 价说明，替换旧「配额 × 倍率」口径。
+        if (priceInfo.kind === "free") {
+            explainEl.innerHTML = "该模型<b>免费</b>使用，不计费；仅受并发 / 速率限流保护。";
+        } else if (priceInfo.kind === "unpriced") {
+            explainEl.innerHTML = "该模型<b>尚未配置价格</b>（未定价），暂不可通过 API 计费调用。";
+        } else {
+            explainEl.innerHTML = `按量计费（原价，无倍率）：<code>${esc(priceInfo.full)}</code>，按本次实际消耗的 token / 调用次数结算。`;
         }
-        const formula = drawerPromoActive
-            ? `<code>effective_pool_tokens × <s>${mult}</s> ${fmtMult(drawerEffMult)}</code>（5 折促销窗口截止 05-24 00:00 UTC+8）`
-            : `<code>effective_pool_tokens × ${mult}</code>`;
-        explainEl.innerHTML =
-            esc(baseExplain) +
-            ` 每次成功调用扣减 ${formula}。`;
     }
 
     // Status placeholder（fetch 完成后会被覆盖）
