@@ -855,6 +855,28 @@
 			"tools": false,
 			"costTier": "cheap",
 			"lineLabel": "modelscope"
+		},
+		{
+			"id": "grok-4.5",
+			"name": "Grok 4.5",
+			"brand": "xAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "futureppo"
+		},
+		{
+			"id": "composer-2.5-fast",
+			"name": "Composer-2.5-Fast",
+			"brand": "Cursor",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "futureppo"
 		}
 	];
 	//#endregion
@@ -924,7 +946,9 @@
 	];
 	function normalizeModelDisplayName(name) {
 		if (!name) return "";
-		return String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
+		const stripped = String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "");
+		if (/composer/i.test(stripped)) return stripped.replace(/\s+/g, " ").trim();
+		return stripped.replace(/-/g, " ").replace(/\s+/g, " ").trim();
 	}
 	function getModelContextWindow(modelId) {
 		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
