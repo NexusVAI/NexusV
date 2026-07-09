@@ -35,6 +35,18 @@
     white-space: nowrap;
     letter-spacing: -0.03em;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.logo img {
+    display: block;
+    height: 42px;
+    width: auto;
+}
+
+html:not(.dark-theme):not(.warm-theme):not(.blue-theme) .logo img {
+    filter: invert(1);
 }
 
 .nav-links { display: flex; gap: 22px; align-items: center; }
