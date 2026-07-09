@@ -700,6 +700,76 @@ const articleData = {
             ]
         }
     },
+    tactfr628: {
+        overlay: 'TACTFR 6.0.0 Beta.2.8',
+        media: { type: 'video', src: 'Logo/1mo.Cancri.mp4', poster: 'Logo/TACTFR6.0.0.png', fit: 'cover', alt: 'TACTFR 6.0.0 Beta.2.8' },
+        zh: {
+            title: '介绍 TACTFR 6.0.0 Beta.2.8',
+            date: '2026年7月9日',
+            category: '产品',
+            readTime: '14 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们发布 **TACTFR 6.0.0 Beta.2.8**。本版本是在 Beta.2.7 可玩性打磨基础上的又一次深度整备——我们基于 4 份全链路架构审计报告，对 legacy 主链路、案件剧情、嫌疑人状态、V6 AI 进行了系统性修复，并顺手修掉了那个“补发警车显示没钱但钱包里有钱”的现金 UI bug。版本号 <code>6.0.2.8</code>（信息版本 <code>TACTFR-6.0.0-BETA-2.8</code>），Release|x64 编译通过，QQ 群 1061632354。',
+                '<strong>从 Beta.2.7 到 Beta.2.8：不再只是修 bug，而是补结构性短板</strong>',
+                'Beta.2.7 把“能玩”做到了。Beta.2.8 回到架构层面：把四条主链路拉出来重新审计——EFCore/V6 边界、案件与剧情、嫌疑人全生命周期、AI 异步与调度。结果是 60+ 个审计点、20 个分级问题、以及 4 个 P0。本版集中解决其中会导致崩溃、剧情卡死、状态覆盖、配置漂移的 P0/P1 问题。',
+                '<strong>生命周期与 V6 边界：默认统一回 legacy</strong>',
+                '修复 <code>ModConfig</code> 三处默认值不一致：属性初始值、模板生成值、读取兜底值曾让新装机直接启用 V6。2.8 把它们统一为 <code>false</code>，并新增运行时互斥：若 <code>EnableOfficerAI</code> 与 <code>EnableOfficerAnima</code> 同时开启，代码会强制关闭一个并打日志。想开 V6 的玩家仍可在 <code>TACTFR.ini</code> 手动启用，但默认不再“被 V6”。',
+                '<strong>输入与 UI：终端不再是“隐形”的</strong>',
+                'V6 终端之前裸轮询 O 键、不接入 <code>UIState</code>，导致终端打开时 <code>IsAnyUiOpen=false</code>，L/G/E/Z 等热键继续触发 gameplay 事件。2.8 让 <code>TerminalUI</code> 实现 <code>IUiSession</code> 并接入 UIState 的心跳/寿命机制，菜单打开期间屏蔽 gameplay 输入。同时给 G/E/Z/L/Ctrl/I/U/F7/F8/F10 统一加了 <code>anyUiOpen</code> 检查，避免菜单开着按 E 触发押送。',
+                '<strong>拖车、小队、清理：不再“注册但忘了 Tick”</strong>',
+                '拖车在 Beta.2.7 中只注册进 <code>CompositionRoot</code> 但 <code>TickAll</code> 无人调用，状态机永不推进。2.8 在 <code>EFCore.OnTick</code> 尾部补上 <code>_towTruckSystem?.Tick()</code>，让拖车真正挂钩、离场、5 分钟寿命、200m 清理。小队警员/警车在脚本 Abort 时未清理，现在 <code>OnAborted</code> 显式调用 <code>DismissAll</code>；<code>CompositionRoot</code> 也加了 Reset，避免 SHVDN 同域重建后系统哑火。',
+                '<strong>案件与剧情：第 4 章不再卡死</strong>',
+                '第 4 章 <code>highway_standoff</code> 在 <code>CustomPhaseHandler</code> 无对应 case，default 分支静默完成，导致 <code>WaitForArrest</code> 因 <code>_trackedHandles.Count==0</code> 永远为 false，剧情卡死并屏蔽全部接警。2.8 为 highway_standoff 补了 Tick case 与 DispatchCase 阶段，并把 CustomPhaseHandler default 分支改为写失败原因。同时给 <code>DispatchCase</code> 阶段加 10-15s 注册超时，剧情生成失败时不再永久卡死。',
+                '<strong>嫌疑人：状态机不再“铐着跑路”</strong>',
+                '2.8 补齐状态转换表：<code>Restrained → ExitingVehicle</code> 与 <code>Restrained → InVehicle</code> 合法化，解决逼停线后嫌疑人被铐在车内无法下车的卡死。对 <code>Anima</code> 的 <code>flee</code> 响应增加 <code>IS_PED_CUFFED</code> / 押送状态校验，已上铐嫌疑人不再被迟到响应驱动全身逃跑。双嫌疑人时，风格/武装/clipset 生命周期全部按 handle 隔离，避免 s2 用 s1 的 style 上铐、一个嫌疑人上车就重置玩家步态。',
+                '<strong>AI：fallback 不再在线程池里调 native</strong>',
+                'P0 问题：<code>OfficerAISystem</code> 的 LLM 失败/取消 fallback 在续体线程调用 <code>state.Officer.Position</code>、<code>Exists()</code>、<code>IsPedArmed</code> 等 GTA natives，每 3 秒/警员触发一次。2.8 把 fallback 计算挪回主线程 <code>ProcessPendingDecisions</code>。AI 决策增加请求时间戳与 TTL，嫌疑人被捕/死亡/交付后过期决策不再覆盖当前任务；<code>SuspectBehaviorTree</code> 不再每帧重发任务，<code>ForceState</code> 改为合法 <code>Transition</code>。',
+                '<strong>本地推理：llama 子进程不再泄漏与阻塞</strong>',
+                '<code>LlamaCppLauncher</code> 实现 <code>IDisposable</code> 接口，V6 GameLoop 关闭时正确释放；stdout/stderr 重定向改为不阻塞，避免子进程日志管道填满后无声挂死。请求超时从 45s 默认值改为本地 8-12s、云端 45s，减少过期上下文排队。',
+                '<strong>现金错误：警车补发 HUD 终于显示正确</strong>',
+                '修复了玩家反馈的“补发警车后，屏幕现金显示没钱，但账户实际有钱”的 bug。根因是 <code>CashAward</code> 事件到账后 UI 缓存未刷新，2.8 在补发流程后强制同步 <code>WalletUI</code> / <code>CashHud</code>，现在现金到账即时显示，不再误导玩家以为奖励没发。',
+                '<strong>配置与文档：注释与代码不再漂移</strong>',
+                '同步 <code>config.ini</code>、<code>config-example.ini</code> 与代码默认值；移除 <code>DeferToScripts</code> 等无效开关；<code>StateMachine.cs</code> 编码损坏修复。',
+                '<strong>安装与已知限制</strong>',
+                '将 <code>a.TACTFR.dll</code> 放入 GTA V <code>scripts/</code> 目录，配合 ScriptHookV + ScriptHookVDotNet。终端按 O 打开，选 920 进入银行警报剧情。本地 AI：在 SentienceV5.2 启动器点「启动本地模型」使 5001 有服务；或 <code>config.ini</code> 设 <code>Provider=cloud</code> 填 DeepSeek Key。',
+                '2.8 不扩大玩法边界，而是让 2.7 建立起来的玩法更稳、更可预测。',
+                '—— TACTFR 开发团队'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 6.0.0 Beta.2.8',
+            date: 'July 9, 2026',
+            category: 'Product',
+            readTime: '14 min read',
+            paragraphs: [
+                'Abstract: Today we release **TACTFR 6.0.0 Beta.2.8**. Building on Beta.2.7\'s playability polish, this version deepens architectural integrity—four full-chain audits (legacy/V6 boundary, case/story, suspect lifecycle, V6 AI) drove systematic fixes, plus the in-game cash UI bug where police car bonuses showed no money while the wallet actually had it. Version <code>6.0.2.8</code> (<code>TACTFR-6.0.0-BETA-2.8</code>), Release|x64 clean build. QQ group 1061632354.',
+                '<strong>From Beta.2.7 to Beta.2.8: fixing structural debt, not just bugs</strong>',
+                'Beta.2.7 made it playable. Beta.2.8 returns to architecture: we re-audited four main chains—EFCore/V6 boundary, cases and story, suspect full lifecycle, and AI async/scheduling. The result: 60+ audit points, 20 graded issues, 4 P0s. This release focuses on the P0/P1 issues that cause crashes, story deadlocks, state overwrites, and config drift.',
+                '<strong>Lifecycle and V6 boundary: defaults unified to legacy</strong>',
+                'Fixed three inconsistent defaults in <code>ModConfig</code>: property initial value, template generation value, and read fallback once caused new installs to enable V6. 2.8 unifies them to <code>false</code> and adds runtime mutual exclusion: if <code>EnableOfficerAI</code> and <code>EnableOfficerAnima</code> are both on, the code force-disables one and logs. Players can still enable V6 in <code>TACTFR.ini</code>, but it no longer turns on by default.',
+                '<strong>Input and UI: terminal is no longer invisible</strong>',
+                'V6 terminal previously polled the O key directly and did not register with <code>UIState</code>, so <code>IsAnyUiOpen=false</code> while the terminal was open and L/G/E/Z etc. still triggered gameplay events. 2.8 makes <code>TerminalUI</code> implement <code>IUiSession</code> and join UIState heartbeat/lifetime, blocking gameplay input while the menu is open. G/E/Z/L/Ctrl/I/U/F7/F8/F10 now check <code>anyUiOpen</code>, preventing E from starting an escort while a menu is open.',
+                '<strong>Tow truck, squad, cleanup: no longer "registered but not ticked"</strong>',
+                'In Beta.2.7 the tow truck was registered with <code>CompositionRoot</code> but <code>TickAll</code> was never called, so its state machine never advanced. 2.8 appends <code>_towTruckSystem?.Tick()</code> at the end of <code>EFCore.OnTick</code>, so towing actually hooks, leaves, ages out, and cleans up at 200m. Squad officers/vehicles were not cleaned on script abort; now <code>OnAborted</code> explicitly calls <code>DismissAll</code>; <code>CompositionRoot</code> also resets to avoid systems going silent on SHVDN rebuild.',
+                '<strong>Cases and story: Chapter 4 no longer deadlocks</strong>',
+                'Chapter 4\'s <code>highway_standoff</code> had no matching case in <code>CustomPhaseHandler</code>, and the default branch silently completed, making <code>WaitForArrest</code> always false because <code>_trackedHandles.Count==0</code>. The story deadlocked and blocked all dispatches. 2.8 adds the Tick case and a DispatchCase phase for highway_standoff, and changes the default branch to write a failure reason. DispatchCase phases also get a 10-15s registration timeout, so story generation failures no longer deadlock.',
+                '<strong>Suspects: state machine no longer "cuffs and runs"</strong>',
+                '2.8 fills the transition table: <code>Restrained → ExitingVehicle</code> and <code>Restrained → InVehicle</code> become valid, fixing the stuck state after a pullover where a cuffed suspect could not exit the vehicle. Anima <code>flee</code> responses now check <code>IS_PED_CUFFED</code> / escort state, so cuffed suspects are no longer driven to flee by a late response. Dual-suspect style, firearm, and clipset lifecycles are isolated per handle, so suspect 2 no longer uses suspect 1\'s style for cuffing and one suspect entering a vehicle no longer resets the player\'s escort gait.',
+                '<strong>AI: fallback no longer calls natives on the thread pool</strong>',
+                'P0: <code>OfficerAISystem</code>\'s LLM failure/cancel fallback ran on continuation threads, calling <code>state.Officer.Position</code>, <code>Exists()</code>, <code>IsPedArmed</code> and other GTA natives, triggered every 3s/officer. 2.8 moves fallback computation to the main thread in <code>ProcessPendingDecisions</code>. AI decisions carry a request timestamp and TTL; stale decisions no longer overwrite tasks after the suspect is arrested/dead/delivered. <code>SuspectBehaviorTree</code> no longer reissues tasks every frame, and <code>ForceState</code> becomes a valid <code>Transition</code>.',
+                '<strong>Local inference: llama child process no longer leaks or blocks</strong>',
+                '<code>LlamaCppLauncher</code> now implements <code>IDisposable</code>, so V6 GameLoop shuts it down correctly. stdout/stderr redirect is set to non-blocking, preventing the log pipe from filling and silently killing the server. Request timeout defaults change to 8-12s local / 45s cloud, reducing expired-context queuing.',
+                '<strong>Cash bug: police car bonus HUD now shows correctly</strong>',
+                'Fixed the reported "police car bonus shows no cash, but the wallet actually has money" bug. The cause was that the UI cache was not refreshed after the <code>CashAward</code> event credited the account. 2.8 forces a <code>WalletUI</code>/<code>CashHud</code> sync after the bonus flow, so the cash is displayed immediately and no longer misleads players into thinking the reward was lost.',
+                '<strong>Config and docs: comments and code no longer drift</strong>',
+                'Synchronized <code>config.ini</code>, <code>config-example.ini</code> with code defaults; removed invalid switches like <code>DeferToScripts</code>; fixed <code>StateMachine.cs</code> encoding corruption.',
+                '<strong>Install and known limitations</strong>',
+                'Drop <code>a.TACTFR.dll</code> into GTA V <code>scripts/</code> with ScriptHookV + ScriptHookVDotNet. Press O for the terminal, choose 920 for the bank alarm story. Local AI: start the local model on port 5001 via SentienceV5.2 launcher, or set <code>Provider=cloud</code> and DeepSeek key in <code>config.ini</code>.',
+                '2.8 does not expand gameplay boundaries; it makes the gameplay established in 2.7 more stable and predictable.',
+                '— TACTFR Development Team'
+            ]
+        }
+    },
     sentienceV4ob: {
         overlay: 'Sentience V4.1 Omni',
         media: { type: 'video', src: 'Logo/意识V4o.webm', poster: 'Logo/4.1Omni.png', fit: 'cover', alt: 'Sentience V4 Omni' },
@@ -956,6 +1026,81 @@ const articleData = {
         }
     },
     cancriV1: {
+        overlay: '黑板中继',
+        media: { type: 'image', src: 'Logo/Blackboard.png', alt: '黑板中继' },
+        zh: {
+            title: '黑板中继：通过压缩隐状态“手传”实现的小型语言模型协作',
+            date: '2026年7月9日',
+            category: '研究',
+            readTime: '18 分钟阅读',
+            paragraphs: [
+                '摘要：扩大单个稠密模型是提升语言能力的常规路径，但昂贵且单一。NexusV 团队探索一种小模型替代方案：让多个亚十亿参数的专家不通过文本，而是通过一个压缩的隐状态——一个固定大小的“黑板”张量 B——相互协作。基于 0.5B 的 board-native 基座模型 Cancri-500M，我们发现：32 槽黑板能恢复 85% 的全文困惑度优势；把黑板当作“增强状态”而非唯一信息通道，可以修正精度丢失；将基座分化为 Understand 专家和 Answer 专家并共同训练，能在多线索合成任务上达到 0.86 的精确答案准确率，超过单权重和全文基线。',
+                '<strong>为什么要让小型语言模型协作？</strong>',
+                '大模型竞赛的主流叙事是继续放大单一稠密网络。但对资源受限的团队、边缘设备和小型 Agent 来说，一个关键问题是：在同样的激活参数预算下，一组小型专家能否比单个模型做得更好？',
+                'MoE 在模型内部按 token 路由专家；我们研究的是任务级、外部可见的多专家协作。每位专家读取一个共享的“黑板”工作区，完成任务后把控制权交给下一位。自然语言传递虽然可读，但每位专家都要重新编码刚解码过的文本，既耗时又容易漂移。我们的替代方案是：专家之间直接传递一个压缩的隐状态张量。',
+                '<strong>Cancri-500M：黑板原生基座</strong>',
+                'Cancri-500M 是一个 24 层、d=1536 的解码器，采用 32 查询头 / 8 KV 头的 GQA，32k BPE 词表，并内置 32 槽黑板。黑板不是预训练后追加的模块，而是在训练阶段就与文档段一起循环复用：当前段输出更新后的黑板，作为下一段的输入。',
+                '基本操作是一个单段前向：B_out = f(B_in, x, q_w)。其中 B_in 是传入黑板，x 是 512 个 token 的片段，q_w 是可学习的写查询。答案专家在读取黑板时，同时接收精确文本形式的查询，这叫做“增强状态”模式。',
+                '<strong>隐状态中继（Latent Relay）</strong>',
+                '一次中继由两位专家完成：Understand 专家负责把上下文“写入”黑板；Answer 专家从黑板中“读取”并基于查询文本生成答案。',
+                '两位专家从同一基座权重分出，损失函数只计算答案 token 的交叉熵。梯度通过黑板反向传播到两个专家，从而迫使它们协商出一种共享的隐协议。',
+                '为了诊断黑板是否真正被使用，我们设计了“唯一路径”实验：把查询文本也屏蔽，答案只能来自黑板。这会暴露黑板的精度弱点——它擅长携带语义，却不擅长保留精确操作数。',
+                '因此主实验采用“增强状态”：查询文本保持原样，黑板负责承载上下文。文本保证精度，黑板承载消化后的跨专家状态。',
+                '<strong>实验与结果</strong>',
+                '__FIGURE__|Logo/blackboard-paper/fig_page_6.png|训练曲线：单权重共享角色与双权重专业化专家的精确答案准确率对比',
+                '任务是一个可控的多线索合成基准：人物喜欢不同颜色、宠物的居住地、以及干扰事实。答案是一个关键 token（人名或城市）。',
+                '零样本情况下，32 槽黑板就恢复了 85% 的全文困惑度优势（ppl 从 13.0 降到 4.25，全文基线为 2.70）。这说明隐状态压缩的物理基础成立。',
+                '但高困惑度提升不等于正确生成。在“唯一路径”下，模型能复现答案格式却丢失精确操作数。经过中继微调后，增强状态把精确答案准确率从 0.09 提升到 0.61；更重要的是，空黑板控制组只有 0.085，说明答案确实来自黑板。',
+                '__FIGURE__|Logo/blackboard-paper/fig_page_7.png|结果摘要：双权重黑板中继 vs 单权重 vs 全文 vs 空黑板',
+                '双权重专家进一步提升：Understand 专家专门写板，Answer 专家专门读板，二者共同训练后准确率达到 0.86，超过单权重共享角色（0.61）和全文基线（0.62）。空黑板控制组 0.17，board−null 差距 +0.687。两个结论：跨权重隐协议成立，分工是净收益。',
+                '<strong>为什么它有效？</strong>',
+                '对 0.5B 模型来说，全文作答意味着它要在上下文中逐句检索，对抗干扰项。这恰恰是小模型的弱项。',
+                '专门的 Understand 专家先把上下文消化成固定大小的摘要，Answer 专家则被显式训练来读取这个摘要。这正符合“黑板中继”的核心论点：用一串匹配子任务的小型专家，通过学到的密集接口协作，胜过一次性把所有事情交给单个通才模型。',
+                '<strong>局限与下一步</strong>',
+                '当前实验仍是受控合成任务，词汇量小、不含复杂算术。跨权重对齐和专业化增益得到支持，但“黑板超越全文”的幅度不应直接外推到开放域任务。',
+                '精确内容仍是黑板的弱项：我们选择了通过“增强状态”保留文本路径来绕过，而不是彻底解决。',
+                '未来工作将面向真实多样数据、更长专家链，以及通过可验证选择解码来补上精确性缺口。',
+                '<strong>论文与复现</strong>',
+                '__PDF__|Logo/paper.pdf|完整论文 PDF（含表格、图与附录）',
+                '所有代码与检查点已随论文发布：cancri_relay.py、cancri_relay2.py、cancri_brp_dual.py，以及 expert_understand.ckpt、expert_answer.ckpt。复现脚本基于固定种子生成多线索基准。',
+                '—— Xingyu Gu · Cancri 团队'
+            ]
+        },
+        en: {
+            title: 'Blackboard Relay: Cooperative Small Language Models via Compressed Latent-State Hand-off',
+            date: 'July 9, 2026',
+            category: 'Research',
+            readTime: '18 min read',
+            paragraphs: [
+                'Abstract: Scaling a single dense model is the dominant path to stronger language capability, but it is expensive and monolithic. We explore an alternative for the small-model regime: a team of specialized sub-billion experts that cooperate not through text, but by handing off a compressed hidden state — a fixed-size “blackboard” tensor B. Based on a 0.5B board-native base model (Cancri-500M), we report three findings. The board is a high-fidelity channel: 32 slots recover 85% of the full-context perplexity gain. Treating the board as an augmented state fixes a precision-loss failure and yields answers provably decoded from the board. Forking the base into an Understand expert and an Answer expert and co-training them through the board reaches 0.86 exact-answer accuracy on a multi-clue synthesis task, beating both a single shared weight and the full-text baseline.',
+                '<strong>Why small models should cooperate</strong>',
+                'The prevailing recipe is to grow a single dense network. This is effective but costly, hard to update, and opaque. For teams operating in the sub-billion-parameter regime, a key question is whether a group of small specialists can be orchestrated to exceed a single model of the same activated scale.',
+                'Mixture-of-Experts routes tokens to experts inside one model. We instead consider task-level, externally visible cooperation. Each expert reads a shared “blackboard” workspace, contributes, and passes control on. Natural-language hand-off is interpretable but lossy and compute-heavy — every expert must re-encode text it just decoded. Our alternative is to pass a compressed hidden-state tensor directly.',
+                '<strong>Cancri-500M, a board-native base</strong>',
+                'Cancri-500M is a 24-layer, d=1536 decoder with GQA (32 query / 8 KV heads), a 32k BPE vocabulary, and a board of M=32 slots. The board is not a retrofit: during pre-training each document is processed in segments of length 512 with the board recurred between segments. The elementary operation is a single segment forward: B_out = f(B_in, x, q_w).',
+                'The relay has two roles: an Understand pass writes the board from context; an Answer pass reads the board and answers from an exact-text query. Both experts are forked from a shared base and trained jointly by back-propagating through the board, forcing a shared latent protocol.',
+                '<strong>Latent relay</strong>',
+                'Given a context c, a query q and an answer a, an Understand pass writes the board and an Answer pass reads it. The training loss is cross-entropy on the answer tokens only, with the prompt masked. Gradients flow through the board into both networks, so the experts must negotiate a common board protocol.',
+                'We use two regimes. Board-as-sole-path removes the query text to force the board to be the only path — a strong diagnostic that the board is truly read, but lossy for precise tokens. Board-as-augmented-state keeps the query as exact text and lets the board carry the context; text handles precision, the board handles the digested cross-expert state.',
+                '<strong>Experiments and results</strong>',
+                '__FIGURE__|Logo/blackboard-paper/fig_page_6.png|Training curves: exact-answer accuracy for single shared weight vs. dual specialized weights',
+                'The task is a controllable multi-clue synthesis benchmark: four people each like a distinct color, a person owns a pet that lives in a city, and the answer is a single key token. Zero-shot, the 32-slot board recovers 85% of the full-context perplexity gain (ppl 13.0→4.25 vs. full-text 2.70).',
+                'But high perplexity lift does not imply correct generation. Under sole-path decoding the model reproduces the answer format yet corrupts exact operands. After relay fine-tuning, board-as-augmented-state exact-answer accuracy rises from 0.09 to 0.61; the null control stays at 0.085, confirming the answer is decoded from the board.',
+                '__FIGURE__|Logo/blackboard-paper/fig_page_7.png|Held-out summary: dual-weight board relay vs. single weight vs. full text vs. null board',
+                'Forking the base into separate U and A weights and co-training them through the board raises accuracy to 0.86. This is above the single shared weight (0.61) and the full-text upper bound (0.62), while null stays at 0.17 (board−null gap +0.687). Two conclusions follow: cross-weight latent alignment holds, and specialization is a net win.',
+                '<strong>Why it matters</strong>',
+                'For a 0.5B model, full-text answering forces retrieval over distractor sentences in-context, which it does poorly. A dedicated Understand expert pre-digests the context into a clean fixed-size summary that the Answer expert was explicitly trained to read. This is precisely the Blackboard-Relay thesis: a pipeline of specialists with a dense, learned interface can beat a single generalist doing everything in one pass — at least where the interface is well matched to the sub-task.',
+                '<strong>Limitations and next steps</strong>',
+                'The benchmark is a controllable synthetic task with a small closed vocabulary, so the magnitude of “board beats full-text” should not be extrapolated to open-domain tasks. Verbatim precision remains the board’s weak spot; we sidestep it with an augmented-state text path rather than solve it.',
+                'Future work targets real, diverse data, longer expert chains, and closing the precision gap via verifiable-selection decoding.',
+                '<strong>Paper and reproducibility</strong>',
+                '__PDF__|Logo/paper.pdf|Full paper PDF (tables, figures, and appendices)',
+                'All scripts and checkpoints are released: cancri_relay.py, cancri_relay2.py, cancri_brp_dual.py, plus expert_understand.ckpt and expert_answer.ckpt. The multi-clue benchmark is generated procedurally with a fixed seed.',
+                '— Xingyu Gu · Cancri Team'
+            ]
+        }
+    },
+    cancriV1_0_1b: {
         overlay: 'CancriV1',
         media: { type: 'image', src: 'Logo/CancriV1-0.1B-Hero.png', alt: 'CancriV1-0.1B' },
         zh: {
@@ -2623,11 +2768,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (blackboardPhase0 first, then sentienceV52mens, tactfr627)
+        // Scrollable List (tactfr628 first, then sentienceV52mens, blackboardPhase0)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['blackboardPhase0', 'sentienceV52mens', 'tactfr627'];
-            const linkTargets = ['blackboardPhase0', 'sentienceV52mens', 'tactfr627'];
+            const listIds = ['tactfr628', 'sentienceV52mens', 'blackboardPhase0'];
+            const linkTargets = ['tactfr628', 'sentienceV52mens', 'blackboardPhase0'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];

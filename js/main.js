@@ -96,13 +96,13 @@ function bindGlobalToggles() {
 
 async function initPageContent() {
     if (isArticlePage()) {
-        if (!window.initArticlePage) await loadScriptOnce('js/article.js');
+        if (!window.initArticlePage) await loadScriptOnce('js/article.js?v=2026-07-09-tactfr28');
         if (window.initArticlePage) window.initArticlePage();
         return;
     }
 
     if (isIndexPage()) {
-        if (!window.initIndexPage) await loadScriptOnce('js/article.js');
+        if (!window.initIndexPage) await loadScriptOnce('js/article.js?v=2026-07-09-tactfr28');
         if (window.initIndexPage) window.initIndexPage();
     }
 }
