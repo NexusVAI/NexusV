@@ -30,8 +30,9 @@
 
   // flagship models pinned to the front (only ids that still exist in catalog).
   var FEATURED_ORDER = [
-    "gpt-5.5", "claude-opus-4-8", "grok-4.3", "gpt-image-2-pro",
+    "gpt-5.5", "claude-opus-4-8", "grok-4.5", "gpt-image-2-pro",
     "minimax-m3", "kimi-k2.6", "glm-5.1", "deepseek-v4-pro",
+    "composer-2.5-fast",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });

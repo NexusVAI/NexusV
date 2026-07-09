@@ -37,12 +37,14 @@ const esc = (s) => {
 const FEATURED_MODEL_ORDER = [
     "gpt-5.5",
     "claude-opus-4-8",
-    "grok-4.3",
+    "grok-4.5",
     "gpt-image-2-pro",
     "minimax-m3",
     "kimi-k2.6",
     "glm-5.1",
     "deepseek-v4-pro",
+    // 2026-07-07: 新增 futureppo 线模型。
+    "composer-2.5-fast",
 ];
 const FEATURED_RANK = new Map(
     FEATURED_MODEL_ORDER.map((id, i) => [id.toLowerCase(), i]),
@@ -99,6 +101,9 @@ const FALLBACK_PAID_IDS = new Set([
     "gpt-5.5-high",
     "grok-4.20-0309",
     "grok-4.3",
+    // 2026-07-07: futureppo 线新增。
+    "grok-4.5",
+    "composer-2.5-fast",
     "gpt-image-2-all",
     "gpt-image-2-pro",
     "gemini-3.1-pro",
