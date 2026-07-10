@@ -15,7 +15,7 @@
   var GW = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
   var ANON = window.__SUPABASE_ANON_KEY__ || "";
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
-  var FEATURED = ["gpt-5.5", "claude-opus-4-8", "grok-4.3", "gpt-image-2-pro", "minimax-m3", "kimi-k2.6", "glm-5.1", "deepseek-v4-pro"];
+  var FEATURED = ["gpt-5.6-sol", "claude-opus-4-8", "grok-4.5", "gpt-image-2-pro", "minimax-m3", "kimi-k2.6", "glm-5.1", "deepseek-v4-pro"];
   var FRANK = {};
   FEATURED.forEach(function (id, i) { FRANK[id.toLowerCase()] = i; });
   var LOGOS = ["neys.png", "neyssa.png", "neyswawea.png", "neyysawaw.png", "neysyss.png", "NJeys.png", "neyyswa.png", "neyyys.png", "neyyyss.png", "neyyysw.png"];
