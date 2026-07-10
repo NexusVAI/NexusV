@@ -1,6 +1,13 @@
-/* NexusV 开放平台首页：生态 logo 动画条 + "由前沿模型驱动" 卡片。
- * 复用公开目录端点（model_public_catalog），与模型广场同一数据源。
- * 注意：本页使用 <base href="../../">，所有相对路径以站点根为基准。 */
+/* NexusV 开放平台首页：生态 logo 动画条 + 旗舰卡真实定价灌入。
+ * 复用公开目录端点（model_public_catalog），价格以 Neon model_pricing 为准。
+ * 注意：本页使用 <base href="../../">，所有相对路径以站点根为基准。
+ *
+ * 2026-07-10 根因修复：
+ * - 价格行禁止 data-i18n。i18n.translate() / injectComponents() 会在首屏后
+ *   把 HTML 正确价覆盖成 i18n 字典里的过期价（曾出现 1.6/5 → 6/27）。
+ * - 本脚本在 catalog 返回后，按 data-model-id 把 inputPricePerM/outputPricePerM
+ *   与上下文 token 写回卡片，保证与数据库一致。
+ */
 (function () {
   "use strict";
 
@@ -11,72 +18,96 @@
     window.OaiTrustedLogos.init(host);
   }
 
-  // ── frontier model cards ───────────────────────────────────────────
+  // ── frontier model cards：从 catalog 灌真实 ¥ 价 ────────────────
   var GW = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
   var ANON = window.__SUPABASE_ANON_KEY__ || "";
-  var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
-  var FEATURED = ["gpt-5.6-sol", "claude-opus-4-8", "grok-4.5", "gpt-image-2-pro", "minimax-m3", "kimi-k2.6", "glm-5.1", "deepseek-v4-pro"];
-  var FRANK = {};
-  FEATURED.forEach(function (id, i) { FRANK[id.toLowerCase()] = i; });
-  var LOGOS = ["neys.png", "neyssa.png", "neyswawea.png", "neyysawaw.png", "neysyss.png", "NJeys.png", "neyyswa.png", "neyyys.png", "neyyyss.png", "neyyysw.png"];
 
-  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
-  function escAttr(s) { return esc(s).replace(/"/g, "&quot;"); }
-  function logoFor(id) {
-    var h = 0, s = String(id || "");
-    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    return "Logo/" + LOGOS[h % LOGOS.length];
-  }
-  function mult(m) {
-    if (m && typeof m.customMultiplier === "number") return m.customMultiplier;
-    var v = COST_TIER_MULTIPLIER[(m && m.costTier) || "normal"];
-    return v == null ? 1 : v;
-  }
-  function fmtMult(n) { return (n === Math.round(n) ? n : Number(n.toFixed(2))) + "×"; }
-  function fmtTokens(n) {
-    if (!n) return "—";
-    if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 ? 2 : 0).replace(/\.0+$/, "") + "M";
-    if (n >= 1000) return Math.round(n / 1000) + "K";
-    return String(n);
+  function fmtYuan(n) {
+    var x = Number(n);
+    if (!Number.isFinite(x)) return "—";
+    // 1.6 → 1.60；0.075 → 0.075（去掉多余尾 0，但至少保留一位小数观感）
+    var s = x.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+    if (s.indexOf(".") === -1) s += ".00";
+    else if (s.split(".")[1].length === 1) s += "0";
+    return s;
   }
 
-  function cardHtml(m) {
-    var id = m.id || m.canonicalId || "";
-    var name = m.displayName || id;
-    var specs = [
-      "计费倍率 " + esc(fmtMult(mult(m))),
-      "上下文 " + esc(fmtTokens(m.maxInputTokens)) + " · 最大输出 " + esc(fmtTokens(m.maxOutputTokens)),
-    ];
-    if (m.brand) specs.push(esc(m.brand) + (m.multimodal ? " · 多模态" : ""));
-    return (
-      '<a class="model-card" href="chat/api_models.html#model-' + escAttr(id) + '" ' +
-      'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')">' +
-      '<div class="model-card__body">' +
-      '<div class="model-card__slide">' +
-      '<div class="model-card__name">' + esc(name) + "</div>" +
-      '<ul class="model-card__specs">' + specs.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ul>" +
-      '<span class="model-card__cta">了解更多 ' +
-      '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>' +
-      "</span>" +
-      "</div></div></a>"
-    );
+  function fmtTokensZh(n) {
+    var x = Number(n);
+    if (!Number.isFinite(x) || x <= 0) return "—";
+    if (x >= 10000) {
+      var wan = x / 10000;
+      var t = wan % 1 === 0 ? String(wan) : wan.toFixed(1).replace(/\.0$/, "");
+      return t + "万";
+    }
+    if (x >= 1000) return Math.round(x / 1000) + "K";
+    return String(Math.round(x));
   }
 
-  function dedupeFeatured(raw) {
-    var by = {}, order = [];
-    raw.forEach(function (m) {
-      var cid = m.canonicalId || m.id;
-      if (!cid || by[cid]) return;
-      var c = {}; for (var k in m) if (Object.prototype.hasOwnProperty.call(m, k)) c[k] = m[k];
-      c.id = cid; by[cid] = c; order.push(cid);
+  function priceLine(m, en) {
+    var inn = m.inputPricePerM != null ? m.inputPricePerM : m.input_price_per_m;
+    var out = m.outputPricePerM != null ? m.outputPricePerM : m.output_price_per_m;
+    if (inn == null || out == null) {
+      // 兜底：catalog 已拼好的 priceDisplay
+      if (m.priceDisplay && m.priceDisplay !== "未定价") return m.priceDisplay;
+      return en ? "Price not set" : "未定价";
+    }
+    if (en) {
+      return "Input: ¥" + fmtYuan(inn) + " / Output: ¥" + fmtYuan(out) + " per 1M tokens";
+    }
+    return "输入：¥" + fmtYuan(inn) + " / 输出：¥" + fmtYuan(out) + " 每百万标记";
+  }
+
+  function ctxLineSimple(m, en) {
+    var inn = m.maxInputTokens != null ? m.maxInputTokens : m.max_input_tokens;
+    var out = m.maxOutputTokens != null ? m.maxOutputTokens : m.max_output_tokens;
+    if (!Number.isFinite(Number(inn)) && !Number.isFinite(Number(out))) return null;
+    if (en) {
+      function enTok(n) {
+        var x = Number(n);
+        if (!Number.isFinite(x) || x <= 0) return "—";
+        if (x >= 1000) {
+          var k = x / 1000;
+          return (k % 1 === 0 ? String(k) : k.toFixed(1).replace(/\.0$/, "")) + "K";
+        }
+        return String(Math.round(x));
+      }
+      return enTok(inn) + " context · " + enTok(out) + " max output";
+    }
+    return fmtTokensZh(inn) + " 上下文长度 · " + fmtTokensZh(out) + " 最大输出";
+  }
+
+  function isEn() {
+    try {
+      var lang = localStorage.getItem("lang") || "";
+      if (lang === "en") return true;
+      if (lang === "zh") return false;
+    } catch (e) { /* ignore */ }
+    return (document.documentElement.lang || "").toLowerCase().indexOf("zh") !== 0;
+  }
+
+  function applyCatalogToCards(models) {
+    if (!Array.isArray(models) || !models.length) return;
+    var byId = {};
+    models.forEach(function (m) {
+      var id = (m.id || m.canonicalId || m.model_id || "").toLowerCase();
+      if (id) byId[id] = m;
     });
-    var list = order.map(function (c) { return by[c]; });
-    list.sort(function (a, b) {
-      var ra = FRANK[(a.id || "").toLowerCase()], rb = FRANK[(b.id || "").toLowerCase()];
-      if (ra != null && rb != null) return ra - rb;
-      if (ra != null) return -1; if (rb != null) return 1; return 0;
+    var en = isEn();
+    document.querySelectorAll(".model-card[data-model-id]").forEach(function (card) {
+      var id = (card.getAttribute("data-model-id") || "").toLowerCase();
+      var m = byId[id];
+      if (!m) return;
+      var priceEl = card.querySelector('[data-slot="price"]');
+      var ctxEl = card.querySelector('[data-slot="ctx"]');
+      var nameEl = card.querySelector(".model-card__name");
+      if (priceEl) priceEl.textContent = priceLine(m, en);
+      if (ctxEl) {
+        var ctx = ctxLineSimple(m, en);
+        if (ctx) ctxEl.textContent = ctx;
+      }
+      if (nameEl && m.displayName) nameEl.textContent = m.displayName;
     });
-    return list;
   }
 
   function fetchCatalog() {
@@ -84,35 +115,50 @@
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: ANON },
       body: JSON.stringify({ endpoint: "model_public_catalog" }),
-      mode: "cors", credentials: "omit", cache: "no-store",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
     };
     return new Promise(function (resolve, reject) {
       var done = false;
-      var t = setTimeout(function () { if (!done) { done = true; reject(new Error("request_timeout")); } }, 12000);
-      fetch(GW, opts).then(function (r) { if (done) return; done = true; clearTimeout(t); resolve(r); })
-        .catch(function (e) { if (done) return; done = true; clearTimeout(t); reject(e); });
+      var t = setTimeout(function () {
+        if (!done) {
+          done = true;
+          reject(new Error("request_timeout"));
+        }
+      }, 12000);
+      fetch(GW, opts)
+        .then(function (r) {
+          if (done) return;
+          done = true;
+          clearTimeout(t);
+          resolve(r);
+        })
+        .catch(function (e) {
+          if (done) return;
+          done = true;
+          clearTimeout(t);
+          reject(e);
+        });
     });
   }
 
-  async function loadModels() {
-    var row = document.getElementById("home-models-row");
-    var loading = document.getElementById("home-models-loading");
-    var err = document.getElementById("home-models-error");
-    if (!row) return;
+  async function hydratePricesFromCatalog() {
     try {
       var r = await fetchCatalog();
-      if (!r.ok) throw new Error("HTTP " + r.status);
+      if (!r.ok) return;
       var data = await r.json();
-      var models = dedupeFeatured(Array.isArray(data.models) ? data.models : []).slice(0, 8);
-      if (loading) loading.setAttribute("data-home-hidden", "");
-      row.innerHTML = models.map(cardHtml).join("");
+      var models = Array.isArray(data.models) ? data.models : [];
+      applyCatalogToCards(models);
     } catch (e) {
-      if (loading) loading.setAttribute("data-home-hidden", "");
-      if (err) { err.removeAttribute("data-home-hidden"); err.textContent = "模型列表加载失败，点此重试"; err.style.cursor = "pointer"; err.onclick = loadModels; }
+      // 失败则保留 HTML 兜底价，不覆盖
     }
   }
 
-  function boot() { initTrustedLogos(); initElevateTabs(); }
+  // 语言切换后重新套一遍（catalog 已缓存在上次结果时再拉一次即可）
+  window.addEventListener("languageChanged", function () {
+    hydratePricesFromCatalog();
+  });
 
   // ── voice/image tab toggle (section 6) ──────────────────────────
   function initElevateTabs() {
@@ -131,6 +177,12 @@
         });
       });
     });
+  }
+
+  function boot() {
+    initTrustedLogos();
+    initElevateTabs();
+    hydratePricesFromCatalog();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
