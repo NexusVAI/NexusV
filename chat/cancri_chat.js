@@ -844,39 +844,6 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "free"
-		},
-		{
-			"id": "hunyuan-3",
-			"name": "Hy3",
-			"brand": "Tencent",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": false,
-			"costTier": "cheap",
-			"lineLabel": "modelscope"
-		},
-		{
-			"id": "grok-4.5",
-			"name": "Grok 4.5",
-			"brand": "xAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
-		},
-		{
-			"id": "composer-2.5-fast",
-			"name": "Composer-2.5-Fast",
-			"brand": "Cursor",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
 		}
 	];
 	//#endregion
@@ -946,9 +913,7 @@
 	];
 	function normalizeModelDisplayName(name) {
 		if (!name) return "";
-		const stripped = String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "");
-		if (/composer/i.test(stripped)) return stripped.replace(/\s+/g, " ").trim();
-		return stripped.replace(/-/g, " ").replace(/\s+/g, " ").trim();
+		return String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
 	}
 	function getModelContextWindow(modelId) {
 		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
@@ -1158,7 +1123,7 @@
 		internal_error: "服务出现异常，请稍后重试。",
 		db_error: "数据写入失败，请稍后重试。"
 	};
-	var QUOTA_REFRESH_TRIGGER_CODES = new Set([
+	var QUOTA_REFRESH_TRIGGER_CODES = /* @__PURE__ */ new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
@@ -1168,19 +1133,19 @@
 		"model_pro_max_required",
 		"model_pro_required"
 	]);
-	var UPGRADE_MODAL_TRIGGER_CODES = new Set([
+	var UPGRADE_MODAL_TRIGGER_CODES = /* @__PURE__ */ new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
 		"token_window_5h_exceeded",
 		"token_window_week_exceeded"
 	]);
-	var USER_QUOTA_ERROR_CODES = new Set([
+	var USER_QUOTA_ERROR_CODES = /* @__PURE__ */ new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted"
 	]);
-	var PROVIDER_QUOTA_ERROR_CODES = new Set(["model_quota_exceeded", "model_free_hour_limit"]);
+	var PROVIDER_QUOTA_ERROR_CODES = /* @__PURE__ */ new Set(["model_quota_exceeded", "model_free_hour_limit"]);
 	function friendlyMessageFromBackend(parsed, status) {
 		const code = String(parsed?.code || "").trim();
 		if (code && QUOTA_REFRESH_TRIGGER_CODES.has(code) && typeof invalidateQuotaState === "function") try {
@@ -1408,7 +1373,9 @@
 					countdownEl.style.color = "#ef4444";
 					return false;
 				}
-				countdownEl.textContent = `剩余 ${Math.floor(remainMs / 6e4)}:${Math.floor(remainMs % 6e4 / 1e3).toString().padStart(2, "0")}`;
+				const m = Math.floor(remainMs / 6e4);
+				const s = Math.floor(remainMs % 6e4 / 1e3);
+				countdownEl.textContent = `剩余 ${m}:${s.toString().padStart(2, "0")}`;
 				return true;
 			}
 			renderCountdown();
@@ -2074,7 +2041,7 @@
 			fetchModelHealthStatus().catch(() => {});
 		}, HEALTH_STATUS_REFRESH_MS);
 	}
-	var PAID_GATE_IDS = new Set([
+	var PAID_GATE_IDS = /* @__PURE__ */ new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
 		"claude-opus-4-8-special",
@@ -2116,7 +2083,7 @@
 		"gemini-3.1-flash-lite-preview",
 		"gemini-3.1-flash-lite-welfare"
 	]);
-	var FREE_USER_BLOCKED_GATE_IDS = new Set([
+	var FREE_USER_BLOCKED_GATE_IDS = /* @__PURE__ */ new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
 		"claude-opus-4-8-special",
@@ -2143,7 +2110,7 @@
 		"glm-5.1",
 		"deepseek-v4-pro"
 	]);
-	var PRO_MAX_GATE_IDS = new Set(["gpt-image-2-pro", "grok-imagine-video"]);
+	var PRO_MAX_GATE_IDS = /* @__PURE__ */ new Set(["gpt-image-2-pro", "grok-imagine-video"]);
 	var GROK_IMAGINE_VIDEO_PROMO_START_MS = Date.parse("2026-06-18T00:00:00+08:00");
 	var GROK_IMAGINE_VIDEO_PROMO_END_MS = Date.parse("2026-07-19T00:00:00+08:00");
 	function isGrokImagineVideoPromoActive(now = Date.now()) {
@@ -2204,7 +2171,7 @@
 	function isFreeUserBlockedGateModel(modelId) {
 		return FREE_USER_BLOCKED_GATE_IDS.has(modelId);
 	}
-	var FREE_WELFARE_MODEL_IDS = new Set([
+	var FREE_WELFARE_MODEL_IDS = /* @__PURE__ */ new Set([
 		"baichuan-m2-welfare",
 		"baichuan4-air-welfare",
 		"baichuan3-turbo-welfare",
@@ -2631,7 +2598,7 @@
 		"glm-5.1"
 	].map((id, index) => [id, index]));
 	var MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
-	var LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
+	var LOCAL_ONLY_CATALOG_IDS = /* @__PURE__ */ new Set(["hunyuan-mt-7b"]);
 	var MODEL_UI_CATALOG_TTL_MS = 0;
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
@@ -2794,7 +2761,7 @@
 		"nex-n2-pro-welfare": "./NEX_logo.svg",
 		"hunyuan-mt-7b": "./yuanbao-color.svg"
 	};
-	var THEME_ADAPTIVE_ICON_BRANDS = new Set([
+	var THEME_ADAPTIVE_ICON_BRANDS = /* @__PURE__ */ new Set([
 		"OpenAI",
 		"Clawto",
 		"Cancri"
@@ -3078,7 +3045,7 @@
 		if (mode === "black") return "black";
 		return mode === "dark" ? "dark" : "light";
 	}
-	var VALID_CHAT_FONTS = new Set([
+	var VALID_CHAT_FONTS = /* @__PURE__ */ new Set([
 		"serif",
 		"sans",
 		"mono"
@@ -7382,7 +7349,8 @@
 			const href = safeUrl(url);
 			if (href === "#") return alt;
 			const escHref = escapeHtml(href);
-			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
+			const escAlt = escapeHtml(alt);
+			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
 		}).replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
 			const href = safeUrl(url);
 			if (href === "#") return label;
@@ -8271,7 +8239,7 @@
 		showToast("图片生成已开始，请稍等。");
 		let finalStatusText = "等待输入提示词";
 		const imageAttachments = (attachments || []).filter((a) => !a.isTextFile && (a.dataUrl || a.url));
-		const noI2iModels = new Set([
+		const noI2iModels = /* @__PURE__ */ new Set([
 			"grok-imagine-image",
 			"gpt-image-2-all",
 			"gpt-image-2-pro",
