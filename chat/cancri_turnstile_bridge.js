@@ -36,7 +36,7 @@
   var TOKEN_WAIT_MS = 20000; // getToken 排队等待挂件回调的上限
   var INJECT_BUDGET_MS = 8000; // fetch 注入时等 token 的预算（超时则裸发）
 
-  var BRIDGE_VERSION = "2026-07-11b-freshrender";
+  var BRIDGE_VERSION = "2026-07-11c-directrender";
   var state = { version: BRIDGE_VERSION };
 
   // ---- window.turnstile 就绪等待 ---------------------------------------
@@ -108,8 +108,10 @@
             } catch (_e) { clearTimeout(timer); finish(""); }
           };
 
-          if (typeof window.turnstile.ready === "function") window.turnstile.ready(doRender);
-          else doRender();
+          // 直接渲染，不经 turnstile.ready()：在 render=explicit 模式下经 ready() 包一层
+          // 会触发「ready() would break」告警且回调不执行，导致挂件根本不渲染。
+          // waitForApi 已确保 window.turnstile.render 存在，直接调用即可（A/B 实测可靠）。
+          doRender();
         })
         .catch(function () { resolve(""); });
     });
