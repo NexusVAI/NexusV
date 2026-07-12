@@ -1399,6 +1399,22 @@ if (drawer) {
 
 // 卡片点击委托：用 #grid 一个 listener 处理所有 card；render() 重置
 // innerHTML 时不会丢监听，因为 #grid 本身从不被替换。
+// 这些模型点击卡片跳转独立详情页（动态计价展示），其余仍开抽屉
+const DETAIL_PAGE_MODELS = new Set([
+    "gpt-5.5",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
+]);
+function openModelView(m) {
+    if (DETAIL_PAGE_MODELS.has(m.id)) {
+        window.location.href =
+            "./model_detail.html?model=" + encodeURIComponent(m.id);
+        return;
+    }
+    openDrawer(m);
+}
+
 const gridEl = $("grid");
 if (gridEl && drawer) {
     gridEl.addEventListener("click", (e) => {
@@ -1410,7 +1426,7 @@ if (gridEl && drawer) {
         if (!modelId) return;
         const m = MODELS.find((x) => x.id === modelId);
         if (!m) return;
-        openDrawer(m);
+        openModelView(m);
     });
     // 键盘可达：Enter / Space 也能打开抽屉
     gridEl.addEventListener("keydown", (e) => {
@@ -1421,7 +1437,7 @@ if (gridEl && drawer) {
         e.preventDefault();
         const modelId = card.dataset.modelId;
         const m = MODELS.find((x) => x.id === modelId);
-        if (m) openDrawer(m);
+        if (m) openModelView(m);
     });
 }
 
