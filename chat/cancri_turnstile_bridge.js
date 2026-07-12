@@ -36,14 +36,8 @@
   var TOKEN_WAIT_MS = 20000; // getToken 排队等待挂件回调的上限
   var INJECT_BUDGET_MS = 8000; // fetch 注入时等 token 的预算（超时则裸发）
 
-  var state = {
-    widgetId: null,
-    mount: null,
-    token: "",
-    tokenAt: 0,
-    rendering: false,
-    waiters: [], // [{resolve, timeoutId}]
-  };
+  var BRIDGE_VERSION = "2026-07-11b-freshrender";
+  var state = { version: BRIDGE_VERSION };
 
   // ---- window.turnstile 就绪等待 ---------------------------------------
   function waitForApi(timeoutMs) {
@@ -58,130 +52,71 @@
     });
   }
 
-  // ---- 隐形挂件挂载点（离屏、零占位） ----------------------------------
-  function ensureMount() {
-    if (state.mount && document.body && document.body.contains(state.mount)) return state.mount;
-    var m = document.getElementById("cancriTurnstileBridgeMount");
-    if (!m) {
-      m = document.createElement("div");
-      m.id = "cancriTurnstileBridgeMount";
-      // 离屏但可渲染（display:none 会让部分挑战无法初始化）。
-      m.style.cssText =
-        "position:absolute;left:-9999px;top:-9999px;width:300px;height:65px;overflow:hidden;";
-      (document.body || document.documentElement).appendChild(m);
-    }
-    state.mount = m;
-    return m;
-  }
-
-  function drainWaiters(token) {
-    while (state.waiters.length > 0) {
-      var w = state.waiters.shift();
-      try { clearTimeout(w.timeoutId); } catch (_e) {}
-      try { w.resolve(token); } catch (_e) {}
-    }
-  }
-
-  function resetWidget() {
-    try {
-      if (state.widgetId !== null && window.turnstile && window.turnstile.reset) {
-        window.turnstile.reset(state.widgetId);
-      }
-    } catch (_e) {}
-  }
-
-  function renderWidget() {
-    if (!SITE_KEY) return false;
-    if (typeof window === "undefined" || !window.turnstile) return false;
-    if (state.widgetId !== null || state.rendering) return true;
-    var mount = ensureMount();
-    if (!mount) return false;
-    state.rendering = true;
-
-    var doRender = function () {
-      try {
-        var id = window.turnstile.render(mount, {
-          sitekey: SITE_KEY,
-          appearance: "interaction-only", // 正常用户完全无感；仅可疑流量才显示
-          execution: "render",
-          size: "normal",
-          theme: "auto",
-          retry: "auto",
-          "refresh-expired": "auto",
-          callback: function (token) {
-            token = token || "";
-            if (!token) return;
-            if (state.waiters.length > 0) {
-              // 有人在等：直接派发（token 单次使用），并重置预取下一枚
-              drainWaiters(token);
-              resetWidget();
-            } else {
-              // 无人等待（如 prerender 阶段自动解出）：缓存起来，供随后的
-              // getToken 直接取用；切勿丢弃，否则挂件转入空闲、getToken 会空等超时。
-              state.token = token;
-              state.tokenAt = Date.now();
-            }
-          },
-          "error-callback": function () { drainWaiters(""); },
-          "expired-callback": function () { state.token = ""; state.tokenAt = 0; resetWidget(); },
-          "timeout-callback": function () { state.token = ""; state.tokenAt = 0; resetWidget(); },
-        });
-        state.widgetId = id;
-      } catch (_e) {
-        drainWaiters("");
-      } finally {
-        state.rendering = false;
-      }
-    };
-
-    if (typeof window.turnstile.ready === "function") window.turnstile.ready(doRender);
-    else doRender();
-    return true;
-  }
-
+  // ---- 预热：仅确保 api.js 就绪，不预渲染（避免"预热 token 被丢弃/挂件转空闲"）---
   function prerender() {
-    waitForApi(API_WAIT_MS).then(function () { try { renderWidget(); } catch (_e) {} }).catch(function () {});
+    waitForApi(API_WAIT_MS).catch(function () {});
   }
 
   // 返回 Promise<string>：拿到 token（或超时/失败时空串）。
+  //
+  // 采用"每次调用 → 全新渲染一枚挂件 → 回调拿到一枚 token → 用完即移除"的模式。
+  // 这是已验证可靠的原语（单次 render 必触发一次 callback 返回 token）；不做跨调用
+  // 复用/reset/缓存，避免 interaction-only 下 reset 不重跑、或预热 token 被丢弃导致
+  // 挂件转入空闲、后续 getToken 空等超时的坑。
+  //
+  // 挂件上屏（fixed 右下角）而非离屏：interaction-only 下正常用户完全不可见（自动过、
+  // 尺寸塌缩为 0）；仅当 Cloudflare 判定需要交互时才在右下角显示一个可点的小挑战框
+  // ——离屏的话该挑战无法被用户完成，会把可疑真人也挡死。
   function getToken() {
     return new Promise(function (resolve) {
       if (!SITE_KEY) return resolve("");
-      waitForApi(API_WAIT_MS).then(function () {
-        // 有新鲜缓存 token → 直接用
-        if (state.token && Date.now() - state.tokenAt < TOKEN_TTL_MS) {
-          var t = state.token;
-          state.token = "";
-          state.tokenAt = 0;
-          resetWidget();
-          return resolve(t);
-        }
-        if (!renderWidget()) return resolve("");
-        // 挂件可能已解过一次而处于空闲：重置以触发一枚新 token（reset 会重跑挑战）。
-        resetWidget();
-        var waiter = { resolve: resolve, timeoutId: null };
-        waiter.timeoutId = setTimeout(function () {
-          var i = state.waiters.indexOf(waiter);
-          if (i >= 0) state.waiters.splice(i, 1);
-          resolve("");
-        }, TOKEN_WAIT_MS);
-        state.waiters.push(waiter);
-      }).catch(function () { resolve(""); });
+      waitForApi(API_WAIT_MS)
+        .then(function () {
+          if (!window.turnstile || !window.turnstile.render) return resolve("");
+
+          var mount = document.createElement("div");
+          mount.className = "cancri-turnstile-mount";
+          mount.style.cssText =
+            "position:fixed;right:12px;bottom:12px;z-index:2147483647;width:300px;max-width:90vw;";
+          (document.body || document.documentElement).appendChild(mount);
+
+          var done = false;
+          var wid = null;
+          var finish = function (tok) {
+            if (done) return;
+            done = true;
+            try { if (wid !== null && window.turnstile.remove) window.turnstile.remove(wid); } catch (_e) {}
+            try { if (mount.parentNode) mount.parentNode.removeChild(mount); } catch (_e) {}
+            resolve(tok || "");
+          };
+          var timer = setTimeout(function () { finish(""); }, TOKEN_WAIT_MS);
+
+          var doRender = function () {
+            try {
+              wid = window.turnstile.render(mount, {
+                sitekey: SITE_KEY,
+                appearance: "interaction-only",
+                execution: "render",
+                size: "normal",
+                theme: "auto",
+                retry: "auto",
+                "refresh-expired": "auto",
+                callback: function (tok) { clearTimeout(timer); finish(tok); },
+                "error-callback": function () { clearTimeout(timer); finish(""); return true; },
+                "timeout-callback": function () { clearTimeout(timer); finish(""); },
+              });
+            } catch (_e) { clearTimeout(timer); finish(""); }
+          };
+
+          if (typeof window.turnstile.ready === "function") window.turnstile.ready(doRender);
+          else doRender();
+        })
+        .catch(function () { resolve(""); });
     });
   }
 
-  function suspend() {
-    try {
-      if (state.widgetId !== null && window.turnstile && window.turnstile.remove) {
-        window.turnstile.remove(state.widgetId);
-      }
-    } catch (_e) {}
-    drainWaiters("");
-    state.widgetId = null;
-    state.token = "";
-    state.tokenAt = 0;
-    state.rendering = false;
-  }
+  // 无持久挂件需要清理（每次 getToken 的挂件自我移除）。保留接口兼容 bundle 的可选调用。
+  function suspend() {}
 
   // ---- (1) 隐形 NexusAuthCaptcha 兼容 shim -----------------------------
   window.NexusAuthCaptcha = {
