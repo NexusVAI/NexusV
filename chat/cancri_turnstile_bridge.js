@@ -109,14 +109,17 @@
           retry: "auto",
           "refresh-expired": "auto",
           callback: function (token) {
-            state.token = token || "";
-            state.tokenAt = Date.now();
-            if (state.token) {
-              var t = state.token;
-              state.token = "";
-              state.tokenAt = 0;
-              drainWaiters(t);
-              resetWidget(); // token 单次使用，用掉即重置以备下次
+            token = token || "";
+            if (!token) return;
+            if (state.waiters.length > 0) {
+              // 有人在等：直接派发（token 单次使用），并重置预取下一枚
+              drainWaiters(token);
+              resetWidget();
+            } else {
+              // 无人等待（如 prerender 阶段自动解出）：缓存起来，供随后的
+              // getToken 直接取用；切勿丢弃，否则挂件转入空闲、getToken 会空等超时。
+              state.token = token;
+              state.tokenAt = Date.now();
             }
           },
           "error-callback": function () { drainWaiters(""); },
@@ -154,6 +157,8 @@
           return resolve(t);
         }
         if (!renderWidget()) return resolve("");
+        // 挂件可能已解过一次而处于空闲：重置以触发一枚新 token（reset 会重跑挑战）。
+        resetWidget();
         var waiter = { resolve: resolve, timeoutId: null };
         waiter.timeoutId = setTimeout(function () {
           var i = state.waiters.indexOf(waiter);
