@@ -100,8 +100,16 @@
     if (n === Math.round(n)) return n + "×";
     return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
   }
+  function isFreeTierModel(m) {
+    return !!m && (m.gateCostTier === "free" || m.costTier === "free");
+  }
+
   function priceHtml(m) {
     // backend may later supply a ready-to-show price string; prefer it.
+    if (isFreeTierModel(m)) {
+      return '<span class="cancri-price__tag cancri-price__tag--promo">Promo</span>' +
+        '<span class="cancri-price__tag cancri-price__tag--free">Free</span>';
+    }
     if (m && typeof m.priceDisplay === "string" && m.priceDisplay) {
       return '<span class="cancri-price__num">' + esc(m.priceDisplay) + "</span>";
     }

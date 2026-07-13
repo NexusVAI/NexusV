@@ -204,10 +204,10 @@ function isWelfareModel(m) {
     if (!m) return false;
     const id = m.id || m.canonicalId || "";
     if (WELFARE_IDS.has(id)) return true;
-    // 兜底：displayName 以「【福利」/ 「【限量福利」开头也算 welfare，
-    // 让后端新加 welfare 模型不必同时改前端常量。
+    // 兜底：displayName 以「【福利」/「【限量福利」/「Free:」开头也算 welfare。
     const name = String(m.displayName || m.name || "");
     if (/^【(限量)?福利/.test(name)) return true;
+    if (/^Free:/.test(name)) return true;
     return false;
 }
 
