@@ -37,12 +37,15 @@
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
 
-  // user-specified card art (chosen by the product owner). assigned per model
-  // by a stable hash of the id so a model always gets the same image.
-  var LOGOS = [
-    "neys.png", "neyssa.png", "neyswawea.png", "neyysawaw.png", "neysyss.png",
-    "NJeys.png", "neyyswa.png", "neyyys.png", "neyyyss.png", "neyyysw.png",
-  ];
+  // card art pool: assets/oai.logo/1-6.png, assigned randomly per render
+  // with a "no repeat among the last 3 picks" rule so nearby cards differ.
+  var ART_POOL = ["1.png", "2.png", "3.png", "4.png", "5.png", "6.png"];
+  // GPT-5.6 cards use the three images extracted from the reference page.
+  var ART_OVERRIDE = {
+    "gpt-5.6-sol": "gpt56-sol.jpg",
+    "gpt-5.6-terra": "gpt56-terra.jpg",
+    "gpt-5.6-luna": "gpt56-luna.jpg",
+  };
 
   var HIDE_IDS = {
     "z-image-turbo": 1, "grok-imagine-image-lite": 1, "gpt-image-2-all": 1,
@@ -70,13 +73,21 @@
     "ByteDance": "ByteDance",
   };
 
-  function logoBase() {
-    return document.body.getAttribute("data-cancri-logobase") || "../Logo/";
+  function artBase() {
+    return document.body.getAttribute("data-cancri-artbase") || "./assets/oai.logo/";
   }
-  function logoFor(id) {
-    var h = 0, s = String(id || "");
-    for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
-    return logoBase() + LOGOS[h % LOGOS.length];
+  // per-section picker: random, but never repeats any of the last 3 picks
+  // (covers the card on the left and the ones directly above in 2/3-col grids).
+  function makeArtPicker() {
+    var recent = [];
+    return function (id) {
+      if (ART_OVERRIDE[id]) return artBase() + ART_OVERRIDE[id];
+      var pool = ART_POOL.filter(function (a) { return recent.indexOf(a) === -1; });
+      var pick = pool[Math.floor(Math.random() * pool.length)];
+      recent.push(pick);
+      if (recent.length > 3) recent.shift();
+      return artBase() + pick;
+    };
   }
 
   function getCostMultiplier(m) {
@@ -130,9 +141,9 @@
     var idAttr = opts.anchor ? ' id="model-' + escAttr(id) + '"' : "";
     return (
       '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '" role="link" tabindex="0" style="cursor:pointer">' +
-        '<div class="h-[180px] w-full">' +
+        '<div class="w-full" style="height:230px">' +
           '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg" ' +
-               'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')">' +
+               'style="background-image:url(\'' + escAttr(opts.art || (ART_OVERRIDE[id] ? artBase() + ART_OVERRIDE[id] : artBase() + ART_POOL[0])) + '\')">' +
             '<span class="cancri-thumb__name">' + esc(name) + "</span>" +
           "</div>" +
         "</div>" +
@@ -159,7 +170,7 @@
   }
 
   /* ── specialized section: compact horizontal cards grouped by brand ── */
-  function specializedCardHtml(m) {
+  function specializedCardHtml(m, art) {
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
     var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
@@ -167,7 +178,7 @@
       '<a href="' + escAttr(detailUrl(id)) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
         '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
           '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg" ' +
-               'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')"></div>' +
+               'style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
           '<div class="flex flex-col min-w-0">' +
             '<div class="flex items-center gap-2">' +
               '<div class="font-semibold truncate">' + esc(name) + '</div>' +
@@ -215,7 +226,8 @@
       html += '<div class="text-sm text-secondary">' + esc(desc) + '</div>';
       html += '</div>';
       html += '<div class="-mx-2 grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">';
-      shown.forEach(function (m) { html += specializedCardHtml(m); });
+      var pickArt = makeArtPicker();
+      shown.forEach(function (m) { html += specializedCardHtml(m, pickArt(m.id || m.canonicalId || "")); });
       html += '</div>';
       html += '</div>';
       if (i < brandOrder.length - 1) {
@@ -275,12 +287,18 @@
       // anchor ids only when there is no full grid on this page (e.g. landing),
       // otherwise the full grid owns the `model-<id>` anchors.
       var frontierAnchor = !document.getElementById("cancri-grid");
-      frontier.innerHTML = top.map(function (m) { return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor }); }).join("");
+      var pickFrontier = makeArtPicker();
+      frontier.innerHTML = top.map(function (m) {
+        return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || "") });
+      }).join("");
     }
 
     var grid = document.getElementById("cancri-grid");
     if (grid) {
-      grid.innerHTML = models.map(function (m) { return cardHtml(m, { flagshipBadge: true, anchor: true }); }).join("");
+      var pickGrid = makeArtPicker();
+      grid.innerHTML = models.map(function (m) {
+        return cardHtml(m, { flagshipBadge: true, anchor: true, art: pickGrid(m.id || m.canonicalId || "") });
+      }).join("");
     }
 
     renderSpecialized(models);

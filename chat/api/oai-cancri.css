@@ -6,6 +6,46 @@
  * Model ID / price spec rows shown below each card.
  * Uses OpenAI's own CSS custom properties so light/dark theming stays 1:1. */
 
+/* ── self-hosted platform font (anthropicSans / anthropicMono) ───── */
+@font-face {
+  font-family: anthropicSans;
+  src: url(../assets/fonts/anthropic-sans.woff2) format("woff2");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: anthropicSans;
+  src: url(../assets/fonts/anthropic-sans-italic.woff2) format("woff2");
+  font-weight: 300 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: anthropicMono;
+  src: url(../assets/fonts/anthropic-mono.woff2) format("woff2");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+body {
+  font-family: anthropicSans, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.font-mono,
+code,
+pre,
+kbd,
+samp {
+  font-family: anthropicMono, ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+}
+
+/* the wordmark SVG is white; invert it on the light theme header */
+:root:not(.dark) img[alt="NexusVAI Developers"] {
+  filter: invert(1);
+}
+
 /* The base `bg-white` utility was tree-shaken from the extracted stylesheet
  * (only the `dark:bg-black` variant survived). The fixed header / sidebar /
  * drawer use `bg-white dark:bg-black`; scope this to light theme only so it

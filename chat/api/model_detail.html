@@ -19,11 +19,16 @@ body{transition:opacity ease-in 0.2s}
 @layer components{._LoadingIndicator_aet99_1:before{position:absolute;inset:0;display:block;border:var(--indicator-stroke,2px) solid var(--indicator-color,currentcolor);border-radius:50%;content:"";-webkit-mask-image:conic-gradient(rgb(0 0 0/0%),rgb(0 0 0));mask-image:conic-gradient(#0000,#000)}._LoadingIndicator_aet99_1:after{position:absolute;top:0;left:50%;display:block;width:var(--indicator-stroke,2px);height:var(--indicator-stroke,2px);border-radius:100%;margin-left:calc(var(--indicator-stroke,2px)*-1/2);background-color:var(--indicator-color,currentcolor);content:""}@keyframes _rotate_aet99_1{0%{transform:rotate(0)}to{transform:rotate(1turn)}}}@layer components{._TransitionGroupChild_1d6a5_1{display:block}}@layer components{._Button_6dmow_1{position:relative;display:inline-block;gap:var(--button-gap);flex-shrink:0;height:var(--button-size);border-radius:var(--button-radius);cursor:pointer;font-size:var(--button-font-size);font-weight:var(--button-font-weight);line-height:1;transition-duration:var(--transition-duration-basic);transition-property:opacity,color;transition-timing-function:var(--transition-ease-basic);-webkit-user-select:none;-moz-user-select:none;user-select:none;white-space:nowrap}._Button_6dmow_1:before{position:absolute;inset:0;display:block;border-radius:inherit;content:"";transition-duration:var(--transition-duration-basic);transition-property:opacity,background-color,transform,box-shadow,border-color;transition-timing-function:var(--transition-ease-basic);will-change:transform}._Button_6dmow_1:after{position:absolute;inset:0;display:block;border-radius:inherit;content:"";pointer-events:none;transition-duration:var(--transition-duration-basic);transition-property:transform;transition-timing-function:var(--transition-ease-basic);will-change:transform}._Button_6dmow_1:focus{outline:none}._Button_6dmow_1:focus-visible:after{outline:2px solid var(--button-ring-color,var(--color-ring));outline-offset:var(--button-ring-offset,2px)}._Button_6dmow_1 svg:where(:not([data-no-autosize])){width:var(--button-icon-size);height:var(--button-icon-size)}:where(._Button_6dmow_1 svg:where(:not([data-no-autosize])):last-child:not(:only-child)){margin-right:var(--button-icon-offset,-1px)}._Button_6dmow_1:where([data-size=xs]){--button-size:var(--control-size-xs);--button-gutter:var(--control-gutter-xs);--button-font-size:var(--control-font-size-md);--button-icon-size:var(--control-icon-size-sm);--button-gap:var(--button-gap-md);--button-radius:var(--control-radius-sm);--button-icon-offset:-1px;--indicator-size:13px;--circular-progress-size:14px}._Button_6dmow_1:where([data-size=md]){--button-size:var(--control-size-md);--button-gutter:var(--control-gutter-md);--button-font-size:var(--control-font-size-md);--button-icon-size:var(--control-icon-size-md);--button-gap:var(--button-gap-lg);--button-radius:var(--control-radius-md);--button-icon-offset:-1px;--indicator-size:16px;--circular-progress-size:16px}._Button_6dmow_1:where([data-size=xl]){--button-size:var(--control-size-xl);--button-gutter:var(--control-gutter-lg);--button-font-size:var(--control-font-size-md);--button-icon-size:var(--control-icon-size-md);--button-gap:var(--button-gap-lg);--button-radius:var(--control-radius-lg);--button-icon-offset:-1px;--indicator-size:18px;--circular-progress-size:18px}._Button_6dmow_1:where([data-icon-size=sm]){--button-icon-size:var(--control-icon-size-sm)}._Button_6dmow_1:where([data-pill]){--button-radius:var(--radius-full);padding:0 calc(var(--button-gutter)*var(--control-gutter-pill-scaling))}._Button_6dmow_1[data-variant=ghost]{--button-ring-offset:-1px;color:var(--button-text-color)}._Button_6dmow_1[data-variant=ghost]:before{background-color:var(--button-background-color);opacity:0;transform:scale(var(--scale))}._Button_6dmow_1[data-variant=ghost][aria-expanded=true]:before,._Button_6dmow_1[data-variant=ghost][data-state=open]:before{opacity:.6;transform:scale(1)}._Button_6dmow_1[data-variant=ghost][data-selected]:before{opacity:1;transform:scale(1)}@media (hover:hover) and (pointer:fine){._Button_6dmow_1[data-variant=ghost]:where(:not([data-disabled])):hover{color:var(--button-text-color-hover)}._Button_6dmow_1[data-variant=ghost]:where(:not([data-disabled])):hover:before{opacity:1;transform:scale(1)}}._Button_6dmow_1[data-variant=ghost]:where(:not([data-disabled])):active:before{background-color:var(--button-background-color-active);opacity:1;transform:scale(var(--scale))}._Button_6dmow_1[data-variant=ghost]:where(:not([data-disabled])):active:after{transform:scale(var(--scale))}._Button_6dmow_1[data-variant=ghost]:where([data-color=primary]){--button-background-color:var(--color-background-primary-ghost-hover);--button-background-color-active:var(--color-background-primary-ghost-active);--button-text-color:var(--color-text-primary-ghost);--button-text-color-hover:var(--color-text-primary-ghost-hover);--button-ring-color:var(--color-ring-primary-ghost)}._Button_6dmow_1[data-variant=solid]{color:var(--button-text-color)}._Button_6dmow_1[data-variant=solid]:before{background-color:var(--button-background-color)}._Button_6dmow_1[data-variant=solid][aria-expanded=true]:before,._Button_6dmow_1[data-variant=solid][data-state=open]:before,._Button_6dmow_1[data-variant=solid][data-selected]:before{background-color:var(--button-background-color-hover)}@media (hover:hover) and (pointer:fine){._Button_6dmow_1[data-variant=solid]:where(:not([data-disabled])):hover:before{background-color:var(--button-background-color-hover)}}._Button_6dmow_1[data-variant=solid]:where(:not([data-disabled])):active:before{background-color:var(--button-background-color-active)}._Button_6dmow_1[data-variant=solid]:where(:not([data-disabled])):active:before,._Button_6dmow_1[data-variant=solid]:where(:not([data-disabled])):active:after{transform:scale(var(--scale))}._Button_6dmow_1[data-variant=solid]:where([data-color=primary]){--button-background-color:var(--color-background-primary-solid);--button-background-color-hover:var(--color-background-primary-solid-hover);--button-background-color-active:var(--color-background-primary-solid-active);--button-text-color:var(--color-text-primary-solid);--button-ring-color:var(--color-ring-primary-solid)}._Button_6dmow_1[data-variant=soft]:before{background-color:var(--button-background-color)}._Button_6dmow_1[data-variant=soft][aria-expanded=true]:before,._Button_6dmow_1[data-variant=soft][data-state=open]:before,._Button_6dmow_1[data-variant=soft][data-selected]:before{background-color:var(--button-background-color-hover)}@media (hover:hover) and (pointer:fine){._Button_6dmow_1[data-variant=soft]:where(:not([data-disabled])):hover:before{background-color:var(--button-background-color-hover)}}._Button_6dmow_1[data-variant=soft]:where(:not([data-disabled])):active:before{background-color:var(--button-background-color-active)}._Button_6dmow_1[data-variant=soft]:where(:not([data-disabled])):active:before,._Button_6dmow_1[data-variant=soft]:where(:not([data-disabled])):active:after{transform:scale(var(--scale))}._Button_6dmow_1[data-variant=outline]{--button-ring-offset:-1px;color:var(--button-text-color)}._Button_6dmow_1[data-variant=outline]:before{background-color:transparent;box-shadow:0 0 0 1px var(--button-border-color) inset,var(--button-shadow-custom,0 0#00000000)}._Button_6dmow_1[data-variant=outline][aria-expanded=true]:before,._Button_6dmow_1[data-variant=outline][data-state=open]:before,._Button_6dmow_1[data-variant=outline][data-selected]:before{background-color:var(--button-background-color-hover);box-shadow:0 0 0 1px var(--button-border-color-hover) inset,var(--button-shadow-custom,0 0#00000000)}@media (hover:hover) and (pointer:fine){._Button_6dmow_1[data-variant=outline]:where(:not([data-disabled])):hover{color:var(--button-text-color-hover)}._Button_6dmow_1[data-variant=outline]:where(:not([data-disabled])):hover:before{background-color:var(--button-background-color-hover);box-shadow:0 0 0 1px var(--button-border-color-hover) inset,var(--button-shadow-custom,0 0#00000000)}}._Button_6dmow_1[data-variant=outline]:where(:not([data-disabled])):active:before{background-color:var(--button-background-color-active);transform:scale(var(--scale))}._Button_6dmow_1[data-variant=outline]:where(:not([data-disabled])):active:after{transform:scale(var(--scale))}._Button_6dmow_1[data-variant=outline]:where([data-color=primary]){--button-background-color-hover:var(--color-background-primary-outline-hover);--button-background-color-active:var(--color-background-primary-outline-active);--button-border-color:var(--color-border-primary-outline);--button-border-color-hover:var(--color-border-primary-outline-hover);--button-text-color:var(--color-text-primary-outline);--button-text-color-hover:var(--color-text-primary-outline-hover);--button-ring-color:var(--color-ring-primary-outline)}._Button_6dmow_1[data-disabled][data-variant]:active:before{transform:scale(1)}._ButtonInner_6dmow_4{position:relative;display:flex;flex-direction:inherit;align-items:center;justify-content:center;gap:inherit;width:100%;height:100%;transition:opacity .15s ease .1s}}
 @layer components{@media (hover:hover) and (pointer:fine){._Tooltip_purug_1[data-compact=true][data-clickable=true]:hover{background:var(--tooltip-compact-interactive-background-color-hover);color:var(--tooltip-compact-interactive-text-color-hover)}}@keyframes _scale-in_purug_1{0%{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}@keyframes _scale-out_purug_1{0%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.97)}}._TriggerDecorator_purug_84:focus{outline:0}}</style>
 <style>
+@font-face{font-family:anthropicSans;src:url(../assets/fonts/anthropic-sans.woff2) format("woff2");font-weight:300 800;font-style:normal;font-display:swap;}
+@font-face{font-family:anthropicSans;src:url(../assets/fonts/anthropic-sans-italic.woff2) format("woff2");font-weight:300 800;font-style:italic;font-display:swap;}
+@font-face{font-family:anthropicMono;src:url(../assets/fonts/anthropic-mono.woff2) format("woff2");font-weight:300 800;font-style:normal;font-display:swap;}
 html,body{margin:0;background:#0d0d0d;color:#ececec;}
+body{font-family:anthropicSans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.font-mono,code,pre,kbd,samp{font-family:anthropicMono,ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
 .cshell-header{position:fixed;top:0;left:0;right:0;height:64px;z-index:50;background:#000;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;padding:0 24px;gap:24px;}
 .cshell-header a{text-decoration:none;}
 .cshell-logo{display:flex;align-items:center;gap:8px;font-weight:600;color:#ececec;font-size:15px;}
-.cshell-logo img{height:24px;width:24px;border-radius:6px;}
+.cshell-logo img{height:24px;width:auto;}
 .cshell-nav{display:none;align-items:center;gap:4px;margin:0 auto;}
 .cshell-nav a{font-size:14px;padding:4px 10px;border-radius:6px;color:#a3a3a3;}
 .cshell-nav a:hover{color:#ececec;background:rgba(255,255,255,.06);}
@@ -50,7 +55,7 @@ html,body{margin:0;background:#0d0d0d;color:#ececec;}
 <body class="overflow-x-hidden">
 
 <header class="cshell-header">
-  <a href="./index.html" class="cshell-logo"><img src="../../Logo/Cancri1.jpg" alt="NexusV" width="24" height="24" /><span>NexusV 开放平台</span></a>
+  <a href="./index.html" class="cshell-logo"><img src="../assets/oai.logo/nexusvai_developers_wordmark.svg" alt="NexusVAI Developers" height="24" /></a>
   <nav class="cshell-nav">
     <a href="./index.html">概览</a>
     <a href="../api_models.html" class="on">模型</a>
@@ -169,9 +174,33 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
 
   var q = new URLSearchParams(location.search).get('model') || 'gpt-5.5';
 
+  // ── 模型方块图：oai.logo 1-6 按 id 稳定哈希；GPT-5.6 三卡用参考页提取图 ──
+  var ART_BASE = '../assets/oai.logo/';
+  var ART_OVERRIDE = {
+    'gpt-5.6-sol': 'gpt56-sol.jpg',
+    'gpt-5.6-terra': 'gpt56-terra.jpg',
+    'gpt-5.6-luna': 'gpt56-luna.jpg'
+  };
+  function artFor(id) {
+    if (ART_OVERRIDE[id]) return ART_BASE + ART_OVERRIDE[id];
+    var h = 0, s = String(id || '');
+    for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+    return ART_BASE + ((h % 6) + 1) + '.png';
+  }
+  function applyArt(id) {
+    var url = artFor(id);
+    document.querySelectorAll('img[alt="gpt-5.5"]').forEach(function (img) {
+      img.src = url;
+      img.style.objectFit = 'cover';
+      img.style.width = '100%';
+      img.style.height = '100%';
+    });
+  }
+
   // ── 动态计价 4 模型：编译期已知的两档 $ 价 ──
   function renderDynamic(m) {
     document.title = m.name + ' Model | NexusVAI API';
+    applyArt(m.id);
     var fmt = function (n) { return '$' + n.toFixed(2); };
     var cached = Math.round(m.inP * CACHED_FACTOR * 100) / 100;
     replaceText([
@@ -197,6 +226,7 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     var name = m.displayName || m.id;
     var desc = m.publicDescription || (m.brand ? m.brand + ' 模型' : '');
     document.title = name + ' Model | NexusVAI API';
+    applyArt(m.id);
     var inStr, outStr, cachedStr;
     var pIn = m.inputPricePerM != null ? Number(m.inputPricePerM) : NaN;
     var pOut = m.outputPricePerM != null ? Number(m.outputPricePerM) : NaN;
