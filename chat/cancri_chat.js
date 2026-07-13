@@ -6435,24 +6435,22 @@
 	}
 	function resolveToastType(message, type) {
 		const explicitType = String(type || "").toLowerCase();
-		if (/^(success|error|info|warning)$/.test(explicitType)) return explicitType;
+		if (explicitType === "success" || explicitType === "info") return "success";
+		if (explicitType === "error" || explicitType === "warning") return "warning";
 		const text = String(message || "");
-		if (/失败|错误|异常|封禁|过期|无法|拒绝|不可用|无效|损坏|过大|不支持|未就绪|用完|校验失败/.test(text)) return "error";
-		if (/警告|限制|请|稍后|只读|太长|已忽略|已暂停|已满/.test(text)) return "warning";
-		if (/已|成功|完成|开始|打开|复制|导出|导入|生成|创建|重命名|删除|切换|加载|引用|进入|选中|保存/.test(text)) return "success";
-		return "info";
+		if (/失败|错误|异常|封禁|过期|无法|拒绝|不可用|无效|损坏|过大|不支持|未就绪|用完|校验失败|警告|限制|稍后|只读|太长|已忽略|已暂停|已满/.test(text)) return "warning";
+		return "success";
 	}
 	function showToast(message, type) {
 		toast.textContent = message;
 		const toastType = resolveToastType(message, type);
 		toast.dataset.type = toastType;
 		toast.classList.toggle("is-warning", toastType === "warning");
-		toast.classList.toggle("is-info", toastType === "info");
+		toast.classList.remove("is-info");
 		toast.classList.add("show");
 		clearTimeout(showToast._timer);
 		showToast._timer = setTimeout(() => {
 			toast.classList.remove("show");
-			delete toast.dataset.type;
 		}, 2200);
 	}
 	function renderWatermark() {
@@ -8129,7 +8127,9 @@
 	function autoResizeComposerInput() {
 		if (!homeInput) return;
 		const composer = homeInput.closest("[data-workbench-composer], .composer");
-		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
+		const isMobile = window.matchMedia("(max-width: 640px)").matches;
+		const isChatting = Boolean(document.getElementById("homeView")?.classList.contains("chatting"));
+		const minHeight = isMobile ? 44 : isChatting ? 24 : 36;
 		const maxHeight = getComposerResizeMaxHeight();
 		homeInput.style.height = "0px";
 		const next = Math.max(minHeight, Math.min(homeInput.scrollHeight, maxHeight));

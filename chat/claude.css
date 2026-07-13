@@ -121,7 +121,7 @@ html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"
     --workbench-sidebar-width: 18rem;
     --workbench-rail-width: 3.5rem;
     --c-main-col: 48rem;
-    --composer-max-w: 42rem;   /* 2026-06-21 对齐 claude.ai composer max-w-2xl=42rem=672px（消息列仍 48rem） */
+    --composer-max-w: 672px;   /* claude.ai composer max-w-2xl；用 px 避免根字号 15px 导致 rem 缩水 */
     --c-radius:    16px;
     --c-radius-sm: 10px;
     --c-radius-pill: 999px;
@@ -518,46 +518,8 @@ html[data-theme="light"] .nav-row.active {
 .sidebar.collapsed .nav-group {
     gap: 1px !important;
 }
-.sidebar.collapsed .nav-row {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    max-width: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    justify-content: center !important;
-    gap: 0 !important;
-    display: grid !important;
-    place-items: center !important;
-    position: static !important;
-    border-radius: 9px !important;
-    box-sizing: border-box !important;
-}
-.sidebar.collapsed .nav-row:hover,
-.sidebar.collapsed .nav-row.active {
-    border-radius: 9px !important;
-}
-.sidebar.collapsed .nav-row svg,
-.sidebar.collapsed .nav-row .claude-nav-icon,
-.sidebar.collapsed .nav-row .claude-anthropicon {
-    position: static !important;
-    transform: none !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-}
-.sidebar.collapsed .nav-row .sidebar-label,
-.sidebar.collapsed .nav-row .claude-nav-tag {
-    display: block !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    max-width: 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none !important;
-}
+/* 2026-07-13：折叠态 nav-row / footer-btn / account-strip 旧几何（32px/38px 盒）
+   与 claude-sidebar-icons.css 的固定网格模型冲突，已删除。 */
 .sidebar.collapsed .claude-recent-title,
 .sidebar.collapsed .recent-wrap,
 .sidebar.collapsed #chatHistoryList,
@@ -570,55 +532,10 @@ html[data-theme="light"] .nav-row.active {
     padding: 0 4px 10px !important;
     gap: 0 !important;
 }
-.sidebar.collapsed .sidebar-footer-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    max-width: 36px !important;
-    min-height: 36px !important;
-    max-height: 36px !important;
-    margin: 2px auto !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-.sidebar.collapsed .account-strip {
-    width: 38px !important;
-    height: 38px !important;
-    min-width: 38px !important;
-    max-width: 38px !important;
-    min-height: 38px !important;
-    max-height: 38px !important;
-    padding: 0 !important;
-    margin: 0 auto !important;
-    justify-content: center !important;
-    gap: 0 !important;
-    display: flex !important;
-    position: static !important;
-    border-radius: 50% !important;
-    box-sizing: border-box !important;
-}
-.sidebar.collapsed .account-strip .avatar {
-    position: static !important;
-    transform: none !important;
-    width: 38px !important;
-    height: 38px !important;
-    border-radius: 50% !important;
-    font-size: 14px !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-}
 .sidebar.collapsed .account-strip .account-meta,
 .sidebar.collapsed .account-strip .upgrade-btn,
 .sidebar.collapsed .account-strip .account-arrow {
     opacity: 0 !important;
-    width: 0 !important;
-    max-width: 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
     pointer-events: none !important;
 }
 
@@ -775,8 +692,9 @@ html[data-theme="light"] .conversation-item:hover {
 }
 
 /* 账号底部 strip */
+/* Claude 参考：账号底部区域无横分隔线 */
 .sidebar-footer, .account-strip-wrap {
-    border-top: 1px solid var(--c-line);
+    border-top: none;
     padding: 8px !important;
 }
 .account-strip {
@@ -2066,6 +1984,10 @@ html[data-theme="black"] .claude-suggest:hover {
     height: 16px !important;
     opacity: 0.85;
 }
+.popover-item .claude-anthropicon {
+    font-size: 16px !important;
+    opacity: 0.85;
+}
 .popover-divider {
     height: 1px !important;
     background: var(--c-line) !important;
@@ -2386,13 +2308,15 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     height: auto !important;
     transform: none !important;
     padding: 8px 24px 16px !important;
-    max-width: var(--c-main-col) !important;
+    /* composer 752px + 左右 padding 24px：列宽需 800px 才放得下 */
+    max-width: 800px !important;
     margin: 0 auto !important;
     width: 100% !important;
 }
+/* Claude 实测：聊天态 composer 更宽（752px），首页保持 672px */
 #homeView.chatting .composer-wrap {
     width: 100% !important;
-    max-width: var(--composer-max-w, 42rem) !important;
+    max-width: 752px !important;
     margin: 0 auto !important;
 }
 #homeView.chatting .composer {
@@ -2519,10 +2443,10 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 #sidebarApiPlatformBtn {
     display: none !important;
 }
-/* sidebar-footer 简化：只保留 account-strip */
+/* sidebar-footer 简化：只保留 account-strip；Claude 参考无横向分隔线 */
 .sidebar-footer {
     margin-top: auto !important;
-    border-top: 1px solid var(--c-line) !important;
+    border-top: none !important;
     padding: 10px !important;
     background: transparent !important;
     flex-shrink: 0 !important;
@@ -2815,6 +2739,10 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 .claude-snav-icon svg {
     width: 18px;
     height: 18px;
+}
+.claude-snav-icon.claude-anthropicon {
+    font-size: 18px;
+    color: inherit;
 }
 .claude-snav-item:hover .claude-snav-icon,
 .claude-snav-item.active .claude-snav-icon {
@@ -3859,22 +3787,6 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     --toast-bg: rgba(20, 60, 30, 0.96);
     --toast-fg: #86efac;
     --toast-border: rgba(134, 239, 172, 0.35);
-    --toast-padding: 12px 16px;
-    --toast-icon: none;
-}
-
-.toast[data-type="error"] {
-    --toast-bg: rgba(60, 20, 20, 0.96);
-    --toast-fg: #fca5a5;
-    --toast-border: rgba(252, 165, 165, 0.35);
-    --toast-padding: 12px 16px;
-    --toast-icon: none;
-}
-
-.toast[data-type="info"] {
-    --toast-bg: rgba(20, 30, 60, 0.96);
-    --toast-fg: #93c5fd;
-    --toast-border: rgba(147, 197, 253, 0.35);
     --toast-padding: 12px 16px;
     --toast-icon: none;
 }
@@ -5964,10 +5876,6 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 
 .toast.show {
     transform: translateX(0) scale(1) !important;
-}
-
-.toast.is-info {
-    --toast-padding: 12px 16px;
 }
 
 .toast.is-warning {
@@ -9528,9 +9436,10 @@ html[data-theme] {
     line-height: 20px !important;
 }
 
+/* 与收起态一致的 44px 高度，避免收起瞬间图标列上抬 4px */
 .sidebar-topbar {
-    min-height: 48px !important;
-    padding: 8px !important;
+    min-height: 44px !important;
+    padding: 0 8px !important;
 }
 
 .account-strip {

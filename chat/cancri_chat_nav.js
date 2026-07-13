@@ -30,10 +30,7 @@
     btn.title = "新建对话";
     btn.setAttribute("aria-label", "新建对话");
     btn.innerHTML =
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>' +
-      '<path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path>' +
-      "</svg>";
+      '<span class="claude-anthropicon" style="font-size: 20px" aria-hidden="true">&#xe057;</span>';
     btn.addEventListener("click", function () {
       const app = window.CancriApp;
       if (app && typeof app.newChat === "function") app.newChat();
