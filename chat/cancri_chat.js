@@ -49,17 +49,6 @@
 			"customMultiplier": 3.5
 		},
 		{
-			"id": "gemini-3.1-flash-lite-welfare",
-			"name": "Gemini 3.1 Flash Lite 0603",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"customMultiplier": 3.5
-		},
-		{
 			"id": "gemini-2.5-flash-lite",
 			"name": "Gemini 2.5 Flash Lite",
 			"brand": "Google",
@@ -795,6 +784,7 @@
 	};
 	//#endregion
 	//#region src/main.js
+	var MODEL_UPGRADE_URL = "https://www.nexusvai.xyz/chat/pricing.html";
 	var MODEL_CONTEXT_WINDOWS = {
 		"gpt-5.5": 256e3,
 		"gpt-5.5-special": 256e3,
@@ -812,7 +802,6 @@
 		"gemini-3.1-pro": 2097152,
 		"gemini-3.1-flash-lite-preview": 1048576,
 		"gemini-3.5-agent": 1048576,
-		"gemini-3.1-flash-lite-welfare": 1048576,
 		"gemini-2.5-flash-lite": 1048576,
 		"gemini-3-flash-preview": 1048576,
 		"deepseek-v4-pro": 64e3,
@@ -2010,8 +1999,7 @@
 		"grok-imagine-video",
 		"doubao-seedream-4-5",
 		"gemini-3-flash-preview",
-		"gemini-3.1-flash-lite-preview",
-		"gemini-3.1-flash-lite-welfare"
+		"gemini-3.1-flash-lite-preview"
 	]);
 	var FREE_USER_BLOCKED_GATE_IDS = new Set([
 		"gpt-5.5",
@@ -2035,7 +2023,6 @@
 		"z-image-turbo",
 		"gemini-3-flash-preview",
 		"gemini-3.1-flash-lite-preview",
-		"gemini-3.1-flash-lite-welfare",
 		"gemini-3.5-agent",
 		"glm-5.1",
 		"deepseek-v4-pro"
@@ -2074,6 +2061,13 @@
 	};
 	var quotaStateFetchInflight = null;
 	var QUOTA_STATE_TTL_MS = 30 * 1e3;
+	var quotaStateReady = false;
+	function markQuotaStateReady() {
+		quotaStateReady = true;
+		if (modelCatalogLoaded) try {
+			renderModelDropdownFromCatalog();
+		} catch (e) {}
+	}
 	function seedQuotaStateFromTierCache() {
 		try {
 			const raw = localStorage.getItem("cancri_tier_cache_v1");
@@ -2113,6 +2107,10 @@
 	function isFreeWelfareModel(modelId) {
 		return FREE_WELFARE_MODEL_IDS.has(modelId);
 	}
+	function isFreePlanModel(modelId) {
+		const meta = getModelMeta(modelId);
+		return Boolean(isFreeWelfareModel(modelId) || meta.gateCostTier === "free" || !meta.gateCostTier && meta.costTier === "free");
+	}
 	function isProPlusGateModel(modelId) {
 		const meta = getModelMeta(modelId);
 		return Boolean(meta && (meta.costTier === "vip" || meta.proPlusOnly));
@@ -2124,9 +2122,9 @@
 	}
 	function getQuotaBlockReason(modelId) {
 		if (quotaState.billingMode === "plan_v4") {
-			if (isFreeWelfareModel(modelId)) {
-				if (quotaState.planV4Active === false && quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
-				if (quotaState.planV4Active === false && quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
+			if (quotaState.planV4Active === false && isFreePlanModel(modelId)) {
+				if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
+				if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
 				return null;
 			}
 			if (quotaState.planV4Active === false) return "plan_required";
@@ -2169,6 +2167,35 @@
 			default: return "";
 		}
 	}
+	function getModelUpgradeLabel(modelId, reason = getQuotaBlockReason(modelId)) {
+		if (reason === "pro_max_only") return "Pro Max";
+		if (reason === "pro_plus_only") return "Pro+";
+		if (reason === "plan_required" || reason === "pro_only") return "Pro";
+		return "";
+	}
+	function syncModelOptionAccess(option, upgradeLabel) {
+		let access = option.querySelector(".model-access");
+		if (!upgradeLabel) {
+			access?.remove();
+			return;
+		}
+		if (!access) {
+			access = document.createElement("span");
+			access.className = "model-access";
+			const badge = document.createElement("span");
+			badge.className = "model-access-badge";
+			access.appendChild(badge);
+			const link = document.createElement("a");
+			link.className = "model-upgrade-link";
+			link.href = MODEL_UPGRADE_URL;
+			link.target = "_self";
+			link.textContent = "Upgrade";
+			access.appendChild(link);
+			option.appendChild(access);
+		}
+		const badge = access.querySelector(".model-access-badge");
+		if (badge) badge.textContent = upgradeLabel;
+	}
 	function getCancriAccessTokenForQuota() {
 		try {
 			const raw = localStorage.getItem("cancri_supabase_auth");
@@ -2185,7 +2212,11 @@
 		const token = getCancriAccessTokenForQuota();
 		const SUPABASE_URL = window.__SUPABASE_URL__ || "";
 		const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
-		if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) return quotaState;
+		if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+			markQuotaStateReady();
+			return quotaState;
+		}
+		const quotaReadyTimeoutId = setTimeout(markQuotaStateReady, 5e3);
 		quotaStateFetchInflight = fetch(SUPABASE_URL + "/functions/v1/chat-gateway", {
 			method: "POST",
 			headers: {
@@ -2248,6 +2279,7 @@
 				quotaState.fetchedAt = Date.now();
 				if (clearTopupBackedQuotaLocks()) persistModelTelemetryCache();
 			}
+			markQuotaStateReady();
 			quotaStateFetchInflight = null;
 			try {
 				if (typeof updateModelDropdownIndicators === "function") updateModelDropdownIndicators();
@@ -2257,8 +2289,11 @@
 			} catch (e) {}
 			return quotaState;
 		}).catch((e) => {
+			markQuotaStateReady();
 			quotaStateFetchInflight = null;
 			return quotaState;
+		}).finally(() => {
+			clearTimeout(quotaReadyTimeoutId);
 		});
 		return quotaStateFetchInflight;
 	}
@@ -2385,26 +2420,28 @@
 		modelDropdown.querySelectorAll(".model-option").forEach((opt) => {
 			const modelId = opt.dataset.model;
 			const status = getModelStatus(modelId);
-			let speedDot = opt.querySelector(".model-speed-dot");
-			if (!speedDot) return;
-			speedDot.className = "model-speed-dot speed-" + (status.speedLevel || "unknown");
-			const h = status._health;
-			if (h && h.successRate !== null) {
-				const latency = h.avgLatency !== null ? ` · ${Math.round(h.avgLatency)}ms` : "";
-				const reqs = h.totalRequests > 0 ? ` · ${h.totalRequests}次请求` : "";
-				if (status.speedLevel === "fast") speedDot.title = `正常 ${h.successRate}%${latency}${reqs}`;
-				else if (status.speedLevel === "medium") speedDot.title = `降级 ${h.successRate}%${latency}${reqs}`;
-				else if (status.speedLevel === "slow") speedDot.title = `异常 ${h.successRate}%${latency}${reqs}`;
-				else speedDot.title = `服务端数据 ${h.successRate}%${latency}`;
-			} else if (status.speedLevel === "fast") speedDot.title = `速度快 (${Math.round(status.speedMs)}ms)`;
-			else if (status.speedLevel === "medium") speedDot.title = `速度中等 (${Math.round(status.speedMs)}ms)`;
-			else if (status.speedLevel === "slow") speedDot.title = `速度较慢 (${Math.round(status.speedMs)}ms)`;
-			else speedDot.title = "速度未测试";
 			const quotaReason = getQuotaBlockReason(modelId);
+			syncModelOptionAccess(opt, getModelUpgradeLabel(modelId, quotaReason));
+			const speedDot = opt.querySelector(".model-speed-dot");
+			if (speedDot) {
+				speedDot.className = "model-speed-dot speed-" + (status.speedLevel || "unknown");
+				const h = status._health;
+				if (h && h.successRate !== null) {
+					const latency = h.avgLatency !== null ? ` · ${Math.round(h.avgLatency)}ms` : "";
+					const reqs = h.totalRequests > 0 ? ` · ${h.totalRequests}次请求` : "";
+					if (status.speedLevel === "fast") speedDot.title = `正常 ${h.successRate}%${latency}${reqs}`;
+					else if (status.speedLevel === "medium") speedDot.title = `降级 ${h.successRate}%${latency}${reqs}`;
+					else if (status.speedLevel === "slow") speedDot.title = `异常 ${h.successRate}%${latency}${reqs}`;
+					else speedDot.title = `服务端数据 ${h.successRate}%${latency}`;
+				} else if (status.speedLevel === "fast") speedDot.title = `速度快 (${Math.round(status.speedMs)}ms)`;
+				else if (status.speedLevel === "medium") speedDot.title = `速度中等 (${Math.round(status.speedMs)}ms)`;
+				else if (status.speedLevel === "slow") speedDot.title = `速度较慢 (${Math.round(status.speedMs)}ms)`;
+				else speedDot.title = "速度未测试";
+			}
 			if (!isModelAvailable(modelId)) {
 				opt.classList.add("disabled");
 				if (quotaReason) {
-					opt.classList.add("quota-blocked");
+					opt.classList.toggle("quota-blocked", Boolean(getModelUpgradeLabel(modelId, quotaReason)));
 					opt.dataset.quotaReason = quotaReason;
 					opt.title = getQuotaBlockMessage(modelId);
 				} else {
@@ -11482,7 +11519,7 @@
 		const content = document.getElementById("modelDropdownContent");
 		if (!content) return;
 		content.textContent = "";
-		if (!modelCatalogLoaded) {
+		if (!modelCatalogLoaded || !quotaStateReady) {
 			for (let i = 0; i < 8; i++) {
 				const sk = document.createElement("div");
 				sk.className = "model-option model-option-skeleton";
@@ -11560,6 +11597,7 @@
 				if (subtext.textContent) textWrap.appendChild(subtext);
 				label.appendChild(textWrap);
 				option.appendChild(label);
+				syncModelOptionAccess(option, getModelUpgradeLabel(model.id));
 				(model.tags || []).forEach((tagText) => {
 					const tag = document.createElement("span");
 					tag.className = "model-tag";
@@ -11858,6 +11896,7 @@
 	} catch (e) {}
 	if (modelDropdown) {
 		modelDropdown.addEventListener("click", (e) => {
+			if (e.target.closest(".model-upgrade-link")) return;
 			const option = e.target.closest(".model-option");
 			if (!option || !modelDropdown.contains(option)) return;
 			const modelId = option.dataset.model;

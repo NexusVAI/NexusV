@@ -3321,6 +3321,10 @@
 
         // cascade click → 找原 option 触发 click，复用 cancri 的 changeModel 委托
         cascade.addEventListener('click', function (e) {
+            if (e.target.closest('.model-upgrade-link')) {
+                e.stopPropagation();
+                return;
+            }
             const opt = e.target.closest('.model-option');
             if (opt) {
                 const modelId = opt.dataset.model;

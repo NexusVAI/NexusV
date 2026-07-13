@@ -1689,41 +1689,68 @@ html[data-theme="dark"] .model-dropdown {
     color: var(--accent);
 }
 .model-option.disabled {
-    opacity: 0.45;
+    opacity: 0.55;
     cursor: not-allowed;
-    text-decoration: line-through;
+    text-decoration: none;
     color: var(--text-dim);
 }
 .model-option.disabled:hover {
     background: transparent;
 }
-/* 2026-05-17：FREE/PAID 配额闸门挡的选项 — 比通用 disabled 更突出（accent
-   描边），暗示「升级即可解锁」。data-quota-reason 让 hover tooltip 区分
-   paid_only / pool_exhausted / daily_limit 三种状态。 */
 .model-option.quota-blocked {
-    opacity: 0.55;
-    cursor: not-allowed;
-    text-decoration: line-through;
-    color: var(--text-dim);
-    border-left: 2px solid var(--accent, #c96442);
-    padding-left: calc(12px - 2px);
-}
-.model-option.quota-blocked::after {
-    content: "PAID";
-    margin-left: auto;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-    color: var(--accent, #c96442);
-    text-decoration: none;
-    padding: 1px 6px;
-    border: 1px solid var(--accent, #c96442);
-    border-radius: 999px;
-    align-self: center;
     opacity: 1;
+    cursor: default;
+    text-decoration: none;
+    color: var(--text);
+    border-left: 0;
+    padding-left: 10px;
 }
 .model-option.quota-blocked:hover {
-    background: transparent;
+    background: var(--hover);
+}
+.model-access {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.model-access-badge {
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #dbeafe;
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.model-upgrade-link {
+    padding: 2px 7px;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+}
+.model-upgrade-link:hover,
+.model-upgrade-link:focus-visible {
+    border-color: #2563eb;
+    background: rgba(37, 99, 235, 0.08);
+}
+html[data-theme="dark"] .model-access-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+html[data-theme="dark"] .model-upgrade-link {
+    border-color: rgba(148, 163, 184, 0.45);
+    color: #93c5fd;
+}
+html[data-theme="dark"] .model-upgrade-link:hover,
+html[data-theme="dark"] .model-upgrade-link:focus-visible {
+    border-color: #93c5fd;
+    background: rgba(59, 130, 246, 0.14);
 }
 
 .model-speed-dot {
