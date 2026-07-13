@@ -184,7 +184,7 @@
 		},
 		{
 			"id": "baichuan-m2-welfare",
-			"name": "【福利】Baichuan M2",
+			"name": "Free:Baichuan M2",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -194,7 +194,7 @@
 		},
 		{
 			"id": "baichuan4-air-welfare",
-			"name": "【福利】Baichuan 4 Air",
+			"name": "Free:Baichuan 4 Air",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -204,7 +204,7 @@
 		},
 		{
 			"id": "baichuan3-turbo-welfare",
-			"name": "【福利】Baichuan 3 Turbo",
+			"name": "Free:Baichuan 3 Turbo",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -214,7 +214,7 @@
 		},
 		{
 			"id": "baichuan2-turbo-welfare",
-			"name": "【福利】Baichuan 2 Turbo",
+			"name": "Free:Baichuan 2 Turbo",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -487,36 +487,6 @@
 			"customMultiplier": 3.5
 		},
 		{
-			"id": "deepseek-v4-welfare",
-			"name": "【福利】DeepSeek V4",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "gemini-3.1-pro-welfare",
-			"name": "【福利】Gemini 3.1 Pro",
-			"brand": "Google",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "gpt-5.5-high-fast",
-			"name": "【福利】GPT-5.5",
-			"brand": "OpenAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
 			"id": "minimax-m2.7",
 			"name": "MiniMax M2.7",
 			"brand": "MiniMax",
@@ -582,44 +552,13 @@
 		},
 		{
 			"id": "qwen3.7-plus",
-			"name": "【订阅福利】Qwen3.7 Plus",
+			"name": "Qwen 3.7 Plus",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3.5-35b-a3b",
-			"name": "Qwen 3.5 35B A3B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "qwen3.5-27b",
-			"name": "Qwen 3.5 27B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap"
-		},
-		{
-			"id": "deepseek-r1-distill-qwen-32b",
-			"name": "DeepSeek R1 Distill Qwen 32B",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": true,
-			"costTier": "cheap",
-			"customMultiplier": .5
+			"costTier": "normal"
 		},
 		{
 			"id": "qwen3.5-122b-a10b",
@@ -746,36 +685,6 @@
 			"lineLabel": "jiuyoumao"
 		},
 		{
-			"id": "qwen3.5-4b",
-			"name": "Qwen3.5 4B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3.5-9b",
-			"name": "Qwen3.5 9B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
-			"id": "qwen3-8b-jiuyoumao",
-			"name": "Qwen 3.5 8B",
-			"brand": "Qwen",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "free"
-		},
-		{
 			"id": "doubao-seed-oss",
 			"name": "Doubao Seed OSS",
 			"brand": "Doubao",
@@ -784,16 +693,6 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "free"
-		},
-		{
-			"id": "deepseek-v4-flash-0617",
-			"name": "DeepSeek V4 Flash 0617",
-			"brand": "DeepSeek",
-			"kind": "chat",
-			"vision": false,
-			"thinking": false,
-			"tools": true,
-			"costTier": "cheap"
 		},
 		{
 			"id": "hunyuan-mt-7b",
@@ -844,6 +743,39 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "free"
+		},
+		{
+			"id": "hunyuan-3",
+			"name": "Hy3",
+			"brand": "Tencent",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": false,
+			"costTier": "cheap",
+			"lineLabel": "modelscope"
+		},
+		{
+			"id": "grok-4.5",
+			"name": "Grok 4.5",
+			"brand": "xAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "futureppo"
+		},
+		{
+			"id": "composer-2.5-fast",
+			"name": "Composer-2.5-Fast",
+			"brand": "Cursor",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"lineLabel": "futureppo"
 		}
 	];
 	//#endregion
@@ -888,7 +820,6 @@
 		"deepseek-v3": 64e3,
 		"deepseek-v3.1": 64e3,
 		"deepseek-v3.2": 64e3,
-		"deepseek-v4-pro-welfare": 64e3,
 		"kimi-k2.6": 2e5,
 		"kimi-k2.7-code": 2e5,
 		"kimi-k2-thinking": 2e5,
@@ -901,7 +832,6 @@
 		"gpt-5.5": 17797536e5,
 		"gpt-5.5-special": 17797536e5,
 		"gemini-3.5-agent": 17797536e5,
-		"deepseek-v4-pro-welfare": 17797536e5,
 		"glm-5.1": 17797536e5,
 		"claude-opus-4-8-special": 17797536e5,
 		"qwen3.7-max-2026-05-17": 17797536e5
@@ -913,7 +843,9 @@
 	];
 	function normalizeModelDisplayName(name) {
 		if (!name) return "";
-		return String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
+		const stripped = String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "");
+		if (/composer/i.test(stripped)) return stripped.replace(/\s+/g, " ").trim();
+		return stripped.replace(/-/g, " ").replace(/\s+/g, " ").trim();
 	}
 	function getModelContextWindow(modelId) {
 		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
@@ -1123,7 +1055,7 @@
 		internal_error: "服务出现异常，请稍后重试。",
 		db_error: "数据写入失败，请稍后重试。"
 	};
-	var QUOTA_REFRESH_TRIGGER_CODES = /* @__PURE__ */ new Set([
+	var QUOTA_REFRESH_TRIGGER_CODES = new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
@@ -1133,19 +1065,19 @@
 		"model_pro_max_required",
 		"model_pro_required"
 	]);
-	var UPGRADE_MODAL_TRIGGER_CODES = /* @__PURE__ */ new Set([
+	var UPGRADE_MODAL_TRIGGER_CODES = new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
 		"token_window_5h_exceeded",
 		"token_window_week_exceeded"
 	]);
-	var USER_QUOTA_ERROR_CODES = /* @__PURE__ */ new Set([
+	var USER_QUOTA_ERROR_CODES = new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted"
 	]);
-	var PROVIDER_QUOTA_ERROR_CODES = /* @__PURE__ */ new Set(["model_quota_exceeded", "model_free_hour_limit"]);
+	var PROVIDER_QUOTA_ERROR_CODES = new Set(["model_quota_exceeded", "model_free_hour_limit"]);
 	function friendlyMessageFromBackend(parsed, status) {
 		const code = String(parsed?.code || "").trim();
 		if (code && QUOTA_REFRESH_TRIGGER_CODES.has(code) && typeof invalidateQuotaState === "function") try {
@@ -1373,9 +1305,7 @@
 					countdownEl.style.color = "#ef4444";
 					return false;
 				}
-				const m = Math.floor(remainMs / 6e4);
-				const s = Math.floor(remainMs % 6e4 / 1e3);
-				countdownEl.textContent = `剩余 ${m}:${s.toString().padStart(2, "0")}`;
+				countdownEl.textContent = `剩余 ${Math.floor(remainMs / 6e4)}:${Math.floor(remainMs % 6e4 / 1e3).toString().padStart(2, "0")}`;
 				return true;
 			}
 			renderCountdown();
@@ -2041,7 +1971,7 @@
 			fetchModelHealthStatus().catch(() => {});
 		}, HEALTH_STATUS_REFRESH_MS);
 	}
-	var PAID_GATE_IDS = /* @__PURE__ */ new Set([
+	var PAID_GATE_IDS = new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
 		"claude-opus-4-8-special",
@@ -2083,7 +2013,7 @@
 		"gemini-3.1-flash-lite-preview",
 		"gemini-3.1-flash-lite-welfare"
 	]);
-	var FREE_USER_BLOCKED_GATE_IDS = /* @__PURE__ */ new Set([
+	var FREE_USER_BLOCKED_GATE_IDS = new Set([
 		"gpt-5.5",
 		"gpt-5.5-special",
 		"claude-opus-4-8-special",
@@ -2110,7 +2040,7 @@
 		"glm-5.1",
 		"deepseek-v4-pro"
 	]);
-	var PRO_MAX_GATE_IDS = /* @__PURE__ */ new Set(["gpt-image-2-pro", "grok-imagine-video"]);
+	var PRO_MAX_GATE_IDS = new Set(["gpt-image-2-pro", "grok-imagine-video"]);
 	var GROK_IMAGINE_VIDEO_PROMO_START_MS = Date.parse("2026-06-18T00:00:00+08:00");
 	var GROK_IMAGINE_VIDEO_PROMO_END_MS = Date.parse("2026-07-19T00:00:00+08:00");
 	function isGrokImagineVideoPromoActive(now = Date.now()) {
@@ -2171,12 +2101,14 @@
 	function isFreeUserBlockedGateModel(modelId) {
 		return FREE_USER_BLOCKED_GATE_IDS.has(modelId);
 	}
-	var FREE_WELFARE_MODEL_IDS = /* @__PURE__ */ new Set([
+	var FREE_WELFARE_MODEL_IDS = new Set([
 		"baichuan-m2-welfare",
 		"baichuan4-air-welfare",
 		"baichuan3-turbo-welfare",
 		"baichuan2-turbo-welfare",
-		"deepseek-v4-pro-welfare"
+		"hunyuan-mt-7b",
+		"nex-n2-pro-welfare",
+		"claude-sonnet-4.5"
 	]);
 	function isFreeWelfareModel(modelId) {
 		return FREE_WELFARE_MODEL_IDS.has(modelId);
@@ -2217,7 +2149,7 @@
 		if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
 		if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 		if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
-		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "deepseek-v4-pro-welfare") return null;
+		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "hunyuan-mt-7b" || modelId === "nex-n2-pro-welfare" || modelId === "claude-sonnet-4.5") return null;
 		const hasTopup = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
 		if (!hasTopup && quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
 		if (!isPaidGateModel(modelId)) return null;
@@ -2598,7 +2530,7 @@
 		"glm-5.1"
 	].map((id, index) => [id, index]));
 	var MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
-	var LOCAL_ONLY_CATALOG_IDS = /* @__PURE__ */ new Set(["hunyuan-mt-7b"]);
+	var LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
 	var MODEL_UI_CATALOG_TTL_MS = 0;
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
@@ -2761,7 +2693,7 @@
 		"nex-n2-pro-welfare": "./NEX_logo.svg",
 		"hunyuan-mt-7b": "./yuanbao-color.svg"
 	};
-	var THEME_ADAPTIVE_ICON_BRANDS = /* @__PURE__ */ new Set([
+	var THEME_ADAPTIVE_ICON_BRANDS = new Set([
 		"OpenAI",
 		"Clawto",
 		"Cancri"
@@ -3045,7 +2977,7 @@
 		if (mode === "black") return "black";
 		return mode === "dark" ? "dark" : "light";
 	}
-	var VALID_CHAT_FONTS = /* @__PURE__ */ new Set([
+	var VALID_CHAT_FONTS = new Set([
 		"serif",
 		"sans",
 		"mono"
@@ -7349,8 +7281,7 @@
 			const href = safeUrl(url);
 			if (href === "#") return alt;
 			const escHref = escapeHtml(href);
-			const escAlt = escapeHtml(alt);
-			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escAlt}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
+			return keep(`<span class="markdown-image-wrap" data-image-src="${escHref}" style="display:inline-block;position:relative;max-width:100%"><img src="${escHref}" alt="${escapeHtml(alt)}" style="max-width:100%;border-radius:8px;display:block;cursor:default"><button type="button" class="markdown-image-download" style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-radius:8px;border:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" title="下载图片"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button></span>`);
 		}).replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
 			const href = safeUrl(url);
 			if (href === "#") return label;
@@ -8239,7 +8170,7 @@
 		showToast("图片生成已开始，请稍等。");
 		let finalStatusText = "等待输入提示词";
 		const imageAttachments = (attachments || []).filter((a) => !a.isTextFile && (a.dataUrl || a.url));
-		const noI2iModels = /* @__PURE__ */ new Set([
+		const noI2iModels = new Set([
 			"grok-imagine-image",
 			"gpt-image-2-all",
 			"gpt-image-2-pro",
