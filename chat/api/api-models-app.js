@@ -1399,20 +1399,10 @@ if (drawer) {
 
 // 卡片点击委托：用 #grid 一个 listener 处理所有 card；render() 重置
 // innerHTML 时不会丢监听，因为 #grid 本身从不被替换。
-// 这些模型点击卡片跳转独立详情页（动态计价展示），其余仍开抽屉
-const DETAIL_PAGE_MODELS = new Set([
-    "gpt-5.5",
-    "gpt-5.6-sol",
-    "gpt-5.6-terra",
-    "gpt-5.6-luna",
-]);
+// 所有模型点击卡片都跳转对应详情页（OpenAI 同款布局；动态计价模型显示两档价）
 function openModelView(m) {
-    if (DETAIL_PAGE_MODELS.has(m.id)) {
-        window.location.href =
-            "./model_detail.html?model=" + encodeURIComponent(m.id);
-        return;
-    }
-    openDrawer(m);
+    window.location.href =
+        "./model_detail.html?model=" + encodeURIComponent(m.id);
 }
 
 const gridEl = $("grid");
