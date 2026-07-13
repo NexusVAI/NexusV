@@ -99,6 +99,11 @@
       '</span><span class="cancri-price__unit">token 倍率</span>';
   }
 
+  // 每张模型卡点击进入对应详情页（OpenAI 同款布局，动态计价模型显示两档价）。
+  function detailUrl(id) {
+    return "./api/model_detail.html?model=" + encodeURIComponent(id);
+  }
+
   function esc(s) {
     var d = document.createElement("div");
     d.textContent = s == null ? "" : String(s);
@@ -124,7 +129,7 @@
     // flagship duplicates in #cancri-frontier don't create duplicate ids.
     var idAttr = opts.anchor ? ' id="model-' + escAttr(id) + '"' : "";
     return (
-      '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '">' +
+      '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '" role="link" tabindex="0" style="cursor:pointer">' +
         '<div class="h-[180px] w-full">' +
           '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg" ' +
                'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')">' +
@@ -159,7 +164,7 @@
     var name = m.displayName || id;
     var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
     return (
-      '<a href="#model-' + escAttr(id) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
+      '<a href="' + escAttr(detailUrl(id)) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
         '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
           '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg" ' +
                'style="background-image:url(\'' + escAttr(logoFor(id)) + '\')"></div>' +
@@ -279,9 +284,33 @@
     }
 
     renderSpecialized(models);
+    bindCardNav();
 
     var counters = document.querySelectorAll("[data-cancri-count]");
     counters.forEach(function (el) { el.textContent = String(models.length); });
+  }
+
+  var __cardNavBound = false;
+  function bindCardNav() {
+    if (__cardNavBound) return;
+    __cardNavBound = true;
+    function go(e) {
+      if (e.target.closest("[data-copy]") || e.target.closest("a")) return;
+      var card = e.target.closest("[data-model-id]");
+      if (!card) return;
+      var id = card.getAttribute("data-model-id");
+      if (!id) return;
+      window.location.href = detailUrl(id);
+    }
+    document.addEventListener("click", go);
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      var card = e.target.closest && e.target.closest("[data-model-id]");
+      if (!card || e.target.closest("[data-copy]")) return;
+      e.preventDefault();
+      var id = card.getAttribute("data-model-id");
+      if (id) window.location.href = detailUrl(id);
+    });
   }
 
   function fetchOptions() {
