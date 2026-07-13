@@ -102,7 +102,7 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
 <script src="../cancri_config.js?v=2026-05-13e"></script>
 <script>
 (function () {
-  var CACHED_FACTOR = 0.5;
+  var CACHED_FACTOR = 1.0;
   var MODELS = {
     'gpt-5.5': {
       name: 'GPT-5.5', id: 'gpt-5.5',
@@ -113,19 +113,19 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     'gpt-5.6-sol': {
       name: 'GPT-5.6-Sol', id: 'gpt-5.6-sol',
       desc: 'A new class of intelligence for coding and professional work.',
-      inP: 5.99, outP: 30.99, longIn: 10.99, longOut: 45.99,
+      inP: 0.39, outP: 1.89,
       snapshots: [['gpt-5.6-sol', 'gpt-5.6-sol-0710'], ['gpt-5.6-sol-0710', 'gpt-5.6-sol-0710']]
     },
     'gpt-5.6-terra': {
       name: 'GPT-5.6-Terra', id: 'gpt-5.6-terra',
       desc: 'A new class of intelligence for coding and professional work.',
-      inP: 2.59, outP: 15.99, longIn: 5.99, longOut: 22.99,
+      inP: 0.19, outP: 0.99,
       snapshots: [['gpt-5.6-terra', 'gpt-5.6-terra']]
     },
     'gpt-5.6-luna': {
       name: 'GPT-5.6-Luna', id: 'gpt-5.6-luna',
       desc: 'A new class of intelligence for coding and professional work.',
-      inP: 1.99, outP: 6.99, longIn: 2.99, longOut: 9.99,
+      inP: 0.09, outP: 0.39,
       snapshots: [['gpt-5.6-luna', 'gpt-5.6-luna']]
     }
   };
@@ -156,7 +156,7 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
       if (!grid && el.className.indexOf('grid-cols-[max-content_1fr_max-content]') !== -1) grid = el;
     });
     if (!grid) return;
-    var rows = [['GPT-5.5', 5.99], ['GPT-5.6-Sol', 5.99], ['GPT-5.6-Terra', 2.59], ['GPT-5.6-Luna', 1.99]];
+    var rows = [['GPT-5.5', 5.99], ['GPT-5.6-Sol', 0.39], ['GPT-5.6-Terra', 0.19], ['GPT-5.6-Luna', 0.09]];
     var maxP = 5.99;
     grid.innerHTML = rows.map(function (r) {
       var w = Math.max(Math.round(r[1] / maxP * 100), 8);
@@ -197,8 +197,8 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     });
   }
 
-  // ── 动态计价 4 模型：编译期已知的两档 $ 价 ──
-  function renderDynamic(m) {
+  // ── OpenAI 模型详情页的定价元数据 ──
+  function renderConfigured(m) {
     document.title = m.name + ' Model | NexusVAI API';
     applyArt(m.id);
     var fmt = function (n) { return '$' + n.toFixed(2); };
@@ -206,7 +206,7 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     replaceText([
       ['GPT-5.5 is our newest frontier model for the most complex professional work.', m.name + ' is our newest frontier model for the most complex professional work.'],
       ['For GPT-5.5, prompts with >272K input tokens are priced at 2x input and 1.5x output for the full session for standard, batch, and flex.',
-       'For ' + m.name + ', prompts with >272K input tokens are priced at ' + fmt(m.longIn) + ' input and ' + fmt(m.longOut) + ' output (per 1M tokens) for the full session.'],
+       m.longIn != null && m.longOut != null ? 'For ' + m.name + ', prompts with >272K input tokens are priced at ' + fmt(m.longIn) + ' input and ' + fmt(m.longOut) + ' output (per 1M tokens) for the full session.' : ''],
       ['Regional processing (data residency) endpoints are charged a 10% uplift for GPT-5.5.', ''],
       ['GPT-5.5', m.name],
       ['gpt-5.5-2026-04-23', m.snapshots[m.snapshots.length - 1][1]],
@@ -285,7 +285,7 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
   }
 
   if (MODELS[q]) {
-    renderDynamic(MODELS[q]);
+    renderConfigured(MODELS[q]);
   } else {
     fetchCatalog().then(function (data) {
       var raw = (data && data.models) || [];
@@ -295,8 +295,8 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
         if (raw[i].id === q || cid === q) { m = raw[i]; m.id = cid || raw[i].id; break; }
       }
       if (m) { renderCatalogModel(m); }
-      else { renderDynamic(MODELS['gpt-5.5']); }
-    }).catch(function () { renderDynamic(MODELS['gpt-5.5']); });
+      else { renderConfigured(MODELS['gpt-5.5']); }
+    }).catch(function () { renderConfigured(MODELS['gpt-5.5']); });
   }
 })();
 </script>
