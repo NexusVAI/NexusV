@@ -1,14 +1,7 @@
 /* =====================================================================
- * 埃德加德加 · 限时创意卡（hero 问候语位）
- * 2026-07-19
- *
- * 展示窗口（Asia/Shanghai）：
- *   2026-07-18 09:42  →  2026-07-20 00:00
- * 窗口外：不渲染，hero 问候文案恢复正常。
- *
- * 行为：
- *   - 替换 #heroTitle 内 .hero-text 位置，展示 Adejia0719 创意卡
- *   - 点击卡片 → 输入框写入介绍 prompt → 触发发送（#sendChatBtn / handleHomeSubmit）
+ * 埃德加德加 · 限时 hero 位图片
+ * 2026-07-18 09:42 → 2026-07-20 00:00 (Asia/Shanghai)
+ * 仅展示图片，无额外文案；点击后自动发送介绍 prompt。
  * ===================================================================== */
 (function () {
   "use strict";
@@ -27,12 +20,8 @@
   var BODY_CLASS = "adejia-promo-active";
   var CHECK_MS = 30 * 1000;
 
-  function nowMs() {
-    return Date.now();
-  }
-
   function isActive() {
-    var t = nowMs();
+    var t = Date.now();
     return t >= START_MS && t < END_MS;
   }
 
@@ -41,127 +30,61 @@
     var s = document.createElement("style");
     s.id = STYLE_ID;
     s.textContent = [
-      "/* 限时：隐藏原 logo 图标 + 问候文案，只露创意卡（红框位置） */",
       "body." + BODY_CLASS + " .hero .hero-icon,",
-      "body." + BODY_CLASS + " .hero .hero-text {",
-      "  display: none !important;",
-      "}",
-      "body." + BODY_CLASS + " #" + CARD_ID + " {",
-      "  display: inline-flex !important;",
-      "}",
-      "body." + BODY_CLASS + " #heroTitle.hero {",
-      "  gap: 0;",
-      "}",
+      "body." + BODY_CLASS + " .hero .hero-text { display: none !important; }",
+      "body." + BODY_CLASS + " #" + CARD_ID + " { display: inline-block !important; }",
       "#" + CARD_ID + " {",
       "  display: none;",
-      "  align-items: center;",
-      "  gap: 12px;",
-      "  vertical-align: middle;",
-      "  margin: 0 auto;",
-      "  padding: 6px 14px 6px 6px;",
-      "  border: 1px solid rgba(112,107,87,.16);",
-      "  border-radius: 999px;",
-      "  background: rgba(250,249,245,.95);",
-      "  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 10px 28px rgba(0,0,0,.07);",
+      "  margin: 0;",
+      "  padding: 0;",
+      "  border: 0;",
+      "  background: transparent;",
       "  cursor: pointer;",
-      "  max-width: min(86vw, 440px);",
-      "  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;",
-      "  font: inherit;",
-      "  color: inherit;",
-      "  text-align: left;",
+      "  line-height: 0;",
+      "  vertical-align: middle;",
       "  -webkit-tap-highlight-color: transparent;",
       "}",
-      "#" + CARD_ID + ":hover {",
-      "  transform: translateY(-1px) scale(1.015);",
-      "  border-color: rgba(217,119,87,.48);",
-      "  box-shadow: 0 2px 8px rgba(0,0,0,.06), 0 14px 32px rgba(217,119,87,.14);",
-      "}",
-      "#" + CARD_ID + ":active { transform: scale(.985); }",
-      "#" + CARD_ID + " .adejia-promo-avatar {",
-      "  width: 48px;",
-      "  height: 48px;",
-      "  border-radius: 50%;",
-      "  object-fit: cover;",
-      "  flex: 0 0 auto;",
-      "  background: #efece4;",
+      "#" + CARD_ID + " img {",
       "  display: block;",
-      "  box-shadow: inset 0 0 0 1px rgba(0,0,0,.04);",
+      "  height: clamp(40px, 5.5vw, 56px);",
+      "  width: auto;",
+      "  max-width: min(70vw, 280px);",
+      "  object-fit: contain;",
+      "  border-radius: 10px;",
+      "  transition: transform .15s ease, filter .15s ease;",
       "}",
-      "#" + CARD_ID + " .adejia-promo-copy {",
-      "  display: flex;",
-      "  flex-direction: column;",
-      "  gap: 2px;",
-      "  min-width: 0;",
-      "  padding-right: 6px;",
-      "}",
-      "#" + CARD_ID + " .adejia-promo-title {",
-      "  font-size: clamp(1.15rem, 1rem + 1.2vw, 1.65rem);",
-      "  font-weight: 600;",
-      "  line-height: 1.25;",
-      "  color: var(--c-text-soft, #3a3428);",
-      "  white-space: nowrap;",
-      "  overflow: hidden;",
-      "  text-overflow: ellipsis;",
-      "}",
-      "#" + CARD_ID + " .adejia-promo-sub {",
-      "  font-size: 12.5px;",
-      "  line-height: 1.3;",
-      "  color: rgba(80,74,60,.72);",
-      "  white-space: nowrap;",
-      "}",
-      "html[data-theme='dark'] #" + CARD_ID + " {",
-      "  background: rgba(40,38,34,.94);",
-      "  border-color: rgba(255,255,255,.10);",
-      "}",
-      "html[data-theme='dark'] #" + CARD_ID + " .adejia-promo-title { color: rgba(245,241,232,.92); }",
-      "html[data-theme='dark'] #" + CARD_ID + " .adejia-promo-sub { color: rgba(220,214,200,.62); }",
-      "@media (max-width: 640px) {",
-      "  #" + CARD_ID + " .adejia-promo-avatar { width: 40px; height: 40px; }",
-      "  #" + CARD_ID + " .adejia-promo-title { font-size: 1.15rem; }",
-      "  #" + CARD_ID + " .adejia-promo-sub { font-size: 11.5px; }",
-      "}",
+      "#" + CARD_ID + ":hover img { transform: scale(1.03); }",
+      "#" + CARD_ID + ":active img { transform: scale(.98); }",
     ].join("\n");
     document.head.appendChild(s);
-  }
-
-  function pickImgSrc() {
-    return IMG_CANDIDATES[0];
   }
 
   function ensureCard() {
     var existing = document.getElementById(CARD_ID);
     if (existing) return existing;
-
     var hero = document.getElementById("heroTitle");
     if (!hero) return null;
 
     var btn = document.createElement("button");
     btn.type = "button";
     btn.id = CARD_ID;
-    btn.className = "adejia-promo-card";
-    btn.setAttribute("aria-label", "认识埃德加德加，点击发送介绍");
-    btn.innerHTML =
-      '<img class="adejia-promo-avatar" alt="" width="40" height="40" decoding="async" />' +
-      '<span class="adejia-promo-copy">' +
-      '<span class="adejia-promo-title">埃德加德加</span>' +
-      '<span class="adejia-promo-sub">点我认识他 · 限时创意卡</span>' +
-      "</span>";
-
-    var img = btn.querySelector("img");
+    btn.setAttribute("aria-label", "埃德加德加");
+    var img = document.createElement("img");
+    img.alt = "埃德加德加";
+    img.decoding = "async";
     var srcs = IMG_CANDIDATES.slice();
     img.src = srcs.shift();
     img.onerror = function () {
       if (srcs.length) img.src = srcs.shift();
     };
+    btn.appendChild(img);
 
-    // 插在 .hero-text 后面；没有则挂到 hero 末尾
     var heroText = hero.querySelector(".hero-text");
     if (heroText && heroText.parentNode) {
       heroText.parentNode.insertBefore(btn, heroText.nextSibling);
     } else {
       hero.appendChild(btn);
     }
-
     btn.addEventListener("click", onCardClick);
     return btn;
   }
@@ -169,8 +92,7 @@
   function setComposerValue(text) {
     var input =
       document.getElementById("homeInput") ||
-      document.querySelector("textarea.composer-input") ||
-      document.querySelector("textarea");
+      document.querySelector("textarea.composer-input");
     if (!input) return null;
     input.focus();
     input.value = text;
@@ -178,7 +100,6 @@
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
     } catch (_e) {}
-    // 自动增高 textarea
     try {
       input.style.height = "auto";
       input.style.height = Math.min(input.scrollHeight, 200) + "px";
@@ -190,28 +111,24 @@
     var btn =
       document.getElementById("sendChatBtn") ||
       document.querySelector("[data-send-chat]") ||
-      document.querySelector(".composer-send") ||
-      document.querySelector("button.send");
+      document.querySelector(".composer-send");
     if (btn && !btn.disabled) {
       btn.click();
-      return true;
+      return;
     }
-    // 兜底：Enter 提交（部分页面绑定 keydown）
     var input = document.getElementById("homeInput");
-    if (input) {
-      try {
-        input.dispatchEvent(
-          new KeyboardEvent("keydown", {
-            key: "Enter",
-            code: "Enter",
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-          })
-        );
-      } catch (_e) {}
-    }
-    return false;
+    if (!input) return;
+    try {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+        })
+      );
+    } catch (_e) {}
   }
 
   function onCardClick(ev) {
@@ -221,10 +138,7 @@
     }
     if (!isActive()) return;
     setComposerValue(PROMPT);
-    // 等一帧让 React/监听器看到 value
-    setTimeout(function () {
-      triggerSend();
-    }, 30);
+    setTimeout(triggerSend, 30);
   }
 
   function applyState() {
@@ -241,15 +155,12 @@
 
   function boot() {
     applyState();
-    // 跨过窗口边界时自动恢复
     setInterval(applyState, CHECK_MS);
-    // hero 可能被 SPA 重绘：观察 #heroTitle
     var hero = document.getElementById("heroTitle");
     if (hero && typeof MutationObserver !== "undefined") {
-      var mo = new MutationObserver(function () {
+      new MutationObserver(function () {
         if (isActive() && !document.getElementById(CARD_ID)) ensureCard();
-      });
-      mo.observe(hero, { childList: true, subtree: true });
+      }).observe(hero, { childList: true, subtree: true });
     }
   }
 
@@ -258,14 +169,4 @@
   } else {
     boot();
   }
-
-  // 调试
-  try {
-    window.__ADEJIA_PROMO__ = {
-      isActive: isActive,
-      prompt: PROMPT,
-      start: START_MS,
-      end: END_MS,
-    };
-  } catch (_e) {}
 })();
