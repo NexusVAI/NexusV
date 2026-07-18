@@ -36,7 +36,7 @@ html[data-theme="dark"],
   --zm-ann-banner-text: #c8d7ea;
 }
 
-/* 抽屉本体：贴右侧全高（覆盖 cancri 居中 modal） */
+/* 抽屉本体：全屏遮罩，面板固定贴右侧 */
 .modal.announcement-drawer.zm-ann-drawer,
 .modal.announcement-drawer.zm-ann-drawer.open,
 .modal.announcement-drawer.zm-ann-drawer.show {
@@ -44,27 +44,33 @@ html[data-theme="dark"],
   justify-content: flex-end !important;
   padding: 0 !important;
   flex-direction: row !important;
+  inset: 0 !important;
 }
 
 .modal.announcement-drawer.zm-ann-drawer .modal-content.announcement-modal-content,
 .modal.announcement-drawer.zm-ann-drawer.open .modal-content.announcement-modal-content,
 .zm-ann-panel {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: 0 !important;
   width: min(440px, 100vw) !important;
   max-width: 440px !important;
   height: 100vh !important;
   max-height: 100vh !important;
   min-height: 100vh !important;
   margin: 0 !important;
-  margin-left: auto !important;
   border-radius: 0 !important;
   border-left: 1px solid var(--zm-ann-border) !important;
   background: var(--zm-ann-bg) !important;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   transform: none !important;
   opacity: 1 !important;
+  z-index: 220 !important;
 }
 
 /* 关键：旧翻页 CSS 把 .timeline-item 默认 display:none，
