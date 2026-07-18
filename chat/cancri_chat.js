@@ -3988,7 +3988,11 @@
 	}
 	async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
 		const client = getSupabaseClient();
-		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
+		// 2026-07-18: 原先「有 NexusAuthCaptcha.validate 就跳过 Turnstile」会在
+		// turnstile_bridge 把 NexusAuthCaptcha 设为恒 true 后永远不取 token，
+		// 仅依赖 fetch 注入；注入失败时服务端 TURNSTILE_ENFORCE=1 直接 captcha_failed，
+		// 用户表现为「一直人机验证不通过」。改为始终 best-effort 取 token。
+		const captchaToken = await getLoginCaptchaTokenBestEffort(12e3);
 		const opts = {
 			email,
 			options: { shouldCreateUser }
@@ -4002,7 +4006,8 @@
 	}
 	async function signInWithEmailPassword(email, password) {
 		const client = getSupabaseClient();
-		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
+		// 2026-07-18: 与 sendEmailOtp 相同，始终取 Turnstile token（见上注释）。
+		const captchaToken = await getLoginCaptchaTokenBestEffort(12e3);
 		const opts = {
 			email,
 			password

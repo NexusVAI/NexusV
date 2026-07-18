@@ -158,13 +158,16 @@
       try {
         var url = (typeof input === "string") ? input : (input && input.url) || "";
         var method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
-        if (
-          method === "POST" &&
-          isAuthTokenUrl(url) &&
-          init && typeof init.body === "string"
-        ) {
+        // 兼容两种调用：fetch(url, {body}) 与 fetch(new Request(url,{body}))。
+        var bodyStr = null;
+        if (init && typeof init.body === "string") bodyStr = init.body;
+        else if (typeof input !== "string" && input && typeof input.clone === "function") {
+          // Request 体只能读一次；这里不主动 clone 读（异步），仅在 init 有 body 时注入。
+          bodyStr = null;
+        }
+        if (method === "POST" && isAuthTokenUrl(url) && bodyStr) {
           var body = null;
-          try { body = JSON.parse(init.body); } catch (_e) { body = null; }
+          try { body = JSON.parse(bodyStr); } catch (_e) { body = null; }
           if (body && typeof body === "object") {
             var meta = body.gotrue_meta_security;
             var hasToken = meta && typeof meta.captcha_token === "string" && meta.captcha_token;
@@ -173,10 +176,19 @@
                 if (tok) {
                   body.gotrue_meta_security = { captcha_token: tok };
                   var newInit = {};
-                  for (var k in init) { if (Object.prototype.hasOwnProperty.call(init, k)) newInit[k] = init[k]; }
+                  if (init) {
+                    for (var k in init) { if (Object.prototype.hasOwnProperty.call(init, k)) newInit[k] = init[k]; }
+                  }
+                  newInit.method = "POST";
                   newInit.body = JSON.stringify(body);
-                  return realFetch(input, newInit);
+                  try {
+                    console.info("[turnstile bridge] injected captcha_token into", url, "len=" + tok.length);
+                  } catch (_e) {}
+                  return realFetch(typeof input === "string" ? input : url, newInit);
                 }
+                try {
+                  console.warn("[turnstile bridge] no captcha token within budget; sending bare auth request");
+                } catch (_e) {}
                 return realFetch(input, init);
               });
             }
