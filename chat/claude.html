@@ -124,6 +124,7 @@
             rel="stylesheet"
             href="./styles/cancri_motion.css?v=2026-06-25-download-icons"
         />
+        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260718-zm-ann" />
         <link
             rel="stylesheet"
             href="./styles/auth-platform-login.css?v=2026-06-25-download-icons"
@@ -2850,196 +2851,192 @@
             </button>
         </div>
 
-        <!-- 系统公告：时间线样式（参考 Claude Console 系统公告风格）。
-             条目按时间倒序，每条带圆点 + 日期 + 内容。新条目就在上面加
-             一个 .timeline-item，无需改任何 JS。 -->
-        <div class="modal medium announcement-drawer" id="announcementModal" aria-hidden="true">
-            <div class="modal-content announcement-modal-content">
-                <div class="modal-header">
-                    <div class="modal-title">系统公告</div>
-                    <button
-                        class="modal-close"
-                        data-close-modal="announcementModal"
-                        aria-label="关闭公告"
-                    >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path d="M18 6 6 18M6 6l12 12"></path>
-                        </svg>
+        <!-- ZenMux-style 通知中心（视觉 1:1 时间线抽屉） -->
+        <div class="modal medium announcement-drawer zm-ann-drawer" id="announcementModal" aria-hidden="true">
+            <div class="modal-content announcement-modal-content zm-ann-panel" role="dialog" aria-modal="true" aria-labelledby="zmAnnTitle">
+                <div class="modal-header zm-ann-header">
+                    <h2 class="zm-ann-header-title" id="zmAnnTitle">通知中心</h2>
+                    <button class="zm-ann-close modal-close" type="button" data-close-modal="announcementModal" aria-label="关闭">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"></path></svg>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <ol class="announcement-timeline" id="announcementTimeline">
-                        <li class="timeline-item timeline-item--latest">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">2026/06/20 迁移完成</div>
-                                <p class="timeline-body">
-                                    <strong>注意事项</strong><br>
-                                    1. 原先登录设置的密码会丢失，表现为原先能用密码登录的账号无法再用密码登录。本次请先用<strong>验证码</strong>登录，然后前往 <strong>设置 → 密码</strong> 重新设置密码即可恢复。<br>
-                                    2. 如果遇到任何异常，请及时 @管理员 / @群主，我们会第一时间处理。
-                                </p>
-                                <p class="timeline-body">
-                                    <strong>事故原因</strong><br>
-                                    近日流量远超预期，我们没有事先做好扩容准备，导致流量被打爆、服务反复宕机。为维护稳定性并支撑长期发展，我们已在今天将数据库从<strong>日本</strong>迁移至<strong>新加坡</strong>，整体响应速度已得到提升。
-                                </p>
-                                <p class="timeline-body">
-                                    <strong>后续</strong><br>
-                                    服务会在接下来几天逐步恢复正常。站内将陆续上线几个<strong>【福利】模型</strong>（团队自费采购，用完即止），作为本次事故的补偿。
-                                </p>
-                                <time class="timeline-date" datetime="2026-06-20">2026-06-20</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">福利模型搬家到公益子站</div>
-                                <p class="timeline-body">
-                                    本站（Cancri Chat）主打<strong>模型多、价格便宜</strong>，后续<strong>不再上架免费福利模型</strong>。想体验福利模型的同学，请移步我们新开的<strong>纯公益子站</strong>（纯公益、不收一分钱）：
-                                    <a href="https://api.nexusvai.xyz/" target="_blank" rel="noopener" class="timeline-link">api.nexusvai.xyz →</a>
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-31">2026-05-31</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">Phase A：三档订阅 + 老用户 Opus 福利</div>
-                                <p class="timeline-body">¥9.9 套餐拆三档，Claude Opus 升级到 Pro+ 专属：</p>
-                                <div class="timeline-tier-grid">
-                                    <div class="timeline-tier-card">
-                                        <b>Pro</b>
-                                        <span class="timeline-tier-price">¥9.9</span>
-                                        <span class="timeline-tier-quota">2000 万 token / 月</span>
-                                    </div>
-                                    <div class="timeline-tier-card timeline-tier-card--highlight">
-                                        <b>Pro+</b>
-                                        <span class="timeline-tier-price">¥29</span>
-                                        <span class="timeline-tier-quota">8000 万 + Opus 全系</span>
-                                    </div>
-                                    <div class="timeline-tier-card">
-                                        <b>Pro Max</b>
-                                        <span class="timeline-tier-price">¥99</span>
-                                        <span class="timeline-tier-quota">3 亿 + 视频图像</span>
-                                    </div>
+                    <div class="zm-ann-scroll">
+                        <ol class="zm-ann-list announcement-timeline" id="announcementTimeline">
+                            <li class="zm-ann-item timeline-item timeline-item--latest">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-dot" aria-hidden="true"></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
                                 </div>
-                                <p class="timeline-body">
-                                    <strong>老用户福利</strong>：5/17 前付费的用户，本订阅周期内继续可调 Opus 全系（配额不变），到期失效。加油包 ¥10 起永不过期。
-                                    <a href="./pricing.html" class="timeline-link">套餐页 →</a>
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-17">2026-05-17</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">未授权账号批量封禁</div>
-                                <p class="timeline-body">
-                                    2026 年 5 月 16 日，系统对所有未加入官方 QQ 群的注册账号执行了永久封禁处理，共计
-                                    <strong>1438</strong> 个账号。封禁原因是这些账号未在授权用户名单内。
-                                    如您认为被误封，请发送邮件至
-                                    <a href="mailto:nexusvai@qq.com" class="timeline-link">nexusvai@qq.com</a>
-                                    并附上注册邮箱与申诉理由。
-                                    <strong>QQ 交流群：</strong
-                                    ><a
-                                        href="https://qm.qq.com/q/1083892008"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="timeline-link"
-                                        >1083892008</a
-                                    >，加群可避免后续清理。
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-16">2026-05-16</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">API 平台已上线</div>
-                                <p class="timeline-body">
-                                    在线注册即可领取永久免费 API key，支持
-                                    OpenAI 兼容协议。
-                                    <a href="./api/" class="timeline-link">前往 API 平台 →</a>
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-14">2026-05-14</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">服务状态实时监控</div>
-                                <p class="timeline-body">
-                                    可随时查看各模型线路的健康状况和延迟数据。
-                                    <a
-                                        href="https://nexusvai.github.io/ChatAI-status/"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="timeline-link"
-                                        >前往 status 页面 →</a
-                                    >
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-12">2026-05-12</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">风控策略升级</div>
-                                <p class="timeline-body">
-                                    针对高频自动化请求（固定间隔轮询、硬编码重试等）启用滥用防护，
-                                    异常请求段已封禁。风控以行为特征为核心，正常用户不受影响。
-                                </p>
-                                <time class="timeline-date" datetime="2026-05-10">2026-05-10</time>
-                            </div>
-                        </li>
-                        <li class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">站内模型永久免费</div>
-                                <p class="timeline-body">
-                                    20+ 主流大模型免费调用，无 token 限额，登录即用。
-                                    <strong>QQ 交流群：</strong
-                                    ><a
-                                        href="https://qm.qq.com/q/1083892008"
-                                        target="_blank"
-                                        rel="noopener"
-                                        class="timeline-link"
-                                        >1083892008</a
-                                    >
-                                </p>
-                                <time class="timeline-date" datetime="2026-04-28">2026-04-28</time>
-                            </div>
-                        </li>
-                    </ol>
-                </div>
-                <div class="modal-footer announcement-modal-footer">
-                    <div class="announcement-pager" id="announcementPager">
-                        <button class="announcement-pager-btn" id="announcementPrev" type="button" aria-label="上一条">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                        </button>
-                        <div class="announcement-pager-dots" id="announcementPagerDots"></div>
-                        <button class="announcement-pager-btn" id="announcementNext" type="button" aria-label="下一条">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-                        </button>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">蟹市（蟹蟹市场）功能下架公告</h3>
+                                        <span class="zm-ann-unread" aria-label="未读"></span>
+                                    </div>
+                                    <div class="zm-ann-md zm-ann-clamped" data-zm-clamp>
+                                        <p>因产品调整，<strong>蟹市（创作者市场）功能已于今日下架</strong>。原控制台入口已改为「模型广场」，可浏览全部在线模型。给您带来的不便敬请谅解。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    <a class="zm-ann-cta" href="./api_models.html"><span>了解更多</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>06-20</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">2026/06/20 迁移完成</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md zm-ann-clamped" data-zm-clamp>
+                                        <p><strong>注意事项</strong></p><p>1. 原先登录设置的密码会丢失，表现为原先能用密码登录的账号无法再用密码登录。本次请先用<strong>验证码</strong>登录，然后前往 <strong>设置 → 密码</strong> 重新设置密码即可恢复。</p><p>2. 如果遇到任何异常，请及时 @管理员 / @群主，我们会第一时间处理。</p><p><strong>事故原因</strong></p><p>近日流量远超预期，我们没有事先做好扩容准备，导致流量被打爆、服务反复宕机。为维护稳定性并支撑长期发展，我们已在今天将数据库从<strong>日本</strong>迁移至<strong>新加坡</strong>，整体响应速度已得到提升。</p><p><strong>后续</strong></p><p>服务会在接下来几天逐步恢复正常。站内将陆续上线几个<strong>【福利】模型</strong>（团队自费采购，用完即止），作为本次事故的补偿。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>05-31</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">福利模型搬家到公益子站</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md" data-zm-clamp>
+                                        <p>本站（Cancri Chat）主打<strong>模型多、价格便宜</strong>，后续<strong>不再上架免费福利模型</strong>。想体验福利模型的同学，请移步我们新开的<strong>纯公益子站</strong>。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    <a class="zm-ann-cta" href="https://api.nexusvai.xyz/" target="_blank" rel="noopener"><span>了解更多</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>05-17</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">Phase A：三档订阅 + 老用户 Opus 福利</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md zm-ann-clamped" data-zm-clamp>
+                                        <p>¥9.9 套餐拆三档，Claude Opus 升级到 Pro+ 专属：</p><ul><li><strong>Pro</strong> ¥9.9 · 2000 万 token / 月</li><li><strong>Pro+</strong> ¥29 · 8000 万 + Opus 全系</li><li><strong>Pro Max</strong> ¥99 · 3 亿 + 视频图像</li></ul><p><strong>老用户福利</strong>：5/17 前付费的用户，本订阅周期内继续可调 Opus 全系（配额不变），到期失效。加油包 ¥10 起永不过期。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    <a class="zm-ann-cta" href="./pricing.html"><span>了解更多</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>05-16</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">未授权账号批量封禁</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md zm-ann-clamped" data-zm-clamp>
+                                        <p>2026 年 5 月 16 日，系统对所有未加入官方 QQ 群的注册账号执行了永久封禁处理，共计 <strong>1438</strong> 个账号。如您认为被误封，请发送邮件至管理员并附上注册邮箱与申诉理由。</p><p><strong>QQ 交流群：</strong><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener">1083892008</a>，加群可避免后续清理。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>05-14</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">API 平台已上线</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md" data-zm-clamp>
+                                        <p>在线注册即可领取永久免费 API key，支持 OpenAI 兼容协议。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    <a class="zm-ann-cta" href="./api/"><span>了解更多</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>05-12</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">服务状态实时监控</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md" data-zm-clamp>
+                                        <p>可随时查看各模型线路的健康状况和延迟数据。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    <a class="zm-ann-cta" href="https://nexusvai.github.io/ChatAI-status/" target="_blank" rel="noopener"><span>了解更多</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>05-10</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">风控策略升级</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md" data-zm-clamp>
+                                        <p>针对高频自动化请求（固定间隔轮询、硬编码重试等）启用滥用防护，异常请求段已封禁。风控以行为特征为核心，正常用户不受影响。</p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>04-28</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">站内模型永久免费</h3>
+                                        
+                                    </div>
+                                    <div class="zm-ann-md" data-zm-clamp>
+                                        <p>20+ 主流大模型免费调用，无 token 限额，登录即用。</p><p><strong>QQ 交流群：</strong><a href="https://qm.qq.com/q/1083892008" target="_blank" rel="noopener">1083892008</a></p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    
+                                </div>
+                            </li>
+                        </ol>
                     </div>
-                    <div class="announcement-footer-actions">
+                </div>
+                <div class="modal-footer announcement-modal-footer zm-ann-footer">
+                    <div class="announcement-pager" id="announcementPager" hidden>
+                        <button class="announcement-pager-btn" id="announcementPrev" type="button" aria-label="上一条"></button>
+                        <div class="announcement-pager-dots" id="announcementPagerDots"></div>
+                        <button class="announcement-pager-btn" id="announcementNext" type="button" aria-label="下一条"></button>
+                    </div>
+                    <div class="announcement-footer-actions" style="display:contents">
                         <label class="announcement-dismiss">
                             <input type="checkbox" id="dismissNoticeCheckbox" />
                             <span>下次不再自动弹出</span>
                         </label>
-                        <button class="primary-btn" id="closeAnnouncementBtn" type="button">
-                            我知道了
-                        </button>
+                        <button class="primary-btn" id="closeAnnouncementBtn" type="button">我知道了</button>
                     </div>
                 </div>
             </div>
         </div>
+
+        
 
         <!-- defer = 浏览器并行下载所有 script 但严格按 source order 串行执行，
              和「6 个 body-bottom 裸 script」最终行为完全一致（启动期不会
@@ -3066,7 +3063,7 @@
         <script defer src="./adejia_promo_card.js?v=20260718-adejia-imgonly"></script>
         <script defer src="./cancri_chat.js?v=20260718-login-captcha-fix"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
-        <script defer src="./cancri_announcement.js?v=2026-05-31-ui-pass"></script>
+        <script defer src="./cancri_announcement.js?v=20260718-zm-ann"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
         <script defer src="./claude_ui.js?v=20260705-ninefix"></script>
