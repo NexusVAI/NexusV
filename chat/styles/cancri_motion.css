@@ -639,15 +639,15 @@ html[data-theme="light"] .site-footer-socials > a {
 .announcement-drawer .announcement-timeline::before {
     display: none;
 }
-.announcement-drawer .timeline-item {
+.announcement-drawer:not(.zm-ann-drawer) .timeline-item {
     display: none;
     padding: 0;
 }
-.announcement-drawer .timeline-item.ann-page-active {
+.announcement-drawer:not(.zm-ann-drawer) .timeline-item.ann-page-active {
     display: block;
     animation: annPageIn 260ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.announcement-drawer .timeline-dot {
+.announcement-drawer:not(.zm-ann-drawer) .timeline-dot {
     display: none;
 }
 @keyframes annPageIn {

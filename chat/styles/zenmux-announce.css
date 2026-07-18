@@ -36,20 +36,26 @@ html[data-theme="dark"],
   --zm-ann-banner-text: #c8d7ea;
 }
 
-/* 抽屉本体 */
-.modal.announcement-drawer.zm-ann-drawer {
-  align-items: stretch;
-  justify-content: flex-end;
-  padding: 0;
+/* 抽屉本体：贴右侧全高（覆盖 cancri 居中 modal） */
+.modal.announcement-drawer.zm-ann-drawer,
+.modal.announcement-drawer.zm-ann-drawer.open,
+.modal.announcement-drawer.zm-ann-drawer.show {
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  padding: 0 !important;
+  flex-direction: row !important;
 }
 
 .modal.announcement-drawer.zm-ann-drawer .modal-content.announcement-modal-content,
+.modal.announcement-drawer.zm-ann-drawer.open .modal-content.announcement-modal-content,
 .zm-ann-panel {
   width: min(440px, 100vw) !important;
   max-width: 440px !important;
   height: 100vh !important;
   max-height: 100vh !important;
+  min-height: 100vh !important;
   margin: 0 !important;
+  margin-left: auto !important;
   border-radius: 0 !important;
   border-left: 1px solid var(--zm-ann-border) !important;
   background: var(--zm-ann-bg) !important;
@@ -57,6 +63,37 @@ html[data-theme="dark"],
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+/* 关键：旧翻页 CSS 把 .timeline-item 默认 display:none，
+   只有 .ann-page-active 才显示 → 新时间线内容全部消失 */
+.modal.announcement-drawer.zm-ann-drawer .timeline-item,
+.modal.announcement-drawer.zm-ann-drawer .zm-ann-item,
+.modal.announcement-drawer.zm-ann-drawer .zm-ann-item.timeline-item,
+.announcement-drawer.zm-ann-drawer .timeline-item {
+  display: flex !important;
+  position: relative !important;
+  padding: 0 !important;
+  break-inside: auto !important;
+  animation: none !important;
+}
+
+/* 关掉旧时间线竖线 / 旧圆点 / 双栏 */
+.modal.announcement-drawer.zm-ann-drawer .announcement-timeline::before,
+.modal.announcement-drawer.zm-ann-drawer .timeline-dot {
+  display: none !important;
+  content: none !important;
+}
+
+.modal.announcement-drawer.zm-ann-drawer .announcement-timeline,
+.modal.announcement-drawer.zm-ann-drawer .zm-ann-list {
+  column-count: 1 !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
 }
 
 .zm-ann-header {
@@ -97,11 +134,23 @@ html[data-theme="dark"],
 }
 
 .zm-ann-scroll {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 20px 16px 8px 8px;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* modal-body 在 motion.css 里会 overflow-y:auto，这里交给内部 .zm-ann-scroll */
+.modal.announcement-drawer.zm-ann-drawer .modal-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
 }
 
 .zm-ann-scroll::-webkit-scrollbar {
@@ -122,10 +171,11 @@ html[data-theme="dark"],
 }
 
 .zm-ann-item {
-  display: flex;
+  display: flex !important;
   gap: 16px;
   margin: 0;
-  padding: 0;
+  padding: 0 !important;
+  align-items: stretch;
 }
 
 .zm-ann-rail {
