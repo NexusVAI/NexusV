@@ -1,23 +1,23 @@
 /* =====================================================================
- * 埃德加德加 · 限时 hero 位图片
- * 2026-07-18 09:42 → 2026-07-20 00:00 (Asia/Shanghai)
- * 仅展示图片，无额外文案；点击后自动发送介绍 prompt。
+ * 人类月球日 · 限时 hero 位图片
+ * 2026-07-19 00:00 → 2026-07-22 00:00 (Asia/Shanghai) 即 7/19–7/21
+ * 仅展示图片；点击后自动填入并发送介绍 prompt。
  * ===================================================================== */
 (function () {
   "use strict";
 
-  var START_MS = Date.parse("2026-07-18T09:42:00+08:00");
-  var END_MS = Date.parse("2026-07-20T00:00:00+08:00");
+  var START_MS = Date.parse("2026-07-19T00:00:00+08:00");
+  var END_MS = Date.parse("2026-07-22T00:00:00+08:00");
   var PROMPT =
-    "介绍一下埃德加德加：他是谁、有什么有趣的特点，用轻松好玩的口吻讲，并邀请我继续聊聊。";
+    "今天是「人类月球日」（Human Moon Day，7 月 20 日）。请用轻松有趣、适合聊天的口吻介绍：它纪念什么历史事件、为什么值得被记住，再分享 2～3 个月球冷知识，最后邀请我继续聊聊太空或登月故事。";
   var IMG_CANDIDATES = [
-    "./assets/Adejia0719.png",
-    "../Logo/Adejia0719.png",
-    "./Logo/Adejia0719.png",
+    "./assets/720.png",
+    "../Logo/720.png",
+    "./Logo/720.png",
   ];
-  var STYLE_ID = "adejia-promo-card-styles";
-  var CARD_ID = "adejiaPromoCard";
-  var BODY_CLASS = "adejia-promo-active";
+  var STYLE_ID = "moon-day-promo-card-styles";
+  var CARD_ID = "moonDayPromoCard";
+  var BODY_CLASS = "moon-day-promo-active";
   var CHECK_MS = 30 * 1000;
 
   function isActive() {
@@ -62,15 +62,19 @@
   function ensureCard() {
     var existing = document.getElementById(CARD_ID);
     if (existing) return existing;
+    // Remove legacy Adejia card if still in DOM
+    var legacy = document.getElementById("adejiaPromoCard");
+    if (legacy && legacy.parentNode) legacy.parentNode.removeChild(legacy);
+
     var hero = document.getElementById("heroTitle");
     if (!hero) return null;
 
     var btn = document.createElement("button");
     btn.type = "button";
     btn.id = CARD_ID;
-    btn.setAttribute("aria-label", "埃德加德加");
+    btn.setAttribute("aria-label", "人类月球日");
     var img = document.createElement("img");
-    img.alt = "埃德加德加";
+    img.alt = "人类月球日";
     img.decoding = "async";
     var srcs = IMG_CANDIDATES.slice();
     img.src = srcs.shift();
@@ -145,6 +149,7 @@
     injectStyles();
     var active = isActive();
     document.body.classList.toggle(BODY_CLASS, active);
+    document.body.classList.remove("adejia-promo-active");
     if (active) {
       ensureCard();
     } else {

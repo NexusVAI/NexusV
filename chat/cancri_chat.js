@@ -297,18 +297,6 @@
 			"customMultiplier": 2
 		},
 		{
-			"id": "gpt-image-2-all",
-			"name": "GPT Image 2",
-			"brand": "OpenAI",
-			"kind": "image",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "expensive",
-			"customMultiplier": 1500,
-			"creditPerUse": 150
-		},
-		{
 			"id": "gpt-image-2-pro",
 			"name": "GPT Image 2 Pro",
 			"brand": "OpenAI",
@@ -321,6 +309,20 @@
 			"proMaxOnly": true,
 			"creditPerUse": 300
 		},
+		// 2026-07-19: gpt-image-2 / gpt-image-2-all 已下架，仅保留 pro
+		{
+			"id": "gpt-image-2-all",
+			"name": "GPT Image 2",
+			"brand": "OpenAI",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "expensive",
+			"customMultiplier": 1500,
+			"creditPerUse": 150,
+			"disabled": true
+		},
 		{
 			"id": "gpt-image-2",
 			"name": "【特价】gpt-image-2",
@@ -332,6 +334,7 @@
 			"costTier": "expensive",
 			"customMultiplier": 100,
 			"proPlusOnly": true,
+			"disabled": true,
 			"creditPerUse": 10
 		},
 		{
