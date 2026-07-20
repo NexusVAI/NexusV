@@ -3862,19 +3862,23 @@
 			emailError.textContent = "";
 			emailError.style.color = "";
 		}
+		// 2026-07-20: 可见 Turnstile 挂在 #authCaptchaContainer。
+		// 旧逻辑 init 后立刻 suspend 会把挂件拆掉，导致用户看不到验证框。
+		// 仅清理旧版 loginTurnstile 独立槽；挂件由 NexusAuthCaptcha.init 重新渲染。
+		const turnstileSlot = document.getElementById("loginTurnstileContainer");
+		if (turnstileSlot) turnstileSlot.remove();
 		if (window.NexusAuthCaptcha) {
-			try {
-				window.NexusAuthCaptcha.init();
-			} catch (_e) {}
 			try {
 				window.NexusAuthCaptcha.clearInput();
 			} catch (_e) {}
+			try {
+				window.NexusAuthCaptcha.init();
+			} catch (_e) {}
+		} else if (window.NexusLoginCaptcha?.prerender) {
+			try {
+				window.NexusLoginCaptcha.prerender();
+			} catch (_e) {}
 		}
-		const turnstileSlot = document.getElementById("loginTurnstileContainer");
-		if (turnstileSlot) turnstileSlot.remove();
-		if (window.NexusLoginCaptcha?.suspend) try {
-			window.NexusLoginCaptcha.suspend();
-		} catch (_e) {}
 	}
 	function hideAuthOverlay() {
 		const overlay = document.getElementById("authOverlay");
@@ -3991,11 +3995,9 @@
 	}
 	async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
 		const client = getSupabaseClient();
-		// 2026-07-18: 原先「有 NexusAuthCaptcha.validate 就跳过 Turnstile」会在
-		// turnstile_bridge 把 NexusAuthCaptcha 设为恒 true 后永远不取 token，
-		// 仅依赖 fetch 注入；注入失败时服务端 TURNSTILE_ENFORCE=1 直接 captcha_failed，
-		// 用户表现为「一直人机验证不通过」。改为始终 best-effort 取 token。
-		const captchaToken = await getLoginCaptchaTokenBestEffort(12e3);
+		// 2026-07-18: 始终取 Turnstile token（见 bridge 注释）。
+		// 2026-07-20: 可见挑战，预算拉长到 20s，避免用户刚点完就被超时清空。
+		const captchaToken = await getLoginCaptchaTokenBestEffort(20e3);
 		const opts = {
 			email,
 			options: { shouldCreateUser }
@@ -4009,8 +4011,8 @@
 	}
 	async function signInWithEmailPassword(email, password) {
 		const client = getSupabaseClient();
-		// 2026-07-18: 与 sendEmailOtp 相同，始终取 Turnstile token（见上注释）。
-		const captchaToken = await getLoginCaptchaTokenBestEffort(12e3);
+		// 2026-07-18/20: 与 sendEmailOtp 相同，始终取可见 Turnstile token。
+		const captchaToken = await getLoginCaptchaTokenBestEffort(20e3);
 		const opts = {
 			email,
 			password
@@ -4097,7 +4099,7 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+				if (emailError) emailError.textContent = "请先完成上方的人机验证（勾选/点击验证框），完成后再发送验证码。";
 				if (emailError) emailError.style.color = "";
 				window.NexusAuthCaptcha.focusInput();
 				return;
@@ -4191,7 +4193,7 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+				if (emailError) emailError.textContent = "请先完成上方的人机验证（勾选/点击验证框），完成后再登录。";
 				window.NexusAuthCaptcha.focusInput();
 				return;
 			}
