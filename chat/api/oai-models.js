@@ -29,7 +29,7 @@
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
 
   // flagship models pinned to the front (only ids that still exist in catalog).
-  // 2026-07-21: 旗舰三卡改为 kfcoding XHigh 线。
+  // 2026-07-21: 旗舰三卡改为 XHigh 线。
   var FEATURED_ORDER = [
     "claude-opus-4-8-xhigh",
     "grok-4.5-xhigh",
