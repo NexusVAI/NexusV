@@ -2757,6 +2757,20 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       disabled: serverModel.disabled === true,
       gateCostTier: serverModel.gateCostTier || null,
       freeUserBlocked: serverModel.freeUserBlocked === true,
+      inputPricePerM:
+        typeof serverModel.inputPricePerM === "number"
+          ? serverModel.inputPricePerM
+          : local.inputPricePerM,
+      outputPricePerM:
+        typeof serverModel.outputPricePerM === "number"
+          ? serverModel.outputPricePerM
+          : local.outputPricePerM,
+      perCallPrice:
+        typeof serverModel.perCallPrice === "number"
+          ? serverModel.perCallPrice
+          : local.perCallPrice,
+      priceDisplay:
+        serverModel.priceDisplay || local.priceDisplay || "",
     };
   }
 
@@ -2975,6 +2989,83 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     const idx = BRAND_PRIORITY_ORDER.indexOf(brand);
     return idx >= 0 ? -1000 + idx : 0;
   }
+
+  // 模型菜单热力条：价位归一化与 HTML 生成（对齐 cancri-code modelMeta.ts）
+  function priceYuanRepr(input, output) {
+    const vals = [input, output].filter(
+      (v) => typeof v === "number" && !Number.isNaN(v) && v >= 0,
+    );
+    if (vals.length === 0) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }
+  function costLevel(multiplier) {
+    const m =
+      typeof multiplier === "number" && !Number.isNaN(multiplier)
+        ? multiplier
+        : 1;
+    if (m <= 0) return 0;
+    const v = Math.log10(m + 1) / Math.log10(300 + 1);
+    return Math.max(0.04, Math.min(1, v));
+  }
+  function barMarkerPct(level) {
+    const pct = Math.max(8, Math.min(92, level * 100));
+    return pct.toFixed(1);
+  }
+  function priceLevelInRange(repr, range) {
+    if (repr == null || Number.isNaN(repr) || repr < 0) return null;
+    if (!range || range.max <= range.min) return 0.5;
+    const lg = (x) => Math.log10(x + 1);
+    const v = (lg(repr) - lg(range.min)) / (lg(range.max) - lg(range.min));
+    return Math.max(0.06, Math.min(0.94, v));
+  }
+  const DEFAULT_TIER_MULTIPLIERS = {
+    free: 0.5,
+    cheap: 1,
+    normal: 2,
+    expensive: 5,
+    vip: 15,
+  };
+  function computeCatalogPriceRange(models) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const m of models) {
+      if (m.isFree || m.isWelfare) continue;
+      let r = null;
+      if (typeof m.perCallPrice === "number" && !Number.isNaN(m.perCallPrice)) {
+        r = m.perCallPrice;
+      } else {
+        r = priceYuanRepr(m.inputPricePerM, m.outputPricePerM);
+      }
+      if (r == null) continue;
+      if (r < min) min = r;
+      if (r > max) max = r;
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    return { min, max };
+  }
+  function modelPriceLevel(model, range) {
+    if (model.isFree || model.isWelfare) return null;
+    const fallbackMultiplier =
+      typeof model.customMultiplier === "number"
+        ? model.customMultiplier
+        : DEFAULT_TIER_MULTIPLIERS[model.costTier] ?? 2;
+    let lvl = costLevel(fallbackMultiplier);
+    if (
+      typeof model.perCallPrice === "number" &&
+      !Number.isNaN(model.perCallPrice)
+    ) {
+      const pl = priceLevelInRange(model.perCallPrice, range);
+      if (pl != null) lvl = pl;
+    } else {
+      const pl = priceLevelInRange(
+        priceYuanRepr(model.inputPricePerM, model.outputPricePerM),
+        range,
+      );
+      if (pl != null) lvl = pl;
+    }
+    return lvl;
+  }
+
   function rebuildModelCatalogDerived() {
     MODEL_META_MAP = new Map();
     MODEL_IDS = {};
@@ -3013,6 +3104,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
         customMultiplier: entry.customMultiplier,
         gateCostTier: entry.gateCostTier || null,
         freeUserBlocked: entry.freeUserBlocked === true,
+        inputPricePerM: entry.inputPricePerM,
+        outputPricePerM: entry.outputPricePerM,
+        perCallPrice: entry.perCallPrice,
+        priceDisplay: entry.priceDisplay || "",
         isWelfare,
         isFree: entry.costTier === "free" || isWelfare,
         isPromo: entry.promoLimited === true || isSpecial,
@@ -3028,6 +3123,11 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       if (pa !== pb) return pa - pb;
       return String(a.displayName || a.id).localeCompare(String(b.displayName || b.id));
     });
+    // 2026-07-22: 按 model_ui_catalog 价格计算热力条相对位置
+    const priceRange = computeCatalogPriceRange(SELECTABLE_MODELS);
+    for (const m of SELECTABLE_MODELS) {
+      m.priceLevel = modelPriceLevel(m, priceRange);
+    }
     MODEL_CATALOG_BY_ID = MODEL_META_MAP;
     ARENA_MODELS = SELECTABLE_MODELS.filter(
       (m) => !m.imageOnly && !m.videoOnly && m.kind === "chat",
@@ -3055,6 +3155,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       iconPath: "./openai.svg",
       kind: "chat",
       costTier: "normal",
+      priceLevel: null,
     };
   }
   
@@ -15519,6 +15620,22 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
             option.appendChild(tag);
           });
   
+          // 热力条：付费 + 未选中才显示（FREE / active 行隐藏，避免和 ✓ 重叠）
+          if (
+            !model.isFree &&
+            model.id !== currentModel &&
+            typeof model.priceLevel === "number"
+          ) {
+            const heat = document.createElement("span");
+            heat.className = "model-item-heat";
+            heat.setAttribute("aria-hidden", "true");
+            heat.innerHTML =
+              `<span class="model-item-heat-track">` +
+              `<span class="model-item-heat-dot" style="left:${barMarkerPct(model.priceLevel)}%"></span>` +
+              `</span>`;
+            option.appendChild(heat);
+          }
+
           option.classList.toggle("active", model.id === currentModel);
           if (model.available === false) {
             option.classList.add("disabled");
