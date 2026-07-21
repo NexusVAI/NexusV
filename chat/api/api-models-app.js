@@ -35,16 +35,10 @@ const esc = (s) => {
 // 模型广场置顶：旗舰模型固定排在最前（其余保持原 catalog 顺序）。
 // 仅列后端 catalog 仍存在的 id；已下线模型勿写死，避免与 model_public_catalog 漂移。
 const FEATURED_MODEL_ORDER = [
-    "gpt-5.6-sol",
-    "claude-opus-4-8",
-    "grok-4.5",
-    "gpt-image-2-pro",
-    "minimax-m3",
-    "kimi-k2.6",
-    "glm-5.1",
-    "deepseek-v4-pro",
-    // 2026-07-07: 新增 futureppo 线模型。
-    "composer-2.5-fast",
+    // 2026-07-21: 旗舰三卡 — kfcoding XHigh
+    "claude-opus-4-8-xhigh",
+    "grok-4.5-xhigh",
+    "gpt-5.6-sol-xhigh",
 ];
 const FEATURED_RANK = new Map(
     FEATURED_MODEL_ORDER.map((id, i) => [id.toLowerCase(), i]),

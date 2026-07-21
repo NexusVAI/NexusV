@@ -29,10 +29,11 @@
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
 
   // flagship models pinned to the front (only ids that still exist in catalog).
+  // 2026-07-21: 旗舰三卡改为 kfcoding XHigh 线。
   var FEATURED_ORDER = [
-    "gpt-5.6-sol", "claude-opus-4-8", "grok-4.5", "gpt-image-2-pro",
-    "minimax-m3", "kimi-k2.6", "glm-5.1", "deepseek-v4-pro",
-    "composer-2.5-fast",
+    "claude-opus-4-8-xhigh",
+    "grok-4.5-xhigh",
+    "gpt-5.6-sol-xhigh",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
