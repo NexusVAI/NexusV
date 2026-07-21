@@ -44,8 +44,11 @@
   // GPT-5.6 cards use the three images extracted from the reference page.
   var ART_OVERRIDE = {
     "gpt-5.6-sol": "gpt56-sol.jpg",
+    "gpt-5.6-sol-xhigh": "gpt56-sol.jpg",
     "gpt-5.6-terra": "gpt56-terra.jpg",
+    "gpt-5.6-terra-xhigh": "gpt56-terra.jpg",
     "gpt-5.6-luna": "gpt56-luna.jpg",
+    "gpt-5.6-luna-xhigh": "gpt56-luna.jpg",
     // 2026-07-16: Claude Fable 5 专用卡面（Logo/fable5.png → assets/oai.logo/fable5.png）
     "claude-fable-5": "fable5.png",
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
