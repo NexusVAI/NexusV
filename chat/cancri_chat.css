@@ -1778,6 +1778,39 @@ html[data-theme="dark"] .model-upgrade-link:focus-visible {
     color: #2563eb;
 }
 
+/* 模型菜单热力条（绿→红渐变 + 白圆点；对齐 cancri-code） */
+.model-item-heat {
+    flex: 0 0 auto;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+.model-item-heat-track {
+    position: relative;
+    display: block;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #34c759 0%, #a3d63a 28%, #f7c948 55%, #f0883e 78%, #e5484d 100%);
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.model-item-heat-dot {
+    position: absolute;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgba(15, 17, 20, 0.22);
+    box-shadow: 0 0 0 0.5px rgba(15, 17, 20, 0.06);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+.model-option.active .model-item-heat {
+    display: none;
+}
+
 /* ── CONTEXT METER ──────────────────────────────────────── */
 .context-meter {
     /* 2026-05-31：按用户要求隐藏上下文额度圆环 */

@@ -49,6 +49,17 @@
 			"customMultiplier": 3.5
 		},
 		{
+			"id": "gemini-3.1-flash-lite-welfare",
+			"name": "Gemini 3.1 Flash Lite 0603",
+			"brand": "Google",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "normal",
+			"customMultiplier": 3.5
+		},
+		{
 			"id": "gemini-2.5-flash-lite",
 			"name": "Gemini 2.5 Flash Lite",
 			"brand": "Google",
@@ -173,7 +184,7 @@
 		},
 		{
 			"id": "baichuan-m2-welfare",
-			"name": "Free:Baichuan M2",
+			"name": "【福利】Baichuan M2",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -183,7 +194,7 @@
 		},
 		{
 			"id": "baichuan4-air-welfare",
-			"name": "Free:Baichuan 4 Air",
+			"name": "【福利】Baichuan 4 Air",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -193,7 +204,7 @@
 		},
 		{
 			"id": "baichuan3-turbo-welfare",
-			"name": "Free:Baichuan 3 Turbo",
+			"name": "【福利】Baichuan 3 Turbo",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -203,7 +214,7 @@
 		},
 		{
 			"id": "baichuan2-turbo-welfare",
-			"name": "Free:Baichuan 2 Turbo",
+			"name": "【福利】Baichuan 2 Turbo",
 			"brand": "Baichuan",
 			"kind": "chat",
 			"vision": false,
@@ -297,6 +308,18 @@
 			"customMultiplier": 2
 		},
 		{
+			"id": "gpt-image-2-all",
+			"name": "GPT Image 2",
+			"brand": "OpenAI",
+			"kind": "image",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "expensive",
+			"customMultiplier": 1500,
+			"creditPerUse": 150
+		},
+		{
 			"id": "gpt-image-2-pro",
 			"name": "GPT Image 2 Pro",
 			"brand": "OpenAI",
@@ -309,20 +332,6 @@
 			"proMaxOnly": true,
 			"creditPerUse": 300
 		},
-		// 2026-07-19: gpt-image-2 / gpt-image-2-all 已下架，仅保留 pro
-		{
-			"id": "gpt-image-2-all",
-			"name": "GPT Image 2",
-			"brand": "OpenAI",
-			"kind": "image",
-			"vision": false,
-			"thinking": false,
-			"tools": false,
-			"costTier": "expensive",
-			"customMultiplier": 1500,
-			"creditPerUse": 150,
-			"disabled": true
-		},
 		{
 			"id": "gpt-image-2",
 			"name": "【特价】gpt-image-2",
@@ -334,7 +343,6 @@
 			"costTier": "expensive",
 			"customMultiplier": 100,
 			"proPlusOnly": true,
-			"disabled": true,
 			"creditPerUse": 10
 		},
 		{
@@ -479,6 +487,36 @@
 			"customMultiplier": 3.5
 		},
 		{
+			"id": "deepseek-v4-welfare",
+			"name": "【福利】DeepSeek V4",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "gemini-3.1-pro-welfare",
+			"name": "【福利】Gemini 3.1 Pro",
+			"brand": "Google",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "gpt-5.5-high-fast",
+			"name": "【福利】GPT-5.5",
+			"brand": "OpenAI",
+			"kind": "chat",
+			"vision": true,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
 			"id": "minimax-m2.7",
 			"name": "MiniMax M2.7",
 			"brand": "MiniMax",
@@ -544,13 +582,44 @@
 		},
 		{
 			"id": "qwen3.7-plus",
-			"name": "Qwen 3.7 Plus",
+			"name": "【订阅福利】Qwen3.7 Plus",
 			"brand": "Qwen",
 			"kind": "chat",
 			"vision": false,
 			"thinking": false,
 			"tools": true,
-			"costTier": "normal"
+			"costTier": "free"
+		},
+		{
+			"id": "qwen3.5-35b-a3b",
+			"name": "Qwen 3.5 35B A3B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "qwen3.5-27b",
+			"name": "Qwen 3.5 27B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "cheap"
+		},
+		{
+			"id": "deepseek-r1-distill-qwen-32b",
+			"name": "DeepSeek R1 Distill Qwen 32B",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "cheap",
+			"customMultiplier": .5
 		},
 		{
 			"id": "qwen3.5-122b-a10b",
@@ -677,6 +746,36 @@
 			"lineLabel": "jiuyoumao"
 		},
 		{
+			"id": "qwen3.5-4b",
+			"name": "Qwen3.5 4B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "qwen3.5-9b",
+			"name": "Qwen3.5 9B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
+			"id": "qwen3-8b-jiuyoumao",
+			"name": "Qwen 3.5 8B",
+			"brand": "Qwen",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "free"
+		},
+		{
 			"id": "doubao-seed-oss",
 			"name": "Doubao Seed OSS",
 			"brand": "Doubao",
@@ -685,6 +784,16 @@
 			"thinking": false,
 			"tools": true,
 			"costTier": "free"
+		},
+		{
+			"id": "deepseek-v4-flash-0617",
+			"name": "DeepSeek V4 Flash 0617",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": true,
+			"costTier": "cheap"
 		},
 		{
 			"id": "hunyuan-mt-7b",
@@ -735,39 +844,6 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "free"
-		},
-		{
-			"id": "hunyuan-3",
-			"name": "Hy3",
-			"brand": "Tencent",
-			"kind": "chat",
-			"vision": false,
-			"thinking": true,
-			"tools": false,
-			"costTier": "cheap",
-			"lineLabel": "modelscope"
-		},
-		{
-			"id": "grok-4.5",
-			"name": "Grok 4.5",
-			"brand": "xAI",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
-		},
-		{
-			"id": "composer-2.5-fast",
-			"name": "Composer-2.5-Fast",
-			"brand": "Cursor",
-			"kind": "chat",
-			"vision": true,
-			"thinking": false,
-			"tools": true,
-			"costTier": "normal",
-			"lineLabel": "futureppo"
 		}
 	];
 	//#endregion
@@ -787,7 +863,6 @@
 	};
 	//#endregion
 	//#region src/main.js
-	var MODEL_UPGRADE_URL = "https://www.nexusvai.xyz/chat/pricing.html";
 	var MODEL_CONTEXT_WINDOWS = {
 		"gpt-5.5": 256e3,
 		"gpt-5.5-special": 256e3,
@@ -805,6 +880,7 @@
 		"gemini-3.1-pro": 2097152,
 		"gemini-3.1-flash-lite-preview": 1048576,
 		"gemini-3.5-agent": 1048576,
+		"gemini-3.1-flash-lite-welfare": 1048576,
 		"gemini-2.5-flash-lite": 1048576,
 		"gemini-3-flash-preview": 1048576,
 		"deepseek-v4-pro": 64e3,
@@ -812,6 +888,7 @@
 		"deepseek-v3": 64e3,
 		"deepseek-v3.1": 64e3,
 		"deepseek-v3.2": 64e3,
+		"deepseek-v4-pro-welfare": 64e3,
 		"kimi-k2.6": 2e5,
 		"kimi-k2.7-code": 2e5,
 		"kimi-k2-thinking": 2e5,
@@ -824,6 +901,7 @@
 		"gpt-5.5": 17797536e5,
 		"gpt-5.5-special": 17797536e5,
 		"gemini-3.5-agent": 17797536e5,
+		"deepseek-v4-pro-welfare": 17797536e5,
 		"glm-5.1": 17797536e5,
 		"claude-opus-4-8-special": 17797536e5,
 		"qwen3.7-max-2026-05-17": 17797536e5
@@ -835,9 +913,7 @@
 	];
 	function normalizeModelDisplayName(name) {
 		if (!name) return "";
-		const stripped = String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "");
-		if (/composer/i.test(stripped)) return stripped.replace(/\s+/g, " ").trim();
-		return stripped.replace(/-/g, " ").replace(/\s+/g, " ").trim();
+		return String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
 	}
 	function getModelContextWindow(modelId) {
 		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
@@ -2002,7 +2078,8 @@
 		"grok-imagine-video",
 		"doubao-seedream-4-5",
 		"gemini-3-flash-preview",
-		"gemini-3.1-flash-lite-preview"
+		"gemini-3.1-flash-lite-preview",
+		"gemini-3.1-flash-lite-welfare"
 	]);
 	var FREE_USER_BLOCKED_GATE_IDS = new Set([
 		"gpt-5.5",
@@ -2026,6 +2103,7 @@
 		"z-image-turbo",
 		"gemini-3-flash-preview",
 		"gemini-3.1-flash-lite-preview",
+		"gemini-3.1-flash-lite-welfare",
 		"gemini-3.5-agent",
 		"glm-5.1",
 		"deepseek-v4-pro"
@@ -2064,13 +2142,6 @@
 	};
 	var quotaStateFetchInflight = null;
 	var QUOTA_STATE_TTL_MS = 30 * 1e3;
-	var quotaStateReady = false;
-	function markQuotaStateReady() {
-		quotaStateReady = true;
-		if (modelCatalogLoaded) try {
-			renderModelDropdownFromCatalog();
-		} catch (e) {}
-	}
 	function seedQuotaStateFromTierCache() {
 		try {
 			const raw = localStorage.getItem("cancri_tier_cache_v1");
@@ -2103,16 +2174,10 @@
 		"baichuan4-air-welfare",
 		"baichuan3-turbo-welfare",
 		"baichuan2-turbo-welfare",
-		"hunyuan-mt-7b",
-		"nex-n2-pro-welfare",
-		"claude-sonnet-4.5"
+		"deepseek-v4-pro-welfare"
 	]);
 	function isFreeWelfareModel(modelId) {
 		return FREE_WELFARE_MODEL_IDS.has(modelId);
-	}
-	function isFreePlanModel(modelId) {
-		const meta = getModelMeta(modelId);
-		return Boolean(isFreeWelfareModel(modelId) || meta.gateCostTier === "free" || !meta.gateCostTier && meta.costTier === "free");
 	}
 	function isProPlusGateModel(modelId) {
 		const meta = getModelMeta(modelId);
@@ -2125,9 +2190,9 @@
 	}
 	function getQuotaBlockReason(modelId) {
 		if (quotaState.billingMode === "plan_v4") {
-			if (quotaState.planV4Active === false && isFreePlanModel(modelId)) {
-				if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
-				if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
+			if (isFreeWelfareModel(modelId)) {
+				if (quotaState.planV4Active === false && quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
+				if (quotaState.planV4Active === false && quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
 				return null;
 			}
 			if (quotaState.planV4Active === false) return "plan_required";
@@ -2150,7 +2215,7 @@
 		if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
 		if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 		if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
-		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "hunyuan-mt-7b" || modelId === "nex-n2-pro-welfare" || modelId === "claude-sonnet-4.5") return null;
+		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "deepseek-v4-pro-welfare") return null;
 		const hasTopup = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
 		if (!hasTopup && quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
 		if (!isPaidGateModel(modelId)) return null;
@@ -2170,35 +2235,6 @@
 			default: return "";
 		}
 	}
-	function getModelUpgradeLabel(modelId, reason = getQuotaBlockReason(modelId)) {
-		if (reason === "pro_max_only") return "Pro Max";
-		if (reason === "pro_plus_only") return "Pro+";
-		if (reason === "plan_required" || reason === "pro_only") return "Pro";
-		return "";
-	}
-	function syncModelOptionAccess(option, upgradeLabel) {
-		let access = option.querySelector(".model-access");
-		if (!upgradeLabel) {
-			access?.remove();
-			return;
-		}
-		if (!access) {
-			access = document.createElement("span");
-			access.className = "model-access";
-			const badge = document.createElement("span");
-			badge.className = "model-access-badge";
-			access.appendChild(badge);
-			const link = document.createElement("a");
-			link.className = "model-upgrade-link";
-			link.href = MODEL_UPGRADE_URL;
-			link.target = "_self";
-			link.textContent = "Upgrade";
-			access.appendChild(link);
-			option.appendChild(access);
-		}
-		const badge = access.querySelector(".model-access-badge");
-		if (badge) badge.textContent = upgradeLabel;
-	}
 	function getCancriAccessTokenForQuota() {
 		try {
 			const raw = localStorage.getItem("cancri_supabase_auth");
@@ -2215,11 +2251,7 @@
 		const token = getCancriAccessTokenForQuota();
 		const SUPABASE_URL = window.__SUPABASE_URL__ || "";
 		const SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY__ || "";
-		if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-			markQuotaStateReady();
-			return quotaState;
-		}
-		const quotaReadyTimeoutId = setTimeout(markQuotaStateReady, 5e3);
+		if (!token || !SUPABASE_URL || !SUPABASE_ANON_KEY) return quotaState;
 		quotaStateFetchInflight = fetch(SUPABASE_URL + "/functions/v1/chat-gateway", {
 			method: "POST",
 			headers: {
@@ -2282,7 +2314,6 @@
 				quotaState.fetchedAt = Date.now();
 				if (clearTopupBackedQuotaLocks()) persistModelTelemetryCache();
 			}
-			markQuotaStateReady();
 			quotaStateFetchInflight = null;
 			try {
 				if (typeof updateModelDropdownIndicators === "function") updateModelDropdownIndicators();
@@ -2292,11 +2323,8 @@
 			} catch (e) {}
 			return quotaState;
 		}).catch((e) => {
-			markQuotaStateReady();
 			quotaStateFetchInflight = null;
 			return quotaState;
-		}).finally(() => {
-			clearTimeout(quotaReadyTimeoutId);
 		});
 		return quotaStateFetchInflight;
 	}
@@ -2423,28 +2451,26 @@
 		modelDropdown.querySelectorAll(".model-option").forEach((opt) => {
 			const modelId = opt.dataset.model;
 			const status = getModelStatus(modelId);
+			let speedDot = opt.querySelector(".model-speed-dot");
+			if (!speedDot) return;
+			speedDot.className = "model-speed-dot speed-" + (status.speedLevel || "unknown");
+			const h = status._health;
+			if (h && h.successRate !== null) {
+				const latency = h.avgLatency !== null ? ` · ${Math.round(h.avgLatency)}ms` : "";
+				const reqs = h.totalRequests > 0 ? ` · ${h.totalRequests}次请求` : "";
+				if (status.speedLevel === "fast") speedDot.title = `正常 ${h.successRate}%${latency}${reqs}`;
+				else if (status.speedLevel === "medium") speedDot.title = `降级 ${h.successRate}%${latency}${reqs}`;
+				else if (status.speedLevel === "slow") speedDot.title = `异常 ${h.successRate}%${latency}${reqs}`;
+				else speedDot.title = `服务端数据 ${h.successRate}%${latency}`;
+			} else if (status.speedLevel === "fast") speedDot.title = `速度快 (${Math.round(status.speedMs)}ms)`;
+			else if (status.speedLevel === "medium") speedDot.title = `速度中等 (${Math.round(status.speedMs)}ms)`;
+			else if (status.speedLevel === "slow") speedDot.title = `速度较慢 (${Math.round(status.speedMs)}ms)`;
+			else speedDot.title = "速度未测试";
 			const quotaReason = getQuotaBlockReason(modelId);
-			syncModelOptionAccess(opt, getModelUpgradeLabel(modelId, quotaReason));
-			const speedDot = opt.querySelector(".model-speed-dot");
-			if (speedDot) {
-				speedDot.className = "model-speed-dot speed-" + (status.speedLevel || "unknown");
-				const h = status._health;
-				if (h && h.successRate !== null) {
-					const latency = h.avgLatency !== null ? ` · ${Math.round(h.avgLatency)}ms` : "";
-					const reqs = h.totalRequests > 0 ? ` · ${h.totalRequests}次请求` : "";
-					if (status.speedLevel === "fast") speedDot.title = `正常 ${h.successRate}%${latency}${reqs}`;
-					else if (status.speedLevel === "medium") speedDot.title = `降级 ${h.successRate}%${latency}${reqs}`;
-					else if (status.speedLevel === "slow") speedDot.title = `异常 ${h.successRate}%${latency}${reqs}`;
-					else speedDot.title = `服务端数据 ${h.successRate}%${latency}`;
-				} else if (status.speedLevel === "fast") speedDot.title = `速度快 (${Math.round(status.speedMs)}ms)`;
-				else if (status.speedLevel === "medium") speedDot.title = `速度中等 (${Math.round(status.speedMs)}ms)`;
-				else if (status.speedLevel === "slow") speedDot.title = `速度较慢 (${Math.round(status.speedMs)}ms)`;
-				else speedDot.title = "速度未测试";
-			}
 			if (!isModelAvailable(modelId)) {
 				opt.classList.add("disabled");
 				if (quotaReason) {
-					opt.classList.toggle("quota-blocked", Boolean(getModelUpgradeLabel(modelId, quotaReason)));
+					opt.classList.add("quota-blocked");
 					opt.dataset.quotaReason = quotaReason;
 					opt.title = getQuotaBlockMessage(modelId);
 				} else {
@@ -2600,7 +2626,11 @@
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
 			gateCostTier: serverModel.gateCostTier || null,
-			freeUserBlocked: serverModel.freeUserBlocked === true
+			freeUserBlocked: serverModel.freeUserBlocked === true,
+			inputPricePerM: typeof serverModel.inputPricePerM === "number" ? serverModel.inputPricePerM : local.inputPricePerM,
+			outputPricePerM: typeof serverModel.outputPricePerM === "number" ? serverModel.outputPricePerM : local.outputPricePerM,
+			perCallPrice: typeof serverModel.perCallPrice === "number" ? serverModel.perCallPrice : local.perCallPrice,
+			priceDisplay: serverModel.priceDisplay || local.priceDisplay || ""
 		};
 	}
 	function syncGateIdsFromMergedCatalog() {
@@ -2766,6 +2796,64 @@
 		const idx = BRAND_PRIORITY_ORDER.indexOf(brand);
 		return idx >= 0 ? -1e3 + idx : 0;
 	}
+	function priceYuanRepr(input, output) {
+		const vals = [input, output].filter((v) => typeof v === "number" && !Number.isNaN(v) && v >= 0);
+		if (vals.length === 0) return null;
+		return vals.reduce((a, b) => a + b, 0) / vals.length;
+	}
+	function costLevel(multiplier) {
+		const m = typeof multiplier === "number" && !Number.isNaN(multiplier) ? multiplier : 1;
+		if (m <= 0) return 0;
+		const v = Math.log10(m + 1) / Math.log10(301);
+		return Math.max(.04, Math.min(1, v));
+	}
+	function barMarkerPct(level) {
+		return Math.max(8, Math.min(92, level * 100)).toFixed(1);
+	}
+	function priceLevelInRange(repr, range) {
+		if (repr == null || Number.isNaN(repr) || repr < 0) return null;
+		if (!range || range.max <= range.min) return .5;
+		const lg = (x) => Math.log10(x + 1);
+		const v = (lg(repr) - lg(range.min)) / (lg(range.max) - lg(range.min));
+		return Math.max(.06, Math.min(.94, v));
+	}
+	var DEFAULT_TIER_MULTIPLIERS = {
+		free: .5,
+		cheap: 1,
+		normal: 2,
+		expensive: 5,
+		vip: 15
+	};
+	function computeCatalogPriceRange(models) {
+		let min = Infinity;
+		let max = -Infinity;
+		for (const m of models) {
+			if (m.isFree || m.isWelfare) continue;
+			let r = null;
+			if (typeof m.perCallPrice === "number" && !Number.isNaN(m.perCallPrice)) r = m.perCallPrice;
+			else r = priceYuanRepr(m.inputPricePerM, m.outputPricePerM);
+			if (r == null) continue;
+			if (r < min) min = r;
+			if (r > max) max = r;
+		}
+		if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+		return {
+			min,
+			max
+		};
+	}
+	function modelPriceLevel(model, range) {
+		if (model.isFree || model.isWelfare) return null;
+		let lvl = costLevel(typeof model.customMultiplier === "number" ? model.customMultiplier : DEFAULT_TIER_MULTIPLIERS[model.costTier] ?? 2);
+		if (typeof model.perCallPrice === "number" && !Number.isNaN(model.perCallPrice)) {
+			const pl = priceLevelInRange(model.perCallPrice, range);
+			if (pl != null) lvl = pl;
+		} else {
+			const pl = priceLevelInRange(priceYuanRepr(model.inputPricePerM, model.outputPricePerM), range);
+			if (pl != null) lvl = pl;
+		}
+		return lvl;
+	}
 	function rebuildModelCatalogDerived() {
 		MODEL_META_MAP = /* @__PURE__ */ new Map();
 		MODEL_IDS = {};
@@ -2804,6 +2892,10 @@
 				customMultiplier: entry.customMultiplier,
 				gateCostTier: entry.gateCostTier || null,
 				freeUserBlocked: entry.freeUserBlocked === true,
+				inputPricePerM: entry.inputPricePerM,
+				outputPricePerM: entry.outputPricePerM,
+				perCallPrice: entry.perCallPrice,
+				priceDisplay: entry.priceDisplay || "",
 				isWelfare,
 				isFree: entry.costTier === "free" || isWelfare,
 				isPromo: entry.promoLimited === true || isSpecial,
@@ -2819,6 +2911,8 @@
 			if (pa !== pb) return pa - pb;
 			return String(a.displayName || a.id).localeCompare(String(b.displayName || b.id));
 		});
+		const priceRange = computeCatalogPriceRange(SELECTABLE_MODELS);
+		for (const m of SELECTABLE_MODELS) m.priceLevel = modelPriceLevel(m, priceRange);
 		MODEL_CATALOG_BY_ID = MODEL_META_MAP;
 		ARENA_MODELS = SELECTABLE_MODELS.filter((m) => !m.imageOnly && !m.videoOnly && m.kind === "chat").map((m) => m.id);
 	}
@@ -2841,7 +2935,8 @@
 			disabled: false,
 			iconPath: "./openai.svg",
 			kind: "chat",
-			costTier: "normal"
+			costTier: "normal",
+			priceLevel: null
 		};
 	}
 	function getModelDisplayName(modelId) {
@@ -3862,23 +3957,19 @@
 			emailError.textContent = "";
 			emailError.style.color = "";
 		}
-		// 2026-07-20: 可见 Turnstile 挂在 #authCaptchaContainer。
-		// 旧逻辑 init 后立刻 suspend 会把挂件拆掉，导致用户看不到验证框。
-		// 仅清理旧版 loginTurnstile 独立槽；挂件由 NexusAuthCaptcha.init 重新渲染。
-		const turnstileSlot = document.getElementById("loginTurnstileContainer");
-		if (turnstileSlot) turnstileSlot.remove();
 		if (window.NexusAuthCaptcha) {
-			try {
-				window.NexusAuthCaptcha.clearInput();
-			} catch (_e) {}
 			try {
 				window.NexusAuthCaptcha.init();
 			} catch (_e) {}
-		} else if (window.NexusLoginCaptcha?.prerender) {
 			try {
-				window.NexusLoginCaptcha.prerender();
+				window.NexusAuthCaptcha.clearInput();
 			} catch (_e) {}
 		}
+		const turnstileSlot = document.getElementById("loginTurnstileContainer");
+		if (turnstileSlot) turnstileSlot.remove();
+		if (window.NexusLoginCaptcha?.suspend) try {
+			window.NexusLoginCaptcha.suspend();
+		} catch (_e) {}
 	}
 	function hideAuthOverlay() {
 		const overlay = document.getElementById("authOverlay");
@@ -3995,9 +4086,7 @@
 	}
 	async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
 		const client = getSupabaseClient();
-		// 2026-07-18: 始终取 Turnstile token（见 bridge 注释）。
-		// 2026-07-20: 可见挑战，预算拉长到 20s，避免用户刚点完就被超时清空。
-		const captchaToken = await getLoginCaptchaTokenBestEffort(20e3);
+		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
 		const opts = {
 			email,
 			options: { shouldCreateUser }
@@ -4011,8 +4100,7 @@
 	}
 	async function signInWithEmailPassword(email, password) {
 		const client = getSupabaseClient();
-		// 2026-07-18/20: 与 sendEmailOtp 相同，始终取可见 Turnstile token。
-		const captchaToken = await getLoginCaptchaTokenBestEffort(20e3);
+		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
 		const opts = {
 			email,
 			password
@@ -4099,7 +4187,7 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先完成上方的人机验证（勾选/点击验证框），完成后再发送验证码。";
+				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
 				if (emailError) emailError.style.color = "";
 				window.NexusAuthCaptcha.focusInput();
 				return;
@@ -4193,7 +4281,7 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先完成上方的人机验证（勾选/点击验证框），完成后再登录。";
+				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
 				window.NexusAuthCaptcha.focusInput();
 				return;
 			}
@@ -6445,22 +6533,24 @@
 	}
 	function resolveToastType(message, type) {
 		const explicitType = String(type || "").toLowerCase();
-		if (explicitType === "success" || explicitType === "info") return "success";
-		if (explicitType === "error" || explicitType === "warning") return "warning";
+		if (/^(success|error|info|warning)$/.test(explicitType)) return explicitType;
 		const text = String(message || "");
-		if (/失败|错误|异常|封禁|过期|无法|拒绝|不可用|无效|损坏|过大|不支持|未就绪|用完|校验失败|警告|限制|稍后|只读|太长|已忽略|已暂停|已满/.test(text)) return "warning";
-		return "success";
+		if (/失败|错误|异常|封禁|过期|无法|拒绝|不可用|无效|损坏|过大|不支持|未就绪|用完|校验失败/.test(text)) return "error";
+		if (/警告|限制|请|稍后|只读|太长|已忽略|已暂停|已满/.test(text)) return "warning";
+		if (/已|成功|完成|开始|打开|复制|导出|导入|生成|创建|重命名|删除|切换|加载|引用|进入|选中|保存/.test(text)) return "success";
+		return "info";
 	}
 	function showToast(message, type) {
 		toast.textContent = message;
 		const toastType = resolveToastType(message, type);
 		toast.dataset.type = toastType;
 		toast.classList.toggle("is-warning", toastType === "warning");
-		toast.classList.remove("is-info");
+		toast.classList.toggle("is-info", toastType === "info");
 		toast.classList.add("show");
 		clearTimeout(showToast._timer);
 		showToast._timer = setTimeout(() => {
 			toast.classList.remove("show");
+			delete toast.dataset.type;
 		}, 2200);
 	}
 	function renderWatermark() {
@@ -8137,9 +8227,7 @@
 	function autoResizeComposerInput() {
 		if (!homeInput) return;
 		const composer = homeInput.closest("[data-workbench-composer], .composer");
-		const isMobile = window.matchMedia("(max-width: 640px)").matches;
-		const isChatting = Boolean(document.getElementById("homeView")?.classList.contains("chatting"));
-		const minHeight = isMobile ? 44 : isChatting ? 24 : 36;
+		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
 		const maxHeight = getComposerResizeMaxHeight();
 		homeInput.style.height = "0px";
 		const next = Math.max(minHeight, Math.min(homeInput.scrollHeight, maxHeight));
@@ -11529,7 +11617,7 @@
 		const content = document.getElementById("modelDropdownContent");
 		if (!content) return;
 		content.textContent = "";
-		if (!modelCatalogLoaded || !quotaStateReady) {
+		if (!modelCatalogLoaded) {
 			for (let i = 0; i < 8; i++) {
 				const sk = document.createElement("div");
 				sk.className = "model-option model-option-skeleton";
@@ -11607,7 +11695,6 @@
 				if (subtext.textContent) textWrap.appendChild(subtext);
 				label.appendChild(textWrap);
 				option.appendChild(label);
-				syncModelOptionAccess(option, getModelUpgradeLabel(model.id));
 				(model.tags || []).forEach((tagText) => {
 					const tag = document.createElement("span");
 					tag.className = "model-tag";
@@ -11615,6 +11702,13 @@
 					tag.textContent = tagText;
 					option.appendChild(tag);
 				});
+				if (!model.isFree && model.id !== currentModel && typeof model.priceLevel === "number") {
+					const heat = document.createElement("span");
+					heat.className = "model-item-heat";
+					heat.setAttribute("aria-hidden", "true");
+					heat.innerHTML = `<span class="model-item-heat-track"><span class="model-item-heat-dot" style="left:${barMarkerPct(model.priceLevel)}%"></span></span>`;
+					option.appendChild(heat);
+				}
 				option.classList.toggle("active", model.id === currentModel);
 				if (model.available === false) {
 					option.classList.add("disabled");
@@ -11906,7 +12000,6 @@
 	} catch (e) {}
 	if (modelDropdown) {
 		modelDropdown.addEventListener("click", (e) => {
-			if (e.target.closest(".model-upgrade-link")) return;
 			const option = e.target.closest(".model-option");
 			if (!option || !modelDropdown.contains(option)) return;
 			const modelId = option.dataset.model;
