@@ -26,7 +26,7 @@
   var TOKEN_WAIT_MS = 90000; // 可见挑战：给用户足够时间点选
   var INJECT_BUDGET_MS = 15000;
 
-  var BRIDGE_VERSION = "2026-07-20-visible";
+  var BRIDGE_VERSION = "2026-07-22-login-fix";
   var state = {
     version: BRIDGE_VERSION,
     widgetId: null,
@@ -189,7 +189,7 @@
     status.id = "loginTurnstileStatus";
     status.style.cssText =
       "font-size:12px;line-height:1.45;color:rgba(128,128,128,0.95);margin:0 0 8px;text-align:left;display:block;";
-    status.textContent = "请完成下方人机验证";
+    status.textContent = "请完成下方 Cloudflare 人机验证";
     host.appendChild(status);
     state.statusEl = status;
 
@@ -282,11 +282,11 @@
         if (hasFreshToken() || state.lastError) return;
         var iframe = mount.querySelector("iframe");
         if (iframe && iframe.offsetHeight > 10) {
-          setStatus("请完成下方人机验证", "rgba(128,128,128,0.95)");
+          setStatus("请完成下方 Cloudflare 人机验证", "rgba(128,128,128,0.95)");
           return;
         }
         var msg =
-          "验证组件未能显示。请关闭广告拦截器 / 隐私扩展，或换网络、无痕模式后刷新页面。";
+          "Cloudflare 验证组件未能显示。请关闭广告拦截器 / 隐私扩展，或换网络、无痕模式后刷新页面。";
         state.lastError = msg;
         setStatus(msg, "#e11d48");
       }, 4000);
@@ -439,7 +439,7 @@
     }
   }
 
-  // ---- NexusAuthCaptcha 兼容 -------------------------------------------
+  // ---- NexusAuthCaptcha 兼容（Turnstile，不再使用左侧 4 位画布码） -------
   window.NexusAuthCaptcha = {
     init: function () {
       // 表单容器必须可见（旧隐形逻辑会 display:none）
@@ -451,7 +451,7 @@
       if (state.widgetId !== null && window.turnstile && window.turnstile.reset) {
         try {
           window.turnstile.reset(state.widgetId);
-          setStatus("请完成下方人机验证", "rgba(128,128,128,0.95)");
+          setStatus("请完成下方 Cloudflare 人机验证", "rgba(128,128,128,0.95)");
           return;
         } catch (_e) {
           suspend();
@@ -466,6 +466,17 @@
       // 挂件还在加载中也先拦一下，避免裸请求被服务端 captcha_failed
       return false;
     },
+    getFailMessage: function () {
+      if (state.apiFailed) {
+        return "Cloudflare 人机验证脚本未能加载。请关闭广告拦截器 / 换网络或无痕模式后刷新页面。";
+      }
+      if (state.lastError) return state.lastError;
+      if (!SITE_KEY) return "人机验证未配置，请联系管理员。";
+      if (!window.turnstile) {
+        return "人机验证组件加载中，请稍候几秒后再试；若一直不出现请刷新页面。";
+      }
+      return "请先完成下方 Cloudflare 人机验证（勾选/通过挑战），再发送验证码或登录。";
+    },
     refresh: function () {
       try {
         if (
@@ -476,7 +487,7 @@
           state.pendingToken = "";
           state.tokenIssuedAt = 0;
           window.turnstile.reset(state.widgetId);
-          setStatus("请完成下方人机验证", "rgba(128,128,128,0.95)");
+          setStatus("请完成下方 Cloudflare 人机验证", "rgba(128,128,128,0.95)");
           return;
         }
       } catch (_e) {}

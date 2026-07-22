@@ -239,7 +239,8 @@
                             required
                         />
 
-                        <div id="authCaptchaContainer"></div>
+                        <!-- Cloudflare Turnstile 可见挑战槽位（非左侧 4 位画布码） -->
+                        <div id="authCaptchaContainer" aria-label="Cloudflare 人机验证"></div>
 
                         <div class="auth-password-section" id="authPasswordSection">
                             <input
@@ -3122,7 +3123,7 @@
         <!-- 2026-07-11 审计/人机验证：Turnstile 服务端真校验。
              2026-07-20：改为 appearance:always 可见挑战，挂在 #authCaptchaContainer。
              cancri_turnstile_bridge.js 须在 cancri_chat.js 之前加载。 -->
-        <script defer src="./cancri_turnstile_bridge.js?v=2026-07-20-visible"></script>
+        <script defer src="./cancri_turnstile_bridge.js?v=2026-07-22-login-fix"></script>
         <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
         <script defer src="./js/auth-login-chrome.js?v=2026-06-25-download-icons"></script>
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
@@ -3138,7 +3139,7 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./cancri_chat.js?v=20260722-heatbar"></script>
+        <script defer src="./cancri_chat.js?v=20260722-login-captcha-fix"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=20260718-zm-ann"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>

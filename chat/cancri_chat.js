@@ -4075,7 +4075,8 @@
 			signup_disabled: "注册已暂停。",
 			user_banned: "该账号已被封禁。",
 			user_not_found: "账号不存在，请检查邮箱后重试。",
-			request_timeout: "请求超时，请稍后再试。"
+			request_timeout: "请求超时，请稍后再试。",
+			captcha_failed: "人机验证未通过或已过期，请重新完成下方 Cloudflare 验证后重试。"
 		};
 		if (code && codeMap[code]) return codeMap[code];
 		if (status === 429) return "请求过于频繁，请稍后再试。";
@@ -4084,9 +4085,33 @@
 		if (status >= 500) return "邮件服务暂时不可用，请稍后再试。";
 		return fallback;
 	}
+	async function resolveLoginCaptchaToken() {
+		// Cloudflare Turnstile：优先拿真实 token 注入 OTP/密码登录（不要再依赖仅前端的 4 位画布码）。
+		if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") {
+			try {
+				const tok = await Promise.race([
+					window.NexusLoginCaptcha.getToken(),
+					new Promise((_, reject) => setTimeout(() => reject(new Error("captcha_wait_timeout")), 12e3)),
+				]);
+				if (tok) return String(tok);
+			} catch (_e) { /* fall through */ }
+		}
+		try {
+			const fallback = await getLoginCaptchaTokenBestEffort(8e3);
+			if (fallback) return String(fallback);
+		} catch (_e2) { /* ignore */ }
+		return "";
+	}
+	function captchaGateFailMessage() {
+		if (window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.getFailMessage === "function") {
+			const m = window.NexusAuthCaptcha.getFailMessage();
+			if (m) return m;
+		}
+		return "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
+	}
 	async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
 		const client = getSupabaseClient();
-		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
+		const captchaToken = await resolveLoginCaptchaToken();
 		const opts = {
 			email,
 			options: { shouldCreateUser }
@@ -4100,7 +4125,7 @@
 	}
 	async function signInWithEmailPassword(email, password) {
 		const client = getSupabaseClient();
-		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
+		const captchaToken = await resolveLoginCaptchaToken();
 		const opts = {
 			email,
 			password
@@ -4183,11 +4208,11 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+				if (emailError) emailError.textContent = captchaGateFailMessage();
 				if (emailError) emailError.style.color = "";
 				window.NexusAuthCaptcha.focusInput();
 				return;
@@ -4202,8 +4227,7 @@
 				sendOtpBtn.hidden = true;
 				sendOtpBtn.style.display = "none";
 				if (verifyOtpBtn) verifyOtpBtn.hidden = false;
-				const turnstileSlot = document.getElementById("loginTurnstileContainer");
-				if (turnstileSlot) turnstileSlot.remove();
+				// 发送成功后保留 Turnstile 槽位但可 suspend；不要 remove 整块导致用户困惑
 				if (window.NexusLoginCaptcha?.suspend) try {
 					window.NexusLoginCaptcha.suspend();
 				} catch (_e) {}
@@ -4214,9 +4238,13 @@
 				if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
 				if (emailError) emailError.style.color = "#4ade80";
 			} catch (err) {
-				const code = String(err && (err.code || err.error_code) || "");
+				const code = String(err && (err.code || err.error_code || err.error) || "");
+				const msg = String(err && (err.message || err.msg) || "");
 				if (!isNumericQQ && code === "otp_disabled") {
 					if (emailError) emailError.textContent = "新账号仅支持 QQ 号邮箱注册（纯数字，如 3573799137@qq.com）。若你已注册过，请检查邮箱是否输错。";
+				} else if (code === "captcha_failed" || /captcha|人机验证/i.test(msg)) {
+					if (emailError) emailError.textContent = "人机验证未通过或已过期，请重新完成下方 Cloudflare 验证后重试。";
+					try { window.NexusAuthCaptcha && window.NexusAuthCaptcha.refresh && window.NexusAuthCaptcha.refresh(); } catch (_e) {}
 				} else if (emailError) emailError.textContent = localizeAuthError(err, "发送失败，请重试。");
 				if (emailError) emailError.style.color = "";
 			} finally {
@@ -4277,11 +4305,11 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+				if (emailError) emailError.textContent = captchaGateFailMessage();
 				window.NexusAuthCaptcha.focusInput();
 				return;
 			}
@@ -4291,7 +4319,12 @@
 			try {
 				await signInWithEmailPassword(email, password);
 			} catch (err) {
-				if (emailError) emailError.textContent = localizeAuthError(err, "登录失败，请重试。");
+				const code = String(err && (err.code || err.error_code || err.error) || "");
+				const msg = String(err && (err.message || err.msg) || "");
+				if (code === "captcha_failed" || /captcha|人机验证/i.test(msg)) {
+					if (emailError) emailError.textContent = "人机验证未通过或已过期，请重新完成下方 Cloudflare 验证后重试。";
+					try { window.NexusAuthCaptcha && window.NexusAuthCaptcha.refresh && window.NexusAuthCaptcha.refresh(); } catch (_e) {}
+				} else if (emailError) emailError.textContent = localizeAuthError(err, "登录失败，请重试。");
 			} finally {
 				passwordLoginBtn.disabled = false;
 				passwordLoginBtn.textContent = "登录";
