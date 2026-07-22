@@ -4086,18 +4086,18 @@
 		return fallback;
 	}
 	async function resolveLoginCaptchaToken() {
-		// Cloudflare Turnstile：优先拿真实 token 注入 OTP/密码登录（不要再依赖仅前端的 4 位画布码）。
+		// Cloudflare Turnstile：能拿到 token 就带上；国内加载失败时返回空串，走服务端 soft 放行。
 		if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") {
 			try {
 				const tok = await Promise.race([
 					window.NexusLoginCaptcha.getToken(),
-					new Promise((_, reject) => setTimeout(() => reject(new Error("captcha_wait_timeout")), 12e3)),
+					new Promise((_, reject) => setTimeout(() => reject(new Error("captcha_wait_timeout")), 8e3)),
 				]);
 				if (tok) return String(tok);
-			} catch (_e) { /* fall through */ }
+			} catch (_e) { /* fall through — 无 token 也可发码 */ }
 		}
 		try {
-			const fallback = await getLoginCaptchaTokenBestEffort(8e3);
+			const fallback = await getLoginCaptchaTokenBestEffort(5e3);
 			if (fallback) return String(fallback);
 		} catch (_e2) { /* ignore */ }
 		return "";

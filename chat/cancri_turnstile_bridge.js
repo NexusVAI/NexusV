@@ -26,7 +26,7 @@
   var TOKEN_WAIT_MS = 90000; // 可见挑战：给用户足够时间点选
   var INJECT_BUDGET_MS = 15000;
 
-  var BRIDGE_VERSION = "2026-07-22-login-fix";
+  var BRIDGE_VERSION = "2026-07-22-cn-soft";
   var state = {
     version: BRIDGE_VERSION,
     widgetId: null,
@@ -37,6 +37,8 @@
     rendering: false,
     apiReady: false,
     apiFailed: false,
+    // 国内链路/代理导致 CF 挂件不可用时，允许继续登录（服务端 soft 模式）
+    networkDegraded: false,
     lastError: "",
     waiters: [], // [{ resolve, reject, timeoutId }]
   };
@@ -277,19 +279,20 @@
         );
       } catch (_e) {}
 
-      // 4s 后检查 iframe 是否真正挂上
+      // 6s 后检查 iframe；国内链路经常超时 → 标记 networkDegraded 允许继续登录
       setTimeout(function () {
-        if (hasFreshToken() || state.lastError) return;
+        if (hasFreshToken()) return;
         var iframe = mount.querySelector("iframe");
         if (iframe && iframe.offsetHeight > 10) {
           setStatus("请完成下方 Cloudflare 人机验证", "rgba(128,128,128,0.95)");
           return;
         }
+        state.networkDegraded = true;
         var msg =
-          "Cloudflare 验证组件未能显示。请关闭广告拦截器 / 隐私扩展，或换网络、无痕模式后刷新页面。";
+          "Cloudflare 验证组件未能显示（国内网络 / 代理常见）。可直接点「发送验证码」继续登录；仍失败请换 4G 热点。";
         state.lastError = msg;
-        setStatus(msg, "#e11d48");
-      }, 4000);
+        setStatus(msg, "#ca8a04");
+      }, 6000);
       return true;
     } catch (err) {
       state.rendering = false;
@@ -303,9 +306,11 @@
 
   function prerender() {
     if (state.apiFailed) {
+      state.networkDegraded = true;
+      ensureContainer();
       setStatus(
-        "人机验证组件加载失败。请关闭广告拦截器或换网络后刷新页面。",
-        "#e11d48"
+        "Cloudflare 验证脚本加载失败（国内网络常见）。可直接发送验证码登录；仍失败请换 4G 热点。",
+        "#ca8a04"
       );
       return;
     }
@@ -314,11 +319,30 @@
         renderWidget();
       })
       .catch(function () {
+        state.apiFailed = true;
+        state.networkDegraded = true;
         ensureContainer();
         setStatus(
-          "Cloudflare 验证脚本未能加载。\n请关闭广告拦截器（uBlock/AdGuard 等），或换网络 / 无痕模式后刷新。",
-          "#e11d48"
+          "Cloudflare 验证脚本未能加载（challenges.cloudflare.com 在国内不稳定）。可直接点「发送验证码」继续；广告拦截可关掉，或换 4G/系统代理节点。",
+          "#ca8a04"
         );
+      });
+  }
+
+  function getTokenBestEffortSoft(timeoutMs) {
+    return getToken()
+      .catch(function () {
+        return "";
+      })
+      .then(function (tok) {
+        if (tok) return tok;
+        // 无 token：若已降级则返回空串，让请求继续（服务端 soft）
+        if (state.networkDegraded || state.apiFailed) return "";
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            resolve(hasFreshToken() ? consumeToken() : "");
+          }, Math.min(timeoutMs || 2000, 3000));
+        });
       });
   }
 
@@ -381,6 +405,11 @@
   }
 
   function getTokenBestEffort(budgetMs) {
+    // 网络降级：立刻空 token，别卡 15s 等人点 CF
+    if (state.networkDegraded || state.apiFailed) {
+      if (hasFreshToken()) return Promise.resolve(consumeToken());
+      return Promise.resolve("");
+    }
     return new Promise(function (resolve) {
       var done = false;
       var fin = function (v) {
@@ -460,22 +489,25 @@
       prerender();
     },
     validate: function () {
-      // 可见挑战：未完成前阻止发送，给出明确提示
+      // 已通过 CF
       if (hasFreshToken()) return true;
-      if (state.apiFailed || state.lastError) return false;
-      // 挂件还在加载中也先拦一下，避免裸请求被服务端 captcha_failed
+      // 国内网络 / 代理 / 广告拦截导致 CF 不可用：放行发送（服务端 soft + 限流）
+      if (state.networkDegraded || state.apiFailed) return true;
+      // 挂件渲染失败且已给出错误：同样走降级
+      if (state.lastError && !window.turnstile) return true;
+      // 挂件已显示但用户还没点：仍拦截
       return false;
     },
     getFailMessage: function () {
-      if (state.apiFailed) {
-        return "Cloudflare 人机验证脚本未能加载。请关闭广告拦截器 / 换网络或无痕模式后刷新页面。";
+      if (state.apiFailed || state.networkDegraded) {
+        return "当前网络访问 Cloudflare 验证困难（国内常见）。可直接点发送验证码继续；若仍失败请换 4G 热点或系统代理节点。";
       }
       if (state.lastError) return state.lastError;
       if (!SITE_KEY) return "人机验证未配置，请联系管理员。";
       if (!window.turnstile) {
-        return "人机验证组件加载中，请稍候几秒后再试；若一直不出现请刷新页面。";
+        return "人机验证组件加载中，请稍候几秒；若一直空白可直接发送验证码（网络受限时）。";
       }
-      return "请先完成下方 Cloudflare 人机验证（勾选/通过挑战），再发送验证码或登录。";
+      return "请先完成下方 Cloudflare 人机验证（勾选/通过挑战）。若验证框空白或不通过：关掉广告拦截，换 4G 热点；开梯子若失败可换节点或关掉再试。";
     },
     refresh: function () {
       try {
