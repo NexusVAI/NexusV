@@ -60,6 +60,27 @@
         }
     }
 
+    function reportInviteVisit(inviterId) {
+        if (!inviterId || !UUID_RE.test(inviterId)) return;
+        try {
+            var base = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz").replace(/\/+$/, "");
+            fetch(base + "/functions/v1/celebrate-signin", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    apikey: window.__SUPABASE_ANON_KEY__ || "neon-auth-via-cf-shim"
+                },
+                body: JSON.stringify({
+                    action: "invite_visit",
+                    inviter_id: inviterId,
+                    fingerprint: getFingerprintHash(),
+                    user_agent: (navigator && navigator.userAgent) || ""
+                }),
+                keepalive: true
+            }).catch(function () {});
+        } catch (_) {}
+    }
+
     function loadStored() {
         try {
             var raw = localStorage.getItem(STORAGE_KEY);
@@ -181,7 +202,7 @@
         if (box) {
             // 仅显示前 8 位避免冗长，强调"将获得 500K token"
             var masked = String(inviterId || "").slice(0, 8) + "···";
-            box.textContent = "✓ 已捕获邀请关系（" + masked + "），登录后将自动获得 500K token 奖励。";
+            box.textContent = "✓ 已捕获邀请关系（" + masked + "），登录后自动绑定。活跃 3 天后双方各得 ¥1，好友首充可返利 20%。";
             box.hidden = false;
         }
         if (details && !details.open) details.open = true;
@@ -228,6 +249,7 @@
         if (fromUrl) {
             saveStored(fromUrl);
             showAuthInviteHint(fromUrl);
+            reportInviteVisit(fromUrl);
         }
 
         // 1b) 登录卡片输入框联动（用户手动粘贴 / 提示条显示）

@@ -2506,6 +2506,9 @@
                     if (key === 'billing') {
                         loadClaudeBillingActivations();
                     }
+                    if (key === 'invite') {
+                        loadClaudeInviteSection();
+                    }
                 });
             });
         }
@@ -3986,6 +3989,127 @@
         else if (u.indexOf('android') !== -1) os = 'Android';
         else if (u.indexOf('iphone') !== -1 || u.indexOf('ipad') !== -1) os = 'iOS';
         return { browser: browser, os: os };
+    }
+
+    function microToCny(micro) {
+        var n = Number(micro || 0);
+        if (!Number.isFinite(n)) return '0.00';
+        return (n / 1e6).toFixed(2);
+    }
+
+    function loadClaudeInviteSection() {
+        var urlEl = document.getElementById('claudeInviteUrl');
+        var sumEl = document.getElementById('claudeInviteSummary');
+        var grantsEl = document.getElementById('claudeInviteGrants');
+        var logEl = document.getElementById('claudeInviteLog');
+        var copyBtn = document.getElementById('claudeInviteCopyBtn');
+        if (!urlEl || !sumEl) return;
+
+        if (copyBtn && !copyBtn._bound) {
+            copyBtn._bound = true;
+            copyBtn.addEventListener('click', function () {
+                var v = urlEl.value || '';
+                if (!v || v.indexOf('http') !== 0) return;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(v).then(function () {
+                        copyBtn.textContent = '已复制';
+                        setTimeout(function () { copyBtn.textContent = '复制'; }, 1500);
+                    }).catch(function () {});
+                } else {
+                    urlEl.select();
+                    try { document.execCommand('copy'); } catch (e) {}
+                }
+            });
+        }
+
+        var token = getCancriAccessToken();
+        if (!token) {
+            urlEl.value = '请先登录';
+            sumEl.textContent = '登录后可查看邀请数据';
+            if (grantsEl) grantsEl.innerHTML = '<p class="claude-billing-empty">—</p>';
+            if (logEl) logEl.innerHTML = '<p class="claude-billing-empty">—</p>';
+            return;
+        }
+
+        sumEl.textContent = '加载中…';
+        fetch(window.__SUPABASE_URL__ + '/functions/v1/celebrate-signin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token,
+                apikey: window.__SUPABASE_ANON_KEY__ || ''
+            },
+            body: JSON.stringify({ action: 'get_invite' })
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (data) {
+            var inv = (data && data.invite) || {};
+            urlEl.value = inv.invite_url || '';
+            var s = inv.summary || {};
+            var visits = Number(inv.visit_count || 0);
+            sumEl.innerHTML =
+                '链接访问量 <strong>' + visits + '</strong> · ' +
+                '已邀 <strong>' + Number(s.total || 0) + '</strong> · ' +
+                '已活跃 <strong>' + Number(s.qualified || 0) + '</strong> · ' +
+                '已返利人数 <strong>' + Number(s.rebated || 0) + '</strong> · ' +
+                '返利合计 <strong>¥' + microToCny(s.rebate_micro_total || inv.rebate_micro_total) + '</strong>';
+
+            var rules = inv.rules;
+            var rulesEl = document.getElementById('claudeInviteRules');
+            if (rulesEl && rules) {
+                rulesEl.textContent =
+                    '好友通过你的链接注册并累计 ' + (rules.activity_min_days || 3) +
+                    ' 天有正常 Chat/API 流量后，双方各得 ¥' + (rules.activity_reward_cny || 1) +
+                    '（自动入账）。好友首充返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
+                    '% 给你（最多 ' + (rules.rebate_max_people || 5) +
+                    ' 人，返利总额上限 ¥' + (rules.rebate_total_cap_cny || 100) + '）。';
+            }
+
+            if (grantsEl) {
+                var grants = inv.grants || [];
+                if (!grants.length) {
+                    grantsEl.innerHTML = '<p class="claude-billing-empty">暂无奖励流水</p>';
+                } else {
+                    var gh = '<table class="claude-billing-table"><thead><tr><th>类型</th><th>金额</th><th>时间</th></tr></thead><tbody>';
+                    grants.forEach(function (g) {
+                        var kind = String(g.kind || '');
+                        var label =
+                            kind === 'activity_inviter' ? '活跃奖（邀请人）' :
+                            kind === 'activity_invitee' ? '活跃奖（被邀请）' :
+                            kind === 'first_recharge_rebate' ? '首充返利' :
+                            kind.indexOf('legacy') === 0 ? '历史 token 奖励' : kind || '其他';
+                        var amt = Number(g.delta_micro || 0) > 0
+                            ? ('¥' + microToCny(g.delta_micro))
+                            : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens') : '—');
+                        var t = g.granted_at ? String(g.granted_at).replace('T', ' ').slice(0, 19) : '—';
+                        gh += '<tr><td>' + esc(label) + '</td><td>' + esc(amt) + '</td><td>' + esc(t) + '</td></tr>';
+                    });
+                    gh += '</tbody></table>';
+                    grantsEl.innerHTML = gh;
+                }
+            }
+
+            if (logEl) {
+                var recent = inv.recent || [];
+                if (!recent.length) {
+                    logEl.innerHTML = '<p class="claude-billing-empty">暂无邀请记录</p>';
+                } else {
+                    var lh = '<table class="claude-billing-table"><thead><tr><th>被邀请人</th><th>状态</th><th>时间</th></tr></thead><tbody>';
+                    recent.forEach(function (r) {
+                        var st = String(r.status || '');
+                        if (r.activity_rewarded_at) st = '已活跃发奖';
+                        if (r.rebate_rewarded_at) st += (st ? ' / ' : '') + '已返利';
+                        if (r.rejected_reason) st = '拒绝:' + r.rejected_reason;
+                        var t = r.created_at ? String(r.created_at).replace('T', ' ').slice(0, 19) : '—';
+                        lh += '<tr><td>' + esc(r.invitee_id_masked || '—') + '</td><td>' + esc(st || '—') + '</td><td>' + esc(t) + '</td></tr>';
+                    });
+                    lh += '</tbody></table>';
+                    logEl.innerHTML = lh;
+                }
+            }
+        }).catch(function (err) {
+            console.error('get_invite:', err);
+            sumEl.textContent = '加载失败，请稍后重试';
+        });
     }
 
     function loadClaudeAccount() {
