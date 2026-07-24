@@ -124,7 +124,7 @@
             rel="stylesheet"
             href="./styles/cancri_motion.css?v=20260718-zm-ann-r2"
         />
-        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260718-zm-ann-r3" />
+        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260724-invite-fix" />
         <link
             rel="stylesheet"
             href="./styles/auth-platform-login.css?v=2026-06-25-download-icons"
@@ -133,7 +133,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=2026-06-21-chat-align"
+            href="./claude.css?v=20260724-invite-fix"
         />
         <link
             rel="stylesheet"
@@ -2865,13 +2865,35 @@
                         <ol class="zm-ann-list announcement-timeline" id="announcementTimeline">
                             <li class="zm-ann-item timeline-item timeline-item--latest">
                                 <div class="zm-ann-rail">
+                                    <div class="zm-ann-rail-date"><span>07-24</span></div>
+                                    <div class="zm-ann-rail-line" aria-hidden="true"></div>
+                                </div>
+                                <div class="zm-ann-main">
+                                    <div class="zm-ann-title-row">
+                                        <h3 class="zm-ann-title">邀请功能上线</h3>
+                                        <span class="zm-ann-unread" aria-label="未读"></span>
+                                    </div>
+                                    <div class="zm-ann-md zm-ann-clamped" data-zm-clamp>
+                                        <p>我们推出了邀请功能，从今日起你可以邀请你的好友一起来用 Cancri！</p>
+                                        <p><strong>如何使用？</strong></p>
+                                        <ul><li>点击左下角「头像」→「自定义」。</li><li>进入页面后点击「邀请」，进入「邀请奖励」页面后自动显示邀请链接。</li><li>发送给朋友注册即可。</li></ul>
+                                        <p><strong>规则</strong></p>
+                                        <ul><li>每邀请一位新用户，双方各得 1 元额度 <sup>*1</sup>。</li><li>邀请的用户如果充值，返利 20% <sup>*2</sup>。</li></ul>
+                                        <p><small><sup>*1</sup> 受限于平台风控机制检测，只有申请 API 通过后，并且累计 3 天有正常 Chat/API 流量后才会自动入账。</small></p>
+                                        <p><small><sup>*2</sup> 仅限首次充值，上限 100 额度。</small></p>
+                                    </div>
+                                    <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
+                                    <a class="zm-ann-cta" href="./claude.html"><span>去邀请</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                </div>
+                            </li>
+                            <li class="zm-ann-item timeline-item">
+                                <div class="zm-ann-rail">
                                     <div class="zm-ann-rail-dot" aria-hidden="true"></div>
                                     <div class="zm-ann-rail-line" aria-hidden="true"></div>
                                 </div>
                                 <div class="zm-ann-main">
                                     <div class="zm-ann-title-row">
                                         <h3 class="zm-ann-title">蟹市（蟹蟹市场）功能下架公告</h3>
-                                        <span class="zm-ann-unread" aria-label="未读"></span>
                                     </div>
                                     <div class="zm-ann-md zm-ann-clamped" data-zm-clamp>
                                         <p>因产品调整，<strong>蟹市（创作者市场）功能已于今日下架</strong>。原控制台入口已改为「模型广场」，可浏览全部在线模型。给您带来的不便敬请谅解。</p>
@@ -3061,11 +3083,11 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./cancri_chat.js?v=20260722-heatbar"></script>
+        <script defer src="./cancri_chat.js?v=20260724-invite-fix"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
-        <script defer src="./cancri_announcement.js?v=20260718-zm-ann"></script>
+        <script defer src="./cancri_announcement.js?v=20260724-invite-fix"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=20260705-ninefix"></script>
+        <script defer src="./claude_ui.js?v=20260724-invite-fix"></script>
     </body>
 </html>

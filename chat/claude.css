@@ -9889,3 +9889,44 @@ html[data-theme="light"] .model-current .model-name {
 html[data-theme="light"] .model-current svg {
     color: rgba(0, 0, 0, 0.55) !important;
 }
+
+.claude-settings-section[data-snav-target="invite"] .claude-form-row {
+    align-items: flex-start;
+}
+.claude-settings-section[data-snav-target="invite"] .claude-form-label {
+    padding-top: 6px;
+}
+#claudeInviteRules {
+    color: var(--c-text-soft);
+    background: var(--c-bg-elev);
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--c-line);
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+#claudeInviteSummary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    line-height: 1.6;
+    font-size: 13px;
+    color: var(--c-text-soft);
+}
+#claudeInviteSummary strong {
+    color: var(--c-text);
+    font-weight: 700;
+}
+#claudeInviteUrl {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+}
+#claudeInviteCopyBtn {
+    white-space: nowrap;
+}
+#claudeInviteGrants .claude-billing-table td:nth-child(2),
+#claudeInviteLog .claude-billing-table td:nth-child(2) {
+    font-weight: 600;
+    text-align: right;
+}

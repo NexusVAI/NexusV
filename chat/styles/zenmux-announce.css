@@ -48,7 +48,6 @@ html[data-theme="dark"],
 }
 
 .modal.announcement-drawer.zm-ann-drawer .modal-content.announcement-modal-content,
-.modal.announcement-drawer.zm-ann-drawer.open .modal-content.announcement-modal-content,
 .zm-ann-panel {
   position: fixed !important;
   top: 0 !important;
@@ -68,9 +67,17 @@ html[data-theme="dark"],
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  transform: none !important;
+  transform: translateX(100%) !important;
   opacity: 1 !important;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1) !important;
   z-index: 220 !important;
+}
+
+.modal.announcement-drawer.zm-ann-drawer.open .modal-content.announcement-modal-content,
+.modal.announcement-drawer.zm-ann-drawer.show .modal-content.announcement-modal-content,
+.modal.announcement-drawer.zm-ann-drawer.open .zm-ann-panel,
+.modal.announcement-drawer.zm-ann-drawer.show .zm-ann-panel {
+  transform: translateX(0) !important;
 }
 
 /* 关键：旧翻页 CSS 把 .timeline-item 默认 display:none，
@@ -243,9 +250,9 @@ html[data-theme="dark"],
 
 .zm-ann-title-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .zm-ann-title {
@@ -282,6 +289,8 @@ html[data-theme="dark"],
   font-size: 13px;
   line-height: 20px;
   color: var(--zm-ann-text-soft);
+  max-height: 9999px;
+  transition: max-height 260ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .zm-ann-md p {
@@ -326,8 +335,9 @@ html[data-theme="dark"],
 }
 
 .zm-ann-expand {
-  display: inline-block;
-  margin-top: 4px;
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 2px;
   font-size: 12px;
   line-height: 16px;
   color: var(--zm-ann-text);
@@ -343,7 +353,7 @@ html[data-theme="dark"],
 }
 
 .zm-ann-cta {
-  margin-top: 12px;
+  margin-top: 8px;
   display: inline-flex;
   align-items: center;
   gap: 6px;

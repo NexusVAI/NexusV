@@ -10,15 +10,15 @@
 
     timeline.querySelectorAll("[data-zm-clamp]").forEach((el) => {
       const btn = el.parentElement && el.parentElement.querySelector("[data-zm-expand]");
-      // measure overflow
-      const needs = el.scrollHeight > el.clientHeight + 4 || el.classList.contains("zm-ann-clamped");
-      // force measure unclamped
+      const originalTransition = el.style.transition;
+      el.style.transition = "none";
       const was = el.classList.contains("zm-ann-clamped");
       el.classList.remove("zm-ann-clamped");
       const fullH = el.scrollHeight;
-      el.classList.toggle("zm-ann-clamped", was || fullH > 160);
+      const shouldClamp = was || fullH > 160;
+      el.classList.toggle("zm-ann-clamped", shouldClamp);
+      el.style.transition = originalTransition || "";
       if (fullH > 160) {
-        el.classList.add("zm-ann-clamped");
         if (btn) {
           btn.hidden = false;
           btn.textContent = "展开";

@@ -4183,11 +4183,12 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+				var failMsgOtp = window.NexusAuthCaptcha.getFailMessage && window.NexusAuthCaptcha.getFailMessage() || "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
+				if (emailError) emailError.textContent = failMsgOtp;
 				if (emailError) emailError.style.color = "";
 				window.NexusAuthCaptcha.focusInput();
 				return;
@@ -4202,8 +4203,6 @@
 				sendOtpBtn.hidden = true;
 				sendOtpBtn.style.display = "none";
 				if (verifyOtpBtn) verifyOtpBtn.hidden = false;
-				const turnstileSlot = document.getElementById("loginTurnstileContainer");
-				if (turnstileSlot) turnstileSlot.remove();
 				if (window.NexusLoginCaptcha?.suspend) try {
 					window.NexusLoginCaptcha.suspend();
 				} catch (_e) {}
@@ -4277,11 +4276,12 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
+				var failMsg = window.NexusAuthCaptcha.getFailMessage && window.NexusAuthCaptcha.getFailMessage() || "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
+				if (emailError) emailError.textContent = failMsg;
 				window.NexusAuthCaptcha.focusInput();
 				return;
 			}
@@ -12166,7 +12166,7 @@
 	var closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 	var dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 	var openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
-	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0620_migration_v1";
+	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_20260724_invite_v1";
 	function openAnnouncementModal() {
 		if (!announcementModal) return;
 		announcementModal.setAttribute("aria-hidden", "false");
