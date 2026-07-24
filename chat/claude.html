@@ -1857,6 +1857,7 @@
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="account"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg></span><span class="claude-snav-label">账号</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="privacy"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.4 3 8.5 7 9 4-.5 7-4.6 7-9V6l-7-3z"/></svg></span><span class="claude-snav-label">隐私</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><span class="claude-snav-label">账单</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8"/><path d="M21 12V5a2 2 0 0 0-2-2h-6"/><circle cx="9" cy="7" r="2.5"/></svg></span><span class="claude-snav-label">邀请</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span class="claude-snav-label">能力</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="password"><span class="claude-snav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span><span class="claude-snav-label">Cancri 密码</span></button></li>
                                 </ul>
@@ -2090,6 +2091,39 @@
                                         <h3 class="claude-billing-activations-title">激活记录</h3>
                                         <div id="claudeBillingActivations" class="claude-billing-table-wrap">
                                             <p class="claude-billing-empty">正在加载…</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 邀请 section：链接 / 访问量 / 流水 / 日志 -->
+                                <div class="claude-settings-section claude-snav-target" data-snav-target="invite">
+                                    <h2 class="claude-settings-h2">邀请奖励</h2>
+                                    <p class="claude-form-help" id="claudeInviteRules" style="margin:0 0 16px;line-height:1.55">
+                                        好友通过你的链接注册并累计 3 天有正常 Chat/API 流量后，双方各得 ¥1（自动入账）。
+                                        好友首充返利 20% 给你（最多 5 人，返利总额上限 ¥100）。
+                                    </p>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">我的邀请链接</span>
+                                        <div class="claude-form-control" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%">
+                                            <input type="text" id="claudeInviteUrl" readonly class="claude-text-input" style="flex:1;min-width:200px" value="登录后加载…" />
+                                            <button type="button" class="claude-secondary-btn" id="claudeInviteCopyBtn">复制</button>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">数据概览</span>
+                                        <div class="claude-form-control">
+                                            <div id="claudeInviteSummary" class="claude-form-help" style="line-height:1.7">加载中…</div>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">奖励流水</span>
+                                        <div class="claude-form-control" style="width:100%">
+                                            <div id="claudeInviteGrants" class="claude-billing-table-wrap"><p class="claude-billing-empty">加载中…</p></div>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
+                                        <span class="claude-form-label">邀请日志</span>
+                                        <div class="claude-form-control" style="width:100%">
+                                            <div id="claudeInviteLog" class="claude-billing-table-wrap"><p class="claude-billing-empty">加载中…</p></div>
                                         </div>
                                     </div>
                                 </div>
@@ -2883,7 +2917,7 @@
                                         <p><small><sup>*2</sup> 仅限首次充值，上限 100 额度。</small></p>
                                     </div>
                                     <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
-                                    <a class="zm-ann-cta" href="./claude.html"><span>去邀请</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+                                    <a class="zm-ann-cta" href="./claude.html" data-zm-action="open-invite"><span>去邀请</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
                                 </div>
                             </li>
                             <li class="zm-ann-item timeline-item">

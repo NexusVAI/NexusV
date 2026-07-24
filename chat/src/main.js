@@ -4775,7 +4775,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       email_address_invalid: "邮箱地址无效，请检查后重试。",
       email_address_not_authorized: "该邮箱不在允许列表内。",
       email_provider_disabled: "邮箱登录暂时关闭。",
-      captcha_failed: "人机验证未通过，请刷新页面后重试。",
+      captcha_failed: "人机验证未通过或已过期，请重新完成下方 Cloudflare 验证后重试。",
       otp_expired: "验证码已过期，请重新获取。",
       otp_disabled: "验证码登录暂未开放。",
       invalid_credentials: "邮箱或密码错误，请检查后重试。",
@@ -4791,6 +4791,32 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     if (status >= 500) return "邮件服务暂时不可用，请稍后再试。";
     return fallback;
   }
+
+  async function resolveLoginCaptchaToken() {
+    // Cloudflare Turnstile：能拿到 token 就带上；国内加载失败时返回空串，走服务端 soft 放行。
+    if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") {
+      try {
+        const tok = await Promise.race([
+          window.NexusLoginCaptcha.getToken(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("captcha_wait_timeout")), 8e3)),
+        ]);
+        if (tok) return String(tok);
+      } catch (_e) { /* fall through — 无 token 也可发码 */ }
+    }
+    try {
+      const fallback = await getLoginCaptchaTokenBestEffort(5e3);
+      if (fallback) return String(fallback);
+    } catch (_e2) { /* ignore */ }
+    return "";
+  }
+
+  function captchaGateFailMessage() {
+    if (window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.getFailMessage === "function") {
+      const m = window.NexusAuthCaptcha.getFailMessage();
+      if (m) return m;
+    }
+    return "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
+  }
   
   async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
     const client = getSupabaseClient();
@@ -4799,10 +4825,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     //    定义了但从未调用，等于裸送，Supabase 项目启用 captcha 时直接挂起）。
     // 2) 给整个调用包 12s timeout，避免 Supabase SDK 在网络抖动时无限等待。
     // 登录页已用 NexusAuthCaptcha 画布验证码；勿再挂载 Turnstile 占位（70px 空槽）。
-    const captchaToken =
-      window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function"
-        ? ""
-        : await getLoginCaptchaTokenBestEffort(8000);
+    const captchaToken = await resolveLoginCaptchaToken();
     // shouldCreateUser=false：见调用处注释。auth.users 上的触发器
     // enforce_numeric_qq_email_on_signup 禁止非「纯数字@qq.com」注册新号（会回 500）。
     // false 时已存在老用户仍能收码登录（不插新行），不存在用户回干净的 otp_disabled(422)。
@@ -4820,10 +4843,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   
   async function signInWithEmailPassword(email, password) {
     const client = getSupabaseClient();
-    const captchaToken =
-      window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function"
-        ? ""
-        : await getLoginCaptchaTokenBestEffort(8000);
+    const captchaToken = await resolveLoginCaptchaToken();
     const opts = { email, password };
     if (captchaToken) opts.options = { captchaToken };
     const timeoutPromise = new Promise((_, reject) => {
@@ -4930,10 +4950,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           return;
         }
         if (!window.NexusAuthCaptcha.validate()) {
-          var failMsgOtp =
-            (window.NexusAuthCaptcha.getFailMessage && window.NexusAuthCaptcha.getFailMessage()) ||
-            "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
-          if (emailError) emailError.textContent = failMsgOtp;
+          if (emailError) emailError.textContent = captchaGateFailMessage();
           if (emailError) emailError.style.color = "";
           window.NexusAuthCaptcha.focusInput();
           return;
@@ -4951,6 +4968,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           sendOtpBtn.hidden = true;
           sendOtpBtn.style.display = "none";
           if (verifyOtpBtn) verifyOtpBtn.hidden = false;
+          // 发送成功后保留 Turnstile 容器但可 suspend；不要 remove 整块导致用户困惑
           if (window.NexusLoginCaptcha?.suspend) {
             try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
           }
@@ -5042,10 +5060,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           return;
         }
         if (!window.NexusAuthCaptcha.validate()) {
-          var failMsg =
-            (window.NexusAuthCaptcha.getFailMessage && window.NexusAuthCaptcha.getFailMessage()) ||
-            "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
-          if (emailError) emailError.textContent = failMsg;
+          if (emailError) emailError.textContent = captchaGateFailMessage();
           window.NexusAuthCaptcha.focusInput();
           return;
         }

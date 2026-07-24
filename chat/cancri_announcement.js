@@ -53,9 +53,24 @@
     else window.addEventListener("load", initClampAndExpand, { once: true });
   }
 
+  function initCtaActions() {
+    document.addEventListener("click", (e) => {
+      const cta = e.target.closest(".zm-ann-cta[data-zm-action='open-invite']");
+      if (!cta) return;
+      e.preventDefault();
+      if (typeof window.openClaudeSettingsInvite === "function") {
+        window.openClaudeSettingsInvite();
+      } else {
+        // 兜底：跳转 claude.html 让用户手动点「邀请」
+        window.location.href = cta.getAttribute("href") || "./claude.html";
+      }
+    });
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initAnnouncementPager, { once: true });
+    document.addEventListener("DOMContentLoaded", () => { initAnnouncementPager(); initCtaActions(); }, { once: true });
   } else {
     initAnnouncementPager();
+    initCtaActions();
   }
 })();

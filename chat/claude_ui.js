@@ -4414,6 +4414,26 @@
             });
         }
     }
+
+    // 公告/CTA 入口：一键打开「设置 → 邀请奖励」
+    window.openClaudeSettingsInvite = function () {
+        openClaudeSettingsModal();
+        var btn = document.querySelector('.claude-snav-item[data-snav="invite"]');
+        if (btn) {
+            btn.click();
+        } else {
+            // claude.html 裸页没有 modal 壳，直接点 nav
+            var view = document.getElementById('claudeSettingsView');
+            if (view) {
+                document.querySelectorAll('.main > .view').forEach(function (v) {
+                    v.classList.toggle('active', v.id === 'claudeSettingsView');
+                });
+                if (document.body) document.body.dataset.view = 'claudeSettings';
+                var nav = document.querySelector('.claude-snav-item[data-snav="invite"]');
+                if (nav) nav.click();
+            }
+        }
+    };
 })();
 
 // ── T5：composer 图标按钮自定义 tooltip（hover 2s 后出现）──
