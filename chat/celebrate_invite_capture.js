@@ -174,7 +174,8 @@
                 body: JSON.stringify({
                     action: "invite_register",
                     inviter_id: stored.inviter_id,
-                    fingerprint_hash: getFingerprintHash()
+                    fingerprint_hash: getFingerprintHash(),
+                    captured_at: new Date(stored.captured_at).toISOString()
                 })
             })
                 .then(function (r) {
@@ -184,8 +185,13 @@
                     if (data && data.ok) {
                         // 注册成功（含 already=true 幂等情况）→ 清缓存
                         clearStored();
+                        return;
                     }
-                    // 失败保留缓存，下次 chat 页面打开再试
+                    if (data && (data.reason === "existing_user" || data.reason === "self_invite_not_allowed" || data.reason === "inviter_not_found" || data.reason === "invalid_capture_time")) {
+                        // 明确不满足新用户等条件，无需重试
+                        clearStored();
+                    }
+                    // 其他失败（程序未启用/窗口/数据库错误）保留缓存，下次再试
                 })
                 .catch(function () {
                     // 网络错误，下次再试
@@ -202,7 +208,7 @@
         if (box) {
             // 仅显示前 8 位避免冗长，强调"将获得 500K token"
             var masked = String(inviterId || "").slice(0, 8) + "···";
-            box.textContent = "✓ 已捕获邀请关系（" + masked + "），登录后自动绑定。活跃 3 天后双方各得 ¥1，好友首充可返利 20%。";
+            box.textContent = "✓ 已捕获邀请关系（" + masked + "），新用户登录后自动绑定。被邀请人需通过 API 申请审核且活跃 3 天后，双方各得 ¥1；好友首充可返利 20%。";
             box.hidden = false;
         }
         if (details && !details.open) details.open = true;

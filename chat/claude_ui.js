@@ -4046,18 +4046,22 @@
             urlEl.value = inv.invite_url || '';
             var s = inv.summary || {};
             var visits = Number(inv.visit_count || 0);
+            var rewardMicro = Number(s.reward_micro_total || 0);
+            if (!rewardMicro && inv.grants && inv.grants.length) {
+                rewardMicro = inv.grants.reduce(function (a, g) { return a + Number(g.delta_micro || 0); }, 0);
+            }
             sumEl.innerHTML =
                 '链接访问量 <strong>' + visits + '</strong> · ' +
                 '已邀 <strong>' + Number(s.total || 0) + '</strong> · ' +
                 '已活跃 <strong>' + Number(s.qualified || 0) + '</strong> · ' +
                 '已返利人数 <strong>' + Number(s.rebated || 0) + '</strong> · ' +
-                '返利合计 <strong>¥' + microToCny(s.rebate_micro_total || inv.rebate_micro_total) + '</strong>';
+                '总奖励合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
 
             var rules = inv.rules;
             var rulesEl = document.getElementById('claudeInviteRules');
             if (rulesEl && rules) {
                 rulesEl.textContent =
-                    '好友通过你的链接注册并累计 ' + (rules.activity_min_days || 3) +
+                    '好友通过你的链接首次注册为新用户，申请 API 通过且累计 ' + (rules.activity_min_days || 3) +
                     ' 天有正常 Chat/API 流量后，双方各得 ¥' + (rules.activity_reward_cny || 1) +
                     '（自动入账）。好友首充返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
                     '% 给你（最多 ' + (rules.rebate_max_people || 5) +
