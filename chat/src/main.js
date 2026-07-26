@@ -706,7 +706,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       const initialQuestion = captcha.question || "";
       const initialAttempts = Number(captcha.attempts_remaining ?? captcha.attemptsRemaining ?? 3);
       const expiresAt = captcha.expires_at || captcha.expiresAt || null;
-      const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/AQYZ.jpg";
+      const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/Cancri1.jpg";
   
       if (!challengeId || !initialQuestion) {
         // 后端坏数据 — 直接放行避免卡死用户
@@ -724,7 +724,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       modal.innerHTML = `
         <div style="background:var(--bg,#1f1f1d);color:var(--text,#f5f4ed);width:min(420px,92vw);border-radius:14px;border:1px solid var(--border,#3a3a37);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;font-family:inherit;">
           <div style="padding:20px 24px 0 24px;display:flex;align-items:center;gap:14px;">
-            <img src="${imageUrl}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
+            <img src="${escapeHtml(imageUrl)}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
             <div style="flex:1;min-width:0;">
               <div style="font-size:15px;font-weight:600;line-height:1.2;">人机校验</div>
               <div id="suspCaptchaSub" style="font-size:12px;opacity:.7;margin-top:2px;">检测到请求频率异常，请完成以下题目继续使用</div>
@@ -10562,7 +10562,12 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
               // metadata, ...) —— 这三个变量在本函数（generateImageFromPrompt）作用域内
               // 不存在（必 ReferenceError），且 sendImageGenerationMessage 是上层函数、会
               // 重复创建用户气泡。验证码通过后应重试本函数自身的底层请求。
-              return await generateImageFromPrompt(value, imageModel, attachments);
+              // 注意：须先清掉忙碌标记，否则入口处 state.isImageGenerating 守卫
+              // 会让这次重试直接 return，重试永远不生效。
+              {
+                setImageGenerationBusy(false);
+                return await generateImageFromPrompt(value, imageModel, attachments);
+              }
             throw new Error("需要完成安全验证才能继续。");
           }
           detail =
@@ -15374,7 +15379,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     const params = new URLSearchParams(window.location.search);
     const question = params.get("q");
     if (question) {
-      const decoded = decodeURIComponent(question);
+      // params.get() 已完成百分号解码；再 decodeURIComponent 会把含字面 '%' 的
+      // 问题（如“增长50%”）变成 URIError，中断整个模块初始化。
+      const decoded = question;
       homeInput.value = decoded;
       // 可选：自动发送或仅填入等待用户确认
       // 这里仅填入并聚焦，让用户按回车或等待
