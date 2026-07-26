@@ -1314,7 +1314,7 @@
 			const initialQuestion = captcha.question || "";
 			const initialAttempts = Number(captcha.attempts_remaining ?? captcha.attemptsRemaining ?? 3);
 			const expiresAt = captcha.expires_at || captcha.expiresAt || null;
-			const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/AQYZ.jpg";
+			const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/Cancri1.jpg";
 			if (!challengeId || !initialQuestion) {
 				resolve(true);
 				return;
@@ -1327,7 +1327,7 @@
 			modal.innerHTML = `
         <div style="background:var(--bg,#1f1f1d);color:var(--text,#f5f4ed);width:min(420px,92vw);border-radius:14px;border:1px solid var(--border,#3a3a37);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;font-family:inherit;">
           <div style="padding:20px 24px 0 24px;display:flex;align-items:center;gap:14px;">
-            <img src="${imageUrl}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
+            <img src="${escapeHtml(imageUrl)}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
             <div style="flex:1;min-width:0;">
               <div style="font-size:15px;font-weight:600;line-height:1.2;">人机校验</div>
               <div id="suspCaptchaSub" style="font-size:12px;opacity:.7;margin-top:2px;">检测到请求频率异常，请完成以下题目继续使用</div>
@@ -8360,7 +8360,10 @@
 				if (detail) {
 					const parsed = parseBackendErrorPayload(detail);
 					if (parsed.code === "captcha_required") {
-						if (await showCaptchaModal(parsed)) return await generateImageFromPrompt(value, imageModel, attachments);
+						if (await showCaptchaModal(parsed)) {
+						setImageGenerationBusy(false);
+						return await generateImageFromPrompt(value, imageModel, attachments);
+					}
 						throw new Error("需要完成安全验证才能继续。");
 					}
 					detail = parsed.code === "challenge_required" || parsed.code === "access_blocked" || parsed.code === "anonymous_not_allowed" ? formatSecurityGuardMessage(parsed) : friendlyMessageFromBackend(parsed, response.status);
@@ -11618,7 +11621,7 @@
 	function initQueryFromUrl() {
 		const question = new URLSearchParams(window.location.search).get("q");
 		if (question) {
-			homeInput.value = decodeURIComponent(question);
+			homeInput.value = question;
 			homeInput.focus();
 			updateHomeHeroText();
 			setComposerBusy(false);

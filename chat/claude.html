@@ -931,9 +931,8 @@
                         <!-- 2026-05-22 真 Claude 对齐：账户按钮右侧 "获取应用和扩展" 入口。
                              指向 ./code/ 桌面客户端，配 animate-ping 红点提示新功能。 -->
                         <a class="account-download-btn" id="accountDownloadBtn"
-                           href="./code/" target="_self"
-                           aria-label="获取应用和扩展" title="获取应用和扩展"
-                           onclick="event.stopPropagation();">
+                           href="https://pan.baidu.com/s/1Q9mm9CnwjtB0tlusgaYlSw" target="_blank" rel="noopener noreferrer"
+                           aria-label="下载 Cancri Chat APK" title="下载 Cancri Chat APK（提取码: Nexu）">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                 <polyline points="7 10 12 15 17 10"/>
@@ -1902,7 +1901,7 @@
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
-                                        <span class="claude-form-label">什么是您喜欢的作品？</span>
+                                        <span class="claude-form-label">哪项最能描述您的工作？</span>
                                         <div class="claude-form-control">
                                             <select class="claude-form-select" id="claudeFormProfession">
                                                 <option value="">其他</option>
@@ -2264,7 +2263,7 @@
                                 </svg>
                             </div>
                             <div class="claude-projects-empty-title">想开始一个项目吗？</div>
-                            <div class="claude-projects-empty-desc">上传材料，设置自定义说明，并存一个专同的项目对话。</div>
+                            <div class="claude-projects-empty-desc">上传材料、设置自定义说明，并保存专属的项目对话。</div>
                             <button class="claude-primary-btn" type="button" id="claudeProjectsEmptyNewBtn">+ 新项目</button>
                         </div>
                     </div>
@@ -3123,5 +3122,7 @@
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
         <script defer src="./claude_ui.js?v=20260724-invite-fix"></script>
+        <!-- 额度耗尽提醒条 / 升级弹窗（cancri_chat.js 通过 window.CancriUpgradeQuotaUI 调用；此前仅 index.html 引入） -->
+        <script defer src="./claude_upgrade_quota_ui.js?v=20260625-wallet-warn"></script>
     </body>
 </html>

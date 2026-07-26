@@ -804,7 +804,7 @@
         if (sub.billing_mode_chat === 'plan_v4') {
             var p4 = getPlanV4(sub);
             if (p4) {
-                var lbl = planV4Label(p4);
+                var lbl = esc(planV4Label(p4));
                 copy.setAttribute('data-tier-state', 'paid');
                 copy.innerHTML = '您当前是<strong>Cancri ' + lbl + '</strong>'
                     + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">' + lbl.toUpperCase() + '</span>'
@@ -1432,7 +1432,10 @@
         }
         var accountDownload = document.getElementById('accountDownloadBtn');
         if (accountDownload) {
-            accountDownload.addEventListener('click', function () {
+            accountDownload.addEventListener('click', function (e) {
+                // 原内联 onclick="event.stopPropagation()" 被页面 CSP（script-src 无
+                // 'unsafe-inline'）拦截，点击下载会连带切换账户弹层，故在此阻断冒泡。
+                e.stopPropagation();
                 showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
             });
         }
@@ -4142,6 +4145,7 @@
             if (uidEl) uidEl.title = user.id;
             setClaudeText('claudeAccountCreated', fmtDate(user.created_at));
             setClaudeText('claudeAccountLastSignin', fmtDate(user.last_sign_in_at));
+            if (claudeAccountTimer) clearInterval(claudeAccountTimer);
             claudeAccountTimer = setInterval(function () {
                 setClaudeText('claudeAccountOnline', fmtDuration(Date.now() - claudeAccountSessionStart));
             }, 1000);
