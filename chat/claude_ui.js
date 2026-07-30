@@ -819,17 +819,12 @@
             }
             return;
         }
-        // 2026-06-23 按量计费 wallet_v3：显示¥余额取代旧订阅信息
+        // 2026-07-30：聊天设置不再显示 wallet 余额，统一展示套餐/订阅状态。
         if (sub.billing_mode === 'wallet_v3') {
-            var w = sub.wallet || {};
-            var balance = Number(w.balance_cny) || 0;
-            var debt = Number(w.debt_cny) || 0;
-            copy.setAttribute('data-tier-state', 'wallet');
-            copy.innerHTML = '<strong>按量计费</strong>'
-                + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">¥钱包</span>'
-                + '。余额 <strong style="font-size:15px">¥' + balance.toFixed(2) + '</strong>'
-                + (debt > 0 ? '（欠款 ¥' + debt.toFixed(2) + '）' : '')
-                + '。<a href="./pricing.html">充值 →</a>';
+            copy.setAttribute('data-tier-state', 'free');
+            copy.innerHTML = '您当前<strong>未订阅套餐</strong>（按量计费）'
+                + '<span class="claude-tier-chip is-free" style="margin-left:8px;vertical-align:middle">FREE</span>'
+                + '。<a href="./pricing.html">订阅套餐 →</a>';
             return;
         }
         if (sub.tier === 'paid') {
@@ -864,23 +859,24 @@
     // 设置页「额度」页：当前档位 + 剩余套餐额度。
     function updateQuotaSection(sub) {
         var nameEl = document.getElementById('claudeQuotaPlanName');
-        var remainEl = document.getElementById('claudeQuotaRemaining');
+        var usedEl = document.getElementById('claudeQuotaRemaining');
         var metaEl = document.getElementById('claudeQuotaMeta');
         var barEl = document.getElementById('claudeQuotaBar');
         if (!nameEl) return;
         var p4 = getPlanV4(sub);
         if (p4) {
             var total = Number(p4.allowance_cny) || 0;
-            var remain = Math.max(0, Number(p4.remaining_cny) || 0);
+            var used = Number(p4.used_cny) || 0;
+            var remain = Math.max(0, total - used);
             nameEl.textContent = planV4Label(p4) + ' 套餐';
-            if (remainEl) remainEl.textContent = fmtPlanCny(remain);
-            if (metaEl) metaEl.textContent = '月度额度 ' + fmtPlanCny(total)
-                + '（已用 ' + fmtPlanCny(p4.used_cny) + '）'
+            if (usedEl) usedEl.textContent = fmtPlanCny(used);
+            if (metaEl) metaEl.textContent = '已用 ' + fmtPlanCny(used) + ' / 月度额度 ' + fmtPlanCny(total)
+                + ' · 剩余 ' + fmtPlanCny(remain)
                 + (p4.period_end ? ' · 本期至 ' + new Date(p4.period_end).toLocaleDateString('zh-CN') : '');
-            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, remain / total * 100)) : 0) + '%';
+            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, used / total * 100)) : 0) + '%';
         } else {
             nameEl.textContent = '未订阅套餐';
-            if (remainEl) remainEl.textContent = '¥0.00';
+            if (usedEl) usedEl.textContent = '¥0.00';
             if (metaEl) metaEl.textContent = '订阅套餐后，付费模型将从套餐月度额度扣费。';
             if (barEl) barEl.style.width = '0%';
         }
@@ -2508,6 +2504,9 @@
                     }
                     if (key === 'billing') {
                         loadClaudeBillingActivations();
+                    }
+                    if (key === 'usage') {
+                        loadClaudeUsagePanel();
                     }
                     if (key === 'invite') {
                         loadClaudeInviteSection();
@@ -4266,6 +4265,160 @@
             console.error('list_my_orders:', err);
             panel.innerHTML = '<p class="claude-billing-empty">加载失败，请稍后重试。</p>';
         });
+    }
+
+    // 2026-07-30：Settings 用量明细面板。调用新端点 get_my_chat_usage_detail，
+    // 展示每次调用的模型、时间、输入/输出 token、扣费、成功/失败。
+    function injectUsagePanelStyles() {
+        if (document.getElementById('claudeUsagePanelStyles')) return;
+        var style = document.createElement('style');
+        style.id = 'claudeUsagePanelStyles';
+        style.textContent = [
+            '.claude-usage-list { display:flex; flex-direction:column; gap:8px; }',
+            '.claude-usage-row { display:grid; grid-template-columns:minmax(120px,1.2fr) 80px 80px 90px 70px 1fr; gap:12px; align-items:center; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--panel); font-size:12.5px; }',
+            '@media (max-width:640px) { .claude-usage-row { grid-template-columns:1fr 1fr; gap:6px 12px; } .claude-usage-cell:not(.claude-usage-cell--model):not(.claude-usage-cell--time) { justify-content:flex-start; } }',
+            '.claude-usage-head { font-weight:600; color:var(--text-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; border:0; background:transparent; padding:0 12px 4px; }',
+            '.claude-usage-cell { display:flex; align-items:center; min-width:0; color:var(--text); overflow:hidden; }',
+            '.claude-usage-cell--model { font-family:ui-monospace,"SF Mono",Consolas,monospace; font-size:11.5px; }',
+            '.claude-usage-cell--time { color:var(--text-soft); }',
+            '.claude-usage-cell--tokens { font-variant-numeric:tabular-nums; }',
+            '.claude-usage-cell--cost { font-variant-numeric:tabular-nums; color:var(--accent); }',
+            '.claude-usage-cell--status .claude-usage-status-success { color:#5cb85c; }',
+            '.claude-usage-cell--status .claude-usage-status-failed { color:#c45252; }',
+            '.claude-usage-empty { color:var(--text-soft); padding:12px; }',
+            '.claude-usage-err { color:#c45252; font-size:12.5px; padding:12px; background:rgba(196,82,82,0.08); border:1px solid rgba(196,82,82,0.25); border-radius:8px; }'
+        ].join('\n');
+        document.head.appendChild(style);
+    }
+
+    function fmtTokens2(n) {
+        var v = Number(n) || 0;
+        if (v >= 10000) return (v / 1000).toFixed(1) + 'k';
+        return v.toLocaleString('en-US');
+    }
+
+    function fmtCreditsFromMicro(micro) {
+        var v = Number(micro) || 0;
+        var cny = v / 1e6;
+        if (cny === 0) return '—';
+        return '¥' + cny.toFixed(4);
+    }
+
+    function fmtUsageWhen(iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso);
+        var now = new Date();
+        var diff = now.getTime() - d.getTime();
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+        return d.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function loadClaudeUsagePanel() {
+        injectUsagePanelStyles();
+        var list = document.getElementById('claudeUsageList');
+        if (!list) return;
+        list.innerHTML = '<p class="claude-usage-empty">正在加载用量明细…</p>';
+        var token = typeof getCancriAccessToken === 'function' ? getCancriAccessToken() : '';
+        if (!token) {
+            list.innerHTML = '<p class="claude-usage-empty">请先登录后查看用量明细。</p>';
+            return;
+        }
+
+        // 同步套餐摘要（用已知 plan_v4）
+        var sub = latestTierSubscription || null;
+        renderUsagePlanSummary(sub);
+
+        fetch(window.__SUPABASE_URL__ + '/functions/v1/chat-gateway', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: window.__SUPABASE_ANON_KEY__,
+                Authorization: 'Bearer ' + token
+            },
+            body: JSON.stringify({ endpoint: 'get_my_chat_usage_detail', __auth_token: token, limit: 50 })
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    list.innerHTML = '<p class="claude-usage-err">加载失败：' + esc((data && data.message) || '请稍后重试') + '</p>';
+                    return;
+                }
+                var calls = (data && data.calls) || [];
+                if (!calls.length) {
+                    list.innerHTML = '<p class="claude-usage-empty">暂无近期调用记录。</p>';
+                    return;
+                }
+                var html = renderUsageRows(calls);
+                list.innerHTML = html;
+            }).catch(function (err) {
+                console.error('get_my_chat_usage_detail:', err);
+                list.innerHTML = '<p class="claude-usage-err">加载失败，请稍后重试。</p>';
+            });
+    }
+
+    function renderUsagePlanSummary(sub) {
+        var summary = document.getElementById('claudeUsageSummary');
+        var nameEl = document.getElementById('claudeUsagePlanName');
+        var metaEl = document.getElementById('claudeUsagePlanMeta');
+        var barEl = document.getElementById('claudeUsagePlanBar');
+        if (!summary || !nameEl) return;
+        var p4 = getPlanV4(sub);
+        if (p4) {
+            var total = Number(p4.allowance_cny) || 0;
+            var used = Number(p4.used_cny) || 0;
+            var remaining = Math.max(0, total - used);
+            nameEl.textContent = (planV4Label(p4) || '套餐') + ' 用量';
+            if (metaEl) metaEl.textContent = '已用 ' + fmtPlanCny(used) + ' / 月度 ' + fmtPlanCny(total);
+            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, used / total * 100)) : 0) + '%';
+            summary.style.display = '';
+        } else if (sub && sub.billing_mode === 'wallet_v3') {
+            nameEl.textContent = '按量计费';
+            if (metaEl) metaEl.textContent = '用量按实际 token 结算';
+            if (barEl) barEl.style.width = '0%';
+            summary.style.display = '';
+        } else if (sub && sub.tier === 'paid') {
+            nameEl.textContent = (PLAN_LABEL_FOR_BILLING[sub.plan_code] || 'Pro') + ' 订阅';
+            if (metaEl) metaEl.textContent = '按量计费 / 订阅计费';
+            if (barEl) barEl.style.width = '0%';
+            summary.style.display = '';
+        } else {
+            nameEl.textContent = '免费计划';
+            if (metaEl) metaEl.textContent = '未订阅套餐';
+            if (barEl) barEl.style.width = '0%';
+            summary.style.display = '';
+        }
+    }
+
+    function renderUsageRows(calls) {
+        var header = '<div class="claude-usage-head claude-usage-row">' +
+            '<div class="claude-usage-cell claude-usage-cell--model">模型</div>' +
+            '<div class="claude-usage-cell">输入</div>' +
+            '<div class="claude-usage-cell">输出</div>' +
+            '<div class="claude-usage-cell">扣费</div>' +
+            '<div class="claude-usage-cell">状态</div>' +
+            '<div class="claude-usage-cell claude-usage-cell--time">时间</div>' +
+            '</div>';
+        var rows = calls.map(function (c) {
+            var isSuccess = !c.counted_as_failure && Number(c.status_code) > 0 && Number(c.status_code) < 400;
+            var statusHtml = isSuccess
+                ? '<span class="claude-usage-status-success">成功</span>'
+                : '<span class="claude-usage-status-failed">失败</span>';
+            var cost = Number(c.plan_charged_micro) > 0 ? c.plan_charged_micro : c.wallet_charged_micro;
+            var costText = fmtCreditsFromMicro(cost);
+            var model = esc(String(c.model_id || ''));
+            var time = fmtUsageWhen(c.created_at);
+            return '<div class="claude-usage-row" title="call ' + esc(String(c.call_id || '')) + '">' +
+                '<div class="claude-usage-cell claude-usage-cell--model">' + model + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--tokens">' + fmtTokens2(c.tokens_in) + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--tokens">' + fmtTokens2(c.tokens_out) + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--cost">' + esc(costText) + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--status">' + statusHtml + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--time">' + time + '</div>' +
+                '</div>';
+        }).join('');
+        return header + rows;
     }
 
     function bindClaudePasswordPanel() {
