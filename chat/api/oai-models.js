@@ -319,9 +319,32 @@
 
     renderSpecialized(models);
     bindCardNav();
+    locateHashModel(models);
 
     var counters = document.querySelectorAll("[data-cancri-count]");
     counters.forEach(function (el) { el.textContent = String(models.length); });
+  }
+
+  function locateHashModel(models) {
+    var raw = String(window.location.hash || "");
+    if (raw.indexOf("#model-") !== 0) return;
+    var requested = "";
+    try { requested = decodeURIComponent(raw.slice(7)); } catch (_) { requested = raw.slice(7); }
+    var target = document.getElementById("model-" + requested);
+    if (!target && /glm-?5\.2/i.test(requested)) {
+      var match = models.find(function (m) {
+        var id = String(m.id || m.canonicalId || "");
+        var name = String(m.displayName || "");
+        return /glm-?5\.2/i.test(id + " " + name) && /fp8/i.test(id + " " + name);
+      });
+      if (match) target = document.getElementById("model-" + (match.id || match.canonicalId));
+    }
+    if (!target) return;
+    window.setTimeout(function () {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.setAttribute("data-cancri-located", "true");
+      window.setTimeout(function () { target.removeAttribute("data-cancri-located"); }, 2200);
+    }, 80);
   }
 
   var __cardNavBound = false;
