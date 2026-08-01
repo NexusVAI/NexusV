@@ -2190,7 +2190,8 @@
 	}
 	function getQuotaBlockReason(modelId) {
 		if (quotaState.billingMode === "plan_v4") {
-			if (isFreeWelfareModel(modelId)) {
+			const meta = getModelMeta(modelId);
+			if (isFreeWelfareModel(modelId) || meta && meta.costTier === "free") {
 				if (quotaState.planV4Active === false && quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 				if (quotaState.planV4Active === false && quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
 				return null;
@@ -2626,11 +2627,7 @@
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
 			gateCostTier: serverModel.gateCostTier || null,
-			freeUserBlocked: serverModel.freeUserBlocked === true,
-			inputPricePerM: typeof serverModel.inputPricePerM === "number" ? serverModel.inputPricePerM : local.inputPricePerM,
-			outputPricePerM: typeof serverModel.outputPricePerM === "number" ? serverModel.outputPricePerM : local.outputPricePerM,
-			perCallPrice: typeof serverModel.perCallPrice === "number" ? serverModel.perCallPrice : local.perCallPrice,
-			priceDisplay: serverModel.priceDisplay || local.priceDisplay || ""
+			freeUserBlocked: serverModel.freeUserBlocked === true
 		};
 	}
 	function syncGateIdsFromMergedCatalog() {
@@ -2796,64 +2793,6 @@
 		const idx = BRAND_PRIORITY_ORDER.indexOf(brand);
 		return idx >= 0 ? -1e3 + idx : 0;
 	}
-	function priceYuanRepr(input, output) {
-		const vals = [input, output].filter((v) => typeof v === "number" && !Number.isNaN(v) && v >= 0);
-		if (vals.length === 0) return null;
-		return vals.reduce((a, b) => a + b, 0) / vals.length;
-	}
-	function costLevel(multiplier) {
-		const m = typeof multiplier === "number" && !Number.isNaN(multiplier) ? multiplier : 1;
-		if (m <= 0) return 0;
-		const v = Math.log10(m + 1) / Math.log10(301);
-		return Math.max(.04, Math.min(1, v));
-	}
-	function barMarkerPct(level) {
-		return Math.max(8, Math.min(92, level * 100)).toFixed(1);
-	}
-	function priceLevelInRange(repr, range) {
-		if (repr == null || Number.isNaN(repr) || repr < 0) return null;
-		if (!range || range.max <= range.min) return .5;
-		const lg = (x) => Math.log10(x + 1);
-		const v = (lg(repr) - lg(range.min)) / (lg(range.max) - lg(range.min));
-		return Math.max(.06, Math.min(.94, v));
-	}
-	var DEFAULT_TIER_MULTIPLIERS = {
-		free: .5,
-		cheap: 1,
-		normal: 2,
-		expensive: 5,
-		vip: 15
-	};
-	function computeCatalogPriceRange(models) {
-		let min = Infinity;
-		let max = -Infinity;
-		for (const m of models) {
-			if (m.isFree || m.isWelfare) continue;
-			let r = null;
-			if (typeof m.perCallPrice === "number" && !Number.isNaN(m.perCallPrice)) r = m.perCallPrice;
-			else r = priceYuanRepr(m.inputPricePerM, m.outputPricePerM);
-			if (r == null) continue;
-			if (r < min) min = r;
-			if (r > max) max = r;
-		}
-		if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-		return {
-			min,
-			max
-		};
-	}
-	function modelPriceLevel(model, range) {
-		if (model.isFree || model.isWelfare) return null;
-		let lvl = costLevel(typeof model.customMultiplier === "number" ? model.customMultiplier : DEFAULT_TIER_MULTIPLIERS[model.costTier] ?? 2);
-		if (typeof model.perCallPrice === "number" && !Number.isNaN(model.perCallPrice)) {
-			const pl = priceLevelInRange(model.perCallPrice, range);
-			if (pl != null) lvl = pl;
-		} else {
-			const pl = priceLevelInRange(priceYuanRepr(model.inputPricePerM, model.outputPricePerM), range);
-			if (pl != null) lvl = pl;
-		}
-		return lvl;
-	}
 	function rebuildModelCatalogDerived() {
 		MODEL_META_MAP = /* @__PURE__ */ new Map();
 		MODEL_IDS = {};
@@ -2892,10 +2831,6 @@
 				customMultiplier: entry.customMultiplier,
 				gateCostTier: entry.gateCostTier || null,
 				freeUserBlocked: entry.freeUserBlocked === true,
-				inputPricePerM: entry.inputPricePerM,
-				outputPricePerM: entry.outputPricePerM,
-				perCallPrice: entry.perCallPrice,
-				priceDisplay: entry.priceDisplay || "",
 				isWelfare,
 				isFree: entry.costTier === "free" || isWelfare,
 				isPromo: entry.promoLimited === true || isSpecial,
@@ -2911,8 +2846,6 @@
 			if (pa !== pb) return pa - pb;
 			return String(a.displayName || a.id).localeCompare(String(b.displayName || b.id));
 		});
-		const priceRange = computeCatalogPriceRange(SELECTABLE_MODELS);
-		for (const m of SELECTABLE_MODELS) m.priceLevel = modelPriceLevel(m, priceRange);
 		MODEL_CATALOG_BY_ID = MODEL_META_MAP;
 		ARENA_MODELS = SELECTABLE_MODELS.filter((m) => !m.imageOnly && !m.videoOnly && m.kind === "chat").map((m) => m.id);
 	}
@@ -2935,8 +2868,7 @@
 			disabled: false,
 			iconPath: "./openai.svg",
 			kind: "chat",
-			costTier: "normal",
-			priceLevel: null
+			costTier: "normal"
 		};
 	}
 	function getModelDisplayName(modelId) {
@@ -4068,7 +4000,7 @@
 			email_address_invalid: "邮箱地址无效，请检查后重试。",
 			email_address_not_authorized: "该邮箱不在允许列表内。",
 			email_provider_disabled: "邮箱登录暂时关闭。",
-			captcha_failed: "人机验证未通过或已过期，请重新完成下方 Cloudflare 验证后重试。",
+			captcha_failed: "人机验证未通过，请刷新页面后重试。",
 			otp_expired: "验证码已过期，请重新获取。",
 			otp_disabled: "验证码登录暂未开放。",
 			invalid_credentials: "邮箱或密码错误，请检查后重试。",
@@ -4084,27 +4016,9 @@
 		if (status >= 500) return "邮件服务暂时不可用，请稍后再试。";
 		return fallback;
 	}
-	async function resolveLoginCaptchaToken() {
-		if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") try {
-			const tok = await Promise.race([window.NexusLoginCaptcha.getToken(), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("captcha_wait_timeout")), 8e3))]);
-			if (tok) return String(tok);
-		} catch (_e) {}
-		try {
-			const fallback = await getLoginCaptchaTokenBestEffort(5e3);
-			if (fallback) return String(fallback);
-		} catch (_e2) {}
-		return "";
-	}
-	function captchaGateFailMessage() {
-		if (window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.getFailMessage === "function") {
-			const m = window.NexusAuthCaptcha.getFailMessage();
-			if (m) return m;
-		}
-		return "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
-	}
 	async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
 		const client = getSupabaseClient();
-		const captchaToken = await resolveLoginCaptchaToken();
+		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
 		const opts = {
 			email,
 			options: { shouldCreateUser }
@@ -4118,7 +4032,7 @@
 	}
 	async function signInWithEmailPassword(email, password) {
 		const client = getSupabaseClient();
-		const captchaToken = await resolveLoginCaptchaToken();
+		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
 		const opts = {
 			email,
 			password
@@ -4201,11 +4115,11 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = captchaGateFailMessage();
+				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
 				if (emailError) emailError.style.color = "";
 				window.NexusAuthCaptcha.focusInput();
 				return;
@@ -4220,6 +4134,8 @@
 				sendOtpBtn.hidden = true;
 				sendOtpBtn.style.display = "none";
 				if (verifyOtpBtn) verifyOtpBtn.hidden = false;
+				const turnstileSlot = document.getElementById("loginTurnstileContainer");
+				if (turnstileSlot) turnstileSlot.remove();
 				if (window.NexusLoginCaptcha?.suspend) try {
 					window.NexusLoginCaptcha.suspend();
 				} catch (_e) {}
@@ -4293,11 +4209,11 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = captchaGateFailMessage();
+				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
 				window.NexusAuthCaptcha.focusInput();
 				return;
 			}
@@ -8361,9 +8277,9 @@
 					const parsed = parseBackendErrorPayload(detail);
 					if (parsed.code === "captcha_required") {
 						if (await showCaptchaModal(parsed)) {
-						setImageGenerationBusy(false);
-						return await generateImageFromPrompt(value, imageModel, attachments);
-					}
+							setImageGenerationBusy(false);
+							return await generateImageFromPrompt(value, imageModel, attachments);
+						}
 						throw new Error("需要完成安全验证才能继续。");
 					}
 					detail = parsed.code === "challenge_required" || parsed.code === "access_blocked" || parsed.code === "anonymous_not_allowed" ? formatSecurityGuardMessage(parsed) : friendlyMessageFromBackend(parsed, response.status);
@@ -11721,13 +11637,6 @@
 					tag.textContent = tagText;
 					option.appendChild(tag);
 				});
-				if (!model.isFree && model.id !== currentModel && typeof model.priceLevel === "number") {
-					const heat = document.createElement("span");
-					heat.className = "model-item-heat";
-					heat.setAttribute("aria-hidden", "true");
-					heat.innerHTML = `<span class="model-item-heat-track"><span class="model-item-heat-dot" style="left:${barMarkerPct(model.priceLevel)}%"></span></span>`;
-					option.appendChild(heat);
-				}
 				option.classList.toggle("active", model.id === currentModel);
 				if (model.available === false) {
 					option.classList.add("disabled");
@@ -12185,7 +12094,7 @@
 	var closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 	var dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 	var openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
-	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_20260724_invite_v1";
+	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0620_migration_v1";
 	function openAnnouncementModal() {
 		if (!announcementModal) return;
 		announcementModal.setAttribute("aria-hidden", "false");

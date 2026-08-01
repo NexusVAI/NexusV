@@ -592,7 +592,9 @@
     //   - 订阅到期：缓存 5 分钟过期后下次刷新拉到 'free'，自动回到 free 显示。
     var TIER_CACHE_KEY = 'cancri_tier_cache_v1';
     var TIER_CACHE_TTL_MS = 5 * 60 * 1000;
+    var TIER_DEGRADED_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var TIER_FETCH_MAX_ATTEMPTS = 3;
+    var tierRetryBlockedUntil = 0;
 
     function bindPlanPill() {
         const pill = document.getElementById('claudePlanPill');
@@ -644,14 +646,15 @@
         } catch (e) { return ''; }
     }
 
-    function readTierCache() {
+    function readTierCache(allowDegraded) {
         try {
             var raw = localStorage.getItem(TIER_CACHE_KEY);
             if (!raw) return null;
             var parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== 'object') return null;
             if (typeof parsed.cachedAt !== 'number') return null;
-            if (Date.now() - parsed.cachedAt > TIER_CACHE_TTL_MS) return null;
+            var maxAge = allowDegraded ? TIER_DEGRADED_CACHE_TTL_MS : TIER_CACHE_TTL_MS;
+            if (Date.now() - parsed.cachedAt > maxAge) return null;
             if (!parsed.subscription) return null;
             return parsed.subscription;
         } catch (e) { return null; }
@@ -676,6 +679,7 @@
         latestTierSubscription = sub || null;
         document.body.classList.remove('is-tier-loading');
         document.body.classList.remove('is-account-tier-loading');
+        document.body.classList.toggle('is-account-tier-degraded', !!(sub && sub.degraded));
         if (sub && sub.tier === 'paid') {
             document.body.classList.add('is-paid-tier');
             updateBillingCopy(sub);
@@ -689,15 +693,22 @@
 
     // 失败时调用：无缓存就维持 loading 态隐藏升级 UI（保守，避免 PAID 用户看 FREE）；
     // 有缓存就保持缓存结果。
-    function applyTierFallback() {
-        var cached = readTierCache();
+    function applyTierFallback(degraded) {
+        var cached = readTierCache(!!degraded);
         if (cached) {
-            applyTierState(cached, /* fromCache */ true);
+            var display = degraded
+                ? Object.assign({}, cached, { degraded: true, degraded_reason: 'hyperdrive_quota' })
+                : cached;
+            applyTierState(display, /* fromCache */ true);
         }
         // 无缓存：维持 is-tier-loading，billing copy 保持"加载中"。
     }
 
     async function applyTierUI() {
+        if (tierRetryBlockedUntil > Date.now()) {
+            applyTierFallback(true);
+            return;
+        }
         const token = getCancriAccessToken();
         if (!token) {
             // 2026-06-17 fix：首屏 token 可能还没从 Supabase 异步恢复。此时绝不能清缓存 /
@@ -727,6 +738,7 @@
         }
 
         var lastErr = null;
+        var degraded = false;
         for (var attempt = 0; attempt < TIER_FETCH_MAX_ATTEMPTS; attempt++) {
             try {
                 var resp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
@@ -738,10 +750,21 @@
                     },
                     body: JSON.stringify({ endpoint: 'get_my_subscription', __auth_token: token }),
                 });
+                var data = resp ? await resp.json().catch(function () { return null; }) : null;
                 if (!resp || !resp.ok) {
                     lastErr = new Error('HTTP ' + (resp && resp.status));
+                    var code = data && data.code;
+                    if (code === 'dependency_quota_exhausted' || code === 'ban_check_unavailable') {
+                        var retryAfter = Number(resp.headers.get('Retry-After') || 0);
+                        var resetAt = data && typeof data.reset_at === 'string' ? Date.parse(data.reset_at) : NaN;
+                        var retryMs = Number.isFinite(resetAt)
+                            ? Math.max(1000, resetAt - Date.now())
+                            : (retryAfter > 0 ? retryAfter * 1000 : TIER_CACHE_TTL_MS);
+                        tierRetryBlockedUntil = Date.now() + retryMs;
+                        degraded = true;
+                        break;
+                    }
                 } else {
-                    var data = await resp.json().catch(function () { return null; });
                     var sub = data && data.subscription;
                     if (sub) {
                         // 2026-06-23 按量计费 wallet_v3：附加 billing_mode + wallet 到 sub
@@ -751,6 +774,7 @@
                         if (data.billing_mode_chat) sub.billing_mode_chat = data.billing_mode_chat;
                         if (data.plan_v4) sub.plan_v4 = data.plan_v4;
                         writeTierCache(sub);
+                        tierRetryBlockedUntil = 0;
                         applyTierState(sub, false);
                         return;
                     }
@@ -766,7 +790,7 @@
         }
         // 全部重试失败 → fail-soft（用缓存或维持 loading）
         try { console.warn('applyTierUI failed after retries:', lastErr); } catch (e) { /* ignore */ }
-        applyTierFallback();
+        applyTierFallback(degraded);
     }
 
     // 把 settings 面板里 billing 区的文案替换成对应 tier 的精确状态。
