@@ -3,7 +3,7 @@
  *
  * 适用页面（按 v1 钩子接入）：
  *   chat/api/index.html         门户首页
- *   chat/api_apply.html         申请 API
+ *   chat/api_apply.html         联系我们（工单/反馈）
  *   chat/api_keys.html          我的 Keys
  *   chat/api_models.html        模型广场
  *   chat/api_docs.html          API 文档
@@ -265,7 +265,7 @@
   // ── topbar mega menu（复刻主站 js/menu.js + css/navbar.css） ──
   var TOPNAV_MENU_KEYS = [
     { key: "overview", match: /\/api\/?$|\/api\/index\.html$/ },
-    { key: "apply", match: /api_apply\.html/ },
+    { key: "contact", match: /api_apply\.html/ },
     { key: "keys", match: /api_keys\.html/ },
     { key: "models", match: /api_models\.html/ },
     { key: "docs", match: /api_docs\.html/ },
@@ -278,7 +278,7 @@
       sideLabel: "相关入口",
       main: [
         { self: true, label: "平台概览" },
-        { nav: /api_apply/, label: "申请密钥" },
+        { nav: /api_keys/, label: "创建密钥" },
         { nav: /api_docs/, hash: "quickstart", label: "快速开始" },
       ],
       side: [
@@ -287,10 +287,10 @@
         { nav: /api_docs/, hash: "intro", label: "阅读文档" },
       ],
     },
-    apply: {
-      sideLabel: "申请之后",
+    contact: {
+      sideLabel: "其他入口",
       main: [
-        { self: true, label: "提交申请" },
+        { self: true, label: "提交工单" },
         { nav: /api_keys/, label: "管理 Keys" },
         { nav: /api_docs/, hash: "auth", label: "认证方式" },
       ],
@@ -308,7 +308,7 @@
         { nav: /api_docs/, hash: "quickstart", label: "调用示例" },
       ],
       side: [
-        { nav: /api_apply/, label: "申请新密钥" },
+        { nav: /api_apply/, label: "联系我们" },
         { nav: /api_models/, label: "模型广场" },
         { nav: /orders/, label: "订单记录" },
       ],
@@ -351,7 +351,7 @@
       side: [
         { nav: /api_models/, label: "模型广场" },
         { nav: /api_docs/, hash: "quota", label: "额度说明" },
-        { nav: /api_apply/, label: "申请 API" },
+        { nav: /api_apply/, label: "联系我们" },
       ],
     },
     orders: {

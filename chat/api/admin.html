@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex,nofollow" />
     <!-- 2026-05-13 审查：抽离内联 script admin-app.js，删 'unsafe-inline'　        style-src 仍保'unsafe-inline'因为 row 渲染中用了少量内联 style 属性-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理台 · API 审核 · Cancri</title>
+    <title>管理台 · 工单 / 反馈 · Cancri</title>
     <link rel="icon" type="image/svg+xml" href="../../Logo/NexusV_favicon.svg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
@@ -393,21 +393,21 @@
 
       <div id="main" style="display: none">
         <header>
-          <h1>API 申请审核</h1>
-          <p>查看 API Key 申请：待审核可一键通过 / 驳回；已通过可撤销、已拒绝可改判。</p>
+          <h1>工单 / 反馈</h1>
+          <p>2026-08-04 起 API 申请制已取消（注册即可建 Key），本页现为「联系我们」工单队列；带「旧申请」标签的是历史记录，仅供风控回溯。付费订阅审批在<a href="./admin_orders.html">订单</a>页。</p>
         </header>
 
         <div class="stats" id="stats">
           <div class="stat-card pending">
-            <div class="label">待审核</div>
+            <div class="label">待处理</div>
             <div class="value" id="stat-pending"></div>
           </div>
           <div class="stat-card approved">
-            <div class="label">已通过</div>
+            <div class="label">已处理</div>
             <div class="value" id="stat-approved"></div>
           </div>
           <div class="stat-card rejected">
-            <div class="label">已驳回</div>
+            <div class="label">已关闭</div>
             <div class="value" id="stat-rejected"></div>
           </div>
           <div class="stat-card">
@@ -422,13 +422,13 @@
               全部<span class="count" id="cnt-all">0</span>
             </button>
             <button class="filter-btn" data-status="pending">
-              待审核<span class="count" id="cnt-pending">0</span>
+              待处理<span class="count" id="cnt-pending">0</span>
             </button>
             <button class="filter-btn" data-status="approved">
-              已通过<span class="count" id="cnt-approved">0</span>
+              已处理<span class="count" id="cnt-approved">0</span>
             </button>
             <button class="filter-btn" data-status="rejected">
-              已拒绝<span class="count" id="cnt-rejected">0</span>
+              已关闭<span class="count" id="cnt-rejected">0</span>
             </button>
           </div>
           <input
@@ -442,14 +442,14 @@
         </div>
 
         <div class="ip-filter-bar" id="ipFilterBar">
-          已锁定 IP <code id="ipFilterValue"></code>，仅显示该 IP 的申请
+          已锁定 IP <code id="ipFilterValue"></code>，仅显示该 IP 的工单
           <button id="ipFilterClear">取消筛选</button>
         </div>
 
         <div class="batch-bar" id="batchBar">
-          已选 <span class="count-pill" id="batchCount">0</span> 条申请
-          <button class="btn-batch approve" id="batchApprove">批量通过</button>
-          <button class="btn-batch reject" id="batchReject">批量拒绝</button>
+          已选 <span class="count-pill" id="batchCount">0</span> 条工单
+          <button class="btn-batch approve" id="batchApprove">批量标为已处理</button>
+          <button class="btn-batch reject" id="batchReject">批量关闭</button>
           <button class="btn-clear" id="batchClear">取消选择</button>
         </div>
 
@@ -458,10 +458,10 @@
             <thead>
               <tr>
                 <th style="width: 32px">
-                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可见的待审核" />
+                  <input type="checkbox" id="checkAll" class="row-check" title="全选当前可见的待处理" />
                 </th>
                 <th style="width: 240px">邮箱</th>
-                <th style="min-width: 140px">用途说明</th>
+                <th style="min-width: 140px">工单内容</th>
                 <th style="width: 210px">IP</th>
                 <th style="width: 86px">状态</th>
                 <th style="width: 130px">提交时间</th>
@@ -500,8 +500,8 @@
       crossorigin="anonymous"
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
-    <script src="./admin-nav.js?v=20260706"></script>
-    <script src="./admin-app.js?v=20260705-revoke"></script>
+    <script src="./admin-nav.js?v=20260804-tickets"></script>
+    <script src="./admin-app.js?v=20260804-tickets"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   </body>
 </html>

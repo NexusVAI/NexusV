@@ -315,7 +315,7 @@
                 </a>
                 <nav class="topnav" aria-label="开放平台导航">
                     <a href="./api/">概览</a>
-                    <a href="./api_apply.html">申请</a>
+                    <a href="./api_apply.html">联系我们</a>
                     <a href="./api_keys.html" class="is-active">Keys</a>
                     <a href="./api_models.html">模型</a>
                     <a href="./api_docs.html">文档</a>
@@ -349,20 +349,6 @@
                         class="btn btn-primary"
                     >
                         前往登录
-                    </button>
-                </div>
-            </div>
-
-            <div id="no-approval" style="display: none">
-                <div class="card">
-                    <p style="margin-bottom: 12px">
-                        你还没有通过 API 申请审核　
-                    </p>
-                    <button
-                        id="apply-redirect-btn"
-                        class="btn btn-primary"
-                    >
-                        去申请
                     </button>
                 </div>
             </div>
@@ -562,6 +548,6 @@
         ></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
         <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-        <script src="./api/api-keys-app.js?v=2026-06-12-skeleton-light"></script>
+        <script src="./api/api-keys-app.js?v=20260804-no-approval"></script>
     </body>
 </html>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-apply-app.js，删 unsafe-inline script-src -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
-  <title>申请 API · Cancri 开放平台</title>
+  <title>联系我们 · Cancri 开放平台</title>
   <link rel="icon" type="image/svg+xml" href="../../Logo/NexusV_favicon.svg">
   <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg">
   <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high">
@@ -30,7 +30,7 @@
       </a>
       <nav class="topnav" aria-label="开放平台导航">
         <a href="./api/">概览</a>
-        <a href="./api_apply.html" class="is-active">申请</a>
+        <a href="./api_apply.html" class="is-active">联系我们</a>
         <a href="./api_keys.html">Keys</a>
         <a href="./api_models.html">模型</a>
         <a href="./api_docs.html">文档</a>
@@ -48,11 +48,11 @@
   <main class="page-shell page-shell--narrow">
     <div class="apply-page-stack">
       <div class="apply-card">
-        <h1 class="page-title">API 申请</h1>
-        <p class="subtitle">首次使用？提交申请进入白名单，审核通过后即可创建 API Key</p>
+        <h1 class="page-title">联系我们</h1>
+        <p class="subtitle">提交工单或反馈，我们会通过注册邮箱回复。创建 API Key 无需申请审核</p>
         <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
         <div id="login-section" style="display:none">
-          <p style="margin-bottom:12px">请先登录后再申请 API Key</p>
+          <p style="margin-bottom:12px">请先登录后再提交工单</p>
           <button id="login-redirect-btn" class="btn-primary full-btn">前往登录</button>
         </div>
         <div id="apply-section" style="display:none">
@@ -63,15 +63,15 @@
               <input type="email" id="email" readonly>
             </div>
             <div class="form-group">
-              <label>用途说明</label>
-              <textarea id="purpose" placeholder="请简要说明你的应用场景、预计调用量等，便于我们审核。"></textarea>
+              <label>工单内容</label>
+              <textarea id="purpose" placeholder="请描述你的问题或建议；付费订阅相关请附上订单号。"></textarea>
             </div>
-            <button id="submit-btn" class="btn-primary full-btn">提交申请</button>
+            <button id="submit-btn" class="btn-primary full-btn">提交工单</button>
             <div class="msg" id="msg"></div>
           </div>
         </div>
         <div id="key-section" style="display:none">
-          <p style="margin-bottom:12px; color: var(--ok)">你的申请已通过审核，可以开始创建 API Key 了</p>
+          <p style="margin-bottom:12px; color: var(--ok)">创建 API Key 无需申请，直接前往控制台</p>
           <button id="manage-keys-btn" class="btn-primary full-btn">管理 API Keys</button>
         </div>
         <button id="back-to-chat-btn" class="btn-secondary secondary-btn">返回聊天</button>
@@ -89,6 +89,6 @@
   <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE" crossorigin="anonymous"></script>
   <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-  <script src="./api/api-apply-app.js?v=2026-06-12-skeleton-light"></script>
+  <script src="./api/api-apply-app.js?v=20260804-contact"></script>
 </body>
 </html>

@@ -318,7 +318,7 @@ function render() {
   const filtered = getFilteredApps();
   const tbody = $("rows");
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty">没有匹配的申请</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">没有匹配的工单</td></tr>`;
     refreshBatchBar();
     return;
   }
@@ -364,10 +364,16 @@ function rowHtml(a) {
     ? new Date(a.created_at).toLocaleString("zh-CN", { hour12: false })
     : "—";
   const statusKey = a.status || "pending";
+  // 2026-08-04：本队列从「API 申请审核」改为「工单 / 反馈」（申请制取消），
+  // 后端 status 枚举不变，仅换文案；kind='api_apply' 是历史旧申请。
   const statusLabel =
-    { pending: "待审核", approved: "已通过", rejected: "已拒绝" }[
+    { pending: "待处理", approved: "已处理", rejected: "已关闭" }[
       statusKey
     ] || statusKey;
+  const kindPill =
+    a.kind === "api_apply"
+      ? '<span class="key-tier-chip" style="background:rgba(148,163,184,.18);color:var(--text-mute)">旧申请</span>'
+      : "";
   const isPending = statusKey === "pending";
   const ip = a.ip || "";
   const ipCount = ip ? IP_COUNTS.get(ip) || 0 : 0;
@@ -375,7 +381,7 @@ function rowHtml(a) {
   // IP 列：第一行 IP（含原有同 IP 申请计数）+ 第二行 IP 真实地理（小字）
   const geoLabel = fmtIpGeo(a.ip_geo);
   const ipLine = ip
-    ? `<a class="ip-link${ipDup ? " ip-dup" : ""}" data-ip="${esc(ip)}" href="#" title="${ipDup ? "该 IP 共 " + ipCount + " 条申请，点击仅看这条 IP" : "点击仅看这条 IP"}">${esc(ip)}${ipDup ? `<span class="ip-count">×${ipCount}</span>` : ""}</a>`
+    ? `<a class="ip-link${ipDup ? " ip-dup" : ""}" data-ip="${esc(ip)}" href="#" title="${ipDup ? "该 IP 共 " + ipCount + " 条记录，点击仅看这条 IP" : "点击仅看这条 IP"}">${esc(ip)}${ipDup ? `<span class="ip-count">×${ipCount}</span>` : ""}</a>`
     : `<span style="color:var(--text-faint)">—</span>`;
   const ipHtml = ipLine + (geoLabel ? `<div class="ip-geo">${esc(geoLabel)}</div>` : "");
   const checked = SELECTED.has(a.id) ? "checked" : "";
@@ -387,7 +393,7 @@ function rowHtml(a) {
   return `<tr class="app-row" data-id="${esc(a.id)}">
     <td>${checkboxHtml}</td>
     <td class="email">
-      <div class="email-line">${esc(a.email || "—")} ${renderTierPill(a.tier)}</div>
+      <div class="email-line">${esc(a.email || "—")} ${renderTierPill(a.tier)} ${kindPill}</div>
       <div class="user-id">${esc((a.user_id || "").slice(0, 13))}…</div>
       ${renderRiskPills(a)}
       ${renderUserContext(a)}
@@ -404,18 +410,18 @@ function rowHtml(a) {
   </tr>`;
 }
 
-// 审核操作按钮：待审可通过/拒绝；已通过可撤销（改判拒绝）；已拒绝可改判通过。
-// 后端 admin_review_api_application 允许对非 pending 申请重复审核（直接 update status）。
+// 工单操作按钮：待处理可标完成/关闭；已处理可重开（改为已关闭）；已关闭可标为已处理。
+// 后端 admin_review_api_application 允许对非 pending 行重复操作（直接 update status）。
 function actionButtonsHtml(a, statusKey) {
   const id = esc(a.id);
   if (statusKey === "approved") {
-    return `<button class="btn-reject" data-action="rejected" data-revoke="1" data-id="${id}">撤销通过</button>`;
+    return `<button class="btn-reject" data-action="rejected" data-revoke="1" data-id="${id}">改为已关闭</button>`;
   }
   if (statusKey === "rejected") {
-    return `<button class="btn-approve" data-action="approved" data-revoke="1" data-id="${id}">改判通过</button>`;
+    return `<button class="btn-approve" data-action="approved" data-revoke="1" data-id="${id}">改为已处理</button>`;
   }
-  return `<button class="btn-approve" data-action="approved" data-id="${id}">通过</button>
-        <button class="btn-reject" data-action="rejected" data-id="${id}">拒绝</button>`;
+  return `<button class="btn-approve" data-action="approved" data-id="${id}">标为已处理</button>
+        <button class="btn-reject" data-action="rejected" data-id="${id}">关闭</button>`;
 }
 
 // 展开详情 sub-row：完整设备指纹 + 同 IP / 同邮箱 / 同设备 的其他 user_id
@@ -494,11 +500,11 @@ async function batchDecide(newStatus) {
     (a) => SELECTED.has(a.id) && a.status === "pending",
   ).map((a) => a.id);
   if (pendingIds.length === 0) {
-    showToast("所选申请里没有待审核的", "err");
+    showToast("所选工单里没有待处理的", "err");
     return;
   }
-  const verb = newStatus === "approved" ? "通过" : "拒绝";
-  if (!confirm(`确认${verb} ${pendingIds.length} 条申请？`)) return;
+  const verb = newStatus === "approved" ? "标为已处理" : "关闭";
+  if (!confirm(`确认${verb} ${pendingIds.length} 条工单？`)) return;
   // Disable the bar buttons during the call.
   const aBtn = $("batchApprove");
   const rBtn = $("batchReject");
@@ -548,18 +554,12 @@ async function decide(btn) {
   const action = btn.dataset.action;
   const id = btn.dataset.id;
   const isRevoke = btn.dataset.revoke === "1";
-  const verb = isRevoke
-    ? action === "approved"
-      ? "改判通过"
-      : "撤销通过"
-    : action === "approved"
-      ? "通过"
-      : "拒绝";
+  const verb = action === "approved" ? "标为已处理" : "关闭";
   const tip = isRevoke
     ? action === "rejected"
-      ? `确认撤销这个申请的通过状态？（改为已拒绝）`
-      : `确认将这个已拒绝的申请改判为通过？`
-    : `确认${verb}这个申请？`;
+      ? `确认把这张已处理的工单改为已关闭？`
+      : `确认把这张已关闭的工单改为已处理？`
+    : `确认${verb}这张工单？`;
   if (!confirm(tip)) return;
   const row = btn.closest("tr");
   row.querySelectorAll("button").forEach((b) => (b.disabled = true));

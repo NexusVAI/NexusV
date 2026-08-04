@@ -93,7 +93,7 @@
       { name: "用量", sub: "控制台 · 调用与计费", href: base + "api_keys.html" },
       { name: "充值", sub: "API 按量充值（结算）", href: base + "api/billing.html" },
       { name: "账单记录", sub: "订单与工单状态", href: base + "api/billing.html#bills" },
-      { name: "申请接入", sub: "申请 API 访问", href: base + "api_apply.html" },
+      { name: "联系我们", sub: "提交工单 / 反馈", href: base + "api_apply.html" },
     ];
   }
 

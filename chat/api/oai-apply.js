@@ -1,8 +1,7 @@
-/* NexusV 开放平台 — 联系销售人员 / API 申请。
- * 复用 api-apply-app.js 的鉴权与提交模式（supabase 会话 + api_apply 端点，
- * 后端仅存 `purpose` 自由文本）。本页 1:1 对标 openai.com/contact-sales，
- * 把"感兴趣方向 / 公司规模 / 公司 / 姓名 / 电话 / 业务需求"一并编入 purpose，
- * 使其随申请记录持久化。除业务需求外均为必填（与 OpenAI 一致）。 */
+/* NexusV 开放平台 — 联系我们（提交工单 / 反馈）。
+ * 2026-08-04：API 申请制取消（注册即可建 Key），本页从「联系销售/申请 API」
+ * 改为工单反馈：提交走网关 endpoint=contact_ticket，落库
+ * api_applications(kind='contact')，管理员在 admin.html 处理。 */
 (function () {
   "use strict";
 
@@ -10,6 +9,11 @@
   var LOGIN_URL = "chat/index.html";
   var sb = null;
   function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
 
   function getSupabase() {
     if (sb) return sb;
@@ -41,7 +45,6 @@
     el.textContent = text;
     el.className = "cs-msg " + (isErr ? "err" : "ok");
   }
-  function hide(id) { var el = $(id); if (el) el.style.display = "none"; }
   function show(id, disp) { var el = $(id); if (el) el.style.display = disp || "block"; }
 
   function hideLoading() {
@@ -80,6 +83,7 @@
       hideLoading();
       var emailEl = $("email"); if (emailEl) emailEl.value = session.user.email || "";
       show("apply-section");
+      show("key-section");
       await checkExisting();
     } catch (e) {
       if (e && e.message === "supabase_not_loaded") {
@@ -90,71 +94,58 @@
     }
   }
 
+  // 列出最近的工单状态（不再隐藏表单：工单可以提多张，上限由后端控制）。
+  // 历史 kind='api_apply' 的旧申请不展示，避免让用户以为还需要审核。
   async function checkExisting() {
     try {
       var data = await callGateway("api_my_keys", {});
-      if (data.applications && data.applications.length > 0) {
-        var app = data.applications[0];
-        var box = $("existing-status");
-        var statusText = { pending: "审核中", approved: "已通过", rejected: "已拒绝" }[app.status] || app.status;
-        box.innerHTML =
-          '<div class="cs-state"><div>申请状态：<span class="cs-status-badge status-' + app.status + '">' + statusText + "</span></div>" +
-          '<div style="color:var(--tertiary-text);font-size:12px;margin-top:8px">申请时间：' + new Date(app.created_at).toLocaleString("zh-CN") + "</div></div>";
-        show("existing-status");
-        hide("apply-form");
-        if (app.status === "approved") show("key-section");
-      }
+      var tickets = (data.applications || []).filter(function (a) { return a.kind === "contact"; });
+      if (tickets.length === 0) return;
+      var statusText = { pending: "待处理", approved: "已处理", rejected: "已关闭" };
+      var box = $("existing-status");
+      box.innerHTML =
+        '<div class="cs-state"><div>最近的工单</div>' +
+        tickets.slice(0, 5).map(function (t) {
+          var st = esc(String(t.status || ""));
+          return '<div style="margin-top:8px"><span class="cs-status-badge status-' + st + '">' +
+            esc(statusText[t.status] || st) + '</span>' +
+            '<span style="color:var(--tertiary-text);font-size:12px;margin-left:8px">' +
+            new Date(t.created_at).toLocaleString("zh-CN") + "</span></div>";
+        }).join("") +
+        "</div>";
+      show("existing-status");
     } catch (e) {
-      showMsg("读取申请状态失败，请稍后刷新。", true);
+      showMsg("读取工单状态失败，请稍后刷新。", true);
     }
   }
 
-  function composePurpose() {
-    var interest = ($("cs-interest") && $("cs-interest").value || "").trim();
-    var companysize = ($("cs-companysize") && $("cs-companysize").value || "").trim();
-    var first = ($("cs-firstname") && $("cs-firstname").value || "").trim();
-    var last = ($("cs-lastname") && $("cs-lastname").value || "").trim();
-    var company = ($("cs-company") && $("cs-company").value || "").trim();
-    var phone = ($("cs-phone") && $("cs-phone").value || "").trim();
+  function composeTicket() {
+    var kind = ($("cs-interest") && $("cs-interest").value || "").trim();
+    var order = ($("cs-order") && $("cs-order").value || "").trim();
     var need = ($("cs-need") && $("cs-need").value || "").trim();
-    var name = (last + first).trim() || (first + last).trim();
     var parts = [];
-    if (interest) parts.push("感兴趣方向：" + interest);
-    if (companysize) parts.push("公司规模：" + companysize);
-    if (name) parts.push("联系人：" + name);
-    if (company) parts.push("公司：" + company);
-    if (phone) parts.push("电话：" + phone);
-    parts.push("业务需求与挑战：\n" + (need || "（未填写）"));
-    return { need: need, purpose: parts.join("\n") };
+    if (order) parts.push("订单号：" + order);
+    parts.push(need);
+    return { subject: kind, content: parts.join("\n") };
   }
 
   function validateRequired() {
-    var required = ["cs-interest", "email", "cs-companysize", "cs-company", "cs-lastname", "cs-firstname", "cs-phone"];
-    var labels = {
-      "cs-interest": "请选择感兴趣的方向。",
-      "email": "工作电子邮件不能为空。",
-      "cs-companysize": "请选择公司规模。",
-      "cs-company": "请填写公司名称。",
-      "cs-lastname": "请填写姓氏。",
-      "cs-firstname": "请填写名字。",
-      "cs-phone": "请填写电话号码。"
-    };
-    for (var i = 0; i < required.length; i++) {
-      var el = $(required[i]);
-      if (!el || !el.value || !el.value.trim()) return labels[required[i]];
-    }
+    if (!$("cs-interest") || !$("cs-interest").value) return "请选择工单类型。";
+    var need = $("cs-need") && $("cs-need").value.trim();
+    if (!need || need.length < 2) return "请填写问题描述（至少 2 个字符）。";
     return null;
   }
 
-  async function submitApplication() {
+  async function submitTicket() {
     var err = validateRequired();
     if (err) { showMsg(err, true); return; }
-    var composed = composePurpose();
+    var ticket = composeTicket();
     var btn = $("submit-btn");
     btn.disabled = true; var orig = btn.textContent; btn.textContent = "提交中…";
     try {
-      await callGateway("api_apply", { purpose: composed.purpose });
-      showMsg("已提交，我们的团队会尽快与你联系。", false);
+      await callGateway("contact_ticket", ticket);
+      showMsg("已提交，我们会通过注册邮箱回复你。", false);
+      if ($("cs-need")) $("cs-need").value = "";
       setTimeout(checkExisting, 1000);
     } catch (e) {
       showMsg((e.body && (e.body.message || e.body.error)) || e.message || "提交失败", true);
@@ -163,8 +154,8 @@
   }
 
   function bindUI() {
-    var s = $("submit-btn"); if (s) s.addEventListener("click", submitApplication);
-    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "chat/api/keys.html"; });
+    var s = $("submit-btn"); if (s) s.addEventListener("click", submitTicket);
+    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "chat/api_keys.html"; });
     var bc = $("back-to-chat-btn"); if (bc) bc.addEventListener("click", function () { location.href = "chat/index.html"; });
     if (window.OaiTrustedLogos) {
       var host = $("cs-trusted-logos");
