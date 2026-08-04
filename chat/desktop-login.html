@@ -204,8 +204,29 @@
     }
     #authPasswordSection[hidden],
     #authVerifyOtpBtn[hidden],
-    #authSendOtpBtn[hidden] {
+    #authSendOtpBtn[hidden],
+    #authStepContinue[hidden],
+    #authStepEmail[hidden] {
       display: none !important;
+    }
+    .auth-continue-email {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: hsl(var(--bg-200) / 0.85);
+      border: 1px solid hsl(var(--border-300) / 0.14);
+      font-size: 15px;
+      font-weight: 600;
+      color: hsl(var(--text-000));
+      word-break: break-all;
+      text-align: center;
+    }
+    .auth-continue-hint {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: hsl(var(--text-300));
+      text-align: center;
     }
   </style>
 </head>
@@ -253,6 +274,21 @@
       </div>
 
       <div class="auth-card" id="authCard">
+        <!-- 2026-08-02：有浏览器缓存 session 时先确认邮箱，禁止静默回传旧账号 -->
+        <div class="auth-step" id="authStepContinue" hidden>
+          <div class="auth-email-divider"><span>确认账号</span></div>
+          <p class="auth-continue-hint">浏览器里当前登录的是下面这个账号。若要换号，请选「使用其他账号」。</p>
+          <p class="auth-continue-email" id="authContinueEmail"></p>
+          <button class="auth-btn auth-btn-primary" id="authContinueBtn" type="button">
+            以此账号登录桌面端
+          </button>
+          <button type="button" class="auth-mode-toggle auth-back-link" id="authSwitchAccountBtn">
+            使用其他账号
+          </button>
+          <div class="auth-status-line" id="authContinueStatus" aria-live="polite"></div>
+          <div class="auth-error" id="authContinueError"></div>
+        </div>
+
         <div class="auth-step" id="authStepEmail">
           <div class="auth-email-divider"><span>邮箱登录</span></div>
 
@@ -510,18 +546,31 @@
         },
       });
 
+      const stepContinue = document.getElementById("authStepContinue");
+      const stepEmail = document.getElementById("authStepEmail");
+      const continueEmailEl = document.getElementById("authContinueEmail");
+      const continueBtn = document.getElementById("authContinueBtn");
+      const switchAccountBtn = document.getElementById("authSwitchAccountBtn");
+      const continueStatus = document.getElementById("authContinueStatus");
+      const continueError = document.getElementById("authContinueError");
+      let cachedSession = null;
+
       async function sendSessionToDesktop(session) {
+        const email = session.user ? session.user.email || "" : "";
         const body = {
           access_token: session.access_token,
           refresh_token: session.refresh_token,
           expires_in: session.expires_in || 3600,
-          user_email: session.user ? session.user.email || "" : "",
+          user_email: email,
           user_id: session.user ? session.user.id || "" : "",
           state: state,
         };
-        showDone("登录成功，正在返回桌面端 ");
+        showDone(
+          (email ? "已确认 " + email + "，" : "") + "正在返回桌面端…",
+        );
         const response = await fetch(cb, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
         if (!response.ok) {
@@ -545,33 +594,96 @@
         return fallback || msg || "未知错误";
       }
 
+      function showContinueStep(session) {
+        cachedSession = session;
+        const email =
+          (session.user && session.user.email) || "(未知邮箱)";
+        if (continueEmailEl) continueEmailEl.textContent = email;
+        if (stepContinue) stepContinue.hidden = false;
+        if (stepEmail) stepEmail.hidden = true;
+        emailInput.disabled = true;
+        sendBtn.disabled = true;
+        if (continueStatus) {
+          continueStatus.textContent = "";
+          continueStatus.className = "auth-status-line";
+        }
+        if (continueError) continueError.textContent = "";
+      }
+
+      function showEmailForm() {
+        cachedSession = null;
+        if (stepContinue) stepContinue.hidden = true;
+        if (stepEmail) stepEmail.hidden = false;
+        emailInput.disabled = false;
+        sendBtn.disabled = false;
+        setStatus("");
+        setError("");
+      }
+
       emailInput.disabled = true;
       sendBtn.disabled = true;
-      setStatus("正在检查登录状态 ");
+      setStatus("正在检查登录状态…");
 
       (async function bootstrap() {
         let existingSession = null;
         try {
           const { data } = await supabase.auth.getSession();
-          existingSession = data && data.session && data.session.access_token ? data.session : null;
+          existingSession =
+            data && data.session && data.session.access_token
+              ? data.session
+              : null;
         } catch (err) {
           console.warn("[desktop-login] getSession failed:", err);
         }
 
+        // 禁止静默回传：浏览器缓存的常是上一个账号（如 357…），用户在站点上已换成别的号时会被坑
         if (existingSession) {
-          try {
-            await sendSessionToDesktop(existingSession);
-          } catch (err) {
-            console.warn("[desktop-login] callback failed:", err);
-            setError(localizeAuthError(err, "桌面端登录回调失败，请回到 Cancri Code 重新发起登录"　));
-          }
+          setStatus("");
+          showContinueStep(existingSession);
           return;
         }
 
-        emailInput.disabled = false;
-        sendBtn.disabled = false;
-        setStatus("");
+        showEmailForm();
       })();
+
+      continueBtn?.addEventListener("click", function () {
+        if (!cachedSession) return;
+        continueBtn.disabled = true;
+        if (continueError) continueError.textContent = "";
+        if (continueStatus) {
+          continueStatus.textContent = "正在回传桌面端…";
+          continueStatus.className = "auth-status-line is-ok";
+        }
+        void sendSessionToDesktop(cachedSession).catch(function (err) {
+          console.warn("[desktop-login] callback failed:", err);
+          continueBtn.disabled = false;
+          if (continueStatus) {
+            continueStatus.textContent = "";
+            continueStatus.className = "auth-status-line";
+          }
+          if (continueError) {
+            continueError.textContent = localizeAuthError(
+              err,
+              "桌面端登录回调失败，请回到 Cancri Code 重新发起登录",
+            );
+          }
+        });
+      });
+
+      switchAccountBtn?.addEventListener("click", function () {
+        switchAccountBtn.disabled = true;
+        void supabase.auth
+          .signOut({ scope: "local" })
+          .catch(function (err) {
+            console.warn("[desktop-login] signOut failed:", err);
+          })
+          .finally(function () {
+            switchAccountBtn.disabled = false;
+            showEmailForm();
+            emailInput.value = "";
+            emailInput.focus();
+          });
+      });
 
       async function sendOtp() {
         const email = emailInput.value.trim();

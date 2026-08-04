@@ -138,7 +138,7 @@
 
             articleDataPromise = new Promise((resolve, reject) => {
                 const existingScript = Array.from(document.scripts).find((script) => {
-                    const src = script.getAttribute('src') || '';
+                    const src = (script.getAttribute('src') || '').split('?')[0];
                     return src === 'js/article.js' || src.endsWith('/js/article.js');
                 });
 

@@ -23,7 +23,8 @@
       title: "CancriCode",
       desc: "用自然语言描述需求，在 IDE 里构建、调试与交付。",
       imgKey: 1,
-      href: "./code/",
+      // chat/code/ 目录不存在（404）；与 index.html 下载入口一致改指网盘（提取码: Nexu）
+      href: "https://pan.baidu.com/s/1Q9mm9CnwjtB0tlusgaYlSw",
     },
     {
       title: "Microsoft Office",
@@ -123,7 +124,9 @@
     // 2026-06-25：阈值从 <=0 提前到 <10（WALLET_LOW_THRESHOLD），低余额即黄色预警。
     if (snap.billingMode === "wallet_v3") {
       var balance = Number(snap.walletBalance);
-      if (balance !== null && balance < WALLET_LOW_THRESHOLD) {
+      // snap.walletBalance 可能为 null（wallet_v3 响应缺 data.wallet 时），
+      // Number(null)===0 会误触发"余额耗尽"红色警报，须先排除。
+      if (snap.walletBalance != null && balance < WALLET_LOW_THRESHOLD) {
         return {
           kind: balance <= 0 ? "wallet_empty" : "wallet_low",
           tier: "wallet",
@@ -376,9 +379,9 @@
         '<a href="' +
         escapeHtml(card.href) +
         '" target="_blank" rel="noopener noreferrer" class="claude-upgrade-card group">' +
-        '<img alt="" class="claude-upgrade-card-img" src="' +
-        escapeHtml(src) +
-        '">' +
+        (src
+          ? '<img alt="" class="claude-upgrade-card-img" src="' + escapeHtml(src) + '">'
+          : '') +
         '<div class="claude-upgrade-card-text">' +
         '<span class="claude-upgrade-card-title">' +
         escapeHtml(card.title) +

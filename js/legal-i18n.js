@@ -206,7 +206,7 @@
             <p>The meanings of relevant terms in this Policy are as follows:</p>
             <ul>
                 <li><strong>Personal information</strong>: information relating to an identified or identifiable natural person recorded in electronic or other form, excluding information after anonymization.</li>
-                <li><strong>Sensitive personal information</strong>: personal information that, once disclosed or used unlawfully, is likely to harm the dignity of a natural person or endanger personal or property safety, including biometric, religious belief, specific identity, medical health, financial account, and行踪轨迹 (location trail) information.</li>
+                <li><strong>Sensitive personal information</strong>: personal information that, once disclosed or used unlawfully, is likely to harm the dignity of a natural person or endanger personal or property safety, including biometric, religious belief, specific identity, medical health, financial account, and location-trail information.</li>
                 <li><strong>Processing</strong>: includes the collection, storage, use, processing, transmission, provision, disclosure and deletion of personal information.</li>
                 <li><strong>Personal information controller</strong>: an organization or individual that independently decides the purposes and means of processing.</li>
                 <li><strong>Processor</strong>: an organization or individual that processes personal information on behalf of and under the instructions of a controller.</li>

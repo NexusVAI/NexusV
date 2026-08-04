@@ -545,7 +545,7 @@ const articleData = {
             readTime: '10 min read',
             paragraphs: [
                 'Today, we officially release TACTFR 5.6.0. As the core law enforcement simulation framework on the GTA5 Enhanced Edition platform, this update represents another significant evolution in our mission to build a highly open, complex, and realistic virtual law enforcement environment.',
-                'Since the complete底层代码重构 in version 5.0.0, our goal has been consistent: transforming monotonous linear script commands into dynamic event systems with "emergence." In version 5.6, we have not only significantly reduced performance overhead but also expanded the system\'s capability boundaries by introducing entirely new autonomous tactical entities and physical interaction mechanisms.',
+                'Since the complete low-level code refactor in version 5.0.0, our goal has been consistent: transforming monotonous linear script commands into dynamic event systems with "emergence." In version 5.6, we have not only significantly reduced performance overhead but also expanded the system\'s capability boundaries by introducing entirely new autonomous tactical entities and physical interaction mechanisms.',
                 'Natural Extension of Tactical Capabilities',
                 'In complex field environments, law enforcement officers often need smarter assistance and more dimensional control. Version 5.6 achieves core breakthroughs in this area.',
                 'K-9 Autonomous Tactical Dog System: Intention-Based Dynamic Response',
@@ -606,7 +606,7 @@ const articleData = {
                 'Beta.2 introduces a brand new story mission framework. We have built a layered story module that supports complete mission lifecycle management. The dialogue system now features typewriter effects, character tone coloring, player choice branches, and trust tracking, providing a solid foundation for immersive storytelling.',
                 'The bank heist chapter has been redesigned from scratch, forming a complete narrative chain from dispatch response, on-scene dialogue, standoff deadlock, to dual suspect pursuit, arrest, and post-incident handling. We added cinematic opening shots, scene unit dispatch, and dynamic environmental interactions, making the mission experience more vivid.',
                 'Arrest & Law Enforcement System',
-                'We重构了逮捕序列系统，引入了七阶段流程（准备-接近-制服-等待-上铐-搜身-结束），随机选择四种动画变体，并配备了四组摄像机视角（侧面中景、骨骼跟随、肩后跟随、样条轨道）。慢动作效果在关键时刻增强戏剧张力。',
+                'We rebuilt the arrest sequence system with a seven-stage flow (prepare, approach, subdue, wait, cuff, search, finish), four randomly selected animation variants, and four camera rigs (side medium shot, bone-follow, over-the-shoulder, and spline track). Slow-motion effects heighten the drama at key moments.',
                 'The officer squad system now perfectly supports consecutive dual-suspect arrests. When the first suspect is subdued, the squad automatically locks onto the next unarmed suspect and continues the arrest chain without player intervention. Pursuit, approach, vehicle exit, and cuffing reliability have been significantly improved.',
                 'Terminal & User Interface',
                 'The police terminal UI has been completely redesigned. We adopted a deeper background tone, brighter panel divisions, and subdivided the right panel into three areas: suspect information, risk assessment, and tactical suggestions. Semi-transparent blue highlights and layered text tones improve readability.',
@@ -630,7 +630,7 @@ const articleData = {
             category: '产品',
             readTime: '14 分钟阅读',
             paragraphs: [
-                '摘要：今天我们发布 **TACTFR 6.0.0 Beta.2.7**——在 Beta.2 故事任务与七阶段逮捕管线之上，本版把嫌疑人行为、交付语义、双目标押送、UI 统一主题与 legacy 链路 Officer AI 全部推到可玩状态。版本号 <code>6.0.2.7</code>（信息版本 <code>TACTFR-6.0.0-BETA-2.7</code>），Release|x64 编译通过，QQ 群 1061632354。',
+                '摘要：今天我们发布 <strong>TACTFR 6.0.0 Beta.2.7</strong>——在 Beta.2 故事任务与七阶段逮捕管线之上，本版把嫌疑人行为、交付语义、双目标押送、UI 统一主题与 legacy 链路 Officer AI 全部推到可玩状态。版本号 <code>6.0.2.7</code>（信息版本 <code>TACTFR-6.0.0-BETA-2.7</code>），Release|x64 编译通过，QQ 群 1061632354。',
                 '<strong>从 Beta.2 到 Beta.2.7：我们修了什么</strong>',
                 'Beta.2 奠定了 6.0 的骨架：分层故事任务（银行抢劫完整叙事链）、七阶段电影化逮捕、警官小队连续双嫌逮捕、警察终端重绘，以及 PullOver / Patrol 纯 V6 战术切片。Beta.2.7 不再扩架构边界，而是把玩家能感知到的断裂点一条条焊死——嫌疑人刷不出来、双车上车不同步、交付后仍显示成功、逮捕镜头穿地、银行警车瞬移、菜单配色各写各的。',
                 '<strong>嫌疑人行为：更像 GTA6 时刻</strong>',
@@ -672,7 +672,7 @@ const articleData = {
             category: 'Product',
             readTime: '14 min read',
             paragraphs: [
-                'Abstract: Today we ship **TACTFR 6.0.0 Beta.2.7** — building on Beta.2 story missions and the seven-stage arrest pipeline, this release hardens suspect behavior, delivery semantics, dual-target escort, unified UI theming, and legacy-path Officer AI into a playable state. Version <code>6.0.2.7</code> (<code>TACTFR-6.0.0-BETA-2.7</code>), Release|x64 clean build. QQ group 1061632354.',
+                'Abstract: Today we ship <strong>TACTFR 6.0.0 Beta.2.7</strong> — building on Beta.2 story missions and the seven-stage arrest pipeline, this release hardens suspect behavior, delivery semantics, dual-target escort, unified UI theming, and legacy-path Officer AI into a playable state. Version <code>6.0.2.7</code> (<code>TACTFR-6.0.0-BETA-2.7</code>), Release|x64 clean build. QQ group 1061632354.',
                 '<strong>From Beta.2 to Beta.2.7</strong>',
                 'Beta.2 laid the 6.0 skeleton: layered story missions (full bank heist arc), cinematic seven-stage arrests, officer-squad consecutive dual-suspect cuffs, terminal redesign, and pure-V6 PullOver / Patrol slices. Beta.2.7 stops expanding architecture and welds every player-visible fracture — suspects failing to spawn, dual boarding desync, false “successful delivery”, arrest camera clipping underground, bank police teleporting, and menus each with their own color palette.',
                 '<strong>Suspect behavior: GTA6 moments</strong>',
@@ -709,7 +709,7 @@ const articleData = {
             category: '产品',
             readTime: '14 分钟阅读',
             paragraphs: [
-                '摘要：今天我们发布 **TACTFR 6.0.0 Beta.2.8**。本版本是在 Beta.2.7 可玩性打磨基础上的又一次深度整备——我们基于 4 份全链路架构审计报告，对 legacy 主链路、案件剧情、嫌疑人状态、V6 AI 进行了系统性修复，并顺手修掉了那个“补发警车显示没钱但钱包里有钱”的现金 UI bug。版本号 <code>6.0.2.8</code>（信息版本 <code>TACTFR-6.0.0-BETA-2.8</code>），Release|x64 编译通过，QQ 群 1061632354。',
+                '摘要：今天我们发布 <strong>TACTFR 6.0.0 Beta.2.8</strong>。本版本是在 Beta.2.7 可玩性打磨基础上的又一次深度整备——我们基于 4 份全链路架构审计报告，对 legacy 主链路、案件剧情、嫌疑人状态、V6 AI 进行了系统性修复，并顺手修掉了那个“补发警车显示没钱但钱包里有钱”的现金 UI bug。版本号 <code>6.0.2.8</code>（信息版本 <code>TACTFR-6.0.0-BETA-2.8</code>），Release|x64 编译通过，QQ 群 1061632354。',
                 '<strong>从 Beta.2.7 到 Beta.2.8：不再只是修 bug，而是补结构性短板</strong>',
                 'Beta.2.7 把“能玩”做到了。Beta.2.8 回到架构层面：把四条主链路拉出来重新审计——EFCore/V6 边界、案件与剧情、嫌疑人全生命周期、AI 异步与调度。结果是 60+ 个审计点、20 个分级问题、以及 4 个 P0。本版集中解决其中会导致崩溃、剧情卡死、状态覆盖、配置漂移的 P0/P1 问题。',
                 '<strong>生命周期与 V6 边界：默认统一回 legacy</strong>',
@@ -742,7 +742,7 @@ const articleData = {
             category: 'Product',
             readTime: '14 min read',
             paragraphs: [
-                'Abstract: Today we release **TACTFR 6.0.0 Beta.2.8**. Building on Beta.2.7\'s playability polish, this version deepens architectural integrity—four full-chain audits (legacy/V6 boundary, case/story, suspect lifecycle, V6 AI) drove systematic fixes, plus the in-game cash UI bug where police car bonuses showed no money while the wallet actually had it. Version <code>6.0.2.8</code> (<code>TACTFR-6.0.0-BETA-2.8</code>), Release|x64 clean build. QQ group 1061632354.',
+                'Abstract: Today we release <strong>TACTFR 6.0.0 Beta.2.8</strong>. Building on Beta.2.7\'s playability polish, this version deepens architectural integrity—four full-chain audits (legacy/V6 boundary, case/story, suspect lifecycle, V6 AI) drove systematic fixes, plus the in-game cash UI bug where police car bonuses showed no money while the wallet actually had it. Version <code>6.0.2.8</code> (<code>TACTFR-6.0.0-BETA-2.8</code>), Release|x64 clean build. QQ group 1061632354.',
                 '<strong>From Beta.2.7 to Beta.2.8: fixing structural debt, not just bugs</strong>',
                 'Beta.2.7 made it playable. Beta.2.8 returns to architecture: we re-audited four main chains—EFCore/V6 boundary, cases and story, suspect full lifecycle, and AI async/scheduling. The result: 60+ audit points, 20 graded issues, 4 P0s. This release focuses on the P0/P1 issues that cause crashes, story deadlocks, state overwrites, and config drift.',
                 '<strong>Lifecycle and V6 boundary: defaults unified to legacy</strong>',
@@ -779,7 +779,7 @@ const articleData = {
             category: '产品',
             readTime: '12 分钟阅读',
             paragraphs: [
-                '今天，我们隆重推出 **SentienceV4.1 Omni 正式版**——GTA V 沉浸式 AI NPC 交互体验的全新里程碑。',
+                '今天，我们隆重推出 <strong>SentienceV4.1 Omni 正式版</strong>——GTA V 沉浸式 AI NPC 交互体验的全新里程碑。',
                 '从 Beta 到正式版，我们不仅仅是在修复 bug，而是在重新定义玩家与虚拟世界的互动方式。SentienceV4.1 Omni 代表着更稳定的性能、更丰富的自定义选项，以及更开放的生态。',
                 '核心亮点',
                 '🚀 全新 NexusVLauncher',
@@ -835,7 +835,7 @@ const articleData = {
             category: 'Product',
             readTime: '12 min read',
             paragraphs: [
-                'Today, we proudly present **SentienceV4.1 Omni Official Release**—a new milestone in immersive AI NPC interaction for GTA V.',
+                'Today, we proudly present <strong>SentienceV4.1 Omni Official Release</strong>—a new milestone in immersive AI NPC interaction for GTA V.',
                 'From Beta to Official Release, we are not just fixing bugs, but redefining how players interact with the virtual world. SentienceV4.1 Omni represents more stable performance, richer customization options, and a more open ecosystem.',
                 'Key Highlights',
                 '🚀 All-New NexusVLauncher',
@@ -895,7 +895,7 @@ const articleData = {
             category: '产品',
             readTime: '18 分钟阅读',
             paragraphs: [
-                '摘要：今天我们发布 **SentienceV5.2 Mens 正式版**——GTA V 沉浸式 AI NPC 模组的下一代架构。V5.2 在 V4.1 Omni 的对话引擎之上，引入了完整的认知栈：五层记忆、五轴人格向量、十二意图效用评分、目击传播与三跳流言网络。模组遵循 MIT 许可证完全开源，SDK 1.0 插件无需重编译即可加载，并为开发者预留了意图注册、场景 JSON、插件 ABI 等扩展接口。',
+                '摘要：今天我们发布 <strong>SentienceV5.2 Mens 正式版</strong>——GTA V 沉浸式 AI NPC 模组的下一代架构。V5.2 在 V4.1 Omni 的对话引擎之上，引入了完整的认知栈：五层记忆、五轴人格向量、十二意图效用评分、目击传播与三跳流言网络。模组遵循 MIT 许可证完全开源，SDK 1.0 插件无需重编译即可加载，并为开发者预留了意图注册、场景 JSON、插件 ABI 等扩展接口。',
                 '<strong>从 Omni 到 Mens：两代架构的分野</strong>',
                 'SentienceV4.1 Omni 正式版解决的是"能不能稳定对话"——多服务商 API、本地与云端 LLM 切换、TTS/STT 管线、启动器体验、OpenAI 兼容接口。它是一个成熟的对话层产品，让洛圣都的 NPC 能够听懂你说的话、用合适的声音回答你。',
                 'SentienceV5.2 Mens 解决的是"NPC 是否像一个有记忆、有性格、有社会关系的个体"——这是次世代 Mod 的核心命题。V5.2 在 V5.1 Animus 插件 SDK 与 V5/V5.1 对话管线之上叠加了三层全新子系统（认知 Cognition、记忆 Memory、社会/具身 Social/Embodiment），与既有存档和插件完全向后兼容。',
@@ -942,7 +942,7 @@ const articleData = {
             category: 'Product',
             readTime: '18 min read',
             paragraphs: [
-                'Abstract: Today we release **SentienceV5.2 Mens Official** — the next-generation architecture for immersive AI NPC mods in GTA V. V5.2 layers a full cognitive stack on top of the V4.1 Omni dialogue engine: five-layer memory, five-axis personality vectors, twelve-intent utility scoring, witness propagation, and a three-hop gossip network. The mod is fully open source under MIT, SDK 1.0 plugins load without recompilation, and developers get extension points for intent registration, scenario JSON, and the plugin ABI.',
+                'Abstract: Today we release <strong>SentienceV5.2 Mens Official</strong> — the next-generation architecture for immersive AI NPC mods in GTA V. V5.2 layers a full cognitive stack on top of the V4.1 Omni dialogue engine: five-layer memory, five-axis personality vectors, twelve-intent utility scoring, witness propagation, and a three-hop gossip network. The mod is fully open source under MIT, SDK 1.0 plugins load without recompilation, and developers get extension points for intent registration, scenario JSON, and the plugin ABI.',
                 '<strong>From Omni to Mens: two generations</strong>',
                 'SentienceV4.1 Omni solved "can we talk stably" — multi-provider APIs, local/cloud LLM switching, TTS/STT pipelines, launcher UX, OpenAI-compatible endpoints. It is a mature dialogue product that lets Los Santos NPCs hear you and answer with the right voice.',
                 'SentienceV5.2 Mens solves "does this NPC feel like someone with memory, personality, and social ties" — the defining question of a next-gen mod. V5.2 stacks three new subsystems (Cognition, Memory, Social/Embodiment) on the V5.1 Animus plugin SDK and legacy dialogue pipeline, fully backward-compatible with existing saves and plugins.',
@@ -1179,7 +1179,7 @@ const articleData = {
             category: '产品',
             readTime: '14 分钟阅读',
             paragraphs: [
-                '摘要：今天我们正式介绍 **Cancri Code**——NexusV 团队打造的本地 AI 编程助理。它是一款基于 Tauri 2 的桌面 IDE，采用组装主义架构（Monaco Editor、xterm.js、tree-sitter、ripgrep 等独立开源组件），通过 Agentic Tool-Calling 范式让 AI 能够自主读取、编辑、搜索和执行你的代码库。Cancri Code 接入 NexusV 自研 chat-gateway，在统一账户体系下使用 40+ 顶尖大语言模型，当前版本 v1.5.0。',
+                '摘要：今天我们正式介绍 <strong>Cancri Code</strong>——NexusV 团队打造的本地 AI 编程助理。它是一款基于 Tauri 2 的桌面 IDE，采用组装主义架构（Monaco Editor、xterm.js、tree-sitter、ripgrep 等独立开源组件），通过 Agentic Tool-Calling 范式让 AI 能够自主读取、编辑、搜索和执行你的代码库。Cancri Code 接入 NexusV 自研 chat-gateway，在统一账户体系下使用 40+ 顶尖大语言模型，当前版本 v1.5.0。',
                 '<strong>为什么需要 Cancri Code</strong>',
                 '通用 AI 聊天窗口擅长回答孤立的问题，但在真实工程场景中，开发者需要的是：理解整个仓库上下文、跨文件重构、先搜索再修改、运行命令验证结果。Cancri Code 的定位不是"另一个聊天框"，而是坐在你项目旁边的 AI 结对程序员——它打开你的文件夹，看见你的文件树，在 Monaco 编辑器里与你共读同一份代码。',
                 '与 Fork 整个 VS Code 不同，Cancri Code 走组装主义路线：每个零件从开源世界独立选取，UI、快捷键、插件系统与品牌 100% 自主。这意味着我们不被 upstream 绑架，却能复用经过验证的编辑器内核与终端组件。',
@@ -1210,7 +1210,7 @@ const articleData = {
             category: 'Product',
             readTime: '14 min read',
             paragraphs: [
-                'Abstract: Today we introduce **Cancri Code** — NexusV\'s local AI programming assistant. Built on Tauri 2 with an assembly-architecture IDE (Monaco Editor, xterm.js, tree-sitter, ripgrep as independent open-source parts), it uses an Agentic Tool-Calling paradigm so AI can autonomously read, edit, search, and execute across your codebase. Cancri Code connects to the NexusV chat-gateway under a unified account, giving access to 40+ top-tier LLMs. Current version: v1.5.0.',
+                'Abstract: Today we introduce <strong>Cancri Code</strong> — NexusV\'s local AI programming assistant. Built on Tauri 2 with an assembly-architecture IDE (Monaco Editor, xterm.js, tree-sitter, ripgrep as independent open-source parts), it uses an Agentic Tool-Calling paradigm so AI can autonomously read, edit, search, and execute across your codebase. Cancri Code connects to the NexusV chat-gateway under a unified account, giving access to 40+ top-tier LLMs. Current version: v1.5.0.',
                 '<strong>Why Cancri Code</strong>',
                 'Generic AI chat excels at isolated questions, but real engineering needs whole-repo context, cross-file refactors, search-then-edit workflows, and command execution to verify results. Cancri Code is not "another chat box" — it is an AI pair programmer sitting beside your project: it opens your folder, sees your file tree, and reads the same code as you in Monaco.',
                 'Unlike forking VS Code, Cancri Code assembles independent open-source parts. UI, shortcuts, plugin system, and brand are 100% ours — no upstream lock-in, with battle-tested editor and terminal cores.',
@@ -2450,7 +2450,7 @@ const ARTICLE_ALLOWED_TAGS = new Set(['A', 'BR', 'CODE', 'EM', 'I', 'STRONG', 'B
 function isSafeArticleHref(href) {
     try {
         const url = new URL(href, window.location.href);
-        return url.origin === window.location.origin && /\/article\.html$/i.test(url.pathname);
+        return url.origin === window.location.origin && (url.protocol === 'http:' || url.protocol === 'https:');
     } catch {
         return false;
     }
