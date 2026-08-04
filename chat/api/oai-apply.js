@@ -9,6 +9,11 @@
   var LOGIN_URL = "chat/index.html";
   var sb = null;
   function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
 
   function getSupabase() {
     if (sb) return sb;
@@ -101,8 +106,9 @@
       box.innerHTML =
         '<div class="cs-state"><div>最近的工单</div>' +
         tickets.slice(0, 5).map(function (t) {
-          return '<div style="margin-top:8px"><span class="cs-status-badge status-' + t.status + '">' +
-            (statusText[t.status] || t.status) + '</span>' +
+          var st = esc(String(t.status || ""));
+          return '<div style="margin-top:8px"><span class="cs-status-badge status-' + st + '">' +
+            esc(statusText[t.status] || st) + '</span>' +
             '<span style="color:var(--tertiary-text);font-size:12px;margin-left:8px">' +
             new Date(t.created_at).toLocaleString("zh-CN") + "</span></div>";
         }).join("") +

@@ -10,6 +10,12 @@ const GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 let currentUser = null;
 let sb = null;
 
+const esc = (s) =>
+  String(s == null ? "" : s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
+
 function getSupabase() {
   if (sb) return sb;
   if (!window.supabase || !window.__SUPABASE_URL__ || !window.__SUPABASE_ANON_KEY__) {
@@ -113,10 +119,11 @@ async function checkExisting() {
     const t = tickets[0];
     const box = document.getElementById("existing-status");
     box.style.display = "block";
-    const statusText = { pending: "待处理", approved: "已处理", rejected: "已关闭" }[t.status] || t.status;
+    const st = esc(String(t.status || ""));
+    const statusText = esc({ pending: "待处理", approved: "已处理", rejected: "已关闭" }[t.status] || st);
     box.innerHTML =
       '<div class="status-box"><div>最近工单：<span class="status-badge status-' +
-      t.status + '">' + statusText +
+      st + '">' + statusText +
       '</span></div><div style="color: var(--text-faint); font-size:12px; margin-top:6px">提交时间：' +
       new Date(t.created_at).toLocaleString("zh-CN") +
       "</div></div>";
