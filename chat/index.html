@@ -950,8 +950,7 @@
                              指向 ./code/ 桌面客户端，配 animate-ping 红点提示新功能。 -->
                         <a class="account-download-btn" id="accountDownloadBtn"
                            href="https://pan.baidu.com/s/1Q9mm9CnwjtB0tlusgaYlSw" target="_blank" rel="noopener noreferrer"
-                           aria-label="下载 Cancri Chat APK" title="下载 Cancri Chat APK（提取码: Nexu）"
-                           onclick="event.stopPropagation();">
+                           aria-label="下载 Cancri Chat APK" title="下载 Cancri Chat APK（提取码: Nexu）">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                 <polyline points="7 10 12 15 17 10"/>
@@ -1863,6 +1862,7 @@
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="privacy"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe102;</span><span class="claude-snav-label">隐私</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="billing"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe058;</span><span class="claude-snav-label">账单</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="quota"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe0fd;</span><span class="claude-snav-label">额度</span></button></li>
+                                    <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="usage"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe030;</span><span class="claude-snav-label">用量</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="invite"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe08c;</span><span class="claude-snav-label">邀请</span></button></li>
                                     <li class="claude-snav-li"><button class="claude-snav-item" type="button" data-snav="capability"><span class="claude-snav-icon claude-anthropicon" aria-hidden="true">&#xe098;</span><span class="claude-snav-label">能力</span></button></li>
                                     
@@ -1893,7 +1893,7 @@
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
-                                        <span class="claude-form-label">什么是您喜欢的作品？</span>
+                                        <span class="claude-form-label">哪项最能描述您的工作？</span>
                                         <div class="claude-form-control">
                                             <select class="claude-form-select" id="claudeFormProfession">
                                                 <option value="">其他</option>
@@ -2109,7 +2109,7 @@
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
-                                        <span class="claude-form-label">剩余额度</span>
+                                        <span class="claude-form-label">已用额度</span>
                                         <div class="claude-form-control">
                                             <span class="claude-form-label-strong" id="claudeQuotaRemaining" style="font-size:18px">¥—</span>
                                         </div>
@@ -2126,6 +2126,24 @@
                                         <div class="claude-form-control">
                                             <a class="claude-secondary-btn" href="./pricing.html" style="text-decoration:none">管理套餐</a>
                                         </div>
+                                    </div>
+                                </div>
+                                <!-- 用量 section：每次调用的模型、时间、token、扣费、状态（claude_ui.js loadClaudeUsagePanel 注入） -->
+                                <div class="claude-settings-section claude-snav-target" data-snav-target="usage">
+                                    <h2 class="claude-settings-h2">用量明细</h2>
+                                    <div class="claude-form-row" id="claudeUsageSummary" style="display:none;">
+                                        <div class="claude-form-stacked" style="width:100%">
+                                            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+                                                <span class="claude-form-label-strong" id="claudeUsagePlanName">—</span>
+                                                <span class="claude-form-help" id="claudeUsagePlanMeta">—</span>
+                                            </div>
+                                            <div style="height:8px;border-radius:999px;background:var(--border-default,rgba(128,128,128,.2));overflow:hidden">
+                                                <div id="claudeUsagePlanBar" style="height:100%;width:0%;border-radius:999px;background:var(--accent,#c96442);transition:width .3s"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="claudeUsageList" class="claude-usage-list">
+                                        <p class="claude-billing-empty">点击左侧「用量」加载明细。</p>
                                     </div>
                                 </div>
                                 <!-- 邀请 section：链接 / 访问量 / 流水 / 日志 -->
@@ -2298,7 +2316,7 @@
                                 </svg>
                             </div>
                             <div class="claude-projects-empty-title">想开始一个项目吗？</div>
-                            <div class="claude-projects-empty-desc">上传材料，设置自定义说明，并存一个专同的项目对话。</div>
+                            <div class="claude-projects-empty-desc">上传材料、设置自定义说明，并保存专属的项目对话。</div>
                             <button class="claude-primary-btn" type="button" id="claudeProjectsEmptyNewBtn">+ 新项目</button>
                         </div>
                     </div>
@@ -3161,13 +3179,14 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./cancri_chat.js?v=20260724-invite-fix"></script>
+        <script defer src="./glm52_fp8_launch_modal.js?v=20260815-glm52-fp8"></script>
+        <script defer src="./cancri_chat.js?v=20260802-paid-badge-go"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=20260724-invite-fix"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
         <script defer src="./celebrate_invite_capture.js?v=20260724-invite-fix"></script>
-        <script defer src="./claude_ui.js?v=20260724-invite-fix"></script>
+        <script defer src="./claude_ui.js?v=20260730-usage-panel"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260625-wallet-warn"></script>

@@ -26,7 +26,7 @@
     { key: "descriptions", href: "./admin_descriptions.html", label: "模型描述" },
     { key: "appeals",      href: "./admin_appeals.html",     label: "申诉" },
     { key: "stories",      href: "./admin_stories.html",     label: "满月故事" },
-    { key: "api_apply",    href: "./admin.html",             label: "API 申请" },
+    { key: "api_apply",    href: "./admin.html",             label: "工单/反馈" },
   ];
 
   function renderAdminNav() {

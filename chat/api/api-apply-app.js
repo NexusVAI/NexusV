@@ -93,7 +93,7 @@ async function init() {
     document.getElementById("apply-section").style.display = "block";
     await checkExisting();
   } catch (e) {
-    console.error("api_apply init:", e);
+    console.error("contact_ticket init:", e);
     showLoadError(
       e && e.message === "supabase_not_loaded"
         ? "依赖脚本加载失败，请检查网络后刷新页面。"
@@ -102,48 +102,45 @@ async function init() {
   }
 }
 
+// 2026-08-04：申请制取消，本页改为工单/反馈；只展示 kind='contact' 的工单，
+// 表单不再隐藏（可提多张，上限由后端控制）。创建 Key 无需审核，常驻入口。
 async function checkExisting() {
   try {
     const data = await callGateway("api_my_keys", {});
-    if (data.applications && data.applications.length > 0) {
-      const app = data.applications[0];
-      const box = document.getElementById("existing-status");
-      box.style.display = "block";
-      const badgeClass = "status-" + app.status;
-      const statusText = { pending: "审核中", approved: "已通过", rejected: "已拒绝" }[app.status] || app.status;
-      box.innerHTML =
-        '<div class="status-box"><div>申请状态：<span class="status-badge ' +
-        badgeClass +
-        '">' +
-        statusText +
-        '</span></div><div style="color: var(--text-faint); font-size:12px; margin-top:6px">申请时间：' +
-        new Date(app.created_at).toLocaleString("zh-CN") +
-        "</div></div>";
-      document.getElementById("apply-form").style.display = "none";
-      if (app.status === "approved") {
-        document.getElementById("key-section").style.display = "block";
-      }
-    }
+    document.getElementById("key-section").style.display = "block";
+    const tickets = (data.applications || []).filter((a) => a.kind === "contact");
+    if (tickets.length === 0) return;
+    const t = tickets[0];
+    const box = document.getElementById("existing-status");
+    box.style.display = "block";
+    const statusText = { pending: "待处理", approved: "已处理", rejected: "已关闭" }[t.status] || t.status;
+    box.innerHTML =
+      '<div class="status-box"><div>最近工单：<span class="status-badge status-' +
+      t.status + '">' + statusText +
+      '</span></div><div style="color: var(--text-faint); font-size:12px; margin-top:6px">提交时间：' +
+      new Date(t.created_at).toLocaleString("zh-CN") +
+      "</div></div>";
   } catch (e) {
     console.error("checkExisting:", e);
-    showMsg("读取申请状态失败，请稍后刷新。", true);
+    showMsg("读取工单状态失败，请稍后刷新。", true);
   }
 }
 
-async function submitApplication() {
-  const purpose = document.getElementById("purpose").value.trim();
-  if (!purpose) { showMsg("请填写用途说明", true); return; }
+async function submitTicket() {
+  const content = document.getElementById("purpose").value.trim();
+  if (content.length < 2) { showMsg("请填写工单内容（至少 2 个字符）", true); return; }
   const btn = document.getElementById("submit-btn");
   btn.disabled = true; btn.textContent = "提交中...";
   try {
-    await callGateway("api_apply", { purpose });
-    showMsg("申请已提交，请等待审核。", false);
+    await callGateway("contact_ticket", { content });
+    showMsg("已提交，我们会通过注册邮箱回复你。", false);
+    document.getElementById("purpose").value = "";
     setTimeout(() => checkExisting(), 1000);
   } catch (e) {
     const m = (e.body && (e.body.message || e.body.error)) || e.message || "提交失败";
     showMsg(m, true);
   }
-  btn.disabled = false; btn.textContent = "提交申请";
+  btn.disabled = false; btn.textContent = "提交工单";
 }
 
 function showMsg(text, isErr) {
@@ -161,7 +158,7 @@ function bindUI() {
   }
   const submitBtn = document.getElementById("submit-btn");
   if (submitBtn) {
-    submitBtn.addEventListener("click", submitApplication);
+    submitBtn.addEventListener("click", submitTicket);
   }
   const manageKeysBtn = document.getElementById("manage-keys-btn");
   if (manageKeysBtn) {

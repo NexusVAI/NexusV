@@ -106,13 +106,7 @@ async function loadData() {
     availableModels = models;
     populateModelSelects();
     const data = await resp.json();
-    const hasApproved =
-        data.applications &&
-        data.applications.some((a) => a.status === "approved");
-    if (!hasApproved) {
-        document.getElementById("no-approval").style.display = "block";
-        return;
-    }
+    // 2026-08-04：API 申请审核已取消，登录用户直接进入 Key 管理（先用后封）。
     document.getElementById("main-section").style.display = "block";
     currentKeys = data.keys || [];
     renderKeys();
@@ -1025,12 +1019,6 @@ async function resetKeyUsage() {
 // 绑定 UI 监听器（替代原 inline onclick="..." 属性，因为 CSP 删除 'unsafe-inline'
 // 后这些 inline handler 会被浏览器拒绝执行）。
 function bindUI() {
-    const applyBtn = document.getElementById("apply-redirect-btn");
-    if (applyBtn) {
-        applyBtn.addEventListener("click", () => {
-            location.href = "./api_apply.html";
-        });
-    }
     const genBtn = document.getElementById("generate-key-btn");
     if (genBtn) {
         genBtn.addEventListener("click", generateKey);
