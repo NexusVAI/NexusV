@@ -7437,6 +7437,16 @@ html[data-theme="blue"] {
     pointer-events: none;
     z-index: 5;
     display: none;
+    opacity: 1;
+    transition: opacity 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.chat-nav.is-idle {
+    opacity: 0.18;
+}
+.chat-nav:hover,
+.chat-nav.is-awake {
+    opacity: 1;
+    transition: opacity 0.22s ease-out;
 }
 
 #homeView.chatting .chat-nav:not([hidden]) {
@@ -7556,22 +7566,29 @@ html[data-theme="blue"] {
 
 .chat-nav-item-tick {
     flex: 0 0 auto;
-    width: 16px;
+    width: 14px;
     height: 2px;
     border-radius: 2px;
     background: currentColor;
-    opacity: 0.55;
+    opacity: 0.5;
+    transform-origin: right center;
+    /* 默认回落：慢阻尼；悬停/选中覆盖为轻弹跳展开 */
     transition:
-        width 0.16s ease,
-        opacity 0.16s ease,
-        background 0.16s ease;
+        width 0.58s cubic-bezier(0.22, 0.61, 0.36, 1),
+        opacity 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+        background 0.35s ease;
 }
 
 .chat-nav-item:hover {
     color: var(--text-soft);
 }
 .chat-nav-item:hover .chat-nav-item-tick {
-    opacity: 0.9;
+    width: 26px;
+    opacity: 0.95;
+    transition:
+        width 0.34s cubic-bezier(0.34, 1.45, 0.64, 1),
+        opacity 0.18s ease-out,
+        background 0.2s ease;
 }
 
 .chat-nav-item.is-active {
@@ -7581,6 +7598,10 @@ html[data-theme="blue"] {
     width: 26px;
     opacity: 1;
     background: var(--accent);
+    transition:
+        width 0.34s cubic-bezier(0.34, 1.45, 0.64, 1),
+        opacity 0.18s ease-out,
+        background 0.2s ease;
 }
 
 @media (max-width: 820px) {

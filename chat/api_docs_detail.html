@@ -350,7 +350,7 @@ c-40 -92 -101 -234 -136 -317 -91 -211 -307 -710 -362 -835 -25 -58 -116 -268
             做 Key 正则校验的客户端推荐用 <code>/^cancri_sk_[A-Za-z0-9_-]{48}$/</code>。
           </p>
           <ol>
-            <li>到 <a href="./api_apply.html">申请页</a> 提交申请</li>
+            <li>注册并登录账号（无需申请审核）</li>
             <li>审核通过后到 <a href="./api_keys.html">Keys 管理页</a> 生成 Key</li>
             <li>把 Key 安全存好（生成后只显示一次）</li>
           </ol>
@@ -381,7 +381,7 @@ c-40 -92 -101 -234 -136 -317 -91 -211 -307 -710 -362 -835 -25 -58 -116 -268
           <h2>快速开始</h2>
           <p>三步接入：</p>
           <ol>
-            <li>到 <a href="./api_apply.html">申请页</a> 提交申请，审核通过后生成 <code>cancri_sk_xxx</code>。</li>
+            <li>注册并登录账号后，在 Keys 管理页直接生成 <code>cancri_sk_xxx</code>（无需申请审核）。</li>
             <li>查 <a href="./api_models.html">模型广场</a> 或调用 <code>GET /v1/models</code> 获取你想用的模型 ID。</li>
             <li>按你的 SDK 设置 Base URL 和 Key，发送第一条请求。</li>
           </ol>
@@ -525,7 +525,7 @@ r = client.chat.completions.create(
               对照 <a href="#errors">错误码</a> 与 <a href="#client-faq">客户端 FAQ</a> 排查。</li>
           </ol>
           <p>
-            尚未申请 API 访问？先到 <a href="./api_apply.html">申请页</a> 提交，审核通过后在
+            还没有 Key？注册登录后无需申请审核，直接在
             <a href="./api/console.html">控制台</a> 创建密钥。
           </p>
         </section>

@@ -1,8 +1,10 @@
-/* GLM-5.2 FP8 限时上线公告：chat 与 API 首页各展示一次，2026-08-10 结束。 */
+/* GLM-5.2 FP8 限时上线公告：chat 与 API 首页各展示一次，2026-08-15 结束。
+   END_AT 必须与后端访问期同日：cf-gateway/src/shared-catalog.ts 与
+   cf-modelscope-proxy/src/index.ts 的 MODEL_ACCESS_END_MS。 */
 (function () {
   "use strict";
 
-  var END_AT = new Date("2026-08-10T23:59:59+08:00").getTime();
+  var END_AT = new Date("2026-08-15T23:59:59+08:00").getTime();
   var SEEN_KEY = "nexusv_glm52_fp8_launch_v1";
   var MODEL_ID = "glm-5.2-fp8";
 
@@ -38,7 +40,7 @@
       : "./api_models.html#model-" + MODEL_ID;
   }
 
-  function applyUrl() {
+  function contactUrl() {
     return surface() === "api" ? "chat/api_apply.html" : "./api_apply.html";
   }
 
@@ -77,7 +79,7 @@
           '<p class="glm52-launch__eyebrow">NexusV AI · 新模型上线</p>' +
           '<h2 id="glm52-launch-title">部署在我们硬件上的<br />GLM-5.2 FP8 版本<sup>1</sup></h2>' +
           '<p class="glm52-launch__copy">即刻体验部署在 NexusV AI 硬件上的 GLM-5.2 FP8。</p>' +
-          '<p class="glm52-launch__note"><sup>1</sup> 在使用前，必须遵守我们的防滥用政策。请先前往 <a href="' + applyUrl() + '">API 使用权申请页</a>申请你的 API 使用权，或者只在 <a href="' + (name === "api" ? "chat/index.html" : "./index.html") + '">网页对话</a>中使用。</p>' +
+          '<p class="glm52-launch__note"><sup>1</sup> 在使用前，必须遵守我们的防滥用政策。注册后即可直接创建 API Key；有问题请到 <a href="' + contactUrl() + '">联系我们</a>提工单，或者只在 <a href="' + (name === "api" ? "chat/index.html" : "./index.html") + '">网页对话</a>中使用。</p>' +
           '<a class="glm52-launch__cta" href="' + modelsUrl() + '">即刻使用 →</a>' +
         '</div>' +
       '</section>';

@@ -2154,7 +2154,7 @@
 			if (!sub || typeof sub !== "object") return;
 			quotaState.tier = sub.tier === "paid" ? "paid" : "free";
 			const rawPlan = typeof sub.plan_code === "string" ? sub.plan_code : null;
-			quotaState.planCode = rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max" ? rawPlan : null;
+			quotaState.planCode = rawPlan === "go" || rawPlan === "plus" || rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max" ? rawPlan : null;
 			quotaState.isGrandfathered = Boolean(sub.is_grandfathered);
 		} catch (e) {}
 	}
@@ -2188,6 +2188,13 @@
 		const meta = getModelMeta(modelId);
 		return Boolean(meta && meta.proMaxOnly === true || PRO_MAX_GATE_IDS.has(modelId));
 	}
+	function isAnyPaidPlanCode(code) {
+		return code === "go" || code === "plus" || code === "pro" || code === "pro_plus" || code === "pro_max";
+	}
+	function normalizePlanCode(raw) {
+		if (typeof raw !== "string") return null;
+		return isAnyPaidPlanCode(raw) ? raw : null;
+	}
 	function getQuotaBlockReason(modelId) {
 		if (quotaState.billingMode === "plan_v4") {
 			const meta = getModelMeta(modelId);
@@ -2199,17 +2206,13 @@
 			if (quotaState.planV4Active === false) return "plan_required";
 			return null;
 		}
+		if (isAnyPaidPlanCode(quotaState.planCode)) return null;
 		if (isProMaxGateModel(modelId)) {
 			const planCode = quotaState.planCode;
 			if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
 		}
 		if (isProPlusGateModel(modelId)) {
-			const planCode = quotaState.planCode;
-			if (planCode !== null) {
-				const isProPlusOrAbove = planCode === "pro_plus" || planCode === "pro_max";
-				const isGrandfatheredPro = planCode === "pro" && quotaState.isGrandfathered;
-				if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
-			}
+			if (quotaState.planCode !== null) return "pro_plus_only";
 		}
 		if (quotaState.tier !== "free") return null;
 		if (isProPlusGateModel(modelId)) return "pro_plus_only";
@@ -2225,14 +2228,14 @@
 	}
 	function getQuotaBlockMessage(modelId) {
 		switch (getQuotaBlockReason(modelId)) {
-			case "plan_required": return "该模型需订阅套餐后使用（免费模型不受限）。前往定价页订阅套餐。";
-			case "pro_only": return "该模型仅向 Cancri Pro 及以上订阅用户开放，请升级或选择其他模型。";
-			case "pro_plus_only": return "该模型仅向 Cancri Pro+ 及以上订阅用户开放（Claude Opus / Gemini 3.1 Pro / 视频生成），请升级或选择其他模型。";
-			case "pro_max_only": return "该模型仅向 Cancri Pro Max 订阅用户开放，请升级或选择其他模型。";
-			case "pool_exhausted": return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
-			case "daily_limit": return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
-			case "token_window_5h_exceeded": return "5 小时内 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
-			case "token_window_week_exceeded": return "本周 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
+			case "plan_required": return "需要Go以上订阅。前往定价页订阅套餐（免费模型不受限）。";
+			case "pro_only": return "需要Go以上订阅，请升级或选择其他模型。";
+			case "pro_plus_only": return "需要Go以上订阅，请升级或选择其他模型。";
+			case "pro_max_only": return "需要Go以上订阅，请升级或选择其他模型。";
+			case "pool_exhausted": return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。订阅 Go 以上可获得专属月度额度。";
+			case "daily_limit": return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。订阅 Go 以上可获得专属月度额度。";
+			case "token_window_5h_exceeded": return "5 小时内 token 用量已达上限，请稍后再试。订阅 Go 以上可解除限制。";
+			case "token_window_week_exceeded": return "本周 token 用量已达上限，请稍后再试。订阅 Go 以上可解除限制。";
 			default: return "";
 		}
 	}
@@ -2267,8 +2270,7 @@
 		}).then((r) => r.ok ? r.json() : null).then((data) => {
 			if (data && data.ok) {
 				quotaState.tier = data.tier === "paid" ? "paid" : "free";
-				const rawPlan = typeof data.plan_code === "string" ? data.plan_code : null;
-				quotaState.planCode = rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max" ? rawPlan : null;
+				quotaState.planCode = normalizePlanCode(typeof data.plan_code === "string" ? data.plan_code : null);
 				quotaState.isGrandfathered = Boolean(data.is_grandfathered);
 				quotaState.freePoolRemaining = data.free_pool ? Number(data.free_pool.remaining) : null;
 				quotaState.dailyPaidRemaining = data.daily_paid ? Number(data.daily_paid.remaining) : null;
@@ -2293,7 +2295,11 @@
 				quotaState.billingMode = data.billing_mode === "plan_v4" || data.billing_mode === "wallet_v3" ? data.billing_mode : "quota_v2";
 				if (data.plan_v4 && typeof data.plan_v4 === "object") {
 					quotaState.planV4Active = data.plan_v4.active === true;
-					quotaState.planV4Code = typeof data.plan_v4.plan_code === "string" ? data.plan_v4.plan_code : null;
+					quotaState.planV4Code = normalizePlanCode(data.plan_v4.plan_code);
+					if (quotaState.planV4Active && quotaState.planV4Code) {
+						quotaState.planCode = quotaState.planV4Code;
+						quotaState.tier = "paid";
+					}
 				} else if (quotaState.billingMode === "plan_v4") {
 					quotaState.planV4Active = false;
 					quotaState.planV4Code = null;
