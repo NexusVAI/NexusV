@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN" class="dark" data-theme="dark">
 <head>
 <meta charset="utf-8">
@@ -55,7 +55,7 @@ body{font-family:anthropicSans,ui-sans-serif,system-ui,-apple-system,"Segoe UI",
 <body class="overflow-x-hidden">
 
 <header class="cshell-header">
-  <a href="./index.html" class="cshell-logo"><img src="../assets/oai.logo/nexusvai_developers_wordmark.svg" alt="NexusVAI Developers" height="24" /></a>
+  <a href="./index.html" class="cshell-logo"><img src="../assets/oai.logo/nexusvai_developers_wordmark.svg" alt="NexusVAI 开发者" height="24" /></a>
   <nav class="cshell-nav">
     <a href="./index.html">概览</a>
     <a href="../api_models.html" class="on">模型</a>
@@ -106,25 +106,25 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
   var MODELS = {
     'gpt-5.5': {
       name: 'GPT-5.5', id: 'gpt-5.5',
-      desc: 'A new class of intelligence for coding and professional work.',
+      desc: '专为编程与专业工作打造的全新智能模型。',
       inP: 5.99, outP: 30.99, longIn: 10.99, longOut: 49.99,
       snapshots: [['gpt-5.5', 'gpt-5.5-2026-04-23'], ['gpt-5.5-2026-04-23', 'gpt-5.5-2026-04-23']]
     },
     'gpt-5.6-sol': {
       name: 'GPT-5.6-Sol', id: 'gpt-5.6-sol',
-      desc: 'A new class of intelligence for coding and professional work.',
+      desc: '专为编程与专业工作打造的全新智能模型。',
       inP: 0.39, outP: 1.89,
       snapshots: [['gpt-5.6-sol', 'gpt-5.6-sol-0710'], ['gpt-5.6-sol-0710', 'gpt-5.6-sol-0710']]
     },
     'gpt-5.6-terra': {
       name: 'GPT-5.6-Terra', id: 'gpt-5.6-terra',
-      desc: 'A new class of intelligence for coding and professional work.',
+      desc: '专为编程与专业工作打造的全新智能模型。',
       inP: 0.19, outP: 0.99,
       snapshots: [['gpt-5.6-terra', 'gpt-5.6-terra']]
     },
     'gpt-5.6-luna': {
       name: 'GPT-5.6-Luna', id: 'gpt-5.6-luna',
-      desc: 'A new class of intelligence for coding and professional work.',
+      desc: '专为编程与专业工作打造的全新智能模型。',
       inP: 0.09, outP: 0.39,
       snapshots: [['gpt-5.6-luna', 'gpt-5.6-luna']]
     }
@@ -142,6 +142,94 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
       if (t !== node.nodeValue) node.nodeValue = t;
     }
   }
+  var UI_LABELS = [
+    ['Input and output', '输入与输出'],
+    ['Input only', '仅输入'],
+    ['Text, image', '文本、图像'],
+    ['Image generation', '图像生成'],
+    ['Image edit', '图像编辑'],
+    ['Speech generation', '语音生成'],
+    ['Realtime transcription', '实时转录'],
+    ['Realtime translation', '实时翻译'],
+    ['Batch queue limit', '批处理队列限制'],
+    ['Batch API price', '批处理 API 价格'],
+    ['Completions (legacy)', '补全（旧版）'],
+    ['Chat Completions', 'Chat 补全'],
+    ['Function calling', '函数调用'],
+    ['Computer use', '计算机使用'],
+    ['Code interpreter', '代码解释器'],
+    ['Long Context', '长上下文'],
+    ['Hosted shell', '托管 Shell'],
+    ['Apply patch', '应用补丁'],
+    ['Tool search', '工具搜索'],
+    ['File search', '文件搜索'],
+    ['Web search', '网页搜索'],
+    ['Rate limits ensure fair and reliable access to the API by placing specific caps on requests, tokens, audio duration, or other usage within a given time period. Your usage tier determines how high these limits are set and automatically increases as you send more requests and spend more on the API.', '速率限制通过对给定时间内的请求、Token、音频时长或其他使用量设置上限，确保 API 的公平和可靠访问。您的使用层级决定了这些限制的高低，并会随着发送更多请求和在 API 上花费更多而自动提升。'],
+    ['Snapshots let you lock in a specific version of the model so that performance and behavior remain consistent. Below is a list of all available snapshots and aliases for', '快照让您锁定模型的特定版本，以确保性能和行为保持一致。以下是所有可用快照和别名的列表：'],
+    ['Tools supported by this model when using the Responses API.', '使用 Responses API 时，此模型支持以下工具。'],
+    ['Pricing is based on the number of tokens used, or other metrics based on the model type. For tool-specific models, like search and computer use, there’s a fee per tool call. See details in the', '定价基于实际使用的 Token 数量或模型类型的其他指标。对于工具类模型（如 search、computer use），每次工具调用单独计费。详情见'],
+    ['For GPT-5.5, prompts with >272K input tokens are priced at 2x input and 1.5x output for the full session for standard, batch, and flex.', '对于 GPT-5.5，当输入 Token 超过 272K 时，整段会话（standard、batch、flex）按输入 2 倍、输出 1.5 倍计价。'],
+    ['Regional processing (data residency) endpoints are charged a 10% uplift for GPT-5.5.', '对于 GPT-5.5，区域处理（数据驻留）端点将加收 10% 费用。'],
+    ['GPT-5.5 is our newest frontier model for the most complex professional work. Learn more in our', 'GPT-5.5 是我们最新的前沿模型，专为最复杂的专业工作而生。了解更多，请查看我们的'],
+    ['A new class of intelligence for coding and professional work.', '专为编程与专业工作打造的全新智能模型。'],
+    ['. Reasoning.effort supports: none, low, medium (default), high and xhigh.', '。Reasoning.effort 支持：none、low、medium（默认）、high、xhigh。'],
+    ['Dec 01, 2025 knowledge cutoff', '知识截止于 2025 年 12 月 1 日'],
+    ['Learn more in our', '了解更多，请查看我们的'],
+    ['Default', '默认'],
+    ['Compare', '对比'],
+    ['Try in Playground', '在 Playground 中试用'],
+    ['Reasoning token support', '推理 Token 支持'],
+    ['Reasoning', '推理'],
+    ['Pricing', '定价'],
+    ['Text tokens', '文本 Token'],
+    ['Per ', '每 '],
+    ['1M tokens', '百万 Token'],
+    ['Cached input', '缓存输入'],
+    ['Input', '输入'],
+    ['Output', '输出'],
+    ['Quick comparison', '快速对比'],
+    ['context window', '上下文窗口'],
+    ['max output tokens', '最大输出 Token'],
+    ['knowledge cutoff', '知识截止日期'],
+    ['latest model guide', '最新模型指南'],
+    ['pricing page', '定价页面'],
+    ['Assistants', '助手'],
+    ['Audio', '音频'],
+    ['Batch', '批处理'],
+    ['Embeddings', '嵌入'],
+    ['Fine-tuning', '微调'],
+    ['Moderation', '内容审核'],
+    ['Responses', '响应'],
+    ['Skills', '技能'],
+    ['Snapshots', '快照'],
+    ['Streaming', '流式'],
+    ['Tools', '工具'],
+    ['Transcription', '转录'],
+    ['Translation', '翻译'],
+    ['Realtime', '实时'],
+    ['Image', '图像'],
+    ['Videos', '多个视频'],
+    ['Video', '视频'],
+    ['Text', '文本'],
+    ['Tier 1', '层级 1'],
+    ['Tier 2', '层级 2'],
+    ['Tier 3', '层级 3'],
+    ['Tier 4', '层级 4'],
+    ['Tier 5', '层级 5'],
+    ['Tier', '层级'],
+    ['Price', '价格'],
+    ['Free', '免费'],
+    ['Fast', '快速'],
+    ['Highest', '最高'],
+    ['Speed', '速度'],
+    ['Endpoints', '端点'],
+    ['Features', '特性'],
+    ['Modalities', '模态'],
+    ['Not supported', '不支持'],
+    ['Supported', '支持'],
+    ['Rate limits', '速率限制'],
+    ['Structured outputs', '结构化输出']
+  ];
   function setBadges(inStr, outStr) {
     document.querySelectorAll('span[title="$5"]').forEach(function (el) {
       el.textContent = inStr; el.setAttribute('title', inStr);
@@ -201,14 +289,14 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
 
   // ── OpenAI 模型详情页的定价元数据 ──
   function renderConfigured(m) {
-    document.title = m.name + ' Model | NexusVAI API';
+    document.title = m.name + ' 模型 | NexusVAI API';
     applyArt(m.id);
     var fmt = function (n) { return '$' + n.toFixed(2); };
     var cached = Math.round(m.inP * CACHED_FACTOR * 100) / 100;
     replaceText([
-      ['GPT-5.5 is our newest frontier model for the most complex professional work.', m.name + ' is our newest frontier model for the most complex professional work.'],
+      ['GPT-5.5 is our newest frontier model for the most complex professional work.', m.name + ' 是我们最新的前沿模型，专为最复杂的专业工作而生。'],
       ['For GPT-5.5, prompts with >272K input tokens are priced at 2x input and 1.5x output for the full session for standard, batch, and flex.',
-       m.longIn != null && m.longOut != null ? 'For ' + m.name + ', prompts with >272K input tokens are priced at ' + fmt(m.longIn) + ' input and ' + fmt(m.longOut) + ' output (per 1M tokens) for the full session.' : ''],
+       m.longIn != null && m.longOut != null ? '对于 ' + m.name + '，当输入 Token 超过 272K 时，整段会话按 ' + fmt(m.longIn) + ' / 百万 Token 输入和 ' + fmt(m.longOut) + ' / 百万 Token 输出计价。' : ''],
       ['Regional processing (data residency) endpoints are charged a 10% uplift for GPT-5.5.', ''],
       ['GPT-5.5', m.name],
       ['gpt-5.5-2026-04-23', m.snapshots[m.snapshots.length - 1][1]],
@@ -221,13 +309,14 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     ]);
     setBadges('$' + String(m.inP), '$' + String(m.outP));
     renderComparison();
+    replaceText(UI_LABELS);
   }
 
   // ── 其余目录模型：运行时拉 model_public_catalog 填充 ──
   function renderCatalogModel(m) {
     var name = m.displayName || m.id;
     var desc = m.publicDescription || (m.brand ? m.brand + ' 模型' : '');
-    document.title = name + ' Model | NexusVAI API';
+    document.title = name + ' 模型 | NexusVAI API';
     applyArt(m.id);
     var inStr, outStr, cachedStr;
     var pIn = m.inputPricePerM != null ? Number(m.inputPricePerM) : NaN;
@@ -263,6 +352,7 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     ]);
     setBadges(inStr, outStr);
     renderComparison();
+    replaceText(UI_LABELS);
   }
 
   function fetchCatalog() {
