@@ -26,7 +26,7 @@
   var TOKEN_WAIT_MS = 90000; // 可见挑战：给用户足够时间点选
   var INJECT_BUDGET_MS = 15000;
 
-  var BRIDGE_VERSION = "2026-07-22-cn-soft";
+  var BRIDGE_VERSION = "2026-08-09-no-gap";
   var state = {
     version: BRIDGE_VERSION,
     widgetId: null,
@@ -117,11 +117,29 @@
         else (document.body || document.documentElement).appendChild(host);
       }
     }
+    // 不预留 min-height：挂件未出来 / 国内降级时避免邮箱与验证码之间出现空白带。
+    // 真实可见 iframe 出现后再由内容撑开高度。
     host.style.display = "block";
-    host.style.margin = "10px 0 12px";
-    host.style.minHeight = "72px";
+    host.style.margin = "0";
+    host.style.minHeight = "0";
     host.style.width = "100%";
     return host;
+  }
+
+  function collapseContainer() {
+    var host =
+      document.getElementById("authCaptchaContainer") ||
+      document.getElementById("loginTurnstileContainer") ||
+      state.mountEl && state.mountEl.parentNode;
+    if (!host) return;
+    try {
+      host.style.display = "none";
+      host.style.margin = "0";
+      host.style.minHeight = "0";
+      host.style.height = "0";
+      host.style.overflow = "hidden";
+      host.style.padding = "0";
+    } catch (_e) {}
   }
 
   function failAllWaiters(message) {
@@ -292,6 +310,7 @@
           "Cloudflare 验证组件未能显示（国内网络 / 代理常见）。可直接点「发送验证码」继续登录；仍失败请换 4G 热点。";
         state.lastError = msg;
         setStatus(msg, "#ca8a04");
+        collapseContainer();
       }, 6000);
       return true;
     } catch (err) {
@@ -307,11 +326,11 @@
   function prerender() {
     if (state.apiFailed) {
       state.networkDegraded = true;
-      ensureContainer();
       setStatus(
         "Cloudflare 验证脚本加载失败（国内网络常见）。可直接发送验证码登录；仍失败请换 4G 热点。",
         "#ca8a04"
       );
+      collapseContainer();
       return;
     }
     waitForApi(API_WAIT_MS)
@@ -321,11 +340,11 @@
       .catch(function () {
         state.apiFailed = true;
         state.networkDegraded = true;
-        ensureContainer();
         setStatus(
           "Cloudflare 验证脚本未能加载（challenges.cloudflare.com 在国内不稳定）。可直接点「发送验证码」继续；广告拦截可关掉，或换 4G/系统代理节点。",
           "#ca8a04"
         );
+        collapseContainer();
       });
   }
 
