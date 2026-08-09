@@ -6124,18 +6124,63 @@
 			}
 		],
 		ratelimit: [{
-			tier: "free",
-			per_minute: 10,
-			per_hour: 60,
-			per_day: 1e3,
-			concurrent: 2
-		}, {
-			tier: "paid",
-			per_minute: 60,
-			per_hour: 600,
-			per_day: 5e4,
-			concurrent: 0,
-			concurrent_note: "0 表示不限并发"
+			note: "账户限速按累计真实充值 Tier0–5：并发 / RPM / TPM / TPD（非旧版 RPH/RPD 请求桶）。门槛 ¥0 / ≥10 / ≥30 / ≥80 / ≥300 / ≥1000。",
+			tiers: [
+				{
+					tier: 0,
+					cumulative_cny: 0,
+					concurrent: 1,
+					rpm: 20,
+					tpm: 5e5,
+					tpd: 15e5
+				},
+				{
+					tier: 1,
+					cumulative_cny: 10,
+					concurrent: 50,
+					rpm: 200,
+					tpm: 2e6,
+					tpd: null
+				},
+				{
+					tier: 2,
+					cumulative_cny: 30,
+					concurrent: 100,
+					rpm: 500,
+					tpm: 3e6,
+					tpd: null
+				},
+				{
+					tier: 3,
+					cumulative_cny: 80,
+					concurrent: 200,
+					rpm: 5e3,
+					tpm: 3e6,
+					tpd: null
+				},
+				{
+					tier: 4,
+					cumulative_cny: 300,
+					concurrent: 400,
+					rpm: 5e3,
+					tpm: 4e6,
+					tpd: null
+				},
+				{
+					tier: 5,
+					cumulative_cny: 1e3,
+					concurrent: 1e3,
+					rpm: 1e4,
+					tpm: 5e6,
+					tpd: null
+				}
+			],
+			free_token_windows: {
+				rolling_5h_tokens: 1e5,
+				rolling_7d_tokens: 5e5,
+				applies_to: "unrecharged / free-settlement accounts"
+			},
+			docs_url_fragment: "#ratelimit"
 		}],
 		errors: [
 			{
@@ -6165,13 +6210,18 @@
 			},
 			{
 				http: 429,
+				code: "rate_limited",
+				when: "账户限速档触顶（并发 / RPM / TPM / TPD）"
+			},
+			{
+				http: 429,
 				code: "rate_limit_exceeded",
-				when: "撞上 per-minute / per-hour / per-day 任一窗口（free: 10/60/1000，paid: 60/600/50000）"
+				when: "Key 侧请求次级桶触顶（勿与账户 TPM/TPD 表混淆）"
 			},
 			{
 				http: 429,
 				code: "concurrent_limit_exceeded",
-				when: "撞上并发槽位上限"
+				when: "Key 侧并发次级桶触顶"
 			},
 			{
 				http: 503,

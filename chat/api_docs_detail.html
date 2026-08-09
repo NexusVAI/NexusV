@@ -1457,7 +1457,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           <h2>速率限制</h2>
           <p>
             为了保证所有人都能稳定使用，每个账户都有速率限制。
-            限制按累计充值档位区分，档位越高，并发和请求频率就越高。
+            限制按<strong>累计真实充值</strong>分成 Tier 0–5；档位越高，并发、每分钟请求数（RPM）与 token 吞吐（TPM / TPD）越高。
           </p>
 
           <table>
@@ -1466,50 +1466,35 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                 <th>档位</th>
                 <th>累计充值</th>
                 <th>并发</th>
-                <th>每分钟</th>
-                <th>每小时</th>
-                <th>每天</th>
+                <th>RPM</th>
+                <th>TPM</th>
+                <th>TPD</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>Tier 0</td><td>¥0</td><td>1</td><td>20</td><td>600</td><td>1,000</td></tr>
-              <tr><td>Tier 1</td><td>≥ ¥10</td><td>50</td><td>200</td><td>3,000</td><td>50,000</td></tr>
-              <tr><td>Tier 2</td><td>≥ ¥30</td><td>100</td><td>500</td><td>8,000</td><td>100,000</td></tr>
-              <tr><td>Tier 3</td><td>≥ ¥80</td><td>200</td><td>5,000</td><td>30,000</td><td>200,000</td></tr>
-              <tr><td>Tier 4</td><td>≥ ¥300</td><td>400</td><td>5,000</td><td>40,000</td><td>300,000</td></tr>
-              <tr><td>Tier 5</td><td>≥ ¥1,000</td><td>1,000</td><td>10,000</td><td>60,000</td><td>500,000</td></tr>
+              <tr><td>Tier 0</td><td>¥0</td><td>1</td><td>20</td><td>500,000</td><td>1,500,000</td></tr>
+              <tr><td>Tier 1</td><td>≥ ¥10</td><td>50</td><td>200</td><td>2,000,000</td><td>不限</td></tr>
+              <tr><td>Tier 2</td><td>≥ ¥30</td><td>100</td><td>500</td><td>3,000,000</td><td>不限</td></tr>
+              <tr><td>Tier 3</td><td>≥ ¥80</td><td>200</td><td>5,000</td><td>3,000,000</td><td>不限</td></tr>
+              <tr><td>Tier 4</td><td>≥ ¥300</td><td>400</td><td>5,000</td><td>4,000,000</td><td>不限</td></tr>
+              <tr><td>Tier 5</td><td>≥ ¥1,000</td><td>1,000</td><td>10,000</td><td>5,000,000</td><td>不限</td></tr>
             </tbody>
           </table>
 
           <p>
-            上表与成功响应头 <code>X-RateLimit-*-Minute/Hour/Day</code> 一致。
-            只有真实充值计入累计档位；折现、代金券不抬档。充值后最多约 60 秒生效。
-            有效订阅 paid/vip 走订阅配额（不限并发）。另有账户级 token 窗口限制，撞限同样返回 <code>429</code>。
+            <strong>RPM</strong> = 每分钟请求数；<strong>TPM</strong> = 每分钟 token；<strong>TPD</strong> = 每天 token（UTC+8 自然日）。
+            只有真实充值计入累计档位；折现、代金券不抬档。充值后档位最多约 60 秒生效。
+            未充值（free）账户另有滚动 token 窗口：5 小时 100,000 tokens、7 天 500,000 tokens，撞限同样 <code>429</code>。
           </p>
 
-          <h3 id="响应头">响应头</h3>
-          <p>成功响应会附带以下限流头，客户端可据此预估节奏：</p>
-          <table>
-            <thead>
-              <tr>
-                <th>响应头</th>
-                <th>含义</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>X-RateLimit-Limit-Minute</td><td>当前 Key 的分钟上限</td></tr>
-              <tr><td>X-RateLimit-Remaining-Minute</td><td>本分钟剩余次数</td></tr>
-              <tr><td>X-RateLimit-Limit-Hour</td><td>当前 Key 的小时上限</td></tr>
-              <tr><td>X-RateLimit-Remaining-Hour</td><td>本小时剩余次数</td></tr>
-              <tr><td>X-RateLimit-Limit-Day</td><td>当前 Key 的当日上限</td></tr>
-              <tr><td>X-RateLimit-Remaining-Day</td><td>今天剩余次数</td></tr>
-            </tbody>
-          </table>
-
+          <h3 id="响应头">响应头与错误码</h3>
           <p>
-            撞限返回 <code>429</code>。请先看 <code>error.code</code>：Key 频次桶多为
-            <code>rate_limit_exceeded</code>；账户级窗口可能为 <code>rate_limited</code>。
-            有 <code>Retry-After</code> 或 body 里的 <code>retry_after</code> 时按其退避，否则从 1 秒起指数退避。
+            账户档位撞限时，响应多为 <code>429</code> + <code>error.code = rate_limited</code>；
+            文案会区分并发 / RPM / TPM / TPD。请优先看 <code>Retry-After</code> 或 body 里的 <code>retry_after</code>。
+          </p>
+          <p>
+            部分成功响应仍可能带 <code>X-RateLimit-*-Minute/Hour/Day</code>，那是 Key 侧请求次级桶的参考头，
+            <strong>不是</strong>上表 TPM/TPD 的权威读数；排障以 <code>error.code</code> 与上表为准。
           </p>
 
           <h3 id="429-识别速查">429 识别速查</h3>
@@ -1517,8 +1502,16 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
           <div class="cnc-alert cnc-alert--warn">
             <ul>
               <li>
-                <code>rate_limited</code> → 账户级速率 / token 窗口限制；有
-                <code>retry_after</code> 时按其等待。
+                <code>rate_limited</code> → 账户档位撞限（并发 / RPM / TPM / TPD）；有
+                <code>retry_after</code> 时按其等待，或提升累计充值档位。
+              </li>
+              <li>
+                <code>token_window_5h_exceeded</code> /
+                <code>token_window_week_exceeded</code> → 未充值账户的滚动 token 窗口触顶。
+              </li>
+              <li>
+                <code>rate_limit_exceeded</code> /
+                <code>concurrent_limit_exceeded</code> → Key 侧请求/并发次级桶触顶。
               </li>
               <li>
                 <code>upstream_rate_limit</code> → 该模型当前繁忙，与你的账户档位无关，建议直接换模型。
@@ -1607,16 +1600,37 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               </tr>
               <tr>
                 <td>429</td>
+                <td>rate_limited</td>
+                <td>
+                  账户限速档触顶（并发 / RPM / TPM / TPD，见速率限制表）。稍后重试或提升累计充值档位。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>token_window_5h_exceeded</td>
+                <td>
+                  未充值账户 5 小时滚动 token 窗口（100,000）触顶。稍后重试或充值抬档。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
+                <td>token_window_week_exceeded</td>
+                <td>
+                  未充值账户 7 天滚动 token 窗口（500,000）触顶。稍后重试或充值抬档。
+                </td>
+              </tr>
+              <tr>
+                <td>429</td>
                 <td>rate_limit_exceeded</td>
                 <td>
-                  Key 频次或并发桶触顶（见 <code>X-RateLimit-*</code>）。可稍后重试或提升累计充值档位。
+                  Key 侧请求次级桶触顶（可能伴随 <code>X-RateLimit-*</code>）。可稍后重试或提升累计充值档位。
                 </td>
               </tr>
               <tr>
                 <td>429</td>
                 <td>concurrent_limit_exceeded</td>
                 <td>
-                  当前同时进行的请求数达到上限。等已有请求完成后再发，或提升累计充值档位以获得更多并发。
+                  Key 侧并发次级桶触顶。等已有请求完成后再发，或提升累计充值档位。
                 </td>
               </tr>
               <tr>
