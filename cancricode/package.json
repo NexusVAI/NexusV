@@ -1,0 +1,13 @@
+{
+  "name": "cancricode",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CancriCode 宣传页 — 完全离线的单页站点，vendor 层只读，Cancri 自定义层受控。",
+  "scripts": {
+    "dev": "node serve.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@cornerkit/core": "^1.3.1"
+  }
+}
