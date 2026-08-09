@@ -1201,7 +1201,7 @@
         <span class="legend-title">档位说明</span>
         <span class="legend-item">
           <span class="tier tier-free">FREE</span>
-          所有用户免费使用，受免费档限速（10 RPM / 60 RPH / 1000 RPD，并参2 路）　
+          价格为 0 时可免余额调用；仍受账户限速档约束（默认 Tier0：并发 1 / 20 RPM / 50 万 TPM / 150 万 TPD，详见速率限制文档）
         </span>
         <span class="legend-item">
           <span class="tier tier-welfare">福利</span>
@@ -1318,7 +1318,7 @@
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态+
          调用代码区，sessionStorage 自动填入用户最迁Key）　-->
     <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-    <script src="./api/api-models-app.js?v=20260809-newconsole"></script>
+    <script src="./api/api-models-app.js?v=20260809-ratelimit-tpm"></script>
     <!-- 2026-06-10：Claude Fable 5 上线推广弹窗 -->
     <script src="./fable5_launch_modal.js?v=2026-06-18-off"></script>
   </body>

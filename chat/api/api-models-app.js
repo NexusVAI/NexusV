@@ -1013,7 +1013,7 @@ const API_BASE_URL =
     (window.__SUPABASE_URL__ || "") + "/functions/v1/api-gateway";
 
 const COST_TIER_EXPLAIN = {
-    free: "FREE 档：所有用户免费调用，受免费档限速 (10 RPM / 60 RPH / 1000 RPD，并发 2)。",
+    free: "FREE 档：价格为 0 的模型可免余额调用；仍受账户限速档约束（默认 Tier0：并发 1 / 20 RPM / 50 万 TPM / 150 万 TPD，详见速率限制文档）。",
     cheap: "Cheap：1× 倍率。轻量、低成本模型；价格友好。",
     normal: "Normal：3× 倍率。GPT-4 类标准模型 / Doubao / Kimi / Haiku 等。",
     expensive:
