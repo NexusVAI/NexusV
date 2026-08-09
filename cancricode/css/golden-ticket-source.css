@@ -1,0 +1,157 @@
+/* Golden Ticket (金奖券/金色礼券) 3D Card Styling */
+
+:root {
+  --gold-primary: #d4af37;
+  --gold-light: #fcf6ba;
+  --gold-dark: #aa771c;
+  --gold-text: #362203;
+}
+
+/* 1. Golden Ticket Notched Polygon Contour (齿轮凸齿/金券缺口边框轮廓) */
+.wallet-card,
+.success-card-face {
+  clip-path: polygon(
+    0% 12px, 12px 12px, 12px 0%,
+    22% 0%, 22% 10px, 28% 10px, 28% 0%,
+    47% 0%, 47% 10px, 53% 10px, 53% 0%,
+    72% 0%, 72% 10px, 78% 10px, 78% 0%,
+    calc(100% - 12px) 0%, calc(100% - 12px) 12px, 100% 12px,
+    100% 28%, calc(100% - 10px) 28%, calc(100% - 10px) 36%, 100% 36%,
+    100% 64%, calc(100% - 10px) 64%, calc(100% - 10px) 72%, 100% 72%,
+    100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%,
+    78% 100%, 78% calc(100% - 10px), 72% calc(100% - 10px), 72% 100%,
+    53% 100%, 53% calc(100% - 10px), 47% calc(100% - 10px), 47% 100%,
+    28% 100%, 28% calc(100% - 10px), 22% calc(100% - 10px), 22% 100%,
+    12px 100%, 12px calc(100% - 12px), 0% calc(100% - 12px),
+    0% 72%, 10px 72%, 10px 64%, 0% 64%,
+    0% 36%, 10px 36%, 10px 28%, 0% 28%
+  ) !important;
+  -webkit-clip-path: polygon(
+    0% 12px, 12px 12px, 12px 0%,
+    22% 0%, 22% 10px, 28% 10px, 28% 0%,
+    47% 0%, 47% 10px, 53% 10px, 53% 0%,
+    72% 0%, 72% 10px, 78% 10px, 78% 0%,
+    calc(100% - 12px) 0%, calc(100% - 12px) 12px, 100% 12px,
+    100% 28%, calc(100% - 10px) 28%, calc(100% - 10px) 36%, 100% 36%,
+    100% 64%, calc(100% - 10px) 64%, calc(100% - 10px) 72%, 100% 72%,
+    100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%,
+    78% 100%, 78% calc(100% - 10px), 72% calc(100% - 10px), 72% 100%,
+    53% 100%, 53% calc(100% - 10px), 47% calc(100% - 10px), 47% 100%,
+    28% 100%, 28% calc(100% - 10px), 22% calc(100% - 10px), 22% 100%,
+    12px 100%, 12px calc(100% - 12px), 0% calc(100% - 12px),
+    0% 72%, 10px 72%, 10px 64%, 0% 64%,
+    0% 36%, 10px 36%, 10px 28%, 0% 28%
+  ) !important;
+  
+  border-radius: 0 !important;
+  background: #c59b27 !important;
+  border: none !important;
+  box-shadow: 
+    0 35px 70px -25px rgba(212, 175, 55, 0.4),
+    0 20px 40px -15px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px #fff6b3,
+    inset 0 0 20px rgba(180, 120, 0, 0.6) !important;
+}
+
+/* 2. Gold Metallic Background Gradients (黄金金箔背景) */
+.card-base {
+  background: 
+    radial-gradient(circle at 20% 20%, #fffae0 0%, #e6b800 35%, #996e00 70%, #4a3300 100%),
+    linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%) !important;
+}
+
+/* 3. Gold Metallic Shimmer / Holographic Refraction (炫彩金箔拉丝光泽) */
+.card-foil-color {
+  opacity: 0.85 !important;
+  mix-blend-mode: color-dodge !important;
+  background: linear-gradient(
+    115deg,
+    rgba(0,0,0,0) 0%,
+    rgba(255, 255, 255, 0.95) 22%,
+    rgba(255, 220, 100, 0.9) 38%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 215, 0, 0.85) 62%,
+    rgba(255, 255, 255, 0.95) 78%,
+    rgba(0,0,0,0) 100%
+  ) !important;
+}
+
+/* 4. Ticket Perforated Tear Line (副券打孔撕缝虚线) */
+.wallet-card::after,
+.success-card-face::after {
+  content: "GOLD TICKET";
+  writing-mode: vertical-rl;
+  font-family: JetBrains Mono, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: rgba(54, 34, 3, 0.45);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 2px dashed rgba(54, 34, 3, 0.4);
+  padding-left: 6px;
+  pointer-events: none;
+  z-index: 10;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* 5. Embossed Gold Stamped Text Styles (黑金/烫金立体文字) */
+.card-brand {
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.card-brand img {
+  filter: drop-shadow(0 1px 1px rgba(255, 253, 210, 0.85)) drop-shadow(0 -1px 1px rgba(60, 40, 0, 0.6)) !important;
+}
+
+.wordmark {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.wordmark img.nexus-icon {
+  filter: drop-shadow(0 1px 2px rgba(244, 129, 32, 0.5)) !important;
+}
+
+.card-edition {
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(80, 50, 0, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+.card-name {
+  color: var(--gold-text) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em !important;
+  text-shadow: 
+    0 2px 2px rgba(255, 255, 230, 0.9), 
+    0 -1px 2px rgba(50, 30, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.6) !important;
+  -webkit-text-stroke: 0.5px rgba(60, 40, 0, 0.4);
+}
+
+.card-label {
+  color: rgba(54, 34, 3, 0.75) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.card-bottomline strong {
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 1px rgba(255, 253, 210, 0.85), 0 -1px 1px rgba(60, 40, 0, 0.6) !important;
+}

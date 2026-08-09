@@ -1,0 +1,458 @@
+/* Original wallet-card styles from cloudflare-pay build */
+[data-cancri-role="gold-ticket"],
+.cancri-gold-ticket-lb {
+  --accent:#f48120; --accent-hover:#ff8d2f; --foreground:#171714; --muted:#6f6d66;
+  font-family: Inter, system-ui, sans-serif;
+}
+.wallet-card-stage{transform:translateY(-2px)}.wallet-card-stage{perspective:1300px;width:100%;margin-bottom:clamp(64px,8vw,92px);transition:transform .45s cubic-bezier(.2,.8,.2,1)}.wallet-card-stage:hover{transform:scale(1.025)translateY(-3px)}.wallet-card-stage.is-rejected{animation:.48s cubic-bezier(.36,.07,.19,.97) both card-rejected}@keyframes card-rejected{0%,to{transform:translate(0)rotate(0)}18%{transform:translate(-9px)rotate(-.35deg)}36%{transform:translate(8px)rotate(.3deg)}54%{transform:translate(-6px)rotate(-.2deg)}72%{transform:translate(4px)rotate(.12deg)}}.wallet-card{--rx:0deg;--ry:0deg;--mx:0px;--my:0px;--card-corner-radius:clamp(16px, 2.4vw, 24px);isolation:isolate;aspect-ratio:1.76;border-radius:var(--card-corner-radius);width:100%;clip-path:inset(0 round var(--card-corner-radius));-webkit-clip-path:inset(0 round var(--card-corner-radius));color:#21150f;transform:rotateX(var(--rx)) rotateY(var(--ry)) translateZ(0);transform-style:preserve-3d;will-change:transform;-webkit-user-select:none;user-select:none;background:#df6320;border:1px solid #fffc;flex-direction:column;justify-content:space-between;padding:clamp(25px,4.3vw,42px);transition:transform .65s cubic-bezier(.16,1,.3,1),box-shadow .45s;display:flex;position:relative;overflow:hidden;box-shadow:0 36px 72px -32px #16141170,0 10px 24px -17px #16141147,inset 0 0 0 1px #ffffff85,inset 0 1px 1px #fff,inset 0 -1px #41382d2e;-webkit-mask-image:-webkit-radial-gradient(#fff,#000)}.wallet-card-stage:hover .wallet-card{transition-duration:.12s,.25s;box-shadow:0 40px 76px -32px #16141175,0 12px 25px -17px #1614113d,inset 0 0 0 1px #ffffff85,inset 0 1px 1px #fff}.card-base{z-index:-6;transform:translate(calc(var(--mx) * -.12),calc(var(--my) * -.12)) scale(1.1);background:radial-gradient(circle at 24% 15%,#f4b785,#0000 34%),radial-gradient(circle at 78% 80%,#e06b27,#0000 42%),#d75b1d;transition:transform .55s cubic-bezier(.16,1,.3,1);position:absolute;inset:-5%}.card-shader{z-index:-5;opacity:1;width:110%;height:110%;transform:translate(calc(var(--mx) * -.16),calc(var(--my) * -.16)) scale(1.02);transition:transform .6s cubic-bezier(.16,1,.3,1),opacity .4s;display:block;position:absolute;inset:-5%}.card-foil{pointer-events:none;transition:opacity .4s,transform .55s cubic-bezier(.16,1,.3,1);position:absolute;inset:-25%}.card-foil-color{z-index:-4;opacity:.03;mix-blend-mode:color-dodge;transform:translate(calc(var(--mx) * .85),calc(var(--my) * .65)) rotate(-7deg);background:linear-gradient(125deg,#0000 8%,#74dce294 28%,#84aff29e 41%,#ffffffe6 50%,#c291e194 61%,#0000 82%)}.wallet-card-stage:hover .card-foil-color{opacity:.1}.card-surface{z-index:-2;opacity:.44;mix-blend-mode:soft-light;pointer-events:none;background:linear-gradient(#ffffff26,#0000 24%,#ffffff06);position:absolute;inset:0}.card-topline,.card-bottomline{z-index:2;transform:translateZ(6px) translate(calc(var(--mx) * .018),calc(var(--my) * .018));justify-content:space-between;align-items:flex-start;transition:transform .45s cubic-bezier(.16,1,.3,1);display:flex;position:relative}.card-brand{color:#2a140ac7;letter-spacing:-.035em;text-shadow:0 -1px #4f180557,0 1px #ffb8736b;mix-blend-mode:multiply;align-items:center;gap:10px;font-size:clamp(11px,1.5vw,14px);font-weight:720;display:flex}.card-brand svg{color:#3a1b0d;filter:drop-shadow(0 -1px #5d1b0547)drop-shadow(0 1px #ffbc7857);width:clamp(31px,4vw,40px)}.card-edition,.card-label{color:#2e1509a3;letter-spacing:.14em;text-shadow:0 -1px #5c1c0540,0 1px #ffc18059;mix-blend-mode:multiply;font:650 clamp(7px,.9vw,9px)/1.2 JetBrains Mono,monospace}.card-name-wrap{z-index:2;text-align:center;transform:translateZ(8px) translate(calc(var(--mx) * .025),calc(var(--my) * .025));transition:transform .45s cubic-bezier(.16,1,.3,1);position:relative}.card-name{color:#2d1409d1;letter-spacing:-.065em;white-space:nowrap;text-overflow:ellipsis;-webkit-text-stroke:.25px #44170640;text-shadow:0 -1.2px 1px #52170480,0 1.3px 1px #ffc27e7a;mix-blend-mode:multiply;max-width:100%;margin:-.08em 0;padding:.1em .03em .14em;font-size:clamp(32px,7vw,64px);font-weight:640;line-height:1.12;overflow:hidden}.card-bottomline>div{gap:7px;display:grid}.card-bottomline strong{color:#2a1309c7;letter-spacing:.09em;text-shadow:0 -1px #50160447,0 1px #ffbe7861;mix-blend-mode:multiply;font:650 clamp(8px,1vw,10px)/1 JetBrains Mono,monospace}.card-number{text-align:right}.status-spinner{border:1.5px solid;border-top-color:#0000;border-radius:50%;width:15px;height:15px;animation:.8s linear infinite spin;display:block}.claim-actions{flex-direction:column;align-items:center;width:min(520px,100%);margin:30px auto 0;display:flex}.claim-button{isolation:isolate;border:1px solid var(--accent);background:var(--accent);color:#fff;letter-spacing:-.01em;cursor:pointer;border-radius:999px;justify-content:center;align-items:center;gap:16px;min-width:190px;height:52px;padding:0 23px;font-size:15px;font-weight:500;transition:transform .16s cubic-bezier(.25,.46,.45,.94),background .16s,border-color .16s,opacity .16s;display:flex;position:relative}.claim-button:before{content:"";z-index:-1;border-radius:inherit;opacity:0;background:#fff;transition:opacity .16s;position:absolute;inset:-1px}.claim-button:hover:not(:disabled){border-color:var(--accent-hover);background:var(--accent-hover)}.claim-button:hover:not(:disabled):before{opacity:.08}.claim-button:active:not(:disabled){transform:translateY(1px)scale(.98)}.claim-button:disabled{opacity:.42;cursor:not-allowed}.claim-button span{font-size:17px;font-weight:400}.form-message{text-align:center;min-height:18px;color:var(--muted);margin:11px 3px 0;font-size:13px;line-height:1.3}.form-message.status-available{color:#398855}.form-message.status-taken,.form-message.status-error{color:#c44b3e}.reservation-disclaimer{color:#9a9892;text-align:center;text-wrap:balance;max-width:430px;margin:15px auto 0;font-size:11px;line-height:1.4}.success-page{min-height:100svh;color:var(--foreground);background:#fff;padding:0 clamp(20px,5vw,72px);overflow:hidden}.success-hero{flex-direction:column;justify-content:center;align-items:center;gap:clamp(65px,9vw,105px);width:min(980px,100%);min-height:calc(100svh - 82px);margin:0 auto;padding:clamp(55px,8vh,90px) 0 80px;display:flex}.success-card-wrap{width:min(720px,92%)}.success-card-scene{--card-corner-radius:clamp(16px, 2.4vw, 24px);aspect-ratio:1.76;perspective:1400px;width:100%}.success-card-float{width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;animation:4.2s ease-in-out infinite success-float}.success-card-orbit{width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;will-change:transform;animation:22s linear infinite success-orbit;position:relative}.success-card-scene:hover .success-card-orbit{animation-play-state:paused}.success-card-depth{border-radius:var(--card-corner-radius);transform:translateZ(var(--card-depth));background:0 0;border:2px solid #bd4818;position:absolute;inset:1px;box-shadow:inset 0 0 0 1px #ffb06780,0 0 2px #5b1c0780}.success-card-face{--mx:0px;--my:0px;isolation:isolate;border-radius:var(--card-corner-radius);clip-path:inset(0 round var(--card-corner-radius));-webkit-clip-path:inset(0 round var(--card-corner-radius));backface-visibility:hidden;background-clip:padding-box;border:1px solid #ffffffb8;flex-direction:column;justify-content:space-between;padding:clamp(25px,4.3vw,42px);display:flex;position:absolute;inset:0;overflow:hidden;box-shadow:0 38px 75px -34px #2319127a,inset 0 0 0 1px #ffffff61,inset 0 1px 1px #fff;-webkit-mask-image:-webkit-radial-gradient(#fff,#000)}.success-card-front{background:#df6320;transform:rotateY(0)translateZ(1.5px)}.success-card-back{color:#361609;background:radial-gradient(circle at 72% 22%,#ffb06d 0,#0000 26%),radial-gradient(circle at 22% 82%,#a9360c 0,#0000 38%),linear-gradient(135deg,#ff7a2d,#dc4e12 53%,#f9792b);justify-content:center;align-items:center;transform:rotateY(180deg)translateZ(1.5px)}.success-back-glow{opacity:.3;background:linear-gradient(118deg,#0000 33%,#ffffff80 48%,#0000 62%);position:absolute;inset:-30%;transform:rotate(-7deg)}.success-back-logo{color:#341307c2;filter:drop-shadow(0 -1px #4a150461)drop-shadow(0 3px #ffb86f61);flex:none;width:30%;max-width:none;position:relative}.success-copy{text-align:center;max-width:540px}.success-copy h1{letter-spacing:-.032em;margin:0;font-size:clamp(44px,6vw,64px);font-weight:500;line-height:.99}.success-copy p{max-width:490px;color:var(--muted);text-wrap:balance;margin:18px auto 0;font-size:17px;line-height:1.35}.success-copy strong{color:var(--foreground);font-weight:600}.share-x-button{color:#fff;cursor:pointer;background:#171717;border:1px solid #171717;border-radius:999px;justify-content:center;align-items:center;gap:9px;min-height:46px;margin-top:27px;padding:0 19px;font:600 14px/1 Inter,sans-serif;transition:transform .18s,background-color .18s,box-shadow .18s;display:inline-flex}.share-x-button svg{width:15px;height:15px}.share-x-button:hover{background:#292929;transform:translateY(-1px);box-shadow:0 8px 20px #00000024}.share-x-button:active{transform:translateY(0)}.share-x-button:focus-visible{outline-offset:3px;outline:3px solid #ff5e1f40}@keyframes success-orbit{0%{transform:rotateX(3deg)rotateY(-8deg)}25%{transform:rotateX(-2deg)rotateY(82deg)}50%{transform:rotateX(3deg)rotateY(172deg)}75%{transform:rotateX(-3deg)rotateY(262deg)}to{transform:rotateX(3deg)rotateY(352deg)}}@keyframes success-float{0%,to{transform:translateY(0)rotate(-.25deg)}50%{transform:translateY(-12px)rotate(.25deg)}}.launch-footer{color:#85827a;letter-spacing:.05em;border-top:1px solid #1717141a;min-height:70px;font:500 10px/1 JetBrains Mono,monospace}.launch-footer div{gap:24px;display:flex}.launch-footer a{color:inherit;text-decoration:none}.launch-footer a:hover{color:#ef7820}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:560px){.launch-page{padding-inline:15px}.launch-nav{height:70px}.nav-link{min-height:36px;padding-inline:13px;font-size:12px}.launch-hero{padding:48px 0 55px}.hero-copy{margin-bottom:38px}.hero-copy h1{font-size:clamp(42px,12vw,50px)}.hero-copy p{font-size:16px}.wallet-card-stage{margin-bottom:52px}.wallet-card{--card-corner-radius:14px;padding:21px}.card-edition{display:none!important}.card-name{font-size:clamp(29px,10vw,46px)}.card-number strong{letter-spacing:.03em;font-size:6px}}
+/* Golden Ticket (金奖券/金色礼券) 3D Card Styling */
+
+:root {
+  --gold-primary: #d4af37;
+  --gold-light: #fcf6ba;
+  --gold-dark: #aa771c;
+  --gold-text: #362203;
+}
+
+/* 1. Golden Ticket Notched Polygon Contour (齿轮凸齿/金券缺口边框轮廓) */
+.wallet-card,
+.success-card-face {
+  clip-path: polygon(
+    0% 12px, 12px 12px, 12px 0%,
+    22% 0%, 22% 10px, 28% 10px, 28% 0%,
+    47% 0%, 47% 10px, 53% 10px, 53% 0%,
+    72% 0%, 72% 10px, 78% 10px, 78% 0%,
+    calc(100% - 12px) 0%, calc(100% - 12px) 12px, 100% 12px,
+    100% 28%, calc(100% - 10px) 28%, calc(100% - 10px) 36%, 100% 36%,
+    100% 64%, calc(100% - 10px) 64%, calc(100% - 10px) 72%, 100% 72%,
+    100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%,
+    78% 100%, 78% calc(100% - 10px), 72% calc(100% - 10px), 72% 100%,
+    53% 100%, 53% calc(100% - 10px), 47% calc(100% - 10px), 47% 100%,
+    28% 100%, 28% calc(100% - 10px), 22% calc(100% - 10px), 22% 100%,
+    12px 100%, 12px calc(100% - 12px), 0% calc(100% - 12px),
+    0% 72%, 10px 72%, 10px 64%, 0% 64%,
+    0% 36%, 10px 36%, 10px 28%, 0% 28%
+  ) !important;
+  -webkit-clip-path: polygon(
+    0% 12px, 12px 12px, 12px 0%,
+    22% 0%, 22% 10px, 28% 10px, 28% 0%,
+    47% 0%, 47% 10px, 53% 10px, 53% 0%,
+    72% 0%, 72% 10px, 78% 10px, 78% 0%,
+    calc(100% - 12px) 0%, calc(100% - 12px) 12px, 100% 12px,
+    100% 28%, calc(100% - 10px) 28%, calc(100% - 10px) 36%, 100% 36%,
+    100% 64%, calc(100% - 10px) 64%, calc(100% - 10px) 72%, 100% 72%,
+    100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%,
+    78% 100%, 78% calc(100% - 10px), 72% calc(100% - 10px), 72% 100%,
+    53% 100%, 53% calc(100% - 10px), 47% calc(100% - 10px), 47% 100%,
+    28% 100%, 28% calc(100% - 10px), 22% calc(100% - 10px), 22% 100%,
+    12px 100%, 12px calc(100% - 12px), 0% calc(100% - 12px),
+    0% 72%, 10px 72%, 10px 64%, 0% 64%,
+    0% 36%, 10px 36%, 10px 28%, 0% 28%
+  ) !important;
+  
+  border-radius: 0 !important;
+  background: #c59b27 !important;
+  border: none !important;
+  box-shadow: 
+    0 35px 70px -25px rgba(212, 175, 55, 0.4),
+    0 20px 40px -15px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px #fff6b3,
+    inset 0 0 20px rgba(180, 120, 0, 0.6) !important;
+}
+
+/* 2. Gold Metallic Background Gradients (黄金金箔背景) */
+.card-base {
+  background: 
+    radial-gradient(circle at 20% 20%, #fffae0 0%, #e6b800 35%, #996e00 70%, #4a3300 100%),
+    linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%) !important;
+}
+
+/* 3. Gold Metallic Shimmer / Holographic Refraction (炫彩金箔拉丝光泽) */
+.card-foil-color {
+  opacity: 0.85 !important;
+  mix-blend-mode: color-dodge !important;
+  background: linear-gradient(
+    115deg,
+    rgba(0,0,0,0) 0%,
+    rgba(255, 255, 255, 0.95) 22%,
+    rgba(255, 220, 100, 0.9) 38%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 215, 0, 0.85) 62%,
+    rgba(255, 255, 255, 0.95) 78%,
+    rgba(0,0,0,0) 100%
+  ) !important;
+}
+
+/* 4. Ticket Perforated Tear Line (副券打孔撕缝虚线) */
+.wallet-card::after,
+.success-card-face::after {
+  content: "GOLD TICKET";
+  writing-mode: vertical-rl;
+  font-family: JetBrains Mono, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: rgba(54, 34, 3, 0.45);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 2px dashed rgba(54, 34, 3, 0.4);
+  padding-left: 6px;
+  pointer-events: none;
+  z-index: 10;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* 5. Embossed Gold Stamped Text Styles (黑金/烫金立体文字) */
+.card-brand {
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.card-brand img {
+  filter: drop-shadow(0 1px 1px rgba(255, 253, 210, 0.85)) drop-shadow(0 -1px 1px rgba(60, 40, 0, 0.6)) !important;
+}
+
+.wordmark {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.wordmark img.nexus-icon {
+  filter: drop-shadow(0 1px 2px rgba(244, 129, 32, 0.5)) !important;
+}
+
+.card-edition {
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(80, 50, 0, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+.card-name {
+  color: var(--gold-text) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em !important;
+  text-shadow: 
+    0 2px 2px rgba(255, 255, 230, 0.9), 
+    0 -1px 2px rgba(50, 30, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.6) !important;
+  -webkit-text-stroke: 0.5px rgba(60, 40, 0, 0.4);
+}
+
+.card-label {
+  color: rgba(54, 34, 3, 0.75) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.card-bottomline strong {
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 1px rgba(255, 253, 210, 0.85), 0 -1px 1px rgba(60, 40, 0, 0.6) !important;
+}
+
+/*
+ * Force Image-1 golden ticket look (notched gold foil).
+ * Vendor wallet CSS uses orange WebGL + radial mask → reads as red rounded card.
+ */
+[data-cancri-role="gold-ticket"] .wallet-card,
+.cancri-gold-ticket-lb .wallet-card {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  border-radius: 0 !important;
+  background: #c59b27 !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-shader,
+.cancri-gold-ticket-lb .card-shader {
+  /* Keep live WebGL shader — gold palettes come from JS */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-base,
+.cancri-gold-ticket-lb .card-base {
+  background:
+    radial-gradient(circle at 20% 20%, #fffae0 0%, #e6b800 35%, #996e00 70%, #4a3300 100%),
+    linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%) !important;
+  opacity: 1 !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-foil-color,
+.cancri-gold-ticket-lb .card-foil-color {
+  opacity: 0.85 !important;
+  mix-blend-mode: color-dodge !important;
+  background: linear-gradient(
+    115deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(255, 255, 255, 0.95) 22%,
+    rgba(255, 220, 100, 0.9) 38%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 215, 0, 0.85) 62%,
+    rgba(255, 255, 255, 0.95) 78%,
+    rgba(0, 0, 0, 0) 100%
+  ) !important;
+}
+
+/*
+ * Direct port sizing: type tracks card width (cqw), same as pay page rhythm.
+ * Preview = narrower card; lightbox = wider card — one formula, no crop.
+ */
+[data-cancri-role="gold-ticket"] {
+  margin: 28px 0 8px;
+}
+
+[data-cancri-role="gold-ticket"] .cancri-gold-ticket__hit {
+  display: block;
+  width: min(100%, 320px);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-cancri-role="gold-ticket"] .wallet-card-stage,
+[data-cancri-role="gold-ticket"] .wallet-card-stage:hover,
+.cancri-gold-ticket-lb__stage .wallet-card-stage,
+.cancri-gold-ticket-lb__stage .wallet-card-stage:hover {
+  width: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.cancri-gold-ticket-lb__stage {
+  width: min(100%, 560px);
+}
+
+[data-cancri-role="gold-ticket"] .wallet-card,
+.cancri-gold-ticket-lb .wallet-card {
+  container-type: inline-size;
+  container-name: gt-card;
+  width: 100% !important;
+  aspect-ratio: 1.76;
+  box-sizing: border-box !important;
+  /* Original uses clamp(25px,4.3vw,42px); map vw→cqw so it follows card */
+  padding: clamp(14px, 6.2cqw, 42px) !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-brand,
+.cancri-gold-ticket-lb .card-brand {
+  gap: clamp(6px, 2cqw, 10px) !important;
+  align-items: center !important;
+}
+
+/* Kill vendor `.card-brand svg { width: clamp(31px…) }` — it squashes the wordmark */
+[data-cancri-role="gold-ticket"] .card-brand svg,
+.cancri-gold-ticket-lb .card-brand svg {
+  width: auto !important;
+  max-width: none !important;
+  flex-shrink: 0 !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-brand .nexus-icon-svg,
+.cancri-gold-ticket-lb .card-brand .nexus-icon-svg {
+  /* Pay site Chinese patch: 26px on full card */
+  height: clamp(14px, 5.1cqw, 26px) !important;
+  color: #362203 !important;
+  fill: currentColor !important;
+  display: block !important;
+  filter: drop-shadow(0 1px 1px rgba(255, 253, 210, 0.85)) !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-brand .nexus-logo-svg,
+.cancri-gold-ticket-lb .card-brand .nexus-logo-svg {
+  /* Pay site Chinese patch: 22px on full card */
+  height: clamp(12px, 4.3cqw, 22px) !important;
+  color: #362203 !important;
+  fill: currentColor !important;
+  display: block !important;
+  filter: drop-shadow(0 1px 1px rgba(255, 253, 210, 0.85)) !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-edition,
+.cancri-gold-ticket-lb .card-edition {
+  display: inline-flex !important;
+  font-size: clamp(6px, 1.7cqw, 9px) !important;
+  letter-spacing: 0.12em !important;
+  padding: 0.25em 0.55em !important;
+  flex-shrink: 0;
+}
+
+[data-cancri-role="gold-ticket"] .card-name-wrap,
+.cancri-gold-ticket-lb .card-name-wrap {
+  padding-right: 14% !important;
+  max-width: 100%;
+}
+
+[data-cancri-role="gold-ticket"] .card-name,
+.cancri-gold-ticket-lb .card-name {
+  /* Pay uses clamp(32px,7vw,64px) for short @handle; long URL needs cqw + wrap */
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0.08em 0 !important;
+  font-size: clamp(10px, 4.35cqw, 34px) !important;
+  font-weight: 640 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  -webkit-text-stroke: 0 !important;
+  color: #362203 !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-label,
+.cancri-gold-ticket-lb .card-label {
+  font-size: clamp(5px, 1.55cqw, 9px) !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-bottomline strong,
+.cancri-gold-ticket-lb .card-bottomline strong {
+  font-size: clamp(6px, 1.9cqw, 11px) !important;
+}
+
+[data-cancri-role="gold-ticket"] .card-number,
+.cancri-gold-ticket-lb .card-number {
+  padding-right: 12% !important;
+}
+
+[data-cancri-role="gold-ticket"] .wallet-card::after,
+.cancri-gold-ticket-lb .wallet-card::after {
+  font-size: clamp(6px, 1.7cqw, 10px) !important;
+  letter-spacing: 0.28em !important;
+  right: 18% !important;
+}
+
+.cancri-gold-ticket-lb {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px 40px;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.cancri-gold-ticket-lb.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.cancri-gold-ticket-lb__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 10, 8, 0.62);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.cancri-gold-ticket-lb__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: min(100%, 520px);
+  transform: translateY(16px) scale(0.92);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cancri-gold-ticket-lb.is-open .cancri-gold-ticket-lb__panel {
+  transform: translateY(0) scale(1);
+}
+
+.cancri-gold-ticket-lb__stage {
+  width: 100%;
+}
+
+.cancri-gold-ticket-lb__share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7.5rem;
+  height: 2.25rem;
+  padding: 0 1.15rem;
+  border-radius: 999px;
+  border: 1px solid var(--cancri-pill-fill, #0d0d0d);
+  background: var(--cancri-pill-fill, #0d0d0d);
+  color: var(--cancri-pill-label, #ffffff);
+  font-family: var(--cancri-font-sans, inherit);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.cancri-gold-ticket-lb__share:hover,
+.cancri-gold-ticket-lb__share:focus-visible {
+  background: var(--cancri-pill-label, #ffffff);
+  color: var(--cancri-pill-fill, #0d0d0d);
+  outline: none;
+}
+
+.cancri-gold-ticket-lb__share[aria-busy="true"] {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.cancri-gold-ticket-lb__toast {
+  position: absolute;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translate(-50%, 8px);
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(20, 18, 16, 0.92);
+  color: #fff;
+  font-size: 0.8125rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  white-space: nowrap;
+}
+
+.cancri-gold-ticket-lb__toast.is-show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+html[data-cancri-theme="dark"] .cancri-gold-ticket-lb__share {
+  border-color: var(--cancri-pill-fill, #ffffff);
+  background: var(--cancri-pill-fill, #ffffff);
+  color: var(--cancri-pill-label, #0d0d0d);
+}
+
+html[data-cancri-theme="dark"] .cancri-gold-ticket-lb__share:hover,
+html[data-cancri-theme="dark"] .cancri-gold-ticket-lb__share:focus-visible {
+  background: var(--cancri-pill-label, #0d0d0d);
+  color: var(--cancri-pill-fill, #ffffff);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancri-gold-ticket-lb,
+  .cancri-gold-ticket-lb__panel {
+    transition: none !important;
+  }
+}

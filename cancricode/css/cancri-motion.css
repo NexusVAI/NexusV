@@ -1,0 +1,108 @@
+/**
+ * cancri-motion.css — Apple-style motion layer (OWNED).
+ *
+ * Everything is gated behind `html.cancri-motion`, which is only added by
+ * js/cancri-motion.js when JS runs AND prefers-reduced-motion is not set.
+ * Without JS the page renders fully visible — no hidden content.
+ *
+ * Sections with their own vendor/owned animations are deliberately excluded:
+ * hero title (Webflow SplitText), engineering-problems (data-scroll),
+ * integrations title/cards (cancri-integration.js).
+ */
+
+:root {
+  --cancri-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --cancri-ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --cancri-ease-press: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ---------- Scroll reveal (attribute is set + removed by JS) ---------- */
+
+html.cancri-motion [data-cancri-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.99);
+  transition:
+    opacity 0.9s var(--cancri-ease-out-quint),
+    transform 0.9s var(--cancri-ease-out-quint),
+    filter 0.9s var(--cancri-ease-out-quint);
+  transition-delay: var(--cancri-reveal-delay, 0s);
+  will-change: opacity, transform;
+}
+
+/* "blur" variant: Apple-style blur-to-sharp materialize (text/headings only —
+   never on elements that own a filter, e.g. codex drop-shadow hosts). */
+html.cancri-motion [data-cancri-reveal="blur"] {
+  filter: blur(12px);
+}
+
+html.cancri-motion [data-cancri-reveal].is-inview {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+html.cancri-motion [data-cancri-reveal="blur"].is-inview {
+  filter: blur(0px);
+}
+
+/* ---------- Pill press physics (Apple button feel) ---------- */
+
+html.cancri-motion [data-cancri-role="hero-ctas"] .cancri-hero-cta,
+html.cancri-motion [data-cancri-role="nav-cta"] .btn_main_wrap,
+html.cancri-motion [data-cancri-section="downloads"] .btn_main_wrap,
+html.cancri-motion [data-cancri-section="engineering-problems"] .btn_main_wrap {
+  transform: translate3d(var(--cancri-mag-x, 0px), var(--cancri-mag-y, 0px), 0)
+    scale(var(--cancri-press, 1));
+  transition: transform 0.5s var(--cancri-ease-spring);
+}
+
+html.cancri-motion [data-cancri-role="hero-ctas"] .cancri-hero-cta:active,
+html.cancri-motion [data-cancri-role="nav-cta"] .btn_main_wrap:active,
+html.cancri-motion [data-cancri-section="downloads"] .btn_main_wrap:active,
+html.cancri-motion [data-cancri-section="engineering-problems"] .btn_main_wrap:active {
+  --cancri-press: 0.96;
+  transition-duration: 0.12s;
+  transition-timing-function: var(--cancri-ease-press);
+}
+
+/* ---------- Hero headline link hover ---------- */
+
+html.cancri-motion [data-cancri-section="hero"] h1 a {
+  transition: color 0.3s ease, text-underline-offset 0.35s var(--cancri-ease-spring);
+}
+
+html.cancri-motion [data-cancri-section="hero"] h1 a:hover {
+  text-underline-offset: 0.12em;
+}
+
+/* ---------- Nav hairline + soft shadow once scrolled ---------- */
+
+/* Nav drop shadows removed — capsule morph + liquid glass live in cancri-liquid-glass.css */
+
+/* ---------- FAQ: smoother open/close than the inline defaults ---------- */
+
+html.cancri-motion [data-cancri-section="faq"] .faq-answer-wrap {
+  transition:
+    max-height 0.55s var(--cancri-ease-out-quint),
+    opacity 0.4s ease !important;
+}
+
+html.cancri-motion [data-cancri-section="faq"] .faq-icon {
+  transition: transform 0.5s var(--cancri-ease-spring) !important;
+}
+
+/* ---------- Download card tilt (transform is JS-driven) ---------- */
+
+html.cancri-motion [data-cancri-section="downloads"] .cancri-rimlight-host--download {
+  transform-style: preserve-3d;
+}
+
+/* ---------- Safety net ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html.cancri-motion [data-cancri-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}

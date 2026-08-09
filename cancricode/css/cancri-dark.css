@@ -1,0 +1,318 @@
+/**
+ * CancriCode dark theme tokens
+ * --------------------------------
+ * Activated by html[data-cancri-theme="dark"] (set in js/cancri-theme.js).
+ * Keep section-scoped overrides here; do not paint global .g_section_space.
+ */
+
+html[data-cancri-theme="dark"] {
+  color-scheme: dark;
+  --cancri-bg: #0d0d0d;
+  --cancri-surface: #1a1a1a;
+  --cancri-ink: #f5f5f5;
+  --cancri-muted: rgba(255, 255, 255, 0.62);
+  --cancri-border: rgba(255, 255, 255, 0.12);
+  --cancri-dark: #0d0d0d;
+  /* Filled capsules: white fill + dark label (inverse of light mode). */
+  --cancri-pill-fill: #ffffff;
+  --cancri-pill-label: #0d0d0d;
+  /* Override Webflow theme tokens so vendor text utilities invert. */
+  --_color-theme---background: var(--cancri-bg);
+  --_color-theme---text: var(--cancri-ink);
+  --_color-theme---link--text: var(--cancri-ink);
+  --_color-theme---link--text-hover: rgba(255, 255, 255, 0.72);
+  --_color-theme---border: var(--cancri-border);
+  --swatch--slate-dark: #f5f5f5;
+  --swatch--ivory-light: #0d0d0d;
+  --swatch--ivory-medium: #141414;
+}
+
+html[data-cancri-theme="dark"] body,
+html[data-cancri-theme="dark"] .page_wrap {
+  background: var(--cancri-bg) !important;
+  color: var(--cancri-ink) !important;
+}
+
+/* Navigation -------------------------------------------------------------- */
+html[data-cancri-theme="dark"] .nav_component {
+  /* Aligned with cancri-code liquid glass dark fill */
+  --cancri-nav-glass: rgba(40, 40, 43, 0.58);
+  --cancri-nav-glass-border: rgba(255, 255, 255, 0.14);
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-cancri-theme="dark"] .nav_wrap,
+html[data-cancri-theme="dark"] .nav_wrap.is-mobile,
+html[data-cancri-theme="dark"] .nav_wrap.is-desktop {
+  background: var(--cancri-nav-glass) !important;
+  background-color: var(--cancri-nav-glass) !important;
+  color: var(--cancri-ink) !important;
+  border: none !important;
+}
+
+/* Mobile drawer stays solid for readability when open. */
+html[data-cancri-theme="dark"] .nav_menu_wrap,
+html[data-cancri-theme="dark"] .nav_menu_scroll {
+  background: var(--cancri-bg) !important;
+  color: var(--cancri-ink) !important;
+  border-color: var(--cancri-border) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-cancri-theme="dark"] .nav_contain,
+html[data-cancri-theme="dark"] .nav_menu_contain {
+  background: transparent !important;
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] .nav_logo_wrap,
+html[data-cancri-theme="dark"] .nav_logo_wrap .nexus-icon-svg,
+html[data-cancri-theme="dark"] .nav_logo_wrap .nexus-logo-svg {
+  color: var(--cancri-ink) !important;
+  fill: currentColor !important;
+}
+
+html[data-cancri-theme="dark"] .nav_links_text,
+html[data-cancri-theme="dark"] .nav_links_link,
+html[data-cancri-theme="dark"] .nav_dropdown_text,
+html[data-cancri-theme="dark"] .nav_dropdown_link,
+html[data-cancri-theme="dark"] .nav_linkout_icon,
+html[data-cancri-theme="dark"] .nav_links_svg,
+html[data-cancri-theme="dark"] .nav_links_svg svg,
+html[data-cancri-theme="dark"] .icon-embed-xsmall,
+html[data-cancri-theme="dark"] .u-detail-s,
+html[data-cancri-theme="dark"] .u-color-faded {
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] .u-color-faded,
+html[data-cancri-theme="dark"] .nav_dropdown_main_scroll .u-detail-s {
+  color: var(--cancri-muted) !important;
+}
+
+html[data-cancri-theme="dark"] .nav_btn_line {
+  background-color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] .nav_dropdown_main_content.is-desktop,
+html[data-cancri-theme="dark"] .nav_dropdown_main_content.is-mobile {
+  background-color: var(--cancri-surface) !important;
+  border-color: var(--cancri-border) !important;
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] .nav_links_item.is-mobile {
+  border-bottom-color: var(--cancri-border) !important;
+}
+
+/* Sections ---------------------------------------------------------------- */
+html[data-cancri-theme="dark"] [data-cancri-section="hero"],
+html[data-cancri-theme="dark"] [data-cancri-section="codex-workflow"],
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"],
+html[data-cancri-theme="dark"] [data-cancri-section="faq"],
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] {
+  background: var(--cancri-bg) !important;
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="hero"],
+html[data-cancri-theme="dark"] .hero_wrap {
+  --_color-theme---background: var(--cancri-bg);
+  --_color-theme---text: var(--cancri-ink);
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] h1 {
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] h1 a,
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] h1 a .animate-word {
+  color: #2200ff !important;
+  text-decoration-color: #2200ff !important;
+}
+
+/* Hero CTA pills keep --cancri-pill-* contrast; don't inherit ink. */
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] .cancri-hero-cta.is-primary {
+  color: var(--cancri-pill-label) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] .cancri-hero-cta.is-primary:hover {
+  color: var(--cancri-pill-fill) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] .cancri-hero-cta.is-secondary {
+  color: var(--cancri-pill-fill) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="hero"] .cancri-hero-cta.is-secondary:hover {
+  color: var(--cancri-pill-label) !important;
+}
+
+/* Light-mode black CTA panel → white in dark mode. */
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_scroll-bg.is-kt3,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_container.is-kt3,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta-content_wrap.is-kt3,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta-asset_wrap.is-kt3,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .ktve-stage {
+  background-color: #ffffff !important;
+  color: #0d0d0d !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_title,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_subtitle,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_title.is-kt3,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_subtitle.is-kt3 {
+  color: #0d0d0d !important;
+}
+
+/* Pill on white panel: black fill / white label; hover outline invert. */
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] [data-scroll="button"].btn_main_wrap {
+  background: #0d0d0d !important;
+  color: #ffffff !important;
+  border-color: #0d0d0d !important;
+  box-shadow: none !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .big-cta_scroll-bg.is-kt3:hover [data-scroll="button"].btn_main_wrap,
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] [data-scroll="button"].btn_main_wrap:hover {
+  background: transparent !important;
+  color: #0d0d0d !important;
+  border-color: #0d0d0d !important;
+  box-shadow: 0 0 0 1px #0d0d0d !important;
+}
+
+/* Network graphic: ivory strokes / grey labels → dark on white panel. */
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .ktve-net line {
+  stroke: #0d0d0d !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .ktve-hub-title {
+  fill: #0d0d0d !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="engineering-problems"] .ktve-slot {
+  fill: #6b6960 !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="codex-workflow"] h2 {
+  color: #ffffff !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="codex-workflow"] .codex-col-text > h3 {
+  color: var(--cancri-brand, #2200ff) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="codex-workflow"] .cancri-brand-ink,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .cancri-brand-ink {
+  color: var(--cancri-brand, #2200ff) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="codex-workflow"] .codex-col-text > p {
+  color: #ffffff !important;
+}
+
+/* Downloads — beat inline #444/#555/#666/#777 */
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] h2,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] h3,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .u-display-s,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .g_heading,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .package_banner_list_item,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .package_banner_list_item div {
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] h2 .cancri-brand-ink {
+  color: var(--cancri-brand, #2200ff) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] p,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .u-paragraph-s,
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .u-font-mono {
+  color: var(--cancri-muted) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] {
+  --cancri-download-1: #1f1f1f;
+  --cancri-download-2: #1a1a1a;
+  --cancri-download-3: #151515;
+  --cancri-download-chip: #2a2a2a;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .package_banner .g_background {
+  background: var(--cancri-download-1) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .u-grid-desktop > .u-column-4:nth-child(2) .package_banner .g_background {
+  background: var(--cancri-download-2) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .u-grid-desktop > .u-column-4:nth-child(3) .package_banner .g_background {
+  background: var(--cancri-download-3) !important;
+}
+
+/* Filled pills already follow --cancri-pill-* tokens; keep disabled muted. */
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .btn_main_wrap[style*="pointer-events"],
+html[data-cancri-theme="dark"] [data-cancri-section="downloads"] .btn_main_wrap[style*="pointer-events"] .btn_main_text {
+  color: var(--cancri-muted) !important;
+  border-color: var(--cancri-border) !important;
+  background: transparent !important;
+}
+
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop > .nav_links_item > [data-cancri-role="nav-cta"] {
+  background: var(--cancri-pill-fill);
+}
+
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_main_text,
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_dropdown_link_wrap,
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_main_wrap.is-combo {
+  color: var(--cancri-pill-label) !important;
+}
+
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover {
+  background: var(--cancri-bg);
+  box-shadow: 0 0 0 1px var(--cancri-pill-fill);
+}
+
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover .btn_main_text,
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover .btn_dropdown_link_wrap,
+html[data-cancri-theme="dark"] .nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover .btn_main_wrap.is-combo {
+  color: var(--cancri-pill-fill) !important;
+}
+
+/* FAQ — beat remaining inline colors on answers / subcopy */
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] h2,
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .faq-trigger,
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .faq-question {
+  color: var(--cancri-ink) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .g_heading p,
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .faq-answer-wrap,
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .faq-answer-wrap div {
+  color: var(--cancri-muted) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .faq-item {
+  border-color: var(--cancri-border) !important;
+}
+
+html[data-cancri-theme="dark"] [data-cancri-section="faq"] .faq-icon-box {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--cancri-ink) !important;
+}
+
+/* Footer brand band stays #2200FF in both themes (no empty white slab). */
+html[data-cancri-theme="dark"] [data-cancri-section="footer"],
+html[data-cancri-theme="dark"] [data-cancri-section="footer"].u-theme-dark,
+html[data-cancri-theme="dark"] footer#footer {
+  background: #2200ff !important;
+  background-color: #2200ff !important;
+  color: #ffffff !important;
+  --_color-theme---background: #2200ff;
+  --_color-theme---text: #ffffff;
+}

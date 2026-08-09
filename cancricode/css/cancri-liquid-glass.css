@@ -1,0 +1,334 @@
+/**
+ * Liquid glass material for the landing navbar.
+ * Port of cancri-code model-menu-duck.css glass tokens + recipe.
+ * Refraction filter IDs: #cc-lg-nav-desktop / #cc-lg-nav-mobile (js/cancri-liquid-glass.js).
+ */
+
+.nav_component {
+  --cancri-nav-glass: rgba(250, 250, 251, 0.66);
+  --cancri-nav-glass-border: rgba(255, 255, 255, 0.5);
+  --cancri-glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+  --cancri-glass-glare: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.07) 22%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 64%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  /* Host centers the bar so it can morph into a floating capsule */
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  pointer-events: none;
+  transition: padding 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-cancri-theme="dark"] .nav_component {
+  --cancri-nav-glass: rgba(40, 40, 43, 0.58);
+  --cancri-nav-glass-border: rgba(255, 255, 255, 0.14);
+  --cancri-glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --cancri-glass-glare: none;
+}
+
+/* Liquid-glass stack on the host — no drop shadow */
+.nav_wrap,
+.nav_wrap.is-mobile,
+.nav_wrap.is-desktop {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  pointer-events: auto;
+  background: var(--cancri-nav-glass) !important;
+  background-color: var(--cancri-nav-glass) !important;
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--cancri-glass-inset);
+  -webkit-backdrop-filter: blur(2.5px) saturate(150%);
+  backdrop-filter: blur(2.5px) saturate(150%);
+  transition:
+    width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.4s ease;
+}
+
+/* Scroll down → floating capsule; scroll up → full bar */
+html.cancri-nav-scrolled .nav_component {
+  padding: 10px 16px 0;
+}
+
+html.cancri-nav-scrolled .nav_wrap,
+html.cancri-nav-scrolled .nav_wrap.is-mobile,
+html.cancri-nav-scrolled .nav_wrap.is-desktop {
+  width: min(100%, 72rem);
+  max-width: min(100%, 72rem);
+  border-radius: 999px;
+  border: none;
+  /* Clip square backdrop “ears”; reopen when menu/dropdown needs to escape */
+  overflow: hidden;
+}
+
+html.cancri-nav-scrolled .nav_wrap:has(.w--open),
+html.cancri-nav-scrolled .nav_wrap:has([aria-expanded="true"]),
+html.cancri-nav-menu-busy .nav_wrap,
+html.cancri-nav-menu-busy .nav_wrap.is-mobile,
+html.cancri-nav-menu-busy .nav_wrap.is-desktop {
+  overflow: visible;
+}
+
+/* Keep content clear of the pill’s curved ends + vertically center row */
+html.cancri-nav-scrolled .nav_wrap .nav_contain,
+html.cancri-nav-scrolled .nav_wrap .nav_menu_contain {
+  display: flex !important;
+  align-items: center !important;
+  padding-left: clamp(1.25rem, 2vw, 2rem);
+  padding-right: clamp(1.25rem, 2vw, 2rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav_component,
+  .nav_wrap,
+  .nav_wrap.is-mobile,
+  .nav_wrap.is-desktop {
+    transition: none !important;
+  }
+}
+
+.nav_wrap.is-desktop.cancri-glass-refract {
+  -webkit-backdrop-filter: blur(2.5px) saturate(150%) url("#cc-lg-nav-desktop");
+  backdrop-filter: blur(2.5px) saturate(150%) url("#cc-lg-nav-desktop");
+}
+
+.nav_wrap.is-mobile.cancri-glass-refract {
+  -webkit-backdrop-filter: blur(2.5px) saturate(150%) url("#cc-lg-nav-mobile");
+  backdrop-filter: blur(2.5px) saturate(150%) url("#cc-lg-nav-mobile");
+}
+
+/*
+ * Menu open/close uses full-viewport clip-path. Drop glass compositing + CTA
+ * morph for that window so close doesn’t hitch.
+ */
+html.cancri-nav-menu-busy .nav_wrap.cancri-glass-active,
+html.cancri-nav-menu-busy .nav_wrap.cancri-glass-refract {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.cancri-nav-menu-busy .nav_wrap.cancri-glass-active::before {
+  opacity: 0;
+}
+
+html.cancri-nav-menu-busy .cancri-nav-capsule-cta,
+html.cancri-nav-menu-busy .cancri-nav-capsule-cta .nav_btn_layout,
+html.cancri-nav-menu-busy .cancri-nav-capsule-cta__label {
+  transition: none !important;
+}
+
+html.cancri-nav-menu-busy .cancri-nav-capsule-cta {
+  width: 1.5rem !important;
+  min-width: 1.5rem !important;
+  max-width: 1.5rem !important;
+  height: 1.5rem !important;
+  min-height: 1.5rem !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  color: var(--cancri-ink) !important;
+}
+
+html.cancri-nav-menu-busy .cancri-nav-capsule-cta__label {
+  opacity: 0 !important;
+}
+
+html.cancri-nav-menu-busy .cancri-nav-capsule-cta .nav_btn_layout {
+  opacity: 1 !important;
+  transform: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+/* Diagonal specular glare (light theme only via --cancri-glass-glare) */
+.nav_wrap.cancri-glass-active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--cancri-glass-glare);
+}
+
+html.cancri-nav-scrolled .nav_wrap.cancri-glass-active::before {
+  clip-path: inset(0 round 999px);
+}
+
+/* Keep chrome / dropdowns above the glare layer */
+.nav_wrap.cancri-glass-active > * {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * Capsule nav: hamburger lines → CTA pill "试试 Cancri Code"
+ * Default = compact icon (kill Webflow .w-nav-button padding:18px).
+ * Expanded CTA only while scrolled + menu not open.
+ */
+.cancri-nav-capsule-cta {
+  position: relative;
+  float: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  box-sizing: border-box;
+  width: 1.5rem !important;
+  min-width: 1.5rem !important;
+  max-width: 1.5rem !important;
+  height: 1.5rem !important;
+  min-height: 1.5rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  cursor: pointer;
+  border: none !important;
+  border-radius: 0.5rem;
+  background: transparent !important;
+  color: var(--cancri-ink);
+  font-size: inherit;
+  transition:
+    width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.cancri-nav-capsule-cta .nav_btn_layout {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  gap: var(--nav--hamburger-gap, 0.4rem);
+  transition:
+    opacity 0.3s ease,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.45s ease,
+    margin 0.45s ease;
+}
+
+.cancri-nav-capsule-cta__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.86);
+  white-space: nowrap;
+  font-family: var(--cancri-font-sans, inherit);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.28s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Expanded CTA — scrolled capsule only (never during menu busy/close) */
+html.cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open) {
+  width: auto !important;
+  max-width: none !important;
+  min-width: 8.25rem !important;
+  height: 2rem !important;
+  min-height: 2rem !important;
+  padding: 0 0.85rem !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--cancri-pill-fill, #0d0d0d) !important;
+  background: var(--cancri-pill-fill, #0d0d0d) !important;
+  color: var(--cancri-pill-label, #ffffff) !important;
+}
+
+html.cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open):hover {
+  background: var(--cancri-pill-label, #ffffff) !important;
+  color: var(--cancri-pill-fill, #0d0d0d) !important;
+  border-color: var(--cancri-pill-fill, #0d0d0d) !important;
+}
+
+html.cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open):hover .cancri-nav-capsule-cta__label {
+  color: inherit;
+}
+
+html.cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open) .nav_btn_layout {
+  opacity: 0;
+  transform: scale(0.55);
+  width: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+html.cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open) .cancri-nav-capsule-cta__label {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  color: inherit;
+}
+
+html.cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open) .nav_btn_line {
+  background: transparent !important;
+}
+
+/* Menu open / scroll-up: stay icon-sized, never keep CTA footprint */
+.cancri-nav-capsule-cta.w--open,
+html:not(.cancri-nav-scrolled) .cancri-nav-capsule-cta {
+  width: 1.5rem !important;
+  min-width: 1.5rem !important;
+  max-width: 1.5rem !important;
+  height: 1.5rem !important;
+  min-height: 1.5rem !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  color: var(--cancri-ink) !important;
+}
+
+.cancri-nav-capsule-cta.w--open .cancri-nav-capsule-cta__label,
+html:not(.cancri-nav-scrolled) .cancri-nav-capsule-cta .cancri-nav-capsule-cta__label {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+html[data-cancri-theme="dark"].cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open) {
+  background: var(--cancri-pill-fill, #ffffff) !important;
+  color: var(--cancri-pill-label, #0d0d0d) !important;
+  border-color: var(--cancri-pill-fill, #ffffff) !important;
+}
+
+html[data-cancri-theme="dark"].cancri-nav-scrolled:not(.cancri-nav-menu-busy) .cancri-nav-capsule-cta:not(.w--open):hover {
+  background: var(--cancri-pill-label, #0d0d0d) !important;
+  color: var(--cancri-pill-fill, #ffffff) !important;
+  border-color: var(--cancri-pill-fill, #ffffff) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancri-nav-capsule-cta,
+  .cancri-nav-capsule-cta .nav_btn_layout,
+  .cancri-nav-capsule-cta__label {
+    transition: none !important;
+  }
+}
