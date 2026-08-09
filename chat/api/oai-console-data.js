@@ -126,6 +126,84 @@
     });
   }
 
+  // SingleFile 快照里的「界面已焕然一新」等 Dismiss 按钮没有 React 处理器，点了无反应。
+  var NAV_UPDATE_SEEN_KEY = "nexusv_console_nav_update_dismissed_v1";
+  var UPDATE_DISMISS_KEY = "nexusv_console_update_dismissed_v1";
+
+  function hideEl(node) {
+    if (!node) return;
+    node.style.display = "none";
+    node.setAttribute("hidden", "");
+  }
+
+  function wireStaticDismissers() {
+    // 硬化：.lkCln:before 铺满按钮但未 pointer-events:none，部分环境下会吃掉点击
+    if (!document.getElementById("nexusv-console-dismiss-fix")) {
+      var s = document.createElement("style");
+      s.id = "nexusv-console-dismiss-fix";
+      s.textContent =
+        ".lkCln:before{pointer-events:none!important}" +
+        'button[aria-label="Dismiss navigation update"],' +
+        'button[aria-label^="Dismiss update:"]{position:relative;z-index:2;pointer-events:auto}';
+      document.head.appendChild(s);
+    }
+
+    var navBtn = document.querySelector(
+      'button[aria-label="Dismiss navigation update"]'
+    );
+    if (navBtn) {
+      var navCard =
+        navBtn.closest(".a6re5") ||
+        navBtn.closest(".rxdQY") ||
+        navBtn.closest("._3eq3b");
+      try {
+        if (localStorage.getItem(NAV_UPDATE_SEEN_KEY) === "1") hideEl(navCard);
+      } catch (_e) {}
+      if (navCard && !navBtn.__nexusvDismissBound) {
+        navBtn.__nexusvDismissBound = true;
+        navBtn.addEventListener(
+          "click",
+          function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              localStorage.setItem(NAV_UPDATE_SEEN_KEY, "1");
+            } catch (_e2) {}
+            hideEl(navCard);
+          },
+          true
+        );
+      }
+    }
+
+    var dismissed = {};
+    try {
+      dismissed = JSON.parse(localStorage.getItem(UPDATE_DISMISS_KEY) || "{}") || {};
+    } catch (_e3) {
+      dismissed = {};
+    }
+    document.querySelectorAll('button[aria-label^="Dismiss update:"]').forEach(function (btn) {
+      var label = btn.getAttribute("aria-label") || "";
+      var row = btn.closest("._8lZuy") || btn.parentElement;
+      if (dismissed[label]) hideEl(row);
+      if (!row || btn.__nexusvDismissBound) return;
+      btn.__nexusvDismissBound = true;
+      btn.addEventListener(
+        "click",
+        function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dismissed[label] = 1;
+          try {
+            localStorage.setItem(UPDATE_DISMISS_KEY, JSON.stringify(dismissed));
+          } catch (_e4) {}
+          hideEl(row);
+        },
+        true
+      );
+    });
+  }
+
   function ensureConsoleCss() {
     if (document.querySelector('link[href*="console.css"]')) return;
     var l = document.createElement("link");
@@ -759,6 +837,7 @@
   async function boot() {
     ensureConsoleCss();
     trimSidebar();
+    wireStaticDismissers();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
