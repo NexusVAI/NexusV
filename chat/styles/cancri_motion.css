@@ -1411,10 +1411,16 @@ html[data-theme="light"] .auth-error {
     color: #b3422f;
 }
 
-/* Turnstile 已弃用（登录改画布验证码）；旧脚本若插入占位槽则强制不占位 */
+/* Turnstile 已弃用（登录改画布验证码）；旧脚本若插入占位槽则强制不占位。
+   含 #authCaptchaContainer:has(#loginTurnstileMount)：bridge 曾给父槽
+   min-height:72px + display:block，子挂件被下面规则隐藏后只剩空白带。
+   画布验证码走 .auth-captcha-wrap，不受 :has(#loginTurnstileMount) 影响。 */
 #loginTurnstileStatus,
 #loginTurnstileContainer,
-#loginTurnstileMount {
+#loginTurnstileMount,
+#authCaptchaContainer:empty,
+#authCaptchaContainer:has(#loginTurnstileMount),
+#authCaptchaContainer:has(#loginTurnstileStatus) {
     display: none !important;
     margin: 0 !important;
     min-height: 0 !important;
@@ -1422,12 +1428,6 @@ html[data-theme="light"] .auth-error {
     overflow: hidden !important;
     padding: 0 !important;
     border: 0 !important;
-}
-
-#authCaptchaContainer:empty {
-    display: none;
-    margin: 0;
-    min-height: 0;
 }
 
 #authSendOtpBtn[style*="display: none"],
