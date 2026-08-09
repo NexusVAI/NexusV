@@ -33,7 +33,7 @@
     return [
       { url: root + "api/", label: "概览" },
       { url: root + "api_apply.html", label: "联系我们" },
-      { url: root + "api_keys.html", label: "控制台" },
+      { url: root + "api/console.html", label: "控制台" },
       { url: root + "api_models.html", label: "模型" },
       { url: root + "api_docs.html", label: "文档" },
       { url: root + "pricing.html", label: "套餐" },

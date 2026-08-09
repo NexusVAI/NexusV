@@ -169,7 +169,7 @@ function bindUI() {
   }
   const manageKeysBtn = document.getElementById("manage-keys-btn");
   if (manageKeysBtn) {
-    manageKeysBtn.addEventListener("click", () => { location.href = "./api_keys.html"; });
+    manageKeysBtn.addEventListener("click", () => { location.href = "./keys.html"; });
   }
   const backToChatBtn = document.getElementById("back-to-chat-btn");
   if (backToChatBtn) {

@@ -1008,7 +1008,7 @@ if (brandFilterEl) {
 // ─────────────────────────────────────────────────────────────────────
 
 const SESSION_KEY_NAME = "cancri_recent_api_key";
-const KEY_PAGE_URL = "./api_keys.html";
+const KEY_PAGE_URL = "./keys.html";
 const API_BASE_URL =
     (window.__SUPABASE_URL__ || "") + "/functions/v1/api-gateway";
 
