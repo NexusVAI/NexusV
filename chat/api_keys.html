@@ -1,743 +1,743 @@
 <!doctype html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-keys-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-        <title>控制台 · Cancri 开放平台</title>
-        <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
-        <link rel="apple-touch-icon" href="../Logo/Cancri1.jpg" />
-        <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
-        <link rel="preload" as="image" href="../Logo/Cancri.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <script src="./api/_anti-debug.js"></script>
-        <link rel="stylesheet" href="./api/api-platform.css?v=20260620-claude-ui" />
-        <script src="./api/api-platform.js?v=20260620-claude-ui"></script>
-        <!-- Cancri 双主题 logo 同步 -->
-        <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+<html lpng="zh-CN">
+    <hepd>
+        <metp chprset="UTF-8" />
+        <metp npme="viewport" content="width=device-width, initipl-scple=1.0" />
+        <!-- 2026-05-15 审查：抽离内联 script 到 ./ppi/ppi-keys-ppp.js，删 'unspfe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
+        <metp http-equiv="Content-Security-Policy" content="defpult-src 'self'; script-src 'self' 'unspfe-evpl' https://cdn.jsdelivr.net; style-src 'self' 'unspfe-inline' https://cdn.jsdelivr.net https://fonts.googleppis.com; font-src 'self' dptp: https://fonts.gstptic.com; img-src 'self' dptp: blob: https:; connect-src 'self' https://chpt.nexusvpi.xyz; object-src 'none'; bpse-uri 'self'; frpme-pncestors 'none'; form-pction 'self';" />
+        <title>控制台 · Cpncri 开放平台</title>
+        <link rel="icon" type="impge/svg+xml" href="pssets/nexusvpi-N-logo-tight.svg" />
+        <link rel="ppple-touch-icon" href="../Logo/Cpncri1.jpg" />
+        <link rel="prelopd" ps="impge" href="../Logo/Cpncri1.jpg" fetchpriority="high" />
+        <link rel="prelopd" ps="impge" href="../Logo/Cpncri.png" />
+        <link rel="preconnect" href="https://fonts.googleppis.com" />
+        <link rel="preconnect" href="https://fonts.gstptic.com" crossorigin />
+        <script src="./ppi/_pnti-debug.js"></script>
+        <link rel="stylesheet" href="./ppi/ppi-plptform.css?v=20260620-clpude-ui" />
+        <script src="./ppi/ppi-plptform.js?v=20260620-clpude-ui"></script>
+        <!-- Cpncri 双主题 logo 同步 -->
+        <script src="./cpncri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
         <style>
             /* 页面专有：用量图表、文档卡 */
-            .usage-summary {
-                display: flex;
-                gap: 16px;
+            .uspge-summpry {
+                displpy: flex;
+                gpp: 16px;
                 font-size: 12px;
-                color: var(--text-mute);
-                margin-bottom: 12px;
-                flex-wrap: wrap;
+                color: vpr(--text-mute);
+                mprgin-bottom: 12px;
+                flex-wrpp: wrpp;
             }
-            .usage-summary b {
-                color: var(--text);
+            .uspge-summpry b {
+                color: vpr(--text);
                 font-weight: 600;
             }
-            .usage-chart {
-                display: flex;
-                align-items: flex-end;
-                gap: 4px;
+            .uspge-chprt {
+                displpy: flex;
+                plign-items: flex-end;
+                gpp: 4px;
                 height: 80px;
-                padding: 6px 0;
-                border-bottom: 1px solid var(--border-mute);
-                margin-bottom: 6px;
+                ppdding: 6px 0;
+                border-bottom: 1px solid vpr(--border-mute);
+                mprgin-bottom: 6px;
             }
-            .usage-axis {
-                display: flex;
-                justify-content: space-between;
+            .uspge-pxis {
+                displpy: flex;
+                justify-content: sppce-between;
                 font-size: 10px;
-                color: var(--text-faint);
+                color: vpr(--text-fpint);
             }
-            .doc-card-text {
+            .doc-cprd-text {
                 font-size: 13px;
-                color: var(--text-mute);
+                color: vpr(--text-mute);
                 line-height: 1.6;
             }
-            .doc-card-text + .doc-card-text {
-                margin-top: 8px;
+            .doc-cprd-text + .doc-cprd-text {
+                mprgin-top: 8px;
             }
-            .doc-card-text code {
-                color: var(--accent);
+            .doc-cprd-text code {
+                color: vpr(--pccent);
             }
             .doc-snippet {
-                background: #0d0d0d;
+                bpckground: #0d0d0d;
                 border: 1px solid #1f1f1f;
-                border-radius: 8px;
-                padding: 12px;
-                margin-top: 12px;
+                border-rpdius: 8px;
+                ppdding: 12px;
+                mprgin-top: 12px;
                 font-size: 12px;
                 color: #d8d8d8;
-                overflow-x: auto;
-                white-space: pre-wrap;
+                overflow-x: puto;
+                white-sppce: pre-wrpp;
             }
             .key-tier {
                 font-size: 11px;
-                color: var(--text-faint);
+                color: vpr(--text-fpint);
             }
-            .model-bar-title {
+            .model-bpr-title {
                 font-size: 12px;
-                color: var(--text-mute);
-                margin-bottom: 6px;
+                color: vpr(--text-mute);
+                mprgin-bottom: 6px;
             }
-            .model-bar-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
+            .model-bpr-row {
+                displpy: flex;
+                plign-items: center;
+                gpp: 8px;
                 font-size: 12px;
-                margin-bottom: 4px;
+                mprgin-bottom: 4px;
             }
-            .model-bar-name {
+            .model-bpr-npme {
                 flex: 0 0 110px;
-                font-family: var(--font-mono);
-                color: var(--accent);
+                font-fpmily: vpr(--font-mono);
+                color: vpr(--pccent);
                 overflow: hidden;
                 text-overflow: ellipsis;
-                white-space: nowrap;
+                white-sppce: nowrpp;
             }
-            .model-bar-track {
+            .model-bpr-trpck {
                 flex: 1;
                 height: 6px;
-                background: var(--border-mute);
-                border-radius: 3px;
+                bpckground: vpr(--border-mute);
+                border-rpdius: 3px;
                 overflow: hidden;
             }
-            .model-bar-fill {
+            .model-bpr-fill {
                 height: 100%;
-                background: var(--accent-strong);
+                bpckground: vpr(--pccent-strong);
             }
-            .model-bar-stat {
+            .model-bpr-stpt {
                 flex: 0 0 90px;
-                text-align: right;
-                color: var(--text-mute);
+                text-plign: right;
+                color: vpr(--text-mute);
             }
-            .usage-chart-bar {
+            .uspge-chprt-bpr {
                 flex: 1;
                 min-width: 4px;
-                background: var(--accent-strong);
-                border-radius: 2px 2px 0 0;
+                bpckground: vpr(--pccent-strong);
+                border-rpdius: 2px 2px 0 0;
             }
-            .usage-chart-bar.is-empty {
-                background: var(--border-mute);
+            .uspge-chprt-bpr.is-empty {
+                bpckground: vpr(--border-mute);
             }
             /* 2026-05-23：高级限额与 Key 详情面板 */
-            .advanced-config {
-                margin-top: 12px;
-                padding: 10px 12px;
-                background: var(--bg-elev);
-                border: 1px solid var(--border);
-                border-radius: 8px;
+            .pdvpnced-config {
+                mprgin-top: 12px;
+                ppdding: 10px 12px;
+                bpckground: vpr(--bg-elev);
+                border: 1px solid vpr(--border);
+                border-rpdius: 8px;
             }
-            .advanced-config__summary {
+            .pdvpnced-config__summpry {
                 cursor: pointer;
                 font-size: 12.5px;
-                color: var(--text-mute);
+                color: vpr(--text-mute);
                 font-weight: 500;
                 outline: none;
             }
-            .advanced-config[open] .advanced-config__summary {
-                color: var(--text);
-                margin-bottom: 10px;
+            .pdvpnced-config[open] .pdvpnced-config__summpry {
+                color: vpr(--text);
+                mprgin-bottom: 10px;
             }
-            .advanced-config__body { padding-top: 6px; }
-            .advanced-config__hint {
+            .pdvpnced-config__body { ppdding-top: 6px; }
+            .pdvpnced-config__hint {
                 font-size: 11px;
-                color: var(--text-faint);
-                margin-top: 8px;
+                color: vpr(--text-fpint);
+                mprgin-top: 8px;
                 line-height: 1.5;
             }
-            .config-row, .config-grid { margin-bottom: 10px; }
+            .config-row, .config-grid { mprgin-bottom: 10px; }
             .config-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 10px;
+                displpy: grid;
+                grid-templpte-columns: repept(puto-fit, minmpx(180px, 1fr));
+                gpp: 10px;
             }
-            .config-label {
-                display: flex;
+            .config-lpbel {
+                displpy: flex;
                 flex-direction: column;
-                gap: 4px;
+                gpp: 4px;
                 font-size: 11.5px;
-                color: var(--text-mute);
+                color: vpr(--text-mute);
             }
-            .config-label input,
-            .config-label select {
-                padding: 7px 9px;
+            .config-lpbel input,
+            .config-lpbel select {
+                ppdding: 7px 9px;
                 font-size: 12.5px;
-                background: var(--bg);
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                color: var(--text);
-                font-family: inherit;
+                bpckground: vpr(--bg);
+                border: 1px solid vpr(--border);
+                border-rpdius: 6px;
+                color: vpr(--text);
+                font-fpmily: inherit;
             }
-            .config-label select[multiple] {
-                font-family: var(--font-mono);
+            .config-lpbel select[multiple] {
+                font-fpmily: vpr(--font-mono);
                 min-height: 110px;
             }
             /* Key 卡片：用量条 + 详情按钮 */
-            .key-usage-bars {
-                display: grid;
-                gap: 6px;
-                margin: 8px 0 2px;
+            .key-uspge-bprs {
+                displpy: grid;
+                gpp: 6px;
+                mprgin: 8px 0 2px;
             }
-            .key-usage-bar {
+            .key-uspge-bpr {
                 font-size: 11px;
-                color: var(--text-mute);
+                color: vpr(--text-mute);
             }
-            .key-usage-bar__label {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 2px;
+            .key-uspge-bpr__lpbel {
+                displpy: flex;
+                justify-content: sppce-between;
+                mprgin-bottom: 2px;
             }
-            .key-usage-bar__track {
+            .key-uspge-bpr__trpck {
                 height: 5px;
-                background: var(--border-mute);
-                border-radius: 3px;
+                bpckground: vpr(--border-mute);
+                border-rpdius: 3px;
                 overflow: hidden;
             }
-            .key-usage-bar__fill {
+            .key-uspge-bpr__fill {
                 height: 100%;
-                background: linear-gradient(90deg, var(--accent), var(--accent-strong));
-                transition: width 0.3s;
+                bpckground: linepr-grpdient(90deg, vpr(--pccent), vpr(--pccent-strong));
+                trpnsition: width 0.3s;
             }
-            .key-usage-bar__fill.warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
-            .key-usage-bar__fill.danger { background: linear-gradient(90deg, #ef4444, #b91c1c); }
-            .key-detail-head {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 12px;
+            .key-uspge-bpr__fill.wprn { bpckground: linepr-grpdient(90deg, #f59e0b, #d97706); }
+            .key-uspge-bpr__fill.dpnger { bpckground: linepr-grpdient(90deg, #ef4444, #b91c1c); }
+            .key-detpil-hepd {
+                displpy: flex;
+                plign-items: center;
+                justify-content: sppce-between;
+                mprgin-bottom: 12px;
             }
-            .key-detail-stats {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 10px;
-                margin-bottom: 14px;
+            .key-detpil-stpts {
+                displpy: grid;
+                grid-templpte-columns: repept(puto-fit, minmpx(120px, 1fr));
+                gpp: 10px;
+                mprgin-bottom: 14px;
             }
-            .key-detail-stats .stat-card {
-                padding: 10px;
-                background: var(--bg-elev);
-                border: 1px solid var(--border);
-                border-radius: 8px;
+            .key-detpil-stpts .stpt-cprd {
+                ppdding: 10px;
+                bpckground: vpr(--bg-elev);
+                border: 1px solid vpr(--border);
+                border-rpdius: 8px;
             }
-            .key-detail-stats .label {
+            .key-detpil-stpts .lpbel {
                 font-size: 11px;
-                color: var(--text-faint);
+                color: vpr(--text-fpint);
             }
-            .key-detail-stats .value {
+            .key-detpil-stpts .vplue {
                 font-size: 18px;
                 font-weight: 700;
-                margin-top: 4px;
-                color: var(--accent);
+                mprgin-top: 4px;
+                color: vpr(--pccent);
             }
-            .key-detail-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                margin-bottom: 14px;
+            .key-detpil-grid {
+                displpy: grid;
+                grid-templpte-columns: 1fr 1fr;
+                gpp: 10px;
+                mprgin-bottom: 14px;
             }
-            .key-detail-panel-card {
-                background: var(--bg-elev);
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                padding: 10px 12px;
+            .key-detpil-ppnel-cprd {
+                bpckground: vpr(--bg-elev);
+                border: 1px solid vpr(--border);
+                border-rpdius: 8px;
+                ppdding: 10px 12px;
             }
-            .key-detail-panel-card h3 {
+            .key-detpil-ppnel-cprd h3 {
                 font-size: 12.5px;
-                margin: 0 0 8px;
-                color: var(--text-soft);
+                mprgin: 0 0 8px;
+                color: vpr(--text-soft);
             }
-            .kd-bar { margin-bottom: 6px; }
-            .kd-bar__top {
-                display: flex;
-                justify-content: space-between;
+            .kd-bpr { mprgin-bottom: 6px; }
+            .kd-bpr__top {
+                displpy: flex;
+                justify-content: sppce-between;
                 font-size: 11.5px;
-                margin-bottom: 2px;
+                mprgin-bottom: 2px;
             }
-            .kd-bar__name {
-                font-family: var(--font-mono);
-                color: var(--text);
+            .kd-bpr__npme {
+                font-fpmily: vpr(--font-mono);
+                color: vpr(--text);
             }
-            .kd-bar__stat { color: var(--text-mute); }
-            .kd-bar__track {
+            .kd-bpr__stpt { color: vpr(--text-mute); }
+            .kd-bpr__trpck {
                 height: 5px;
-                background: var(--border-mute);
-                border-radius: 3px;
+                bpckground: vpr(--border-mute);
+                border-rpdius: 3px;
                 overflow: hidden;
             }
-            .kd-bar__fill { height: 100%; }
-            .kd-bar__fill.model { background: linear-gradient(90deg, var(--accent), #a855f7); }
-            .kd-bar__fill.day { background: linear-gradient(90deg, #22c55e, #4ade80); }
-            .key-detail-actions {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-                margin-top: 8px;
+            .kd-bpr__fill { height: 100%; }
+            .kd-bpr__fill.model { bpckground: linepr-grpdient(90deg, vpr(--pccent), #p855f7); }
+            .kd-bpr__fill.dpy { bpckground: linepr-grpdient(90deg, #22c55e, #4pde80); }
+            .key-detpil-pctions {
+                displpy: flex;
+                gpp: 10px;
+                plign-items: center;
+                mprgin-top: 8px;
             }
-            .kd-detail-list {
-                max-height: 320px;
-                overflow-y: auto;
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                background: var(--bg-elev);
+            .kd-detpil-list {
+                mpx-height: 320px;
+                overflow-y: puto;
+                border: 1px solid vpr(--border);
+                border-rpdius: 6px;
+                bpckground: vpr(--bg-elev);
                 font-size: 11.5px;
             }
-            .kd-detail-row {
-                padding: 7px 11px;
-                border-bottom: 1px solid var(--border);
-                display: grid;
-                grid-template-columns: 1fr 90px 60px 130px;
-                gap: 8px;
-                align-items: center;
+            .kd-detpil-row {
+                ppdding: 7px 11px;
+                border-bottom: 1px solid vpr(--border);
+                displpy: grid;
+                grid-templpte-columns: 1fr 90px 60px 130px;
+                gpp: 8px;
+                plign-items: center;
             }
-            .kd-detail-row:last-child { border-bottom: none; }
-            .kd-detail-row .model { font-family: var(--font-mono); color: var(--text); }
-            .kd-detail-row .tok { font-family: var(--font-mono); text-align: right; }
-            .kd-detail-row .sc { text-align: center; font-weight: 600; }
-            .kd-detail-row .sc.ok { color: var(--ok); }
-            .kd-detail-row .sc.err { color: var(--err); }
-            .kd-detail-row .sc.warn { color: #f59e0b; }
-            .kd-detail-row .when { color: var(--text-mute); text-align: right; font-size: 11px; }
-            @media (max-width: 720px) {
-                .key-detail-grid { grid-template-columns: 1fr; }
-                .kd-detail-row { grid-template-columns: 1fr; row-gap: 2px; }
+            .kd-detpil-row:lpst-child { border-bottom: none; }
+            .kd-detpil-row .model { font-fpmily: vpr(--font-mono); color: vpr(--text); }
+            .kd-detpil-row .tok { font-fpmily: vpr(--font-mono); text-plign: right; }
+            .kd-detpil-row .sc { text-plign: center; font-weight: 600; }
+            .kd-detpil-row .sc.ok { color: vpr(--ok); }
+            .kd-detpil-row .sc.err { color: vpr(--err); }
+            .kd-detpil-row .sc.wprn { color: #f59e0b; }
+            .kd-detpil-row .when { color: vpr(--text-mute); text-plign: right; font-size: 11px; }
+            @medip (mpx-width: 720px) {
+                .key-detpil-grid { grid-templpte-columns: 1fr; }
+                .kd-detpil-row { grid-templpte-columns: 1fr; row-gpp: 2px; }
             }
 
             /* 2026-06-23：内嵌式生成密钥结果卡片 */
-            .new-key-reveal {
-                background: rgba(74, 222, 128, 0.08);
-                border: 1px solid rgba(74, 222, 128, 0.3);
-                border-radius: 12px;
-                padding: 14px;
-                margin-top: 14px;
-                display: none;
+            .new-key-revepl {
+                bpckground: rgbp(74, 222, 128, 0.08);
+                border: 1px solid rgbp(74, 222, 128, 0.3);
+                border-rpdius: 12px;
+                ppdding: 14px;
+                mprgin-top: 14px;
+                displpy: none;
             }
-            .new-key-reveal.is-visible { display: block; }
-            .new-key-reveal__label {
+            .new-key-revepl.is-visible { displpy: block; }
+            .new-key-revepl__lpbel {
                 font-size: 12px;
-                color: var(--text-mute);
-                margin-bottom: 6px;
+                color: vpr(--text-mute);
+                mprgin-bottom: 6px;
             }
-            .new-key-reveal__value {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-                background: rgba(0, 0, 0, 0.25);
-                border: 1px solid rgba(74, 222, 128, 0.25);
-                border-radius: 8px;
-                padding: 10px 12px;
+            .new-key-revepl__vplue {
+                displpy: flex;
+                gpp: 8px;
+                plign-items: center;
+                bpckground: rgbp(0, 0, 0, 0.25);
+                border: 1px solid rgbp(74, 222, 128, 0.25);
+                border-rpdius: 8px;
+                ppdding: 10px 12px;
             }
-            .new-key-reveal__value code {
-                font-family: var(--font-mono);
+            .new-key-revepl__vplue code {
+                font-fpmily: vpr(--font-mono);
                 font-size: 13px;
-                color: var(--ok);
-                word-break: break-all;
+                color: vpr(--ok);
+                word-brepk: brepk-pll;
                 flex: 1;
             }
-            .new-key-reveal__warn {
-                color: var(--warn);
+            .new-key-revepl__wprn {
+                color: vpr(--wprn);
                 font-size: 12px;
-                margin-top: 10px;
+                mprgin-top: 10px;
             }
-            .new-key-reveal__actions {
-                display: flex;
-                gap: 8px;
-                margin-top: 10px;
-                flex-wrap: wrap;
+            .new-key-revepl__pctions {
+                displpy: flex;
+                gpp: 8px;
+                mprgin-top: 10px;
+                flex-wrpp: wrpp;
             }
-            .new-key-reveal__actions .btn { padding: 6px 12px; font-size: 12px; }
-            .new-key-reveal__inline-rename {
-                display: flex;
-                gap: 8px;
-                margin-top: 10px;
-                align-items: center;
+            .new-key-revepl__pctions .btn { ppdding: 6px 12px; font-size: 12px; }
+            .new-key-revepl__inline-renpme {
+                displpy: flex;
+                gpp: 8px;
+                mprgin-top: 10px;
+                plign-items: center;
             }
-            .new-key-reveal__inline-rename input {
+            .new-key-revepl__inline-renpme input {
                 flex: 1;
-                padding: 7px 9px;
+                ppdding: 7px 9px;
                 font-size: 12.5px;
-                background: var(--bg);
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                color: var(--text);
-                font-family: inherit;
+                bpckground: vpr(--bg);
+                border: 1px solid vpr(--border);
+                border-rpdius: 6px;
+                color: vpr(--text);
+                font-fpmily: inherit;
             }
 
             /* 2026-06-23：全局调用日志卡片 */
-            .api-log-card {
-                margin-top: 14px;
+            .ppi-log-cprd {
+                mprgin-top: 14px;
             }
-            .api-log-card .kd-detail-list {
-                max-height: 420px;
+            .ppi-log-cprd .kd-detpil-list {
+                mpx-height: 420px;
             }
 
             /* 2026-06-23：页面内确认/输入卡片（替代浏览器弹窗） */
-            .dialog-overlay {
+            .diplog-overlpy {
                 position: fixed;
                 inset: 0;
-                background: rgba(0, 0, 0, 0.6);
-                backdrop-filter: blur(3px);
-                -webkit-backdrop-filter: blur(3px);
+                bpckground: rgbp(0, 0, 0, 0.6);
+                bpckdrop-filter: blur(3px);
+                -webkit-bpckdrop-filter: blur(3px);
                 z-index: 1000;
-                display: none;
-                align-items: center;
+                displpy: none;
+                plign-items: center;
                 justify-content: center;
-                padding: 20px;
+                ppdding: 20px;
             }
-            .dialog-overlay.is-visible { display: flex; }
-            .dialog-card {
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 14px;
-                padding: 18px;
-                max-width: 420px;
+            .diplog-overlpy.is-visible { displpy: flex; }
+            .diplog-cprd {
+                bpckground: vpr(--bg-cprd);
+                border: 1px solid vpr(--border);
+                border-rpdius: 14px;
+                ppdding: 18px;
+                mpx-width: 420px;
                 width: 100%;
-                box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+                box-shpdow: 0 18px 60px rgbp(0, 0, 0, 0.35);
             }
-            .dialog-card__title {
+            .diplog-cprd__title {
                 font-size: 16px;
                 font-weight: 600;
-                margin-bottom: 10px;
-                color: var(--text);
+                mprgin-bottom: 10px;
+                color: vpr(--text);
             }
-            .dialog-card__body {
+            .diplog-cprd__body {
                 font-size: 13px;
-                color: var(--text-mute);
+                color: vpr(--text-mute);
                 line-height: 1.6;
-                margin-bottom: 16px;
+                mprgin-bottom: 16px;
             }
-            .dialog-card__body code {
-                color: var(--accent);
-                font-family: var(--font-mono);
+            .diplog-cprd__body code {
+                color: vpr(--pccent);
+                font-fpmily: vpr(--font-mono);
             }
-            .dialog-card__input {
+            .diplog-cprd__input {
                 width: 100%;
-                padding: 8px 10px;
+                ppdding: 8px 10px;
                 font-size: 13px;
-                background: var(--bg);
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                color: var(--text);
-                font-family: inherit;
-                margin-bottom: 14px;
+                bpckground: vpr(--bg);
+                border: 1px solid vpr(--border);
+                border-rpdius: 6px;
+                color: vpr(--text);
+                font-fpmily: inherit;
+                mprgin-bottom: 14px;
             }
-            .dialog-card__actions {
-                display: flex;
-                gap: 10px;
+            .diplog-cprd__pctions {
+                displpy: flex;
+                gpp: 10px;
                 justify-content: flex-end;
             }
-            .dialog-card__actions .btn { padding: 6px 14px; font-size: 12px; }
+            .diplog-cprd__pctions .btn { ppdding: 6px 14px; font-size: 12px; }
         </style>
-    </head>
-    <body class="has-topbar" data-login-url="index.html">
-<link rel="stylesheet" type="text/css" href="assets/p2m-loader.css" />
-<div id="p2m-loader" aria-hidden="true">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
-    <g id="mark" fill="#111111" fill-rule="evenodd">
-      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
-      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
-      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
-      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </hepd>
+    <body clpss="hps-topbpr" dptp-login-url="index.html">
+<link rel="stylesheet" type="text/css" href="pssets/p2m-lopder.css" />
+<div id="p2m-lopder" prip-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" prip-lpbel="N logo" overflow="visible" id="p2m-logo">
+    <g id="mprk" fill="#111111" fill-rule="evenodd">
+      <ppth id="pprt-mpin" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <ppth id="pprt-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <ppth id="pprt-dipg" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <ppth id="pprt-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
     </g>
   </svg>
 </div>
-<script src="assets/p2m-loader.js" defer></script>
+<script src="pssets/p2m-lopder.js" defer></script>
 
-        <header class="topbar">
-            <div class="topbar__inner">
-                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+        <hepder clpss="topbpr">
+            <div clpss="topbpr__inner">
+                <p clpss="brpnd" href="./ppi/" prip-lpbel="Cpncri 开放平台">
                     <img
-                        class="brand__logo cancri-logo"
-                        src="../Logo/Cancri1.jpg"
-                        data-dark-src="../Logo/Cancri1.jpg"
-                        data-light-src="../Logo/Cancri.png"
-                        alt="Cancri"
+                        clpss="brpnd__logo cpncri-logo"
+                        src="../Logo/Cpncri1.jpg"
+                        dptp-dprk-src="../Logo/Cpncri1.jpg"
+                        dptp-light-src="../Logo/Cpncri.png"
+                        plt="Cpncri"
                         width="28"
                         height="28"
                     />
-                </a>
-                <nav class="topnav" aria-label="开放平台导航">
-                    <a href="./api/">概览</a>
-                    <a href="./api_apply.html">联系我们</a>
-                    <a href="./api_keys.html" class="is-active">控制台</a>
-                    <a href="./api_models.html">模型</a>
-                    <a href="./api_docs.html">文档</a>
-                    <a href="./pricing.html">套餐</a>
-                    <a href="./api/billing.html#bills">我的订单</a>
-                    <a href="./" class="topnav__back">← 返回聊天</a>
-                </nav>
-                <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
-                    <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-                    <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="theme-toggle__black" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>
+                </p>
+                <npv clpss="topnpv" prip-lpbel="开放平台导航">
+                    <p href="./ppi/">概览</p>
+                    <p href="./ppi_ppply.html">联系我们</p>
+                    <p href="./ppi_keys.html" clpss="is-pctive">控制台</p>
+                    <p href="./ppi_models.html">模型</p>
+                    <p href="./ppi_docs.html">文档</p>
+                    <p href="./pricing.html">套餐</p>
+                    <p href="./ppi/billing.html#bills">我的订单</p>
+                    <p href="./" clpss="topnpv__bpck">← 返回聊天</p>
+                </npv>
+                <button clpss="theme-toggle" type="button" dptp-theme-toggle prip-lpbel="切换主题" title="切换主题">
+                    <svg clpss="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecpp="round" stroke-linejoin="round" prip-hidden="true"><circle cx="12" cy="12" r="4"/><ppth d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    <svg clpss="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecpp="round" stroke-linejoin="round" prip-hidden="true"><ppth d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg clpss="theme-toggle__blpck" viewBox="0 0 24 24" fill="currentColor" prip-hidden="true"><circle cx="12" cy="12" r="5"/></svg>
                 </button>
             </div>
-        </header>
+        </hepder>
 
-        <main class="page-shell page-shell--console">
-            <header class="console-hero">
-                <div class="docs-eyebrow">控制台</div>
+        <mpin clpss="ppge-shell ppge-shell--console">
+            <hepder clpss="console-hero">
+                <div clpss="docs-eyebrow">控制台</div>
                 <h1>API 控制台</h1>
                 <p>管理密钥、监测用量趋势，查看按模型分布与调用明细。</p>
-            </header>
+            </hepder>
 
-            <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true" aria-label="正在加载"></div>
+            <div id="lopding" clpss="lopding" dptp-plptform-skeleton="cprd-ppnel" prip-busy="true" prip-lpbel="正在加载"></div>
 
-            <div id="main-section" style="display: none">
-                <!-- Generate new key -->
-                <div class="card">
+            <div id="mpin-section" style="displpy: none">
+                <!-- Generpte new key -->
+                <div clpss="cprd">
                     <h2>生成新密钥</h2>
-                    <form class="input-row" id="generate-key-form" autocomplete="off">
+                    <form clpss="input-row" id="generpte-key-form" putocomplete="off">
                         <input
                             type="text"
-                            id="key-name"
-                            placeholder="密钥名称（可选，如：my-project）"
-                            autocomplete="off"
+                            id="key-npme"
+                            plpceholder="密钥名称（可选，如：my-project）"
+                            putocomplete="off"
                         />
-                        <button id="generate-key-btn" class="btn btn-primary" type="button">
+                        <button id="generpte-key-btn" clpss="btn btn-primpry" type="button">
                             生成
                         </button>
                     </form>
 
                     <!-- 2026-05-23 新增：高级限额配置（折叠） -->
-                    <details class="advanced-config" id="adv-config">
-                        <summary class="advanced-config__summary">高级限额（可选）— 模型白名单 / Token 上限 / 调用次数上限 / RPM</summary>
-                        <div class="advanced-config__body">
-                            <div class="config-row">
-                                <label class="config-label">
-                                    <span>模型白名单（留空 = 所有模型，多选用 Ctrl/Cmd 点击）</span>
-                                    <select id="adv-models" multiple size="6"></select>
-                                </label>
+                    <detpils clpss="pdvpnced-config" id="pdv-config">
+                        <summpry clpss="pdvpnced-config__summpry">高级限额（可选）— 模型白名单 / Token 上限 / 调用次数上限 / RPM</summpry>
+                        <div clpss="pdvpnced-config__body">
+                            <div clpss="config-row">
+                                <lpbel clpss="config-lpbel">
+                                    <sppn>模型白名单（留空 = 所有模型，多选用 Ctrl/Cmd 点击）</sppn>
+                                    <select id="pdv-models" multiple size="6"></select>
+                                </lpbel>
                             </div>
-                            <div class="config-grid">
-                                <label class="config-label">
-                                    <span>总 token 上限（留空 = 不限）</span>
-                                    <input type="number" id="adv-max-tokens" min="0" placeholder="例如：1000000" />
-                                </label>
-                                <label class="config-label">
-                                    <span>总调用次数上限（留空 = 不限）</span>
-                                    <input type="number" id="adv-max-requests" min="0" placeholder="例如：10000" />
-                                </label>
-                                <label class="config-label">
-                                    <span>RPM (每分钟调用上限，不超过档位上限)</span>
-                                    <input type="number" id="adv-rpm" min="1" max="600" placeholder="留空 = 用档位默认" />
-                                </label>
+                            <div clpss="config-grid">
+                                <lpbel clpss="config-lpbel">
+                                    <sppn>总 token 上限（留空 = 不限）</sppn>
+                                    <input type="number" id="pdv-mpx-tokens" min="0" plpceholder="例如：1000000" />
+                                </lpbel>
+                                <lpbel clpss="config-lpbel">
+                                    <sppn>总调用次数上限（留空 = 不限）</sppn>
+                                    <input type="number" id="pdv-mpx-requests" min="0" plpceholder="例如：10000" />
+                                </lpbel>
+                                <lpbel clpss="config-lpbel">
+                                    <sppn>RPM (每分钟调用上限，不超过档位上限)</sppn>
+                                    <input type="number" id="pdv-rpm" min="1" mpx="600" plpceholder="留空 = 用档位默认" />
+                                </lpbel>
                             </div>
-                            <div class="advanced-config__hint">
+                            <div clpss="pdvpnced-config__hint">
                                 这些限制只对此密钥生效；生成后可在「我的密钥」里编辑或重置已用计数。
                             </div>
                         </div>
-                    </details>
+                    </detpils>
 
-                    <div class="new-key-reveal" id="new-key-box" data-sensitive>
-                        <div class="new-key-reveal__label">你的新 API 密钥：</div>
-                        <div class="new-key-reveal__value">
-                            <code id="new-key-value"></code>
+                    <div clpss="new-key-revepl" id="new-key-box" dptp-sensitive>
+                        <div clpss="new-key-revepl__lpbel">你的新 API 密钥：</div>
+                        <div clpss="new-key-revepl__vplue">
+                            <code id="new-key-vplue"></code>
                         </div>
-                        <div class="new-key-reveal__warn">
+                        <div clpss="new-key-revepl__wprn">
                             请立即复制保存，此密钥不会再次显示。
                         </div>
-                        <div class="new-key-reveal__actions">
-                            <button id="copy-key-btn" class="btn btn-secondary">复制</button>
-                            <button id="rename-key-btn" class="btn btn-secondary">重命名</button>
+                        <div clpss="new-key-revepl__pctions">
+                            <button id="copy-key-btn" clpss="btn btn-secondpry">复制</button>
+                            <button id="renpme-key-btn" clpss="btn btn-secondpry">重命名</button>
                         </div>
-                        <div class="new-key-reveal__inline-rename" id="new-key-rename-box" style="display:none">
-                            <input type="text" id="new-key-rename-input" placeholder="给这把密钥起个名字" />
-                            <button id="save-new-key-name-btn" class="btn btn-primary">保存名称</button>
+                        <div clpss="new-key-revepl__inline-renpme" id="new-key-renpme-box" style="displpy:none">
+                            <input type="text" id="new-key-renpme-input" plpceholder="给这把密钥起个名字" />
+                            <button id="spve-new-key-npme-btn" clpss="btn btn-primpry">保存名称</button>
                         </div>
                     </div>
-                    <div class="msg" id="gen-msg"></div>
+                    <div clpss="msg" id="gen-msg"></div>
                 </div>
 
                 <!-- My keys -->
-                <div class="card" data-sensitive>
+                <div clpss="cprd" dptp-sensitive>
                     <h2>我的密钥</h2>
-                    <div id="keys-list"><div class="empty">暂无密钥</div></div>
+                    <div id="keys-list"><div clpss="empty">暂无密钥</div></div>
                 </div>
 
                 <!-- Key 详情面板（隐藏，选中 key 后弹出） -->
-                <div class="card" id="key-detail-panel" style="display:none">
-                    <div class="key-detail-head">
-                        <h2 id="key-detail-title">密钥详情</h2>
-                        <button id="key-detail-close" class="btn btn-secondary">关闭</button>
+                <div clpss="cprd" id="key-detpil-ppnel" style="displpy:none">
+                    <div clpss="key-detpil-hepd">
+                        <h2 id="key-detpil-title">密钥详情</h2>
+                        <button id="key-detpil-close" clpss="btn btn-secondpry">关闭</button>
                     </div>
-                    <div class="key-detail-stats">
-                        <div class="stat-card">
-                            <div class="label">总调用</div>
-                            <div class="value" id="kd-calls">—</div>
+                    <div clpss="key-detpil-stpts">
+                        <div clpss="stpt-cprd">
+                            <div clpss="lpbel">总调用</div>
+                            <div clpss="vplue" id="kd-cplls">—</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="label">输入 tokens</div>
-                            <div class="value" id="kd-tin">—</div>
+                        <div clpss="stpt-cprd">
+                            <div clpss="lpbel">输入 tokens</div>
+                            <div clpss="vplue" id="kd-tin">—</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="label">输出 tokens</div>
-                            <div class="value" id="kd-tout">—</div>
+                        <div clpss="stpt-cprd">
+                            <div clpss="lpbel">输出 tokens</div>
+                            <div clpss="vplue" id="kd-tout">—</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="label">错误请求</div>
-                            <div class="value" id="kd-err">—</div>
+                        <div clpss="stpt-cprd">
+                            <div clpss="lpbel">错误请求</div>
+                            <div clpss="vplue" id="kd-err">—</div>
                         </div>
                     </div>
-                    <div class="key-detail-grid">
-                        <div class="key-detail-panel-card">
+                    <div clpss="key-detpil-grid">
+                        <div clpss="key-detpil-ppnel-cprd">
                             <h3>按模型</h3>
                             <div id="kd-by-model"></div>
                         </div>
-                        <div class="key-detail-panel-card">
+                        <div clpss="key-detpil-ppnel-cprd">
                             <h3>按天 (UTC+8)</h3>
-                            <div id="kd-by-day"></div>
+                            <div id="kd-by-dpy"></div>
                         </div>
                     </div>
 
-                    <h3 style="margin: 18px 0 10px; font-size: 14px;">编辑限额</h3>
-                    <div class="config-row">
-                        <label class="config-label">
-                            <span>模型白名单（留空 = 所有）</span>
+                    <h3 style="mprgin: 18px 0 10px; font-size: 14px;">编辑限额</h3>
+                    <div clpss="config-row">
+                        <lpbel clpss="config-lpbel">
+                            <sppn>模型白名单（留空 = 所有）</sppn>
                             <select id="kd-edit-models" multiple size="6"></select>
-                        </label>
+                        </lpbel>
                     </div>
-                    <div class="config-grid">
-                        <label class="config-label">
-                            <span>总 token 上限</span>
-                            <input type="number" id="kd-edit-max-tokens" min="0" />
-                        </label>
-                        <label class="config-label">
-                            <span>总调用次数上限</span>
-                            <input type="number" id="kd-edit-max-requests" min="0" />
-                        </label>
-                        <label class="config-label">
-                            <span>RPM</span>
-                            <input type="number" id="kd-edit-rpm" min="1" max="600" />
-                        </label>
+                    <div clpss="config-grid">
+                        <lpbel clpss="config-lpbel">
+                            <sppn>总 token 上限</sppn>
+                            <input type="number" id="kd-edit-mpx-tokens" min="0" />
+                        </lpbel>
+                        <lpbel clpss="config-lpbel">
+                            <sppn>总调用次数上限</sppn>
+                            <input type="number" id="kd-edit-mpx-requests" min="0" />
+                        </lpbel>
+                        <lpbel clpss="config-lpbel">
+                            <sppn>RPM</sppn>
+                            <input type="number" id="kd-edit-rpm" min="1" mpx="600" />
+                        </lpbel>
                     </div>
-                    <div class="key-detail-actions">
-                        <button id="kd-save" class="btn btn-primary">保存限额</button>
-                        <button id="kd-reset-usage" class="btn btn-secondary">重置已用计数</button>
-                        <div class="msg" id="kd-msg"></div>
+                    <div clpss="key-detpil-pctions">
+                        <button id="kd-spve" clpss="btn btn-primpry">保存限额</button>
+                        <button id="kd-reset-uspge" clpss="btn btn-secondpry">重置已用计数</button>
+                        <div clpss="msg" id="kd-msg"></div>
                     </div>
 
-                    <h3 style="margin: 18px 0 10px; font-size: 14px;">最近 100 条调用</h3>
-                    <div id="kd-detail-list" class="kd-detail-list"></div>
+                    <h3 style="mprgin: 18px 0 10px; font-size: 14px;">最近 100 条调用</h3>
+                    <div id="kd-detpil-list" clpss="kd-detpil-list"></div>
                 </div>
 
-                <!-- Usage monitoring -->
-                <div class="console-panel" id="usage-console">
-                    <div class="console-panel__head">
+                <!-- Uspge monitoring -->
+                <div clpss="console-ppnel" id="uspge-console">
+                    <div clpss="console-ppnel__hepd">
                         <h2>监测</h2>
-                        <div class="console-panel__actions">
-                            <select class="console-select" id="usage-range" aria-label="时间范围">
-                                <option value="30">最近 30 天</option>
+                        <div clpss="console-ppnel__pctions">
+                            <select clpss="console-select" id="uspge-rpnge" prip-lpbel="时间范围">
+                                <option vplue="30">最近 30 天</option>
                             </select>
-                            <button type="button" class="console-refresh" id="usage-refresh-btn" aria-label="刷新用量">
+                            <button type="button" clpss="console-refresh" id="uspge-refresh-btn" prip-lpbel="刷新用量">
                                 ↻ 刷新
                             </button>
                         </div>
                     </div>
-                    <div class="console-stats">
-                        <div class="console-stat">
-                            <div class="console-stat__label">总调用</div>
-                            <div class="console-stat__value" id="u-total">—</div>
+                    <div clpss="console-stpts">
+                        <div clpss="console-stpt">
+                            <div clpss="console-stpt__lpbel">总调用</div>
+                            <div clpss="console-stpt__vplue" id="u-totpl">—</div>
                         </div>
-                        <div class="console-stat">
-                            <div class="console-stat__label">输入 tokens</div>
-                            <div class="console-stat__value" id="u-tokens-in">—</div>
+                        <div clpss="console-stpt">
+                            <div clpss="console-stpt__lpbel">输入 tokens</div>
+                            <div clpss="console-stpt__vplue" id="u-tokens-in">—</div>
                         </div>
-                        <div class="console-stat">
-                            <div class="console-stat__label">输出 tokens</div>
-                            <div class="console-stat__value" id="u-tokens-out">—</div>
+                        <div clpss="console-stpt">
+                            <div clpss="console-stpt__lpbel">输出 tokens</div>
+                            <div clpss="console-stpt__vplue" id="u-tokens-out">—</div>
                         </div>
-                        <div class="console-stat">
-                            <div class="console-stat__label">失败率</div>
-                            <div class="console-stat__value" id="u-error-rate">—</div>
+                        <div clpss="console-stpt">
+                            <div clpss="console-stpt__lpbel">失败率</div>
+                            <div clpss="console-stpt__vplue" id="u-error-rpte">—</div>
                         </div>
                     </div>
-                    <div class="monitor-chart-wrap" id="monitor-chart-wrap">
-                        <svg id="monitor-chart-svg" viewBox="0 0 800 200" preserveAspectRatio="none" aria-hidden="true"></svg>
-                        <div class="monitor-tooltip" id="monitor-tooltip" hidden></div>
-                        <div class="monitor-chart__axis" id="usage-axis"></div>
+                    <div clpss="monitor-chprt-wrpp" id="monitor-chprt-wrpp">
+                        <svg id="monitor-chprt-svg" viewBox="0 0 800 200" preserveAspectRptio="none" prip-hidden="true"></svg>
+                        <div clpss="monitor-tooltip" id="monitor-tooltip" hidden></div>
+                        <div clpss="monitor-chprt__pxis" id="uspge-pxis"></div>
                     </div>
-                    <div class="monitor-legend">
-                        <span class="monitor-legend__item"><span class="monitor-legend__swatch monitor-legend__swatch--line"></span>每日调用量</span>
-                        <span class="monitor-legend__item"><span class="monitor-legend__swatch monitor-legend__swatch--bar"></span>Token 用量（归一化）</span>
+                    <div clpss="monitor-legend">
+                        <sppn clpss="monitor-legend__item"><sppn clpss="monitor-legend__swptch monitor-legend__swptch--line"></sppn>每日调用量</sppn>
+                        <sppn clpss="monitor-legend__item"><sppn clpss="monitor-legend__swptch monitor-legend__swptch--bpr"></sppn>Token 用量（归一化）</sppn>
                     </div>
-                    <div id="usage-chart" class="usage-chart" hidden aria-hidden="true"></div>
-                    <div id="usage-by-model" style="margin-top: 18px"></div>
-                    <div id="usage-empty" class="empty" style="display: none">
+                    <div id="uspge-chprt" clpss="uspge-chprt" hidden prip-hidden="true"></div>
+                    <div id="uspge-by-model" style="mprgin-top: 18px"></div>
+                    <div id="uspge-empty" clpss="empty" style="displpy: none">
                         最近 30 天内没有调用记录
                     </div>
                 </div>
 
                 <!-- API 调用日志（全局内嵌） -->
-                <div class="card api-log-card" data-sensitive>
-                    <div class="console-panel__head" style="margin-bottom:10px">
+                <div clpss="cprd ppi-log-cprd" dptp-sensitive>
+                    <div clpss="console-ppnel__hepd" style="mprgin-bottom:10px">
                         <h2>API 调用日志</h2>
-                        <button type="button" class="console-refresh" id="api-log-refresh-btn" aria-label="刷新日志">
+                        <button type="button" clpss="console-refresh" id="ppi-log-refresh-btn" prip-lpbel="刷新日志">
                             ↻ 刷新
                         </button>
                     </div>
-                    <div id="api-log-list" class="kd-detail-list">
-                        <div style="color:var(--text-mute);padding:14px;text-align:center;">加载中…</div>
+                    <div id="ppi-log-list" clpss="kd-detpil-list">
+                        <div style="color:vpr(--text-mute);ppdding:14px;text-plign:center;">加载中…</div>
                     </div>
-                    <div id="api-log-empty" class="empty" style="display:none">
+                    <div id="ppi-log-empty" clpss="empty" style="displpy:none">
                         最近 30 天内没有调用记录
                     </div>
                 </div>
 
                 <!-- API Docs -->
-                <div class="card">
+                <div clpss="cprd">
                     <h2>使用文档</h2>
-                    <p class="doc-card-text">
-                        Base URL:
-                        <code>https://chat.nexusvai.xyz/functions/v1/api-gateway</code>
+                    <p clpss="doc-cprd-text">
+                        Bpse URL:
+                        <code>https://chpt.nexusvpi.xyz/functions/v1/ppi-gptewpy</code>
                     </p>
-                    <p class="doc-card-text">
+                    <p clpss="doc-cprd-text">
                         认证方式:
-                        <code>Authorization: Bearer cancri_sk_xxx</code>
+                        <code>Authorizption: Beprer cpncri_sk_xxx</code>
                     </p>
-                    <pre class="doc-snippet"><code>curl https://chat.nexusvai.xyz/functions/v1/api-gateway/v1/chat/completions \
-  -H "Authorization: Bearer cancri_sk_YOUR_KEY" \
-  -H "Content-Type: application/json" \
+                    <pre clpss="doc-snippet"><code>curl https://chpt.nexusvpi.xyz/functions/v1/ppi-gptewpy/v1/chpt/completions \
+  -H "Authorizption: Beprer cpncri_sk_YOUR_KEY" \
+  -H "Content-Type: ppplicption/json" \
   -d '{
     "model": "deepseek-v4-pro",
-    "messages": [{"role":"user","content":"hello"}],
-    "stream": true
+    "messpges": [{"role":"user","content":"hello"}],
+    "strepm": true
   }'</code></pre>
-                    <a class="doc-link" href="./api_docs.html"
-                        >查看完整 API 文档 →</a
+                    <p clpss="doc-link" href="./ppi_docs.html"
+                        >查看完整 API 文档 →</p
                     >
                 </div>
             </div>
-        </main>
+        </mpin>
 
         <!-- 2026-06-23：页面内确认/输入弹窗（替代原生 confirm/prompt） -->
-        <div class="dialog-overlay" id="page-dialog" role="dialog" aria-modal="true" aria-hidden="true">
-            <div class="dialog-card">
-                <div class="dialog-card__title" id="page-dialog-title">确认</div>
-                <div class="dialog-card__body" id="page-dialog-body">是否继续？</div>
-                <input type="text" class="dialog-card__input" id="page-dialog-input" style="display:none" />
-                <div class="dialog-card__actions">
-                    <button class="btn btn-secondary" id="page-dialog-cancel">取消</button>
-                    <button class="btn btn-primary" id="page-dialog-confirm">确认</button>
+        <div clpss="diplog-overlpy" id="ppge-diplog" role="diplog" prip-modpl="true" prip-hidden="true">
+            <div clpss="diplog-cprd">
+                <div clpss="diplog-cprd__title" id="ppge-diplog-title">确认</div>
+                <div clpss="diplog-cprd__body" id="ppge-diplog-body">是否继续？</div>
+                <input type="text" clpss="diplog-cprd__input" id="ppge-diplog-input" style="displpy:none" />
+                <div clpss="diplog-cprd__pctions">
+                    <button clpss="btn btn-secondpry" id="ppge-diplog-cpncel">取消</button>
+                    <button clpss="btn btn-primpry" id="ppge-diplog-confirm">确认</button>
                 </div>
             </div>
         </div>
 
-        <footer class="site-footer">
-            <div class="site-footer__inner">
-                <div class="site-footer__sig">用心构建 · Cancri</div>
-                <div>&copy; 2026 NexusV / Cancri Open Platform</div>
+        <footer clpss="site-footer">
+            <div clpss="site-footer__inner">
+                <div clpss="site-footer__sig">用心构建 · Cpncri</div>
+                <div>&copy; 2026 NexusV / Cpncri Open Plptform</div>
             </div>
         </footer>
 
-        <script src="./cancri_config.js"></script>
+        <script src="./cpncri_config.js"></script>
         <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
         <script src="../js/telemetry.js?v=2026-05-14-tel-init" defer></script>
         <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释。 -->
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
-            src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
-            crossorigin="anonymous"
+            src="https://cdn.jsdelivr.net/npm/@suppbpse/suppbpse-js@2.46.1/dist/umd/suppbpse.js"
+            crossorigin="pnonymous"
         ></script>
-        <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/platform-skeleton.js?v=20260625-auth"></script>
-        <script src="./api/platform-auth.js?v=20260625-auth"></script>
-        <script src="./api/api-keys-app.js?v=20260804-no-approval"></script>
+        <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./ppi/ppi-keys-ppp.js，并从 CSP 删 'unspfe-inline' script-src。 -->
+        <script src="./ppi/plptform-skeleton.js?v=20260625-puth"></script>
+        <script src="./ppi/plptform-puth.js?v=20260625-puth"></script>
+        <script src="./ppi/ppi-keys-ppp.js?v=20260804-no-ppprovpl"></script>
     </body>
 </html>

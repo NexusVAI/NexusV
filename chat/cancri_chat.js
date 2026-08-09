@@ -4869,6 +4869,34 @@
 	var chatNavLastActiveIndex = null;
 	var chatNavTurnData = [];
 	var chatNavPreviewBound = false;
+	var chatNavIdleBound = false;
+	var chatNavIdleTimer = null;
+	function wakeChatNav() {
+		const navEl = document.getElementById("chatNav");
+		if (!navEl) return;
+		if (chatNavIdleTimer != null) {
+			clearTimeout(chatNavIdleTimer);
+			chatNavIdleTimer = null;
+		}
+		navEl.classList.remove("is-idle");
+		navEl.classList.add("is-awake");
+	}
+	function armChatNavIdle() {
+		const navEl = document.getElementById("chatNav");
+		if (!navEl || navEl.hidden) return;
+		if (chatNavIdleTimer != null) clearTimeout(chatNavIdleTimer);
+		navEl.classList.remove("is-awake");
+		chatNavIdleTimer = setTimeout(() => {
+			chatNavIdleTimer = null;
+			if (!navEl.hidden && !navEl.matches(":hover")) navEl.classList.add("is-idle");
+		}, 2600);
+	}
+	function bindChatNavIdle(navEl) {
+		if (chatNavIdleBound || !navEl) return;
+		chatNavIdleBound = true;
+		navEl.addEventListener("mouseenter", () => wakeChatNav());
+		navEl.addEventListener("mouseleave", () => armChatNavIdle());
+	}
 	function getUserMessageSnippet(domNode, fallbackContent) {
 		const fromDataset = (domNode?.dataset?.userText || "").trim();
 		if (fromDataset) return fromDataset;
@@ -5007,6 +5035,11 @@
 				chatNavObserver = null;
 			}
 			chatNavLastActiveIndex = null;
+			navEl.classList.remove("is-idle", "is-awake");
+			if (chatNavIdleTimer != null) {
+				clearTimeout(chatNavIdleTimer);
+				chatNavIdleTimer = null;
+			}
 			return;
 		}
 		hideChatNavPreview();
@@ -5036,7 +5069,10 @@
 			listEl.appendChild(btn);
 		});
 		bindChatNavPreviewEvents(listEl);
+		bindChatNavIdle(navEl);
 		navEl.hidden = false;
+		wakeChatNav();
+		armChatNavIdle();
 		setupChatNavObserver(userBubbles);
 	}
 	function scrollChatToUserMessage(messageIndex) {
@@ -5055,6 +5091,7 @@
 		if (chatNavLastActiveIndex === messageIndex) return;
 		chatNavLastActiveIndex = messageIndex;
 		const listEl = document.getElementById("chatNavList");
+		const navEl = document.getElementById("chatNav");
 		if (!listEl) return;
 		let activeEl = null;
 		listEl.querySelectorAll(".chat-nav-item").forEach((item) => {
@@ -5066,6 +5103,10 @@
 			block: "nearest",
 			behavior: "smooth"
 		});
+		if (navEl && !navEl.hidden) {
+			wakeChatNav();
+			if (!navEl.matches(":hover")) armChatNavIdle();
+		}
 	}
 	function setupChatNavObserver(bubbles) {
 		if (!chatMessages || !("IntersectionObserver" in window)) return;
@@ -5884,7 +5925,7 @@
 			models_url: "https://www.nexusvai.xyz/chat/api_models.html",
 			pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
 			apply_url: "https://www.nexusvai.xyz/chat/api_apply.html",
-			keys_url: "https://www.nexusvai.xyz/chat/api_keys.html",
+			keys_url: "https://www.nexusvai.xyz/chat/api/keys.html",
 			key_format: "cancri_sk_xxx",
 			protocols: [
 				"OpenAI Chat Completions",
@@ -6169,7 +6210,7 @@
 			},
 			{
 				q: "Key 怎么撤销？",
-				a: "https://www.nexusvai.xyz/chat/api_keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。"
+				a: "https://www.nexusvai.xyz/chat/api/keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。"
 			},
 			{
 				q: "为什么 Claude Code 连不上？",
