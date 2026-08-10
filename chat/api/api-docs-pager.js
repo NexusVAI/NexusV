@@ -202,7 +202,9 @@
 
     (function initMobileDrawer() {
         const drawer = document.getElementById("drawer");
-        const sidebar = document.querySelector("nav.cnc-sidebar");
+        const sidebar = document.querySelector(
+            "#oai-mount-sidebar nav.cnc-sidebar",
+        );
         const panel = drawer?.querySelector("[data-mobile-nav-panels]");
         if (!drawer || !sidebar || !panel) return;
 
@@ -219,6 +221,9 @@
             a.addEventListener("click", () => {
                 drawer.classList.remove("translate-x-0");
                 drawer.classList.add("translate-x-full");
+                drawer.setAttribute("data-open", "false");
+                drawer.classList.add("hidden");
+                drawer.classList.remove("flex");
             });
         });
         panel.appendChild(clone);

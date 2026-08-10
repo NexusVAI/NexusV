@@ -21,12 +21,12 @@
   ];
 
   function detectLang() {
+    // 控制台产品文案以中文为准；localStorage.lang=en 仍可强制英文模态框。
     try {
       var saved = localStorage.getItem("lang");
-      if (saved === "zh" || saved === "en") return saved;
+      if (saved === "en") return "en";
     } catch (e) {}
-    var nav = (navigator.language || navigator.userLanguage || "en").toLowerCase();
-    return nav.indexOf("zh") >= 0 ? "zh" : "en";
+    return "zh";
   }
 
   var LANG = detectLang();
@@ -34,10 +34,65 @@
   var LABELS = {
     credit: ["Credit remaining", "剩余额度"],
     requests: ["Total requests", "总请求数"],
-    tokens: ["Total tokens", "总 Token 数"],
-    responses: ["Responses and Chat Completions"],
+    // dump 已是「总 token 数」小写；locale 曾写「总 Token 数」需兼容两边
+    tokens: ["Total tokens", "总 token 数", "总 Token 数"],
+    spend: ["Total Spend", "总消耗"],
+    responses: [
+      "Responses and Chat Completions",
+      "Responses 与 Chat Completions",
+      "响应与 Chat Completions",
+    ],
     balance: ["Current balance", "当前余额", "Wallet Balance", "钱包余额"],
   };
+
+  var SIDEBAR_KEY = "nexusv_console_sidebar";
+  var THEME_KEY_INDEX = "theme";
+  var THEME_KEY_OAI = "cancri_oai_theme";
+
+  // Pre-paint theme (script is at end of body; still beats late paint of data cards).
+  (function earlyTheme() {
+    try {
+      var raw = localStorage.getItem(THEME_KEY_INDEX);
+      var t =
+        raw === "light"
+          ? "light"
+          : raw === "dark" || raw === "warm" || raw === "blue"
+            ? "dark"
+            : localStorage.getItem(THEME_KEY_OAI) === "light"
+              ? "light"
+              : "dark";
+      if (t === "light") {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.setAttribute("data-theme", "light");
+      } else {
+        document.documentElement.classList.add("dark");
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (e) {}
+  })();
+
+  var FEATURED_MODELS = [
+    {
+      id: "claude-opus-4-8",
+      name: "Claude Opus 4.8",
+      desc: "Anthropic 旗舰，适合复杂推理与长任务",
+    },
+    {
+      id: "gpt-5.6-sol",
+      name: "GPT-5.6 Sol",
+      desc: "OpenAI 编程与专业工作主力",
+    },
+    {
+      id: "grok-4.5",
+      name: "Grok 4.5",
+      desc: "xAI 高速多模态模型",
+    },
+    {
+      id: "gemini-3.6-flash",
+      name: "Gemini 3.6 Flash",
+      desc: "Google 轻量快速，按次计费",
+    },
+  ];
 
   var I18N = {
     en: {
@@ -92,15 +147,16 @@
   }
 
   function applyPageLocale() {
-    document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en-US";
-    if (LANG !== "zh") return;
+    document.documentElement.lang = "zh-CN";
     var pairs = [
       ["Credit remaining", "剩余额度"],
       ["Total requests", "总请求数"],
       ["Total tokens", "总 Token 数"],
+      ["Total Spend", "总消耗"],
       ["Current balance", "当前余额"],
       ["Wallet Balance", "钱包余额"],
       ["API Keys", "API 密钥"],
+      ["API keys", "API 密钥"],
       ["Usage", "用量"],
       ["Logs", "日志"],
       ["Home", "首页"],
@@ -108,8 +164,28 @@
       ["Default project", "默认项目"],
       ["Organization", "个人版"],
       ["Create new secret key", "创建新密钥"],
+      ["Create an API key to access the NexusVAI API", "创建 API 密钥以调用 NexusVAI API"],
       ["Add credits", "充值"],
       ["Overview", "概览"],
+      ["Explore in playground", "在对话中打开"],
+      ["Read the docs", "了解怎么使用"],
+      ["We've cleaned things up", "导航已整理"],
+      ["Explore what's changed with the redesigned navigation.", "看看新版导航有哪些变化。"],
+      ["Explore what's changed with the redesigned navigation", "看看新版导航有哪些变化"],
+      ["Learn more", "了解更多"],
+      ["API Key Usage", "密钥用量"],
+      ["Search...", "搜索…"],
+      ["Active", "有效"],
+      ["+ Add filter", "+ 添加筛选"],
+      ["Add filter", "添加筛选"],
+      ["0 results", "0 条结果"],
+      ["Responses and Chat Completions", "响应与 Chat Completions"],
+      ["Responses 与 Chat Completions", "响应与 Chat Completions"],
+      ["Recommended", "推荐模型"],
+      ["Updates", "更新"],
+      ["June spend", "本月消耗"],
+      ["Personal", "个人"],
+      ["Revoke", "撤销"],
     ];
     pairs.forEach(function (p) {
       replaceAllText(p[0], p[1]);
@@ -481,14 +557,46 @@
     return { d: d, last: pts[pts.length - 1] };
   }
 
+  function sparkSvgSize(card) {
+    var svg = card && card.querySelector("svg.recharts-surface");
+    if (!svg) return { svg: null, width: 200, height: 44 };
+    var wrap =
+      card.querySelector(".recharts-responsive-container") ||
+      card.querySelector(".wfoF9") ||
+      card;
+    var width = Math.max(
+      40,
+      Math.floor(
+        wrap.clientWidth ||
+          parseFloat(svg.getAttribute("width")) ||
+          200
+      )
+    );
+    var height = Math.max(
+      24,
+      Math.floor(parseFloat(svg.getAttribute("height")) || 44)
+    );
+    svg.setAttribute("width", String(width));
+    svg.setAttribute("height", String(height));
+    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    svg.style.maxWidth = "100%";
+    svg.style.overflow = "hidden";
+    // clipPath rect if present
+    var clip = svg.querySelector("clipPath rect");
+    if (clip) {
+      clip.setAttribute("width", String(width));
+      clip.setAttribute("height", String(height));
+    }
+    return { svg: svg, width: width, height: height };
+  }
+
   function updateLineSparkline(card, values) {
     if (!card) return;
     var path = card.querySelector(".recharts-line-curve");
     var dot = card.querySelector(".recharts-line-dots circle");
     if (!path) return;
-    var width = 897;
-    var height = 44;
-    var built = buildSparklinePath(values, width, height);
+    var size = sparkSvgSize(card);
+    var built = buildSparklinePath(values, size.width, size.height);
     path.setAttribute("d", built.d);
     if (dot && built.last) {
       dot.setAttribute("cx", String(built.last.x));
@@ -500,19 +608,23 @@
     if (!card) return;
     var bars = card.querySelectorAll(".recharts-bar-rectangle path");
     if (!bars.length) return;
-    var series = sampleSeries(values, bars.length);
+    var size = sparkSvgSize(card);
+    var n = bars.length;
+    var series = sampleSeries(values, n);
     var max = Math.max(1, Math.max.apply(null, series));
-    for (var i = 0; i < bars.length; i++) {
+    var pad = 6;
+    var gap = 2;
+    var barW = Math.max(2, Math.floor((size.width - pad * 2) / n) - gap);
+    for (var i = 0; i < n; i++) {
       var bar = bars[i];
-      var h = Math.max(2, Math.round((series[i] / max) * 32));
-      var y = 44 - h;
-      var x = bar.getAttribute("x");
-      if (x == null) continue;
+      var h = Math.max(2, Math.round((series[i] / max) * (size.height - 12)));
+      var y = size.height - h;
+      var xn = pad + i * (barW + gap);
+      var r = 1;
+      bar.setAttribute("x", String(xn));
+      bar.setAttribute("width", String(barW));
       bar.setAttribute("height", String(h));
       bar.setAttribute("y", String(y));
-      var xn = parseFloat(x);
-      var w = parseFloat(bar.getAttribute("width") || "14");
-      var r = 1;
       bar.setAttribute(
         "d",
         "M" +
@@ -528,7 +640,7 @@
           "," +
           y +
           "L" +
-          (xn + w - r) +
+          (xn + barW - r) +
           "," +
           y +
           "A " +
@@ -536,11 +648,11 @@
           "," +
           r +
           ",0,0,1," +
-          (xn + w) +
+          (xn + barW) +
           "," +
           (y + r) +
           "L" +
-          (xn + w) +
+          (xn + barW) +
           "," +
           (y + h) +
           "L" +
@@ -552,12 +664,35 @@
     }
   }
 
+  function updateSparklineAuto(card, values) {
+    if (!card) return;
+    var hasLine = !!card.querySelector(".recharts-line-curve");
+    var hasBar = !!card.querySelector(".recharts-bar-rectangle path");
+    if (hasLine) updateLineSparkline(card, values);
+    if (hasBar) updateBarSparkline(card, values);
+    if (!hasLine && !hasBar) sparkSvgSize(card);
+  }
+
+  var __lastDaily = null;
   function drawOverviewCharts(rows) {
     if (PAGE !== "overview") return;
     var daily = aggregateDaily(rows);
-    updateLineSparkline(findStatCard(LABELS.requests), daily.calls);
-    updateBarSparkline(findStatCard(LABELS.tokens), daily.tokens);
-    updateBarSparkline(findStatCard(LABELS.responses), daily.calls);
+    __lastDaily = daily;
+    // 按卡片实际图表类型重算；SingleFile 写死 897 宽会穿到邻格/充值按钮
+    updateSparklineAuto(findStatCard(LABELS.requests), daily.calls);
+    updateSparklineAuto(findStatCard(LABELS.tokens), daily.tokens);
+    updateSparklineAuto(findStatCard(LABELS.responses), daily.calls);
+    document.querySelectorAll(".Z5hMp .wfoF9, .Z5hMp .recharts-wrapper").forEach(function (el) {
+      el.style.overflow = "hidden";
+      el.style.maxWidth = "100%";
+    });
+  }
+
+  function redrawOverviewCharts() {
+    if (PAGE !== "overview" || !__lastDaily) return;
+    updateSparklineAuto(findStatCard(LABELS.requests), __lastDaily.calls);
+    updateSparklineAuto(findStatCard(LABELS.tokens), __lastDaily.tokens);
+    updateSparklineAuto(findStatCard(LABELS.responses), __lastDaily.calls);
   }
 
   function closeCsModal() {
@@ -834,10 +969,252 @@
       "</tbody></table>";
   }
 
+  function injectConsoleChromeCss() {
+    if (document.getElementById("nexusv-console-chrome-css")) return;
+    var s = document.createElement("style");
+    s.id = "nexusv-console-chrome-css";
+    s.textContent =
+      "@media (min-width:768px){" +
+      "main.sm8f7[data-sidebar=collapsed]{--side-nav-width:var(--side-nav-collapsed-width,56px)}" +
+      "main.sm8f7[data-sidebar=collapsed] aside._1qzLV," +
+      "main.sm8f7[data-sidebar=collapsed] .CO5li[data-sidebar-collapsible]," +
+      "main.sm8f7[data-sidebar=collapsed] ._3eq3b{width:var(--side-nav-collapsed-width,56px)!important;max-width:var(--side-nav-collapsed-width,56px)!important;overflow:hidden!important}" +
+      "main.sm8f7[data-sidebar=collapsed] .yaYrI{left:var(--side-nav-collapsed-width,56px)}" +
+      "main.sm8f7[data-sidebar=collapsed] .SjyEm," +
+      "main.sm8f7[data-sidebar=collapsed] .rxdQY," +
+      "main.sm8f7[data-sidebar=collapsed] .a6re5," +
+      "main.sm8f7[data-sidebar=collapsed] ._3DFLd," +
+      "main.sm8f7[data-sidebar=collapsed] .CtBQA," +
+      "main.sm8f7[data-sidebar=collapsed] .-ZU7U," +
+      "main.sm8f7[data-sidebar=collapsed] ._6UBrL," +
+      "main.sm8f7[data-sidebar=collapsed] #cnc-theme-toggle{display:none!important}" +
+      "main.sm8f7[data-sidebar=collapsed] ._4SoGl{margin:0}" +
+      "main.sm8f7[data-sidebar=collapsed] .HPtRB.O3ygq{justify-content:center;padding-left:0;padding-right:0}" +
+      "}" +
+      ".cnc-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:4px;border:0;border-radius:8px;background:transparent;color:var(--color-text-secondary,inherit);cursor:pointer}" +
+      ".cnc-theme-btn:hover{background:var(--color-background-primary-soft,rgba(127,127,127,.12));color:var(--color-text,inherit)}" +
+      "section._3s6q5.y5pFn .OQedc:empty::before{content:'（更新内容待填写）';display:block;padding:12px 0;color:var(--color-text-secondary,#888);font-size:14px}" +
+      /* overview sparkline 穿模：卡片内强制裁切 */
+      ".Z5hMp .wfoF9,.Z5hMp .ZhrJy,.Z5hMp .recharts-responsive-container,.Z5hMp .recharts-wrapper{overflow:hidden!important;max-width:100%!important}" +
+      ".Z5hMp svg.recharts-surface{max-width:100%!important;overflow:hidden!important}";
+    document.head.appendChild(s);
+  }
+
+  function mapIndexThemeToOai(raw) {
+    if (raw === "light") return "light";
+    if (raw === "dark" || raw === "warm" || raw === "blue") return "dark";
+    return null;
+  }
+
+  function resolveTheme() {
+    try {
+      var fromIndex = mapIndexThemeToOai(localStorage.getItem(THEME_KEY_INDEX));
+      if (fromIndex) return fromIndex;
+      var fromOai = localStorage.getItem(THEME_KEY_OAI);
+      if (fromOai === "light" || fromOai === "dark") return fromOai;
+    } catch (e) {}
+    return "dark";
+  }
+
+  function applyTheme(theme) {
+    var root = document.documentElement;
+    if (theme === "light") {
+      root.classList.remove("dark");
+      root.setAttribute("data-theme", "light");
+    } else {
+      root.classList.add("dark");
+      root.setAttribute("data-theme", "dark");
+    }
+    try {
+      localStorage.setItem(THEME_KEY_OAI, theme);
+      localStorage.setItem(THEME_KEY_INDEX, theme);
+    } catch (e) {}
+    var btn = document.getElementById("cnc-theme-toggle");
+    if (btn) {
+      btn.setAttribute("aria-label", theme === "dark" ? "切换到浅色" : "切换到深色");
+      btn.title = theme === "dark" ? "浅色模式" : "深色模式";
+    }
+  }
+
+  function wireThemeToggle() {
+    applyTheme(resolveTheme());
+    var host =
+      document.querySelector("button.O3ygq.FzNxy") &&
+      document.querySelector("button.O3ygq.FzNxy").parentElement;
+    if (!host || document.getElementById("cnc-theme-toggle")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "cnc-theme-toggle";
+    btn.className = "cnc-theme-btn";
+    btn.setAttribute("data-cancri-theme-toggle", "1");
+    btn.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+      '<path d="M12 3a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1Zm0 15a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm9-6a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM5 12a1 1 0 0 1-1 1H3a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm12.95 6.364a1 1 0 0 1-1.414 0l-.707-.707a1 1 0 0 1 1.414-1.414l.707.707a1 1 0 0 1 0 1.414ZM7.757 7.757a1 1 0 0 1-1.414 0l-.707-.707A1 1 0 0 1 7.05 5.636l.707.707a1 1 0 0 1 0 1.414Zm9.9-2.121a1 1 0 0 1 0 1.414l-.708.707A1 1 0 1 1 15.535 6.343l.707-.707a1 1 0 0 1 1.415 0ZM7.05 18.364a1 1 0 0 1 0-1.414l.707-.707a1 1 0 1 1 1.414 1.414l-.707.707a1 1 0 0 1-1.414 0ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"/></svg>';
+    host.appendChild(btn);
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      applyTheme(cur === "dark" ? "light" : "dark");
+    });
+    applyTheme(resolveTheme());
+  }
+
+  function wireSidebarCollapse() {
+    var main = document.querySelector("main.sm8f7[data-sidebar]");
+    var btn = document.querySelector('button.O3ygq.FzNxy[aria-label*="侧边栏"], button.O3ygq.FzNxy');
+    if (!main || !btn || btn.dataset.cncCollapseWired === "1") return;
+    btn.dataset.cncCollapseWired = "1";
+
+    function setCollapsed(collapsed) {
+      main.setAttribute("data-sidebar", collapsed ? "collapsed" : "expanded");
+      btn.setAttribute("aria-label", collapsed ? "展开侧边栏" : "收起侧边栏");
+      try {
+        localStorage.setItem(SIDEBAR_KEY, collapsed ? "collapsed" : "expanded");
+      } catch (e) {}
+      // 侧栏宽度变了 → 概览 sparkline 按新宽度重算
+      window.setTimeout(redrawOverviewCharts, 80);
+    }
+
+    var saved = null;
+    try {
+      saved = localStorage.getItem(SIDEBAR_KEY);
+    } catch (e) {}
+    if (saved === "collapsed" || saved === "expanded") {
+      setCollapsed(saved === "collapsed");
+    }
+
+    btn.addEventListener(
+      "click",
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var now = main.getAttribute("data-sidebar") === "collapsed";
+        setCollapsed(!now);
+      },
+      true
+    );
+  }
+
+  function clearUpdatesSection() {
+    if (PAGE !== "overview") return;
+    document.querySelectorAll("section._3s6q5.y5pFn .OQedc").forEach(function (box) {
+      box.innerHTML = "";
+    });
+  }
+
+  function rewriteActionLinks(card, modelId) {
+    var links = card.querySelectorAll("a");
+    if (links[0]) {
+      links[0].setAttribute("href", "../index.html?models=" + encodeURIComponent(modelId));
+      links[0].removeAttribute("target");
+      links[0].removeAttribute("rel");
+      // keep icon, replace trailing text
+      var nodes = Array.prototype.slice.call(links[0].childNodes);
+      nodes.forEach(function (n) {
+        if (n.nodeType === 3) n.nodeValue = "";
+      });
+      links[0].appendChild(document.createTextNode(" 在对话中打开"));
+    }
+    if (links[1]) {
+      links[1].setAttribute("href", "../api_docs_detail.html#intro");
+      links[1].setAttribute("target", "_blank");
+      links[1].setAttribute("rel", "noopener noreferrer");
+      var nodes2 = Array.prototype.slice.call(links[1].childNodes);
+      nodes2.forEach(function (n) {
+        if (n.nodeType === 3) n.nodeValue = "";
+      });
+      links[1].appendChild(document.createTextNode(" 了解怎么使用"));
+    }
+  }
+
+  function patchFeaturedModels() {
+    if (PAGE !== "overview") return;
+    var grid = document.querySelector("section._3s6q5 ._7Yo0u");
+    if (!grid) return;
+    var cards = Array.prototype.slice.call(grid.querySelectorAll(".F9uU-"));
+    if (!cards.length) return;
+
+    // Keep first N card shells (icons), drop extras
+    FEATURED_MODELS.forEach(function (m, i) {
+      var card = cards[i];
+      if (!card) {
+        card = cards[0].cloneNode(true);
+        grid.appendChild(card);
+      }
+      card.setAttribute("aria-label", m.name);
+      card.setAttribute("data-interactive", "true");
+      card.setAttribute("role", "group");
+      var title = card.querySelector("h6.Ai6pw");
+      var desc = card.querySelector("p.RBw-C");
+      if (title) title.textContent = m.name;
+      if (desc) desc.textContent = m.desc;
+      var groups = card.querySelectorAll(".j4lZ6");
+      if (groups[0]) groups[0].setAttribute("aria-label", m.name + " top action");
+      if (groups[1]) groups[1].setAttribute("aria-label", m.name + " bottom action");
+      rewriteActionLinks(card, m.id);
+    });
+    // remove leftover cards beyond featured set
+    Array.prototype.slice
+      .call(grid.querySelectorAll(".F9uU-"))
+      .slice(FEATURED_MODELS.length)
+      .forEach(function (n) {
+        n.remove();
+      });
+  }
+
+  function patchActionCtasEverywhere() {
+    document.querySelectorAll("a").forEach(function (a) {
+      var t = (a.textContent || "").replace(/\s+/g, " ").trim();
+      if (t.indexOf("Explore in playground") >= 0 || t.indexOf("在对话中打开") >= 0) {
+        // normalize label
+        var href = a.getAttribute("href") || "";
+        if (/models=/.test(href) || /index\.html/.test(href)) {
+          var nodes = Array.prototype.slice.call(a.childNodes);
+          nodes.forEach(function (n) {
+            if (n.nodeType === 3) n.nodeValue = "";
+          });
+          a.appendChild(document.createTextNode(" 在对话中打开"));
+        }
+      }
+      if (t.indexOf("Read the docs") >= 0 || t.indexOf("了解怎么使用") >= 0) {
+        var nodes2 = Array.prototype.slice.call(a.childNodes);
+        nodes2.forEach(function (n) {
+          if (n.nodeType === 3) n.nodeValue = "";
+        });
+        a.appendChild(document.createTextNode(" 了解怎么使用"));
+      }
+    });
+  }
+
+  /** api_usage 无金额列；Spend 不能伪造。显示 — 并改成 ¥ 口径文案。 */
+  function applySpendPlaceholder() {
+    setValueNearLabels(LABELS.spend, "—");
+    // organization-spend-summary $0.00 → —
+    document.querySelectorAll('[data-testid="organization-spend-summary-section"] .text-lg.font-semibold').forEach(function (el) {
+      if (/^\$/.test((el.textContent || "").trim()) || (el.textContent || "").trim() === "$0.00") {
+        el.textContent = "—";
+      }
+    });
+    // Total Spend big number
+    findTextNodes("Total Spend").concat(findTextNodes("总消耗")).forEach(function (tn) {
+      var wrap = tn.parentElement && tn.parentElement.parentElement;
+      if (!wrap) return;
+      var val = wrap.querySelector(".text-xl.font-semibold div, .text-xl.font-semibold");
+      if (val && /\$/.test(val.textContent || "")) val.textContent = "—";
+    });
+  }
+
   async function boot() {
     ensureConsoleCss();
+    injectConsoleChromeCss();
+    applyTheme(resolveTheme());
     trimSidebar();
     wireStaticDismissers();
+    wireSidebarCollapse();
+    wireThemeToggle();
+    clearUpdatesSection();
+    patchFeaturedModels();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
@@ -867,7 +1244,16 @@
       var agg = aggregate(usage);
       setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
       setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
+      applySpendPlaceholder();
       drawOverviewCharts(usage);
+      if (!window.__cncSparkResizeWired) {
+        window.__cncSparkResizeWired = true;
+        var resizeT = 0;
+        window.addEventListener("resize", function () {
+          window.clearTimeout(resizeT);
+          resizeT = window.setTimeout(redrawOverviewCharts, 100);
+        });
+      }
 
       if (PAGE === "keys") {
         wireCreateKeyButton(function () {
@@ -908,6 +1294,10 @@
       if (PAGE === "logs") renderLogsList(usage);
 
       applyPageLocale();
+      patchActionCtasEverywhere();
+      // locale may recreate English CTA leftovers — re-assert featured cards
+      patchFeaturedModels();
+      clearUpdatesSection();
     } catch (e) {
       if (e && e.message === "supabase_not_loaded") {
         PlatformAuth.showAuthError(t("authLoadFail"));

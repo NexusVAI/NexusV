@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-13 审查：抽离内联 script admin-users-app.js，删 'unsafe-inline' script-src-->
+    <!-- 2026-05-13 审查：抽离内�?script admin-users-app.js，删 'unsafe-inline' script-src-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理台· 用户 · Cancri</title>
+    <title>管理台�?用户 · Cancri</title>
     <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
@@ -270,7 +270,7 @@
       <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div></div></div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登录</h2>
+        <h2>需要登�?/h2>
         <p>请先登录账号，验证你的管理员身份</p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
@@ -285,9 +285,9 @@
 
       <div id="main" style="display: none">
         <header>
-          <h1>用户管理与钱包控制中心</h1>
+          <h1>用户管理与钱包控制中�?/h1>
           <p>
-            搜索用户后可查看钱包余额与限速档、手动调整余额、审计订单与额度流水、封禁解封          </p>
+            搜索用户后可查看钱包余额与限速档、手动调整余额、审计订单与额度流水、封禁解�?         </p>
         </header>
 
         <div class="stats">
@@ -304,7 +304,7 @@
         <div class="panel">
           <div class="panel-head">
             搜索 + 封禁
-            <span class="hint">支持邮箱片段、user_id 前缀（≥3 字符）</span>
+            <span class="hint">支持邮箱片段、user_id 前缀（≥3 字符�?/span>
           </div>
           <div class="panel-body">
             <div class="form-row full">
@@ -342,7 +342,7 @@
                 />
               </label>
               <label style="display: flex; align-items: flex-end">
-                <button class="btn-ban" id="banBtn">封禁此用户</button>
+                <button class="btn-ban" id="banBtn">封禁此用�?/button>
               </label>
             </div>
             <div class="form-row full">
@@ -367,28 +367,28 @@
             <div class="stats" style="margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
                 <div class="label" style="font-size: 11px; color: var(--text-faint);">钱包余额（¥）</div>
-                <div class="value" id="wallet-balance" style="font-size: 16px; font-weight: 700; color: var(--ok); margin-top: 4px;">—</div>
+                <div class="value" id="wallet-balance" style="font-size: 16px; font-weight: 700; color: var(--ok); margin-top: 4px;">�?/div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
                 <div class="label" style="font-size: 11px; color: var(--text-faint);">欠款（¥）</div>
-                <div class="value" id="wallet-debt" style="font-size: 16px; font-weight: 700; color: var(--err); margin-top: 4px;">—</div>
+                <div class="value" id="wallet-debt" style="font-size: 16px; font-weight: 700; color: var(--err); margin-top: 4px;">�?/div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">累计充值（¥）</div>
-                <div class="value" id="wallet-cumulative" style="font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px;">—</div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">累计充值（¥�?/div>
+                <div class="value" id="wallet-cumulative" style="font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px;">�?/div>
               </div>
               <div class="stat-card" style="padding: 10px; background: var(--bg-elev); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="label" style="font-size: 11px; color: var(--text-faint);">限速档位 (Tier)</div>
-                <div class="value" id="wallet-tier" style="font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px;">—</div>
+                <div class="label" style="font-size: 11px; color: var(--text-faint);">限速档�?(Tier)</div>
+                <div class="value" id="wallet-tier" style="font-size: 16px; font-weight: 700; color: var(--accent); margin-top: 4px;">�?/div>
               </div>
             </div>
 
             <div style="font-size: 11.5px; color: var(--text-faint); margin-bottom: 12px; line-height: 1.5;">
-              按量计费：余额按真实 token 用量结算，限速档由累计充值自动决定（Tier 0-5，越高 RPM/TPM/并发上限越高）。
+              按量计费：余额按真实 token 用量结算，限速档由累计充值自动决定（Tier 0-5，越�?RPM/TPM/并发上限越高）�?
             </div>
 
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">1. 钱包余额调整（¥，可正可负）</h4>
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">1. 钱包余额调整（¥，可正可负�?/h4>
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletPlus10">+¥10</button>
                 <button class="btn-unban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletPlus50">+¥50</button>
@@ -396,20 +396,20 @@
                 <button class="btn-ban" style="padding: 6px 12px; font-size: 11.5px;" id="btnWalletMinus10">-¥10</button>
                 <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
                   <span style="font-size: 11.5px; color: var(--text-mute);">自定义（¥，可负）:</span>
-                  <input type="number" id="customWalletInput" placeholder="例如 25.5 或 -30" style="width: 140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" step="0.01" />
+                  <input type="number" id="customWalletInput" placeholder="例如 25.5 �?-30" style="width: 140px; padding: 5px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);" step="0.01" />
                   <button class="btn-unban" style="padding: 5px 12px; font-size: 11.5px; font-weight: 600; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); color: var(--ok);" id="btnCustomWallet">执行</button>
                 </div>
               </div>
               <div style="font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5;">
-                提示：正数增加余额（相当于手动充值，会同步累计充值并可能提升限速档）；负数扣减余额（用于退款/纠错）。
+                提示：正数增加余额（相当于手动充值，会同步累计充值并可能提升限速档）；负数扣减余额（用于退�?纠错）�?
               </div>
             </div>
 
-            <!-- 2026-06-07：用户订单 + 额度审计 -->
+            <!-- 2026-06-07：用户订�?+ 额度审计 -->
             <div class="form-row full" style="border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 14px; grid-template-columns: 1fr;">
               <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 8px; color: var(--text-soft);">2. 订单历史 & 额度审计</h4>
-              <div id="userOrdersList" style="font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); margin-bottom: 10px;">选择用户后加载</div>
-              <div id="creditLedgerList" style="font-size: 11.5px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev);">选择用户后加载</div>
+              <div id="userOrdersList" style="font-size: 12px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); margin-bottom: 10px;">选择用户后加�?/div>
+              <div id="creditLedgerList" style="font-size: 11.5px; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev);">选择用户后加�?/div>
             </div>
           </div>
         </div>
@@ -420,10 +420,10 @@
             📊 调用日志与统            <span class="hint" id="usagePanelUserEmail" style="color: #a855f7; font-weight: 600;">已选择用户</span>
             <span class="spacer" style="flex: 1"></span>
             <select id="usageWindowSelect" style="padding: 4px 8px; font-size: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
-              <option value="86400000">最近 1 天</option>
-              <option value="604800000" selected>最近 7 天</option>
-              <option value="2592000000">最近 30 天</option>
-              <option value="7776000000">最近 90 天</option>
+              <option value="86400000">最�?1 �?/option>
+              <option value="604800000" selected>最�?7 �?/option>
+              <option value="2592000000">最�?30 �?/option>
+              <option value="7776000000">最�?90 �?/option>
             </select>
             <button class="reload-btn" id="usageReloadBtn">刷新</button>
           </div>
@@ -466,7 +466,7 @@
               </div>
             </div>
 
-            <h4 style="font-size: 12.5px; font-weight: 600; margin: 6px 0 8px; color: var(--text-soft);">最近调用明细 (API + Chat，最多 200 条)</h4>
+            <h4 style="font-size: 12.5px; font-weight: 600; margin: 6px 0 8px; color: var(--text-soft);">最近调用明�?(API + Chat，最�?200 �?</h4>
             <span id="usage-source-breakdown" style="font-size:11px;color:var(--text-mute);display:block;margin-bottom:6px;"></span>
             <div id="usage-detail" style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elev); font-size: 12px;"></div>
           </div>
@@ -477,7 +477,7 @@
             当前封禁
             <span class="hint">按封禁时间倒序</span>
             <span class="spacer" style="flex: 1"></span>
-            <input id="banSearch" type="search" placeholder="搜邮箱 / user_id / 原因" autocomplete="off" style="padding:5px 10px;font-size:12.5px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;color:var(--text);width:200px" />
+            <input id="banSearch" type="search" placeholder="搜邮�?/ user_id / 原因" autocomplete="off" style="padding:5px 10px;font-size:12.5px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;color:var(--text);width:200px" />
             <button class="reload-btn" id="reload-btn">刷新</button>
           </div>
           <div id="bansList"></div>

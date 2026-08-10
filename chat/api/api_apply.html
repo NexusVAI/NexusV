@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-apply-app.js，删 unsafe-inline script-src -->
+  <!-- 2026-05-15 审查：抽离内�?script �?./api/api-apply-app.js，删 unsafe-inline script-src -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';">
-  <title>联系我们 · Cancri 开放平台</title>
+  <title>联系我们 · Cancri 开放平�?/title>
   <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
   <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg">
   <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high">
@@ -38,10 +38,10 @@
 
   <header class="topbar">
     <div class="topbar__inner">
-      <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+      <a class="brand" href="./api/" aria-label="Cancri 开放平�?>
         <img class="brand__logo cancri-logo" src="../../Logo/Cancri1.jpg" data-dark-src="../../Logo/Cancri1.jpg" data-light-src="../../Logo/Cancri.png" alt="Cancri" width="28" height="28" />
       </a>
-      <nav class="topnav" aria-label="开放平台导航">
+      <nav class="topnav" aria-label="开放平台导�?>
         <a href="./api/">概览</a>
         <a href="./api_apply.html" class="is-active">联系我们</a>
         <a href="./keys.html">Keys</a>
@@ -49,7 +49,7 @@
         <a href="./api_docs.html">文档</a>
         <a href="./pricing.html">套餐</a>
         <a href="./billing.html#bills">我的订单</a>
-        <a href="./" class="topnav__back">←返回聊天</a>
+        <a href="./" class="topnav__back">←返回聊�?/a>
       </nav>
       <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
         <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -62,7 +62,7 @@
     <div class="apply-page-stack">
       <div class="apply-card">
         <h1 class="page-title">联系我们</h1>
-        <p class="subtitle">提交工单或反馈，我们会通过注册邮箱回复。创建 API Key 无需申请审核</p>
+        <p class="subtitle">提交工单或反馈，我们会通过注册邮箱回复。创�?API Key 无需申请审核</p>
         <div id="loading" class="loading" data-platform-skeleton="card-panel" aria-busy="true"></div>
         <div id="login-section" style="display:none">
           <p style="margin-bottom:12px">请先登录后再提交工单</p>
@@ -77,14 +77,14 @@
             </div>
             <div class="form-group">
               <label>工单内容</label>
-              <textarea id="purpose" placeholder="请描述你的问题或建议；付费订阅相关请附上订单号。"></textarea>
+              <textarea id="purpose" placeholder="请描述你的问题或建议；付费订阅相关请附上订单号�?></textarea>
             </div>
             <button id="submit-btn" class="btn-primary full-btn">提交工单</button>
             <div class="msg" id="msg"></div>
           </div>
         </div>
         <div id="key-section" style="display:none">
-          <p style="margin-bottom:12px; color: var(--ok)">创建 API Key 无需申请，直接前往控制台</p>
+          <p style="margin-bottom:12px; color: var(--ok)">创建 API Key 无需申请，直接前往控制�?/p>
           <button id="manage-keys-btn" class="btn-primary full-btn">管理 API Keys</button>
         </div>
         <button id="back-to-chat-btn" class="btn-secondary secondary-btn">返回聊天</button>

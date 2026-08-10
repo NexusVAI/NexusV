@@ -1,12 +1,8 @@
-/* NexusV 开放平台首页：生态 logo 动画条 + 旗舰卡真实定价灌入。
- * 复用公开目录端点（model_public_catalog），价格以 Neon model_pricing 为准。
+/* NexusV 开放平台首页：生态 logo 动画条 + 旗舰卡营销展示。
  * 注意：本页使用 <base href="../../">，所有相对路径以站点根为基准。
  *
- * 2026-07-10 根因修复：
- * - 价格行禁止 data-i18n。i18n.translate() / injectComponents() 会在首屏后
- *   把 HTML 正确价覆盖成 i18n 字典里的过期价（曾出现 1.6/5 → 6/27）。
- * - 本脚本在 catalog 返回后，按 data-model-id 把 inputPricePerM/outputPricePerM
- *   与上下文 token 写回卡片，保证与数据库一致。
+ * 2026-07-10：价格行禁止 data-i18n（曾把正确价刷成过期 i18n）。
+ * 2026-08-10：首页三张旗舰卡用 HOME_CARD_OVERRIDES 固定营销名/价/ctx（不跟计费库）。
  */
 (function () {
   "use strict";
@@ -18,10 +14,7 @@
     window.OaiTrustedLogos.init(host);
   }
 
-  // ── frontier model cards：从 catalog 灌真实 ¥ 价 ────────────────
-  var GW = (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") + "/functions/v1/chat-gateway";
-  var ANON = window.__SUPABASE_ANON_KEY__ || "";
-
+  // ── frontier model cards：首页营销展示 ──────────────────────────
   function fmtYuan(n) {
     var x = Number(n);
     if (!Number.isFinite(x)) return "—";
@@ -30,51 +23,6 @@
     if (s.indexOf(".") === -1) s += ".00";
     else if (s.split(".")[1].length === 1) s += "0";
     return s;
-  }
-
-  function fmtTokensZh(n) {
-    var x = Number(n);
-    if (!Number.isFinite(x) || x <= 0) return "—";
-    if (x >= 10000) {
-      var wan = x / 10000;
-      var t = wan % 1 === 0 ? String(wan) : wan.toFixed(1).replace(/\.0$/, "");
-      return t + "万";
-    }
-    if (x >= 1000) return Math.round(x / 1000) + "K";
-    return String(Math.round(x));
-  }
-
-  function priceLine(m, en) {
-    var inn = m.inputPricePerM != null ? m.inputPricePerM : m.input_price_per_m;
-    var out = m.outputPricePerM != null ? m.outputPricePerM : m.output_price_per_m;
-    if (inn == null || out == null) {
-      // 兜底：catalog 已拼好的 priceDisplay
-      if (m.priceDisplay && m.priceDisplay !== "未定价") return m.priceDisplay;
-      return en ? "Price not set" : "未定价";
-    }
-    if (en) {
-      return "Input: ¥" + fmtYuan(inn) + " / Output: ¥" + fmtYuan(out) + " per 1M tokens";
-    }
-    return "输入：¥" + fmtYuan(inn) + " / 输出：¥" + fmtYuan(out) + " 每百万标记";
-  }
-
-  function ctxLineSimple(m, en) {
-    var inn = m.maxInputTokens != null ? m.maxInputTokens : m.max_input_tokens;
-    var out = m.maxOutputTokens != null ? m.maxOutputTokens : m.max_output_tokens;
-    if (!Number.isFinite(Number(inn)) && !Number.isFinite(Number(out))) return null;
-    if (en) {
-      function enTok(n) {
-        var x = Number(n);
-        if (!Number.isFinite(x) || x <= 0) return "—";
-        if (x >= 1000) {
-          var k = x / 1000;
-          return (k % 1 === 0 ? String(k) : k.toFixed(1).replace(/\.0$/, "")) + "K";
-        }
-        return String(Math.round(x));
-      }
-      return enTok(inn) + " context · " + enTok(out) + " max output";
-    }
-    return fmtTokensZh(inn) + " 上下文长度 · " + fmtTokensZh(out) + " 最大输出";
   }
 
   function isEn() {
@@ -86,78 +34,75 @@
     return (document.documentElement.lang || "").toLowerCase().indexOf("zh") !== 0;
   }
 
-  function applyCatalogToCards(models) {
-    if (!Array.isArray(models) || !models.length) return;
-    var byId = {};
-    models.forEach(function (m) {
-      var id = (m.id || m.canonicalId || m.model_id || "").toLowerCase();
-      if (id) byId[id] = m;
-    });
+  // 首页旗舰卡营销展示（仅 UI；不改计费 / model_pricing）
+  var HOME_CARD_OVERRIDES = {
+    "claude-opus-4-8-xhigh": {
+      displayName: "Claude Opus 5",
+      inputPricePerM: 0.59,
+      outputPricePerM: 1.99,
+      ctxZh: "1M 上下文长度 · 32K 最大输出",
+      ctxEn: "1M context · 32K max output",
+    },
+    "gpt-5.6-sol-xhigh": {
+      displayName: "GPT 5.6 Sol",
+      inputPricePerM: 0.59,
+      outputPricePerM: 2.99,
+      ctxZh: "100万 上下文长度 · 3.2万 最大输出",
+      ctxEn: "1M context · 32K max output",
+    },
+    "grok-4.5-xhigh": {
+      displayName: "Grok 4.5",
+      pricePerCall: 0.05,
+      ctxZh: "500K 上下文长度 · 32K 最大输出",
+      ctxEn: "500K context · 32K max output",
+    },
+  };
+
+  function marketingPriceLine(ov, en) {
+    if (ov.pricePerCall != null) {
+      return en
+        ? "¥" + fmtYuan(ov.pricePerCall) + " per request"
+        : "每次：¥" + fmtYuan(ov.pricePerCall);
+    }
+    if (en) {
+      return (
+        "Input: ¥" +
+        fmtYuan(ov.inputPricePerM) +
+        " / Output: ¥" +
+        fmtYuan(ov.outputPricePerM) +
+        " per 1M tokens"
+      );
+    }
+    return (
+      "输入：¥" +
+      fmtYuan(ov.inputPricePerM) +
+      " / 输出：¥" +
+      fmtYuan(ov.outputPricePerM) +
+      " 每百万标记"
+    );
+  }
+
+  function applyHomeMarketingCards() {
     var en = isEn();
     document.querySelectorAll(".model-card[data-model-id]").forEach(function (card) {
       var id = (card.getAttribute("data-model-id") || "").toLowerCase();
-      var m = byId[id];
-      if (!m) return;
+      var ov = HOME_CARD_OVERRIDES[id];
+      if (!ov) return;
+      var nameEl = card.querySelector(".model-card__name");
       var priceEl = card.querySelector('[data-slot="price"]');
       var ctxEl = card.querySelector('[data-slot="ctx"]');
-      var nameEl = card.querySelector(".model-card__name");
-      if (priceEl) priceEl.textContent = priceLine(m, en);
+      if (nameEl && ov.displayName) nameEl.textContent = ov.displayName;
+      if (priceEl) priceEl.textContent = marketingPriceLine(ov, en);
       if (ctxEl) {
-        var ctx = ctxLineSimple(m, en);
+        var ctx = en ? ov.ctxEn : ov.ctxZh;
         if (ctx) ctxEl.textContent = ctx;
       }
-      if (nameEl && m.displayName) nameEl.textContent = m.displayName;
     });
   }
 
-  function fetchCatalog() {
-    var opts = {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: ANON },
-      body: JSON.stringify({ endpoint: "model_public_catalog" }),
-      mode: "cors",
-      credentials: "omit",
-      cache: "no-store",
-    };
-    return new Promise(function (resolve, reject) {
-      var done = false;
-      var t = setTimeout(function () {
-        if (!done) {
-          done = true;
-          reject(new Error("request_timeout"));
-        }
-      }, 12000);
-      fetch(GW, opts)
-        .then(function (r) {
-          if (done) return;
-          done = true;
-          clearTimeout(t);
-          resolve(r);
-        })
-        .catch(function (e) {
-          if (done) return;
-          done = true;
-          clearTimeout(t);
-          reject(e);
-        });
-    });
-  }
-
-  async function hydratePricesFromCatalog() {
-    try {
-      var r = await fetchCatalog();
-      if (!r.ok) return;
-      var data = await r.json();
-      var models = Array.isArray(data.models) ? data.models : [];
-      applyCatalogToCards(models);
-    } catch (e) {
-      // 失败则保留 HTML 兜底价，不覆盖
-    }
-  }
-
-  // 语言切换后重新套一遍（catalog 已缓存在上次结果时再拉一次即可）
+  // 语言切换后按 isEn 重套营销文案（cutoff 由 i18n data-i18n 处理）
   window.addEventListener("languageChanged", function () {
-    hydratePricesFromCatalog();
+    applyHomeMarketingCards();
   });
 
   // ── voice/image tab toggle (section 6) ──────────────────────────
@@ -182,7 +127,7 @@
   function boot() {
     initTrustedLogos();
     initElevateTabs();
-    hydratePricesFromCatalog();
+    applyHomeMarketingCards();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

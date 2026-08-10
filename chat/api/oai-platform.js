@@ -14,16 +14,36 @@
 (function () {
   "use strict";
 
-  var THEME_KEY = "cancri_oai_theme"; // 'dark' | 'light'
+  // Bind to api/index (`GitHub/js/theme.js`) key so open-platform pages
+  // keep the same preference. OAI chrome only has dark|light; map warm/blue → dark.
+  var THEME_KEY_INDEX = "theme"; // light | dark | warm | blue
+  var THEME_KEY_OAI = "cancri_oai_theme"; // dark | light (legacy / console)
   var root = document.documentElement;
+
+  function mapIndexThemeToOai(raw) {
+    if (raw === "light") return "light";
+    if (raw === "dark" || raw === "warm" || raw === "blue") return "dark";
+    return null;
+  }
 
   function resolveInitialTheme() {
     try {
-      var saved = localStorage.getItem(THEME_KEY);
-      if (saved === "light" || saved === "dark") return saved;
+      var fromIndex = mapIndexThemeToOai(localStorage.getItem(THEME_KEY_INDEX));
+      if (fromIndex) return fromIndex;
+      var fromOai = localStorage.getItem(THEME_KEY_OAI);
+      if (fromOai === "light" || fromOai === "dark") return fromOai;
     } catch (e) {}
-    // default dark, matching the OpenAI dev platform + the old Cancri portal
-    return "dark";
+    // Match js/theme.js default when nothing saved
+    return "light";
+  }
+
+  function persistTheme(theme) {
+    try {
+      localStorage.setItem(THEME_KEY_OAI, theme);
+      // Index cycle includes warm/blue; when OAI toggles, write light|dark so
+      // index's setTheme reads a value it understands.
+      localStorage.setItem(THEME_KEY_INDEX, theme);
+    } catch (e) {}
   }
 
   function applyTheme(theme) {
@@ -65,14 +85,15 @@
   ready(function () {
     swapThemedImages(currentTheme());
 
-    // theme toggle button(s)
-    var themeBtns = document.querySelectorAll("#header-theme-button, [data-cancri-theme-toggle]");
-    themeBtns.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var next = currentTheme() === "dark" ? "light" : "dark";
-        applyTheme(next);
-        try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
-      });
+    // Theme toggle: delegate so it still works if shell mounts late.
+    document.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest
+        ? e.target.closest("#header-theme-button, [data-cancri-theme-toggle]")
+        : null;
+      if (!btn) return;
+      var next = currentTheme() === "dark" ? "light" : "dark";
+      applyTheme(next);
+      persistTheme(next);
     });
 
     initSearchOverlay();

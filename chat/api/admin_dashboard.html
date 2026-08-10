@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <!-- 2026-05-23 新建：管理员管理员仪表盘 - 大盘 + 圆环 + 折线 + Top10 单页　        CSP 严格：无 inline script，纯 inline SVG 渲染图表（不用 Chart.js）-->
+    <!-- 2026-05-23 新建：管理员管理员仪表盘 - 大盘 + 圆环 + 折线 + Top10 单页　        CSP 严格：无 inline script，纯 inline SVG 渲染图表（不�?Chart.js�?->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理台· 仪表盘· Cancri</title>
+    <title>管理台�?仪表盘�?Cancri</title>
     <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
@@ -233,7 +233,7 @@
       <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-row"><div class="sk-block sk-card"></div><div class="sk-block sk-card"></div><div class="sk-block sk-card"></div><div class="sk-block sk-card"></div></div><div class="sk-block sk-table"></div></div></div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登录</h2>
+        <h2>需要登�?/h2>
         <p>请先登录账号</p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
@@ -246,8 +246,8 @@
 
       <div id="main" style="display: none">
         <header>
-          <h1>仪表盘</h1>
-          <p>站点运营关键指标 · 每 30 秒自动刷新· <span id="last-updated" style="color:var(--text-faint)"></span></p>
+          <h1>仪表�?/h1>
+          <p>站点运营关键指标 · �?30 秒自动刷新�?<span id="last-updated" style="color:var(--text-faint)"></span></p>
         </header>
 
         <!-- 顶部 8 张数据卡 -->
@@ -255,12 +255,12 @@
           <div class="dash-card accent">
             <div class="dash-card__label">用户总数</div>
             <div class="dash-card__value" id="m-users-total"></div>
-            <div class="dash-card__sub" id="m-users-sub">含匿名</div>
+            <div class="dash-card__sub" id="m-users-sub">含匿�?/div>
           </div>
           <div class="dash-card success">
             <div class="dash-card__label">今日活跃</div>
             <div class="dash-card__value" id="m-active-today"></div>
-            <div class="dash-card__sub">UTC+8 自然日</div>
+            <div class="dash-card__sub">UTC+8 自然�?/div>
           </div>
           <div class="dash-card accent">
             <div class="dash-card__label">24h 调用</div>
@@ -297,23 +297,23 @@
         <!-- 2026-06-23：wallet_v3 按量计费指标 -->
         <div class="dash-cards" id="dash-wallet-cards" style="margin-top:12px;">
           <div class="dash-card success">
-            <div class="dash-card__label">钱包总余额</div>
-            <div class="dash-card__value" id="m-wallet-total">—</div>
-            <div class="dash-card__sub" id="m-wallet-users">— 个钱包</div>
+            <div class="dash-card__label">钱包总余�?/div>
+            <div class="dash-card__value" id="m-wallet-total">�?/div>
+            <div class="dash-card__sub" id="m-wallet-users">�?个钱�?/div>
           </div>
           <div class="dash-card accent">
-            <div class="dash-card__label">24h 充值入账</div>
-            <div class="dash-card__value" id="m-wallet-recharge-24h">—</div>
-            <div class="dash-card__sub" id="m-wallet-recharge-count">— 笔</div>
+            <div class="dash-card__label">24h 充值入�?/div>
+            <div class="dash-card__value" id="m-wallet-recharge-24h">�?/div>
+            <div class="dash-card__sub" id="m-wallet-recharge-count">�?�?/div>
           </div>
           <div class="dash-card warn">
-            <div class="dash-card__label">待审充值订单</div>
-            <div class="dash-card__value" id="m-wallet-pending">—</div>
+            <div class="dash-card__label">待审充值订�?/div>
+            <div class="dash-card__value" id="m-wallet-pending">�?/div>
             <div class="dash-card__sub">recharge · submitted</div>
           </div>
           <div class="dash-card">
             <div class="dash-card__label">计费模式</div>
-            <div class="dash-card__value" id="m-billing-mode">—</div>
+            <div class="dash-card__value" id="m-billing-mode">�?/div>
             <div class="dash-card__sub" id="m-billing-mode-sub">quota_v2 / wallet_v3</div>
           </div>
         </div>
@@ -325,11 +325,11 @@
           <div id="dash-ops-alerts"></div>
         </div>
 
-        <!-- 第二行：订阅分布（quota_v2）/ 模型 Top10（wallet_v3 下订阅面板隐藏） -->
+        <!-- 第二行：订阅分布（quota_v2�? 模型 Top10（wallet_v3 下订阅面板隐藏） -->
         <div class="dash-two-col" style="margin-bottom: 12px;">
           <div class="dash-panel" id="sub-panel">
             <h3>📊 订阅分布</h3>
-            <div class="dash-panel__hint" id="sub-hint">活跃付费订阅（仅 quota_v2）</div>
+            <div class="dash-panel__hint" id="sub-hint">活跃付费订阅（仅 quota_v2�?/div>
             <div class="donut-wrap">
               <svg class="donut-svg" id="sub-donut" viewBox="0 0 140 140" aria-hidden="true"></svg>
               <div class="donut-legend" id="sub-legend"></div>
@@ -337,7 +337,7 @@
           </div>
           <div class="dash-panel">
             <h3>🔥 模型 Top 10 · 24h</h3>
-            <div class="dash-panel__hint">按调用次数排序</div>
+            <div class="dash-panel__hint">按调用次数排�?/div>
             <div id="top-models"></div>
           </div>
         </div>
@@ -360,7 +360,7 @@
             </a>
             <a class="dash-nav-card" href="./admin_orders.html">
               <div class="dash-nav-card__title">订单审核 <span class="dash-nav-card__badge" id="nav-orders-badge" style="display:none">0</span></div>
-              <div class="dash-nav-card__desc">支付订单 · 钱包充值</div>
+              <div class="dash-nav-card__desc">支付订单 · 钱包充�?/div>
             </a>
             <a class="dash-nav-card" href="./admin.html">
               <div class="dash-nav-card__title">API 申请 <span class="dash-nav-card__badge" id="nav-apps-badge" style="display:none">0</span></div>
@@ -376,7 +376,7 @@
             </a>
             <a class="dash-nav-card" href="./admin_descriptions.html">
               <div class="dash-nav-card__title">模型描述</div>
-              <div class="dash-nav-card__desc">模型广场卡片简介 · ≤5s 生效</div>
+              <div class="dash-nav-card__desc">模型广场卡片简�?· �?s 生效</div>
             </a>
           </div>
         </div>

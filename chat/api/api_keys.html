@@ -3,9 +3,9 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-keys-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）　-->
+        <!-- 2026-05-15 审查：抽离内�?script �?./api/api-keys-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）　-->
         <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-        <title>API Keys · Cancri 开放平台</title>
+        <title>API Keys · Cancri 开放平�?/title>
         <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
         <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high" />
@@ -14,7 +14,7 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
         <script src="./api/api-platform.js?v=20260607-account-fix"></script>
-        <!-- Cancri 双主题 logo 同步 -->
+        <!-- Cancri 双主�?logo 同步 -->
         <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
         <style>
             /* 页面专有：用量图表、文档卡 */
@@ -315,7 +315,7 @@
 
         <header class="topbar">
             <div class="topbar__inner">
-                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+                <a class="brand" href="./api/" aria-label="Cancri 开放平�?>
                     <img
                         class="brand__logo cancri-logo"
                         src="../../Logo/Cancri1.jpg"
@@ -326,7 +326,7 @@
                         height="28"
                     />
                 </a>
-                <nav class="topnav" aria-label="开放平台导航">
+                <nav class="topnav" aria-label="开放平台导�?>
                     <a href="./api/">概览</a>
                     <a href="./api_apply.html">联系我们</a>
                     <a href="./api_keys.html" class="is-active">Keys</a>
@@ -334,7 +334,7 @@
                     <a href="./api_docs.html">文档</a>
                     <a href="./pricing.html">套餐</a>
                     <a href="./billing.html#bills">我的订单</a>
-                    <a href="./" class="topnav__back">←返回聊天</a>
+                    <a href="./" class="topnav__back">←返回聊�?/a>
                 </nav>
                 <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换主题" title="切换主题">
                     <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -369,53 +369,53 @@
             <div id="main-section" style="display: none">
                 <!-- Generate new key -->
                 <div class="card">
-                    <h2>生成新 Key</h2>
+                    <h2>生成�?Key</h2>
                     <div class="input-row">
                         <input
                             type="text"
                             id="key-name"
-                            placeholder="Key 名称（可选，如：my-project）"
+                            placeholder="Key 名称（可选，如：my-project�?
                         />
                         <button id="generate-key-btn" class="btn btn-primary">
                             生成
                         </button>
                     </div>
 
-                    <!-- 2026-05-23 新增：高级限额配置（折叠） -->
+                    <!-- 2026-05-23 新增：高级限额配置（折叠�?-->
                     <details class="advanced-config" id="adv-config">
                         <summary class="advanced-config__summary">高级限额（可选） 模型白名单 / Token 上限 / 调用次数上限 / RPM</summary>
                         <div class="advanced-config__body">
                             <div class="config-row">
                                 <label class="config-label">
-                                    <span>模型白名单（留空 = 所有模型，多选用 Ctrl/Cmd 点击）</span>
+                                    <span>模型白名单（留空 = 所有模型，多选用 Ctrl/Cmd 点击�?/span>
                                     <select id="adv-models" multiple size="6"></select>
                                 </label>
                             </div>
                             <div class="config-grid">
                                 <label class="config-label">
-                                    <span>总 token 上限（留空 = 不限）</span>
-                                    <input type="number" id="adv-max-tokens" min="0" placeholder="例如：1000000" />
+                                    <span>�?token 上限（留�?= 不限�?/span>
+                                    <input type="number" id="adv-max-tokens" min="0" placeholder="例如�?000000" />
                                 </label>
                                 <label class="config-label">
-                                    <span>总调用次数上限（留空 = 不限）</span>
-                                    <input type="number" id="adv-max-requests" min="0" placeholder="例如：10000" />
+                                    <span>总调用次数上限（留空 = 不限�?/span>
+                                    <input type="number" id="adv-max-requests" min="0" placeholder="例如�?0000" />
                                 </label>
                                 <label class="config-label">
-                                    <span>RPM (每分钟调用上限，不超过档位上限)</span>
-                                    <input type="number" id="adv-rpm" min="1" max="600" placeholder="留空 = 用档位默认" />
+                                    <span>RPM (每分钟调用上限，不超过档位上�?</span>
+                                    <input type="number" id="adv-rpm" min="1" max="600" placeholder="留空 = 用档位默�? />
                                 </label>
                             </div>
                             <div class="advanced-config__hint">
-                                这些限制只对此 Key 生效；生成后可在「我的Keys」里编辑或重置已用计数　
+                                这些限制只对�?Key 生效；生成后可在「我的Keys」里编辑或重置已用计数　
                             </div>
                         </div>
                     </details>
 
                     <div class="new-key-reveal" id="new-key-box" data-sensitive>
-                        <div>你的新 API Key：</div>
+                        <div>你的�?API Key�?/div>
                         <code id="new-key-value"></code>
                         <div class="warn">
-                            请立即复制保存，此 key 不会再次显示　
+                            请立即复制保存，�?key 不会再次显示　
                         </div>
                         <button
                             id="copy-key-btn"
@@ -442,7 +442,7 @@
                     </div>
                     <div class="key-detail-stats">
                         <div class="stat-card">
-                            <div class="label">总调用</div>
+                            <div class="label">总调�?/div>
                             <div class="value" id="kd-calls"></div>
                         </div>
                         <div class="stat-card">
@@ -460,7 +460,7 @@
                     </div>
                     <div class="key-detail-grid">
                         <div class="key-detail-panel-card">
-                            <h3>按模型</h3>
+                            <h3>按模�?/h3>
                             <div id="kd-by-model"></div>
                         </div>
                         <div class="key-detail-panel-card">
@@ -478,11 +478,11 @@
                     </div>
                     <div class="config-grid">
                         <label class="config-label">
-                            <span>总 token 上限</span>
+                            <span>�?token 上限</span>
                             <input type="number" id="kd-edit-max-tokens" min="0" />
                         </label>
                         <label class="config-label">
-                            <span>总调用次数上限</span>
+                            <span>总调用次数上�?/span>
                             <input type="number" id="kd-edit-max-requests" min="0" />
                         </label>
                         <label class="config-label">
@@ -496,24 +496,24 @@
                         <div class="msg" id="kd-msg"></div>
                     </div>
 
-                    <h3 style="margin: 18px 0 10px; font-size: 14px;">最近 100 条调用</h3>
+                    <h3 style="margin: 18px 0 10px; font-size: 14px;">最�?100 条调�?/h3>
                     <div id="kd-detail-list" class="kd-detail-list"></div>
                 </div>
 
                 <!-- Usage -->
                 <div class="card">
-                    <h2>最近 30 天用量</h2>
+                    <h2>最�?30 天用�?/h2>
                     <div id="usage-summary" class="usage-summary">
-                        <span>总调用 <b id="u-total"></b></span>
-                        <span>总输入 tokens <b id="u-tokens-in"></b></span>
-                        <span>总输出 tokens <b id="u-tokens-out"></b></span>
-                        <span>失败率<b id="u-error-rate"></b></span>
+                        <span>总调�?<b id="u-total"></b></span>
+                        <span>总输�?tokens <b id="u-tokens-in"></b></span>
+                        <span>总输�?tokens <b id="u-tokens-out"></b></span>
+                        <span>失败�?b id="u-error-rate"></b></span>
                     </div>
                     <div id="usage-chart" class="usage-chart"></div>
                     <div id="usage-axis" class="usage-axis"></div>
                     <div id="usage-by-model" style="margin-top: 14px"></div>
                     <div id="usage-empty" class="empty" style="display: none">
-                        最近 30 天内没有调用记录
+                        最�?30 天内没有调用记录
                     </div>
                 </div>
 
@@ -537,7 +537,7 @@
     "stream": true
   }'</code></pre>
                     <a class="doc-link" href="./api_docs.html"
-                        >查看完整 API 文档 ←/a
+                        >查看完整 API 文档 �?a
                     >
                 </div>
             </div>
@@ -551,7 +551,7 @@
         </footer>
 
         <script src="./cancri_config.js"></script>
-        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
+        <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动�?bug�?->
         <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
         <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见js/fingerprint.js 顶部注释　-->
         <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
@@ -559,7 +559,7 @@
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
+        <!-- 2026-05-15 审查：原 inline <script> 抽离�?./api/api-keys-app.js，并�?CSP �?'unsafe-inline' script-src�?-->
         <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
         <script src="./api/api-keys-app.js?v=20260804-no-approval"></script>
     </body>

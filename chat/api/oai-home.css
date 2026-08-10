@@ -630,7 +630,6 @@ body.cs-page:has(.mega-menu-container.active) .navbar {
   text-decoration: none;
   color: #fff;
   isolation: isolate;
-  transition: transform 0.25s ease;
 }
 /* 桌面端：卡片拉伸填满容器（对照 OpenAI flex-1 + @xl:min-w-0）*/
 @media (min-width: 1024px) {
@@ -639,7 +638,7 @@ body.cs-page:has(.mega-menu-container.active) .navbar {
     min-width: 0;
   }
 }
-.model-card:hover { transform: translateY(-4px); }
+/* 悬停：卡片本体不浮动，仅内部 .model-card__slide 上浮 */
 .model-card__body {
   position: relative;
   z-index: 1;

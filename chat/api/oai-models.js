@@ -14,7 +14,7 @@
  * Container hooks (any subset may exist on a page):
  *   #cancri-frontier  — featured (flagship) cards, OpenAI 3-up grid
  *   #cancri-grid      — full catalog grid
- *   #cancri-loading / #cancri-error — state
+ *   #cancri-loading / #cancri-error — state（loading = 流光骨架，不再显示文案）
  *   [data-cancri-count] — text node updated with model count
  */
 (function () {
@@ -29,14 +29,25 @@
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
 
   // flagship models pinned to the front (only ids that still exist in catalog).
-  // 2026-07-21: 旗舰三卡改为 XHigh 线。
+  // 2026-08-10: 旗舰区 = 主线三卡 + XHigh 普惠三卡（禁止非名单补位）
   var FEATURED_ORDER = [
     "claude-opus-4-8-xhigh",
     "grok-4.5-xhigh",
     "gpt-5.6-sol-xhigh",
+    "claude-opus-5",
+    "gpt-5.6-sol",
+    "grok-4.5",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
+
+  // 首页「我们部署的免费模型」固定四卡（与计费 free 线对齐；MiniMax 用免费渠道 id）
+  var FREE_ORDER = [
+    "kimi-k3-high",
+    "deepseek-v4-flash-0731",
+    "nexusvai:minimax-m3-free",
+    "glm-5.2-fp8",
+  ];
 
   // card art pool: assets/oai.logo/1-6.png, assigned randomly per render
   // with a "no repeat among the last 3 picks" rule so nearby cards differ.
@@ -53,6 +64,7 @@
     "claude-fable-5": "fable5.png",
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
     "kimi-k3": "kimik3.jpg",
+    "kimi-k3-high": "kimik3.jpg",
   };
 
   var HIDE_IDS = {
@@ -190,8 +202,9 @@
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
     var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
+    // 专项小卡：页内锚到下方完整目录大卡（#model-<id>），不进详情页
     return (
-      '<a href="' + escAttr(detailUrl(id)) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
+      '<a href="#model-' + escAttr(id) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
         '<div class="group flex h-full w-full cursor-pointer flex-row items-center gap-4 rounded-lg p-2 hover:bg-primary-soft">' +
           '<div class="cancri-thumb-sm flex shrink-0 overflow-hidden rounded-lg" ' +
                'style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
@@ -298,15 +311,41 @@
 
     var frontier = document.getElementById("cancri-frontier");
     if (frontier) {
+      // 只展示 FEATURED_ORDER 命中项，禁止用非旗舰模型补位（曾冒出 gemini-3.1-flash-lite）
+      var byIdFrontier = {};
+      models.forEach(function (m) {
+        var mid = String(m.id || m.canonicalId || "").toLowerCase();
+        if (mid) byIdFrontier[mid] = m;
+      });
+      var top = FEATURED_ORDER.map(function (id) { return byIdFrontier[id.toLowerCase()]; }).filter(Boolean);
       var n = parseInt(frontier.getAttribute("data-cancri-limit") || "3", 10);
-      var top = models.slice(0, n);
+      if (n > 0) top = top.slice(0, n);
       // anchor ids only when there is no full grid on this page (e.g. landing),
       // otherwise the full grid owns the `model-<id>` anchors.
       var frontierAnchor = !document.getElementById("cancri-grid");
       var pickFrontier = makeArtPicker();
-      frontier.innerHTML = top.map(function (m) {
-        return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || "") });
-      }).join("");
+      frontier.innerHTML = top.length
+        ? top.map(function (m) {
+            return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || "") });
+          }).join("")
+        : '<div class="text-sm text-secondary py-6">暂无旗舰模型</div>';
+    }
+
+    var free = document.getElementById("cancri-free");
+    if (free) {
+      var byId = {};
+      models.forEach(function (m) {
+        var mid = String(m.id || m.canonicalId || "").toLowerCase();
+        if (mid) byId[mid] = m;
+      });
+      var freeList = FREE_ORDER.map(function (id) { return byId[id.toLowerCase()]; }).filter(Boolean);
+      var freeAnchor = !document.getElementById("cancri-grid");
+      var pickFree = makeArtPicker();
+      free.innerHTML = freeList.length
+        ? freeList.map(function (m) {
+            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || "") });
+          }).join("")
+        : '<div class="text-sm text-secondary py-6">暂无免费模型</div>';
     }
 
     var grid = document.getElementById("cancri-grid");
@@ -318,6 +357,7 @@
     }
 
     renderSpecialized(models);
+    bindSpecializedScroll();
     bindCardNav();
     locateHashModel(models);
 
@@ -327,6 +367,20 @@
 
   function locateHashModel(models) {
     var raw = String(window.location.hash || "");
+    if (!raw) return;
+
+    // GLM 营销弹窗等：滚到免费模型版块
+    if (raw === "#cancri-free" || raw === "#cancri-free-section") {
+      var freeSec = document.getElementById("cancri-free-section") || document.getElementById("cancri-free");
+      if (!freeSec) return;
+      window.setTimeout(function () {
+        freeSec.scrollIntoView({ behavior: "smooth", block: "start" });
+        freeSec.setAttribute("data-cancri-located", "true");
+        window.setTimeout(function () { freeSec.removeAttribute("data-cancri-located"); }, 2200);
+      }, 80);
+      return;
+    }
+
     if (raw.indexOf("#model-") !== 0) return;
     var requested = "";
     try { requested = decodeURIComponent(raw.slice(7)); } catch (_) { requested = raw.slice(7); }
@@ -338,6 +392,10 @@
         return /glm-?5\.2/i.test(id + " " + name) && /fp8/i.test(id + " " + name);
       });
       if (match) target = document.getElementById("model-" + (match.id || match.canonicalId));
+      // 旧锚点兼容：滚到免费版块（GLM 在其中）
+      if (!target) {
+        target = document.getElementById("cancri-free-section") || document.getElementById("cancri-free");
+      }
     }
     if (!target) return;
     window.setTimeout(function () {
@@ -345,6 +403,29 @@
       target.setAttribute("data-cancri-located", "true");
       window.setTimeout(function () { target.removeAttribute("data-cancri-located"); }, 2200);
     }, 80);
+  }
+
+  var __specScrollBound = false;
+  function bindSpecializedScroll() {
+    var container = document.getElementById("cancri-specialized");
+    if (!container || __specScrollBound) return;
+    __specScrollBound = true;
+    container.addEventListener("click", function (e) {
+      var a = e.target.closest('a[href^="#model-"]');
+      if (!a) return;
+      var href = a.getAttribute("href") || "";
+      var raw = href.slice("#model-".length);
+      var id = raw;
+      try { id = decodeURIComponent(raw); } catch (_) { /* keep raw */ }
+      var target = document.getElementById("model-" + id);
+      if (!target) return;
+      e.preventDefault();
+      if (history && history.pushState) history.pushState(null, "", href);
+      else window.location.hash = href;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.setAttribute("data-cancri-located", "true");
+      window.setTimeout(function () { target.removeAttribute("data-cancri-located"); }, 2200);
+    });
   }
 
   var __cardNavBound = false;
@@ -416,9 +497,85 @@
     throw lastErr || new Error("加载模型列表失败");
   }
 
+  function skelLine(cls) {
+    return '<span class="cancri-skel-line cancri-skel-shimmer ' + (cls || "") + '"></span>';
+  }
+  function skelFeatureCard() {
+    return (
+      '<div class="cancri-skel-card" aria-hidden="true">' +
+        '<div class="cancri-skel-thumb cancri-skel-shimmer"></div>' +
+        '<div class="cancri-skel-body">' +
+          skelLine("cancri-skel-line--lg") +
+          skelLine("cancri-skel-line--md") +
+          '<div class="cancri-skel-spec">' +
+            skelLine("cancri-skel-line--sm") +
+            skelLine("cancri-skel-line--sm") +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+  function skelFeatureGrid(n) {
+    var html = "";
+    for (var i = 0; i < n; i++) html += skelFeatureCard();
+    return html;
+  }
+  function skelSpecChip() {
+    return (
+      '<div class="cancri-skel-chip" aria-hidden="true">' +
+        '<div class="cancri-skel-chip__art cancri-skel-shimmer"></div>' +
+        '<div class="cancri-skel-chip__text">' +
+          skelLine("cancri-skel-line--lg") +
+          skelLine("cancri-skel-line--md") +
+        "</div>" +
+      "</div>"
+    );
+  }
+  function skelSpecialized() {
+    var html = "";
+    for (var r = 0; r < 2; r++) {
+      html += '<div class="cancri-skel-spec-row">';
+      html += '<div class="cancri-skel-spec-side">' + skelLine("cancri-skel-line--lg") + skelLine("cancri-skel-line--md") + "</div>";
+      html += '<div class="cancri-skel-spec-grid">';
+      for (var i = 0; i < 4; i++) html += skelSpecChip();
+      html += "</div></div>";
+      if (r === 0) html += '<div class="h-px w-full bg-primary-soft"></div>';
+    }
+    return html;
+  }
+  function showLoadingSkeletons() {
+    var frontier = document.getElementById("cancri-frontier");
+    if (frontier) {
+      frontier.setAttribute("aria-busy", "true");
+      var fn = parseInt(frontier.getAttribute("data-cancri-limit") || "6", 10);
+      frontier.innerHTML = skelFeatureGrid(fn > 0 ? fn : 6);
+    }
+    var free = document.getElementById("cancri-free");
+    if (free) {
+      free.setAttribute("aria-busy", "true");
+      free.innerHTML = skelFeatureGrid(4);
+    }
+    var specialized = document.getElementById("cancri-specialized");
+    if (specialized) {
+      specialized.setAttribute("aria-busy", "true");
+      specialized.innerHTML = skelSpecialized();
+    }
+    var loading = document.getElementById("cancri-loading");
+    var grid = document.getElementById("cancri-grid");
+    if (loading) {
+      loading.removeAttribute("data-cancri-hidden");
+      loading.setAttribute("aria-busy", "true");
+      loading.innerHTML = skelFeatureGrid(6);
+    }
+    if (grid) grid.setAttribute("data-cancri-hidden", "");
+  }
+
   function showError(msg) {
     var loading = document.getElementById("cancri-loading");
-    if (loading) loading.setAttribute("data-cancri-hidden", "");
+    if (loading) {
+      loading.setAttribute("data-cancri-hidden", "");
+      loading.removeAttribute("aria-busy");
+    }
     var err = document.getElementById("cancri-error");
     if (err) {
       err.removeAttribute("data-cancri-hidden");
@@ -433,7 +590,7 @@
     var loading = document.getElementById("cancri-loading");
     var err = document.getElementById("cancri-error");
     if (err) err.setAttribute("data-cancri-hidden", "");
-    if (loading) loading.removeAttribute("data-cancri-hidden");
+    showLoadingSkeletons();
     try {
       if (!window.__SUPABASE_URL__ || !ANON) throw new Error("站点配置未就绪，请刷新页面");
       var data = await loadCatalog();
@@ -446,8 +603,17 @@
       }
       var raw = Array.isArray(data && data.models) ? data.models : [];
       var models = dedupeFeaturedFirst(raw);
-      if (loading) loading.setAttribute("data-cancri-hidden", "");
+      if (loading) {
+        loading.setAttribute("data-cancri-hidden", "");
+        loading.removeAttribute("aria-busy");
+      }
+      var grid = document.getElementById("cancri-grid");
+      if (grid) grid.removeAttribute("data-cancri-hidden");
       render(models);
+      ["cancri-frontier", "cancri-free", "cancri-specialized"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.removeAttribute("aria-busy");
+      });
     } catch (e) {
       showError((e && e.message) ? e.message : String(e));
     }
