@@ -1,0 +1,37 @@
+/* ============================================================================
+ * claude-port.css — 搬运层的接线补丁（唯一可手工编辑的样式文件）
+ *
+ * claude-real.css 是机器提取的 Claude 官方样式，会被重跑覆盖，禁止手改。
+ * 本文件只放「接线必需」的适配：把 Claude 原本用 contenteditable(ProseMirror)
+ * 承载的输入框换成原生 textarea 后，需要抹平两者的默认差异。
+ * 不在此文件做视觉再设计。
+ * ========================================================================== */
+
+/* 输入框：textarea 顶掉 ProseMirror 的默认外观差异，保持 Claude 观感 */
+textarea.cancri-composer-input {
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  min-height: 1.5rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  field-sizing: content; /* 随内容自增高，等价 ProseMirror 的行为 */
+}
+
+textarea.cancri-composer-input::placeholder {
+  color: hsl(var(--text-500));
+  opacity: 1;
+}
+
+/* 空对话时隐藏消息列表的滚动条占位，避免首屏出现空白轨道 */
+#messageList:empty {
+  min-height: 0;
+}
