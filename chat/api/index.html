@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; frame-src https://player.vimeo.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-  <title data-i18n="api.home.doc_title">NexusV 开放平�?/title>
-  <meta name="description" data-i18n-content="api.home.doc_desc" content="�?NexusV 平台上开发领先的 AI 产品。一个端点，多种协议，一把密钥——把 OpenAI、Anthropic �?Codex 原生协议归一到同一�?API 网关�? />
+  <title data-i18n="api.home.doc_title">NexusV 开放平台</title>
+  <meta name="description" data-i18n-content="api.home.doc_desc" content="在 NexusV 平台上开发领先的 AI 产品。一个端点，多种协议，一把密钥——把 OpenAI、Anthropic 与 Codex 原生协议归一到同一个 API 网关。" />
   <base href="../../" />
   <script>
     (() => {
@@ -29,8 +29,7 @@
   <link rel="stylesheet" href="css/inter-fonts.css" />
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/display-fonts.css" />
-  <link rel="stylesheet" href="chat/api/oai-home.css?v=20260810-card-nofloat" />
-  <link rel="stylesheet" href="chat/api/oai-cjk-fonts.css?v=20260810-cjk" />
+  <link rel="stylesheet" href="chat/api/oai-home.css?v=20260710-gpt56" />
 </head>
 <body>
 <link rel="stylesheet" type="text/css" href="chat/assets/p2m-loader.css" />
@@ -47,41 +46,40 @@
 <script src="chat/assets/p2m-loader.js" defer></script>
 
   <main class="api-home">
-    <!-- ══�?1. HERO ══�?-->
+    <!-- ═══ 1. HERO ═══ -->
     <section class="api-hero">
-      <h1 class="api-hero__title" data-i18n="api.home.hero.title">�?NexusVAI 平台上开发领先的 AI 产品</h1>
+      <h1 class="api-hero__title" data-i18n="api.home.hero.title">在 NexusV 平台上开发领先的 AI 产品</h1>
       <div class="api-hero__actions">
         <a class="api-btn api-btn--solid" href="chat/api_apply.html" data-i18n="api.home.hero.contact_sales">联系我们</a>
-        <a class="api-btn api-btn--ghost" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构�?/span>
+        <a class="api-btn api-btn--ghost" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构建</span>
           <svg class="api-btn__chevron" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M.21 5.352a.714.714 0 0 1 1.01 0L5 9.132l3.78-3.78a.714.714 0 0 1 1.01 1.01l-4.285 4.286a.714.714 0 0 1-1.01 0L.209 6.362a.714.714 0 0 1 0-1.01"></path></svg>
         </a>
       </div>
     </section>
 
-    <!-- ══�?2. TRUSTED LOGOS (OpenAI mask carousel) ══�?-->
-    <section class="trusted-logos" data-i18n-aria="api.home.trusted_aria" aria-label="生态模型品�?>
+    <!-- ═══ 2. TRUSTED LOGOS (OpenAI mask carousel) ═══ -->
+    <section class="trusted-logos" data-i18n-aria="api.home.trusted_aria" aria-label="生态模型品牌">
       <div id="api-home-trusted-logos"></div>
     </section>
 
-    <!-- ══�?3. 由前沿模型驱动（预写 3 张卡片，对照 OpenAI aspect-4/5 + hover 动画）═══ -->
+    <!-- ═══ 3. 由前沿模型驱动（预写 3 张卡片，对照 OpenAI aspect-4/5 + hover 动画）═══ -->
     <section class="models-section">
       <div class="models-section__head">
-        <h2 class="models-section__title" data-i18n="api.home.models.title">由前沿模型驱�?/h2>
-        <p class="models-section__sub" data-i18n="api.home.models.sub">我们提供全球的前沿智能服务，助你构建雄心勃勃的软�?/p>
+        <h2 class="models-section__title" data-i18n="api.home.models.title">由前沿模型驱动</h2>
+        <p class="models-section__sub" data-i18n="api.home.models.sub">我们实力强劲的模型专为真实场景而设计，提供先进的智能与多模态能力。一个端点接入全部模型。</p>
       </div>
-      <!-- 价格/上下文：禁止 data-i18n（i18n.translate 会覆�?HTML，曾�?1.6/5 刷成 6/27）�?
-           首屏 HTML = 营销展示兜底；oai-home.js HOME_CARD_OVERRIDES 固定营销文案（不�?catalog 计费价）�?
-           cutoff 可用 data-i18n（与价无关）�?-->
+      <!-- 价格/上下文：禁止 data-i18n（i18n.translate 会覆盖 HTML，曾把 1.6/5 刷成 6/27）。
+           首屏 HTML 为 Neon 当前价兜底；oai-home.js 再从 model_public_catalog 灌真实价。 -->
       <div class="models-row" id="home-models-row">
-        <!-- 2026-08-10: 首页旗舰卡营销展示（名/�?ctx �?oai-home 覆盖；data-model-id 仍指向详情锚点） -->
+        <!-- 2026-07-22: 首页旗舰卡固定展示 XHigh 低价线，勿绑高价主线 id -->
         <a class="model-card" data-model-id="claude-opus-4-8-xhigh" href="chat/api_models.html#model-claude-opus-4-8-xhigh" style="background-image:url('chat/img/api-model-0.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">Claude Opus 5</div>
+              <div class="model-card__name">Claude Opus 4.8 XHigh</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：�?.59 / 输出：�?.99 每百万标�?/li>
-                <li data-slot="ctx">1M 上下文长�?· 32K 最大输�?/li>
-                <li data-slot="cutoff" data-i18n="api.home.card.opus.spec3">知识截止日期�?026�?�?/li>
+                <li data-slot="price">输入：¥0.99 / 输出：¥4.00 每百万标记</li>
+                <li data-slot="ctx">20万 上下文长度 · 3.2万 最大输出</li>
+                <li data-slot="cutoff">知识截止日期：2026年1月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>
@@ -92,11 +90,11 @@
         <a class="model-card" data-model-id="gpt-5.6-sol-xhigh" href="chat/api_models.html#model-gpt-5.6-sol-xhigh" style="background-image:url('chat/img/api-model-sf30.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">GPT 5.6 Sol</div>
+              <div class="model-card__name">GPT-5.6 Sol XHigh</div>
               <ul class="model-card__specs">
-                <li data-slot="price">输入：�?.59 / 输出：�?.99 每百万标�?/li>
-                <li data-slot="ctx">100�?上下文长�?· 3.2�?最大输�?/li>
-                <li data-slot="cutoff" data-i18n="api.home.card.gpt56sol.spec3">知识截止日期�?025�?2�?/li>
+                <li data-slot="price">输入：¥0.30 / 输出：¥1.79 每百万标记</li>
+                <li data-slot="ctx">100万 上下文长度 · 3.2万 最大输出</li>
+                <li data-slot="cutoff">知识截止日期：2025年12月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>
@@ -107,11 +105,11 @@
         <a class="model-card" data-model-id="grok-4.5-xhigh" href="chat/api_models.html#model-grok-4.5-xhigh" style="background-image:url('chat/img/api-model-sf30.png')">
           <div class="model-card__body">
             <div class="model-card__slide">
-              <div class="model-card__name">Grok 4.5</div>
+              <div class="model-card__name">Grok 4.5 XHigh</div>
               <ul class="model-card__specs">
-                <li data-slot="price">每次：�?.05</li>
-                <li data-slot="ctx">500K 上下文长�?· 32K 最大输�?/li>
-                <li data-slot="cutoff" data-i18n="api.home.card.grok.spec3">知识截止日期�?025�?2�?/li>
+                <li data-slot="price">输入：¥0.18 / 输出：¥0.51 每百万标记</li>
+                <li data-slot="ctx">20万 上下文长度 · 3.2万 最大输出</li>
+                <li data-slot="cutoff">知识截止日期：2025年12月</li>
               </ul>
               <span class="model-card__cta"><span data-i18n="api.home.model.learn_more">了解更多</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>
@@ -122,10 +120,10 @@
       </div>
     </section>
 
-    <!-- ══�?4. 开始构建（指南卡片）═══ -->
+    <!-- ═══ 4. 开始构建（指南卡片）═══ -->
     <section class="api-section api-section--guides">
       <div class="api-section__head">
-        <h2 class="api-section__title" data-i18n="api.home.guides.title">开始构�?/h2>
+        <h2 class="api-section__title" data-i18n="api.home.guides.title">开始构建</h2>
         <a class="api-btn api-btn--ghost" href="chat/api_models.html"><span data-i18n="api.home.guides.view_all">查看全部模型</span>
           <svg class="api-btn__chevron" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M.21 5.352a.714.714 0 0 1 1.01 0L5 9.132l3.78-3.78a.714.714 0 0 1 1.01 1.01l-4.285 4.286a.714.714 0 0 1-1.01 0L.209 6.362a.714.714 0 0 1 0-1.01"></path></svg>
         </a>
@@ -145,14 +143,14 @@
             <h3 class="guide-card__title" data-i18n="api.home.guide.console.title">API Home</h3>
             <p class="guide-card__desc" data-i18n="api.home.guide.console.desc">进入属于你的控制台查看密钥或日志</p>
           </div>
-          <span class="guide-card__link"><span data-i18n="api.home.guide.console.link">查看控制�?/span>
+          <span class="guide-card__link"><span data-i18n="api.home.guide.console.link">查看控制台</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>
           </span>
         </a>
         <a class="guide-card" href="chat/api_docs_detail.html#migration">
           <div class="guide-card__top">
             <h3 class="guide-card__title" data-i18n="api.home.guide.migrate.title">迁移支持</h3>
-            <p class="guide-card__desc" data-i18n="api.home.guide.migrate.desc">了解如何从其他平台迁移到 NexusV 网关�?/p>
+            <p class="guide-card__desc" data-i18n="api.home.guide.migrate.desc">了解如何从其他平台迁移到 NexusV 网关。</p>
           </div>
           <span class="guide-card__link"><span data-i18n="api.home.guide.migrate.link">查看迁移指南</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 11 12" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3" d="M1.71 4.5h6.07m0 0v6.07m0-6.07-7 7"></path></svg>
@@ -161,16 +159,16 @@
       </div>
     </section>
 
-    <!-- ══�?5. 一站式智能体平�?══�?-->
+    <!-- ═══ 5. 一站式智能体平台 ═══ -->
     <section class="api-section api-section--agent">
       <div class="api-section__head">
         <div>
-          <h2 class="api-section__title" data-i18n="api.home.agent.title">一站式智能体平�?/h2>
-          <p class="api-section__sub" data-i18n="api.home.agent.sub">使用预构建组件或从零开始，更快速地开发、部署并优化可投入生产的智能体�?/p>
+          <h2 class="api-section__title" data-i18n="api.home.agent.title">一站式智能体平台</h2>
+          <p class="api-section__sub" data-i18n="api.home.agent.sub">使用预构建组件或从零开始，更快速地开发、部署并优化可投入生产的智能体。</p>
         </div>
         <div class="api-section__actions">
           <a class="api-btn api-btn--ghost" href="chat/api_docs_detail.html#agents" data-i18n="api.home.agent.learn_more">了解更多</a>
-          <a class="api-btn api-btn--solid" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构�?/span>
+          <a class="api-btn api-btn--solid" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构建</span>
             <svg class="api-btn__chevron" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M.21 5.352a.714.714 0 0 1 1.01 0L5 9.132l3.78-3.78a.714.714 0 0 1 1.01 1.01l-4.285 4.286a.714.714 0 0 1-1.01 0L.209 6.362a.714.714 0 0 1 0-1.01"></path></svg>
           </a>
         </div>
@@ -178,58 +176,58 @@
       <div class="agent-grid">
         <div class="agent-card">
           <div class="agent-card__media">
-            <img src="chat/img/api-src-3.webp" data-i18n-alt="api.home.agent.build.alt" alt="智能体构建器可视化画�? loading="lazy" decoding="async" />
+            <img src="chat/img/api-src-3.webp" data-i18n-alt="api.home.agent.build.alt" alt="智能体构建器可视化画布" loading="lazy" decoding="async" />
           </div>
           <h3 class="agent-card__title" data-i18n="api.home.agent.build.title">构建</h3>
-          <p class="agent-card__desc" data-i18n="api.home.agent.build.desc">在可视化画布中使用智能体构建器快速创建智能体，或在代码优先的环境中借助智能�?SDK 灵活开发�?/p>
+          <p class="agent-card__desc" data-i18n="api.home.agent.build.desc">在可视化画布中使用智能体构建器快速创建智能体，或在代码优先的环境中借助智能体 SDK 灵活开发。</p>
         </div>
         <div class="agent-card">
           <div class="agent-card__media">
             <img src="chat/img/api-src-4.webp" data-i18n-alt="api.home.agent.ground.alt" alt="内置工具图标：代码、搜索、图像等" loading="lazy" decoding="async" />
           </div>
           <h3 class="agent-card__title">Ground</h3>
-          <p class="agent-card__desc" data-i18n="api.home.agent.ground.desc">通过内置工具（如网页搜索、文件搜索和远程 MCP 服务器）为智能体提供相关上下文�?/p>
+          <p class="agent-card__desc" data-i18n="api.home.agent.ground.desc">通过内置工具（如网页搜索、文件搜索和远程 MCP 服务器）为智能体提供相关上下文。</p>
         </div>
         <div class="agent-card">
           <div class="agent-card__media">
             <img src="chat/img/api-src-5.webp" data-i18n-alt="api.home.agent.optimize.alt" alt="Slack、Gmail、Salesforce、GitHub 应用图标" loading="lazy" decoding="async" />
           </div>
           <h3 class="agent-card__title" data-i18n="api.home.agent.optimize.title">优化</h3>
-          <p class="agent-card__desc" data-i18n="api.home.agent.optimize.desc">运行评测以衡量智能体表现，并通过提示词优化改进结果�?/p>
+          <p class="agent-card__desc" data-i18n="api.home.agent.optimize.desc">运行评测以衡量智能体表现，并通过提示词优化改进结果。</p>
         </div>
       </div>
     </section>
 
-    <!-- ══�?6. �?AI 体验更上一层楼（语�?图片 Tab）═══ -->
+    <!-- ═══ 6. 让 AI 体验更上一层楼（语音/图片 Tab）═══ -->
     <section class="api-section api-section--elevate">
       <div class="api-section__head api-section__head--center">
-        <h2 class="api-section__title" data-i18n="api.home.elevate.title">�?AI 体验更上一层楼</h2>
+        <h2 class="api-section__title" data-i18n="api.home.elevate.title">让 AI 体验更上一层楼</h2>
       </div>
-      <div class="elevate-tabs" role="tablist" data-i18n-aria="api.home.elevate.tabs_aria" aria-label="模�?>
-        <button class="elevate-tab is-active" role="tab" aria-selected="true" data-elevate-tab="voice" data-i18n="api.home.elevate.tab.voice">Code</button>
-        <button class="elevate-tab" role="tab" aria-selected="false" data-elevate-tab="image" data-i18n="api.home.elevate.tab.image">API</button>
+      <div class="elevate-tabs" role="tablist" data-i18n-aria="api.home.elevate.tabs_aria" aria-label="模态">
+        <button class="elevate-tab is-active" role="tab" aria-selected="true" data-elevate-tab="voice" data-i18n="api.home.elevate.tab.voice">语音</button>
+        <button class="elevate-tab" role="tab" aria-selected="false" data-elevate-tab="image" data-i18n="api.home.elevate.tab.image">图片</button>
       </div>
       <div class="elevate-panel is-active" data-elevate-panel="voice">
-        <p class="elevate-panel__desc" data-i18n-html="api.home.elevate.voice.desc">利用 <a href="https://www.nexusvai.xyz/cancricode/" class="elevate-panel__link" target="_blank" rel="noopener noreferrer">Cancri Code</a> 构建出色�?SaaS 应用，为客户带来更出色的体验支持�?/p>
-        <div class="elevate-panel__media elevate-panel__media--image">
-          <img src="Logo/CCODE3.0.png" data-i18n-alt="api.home.elevate.voice.alt" alt="Cancri Code" loading="lazy" decoding="async" />
+        <p class="elevate-panel__desc" data-i18n-html="api.home.elevate.voice.desc">利用 <a href="chat/api_docs_detail.html#realtime" class="elevate-panel__link">Realtime API</a> 构建自然流畅的语音智能体，为客户带来更出色体验与支持。</p>
+        <div class="elevate-panel__media">
+          <iframe src="https://player.vimeo.com/video/1124376765?h=4404cb6ef0&dnt=1" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" data-i18n-title="api.home.elevate.voice.iframe_title" title="Realtime API 语音演示" loading="lazy"></iframe>
         </div>
       </div>
       <div class="elevate-panel" data-elevate-panel="image">
-        <p class="elevate-panel__desc" data-i18n-html="api.home.elevate.image.desc">利用 <a href="chat/api_docs_detail.html#image" class="elevate-panel__link">Image API</a> 生成高质量图像，为创意工作流和产品体验注入视觉智能�?/p>
+        <p class="elevate-panel__desc" data-i18n-html="api.home.elevate.image.desc">利用 <a href="chat/api_docs_detail.html#image" class="elevate-panel__link">Image API</a> 生成高质量图像，为创意工作流和产品体验注入视觉智能。</p>
         <div class="elevate-panel__media elevate-panel__media--image">
           <img src="chat/img/api-model-0.png" data-i18n-alt="api.home.elevate.image.alt" alt="Image API 生成示例" loading="lazy" decoding="async" />
         </div>
       </div>
     </section>
 
-    <!-- ══�?7. 由我们平台驱动的应用场景 ══�?-->
+    <!-- ═══ 7. 由我们平台驱动的应用场景 ═══ -->
     <section class="api-section api-section--usecases">
       <div class="api-section__head">
         <h2 class="api-section__title" data-i18n="api.home.usecases.title">由我们平台驱动的应用场景</h2>
         <div class="api-section__actions">
           <a class="api-btn api-btn--solid" href="chat/api_apply.html" data-i18n="api.home.usecases.contact">联系我们</a>
-          <a class="api-btn api-btn--ghost" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构�?/span>
+          <a class="api-btn api-btn--ghost" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构建</span>
             <svg class="api-btn__chevron" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M.21 5.352a.714.714 0 0 1 1.01 0L5 9.132l3.78-3.78a.714.714 0 0 1 1.01 1.01l-4.285 4.286a.714.714 0 0 1-1.01 0L.209 6.362a.714.714 0 0 1 0-1.01"></path></svg>
           </a>
         </div>
@@ -239,48 +237,54 @@
           <div class="usecase-card__media"><img src="chat/img/api-uc-0.webp" data-i18n-alt="api.home.usecase.coding.alt" alt="编程场景" loading="lazy" decoding="async" /></div>
           <div class="usecase-card__body">
             <h3 class="usecase-card__title" data-i18n="api.home.usecase.coding.title">编程</h3>
-            <p class="usecase-card__desc" data-i18n="api.home.usecase.coding.desc">利用能够编写、审查、调试、重构和迁移代码的模型，缩短开发周期�?/p>
+            <p class="usecase-card__desc" data-i18n="api.home.usecase.coding.desc">利用能够编写、审查、调试、重构和迁移代码的模型，缩短开发周期。</p>
+            <a class="usecase-card__link" href="chat/api_docs_detail.html#coding" data-i18n="api.home.usecase.coding.link">查看客户案例</a>
           </div>
         </div>
         <div class="usecase-card">
           <div class="usecase-card__media"><img src="chat/img/api-uc-1.webp" data-i18n-alt="api.home.usecase.support.alt" alt="客户支持场景" loading="lazy" decoding="async" /></div>
           <div class="usecase-card__body">
             <h3 class="usecase-card__title" data-i18n="api.home.usecase.support.title">客户支持</h3>
-            <p class="usecase-card__desc" data-i18n="api.home.usecase.support.desc">借助能够自主解决问题并处理客户咨询的模型，更高效地提供客户支持�?/p>
+            <p class="usecase-card__desc" data-i18n="api.home.usecase.support.desc">借助能够自主解决问题并处理客户咨询的模型，更高效地提供客户支持。</p>
+            <a class="usecase-card__link" href="chat/api_docs_detail.html#support" data-i18n="api.home.usecase.coding.link">查看客户案例</a>
           </div>
         </div>
         <div class="usecase-card">
           <div class="usecase-card__media"><img src="chat/img/api-uc-2.webp" data-i18n-alt="api.home.usecase.recommend.alt" alt="个性化推荐场景" loading="lazy" decoding="async" /></div>
           <div class="usecase-card__body">
             <h3 class="usecase-card__title" data-i18n="api.home.usecase.recommend.title">个性化推荐</h3>
-            <p class="usecase-card__desc" data-i18n="api.home.usecase.recommend.desc">呈现为客户量身定制的推荐，提升参与度、留存率和收益�?/p>
+            <p class="usecase-card__desc" data-i18n="api.home.usecase.recommend.desc">呈现为客户量身定制的推荐，提升参与度、留存率和收益。</p>
+            <a class="usecase-card__link" href="chat/api_docs_detail.html#recommend" data-i18n="api.home.usecase.coding.link">查看客户案例</a>
           </div>
         </div>
         <div class="usecase-card">
-          <div class="usecase-card__media"><img src="chat/img/api-uc-3.webp" data-i18n-alt="api.home.usecase.research.alt" alt="研究与数据分析场�? loading="lazy" decoding="async" /></div>
+          <div class="usecase-card__media"><img src="chat/img/api-uc-3.webp" data-i18n-alt="api.home.usecase.research.alt" alt="研究与数据分析场景" loading="lazy" decoding="async" /></div>
           <div class="usecase-card__body">
-            <h3 class="usecase-card__title" data-i18n="api.home.usecase.research.title">研究与数据分�?/h3>
-            <p class="usecase-card__desc" data-i18n="api.home.usecase.research.desc">将复杂数据转化为清晰洞察与综合结论�?/p>
+            <h3 class="usecase-card__title" data-i18n="api.home.usecase.research.title">研究与数据分析</h3>
+            <p class="usecase-card__desc" data-i18n="api.home.usecase.research.desc">将复杂数据转化为清晰洞察与综合结论。</p>
+            <a class="usecase-card__link" href="chat/api_docs_detail.html#research" data-i18n="api.home.usecase.coding.link">查看客户案例</a>
           </div>
         </div>
         <div class="usecase-card">
-          <div class="usecase-card__media"><img src="chat/img/api-uc-4.webp" data-i18n-alt="api.home.usecase.content.alt" alt="模型蒸馏场景" loading="lazy" decoding="async" /></div>
+          <div class="usecase-card__media"><img src="chat/img/api-uc-4.webp" data-i18n-alt="api.home.usecase.content.alt" alt="内容生成场景" loading="lazy" decoding="async" /></div>
           <div class="usecase-card__body">
-            <h3 class="usecase-card__title" data-i18n="api.home.usecase.content.title">模型蒸馏</h3>
-            <p class="usecase-card__desc" data-i18n="api.home.usecase.content.desc">使用 API 批量生成高质量文本，用于语言模型的训练�?/p>
+            <h3 class="usecase-card__title" data-i18n="api.home.usecase.content.title">内容生成</h3>
+            <p class="usecase-card__desc" data-i18n="api.home.usecase.content.desc">生成高质量的文本和图像等内容，以契合品牌的风格与调性。</p>
+            <a class="usecase-card__link" href="chat/api_docs_detail.html#content" data-i18n="api.home.usecase.coding.link">查看客户案例</a>
           </div>
         </div>
         <div class="usecase-card">
           <div class="usecase-card__media"><img src="chat/img/api-uc-5.webp" data-i18n-alt="api.home.usecase.education.alt" alt="教育场景" loading="lazy" decoding="async" /></div>
           <div class="usecase-card__body">
-            <h3 class="usecase-card__title" data-i18n="api.home.usecase.education.title">Education �?/h3>
-            <p class="usecase-card__desc" data-i18n="api.home.usecase.education.desc">借助 AI 工具提升教学效果，用于课程规划、辅导与支持�?/p>
+            <h3 class="usecase-card__title" data-i18n="api.home.usecase.education.title">Education 版</h3>
+            <p class="usecase-card__desc" data-i18n="api.home.usecase.education.desc">借助 AI 工具提升教学效果，用于课程规划、辅导与支持。</p>
+            <a class="usecase-card__link" href="chat/api_docs_detail.html#education" data-i18n="api.home.usecase.coding.link">查看客户案例</a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ══�?8. 适用于大规模运营的企业级功能 ══�?-->
+    <!-- ═══ 8. 适用于大规模运营的企业级功能 ═══ -->
     <section class="api-section api-section--enterprise">
       <div class="api-section__head">
         <h2 class="api-section__title" data-i18n="api.home.enterprise.title">适用于大规模运营的企业级功能</h2>
@@ -290,43 +294,45 @@
       </div>
       <div class="enterprise-grid">
         <div class="enterprise-card">
-          <h3 class="enterprise-card__title" data-i18n="api.home.enterprise.security.title">安全与数据隐�?/h3>
+          <h3 class="enterprise-card__title" data-i18n="api.home.enterprise.security.title">安全与数据隐私</h3>
           <ul class="enterprise-card__list">
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l1">可选的对话收集关闭�?/span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l2">聊天记录和账号的完整删除�?/span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l1">对话数据训练开关由你掌控，一键即可退出</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l2">聊天记录可手动删除，支持账户注销与数据清理</span></li>
             <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l3">多层风控与访问审计，识别并拦截异常登录和滥用</span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l4">采用边缘安全网关和安全托管的数据�?/span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l5">采取行业通行的安全措施保护您的信�?/span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l8">全站 HTTPS 传输加密保护数据安全</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l4">Cloudflare 边缘安全网关 + Neon 安全托管数据库</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l5">数据存储位置透明，主数据库部署于新加坡</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l6">IP 维度风控与登录频率保护，实时识别异常来源</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l7">邮箱 OTP 无密码登录，JWT 无状态鉴权</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.security.l8">全站 HTTPS 传输加密（TLS 1.3），云端存储加密保护</span></li>
           </ul>
         </div>
         <div class="enterprise-card">
           <h3 class="enterprise-card__title" data-i18n="api.home.enterprise.admin.title">管理控制</h3>
           <ul class="enterprise-card__list">
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.admin.l1">通过基于角色的访问控制，管理工具、模型和项目的使用权�?/span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.admin.l2">设置账单与使用量提醒，避免超�?/span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.admin.l3">按项目查看详细的使用情况与成本活�?/span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.admin.l1">通过基于角色的访问控制，管理工具、模型和项目的使用权限</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.admin.l2">设置账单与使用量提醒，避免超额</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.admin.l3">按项目查看详细的使用情况与成本活动</span></li>
           </ul>
           <h3 class="enterprise-card__title enterprise-card__title--mt" data-i18n="api.home.enterprise.support.title">获取 NexusV 专业支持</h3>
           <ul class="enterprise-card__list">
             <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.support.l1">专属客户团队与优先级支持</span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.support.l2">来自解决方案架构师的 AI 部署与最佳实践指�?/span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.support.l2">来自解决方案架构师的 AI 部署与最佳实践指导</span></li>
             <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.enterprise.support.l3">与研究人员合作，共同构建定制 AI 模型</span></li>
           </ul>
         </div>
       </div>
     </section>
 
-    <!-- ══�?9. 开始使�?══�?-->
+    <!-- ═══ 9. 开始使用 ═══ -->
     <section class="api-section api-section--get-started">
-      <h2 class="api-section__title api-section__title--center" data-i18n="api.home.getstarted.title">开始使�?/h2>
+      <h2 class="api-section__title api-section__title--center" data-i18n="api.home.getstarted.title">开始使用</h2>
       <div class="get-started-grid">
         <div class="get-started-card">
-          <h3 class="get-started-card__title" data-i18n="api.home.getstarted.strategy.title">与我们携�?/h3>
+          <h3 class="get-started-card__title" data-i18n="api.home.getstarted.strategy.title">与我们携手制定 AI 战略</h3>
           <ul class="get-started-card__list">
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.strategy.l1">提出问题</span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.strategy.l2">我们回复你的问题</span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.strategy.l3">直通团队通道</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.strategy.l1">与 AI 顾问合作，解决复杂挑战</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.strategy.l2">获得实操部署指导</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.strategy.l3">解锁优先处理与定价优惠</span></li>
           </ul>
           <a class="api-btn api-btn--solid" href="chat/api_apply.html" data-i18n="api.home.usecases.contact">联系我们</a>
         </div>
@@ -335,10 +341,10 @@
           <ul class="get-started-card__list">
             <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.self.l1">访问我们的前沿模型和 API</span></li>
             <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.self.l2">简单的即用即付定价</span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.self.l3">�?CancriCode 中进行测�?/span></li>
-            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.self.l4">利用我们�?API 文档和开发者资源进行构�?/span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.self.l3">在 Playground 中进行测试</span></li>
+            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" fill="none" viewBox="0 0 16 16" class="enterprise-check"><path fill="currentColor" d="M13.72 3.195c.347.294.39.813.096 1.16l-7.082 8.354a.823.823 0 0 1-1.267-.014L2.172 8.626a.823.823 0 0 1 1.279-1.035l2.67 3.297 6.44-7.597a.823.823 0 0 1 1.16-.096"></path></svg><span data-i18n="api.home.getstarted.self.l4">利用我们的 API 文档和开发者资源进行构建</span></li>
           </ul>
-          <a class="api-btn api-btn--ghost" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构�?/span>
+          <a class="api-btn api-btn--ghost" href="chat/api/console.html"><span data-i18n="api.home.hero.start_build">开始构建</span>
             <svg class="api-btn__chevron" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M.21 5.352a.714.714 0 0 1 1.01 0L5 9.132l3.78-3.78a.714.714 0 0 1 1.01 1.01l-4.285 4.286a.714.714 0 0 1-1.01 0L.209 6.362a.714.714 0 0 1 0-1.01"></path></svg>
           </a>
         </div>
@@ -353,33 +359,12 @@
   <script src="js/theme.js" defer></script>
   <script src="js/main.js?v=2026-05-18" defer></script>
   <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
-  <script src="js/search.js?v=20260810-api-home" defer></script>
   <script src="chat/cancri_config.js?v=2026-05-13e"></script>
   <script src="chat/api/oai-trusted-logos.js?v=20260810-logos-order" defer></script>
   <script src="chat/api/oai-home.js?v=20260810-home-mkt" defer></script>
   <script src="chat/model_launch_modal.js?v=20260809-f5lm2" defer></script>
   <script src="chat/glm52_fp8_launch_modal.js?v=20260810-freesec" defer></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      if (window.injectComponents) injectComponents({});
-      // 仅开放平台首页：logo / CTA，不动主�?components.js
-      var logo = document.querySelector('.navbar a.logo img');
-      if (logo) {
-        logo.setAttribute('src', 'chat/assets/nexusvai_logo_transparent.svg');
-        logo.setAttribute('alt', 'NexusVAI');
-        logo.style.height = '52px';
-      }
-      var pill = document.querySelector('.navbar a.btn-pill');
-      if (pill) {
-        pill.setAttribute('href', 'https://qm.qq.com/q/zVsZBXS2OY');
-        pill.setAttribute('target', '_blank');
-        pill.setAttribute('rel', 'noopener noreferrer');
-        var label = pill.querySelector('[data-i18n]');
-        if (label) label.setAttribute('data-i18n', 'api.home.nav.join');
-        else pill.setAttribute('data-i18n', 'api.home.nav.join');
-        if (window.translate) window.translate();
-      }
-    });
-  </script>
+  <script>document.addEventListener('DOMContentLoaded', function () { if (window.injectComponents) injectComponents({}); });</script>
+<script src="js/search.js?v=20260810-api-home" defer></script>
 </body>
 </html>

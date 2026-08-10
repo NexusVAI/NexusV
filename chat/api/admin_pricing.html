@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>管理�?· 按量定价 · Cancri</title>
-    <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
+    <title>管理台 · 按量定价 · Cancri</title>
+    <link rel="icon" type="image/svg+xml" href="../../Logo/NexusV_favicon.svg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
     <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
@@ -68,33 +68,20 @@
     </style>
   </head>
   <body class="admin-console">
-<link rel="stylesheet" type="text/css" href="../assets/p2m-loader.css" />
-<div id="p2m-loader" aria-hidden="true">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
-    <g id="mark" fill="#111111" fill-rule="evenodd">
-      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
-      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
-      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
-      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
-    </g>
-  </svg>
-</div>
-<script src="../assets/p2m-loader.js" defer></script>
-
     <div class="container">
       <nav id="admin-nav" data-active="pricing"></nav>
 
       <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-block sk-table"></div></div></div>
 
       <div id="login-gate" class="gate" style="display: none">
-        <h2>需要登�?/h2>
+        <h2>需要登录</h2>
         <p>请先登录账号，验证你的管理员身份</p>
         <a class="btn-primary" href="../">前往登录</a>
       </div>
 
       <div id="deny-gate" class="gate deny" style="display: none">
         <h2>无权访问</h2>
-        <p>这个页面仅站点管理员可见�?/p>
+        <p>这个页面仅站点管理员可见。</p>
         <a class="btn-primary" href="../">返回聊天</a>
       </div>
 
@@ -102,27 +89,27 @@
         <header>
           <h1>按量定价</h1>
           <p>
-            每个模型设�?strong>按量</strong>（输�?输出 �?M token）」或�?strong>按次</strong>（元/次）」�?
-            <strong>付费模型未正确定�?= 不可用（402�?/strong>；改价即时生效（v3 RPC 每次直读 DB，无缓存）�?
-            免费模型不计费，无需定价�?
+            每个模型设「<strong>按量</strong>（输入/输出 元/M token）」或「<strong>按次</strong>（元/次）」。
+            <strong>付费模型未正确定价 = 不可用（402）</strong>；改价即时生效（v3 RPC 每次直读 DB，无缓存）。
+            免费模型不计费，无需定价。
           </p>
         </header>
 
-        <!-- 计费模式开关（cutover�?-->
+        <!-- 计费模式开关（cutover） -->
         <div class="mode-card">
-          <span>当前计费模式�?/span>
-          <span id="mode-pill" class="mode-pill quota">�?/span>
+          <span>当前计费模式：</span>
+          <span id="mode-pill" class="mode-pill quota">—</span>
           <span class="desc">
-            <code>quota_v2</code>=旧订�?积分�?code>wallet_v3</code>=按量充值（¥钱包）�?
-            切到 wallet_v3 即对全站启用按量计费——请先确认付费模型都已定价、充值入口与限速已就绪�?
+            <code>quota_v2</code>=旧订阅/积分；<code>wallet_v3</code>=按量充值（¥钱包）。
+            切到 wallet_v3 即对全站启用按量计费——请先确认付费模型都已定价、充值入口与限速已就绪。
           </span>
           <button class="btn-save" id="mode-toggle">切换模式</button>
         </div>
 
         <div class="toolbar2">
-          <input type="text" id="filter" placeholder="搜索模型 ID / 名称 / 品牌�? autocomplete="off" spellcheck="false" />
+          <input type="text" id="filter" placeholder="搜索模型 ID / 名称 / 品牌…" autocomplete="off" spellcheck="false" />
           <label><input type="checkbox" id="only-paid" /> 只看付费</label>
-          <label><input type="checkbox" id="only-unpriced" /> 只看未定�?/label>
+          <label><input type="checkbox" id="only-unpriced" /> 只看未定价</label>
           <button class="btn-save" id="reload-btn">重新加载</button>
         </div>
         <div class="summary" id="summary"></div>
@@ -137,8 +124,8 @@
                 <th>输入 ¥/M</th>
                 <th>输出 ¥/M</th>
                 <th>缓存×</th>
-                <th>¥/�?/th>
-                <th>状�?/th>
+                <th>¥/次</th>
+                <th>状态</th>
                 <th></th>
               </tr>
             </thead>
@@ -158,5 +145,6 @@
     ></script>
     <script src="./admin-nav.js?v=20260804-tickets"></script>
     <script src="./admin-pricing-app.js?v=2026-06-22-payg"></script>
-  </body>
+  <script src="../assets/p2m-loader.js" defer></script>
+</body>
 </html>

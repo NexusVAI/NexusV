@@ -8,8 +8,8 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>管理�?· 订单审核 · Cancri</title>
-        <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
+        <title>管理台 · 订单审核 · Cancri</title>
+        <link rel="icon" type="image/svg+xml" href="../../Logo/NexusV_favicon.svg" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
         <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
         <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
@@ -205,26 +205,13 @@
         </style>
     </head>
     <body class="admin-console">
-<link rel="stylesheet" type="text/css" href="../assets/p2m-loader.css" />
-<div id="p2m-loader" aria-hidden="true">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
-    <g id="mark" fill="#111111" fill-rule="evenodd">
-      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
-      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
-      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
-      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
-    </g>
-  </svg>
-</div>
-<script src="../assets/p2m-loader.js" defer></script>
-
         <div class="container">
             <nav id="admin-nav" data-active="orders"></nav>
 
             <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div></div></div>
 
             <div id="login-gate" class="gate" style="display: none">
-                <h2>需要登�?/h2>
+                <h2>需要登录</h2>
                 <p>请先登录账号，验证你的管理员身份</p>
                 <a class="btn-primary" href="../">前往登录</a>
             </div>
@@ -241,7 +228,7 @@
                 <header>
                     <h1>付费订单审核</h1>
                     <p>
-                        按量计费模式：审核用户提交的充值订单，以每条订单的<strong>用户应付</strong>为准核对。审核通过后自动按实付金额打入用户¥钱包�?:1），即时生效，无激活码环节�?                   </p>
+                        按量计费模式：审核用户提交的充值订单，以每条订单的<strong>用户应付</strong>为准核对。审核通过后自动按实付金额打入用户¥钱包（1:1），即时生效，无激活码环节。                    </p>
                 </header>
 
                 <div id="ops-alerts" style="display: none"></div>
@@ -256,11 +243,11 @@
                         <div class="value" id="stat-approved"></div>
                     </div>
                     <div class="stat-card">
-                        <div class="label">已激�?/div>
+                        <div class="label">已激活</div>
                         <div class="value" id="stat-activated"></div>
                     </div>
                     <div class="stat-card rejected">
-                        <div class="label">已驳�?/div>
+                        <div class="label">已驳回</div>
                         <div class="value" id="stat-rejected"></div>
                     </div>
                 </div>
@@ -268,28 +255,28 @@
                 <div class="grant-panel" id="grantPanel">
                     <div class="grant-panel-title">指定邮箱赠送激活码</div>
                     <p class="grant-panel-hint">
-                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使�?                  </p>
+                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用                   </p>
                     <div class="grant-form">
                         <input
                             type="email"
                             id="grantEmail"
-                            placeholder="对方邮箱（QQ / Foxmail�?
+                            placeholder="对方邮箱（QQ / Foxmail）"
                             autocomplete="off"
                             maxlength="200"
                         />
                         <select id="grantSku" class="grant-form-select">
-                            <option value="recharge:custom">充�?· 按量钱包（�?-¥2000�?:1 入钱包）</option>
-                            <option value="plan:pro">订阅 · Pro（�?.9 / 30 天）</option>
-                            <option value="plan:pro_plus">订阅 · Pro+（�?9 / 30 天）</option>
-                            <option value="plan:pro_max">订阅 · Pro Max（�?9 / 30 天）</option>
-                            <option value="topup:topup_small">加油�?· 1,500 �?token（�?0�?/option>
-                            <option value="topup:topup_medium">加油�?· 9,000 �?token（�?0�?/option>
-                            <option value="topup:topup_large">加油�?· 4 �?token（�?00�?/option>
+                            <option value="recharge:custom">充值 · 按量钱包（¥1-¥2000，1:1 入钱包）</option>
+                            <option value="plan:pro">订阅 · Pro（¥9.9 / 30 天）</option>
+                            <option value="plan:pro_plus">订阅 · Pro+（¥29 / 30 天）</option>
+                            <option value="plan:pro_max">订阅 · Pro Max（¥99 / 30 天）</option>
+                            <option value="topup:topup_small">加油包 · 1,500 万 token（¥10）</option>
+                            <option value="topup:topup_medium">加油包 · 9,000 万 token（¥50）</option>
+                            <option value="topup:topup_large">加油包 · 4 亿 token（¥100）</option>
                         </select>
                         <input
                             type="number"
                             id="grantRechargeAmount"
-                            placeholder="充值金�?¥�?-2000�?
+                            placeholder="充值金额 ¥（1-2000）"
                             min="1"
                             max="2000"
                             step="0.01"
@@ -308,7 +295,7 @@
 
                 <div class="filter-group" id="statusFilter">
                     <button class="filter-btn active" data-status="">全部</button>
-                    <button class="filter-btn" data-status="submitted">待审�?/button>
+                    <button class="filter-btn" data-status="submitted">待审核</button>
                     <button class="filter-btn" data-status="approved">已通过</button>
                     <button class="filter-btn" data-status="activated">已激</button>
                     <button class="filter-btn" data-status="rejected">已拒</button>
@@ -320,7 +307,7 @@
                 <div id="orders"></div>
 
                 <div id="empty-msg" class="empty" style="display: none">
-                    没有匹配的订�?              </div>
+                    没有匹配的订单               </div>
             </div>
 
             <div id="toast" class="toast"></div>
@@ -338,5 +325,6 @@
         <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
         <script src="./admin-nav.js?v=20260804-tickets"></script>
         <script src="./admin-orders-app.js?v=20260705-undo2"></script>
-    </body>
+    <script src="../assets/p2m-loader.js" defer></script>
+</body>
 </html>
