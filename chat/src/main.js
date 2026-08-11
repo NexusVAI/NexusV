@@ -181,6 +181,37 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   const homeInput = document.getElementById("homeInput");
   const sendChatBtn = document.getElementById("sendChatBtn");
   const chatMessages = document.getElementById("chatMessages");
+  // 搬运版页面（claude2.html，html[data-skin="claude-port"]）里，消息要塞进官方
+  // 的居中列 #messageList，而不是滚动容器本身：官方滚动容器内有一个 min-h-full
+  // 的包裹层，直接 append 成它的兄弟会被顶到首屏之外，消息看不见。
+  // 滚动依旧操作 chatMessages —— 它才是真正带 overflow 的那层。
+  const PORT_SKIN =
+    document.documentElement.getAttribute("data-skin") === "claude-port";
+  const messageSink =
+    (PORT_SKIN && document.getElementById("messageList")) || chatMessages;
+
+  // 侧栏会话行 / 图标按钮的 class 串，原样抄自官方快照（chat/_port_templates.html）。
+  // 定义在这里而不是靠近使用处，是因为会话列表在初始化阶段就会渲染一次，
+  // 常量若声明在文件后半段会踩到 TDZ。
+  const PORT_CHAT_ROW_CLS =
+    "inline-flex items-center justify-center relative isolate shrink-0 can-focus select-none " +
+    "border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] " +
+    "h-8 rounded-md min-w-[4rem] whitespace-nowrap !text-xs w-full !min-w-0 group py-1.5 " +
+    "!rounded-[9px] px-4 !transition-none before:!transition-none !-outline-offset-2 " +
+    "overflow-hidden active:bg-neutral-30 active:scale-[1.0] _fill_19tw7_9 _ghost_19tw7_96";
+  const PORT_ICON_BTN_CLS =
+    "cds-reset group/btn relative isolate inline-flex shrink-0 items-center justify-center gap-1.5 " +
+    "whitespace-nowrap select-none cursor-[var(--cds-cursor-interactive)] border-0 outline-none " +
+    "focus-visible:outline-hidden rounded h-control font-sans text-body transition-shadow " +
+    "duration-fast focus-visible:shadow-focus text-primary font-normal aspect-square w-control px-0";
+  // 消息操作栏（官方 MessageActions 的 class 串）
+  const PORT_ACTIONS_CLS = {
+    bar: "flex items-center select-none [&_button]:text-muted [&_button:hover:not([aria-pressed=true])]:text-primary",
+    inner: "flex items-center gap-1",
+    group: "flex items-center",
+    ts: "text-caption text-muted select-none pr-1",
+  };
+
   const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
   const homeCenter = document.getElementById("homeCenter");
   const attachBtn = document.getElementById("attachBtn");
@@ -1895,8 +1926,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   let quotaState = {
     fetchedAt: 0,
     tier: null,                 // null = 未知（不阻挡）；"free" / "paid" = 已知
-    planCode: null,             // 'pro' | 'pro_plus' | 'pro_max' | null
-    isGrandfathered: false,     // Phase A 老用户豁免 vip 模型
+    planCode: null,             // plan_v4: 'go'|'plus'|'pro'；legacy: 'pro_plus'|'pro_max'|null
+    isGrandfathered: false,     // Phase A 老用户豁免 vip 模型（legacy quota_v2）
     freePoolRemaining: null,    // null = 未知（不强制阻挡）
     dailyPaidRemaining: null,   // null = 未知（不强制阻挡）
     // 2026-05-19：加油包余额。后端 cancri_consume_paid_quota_v2 FREE 分支
@@ -1946,8 +1977,13 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       if (!sub || typeof sub !== "object") return;
       quotaState.tier = sub.tier === "paid" ? "paid" : "free";
       const rawPlan = typeof sub.plan_code === "string" ? sub.plan_code : null;
+      // go/plus/pro + legacy；与 getQuotaBlockReason 的 isAnyPaidPlanCode 对齐
       quotaState.planCode =
-        rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max"
+        rawPlan === "go" ||
+        rawPlan === "plus" ||
+        rawPlan === "pro" ||
+        rawPlan === "pro_plus" ||
+        rawPlan === "pro_max"
           ? rawPlan
           : null;
       quotaState.isGrandfathered = Boolean(sub.is_grandfathered);
@@ -1998,17 +2034,41 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     return Boolean((meta && meta.proMaxOnly === true) || PRO_MAX_GATE_IDS.has(modelId));
   }
   
+  // plan_v4 现行档：Go / Plus / Pro —— 任一有效订阅解锁全部付费模型（无 vip 档位差）。
+  // legacy pro_plus / pro_max 也视为「已订阅」全解锁，避免旧码误挡。
+  function isAnyPaidPlanCode(code) {
+    return (
+      code === "go" ||
+      code === "plus" ||
+      code === "pro" ||
+      code === "pro_plus" ||
+      code === "pro_max"
+    );
+  }
+
+  function normalizePlanCode(raw) {
+    if (typeof raw !== "string") return null;
+    return isAnyPaidPlanCode(raw) ? raw : null;
+  }
+
   // 返回 null 表示通过；否则返回原因 code：
-  //   • 'pro_only'       FREE 用户调 GPT-5.5 系列 / GPT-5.4 Mini（硬挡，不论池/日配额）
-  //   • 'pro_plus_only'  FREE 或 Pro（非 grandfather）调 vip 模型（Opus / Gemini Pro / 视频）
+  //   • 'plan_required'  plan_v4 未订阅/过期 → 付费模型置灰
+  //   • 'pro_only'       legacy FREE 用户调硬挡模型
+  //   • 'pro_plus_only'  legacy 无有效订阅时调 vip（plan_v4 下不再按档位挡）
   //   • 'pool_exhausted' 本月共享池耗尽（FREE 用户调任何模型）
   //   • 'daily_limit'    当日 15 次 PAID 试用用完（2026-05-17 Phase A：25 → 15）
   function getQuotaBlockReason(modelId) {
     // 2026-07-04 套餐制 plan_v4：Chat/IDE 只看套餐。未订阅（或套餐失效）时
-    // 付费模型全部置灰，仅免费（福利）模型可用（后端附加严格限流）。
+    // 付费模型全部置灰；免费 = 福利白名单 OR catalog costTier==='free'
+    //（与 cancri_consume_plan_v4 免费短路一致；勿只认 welfare 硬编码）。
+    // Go/Plus/Pro 任一 active → 全部付费模型解锁（无 Pro+ 档位差）。
+    // 额度用尽由后端 allowance_exhausted 裁决（可钱包溢出），前端不预挡。
     // planV4Active === null（未拉到）不阻挡，后端是权威源。
     if (quotaState.billingMode === "plan_v4") {
-      if (isFreeWelfareModel(modelId)) {
+      const meta = getModelMeta(modelId);
+      const isPlanV4Free =
+        isFreeWelfareModel(modelId) || (meta && meta.costTier === "free");
+      if (isPlanV4Free) {
         // 免费模型：仍受 token 滚动窗口限流（与后端 enforceTokenWindow 同步）
         if (
           quotaState.planV4Active === false &&
@@ -2027,20 +2087,18 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       if (quotaState.planV4Active === false) return "plan_required";
       return null;
     }
+    // Go/Plus/Pro（或 legacy 付费码）→ 全部模型解锁（无 vip 档位差）
+    if (isAnyPaidPlanCode(quotaState.planCode)) return null;
     if (isProMaxGateModel(modelId)) {
       const planCode = quotaState.planCode;
       if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
     }
-    // 2026-05-18 vip 档位闸门：与 chat-gateway cancri_consume_paid_quota_v2 同步。
-    // FREE / Pro（非 grandfather）调 vip 模型 → 后端返 5/403，前端也锁死。
-    // Pro+ / Pro Max / grandfather Pro 豁免。
+    // legacy vip 档位闸门：无有效付费码时才挡
     if (isProPlusGateModel(modelId)) {
       const planCode = quotaState.planCode;
       // planCode 未加载完（null）时不挡——后端是权威源，前端只是预判。
       if (planCode !== null) {
-        const isProPlusOrAbove = planCode === "pro_plus" || planCode === "pro_max";
-        const isGrandfatheredPro = planCode === "pro" && quotaState.isGrandfathered;
-        if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
+        return "pro_plus_only";
       }
     }
     // 2026-05-18 fix：只有当 tier 已知为 "free" 时才横杠 PAID 模型。
@@ -2107,21 +2165,21 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   function getQuotaBlockMessage(modelId) {
     switch (getQuotaBlockReason(modelId)) {
       case "plan_required":
-        return "该模型需订阅套餐后使用（免费模型不受限）。前往定价页订阅套餐。";
+        return "需要Go以上订阅。前往定价页订阅套餐（免费模型不受限）。";
       case "pro_only":
-        return "该模型仅向 Cancri Pro 及以上订阅用户开放，请升级或选择其他模型。";
+        return "需要Go以上订阅，请升级或选择其他模型。";
       case "pro_plus_only":
-        return "该模型仅向 Cancri Pro+ 及以上订阅用户开放（Claude Opus / Gemini 3.1 Pro / 视频生成），请升级或选择其他模型。";
+        return "需要Go以上订阅，请升级或选择其他模型。";
       case "pro_max_only":
-        return "该模型仅向 Cancri Pro Max 订阅用户开放，请升级或选择其他模型。";
+        return "需要Go以上订阅，请升级或选择其他模型。";
       case "pool_exhausted":
-        return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
+        return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。订阅 Go 以上可获得专属月度额度。";
       case "daily_limit":
-        return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
+        return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。订阅 Go 以上可获得专属月度额度。";
       case "token_window_5h_exceeded":
-        return "5 小时内 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
+        return "5 小时内 token 用量已达上限，请稍后再试。订阅 Go 以上可解除限制。";
       case "token_window_week_exceeded":
-        return "本周 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
+        return "本周 token 用量已达上限，请稍后再试。订阅 Go 以上可解除限制。";
       default:
         return "";
     }
@@ -2167,12 +2225,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       .then((data) => {
         if (data && data.ok) {
           quotaState.tier = data.tier === "paid" ? "paid" : "free";
-          // 2026-05-18：吃 plan_code + is_grandfathered，让 vip 档位闸门能区分 Pro/Pro+/Pro Max。
-          // backend cancri_get_quota_status_v2 返回这两个字段。
+          // plan_code：plan_v4 为 go/plus/pro；legacy 为 pro_plus/pro_max。
           const rawPlan = typeof data.plan_code === "string" ? data.plan_code : null;
-          quotaState.planCode = rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max"
-            ? rawPlan
-            : null;
+          quotaState.planCode = normalizePlanCode(rawPlan);
           quotaState.isGrandfathered = Boolean(data.is_grandfathered);
           quotaState.freePoolRemaining = data.free_pool
             ? Number(data.free_pool.remaining)
@@ -2233,8 +2288,12 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           // 2026-07-04 套餐制 plan_v4：get_quota_status 附加 plan_v4 字段
           if (data.plan_v4 && typeof data.plan_v4 === "object") {
             quotaState.planV4Active = data.plan_v4.active === true;
-            quotaState.planV4Code =
-              typeof data.plan_v4.plan_code === "string" ? data.plan_v4.plan_code : null;
+            quotaState.planV4Code = normalizePlanCode(data.plan_v4.plan_code);
+            // 有效套餐时以 plan_v4.plan_code 为准（勿被顶层旧 subscription.plan_code 盖掉）
+            if (quotaState.planV4Active && quotaState.planV4Code) {
+              quotaState.planCode = quotaState.planV4Code;
+              quotaState.tier = "paid";
+            }
           } else if (quotaState.billingMode === "plan_v4") {
             quotaState.planV4Active = false;
             quotaState.planV4Code = null;
@@ -4993,6 +5052,12 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
         if (event === "SIGNED_IN") {
           void maybeShowExpirySoonBanner();
           void fetchUserMemories();
+          // 首屏 renderChatHistoryList() 若跑在 session 就绪之前，ensureAuthSession()
+          // 会抛「请先登录后再使用。」，该错误被 loadChatHistoryList 静默吞掉（不弹 toast），
+          // 侧栏就永久停在「暂无聊天记录」——之前只有记忆在这里补拉，历史列表没有，
+          // 于是必须刷新页面才出得来。这里补齐对称的重拉。
+          // 分享链接场景沿用首屏同一判断，避免冲掉「登录后即可同步历史记录」提示。
+          if (!hasSharedConversationHash()) renderChatHistoryList();
         }
       } else if (event === "SIGNED_OUT") {
         authSessionPromise = null;
@@ -5380,7 +5445,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   // 避免白屏或停留在旧内容。renderMessages() 会在真实消息到达后整页替换掉它。
   function renderChatMessagesSkeleton() {
     if (!chatMessages) return;
-    chatMessages.innerHTML = "";
+    messageSink.innerHTML = "";
     const wrap = document.createElement("div");
     wrap.className = "chat-skeleton";
     wrap.setAttribute("aria-hidden", "true");
@@ -5401,7 +5466,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       });
       wrap.appendChild(msg);
     });
-    chatMessages.appendChild(wrap);
+    messageSink.appendChild(wrap);
   }
 
   function chatHistoryListHasRenderedItems(container) {
@@ -5454,12 +5519,78 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   
       function appendChatHistoryItem(chat) {
         const isPinned = pinned.includes(chat.id);
+        const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
+
+        // 搬运版走官方的 <li><div.relative.group><a> 结构（class 串抄自快照，
+        // 见 chat/_port_templates.html）。仍保留 .recent-item / data-chat-id，
+        // 因为侧栏转圈、菜单定位等既有逻辑都按这两个标识查询节点。
+        if (PORT_SKIN) {
+          const li = document.createElement("li");
+          li.className = "recent-item" + (isPinned ? " recent-item-pinned" : "");
+          li.dataset.chatId = chat.id;
+          if (chat.id === currentChatId) li.classList.add("active");
+          if (isStreamingItem) li.classList.add("recent-item-streaming");
+
+          const wrap = document.createElement("div");
+          wrap.className = "relative group";
+
+          const a = document.createElement("a");
+          a.className = PORT_CHAT_ROW_CLS;
+          a.href = "#";
+          const inner = document.createElement("div");
+          inner.className = "-translate-x-2 w-full flex flex-row items-center justify-start gap-3";
+          const title = document.createElement("span");
+          title.className =
+            "recent-item-title truncate text-sm whitespace-nowrap flex-1 " +
+            "group-hover:[mask-image:linear-gradient(to_right,black_calc(100%_-_28px),transparent_100%)] " +
+            "group-focus-within:[mask-image:linear-gradient(to_right,black_calc(100%_-_28px),transparent_100%)] " +
+            "[mask-size:100%_100%]";
+          title.textContent = chat.title || "新对话";
+          title.title = chat.title || "新对话";
+          inner.appendChild(title);
+          a.appendChild(inner);
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            loadChat(chat.id);
+          });
+
+          const actionsWrap = document.createElement("div");
+          actionsWrap.className =
+            "absolute inset-y-0 right-1 items-center hidden group-hover:flex " +
+            "group-focus-within:flex pointer-coarse:flex opacity-0 group-hover:opacity-100 " +
+            "group-focus-within:opacity-100 pointer-coarse:opacity-100";
+          const more = document.createElement("button");
+          more.type = "button";
+          more.className = "recent-item-actions " + PORT_ICON_BTN_CLS;
+          more.setAttribute("aria-label", `${chat.title || "新对话"} 的更多操作`);
+          more.innerHTML =
+            `<span aria-hidden="true" class="absolute -z-[1] rounded-[inherit] transition-colors duration-fast bg-transparent group-hover/btn:bg-fill-ghost-hover inset-0 cds-btn-squish"></span>` +
+            `<span class="inline-flex min-w-0 items-center gap-1"><span data-cds="Icon" aria-hidden="true" class="claude-anthropicon" style="font-size:16px;font-weight:533.3">\uE0A6</span></span>`;
+          more.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
+          });
+          actionsWrap.appendChild(more);
+
+          wrap.appendChild(a);
+          wrap.appendChild(actionsWrap);
+          li.appendChild(wrap);
+          if (isStreamingItem) {
+            const spinner = document.createElement("span");
+            spinner.className = "recent-item-spinner";
+            spinner.setAttribute("aria-hidden", "true");
+            inner.appendChild(spinner);
+          }
+          listContainer.appendChild(li);
+          return;
+        }
+
         const item = document.createElement("div");
         item.className =
           "recent-item" + (isPinned ? " recent-item-pinned" : "");
         item.dataset.chatId = chat.id;
         if (chat.id === currentChatId) item.classList.add("active");
-        const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
         if (isStreamingItem) item.classList.add("recent-item-streaming");
   
         const modelId = String(chat.model || "").trim();
@@ -5611,7 +5742,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     currentChatId = null;
     loadedChatModel = "";
     conversationHistory = [];
-    chatMessages.innerHTML = "";
+    messageSink.innerHTML = "";
+    hideAskUserBlock();
     homeCenter.style.display = "flex";
     chatMessages.classList.remove("active");
     homeView.classList.remove("chatting");
@@ -5627,7 +5759,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   // 渲染消息
   function renderMessages() {
     if (!chatMessages) return;
-    chatMessages.innerHTML = "";
+    messageSink.innerHTML = "";
   
     let lastUserMessageIndex = -1;
     conversationHistory.forEach((message, i) => {
@@ -5677,7 +5809,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           const id = createAssistantMessage(metadata);
           const messageDiv = document.getElementById(id);
           // 历史回放：图片/视频消息已是终态，移除脉冲圆球占位
-          messageDiv?.classList.remove("is-generating");
+          if (messageDiv) {
+            if (PORT_SKIN) portSetStreaming(messageDiv, false);
+            else messageDiv.classList.remove("is-generating");
+          }
           const answerBody = messageDiv?.querySelector(".answer-body");
           if (answerBody) {
             answerBody.innerHTML = "";
@@ -5695,7 +5830,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           const videoUrl = videoMatch[1];
           const id = createAssistantMessage(metadata);
           const messageDiv = document.getElementById(id);
-          messageDiv?.classList.remove("is-generating");
+          if (messageDiv) {
+            if (PORT_SKIN) portSetStreaming(messageDiv, false);
+            else messageDiv.classList.remove("is-generating");
+          }
           const answerBody = messageDiv?.querySelector(".answer-body");
           if (answerBody) {
             answerBody.innerHTML = "";
@@ -5745,6 +5883,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   
     updateChatNav();
     updateChatShareButtonVisibility();
+    // 历史回放/切对话后按最后一条消息决定 ask_user 提问块显隐
+    syncAskUserFromHistory();
     if (homeView?.classList.contains("chatting")) {
       scheduleChatScrollToBottom(true);
     }
@@ -5759,6 +5899,39 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   let chatNavLastActiveIndex = null;
   let chatNavTurnData = [];
   let chatNavPreviewBound = false;
+  let chatNavIdleBound = false;
+  let chatNavIdleTimer = null;
+
+  function wakeChatNav() {
+    const navEl = document.getElementById("chatNav");
+    if (!navEl) return;
+    if (chatNavIdleTimer != null) {
+      clearTimeout(chatNavIdleTimer);
+      chatNavIdleTimer = null;
+    }
+    navEl.classList.remove("is-idle");
+    navEl.classList.add("is-awake");
+  }
+
+  function armChatNavIdle() {
+    const navEl = document.getElementById("chatNav");
+    if (!navEl || navEl.hidden) return;
+    if (chatNavIdleTimer != null) clearTimeout(chatNavIdleTimer);
+    navEl.classList.remove("is-awake");
+    chatNavIdleTimer = setTimeout(() => {
+      chatNavIdleTimer = null;
+      if (!navEl.hidden && !navEl.matches(":hover")) {
+        navEl.classList.add("is-idle");
+      }
+    }, 2600);
+  }
+
+  function bindChatNavIdle(navEl) {
+    if (chatNavIdleBound || !navEl) return;
+    chatNavIdleBound = true;
+    navEl.addEventListener("mouseenter", () => wakeChatNav());
+    navEl.addEventListener("mouseleave", () => armChatNavIdle());
+  }
   
   function getUserMessageSnippet(domNode, fallbackContent) {
     const fromDataset = (domNode?.dataset?.userText || "").trim();
@@ -5925,6 +6098,11 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
         chatNavObserver = null;
       }
       chatNavLastActiveIndex = null;
+      navEl.classList.remove("is-idle", "is-awake");
+      if (chatNavIdleTimer != null) {
+        clearTimeout(chatNavIdleTimer);
+        chatNavIdleTimer = null;
+      }
       return;
     }
   
@@ -5962,7 +6140,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     });
   
     bindChatNavPreviewEvents(listEl);
+    bindChatNavIdle(navEl);
     navEl.hidden = false;
+    wakeChatNav();
+    armChatNavIdle();
     setupChatNavObserver(userBubbles);
   }
   
@@ -5984,6 +6165,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     if (chatNavLastActiveIndex === messageIndex) return;
     chatNavLastActiveIndex = messageIndex;
     const listEl = document.getElementById("chatNavList");
+    const navEl = document.getElementById("chatNav");
     if (!listEl) return;
     let activeEl = null;
     listEl.querySelectorAll(".chat-nav-item").forEach((item) => {
@@ -5994,6 +6176,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     });
     if (activeEl) {
       activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    if (navEl && !navEl.hidden) {
+      wakeChatNav();
+      if (!navEl.matches(":hover")) armChatNavIdle();
     }
   }
   
@@ -6063,7 +6249,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     grid.appendChild(makeCard("b", answerB));
     wrapper.appendChild(avatar);
     wrapper.appendChild(grid);
-    chatMessages.appendChild(wrapper);
+    messageSink.appendChild(wrapper);
   
     renderPostMarkdownInElement(wrapper);
   }
@@ -7037,7 +7223,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       models_url: "https://www.nexusvai.xyz/chat/api_models.html",
       pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
       apply_url: "https://www.nexusvai.xyz/chat/api_apply.html",
-      keys_url: "https://www.nexusvai.xyz/chat/api_keys.html",
+      keys_url: "https://www.nexusvai.xyz/chat/api/keys.html",
       key_format: "cancri_sk_xxx",
       protocols: [
         "OpenAI Chat Completions",
@@ -7244,19 +7430,21 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     ],
     ratelimit: [
       {
-        tier: "free",
-        per_minute: 10,
-        per_hour: 60,
-        per_day: 1000,
-        concurrent: 2,
-      },
-      {
-        tier: "paid",
-        per_minute: 60,
-        per_hour: 600,
-        per_day: 50000,
-        concurrent: 0,
-        concurrent_note: "0 表示不限并发",
+        note: "账户限速按累计真实充值 Tier0–5：并发 / RPM / TPM / TPD（非旧版 RPH/RPD 请求桶）。门槛 ¥0 / ≥10 / ≥30 / ≥80 / ≥300 / ≥1000。",
+        tiers: [
+          { tier: 0, cumulative_cny: 0, concurrent: 1, rpm: 20, tpm: 500000, tpd: 1500000 },
+          { tier: 1, cumulative_cny: 10, concurrent: 50, rpm: 200, tpm: 2000000, tpd: null },
+          { tier: 2, cumulative_cny: 30, concurrent: 100, rpm: 500, tpm: 3000000, tpd: null },
+          { tier: 3, cumulative_cny: 80, concurrent: 200, rpm: 5000, tpm: 3000000, tpd: null },
+          { tier: 4, cumulative_cny: 300, concurrent: 400, rpm: 5000, tpm: 4000000, tpd: null },
+          { tier: 5, cumulative_cny: 1000, concurrent: 1000, rpm: 10000, tpm: 5000000, tpd: null },
+        ],
+        free_token_windows: {
+          rolling_5h_tokens: 100000,
+          rolling_7d_tokens: 500000,
+          applies_to: "unrecharged / free-settlement accounts",
+        },
+        docs_url_fragment: "#ratelimit",
       },
     ],
     errors: [
@@ -7279,10 +7467,15 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       },
       {
         http: 429,
-        code: "rate_limit_exceeded",
-        when: "撞上 per-minute / per-hour / per-day 任一窗口（free: 10/60/1000，paid: 60/600/50000）",
+        code: "rate_limited",
+        when: "账户限速档触顶（并发 / RPM / TPM / TPD）",
       },
-      { http: 429, code: "concurrent_limit_exceeded", when: "撞上并发槽位上限" },
+      {
+        http: 429,
+        code: "rate_limit_exceeded",
+        when: "Key 侧请求次级桶触顶（勿与账户 TPM/TPD 表混淆）",
+      },
+      { http: 429, code: "concurrent_limit_exceeded", when: "Key 侧并发次级桶触顶" },
       {
         http: 503,
         code: "api_paused",
@@ -7320,7 +7513,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       },
       {
         q: "Key 怎么撤销？",
-        a: "https://www.nexusvai.xyz/chat/api_keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。",
+        a: "https://www.nexusvai.xyz/chat/api/keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。",
       },
       {
         q: "为什么 Claude Code 连不上？",
@@ -7750,10 +7943,17 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     // 真实生效。登录页字色已在 cancri_motion.css 用 .auth-overlay scope
     // 锁死暖白系，不再受 [data-theme="light"] 影响；.auth-card / .auth-input
     // 也写死 brutalist 米白色，独立于 theme。
-    root.setAttribute(
-      "data-theme",
-      state.theme === "light" || state.theme === "black" ? state.theme : "dark",
-    );
+    const resolvedTheme =
+      state.theme === "light" || state.theme === "black" ? state.theme : "dark";
+    if (PORT_SKIN) {
+      // 搬运版页面沿用官方属性约定：data-theme 恒为 "claude"（官方所有色彩
+      // token 都定义在 [data-theme=claude] 下），明暗切换走 data-mode。
+      // 若在这里写旧站的 data-theme=light，[data-theme=claude] 全部失配，
+      // --bg-300 之类的 token 解析为空，整页配色（气泡背景等）直接落空。
+      root.setAttribute("data-mode", resolvedTheme === "light" ? "light" : "dark");
+    } else {
+      root.setAttribute("data-theme", resolvedTheme);
+    }
     // 2026-05-18：聊天字体偏好。CSS 通过 html[data-chat-font="serif|sans|mono"]
     // 覆盖 `.message .message-content` 的 font-family。data-chat-font 永远存在
     // （不会缺省），即便用户没显式选过也会写入默认 sans。
@@ -7940,28 +8140,47 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   };
 
   function messageActionIconHtml(action, fallbackIcon) {
+    // 搬运版统一用官方的 Anthropicons 字体图标；旧页面继续走内联 SVG。
+    if (PORT_SKIN && fallbackIcon) return claudeActionIconHtml(fallbackIcon);
     return MESSAGE_ACTION_SVG[action] || claudeActionIconHtml(fallbackIcon);
   }
 
   function createClaudeActionButton({ action, label, title, icon }) {
+    // 官方按钮结构（抄自快照的 MessageActions）：外层 cds Button + 一个绝对定位
+    // 的底色 span 负责 hover 反馈 + 一个居中图标 span。保留 message-action-btn
+    // 与 data-action，事件委托按它们查找。
+    if (PORT_SKIN) {
+      return (
+        `<button type="button" data-cds="Button" data-size="xs" data-action="${action}" ` +
+        `class="message-action-btn ${PORT_ICON_BTN_CLS}" aria-label="${title || label}" title="${title || label}">` +
+        `<span aria-hidden="true" class="absolute -z-[1] rounded-[inherit] transition-colors duration-fast ` +
+        `bg-transparent group-hover/btn:bg-fill-ghost-hover inset-0 cds-btn-squish"></span>` +
+        `<span class="inline-flex min-w-0 items-center gap-1">${messageActionIconHtml(action, icon)}</span>` +
+        `</button>`
+      );
+    }
     return `<button class="message-action-btn" type="button" data-action="${action}" aria-label="${label}" title="${title || label}">${messageActionIconHtml(action, icon)}</button>`;
   }
 
   function buildUserMessageActionsBar(messageDiv, resolvedIndex) {
     const actionsBar = document.createElement("div");
-    actionsBar.className = "message-actions";
+    actionsBar.className = "message-actions" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.bar : "");
+    if (PORT_SKIN) {
+      actionsBar.setAttribute("data-cds", "MessageActions");
+      actionsBar.setAttribute("data-size", "xs");
+    }
     actionsBar.setAttribute("role", "group");
     actionsBar.setAttribute("aria-label", "Message actions");
 
     const inner = document.createElement("div");
-    inner.className = "message-actions-inner";
+    inner.className = "message-actions-inner" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.inner : "");
 
     const tsSpan = document.createElement("span");
-    tsSpan.className = "message-action-ts";
+    tsSpan.className = "message-action-ts" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.ts : "");
     tsSpan.textContent = formatMessageActionDate();
 
     const btnGroup = document.createElement("div");
-    btnGroup.className = "message-actions-buttons";
+    btnGroup.className = "message-actions-buttons" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.group : "");
     btnGroup.innerHTML = [
       createClaudeActionButton({
         action: "retry",
@@ -8094,36 +8313,203 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   }
 
   function wireAssistantMessageActions(messageDiv, messageActions, answerBody) {
-    messageActions
-      .querySelector('[data-action="copy"]')
-      ?.addEventListener("click", async () => {
-        const text = answerBody.textContent || "";
-        if (!text || text === "正在思考中…") {
-          showToast("没有可复制的内容");
-          return;
-        }
-        const ok = await writeTextToClipboard(text);
-        showToast(ok ? "已复制" : "复制失败");
-      });
+    if (!messageActions) return;
+    const pick = (name) =>
+      messageActions.querySelector(
+        `[data-action="${name}"], [data-port-action="${name}"]`,
+      );
 
-    messageActions
-      .querySelector('[data-action="download-md"]')
-      ?.addEventListener("click", () => {
-        const md =
-          messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
-        if (!md.trim() || md === "正在思考中…") {
-          showToast("没有可下载的内容");
-          return;
-        }
-        downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
-      });
+    pick("copy")?.addEventListener("click", async () => {
+      const text = answerBody.textContent || "";
+      if (!text || text === "正在思考中…") {
+        showToast("没有可复制的内容");
+        return;
+      }
+      const ok = await writeTextToClipboard(text);
+      showToast(ok ? "已复制" : "复制失败");
+    });
 
-    messageActions
-      .querySelector('[data-action="retry"]')
-      ?.addEventListener("click", () => {
-        retryAssistantFromMessage(messageDiv);
-      });
+    pick("download-md")?.addEventListener("click", () => {
+      const md =
+        messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
+      if (!md.trim() || md === "正在思考中…") {
+        showToast("没有可下载的内容");
+        return;
+      }
+      downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
+    });
 
+    pick("retry")?.addEventListener("click", () => {
+      retryAssistantFromMessage(messageDiv);
+    });
+  }
+
+  function portCloneTurn(kind) {
+    const id = kind === "user" ? "portTplUserTurn" : "portTplAssistantTurn";
+    const tpl = document.getElementById(id);
+    if (!tpl?.content?.firstElementChild) {
+      console.error("[claude-port] missing template", id);
+      return null;
+    }
+    return tpl.content.firstElementChild.cloneNode(true);
+  }
+
+  function portSetStreaming(messageDiv, on) {
+    messageDiv.classList.toggle("is-generating", on);
+    messageDiv
+      .querySelector("[data-is-streaming]")
+      ?.setAttribute("data-is-streaming", on ? "true" : "false");
+  }
+
+  function wirePortUserActions(root, resolvedIndex) {
+    const act = (name) => root.querySelector(`[data-port-action="${name}"]`);
+    act("retry")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const idx = Number(root.dataset.messageIndex);
+      undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+      const originalText = root.dataset.userText || "";
+      if (originalText && homeInput) {
+        homeInput.value = originalText;
+        autoResizeComposerInput();
+        updateComposerSendButton();
+        homeInput.focus();
+      }
+    });
+    act("edit")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const originalText = root.dataset.userText || "";
+      if (!originalText) {
+        showToast("没有可编辑的内容");
+        return;
+      }
+      if (homeInput) {
+        homeInput.value = originalText;
+        autoResizeComposerInput();
+        updateComposerSendButton();
+        homeInput.focus();
+      }
+    });
+    act("copy")?.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      const text = root.dataset.userText || "";
+      if (!text) {
+        showToast("没有可复制的内容");
+        return;
+      }
+      const ok = await writeTextToClipboard(text);
+      showToast(ok ? "已复制" : "复制失败");
+    });
+  }
+
+  function createPortUserMessage(content, attachments = [], messageIndex = null) {
+    const root = portCloneTurn("user");
+    if (!root) return;
+    // 保留旧选择器钩子（chatNav / undo 用 .message.user[data-message-index]）
+    root.classList.add("message", "user");
+    const resolvedIndex =
+      typeof messageIndex === "number"
+        ? messageIndex
+        : conversationHistory.length;
+    root.dataset.messageIndex = String(resolvedIndex);
+
+    const normalizedContent = Array.isArray(content)
+      ? extractUserMessageParts(content)
+      : null;
+    const messageAttachments = attachments.length
+      ? attachments
+      : normalizedContent?.attachments || [];
+    const text = normalizedContent
+      ? normalizedContent.text
+      : String(content || "")
+          .replace(/\r\n/g, "\n")
+          .trim();
+    root.dataset.userText = text.replace(/\r\n/g, "\n");
+
+    const sr = root.querySelector('[data-port-slot="user-sr-title"]');
+    if (sr) sr.textContent = text ? `You said: ${text.slice(0, 80)}` : "You said:";
+
+    const textSlot = root.querySelector('[data-port-slot="user-text"]');
+    if (textSlot) {
+      textSlot.textContent = text || (messageAttachments.length ? "已发送图片" : "");
+    }
+
+    const timeSlot = root.querySelector('[data-port-slot="user-time"]');
+    if (timeSlot) timeSlot.textContent = formatMessageActionDate();
+
+    const attSlot = root.querySelector('[data-port-slot="user-attachments"]');
+    if (attSlot) {
+      attSlot.innerHTML = "";
+      if (!messageAttachments.length) {
+        attSlot.setAttribute("hidden", "");
+      } else {
+        attSlot.removeAttribute("hidden");
+        // 附件仍用轻量块；完整 thumbnail 官方 DOM 后续可再抽
+        messageAttachments.forEach((attachment) => {
+          const chip = document.createElement("div");
+          chip.className =
+            "min-w-0 h-[18px] flex flex-row items-center justify-center gap-0.5 px-1 " +
+            "border-0.5 border-strong shadow-sm rounded-[4px] bg-bg-000/70 backdrop-blur-sm font-medium";
+          chip.innerHTML = `<p class="uppercase truncate font-ui text-text-300 text-[11px] leading-[13px]">${escapeHtml(attachment.name || "file")}</p>`;
+          attSlot.appendChild(chip);
+        });
+      }
+    }
+
+    wirePortUserActions(root, resolvedIndex);
+    messageSink.appendChild(root);
+    const bubble = root.querySelector("[data-user-message-bubble]");
+    if (bubble && textSlot) setupUserMessageCollapse(bubble, textSlot);
+    scrollChatToBottom(false);
+    updateChatNav();
+  }
+
+  function createPortAssistantMessage(metadata = createModelMetadata(currentModel)) {
+    const root = portCloneTurn("assistant");
+    if (!root) return null;
+    const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    root.id = messageId;
+    root.classList.add("message", "assistant", "is-generating");
+    portSetStreaming(root, true);
+
+    const modelMetadata = normalizeAssistantMetadata(metadata);
+    const answerBody = root.querySelector('[data-port-slot="asst-answer"]');
+    if (!answerBody) {
+      console.error("[claude-port] assistant template missing asst-answer slot");
+      return null;
+    }
+    answerBody.innerHTML = "";
+
+    const timeSlot = root.querySelector('[data-port-slot="asst-time"]');
+    if (timeSlot) timeSlot.textContent = formatMessageActionDate();
+
+    const messageActions =
+      root.querySelector("[data-message-action-bar]") ||
+      root.querySelector('[aria-label="Message actions"]');
+
+    // 时间线/思考：官方结构里有 pill 槽；先挂空容器供 updateAssistantMessage 复用
+    let timelineContainer = root.querySelector('[data-port-slot="asst-thinking-pill"]');
+    if (!timelineContainer) {
+      timelineContainer = document.createElement("div");
+      timelineContainer.className = "assistant-timeline";
+      timelineContainer.hidden = true;
+      answerBody.parentElement?.insertBefore(timelineContainer, answerBody);
+    }
+
+    wireAssistantMessageActions(root, messageActions || root, answerBody);
+
+    root._parts = {
+      timelineContainer,
+      answerBody,
+      messageActions,
+      modelMetadata,
+      timeline: [],
+      currentReasoningBlock: null,
+      committedReasoningLength: 0,
+      answerStreamState: { text: "", ready: false },
+    };
+    messageSink.appendChild(root);
+    scrollChatToBottom(false);
+    return messageId;
   }
 
   function base64ToBlob(base64, mimeType) {
@@ -9774,6 +10160,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     const isThinkBody = blockElement.classList.contains("think-body");
     const renderText = isThinkBody ? normalizeThinkDisplayText(nextText) : nextText;
     blockElement.innerHTML = renderMarkdown(renderText);
+    if (blockElement.classList.contains("answer-body")) {
+      portStampResponseBodyClasses(blockElement);
+    }
     // 流式输出期间 debounce KaTeX 渲染，避免每帧全量扫描导致卡顿。
     // 流结束后立即渲染一次。
     if (!thinking) {
@@ -10296,13 +10685,28 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     if (window.matchMedia("(max-width: 640px)").matches) {
       return Math.min(176, Math.max(120, Math.floor(window.innerHeight * 0.28)));
     }
-    return 220;
+    // 快照的输入区是 max-h-96 = 384px。这里原本返回 220，比 CSS 声明的 384
+    // (claude.css:1406 / 2205) 更早卡住 —— 同一个「最大高度」当时有三份互相打架的值
+    // (JS 220 / CSS 384 / 外壳 320)，实际生效的是最小的 220，384 永远到不了。
+    return 384;
   }
   
   function autoResizeComposerInput() {
     if (!homeInput) return;
     const composer = homeInput.closest("[data-workbench-composer], .composer");
-    const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
+    // 对话态下限 = CSS min-height:24（claude.css 对话态输入区），让 scrollHeight 决胜：
+    // 单行 = 6 上内距 + 22.4 行高 ≈ 29px，与 ai提问块.html 快照的 ProseMirror 单行
+    // 28.4px 逐像素级一致（2026-08-11 Playwright 实测）。此前写 30（按 24+6 心算），
+    // 打第一个字比快照高 1.6px；再早写死 36，整框 128 vs 快照 102.4。
+    // 空输入态由 claude.css `:placeholder-shown{height:auto}` 直接钉 28.4，不走这里。
+    // 首页态仍用 36：那边 CSS 另有 min-height:48（claude.css:1405，对应 Claude
+    // welcome 的 min-h-[3rem]），JS 下限不参与决胜，改它没有意义也不该改。
+    const chatting = Boolean(homeView?.classList.contains("chatting"));
+    const minHeight = window.matchMedia("(max-width: 640px)").matches
+      ? 44
+      : chatting
+        ? 24
+        : 36;
     const maxHeight = getComposerResizeMaxHeight();
   
     homeInput.style.height = "0px";
@@ -11164,9 +11568,59 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     }
   }
   
+  // 搬运版页面的样式全部由官方 claude-real.css 提供，靠 Tailwind 原子类命中。
+  // 下面的 class 串是从官方快照原样抽出的（tasks/_extract_msg_dom.mjs），
+  // 因此这里只做「贴 class」，不另写一套视觉。老页面 index.html 没有这个
+  // data-skin，走原有 claude.css，行为不变。
+  // 限宽/居中由 #messageList 自己负责，消息节点不再重复 max-w-3xl。
+  // class 串从 _port_msg_dom.html / 对话快照原样抄，禁止手写第二套 token。
+  const PORT_MSG_CLS = {
+    userRow:
+      "mb-1 mt-[var(--msg-gap,1.5rem)] group group/message-row flex flex-col items-end gap-1 font-sans",
+    userBubble:
+      "group relative inline-flex gap-2 bg-bg-300 dark:[[data-darker-default]_&]:bg-bg-000 " +
+      "rounded-xl pl-2.5 py-[var(--msg-bubble-py,0.625rem)] break-words text-text-100 " +
+      "transition-all max-w-[75ch] flex-col !px-[var(--msg-bubble-px,1rem)] max-w-[85%]",
+    userText:
+      "font-large !font-user-message py-0.5 grid grid-cols-1 gap-2 relative " +
+      "[&_ul]:!space-y-0 [&_ol]:!space-y-0 [&_ul]:pl-8 [&_ol]:pl-8",
+    assistant:
+      "font-claude-response relative leading-[1.65rem] " +
+      "[&_pre>div]:bg-bg-000/50 [&_pre>div]:border-0.5 [&_pre>div]:border-border-400 " +
+      "[&_.ignore-pre-bg>div]:bg-transparent " +
+      "[&_.standard-markdown_:is(p,blockquote,h1,h2,h3,h4,h5,h6)]:pl-2 " +
+      "[&_.standard-markdown_:is(p,blockquote,ul,ol,h1,h2,h3,h4,h5,h6)]:pr-8 " +
+      "[&_.progressive-markdown_:is(p,blockquote,h1,h2,h3,h4,h5,h6)]:pl-2 " +
+      "[&_.progressive-markdown_:is(p,blockquote,ul,ol,h1,h2,h3,h4,h5,h6)]:pr-8",
+    markdown:
+      "standard-markdown grid-cols-1 grid [&_>_*]:min-w-0 gap-3 " +
+      "[&_>_*:last-child]:mb-0 print:block print:[&_>_*_+_*]:mt-3",
+  };
+  function portCls(el, ...keys) {
+    if (!PORT_SKIN || !el) return el;
+    el.className += " " + keys.map((k) => PORT_MSG_CLS[k]).join(" ");
+    return el;
+  }
+  /** 官方助手段落带 font-claude-response-body；markdown 渲染后补上。 */
+  function portStampResponseBodyClasses(root) {
+    if (!PORT_SKIN || !root) return;
+    root.querySelectorAll("p, li").forEach((el) => {
+      el.classList.add(
+        "font-claude-response-body",
+        "break-words",
+        "whitespace-normal",
+      );
+    });
+  }
+
   function createUserMessage(content, attachments = [], messageIndex = null) {
+    if (PORT_SKIN) {
+      createPortUserMessage(content, attachments, messageIndex);
+      return;
+    }
     const messageDiv = document.createElement("div");
     messageDiv.className = "message user";
+    portCls(messageDiv, "userRow");
   
     // Track which slot of conversationHistory this DOM bubble represents so the
     // undo button can roll back from this point forward.
@@ -11189,6 +11643,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     const bubble = document.createElement("div");
     bubble.className = "message-content md-content user-message-bubble";
     bubble.setAttribute("data-user-message-bubble", "true");
+    portCls(bubble, "userBubble");
     const normalizedContent = Array.isArray(content)
       ? extractUserMessageParts(content)
       : null;
@@ -11207,27 +11662,27 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     // history slot has not been written).
     messageDiv.dataset.userText = text.replace(/\r\n/g, "\n");
   
-    // Undo control: small "return" arrow that lets the user retract this turn,
-    // dropping it (and everything after) and re-loading the original text into
-    // the composer for editing. Placed before the bubble so it sits to the
-    // left of the right-aligned user message via absolute positioning.
-    const undoBtn = document.createElement("button");
-    undoBtn.type = "button";
-    undoBtn.className = "message-undo-btn";
-    undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
-    undoBtn.title = "撤回这条消息";
-    undoBtn.innerHTML = `
+    // Undo：旧站左侧绝对定位箭头。搬运页没有 cancri_chat.css 那套定位，
+    // 且官方用户气泡旁没有这颗 SVG——撤回走操作条 Edit。PORT 上不挂此按钮。
+    if (!PORT_SKIN) {
+      const undoBtn = document.createElement("button");
+      undoBtn.type = "button";
+      undoBtn.className = "message-undo-btn";
+      undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
+      undoBtn.title = "撤回这条消息";
+      undoBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <polyline points="9 14 4 9 9 4"></polyline>
         <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
       </svg>
     `;
-    undoBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const idx = Number(messageDiv.dataset.messageIndex);
-      undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
-    });
-    messageDiv.appendChild(undoBtn);
+      undoBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const idx = Number(messageDiv.dataset.messageIndex);
+        undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+      });
+      messageDiv.appendChild(undoBtn);
+    }
   
     // 附件缩略图放在文字上方（Claude 风格小块卡片）
     if (messageAttachments.length) {
@@ -11283,8 +11738,18 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   
     const textBlock = document.createElement("div");
     textBlock.className = "user-message-text";
+    portCls(textBlock, "userText");
+    if (PORT_SKIN) textBlock.setAttribute("data-testid", "user-message");
     if (text) {
-      textBlock.innerHTML = renderStreamingFragment(text);
+      if (PORT_SKIN) {
+        // 官方：data-testid=user-message > p.whitespace-pre-wrap.break-words
+        textBlock.innerHTML =
+          `<p class="whitespace-pre-wrap break-words">` +
+          renderStreamingFragment(text) +
+          `</p>`;
+      } else {
+        textBlock.innerHTML = renderStreamingFragment(text);
+      }
     } else {
       textBlock.textContent = messageAttachments.length ? "已发送图片" : "";
     }
@@ -11295,7 +11760,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(bubble);
     messageDiv.appendChild(actionsBar);
-    chatMessages.appendChild(messageDiv);
+    messageSink.appendChild(messageDiv);
     setupUserMessageCollapse(bubble, textBlock);
     scrollChatToBottom(false);
     updateChatNav();
@@ -11697,6 +12162,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   }
 
   function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
+    if (PORT_SKIN) {
+      return createPortAssistantMessage(metadata);
+    }
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const messageDiv = document.createElement("div");
     // 2026-05-21 ChatGPT-style "generating" indicator：助手消息被创建时默认
@@ -11713,7 +12181,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   
     const bubble = document.createElement("div");
     bubble.className = "message-content md-content assistant-message-bubble";
-  
+    portCls(bubble, "assistant");
+
     const generatingIndicator = document.createElement("div");
     generatingIndicator.className = "generating-indicator";
     generatingIndicator.setAttribute("aria-hidden", "true");
@@ -11740,14 +12209,25 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     timelineContainer.className = "assistant-timeline";
 
     const answerBody = document.createElement("div");
-    answerBody.className = "answer-body md-content standard-markdown font-claude-response";
+    // PORT：standard-markdown + gap 等由 PORT_MSG_CLS.markdown 提供（与快照一致）
+    answerBody.className = PORT_SKIN
+      ? "answer-body md-content"
+      : "answer-body md-content standard-markdown font-claude-response";
+    portCls(answerBody, "markdown");
     answerBody.innerHTML = "";
 
     const messageActions = document.createElement("div");
-    messageActions.className = "message-actions";
+    messageActions.className = "message-actions" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.bar : "");
+    if (PORT_SKIN) {
+      messageActions.setAttribute("data-cds", "MessageActions");
+      messageActions.setAttribute("data-size", "xs");
+    }
     messageActions.setAttribute("role", "group");
     messageActions.setAttribute("aria-label", "Message actions");
-    messageActions.innerHTML = `<div class="message-actions-inner"><div class="message-actions-buttons">${buildAssistantMessageActionsHtml()}</div></div>`;
+    messageActions.innerHTML =
+      `<div class="message-actions-inner${PORT_SKIN ? " " + PORT_ACTIONS_CLS.inner : ""}">` +
+      `<div class="message-actions-buttons${PORT_SKIN ? " " + PORT_ACTIONS_CLS.group : ""}">` +
+      `${buildAssistantMessageActionsHtml()}</div></div>`;
   
     bubble.appendChild(modelLabel);
     bubble.appendChild(generatingIndicator);
@@ -11769,7 +12249,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       committedReasoningLength: 0,
       answerStreamState: { text: "", ready: false },
     };
-    chatMessages.appendChild(messageDiv);
+    messageSink.appendChild(messageDiv);
     scrollChatToBottom(false);
   
     return messageId;
@@ -11804,7 +12284,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     // 阶段显示。一旦有任何内容流入，或流式结束（thinking=false），就移除
     // .is-generating 让球消失。
     if (hasReasoning || hasAnswer || !thinking) {
-      messageDiv.classList.remove("is-generating");
+      if (PORT_SKIN) portSetStreaming(messageDiv, false);
+      else messageDiv.classList.remove("is-generating");
     }
     answerBody.classList.remove("assistant-error-card");
     if (messageActions) messageActions.hidden = false;
@@ -11850,18 +12331,28 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     }
 
     if (hasAnswer) {
-      syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, {
-        thinking,
-        placeholder: "正在思考中…",
-      });
+      // ask_user 标签只从"展示文本"里剥掉；原文存 parts.rawAnswerText，
+      // getPartialAssistantContent 优先取它 → 历史/上下文保留标签原文。
+      parts.rawAnswerText = answerText;
+      syncStreamingMarkdownBlock(
+        answerBody,
+        answerStreamState,
+        stripAskUserForDisplay(answerText),
+        {
+          thinking,
+          placeholder: "正在思考中…",
+        },
+      );
     } else if (thinking) {
       answerBody.innerHTML = "";
       answerStreamState.text = "";
       answerStreamState.ready = false;
+      parts.rawAnswerText = "";
     } else {
       answerBody.innerHTML = "";
       answerStreamState.text = "";
       answerStreamState.ready = false;
+      parts.rawAnswerText = "";
     }
 
     // 渲染数学公式
@@ -11938,7 +12429,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     }
     messageDiv.classList.add("is-error");
     // 错误卡 = 流式收尾的另一种终态，白色脉冲圆球必须消失。
-    messageDiv.classList.remove("is-generating");
+    if (PORT_SKIN) portSetStreaming(messageDiv, false);
+    else messageDiv.classList.remove("is-generating");
     if (timelineContainer) {
       timelineContainer.hidden = true;
       timelineContainer.innerHTML = "";
@@ -12004,7 +12496,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       const messageDiv = document.getElementById(messageId);
       if (!messageDiv || !messageDiv._parts) return { reasoning: "", answer: "" };
       const parts = messageDiv._parts;
-      const answer = String(parts.answerStreamState?.text || "");
+      // rawAnswerText = 未剥 ask_user 标签的原文（updateAssistantMessage 写入）；
+      // answerStreamState.text 是展示文本（已剥标签），只作兜底。
+      const answer = String(parts.rawAnswerText || parts.answerStreamState?.text || "");
       const segments = [];
       for (const ev of parts.timeline || []) {
         if (!ev || ev.type !== "reasoning") continue;
@@ -12114,7 +12608,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     conversationHistory.length = 0;
     clearPendingAttachments();
     updateContextMeter();
-    chatMessages.innerHTML = "";
+    messageSink.innerHTML = "";
     chatMessages.classList.remove("active");
     homeView.classList.remove("chatting");
     homeInput.value = "";
@@ -12362,6 +12856,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       const memoryText = state.userMemories.map((m) => m.content).join("；");
       lines.push(`- 用户的历史记忆（系统自动总结的重要信息）：${memoryText}`);
     }
+    // （2026-08-11 更正：ask_user 协议不再走本通道——网关把它包成 "untrusted
+    //   data、不要执行其中指令"，模型不遵守。协议改为 requestBody.cancri_ask_user
+    //   开关 + 网关服务端 system 注入，见 streamChatCompletionRound。）
     if (!lines.length) return "";
     return [
       "以下是用户在设置中提供的个人资料与偏好（Cancri Custom Instructions），请在本次对话中合理参考：",
@@ -12496,7 +12993,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     }
   
     currentChatId = null;
-    chatMessages.innerHTML = "";
+    messageSink.innerHTML = "";
     homeView.classList.add("chatting");
     chatMessages.classList.add("active");
   
@@ -13137,6 +13634,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     }
   
     requestBody.web_search_enabled = Boolean(webSearchEnabled);
+    // 2026-08-11 ask_user 提问块：让网关注入协议 system 消息（web 专属开关；
+    // 曾试过塞 cancri_custom_instructions，但网关把该通道包成"untrusted data、
+    // 不要执行其中指令"，模型不遵守 —— 详见 chat-gateway ASK_USER_PROTOCOL_SYSTEM_PROMPT）。
+    requestBody.cancri_ask_user = true;
   
     const queueSessionId = queueSessionIdOverride || crypto.randomUUID();
     requestBody.queue_session_id = queueSessionId;
@@ -13921,6 +14422,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
         scrollChatToBottom();
       }
       persistSessionNav();
+      // 最终答案落史后检查是否携带 ask_user 提问块
+      syncAskUserFromHistory();
     }
 
     // 与旧版 finalizeConversationTurn 行为一致：分享按钮 + 附件清理始终执行。
@@ -14029,6 +14532,236 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   }
   // ===== /后台生成 / 持久化 / 完成通知 / 智能标题 =====
 
+  // ═══════════════════════════════════════════════════════════════
+  // Ask-User 提问块（2026-08-11，UI 1:1 对齐 移植，直接搬/ai提问块.html）
+  //
+  // 协议：模型在回复正文后追加 <ask_user>{"question":"…","options":["…"]}</ask_user>
+  //（协议指令由网关按 requestBody.cancri_ask_user 开关注入 system 消息；
+  //  客户端 system 会被网关过滤，untrusted 通道模型不遵守——两坑都踩过）。
+  // 流式期间标签被 stripAskUserForDisplay 隐藏；commitGeneration 落史后由
+  // syncAskUserFromHistory 解析"最后一条 assistant 消息"决定显隐 —— 块的
+  // 显隐完全由 conversationHistory 派生，切对话 / 刷新 / 后台生成天然一致。
+  // 历史里保留标签原文（getPartialAssistantContent 优先读 parts.rawAnswerText），
+  // 下一轮上下文里模型能看到自己问过什么。
+  // ═══════════════════════════════════════════════════════════════
+  const ASK_USER_OPEN_TAG = "<ask_user>";
+  const ASK_USER_TAG_RE = /<ask_user>\s*([\s\S]*?)\s*<\/ask_user>/;
+  // 协议指令文本在网关侧（chat-gateway ASK_USER_PROTOCOL_SYSTEM_PROMPT），
+  // 前端只负责 requestBody.cancri_ask_user 开关 + 解析/渲染。
+
+  function parseAskUserPayload(text) {
+    if (typeof text !== "string" || !text.includes(ASK_USER_OPEN_TAG)) return null;
+    const match = text.match(ASK_USER_TAG_RE);
+    if (!match) return null;
+    try {
+      const data = JSON.parse(match[1]);
+      const question = String(data?.question || "").trim().slice(0, 200);
+      const options = Array.isArray(data?.options)
+        ? data.options
+            .map((item) => String(item || "").trim())
+            .filter(Boolean)
+            .slice(0, 4)
+        : [];
+      if (!question || options.length < 2) return null;
+      return { question, options: options.map((item) => item.slice(0, 60)) };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // 展示层剥标签：完整标签整段移除；流式中未闭合的从开标签处截断；
+  // 行尾"<ask_use"这类半截前缀也吞掉，避免打字机闪出尖括号碎片。
+  function stripAskUserForDisplay(text) {
+    const raw = String(text ?? "");
+    if (!raw) return raw;
+    let out = raw.replace(ASK_USER_TAG_RE, "");
+    const openIndex = out.indexOf(ASK_USER_OPEN_TAG);
+    if (openIndex >= 0) out = out.slice(0, openIndex);
+    out = out.replace(/<(?:ask_user|ask_use|ask_us|ask_u|ask_|ask|as|a)?$/, "");
+    return out.trimEnd();
+  }
+
+  let askUserActiveIndex = 0;
+  let askUserVisible = false;
+
+  function getAskUserDom() {
+    let card = document.getElementById("askUserBlock");
+    if (card) {
+      return {
+        card,
+        hint: document.getElementById("askUserHint"),
+      };
+    }
+    const wrap = homeView?.querySelector(".composer-wrap");
+    const composerEl = wrap?.querySelector(".composer");
+    if (!wrap || !composerEl) return null;
+    card = document.createElement("div");
+    card.id = "askUserBlock";
+    card.className = "ask-user-card";
+    card.hidden = true;
+    card.innerHTML =
+      '<div class="ask-user-head">' +
+      '<span class="ask-user-question" id="askUserQuestion"></span>' +
+      '<button class="ask-user-close" id="askUserCloseBtn" type="button" aria-label="关闭提问">' +
+      '<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13.147 6.146a.5.5 0 0 1 .707.707L10.707 10l3.146 3.146a.5.5 0 0 1-.628.772l-.079-.065L10 10.707l-3.147 3.146a.5.5 0 0 1-.707-.707L9.293 10 6.146 6.853l-.064-.078a.5.5 0 0 1 .693-.693l.078.064L10 9.293z"></path></svg>' +
+      "</button></div>" +
+      '<div class="ask-user-list" id="askUserList"></div>';
+    wrap.insertBefore(card, composerEl);
+    const hint = document.createElement("div");
+    hint.id = "askUserHint";
+    hint.className = "ask-user-hint";
+    hint.hidden = true;
+    hint.textContent = "↑↓ 选择 · Enter 发送 · 或直接在下方输入";
+    composerEl.insertAdjacentElement("afterend", hint);
+    card.querySelector("#askUserCloseBtn").addEventListener("click", () => hideAskUserBlock());
+    return { card, hint };
+  }
+
+  function setAskUserActive(index) {
+    const card = document.getElementById("askUserBlock");
+    if (!card) return;
+    const rows = [...card.querySelectorAll(".ask-user-row")];
+    if (!rows.length) return;
+    askUserActiveIndex = ((index % rows.length) + rows.length) % rows.length;
+    rows.forEach((row, i) => row.classList.toggle("is-active", i === askUserActiveIndex));
+  }
+
+  function askUserAnswer(text) {
+    const answer = String(text || "").trim();
+    if (!answer) return;
+    hideAskUserBlock();
+    sendMessage(answer);
+  }
+
+  function showAskUserBlock(payload) {
+    const dom = getAskUserDom();
+    if (!dom || !payload) return;
+    const { card, hint } = dom;
+    card.querySelector("#askUserQuestion").textContent = payload.question;
+    const list = card.querySelector("#askUserList");
+    list.innerHTML = "";
+    payload.options.forEach((option, index) => {
+      if (index > 0) {
+        const sep = document.createElement("div");
+        sep.className = "ask-user-sep";
+        list.appendChild(sep);
+      }
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "ask-user-row";
+      const num = document.createElement("span");
+      num.className = "ask-user-num";
+      num.textContent = String(index + 1);
+      const label = document.createElement("span");
+      label.className = "ask-user-label";
+      label.textContent = option;
+      const enter = document.createElement("span");
+      enter.className = "ask-user-enter";
+      enter.textContent = "⏎";
+      row.append(num, label, enter);
+      row.addEventListener("click", () => askUserAnswer(option));
+      row.addEventListener("mouseenter", () => setAskUserActive(index));
+      list.appendChild(row);
+    });
+    const freeSep = document.createElement("div");
+    freeSep.className = "ask-user-sep is-static";
+    list.appendChild(freeSep);
+    const free = document.createElement("div");
+    free.className = "ask-user-free";
+    free.innerHTML =
+      '<span class="ask-user-num ask-user-pencil">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>' +
+      "</span>" +
+      '<input class="ask-user-input" id="askUserFreeInput" type="text" placeholder="其他答案…" autocomplete="off" />' +
+      '<button class="ask-user-skip" id="askUserSkipBtn" type="button">跳过</button>';
+    list.appendChild(free);
+    free.querySelector("#askUserSkipBtn").addEventListener("click", () => hideAskUserBlock());
+    const freeInput = free.querySelector("#askUserFreeInput");
+    freeInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && freeInput.value.trim()) {
+        event.preventDefault();
+        event.stopPropagation();
+        askUserAnswer(freeInput.value);
+      }
+    });
+    card.hidden = false;
+    if (hint) hint.hidden = false;
+    askUserVisible = true;
+    setAskUserActive(0);
+  }
+
+  function hideAskUserBlock() {
+    const card = document.getElementById("askUserBlock");
+    const hint = document.getElementById("askUserHint");
+    if (card) card.hidden = true;
+    if (hint) hint.hidden = true;
+    askUserVisible = false;
+  }
+
+  // 显隐完全由"最后一条消息是否为带有效 ask_user 的 assistant"派生。
+  function syncAskUserFromHistory() {
+    if (!homeView?.classList.contains("chatting")) {
+      hideAskUserBlock();
+      return;
+    }
+    const last = conversationHistory[conversationHistory.length - 1];
+    const payload =
+      last && last.role === "assistant" && typeof last.content === "string"
+        ? parseAskUserPayload(last.content)
+        : null;
+    if (payload) showAskUserBlock(payload);
+    else hideAskUserBlock();
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (!askUserVisible || state.modal) return;
+    const card = document.getElementById("askUserBlock");
+    if (!card || card.hidden) return;
+    const active = document.activeElement;
+    const inFreeInput = active && active.id === "askUserFreeInput";
+    const inComposer = active && active.id === "homeInput";
+    const composerEmpty = !homeInput || !homeInput.value.trim();
+    const typingElsewhere =
+      active &&
+      active !== document.body &&
+      !inFreeInput &&
+      !inComposer &&
+      (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+    if (typingElsewhere) return;
+
+    if (event.key === "Escape") {
+      hideAskUserBlock();
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      // 输入框里已有文字时方向键留给光标
+      if ((inFreeInput && active.value) || (inComposer && !composerEmpty)) return;
+      event.preventDefault();
+      setAskUserActive(askUserActiveIndex + (event.key === "ArrowDown" ? 1 : -1));
+      return;
+    }
+    if (event.key === "Enter") {
+      if (inFreeInput) return; // 由输入框自己的监听处理
+      if (inComposer && !composerEmpty) return; // 正常发送流程
+      const rows = [...card.querySelectorAll(".ask-user-row")];
+      const row = rows[askUserActiveIndex];
+      if (row) {
+        event.preventDefault();
+        askUserAnswer(row.querySelector(".ask-user-label")?.textContent || "");
+      }
+      return;
+    }
+    // 数字快捷键：仅在没有聚焦任何输入框时生效，避免吞掉正常打字
+    if (/^[1-4]$/.test(event.key) && (!active || active === document.body)) {
+      const rows = [...card.querySelectorAll(".ask-user-row")];
+      const row = rows[Number(event.key) - 1];
+      if (row) {
+        event.preventDefault();
+        askUserAnswer(row.querySelector(".ask-user-label")?.textContent || "");
+      }
+    }
+  });
+
   async function sendMessage(content) {
     // 检查速率限制
     const rateCheck = checkRateLimit();
@@ -14062,6 +14795,8 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     }
   
     stopVoiceRecognition();
+    // 任何新消息发出即撤下 ask_user 提问块（点选发送路径已先行隐藏，双保险）
+    hideAskUserBlock();
   
     homeView.classList.add("chatting");
     chatMessages.classList.add("active");
@@ -14587,17 +15322,29 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     );
   }
   
+  let mobileDrawerCloseTimer = 0;
+
   function closeMobileSidebarDrawer() {
     if (!window.matchMedia("(max-width: 768px)").matches) return;
     document.body.classList.remove("sidebar-open");
     if (!sidebar) return;
-    sidebar.classList.add("collapsed");
+    // 2026-08-11：与 claude_ui.js closeDrawer 同步——.collapsed 延迟到 220ms
+    // 滑出结束再加（立刻加会命中 rail 的内容隐藏规则，抽屉滑出途中内容整块
+    // 消失=看起来"关闭没动画"）。去掉 open class 后基础 mobile 规则
+    // (.sidebar → translateX(-100%)) 已负责滑出。
     sidebar.classList.remove("is-mobile-open");
     sidebar.classList.add("is-mobile-closing");
     sidebar.dataset.open = "false";
     sidebar.dataset.collapsed = "true";
-    window.setTimeout(() => {
-      sidebar?.classList.remove("is-mobile-closing");
+    window.clearTimeout(mobileDrawerCloseTimer);
+    mobileDrawerCloseTimer = window.setTimeout(() => {
+      if (!sidebar) return;
+      sidebar.classList.remove("is-mobile-closing");
+      // 期间若抽屉被重新打开，不能补 .collapsed
+      const reopened =
+        document.body.classList.contains("sidebar-open") ||
+        sidebar.classList.contains("is-mobile-open");
+      if (!reopened) sidebar.classList.add("collapsed");
     }, 220);
     ["mobileMenuBtn", "sidebarToggle"].forEach((id) => {
       const btn = document.getElementById(id);
@@ -14669,10 +15416,12 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       accountPopover &&
       accountPopover.classList.contains("open") &&
       isAccountSheetViewport();
-    const shouldShow =
-      Boolean(state.modal) ||
-      accountSheetOpen ||
-      (isMobileViewport() && sidebar && !sidebar.classList.contains("collapsed"));
+    // 2026-08-11：删掉"mobile 且未 collapsed 就亮 .scrim"分支。移动端抽屉的
+    // 变暗层是 claude.css 的 body.sidebar-open::after；这条旧分支用 ≤640 阈值
+    // （抽屉断点是 ≤768）且关闭路径走 claude_ui.js 时永远没人来清 .show，
+    // 结果 0.28 半透明 scrim（pointer-events:auto）留在整页上：看着"没回灰"、
+    // 什么都点不动，直到再点一次恰好命中 scrim 自己的 click 处理器才恢复。
+    const shouldShow = Boolean(state.modal) || accountSheetOpen;
     scrim.classList.toggle("show", shouldShow);
     syncScrollToBottomAnchor();
   }
@@ -14787,7 +15536,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   }
   
 
-  const SIDEBAR_RAIL_ANIM_MS = 240;
+  // 2026-08-11：240→300。CSS 里最长的过渡是 claude-sidebar-icons.css:107 的
+  // width 260ms；动画类在 240ms 就被摘掉会让收尾一帧回到基础 transition 曲线，
+  // 偶发肉眼可见的"末帧顿一下"。300ms 完整盖住 260ms。
+  const SIDEBAR_RAIL_ANIM_MS = 300;
   let sidebarRailAnimTimer = 0;
   
   function beginSidebarRailAnimation(mode) {
@@ -16318,6 +17070,14 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     renderMemoriesInSettings,
     handleSelectedAttachmentFiles,
     reserveFileUploadUsage,
+    // 2026-08-11：ask_user 提问块的集成缝隙（claude_ui.js / E2E 验证用）。
+    askUser: {
+      show: showAskUserBlock,
+      hide: hideAskUserBlock,
+      parse: parseAskUserPayload,
+      strip: stripAskUserForDisplay,
+      sync: syncAskUserFromHistory,
+    },
   };
   
   // 侧边栏主题切换按钮由 js/ui/theme.js 统一处理，此处不再重复绑定
