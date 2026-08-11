@@ -124,7 +124,7 @@
             rel="stylesheet"
             href="./styles/cancri_motion.css?v=20260718-zm-ann-r2"
         />
-        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260724-invite-fix" />
+        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260811-ann-expand" />
         <link
             rel="stylesheet"
             href="./styles/auth-platform-login.css?v=2026-06-25-download-icons"
@@ -133,7 +133,7 @@
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=20260724-invite-fix"
+            href="./claude.css?v=20260811-ann-expand"
         />
         <link
             rel="stylesheet"
@@ -908,7 +908,7 @@
                         </button>
                         <div class="claude-onboarding-head">
                             <h2 class="claude-onboarding-title">试试基础</h2>
-                            <span class="claude-onboarding-progress" id="claudeOnboardingProgress">3步中0步完成</span>
+                            <span class="claude-onboarding-progress" id="claudeOnboardingProgress">2步中0步完成</span>
                         </div>
                         <div class="claude-onboarding-list">
                             <button class="claude-onboarding-task" type="button" data-onboarding-id="importMemory" data-onboarding-action="import-memory">
@@ -923,13 +923,6 @@
                                 <span class="claude-onboarding-copy">
                                     <span class="claude-onboarding-task-title">加入最棒的社区</span>
                                     <span class="claude-onboarding-task-subtitle">当你困惑时，社区会给出最好的答案</span>
-                                </span>
-                            </button>
-                            <button class="claude-onboarding-task" type="button" data-onboarding-id="cancriCode" data-onboarding-action="open-cancri-code">
-                                <span class="claude-onboarding-check" aria-hidden="true"></span>
-                                <span class="claude-onboarding-copy">
-                                    <span class="claude-onboarding-task-title">下载 Cancri-code</span>
-                                    <span class="claude-onboarding-task-subtitle">把任务交接，用 Cancri 编程，更多地在桌面上完成</span>
                                 </span>
                             </button>
                         </div>
@@ -3148,12 +3141,12 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./cancri_chat.js?v=20260809-ratelimit-tpm"></script>
+        <script defer src="./cancri_chat.js?v=20260811-ann-expand"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
-        <script defer src="./cancri_announcement.js?v=20260724-invite-fix"></script>
+        <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=20260730-usage-panel"></script>
+        <script defer src="./claude_ui.js?v=20260811-ann-expand"></script>
         <!-- 额度耗尽提醒条 / 升级弹窗（cancri_chat.js 通过 window.CancriUpgradeQuotaUI 调用；此前仅 index.html 引入） -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260625-wallet-warn"></script>
     </body>

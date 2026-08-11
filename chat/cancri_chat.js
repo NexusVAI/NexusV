@@ -4831,6 +4831,7 @@
 		loadedChatModel = "";
 		conversationHistory = [];
 		messageSink.innerHTML = "";
+		hideAskUserBlock();
 		homeCenter.style.display = "flex";
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
@@ -4924,6 +4925,7 @@
 		});
 		updateChatNav();
 		updateChatShareButtonVisibility();
+		syncAskUserFromHistory();
 		if (homeView?.classList.contains("chatting")) scheduleChatScrollToBottom(true);
 	}
 	var chatNavObserver = null;
@@ -8453,12 +8455,13 @@
 	}
 	function getComposerResizeMaxHeight() {
 		if (window.matchMedia("(max-width: 640px)").matches) return Math.min(176, Math.max(120, Math.floor(window.innerHeight * .28)));
-		return 220;
+		return 384;
 	}
 	function autoResizeComposerInput() {
 		if (!homeInput) return;
 		const composer = homeInput.closest("[data-workbench-composer], .composer");
-		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
+		const chatting = Boolean(homeView?.classList.contains("chatting"));
+		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : chatting ? 24 : 36;
 		const maxHeight = getComposerResizeMaxHeight();
 		homeInput.style.height = "0px";
 		const next = Math.max(minHeight, Math.min(homeInput.scrollHeight, maxHeight));
@@ -9486,18 +9489,22 @@
 			});
 			if (!thinking) parts.currentReasoningBlock = null;
 		}
-		if (hasAnswer) syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, {
-			thinking,
-			placeholder: "正在思考中…"
-		});
-		else if (thinking) {
+		if (hasAnswer) {
+			parts.rawAnswerText = answerText;
+			syncStreamingMarkdownBlock(answerBody, answerStreamState, stripAskUserForDisplay(answerText), {
+				thinking,
+				placeholder: "正在思考中…"
+			});
+		} else if (thinking) {
 			answerBody.innerHTML = "";
 			answerStreamState.text = "";
 			answerStreamState.ready = false;
+			parts.rawAnswerText = "";
 		} else {
 			answerBody.innerHTML = "";
 			answerStreamState.text = "";
 			answerStreamState.ready = false;
+			parts.rawAnswerText = "";
 		}
 		if (hasAnswer || hasReasoning) renderMathInMessage(messageId);
 		scrollChatToBottom();
@@ -9615,7 +9622,7 @@
 				answer: ""
 			};
 			const parts = messageDiv._parts;
-			const answer = String(parts.answerStreamState?.text || "");
+			const answer = String(parts.rawAnswerText || parts.answerStreamState?.text || "");
 			const segments = [];
 			for (const ev of parts.timeline || []) {
 				if (!ev || ev.type !== "reasoning") continue;
@@ -10289,6 +10296,7 @@
 		const customInstructionsContent = buildCustomInstructionsSystemContent();
 		if (customInstructionsContent && activeModelId !== "cancriv1-0.1b") requestBody.cancri_custom_instructions = customInstructionsContent;
 		requestBody.web_search_enabled = Boolean(webSearchEnabled);
+		requestBody.cancri_ask_user = true;
 		const queueSessionId = queueSessionIdOverride || crypto.randomUUID();
 		requestBody.queue_session_id = queueSessionId;
 		if (enableTools && activeModelId !== "cancriv1-0.1b") {
@@ -10879,6 +10887,7 @@
 				scrollChatToBottom();
 			}
 			persistSessionNav();
+			syncAskUserFromHistory();
 		}
 		updateChatShareButtonVisibility();
 		clearPendingAttachments();
@@ -10978,6 +10987,182 @@
 			dispatchChatTitleUpdated(clean, gen.chatId);
 		} catch (error) {}
 	}
+	var ASK_USER_OPEN_TAG = "<ask_user>";
+	var ASK_USER_TAG_RE = /<ask_user>\s*([\s\S]*?)\s*<\/ask_user>/;
+	function parseAskUserPayload(text) {
+		if (typeof text !== "string" || !text.includes(ASK_USER_OPEN_TAG)) return null;
+		const match = text.match(ASK_USER_TAG_RE);
+		if (!match) return null;
+		try {
+			const data = JSON.parse(match[1]);
+			const question = String(data?.question || "").trim().slice(0, 200);
+			const options = Array.isArray(data?.options) ? data.options.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4) : [];
+			if (!question || options.length < 2) return null;
+			return {
+				question,
+				options: options.map((item) => item.slice(0, 60))
+			};
+		} catch (_) {
+			return null;
+		}
+	}
+	function stripAskUserForDisplay(text) {
+		const raw = String(text ?? "");
+		if (!raw) return raw;
+		let out = raw.replace(ASK_USER_TAG_RE, "");
+		const openIndex = out.indexOf(ASK_USER_OPEN_TAG);
+		if (openIndex >= 0) out = out.slice(0, openIndex);
+		out = out.replace(/<(?:ask_user|ask_use|ask_us|ask_u|ask_|ask|as|a)?$/, "");
+		return out.trimEnd();
+	}
+	var askUserActiveIndex = 0;
+	var askUserVisible = false;
+	function getAskUserDom() {
+		let card = document.getElementById("askUserBlock");
+		if (card) return {
+			card,
+			hint: document.getElementById("askUserHint")
+		};
+		const wrap = homeView?.querySelector(".composer-wrap");
+		const composerEl = wrap?.querySelector(".composer");
+		if (!wrap || !composerEl) return null;
+		card = document.createElement("div");
+		card.id = "askUserBlock";
+		card.className = "ask-user-card";
+		card.hidden = true;
+		card.innerHTML = "<div class=\"ask-user-head\"><span class=\"ask-user-question\" id=\"askUserQuestion\"></span><button class=\"ask-user-close\" id=\"askUserCloseBtn\" type=\"button\" aria-label=\"关闭提问\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M13.147 6.146a.5.5 0 0 1 .707.707L10.707 10l3.146 3.146a.5.5 0 0 1-.628.772l-.079-.065L10 10.707l-3.147 3.146a.5.5 0 0 1-.707-.707L9.293 10 6.146 6.853l-.064-.078a.5.5 0 0 1 .693-.693l.078.064L10 9.293z\"></path></svg></button></div><div class=\"ask-user-list\" id=\"askUserList\"></div>";
+		wrap.insertBefore(card, composerEl);
+		const hint = document.createElement("div");
+		hint.id = "askUserHint";
+		hint.className = "ask-user-hint";
+		hint.hidden = true;
+		hint.textContent = "↑↓ 选择 · Enter 发送 · 或直接在下方输入";
+		composerEl.insertAdjacentElement("afterend", hint);
+		card.querySelector("#askUserCloseBtn").addEventListener("click", () => hideAskUserBlock());
+		return {
+			card,
+			hint
+		};
+	}
+	function setAskUserActive(index) {
+		const card = document.getElementById("askUserBlock");
+		if (!card) return;
+		const rows = [...card.querySelectorAll(".ask-user-row")];
+		if (!rows.length) return;
+		askUserActiveIndex = (index % rows.length + rows.length) % rows.length;
+		rows.forEach((row, i) => row.classList.toggle("is-active", i === askUserActiveIndex));
+	}
+	function askUserAnswer(text) {
+		const answer = String(text || "").trim();
+		if (!answer) return;
+		hideAskUserBlock();
+		sendMessage(answer);
+	}
+	function showAskUserBlock(payload) {
+		const dom = getAskUserDom();
+		if (!dom || !payload) return;
+		const { card, hint } = dom;
+		card.querySelector("#askUserQuestion").textContent = payload.question;
+		const list = card.querySelector("#askUserList");
+		list.innerHTML = "";
+		payload.options.forEach((option, index) => {
+			if (index > 0) {
+				const sep = document.createElement("div");
+				sep.className = "ask-user-sep";
+				list.appendChild(sep);
+			}
+			const row = document.createElement("button");
+			row.type = "button";
+			row.className = "ask-user-row";
+			const num = document.createElement("span");
+			num.className = "ask-user-num";
+			num.textContent = String(index + 1);
+			const label = document.createElement("span");
+			label.className = "ask-user-label";
+			label.textContent = option;
+			const enter = document.createElement("span");
+			enter.className = "ask-user-enter";
+			enter.textContent = "⏎";
+			row.append(num, label, enter);
+			row.addEventListener("click", () => askUserAnswer(option));
+			row.addEventListener("mouseenter", () => setAskUserActive(index));
+			list.appendChild(row);
+		});
+		const freeSep = document.createElement("div");
+		freeSep.className = "ask-user-sep is-static";
+		list.appendChild(freeSep);
+		const free = document.createElement("div");
+		free.className = "ask-user-free";
+		free.innerHTML = "<span class=\"ask-user-num ask-user-pencil\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"></path></svg></span><input class=\"ask-user-input\" id=\"askUserFreeInput\" type=\"text\" placeholder=\"其他答案…\" autocomplete=\"off\" /><button class=\"ask-user-skip\" id=\"askUserSkipBtn\" type=\"button\">跳过</button>";
+		list.appendChild(free);
+		free.querySelector("#askUserSkipBtn").addEventListener("click", () => hideAskUserBlock());
+		const freeInput = free.querySelector("#askUserFreeInput");
+		freeInput.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" && freeInput.value.trim()) {
+				event.preventDefault();
+				event.stopPropagation();
+				askUserAnswer(freeInput.value);
+			}
+		});
+		card.hidden = false;
+		if (hint) hint.hidden = false;
+		askUserVisible = true;
+		setAskUserActive(0);
+	}
+	function hideAskUserBlock() {
+		const card = document.getElementById("askUserBlock");
+		const hint = document.getElementById("askUserHint");
+		if (card) card.hidden = true;
+		if (hint) hint.hidden = true;
+		askUserVisible = false;
+	}
+	function syncAskUserFromHistory() {
+		if (!homeView?.classList.contains("chatting")) {
+			hideAskUserBlock();
+			return;
+		}
+		const last = conversationHistory[conversationHistory.length - 1];
+		const payload = last && last.role === "assistant" && typeof last.content === "string" ? parseAskUserPayload(last.content) : null;
+		if (payload) showAskUserBlock(payload);
+		else hideAskUserBlock();
+	}
+	document.addEventListener("keydown", (event) => {
+		if (!askUserVisible || state.modal) return;
+		const card = document.getElementById("askUserBlock");
+		if (!card || card.hidden) return;
+		const active = document.activeElement;
+		const inFreeInput = active && active.id === "askUserFreeInput";
+		const inComposer = active && active.id === "homeInput";
+		const composerEmpty = !homeInput || !homeInput.value.trim();
+		if (active && active !== document.body && !inFreeInput && !inComposer && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
+		if (event.key === "Escape") {
+			hideAskUserBlock();
+			return;
+		}
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+			if (inFreeInput && active.value || inComposer && !composerEmpty) return;
+			event.preventDefault();
+			setAskUserActive(askUserActiveIndex + (event.key === "ArrowDown" ? 1 : -1));
+			return;
+		}
+		if (event.key === "Enter") {
+			if (inFreeInput) return;
+			if (inComposer && !composerEmpty) return;
+			const row = [...card.querySelectorAll(".ask-user-row")][askUserActiveIndex];
+			if (row) {
+				event.preventDefault();
+				askUserAnswer(row.querySelector(".ask-user-label")?.textContent || "");
+			}
+			return;
+		}
+		if (/^[1-4]$/.test(event.key) && (!active || active === document.body)) {
+			const row = [...card.querySelectorAll(".ask-user-row")][Number(event.key) - 1];
+			if (row) {
+				event.preventDefault();
+				askUserAnswer(row.querySelector(".ask-user-label")?.textContent || "");
+			}
+		}
+	});
 	async function sendMessage(content) {
 		const rateCheck = checkRateLimit();
 		if (!rateCheck.allowed) {
@@ -11002,6 +11187,7 @@
 			return;
 		}
 		stopVoiceRecognition();
+		hideAskUserBlock();
 		homeView.classList.add("chatting");
 		chatMessages.classList.add("active");
 		persistSessionNav();
@@ -11319,17 +11505,20 @@
 		if (!sidebar) return document.body.classList.contains("sidebar-open");
 		return document.body.classList.contains("sidebar-open") || sidebar.classList.contains("is-mobile-open") || sidebar.dataset.open === "true";
 	}
+	var mobileDrawerCloseTimer = 0;
 	function closeMobileSidebarDrawer() {
 		if (!window.matchMedia("(max-width: 768px)").matches) return;
 		document.body.classList.remove("sidebar-open");
 		if (!sidebar) return;
-		sidebar.classList.add("collapsed");
 		sidebar.classList.remove("is-mobile-open");
 		sidebar.classList.add("is-mobile-closing");
 		sidebar.dataset.open = "false";
 		sidebar.dataset.collapsed = "true";
-		window.setTimeout(() => {
-			sidebar?.classList.remove("is-mobile-closing");
+		window.clearTimeout(mobileDrawerCloseTimer);
+		mobileDrawerCloseTimer = window.setTimeout(() => {
+			if (!sidebar) return;
+			sidebar.classList.remove("is-mobile-closing");
+			if (!(document.body.classList.contains("sidebar-open") || sidebar.classList.contains("is-mobile-open"))) sidebar.classList.add("collapsed");
 		}, 220);
 		["mobileMenuBtn", "sidebarToggle"].forEach((id) => {
 			const btn = document.getElementById(id);
@@ -11386,7 +11575,7 @@
 	function updateScrimVisibility() {
 		if (!scrim) return;
 		const accountSheetOpen = accountPopover && accountPopover.classList.contains("open") && isAccountSheetViewport();
-		const shouldShow = Boolean(state.modal) || accountSheetOpen || isMobileViewport() && sidebar && !sidebar.classList.contains("collapsed");
+		const shouldShow = Boolean(state.modal) || accountSheetOpen;
 		scrim.classList.toggle("show", shouldShow);
 		syncScrollToBottomAnchor();
 	}
@@ -11444,7 +11633,7 @@
 		settingTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.settingsPanel === panelId));
 		settingPanels.forEach((panel) => panel.classList.toggle("active", panel.id === panelId));
 	}
-	var SIDEBAR_RAIL_ANIM_MS = 240;
+	var SIDEBAR_RAIL_ANIM_MS = 300;
 	var sidebarRailAnimTimer = 0;
 	function beginSidebarRailAnimation(mode) {
 		if (!sidebar) return;
@@ -12522,7 +12711,14 @@
 		importUserMemories,
 		renderMemoriesInSettings,
 		handleSelectedAttachmentFiles,
-		reserveFileUploadUsage
+		reserveFileUploadUsage,
+		askUser: {
+			show: showAskUserBlock,
+			hide: hideAskUserBlock,
+			parse: parseAskUserPayload,
+			strip: stripAskUserForDisplay,
+			sync: syncAskUserFromHistory
+		}
 	};
 	//#endregion
 })();

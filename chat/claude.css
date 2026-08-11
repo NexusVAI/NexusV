@@ -117,8 +117,10 @@ html[data-theme="black"] {
 }
 
 html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"] {
-    --c-sidebar-w: 18rem;
-    --workbench-sidebar-width: 18rem;
+    /* 2026-08-11 对齐 ai提问块.html 快照：真站 nav 宽 18rem@16px 根字号 = 288px。
+       我们根字号 15px，18rem 只有 270px → 用 px 钉死（同 --composer-max-w 的教训）。 */
+    --c-sidebar-w: 288px;
+    --workbench-sidebar-width: 288px;
     --workbench-rail-width: 3.5rem;
     --c-main-col: 48rem;
     --composer-max-w: 672px;   /* claude.ai composer max-w-2xl；用 px 避免根字号 15px 导致 rem 缩水 */
@@ -281,22 +283,30 @@ body {
     flex-shrink: 0;
 }
 .sidebar-topbar::before {
-    content: "Cancri";
-    /* 2026-05-16 PR B (全部撤→sans)：原为 `font-family: var(--c-font-serif)`，
-       已撤。跟 Claude 真站 main_window/index.html:148 默认 sans 对齐。
-       品牌 logo 从 serif 变为 sans 详见 PR B 说明。 */
-    font-size: 22px;
-    font-weight: 500;
-    letter-spacing: -0.005em;
-    color: var(--c-text);
+    /* 2026-08-11：纯文字 "Cancri" 换成 serif 字标 SVG（assets/cancri_serif_black.svg，
+       viewBox 701×298）。用 mask + background-color 而非 <img>/content:url —— 颜色跟
+       var(--c-text) 自动适配深浅主题，且保留下方 max-width 160→0 的收起动画（logo
+       从右侧被连续裁切 + 120ms 淡出，行为与原文字版完全一致）。 */
+    content: "";
+    height: 20px;
+    /* viewBox 已收紧到墨迹（480×120，比例 4.0）：20px 高 → 80px 宽，
+       与快照 "Claude" 字标（68×20 墨迹）同级观感。 */
+    width: 80px;
+    background-color: var(--c-text);
+    -webkit-mask: url(./assets/cancri_serif_black.svg) no-repeat left center / contain;
+    mask: url(./assets/cancri_serif_black.svg) no-repeat left center / contain;
     flex: 1 1 auto;
     min-width: 0;
+    /* 2026-08-11：给 max-width 一个数值端点（原 none↔0 不可动画，字标瞬灭）。
+       160px > "Cancri" 实宽，展开态不改变布局；开关按钮已 margin-left:auto
+       右锚定，不依赖本元素撑位。 */
+    max-width: 160px;
     line-height: 1;
     white-space: nowrap;
     overflow: hidden;
     transform: translateX(0);
     transition:
-        opacity 240ms cubic-bezier(0.32, 0.72, 0, 1),
+        opacity 120ms cubic-bezier(0.32, 0.72, 0, 1),
         width 240ms cubic-bezier(0.32, 0.72, 0, 1),
         max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
         flex 240ms cubic-bezier(0.32, 0.72, 0, 1),
@@ -336,6 +346,8 @@ body {
     border-radius: 8px !important;
     color: var(--c-text-soft) !important;
     flex-shrink: 0;
+    /* 恒右锚定：不依赖 ::before 的 flex 撑位，收起动画期间不发生水平跳变 */
+    margin-left: auto;
 }
 .sidebar-toggle:hover {
     background: var(--c-hover) !important;
@@ -483,15 +495,18 @@ html[data-theme="light"] .nav-row.active {
     height: 44px !important;
     min-height: 44px !important;
     max-height: 44px !important;
-    padding: 0 !important;
+    /* 2026-08-11 用户抓帧实锤：原 padding:0 + justify-content:center 让开关按钮
+       在 .collapsed 落地瞬间跳到"还没变窄的 topbar"正中再往左飘。
+       justify-content 不可动画 → 不再居中；开关靠 margin-left:auto 恒右锚定，
+       面板宽度动画自然把它带到 rail 位（52.5-10-32≈10.5 ≈ 居中）。 */
+    padding: 0 10px !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: center !important;
     transition: padding 240ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .sidebar.collapsed .sidebar-topbar::before {
-    flex: 0 0 0 !important;
-    width: 0 !important;
+    /* 2026-08-11：去掉 flex:0 0 0 与 width:0（basis/width 的 auto↔0 不可动画，
+       字标整块瞬灭）。只动 max-width 160→0 + opacity，随宽度动画连续收场。 */
     max-width: 0 !important;
     opacity: 0 !important;
     transform: translateX(18px) !important;
@@ -505,7 +520,9 @@ html[data-theme="light"] .nav-row.active {
     height: 32px !important;
     min-width: 32px !important;
     min-height: 32px !important;
-    margin: 0 auto !important;
+    /* 2026-08-11：margin:0 auto 会在收起瞬间把按钮瞬移到宽面板正中（用户抓帧）。
+       保持右锚定（同展开态），位置随宽度动画连续到位。 */
+    margin: 0 0 0 auto !important;
     padding: 0 !important;
     flex-shrink: 0;
     display: grid !important;
@@ -529,8 +546,10 @@ html[data-theme="light"] .nav-row.active {
 }
 .sidebar.collapsed .sidebar-footer {
     margin-top: auto !important;
-    padding: 0 4px 10px !important;
-    gap: 0 !important;
+    /* 2026-08-11：垂直 padding/gap 与展开态(10px/8px)一致，只收横向。
+       原 top 0 + gap 0 会让账号条在收起/展开动画期间上下平移。 */
+    padding: 10px 4px !important;
+    gap: 8px !important;
 }
 .sidebar.collapsed .account-strip .account-meta,
 .sidebar.collapsed .account-strip .upgrade-btn,
@@ -668,10 +687,12 @@ html[data-theme="light"] .cancri-skeleton-shimmer::after {
     padding: 0 4px !important;
 }
 .recent-item, .conversation-item {
+    /* 2026-08-11 快照实测：行 32px / 圆角 9 / 标题字 text-sm=14px lh20。原 13px 偏小。 */
     height: 32px !important;
     padding: 0 10px !important;
-    border-radius: 8px !important;
-    font-size: 13px !important;
+    border-radius: 9px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
     color: var(--c-text-soft) !important;
     gap: 8px !important;
 }
@@ -692,13 +713,17 @@ html[data-theme="light"] .conversation-item:hover {
 }
 
 /* 账号底部 strip */
-/* Claude 参考：账号底部区域无横分隔线 */
+/* 2026-08-11 快照更正：当前 Claude（ai提问块.html）账号区上方**有**一条
+   1px 分割线（border-t-0.5 border-border-300，全宽）。旧注释"无横分隔线"过时。
+   线画在 .sidebar-footer 顶（见 :2335 一带），这里不重复画。 */
 .sidebar-footer, .account-strip-wrap {
     border-top: none;
     padding: 8px !important;
 }
 .account-strip {
-    height: 52px !important;
+    /* 快照账号行 ~48px；两态同高，收起/展开时头像不再上下平移 */
+    height: 48px !important;
+    min-height: 48px !important;
     padding: 8px !important;
     border-radius: 10px !important;
     gap: 10px !important;
@@ -707,9 +732,10 @@ html[data-theme="light"] .conversation-item:hover {
     background: var(--c-hover) !important;
 }
 .account-strip .avatar {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 50% !important;
+    /* 快照头像：28px 圆角方形（rounded-lg），非圆形 */
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
     background-color: var(--accent) !important;
     color: white !important;
     font-size: 14px !important;
@@ -756,6 +782,9 @@ html[data-theme="light"] .conversation-item:hover {
     background: var(--c-bg-elev);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     overflow: hidden;
+    /* 2026-08-11：展开态必须给数值 max-height，否则 0 ↔ none 不可动画，
+       侧栏展开时"试试基础"卡整块瞬现、把账号条顶得跳一下。320px > 实际内容高。 */
+    max-height: 320px;
     transition:
         opacity 220ms ease,
         transform 220ms ease,
@@ -1365,7 +1394,13 @@ body.is-account-tier-loading .account-strip .account-plan::after {
     box-shadow:
         0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
         0 0 0 0.5px var(--c-line) !important;
-    transition: box-shadow 200ms, background-color 160ms;
+    /* 快照：transition-[background-color,border-color,box-shadow,opacity] duration-200。
+       原来只过渡 box-shadow + background-color(160ms)，hover/focus 时的描边色是硬切的。 */
+    transition:
+        background-color 200ms,
+        border-color 200ms,
+        box-shadow 200ms,
+        opacity 200ms;
 }
 .composer:hover {
     box-shadow:
@@ -2182,6 +2217,9 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     padding: 8px 24px 16px !important;
     /* composer 752px + 左右 padding 24px：列宽需 800px 才放得下 */
     max-width: 800px !important;
+    /* 2026-08-11 对齐 ai提问块.html 快照：Claude 对话页输入区上方没有分隔线。
+       这条线来自 cancri_chat.css:5515（旧版底部栏设计）的 border-top，在此覆盖层收口。 */
+    border-top: 0 !important;
     margin: 0 auto !important;
     width: 100% !important;
 }
@@ -2299,11 +2337,14 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     letter-spacing: 0.02em;
 }
 .claude-recent-title {
+    /* 2026-08-11 快照实测：分节标题（Starred/Recents）= 12px/16 · weight 400 ·
+       无大写无字距，颜色 muted。原 11px/600/uppercase 是旧版 Claude 样式。 */
     color: var(--c-text-dim);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
     padding: 14px 12px 4px;
     margin-top: 2px;
 }
@@ -2318,7 +2359,9 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
 /* sidebar-footer 简化：只保留 account-strip；Claude 参考无横向分隔线 */
 .sidebar-footer {
     margin-top: auto !important;
-    border-top: none !important;
+    /* 2026-08-11 快照对齐：账号区上方一条全宽 1px 分割线
+       （快照 border-t-0.5 border-border-300 ≈ rgba(31,31,30,0.15)，用主题变量）。 */
+    border-top: 1px solid var(--c-line) !important;
     padding: 10px !important;
     background: transparent !important;
     flex-shrink: 0 !important;
@@ -3288,21 +3331,24 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
         transform: translateX(0) !important;
         pointer-events: auto !important;
     }
-    /* mobile drawer 打开时的暗色蒙层。2026-05-15 fix(M2)：
-       原 rgba(0,0,0,0.5) 太重 + 跟 cancri_chat .scrim 叠加导致两层 dim，
-       群友反馈"很烦"。降到 0.32，drawer 打开时只是淡淡变暗，不刺眼。 */
-    body.sidebar-open::after {
+    /* mobile drawer 蒙层。2026-08-11 重写：原来只在 body.sidebar-open 上
+       创建 ::after + 单向 fade-in animation —— 关闭时元素直接消失，没有淡出
+       （用户："移动端没有动画/没回灰"）。改成常驻 ::after + opacity transition，
+       开合都有 200ms 渐变；关闭态 pointer-events:none 不挡任何点击。
+       透明度沿用 2026-05-15 fix(M2) 的 0.16（避免与 .scrim 叠加过重）。 */
+    body::after {
         content: "";
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.16);
-        z-index: 99;
-        pointer-events: auto;
-        animation: cscrim-fade-in 200ms ease;
+        z-index: 150;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease;
     }
-    @keyframes cscrim-fade-in {
-        from { opacity: 0; }
-        to   { opacity: 1; }
+    body.sidebar-open::after {
+        opacity: 1;
+        pointer-events: auto;
     }
     /* main 区域占满 viewport（不再为 sidebar 留位） */
     .main, .app .main {
@@ -4811,8 +4857,8 @@ button#plusTrigger:hover {
     color: var(--c-text) !important;
 }
 .sidebar .claude-recent-title {
-    /* "近期" 标题字重稍重，跟 nav 区分 */
-    font-weight: 500;
+    /* 2026-08-11 快照：分节标题 weight 400（此前 500"稍重"是旧对齐） */
+    font-weight: 400;
 }
 
 /* ─── §X · CLAUDE ANIMATION PRIMITIVES ────────────────────────
@@ -5600,10 +5646,8 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     .sidebar.is-mobile-open {
         z-index: 200 !important;
     }
-    /* scrim/遮罩抬到 sidebar 之下、header 之上 */
-    body.sidebar-open::after {
-        z-index: 150 !important;
-    }
+    /* 蒙层 z-index=150（sidebar 之下、header 之上）已并入 §14 的常驻
+       body::after 规则（2026-08-11），此处不再重复声明。 */
 }
 
 /* §22.4 ─ 移动端去 backdrop-filter / 厚阴影，降卡顿
@@ -6601,8 +6645,10 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     .sidebar.collapsed,
     body.sidebar-open .sidebar,
     .sidebar.is-mobile-open {
-        width: min(18rem, calc(100vw - 0.5rem)) !important;
-        max-width: 18rem !important;
+        /* 2026-08-11：与 §15a 的 280px 抽屉宽统一（原 18rem 与开启态 280px
+           两个值，开合瞬间宽度跳变，滑入动画看着像"闪现"）。 */
+        width: min(280px, calc(100vw - 48px)) !important;
+        max-width: 280px !important;
         transition: transform 180ms cubic-bezier(0.32, 0.72, 0, 1) !important;
         will-change: transform;
     }
@@ -6621,6 +6667,11 @@ html[data-chat-font="mono"] .message.assistant .think-body {
 
     .sidebar.is-mobile-closing {
         z-index: 200 !important;
+        /* 2026-08-11：关闭抽屉时 .collapsed 延迟 220ms 才加（内容不能提前消失），
+           这个窗口期 layout-sidebar.css 的 `.sidebar:not(.collapsed)`(0,2,0) 会以
+           translateX(0) 获胜 → 抽屉先僵住 220ms 再滑出。closing 态显式钉死目标位。 */
+        transform: translateX(-100%) !important;
+        pointer-events: none !important;
     }
 
     .sidebar.collapsed .sidebar-topbar {
@@ -7731,8 +7782,10 @@ html[data-theme="light"] #claudeSettingsView.active {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
-    font-weight: 500;
+    /* 2026-08-11 快照：分节标题 12px/16 weight 400（同 :2310 更正） */
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
     color: var(--c-text-dim);
     cursor: pointer;
     background: transparent;
@@ -9033,6 +9086,10 @@ html[data-theme] {
     min-height: 0 !important;
     padding: 14px !important;
     gap: 12px !important;
+    /* 解开 99-polish-fixes.css:137 的 320px 外壳封顶：它比输入区自己的 384px 更早
+       卡死，导致 max-height:384 永远到不了（快照的输入区能长到 max-h-96=384）。
+       保留 calc(100dvh - 180px) —— 那部分是防止矮屏上输入框吃掉整个视口，不是拍脑袋的数。 */
+    max-height: calc(100dvh - 180px) !important;
     box-shadow:
         0 0.25rem 1.25rem hsl(0 0% 0% / 3.5%),
         0 0 0 0.5px hsl(var(--border-300) / 15%) !important;
@@ -9069,18 +9126,51 @@ html[data-theme] {
 }
 
 #homeView.chatting .composer-input {
+    /* 快照值：输入区 pl-[6px] pt-[6px]（ai提问块.html 的 chatting composer）。
+       此前这里写的是 2px 4px，把上面 :2201 已经对齐好的 6px 0 0 6px 覆盖掉了
+       —— 同选择器同权重、位置更靠后就赢。改值请连 :2201 一起改，别只改一处。 */
     min-height: 24px !important;
-    padding: 2px 4px !important;
+    padding: 6px 0 0 6px !important;
 }
 
+/* 2026-08-11 对齐 ai提问块.html 快照实测：整盒 102.4px =
+   边框1 + 14 + 输入区28.4(行高22.4+上内距6) + gap12 + 工具行32 + 14 + 边框1。
+   空输入时构建产物 cancri_chat.js:8461 遗留的 inline height:48 把输入区撑到 48px
+   （src/main.js:10691 已改为对话态 30，等下次授权 vite build 收口 JS 侧）。
+   :placeholder-shown 仅命中"空输入"：height:auto → rows=1 → 28.4px 与快照逐像素一致；
+   一旦输入文字 placeholder 消失，仍由 JS 自适应接管增高，互不打架。 */
+#homeView.chatting .composer-input:placeholder-shown {
+    height: auto !important;
+}
+
+/* 附件 pill 全隐藏时 status 行退出布局：否则它作为 composer-bottom(列向 gap:4px)
+   的零高首子元素白吃 4px 间距，快照对话态盒内只有 输入区+工具行 两级。 */
+#homeView.chatting .composer-status:not(:has(> :not([hidden]))) {
+    display: none !important;
+}
+
+/* 快照工具行全员 32×32（含麦克风/波形按钮实测 32）。99-polish-fixes.css:184 的
+   `.composer-actions .voice-btn/.send-btn` 34px !important 特异性(0,2,0)压过
+   claude.css:1457 的(0,1,0) 32px，把整行撑到 34。仅对话态桌面端收口；
+   ≤768px 的 36px 移动端规格（:7377 一带）保持不动。 */
+@media (min-width: 769px) {
+    #homeView.chatting .composer-actions .voice-btn,
+    #homeView.chatting .composer-actions .send-btn {
+        width: 32px !important;
+        height: 32px !important;
+    }
+}
+
+/* 输入区到工具行的间距由 .composer 的 gap:12px 单独负责（快照 gap-3）。
+   这里原本还叠了 padding-top:2px，实测变成 14px，比快照高 2px。 */
 #homeView.chatting .composer-bottom {
     gap: 4px !important;
-    padding-top: 2px !important;
 }
 
+/* 不设 min-height：快照的工具行没有固定高，高度由按钮撑出来（32px，见 :1451）。
+   原来钉死 36px，整框因此比快照高 4px。 */
 #homeView.chatting .composer-tools-row {
     align-items: center !important;
-    min-height: 36px !important;
 }
 
 #homeView.chatting .composer-tools,
@@ -9093,6 +9183,203 @@ html[data-theme] {
     padding: 6px 10px !important;
     font-size: 14px !important;
     border-radius: 8px !important;
+    /* 2026-08-11：行高不钉死时 normal≈21.7px，6+21.7+6≈34px，把整条工具行从快照的
+       32px 撑到 34px（上面 :9097 注释只想到按钮 32，漏了这个最高元素）。20px 行高
+       让它精确回到 6+20+6=32，与快照 "Sonnet 5 Medium" 行同高。 */
+    line-height: 20px !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   Ask-User 提问块（2026-08-11 新增，1:1 对齐 移植，直接搬/ai提问块.html 实测：
+   卡片 圆角16/pt12/阴影同 chatting composer/与 composer 间距 8；
+   题头 14px serif + 24px 关闭钮；选项行 44px 圆角12 px10 gap10；
+   序号章 28×28 圆角8；高亮行 bg 5% + ⏎ 提示；行间 0.5px 分隔线且
+   紧贴高亮行的隐藏；自由输入行 + 28px "跳过" 描边钮；底部快捷键提示条。
+   DOM 由 cancri_chat.js showAskUserBlock 动态挂到 .composer-wrap 里。 */
+.ask-user-card {
+    margin: 0 8px 8px;
+    border-radius: 16px;
+    background: var(--c-bg-elev);
+    padding-top: 12px;
+    overflow: hidden;
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.08),
+        0 0 0 0.5px var(--c-line);
+    animation: ask-user-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+html[data-theme="dark"] .ask-user-card {
+    box-shadow:
+        0 0.25rem 1.25rem rgba(0, 0, 0, 0.18),
+        0 0 0 0.5px var(--c-line);
+}
+@media (min-width: 768px) {
+    .ask-user-card {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+@keyframes ask-user-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+#homeView:not(.chatting) .ask-user-card,
+#homeView:not(.chatting) .ask-user-hint {
+    display: none !important;
+}
+.ask-user-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 6px 16px;
+}
+.ask-user-question {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--c-font-serif);
+    font-size: 14px;
+    line-height: 21px;
+    color: var(--c-text);
+}
+.ask-user-close {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    border-radius: 6px;
+    color: var(--c-text-dim);
+    cursor: pointer;
+}
+.ask-user-close:hover {
+    background: var(--c-hover);
+    color: var(--c-text);
+}
+.ask-user-list {
+    padding: 6px;
+}
+.ask-user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 44px;
+    padding: 0 10px;
+    border: 0;
+    background: transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+.ask-user-row.is-active {
+    background: var(--c-hover);
+}
+.ask-user-num {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--c-hover);
+    color: var(--c-text-soft);
+    font-size: 13px;
+    font-weight: 500;
+}
+.ask-user-row.is-active .ask-user-num {
+    background: var(--c-hover-strong);
+    color: var(--c-text);
+}
+.ask-user-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--c-text-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ask-user-row.is-active .ask-user-label {
+    color: var(--c-text);
+}
+.ask-user-enter {
+    flex: 0 0 auto;
+    margin-right: 8px;
+    font-size: 14px;
+    color: var(--c-text-dim);
+    opacity: 0;
+    transition: opacity 150ms;
+}
+.ask-user-row.is-active .ask-user-enter {
+    opacity: 1;
+}
+.ask-user-sep {
+    height: 0.5px;
+    background: var(--c-line);
+    margin: 0 12px;
+    transition: opacity 150ms;
+}
+.ask-user-row.is-active + .ask-user-sep,
+.ask-user-sep:has(+ .ask-user-row.is-active) {
+    opacity: 0;
+}
+.ask-user-free {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 10px;
+    border-radius: 12px;
+    cursor: text;
+}
+.ask-user-pencil {
+    color: var(--c-text-soft);
+}
+.ask-user-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--c-text);
+    font-family: inherit;
+}
+.ask-user-input::placeholder {
+    color: var(--c-text-dim);
+}
+.ask-user-skip {
+    flex: 0 0 auto;
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    box-shadow: 0 0 0 0.5px var(--c-line-strong);
+    color: var(--c-text);
+    font-size: 14px;
+    font-weight: 550;
+    cursor: pointer;
+    font-family: inherit;
+}
+.ask-user-skip:hover {
+    background: var(--c-hover);
+}
+.ask-user-hint {
+    text-align: center;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--c-text-dim);
+    padding: 8px 0 0;
+}
+@media (max-width: 768px) {
+    .ask-user-hint {
+        display: none !important;
+    }
 }
 
 .answer-body.standard-markdown,
@@ -9114,9 +9401,14 @@ html[data-theme] {
     margin: 0;
 }
 
+/* 助手消息的左侧留白：正文段落、列表、思考块三处必须读同一个值。
+   2026-08-11 报障：这里给正文 p 加了 8px padding-left，而思考块
+   （.think-header / .think-body，cancri_chat.css:3395,3492）一直是 0，
+   两段文字左边缘错开 8px。带 fallback 是为了让 .message.assistant 之外
+   的消费方（如 arena 卡片）行为完全不变。 */
 .answer-body.standard-markdown :is(p, blockquote, h1, h2, h3, h4, h5, h6),
 .standard-markdown.answer-body :is(p, blockquote, h1, h2, h3, h4, h5, h6) {
-    padding-left: 8px;
+    padding-left: var(--c-response-gutter, 8px);
     padding-right: 32px;
     font-family: inherit;
     font-size: inherit;
@@ -9138,13 +9430,20 @@ html[data-theme] {
 .standard-markdown.answer-body ul,
 .standard-markdown.answer-body ol {
     margin: 0;
-    padding-left: calc(8px + 1.35em);
+    padding-left: calc(var(--c-response-gutter, 8px) + 1.35em);
     padding-right: 32px;
 }
 
 .answer-body.standard-markdown li + li,
 .standard-markdown.answer-body li + li {
     margin-top: 0.15em;
+}
+
+/* 思考块跟上面的正文对齐到同一条左边线。加在 .think-block 上而不是 header/body 各加一次，
+   是为了不去动 cancri_chat.css:3395/3492 以及本文件 9384/9395 那几条 padding 简写
+   （简写会把 padding-left 一起覆盖掉）。限定 .message.assistant，arena 卡片不受影响。 */
+.message.assistant .think-block {
+    padding-left: var(--c-response-gutter, 8px);
 }
 
 .answer-body.standard-markdown hr,
@@ -9186,6 +9485,9 @@ html[data-theme] {
 }
 
 .chat-messages .message.assistant .message-content {
+    /* 正文段落 / 列表 / 思考块共用的左侧留白，改这一处即可整体平移，
+       不要再在下游各写一个 8px（见上方 .answer-body.standard-markdown 注释）。 */
+    --c-response-gutter: 8px;
     max-width: 100% !important;
     box-shadow: none !important;
     border: 0 !important;
@@ -9315,14 +9617,16 @@ html[data-theme] {
 }
 
 .account-strip {
-    min-height: 64px !important;
-    padding: 8px 12px !important;
+    /* 2026-08-11 快照对齐：行高统一 48（原 64 与 :700 的 52 打架，
+       且与收起态不同高 → 展开时账号头像上移。两态一个值，位移归零。 */
+    min-height: 48px !important;
+    padding: 8px 10px !important;
 }
 
 .account-strip .avatar {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 13px !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
 }
 
 .account-strip .account-name {
@@ -9801,4 +10105,106 @@ html[data-theme="light"] .model-current svg {
 #claudeInviteLog .claude-billing-table td:nth-child(2) {
     font-weight: 600;
     text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   超椭圆圆角（2026-08-11，移植自 D:\A.CANCRICODEVITE\cancricode）
+   源站实现 = @cornerkit/core（SVG clip-path，smoothing:1）。chat 页不能用
+   clip-path（会裁掉 composer/卡片赖以成形的 box-shadow 描边环），改用浏览器
+   原生 corner-shape，阴影/边框/背景原生跟随曲线，不支持的浏览器自动保持圆角。
+
+   参数由实渲染逐像素比对得出（tasks/_probe_superellipse_match2.mjs）：
+   CornerKit(radius R, smoothing 1) ≈ corner-shape: superellipse(1.3) + 半径 R×1.2
+   （600×300@2x 差异仅 195 设备像素；同半径下不放大时任何超椭圆都不如圆 → 半径
+   ×1.2 是该观感的必要部分）。以下半径覆盖 = 各元素现值 ×1.2 取整。
+   圆形/胶囊元素（头像旧圆、语音条、pill、spinner）刻意不做。
+   ═══════════════════════════════════════════════════════════════ */
+@supports (corner-shape: superellipse(1.3)) {
+    .composer,
+    .ask-user-card,
+    .ask-user-row,
+    .ask-user-free,
+    .ask-user-num,
+    .ask-user-skip,
+    .ask-user-close,
+    .recent-item,
+    .conversation-item,
+    .nav-row,
+    .sidebar-toggle,
+    .account-strip,
+    .account-strip .avatar,
+    .composer-tool-btn,
+    .voice-btn,
+    .send-btn,
+    .model-current,
+    .model-dropdown,
+    .claude-user-menu,
+    .claude-onboarding-card,
+    .popover,
+    .modal-content,
+    .toast,
+    .message.user .message-content {
+        corner-shape: superellipse(1.3);
+    }
+
+    html[data-theme] {
+        --composer-radius: 24px; /* 20×1.2 */
+    }
+    #homeView.chatting .composer {
+        border-radius: 24px !important;
+    }
+    .nav-row,
+    .sidebar .nav-row,
+    .recent-item,
+    .conversation-item {
+        border-radius: 11px !important; /* 9×1.2 */
+    }
+    .sidebar-toggle,
+    .composer-tool-btn,
+    .voice-btn,
+    .send-btn,
+    .composer-actions #modelSelector .model-current,
+    .account-strip .avatar,
+    .ask-user-num {
+        border-radius: 10px !important; /* 8×1.2 */
+    }
+    #homeView.chatting .claude-model-selector-inline .model-current {
+        border-radius: 10px !important;
+    }
+    .account-strip {
+        border-radius: 12px !important; /* 10×1.2 */
+    }
+    .ask-user-card {
+        border-radius: 19px !important; /* 16×1.2 */
+    }
+    .ask-user-row,
+    .ask-user-free,
+    .claude-onboarding-card,
+    .message.user .message-content {
+        border-radius: 14px !important; /* 12×1.2 */
+    }
+    .ask-user-skip {
+        border-radius: 8px !important; /* 7×1.2 */
+    }
+    .ask-user-close {
+        border-radius: 7px !important; /* 6×1.2 */
+    }
+    .model-dropdown {
+        border-radius: 14px !important; /* 12×1.2 */
+    }
+    .claude-user-menu {
+        border-radius: 12px !important; /* 10×1.2 */
+    }
+    .popover {
+        border-radius: 17px !important; /* 14×1.2 */
+    }
+    .modal-content {
+        border-radius: 22px !important; /* 18×1.2 */
+    }
+    #settingsModal .modal-content {
+        border-radius: 19px !important; /* 16×1.2 */
+    }
+    .toast {
+        border-radius: 14px !important; /* 12×1.2 */
+    }
 }

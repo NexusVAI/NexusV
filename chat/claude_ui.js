@@ -14,7 +14,11 @@
 
     var ONBOARDING_DISMISSED_KEY = 'cancri_getting_started_dismissed_v1';
     var ONBOARDING_COMPLETED_KEY = 'cancri_getting_started_completed_v1';
-    var ONBOARDING_TASK_IDS = ['importMemory', 'community', 'cancriCode'];
+    // 2026-08-11：'cancriCode'（下载 Cancri-code）暂时从清单下掉，两个 HTML 里的按钮已一并移除。
+    // 必须同步删这里的 id —— 留着的话 count 永远到不了 length，卡片再也不会自动完成收起。
+    // 恢复时：把 id 加回来 + 复原 index.html / claude.html 的 .claude-onboarding-task 按钮即可，
+    // runOnboardingAction 的 'open-cancri-code' 分支与 openCancriCodeDownload() 都保留着没删。
+    var ONBOARDING_TASK_IDS = ['importMemory', 'community'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
     var CANCRI_CODE_URL = 'https://pan.baidu.com/s/1f65FMHdo2TenrwG7gBWQhg';
     var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/status.html';
@@ -268,10 +272,17 @@
             }
             document.body.classList.remove('sidebar-open');
             syncMobileSidebarState(sidebar, false);
-            if (sidebar) sidebar.classList.add('collapsed', 'is-mobile-closing');
+            // 2026-08-11：.collapsed 延迟到滑出结束再加。立刻加会命中桌面 rail 的
+            // 内容隐藏规则（label/最近列表 display:none 等），抽屉还在 180ms 滑出
+            // 途中内容就整块消失——用户看到的"关闭没有动画"。去掉 open class 后
+            // 基础 mobile 规则(.sidebar → translateX(-100%))已负责把抽屉滑出去。
+            if (sidebar) sidebar.classList.add('is-mobile-closing');
             closeAnimationTimer = setTimeout(function () {
                 const latest = sidebarEl();
-                if (latest) latest.classList.remove('is-mobile-closing');
+                if (latest) {
+                    latest.classList.add('collapsed');
+                    latest.classList.remove('is-mobile-closing');
+                }
                 closeAnimationTimer = null;
             }, 220);
         }
@@ -303,6 +314,12 @@
         // 桌面端不应继承 .collapsed（rail 模式），只保留用户手动切换。
         window.matchMedia('(min-width: 769px)').addEventListener('change', function (e) {
             if (e.matches) {
+                // 清掉 closeDrawer 的待定计时器，防止它在切回桌面后补一个
+                // .collapsed 把桌面侧栏折成 rail。
+                if (closeAnimationTimer) {
+                    clearTimeout(closeAnimationTimer);
+                    closeAnimationTimer = null;
+                }
                 document.body.classList.remove('sidebar-open');
                 const sidebar = sidebarEl();
                 if (sidebar) {
@@ -1019,7 +1036,9 @@
         setTimeout(function () { card.hidden = true; }, 260);
     }
 
-    // 仍被 onboarding 清单的 open-cancri-code 任务调用（见 runOnboardingAction）。
+    // TODO(2026-08-11): 当前无调用方——onboarding 的「下载 Cancri-code」任务已暂时下架
+    // （见 ONBOARDING_TASK_IDS 注释）。刻意保留而非删除：这是那个任务恢复上架时的还原点，
+    // runOnboardingAction 里的 'open-cancri-code' 分支同理。若确定不再恢复，两处一起删。
     function openCancriCodeDownload() {
         window.open(CANCRI_CODE_URL, '_blank', 'noopener');
         showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
@@ -1035,7 +1054,9 @@
             if (task) task.classList.toggle('is-complete', isDone);
         });
         var progress = document.getElementById('claudeOnboardingProgress');
-        if (progress) progress.textContent = '3步中' + count + '步完成';
+        // 总步数跟着 ONBOARDING_TASK_IDS 走，别再写死数字：上下架任务时漏改一处
+        // 就会出现「3步中2步完成」然后卡片立刻自己收起的矛盾状态。
+        if (progress) progress.textContent = ONBOARDING_TASK_IDS.length + '步中' + count + '步完成';
         if (count >= ONBOARDING_TASK_IDS.length) dismissOnboarding(card);
     }
 
