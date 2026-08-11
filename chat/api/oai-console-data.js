@@ -8,7 +8,8 @@
   var GW =
     (window.__SUPABASE_URL__ || "https://chat.nexusvai.xyz") +
     "/functions/v1/chat-gateway";
-  var WALLET_LOW_THRESHOLD = 10;
+  // 余额 ≥ 1 元就算健康：不再刷黄底、不再显示告警三角
+  var WALLET_LOW_THRESHOLD = 1;
   var HIDE_NAV = [
     "Chat",
     "Audio",
@@ -68,6 +69,22 @@
         document.documentElement.classList.add("dark");
         document.documentElement.setAttribute("data-theme", "dark");
       }
+    } catch (e) {}
+  })();
+
+  function revealL10n() {
+    document.documentElement.setAttribute("data-cnc-l10n", "1");
+  }
+
+  // 正文是英文 OAI dump，汉化靠 JS 改文本节点，首帧会闪英文。
+  // 先藏 #root，applyPageLocale() 跑完再放出来；JS 挂掉时 1.2s 兜底自动放出，避免白屏。
+  (function earlyL10nGate() {
+    try {
+      var s = document.createElement("style");
+      s.id = "nexusv-l10n-gate";
+      s.textContent = "html:not([data-cnc-l10n]) #root{visibility:hidden!important}";
+      (document.head || document.documentElement).appendChild(s);
+      window.setTimeout(revealL10n, 1200);
     } catch (e) {}
   })();
 
@@ -186,9 +203,165 @@
       ["June spend", "本月消耗"],
       ["Personal", "个人"],
       ["Revoke", "撤销"],
+      // 用量页
+      ["API capabilities", "API 能力"],
+      ["Spend categories", "消耗分类"],
+      ["Group by", "分组方式"],
+      ["Users", "用户"],
+      ["Services", "服务"],
+      ["Manage", "管理"],
+      ["Cost", "花费"],
+      ["Model", "模型"],
+      ["Project", "项目"],
+      ["All", "全部"],
+      ["Today", "今天"],
+      ["This month", "本月"],
+      ["Last 30 days", "近 30 天"],
+      ["There is no usage data for this period and group.", "该时间段内没有用量数据。"],
+      ["No data available", "暂无数据"],
+      ["Export", "导出"],
+      // 首页工具卡
+      ["Search the web in real-time", "实时联网搜索"],
+      ["Upload, manage, and attach skills", "上传、管理并挂载技能"],
+      // 日志页
+      ["Responses", "响应"],
+      ["Completions", "补全"],
+      ["Agent Traces", "智能体追踪"],
+      ["Conversations", "会话"],
+      ["ChatKit Threads", "ChatKit 线程"],
+      ["Your Responses will appear here", "这里会显示你的调用记录"],
+      ["Use the Responses API to view your logs.", "调用 API 后即可在此查看日志。"],
     ];
     pairs.forEach(function (p) {
       replaceAllText(p[0], p[1]);
+    });
+    var titles = {
+      overview: "首页 · NexusVAI API",
+      usage: "用量 · NexusVAI API",
+      logs: "日志 · NexusVAI API",
+      keys: "API 密钥 · NexusVAI API",
+      billing: "结算 · NexusVAI API",
+    };
+    if (titles[PAGE]) document.title = titles[PAGE];
+    localizePatterns();
+  }
+
+  var MONTH_ZH = {
+    Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
+    Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12,
+  };
+
+  // 数量随数据变化，固定串对不上，只能按模式改
+  var TEXT_PATTERNS = [
+    [/^([\d,.]+)\s+requests?$/, "$1 次请求"],
+    [/^([\d,.]+)\s+input tokens?$/, "$1 输入 Token"],
+    [/^([\d,.]+)\s+output tokens?$/, "$1 输出 Token"],
+    [/^([\d,.]+)\s+tokens?$/, "$1 Token"],
+    [/^([\d,.]+)\s+images?$/, "$1 张图"],
+    [/^([\d,.]+)\s+results?$/, "$1 条结果"],
+    [/^([\d,.]+)\s+keys?$/, "$1 个密钥"],
+  ];
+
+  // 带序号/前后缀的节点（如 "3. Add credits"）整串对不上，只能按子串换
+  var TEXT_CONTAINS = [
+    ["Create an API key", "创建 API 密钥"],
+    ["Test models", "试用模型"],
+    ["Add credits", "充值"],
+    ["Dismiss", "关闭"],
+    ["Get started", "开始使用"],
+    ["View all", "查看全部"],
+    ["See all", "查看全部"],
+    ["Copy", "复制"],
+    ["Close", "关闭"],
+  ];
+
+  function localizePatterns() {
+    var walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    var node;
+    while ((node = walker.nextNode())) {
+      var raw = node.nodeValue;
+      if (!raw) continue;
+      var s = raw.trim();
+      if (!s || s.length > 60 || !/[A-Za-z]/.test(s)) continue;
+      if (s.length <= 60) {
+        var sub = raw;
+        for (var c = 0; c < TEXT_CONTAINS.length; c++) {
+          if (sub.indexOf(TEXT_CONTAINS[c][0]) >= 0) {
+            sub = sub.split(TEXT_CONTAINS[c][0]).join(TEXT_CONTAINS[c][1]);
+          }
+        }
+        if (sub !== raw) {
+          node.nodeValue = sub;
+          continue;
+        }
+      }
+      if (s.length > 40) continue;
+      var next = null;
+      for (var i = 0; i < TEXT_PATTERNS.length; i++) {
+        if (TEXT_PATTERNS[i][0].test(s)) {
+          next = s.replace(TEXT_PATTERNS[i][0], TEXT_PATTERNS[i][1]);
+          break;
+        }
+      }
+      if (next === null) {
+        var m = s.match(/^([A-Z][a-z]{2})\s+(\d{1,2})$/);
+        if (m && MONTH_ZH[m[1]]) next = MONTH_ZH[m[1]] + "月" + Number(m[2]) + "日";
+      }
+      if (next !== null && next !== s) node.nodeValue = raw.replace(s, next);
+    }
+  }
+
+  // 只做 Chat/Responses：dump 里其余能力卡是死数据，留着误导用户
+  var USAGE_DEAD_CARDS = [
+    "Images",
+    "Web Searches",
+    "File Searches",
+    "Moderation",
+    "Embeddings",
+    "Audio Speeches",
+    "Audio Transcriptions",
+    "Vector Stores",
+    "Code Interpreter Sessions",
+  ];
+
+  // 用量页仅存的那张能力卡里是 dump 的死 0，用真实聚合值填掉
+  function fillUsageCapabilityCard(agg) {
+    if (PAGE !== "usage" || !agg) return;
+    var card = document.querySelector(
+      ".rounded-lg.border.border-solid.border-default.p-4"
+    );
+    if (!card) return;
+    var walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT, null);
+    var node;
+    while ((node = walker.nextNode())) {
+      var s = (node.nodeValue || "").trim();
+      if (/^[\d,.]+\s*次请求$/.test(s)) {
+        node.nodeValue = nf(agg.totalRequests) + " 次请求";
+      } else if (/^[\d,.]+\s*输入 Token$/.test(s)) {
+        node.nodeValue = nf(agg.totalTokens) + " Token";
+      }
+    }
+  }
+
+  function stripDeadUsageBlocks() {
+    if (PAGE !== "usage") return;
+    document
+      .querySelectorAll(".rounded-lg.border.border-solid.border-default.p-4")
+      .forEach(function (card) {
+        var head = card.firstElementChild;
+        if (!head) return;
+        var title = (head.textContent || "").replace(/\s+/g, " ").trim();
+        if (USAGE_DEAD_CARDS.indexOf(title) >= 0) card.remove();
+      });
+    // 右侧「按用户/服务/密钥分组」面板后端没有对应数据源，永远是空态
+    document.querySelectorAll(".cmy7W").forEach(function (panel) {
+      if (/There is no usage data|该时间段内没有用量数据/.test(panel.textContent || "")) {
+        panel.style.display = "none";
+      }
     });
   }
 
@@ -477,6 +650,13 @@
     } else {
       card.classList.remove("bg-yellow-25", "dark:bg-yellow-900");
     }
+    // 余额充足时连告警三角一起收掉；它和金额同在 .font-semibold 行内，充值按钮的图标不在这里
+    var valueRow = card.querySelector(".text-lg.font-semibold, .text-xl.font-semibold");
+    if (valueRow) {
+      valueRow.querySelectorAll("svg").forEach(function (svg) {
+        svg.style.display = low ? "" : "none";
+      });
+    }
   }
 
   function aggregateDaily(rows) {
@@ -579,8 +759,14 @@
     svg.setAttribute("width", String(width));
     svg.setAttribute("height", String(height));
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
-    svg.style.maxWidth = "100%";
     svg.style.overflow = "hidden";
+    // svg 的父级 .recharts-wrapper 又挂在 0 宽测量容器下，设百分比 max-width 会把它压成 0
+    svg.style.removeProperty("max-width");
+    var wrapper = svg.closest && svg.closest(".recharts-wrapper");
+    if (wrapper) {
+      wrapper.style.removeProperty("max-width");
+      wrapper.style.width = width + "px";
+    }
     // clipPath rect if present
     var clip = svg.querySelector("clipPath rect");
     if (clip) {
@@ -673,26 +859,42 @@
     if (!hasLine && !hasBar) sparkSvgSize(card);
   }
 
-  var __lastDaily = null;
-  function drawOverviewCharts(rows) {
-    if (PAGE !== "overview") return;
-    var daily = aggregateDaily(rows);
-    __lastDaily = daily;
-    // 按卡片实际图表类型重算；SingleFile 写死 897 宽会穿到邻格/充值按钮
-    updateSparklineAuto(findStatCard(LABELS.requests), daily.calls);
-    updateSparklineAuto(findStatCard(LABELS.tokens), daily.tokens);
-    updateSparklineAuto(findStatCard(LABELS.responses), daily.calls);
-    document.querySelectorAll(".Z5hMp .wfoF9, .Z5hMp .recharts-wrapper").forEach(function (el) {
-      el.style.overflow = "hidden";
-      el.style.maxWidth = "100%";
-    });
+  /** 从标签文本往上找到第一个真正含 recharts 画布的祖先（概览与用量页容器类名不同）。 */
+  function findChartHost(labels) {
+    for (var li = 0; li < labels.length; li++) {
+      var nodes = findTextNodes(labels[li]);
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i].parentElement;
+        while (el && el !== document.body) {
+          if (el.querySelector && el.querySelector(".recharts-surface")) return el;
+          el = el.parentElement;
+        }
+      }
+    }
+    return null;
   }
 
-  function redrawOverviewCharts() {
-    if (PAGE !== "overview" || !__lastDaily) return;
-    updateSparklineAuto(findStatCard(LABELS.requests), __lastDaily.calls);
-    updateSparklineAuto(findStatCard(LABELS.tokens), __lastDaily.tokens);
-    updateSparklineAuto(findStatCard(LABELS.responses), __lastDaily.calls);
+  var __lastDaily = null;
+  function drawCharts(rows) {
+    if (PAGE !== "overview" && PAGE !== "usage") return;
+    var daily = aggregateDaily(rows);
+    __lastDaily = daily;
+    redrawCharts();
+    // 同上：只裁外层容器，别碰 .recharts-wrapper 和 svg
+    document
+      .querySelectorAll(".wfoF9, .recharts-responsive-container")
+      .forEach(function (el) {
+        el.style.overflow = "hidden";
+        el.style.maxWidth = "100%";
+      });
+  }
+
+  function redrawCharts() {
+    if (!__lastDaily) return;
+    // 按卡片实际宽度和图表类型重算；dump 里写死的 897 宽会穿到邻格
+    updateSparklineAuto(findChartHost(LABELS.requests), __lastDaily.calls);
+    updateSparklineAuto(findChartHost(LABELS.tokens), __lastDaily.tokens);
+    updateSparklineAuto(findChartHost(LABELS.responses), __lastDaily.calls);
   }
 
   function closeCsModal() {
@@ -995,8 +1197,9 @@
       ".cnc-theme-btn:hover{background:var(--color-background-primary-soft,rgba(127,127,127,.12));color:var(--color-text,inherit)}" +
       "section._3s6q5.y5pFn .OQedc:empty::before{content:'（更新内容待填写）';display:block;padding:12px 0;color:var(--color-text-secondary,#888);font-size:14px}" +
       /* overview sparkline 穿模：卡片内强制裁切 */
-      ".Z5hMp .wfoF9,.Z5hMp .ZhrJy,.Z5hMp .recharts-responsive-container,.Z5hMp .recharts-wrapper{overflow:hidden!important;max-width:100%!important}" +
-      ".Z5hMp svg.recharts-surface{max-width:100%!important;overflow:hidden!important}";
+      // ⚠ 不要给 .recharts-wrapper / svg 设 max-width：它们的父级是 recharts 那层
+      // width:0;height:0 的测量容器，百分比会解析成 0，整张图直接消失。
+      ".Z5hMp .wfoF9,.Z5hMp .ZhrJy,.Z5hMp .recharts-responsive-container{overflow:hidden!important;max-width:100%!important}";
     document.head.appendChild(s);
   }
 
@@ -1073,7 +1276,7 @@
         localStorage.setItem(SIDEBAR_KEY, collapsed ? "collapsed" : "expanded");
       } catch (e) {}
       // 侧栏宽度变了 → 概览 sparkline 按新宽度重算
-      window.setTimeout(redrawOverviewCharts, 80);
+      window.setTimeout(redrawCharts, 80);
     }
 
     var saved = null;
@@ -1215,6 +1418,11 @@
     wireThemeToggle();
     clearUpdatesSection();
     patchFeaturedModels();
+    // 汉化必须赶在首帧之前，否则英文 dump 会先画一遍（同 model_detail 的 5.5 闪现）
+    stripDeadUsageBlocks();
+    applyPageLocale();
+    patchActionCtasEverywhere();
+    revealL10n();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
@@ -1244,14 +1452,19 @@
       var agg = aggregate(usage);
       setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
       setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
+      // 只有概览页有这张统计卡；用量页同名的是卡片标题链接，写进去会把标题冲掉
+      if (PAGE === "overview") {
+        setValueNearLabels(LABELS.responses, nf(agg.totalRequests));
+      }
+      fillUsageCapabilityCard(agg);
       applySpendPlaceholder();
-      drawOverviewCharts(usage);
+      drawCharts(usage);
       if (!window.__cncSparkResizeWired) {
         window.__cncSparkResizeWired = true;
         var resizeT = 0;
         window.addEventListener("resize", function () {
           window.clearTimeout(resizeT);
-          resizeT = window.setTimeout(redrawOverviewCharts, 100);
+          resizeT = window.setTimeout(redrawCharts, 100);
         });
       }
 
