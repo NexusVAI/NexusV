@@ -14,7 +14,6 @@
 
     var ONBOARDING_DISMISSED_KEY = 'cancri_getting_started_dismissed_v1';
     var ONBOARDING_COMPLETED_KEY = 'cancri_getting_started_completed_v1';
-    var CODE_PROMO_DISMISSED_KEY = 'cancri_code_promo_dismissed_v1';
     var ONBOARDING_TASK_IDS = ['importMemory', 'community', 'cancriCode'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
     var CANCRI_CODE_URL = 'https://pan.baidu.com/s/1f65FMHdo2TenrwG7gBWQhg';
@@ -58,7 +57,6 @@
             bindAccountPlanSync,
             bindTierAuthEvents,
             bindGettingStartedChecklist,
-            bindCodePromoCard,
             bindExternalSidebarLinks,
             bindImportMemoryShortcut,
             bindImportMemoryDelegation,
@@ -1018,40 +1016,10 @@
         if (!card) return;
         try { localStorage.setItem(ONBOARDING_DISMISSED_KEY, '1'); } catch (e) {}
         card.classList.add('is-fading');
-        setTimeout(function () {
-            card.hidden = true;
-            maybeShowCodePromo();
-        }, 260);
-    }
-
-    function isCodePromoDismissed() {
-        try { return localStorage.getItem(CODE_PROMO_DISMISSED_KEY) === '1'; } catch (e) { return false; }
-    }
-
-    function dismissCodePromo(card) {
-        if (!card) return;
-        try { localStorage.setItem(CODE_PROMO_DISMISSED_KEY, '1'); } catch (e) {}
-        card.classList.add('is-fading');
         setTimeout(function () { card.hidden = true; }, 260);
     }
 
-    function isOnboardingVisible() {
-        var card = document.getElementById('claudeOnboardingCard');
-        if (!card || card.hidden || isOnboardingDismissed()) return false;
-        return true;
-    }
-
-    function maybeShowCodePromo() {
-        var promo = document.getElementById('claudeCodePromoCard');
-        if (!promo) return;
-        if (isOnboardingVisible() || isCodePromoDismissed()) {
-            promo.hidden = true;
-            return;
-        }
-        promo.hidden = false;
-        promo.classList.remove('is-fading');
-    }
-
+    // 仍被 onboarding 清单的 open-cancri-code 任务调用（见 runOnboardingAction）。
     function openCancriCodeDownload() {
         window.open(CANCRI_CODE_URL, '_blank', 'noopener');
         showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
@@ -1389,13 +1357,9 @@
 
     function bindGettingStartedChecklist() {
         var card = document.getElementById('claudeOnboardingCard');
-        if (!card) {
-            maybeShowCodePromo();
-            return;
-        }
+        if (!card) return;
         if (isOnboardingDismissed()) {
             card.hidden = true;
-            maybeShowCodePromo();
             return;
         }
         renderOnboardingState(card, readOnboardingCompleted());
@@ -1416,27 +1380,6 @@
                 runOnboardingAction(action);
             });
         });
-    }
-
-    function bindCodePromoCard() {
-        var promo = document.getElementById('claudeCodePromoCard');
-        if (!promo) return;
-        var close = document.getElementById('claudeCodePromoCloseBtn');
-        if (close) {
-            close.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dismissCodePromo(promo);
-            });
-        }
-        var download = document.getElementById('claudeCodePromoDownloadBtn');
-        if (download) {
-            download.addEventListener('click', function (e) {
-                e.preventDefault();
-                openCancriCodeDownload();
-            });
-        }
-        maybeShowCodePromo();
     }
 
     function bindExternalSidebarLinks() {

@@ -974,6 +974,16 @@
 	var homeInput = document.getElementById("homeInput");
 	var sendChatBtn = document.getElementById("sendChatBtn");
 	var chatMessages = document.getElementById("chatMessages");
+	var PORT_SKIN = document.documentElement.getAttribute("data-skin") === "claude-port";
+	var messageSink = PORT_SKIN && document.getElementById("messageList") || chatMessages;
+	var PORT_CHAT_ROW_CLS = "inline-flex items-center justify-center relative isolate shrink-0 can-focus select-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-8 rounded-md min-w-[4rem] whitespace-nowrap !text-xs w-full !min-w-0 group py-1.5 !rounded-[9px] px-4 !transition-none before:!transition-none !-outline-offset-2 overflow-hidden active:bg-neutral-30 active:scale-[1.0] _fill_19tw7_9 _ghost_19tw7_96";
+	var PORT_ICON_BTN_CLS = "cds-reset group/btn relative isolate inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap select-none cursor-[var(--cds-cursor-interactive)] border-0 outline-none focus-visible:outline-hidden rounded h-control font-sans text-body transition-shadow duration-fast focus-visible:shadow-focus text-primary font-normal aspect-square w-control px-0";
+	var PORT_ACTIONS_CLS = {
+		bar: "flex items-center select-none [&_button]:text-muted [&_button:hover:not([aria-pressed=true])]:text-primary",
+		inner: "flex items-center gap-1",
+		group: "flex items-center",
+		ts: "text-caption text-muted select-none pr-1"
+	};
 	var scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
 	var homeCenter = document.getElementById("homeCenter");
 	var attachBtn = document.getElementById("attachBtn");
@@ -4260,6 +4270,7 @@
 				if (event === "SIGNED_IN") {
 					maybeShowExpirySoonBanner();
 					fetchUserMemories();
+					if (!hasSharedConversationHash()) renderChatHistoryList();
 				}
 			} else if (event === "SIGNED_OUT") {
 				authSessionPromise = null;
@@ -4579,7 +4590,7 @@
 	}
 	function renderChatMessagesSkeleton() {
 		if (!chatMessages) return;
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		const wrap = document.createElement("div");
 		wrap.className = "chat-skeleton";
 		wrap.setAttribute("aria-hidden", "true");
@@ -4615,7 +4626,7 @@
 			});
 			wrap.appendChild(msg);
 		});
-		chatMessages.appendChild(wrap);
+		messageSink.appendChild(wrap);
 	}
 	function chatHistoryListHasRenderedItems(container) {
 		return Boolean(container?.querySelector(".recent-item, .recent-placeholder"));
@@ -4648,11 +4659,59 @@
 			}
 			function appendChatHistoryItem(chat) {
 				const isPinned = pinned.includes(chat.id);
+				const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
+				if (PORT_SKIN) {
+					const li = document.createElement("li");
+					li.className = "recent-item" + (isPinned ? " recent-item-pinned" : "");
+					li.dataset.chatId = chat.id;
+					if (chat.id === currentChatId) li.classList.add("active");
+					if (isStreamingItem) li.classList.add("recent-item-streaming");
+					const wrap = document.createElement("div");
+					wrap.className = "relative group";
+					const a = document.createElement("a");
+					a.className = PORT_CHAT_ROW_CLS;
+					a.href = "#";
+					const inner = document.createElement("div");
+					inner.className = "-translate-x-2 w-full flex flex-row items-center justify-start gap-3";
+					const title = document.createElement("span");
+					title.className = "recent-item-title truncate text-sm whitespace-nowrap flex-1 group-hover:[mask-image:linear-gradient(to_right,black_calc(100%_-_28px),transparent_100%)] group-focus-within:[mask-image:linear-gradient(to_right,black_calc(100%_-_28px),transparent_100%)] [mask-size:100%_100%]";
+					title.textContent = chat.title || "新对话";
+					title.title = chat.title || "新对话";
+					inner.appendChild(title);
+					a.appendChild(inner);
+					a.addEventListener("click", (e) => {
+						e.preventDefault();
+						loadChat(chat.id);
+					});
+					const actionsWrap = document.createElement("div");
+					actionsWrap.className = "absolute inset-y-0 right-1 items-center hidden group-hover:flex group-focus-within:flex pointer-coarse:flex opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100";
+					const more = document.createElement("button");
+					more.type = "button";
+					more.className = "recent-item-actions cds-reset group/btn relative isolate inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap select-none cursor-[var(--cds-cursor-interactive)] border-0 outline-none focus-visible:outline-hidden rounded h-control font-sans text-body transition-shadow duration-fast focus-visible:shadow-focus text-primary font-normal aspect-square w-control px-0";
+					more.setAttribute("aria-label", `${chat.title || "新对话"} 的更多操作`);
+					more.innerHTML = "<span aria-hidden=\"true\" class=\"absolute -z-[1] rounded-[inherit] transition-colors duration-fast bg-transparent group-hover/btn:bg-fill-ghost-hover inset-0 cds-btn-squish\"></span><span class=\"inline-flex min-w-0 items-center gap-1\"><span data-cds=\"Icon\" aria-hidden=\"true\" class=\"claude-anthropicon\" style=\"font-size:16px;font-weight:533.3\"></span></span>";
+					more.addEventListener("click", (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
+					});
+					actionsWrap.appendChild(more);
+					wrap.appendChild(a);
+					wrap.appendChild(actionsWrap);
+					li.appendChild(wrap);
+					if (isStreamingItem) {
+						const spinner = document.createElement("span");
+						spinner.className = "recent-item-spinner";
+						spinner.setAttribute("aria-hidden", "true");
+						inner.appendChild(spinner);
+					}
+					listContainer.appendChild(li);
+					return;
+				}
 				const item = document.createElement("div");
 				item.className = "recent-item" + (isPinned ? " recent-item-pinned" : "");
 				item.dataset.chatId = chat.id;
 				if (chat.id === currentChatId) item.classList.add("active");
-				const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
 				if (isStreamingItem) item.classList.add("recent-item-streaming");
 				const modelId = String(chat.model || "").trim();
 				const modelMeta = modelId ? getModelMeta(modelId) : null;
@@ -4771,7 +4830,7 @@
 		currentChatId = null;
 		loadedChatModel = "";
 		conversationHistory = [];
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		homeCenter.style.display = "flex";
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
@@ -4785,7 +4844,7 @@
 	}
 	function renderMessages() {
 		if (!chatMessages) return;
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		let lastUserMessageIndex = -1;
 		conversationHistory.forEach((message, i) => {
 			if (message.role === "user") {
@@ -4810,7 +4869,8 @@
 					if (!/^(https?:\/\/|data:image\/)/i.test(imageUrl)) {} else {
 						const id = createAssistantMessage(metadata);
 						const messageDiv = document.getElementById(id);
-						messageDiv?.classList.remove("is-generating");
+						if (messageDiv) if (PORT_SKIN) portSetStreaming(messageDiv, false);
+						else messageDiv.classList.remove("is-generating");
 						const answerBody = messageDiv?.querySelector(".answer-body");
 						if (answerBody) {
 							answerBody.innerHTML = "";
@@ -4824,7 +4884,8 @@
 					const videoUrl = videoMatch[1];
 					const id = createAssistantMessage(metadata);
 					const messageDiv = document.getElementById(id);
-					messageDiv?.classList.remove("is-generating");
+					if (messageDiv) if (PORT_SKIN) portSetStreaming(messageDiv, false);
+					else messageDiv.classList.remove("is-generating");
 					const answerBody = messageDiv?.querySelector(".answer-body");
 					if (answerBody) {
 						answerBody.innerHTML = "";
@@ -5153,7 +5214,7 @@
 		grid.appendChild(makeCard("b", answerB));
 		wrapper.appendChild(avatar);
 		wrapper.appendChild(grid);
-		chatMessages.appendChild(wrapper);
+		messageSink.appendChild(wrapper);
 		renderPostMarkdownInElement(wrapper);
 	}
 	var GENERATED_IMAGE_COPY_SVG = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"></rect><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"></path></svg>";
@@ -6541,7 +6602,9 @@
 	function applyTheme() {
 		const nextThemeIndex = themeCycle.findIndex((item) => item.value === state.theme);
 		if (nextThemeIndex >= 0) themeIndex = nextThemeIndex;
-		root.setAttribute("data-theme", state.theme === "light" || state.theme === "black" ? state.theme : "dark");
+		const resolvedTheme = state.theme === "light" || state.theme === "black" ? state.theme : "dark";
+		if (PORT_SKIN) root.setAttribute("data-mode", resolvedTheme === "light" ? "light" : "dark");
+		else root.setAttribute("data-theme", resolvedTheme);
 		root.setAttribute("data-chat-font", state.chatFont || "sans");
 		if (state.accentValue) {
 			root.style.setProperty("--accent", state.accentValue);
@@ -6669,23 +6732,29 @@
 		"download-md": `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`
 	};
 	function messageActionIconHtml(action, fallbackIcon) {
+		if (PORT_SKIN && fallbackIcon) return claudeActionIconHtml(fallbackIcon);
 		return MESSAGE_ACTION_SVG[action] || claudeActionIconHtml(fallbackIcon);
 	}
 	function createClaudeActionButton({ action, label, title, icon }) {
+		if (PORT_SKIN) return `<button type="button" data-cds="Button" data-size="xs" data-action="${action}" class="message-action-btn ${PORT_ICON_BTN_CLS}" aria-label="${title || label}" title="${title || label}"><span aria-hidden="true" class="absolute -z-[1] rounded-[inherit] transition-colors duration-fast bg-transparent group-hover/btn:bg-fill-ghost-hover inset-0 cds-btn-squish"></span><span class="inline-flex min-w-0 items-center gap-1">${messageActionIconHtml(action, icon)}</span></button>`;
 		return `<button class="message-action-btn" type="button" data-action="${action}" aria-label="${label}" title="${title || label}">${messageActionIconHtml(action, icon)}</button>`;
 	}
 	function buildUserMessageActionsBar(messageDiv, resolvedIndex) {
 		const actionsBar = document.createElement("div");
-		actionsBar.className = "message-actions";
+		actionsBar.className = "message-actions" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.bar : "");
+		if (PORT_SKIN) {
+			actionsBar.setAttribute("data-cds", "MessageActions");
+			actionsBar.setAttribute("data-size", "xs");
+		}
 		actionsBar.setAttribute("role", "group");
 		actionsBar.setAttribute("aria-label", "Message actions");
 		const inner = document.createElement("div");
-		inner.className = "message-actions-inner";
+		inner.className = "message-actions-inner" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.inner : "");
 		const tsSpan = document.createElement("span");
-		tsSpan.className = "message-action-ts";
+		tsSpan.className = "message-action-ts" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.ts : "");
 		tsSpan.textContent = formatMessageActionDate();
 		const btnGroup = document.createElement("div");
-		btnGroup.className = "message-actions-buttons";
+		btnGroup.className = "message-actions-buttons" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.group : "");
 		btnGroup.innerHTML = [
 			createClaudeActionButton({
 				action: "retry",
@@ -6804,7 +6873,9 @@
 		undoUserMessage(idx);
 	}
 	function wireAssistantMessageActions(messageDiv, messageActions, answerBody) {
-		messageActions.querySelector("[data-action=\"copy\"]")?.addEventListener("click", async () => {
+		if (!messageActions) return;
+		const pick = (name) => messageActions.querySelector(`[data-action="${name}"], [data-port-action="${name}"]`);
+		pick("copy")?.addEventListener("click", async () => {
 			const text = answerBody.textContent || "";
 			if (!text || text === "正在思考中…") {
 				showToast("没有可复制的内容");
@@ -6812,7 +6883,7 @@
 			}
 			showToast(await writeTextToClipboard(text) ? "已复制" : "复制失败");
 		});
-		messageActions.querySelector("[data-action=\"download-md\"]")?.addEventListener("click", () => {
+		pick("download-md")?.addEventListener("click", () => {
 			const md = messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
 			if (!md.trim() || md === "正在思考中…") {
 				showToast("没有可下载的内容");
@@ -6820,9 +6891,139 @@
 			}
 			downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
 		});
-		messageActions.querySelector("[data-action=\"retry\"]")?.addEventListener("click", () => {
+		pick("retry")?.addEventListener("click", () => {
 			retryAssistantFromMessage(messageDiv);
 		});
+	}
+	function portCloneTurn(kind) {
+		const id = kind === "user" ? "portTplUserTurn" : "portTplAssistantTurn";
+		const tpl = document.getElementById(id);
+		if (!tpl?.content?.firstElementChild) {
+			console.error("[claude-port] missing template", id);
+			return null;
+		}
+		return tpl.content.firstElementChild.cloneNode(true);
+	}
+	function portSetStreaming(messageDiv, on) {
+		messageDiv.classList.toggle("is-generating", on);
+		messageDiv.querySelector("[data-is-streaming]")?.setAttribute("data-is-streaming", on ? "true" : "false");
+	}
+	function wirePortUserActions(root, resolvedIndex) {
+		const act = (name) => root.querySelector(`[data-port-action="${name}"]`);
+		act("retry")?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			const idx = Number(root.dataset.messageIndex);
+			undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+			const originalText = root.dataset.userText || "";
+			if (originalText && homeInput) {
+				homeInput.value = originalText;
+				autoResizeComposerInput();
+				updateComposerSendButton();
+				homeInput.focus();
+			}
+		});
+		act("edit")?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			const originalText = root.dataset.userText || "";
+			if (!originalText) {
+				showToast("没有可编辑的内容");
+				return;
+			}
+			if (homeInput) {
+				homeInput.value = originalText;
+				autoResizeComposerInput();
+				updateComposerSendButton();
+				homeInput.focus();
+			}
+		});
+		act("copy")?.addEventListener("click", async (event) => {
+			event.stopPropagation();
+			const text = root.dataset.userText || "";
+			if (!text) {
+				showToast("没有可复制的内容");
+				return;
+			}
+			showToast(await writeTextToClipboard(text) ? "已复制" : "复制失败");
+		});
+	}
+	function createPortUserMessage(content, attachments = [], messageIndex = null) {
+		const root = portCloneTurn("user");
+		if (!root) return;
+		root.classList.add("message", "user");
+		const resolvedIndex = typeof messageIndex === "number" ? messageIndex : conversationHistory.length;
+		root.dataset.messageIndex = String(resolvedIndex);
+		const normalizedContent = Array.isArray(content) ? extractUserMessageParts(content) : null;
+		const messageAttachments = attachments.length ? attachments : normalizedContent?.attachments || [];
+		const text = normalizedContent ? normalizedContent.text : String(content || "").replace(/\r\n/g, "\n").trim();
+		root.dataset.userText = text.replace(/\r\n/g, "\n");
+		const sr = root.querySelector("[data-port-slot=\"user-sr-title\"]");
+		if (sr) sr.textContent = text ? `You said: ${text.slice(0, 80)}` : "You said:";
+		const textSlot = root.querySelector("[data-port-slot=\"user-text\"]");
+		if (textSlot) textSlot.textContent = text || (messageAttachments.length ? "已发送图片" : "");
+		const timeSlot = root.querySelector("[data-port-slot=\"user-time\"]");
+		if (timeSlot) timeSlot.textContent = formatMessageActionDate();
+		const attSlot = root.querySelector("[data-port-slot=\"user-attachments\"]");
+		if (attSlot) {
+			attSlot.innerHTML = "";
+			if (!messageAttachments.length) attSlot.setAttribute("hidden", "");
+			else {
+				attSlot.removeAttribute("hidden");
+				messageAttachments.forEach((attachment) => {
+					const chip = document.createElement("div");
+					chip.className = "min-w-0 h-[18px] flex flex-row items-center justify-center gap-0.5 px-1 border-0.5 border-strong shadow-sm rounded-[4px] bg-bg-000/70 backdrop-blur-sm font-medium";
+					chip.innerHTML = `<p class="uppercase truncate font-ui text-text-300 text-[11px] leading-[13px]">${escapeHtml(attachment.name || "file")}</p>`;
+					attSlot.appendChild(chip);
+				});
+			}
+		}
+		wirePortUserActions(root, resolvedIndex);
+		messageSink.appendChild(root);
+		const bubble = root.querySelector("[data-user-message-bubble]");
+		if (bubble && textSlot) setupUserMessageCollapse(bubble, textSlot);
+		scrollChatToBottom(false);
+		updateChatNav();
+	}
+	function createPortAssistantMessage(metadata = createModelMetadata(currentModel)) {
+		const root = portCloneTurn("assistant");
+		if (!root) return null;
+		const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+		root.id = messageId;
+		root.classList.add("message", "assistant", "is-generating");
+		portSetStreaming(root, true);
+		const modelMetadata = normalizeAssistantMetadata(metadata);
+		const answerBody = root.querySelector("[data-port-slot=\"asst-answer\"]");
+		if (!answerBody) {
+			console.error("[claude-port] assistant template missing asst-answer slot");
+			return null;
+		}
+		answerBody.innerHTML = "";
+		const timeSlot = root.querySelector("[data-port-slot=\"asst-time\"]");
+		if (timeSlot) timeSlot.textContent = formatMessageActionDate();
+		const messageActions = root.querySelector("[data-message-action-bar]") || root.querySelector("[aria-label=\"Message actions\"]");
+		let timelineContainer = root.querySelector("[data-port-slot=\"asst-thinking-pill\"]");
+		if (!timelineContainer) {
+			timelineContainer = document.createElement("div");
+			timelineContainer.className = "assistant-timeline";
+			timelineContainer.hidden = true;
+			answerBody.parentElement?.insertBefore(timelineContainer, answerBody);
+		}
+		wireAssistantMessageActions(root, messageActions || root, answerBody);
+		root._parts = {
+			timelineContainer,
+			answerBody,
+			messageActions,
+			modelMetadata,
+			timeline: [],
+			currentReasoningBlock: null,
+			committedReasoningLength: 0,
+			answerStreamState: {
+				text: "",
+				ready: false
+			}
+		};
+		messageSink.appendChild(root);
+		scrollChatToBottom(false);
+		return messageId;
 	}
 	function insertTextIntoEditable(target, text) {
 		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -7775,6 +7976,7 @@
 		if (streamState.ready && streamState.text === nextText && streamState.thinking === thinking) return;
 		blockElement.classList.toggle("is-streaming", Boolean(thinking));
 		blockElement.innerHTML = renderMarkdown(blockElement.classList.contains("think-body") ? normalizeThinkDisplayText(nextText) : nextText);
+		if (blockElement.classList.contains("answer-body")) portStampResponseBodyClasses(blockElement);
 		if (!thinking) renderPostMarkdownInElement(blockElement);
 		else if (!streamState._katexTimer) streamState._katexTimer = setTimeout(() => {
 			renderPostMarkdownInElement(blockElement);
@@ -8777,9 +8979,33 @@
 			setComposerBusy(false);
 		}
 	}
+	var PORT_MSG_CLS = {
+		userRow: "mb-1 mt-[var(--msg-gap,1.5rem)] group group/message-row flex flex-col items-end gap-1 font-sans",
+		userBubble: "group relative inline-flex gap-2 bg-bg-300 dark:[[data-darker-default]_&]:bg-bg-000 rounded-xl pl-2.5 py-[var(--msg-bubble-py,0.625rem)] break-words text-text-100 transition-all max-w-[75ch] flex-col !px-[var(--msg-bubble-px,1rem)] max-w-[85%]",
+		userText: "font-large !font-user-message py-0.5 grid grid-cols-1 gap-2 relative [&_ul]:!space-y-0 [&_ol]:!space-y-0 [&_ul]:pl-8 [&_ol]:pl-8",
+		assistant: "font-claude-response relative leading-[1.65rem] [&_pre>div]:bg-bg-000/50 [&_pre>div]:border-0.5 [&_pre>div]:border-border-400 [&_.ignore-pre-bg>div]:bg-transparent [&_.standard-markdown_:is(p,blockquote,h1,h2,h3,h4,h5,h6)]:pl-2 [&_.standard-markdown_:is(p,blockquote,ul,ol,h1,h2,h3,h4,h5,h6)]:pr-8 [&_.progressive-markdown_:is(p,blockquote,h1,h2,h3,h4,h5,h6)]:pl-2 [&_.progressive-markdown_:is(p,blockquote,ul,ol,h1,h2,h3,h4,h5,h6)]:pr-8",
+		markdown: "standard-markdown grid-cols-1 grid [&_>_*]:min-w-0 gap-3 [&_>_*:last-child]:mb-0 print:block print:[&_>_*_+_*]:mt-3"
+	};
+	function portCls(el, ...keys) {
+		if (!PORT_SKIN || !el) return el;
+		el.className += " " + keys.map((k) => PORT_MSG_CLS[k]).join(" ");
+		return el;
+	}
+	/** 官方助手段落带 font-claude-response-body；markdown 渲染后补上。 */
+	function portStampResponseBodyClasses(root) {
+		if (!PORT_SKIN || !root) return;
+		root.querySelectorAll("p, li").forEach((el) => {
+			el.classList.add("font-claude-response-body", "break-words", "whitespace-normal");
+		});
+	}
 	function createUserMessage(content, attachments = [], messageIndex = null) {
+		if (PORT_SKIN) {
+			createPortUserMessage(content, attachments, messageIndex);
+			return;
+		}
 		const messageDiv = document.createElement("div");
 		messageDiv.className = "message user";
+		portCls(messageDiv, "userRow");
 		const resolvedIndex = typeof messageIndex === "number" ? messageIndex : conversationHistory.length;
 		messageDiv.dataset.messageIndex = String(resolvedIndex);
 		const avatar = document.createElement("div");
@@ -8788,27 +9014,30 @@
 		const bubble = document.createElement("div");
 		bubble.className = "message-content md-content user-message-bubble";
 		bubble.setAttribute("data-user-message-bubble", "true");
+		portCls(bubble, "userBubble");
 		const normalizedContent = Array.isArray(content) ? extractUserMessageParts(content) : null;
 		const messageAttachments = attachments.length ? attachments : normalizedContent?.attachments || [];
 		const text = normalizedContent ? normalizedContent.text : String(content || "").replace(/\r\n/g, "\n").trim();
 		messageDiv.dataset.userText = text.replace(/\r\n/g, "\n");
-		const undoBtn = document.createElement("button");
-		undoBtn.type = "button";
-		undoBtn.className = "message-undo-btn";
-		undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
-		undoBtn.title = "撤回这条消息";
-		undoBtn.innerHTML = `
+		if (!PORT_SKIN) {
+			const undoBtn = document.createElement("button");
+			undoBtn.type = "button";
+			undoBtn.className = "message-undo-btn";
+			undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
+			undoBtn.title = "撤回这条消息";
+			undoBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <polyline points="9 14 4 9 9 4"></polyline>
         <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
       </svg>
     `;
-		undoBtn.addEventListener("click", (event) => {
-			event.stopPropagation();
-			const idx = Number(messageDiv.dataset.messageIndex);
-			undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
-		});
-		messageDiv.appendChild(undoBtn);
+			undoBtn.addEventListener("click", (event) => {
+				event.stopPropagation();
+				const idx = Number(messageDiv.dataset.messageIndex);
+				undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+			});
+			messageDiv.appendChild(undoBtn);
+		}
 		if (messageAttachments.length) {
 			const attachmentGrid = document.createElement("div");
 			attachmentGrid.className = "user-attachments";
@@ -8850,14 +9079,17 @@
 		}
 		const textBlock = document.createElement("div");
 		textBlock.className = "user-message-text";
-		if (text) textBlock.innerHTML = renderStreamingFragment(text);
+		portCls(textBlock, "userText");
+		if (PORT_SKIN) textBlock.setAttribute("data-testid", "user-message");
+		if (text) if (PORT_SKIN) textBlock.innerHTML = `<p class="whitespace-pre-wrap break-words">` + renderStreamingFragment(text) + `</p>`;
+		else textBlock.innerHTML = renderStreamingFragment(text);
 		else textBlock.textContent = messageAttachments.length ? "已发送图片" : "";
 		bubble.appendChild(textBlock);
 		const actionsBar = buildUserMessageActionsBar(messageDiv, resolvedIndex);
 		messageDiv.appendChild(avatar);
 		messageDiv.appendChild(bubble);
 		messageDiv.appendChild(actionsBar);
-		chatMessages.appendChild(messageDiv);
+		messageSink.appendChild(messageDiv);
 		setupUserMessageCollapse(bubble, textBlock);
 		scrollChatToBottom(false);
 		updateChatNav();
@@ -9139,6 +9371,7 @@
 		thinkStreamState.wasThinking = Boolean(thinking);
 	}
 	function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
+		if (PORT_SKIN) return createPortAssistantMessage(metadata);
 		const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 		const messageDiv = document.createElement("div");
 		messageDiv.className = "message assistant is-generating";
@@ -9149,6 +9382,7 @@
 		avatar.textContent = "A";
 		const bubble = document.createElement("div");
 		bubble.className = "message-content md-content assistant-message-bubble";
+		portCls(bubble, "assistant");
 		const generatingIndicator = document.createElement("div");
 		generatingIndicator.className = "generating-indicator";
 		generatingIndicator.setAttribute("aria-hidden", "true");
@@ -9170,13 +9404,18 @@
 		const timelineContainer = document.createElement("div");
 		timelineContainer.className = "assistant-timeline";
 		const answerBody = document.createElement("div");
-		answerBody.className = "answer-body md-content standard-markdown font-claude-response";
+		answerBody.className = PORT_SKIN ? "answer-body md-content" : "answer-body md-content standard-markdown font-claude-response";
+		portCls(answerBody, "markdown");
 		answerBody.innerHTML = "";
 		const messageActions = document.createElement("div");
-		messageActions.className = "message-actions";
+		messageActions.className = "message-actions" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.bar : "");
+		if (PORT_SKIN) {
+			messageActions.setAttribute("data-cds", "MessageActions");
+			messageActions.setAttribute("data-size", "xs");
+		}
 		messageActions.setAttribute("role", "group");
 		messageActions.setAttribute("aria-label", "Message actions");
-		messageActions.innerHTML = `<div class="message-actions-inner"><div class="message-actions-buttons">${buildAssistantMessageActionsHtml()}</div></div>`;
+		messageActions.innerHTML = `<div class="message-actions-inner${PORT_SKIN ? " " + PORT_ACTIONS_CLS.inner : ""}"><div class="message-actions-buttons${PORT_SKIN ? " " + PORT_ACTIONS_CLS.group : ""}">${buildAssistantMessageActionsHtml()}</div></div>`;
 		bubble.appendChild(modelLabel);
 		bubble.appendChild(generatingIndicator);
 		bubble.appendChild(timelineContainer);
@@ -9198,7 +9437,7 @@
 				ready: false
 			}
 		};
-		chatMessages.appendChild(messageDiv);
+		messageSink.appendChild(messageDiv);
 		scrollChatToBottom(false);
 		return messageId;
 	}
@@ -9213,7 +9452,8 @@
 		const hasReasoning = Boolean(fullReasoning.trim());
 		const hasAnswer = Boolean(answerText.trim());
 		messageDiv.classList.remove("is-error");
-		if (hasReasoning || hasAnswer || !thinking) messageDiv.classList.remove("is-generating");
+		if (hasReasoning || hasAnswer || !thinking) if (PORT_SKIN) portSetStreaming(messageDiv, false);
+		else messageDiv.classList.remove("is-generating");
 		answerBody.classList.remove("assistant-error-card");
 		if (messageActions) messageActions.hidden = false;
 		let newCommitted = parts.committedReasoningLength;
@@ -9318,7 +9558,8 @@
 		const { timelineContainer, answerBody, messageActions } = messageDiv._parts;
 		if (Number.isFinite(retryUserIndex)) tagAssistantRetryUserIndex(messageId, retryUserIndex);
 		messageDiv.classList.add("is-error");
-		messageDiv.classList.remove("is-generating");
+		if (PORT_SKIN) portSetStreaming(messageDiv, false);
+		else messageDiv.classList.remove("is-generating");
 		if (timelineContainer) {
 			timelineContainer.hidden = true;
 			timelineContainer.innerHTML = "";
@@ -9460,7 +9701,7 @@
 		conversationHistory.length = 0;
 		clearPendingAttachments();
 		updateContextMeter();
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
 		homeInput.value = "";
@@ -9692,7 +9933,7 @@
 			}
 		}
 		currentChatId = null;
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		homeView.classList.add("chatting");
 		chatMessages.classList.add("active");
 		if (contextMeter) contextMeter.classList.remove("hidden");
