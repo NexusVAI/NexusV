@@ -31,6 +31,35 @@
   const DEFAULT_EMAIL = '';
   const GATEWAY_URL = `${(window.__SUPABASE_URL__ || 'https://chat.nexusvai.xyz').replace(/\/+$/, '')}/functions/v1/chat-gateway`;
 
+  // ── 爱发电自动到账（2026-08-12 上线）─────────────────────────────────
+  // 只覆盖「按量充值且 ≥ ¥5」：¥5 是爱发电自选金额的平台下限（后台实测，售卖商品同样卡 5 元），
+  // 低于 5 元只能继续走微信/支付宝收款码 + 管理员人工审核。
+  // 运维文档：css/后端/supabase/docs/aiven-ops-runbook.md §1.7
+  const AFDIAN_ORDER_URL = 'https://ifdian.net/order/create';
+  const AFDIAN_CREATOR_USER_ID = 'ba38e960115a11f197695254001e7c00';
+  const AFDIAN_MIN_CNY = 5;
+
+  function isAfdianAuto(selection) {
+    return !!selection
+      && selection.kind === 'recharge'
+      && Number(selection.amount) >= AFDIAN_MIN_CNY;
+  }
+
+  // custom_order_id 只发订单号前 8 位十六进制，**不发完整 UUID**：
+  // 爱发电对这个字段没有任何文档承诺的长度上限，实测确认可用的只有 9 字符
+  // （官方示例 10 字符）。发满 36 位一旦被截断，失败方式是每一笔付款都认不出付款人。
+  // 后端 afdian_record_order 用前缀唯一匹配还原订单，撞前缀则判定认不出、转人工。
+  function buildAfdianPayUrl(orderId, amountCny) {
+    const shortCode = String(orderId || '').toLowerCase().slice(0, 8);
+    if (!/^[0-9a-f]{8}$/.test(shortCode)) return '';
+    const params = new URLSearchParams({
+      user_id: AFDIAN_CREATOR_USER_ID,
+      custom_price: formatAmount(amountCny),
+      custom_order_id: shortCode,
+    });
+    return `${AFDIAN_ORDER_URL}?${params.toString()}`;
+  }
+
   const state = {
     selection: null,
     session: null,
@@ -330,7 +359,11 @@
     input.inputMode = 'decimal';
     input.autocomplete = 'off';
     input.setAttribute('aria-label', editable ? '充值金额' : '订单金额');
-    input.placeholder = editable ? '充值金额（1 - 2000 元，可自由调整）' : '订单金额';
+    input.placeholder = editable
+      ? (state.selection.kind === 'recharge'
+        ? `充值金额（1 - 2000 元；满 ${AFDIAN_MIN_CNY} 元自动到账）`
+        : '充值金额（1 - 2000 元，可自由调整）')
+      : '订单金额';
     input.value = formatAmount(state.selection.amount);
     input.setCustomValidity('');
     if (editable && input.dataset.nexusvAmountSyncBound !== '1') {
@@ -345,9 +378,15 @@
     if (!input || !state.selection) return;
     const amount = Number(input.value.trim());
     if (Number.isFinite(amount) && amount > 0) {
+      const wasAuto = isAfdianAuto(state.selection);
       state.selection.amount = amount;
       renderSummary(state.selection);
       updatePreviewMeta();
+      // 跨过 ¥5 分界时，付款面板与按钮文案要跟着换（自动到账 ↔ 收款码人工审核）。
+      if (wasAuto !== isAfdianAuto(state.selection)) {
+        updatePreview();
+        updateSubmitLabel();
+      }
     }
   }
 
@@ -488,16 +527,35 @@
     if (!shell) return;
     const meta = METHOD_META[state.method] || METHOD_META[DEFAULT_METHOD];
     const img = q('img', shell);
+    const titleNode = q('.nexusv-payment-preview__title', shell);
+    const frameNode = q('.nexusv-payment-preview__frame', shell);
     const metaNode = q('[data-testid="payment-preview-meta"]', shell);
     const footNode = q('[data-testid="payment-preview-foot"]', shell);
+    const picker = q('.nexusv-method-picker');
+    const auto = isAfdianAuto(state.selection);
 
-    shell.classList.remove('is-error');
-    shell.classList.add('is-loading');
     if (metaNode) {
       metaNode.textContent = state.selection.kind === 'recharge'
         ? `按量充值 · ${formatCurrency(state.selection.amount)}`
         : `${resolveSelectionText(state.selection).summaryName} · ${resolveSelectionText(state.selection).amount}`;
     }
+
+    // 自动到账走爱发电托管收银台，本站不再展示收款码，也不需要选支付方式
+    // （微信 / 支付宝在爱发电页面内选）。
+    if (picker) picker.style.display = auto ? 'none' : '';
+    if (frameNode) frameNode.style.display = auto ? 'none' : '';
+    if (titleNode) titleNode.textContent = auto ? '自动到账' : '付款码';
+    if (auto) {
+      shell.classList.remove('is-loading', 'is-error');
+      shell.classList.add('is-ready');
+      if (footNode) {
+        footNode.textContent = '提交后跳转爱发电完成支付，支持微信 / 支付宝。付款成功即自动到账，无需等待人工审核。';
+      }
+      return;
+    }
+
+    shell.classList.remove('is-error');
+    shell.classList.add('is-loading');
     if (footNode) footNode.textContent = meta.hint;
     if (img) {
       img.onload = () => {
@@ -647,11 +705,13 @@
     if (!button) return;
     const currentLabel = q('.SubmitButton-Text--current', button);
     if (!currentLabel) return;
-    const text = state.selection?.kind === 'recharge'
-      ? '支付并充值'
-      : state.selection?.kind === 'topup'
-        ? '支付并购买'
-        : '支付并订阅';
+    const text = isAfdianAuto(state.selection)
+      ? '去爱发电付款'
+      : state.selection?.kind === 'recharge'
+        ? '支付并充值'
+        : state.selection?.kind === 'topup'
+          ? '支付并购买'
+          : '支付并订阅';
     currentLabel.textContent = text;
   }
 
@@ -752,8 +812,23 @@
         const res = await callGateway('submit_payment_order', getOrderPayload(state.selection));
         const order = res && res.order ? res.order : null;
         const orderId = order && (order.id || order.order_id) ? (order.id || order.order_id) : '—';
-        setStatus(`订单已提交：${orderId}。请等待管理员审批。`, 'success');
         if (orderId !== '—') safeLocalStorageSet('checkout_last_order_id', String(orderId));
+
+        // 金额一律以 server 落库值为准：前端输入会被后端钳制到 [1,2000] 并重算，
+        // 拿输入框的数字去拼付款链接会在被钳制时算出与订单不符的价，导致少付判死。
+        const serverAmount = order && Number.isFinite(Number(order.amount_cny))
+          ? Number(order.amount_cny)
+          : Number(state.selection.amount);
+        const payUrl = order && state.selection.kind === 'recharge' && serverAmount >= AFDIAN_MIN_CNY
+          ? buildAfdianPayUrl(orderId, serverAmount)
+          : '';
+
+        if (payUrl) {
+          setStatus(`订单 ${orderId} 已创建，正在跳转爱发电付款…`, 'success');
+          window.location.href = payUrl;
+          return;
+        }
+        setStatus(`订单已提交：${orderId}。请等待管理员审批。`, 'success');
       } catch (err) {
         setStatus(err && err.message ? err.message : '提交失败，请稍后重试。', 'error');
       } finally {
