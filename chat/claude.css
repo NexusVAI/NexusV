@@ -6644,7 +6644,10 @@ html[data-chat-font="mono"] .message.assistant .think-body {
     .sidebar,
     .sidebar.collapsed,
     body.sidebar-open .sidebar,
-    .sidebar.is-mobile-open {
+    .sidebar.is-mobile-open,
+    /* 2026-08-12 审计#1：关闭窗口期（.collapsed 延迟 220ms）显式声明 transform
+       过渡，不再依赖裸 .sidebar 与其他文件的同特异性胜负。 */
+    .sidebar.is-mobile-closing {
         /* 2026-08-11：与 §15a 的 280px 抽屉宽统一（原 18rem 与开启态 280px
            两个值，开合瞬间宽度跳变，滑入动画看着像"闪现"）。 */
         width: min(280px, calc(100vw - 48px)) !important;
@@ -6657,6 +6660,16 @@ html[data-chat-font="mono"] .message.assistant .think-body {
         transform: translateX(-100%) !important;
         box-shadow: none !important;
         pointer-events: none !important;
+        /* 2026-08-12 审计#9：关闭落定后对键盘与读屏彻底不可达（Tab 不进 hidden
+           子树）。closing 态没有 .collapsed，滑出动画不受影响。 */
+        visibility: hidden;
+    }
+
+    body.sidebar-open .sidebar,
+    .sidebar.is-mobile-open,
+    .sidebar.is-mobile-closing {
+        /* open+collapsed 共存态（历史兼容）与滑出中必须可见，压回上面的 hidden */
+        visibility: visible;
     }
 
     body.sidebar-open .sidebar,
@@ -9158,6 +9171,9 @@ html[data-theme] {
     #homeView.chatting .composer-actions .send-btn {
         width: 32px !important;
         height: 32px !important;
+        /* 2026-08-12 审计#6：99-polish-fixes.css:184 还有 flex:0 0 34px，
+           flex-basis 决定主轴尺寸 → 只收 width 实渲染仍 34×32 非正方形。 */
+        flex: 0 0 32px !important;
     }
 }
 

@@ -11098,7 +11098,7 @@
 		free.querySelector("#askUserSkipBtn").addEventListener("click", () => hideAskUserBlock());
 		const freeInput = free.querySelector("#askUserFreeInput");
 		freeInput.addEventListener("keydown", (event) => {
-			if (event.key === "Enter" && freeInput.value.trim()) {
+			if (event.key === "Enter" && !event.isComposing && freeInput.value.trim()) {
 				event.preventDefault();
 				event.stopPropagation();
 				askUserAnswer(freeInput.value);
@@ -11128,6 +11128,7 @@
 	}
 	document.addEventListener("keydown", (event) => {
 		if (!askUserVisible || state.modal) return;
+		if (event.isComposing) return;
 		const card = document.getElementById("askUserBlock");
 		if (!card || card.hidden) return;
 		const active = document.activeElement;
@@ -11491,9 +11492,6 @@
 		}
 		state.modal = null;
 		updateScrimVisibility();
-	}
-	function isMobileViewport() {
-		return window.innerWidth <= 640;
 	}
 	/** 账户菜单底部抽屉断点（与 claude.css 侧栏 mobile drawer 一致） */
 	function isAccountSheetViewport() {
@@ -12006,7 +12004,6 @@
 		closePopover();
 		closeModal();
 		closeMobileSidebarDrawer();
-		if (isMobileViewport() && sidebar) sidebar.classList.add("collapsed");
 		updateScrimVisibility();
 	});
 	document.addEventListener("click", (event) => {
@@ -12014,7 +12011,7 @@
 		closePopover();
 		if (isMobileDrawerOpen()) {
 			if (![document.getElementById("mobileMenuBtn"), document.getElementById("sidebarToggle")].some((el) => el && el.contains(event.target))) closeMobileSidebarDrawer();
-		} else if (isMobileViewport() && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains("collapsed")) sidebar.classList.add("collapsed");
+		} else if (window.matchMedia("(max-width: 768px)").matches && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains("collapsed")) closeMobileSidebarDrawer();
 		if (!state.modal) updateScrimVisibility();
 	});
 	document.addEventListener("keydown", (e) => {
@@ -12023,7 +12020,7 @@
 			if (settingsView && settingsView.classList.contains("active")) return;
 			closePopover();
 			closeModal();
-			if (isMobileViewport() && sidebar) sidebar.classList.add("collapsed");
+			closeMobileSidebarDrawer();
 			updateScrimVisibility();
 		}
 	});
@@ -12558,7 +12555,7 @@
 	autoResizeComposerInput();
 	updateComposerSendButton();
 	updateAttachBtnVisibility();
-	if (isMobileViewport() && sidebar) sidebar.classList.add("collapsed");
+	if (window.matchMedia("(max-width: 768px)").matches && sidebar) sidebar.classList.add("collapsed");
 	updateScrimVisibility();
 	window.addEventListener("resize", updateScrimVisibility);
 	if (homeCenter && "ResizeObserver" in window) new ResizeObserver(() => {
