@@ -25,8 +25,12 @@
   var API_WAIT_MS = 10000;
   var TOKEN_WAIT_MS = 90000; // 可见挑战：给用户足够时间点选
   var INJECT_BUDGET_MS = 15000;
+  // 2026-08-13：挂件可见性探测总时长。原来是「T+6s 只看一次」，国内链路 6 秒
+  // 常常还没加载完 iframe → 每次都误判降级。改成 20s 内每 1.5s 轮询一次。
+  var WIDGET_PROBE_MS = 20000;
+  var WIDGET_PROBE_INTERVAL_MS = 1500;
 
-  var BRIDGE_VERSION = "2026-08-09-no-gap";
+  var BRIDGE_VERSION = "2026-08-13-probe-fix";
   var state = {
     version: BRIDGE_VERSION,
     widgetId: null,
@@ -37,6 +41,8 @@
     rendering: false,
     apiReady: false,
     apiFailed: false,
+    // 挂件 iframe 是否已真正撑开（探测到一次即置位，用于撤销抢跑的降级判定）
+    widgetVisible: false,
     // 国内链路/代理导致 CF 挂件不可用时，允许继续登录（服务端 soft 模式）
     networkDegraded: false,
     lastError: "",
@@ -126,11 +132,16 @@
     return host;
   }
 
-  function collapseContainer() {
-    var host =
+  function captchaHost() {
+    return (
       document.getElementById("authCaptchaContainer") ||
       document.getElementById("loginTurnstileContainer") ||
-      state.mountEl && state.mountEl.parentNode;
+      (state.mountEl && state.mountEl.parentNode)
+    );
+  }
+
+  function collapseContainer() {
+    var host = captchaHost();
     if (!host) return;
     try {
       host.style.display = "none";
@@ -139,6 +150,23 @@
       host.style.height = "0";
       host.style.overflow = "hidden";
       host.style.padding = "0";
+    } catch (_e) {}
+  }
+
+  // 2026-08-13：collapseContainer 的逆操作。降级判定是**抢跑**的（见下面的
+  // 探测逻辑），挂件后来加载成功时必须能把容器恢复出来，否则用户永远看不到
+  // 验证框 —— 实测线上状态 widgetId 已生成、apiReady=true、token 也拿到了，
+  // 但 networkDegraded 停在 true 且容器是 display:none。
+  function restoreContainer() {
+    var host = captchaHost();
+    if (!host) return;
+    try {
+      host.style.display = "block";
+      host.style.margin = "0";
+      host.style.minHeight = "0";
+      host.style.height = "";
+      host.style.overflow = "";
+      host.style.padding = "";
     } catch (_e) {}
   }
 
@@ -225,6 +253,12 @@
       state.pendingToken = tok || "";
       state.tokenIssuedAt = Date.now();
       state.lastError = "";
+      // 2026-08-13：拿到 token 证明链路是通的。撤销探测阶段可能已经抢跑打上的
+      // 降级标记，并把被 collapseContainer() 藏起来的容器恢复显示 —— 否则
+      // networkDegraded 会永久停在 true，validate() 变成无条件放行。
+      state.networkDegraded = false;
+      state.widgetVisible = true;
+      restoreContainer();
       setStatus("验证已通过，可以发送验证码 / 登录", "#16a34a");
       try {
         console.info(
@@ -297,21 +331,42 @@
         );
       } catch (_e) {}
 
-      // 6s 后检查 iframe；国内链路经常超时 → 标记 networkDegraded 允许继续登录
-      setTimeout(function () {
-        if (hasFreshToken()) return;
+      // 挂件可见性探测。2026-08-13 修复：原实现只在 T+6s **看一次** iframe
+      // 高度，不到 10px 就判定降级并 collapseContainer() 把容器永久藏起来。
+      // 国内链路 6 秒往往还没加载完 → 每次都误判。实测线上状态可证：
+      // widgetId 已生成、apiReady=true、lastError 为空、之后还拿到了合法
+      // token，但 networkDegraded 停在 true、容器 display:none —— 挂件本身
+      // 是好的，只是被这个抢跑的定时器藏了，用户因此从未见过验证框。
+      // 改为轮询：任意一次探到就恢复显示并撤销降级；直到 20s 都没出现才判降级。
+      var probeStart = Date.now();
+      var probeTimer = setInterval(function () {
+        if (state.widgetId === null) {
+          clearInterval(probeTimer); // 已 suspend
+          return;
+        }
+        if (hasFreshToken() || state.widgetVisible) {
+          clearInterval(probeTimer);
+          return;
+        }
         var iframe = mount.querySelector("iframe");
         if (iframe && iframe.offsetHeight > 10) {
+          clearInterval(probeTimer);
+          state.widgetVisible = true;
+          state.networkDegraded = false;
+          restoreContainer();
           setStatus("请完成下方 Cloudflare 人机验证", "rgba(128,128,128,0.95)");
           return;
         }
-        state.networkDegraded = true;
-        var msg =
-          "Cloudflare 验证组件未能显示（国内网络 / 代理常见）。可直接点「发送验证码」继续登录；仍失败请换 4G 热点。";
-        state.lastError = msg;
-        setStatus(msg, "#ca8a04");
-        collapseContainer();
-      }, 6000);
+        if (Date.now() - probeStart >= WIDGET_PROBE_MS) {
+          clearInterval(probeTimer);
+          state.networkDegraded = true;
+          var msg =
+            "Cloudflare 验证组件未能显示（国内网络 / 代理常见）。可直接点「发送验证码」继续登录；仍失败请换 4G 热点。";
+          state.lastError = msg;
+          setStatus(msg, "#ca8a04");
+          collapseContainer();
+        }
+      }, WIDGET_PROBE_INTERVAL_MS);
       return true;
     } catch (err) {
       state.rendering = false;
@@ -471,6 +526,7 @@
     state.tokenIssuedAt = 0;
     state.rendering = false;
     state.lastError = "";
+    state.widgetVisible = false;
     if (state.statusEl && state.statusEl.parentNode) {
       try {
         state.statusEl.parentNode.removeChild(state.statusEl);
