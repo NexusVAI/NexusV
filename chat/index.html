@@ -191,6 +191,31 @@
                 visibility: visible !important;
                 opacity: 1 !important;
             }
+            html.auth-platform-page .auth-alert-banner {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 0.5rem !important;
+                width: 100% !important;
+                max-height: 4.5rem !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                padding: 0.6rem 1rem !important;
+                background: #b42318 !important;
+                color: #fff !important;
+                font-size: 0.875rem !important;
+                font-weight: 600 !important;
+                line-height: 1.45 !important;
+            }
+            html.auth-platform-page .auth-alert-banner svg {
+                width: 17px !important;
+                height: 17px !important;
+                max-width: 17px !important;
+                max-height: 17px !important;
+                flex: 0 0 17px !important;
+                display: block !important;
+                fill: currentColor !important;
+            }
         </style>
         <link
             rel="stylesheet"
@@ -247,7 +272,7 @@
 
             <div class="auth-chrome">
             <div class="auth-alert-banner" role="alert">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
                     <path d="M12 3.2 2.4 20.2h19.2L12 3.2zm0 5.3c.6 0 1 .5 1 1.1v4.2c0 .6-.4 1.1-1 1.1s-1-.5-1-1.1V9.6c0-.6.4-1.1 1-1.1zm0 8.2c.7 0 1.2.5 1.2 1.2S12.7 19 12 19s-1.2-.5-1.2-1.1.5-1.2 1.2-1.2z"/>
                 </svg>
                 <span>我们已经定位到验证码无法发送的问题:暂停注册，2026/08/14届时重新开启</span>
