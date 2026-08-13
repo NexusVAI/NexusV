@@ -165,6 +165,60 @@
     '<rect x="9" y="9" width="13" height="13" rx="2"></rect>' +
     '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 
+  // 近 24h 状态条：数据来自 chat-gateway `model_health`（model_health_logs）。
+  // 那是真实用户请求的抽样成功/失败，不是定时探测。用户侧 400/403/413/422 不计入。
+  var healthById = {};
+
+  function pad2(n) { return n < 10 ? "0" + n : String(n); }
+
+  function hourlyFor(id) {
+    var row = healthById[String(id || "").toLowerCase()];
+    return row && Array.isArray(row.hourly) ? row.hourly : null;
+  }
+
+  function hourTooltip(hourIso, total, rate) {
+    var d = new Date(hourIso);
+    if (!hourIso || isNaN(d.getTime())) {
+      return total ? ("成功率 " + rate + "% · " + total + " 次") : "无调用样本";
+    }
+    var end = new Date(d.getTime() + 3600000);
+    var span = pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + "–" + pad2(end.getHours()) + ":" + pad2(end.getMinutes());
+    if (!total) return span + " 无调用样本";
+    return span + " 成功率 " + rate + "% · " + total + " 次";
+  }
+
+  function uptimeHtml(hourly) {
+    var hours = Array.isArray(hourly) ? hourly : [];
+    var maxTotal = 1;
+    var i;
+    for (i = 0; i < hours.length; i++) {
+      var t = Number(hours[i] && hours[i].total) || 0;
+      if (t > maxTotal) maxTotal = t;
+    }
+    var segs = "";
+    for (i = 0; i < 24; i++) {
+      var h = hours[i] || { hour: "", total: 0, success_rate: null };
+      var total = Number(h.total) || 0;
+      var rate = typeof h.success_rate === "number" ? h.success_rate : null;
+      var cls = "cancri-uptime__seg--empty";
+      if (total > 0) cls = (rate != null && rate >= 90) ? "cancri-uptime__seg--ok" : "cancri-uptime__seg--bad";
+      var ratio = total > 0 ? Math.max(0.42, total / maxTotal) : 0.34;
+      segs += '<span class="cancri-uptime__seg ' + cls + '" style="height:' + Math.round(ratio * 100) + '%" title="' + escAttr(hourTooltip(h.hour, total, rate)) + '"></span>';
+    }
+    return '<div class="cancri-uptime" role="img" aria-label="近24小时用户请求成功率">' + segs + "</div>";
+  }
+
+  function applyUptime(map) {
+    if (map) healthById = map;
+    var nodes = document.querySelectorAll("[data-model-id] .cancri-uptime");
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var card = el.closest("[data-model-id]");
+      var id = card ? card.getAttribute("data-model-id") : "";
+      el.outerHTML = uptimeHtml(hourlyFor(id));
+    }
+  }
+
   function cardHtml(m, opts) {
     opts = opts || {};
     var id = m.id || m.canonicalId || "";
@@ -196,6 +250,9 @@
               '<button type="button" class="cancri-id" data-copy="' + escAttr(id) + '" title="点击复制 model ID">' +
                 '<span class="cancri-id__text">' + esc(id) + "</span>" + COPY_SVG +
               "</button>" +
+            "</div>" +
+            '<div class="cancri-spec__row cancri-spec__row--uptime">' +
+              uptimeHtml(hourlyFor(id)) +
             "</div>" +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">价格</span>' +
@@ -507,6 +564,36 @@
     throw lastErr || new Error("加载模型列表失败");
   }
 
+  function healthFetchOptions() {
+    return {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON },
+      body: JSON.stringify({ endpoint: "model_health", window_days: 1 }),
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+    };
+  }
+
+  async function loadHealth() {
+    var urls = gatewayCandidates();
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        var r = await fetchOnce(urls[i], healthFetchOptions(), i === 0 ? 12000 : 20000);
+        if (!r.ok) continue;
+        var data = await r.json();
+        var map = {};
+        var rows = Array.isArray(data && data.models) ? data.models : [];
+        for (var k = 0; k < rows.length; k++) {
+          var id = String(rows[k].model_id || "").toLowerCase();
+          if (id) map[id] = rows[k];
+        }
+        return map;
+      } catch (_e) { /* 下一条网关 */ }
+    }
+    return {};
+  }
+
   function skelLine(cls) {
     return '<span class="cancri-skel-line cancri-skel-shimmer ' + (cls || "") + '"></span>';
   }
@@ -518,6 +605,7 @@
           skelLine("cancri-skel-line--lg") +
           skelLine("cancri-skel-line--md") +
           '<div class="cancri-skel-spec">' +
+            skelLine("cancri-skel-line--sm") +
             skelLine("cancri-skel-line--sm") +
             skelLine("cancri-skel-line--sm") +
           "</div>" +
@@ -603,6 +691,10 @@
     showLoadingSkeletons();
     try {
       if (!window.__SUPABASE_URL__ || !ANON) throw new Error("站点配置未就绪，请刷新页面");
+      var healthPromise = loadHealth().then(function (map) {
+        healthById = map;
+        return map;
+      });
       var data = await loadCatalog();
       if (data && data.multiplier_legend) {
         for (var k in data.multiplier_legend) {
@@ -624,6 +716,7 @@
         var el = document.getElementById(id);
         if (el) el.removeAttribute("aria-busy");
       });
+      healthPromise.then(function (map) { applyUptime(map); }).catch(function () {});
     } catch (e) {
       showError((e && e.message) ? e.message : String(e));
     }
