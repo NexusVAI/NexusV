@@ -46,6 +46,7 @@
   var FREE_ORDER = [
     "c:claude-opus-5",
     "c:gpt-5.6-sol",
+    "c:gpt-5.6-luna",
     "kimi-k3-high",
     "deepseek-v4-flash-0731",
     "nexusvai:minimax-m3-free",
@@ -65,9 +66,12 @@
     "gpt-5.6-terra": "gpt56-terra.jpg",
     "gpt-5.6-terra-xhigh": "gpt56-terra.jpg",
     "gpt-5.6-luna": "gpt56-luna.jpg",
+    "c:gpt-5.6-luna": "gpt56-luna.jpg",
     "gpt-5.6-luna-xhigh": "gpt56-luna.jpg",
     // 2026-07-16: Claude Fable 5 专用卡面（Logo/fable5.png → assets/oai.logo/fable5.png）
     "claude-fable-5": "fable5.png",
+    "claude-opus-5": "opus5.png",
+    "c:claude-opus-5": "opus5.png",
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
     "kimi-k3": "kimik3.jpg",
     "kimi-k3-high": "kimik3.jpg",
