@@ -124,7 +124,7 @@
         <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260811-ann-expand" />
         <link
             rel="stylesheet"
-            href="./styles/auth-platform-login.css?v=2026-06-25-download-icons"
+            href="./styles/auth-platform-login.css?v=20260813-otp-alert"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -185,6 +185,13 @@
         <div class="auth-overlay" id="authOverlay">
             <div class="auth-bg" aria-hidden="true"></div>
 
+            <div class="auth-chrome">
+            <div class="auth-alert-banner" role="alert">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 3.2 2.4 20.2h19.2L12 3.2zm0 5.3c.6 0 1 .5 1 1.1v4.2c0 .6-.4 1.1-1 1.1s-1-.5-1-1.1V9.6c0-.6.4-1.1 1-1.1zm0 8.2c.7 0 1.2.5 1.2 1.2S12.7 19 12 19s-1.2-.5-1.2-1.1.5-1.2 1.2-1.2z"/>
+                </svg>
+                <span>我们已经定位到验证码无法发送的问题:暂停注册，2026/08/14届时重新开启</span>
+            </div>
             <header class="auth-topnav">
                 <div class="auth-topnav-inner">
                     <a
@@ -222,6 +229,7 @@
                     >
                 </div>
             </header>
+            </div>
             <div class="auth-topnav-spacer" aria-hidden="true"></div>
 
             <div class="auth-page-shell">
