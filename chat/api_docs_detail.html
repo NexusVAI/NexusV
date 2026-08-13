@@ -334,7 +334,7 @@ main .prose{width:100%;max-width:100%}
             ><span style="color: var(--text-faint)">48 个 base64url 字符</span>
           </div>
           <p style="color: var(--text-faint); font-size: 12.5px; margin-top: -4px">
-            前缀 <code>cancri_sk_</code>（10 字符）+ 36 字节随机熵的 base64url 编码（48 字符）= <b>总长度恒为 58 字符</b>。
+            前缀 <code>cancri_sk_</code>（10 字符）+ 36 字节随机熵的 base64url 编码（48 字符）= <b>标准总长度 58 字符</b>。
             后半部分字符集为 <code>A-Z a-z 0-9 - _</code>（不含 <code>+</code> / <code>=</code> 填充符）。
             做 Key 正则校验的客户端推荐用 <code>/^cancri_sk_[A-Za-z0-9_-]{48}$/</code>。
           </p>
@@ -1370,8 +1370,8 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               <p>
                 A: 按账户档位区分：
                 <br>
-                • <b>并发：</b> Tier 0（未充值）最多 1 个进行中请求；有效订阅 paid/vip 不限并发。<br>
-                • <b>频次（Tier 0）：</b> 20 次/分、600 次/小时、1000 次/天。更高档位见下方速率表。<br>
+                • <b>并发：</b> Tier 0（未充值）最多 3 个进行中请求；Tier 1 起 50 并发，随档位递增。<br>
+                • <b>频次（Tier 0）：</b> 60 次/分、1200 次/小时、10000 次/天。更高档位见下方速率表。<br>
                 模型队列、福利池与维护闸门会另行生效。
               </p>
             </div>
@@ -1448,7 +1448,7 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
               </tr>
             </thead>
             <tbody>
-              <tr><td>Tier 0</td><td>¥0</td><td>1</td><td>20</td><td>500,000</td><td>1,500,000</td></tr>
+              <tr><td>Tier 0</td><td>¥0</td><td>3</td><td>60</td><td>2,000,000</td><td>20,000,000</td></tr>
               <tr><td>Tier 1</td><td>≥ ¥10</td><td>50</td><td>200</td><td>2,000,000</td><td>不限</td></tr>
               <tr><td>Tier 2</td><td>≥ ¥30</td><td>100</td><td>500</td><td>3,000,000</td><td>不限</td></tr>
               <tr><td>Tier 3</td><td>≥ ¥80</td><td>200</td><td>5,000</td><td>3,000,000</td><td>不限</td></tr>
@@ -1640,6 +1640,26 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
                   维护闸门等为独立码（如 <code>api_paused</code>），请按 <code>error.code</code> 分支。
                   <code>503</code> 可能带 <code>Retry-After</code>，可退避或换模型。
                 </td>
+              </tr>
+              <tr>
+                <td>504</td>
+                <td>upstream_timeout</td>
+                <td>上游模型响应超时（网关侧 120 秒硬上限）。建议降低 <code>max_tokens</code> 或换模型重试。</td>
+              </tr>
+              <tr>
+                <td>500</td>
+                <td>model_temporary_failure</td>
+                <td>模型临时不可用（非你的 Key 或配额问题）。稍后重试或换模型。</td>
+              </tr>
+              <tr>
+                <td>503</td>
+                <td>maintenance_mode</td>
+                <td>系统正在维护中，所有 API 端点暂停服务。</td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td>model_ide_only</td>
+                <td>该模型仅供桌面 IDE 使用，不对公开 API 开放。</td>
               </tr>
             </tbody>
           </table>
