@@ -127,7 +127,7 @@
         <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260811-ann-expand" />
         <link
             rel="stylesheet"
-            href="./styles/auth-platform-login.css?v=20260813-otp-alert"
+            href="./styles/auth-platform-login.css?v=20260813-login-paint"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -173,7 +173,7 @@
     </g>
   </svg>
 </div>
-<script src="assets/p2m-loader.js" defer></script>
+<script src="assets/p2m-loader.js?v=20260813-cap" defer></script>
 
         <!-- ── Login stage (未登录时覆盖整个页面) ───────────────────
              重设计自 Claude (claude.ai) 的登录页：暗底全屏 +
@@ -185,7 +185,7 @@
              视觉层面新增的元素只有 .auth-stage / .auth-brand /
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
-        <div class="auth-overlay" id="authOverlay">
+        <div class="auth-overlay visible" id="authOverlay">
             <div class="auth-bg" aria-hidden="true"></div>
 
             <div class="auth-chrome">
