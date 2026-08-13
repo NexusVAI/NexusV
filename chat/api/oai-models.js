@@ -41,12 +41,15 @@
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
 
-  // 首页「我们部署的免费模型」固定四卡（与计费 free 线对齐；MiniMax 用免费渠道 id）
+  // 首页「我们部署的免费模型」= 网关 MODEL_ACCESS_END_MS 全部限时线（缺哪个补哪个）。
+  // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
     "kimi-k3-high",
     "deepseek-v4-flash-0731",
     "nexusvai:minimax-m3-free",
     "glm-5.2-fp8",
+    "c:grok-4.6",
+    "mimo-v2.5-free",
   ];
 
   // card art pool: assets/oai.logo/1-6.png, assigned randomly per render
@@ -553,7 +556,7 @@
     var free = document.getElementById("cancri-free");
     if (free) {
       free.setAttribute("aria-busy", "true");
-      free.innerHTML = skelFeatureGrid(4);
+      free.innerHTML = skelFeatureGrid(FREE_ORDER.length);
     }
     var specialized = document.getElementById("cancri-specialized");
     if (specialized) {
