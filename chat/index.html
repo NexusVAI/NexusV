@@ -124,7 +124,7 @@
         <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260811-ann-expand" />
         <link
             rel="stylesheet"
-            href="./styles/auth-platform-login.css?v=20260813-login-paint"
+            href="./styles/auth-platform-login.css?v=20260813-login-paint2"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
@@ -132,6 +132,66 @@
             rel="stylesheet"
             href="./claude.css?v=20260811-ann-expand"
         />
+        <style>
+            /* 登录层必须跟 HTML 一起下发：外链 CSS 会单独缓存，.visible 仍可能只剩沙底+主题钮 */
+            html.auth-platform-page #authOverlay.visible {
+                display: flex !important;
+                flex-direction: column !important;
+                grid-template: none !important;
+                grid-template-columns: none !important;
+                align-items: stretch !important;
+                justify-content: flex-start !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: auto !important;
+                height: auto !important;
+                min-height: 100dvh !important;
+                max-height: none !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                padding: 0 !important;
+                gap: 0 !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+                z-index: 9999 !important;
+                background: hsl(var(--bg-300)) !important;
+            }
+            html.auth-platform-page #authOverlay:not(.visible) {
+                height: 0 !important;
+                min-height: 0 !important;
+                max-height: 0 !important;
+                overflow: hidden !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
+            }
+            html.auth-platform-page #authOverlay.visible > .auth-chrome,
+            html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                width: 100% !important;
+                max-width: none !important;
+                flex: 0 0 auto !important;
+                grid-column: 1 / -1 !important;
+                position: relative !important;
+                z-index: 2 !important;
+            }
+            html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+                display: flex !important;
+                flex-direction: column !important;
+                flex: 1 0 auto !important;
+            }
+            html.auth-platform-page #authOverlay.visible .auth-login-panel,
+            html.auth-platform-page #authOverlay.visible .auth-stage,
+            html.auth-platform-page #authOverlay.visible .auth-hero,
+            html.auth-platform-page #authOverlay.visible .auth-card {
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+        </style>
         <link
             rel="stylesheet"
             href="./styles/claude-sidebar-icons.css?v=2026-06-20-sidebar-fade-strip"
