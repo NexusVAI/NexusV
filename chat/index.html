@@ -119,7 +119,7 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=20260809-captcha-gap"
+            href="./styles/cancri_motion.css?v=20260814-server-driven-turnstile"
         />
         <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260811-ann-expand" />
         <link
@@ -345,7 +345,7 @@
                             required
                         />
 
-                        <!-- Cloudflare Turnstile 可见挑战槽位（非左侧 4 位画布码） -->
+                        <!-- 服务端要求时才展开的 Cloudflare Turnstile 挑战槽位 -->
                         <div id="authCaptchaContainer" aria-label="Cloudflare 人机验证"></div>
 
                         <div class="auth-password-section" id="authPasswordSection">
@@ -3240,10 +3240,9 @@
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_image_loader.js?v=img-loader-0531"></script>
         <script defer src="./cancri_chat_nav.js?v=chat-nav-0531"></script>
-        <!-- 2026-07-11 审计/人机验证：Turnstile 服务端真校验。
-             2026-07-20：改为 appearance:always 可见挑战，挂在 #authCaptchaContainer。
+        <!-- 2026-08-14：登录 Turnstile 改为服务端按 IP/风险策略触发；普通请求不展示挑战。
              cancri_turnstile_bridge.js 须在 cancri_chat.js 之前加载。 -->
-        <script defer src="./cancri_turnstile_bridge.js?v=2026-08-13-probe-fix"></script>
+        <script defer src="./cancri_turnstile_bridge.js?v=2026-08-14-server-driven"></script>
         <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
         <script defer src="./js/auth-login-chrome.js?v=2026-06-25-download-icons"></script>
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
