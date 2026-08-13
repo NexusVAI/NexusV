@@ -1,0 +1,1635 @@
+/*
+ * Cancri Motion — minimal, "Claude / ChatGPT / Linear" quiet baseline.
+ *
+ * The previous version of this file added spring tap-feedback, sheet-
+ * slide modal entrance, per-message stagger, hover lift, scroll-snap…
+ * Together they made the UI feel like a marketing demo — too many
+ * elements shimmered at once. Claude / ChatGPT / Linear / Notion all
+ * use a much quieter motion vocabulary:
+ *
+ *   • Color / opacity transitions on hover and active states
+ *   • Small (≤200ms) durations
+ *   • Almost zero transforms, no overshoot, no scale snaps
+ *   • Modals / popovers fade rather than slide
+ *   • The tool feels "instant", not "celebrated"
+ *
+ * So this file now does ONLY:
+ *
+ *   1. Exports iOS-tuned easing tokens as CSS variables. They sit
+ *      unused until somebody opts in via `transition-timing-function:
+ *      var(--ease-ios-standard)`. We don't blanket-apply them.
+ *   2. Off-screen virtualisation for long lists (content-visibility).
+ *   3. Subtree containment for the message list (contain).
+ *   4. will-change on the three most-tapped composer buttons.
+ *   5. prefers-reduced-motion bypass for accessibility.
+ *
+ * What it intentionally does NOT do:
+ *   • No per-element entrance animations (popover / dropdown / modal
+ *     / message). The host file's existing opacity transitions are
+ *     enough — and quieter.
+ *   • No tap-spring scale-down. Buttons should feel solid, not bouncy.
+ *   • No hover translate-Y lift. Adds visual noise with no signal.
+ *   • No smooth scroll on <html>. Jumping to a chat history entry
+ *     should be instant, not a 600ms ride.
+ */
+
+:root {
+    /* ── iOS easing tokens ───────────────────────────────────────
+     * Values calibrated against SwiftUI's default Spring(.smooth) and
+     * Spring(.snappy) presets, projected to cubic-bezier. Use the
+     * `emphasized` curve for sheets/modals (long, soft), `snappy` for
+     * popovers / dropdowns (short, tiny overshoot), `spring` for tap
+     * springs (overshoots clearly on snap-back). */
+    --ease-ios-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-ios-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-ios-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --ease-ios-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --ease-ios-snappy: cubic-bezier(0.42, 1.42, 0.66, 1);
+    --ease-ios-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --dur-fast: 150ms;
+    --dur-base: 240ms;
+    --dur-slow: 360ms;
+    --dur-modal: 420ms;
+}
+
+/* ── Reduce-motion bypass (covers the whole site) ─────────────────
+ *
+ * Users who toggle "Reduce Motion" in their OS get every animation /
+ * transition flattened — across this stylesheet AND every other CSS
+ * file in the project. We zero-duration rather than `animation: none`
+ * because some keyframes elsewhere set the final state on the 100%
+ * stop; disabling animation entirely would skip that end state. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Performance: skip off-screen layout work ──────────────────────
+ *
+ * `content-visibility: auto` lets the browser skip the layout, paint,
+ * and even style recalc of an element when it's scrolled off-screen.
+ * `contain-intrinsic-size` provides a placeholder height so the
+ * scrollbar doesn't jump as items are virtualised in/out.
+ *
+ * Why these specific selectors:
+ *   • .recent-item — sidebar conversation list. Long-running users
+ *     have hundreds of past chats. Without this, the sidebar paints
+ *     all of them on every reflow. With this, only the ~10 visible
+ *     ones do work; the rest are basically free.
+ *   • .duel-message — arena's two-column compare cards are heavy
+ *     (markdown + math + code highlighting per side). Off-screen ones
+ *     skip all of that.
+ *
+ * Why we DON'T add it to .message: the streaming-typewriter animation
+ * during AI reply needs continuous paint on the active message; if it
+ * were content-visibility: auto and went off-screen mid-stream we'd
+ * lose paint cycles and the typing animation would freeze.
+ *
+ * `contain: layout style paint` on .chat-messages is a separate
+ * optimisation — it isolates the message-list subtree from the rest
+ * of the page so message updates can't trigger layout recalc on the
+ * sidebar / header / etc.
+ */
+.recent-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 44px;
+}
+
+.duel-message {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 280px;
+}
+
+.chat-messages {
+    contain: layout style paint;
+}
+
+/* ── Composited layers for known-animated surfaces ─────────────
+ *
+ * `will-change: transform` promotes these elements to their own GPU
+ * layer so transform-only animations (tap-spring, hover-lift) compose
+ * without re-paint. We use this sparingly — over-promoting layers
+ * costs GPU memory — only on elements that are reliably animated. */
+.send-btn,
+.voice-btn,
+.composer-tool-btn {
+    will-change: transform;
+}
+
+/* ── Site footer: 4 social icons (replaces NEXUSV glitch brand) ─────
+ *
+ * Visual target: a quiet row of 4 icons centered at the bottom of the
+ * home view, dimmed at rest, lit up on hover. Color/opacity-only
+ * transitions. No transform, no shadow, no fade-in. Mirrors how
+ * Claude / Linear / Notion handle their tiny footer social rows.
+ *
+ * Decoupled from `.nexusv-footer`: the HTML deliberately drops that
+ * legacy class so cancri_chat.js's `querySelector(".nexusv-footer")`
+ * returns null (and its null-guarded callers gracefully no-op),
+ * leaving the footer purely CSS-driven.
+ */
+.site-footer-socials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 14px 16px 26px;
+    margin-top: auto;
+    width: 100%;
+}
+
+/* Hide while a chat is in progress — bottom of the screen is for the
+   composer / message stream, not site chrome. */
+#homeView.chatting .site-footer-socials {
+    display: none;
+}
+
+.site-footer-socials > a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--text-soft, #9a9a96);
+    opacity: 0.55;
+    text-decoration: none;
+    transition:
+        opacity 150ms cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.site-footer-socials > a:hover,
+.site-footer-socials > a:focus-visible {
+    opacity: 1;
+    background-color: rgba(127, 127, 127, 0.10);
+    outline: none;
+}
+
+.site-footer-socials img,
+.site-footer-socials svg {
+    display: block;
+    pointer-events: none;
+}
+
+/* Light theme: the X-twitter SVG uses fill="currentColor", so we
+   re-tint the link color to a soft black. The other three (github /
+   huggingface / bilibili) are <img> SVGs, unaffected. */
+html[data-theme="light"] .site-footer-socials > a {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* Mobile: shrink padding + icon target so the four icons fit
+   comfortably on a 320-360px-wide screen. */
+@media (max-width: 640px) {
+    .site-footer-socials {
+        gap: 18px;
+        padding: 10px 12px 18px;
+    }
+    .site-footer-socials > a {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* ── Sidebar brand: NexusV name next to the logo ────────────────
+ *
+ * The home button used to be an icon-only `<button class="brand-mark">`
+ * sized 20x20. We re-shaped it into a horizontal `<a class="brand-mark
+ * sidebar-brand">` with logo + "NexusV" wordmark sitting in the
+ * sidebar-topbar, like Claude / Linear / Notion. Original .brand-mark
+ * geometry from cancri_chat.css L313-316 is overridden here. */
+.sidebar-brand {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 8px;
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1 !important;
+}
+
+.sidebar-brand:hover {
+    background-color: rgba(127, 127, 127, 0.10);
+}
+
+.sidebar-brand-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+/* When the sidebar collapses, only the logo stays — wordmark hides. */
+.sidebar.collapsed .sidebar-brand-name {
+    display: none;
+}
+
+/* The cancri_chat.css L278-280 rule `.sidebar.collapsed .brand-mark
+   { display:none }` still applies when the sidebar collapses. We
+   want the brand logo visible even when collapsed (acts as the
+   "home" button), so flip it back. */
+.sidebar.collapsed .sidebar-brand {
+    display: inline-flex !important;
+}
+
+/* ── Sidebar Cancri Code entry: hide on mobile only ───────────
+ *
+ * The Cancri Code IDE-style app at /chat/code/ ships with a fixed
+ * left/right panel layout that needs ≥ 1024px to be usable. We hide
+ * the entry on screens ≤ 640px so mobile users don't tap through to
+ * a broken layout. The 50/150 daily-message quota that protects the
+ * underlying chat-gateway lives inside the Cancri Code app itself
+ * (consumed via chat-gateway counter), not in this sidebar row. */
+@media (max-width: 640px) {
+    .sidebar-cancri-code {
+        display: none !important;
+    }
+}
+
+/* ── Header broadcast bell ──────────────────────────────────── */
+.header-broadcast-btn {
+    position: relative;
+}
+
+.header-broadcast-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent, #cc7755);
+    box-shadow: 0 0 0 2px var(--bg, #1a1a1a);
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+        opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.header-broadcast-btn.has-update .header-broadcast-dot {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ── Announcement modal: timeline ─────────────────────────────── */
+/* 2026-05-17：原 max-width 580 + 无 max-height 导致 6 条公告堆完后
+   卡片高度超过 1080P 视口，底部「我知道了」按钮无法点击。
+   修复：① 卡片整体上限 880px × 视口高 - 48px；② 改 flex 列布局让
+   header / 滚动 body / footer 各占其位；③ 桌面端时间线改 2 列网格，
+   高度减半的同时把"卡片横向展示"。 */
+.announcement-modal-content {
+    width: min(880px, calc(100vw - 32px));
+    max-width: 880px;
+    max-height: calc(100dvh - 48px);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+}
+
+.announcement-modal-content > .modal-header {
+    flex: 0 0 auto;
+}
+
+.announcement-modal-content > .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.announcement-modal-content > .announcement-modal-footer {
+    flex: 0 0 auto;
+}
+
+.announcement-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 4px 4px 8px;
+    position: relative;
+}
+
+/* Single vertical guide line for the entire timeline */
+.announcement-timeline::before {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 14px;
+    bottom: 14px;
+    width: 1px;
+    background: var(--border, rgba(127, 127, 127, 0.22));
+}
+
+.timeline-item {
+    position: relative;
+    padding: 0 0 18px 32px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 4px;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--bg, #1a1a1a);
+    border: 1.6px solid var(--text-dim, #888);
+    box-sizing: border-box;
+}
+
+.timeline-item--latest .timeline-dot {
+    border-color: var(--accent, #cc7755);
+    background: var(--accent, #cc7755);
+    box-shadow: 0 0 0 4px rgba(204, 119, 85, 0.15);
+}
+
+.timeline-content {
+    color: var(--text);
+}
+
+.timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.timeline-body {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-soft);
+    margin: 0 0 4px;
+}
+
+.timeline-link {
+    color: var(--accent, #cc7755);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.timeline-link:hover {
+    text-decoration: underline;
+}
+
+.timeline-date {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 4px;
+}
+
+/* 2026-05-17 Phase A：横向三档 grid，紧凑公告内容用 */
+.timeline-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.timeline-tier-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--border, rgba(127, 127, 127, 0.22));
+    border-radius: 8px;
+    background: rgba(127, 127, 127, 0.04);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.timeline-tier-card--highlight {
+    border-color: var(--accent, #cc7755);
+    background: rgba(204, 119, 85, 0.06);
+}
+
+.timeline-tier-card b {
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.timeline-tier-price {
+    color: var(--accent, #cc7755);
+    font-weight: 600;
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.timeline-tier-quota {
+    color: var(--text-soft);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+@media (max-width: 540px) {
+    .timeline-tier-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .timeline-tier-card {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 8px;
+        padding: 6px 10px;
+    }
+    .timeline-tier-card b {
+        flex: 0 0 56px;
+    }
+    .timeline-tier-price {
+        flex: 0 0 auto;
+    }
+    .timeline-tier-quota {
+        flex: 1;
+        text-align: right;
+        font-size: 11px;
+    }
+}
+
+/* 2026-05-17：桌面端公告时间线横向 2 栏。
+   用 CSS multi-column 而不是 grid，因为各条公告高度不一（Phase A 含三档
+   卡片 + 长段落，普通条目只 2-3 行），grid 会按最高行拉齐留空白；
+   column 自然按内容流动，2 栏均衡填充。
+   竖线 ::before 在双栏布局里跨不了列，隐藏；每条公告靠自带圆点点位。 */
+@media (min-width: 720px) {
+    .announcement-timeline {
+        column-count: 2;
+        column-gap: 28px;
+        column-fill: balance;
+        padding: 4px 8px 8px 8px;
+    }
+
+    .announcement-timeline::before {
+        display: none;
+    }
+
+    .timeline-item {
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        page-break-inside: avoid;
+        padding-bottom: 14px;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 4px;
+    }
+}
+
+.announcement-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--border, rgba(127, 127, 127, 0.18));
+}
+
+.announcement-dismiss {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-soft);
+    cursor: pointer;
+}
+
+.announcement-dismiss input {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+/* ── Modal fade-in / fade-out ─────────────────────────────────
+ *
+ * `cancri_chat.css` originally toggled modals with `display: none ↔ flex`,
+ * which can't be transitioned. We override to a continuous-visibility
+ * model: the overlay stays `display: flex` but is hidden via
+ * `opacity + visibility + pointer-events`. The card inside also gets
+ * a small translate + scale curve for a soft "rise into focus" feel.
+ *
+ * Tested against:
+ *   • #announcementModal (timeline)
+ *   • #settingsModal & friends (all use .modal + .modal.open)
+ *
+ * Why !important on display: cancri_chat.css ships
+ * `.modal { display: none; }` as the base. We need to defeat that to
+ * keep visibility-based transitions working. We do *not* touch
+ * `.modal.open { display: flex }` rule — flex is the same final value,
+ * so visually nothing changes. */
+.modal {
+    display: flex !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 220ms cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal.open,
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.modal .modal-content {
+    transform: translateY(12px) scale(0.97);
+    opacity: 0;
+    transition:
+        transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+}
+
+.modal.open .modal-content,
+.modal.show .modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+/* Reduce motion: collapse to a plain fade, no transform. Matches the
+   global prefers-reduced-motion contract elsewhere in this file. */
+@media (prefers-reduced-motion: reduce) {
+    .modal,
+    .modal .modal-content {
+        transition-duration: 0ms !important;
+    }
+    .modal .modal-content {
+        transform: none;
+    }
+}
+
+/* ── 公告：顶部下拉抽屉 + 一页页翻（2026-05-31，对齐 Grok 超级菜单）──
+   原 #announcementModal 是居中弹卡；改成从屏幕上沿下拉的抽屉，并把竖向
+   timeline 拆成「一次一条」翻页（footer 加 ‹ dots › 翻页器）。所有 open/
+   close/红点/dismiss 逻辑沿用 cancri_chat.js 不变；翻页由 cancri_announcement.js 驱动。 */
+.modal.announcement-drawer {
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.modal.announcement-drawer.open,
+.modal.announcement-drawer.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+.announcement-drawer .announcement-modal-content {
+    width: min(760px, calc(100vw - 24px));
+    max-width: 760px;
+    max-height: min(72dvh, 640px);
+    border-radius: 0 0 22px 22px;
+    border-top: none;
+}
+/* 顶部抽屉：从上沿下拉（覆盖 .modal .modal-content 的 12px+scale 默认动画） */
+.announcement-drawer .modal-content {
+    transform: translateY(-110%);
+    opacity: 1;
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.announcement-drawer.open .modal-content,
+.announcement-drawer.show .modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+/* 一页页：每次只显示一条；去掉竖线/圆点/双列 */
+.announcement-drawer .announcement-timeline {
+    column-count: 1 !important;
+    padding: 8px 6px 4px;
+    min-height: 200px;
+}
+.announcement-drawer .announcement-timeline::before {
+    display: none;
+}
+.announcement-drawer:not(.zm-ann-drawer) .timeline-item {
+    display: none;
+    padding: 0;
+}
+.announcement-drawer:not(.zm-ann-drawer) .timeline-item.ann-page-active {
+    display: block;
+    animation: annPageIn 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.announcement-drawer:not(.zm-ann-drawer) .timeline-dot {
+    display: none;
+}
+@keyframes annPageIn {
+    from {
+        opacity: 0;
+        transform: translateX(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+/* footer 拆两行：上排翻页器，下排「不再弹出」+「我知道了」 */
+.announcement-drawer .announcement-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+.announcement-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.announcement-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+.announcement-pager-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--line-2, rgba(127, 127, 127, 0.25));
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        opacity 0.15s ease;
+}
+.announcement-pager-btn:hover {
+    background: var(--hover);
+    color: var(--text);
+}
+.announcement-pager-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+.announcement-pager-dots {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.announcement-pager-dots .ann-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim, #888);
+    opacity: 0.35;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+.announcement-pager-dots .ann-dot.active {
+    background: var(--accent);
+    opacity: 1;
+    transform: scale(1.25);
+}
+
+/* ── Login stage（2026-05-16 claude-clone v3 复刻 baseline） ───
+ *
+ * 用户在 minimal redo 后又改方向，要求参照图 1 Claude 登录页的布局/视觉
+ * 风格做基础版（后续微调）。dark 为默认基础样式（图 1 是 dark），light
+ * 为反相 override。
+ *
+ * 复刻范围（通用 design pattern，不复制 Anthropic 受版权保护的具体素材）：
+ *   - 布局：左上 fixed brand + 居中 hero（衬线大字 + 暖橙副标题）+ 居中卡片
+ *   - 卡片：半透深色容器 + 12px 圆角 + 1px 细边
+ *   - 输入：卡内深灰圆角 textbox，placeholder 居中
+ *   - 主按钮：白底深字（primary CTA），hover 微亮
+ *   - footer：灰小字 + 下划线链接
+ *
+ * 不抄的：Claude 八角星 logo、"Claude" 字眼、Anthropic marketing copy、
+ * "Continue with Google" OAuth 按钮（NexusV 仅 OTP 流程）、"Download
+ * desktop app" 按钮（NexusV 无 desktop）、右侧 placeholder 卡片。
+ *
+ * 关键保留：DOM ID authEmailInput / authSendOtpBtn / authOtpInput /
+ * authVerifyOtpBtn / authOtpSection / authStepEmail / authEmailError 零改动，
+ * cancri_chat.js initAuthOverlay() 事件绑定 + Supabase OTP 流程零改动。
+ *
+ * .island / .islandt / .auth-bg-sheen 等装饰 selector display:none 兜底
+ * （HTML/JS 已无引用，auth_bg_bake.js 已从 index.html 移除 include）。
+ * ──────────────────────────────────────────────────────────── */
+
+/* 2026-05-16 claude-clone v4：从原 block 布局升级到 grid 2 列。
+   左列 .auth-stage（保留现有 brand/hero/card/footer）+ 右列 .auth-showcase
+   (新增，奶白圆角卡承载 Nexusai.mp4 video)，1:1 复刻 claude.ai 登录页结构。
+   gap: 24px 让两列之间留窗口缝；padding: 24px 让外圈出气；
+   mobile (<880px) 下面 @media 把 grid 退化单列 + showcase display:none。 */
+.auth-overlay {
+    /* 2026-05-16 claude-clone v4c: bg 调更黑 #0e0e0e，跟 Claude 真站
+       图 2 深黑背景 #0f0e0f 对齐。 */
+    background: hsl(var(--bg-100));
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    padding: 16px;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    gap: 16px;
+}
+
+html[data-theme="light"] .auth-overlay {
+    background: hsl(var(--bg-100));
+}
+
+/* 2026-05-16 claude-clone v4 修透明 bug：cancri_chat.css L6229
+   `[data-theme="dark"] .auth-overlay { background: rgba(0,0,0,0.7) }`
+   specificity (0,2,0) 胜过本文件 `.auth-overlay { background: #1a1a1a }` (0,1,0)，
+   导致 dark mode 剧本 overlay 半透明、后面 sidebar/chat 透出。
+   这里用 html[data-theme="dark"] (0,2,1) 高 specificity 覆盖。 */
+html[data-theme="dark"] .auth-overlay,
+html[data-theme="black"] .auth-overlay {
+    background: hsl(var(--bg-300));
+}
+
+/* Platform login pages (index / claude / desktop-login): single-column scroll page.
+   Without this, grid-template-columns: 1fr 1fr above 880px leaves footer on left half only. */
+.auth-overlay:has(.auth-page-shell),
+html.auth-platform-page .auth-overlay:has(+ #appRoot).visible,
+html.auth-platform-page .auth-overlay:not(:has(+ #appRoot)) {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+}
+
+html.auth-platform-page .auth-overlay:not(.visible):has(+ #appRoot) {
+    position: fixed !important;
+    inset: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+}
+
+html.auth-platform-page .auth-overlay:not(:has(+ #appRoot)) {
+    position: relative !important;
+    inset: auto !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+}
+
+.auth-overlay:has(.auth-page-shell) > .auth-topnav-spacer,
+.auth-overlay:has(.auth-page-shell) > .auth-page-shell,
+html.auth-platform-page .auth-overlay > .auth-topnav-spacer,
+html.auth-platform-page .auth-overlay > .auth-page-shell {
+    grid-column: unset !important;
+    width: 100% !important;
+    max-width: none !important;
+    align-self: stretch !important;
+}
+
+html.auth-platform-page .auth-stage {
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem) 1rem !important;
+    max-width: min(768px, calc(100% - 0.5rem)) !important;
+}
+
+.auth-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: transparent;
+}
+
+/* ── Showcase（右列奶白大圆角卡 + 全覆盖视频，1:1 Claude 真站布局）─── */
+.auth-showcase {
+    grid-column: 2;
+    position: relative;
+    z-index: 1;
+    background: hsl(var(--bg-200));
+    border: 1px solid hsl(var(--border-300) / 0.18);
+    border-radius: 16px;
+    overflow: hidden;
+    align-self: center;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    /* GPU 合成层提升，避免重绘时回流左列 stage */
+    transform: translateZ(0);
+    will-change: transform;
+    box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
+}
+
+html[data-theme="light"] .auth-showcase {
+    /* light 模式 overlay 本身就是奶白底 (#fafaf9)，右卡为了视觉分层
+       改用稍深一档的暖灰（参考 chat/api 平台 light mode --bg-1）。 */
+    background: hsl(var(--bg-200));
+    box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
+}
+
+.auth-showcase-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+.auth-mobile-poster {
+    display: none;
+    width: min(88vw, 340px);
+    max-width: 340px;
+    margin-top: 20px;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid hsl(var(--border-300) / 0.18);
+    box-shadow: 0 4px 20px hsl(var(--black) / 0.04);
+    flex-shrink: 0;
+}
+
+.auth-mobile-poster-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+/* mobile：< 880px 退化为单列 + 隐藏 showcase，左列底部展示 16:9 海报 */
+@media (max-width: 880px) {
+    .auth-overlay {
+        grid-template-columns: 1fr;
+        padding: 0;
+        gap: 0;
+        overflow-y: auto;
+        align-items: flex-start;
+    }
+    .auth-showcase {
+        display: none;
+    }
+    .auth-mobile-poster {
+        display: block;
+    }
+    .auth-stage {
+        padding-bottom: 32px;
+    }
+}
+
+@media (max-width: 520px) {
+    .auth-mobile-poster {
+        width: min(92vw, 300px);
+        max-width: 300px;
+        margin-top: 16px;
+    }
+}
+
+/* legacy 装饰 selector 全部隐藏（HTML/JS 已移除引用） */
+.auth-bg-island,
+.auth-bg-islandt,
+.auth-bg-defs,
+.auth-bg-sheen,
+.island,
+.islandt,
+.hatch {
+    display: none !important;
+}
+
+/* ── auth-stage：居中单列堆栈（hero + card + footer） ────────── */
+.auth-stage {
+    width: 100%;
+    max-width: 768px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    position: relative;
+    z-index: 1;
+    padding: 72px 32px 32px;
+    background: transparent !important;
+    text-align: center;
+    align-self: center;
+}
+
+@media (max-width: 520px) {
+    .auth-stage {
+        padding: 56px 20px 32px;
+        max-width: 100%;
+    }
+}
+
+/* ── Brand（fixed 左上角，独立于 stage 流式布局）─────────── */
+.auth-brand {
+    position: fixed;
+    top: 24px;
+    left: 32px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
+    color: hsl(var(--text-000));
+    padding: 0;
+    border-radius: 0;
+    margin: 0;
+    transition: opacity 150ms ease;
+}
+.auth-brand:hover {
+    opacity: 0.75;
+}
+
+html[data-theme="light"] .auth-brand {
+    color: hsl(var(--text-000));
+}
+
+.auth-brand-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    object-fit: cover;
+    display: block;
+}
+
+.auth-brand-name {
+    /* 2026-05-16 claude-clone v4: 栈头加 Anthropic Sans，跟 Claude 真站 brand
+       "Claude" 对齐（sans 不是 serif）。@font-face 在 chat/claude.css 注册。 */
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+@media (max-width: 520px) {
+    .auth-brand {
+        top: 16px;
+        left: 16px;
+    }
+}
+
+/* ── Hero（衬线大字 + 暖橙副标题，居中）────────────── */
+.auth-hero {
+    text-align: center;
+    margin: 0 0 32px;
+    padding: 0;
+}
+
+.auth-hero-title {
+    /* 2026-05-16 claude-clone v4: 栈头加 Anthropic Serif。中文 fallback 到
+       Noto Serif SC / Source Han Serif SC（Anthropic Serif 无中文 glyph）。 */
+    font-family:
+        "Anthropic Serif", "AnthropicSerif",
+        "Source Serif 4", "Source Serif Pro", "Noto Serif SC",
+        "Source Han Serif SC", "Songti SC", Georgia, serif;
+    font-size: clamp(44px, 5.8vw, 56px);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    margin: 0 0 18px;
+    color: hsl(var(--text-100));
+}
+
+.auth-hero-subtitle {
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: hsl(var(--text-100));
+    margin: 0 auto;
+    max-width: 420px;
+    letter-spacing: -0.01em;
+}
+
+html[data-theme="light"] .auth-hero-title {
+    color: hsl(var(--text-100));
+}
+html[data-theme="light"] .auth-hero-subtitle {
+    color: hsl(var(--text-100));
+}
+
+@media (max-width: 520px) {
+    .auth-hero-title {
+        font-size: 34px;
+    }
+}
+
+/* ── Card（深色容器，圆角细边）────────────────────── */
+/* 2026-05-16 claude-clone v4c: padding 16 → 20，border alpha 0.06 → 0.10
+   跟 Claude 真站 card 更软、边梦更强的视觉对齐。 */
+.auth-card {
+    width: 100%;
+    max-width: 448px;
+    min-width: min(100%, 320px);
+    --auth-card-radius: 32px;
+    --auth-field-radius: max(10px, calc(var(--auth-card-radius) - 20px));
+    padding: 18px 20px 16px;
+    border-radius: var(--auth-card-radius);
+    background: hsl(var(--bg-100));
+    border: 1px solid hsl(var(--border-300) / 0.14);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+html[data-theme="light"] .auth-card {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.14);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.04);
+}
+
+.auth-step {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.auth-email-divider {
+    color: hsl(var(--text-300));
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* Claude 风格直接用 input placeholder 代 label，所以 label 隐藏。
+   keep DOM 不动以保持 a11y for assistive tech via `for` 关系。 */
+.auth-field-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── Input（卡内深灰底圆角，placeholder 居中）────────── */
+.auth-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 16px;
+    font-weight: 400;
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    border-radius: var(--auth-field-radius, 12px);
+    background: hsl(var(--bg-000));
+    color: hsl(var(--text-000));
+    border: 1px solid hsl(var(--border-300) / 0.30);
+    box-shadow: none;
+    box-sizing: border-box;
+    outline: none;
+    text-align: left;
+    transition:
+        border-color 150ms ease,
+        background-color 150ms ease;
+}
+.auth-input::placeholder {
+    color: hsl(var(--text-400));
+    text-align: left;
+}
+.auth-input:hover {
+    border-color: hsl(var(--border-300) / 0.48);
+}
+.auth-input:focus {
+    border-color: hsl(var(--text-000) / 0.55);
+    background: hsl(var(--bg-000));
+}
+
+html[data-theme="light"] .auth-input {
+    background: hsl(var(--bg-000));
+    color: hsl(var(--text-000));
+    border-color: hsl(var(--border-300) / 0.30);
+}
+html[data-theme="light"] .auth-input::placeholder {
+    color: hsl(var(--text-400));
+}
+html[data-theme="light"] .auth-input:hover {
+    border-color: hsl(var(--border-300) / 0.48);
+}
+html[data-theme="light"] .auth-input:focus {
+    border-color: hsl(var(--text-000) / 0.55);
+    background: hsl(var(--bg-000));
+}
+
+.auth-otp-input {
+    letter-spacing: 6px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.auth-otp-input::placeholder {
+    text-align: center;
+    opacity: 1;
+}
+
+/* ── Button（白底深字 primary，参照 Claude "Continue with email"）── */
+.auth-btn {
+    width: 100%;
+    height: 44px;
+    margin-top: 0;
+    padding: 0 20px;
+    border-radius: var(--auth-field-radius, 12px);
+    border: 1px solid transparent;
+    background: hsl(var(--text-000));
+    color: hsl(var(--bg-000));
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    cursor: pointer;
+    box-shadow: none;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        opacity 150ms ease;
+}
+.auth-btn:hover {
+    background: hsl(var(--text-000));
+    border-color: transparent;
+}
+.auth-btn:active {
+    transform: scale(0.98);
+}
+.auth-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.20);
+}
+.auth-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+html[data-theme="light"] .auth-btn {
+    background: hsl(var(--text-000));
+    border-color: transparent;
+    color: hsl(var(--bg-000));
+}
+html[data-theme="light"] .auth-btn:hover {
+    background: hsl(var(--text-000));
+    border-color: transparent;
+}
+html[data-theme="light"] .auth-btn:active {
+    transform: scale(0.98);
+}
+html[data-theme="light"] .auth-btn:focus-visible {
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.20);
+}
+html[data-theme="light"] .auth-btn:disabled {
+    opacity: 0.5;
+}
+
+/* .auth-btn-primary 沿用 .auth-btn 全部样式 */
+
+.auth-desktop-download-wrap {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 448px;
+    margin: 1.5rem auto 0;
+    padding: 0;
+    /* 与 .auth-card 同级，不在 card 内 — Claude「Download desktop app」布局 */
+    align-self: center;
+}
+
+.auth-desktop-download-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 44px;
+    min-width: 0;
+    flex: 1 1 9.5rem;
+    max-width: 100%;
+    padding: 0 1.25rem;
+    border-radius: 0.6rem;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-000));
+    font-size: 16px;
+    font-weight: 600;
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition:
+        background-color 100ms ease,
+        border-color 100ms ease,
+        transform 100ms ease;
+}
+
+.auth-desktop-download-btn__icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.55);
+    color: hsl(var(--text-000));
+}
+
+.auth-desktop-download-btn:active {
+    transform: scale(0.98);
+}
+
+.auth-desktop-download-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.14);
+}
+
+html[data-theme="light"] .auth-desktop-download-btn {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.35);
+    color: hsl(var(--text-000));
+}
+
+html[data-theme="light"] .auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.55);
+}
+
+.auth-password-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.auth-mode-toggle {
+    margin-top: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: hsl(var(--text-300));
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    align-self: flex-start;
+}
+.auth-mode-toggle:hover {
+    color: hsl(var(--text-200));
+}
+
+/* ── OTP section / divider / error ───────────────────── */
+.auth-otp-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 14px;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 12px 0;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--text-300));
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: hsl(var(--border-300) / 0.16);
+}
+html[data-theme="light"] .auth-divider {
+    color: hsl(var(--text-300));
+}
+html[data-theme="light"] .auth-divider::before,
+html[data-theme="light"] .auth-divider::after {
+    background: hsl(var(--border-300) / 0.16);
+}
+
+.auth-error {
+    font-size: 12px;
+    font-weight: 400;
+    color: #e57361;
+    min-height: 14px;
+    text-align: center;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+html[data-theme="light"] .auth-error {
+    color: #b3422f;
+}
+
+/* 默认隐藏验证码槽；只有服务端要求挑战且 bridge 挂入 Turnstile 后才展开。 */
+#loginTurnstileContainer:empty,
+#loginTurnstileContainer:not(:has(#loginTurnstileMount)):not(:has(#loginTurnstileStatus)),
+#authCaptchaContainer:empty,
+#authCaptchaContainer:not(:has(#loginTurnstileMount)):not(:has(#loginTurnstileStatus)) {
+    display: none !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/* 服务端返回 captcha_failed 后，展示可操作的 Turnstile 挑战。 */
+#loginTurnstileContainer:has(#loginTurnstileMount),
+#authCaptchaContainer:has(#loginTurnstileMount),
+#loginTurnstileContainer:has(#loginTurnstileStatus),
+#authCaptchaContainer:has(#loginTurnstileStatus) {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 10px 0 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+}
+
+#loginTurnstileStatus {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+#loginTurnstileMount {
+    display: flex !important;
+    height: auto !important;
+    min-height: 65px !important;
+    overflow: visible !important;
+}
+
+#authSendOtpBtn[style*="display: none"],
+#authSendOtpBtn[style*="display:none"] {
+    display: none !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+}
+
+/* 旧版画布验证码样式仅供历史入口兼容；当前 bridge 不会展示它。 */
+.auth-captcha-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    width: 100%;
+}
+.auth-captcha-canvas {
+    width: 140px;
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-100));
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.auth-captcha-input {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    letter-spacing: 4px;
+    font-variant-numeric: tabular-nums;
+}
+.auth-captcha-input::placeholder {
+    text-align: center;
+    opacity: 1;
+}
+.auth-captcha-refresh {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-200));
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 150ms ease, color 150ms ease;
+}
+.auth-captcha-refresh:hover {
+    background: hsl(var(--bg-200));
+    color: hsl(var(--text-000));
+}
+html[data-theme="light"] .auth-captcha-canvas {
+    border-color: hsl(var(--border-300) / 0.45);
+    background: hsl(var(--bg-100));
+}
+html[data-theme="light"] .auth-captcha-refresh {
+    border-color: hsl(var(--border-300) / 0.45);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-200));
+}
+html[data-theme="light"] .auth-captcha-refresh:hover {
+    background: hsl(var(--bg-200));
+    color: hsl(var(--text-000));
+}
+
+/* ── Footer microcopy（卡内底部）──────────────────── */
+/* 2026-05-16 claude-clone v4c: HTML 里 .auth-footer-line 从 .auth-card 外面
+   移进 card 内 .auth-step 后面（跟 Claude 真站 "By continuing..." 在
+   card 内部最底一致）。这里 margin-top 从 12 调 8，贴近上面按钮。 */
+.auth-footer-line {
+    font-family:
+        "Anthropic Sans", "AnthropicSans",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 11px;
+    text-align: center;
+    margin: 8px 0 0;
+    line-height: 1.5;
+    color: hsl(var(--text-400));
+    max-width: 100%;
+}
+.auth-footer-link {
+    color: hsl(var(--text-300));
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    transition: color 120ms ease;
+}
+.auth-footer-link:hover {
+    color: hsl(var(--text-000));
+}
+html[data-theme="light"] .auth-footer-line {
+    color: hsl(var(--text-400));
+}
+html[data-theme="light"] .auth-footer-link {
+    color: hsl(var(--text-300));
+}
+html[data-theme="light"] .auth-footer-link:hover {
+    color: hsl(var(--text-000));
+}
+
+/* ── Theme toggle（右下角小方按钮）──────────────────── */
+.auth-theme-toggle {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid hsl(var(--border-300) / 0.16);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-400));
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease;
+}
+.auth-theme-toggle:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.28);
+    color: hsl(var(--text-000));
+}
+.auth-theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--text-000) / 0.14);
+}
+
+html[data-theme="light"] .auth-theme-toggle {
+    border-color: hsl(var(--border-300) / 0.16);
+    background: hsl(var(--bg-100));
+    color: hsl(var(--text-400));
+}
+html[data-theme="light"] .auth-theme-toggle:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.28);
+    color: hsl(var(--text-000));
+}
+
+.auth-theme-icon {
+    pointer-events: none;
+    display: block;
+}
+html[data-theme="light"] .auth-theme-icon-moon,
+html:not([data-theme="dark"]) .auth-theme-icon-moon {
+    display: none;
+}
+html[data-theme="dark"] .auth-theme-icon-sun {
+    display: none;
+}
+
+/* legacy class 隐藏 */
+.auth-logo,
+.auth-title,
+.auth-subtitle,
+.auth-otp-hint,
+.auth-link {
+    display: none !important;
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .auth-input,
+    .auth-btn,
+    .auth-theme-toggle,
+    .auth-footer-link,
+    .auth-brand {
+        transition-duration: 0ms !important;
+    }
+}

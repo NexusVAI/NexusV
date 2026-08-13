@@ -1,0 +1,487 @@
+/* =====================================================================
+ * ZenMux-style 通知中心 / 系统公告（1:1 视觉移植壳）
+ * 参考：zenmux.ai 定价页 notification drawer + timeline
+ * ===================================================================== */
+
+:root {
+  --zm-ann-bg: #ffffff;
+  --zm-ann-text: #1a1a1a;
+  --zm-ann-text-soft: #4e4e4e;
+  --zm-ann-border: #ebebeb;
+  --zm-ann-divider: #e5e5e5;
+  --zm-ann-stripe: #f5f5f5;
+  --zm-ann-dot-border: #ffffff;
+  --zm-ann-unread: #fa6062;
+  --zm-ann-btn: #000000;
+  --zm-ann-btn-text: #ffffff;
+  --zm-ann-rail: 58px;
+  --zm-ann-banner-bg: rgb(241, 247, 254);
+  --zm-ann-banner-border: rgb(208, 231, 253);
+  --zm-ann-banner-text: rgb(78, 78, 78);
+}
+
+html[data-theme="dark"],
+:root[data-theme="dark"] {
+  --zm-ann-bg: #1a1a1a;
+  --zm-ann-text: rgba(255, 255, 255, 0.92);
+  --zm-ann-text-soft: rgba(255, 255, 255, 0.65);
+  --zm-ann-border: #2a2a2a;
+  --zm-ann-divider: #333;
+  --zm-ann-stripe: #242424;
+  --zm-ann-dot-border: #1a1a1a;
+  --zm-ann-btn: #f5f5f5;
+  --zm-ann-btn-text: #111;
+  --zm-ann-banner-bg: #152033;
+  --zm-ann-banner-border: #243652;
+  --zm-ann-banner-text: #c8d7ea;
+}
+
+/* 抽屉本体：全屏遮罩，面板固定贴右侧 */
+.modal.announcement-drawer.zm-ann-drawer,
+.modal.announcement-drawer.zm-ann-drawer.open,
+.modal.announcement-drawer.zm-ann-drawer.show {
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  padding: 0 !important;
+  flex-direction: row !important;
+  inset: 0 !important;
+}
+
+.modal.announcement-drawer.zm-ann-drawer .modal-content.announcement-modal-content,
+.zm-ann-panel {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: 0 !important;
+  width: min(440px, 100vw) !important;
+  max-width: 440px !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-left: 1px solid var(--zm-ann-border) !important;
+  background: var(--zm-ann-bg) !important;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  transform: translateX(100%) !important;
+  opacity: 1 !important;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  z-index: 220 !important;
+}
+
+.modal.announcement-drawer.zm-ann-drawer.open .modal-content.announcement-modal-content,
+.modal.announcement-drawer.zm-ann-drawer.show .modal-content.announcement-modal-content,
+.modal.announcement-drawer.zm-ann-drawer.open .zm-ann-panel,
+.modal.announcement-drawer.zm-ann-drawer.show .zm-ann-panel {
+  transform: translateX(0) !important;
+}
+
+/* 关键：旧翻页 CSS 把 .timeline-item 默认 display:none，
+   只有 .ann-page-active 才显示 → 新时间线内容全部消失 */
+.modal.announcement-drawer.zm-ann-drawer .timeline-item,
+.modal.announcement-drawer.zm-ann-drawer .zm-ann-item,
+.modal.announcement-drawer.zm-ann-drawer .zm-ann-item.timeline-item,
+.announcement-drawer.zm-ann-drawer .timeline-item {
+  display: flex !important;
+  position: relative !important;
+  padding: 0 !important;
+  break-inside: auto !important;
+  animation: none !important;
+}
+
+/* 关掉旧时间线竖线 / 旧圆点 / 双栏 */
+.modal.announcement-drawer.zm-ann-drawer .announcement-timeline::before,
+.modal.announcement-drawer.zm-ann-drawer .timeline-dot {
+  display: none !important;
+  content: none !important;
+}
+
+.modal.announcement-drawer.zm-ann-drawer .announcement-timeline,
+.modal.announcement-drawer.zm-ann-drawer .zm-ann-list {
+  column-count: 1 !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+}
+
+.zm-ann-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px 12px 20px;
+  border-bottom: 1px solid var(--zm-ann-border);
+  flex-shrink: 0;
+}
+
+.zm-ann-header-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+  color: var(--zm-ann-text);
+  margin: 0;
+}
+
+.zm-ann-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--zm-ann-text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.zm-ann-close:hover {
+  background: var(--zm-ann-stripe);
+  color: var(--zm-ann-text);
+}
+
+.zm-ann-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px 16px 8px 8px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* modal-body 在 motion.css 里会 overflow-y:auto，这里交给内部 .zm-ann-scroll */
+.modal.announcement-drawer.zm-ann-drawer .modal-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.zm-ann-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.zm-ann-scroll::-webkit-scrollbar-thumb {
+  background: var(--zm-ann-divider);
+  border-radius: 4px;
+}
+
+/* 时间线条目 */
+.zm-ann-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.zm-ann-item {
+  display: flex !important;
+  gap: 16px;
+  margin: 0;
+  padding: 0 !important;
+  align-items: stretch;
+}
+
+.zm-ann-rail {
+  width: var(--zm-ann-rail);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.zm-ann-rail-dot {
+  width: 10px;
+  height: 10px;
+  margin: 4px 0;
+  border-radius: 999px;
+  background: var(--zm-ann-text);
+  border: 2px solid var(--zm-ann-dot-border);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.zm-ann-rail-date {
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--zm-ann-divider);
+  background: var(--zm-ann-stripe);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.zm-ann-rail-date span {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 10px;
+  color: var(--zm-ann-text);
+  white-space: nowrap;
+}
+
+.zm-ann-rail-line {
+  width: 0;
+  flex: 1;
+  min-height: 16px;
+  border-left: 1px dashed var(--zm-ann-divider);
+  margin: 4px 0 0;
+}
+
+.zm-ann-item:last-child .zm-ann-rail-line {
+  opacity: 0;
+}
+
+.zm-ann-main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 32px;
+}
+
+.zm-ann-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.zm-ann-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 19px;
+  color: var(--zm-ann-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zm-ann-unread {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--zm-ann-unread);
+  flex-shrink: 0;
+}
+
+.zm-ann-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 0 0 16px;
+  object-fit: cover;
+  background: var(--zm-ann-stripe);
+}
+
+.zm-ann-md {
+  /* 截断高度的唯一真相。cancri_announcement.js 读这个变量决定「要不要给展开按钮」，
+     改高度只改这里。历史事故：CSS 剪 140px 而 JS 按 160px 发按钮，内容高度落在
+     141-160px 的公告被剪掉却没有展开入口，永久截断。禁止在 JS 里另写一个数字。 */
+  --zm-clamp-h: 140px;
+  position: relative;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--zm-ann-text-soft);
+  overflow: hidden;
+  /* 展开动画由 JS 写入实测像素值驱动（见 cancri_announcement.js expand/collapse）。
+     基础态刻意不设 max-height —— 旧写法 9999px → 140px 之间做 transition，
+     可见内容在头几毫秒就走完，剩下的时间在动看不见的部分，观感等于没有动画。 */
+  transition: max-height 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.zm-ann-md p {
+  margin: 0 0 10px;
+}
+
+.zm-ann-md p:last-child {
+  margin-bottom: 0;
+}
+
+.zm-ann-md strong {
+  color: var(--zm-ann-text);
+  font-weight: 700;
+}
+
+.zm-ann-md a {
+  color: var(--zm-ann-text);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.zm-ann-md ul {
+  margin: 0 0 10px;
+  padding-left: 1.2em;
+}
+
+.zm-ann-md.zm-ann-clamped {
+  max-height: var(--zm-clamp-h);
+}
+
+/* 遮罩常驻、靠 opacity 淡入淡出，跟着高度动画一起走；旧写法只挂在 .zm-ann-clamped 上，
+   展开瞬间整块渐变直接消失，是「动画不好看」的另一半原因。 */
+.zm-ann-md::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--zm-ann-bg));
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.zm-ann-md.zm-ann-clamped::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zm-ann-md,
+  .zm-ann-md::after {
+    transition: none;
+  }
+}
+
+/* 「展开」与 CTA 实心按钮同行：.zm-ann-main 是普通块级容器，两者是兄弟节点，
+   没法用 flex 收拢，所以统一走 inline 流 + 等高 + 顶对齐。 */
+.zm-ann-expand {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  margin: 10px 10px 0 0;
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--zm-ann-text-soft);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: none;
+}
+
+/* 原生 [hidden] 只是 UA 样式表里的 display:none，会被上面这条作者 display 覆盖。
+   缺了这条，每条公告都会显示一个「展开」，而 JS 只给需要截断的那几条绑了 onclick
+   —— 表现就是「第一条能展开、后面的点了没反应」。同 claude.css:3999 的老坑。 */
+.zm-ann-expand[hidden] {
+  display: none;
+}
+
+.zm-ann-expand:hover {
+  color: var(--zm-ann-text);
+  text-decoration: underline;
+}
+
+.zm-ann-cta {
+  margin-top: 10px;
+  vertical-align: top;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--zm-ann-btn);
+  color: var(--zm-ann-btn-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.zm-ann-cta:hover {
+  opacity: 0.9;
+  color: var(--zm-ann-btn-text);
+}
+
+.zm-ann-cta svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* 页脚 */
+.zm-ann-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--zm-ann-border);
+  background: var(--zm-ann-bg);
+}
+
+.zm-ann-footer .announcement-dismiss {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--zm-ann-text-soft);
+  cursor: pointer;
+  user-select: none;
+}
+
+.zm-ann-footer .primary-btn,
+.zm-ann-footer #closeAnnouncementBtn {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--zm-ann-btn);
+  color: var(--zm-ann-btn-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 旧 pager 在 ZenMux 模式下隐藏（连续滚动时间线） */
+.zm-ann-drawer .announcement-pager {
+  display: none !important;
+}
+
+/* 兼容：旧 class 不破坏 open 逻辑 */
+.zm-ann-drawer .modal-header,
+.zm-ann-drawer .modal-body,
+.zm-ann-drawer .modal-footer {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.zm-ann-drawer .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .modal.announcement-drawer.zm-ann-drawer .modal-content.announcement-modal-content,
+  .zm-ann-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+  .zm-ann-rail {
+    width: 48px;
+  }
+  .zm-ann-title {
+    white-space: normal;
+  }
+}

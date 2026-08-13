@@ -1,0 +1,881 @@
+/*
+ * Auth platform login chrome — layout cloned from platform.claude.com/login
+ * (fixed nav + dot-grid hero + login card + partner logo row + site footer).
+ * Form/card styles stay in cancri_motion.css; this file only handles page shell.
+ */
+
+/* ── Full-viewport backdrop + document scroll (not #authOverlay scroll) ──
+   Internal overlay scroll leaves a ~15px classic scrollbar gutter on Windows;
+   default track color reads as a permanent right-edge white strip. */
+html.auth-platform-page {
+    --auth-nav-h: 4.5rem;
+    --auth-alert-h: 2.75rem;
+    background: hsl(var(--bg-300));
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-padding-top: calc(var(--auth-nav-h) + var(--auth-alert-h));
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+@media (min-width: 69rem) {
+    html.auth-platform-page {
+        --auth-nav-h: 5.25rem;
+    }
+}
+
+html.auth-platform-page::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+html.auth-platform-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -9999;
+    background: hsl(var(--bg-300));
+    pointer-events: none;
+}
+
+html.auth-platform-page body {
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+    background: hsl(var(--bg-300));
+}
+
+/* 登录页底带：与主题无关，始终深色（避免 black 主题下 --bg-000 仍为白） */
+html.auth-platform-page {
+    --auth-footer-band: hsl(60 3% 8%);
+    --auth-footer-text: hsl(48 33.3% 97.1%);
+    --auth-footer-muted: hsl(60 5% 78%);
+    --auth-footer-dim: hsl(60 4% 58%);
+}
+
+/* ── Auth brand logo (nexusvai_logo_transparent.svg, 白字 SVG) ─── */
+.auth-topnav .auth-brand-logo {
+    display: block;
+    width: auto;
+    height: 3.75rem;
+    max-width: min(22rem, 68vw);
+    object-fit: contain;
+    object-position: left center;
+    /* 默认黑字：顶栏在 :root/light 下是浅色底；勿用 :not([data-theme=light]) 反白（black 主题会白字贴白底） */
+    filter: brightness(0);
+}
+
+/* 仅 dark 顶栏（深色底）反白；black/light 顶栏为浅色底 → 默认黑字 */
+html[data-theme="dark"] .auth-topnav .auth-brand-logo {
+    filter: brightness(0) invert(1);
+}
+
+.auth-brand-logo--footer {
+    display: block;
+    width: auto;
+    height: 2rem;
+    max-width: min(12rem, 55vw);
+    object-fit: contain;
+    object-position: left center;
+}
+
+/* ── Overlay shell: Claude Platform vertical page, not 2-col grid ─ */
+.auth-overlay {
+    display: flex !important;
+    flex-direction: column;
+    grid-template-columns: unset !important;
+    grid-template-rows: unset !important;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    max-width: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* desktop-login: normal document scroll login page */
+html.auth-platform-page .auth-overlay:not(:has(+ #appRoot)) {
+    position: relative;
+    inset: auto;
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+}
+
+/* index/claude: logged-in overlay must not reserve layout space */
+html.auth-platform-page .auth-overlay:not(.visible):has(+ #appRoot) {
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+}
+
+/* cancri_motion.css keeps 2-col grid above 880px — kill it for platform login */
+@media (min-width: 881px) {
+    .auth-overlay {
+        display: flex !important;
+        grid-template-columns: unset !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+}
+
+.auth-overlay > .auth-chrome,
+.auth-overlay > .auth-topnav-spacer,
+.auth-overlay > .auth-page-shell {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+    flex: 0 0 auto;
+    align-self: stretch;
+    box-sizing: border-box;
+}
+
+.auth-overlay.visible {
+    justify-content: flex-start;
+    align-items: stretch;
+    overflow: visible;
+}
+
+html[data-theme="dark"] .auth-overlay,
+html[data-theme="black"] .auth-overlay {
+    background: hsl(var(--bg-300));
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* index/claude: full-viewport login when visible */
+html.auth-platform-page .auth-overlay.visible:has(+ #appRoot) {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scroll-padding-top: calc(var(--auth-nav-h) + var(--auth-alert-h, 2.75rem)) !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 9999 !important;
+}
+
+html.auth-platform-page .auth-overlay.visible:has(+ #appRoot)::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.auth-showcase,
+.auth-mobile-poster,
+.auth-brand {
+    display: none !important;
+}
+
+.auth-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    z-index: 0;
+    pointer-events: none;
+    background: hsl(var(--bg-300));
+}
+
+/* ── OTP 故障告警条（顶栏上方，与导航一起吸顶） ───────────────── */
+.auth-chrome {
+    position: relative;
+    z-index: 30;
+    width: 100%;
+    flex: 0 0 auto;
+}
+html.auth-platform-page .auth-chrome {
+    position: sticky;
+    top: 0;
+}
+html.auth-platform-page .auth-chrome .auth-topnav {
+    position: relative;
+    top: auto;
+}
+.auth-alert-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-height: 4.5rem;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0.6rem 1rem;
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    background: #b42318;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: center;
+    letter-spacing: 0.01em;
+    border-bottom: 2px solid #f97066;
+}
+.auth-alert-banner svg {
+    width: 17px;
+    height: 17px;
+    max-width: 17px;
+    max-height: 17px;
+    flex: 0 0 17px;
+    display: block;
+    fill: currentColor;
+}
+@media (max-width: 640px) {
+    .auth-alert-banner {
+        font-size: 0.8125rem;
+        padding: 0.55rem 0.75rem;
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    }
+}
+
+/* ── Sticky top nav — content stays below nav when scrolling (no overlap) ─ */
+html.auth-platform-page .auth-topnav {
+    position: sticky;
+    top: 0;
+}
+
+.auth-topnav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    z-index: 20;
+    background: hsl(var(--bg-100));
+    border-bottom: 1px solid hsl(var(--border-300) / 0.12);
+    box-sizing: border-box;
+}
+
+html[data-theme="dark"] .auth-topnav {
+    background: hsl(var(--bg-300));
+}
+
+.auth-topnav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 90rem;
+    margin: 0 auto;
+    width: calc(100% - (2 * clamp(2rem, 1.43rem + 2.86vw, 4rem)));
+    min-height: var(--auth-nav-h, 4.5rem);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    box-sizing: border-box;
+}
+
+.auth-topnav-brand {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.auth-topnav-links {
+    display: none;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.auth-topnav-links a {
+    font-size: 0.875rem;
+    color: hsl(var(--text-300));
+    text-decoration: none;
+    transition: color 150ms ease;
+    white-space: nowrap;
+}
+
+.auth-topnav-links a:hover {
+    color: hsl(var(--text-100));
+}
+
+.auth-topnav-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border-300) / 0.35);
+    background: hsl(var(--bg-200));
+    color: hsl(var(--text-100));
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease;
+}
+
+.auth-topnav-cta:hover {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.55);
+}
+
+html.auth-platform-page .auth-topnav-spacer {
+    display: none !important;
+    flex: 0 0 0 !important;
+    height: 0 !important;
+    overflow: hidden;
+}
+
+.auth-topnav-spacer {
+    flex: 0 0 4.5rem;
+    width: 100%;
+    max-width: none;
+}
+
+@media (min-width: 640px) {
+    .auth-topnav-links {
+        display: flex;
+    }
+}
+
+@media (min-width: 69rem) {
+    .auth-topnav-inner {
+        min-height: var(--auth-nav-h, 5.25rem);
+    }
+}
+
+/* ── Scrollable page body ──────────────────────────────────────── */
+.auth-page-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: none;
+    min-height: calc(100dvh - var(--auth-nav-h, 4.5rem));
+    padding-bottom: 0;
+    box-sizing: border-box;
+}
+
+html.auth-platform-page .auth-page-shell {
+    min-height: calc(100dvh - var(--auth-nav-h, 4.5rem));
+}
+
+.auth-login-panel {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    box-sizing: border-box;
+    min-height: auto;
+    padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1rem, 3vw, 1.5rem)
+        clamp(1.5rem, 4vw, 2.5rem);
+    /* Claude Platform：登录区 page bg-100，卡片白底独立浮于其上 */
+    background: hsl(var(--bg-100));
+}
+
+.auth-dot-grid {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(hsl(var(--text-500) / 0.3) 1px, transparent 1.2px);
+    background-size: 14px 14px;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 72%, transparent 100%);
+}
+
+.auth-stage {
+    width: 100%;
+    max-width: min(768px, calc(100% - 0.5rem));
+    margin: 0 auto;
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem) 1rem;
+    align-self: center;
+    box-sizing: border-box;
+}
+
+html.auth-platform-page .auth-stage {
+    padding: 0 clamp(0.75rem, 2vw, 1.5rem) 1rem;
+}
+
+html.auth-platform-page .auth-hero {
+    margin-bottom: clamp(1rem, 3vw, 2rem);
+}
+
+html.auth-platform-page .auth-hero-title {
+    font-size: clamp(1.75rem, 5.5vw, 3.25rem);
+    line-height: 1.08;
+}
+
+html.auth-platform-page .auth-hero-subtitle {
+    font-size: clamp(0.875rem, 2.2vw, 1.125rem);
+    line-height: 1.45;
+    padding: 0 clamp(0.25rem, 2vw, 1rem);
+}
+
+html.auth-platform-page .auth-card {
+    --auth-card-radius: clamp(24px, 4vw, 32px);
+    --auth-field-radius: max(10px, calc(var(--auth-card-radius) - 20px));
+    max-width: min(448px, calc(100vw - 2rem));
+    padding: clamp(14px, 2.5vw, 18px) clamp(14px, 3vw, 20px) clamp(12px, 2vw, 16px);
+    border-radius: var(--auth-card-radius);
+    background: hsl(var(--bg-000));
+    border-color: hsl(var(--border-300) / 0.12);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.06);
+}
+
+html.auth-platform-page .auth-desktop-download-wrap {
+    max-width: min(448px, calc(100vw - 2rem));
+    margin-top: 1.5rem;
+}
+
+html.auth-platform-page .auth-desktop-download-btn {
+    background: hsl(var(--bg-100));
+    border: 0.5px solid hsl(var(--border-300) / 0.28);
+    box-shadow: none;
+}
+
+html.auth-platform-page .auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.45);
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-login-panel {
+    background: hsl(var(--bg-300));
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-card {
+    background: hsl(var(--bg-100));
+    border-color: hsl(var(--border-300) / 0.18);
+    box-shadow: 0 4px 24px hsl(var(--black) / 0.24);
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-desktop-download-btn {
+    background: hsl(var(--bg-300));
+    border-color: hsl(var(--border-300) / 0.35);
+}
+
+html.auth-platform-page[data-theme="dark"] .auth-desktop-download-btn:hover {
+    background: hsl(var(--bg-200));
+    border-color: hsl(var(--border-300) / 0.5);
+}
+
+html.auth-platform-page .auth-input,
+html.auth-platform-page .auth-btn,
+html.auth-platform-page .auth-captcha-input {
+    border-radius: var(--auth-field-radius);
+}
+
+@media (max-height: 780px) {
+    html.auth-platform-page .auth-login-panel {
+        padding-top: 1rem;
+        padding-bottom: 1.25rem;
+    }
+
+    html.auth-platform-page .auth-hero {
+        margin-bottom: 0.75rem;
+    }
+
+    html.auth-platform-page .auth-hero-title {
+        font-size: clamp(1.5rem, 6vw, 2.25rem);
+    }
+}
+
+@media (max-width: 639px) {
+    .auth-topnav-inner {
+        width: calc(100% - 2rem);
+        gap: 10px;
+    }
+
+    .auth-topnav-cta {
+        min-height: 2rem;
+        padding: 0 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .auth-login-panel {
+        padding: 1rem 0.75rem 1.5rem;
+    }
+
+    .auth-partners {
+        padding-top: 2rem;
+        padding-bottom: 1.75rem;
+    }
+
+    .auth-site-footer-links {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem 1rem;
+    }
+}
+
+/* ── Partner logos + footer bottom band (full-width bg) ─────────── */
+.auth-partners,
+.auth-site-footer {
+    --auth-band-bg: var(--auth-footer-band);
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    box-sizing: border-box;
+    background: var(--auth-band-bg);
+}
+
+.auth-partners {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 2.5rem clamp(1rem, 1.43rem + 2.86vw, 4rem) 2rem;
+    flex: 0 0 auto;
+    border-top: 1px solid hsl(0 0% 100% / 0.08);
+}
+
+.auth-partners-title {
+    margin: 0;
+    padding: 0 clamp(0.5rem, 2vw, 1rem);
+    font-family:
+        "Anthropic Serif", "AnthropicSerif",
+        "Source Serif 4", "Noto Serif SC", Georgia, serif;
+    font-size: clamp(1rem, 2.8vw, 1.125rem);
+    line-height: 1.4;
+    color: var(--auth-footer-text);
+    text-align: center;
+}
+
+.auth-partners-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.875rem 1rem;
+    width: 100%;
+    max-width: 90rem;
+    margin: 0 auto;
+}
+
+.auth-partner-slot {
+    --slot: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: 0 0 calc(50% - 0.625rem);
+    width: calc(50% - 0.625rem);
+    max-width: 148px;
+    height: 44px;
+    min-height: 44px;
+    opacity: 0;
+    animation: auth-partner-enter 0.75s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+    animation-delay: calc(var(--slot) * 0.1s);
+}
+
+@media (min-width: 480px) {
+    .auth-partner-slot {
+        flex: 0 0 calc(25% - 0.875rem);
+        width: calc(25% - 0.875rem);
+        max-width: 156px;
+        height: 48px;
+        min-height: 48px;
+    }
+}
+
+@media (min-width: 768px) {
+    .auth-partners-grid {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 1.25rem 1rem;
+    }
+
+    .auth-partner-slot {
+        flex: unset;
+        width: 100%;
+        max-width: none;
+        height: 56px;
+        min-height: 56px;
+    }
+}
+
+.auth-partner-logo {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+    color: hsl(48 33% 96%);
+}
+
+.auth-partner-logo img {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain;
+    object-position: center;
+    opacity: 0.92;
+}
+
+.auth-partner-logo.is-out,
+.auth-partner-logo.is-in {
+    position: absolute;
+    inset: 0;
+}
+
+.auth-partner-logo.is-out {
+    animation: auth-partner-fade-out 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+.auth-partner-logo.is-in {
+    animation: auth-partner-fade-in 0.55s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+@keyframes auth-partner-enter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes auth-partner-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes auth-partner-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-partner-slot {
+        opacity: 1;
+        animation: none;
+    }
+    .auth-partner-logo.is-out,
+    .auth-partner-logo.is-in {
+        animation: none;
+    }
+}
+
+/* 底带恒为深色：单色 partner logo 统一反白 */
+.auth-partners .model-icon-theme-adaptive {
+    filter: brightness(0) invert(1);
+}
+
+/* ── Site footer (simplified Cancri官网 footer) ────────────────── */
+.auth-site-footer {
+    color: var(--auth-footer-muted);
+    border-top: none;
+    padding: clamp(2rem, 2vw, 3rem) clamp(1rem, 1.43rem + 2.86vw, 4rem)
+        clamp(4.5rem, 3rem + 2vw, 5rem);
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--auth-footer-band);
+}
+
+.auth-site-footer-inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem 2.5rem;
+    max-width: 90rem;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1 0 auto;
+}
+
+@media (min-width: 768px) {
+    .auth-site-footer-inner {
+        grid-template-columns: minmax(220px, 1.1fr) minmax(0, 2fr);
+        align-items: start;
+    }
+}
+
+.auth-site-footer-brand {
+    display: inline-block;
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 1.25rem;
+}
+
+.auth-site-footer-copy {
+    margin: 0 0 1rem;
+    font-size: 0.8125rem;
+    color: var(--auth-footer-dim);
+}
+
+.auth-site-footer-socials {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.auth-site-footer-socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    color: inherit;
+    opacity: 0.72;
+    transition: opacity 150ms ease, background-color 150ms ease;
+}
+
+.auth-site-footer-socials a:hover {
+    opacity: 1;
+    background: hsl(0 0% 100% / 0.08);
+}
+
+.auth-site-footer-socials svg,
+.auth-site-footer-socials img {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.auth-site-footer-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.5rem 2rem;
+}
+
+.auth-site-footer-links h3 {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--auth-footer-dim);
+}
+
+.auth-site-footer-links ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.auth-site-footer-links a {
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    opacity: 0.88;
+    transition: opacity 150ms ease;
+}
+
+.auth-site-footer-links a:hover {
+    opacity: 1;
+}
+
+/* 登录层解锁：不依赖 :has()，压过 cancri_chat opacity:0 与 motion 两列 grid */
+html.auth-platform-page #authOverlay.visible {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template: none !important;
+    grid-template-columns: none !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 9999 !important;
+    background: hsl(var(--bg-300)) !important;
+}
+html.auth-platform-page #authOverlay:not(.visible) {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+html.auth-platform-page #authOverlay.visible > .auth-chrome,
+html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
+    grid-column: 1 / -1 !important;
+    position: relative !important;
+    z-index: 2 !important;
+}
+html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 0 auto !important;
+}
