@@ -251,9 +251,11 @@
                 '<span class="cancri-id__text">' + esc(id) + "</span>" + COPY_SVG +
               "</button>" +
             "</div>" +
-            '<div class="cancri-spec__row cancri-spec__row--uptime">' +
-              uptimeHtml(hourlyFor(id)) +
-            "</div>" +
+            (opts.uptime
+              ? '<div class="cancri-spec__row cancri-spec__row--uptime">' +
+                  uptimeHtml(hourlyFor(id)) +
+                "</div>"
+              : "") +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">价格</span>' +
               '<span class="cancri-spec__val cancri-price">' + priceHtml(m) + "</span>" +
@@ -393,7 +395,7 @@
       var pickFrontier = makeArtPicker();
       frontier.innerHTML = top.length
         ? top.map(function (m) {
-            return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || "") });
+            return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || ""), uptime: true });
           }).join("")
         : '<div class="text-sm text-secondary py-6">暂无旗舰模型</div>';
     }
@@ -410,7 +412,7 @@
       var pickFree = makeArtPicker();
       free.innerHTML = freeList.length
         ? freeList.map(function (m) {
-            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || "") });
+            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || ""), uptime: true });
           }).join("")
         : '<div class="text-sm text-secondary py-6">暂无免费模型</div>';
     }
