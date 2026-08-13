@@ -41,9 +41,11 @@
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
 
-  // 首页「我们部署的免费模型」= 网关 MODEL_ACCESS_END_MS 全部限时线（缺哪个补哪个）。
+  // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    "c:claude-opus-5",
+    "c:gpt-5.6-sol",
     "kimi-k3-high",
     "deepseek-v4-flash-0731",
     "nexusvai:minimax-m3-free",
@@ -58,6 +60,7 @@
   // GPT-5.6 cards use the three images extracted from the reference page.
   var ART_OVERRIDE = {
     "gpt-5.6-sol": "gpt56-sol.jpg",
+    "c:gpt-5.6-sol": "gpt56-sol.jpg",
     "gpt-5.6-sol-xhigh": "gpt56-sol.jpg",
     "gpt-5.6-terra": "gpt56-terra.jpg",
     "gpt-5.6-terra-xhigh": "gpt56-terra.jpg",
