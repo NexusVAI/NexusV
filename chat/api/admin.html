@@ -397,6 +397,47 @@
           <p>查看 API Key 申请：待审核可一键通过 / 驳回；已通过可撤销、已拒绝可改判。</p>
         </header>
 
+        <!-- 2026-08-14: 免费 Opus5（c:claude-opus-5）验证用户面板——
+             人工搜索账号并打标，打标后每日调用上限从 10 次提升到 100 次，
+             仅影响这一个模型。搜索复用 admin_search_opus5_candidates（同时
+             返回注册时长 + 累计充值供管理员判断是否真人）。 -->
+        <div class="card" id="opus5VerifyCard">
+          <h2>验证用户 · 免费 Opus5（C）</h2>
+          <p style="font-size: 12.5px; color: var(--text-mute); margin-bottom: 12px; max-width: 720px">
+            按用户名 / user_id / 邮箱搜索账号，标记为「已验证」后该账号每日可调用免费 Opus5（c:claude-opus-5）
+            100 次（未验证 10 次/日）；单次请求上下文超 20 万 tokens 一律拒绝，与验证状态无关。仅影响这一个模型。
+          </p>
+          <div class="toolbar" style="margin-bottom: 12px">
+            <input
+              id="opus5SearchInput"
+              class="search-box"
+              type="search"
+              placeholder="搜索用户名 / user_id / 邮箱（至少 3 个字符）"
+              autocomplete="off"
+            />
+            <button class="reload-btn" id="opus5SearchBtn">搜索</button>
+          </div>
+          <div class="table-wrap" data-sensitive>
+            <table class="apply-table" id="opus5Table" style="min-width: 760px">
+              <thead>
+                <tr>
+                  <th style="width: 260px">邮箱 / 用户名</th>
+                  <th style="width: 130px">user_id</th>
+                  <th style="width: 100px">注册时长</th>
+                  <th style="width: 100px">累计充值</th>
+                  <th style="width: 130px">验证状态</th>
+                  <th style="width: 120px">操作</th>
+                </tr>
+              </thead>
+              <tbody id="opus5Rows">
+                <tr>
+                  <td colspan="6" class="empty">输入关键词后点击搜索</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="stats" id="stats">
           <div class="stat-card pending">
             <div class="label">待审核</div>
@@ -500,8 +541,8 @@
       crossorigin="anonymous"
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
-    <script src="./admin-nav.js?v=20260804-tickets"></script>
-    <script src="./admin-app.js?v=20260804-tickets"></script>
+    <script src="./admin-nav.js?v=20260814-authgate"></script>
+    <script src="./admin-app.js?v=20260814-opus5verify"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   <script src="../assets/p2m-loader.js" defer></script>
 </body>

@@ -265,7 +265,9 @@
       ) +
       group(
         "配额与限制",
-        item("quota", "计费与余额") + item("ratelimit", "速率限制"),
+        item("quota", "计费与余额") +
+          item("free-model-limits", "免费模型限额") +
+          item("ratelimit", "速率限制"),
       ) +
       group("参考", item("errors", "错误码") + item("faq", "FAQ"))
     );
