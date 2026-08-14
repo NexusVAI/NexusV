@@ -119,6 +119,8 @@ samp {
 }
 .cancri-spec__row--uptime {
   padding: 10px 0 8px;
+  min-height: 34px;
+  box-sizing: content-box;
 }
 .cancri-uptime {
   display: flex;

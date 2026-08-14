@@ -211,12 +211,49 @@
   function applyUptime(map) {
     if (map) healthById = map;
     var nodes = document.querySelectorAll("[data-model-id] .cancri-uptime");
-    for (var i = 0; i < nodes.length; i++) {
-      var el = nodes[i];
-      var card = el.closest("[data-model-id]");
-      var id = card ? card.getAttribute("data-model-id") : "";
-      el.outerHTML = uptimeHtml(hourlyFor(id));
+    var i = 0;
+    function chunk() {
+      var end = Math.min(i + 8, nodes.length);
+      for (; i < end; i++) {
+        var el = nodes[i];
+        var card = el.closest("[data-model-id]");
+        var id = card ? card.getAttribute("data-model-id") : "";
+        el.outerHTML = uptimeHtml(hourlyFor(id));
+      }
+      if (i < nodes.length) requestAnimationFrame(chunk);
     }
+    if (nodes.length) chunk();
+  }
+
+  function paintUptimeSlot(slot) {
+    if (!slot || slot.getAttribute("data-uptime-slot") == null) return;
+    var card = slot.closest("[data-model-id]");
+    var id = card ? card.getAttribute("data-model-id") : "";
+    slot.removeAttribute("data-uptime-slot");
+    slot.innerHTML = uptimeHtml(hourlyFor(id));
+  }
+
+  function observeUptimeSlots() {
+    var slots = document.querySelectorAll("[data-uptime-slot]");
+    if (!slots.length) return;
+    if (!("IntersectionObserver" in window)) {
+      for (var i = 0; i < slots.length; i++) paintUptimeSlot(slots[i]);
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      for (var e = 0; e < entries.length; e++) {
+        if (!entries[e].isIntersecting) continue;
+        io.unobserve(entries[e].target);
+        paintUptimeSlot(entries[e].target);
+      }
+    }, { rootMargin: "280px 0px" });
+    for (var j = 0; j < slots.length; j++) io.observe(slots[j]);
+  }
+
+  function afterFirstPaint(fn) {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(fn);
+    });
   }
 
   function cardHtml(m, opts) {
@@ -251,11 +288,7 @@
                 '<span class="cancri-id__text">' + esc(id) + "</span>" + COPY_SVG +
               "</button>" +
             "</div>" +
-            (opts.uptime
-              ? '<div class="cancri-spec__row cancri-spec__row--uptime">' +
-                  uptimeHtml(hourlyFor(id)) +
-                "</div>"
-              : "") +
+            '<div class="cancri-spec__row cancri-spec__row--uptime" data-uptime-slot></div>' +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">价格</span>' +
               '<span class="cancri-spec__val cancri-price">' + priceHtml(m) + "</span>" +
@@ -395,7 +428,7 @@
       var pickFrontier = makeArtPicker();
       frontier.innerHTML = top.length
         ? top.map(function (m) {
-            return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || ""), uptime: true });
+            return cardHtml(m, { flagshipBadge: true, anchor: frontierAnchor, art: pickFrontier(m.id || m.canonicalId || "") });
           }).join("")
         : '<div class="text-sm text-secondary py-6">暂无旗舰模型</div>';
     }
@@ -412,7 +445,7 @@
       var pickFree = makeArtPicker();
       free.innerHTML = freeList.length
         ? freeList.map(function (m) {
-            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || ""), uptime: true });
+            return cardHtml(m, { flagshipBadge: false, anchor: freeAnchor, art: pickFree(m.id || m.canonicalId || "") });
           }).join("")
         : '<div class="text-sm text-secondary py-6">暂无免费模型</div>';
     }
@@ -693,10 +726,6 @@
     showLoadingSkeletons();
     try {
       if (!window.__SUPABASE_URL__ || !ANON) throw new Error("站点配置未就绪，请刷新页面");
-      var healthPromise = loadHealth().then(function (map) {
-        healthById = map;
-        return map;
-      });
       var data = await loadCatalog();
       if (data && data.multiplier_legend) {
         for (var k in data.multiplier_legend) {
@@ -718,7 +747,12 @@
         var el = document.getElementById(id);
         if (el) el.removeAttribute("aria-busy");
       });
-      healthPromise.then(function (map) { applyUptime(map); }).catch(function () {});
+      afterFirstPaint(function () {
+        observeUptimeSlots();
+        loadHealth().then(function (map) {
+          applyUptime(map);
+        }).catch(function () {});
+      });
     } catch (e) {
       showError((e && e.message) ? e.message : String(e));
     }
