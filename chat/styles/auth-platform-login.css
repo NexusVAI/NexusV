@@ -9,10 +9,11 @@
    default track color reads as a permanent right-edge white strip. */
 html.auth-platform-page {
     --auth-nav-h: 4.5rem;
+    --auth-alert-h: 2.75rem;
     background: hsl(var(--bg-300));
     overflow-x: hidden;
     overflow-y: auto;
-    scroll-padding-top: var(--auth-nav-h);
+    scroll-padding-top: calc(var(--auth-nav-h) + var(--auth-alert-h));
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -129,6 +130,7 @@ html.auth-platform-page .auth-overlay:not(.visible):has(+ #appRoot) {
     }
 }
 
+.auth-overlay > .auth-chrome,
 .auth-overlay > .auth-topnav-spacer,
 .auth-overlay > .auth-page-shell {
     grid-column: 1 / -1;
@@ -166,7 +168,7 @@ html.auth-platform-page .auth-overlay.visible:has(+ #appRoot) {
     max-height: none !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    scroll-padding-top: var(--auth-nav-h) !important;
+    scroll-padding-top: calc(var(--auth-nav-h) + var(--auth-alert-h, 2.75rem)) !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
     pointer-events: auto !important;
@@ -198,6 +200,60 @@ html.auth-platform-page .auth-overlay.visible:has(+ #appRoot)::-webkit-scrollbar
     z-index: 0;
     pointer-events: none;
     background: hsl(var(--bg-300));
+}
+
+/* ── OTP 故障告警条（顶栏上方，与导航一起吸顶） ───────────────── */
+.auth-chrome {
+    position: relative;
+    z-index: 30;
+    width: 100%;
+    flex: 0 0 auto;
+}
+html.auth-platform-page .auth-chrome {
+    position: sticky;
+    top: 0;
+}
+html.auth-platform-page .auth-chrome .auth-topnav {
+    position: relative;
+    top: auto;
+}
+.auth-alert-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-height: 4.5rem;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0.6rem 1rem;
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    background: #b42318;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: center;
+    letter-spacing: 0.01em;
+    border-bottom: 2px solid #f97066;
+}
+.auth-alert-banner svg {
+    width: 17px;
+    height: 17px;
+    max-width: 17px;
+    max-height: 17px;
+    flex: 0 0 17px;
+    display: block;
+    fill: currentColor;
+}
+@media (max-width: 640px) {
+    .auth-alert-banner {
+        font-size: 0.8125rem;
+        padding: 0.55rem 0.75rem;
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    }
 }
 
 /* ── Sticky top nav — content stays below nav when scrolling (no overlap) ─ */
@@ -770,4 +826,56 @@ html.auth-platform-page .auth-captcha-input {
 
 .auth-site-footer-links a:hover {
     opacity: 1;
+}
+
+/* 登录层解锁：不依赖 :has()，压过 cancri_chat opacity:0 与 motion 两列 grid */
+html.auth-platform-page #authOverlay.visible {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template: none !important;
+    grid-template-columns: none !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 9999 !important;
+    background: hsl(var(--bg-300)) !important;
+}
+html.auth-platform-page #authOverlay:not(.visible) {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+html.auth-platform-page #authOverlay.visible > .auth-chrome,
+html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
+    grid-column: 1 / -1 !important;
+    position: relative !important;
+    z-index: 2 !important;
+}
+html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 0 auto !important;
 }

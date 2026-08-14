@@ -1411,16 +1411,11 @@ html[data-theme="light"] .auth-error {
     color: #b3422f;
 }
 
-/* Turnstile 已弃用（登录改画布验证码）；旧脚本若插入占位槽则强制不占位。
-   含 #authCaptchaContainer:has(#loginTurnstileMount)：bridge 曾给父槽
-   min-height:72px + display:block，子挂件被下面规则隐藏后只剩空白带。
-   画布验证码走 .auth-captcha-wrap，不受 :has(#loginTurnstileMount) 影响。 */
-#loginTurnstileStatus,
-#loginTurnstileContainer,
-#loginTurnstileMount,
+/* 默认隐藏验证码槽；只有服务端要求挑战且 bridge 挂入 Turnstile 后才展开。 */
+#loginTurnstileContainer:empty,
+#loginTurnstileContainer:not(:has(#loginTurnstileMount)):not(:has(#loginTurnstileStatus)),
 #authCaptchaContainer:empty,
-#authCaptchaContainer:has(#loginTurnstileMount),
-#authCaptchaContainer:has(#loginTurnstileStatus) {
+#authCaptchaContainer:not(:has(#loginTurnstileMount)):not(:has(#loginTurnstileStatus)) {
     display: none !important;
     margin: 0 !important;
     min-height: 0 !important;
@@ -1428,6 +1423,33 @@ html[data-theme="light"] .auth-error {
     overflow: hidden !important;
     padding: 0 !important;
     border: 0 !important;
+}
+
+/* 服务端返回 captcha_failed 后，展示可操作的 Turnstile 挑战。 */
+#loginTurnstileContainer:has(#loginTurnstileMount),
+#authCaptchaContainer:has(#loginTurnstileMount),
+#loginTurnstileContainer:has(#loginTurnstileStatus),
+#authCaptchaContainer:has(#loginTurnstileStatus) {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 10px 0 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+}
+
+#loginTurnstileStatus {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+#loginTurnstileMount {
+    display: flex !important;
+    height: auto !important;
+    min-height: 65px !important;
+    overflow: visible !important;
 }
 
 #authSendOtpBtn[style*="display: none"],
@@ -1441,7 +1463,7 @@ html[data-theme="light"] .auth-error {
     overflow: hidden !important;
 }
 
-/* ── Inline auth captcha (replaces Turnstile) ────────── */
+/* 旧版画布验证码样式仅供历史入口兼容；当前 bridge 不会展示它。 */
 .auth-captcha-wrap {
     display: flex;
     align-items: center;

@@ -286,11 +286,19 @@ html[data-theme="dark"],
 }
 
 .zm-ann-md {
+  /* 截断高度的唯一真相。cancri_announcement.js 读这个变量决定「要不要给展开按钮」，
+     改高度只改这里。历史事故：CSS 剪 140px 而 JS 按 160px 发按钮，内容高度落在
+     141-160px 的公告被剪掉却没有展开入口，永久截断。禁止在 JS 里另写一个数字。 */
+  --zm-clamp-h: 140px;
+  position: relative;
   font-size: 13px;
   line-height: 20px;
   color: var(--zm-ann-text-soft);
-  max-height: 9999px;
-  transition: max-height 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  /* 展开动画由 JS 写入实测像素值驱动（见 cancri_announcement.js expand/collapse）。
+     基础态刻意不设 max-height —— 旧写法 9999px → 140px 之间做 transition，
+     可见内容在头几毫秒就走完，剩下的时间在动看不见的部分，观感等于没有动画。 */
+  transition: max-height 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .zm-ann-md p {
@@ -318,29 +326,46 @@ html[data-theme="dark"],
 }
 
 .zm-ann-md.zm-ann-clamped {
-  max-height: 140px;
-  overflow: hidden;
-  position: relative;
+  max-height: var(--zm-clamp-h);
 }
 
-.zm-ann-md.zm-ann-clamped::after {
+/* 遮罩常驻、靠 opacity 淡入淡出，跟着高度动画一起走；旧写法只挂在 .zm-ann-clamped 上，
+   展开瞬间整块渐变直接消失，是「动画不好看」的另一半原因。 */
+.zm-ann-md::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   height: 60px;
+  opacity: 0;
   pointer-events: none;
   background: linear-gradient(to bottom, transparent, var(--zm-ann-bg));
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.zm-ann-md.zm-ann-clamped::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zm-ann-md,
+  .zm-ann-md::after {
+    transition: none;
+  }
+}
+
+/* 「展开」与 CTA 实心按钮同行：.zm-ann-main 是普通块级容器，两者是兄弟节点，
+   没法用 flex 收拢，所以统一走 inline 流 + 等高 + 顶对齐。 */
 .zm-ann-expand {
-  display: block;
-  margin-top: 8px;
-  margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  margin: 10px 10px 0 0;
+  vertical-align: top;
   font-size: 12px;
   line-height: 16px;
-  color: var(--zm-ann-text);
+  color: var(--zm-ann-text-soft);
   cursor: pointer;
   background: none;
   border: 0;
@@ -348,12 +373,21 @@ html[data-theme="dark"],
   text-decoration: none;
 }
 
+/* 原生 [hidden] 只是 UA 样式表里的 display:none，会被上面这条作者 display 覆盖。
+   缺了这条，每条公告都会显示一个「展开」，而 JS 只给需要截断的那几条绑了 onclick
+   —— 表现就是「第一条能展开、后面的点了没反应」。同 claude.css:3999 的老坑。 */
+.zm-ann-expand[hidden] {
+  display: none;
+}
+
 .zm-ann-expand:hover {
+  color: var(--zm-ann-text);
   text-decoration: underline;
 }
 
 .zm-ann-cta {
-  margin-top: 8px;
+  margin-top: 10px;
+  vertical-align: top;
   display: inline-flex;
   align-items: center;
   gap: 6px;

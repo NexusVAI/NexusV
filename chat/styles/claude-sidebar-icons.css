@@ -104,12 +104,27 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   overflow-x: clip !important;
   overflow-y: auto !important;
   width: var(--workbench-sidebar-width, var(--c-sidebar-w, 18rem)) !important;
-  transition: width 260ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
-.sidebar.collapsed,
-.sidebar[data-collapsed="true"] {
-  width: var(--workbench-rail-width, 3.5rem) !important;
+/* 2026-08-12 审计#1：width 过渡是桌面 rail 动画，必须圈在 ≥769px。
+   本文件最后加载，此前这条裸 `.sidebar` transition 在移动端关闭窗口期
+   （抽屉只剩裸 .sidebar 命中，同特异性后者胜）压掉 claude.css:6652 的
+   transform 过渡 → 抽屉关闭第一帧就瞬移出屏（实测 9ms 时 x 已 -280）。 */
+@media (min-width: 769px) {
+  .sidebar {
+    transition: width 260ms cubic-bezier(0.32, 0.72, 0, 1) !important;
+  }
+}
+
+/* 2026-08-11：rail(3.5rem) 是桌面折叠概念，必须圈在 ≥769px。
+   本文件晚于 claude.css 加载，此前无媒体守卫时它在移动端压过
+   claude.css 的抽屉宽度(280px) → 关闭态抽屉只有 56px 宽，
+   打开瞬间宽度 56→280 跳变，滑入动画看着像"没有动画"。 */
+@media (min-width: 769px) {
+  .sidebar.collapsed,
+  .sidebar[data-collapsed="true"] {
+    width: var(--workbench-rail-width, 3.5rem) !important;
+  }
 }
 
 .sidebar.is-rail-collapsing {
@@ -422,19 +437,22 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   transition: opacity 140ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
-/* 收起：图标列不动，文字「只淡出」（不再过渡 width/transform，杜绝瞬移） */
+/* 收起：图标列不动，文字「只淡出」（不再过渡 width/transform，杜绝瞬移）。
+   2026-08-11：180ms→120ms —— 面板宽度 240ms 收缩会从右侧裁掉文字，
+   淡出必须显著快于裁切才能被看见（用户："收起字体渐隐不够明显"）。 */
 .sidebar .nav-row .sidebar-label,
 .sidebar .nav-row .claude-nav-tag,
 .sidebar .nav-row .nav-kbd-hint {
-  transition: opacity 180ms cubic-bezier(0.32, 0.72, 0, 1) !important;
+  transition: opacity 120ms cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 .sidebar .sidebar-footer-text,
 .sidebar .account-strip .account-meta,
 .sidebar .account-strip .upgrade-btn,
 .sidebar .account-strip .account-arrow,
 .sidebar .account-strip .account-download-btn {
+  /* opacity 与 nav 文字同步 120ms（快于宽度裁切，渐隐可见） */
   transition:
-    opacity 200ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 120ms cubic-bezier(0.32, 0.72, 0, 1),
     max-width 240ms cubic-bezier(0.32, 0.72, 0, 1),
     width 240ms cubic-bezier(0.32, 0.72, 0, 1),
     flex 240ms cubic-bezier(0.32, 0.72, 0, 1),
@@ -473,16 +491,13 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   opacity: 0 !important;
 }
 
-.sidebar.collapsed:not(.is-rail-animating) .sidebar-topbar,
-.sidebar[data-collapsed="true"]:not(.is-rail-animating) .sidebar-topbar {
-  justify-content: center !important;
-  padding: 0 !important;
-}
-
-.sidebar.is-rail-animating.collapsed .sidebar-topbar,
-.sidebar.is-rail-animating[data-collapsed="true"] .sidebar-topbar {
-  justify-content: center !important;
-  padding: 0 !important;
+/* 2026-08-11 用户抓帧后重写：原来动画期/静止期两条规则都是
+   justify-content:center + padding:0 —— center 对带 margin-left:auto 的开关
+   是死属性（auto margin 先吃掉剩余空间），实际效果 = 按钮贴死右缘（gap 1px）。
+   统一为 0 10px：开关右锚定连续滑入，rail 终态 52.5-10-32≈10.5 ≈ 视觉居中。 */
+.sidebar.collapsed .sidebar-topbar,
+.sidebar[data-collapsed="true"] .sidebar-topbar {
+  padding: 0 10px !important;
 }
 
 .sidebar.collapsed .sidebar-body,
@@ -500,11 +515,15 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 
 .sidebar.collapsed .sidebar-toggle,
 .sidebar[data-collapsed="true"] .sidebar-toggle {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  margin: 0 auto !important;
+  /* 2026-08-11 用户抓帧实锤：本文件最后加载，这里的 margin:0 auto 压过
+     claude.css 的右锚定修正，收起时按钮仍被"居中插值"拖着横穿面板；
+     28px 也与展开态 32px 不一致（尺寸无过渡=跳变）。统一 32 + 右锚定，
+     位置完全由面板宽度动画连续决定（rail 落点 52.5-10-32≈10.5 ≈ 居中）。 */
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  margin: 0 0 0 auto !important;
   padding: 0 !important;
   flex-shrink: 0 !important;
   display: grid !important;
@@ -655,16 +674,24 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
-  height: 40px !important;
-  min-height: 40px !important;
+  /* 2026-08-11：与展开态同高 48（原 40 → 底部锚定下头像收起时上移 4px、
+     展开时又跳回来，即用户报的"账号位置平移"）。 */
+  height: 48px !important;
+  min-height: 48px !important;
   max-height: none !important;
   margin: 0 !important;
-  padding: 0 !important;
+  /* 2026-08-11 用户抓帧实锤：原 justify-content:center + padding:0 让头像在
+     .collapsed 落地瞬间跳到"还没变窄的整条"正中，再随宽度动画往左飘。
+     justify-content 不可动画 → 改回 flex-start（与展开态同），用 padding
+     （在 :455 的过渡列表里，240ms）把落点调到 rail 居中：
+     rail 52.5 - footer 横向 4×2 = 44.5 内容宽，(44.5-28)/2 ≈ 8px。
+     头像全程只有 10→8 的 2px 连续位移，不再横穿面板。 */
+  padding: 0 8px !important;
   border-radius: 10px !important;
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   gap: 0 !important;
   overflow: hidden !important;
   position: relative !important;
@@ -672,11 +699,13 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
 
 .sidebar.collapsed .account-strip .avatar,
 .sidebar[data-collapsed="true"] .account-strip .avatar {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  border-radius: 50% !important;
+  /* 2026-08-11：与展开态一致（28px 圆角 8 方形，快照 rounded-lg）。
+     原 32px 圆形导致收起/展开瞬间头像形状和尺寸跳变。 */
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
   margin: 0 !important;
   flex-shrink: 0 !important;
   display: grid !important;
@@ -763,5 +792,14 @@ html[data-theme="light"] .sidebar #newChatBtn:hover .claude-anthropicon--new-cha
   .sidebar.collapsed .account-strip .account-arrow,
   .sidebar.collapsed .account-strip .account-download-btn {
     transform: none !important;
+  }
+}
+
+/* 超椭圆圆角（2026-08-11，详见 claude.css 文件尾的移植说明块）：
+   本文件是最后加载的样式表，:168 的 nav-row 9px 会压过 claude.css 里的
+   ×1.2 半径覆盖，故在此文件尾同守卫补一条。 */
+@supports (corner-shape: superellipse(1.3)) {
+  .sidebar .nav-row {
+    border-radius: 11px !important; /* 9×1.2 */
   }
 }
