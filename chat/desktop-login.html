@@ -32,6 +32,17 @@
     href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600&display=swap"
   />
   <script src="./cancri_config.js"></script>
+  <!-- 2026-08-14 人机验证：本页此前完全没挂 Turnstile，桌面端登录（走系统浏览器
+       打开本页 → signInWithOtp）因此从不携带 captcha_token，只能靠服务端 soft
+       模式放行 —— 与主站 index.html 之间存在缺口。
+       加载顺序有硬性要求，三者不能调换：
+         1) cancri_config.js  提供 __LOGIN_TURNSTILE_SITE_KEY__
+         2) turnstile api.js  提供 window.turnstile
+         3) bridge            包装 window.fetch 注入 token
+       bridge 必须在 supabase-js **之前**同步执行：supabase-js 在 createClient
+       时会捕获 fetch 引用，晚于它加载则包装不生效。故此处不加 defer。 -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+  <script src="./cancri_turnstile_bridge.js?v=2026-08-14-server-driven"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
     integrity="sha384-L+IlvYRlq83Yqv9kTm92qOc1xXxFuPatpFkRtF+Ov87zhKKV6gcx9GvTURw6uviE"
