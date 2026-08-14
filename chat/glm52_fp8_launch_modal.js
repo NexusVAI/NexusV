@@ -16,7 +16,7 @@
     id: "glm52-fp8",
     seenKey: "nexusv_glm52_fp8_launch_v1",
     killParam: "noglm52",
-    endAt: "2026-08-15T23:59:59+08:00",
+    endAt: "2026-08-20T23:59:59+08:00",
     badge: false,
     titleHtml: "部署在我们硬件上的<br />GLM-5.2 FP8 版本<sup>1</sup>",
     leadHtml: "即刻体验部署在 NexusV AI 硬件上的 GLM-5.2 FP8。",
