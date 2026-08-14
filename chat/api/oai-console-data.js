@@ -76,15 +76,14 @@
     document.documentElement.setAttribute("data-cnc-l10n", "1");
   }
 
-  // 正文是英文 OAI dump，汉化靠 JS 改文本节点，首帧会闪英文。
-  // 先藏 #root，applyPageLocale() 跑完再放出来；JS 挂掉时 1.2s 兜底自动放出，避免白屏。
+  // 正文是英文 OAI dump，汉化靠 JS 改文本节点。
+  // 先藏 #root；必须等 requireSession 成功才 reveal。禁止定时放出——否则未登录也能看见控制台。
   (function earlyL10nGate() {
     try {
       var s = document.createElement("style");
       s.id = "nexusv-l10n-gate";
       s.textContent = "html:not([data-cnc-l10n]) #root{visibility:hidden!important}";
       (document.head || document.documentElement).appendChild(s);
-      window.setTimeout(revealL10n, 1200);
     } catch (e) {}
   })();
 
@@ -231,6 +230,8 @@
       ["ChatKit Threads", "ChatKit 线程"],
       ["Your Responses will appear here", "这里会显示你的调用记录"],
       ["Use the Responses API to view your logs.", "调用 API 后即可在此查看日志。"],
+      ["用 Codex 开始构建", "用Cancri Code 开始构建"],
+      ["用 NexusVAI 构建", "由NexusVAI构建"],
     ];
     pairs.forEach(function (p) {
       replaceAllText(p[0], p[1]);
@@ -596,6 +597,24 @@
   function replaceAllText(oldText, newText) {
     findTextNodes(oldText).forEach(function (n) {
       n.nodeValue = newText;
+    });
+  }
+
+  function patchBuildWithCards() {
+    document.querySelectorAll("a.fSPaI").forEach(function (a) {
+      var title = a.querySelector("p.text-sm");
+      var sub = a.querySelector("p.text-xs");
+      if (title) {
+        Array.prototype.forEach.call(title.childNodes, function (n) {
+          if (n.nodeType !== 3 || !n.nodeValue) return;
+          if (n.nodeValue.indexOf("用 Codex 开始构建") >= 0) {
+            n.nodeValue = n.nodeValue.split("用 Codex 开始构建").join("用Cancri Code 开始构建");
+          }
+        });
+      }
+      if (sub && (sub.textContent || "").trim() === "用 NexusVAI 构建") {
+        sub.textContent = "由NexusVAI构建";
+      }
     });
   }
 
@@ -1421,12 +1440,13 @@
     // 汉化必须赶在首帧之前，否则英文 dump 会先画一遍（同 model_detail 的 5.5 闪现）
     stripDeadUsageBlocks();
     applyPageLocale();
+    patchBuildWithCards();
     patchActionCtasEverywhere();
-    revealL10n();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       var session = await PlatformAuth.requireSession({});
       if (!session) return;
+      revealL10n();
       updateUserChip(session.user);
 
       var walletP = call("get_quota_status", {}).catch(function () {
@@ -1507,14 +1527,21 @@
       if (PAGE === "logs") renderLogsList(usage);
 
       applyPageLocale();
+      patchBuildWithCards();
       patchActionCtasEverywhere();
       // locale may recreate English CTA leftovers — re-assert featured cards
       patchFeaturedModels();
       clearUpdatesSection();
     } catch (e) {
       if (e && e.message === "supabase_not_loaded") {
-        PlatformAuth.showAuthError(t("authLoadFail"));
+        var login =
+          (document.body && document.body.getAttribute("data-login-url")) ||
+          "../index.html";
+        if (window.PlatformAuth) PlatformAuth.redirectToLogin();
+        else win.location.replace(login);
+        return;
       }
+      revealL10n();
     }
   }
 

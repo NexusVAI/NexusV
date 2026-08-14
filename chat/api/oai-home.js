@@ -124,11 +124,157 @@
     });
   }
 
+  // ── Split 按钮：左半跳转，右半箭头开菜单 ────────────────────
+  // 胶囊按钮 r=40；只有下拉菜单同比缩小用 r=32。条目 R = 32 − padding，min-height > 2R。
+  var CK_PILL_RADIUS = 40;
+  var CK_MENU_RADIUS = 32;
+  var CK_SMOOTHING = 1;
+  var ckInstance = null;
+
+  function getCornerKit() {
+    var Ctor = window.CornerKit;
+    if (!Ctor) return null;
+    if (!ckInstance) ckInstance = new Ctor({ radius: CK_PILL_RADIUS, smoothing: CK_SMOOTHING });
+    return ckInstance;
+  }
+
+  function paddingInset(el) {
+    var style = window.getComputedStyle(el);
+    var left = parseFloat(style.paddingLeft) || 0;
+    var right = parseFloat(style.paddingRight) || 0;
+    var top = parseFloat(style.paddingTop) || 0;
+    var bottom = parseFloat(style.paddingBottom) || 0;
+    return Math.min(left, right, top, bottom);
+  }
+
+  function applySquircle(el, radius, withBorder) {
+    var ck = getCornerKit();
+    if (!ck || !(el instanceof HTMLElement)) return false;
+    if (el.offsetWidth < 1 || el.offsetHeight < 1) return false;
+    var cfg = { radius: radius, smoothing: CK_SMOOTHING };
+    if (withBorder) cfg.border = { width: 1, color: "var(--border-light)" };
+    try {
+      if (ck.inspect(el)) ck.update(el, cfg);
+      else ck.apply(el, cfg);
+      el.setAttribute("data-ck", "1");
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function squircleMenuPanel(panel) {
+    applySquircle(panel, CK_MENU_RADIUS, true);
+    var innerR = Math.max(0, CK_MENU_RADIUS - paddingInset(panel));
+    var host = panel.querySelector(".api-btn-menu__clip") || panel;
+    host.querySelectorAll("a").forEach(function (a) {
+      applySquircle(a, innerR, false);
+    });
+  }
+
+  function squirclePills() {
+    document.querySelectorAll(".api-btn").forEach(function (el) {
+      applySquircle(el, CK_PILL_RADIUS, false);
+    });
+  }
+
+  function initSplitMenus() {
+    var menus = document.querySelectorAll(".api-btn-menu");
+    if (!menus.length) return;
+
+    function setOpen(root, open) {
+      var btn = root.querySelector(".api-btn-menu__toggle");
+      var panel = root.querySelector(".api-btn-menu__panel");
+      if (!btn || !panel) return;
+      root.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        panel.removeAttribute("hidden");
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            squircleMenuPanel(panel);
+          });
+        });
+      } else {
+        panel.setAttribute("hidden", "");
+      }
+    }
+
+    function closeAll(except) {
+      menus.forEach(function (root) {
+        if (root !== except) setOpen(root, false);
+      });
+    }
+
+    menus.forEach(function (root) {
+      var btn = root.querySelector(".api-btn-menu__toggle");
+      if (!btn) return;
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var next = !root.classList.contains("is-open");
+        closeAll(root);
+        setOpen(root, next);
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      var hit = e.target && e.target.closest ? e.target.closest(".api-btn-menu") : null;
+      if (!hit) closeAll(null);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeAll(null);
+    });
+  }
+
+  // ── 仅本页顶栏：社群按钮 + NexusVAI 开放平台文案（不改 components.js）──
+  var QQ_GROUP_URL = "https://qm.qq.com/q/bjNIz8USbu";
+
+  function patchApiHomeNav() {
+    var pill = document.querySelector(".navbar a.btn-pill");
+    if (pill) {
+      pill.href = QQ_GROUP_URL;
+      pill.target = "_blank";
+      pill.rel = "noopener noreferrer";
+      var pillLabel = pill.querySelector("[data-i18n]") || pill;
+      pillLabel.setAttribute("data-i18n", "api.home.nav.join_community");
+      if (pillLabel !== pill) pill.removeAttribute("data-i18n");
+    }
+
+    document.querySelectorAll("a.nav-item, a.mobile-nav-item").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      if (key === "nav.developer" || key === "api.home.nav.developer") {
+        el.setAttribute("data-i18n", "api.home.nav.developer");
+      }
+    });
+
+    var cta = document.querySelector(".mobile-drawer a.mobile-cta");
+    if (cta) {
+      cta.href = QQ_GROUP_URL;
+      cta.target = "_blank";
+      cta.rel = "noopener noreferrer";
+      cta.setAttribute("data-i18n", "api.home.nav.join_community");
+    }
+
+    if (typeof window.translate === "function") {
+      var nav = document.querySelector(".navbar");
+      var drawer = document.querySelector(".mobile-drawer");
+      if (nav) window.translate(nav);
+      if (drawer) window.translate(drawer);
+    }
+  }
+
   function boot() {
     initTrustedLogos();
     initElevateTabs();
     applyHomeMarketingCards();
+    initSplitMenus();
+    squirclePills();
+    if (document.querySelector(".navbar")) patchApiHomeNav();
   }
+
+  window.addEventListener("nexus:components-injected", patchApiHomeNav);
+  window.addEventListener("languageChanged", patchApiHomeNav);
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

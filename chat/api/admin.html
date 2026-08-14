@@ -417,6 +417,15 @@
             />
             <button class="reload-btn" id="opus5SearchBtn">搜索</button>
           </div>
+          <!-- 2026-08-14: 一键重置所有人的免费 Opus5 每日限额（未验证 10 次 / 已验证
+               100 次都清零），且新的 24 小时窗口从点击这一刻重新起算。影响全站所有
+               用户，需二次确认。 -->
+          <div class="toolbar" style="margin-bottom: 4px">
+            <button class="btn-danger" id="opus5ResetAllBtn" type="button">
+              重置所有人的 Opus5 每日限额
+            </button>
+            <span id="opus5ResetAllStatus" style="font-size: 12.5px; color: var(--text-mute); margin-left: 10px"></span>
+          </div>
           <div class="table-wrap" data-sensitive>
             <table class="apply-table" id="opus5Table" style="min-width: 760px">
               <thead>

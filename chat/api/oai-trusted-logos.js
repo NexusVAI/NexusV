@@ -4,39 +4,40 @@
 
   /** viewBox 宽高用于按真实比例计算 mask 容器尺寸
    * 顺序：Anthropic | Grok | NexusVAI(中) | OpenAI | Gemini
-   * 高度：伙伴字标同档 ~1–1.35rem；自家 brand 更大（中心强调）。
-   * Anthropic 略矮是因为字标极宽（182×24），同高会占满整列。 */
+   * 布局靠 flex + 字标真实宽度均分缝隙（不再等宽 5 列）。
+   * 伙伴字标同 cap-height；Anthropic 全大写略矮以免光学上压过邻居。
+   * 自家 brand 只略高于伙伴，避免中心鼓包。 */
   var LOGO_ENTRIES = [
     {
       path: "chat/assets/partners/anthropic-text.svg",
       vw: 182,
       vh: 24,
-      markH: "clamp(0.875rem, 1.9vw, 1.2rem)",
+      markH: "clamp(0.92rem, 1.85vw, 1.18rem)",
     },
     {
       path: "chat/assets/partners/grok-text.svg",
       vw: 63,
       vh: 24,
-      markH: "clamp(1rem, 2.1vw, 1.35rem)",
+      markH: "clamp(1.05rem, 2.05vw, 1.35rem)",
     },
     {
       path: "chat/assets/nexusvai_logo_transparent.svg",
       vw: 1774,
       vh: 887,
       brand: true,
-      markH: "clamp(2.5rem, 5.2vw, 3.5rem)",
+      markH: "clamp(1.55rem, 3.2vw, 2.05rem)",
     },
     {
       path: "chat/assets/partners/openai-text.svg",
       vw: 86,
       vh: 24,
-      markH: "clamp(1rem, 2.1vw, 1.35rem)",
+      markH: "clamp(1.05rem, 2.05vw, 1.35rem)",
     },
     {
       path: "chat/assets/partners/gemini-text.svg",
       vw: 98,
       vh: 24,
-      markH: "clamp(1rem, 2.1vw, 1.35rem)",
+      markH: "clamp(1.05rem, 2.05vw, 1.35rem)",
     },
   ];
 
