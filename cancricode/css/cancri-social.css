@@ -1,0 +1,94 @@
+/**
+ * FAQ → footer social strip (Trae-like): hairline + left icons.
+ * Icons: Simple Icons SVGs under images/social/.
+ */
+
+[data-cancri-role="faq-social"] {
+  --cancri-social-ink: rgba(17, 17, 17, 0.72);
+  --cancri-social-ink-hover: #111111;
+  --cancri-social-rule: rgba(17, 17, 17, 0.12);
+  width: 100%;
+  padding: 28px 0 28px;
+  box-sizing: border-box;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__inner {
+  width: 100%;
+  max-width: var(--_sizing---max-width--main, 1280px);
+  margin: 0 auto;
+  padding: 0 var(--_sizing---padding--main, 32px);
+  box-sizing: border-box;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__rule {
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin: 0 0 20px;
+  background: var(--cancri-social-rule);
+  border: 0;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--cancri-social-ink);
+  text-decoration: none;
+  transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__link:hover,
+[data-cancri-role="faq-social"] .cancri-social__link:focus-visible {
+  color: var(--cancri-social-ink-hover);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-color: currentColor;
+  -webkit-mask: var(--cancri-social-mask) center / contain no-repeat;
+  mask: var(--cancri-social-mask) center / contain no-repeat;
+}
+
+[data-cancri-role="faq-social"] .cancri-social__icon--bilibili {
+  --cancri-social-mask: url("../images/social/bilibili.svg");
+}
+
+[data-cancri-role="faq-social"] .cancri-social__icon--discord {
+  --cancri-social-mask: url("../images/social/discord.svg");
+}
+
+[data-cancri-role="faq-social"] .cancri-social__icon--github {
+  --cancri-social-mask: url("../images/social/github.svg");
+}
+
+[data-cancri-role="faq-social"] .cancri-social__icon--huggingface {
+  --cancri-social-mask: url("../images/social/huggingface.svg");
+}
+
+[data-cancri-role="faq-social"] .cancri-social__icon--x {
+  --cancri-social-mask: url("../images/social/x.svg");
+}
+
+html[data-cancri-theme="dark"] [data-cancri-role="faq-social"] {
+  --cancri-social-ink: rgba(255, 255, 255, 0.72);
+  --cancri-social-ink-hover: #ffffff;
+  --cancri-social-rule: rgba(255, 255, 255, 0.16);
+}

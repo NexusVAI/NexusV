@@ -23,7 +23,7 @@
     --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 
     /* OpenAI-style font stack: Inter for Latin, system Chinese fonts for CJK */
-    --font-main: 'Inter', 'OpenAI Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Source Han Sans SC', 'Noto Sans CJK SC', ui-sans-serif, system-ui, sans-serif;
+    --font-main: 'OpenAI Sans', 'Segoe UI Variable Text', 'Segoe UI', 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', system-ui, sans-serif;
     --font-mono: 'SF Mono', Consolas, 'Liberation Mono', ui-monospace, monospace;
 
     /* OpenAI responsive type ramp — clamp from 375px to 1440px viewports. */

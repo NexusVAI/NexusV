@@ -110,6 +110,160 @@ async function getSession() {
   return session;
 }
 
+// ─── 2026-08-14: 免费 Opus5（c:claude-opus-5）验证用户面板 ───────────
+let OPUS5_MATCHES = [];
+
+function renderOpus5Row(m) {
+  const ageDays = m.created_at
+    ? Math.floor((Date.now() - new Date(m.created_at).getTime()) / 86400000)
+    : null;
+  const verified = !!m.is_verified;
+  const identity = m.email || m.name || "—";
+  const subIdentity = m.name && m.email ? `<div class="user-id">${esc(m.name)}</div>` : "";
+  const recharge = "¥" + (Number(m.cumulative_recharge_cny) || 0).toFixed(2);
+  const statusPill = verified
+    ? '<span class="tier-pill paid">已验证 · 100/日</span>'
+    : '<span class="tier-pill free">未验证 · 10/日</span>';
+  const actionLabel = verified ? "取消验证" : "标记已验证";
+  const actionCls = verified ? "btn-reject" : "btn-approve";
+  return `<tr data-uid="${esc(m.user_id)}">
+    <td>${esc(identity)}${subIdentity}</td>
+    <td><code style="font-size: 11px">${esc(m.user_id)}</code></td>
+    <td>${esc(fmtAgeDays(ageDays))}</td>
+    <td>${esc(recharge)}</td>
+    <td>${statusPill}</td>
+    <td>
+      <button class="${actionCls}" data-action="opus5-toggle" data-verified="${verified ? "0" : "1"}" data-uid="${esc(m.user_id)}">${actionLabel}</button>
+    </td>
+  </tr>`;
+}
+
+function renderOpus5Table() {
+  const tbody = $("opus5Rows");
+  if (!tbody) return;
+  if (OPUS5_MATCHES.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">没有匹配的用户</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = OPUS5_MATCHES.map(renderOpus5Row).join("");
+  tbody.querySelectorAll('[data-action="opus5-toggle"]').forEach((btn) => {
+    btn.addEventListener("click", () =>
+      setOpus5Verified(btn.dataset.uid, btn.dataset.verified === "1"),
+    );
+  });
+}
+
+async function searchOpus5Candidates() {
+  const input = $("opus5SearchInput");
+  const query = (input?.value || "").trim();
+  if (query.length < 3) {
+    showToast("至少输入 3 个字符", "err");
+    return;
+  }
+  const btn = $("opus5SearchBtn");
+  if (btn) btn.disabled = true;
+  try {
+    const session = await getSession();
+    const resp = await fetch(GW, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: window.__SUPABASE_ANON_KEY__,
+      },
+      body: JSON.stringify({
+        endpoint: "admin_search_opus5_candidates",
+        query,
+        __auth_token: session.access_token,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error || "HTTP " + resp.status);
+    OPUS5_MATCHES = Array.isArray(data.matches) ? data.matches : [];
+    renderOpus5Table();
+  } catch (e) {
+    showToast("搜索失败：" + (e.message || e), "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function setOpus5Verified(userId, verified) {
+  const verb = verified ? "标记为已验证" : "取消验证";
+  if (!confirm(`确认${verb}？`)) return;
+  const row = document.querySelector(`#opus5Rows tr[data-uid="${userId}"]`);
+  row?.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  try {
+    const session = await getSession();
+    const resp = await fetch(GW, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: window.__SUPABASE_ANON_KEY__,
+      },
+      body: JSON.stringify({
+        endpoint: "admin_set_opus5_verified",
+        user_id: userId,
+        verified,
+        __auth_token: session.access_token,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) throw new Error(data.error || "HTTP " + resp.status);
+    const m = OPUS5_MATCHES.find((x) => x.user_id === userId);
+    if (m) m.is_verified = verified;
+    renderOpus5Table();
+    showToast(`已${verb}`, "ok");
+  } catch (e) {
+    showToast(`${verb}失败：` + (e.message || e), "err");
+    row?.querySelectorAll("button").forEach((b) => (b.disabled = false));
+  }
+}
+
+$("opus5SearchBtn")?.addEventListener("click", searchOpus5Candidates);
+$("opus5SearchInput")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") searchOpus5Candidates();
+});
+
+// 2026-08-14: 一键重置所有人的免费 Opus5 每日限额（未验证 10 次 / 已验证 100 次
+// 都清零），新的 24 小时窗口从点击这一刻重新起算。影响全站所有用户，二次确认。
+async function resetOpus5DailyLimits() {
+  if (
+    !confirm(
+      "确认重置所有人的免费 Opus5（C）每日调用次数？\n\n所有账号（未验证 10 次/已验证 100 次）的今日计数都会清零，新的 24 小时窗口从现在重新开始计算。此操作影响全站所有用户，不可撤销。",
+    )
+  )
+    return;
+  const btn = $("opus5ResetAllBtn");
+  const statusEl = $("opus5ResetAllStatus");
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = "重置中…";
+  try {
+    const session = await getSession();
+    const resp = await fetch(GW, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: window.__SUPABASE_ANON_KEY__,
+      },
+      body: JSON.stringify({
+        endpoint: "admin_reset_opus5_daily_limits",
+        __auth_token: session.access_token,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) throw new Error(data.error || "HTTP " + resp.status);
+    const resetTime = data.reset_at ? new Date(data.reset_at).toLocaleString("zh-CN") : "";
+    if (statusEl) statusEl.textContent = resetTime ? `已重置，下次自然重置时间：${resetTime}` : "已重置";
+    showToast("已重置所有人的 Opus5 每日限额", "ok");
+  } catch (e) {
+    if (statusEl) statusEl.textContent = "";
+    showToast("重置失败：" + (e.message || e), "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+$("opus5ResetAllBtn")?.addEventListener("click", resetOpus5DailyLimits);
+
 async function init() {
   const session = await getSession();
   $("loading").style.display = "none";

@@ -29,9 +29,20 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>Cancri</title>
+        <title>Cancri - AI 对话平台 | NexusVAI</title>
+    <meta name="description" content="Cancri 是 NexusVAI 的 AI 对话客户端，统一体验 40+ 顶尖大语言模型。" />
+    <link rel="canonical" href="https://www.nexusvai.xyz/chat/index.html" />
+    <meta property="og:title" content="Cancri - AI 对话平台 | NexusVAI">
+    <meta property="og:description" content="Cancri 是 NexusVAI 的 AI 对话客户端，统一体验 40+ 顶尖大语言模型。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.nexusvai.xyz/chat/index.html">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Cancri - AI 对话平台 | NexusVAI">
+    <meta name="twitter:description" content="Cancri 是 NexusVAI 的 AI 对话客户端，统一体验 40+ 顶尖大语言模型。">
+    <meta name="twitter:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
         <!-- Browser tab icon. -->
-        <link rel="icon" type="image/svg+xml" href="../Logo/NexusV_favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
         <link rel="apple-touch-icon" href="../Logo/Cancri1.jpg" />
         <!-- Logo 同时被 sidebar-topbar、登录页 .auth-brand、PWA install
              prompt、模态框 hero 重复使用 6+ 次。fetchpriority=high 让浏览器
@@ -119,19 +130,104 @@
         />
         <link
             rel="stylesheet"
-            href="./styles/cancri_motion.css?v=20260718-zm-ann-r2"
+            href="./styles/cancri_motion.css?v=20260814-server-driven-turnstile"
         />
-        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260724-invite-fix" />
+        <link rel="stylesheet" href="./styles/zenmux-announce.css?v=20260811-ann-expand" />
         <link
             rel="stylesheet"
-            href="./styles/auth-platform-login.css?v=2026-06-25-download-icons"
+            href="./styles/auth-platform-login.css?v=20260813-login-paint2"
         />
         <!-- Claude 1:1 复刻覆盖层（Phase 2-6 全部视觉调整）。
              放在所有老 CSS 之后以使优先级取胜，只针对貌貌不调整后端逻辑。 -->
         <link
             rel="stylesheet"
-            href="./claude.css?v=20260724-invite-fix"
+            href="./claude.css?v=20260811-ann-expand"
         />
+        <style>
+            /* 登录层必须跟 HTML 一起下发：外链 CSS 会单独缓存，.visible 仍可能只剩沙底+主题钮 */
+            html.auth-platform-page #authOverlay.visible {
+                display: flex !important;
+                flex-direction: column !important;
+                grid-template: none !important;
+                grid-template-columns: none !important;
+                align-items: stretch !important;
+                justify-content: flex-start !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: auto !important;
+                height: auto !important;
+                min-height: 100dvh !important;
+                max-height: none !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                padding: 0 !important;
+                gap: 0 !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+                z-index: 9999 !important;
+                background: hsl(var(--bg-300)) !important;
+            }
+            html.auth-platform-page #authOverlay:not(.visible) {
+                height: 0 !important;
+                min-height: 0 !important;
+                max-height: 0 !important;
+                overflow: hidden !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
+            }
+            html.auth-platform-page #authOverlay.visible > .auth-chrome,
+            html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                width: 100% !important;
+                max-width: none !important;
+                flex: 0 0 auto !important;
+                grid-column: 1 / -1 !important;
+                position: relative !important;
+                z-index: 2 !important;
+            }
+            html.auth-platform-page #authOverlay.visible > .auth-page-shell {
+                display: flex !important;
+                flex-direction: column !important;
+                flex: 1 0 auto !important;
+            }
+            html.auth-platform-page #authOverlay.visible .auth-login-panel,
+            html.auth-platform-page #authOverlay.visible .auth-stage,
+            html.auth-platform-page #authOverlay.visible .auth-hero,
+            html.auth-platform-page #authOverlay.visible .auth-card {
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+            html.auth-platform-page .auth-alert-banner {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 0.5rem !important;
+                width: 100% !important;
+                max-height: 4.5rem !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                padding: 0.6rem 1rem !important;
+                background: #b42318 !important;
+                color: #fff !important;
+                font-size: 0.875rem !important;
+                font-weight: 600 !important;
+                line-height: 1.45 !important;
+            }
+            html.auth-platform-page .auth-alert-banner svg {
+                width: 17px !important;
+                height: 17px !important;
+                max-width: 17px !important;
+                max-height: 17px !important;
+                flex: 0 0 17px !important;
+                display: block !important;
+                fill: currentColor !important;
+            }
+        </style>
         <link
             rel="stylesheet"
             href="./styles/claude-sidebar-icons.css?v=2026-06-20-sidebar-fade-strip"
@@ -159,6 +255,19 @@
         ></script>
     </head>
     <body>
+<link rel="stylesheet" type="text/css" href="assets/p2m-loader.css?v=20260814-paint" />
+<div id="p2m-loader" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
+    <g id="mark" fill="#111111" fill-rule="evenodd">
+      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </g>
+  </svg>
+</div>
+<script src="assets/p2m-loader.js?v=20260814-paint" defer></script>
+
         <!-- ── Login stage (未登录时覆盖整个页面) ───────────────────
              重设计自 Claude (claude.ai) 的登录页：暗底全屏 +
              左上角 brand + 中央衬线大标题 + 副标题 + 单列卡片。
@@ -169,9 +278,16 @@
              视觉层面新增的元素只有 .auth-stage / .auth-brand /
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
-        <div class="auth-overlay" id="authOverlay">
+        <div class="auth-overlay visible" id="authOverlay">
             <div class="auth-bg" aria-hidden="true"></div>
 
+            <div class="auth-chrome">
+            <div class="auth-alert-banner" role="alert">
+                <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
+                    <path d="M12 3.2 2.4 20.2h19.2L12 3.2zm0 5.3c.6 0 1 .5 1 1.1v4.2c0 .6-.4 1.1-1 1.1s-1-.5-1-1.1V9.6c0-.6.4-1.1 1-1.1zm0 8.2c.7 0 1.2.5 1.2 1.2S12.7 19 12 19s-1.2-.5-1.2-1.1.5-1.2 1.2-1.2z"/>
+                </svg>
+                <span>我们已经定位到验证码无法发送的问题:暂停注册，2026/08/14届时重新开启</span>
+            </div>
             <header class="auth-topnav">
                 <div class="auth-topnav-inner">
                     <a
@@ -209,6 +325,7 @@
                     >
                 </div>
             </header>
+            </div>
             <div class="auth-topnav-spacer" aria-hidden="true"></div>
 
             <div class="auth-page-shell">
@@ -239,7 +356,7 @@
                             required
                         />
 
-                        <!-- Cloudflare Turnstile 可见挑战槽位（非左侧 4 位画布码） -->
+                        <!-- 服务端要求时才展开的 Cloudflare Turnstile 挑战槽位 -->
                         <div id="authCaptchaContainer" aria-label="Cloudflare 人机验证"></div>
 
                         <div class="auth-password-section" id="authPasswordSection">
@@ -893,7 +1010,7 @@
                         </button>
                         <div class="claude-onboarding-head">
                             <h2 class="claude-onboarding-title">试试基础</h2>
-                            <span class="claude-onboarding-progress" id="claudeOnboardingProgress">3步中0步完成</span>
+                            <span class="claude-onboarding-progress" id="claudeOnboardingProgress">2步中0步完成</span>
                         </div>
                         <div class="claude-onboarding-list">
                             <button class="claude-onboarding-task" type="button" data-onboarding-id="importMemory" data-onboarding-action="import-memory">
@@ -910,33 +1027,6 @@
                                     <span class="claude-onboarding-task-subtitle">当你困惑时，社区会给出最好的答案</span>
                                 </span>
                             </button>
-                            <button class="claude-onboarding-task" type="button" data-onboarding-id="cancriCode" data-onboarding-action="open-cancri-code">
-                                <span class="claude-onboarding-check" aria-hidden="true"></span>
-                                <span class="claude-onboarding-copy">
-                                    <span class="claude-onboarding-task-title">下载 Cancri-code</span>
-                                    <span class="claude-onboarding-task-subtitle">把任务交接，用 Cancri 编程，更多地在桌面上完成</span>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                    <!-- 2026-06-30：Cancri Code 推广海报卡（视频版），与上方 onboarding 卡互斥接力显示。
-                         复用 .claude-code-promo-card CSS+JS 框架（claude.css:1018 / claude_ui.js:1321）。
-                         视频相对路径引用 ../Logo/6月30日.mp4（与 ../Logo/Cancri1.jpg 同模式）。
-                         下载按钮当前 disabled 占位，等接入百度网盘下载链接后启用。 -->
-                    <div class="claude-code-promo-card" id="claudeCodePromoCard" hidden>
-                        <button class="claude-code-promo-close" id="claudeCodePromoCloseBtn" type="button" aria-label="关闭 Cancri Code 推广">
-                            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path d="M13.147 6.146a.5.5 0 0 1 .707.707L10.707 10l3.146 3.146a.5.5 0 0 1-.628.772l-.079-.065L10 10.707l-3.147 3.146a.5.5 0 0 1-.707-.707L9.293 10 6.146 6.853l-.064-.078a.5.5 0 0 1 .693-.693l.078.064L10 9.293z"></path>
-                            </svg>
-                        </button>
-                        <div class="claude-code-promo-media">
-                            <video src="../Logo/6月30日.mp4" muted autoplay loop playsinline preload="metadata" aria-hidden="true"></video>
-                        </div>
-                        <div class="claude-code-promo-body">
-                            <h3 class="claude-code-promo-title">来试试Cancri Code吧！</h3>
-                            <p class="claude-code-promo-subtitle">内置我们的合作伙伴Agnes最优秀的一款模型</p>
-                            <p class="claude-code-promo-text">不限免费使用</p>
-                            <button class="claude-code-promo-download" id="claudeCodePromoDownloadBtn" type="button" disabled>下载链接即将接入</button>
                         </div>
                     </div>
                     <div class="account-strip" id="accountTrigger">
@@ -1067,6 +1157,7 @@
                             class="mobile-menu-btn"
                             id="mobileMenuBtn"
                             aria-label="切换侧边栏"
+                            aria-expanded="false"
                         >
                             <svg
                                 width="20"
@@ -2150,7 +2241,7 @@
                                 <div class="claude-settings-section claude-snav-target" data-snav-target="invite">
                                     <h2 class="claude-settings-h2">邀请奖励</h2>
                                     <p class="claude-form-help" id="claudeInviteRules" style="margin:0 0 16px;line-height:1.55">
-                                        好友通过你的链接注册并累计 3 天有正常 Chat/API 流量后，双方各得 ¥1（自动入账）。
+                                        好友通过你的链接注册（需为 7 天内的新账号）、验证邮箱，并累计 3 天有正常 Chat/API 流量后，双方各得 1 张重置卡（自动入账）。
                                         好友首充返利 20% 给你（最多 5 人，返利总额上限 ¥100）。
                                     </p>
                                     <div class="claude-form-row">
@@ -2967,8 +3058,8 @@
                                         <p><strong>如何使用？</strong></p>
                                         <ul><li>点击左下角「头像」→「自定义」。</li><li>进入页面后点击「邀请」，进入「邀请奖励」页面后自动显示邀请链接。</li><li>发送给朋友注册即可。</li></ul>
                                         <p><strong>规则</strong></p>
-                                        <ul><li>每邀请一位新用户，双方各得 1 元额度 <sup>*1</sup>。</li><li>邀请的用户如果充值，返利 20% <sup>*2</sup>。</li></ul>
-                                        <p><small><sup>*1</sup> 受限于平台风控机制检测，只有申请 API 通过后，并且累计 3 天有正常 Chat/API 流量后才会自动入账。</small></p>
+                                        <ul><li>每邀请一位新用户，双方各得 1 张<strong>重置卡</strong> <sup>*1</sup>。</li><li>邀请的用户如果充值，返利 20% <sup>*2</sup>。</li></ul>
+                                        <p><small><sup>*1</sup> 一张重置卡可把 Opus 5 免费额度与当日 Token 额度同时清零，不过期，最多持有 50 张，可在「结算 → 重置」使用。受平台风控检测：被邀请人须为新注册账号（注册 7 天内）、已验证邮箱，且累计 3 天有正常 Chat/API 流量后自动入账；同设备 / 同网段 / 重复设备指纹不计。</small></p>
                                         <p><small><sup>*2</sup> 仅限首次充值，上限 100 额度。</small></p>
                                     </div>
                                     <button type="button" class="zm-ann-expand" data-zm-expand hidden>展开</button>
@@ -3160,10 +3251,9 @@
         <script defer src="./cancri_orb_loader.js?v=orb-loader-0510"></script>
         <script defer src="./cancri_image_loader.js?v=img-loader-0531"></script>
         <script defer src="./cancri_chat_nav.js?v=chat-nav-0531"></script>
-        <!-- 2026-07-11 审计/人机验证：Turnstile 服务端真校验。
-             2026-07-20：改为 appearance:always 可见挑战，挂在 #authCaptchaContainer。
+        <!-- 2026-08-14：登录 Turnstile 改为服务端按 IP/风险策略触发；普通请求不展示挑战。
              cancri_turnstile_bridge.js 须在 cancri_chat.js 之前加载。 -->
-        <script defer src="./cancri_turnstile_bridge.js?v=2026-07-22-cn-soft"></script>
+        <script defer src="./cancri_turnstile_bridge.js?v=2026-08-14-server-driven"></script>
         <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
         <script defer src="./js/auth-login-chrome.js?v=2026-06-25-download-icons"></script>
         <!-- 2026-05-16 minimal redo：auth_bg_bake.js 不再需要（极简登录页已
@@ -3179,14 +3269,15 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./glm52_fp8_launch_modal.js?v=20260815-glm52-fp8"></script>
-        <script defer src="./cancri_chat.js?v=20260802-paid-badge-go"></script>
+        <script defer src="./model_launch_modal.js?v=20260809-f5lm2"></script>
+        <script defer src="./glm52_fp8_launch_modal.js?v=20260814-ext0820"></script>
+        <script defer src="./cancri_chat.js?v=20260815-welfare-dedupe"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
-        <script defer src="./cancri_announcement.js?v=20260724-invite-fix"></script>
+        <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./celebrate_invite_capture.js?v=20260724-invite-fix"></script>
-        <script defer src="./claude_ui.js?v=20260730-usage-panel"></script>
+        <script defer src="./celebrate_invite_capture.js?v=20260815-resetcard2"></script>
+        <script defer src="./claude_ui.js?v=20260815-resetcard2"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260625-wallet-warn"></script>

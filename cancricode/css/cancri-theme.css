@@ -1,0 +1,658 @@
+/**
+ * CancriCode customization layer
+ * --------------------------------
+ * This file intentionally loads after css/style.css.
+ * Keep edits scoped to data-cancri-* hooks so the imported Webflow styles
+ * remain stable and section spacing does not leak across the page.
+ */
+
+:root {
+  --cancri-bg: #ffffff;
+  --cancri-surface: #f7f7f8;
+  --cancri-ink: #111111;
+  --cancri-muted: #666666;
+  --cancri-border: rgba(0, 0, 0, 0.12);
+  --cancri-brand: #2200ff;
+  --cancri-dark: #0d0d0d;
+  /* Filled pill: fill + label invert together in dark mode */
+  --cancri-pill-fill: #0d0d0d;
+  --cancri-pill-label: #ffffff;
+  /* Matched to D:\A.CancriCode\GitHub css/cta.css + css/navbar.css pills */
+  --cancri-pill-radius: 999px;
+  --cancri-pill-transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+  /*
+   * Site-wide sans — same stack as [data-cancri-section="codex-workflow"].
+   * Inter for Latin; system CJK fallbacks for Chinese UI copy.
+   */
+  --cancri-font-sans:
+    Inter,
+    "OpenAI Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "PingFang SC",
+    "Microsoft YaHei",
+    "Hiragino Sans GB",
+    "Source Han Sans SC",
+    "Noto Sans CJK SC",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+
+  /* Override Webflow typography tokens so utilities inherit the same face */
+  --_typography---font--paragraph-text: var(--cancri-font-sans);
+  --_typography---font--display-sans: var(--cancri-font-sans);
+  --_text-style---font-family: var(--cancri-font-sans);
+}
+
+/* Unify body + common text surfaces with the Codex paragraph face */
+body,
+.page_wrap,
+.page_wrap p,
+.page_wrap li,
+.page_wrap button,
+.page_wrap input,
+.page_wrap textarea,
+.page_wrap .u-paragraph-s,
+.page_wrap .u-paragraph-m,
+.page_wrap .u-paragraph-l,
+.page_wrap .u-display-s,
+.page_wrap .u-display-xl,
+.page_wrap .u-font-display-sans,
+.page_wrap .faq-trigger,
+.page_wrap .faq-question,
+.page_wrap .faq-answer-wrap,
+.page_wrap .package_banner,
+.page_wrap .g_heading,
+.page_wrap [data-cancri-section] {
+  font-family: var(--cancri-font-sans);
+}
+
+/* Keep true mono / serif utilities untouched */
+.page_wrap .u-font-mono,
+.page_wrap code,
+.page_wrap pre,
+.page_wrap kbd,
+.page_wrap samp {
+  font-family: var(--_typography---font--mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+}
+
+.page_wrap .u-font-display-serif {
+  font-family: var(--_typography---font--display-serif-family, "Anthropic Serif", Georgia, serif);
+}
+
+/* Navigation -------------------------------------------------------------- */
+/*
+ * Vendor sticky is broken by .page_wrap { overflow:clip } and was also
+ * overridden by footer stacking (position:relative). Pin the bar to the
+ * viewport so it stays visible while scrolling.
+ * One frosted layer only on .nav_wrap — never on both component + wrap
+ * (that stacked into a solid bar + thin glass strip).
+ */
+.nav_component {
+  /* Fill/border tokens overridden by cancri-liquid-glass.css */
+  --cancri-nav-glass: rgba(250, 250, 251, 0.66);
+  --cancri-nav-glass-border: rgba(255, 255, 255, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 1100;
+  inset: 0% 0% auto;
+  height: auto;
+  min-height: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Fixed nav is out of flow — reserve its height so hero isn't tucked under.
+   Kill vendor ivory behind the reserved strip; follow --cancri-bg (theme). */
+main.page_wrap,
+main.page_wrap.u-bg-ivory-medium {
+  padding-top: var(--nav--height, 4.25rem);
+  --_color-theme---background: var(--cancri-bg);
+  background: var(--cancri-bg);
+  background-color: var(--cancri-bg);
+}
+
+/* Single glass surface = the visible banner row.
+   Frost / refraction recipe lives in cancri-liquid-glass.css */
+.nav_wrap,
+.nav_wrap.is-mobile,
+.nav_wrap.is-desktop {
+  background: var(--cancri-nav-glass) !important;
+  background-color: var(--cancri-nav-glass) !important;
+  border: none;
+}
+
+/* Keep inner chrome transparent so glass can sample the page. */
+.nav_wrap .nav_contain,
+.nav_wrap .nav_desktop_layout,
+.nav_wrap .nav_menu_contain {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Logo SVGs use currentColor — keep ink tokenized for dark mode. */
+.nav_logo_wrap .nexus-icon-svg,
+.nav_logo_wrap .nexus-logo-svg {
+  color: var(--cancri-ink);
+  fill: currentColor;
+}
+
+/* Mobile drawer: kill ivory-light / ivory-medium leftovers from vendor theme. */
+.nav_menu_wrap,
+.nav_menu_wrap[data-nav-menu-open],
+.nav_menu_wrap.w--open {
+  --_color-theme---background: var(--cancri-bg);
+  background: var(--cancri-bg) !important;
+  background-color: var(--cancri-bg) !important;
+}
+
+.nav_menu_scroll {
+  background: var(--cancri-bg) !important;
+  border-top-color: var(--cancri-bg) !important;
+}
+
+.nav_links_item.is-mobile {
+  border-bottom-color: var(--cancri-border) !important;
+}
+
+/* Desktop nav dropdown cards (帮助文档 / 设计原则 / CTA combo) */
+.nav_dropdown_main_content.is-desktop {
+  background-color: var(--cancri-bg) !important;
+  border-color: var(--cancri-border) !important;
+}
+
+/* Hero -------------------------------------------------------------------- */
+/* Override page_wrap ivory medium so the first viewport reads as pure white. */
+[data-cancri-section="hero"] {
+  --_color-theme---background: var(--cancri-bg);
+  background: var(--cancri-bg);
+}
+
+/* Longer headline — slightly looser rhythm so it doesn’t feel cramped. */
+[data-cancri-section="hero"] .u-display-xl {
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  max-width: 16em;
+}
+
+/* Underlined phrase links in the hero title. */
+[data-cancri-section="hero"] .u-display-xl a,
+[data-cancri-section="hero"] .u-display-xl a .animate-word {
+  color: var(--cancri-brand);
+  text-decoration-color: var(--cancri-brand);
+}
+
+/* Shared brand accent for highlighted copy fragments. */
+.cancri-brand-ink {
+  color: var(--cancri-brand) !important;
+}
+
+[data-cancri-section="codex-workflow"] .codex-col-text > h3 {
+  color: var(--cancri-brand) !important;
+}
+
+[data-cancri-section="engineering-problems"] .big-cta_scroll-bg.is-kt3 {
+  /* Fallback before CornerKit clip-path; matches radius: 40. */
+  border-radius: 40px;
+}
+
+[data-cancri-section="hero"] .home_hero_bump {
+  padding-bottom: 0;
+}
+
+[data-cancri-section="hero"] .cancri-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  /* Hidden until hero title word animation intersects (see cancri-site.js). */
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+[data-cancri-section="hero"] .cancri-hero-ctas.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 280ms;
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-cancri-section="hero"] .cancri-hero-ctas {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}
+
+[data-cancri-section="hero"] .cancri-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cancri-pill-radius);
+  padding: 12px 22px;
+  font-family: var(--_typography---font--display-sans, inherit);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: var(--cancri-pill-transition);
+  box-shadow: none;
+}
+
+[data-cancri-section="hero"] .cancri-hero-cta.is-primary {
+  background: var(--cancri-pill-fill);
+  border: 1px solid var(--cancri-pill-fill);
+  color: var(--cancri-pill-label) !important;
+}
+
+[data-cancri-section="hero"] .cancri-hero-cta.is-primary:hover {
+  background: transparent;
+  color: var(--cancri-pill-fill) !important;
+  box-shadow: 0 0 0 1px var(--cancri-pill-fill);
+}
+
+[data-cancri-section="hero"] .cancri-hero-cta.is-secondary {
+  background: transparent;
+  border: 1px solid var(--cancri-pill-fill);
+  color: var(--cancri-pill-fill) !important;
+}
+
+[data-cancri-section="hero"] .cancri-hero-cta.is-secondary:hover {
+  background: var(--cancri-pill-fill);
+  color: var(--cancri-pill-label) !important;
+  box-shadow: none;
+}
+
+/*
+ * Desktop topbar CTA — one filled pill (GitHub .cta-btn).
+ * Nav list uses align-items:stretch, so the li is full nav height; center the
+ * compact pill inside it (height:auto previously pinned the capsule to the top).
+ */
+.nav_links_wrap.is-desktop > .nav_links_item:has(> [data-cancri-role="nav-cta"]) {
+  display: flex;
+  align-items: center;
+}
+
+.nav_links_wrap.is-desktop > .nav_links_item > [data-cancri-role="nav-cta"] {
+  height: 2.25rem;
+  min-height: 2.25rem;
+  max-height: 2.25rem;
+  padding-left: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  width: auto;
+  border-radius: var(--cancri-pill-radius);
+  overflow: hidden;
+  background: var(--cancri-pill-fill);
+  box-shadow: none;
+  transition: var(--cancri-pill-transition);
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_main_wrap.is-combo,
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_dropdown_link_wrap {
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--cancri-pill-label) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: var(--cancri-pill-transition);
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_main_wrap.is-combo {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .nav_dropdown_component,
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .nav_links_link.is-btn-dropdown {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_dropdown_link_wrap {
+  width: 2.25rem;
+  padding: 0 !important;
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_main_text,
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"] .btn_dropdown_link_wrap {
+  color: var(--cancri-pill-label) !important;
+  line-height: 1;
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover {
+  background: var(--cancri-bg);
+  box-shadow: 0 0 0 1px var(--cancri-pill-fill);
+}
+
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover .btn_main_wrap.is-combo,
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover .btn_dropdown_link_wrap,
+.nav_links_wrap.is-desktop [data-cancri-role="nav-cta"]:hover .btn_main_text {
+  color: var(--cancri-pill-fill) !important;
+}
+
+/* Mobile drawer already has 登录 / 下载; hide the broken split CTA there. */
+.nav_links_wrap.is-mobile [data-cancri-role="nav-cta"] {
+  display: none !important;
+}
+
+/*
+ * Mobile drawer actions — match GitHub mobile-menu.css:
+ * login = outline pill; download = filled pill; both invert on hover.
+ */
+.nav_buttons_item .btn_main_wrap {
+  width: 100%;
+  justify-content: center;
+  border-radius: var(--cancri-pill-radius) !important;
+  padding: 12px 24px !important;
+  min-height: auto;
+  font-weight: 500;
+  transition: var(--cancri-pill-transition);
+}
+
+.nav_buttons_item .btn_main_wrap.is-nav {
+  background-color: transparent !important;
+  border: 1px solid var(--cancri-border) !important;
+  color: var(--cancri-ink) !important;
+}
+
+.nav_buttons_item .btn_main_wrap.is-nav .btn_main_text {
+  color: inherit !important;
+}
+
+.nav_buttons_item .btn_main_wrap.is-nav:hover {
+  background-color: var(--cancri-pill-fill) !important;
+  border-color: var(--cancri-pill-fill) !important;
+  color: var(--cancri-pill-label) !important;
+}
+
+.nav_buttons_item .btn_main_wrap[data-wf--button-main--style="tertiary"] {
+  background-color: var(--cancri-pill-fill) !important;
+  border: 1px solid var(--cancri-pill-fill) !important;
+  color: var(--cancri-pill-label) !important;
+  box-shadow: none;
+}
+
+.nav_buttons_item .btn_main_wrap[data-wf--button-main--style="tertiary"] .btn_main_text {
+  color: inherit !important;
+}
+
+.nav_buttons_item .btn_main_wrap[data-wf--button-main--style="tertiary"]:hover {
+  background-color: var(--cancri-bg) !important;
+  color: var(--cancri-pill-fill) !important;
+  box-shadow: 0 0 0 1px var(--cancri-pill-fill);
+}
+
+/* Engineering-problems CTA ------------------------------------------------ */
+/* The page around the dark panel is white. Only the panel itself stays dark. */
+[data-cancri-section="engineering-problems"] {
+  background: var(--cancri-bg) !important;
+}
+
+[data-cancri-section="engineering-problems"] .big-cta_scroll-bg.is-kt3,
+[data-cancri-section="engineering-problems"] .big-cta_container.is-kt3,
+[data-cancri-section="engineering-problems"] .big-cta-content_wrap.is-kt3,
+[data-cancri-section="engineering-problems"] .big-cta-asset_wrap.is-kt3,
+[data-cancri-section="engineering-problems"] .ktve-stage {
+  /* Always near-black stage — not tied to pill-fill inversion. */
+  background-color: #0d0d0d !important;
+}
+
+/* Keep the content layer transparent in case a future animation paints behind it. */
+[data-cancri-section="engineering-problems"] .big-cta-content_wrap.is-kt3 {
+  background: transparent !important;
+}
+
+/* "了解工作原理" — white filled pill on dark; hover inverts (GitHub .cta-btn on dark). */
+[data-cancri-section="engineering-problems"] [data-scroll="button"].btn_main_wrap {
+  border-radius: var(--cancri-pill-radius) !important;
+  background: #ffffff !important;
+  color: var(--cancri-dark) !important;
+  border: 1px solid #ffffff !important;
+  padding: 12px 24px !important;
+  font-weight: 500;
+  transition: var(--cancri-pill-transition);
+  box-shadow: none;
+}
+
+[data-cancri-section="engineering-problems"] [data-scroll="button"].btn_main_wrap .btn_main_text,
+[data-cancri-section="engineering-problems"] [data-scroll="button"].btn_main_wrap .g_svg {
+  color: inherit !important;
+}
+
+[data-cancri-section="engineering-problems"] .big-cta_scroll-bg.is-kt3:hover [data-scroll="button"].btn_main_wrap,
+[data-cancri-section="engineering-problems"] [data-scroll="button"].btn_main_wrap:hover {
+  background: transparent !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
+/* Codex-like workflow section --------------------------------------------- */
+[data-cancri-section="codex-workflow"] {
+  background: var(--cancri-bg) !important;
+  font-family: var(--cancri-font-sans);
+}
+
+[data-cancri-section="codex-workflow"] h2,
+[data-cancri-section="codex-workflow"] h3 {
+  font-family: inherit;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+[data-cancri-section="codex-workflow"] p {
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/*
+ * Stacked layout (mobile): center text + image like Codex.
+ * Was align-items:flex-end, which pinned the 350px text column to the right.
+ */
+[data-cancri-section="codex-workflow"] .codex-row {
+  align-items: center !important;
+}
+
+[data-cancri-section="codex-workflow"] .codex-col-text {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+[data-cancri-section="codex-workflow"] .codex-col-img {
+  width: 100%;
+  overflow: visible !important;
+}
+
+@media (min-width: 768px) {
+  [data-cancri-section="codex-workflow"] .codex-row {
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    gap: 60px !important;
+  }
+
+  [data-cancri-section="codex-workflow"] .codex-row-reverse {
+    flex-direction: row-reverse !important;
+  }
+
+  [data-cancri-section="codex-workflow"] .codex-col-text {
+    flex: 0 0 30% !important;
+    margin-left: 0;
+    margin-right: 0;
+    text-align: left;
+  }
+
+  [data-cancri-section="codex-workflow"] .codex-col-img {
+    flex: 0 0 65% !important;
+  }
+}
+
+/* Download cards ----------------------------------------------------------- */
+[data-cancri-section="downloads"] {
+  --cancri-download-1: #efefef;
+  --cancri-download-2: #e8e8e8;
+  --cancri-download-3: #e2e2e2;
+  --cancri-download-chip: #ffffff;
+  /* Concentric / nested radius: R_btn = R_card - padding */
+  --cancri-download-radius: 40px;
+  --cancri-download-pad: var(--_spacing---space--6, 2rem);
+  --cancri-download-btn-radius: max(
+    0px,
+    calc(var(--cancri-download-radius) - var(--cancri-download-pad))
+  );
+  background: var(--cancri-bg);
+  border-top: none;
+  border-bottom: none;
+}
+
+[data-cancri-section="downloads"] .package_banner {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  /* Fallback; CornerKit replaces with squircle clip-path. */
+  border-radius: var(--cancri-download-radius);
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-cancri-section="downloads"] .package_banner .g_background {
+  border: none;
+  box-shadow: none;
+}
+
+/* Layered surfaces — same #EFEFEF family, not flat white. */
+[data-cancri-section="downloads"] .u-grid-desktop > .u-column-4:nth-child(1) .package_banner .g_background {
+  background: var(--cancri-download-1) !important;
+}
+
+[data-cancri-section="downloads"] .u-grid-desktop > .u-column-4:nth-child(2) .package_banner .g_background {
+  background: var(--cancri-download-2) !important;
+}
+
+[data-cancri-section="downloads"] .u-grid-desktop > .u-column-4:nth-child(3) .package_banner .g_background {
+  background: var(--cancri-download-3) !important;
+}
+
+/* Inner OS icon chip — white layer on grey card. */
+[data-cancri-section="downloads"] .package_banner_left > div > div[style*="border-radius: 12px"] {
+  background: var(--cancri-download-chip) !important;
+  border: none;
+  box-shadow: none;
+}
+
+/* Download CTAs — concentric with card (nested radius), not a free 999px capsule. */
+[data-cancri-section="downloads"] .btn_main_wrap {
+  border-radius: var(--cancri-download-btn-radius) !important;
+  background: var(--cancri-pill-fill) !important;
+  border: 1px solid var(--cancri-pill-fill) !important;
+  color: var(--cancri-pill-label) !important;
+  padding: 10px 20px !important;
+  font-weight: 500;
+  transition: var(--cancri-pill-transition);
+  box-shadow: none;
+  opacity: 1 !important;
+}
+
+[data-cancri-section="downloads"] .btn_main_wrap .btn_main_text,
+[data-cancri-section="downloads"] .btn_main_wrap .g_svg {
+  color: inherit !important;
+}
+
+[data-cancri-section="downloads"] .btn_main_wrap:hover {
+  background: var(--cancri-bg) !important;
+  color: var(--cancri-pill-fill) !important;
+  box-shadow: 0 0 0 1px var(--cancri-pill-fill);
+}
+
+/*
+ * Disabled macOS / Linux cards.
+ * Do NOT use opacity on .package_banner — it makes the whole surface translucent
+ * and lets any under-layer (e.g. rimlight conic) bleed through the card face.
+ */
+[data-cancri-section="downloads"] .package_banner.is-disabled,
+[data-cancri-section="downloads"] .package_banner[style*="opacity"] {
+  opacity: 1 !important;
+  filter: none !important;
+  cursor: not-allowed;
+}
+
+[data-cancri-section="downloads"] .package_banner.is-disabled .package_banner_left,
+[data-cancri-section="downloads"] .package_banner[style*="opacity"] .package_banner_left {
+  opacity: 0.55;
+  filter: grayscale(100%);
+}
+
+[data-cancri-section="downloads"] .package_banner.is-disabled .g_background,
+[data-cancri-section="downloads"] .package_banner[style*="opacity"] .g_background {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Disabled macOS / Linux — outline muted pill, no hover invert. */
+[data-cancri-section="downloads"] .btn_main_wrap[style*="pointer-events"] {
+  background: transparent !important;
+  border: 1px solid var(--cancri-border) !important;
+  color: var(--cancri-muted) !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+[data-cancri-section="downloads"] .btn_main_wrap[style*="pointer-events"]:hover {
+  background: transparent !important;
+  color: var(--cancri-muted) !important;
+  box-shadow: none !important;
+}
+
+[data-cancri-section="downloads"] .btn_main_wrap[style*="pointer-events"] .btn_main_text {
+  color: inherit !important;
+}
+
+/* The spacer is intentionally transparent: do not paint a white bar here. */
+[data-cancri-section="downloads"] .g_section_space {
+  background: transparent !important;
+}
+
+/* FAQ --------------------------------------------------------------------- */
+[data-cancri-section="faq"] {
+  background: var(--cancri-bg) !important;
+  border-top: none;
+}
+
+[data-cancri-section="faq"] .g_section_space {
+  background: transparent !important;
+}
+
+[data-cancri-section="faq"] .faq-item {
+  border-color: var(--cancri-border) !important;
+}
+
+[data-cancri-section="faq"] .faq-trigger:focus-visible {
+  outline: 2px solid var(--cancri-ink) !important;
+  outline-offset: 5px;
+  border-radius: var(--radius--small);
+}
+
+/* Footer shell — brand mark band in cancri-footer-mark.css (#2200FF). */
+/* Toggle chrome: css/cancri-theme-toggle.css + js/cancri-theme.js */
+[data-cancri-section="footer"] {
+  background: #2200ff !important;
+}

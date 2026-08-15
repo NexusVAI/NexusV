@@ -1,0 +1,99 @@
+/**
+ * Footer brand mark — Trae-style reveal band (Cancri-owned).
+ * - Spacer + fixed band under main content (z-index)
+ * - Brand fill #2200FF
+ * - Mouse-local ripple via js/cancri-footer-mark.js
+ */
+
+/* Keep nav out of this rule — it must stay sticky/fixed above content. */
+main.page_wrap > *:not([data-cancri-section="footer"]):not(.nav_component) {
+  position: relative;
+  z-index: 1;
+}
+
+[data-cancri-section="footer"] {
+  --cancri-footer-brand: #2200ff;
+  position: relative;
+  z-index: 0;
+  display: block;
+  overflow: visible;
+  background: var(--cancri-footer-brand) !important;
+  color: #ffffff;
+  min-height: 0;
+  padding: 0;
+}
+
+/* Trae grid-distortion band proportions. */
+[data-cancri-role="footer-distortion"] {
+  --cancri-distortion-aspect: 3.83228;
+  --cancri-distortion-pad-y: 16px;
+  --cancri-distortion-pad-x: 16px;
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  padding-bottom: calc(
+    (min(100vw, 1600px) + 2 * var(--cancri-distortion-pad-y)) /
+      var(--cancri-distortion-aspect)
+  );
+}
+
+[data-cancri-role="footer-distortion"] .cancri-footer-distortion__band {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 100%;
+  height: calc(
+    (min(100vw, 1600px) + 2 * var(--cancri-distortion-pad-y)) /
+      var(--cancri-distortion-aspect)
+  );
+  box-sizing: border-box;
+  padding: 0;
+  display: block;
+  background: var(--cancri-footer-brand, #2200ff);
+  pointer-events: auto;
+  cursor: default;
+  touch-action: none;
+}
+
+@media (min-width: 744px) {
+  [data-cancri-role="footer-distortion"] {
+    --cancri-distortion-pad-x: 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  [data-cancri-role="footer-distortion"] {
+    --cancri-distortion-pad-x: 32px;
+  }
+}
+
+[data-cancri-role="footer-distortion"] .cancri-footer-distortion__mount {
+  position: absolute;
+  top: var(--cancri-distortion-pad-y);
+  bottom: var(--cancri-distortion-pad-y);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2 * var(--cancri-distortion-pad-x));
+  max-width: 1600px;
+  height: auto;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+[data-cancri-role="footer-distortion"] .cancri-footer-distortion__mount canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Theme toggle floats on the brand band — no empty white skeleton. */
+[data-cancri-role="footer-distortion"] .cancri-footer-bar {
+  position: absolute;
+  top: 16px;
+  right: var(--cancri-distortion-pad-x);
+  width: auto;
+  z-index: 2;
+  pointer-events: auto;
+}

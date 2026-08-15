@@ -1,6 +1,6 @@
 /**
  * Cancri 开放平台 — 共享会话鉴权（与 chat 页 storageKey 一致）
- * 需拉用户数据的页面：未登录 → location.replace 登录页；脚本失败 → cs-auth-error
+ * 需拉用户数据的页面：无有效会话（含依赖脚本失败、超时）→ location.replace 登录页
  */
 (function (win) {
   "use strict";
@@ -77,31 +77,22 @@
     return !!(session && session.user && !session.user.is_anonymous);
   }
 
-  /** @returns {Promise<object|null>} session，或 null（已跳转 / 已展示错误） */
+  /** @returns {Promise<object|null>} session，或 null（已跳转登录页） */
   async function requireSession(opts) {
     opts = opts || {};
     try {
       getSupabase();
     } catch (e) {
       if (e && e.message === "supabase_not_loaded") {
-        showAuthError("依赖脚本加载失败，请检查网络后刷新。", opts.errorParent);
-        if (opts.loadingId) hide(opts.loadingId);
+        redirectToLogin();
         return null;
       }
       throw e;
     }
     var session = await getSession(opts.timeoutMs);
     if (!isValidSession(session)) {
-      // 本地 file:// 预览：返回 stub session 让页面 UI 渲染，不跳转登录页
-      if (location.protocol === 'file:') {
-        session = {
-          user: { email: 'preview@local', is_anonymous: false },
-          access_token: 'preview-token',
-        };
-      } else {
-        redirectToLogin();
-        return null;
-      }
+      redirectToLogin();
+      return null;
     }
     if (opts.loadingId) hide(opts.loadingId);
     return session;

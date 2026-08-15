@@ -1,0 +1,29 @@
+{
+  "source": "修改对话中气泡的样式.html",
+  "sourceBuild": "210d3f7c4a",
+  "userKB": 6.3,
+  "asstKB": 9.1,
+  "userSlots": [
+    "user-sr-title",
+    "user-attachments",
+    "user-text",
+    "user-time"
+  ],
+  "asstSlots": [
+    "asst-sr-title",
+    "asst-answer"
+  ],
+  "userActions": [
+    "retry",
+    "edit",
+    "copy"
+  ],
+  "asstActions": [
+    "copy",
+    "speak",
+    "retry"
+  ],
+  "userBubble": true,
+  "asstAnswer": true,
+  "asstAnswerBody": true
+}

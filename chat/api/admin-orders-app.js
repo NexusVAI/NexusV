@@ -350,23 +350,57 @@ function showToast(text, kind) {
 // 正在倒计时的待提交审批：order_id → interval 计时器。
 // 存在模块级 Map 而非按钮 DOM 上，避免 renderOrders() 重建 innerHTML
 // 后旧按钮被销毁、计时器却继续跑完静默提交且无法取消。
+// order_id → { timer, left, note }
 const UNDO_TIMERS = new Map();
 
-function cancelAllUndoTimers() {
-    if (UNDO_TIMERS.size === 0) return 0;
-    const n = UNDO_TIMERS.size;
-    UNDO_TIMERS.forEach((timer) => clearInterval(timer));
-    UNDO_TIMERS.clear();
-    return n;
+function cancelUndoTimer(id) {
+    const st = UNDO_TIMERS.get(id);
+    if (!st) return false;
+    clearInterval(st.timer);
+    UNDO_TIMERS.delete(id);
+    return true;
+}
+
+// 2026-08-12 修复：原实现在**每次**重渲染时无差别取消全部待提交审批。
+// 于是连续处理多笔时（正是清理重复订单的场景），前一笔成功后触发的列表刷新
+// 会把后面几笔还在倒计时的审批静默取消，管理员以为点过了、实际请求从未发出。
+// 数据佐证：卡在 submitted 的订单 reviewed_at / reviewed_by 全为 null。
+// 现在只取消「订单已从列表里消失」的（例如已被删除），其余继续跑。
+function pruneUndoTimers(validIds) {
+    let cancelled = 0;
+    UNDO_TIMERS.forEach((_st, id) => {
+        if (!validIds.has(id)) {
+            cancelUndoTimer(id);
+            cancelled += 1;
+        }
+    });
+    return cancelled;
+}
+
+// 重渲染会重建 innerHTML、换掉按钮对象。渲染后把仍在倒计时的按钮恢复成
+// 「撤销（Ns）」，否则按钮看起来弹回了「通过」，管理员会以为没点上。
+function restorePendingApprovals(container) {
+    UNDO_TIMERS.forEach((st, id) => {
+        const btn = container.querySelector(
+            '[data-action="approve"][data-id="' + id + '"]',
+        );
+        if (!btn) return;
+        if (!btn.dataset.origLabel) btn.dataset.origLabel = btn.textContent;
+        btn.classList.remove("approve");
+        btn.classList.add("undo");
+        btn.textContent = "撤销（" + st.left + "s）";
+    });
 }
 
 function renderOrders() {
-    // 重渲染会销毁倒计时按钮，先取消所有待提交审批并提醒，
-    // 绝不在管理员无法撤销的情况下静默提交。
-    const cancelled = cancelAllUndoTimers();
+    // 只取消「订单已不在列表里」的倒计时（例如已被删除）；仍在列表里的继续跑，
+    // 渲染完由 restorePendingApprovals() 把按钮恢复成「撤销（Ns）」。
+    // 绝不因为一次无关刷新就把管理员已经点下去的审批吞掉。
+    const liveIds = new Set(cachedOrders.map((o) => o.id));
+    const cancelled = pruneUndoTimers(liveIds);
     if (cancelled > 0) {
         showToast(
-            "⚠️ 列表已刷新，" + cancelled + " 个待提交的通过已自动取消，请重新操作",
+            "⚠️ " + cancelled + " 个待提交的通过已取消：订单已不在列表中",
             "err",
         );
     }
@@ -557,40 +591,48 @@ function renderOrders() {
                 if (action === "approve") {
                     // 防手滑：点击后进入 5 秒倒计时，按钮变为「撤销」，
                     // 再点一次即取消；倒计时结束才真正调后端。
+                    // ⚠️ 期间列表可能被重渲染（处理别的订单/切筛选/刷新），
+                    // 按钮对象会被替换，所以所有 UI 更新都按 id 重新查 DOM。
+                    const liveBtn = () =>
+                        document.querySelector(
+                            '[data-action="approve"][data-id="' + id + '"]',
+                        ) || btn;
                     if (UNDO_TIMERS.has(id)) {
-                        clearInterval(UNDO_TIMERS.get(id));
-                        UNDO_TIMERS.delete(id);
-                        btn.classList.remove("undo");
-                        btn.classList.add("approve");
-                        btn.textContent = btn.dataset.origLabel || "通过";
+                        cancelUndoTimer(id);
+                        const b = liveBtn();
+                        b.classList.remove("undo");
+                        b.classList.add("approve");
+                        b.textContent = b.dataset.origLabel || "通过";
                         showToast("已撤销，未提交", "ok");
                         return;
                     }
                     btn.dataset.origLabel = btn.textContent;
                     btn.classList.remove("approve");
                     btn.classList.add("undo");
-                    let left = 5;
-                    btn.textContent = "撤销（" + left + "s）";
-                    const timer = setInterval(async () => {
-                        // 重渲染会 cancelAllUndoTimers() 清掉本计时器；双重保险：
-                        // 若 Map 里已不是本计时器，说明已被取消，直接停止。
-                        if (UNDO_TIMERS.get(id) !== timer) {
-                            clearInterval(timer);
+                    // 备注在点击当下取走：重渲染会重建输入框、清空内容。
+                    const state = { timer: null, left: 5, note: note };
+                    btn.textContent = "撤销（" + state.left + "s）";
+                    state.timer = setInterval(async () => {
+                        // 若 Map 里已不是本计时器，说明已被撤销/取消，直接停止。
+                        const cur = UNDO_TIMERS.get(id);
+                        if (!cur || cur.timer !== state.timer) {
+                            clearInterval(state.timer);
                             return;
                         }
-                        left -= 1;
-                        if (left > 0) {
-                            btn.textContent = "撤销（" + left + "s）";
+                        state.left -= 1;
+                        if (state.left > 0) {
+                            liveBtn().textContent = "撤销（" + state.left + "s）";
                             return;
                         }
-                        clearInterval(timer);
+                        clearInterval(state.timer);
                         UNDO_TIMERS.delete(id);
-                        btn.disabled = true;
-                        btn.textContent = "提交中…";
+                        const submitBtn = liveBtn();
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = "提交中…";
                         try {
                             const r = await callGateway(
                                 "admin_approve_order",
-                                { order_id: id, admin_note: note },
+                                { order_id: id, admin_note: state.note },
                             );
                             // 2026-06-23：recharge 订单审核后 auto_credited=true，无激活码
                             if (r.auto_credited) {
@@ -611,7 +653,7 @@ function renderOrders() {
                             patchLocalOrder(id, {
                                 status: r.auto_credited ? "activated" : "approved",
                                 activation_code: r.activation_code || null,
-                                admin_note: note || null,
+                                admin_note: state.note || null,
                                 reviewed_at: new Date().toISOString(),
                                 activated_at: r.auto_credited
                                     ? new Date().toISOString()
@@ -626,13 +668,15 @@ function renderOrders() {
                                 err.message ||
                                 "操作失败";
                             showToast("❌ " + m, "err");
-                            btn.disabled = false;
-                            btn.classList.remove("undo");
-                            btn.classList.add("approve");
-                            btn.textContent = btn.dataset.origLabel || "通过";
+                            const failBtn = liveBtn();
+                            failBtn.disabled = false;
+                            failBtn.classList.remove("undo");
+                            failBtn.classList.add("approve");
+                            failBtn.textContent =
+                                failBtn.dataset.origLabel || "通过";
                         }
                     }, 1000);
-                    UNDO_TIMERS.set(id, timer);
+                    UNDO_TIMERS.set(id, state);
                     showToast("⏳ 5 秒后提交通过，点「撤销」可取消", "ok");
                     return;
                 }
@@ -703,6 +747,9 @@ function renderOrders() {
             });
         });
     });
+
+    // 按钮是刚重建的，把仍在倒计时的审批恢复成「撤销（Ns）」。
+    restorePendingApprovals(container);
 }
 
 // 局部乐观更新：审批后立刻把结果反映到列表，不等全量 reload。

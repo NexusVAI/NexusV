@@ -4,7 +4,7 @@
  * 适用页面（按 v1 钩子接入）：
  *   chat/api/index.html         门户首页
  *   chat/api_apply.html         联系我们（工单/反馈）
- *   chat/api_keys.html          我的 Keys
+ *   chat/api/console.html       新控制台（OpenAI 复刻）；旧 chat/api_keys.html 已弃用
  *   chat/api_models.html        模型广场
  *   chat/api_docs.html          API 文档
  *   chat/api/admin*.html        管理员页面（可选接入）
@@ -266,7 +266,7 @@
   var TOPNAV_MENU_KEYS = [
     { key: "overview", match: /\/api\/?$|\/api\/index\.html$/ },
     { key: "contact", match: /api_apply\.html/ },
-    { key: "keys", match: /api_keys\.html/ },
+    { key: "keys", match: /api_keys\.html|\/api\/(?:console|keys|usage|logs)\.html/ },
     { key: "models", match: /api_models\.html/ },
     { key: "docs", match: /api_docs\.html/ },
     { key: "pricing", match: /pricing\.html/ },
@@ -278,7 +278,7 @@
       sideLabel: "相关入口",
       main: [
         { self: true, label: "平台概览" },
-        { nav: /api_keys/, label: "创建密钥" },
+        { nav: /api_keys|\/api\/(?:console|keys)/, label: "创建密钥" },
         { nav: /api_docs/, hash: "quickstart", label: "快速开始" },
       ],
       side: [
@@ -291,7 +291,7 @@
       sideLabel: "其他入口",
       main: [
         { self: true, label: "提交工单" },
-        { nav: /api_keys/, label: "管理 Keys" },
+        { nav: /api_keys|\/api\/(?:console|keys)/, label: "管理 Keys" },
         { nav: /api_docs/, hash: "auth", label: "认证方式" },
       ],
       side: [
@@ -322,7 +322,7 @@
       ],
       side: [
         { nav: /pricing/, label: "套餐与额度" },
-        { nav: /api_keys/, label: "管理 API Keys" },
+        { nav: /api_keys|\/api\/(?:console|keys)/, label: "管理 API Keys" },
         { nav: /api_docs/, hash: "messages", label: "Messages 协议" },
       ],
     },
@@ -346,7 +346,7 @@
       main: [
         { self: true, label: "套餐与加油包" },
         { nav: /orders/, label: "我的订单" },
-        { nav: /api_keys/, label: "查看 Keys" },
+        { nav: /api_keys|\/api\/(?:console|keys)/, label: "查看 Keys" },
       ],
       side: [
         { nav: /api_models/, label: "模型广场" },
@@ -359,7 +359,7 @@
       main: [
         { self: true, label: "订单记录" },
         { nav: /pricing/, label: "购买套餐" },
-        { nav: /api_keys/, label: "我的 Keys" },
+        { nav: /api_keys|\/api\/(?:console|keys)/, label: "我的 Keys" },
       ],
       side: [
         { nav: /api_docs/, hash: "quota", label: "额度规则" },
@@ -912,7 +912,9 @@
       brand.appendChild(wordmark);
     }
 
-    inner.querySelectorAll('.topnav a[href*="api_keys"]').forEach(function (a) {
+    inner.querySelectorAll(
+      '.topnav a[href*="api_keys"], .topnav a[href*="api/console"], .topnav a[href*="api/keys"]'
+    ).forEach(function (a) {
       if (/^keys$/i.test((a.textContent || "").trim())) {
         a.textContent = "控制台";
       }
@@ -925,9 +927,10 @@
     var root = chatRootPrefix();
     var consoleLink = document.createElement("a");
     consoleLink.className = "topbar__console-btn";
-    consoleLink.href = root + "api_keys.html";
+    consoleLink.href = root + "api/console.html";
     consoleLink.textContent = "Console";
-    if (/api_keys\.html/i.test(location.pathname || "")) {
+    if (/\/api\/(?:console|keys|usage|logs)\.html/i.test(location.pathname || "") ||
+        /api_keys\.html/i.test(location.pathname || "")) {
       consoleLink.classList.add("is-active");
     }
     actions.appendChild(consoleLink);

@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
-    <title>NexusV</title>
-    <meta name="description" content="NexusV - 前沿游戏模组制作工作室，打造最具沉浸感的开放世界交互体验。">
-    <meta name="keywords" content="NexusV,SentienceV4,游戏模组,开放世界,AI">
-    <meta property="og:title" content="NexusV">
-    <meta property="og:description" content="NexusV - 前沿游戏模组制作工作室，打造最具沉浸感的开放世界交互体验。">
+    <title>NexusVAI - 多模型 AI 聚合平台</title>
+    <meta name="description" content="NexusVAI（Cancri）多模型 AI 聚合平台，统一接入 GPT、Claude、DeepSeek、Gemini 等 40+ 顶尖大语言模型，提供对话与 OpenAI 兼容 API。">
+    <link rel="canonical" href="https://www.nexusvai.xyz/" />
+    <meta name="keywords" content="NexusVAI,Cancri,AI,大模型,GPT,Claude,DeepSeek,Gemini,API,多模型聚合">
+    <meta property="og:title" content="NexusVAI - 多模型 AI 聚合平台">
+    <meta property="og:description" content="NexusVAI（Cancri）多模型 AI 聚合平台，统一接入 GPT、Claude、DeepSeek、Gemini 等 40+ 顶尖大语言模型，提供对话与 OpenAI 兼容 API。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.nexusvai.xyz/">
-    <meta property="og:image" content="Logo/NNNEE.png">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/NNNEE.png">
     <meta name="twitter:card" content="summary_large_image">
     <script>
         (() => {
@@ -22,7 +23,7 @@
             if (theme === 'blue') document.documentElement.classList.add('blue-theme');
         })();
     </script>
-    <link rel="icon" type="image/svg+xml" href="Logo/NexusV_favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="chat/assets/nexusvai-N-logo-tight.svg" />
     <link rel="apple-touch-icon" href="Logo/Cancri.png">
     <!-- 预热主站会跳转到 /chat/、/chat/api/ 子站时所需的第三方连接。
          用户在主站停留期间 TLS 握手已完成，跳转过去几乎零延迟。
@@ -49,8 +50,52 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/display-fonts.css">
-</head>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "NexusVAI",
+  "alternateName": "Cancri",
+  "url": "https://www.nexusvai.xyz/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.nexusvai.xyz/article.html?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "NexusVAI",
+  "alternateName": "Cancri",
+  "url": "https://www.nexusvai.xyz/",
+  "logo": "https://www.nexusvai.xyz/Logo/NNNEE.png",
+  "sameAs": [
+    "https://x.com/NexusVAI",
+    "https://discord.gg/BD9M6VMu",
+    "https://github.com/NexusVai",
+    "https://huggingface.co/xingy555888",
+    "https://space.bilibili.com/3691002594331274"
+  ]
+}
+</script>
+  </head>
 <body>
+<link rel="stylesheet" type="text/css" href="chat/assets/p2m-loader.css?v=20260814-paint" />
+<div id="p2m-loader" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
+    <g id="mark" fill="#111111" fill-rule="evenodd">
+      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </g>
+  </svg>
+</div>
+<script src="chat/assets/p2m-loader.js?v=20260814-paint" defer></script>
+
     <!-- Shared components injected by components.js -->
 
     <main class="main-container">

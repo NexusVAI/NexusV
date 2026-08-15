@@ -169,7 +169,7 @@
 --content-v-padding:24px;
 --content-h-padding:24px;
 --docs-page-max-width:1048px;
---sans-serif:"OpenAI Sans",helvetica,sans-serif;
+--sans-serif:"OpenAI Sans","Segoe UI Variable Text","Segoe UI","Noto Sans SC","Noto Sans CJK SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
 --monospace:"SF Mono","SFMono-Regular",ui-monospace,consolas,liberation mono,menlo,monospace;
 --redesigned-page-heading-letter-spacing:.36px;
 --redesigned-page-heading-weight:590;

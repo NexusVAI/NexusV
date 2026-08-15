@@ -974,6 +974,16 @@
 	var homeInput = document.getElementById("homeInput");
 	var sendChatBtn = document.getElementById("sendChatBtn");
 	var chatMessages = document.getElementById("chatMessages");
+	var PORT_SKIN = document.documentElement.getAttribute("data-skin") === "claude-port";
+	var messageSink = PORT_SKIN && document.getElementById("messageList") || chatMessages;
+	var PORT_CHAT_ROW_CLS = "inline-flex items-center justify-center relative isolate shrink-0 can-focus select-none border-transparent transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-8 rounded-md min-w-[4rem] whitespace-nowrap !text-xs w-full !min-w-0 group py-1.5 !rounded-[9px] px-4 !transition-none before:!transition-none !-outline-offset-2 overflow-hidden active:bg-neutral-30 active:scale-[1.0] _fill_19tw7_9 _ghost_19tw7_96";
+	var PORT_ICON_BTN_CLS = "cds-reset group/btn relative isolate inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap select-none cursor-[var(--cds-cursor-interactive)] border-0 outline-none focus-visible:outline-hidden rounded h-control font-sans text-body transition-shadow duration-fast focus-visible:shadow-focus text-primary font-normal aspect-square w-control px-0";
+	var PORT_ACTIONS_CLS = {
+		bar: "flex items-center select-none [&_button]:text-muted [&_button:hover:not([aria-pressed=true])]:text-primary",
+		inner: "flex items-center gap-1",
+		group: "flex items-center",
+		ts: "text-caption text-muted select-none pr-1"
+	};
 	var scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
 	var homeCenter = document.getElementById("homeCenter");
 	var attachBtn = document.getElementById("attachBtn");
@@ -1314,7 +1324,7 @@
 			const initialQuestion = captcha.question || "";
 			const initialAttempts = Number(captcha.attempts_remaining ?? captcha.attemptsRemaining ?? 3);
 			const expiresAt = captcha.expires_at || captcha.expiresAt || null;
-			const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/AQYZ.jpg";
+			const imageUrl = captcha.image_url || captcha.imageUrl || "/Logo/Cancri1.jpg";
 			if (!challengeId || !initialQuestion) {
 				resolve(true);
 				return;
@@ -1327,7 +1337,7 @@
 			modal.innerHTML = `
         <div style="background:var(--bg,#1f1f1d);color:var(--text,#f5f4ed);width:min(420px,92vw);border-radius:14px;border:1px solid var(--border,#3a3a37);box-shadow:0 24px 60px rgba(0,0,0,.45);overflow:hidden;font-family:inherit;">
           <div style="padding:20px 24px 0 24px;display:flex;align-items:center;gap:14px;">
-            <img src="${imageUrl}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
+            <img src="${escapeHtml(imageUrl)}" alt="安全验证" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:1px solid var(--border,#3a3a37);background:#0e0e0c;" onerror="this.style.display='none'" />
             <div style="flex:1;min-width:0;">
               <div style="font-size:15px;font-weight:600;line-height:1.2;">人机校验</div>
               <div id="suspCaptchaSub" style="font-size:12px;opacity:.7;margin-top:2px;">检测到请求频率异常，请完成以下题目继续使用</div>
@@ -2154,7 +2164,7 @@
 			if (!sub || typeof sub !== "object") return;
 			quotaState.tier = sub.tier === "paid" ? "paid" : "free";
 			const rawPlan = typeof sub.plan_code === "string" ? sub.plan_code : null;
-			quotaState.planCode = rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max" ? rawPlan : null;
+			quotaState.planCode = rawPlan === "go" || rawPlan === "plus" || rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max" ? rawPlan : null;
 			quotaState.isGrandfathered = Boolean(sub.is_grandfathered);
 		} catch (e) {}
 	}
@@ -2188,9 +2198,17 @@
 		const meta = getModelMeta(modelId);
 		return Boolean(meta && meta.proMaxOnly === true || PRO_MAX_GATE_IDS.has(modelId));
 	}
+	function isAnyPaidPlanCode(code) {
+		return code === "go" || code === "plus" || code === "pro" || code === "pro_plus" || code === "pro_max";
+	}
+	function normalizePlanCode(raw) {
+		if (typeof raw !== "string") return null;
+		return isAnyPaidPlanCode(raw) ? raw : null;
+	}
 	function getQuotaBlockReason(modelId) {
 		if (quotaState.billingMode === "plan_v4") {
-			if (isFreeWelfareModel(modelId)) {
+			const meta = getModelMeta(modelId);
+			if (isFreeWelfareModel(modelId) || meta && meta.costTier === "free") {
 				if (quotaState.planV4Active === false && quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 				if (quotaState.planV4Active === false && quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
 				return null;
@@ -2198,24 +2216,20 @@
 			if (quotaState.planV4Active === false) return "plan_required";
 			return null;
 		}
+		if (isAnyPaidPlanCode(quotaState.planCode)) return null;
 		if (isProMaxGateModel(modelId)) {
 			const planCode = quotaState.planCode;
 			if (planCode !== "pro_max" && (planCode !== null || quotaState.tier === "free")) return "pro_max_only";
 		}
 		if (isProPlusGateModel(modelId)) {
-			const planCode = quotaState.planCode;
-			if (planCode !== null) {
-				const isProPlusOrAbove = planCode === "pro_plus" || planCode === "pro_max";
-				const isGrandfatheredPro = planCode === "pro" && quotaState.isGrandfathered;
-				if (!isProPlusOrAbove && !isGrandfatheredPro) return "pro_plus_only";
-			}
+			if (quotaState.planCode !== null) return "pro_plus_only";
 		}
 		if (quotaState.tier !== "free") return null;
 		if (isProPlusGateModel(modelId)) return "pro_plus_only";
 		if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
 		if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 		if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
-		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "deepseek-v4-pro-welfare") return null;
+		if (isFreeWelfareModel(modelId)) return null;
 		const hasTopup = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
 		if (!hasTopup && quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
 		if (!isPaidGateModel(modelId)) return null;
@@ -2224,14 +2238,14 @@
 	}
 	function getQuotaBlockMessage(modelId) {
 		switch (getQuotaBlockReason(modelId)) {
-			case "plan_required": return "该模型需订阅套餐后使用（免费模型不受限）。前往定价页订阅套餐。";
-			case "pro_only": return "该模型仅向 Cancri Pro 及以上订阅用户开放，请升级或选择其他模型。";
-			case "pro_plus_only": return "该模型仅向 Cancri Pro+ 及以上订阅用户开放（Claude Opus / Gemini 3.1 Pro / 视频生成），请升级或选择其他模型。";
-			case "pro_max_only": return "该模型仅向 Cancri Pro Max 订阅用户开放，请升级或选择其他模型。";
-			case "pool_exhausted": return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
-			case "daily_limit": return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。升级 Cancri Pro 可立即获得专属月度配额。";
-			case "token_window_5h_exceeded": return "5 小时内 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
-			case "token_window_week_exceeded": return "本周 token 用量已达上限，请稍后再试。升级 Pro 解除限制。";
+			case "plan_required": return "需要Go以上订阅。前往定价页订阅套餐（免费模型不受限）。";
+			case "pro_only": return "需要Go以上订阅，请升级或选择其他模型。";
+			case "pro_plus_only": return "需要Go以上订阅，请升级或选择其他模型。";
+			case "pro_max_only": return "需要Go以上订阅，请升级或选择其他模型。";
+			case "pool_exhausted": return "本月免费共享池（1亿 token）已用完，下月 1 号 00:00（UTC+8）重置。订阅 Go 以上可获得专属月度额度。";
+			case "daily_limit": return "您今日 15 次免费 PAID 模型试用已用完，明日 00:00（UTC+8）重置。订阅 Go 以上可获得专属月度额度。";
+			case "token_window_5h_exceeded": return "5 小时内 token 用量已达上限，请稍后再试。订阅 Go 以上可解除限制。";
+			case "token_window_week_exceeded": return "本周 token 用量已达上限，请稍后再试。订阅 Go 以上可解除限制。";
 			default: return "";
 		}
 	}
@@ -2266,8 +2280,7 @@
 		}).then((r) => r.ok ? r.json() : null).then((data) => {
 			if (data && data.ok) {
 				quotaState.tier = data.tier === "paid" ? "paid" : "free";
-				const rawPlan = typeof data.plan_code === "string" ? data.plan_code : null;
-				quotaState.planCode = rawPlan === "pro" || rawPlan === "pro_plus" || rawPlan === "pro_max" ? rawPlan : null;
+				quotaState.planCode = normalizePlanCode(typeof data.plan_code === "string" ? data.plan_code : null);
 				quotaState.isGrandfathered = Boolean(data.is_grandfathered);
 				quotaState.freePoolRemaining = data.free_pool ? Number(data.free_pool.remaining) : null;
 				quotaState.dailyPaidRemaining = data.daily_paid ? Number(data.daily_paid.remaining) : null;
@@ -2292,7 +2305,11 @@
 				quotaState.billingMode = data.billing_mode === "plan_v4" || data.billing_mode === "wallet_v3" ? data.billing_mode : "quota_v2";
 				if (data.plan_v4 && typeof data.plan_v4 === "object") {
 					quotaState.planV4Active = data.plan_v4.active === true;
-					quotaState.planV4Code = typeof data.plan_v4.plan_code === "string" ? data.plan_v4.plan_code : null;
+					quotaState.planV4Code = normalizePlanCode(data.plan_v4.plan_code);
+					if (quotaState.planV4Active && quotaState.planV4Code) {
+						quotaState.planCode = quotaState.planV4Code;
+						quotaState.tier = "paid";
+					}
 				} else if (quotaState.billingMode === "plan_v4") {
 					quotaState.planV4Active = false;
 					quotaState.planV4Code = null;
@@ -2519,7 +2536,6 @@
 		"deepseek-v3.2-exp": DEFAULT_MODEL_ID,
 		"qwen3.6-flash": DEFAULT_MODEL_ID,
 		"qwen3.6-flash-2026-04-16": DEFAULT_MODEL_ID,
-		"qwen3.6-max-preview": DEFAULT_MODEL_ID,
 		"qwen3.6-plus-2026-04-02": DEFAULT_MODEL_ID,
 		"kimi-k2.5": DEFAULT_MODEL_ID,
 		"glm-4.6": DEFAULT_MODEL_ID,
@@ -2542,8 +2558,6 @@
 		"moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
 		"gpt-5.5-b": DEFAULT_MODEL_ID,
 		"gpt-5.5-c": DEFAULT_MODEL_ID,
-		"claude-opus-4-5": DEFAULT_MODEL_ID,
-		"claude-opus-4-6": DEFAULT_MODEL_ID,
 		"claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
 		"claude-opus-4-6-thinking": DEFAULT_MODEL_ID,
 		"claude-sonnet-4-6-thinking": DEFAULT_MODEL_ID,
@@ -2626,11 +2640,7 @@
 			unavailableMessage: serverModel.unavailableMessage || local.unavailableMessage || "",
 			disabled: serverModel.disabled === true,
 			gateCostTier: serverModel.gateCostTier || null,
-			freeUserBlocked: serverModel.freeUserBlocked === true,
-			inputPricePerM: typeof serverModel.inputPricePerM === "number" ? serverModel.inputPricePerM : local.inputPricePerM,
-			outputPricePerM: typeof serverModel.outputPricePerM === "number" ? serverModel.outputPricePerM : local.outputPricePerM,
-			perCallPrice: typeof serverModel.perCallPrice === "number" ? serverModel.perCallPrice : local.perCallPrice,
-			priceDisplay: serverModel.priceDisplay || local.priceDisplay || ""
+			freeUserBlocked: serverModel.freeUserBlocked === true
 		};
 	}
 	function syncGateIdsFromMergedCatalog() {
@@ -2796,64 +2806,6 @@
 		const idx = BRAND_PRIORITY_ORDER.indexOf(brand);
 		return idx >= 0 ? -1e3 + idx : 0;
 	}
-	function priceYuanRepr(input, output) {
-		const vals = [input, output].filter((v) => typeof v === "number" && !Number.isNaN(v) && v >= 0);
-		if (vals.length === 0) return null;
-		return vals.reduce((a, b) => a + b, 0) / vals.length;
-	}
-	function costLevel(multiplier) {
-		const m = typeof multiplier === "number" && !Number.isNaN(multiplier) ? multiplier : 1;
-		if (m <= 0) return 0;
-		const v = Math.log10(m + 1) / Math.log10(301);
-		return Math.max(.04, Math.min(1, v));
-	}
-	function barMarkerPct(level) {
-		return Math.max(8, Math.min(92, level * 100)).toFixed(1);
-	}
-	function priceLevelInRange(repr, range) {
-		if (repr == null || Number.isNaN(repr) || repr < 0) return null;
-		if (!range || range.max <= range.min) return .5;
-		const lg = (x) => Math.log10(x + 1);
-		const v = (lg(repr) - lg(range.min)) / (lg(range.max) - lg(range.min));
-		return Math.max(.06, Math.min(.94, v));
-	}
-	var DEFAULT_TIER_MULTIPLIERS = {
-		free: .5,
-		cheap: 1,
-		normal: 2,
-		expensive: 5,
-		vip: 15
-	};
-	function computeCatalogPriceRange(models) {
-		let min = Infinity;
-		let max = -Infinity;
-		for (const m of models) {
-			if (m.isFree || m.isWelfare) continue;
-			let r = null;
-			if (typeof m.perCallPrice === "number" && !Number.isNaN(m.perCallPrice)) r = m.perCallPrice;
-			else r = priceYuanRepr(m.inputPricePerM, m.outputPricePerM);
-			if (r == null) continue;
-			if (r < min) min = r;
-			if (r > max) max = r;
-		}
-		if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-		return {
-			min,
-			max
-		};
-	}
-	function modelPriceLevel(model, range) {
-		if (model.isFree || model.isWelfare) return null;
-		let lvl = costLevel(typeof model.customMultiplier === "number" ? model.customMultiplier : DEFAULT_TIER_MULTIPLIERS[model.costTier] ?? 2);
-		if (typeof model.perCallPrice === "number" && !Number.isNaN(model.perCallPrice)) {
-			const pl = priceLevelInRange(model.perCallPrice, range);
-			if (pl != null) lvl = pl;
-		} else {
-			const pl = priceLevelInRange(priceYuanRepr(model.inputPricePerM, model.outputPricePerM), range);
-			if (pl != null) lvl = pl;
-		}
-		return lvl;
-	}
 	function rebuildModelCatalogDerived() {
 		MODEL_META_MAP = /* @__PURE__ */ new Map();
 		MODEL_IDS = {};
@@ -2892,10 +2844,6 @@
 				customMultiplier: entry.customMultiplier,
 				gateCostTier: entry.gateCostTier || null,
 				freeUserBlocked: entry.freeUserBlocked === true,
-				inputPricePerM: entry.inputPricePerM,
-				outputPricePerM: entry.outputPricePerM,
-				perCallPrice: entry.perCallPrice,
-				priceDisplay: entry.priceDisplay || "",
 				isWelfare,
 				isFree: entry.costTier === "free" || isWelfare,
 				isPromo: entry.promoLimited === true || isSpecial,
@@ -2911,8 +2859,6 @@
 			if (pa !== pb) return pa - pb;
 			return String(a.displayName || a.id).localeCompare(String(b.displayName || b.id));
 		});
-		const priceRange = computeCatalogPriceRange(SELECTABLE_MODELS);
-		for (const m of SELECTABLE_MODELS) m.priceLevel = modelPriceLevel(m, priceRange);
 		MODEL_CATALOG_BY_ID = MODEL_META_MAP;
 		ARENA_MODELS = SELECTABLE_MODELS.filter((m) => !m.imageOnly && !m.videoOnly && m.kind === "chat").map((m) => m.id);
 	}
@@ -2935,8 +2881,7 @@
 			disabled: false,
 			iconPath: "./openai.svg",
 			kind: "chat",
-			costTier: "normal",
-			priceLevel: null
+			costTier: "normal"
 		};
 	}
 	function getModelDisplayName(modelId) {
@@ -4068,7 +4013,7 @@
 			email_address_invalid: "邮箱地址无效，请检查后重试。",
 			email_address_not_authorized: "该邮箱不在允许列表内。",
 			email_provider_disabled: "邮箱登录暂时关闭。",
-			captcha_failed: "人机验证未通过或已过期，请重新完成下方 Cloudflare 验证后重试。",
+			captcha_failed: "人机验证未通过，请刷新页面后重试。",
 			otp_expired: "验证码已过期，请重新获取。",
 			otp_disabled: "验证码登录暂未开放。",
 			invalid_credentials: "邮箱或密码错误，请检查后重试。",
@@ -4084,27 +4029,9 @@
 		if (status >= 500) return "邮件服务暂时不可用，请稍后再试。";
 		return fallback;
 	}
-	async function resolveLoginCaptchaToken() {
-		if (window.NexusLoginCaptcha && typeof window.NexusLoginCaptcha.getToken === "function") try {
-			const tok = await Promise.race([window.NexusLoginCaptcha.getToken(), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("captcha_wait_timeout")), 8e3))]);
-			if (tok) return String(tok);
-		} catch (_e) {}
-		try {
-			const fallback = await getLoginCaptchaTokenBestEffort(5e3);
-			if (fallback) return String(fallback);
-		} catch (_e2) {}
-		return "";
-	}
-	function captchaGateFailMessage() {
-		if (window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.getFailMessage === "function") {
-			const m = window.NexusAuthCaptcha.getFailMessage();
-			if (m) return m;
-		}
-		return "请先完成下方 Cloudflare 人机验证，再发送验证码 / 登录。";
-	}
 	async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
 		const client = getSupabaseClient();
-		const captchaToken = await resolveLoginCaptchaToken();
+		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
 		const opts = {
 			email,
 			options: { shouldCreateUser }
@@ -4118,7 +4045,7 @@
 	}
 	async function signInWithEmailPassword(email, password) {
 		const client = getSupabaseClient();
-		const captchaToken = await resolveLoginCaptchaToken();
+		const captchaToken = window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function" ? "" : await getLoginCaptchaTokenBestEffort(8e3);
 		const opts = {
 			email,
 			password
@@ -4201,11 +4128,11 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = captchaGateFailMessage();
+				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
 				if (emailError) emailError.style.color = "";
 				window.NexusAuthCaptcha.focusInput();
 				return;
@@ -4220,6 +4147,8 @@
 				sendOtpBtn.hidden = true;
 				sendOtpBtn.style.display = "none";
 				if (verifyOtpBtn) verifyOtpBtn.hidden = false;
+				const turnstileSlot = document.getElementById("loginTurnstileContainer");
+				if (turnstileSlot) turnstileSlot.remove();
 				if (window.NexusLoginCaptcha?.suspend) try {
 					window.NexusLoginCaptcha.suspend();
 				} catch (_e) {}
@@ -4293,11 +4222,11 @@
 				return;
 			}
 			if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-				if (emailError) emailError.textContent = "人机验证组件未加载，请刷新页面后重试。";
+				if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
 				return;
 			}
 			if (!window.NexusAuthCaptcha.validate()) {
-				if (emailError) emailError.textContent = captchaGateFailMessage();
+				if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
 				window.NexusAuthCaptcha.focusInput();
 				return;
 			}
@@ -4338,6 +4267,7 @@
 				if (event === "SIGNED_IN") {
 					maybeShowExpirySoonBanner();
 					fetchUserMemories();
+					if (!hasSharedConversationHash()) renderChatHistoryList();
 				}
 			} else if (event === "SIGNED_OUT") {
 				authSessionPromise = null;
@@ -4657,7 +4587,7 @@
 	}
 	function renderChatMessagesSkeleton() {
 		if (!chatMessages) return;
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		const wrap = document.createElement("div");
 		wrap.className = "chat-skeleton";
 		wrap.setAttribute("aria-hidden", "true");
@@ -4693,7 +4623,7 @@
 			});
 			wrap.appendChild(msg);
 		});
-		chatMessages.appendChild(wrap);
+		messageSink.appendChild(wrap);
 	}
 	function chatHistoryListHasRenderedItems(container) {
 		return Boolean(container?.querySelector(".recent-item, .recent-placeholder"));
@@ -4726,11 +4656,59 @@
 			}
 			function appendChatHistoryItem(chat) {
 				const isPinned = pinned.includes(chat.id);
+				const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
+				if (PORT_SKIN) {
+					const li = document.createElement("li");
+					li.className = "recent-item" + (isPinned ? " recent-item-pinned" : "");
+					li.dataset.chatId = chat.id;
+					if (chat.id === currentChatId) li.classList.add("active");
+					if (isStreamingItem) li.classList.add("recent-item-streaming");
+					const wrap = document.createElement("div");
+					wrap.className = "relative group";
+					const a = document.createElement("a");
+					a.className = PORT_CHAT_ROW_CLS;
+					a.href = "#";
+					const inner = document.createElement("div");
+					inner.className = "-translate-x-2 w-full flex flex-row items-center justify-start gap-3";
+					const title = document.createElement("span");
+					title.className = "recent-item-title truncate text-sm whitespace-nowrap flex-1 group-hover:[mask-image:linear-gradient(to_right,black_calc(100%_-_28px),transparent_100%)] group-focus-within:[mask-image:linear-gradient(to_right,black_calc(100%_-_28px),transparent_100%)] [mask-size:100%_100%]";
+					title.textContent = chat.title || "新对话";
+					title.title = chat.title || "新对话";
+					inner.appendChild(title);
+					a.appendChild(inner);
+					a.addEventListener("click", (e) => {
+						e.preventDefault();
+						loadChat(chat.id);
+					});
+					const actionsWrap = document.createElement("div");
+					actionsWrap.className = "absolute inset-y-0 right-1 items-center hidden group-hover:flex group-focus-within:flex pointer-coarse:flex opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100";
+					const more = document.createElement("button");
+					more.type = "button";
+					more.className = "recent-item-actions cds-reset group/btn relative isolate inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap select-none cursor-[var(--cds-cursor-interactive)] border-0 outline-none focus-visible:outline-hidden rounded h-control font-sans text-body transition-shadow duration-fast focus-visible:shadow-focus text-primary font-normal aspect-square w-control px-0";
+					more.setAttribute("aria-label", `${chat.title || "新对话"} 的更多操作`);
+					more.innerHTML = "<span aria-hidden=\"true\" class=\"absolute -z-[1] rounded-[inherit] transition-colors duration-fast bg-transparent group-hover/btn:bg-fill-ghost-hover inset-0 cds-btn-squish\"></span><span class=\"inline-flex min-w-0 items-center gap-1\"><span data-cds=\"Icon\" aria-hidden=\"true\" class=\"claude-anthropicon\" style=\"font-size:16px;font-weight:533.3\"></span></span>";
+					more.addEventListener("click", (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						showChatItemMenu(e.clientX, e.clientY, chat.id, chat.title);
+					});
+					actionsWrap.appendChild(more);
+					wrap.appendChild(a);
+					wrap.appendChild(actionsWrap);
+					li.appendChild(wrap);
+					if (isStreamingItem) {
+						const spinner = document.createElement("span");
+						spinner.className = "recent-item-spinner";
+						spinner.setAttribute("aria-hidden", "true");
+						inner.appendChild(spinner);
+					}
+					listContainer.appendChild(li);
+					return;
+				}
 				const item = document.createElement("div");
 				item.className = "recent-item" + (isPinned ? " recent-item-pinned" : "");
 				item.dataset.chatId = chat.id;
 				if (chat.id === currentChatId) item.classList.add("active");
-				const isStreamingItem = Boolean(getGenerationByChatId(chat.id));
 				if (isStreamingItem) item.classList.add("recent-item-streaming");
 				const modelId = String(chat.model || "").trim();
 				const modelMeta = modelId ? getModelMeta(modelId) : null;
@@ -4849,7 +4827,8 @@
 		currentChatId = null;
 		loadedChatModel = "";
 		conversationHistory = [];
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
+		hideAskUserBlock();
 		homeCenter.style.display = "flex";
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
@@ -4863,7 +4842,7 @@
 	}
 	function renderMessages() {
 		if (!chatMessages) return;
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		let lastUserMessageIndex = -1;
 		conversationHistory.forEach((message, i) => {
 			if (message.role === "user") {
@@ -4888,7 +4867,8 @@
 					if (!/^(https?:\/\/|data:image\/)/i.test(imageUrl)) {} else {
 						const id = createAssistantMessage(metadata);
 						const messageDiv = document.getElementById(id);
-						messageDiv?.classList.remove("is-generating");
+						if (messageDiv) if (PORT_SKIN) portSetStreaming(messageDiv, false);
+						else messageDiv.classList.remove("is-generating");
 						const answerBody = messageDiv?.querySelector(".answer-body");
 						if (answerBody) {
 							answerBody.innerHTML = "";
@@ -4902,7 +4882,8 @@
 					const videoUrl = videoMatch[1];
 					const id = createAssistantMessage(metadata);
 					const messageDiv = document.getElementById(id);
-					messageDiv?.classList.remove("is-generating");
+					if (messageDiv) if (PORT_SKIN) portSetStreaming(messageDiv, false);
+					else messageDiv.classList.remove("is-generating");
 					const answerBody = messageDiv?.querySelector(".answer-body");
 					if (answerBody) {
 						answerBody.innerHTML = "";
@@ -4941,12 +4922,41 @@
 		});
 		updateChatNav();
 		updateChatShareButtonVisibility();
+		syncAskUserFromHistory();
 		if (homeView?.classList.contains("chatting")) scheduleChatScrollToBottom(true);
 	}
 	var chatNavObserver = null;
 	var chatNavLastActiveIndex = null;
 	var chatNavTurnData = [];
 	var chatNavPreviewBound = false;
+	var chatNavIdleBound = false;
+	var chatNavIdleTimer = null;
+	function wakeChatNav() {
+		const navEl = document.getElementById("chatNav");
+		if (!navEl) return;
+		if (chatNavIdleTimer != null) {
+			clearTimeout(chatNavIdleTimer);
+			chatNavIdleTimer = null;
+		}
+		navEl.classList.remove("is-idle");
+		navEl.classList.add("is-awake");
+	}
+	function armChatNavIdle() {
+		const navEl = document.getElementById("chatNav");
+		if (!navEl || navEl.hidden) return;
+		if (chatNavIdleTimer != null) clearTimeout(chatNavIdleTimer);
+		navEl.classList.remove("is-awake");
+		chatNavIdleTimer = setTimeout(() => {
+			chatNavIdleTimer = null;
+			if (!navEl.hidden && !navEl.matches(":hover")) navEl.classList.add("is-idle");
+		}, 2600);
+	}
+	function bindChatNavIdle(navEl) {
+		if (chatNavIdleBound || !navEl) return;
+		chatNavIdleBound = true;
+		navEl.addEventListener("mouseenter", () => wakeChatNav());
+		navEl.addEventListener("mouseleave", () => armChatNavIdle());
+	}
 	function getUserMessageSnippet(domNode, fallbackContent) {
 		const fromDataset = (domNode?.dataset?.userText || "").trim();
 		if (fromDataset) return fromDataset;
@@ -5085,6 +5095,11 @@
 				chatNavObserver = null;
 			}
 			chatNavLastActiveIndex = null;
+			navEl.classList.remove("is-idle", "is-awake");
+			if (chatNavIdleTimer != null) {
+				clearTimeout(chatNavIdleTimer);
+				chatNavIdleTimer = null;
+			}
 			return;
 		}
 		hideChatNavPreview();
@@ -5114,7 +5129,10 @@
 			listEl.appendChild(btn);
 		});
 		bindChatNavPreviewEvents(listEl);
+		bindChatNavIdle(navEl);
 		navEl.hidden = false;
+		wakeChatNav();
+		armChatNavIdle();
 		setupChatNavObserver(userBubbles);
 	}
 	function scrollChatToUserMessage(messageIndex) {
@@ -5133,6 +5151,7 @@
 		if (chatNavLastActiveIndex === messageIndex) return;
 		chatNavLastActiveIndex = messageIndex;
 		const listEl = document.getElementById("chatNavList");
+		const navEl = document.getElementById("chatNav");
 		if (!listEl) return;
 		let activeEl = null;
 		listEl.querySelectorAll(".chat-nav-item").forEach((item) => {
@@ -5144,6 +5163,10 @@
 			block: "nearest",
 			behavior: "smooth"
 		});
+		if (navEl && !navEl.hidden) {
+			wakeChatNav();
+			if (!navEl.matches(":hover")) armChatNavIdle();
+		}
 	}
 	function setupChatNavObserver(bubbles) {
 		if (!chatMessages || !("IntersectionObserver" in window)) return;
@@ -5190,7 +5213,7 @@
 		grid.appendChild(makeCard("b", answerB));
 		wrapper.appendChild(avatar);
 		wrapper.appendChild(grid);
-		chatMessages.appendChild(wrapper);
+		messageSink.appendChild(wrapper);
 		renderPostMarkdownInElement(wrapper);
 	}
 	var GENERATED_IMAGE_COPY_SVG = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"></rect><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"></path></svg>";
@@ -5962,7 +5985,7 @@
 			models_url: "https://www.nexusvai.xyz/chat/api_models.html",
 			pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
 			apply_url: "https://www.nexusvai.xyz/chat/api_apply.html",
-			keys_url: "https://www.nexusvai.xyz/chat/api_keys.html",
+			keys_url: "https://www.nexusvai.xyz/chat/api/keys.html",
 			key_format: "cancri_sk_xxx",
 			protocols: [
 				"OpenAI Chat Completions",
@@ -6161,18 +6184,63 @@
 			}
 		],
 		ratelimit: [{
-			tier: "free",
-			per_minute: 10,
-			per_hour: 60,
-			per_day: 1e3,
-			concurrent: 2
-		}, {
-			tier: "paid",
-			per_minute: 60,
-			per_hour: 600,
-			per_day: 5e4,
-			concurrent: 0,
-			concurrent_note: "0 表示不限并发"
+			note: "账户限速按累计真实充值 Tier0–5：并发 / RPM / TPM / TPD（非旧版 RPH/RPD 请求桶）。门槛 ¥0 / ≥10 / ≥30 / ≥80 / ≥300 / ≥1000。",
+			tiers: [
+				{
+					tier: 0,
+					cumulative_cny: 0,
+					concurrent: 3,
+					rpm: 60,
+					tpm: 2e6,
+					tpd: 2e7
+				},
+				{
+					tier: 1,
+					cumulative_cny: 10,
+					concurrent: 10,
+					rpm: 120,
+					tpm: 2e6,
+					tpd: 1e8
+				},
+				{
+					tier: 2,
+					cumulative_cny: 30,
+					concurrent: 100,
+					rpm: 500,
+					tpm: 3e6,
+					tpd: null
+				},
+				{
+					tier: 3,
+					cumulative_cny: 80,
+					concurrent: 200,
+					rpm: 5e3,
+					tpm: 3e6,
+					tpd: null
+				},
+				{
+					tier: 4,
+					cumulative_cny: 300,
+					concurrent: 400,
+					rpm: 5e3,
+					tpm: 4e6,
+					tpd: null
+				},
+				{
+					tier: 5,
+					cumulative_cny: 1e3,
+					concurrent: 1e3,
+					rpm: 1e4,
+					tpm: 5e6,
+					tpd: null
+				}
+			],
+			free_token_windows: {
+				rolling_5h_tokens: 1e5,
+				rolling_7d_tokens: 5e5,
+				applies_to: "unrecharged / free-settlement accounts"
+			},
+			docs_url_fragment: "#ratelimit"
 		}],
 		errors: [
 			{
@@ -6202,13 +6270,18 @@
 			},
 			{
 				http: 429,
+				code: "rate_limited",
+				when: "账户限速档触顶（并发 / RPM / TPM / TPD）"
+			},
+			{
+				http: 429,
 				code: "rate_limit_exceeded",
-				when: "撞上 per-minute / per-hour / per-day 任一窗口（free: 10/60/1000，paid: 60/600/50000）"
+				when: "Key 侧请求次级桶触顶（勿与账户 TPM/TPD 表混淆）"
 			},
 			{
 				http: 429,
 				code: "concurrent_limit_exceeded",
-				when: "撞上并发槽位上限"
+				when: "Key 侧并发次级桶触顶"
 			},
 			{
 				http: 503,
@@ -6247,7 +6320,7 @@
 			},
 			{
 				q: "Key 怎么撤销？",
-				a: "https://www.nexusvai.xyz/chat/api_keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。"
+				a: "https://www.nexusvai.xyz/chat/api/keys.html 控制台单击 Key 行的「撤销」按钮。撤销后立即失效，新建一个不影响其他 Key。每个账号同时最多 5 个活跃 Key。"
 			},
 			{
 				q: "为什么 Claude Code 连不上？",
@@ -6528,7 +6601,9 @@
 	function applyTheme() {
 		const nextThemeIndex = themeCycle.findIndex((item) => item.value === state.theme);
 		if (nextThemeIndex >= 0) themeIndex = nextThemeIndex;
-		root.setAttribute("data-theme", state.theme === "light" || state.theme === "black" ? state.theme : "dark");
+		const resolvedTheme = state.theme === "light" || state.theme === "black" ? state.theme : "dark";
+		if (PORT_SKIN) root.setAttribute("data-mode", resolvedTheme === "light" ? "light" : "dark");
+		else root.setAttribute("data-theme", resolvedTheme);
 		root.setAttribute("data-chat-font", state.chatFont || "sans");
 		if (state.accentValue) {
 			root.style.setProperty("--accent", state.accentValue);
@@ -6656,23 +6731,29 @@
 		"download-md": `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`
 	};
 	function messageActionIconHtml(action, fallbackIcon) {
+		if (PORT_SKIN && fallbackIcon) return claudeActionIconHtml(fallbackIcon);
 		return MESSAGE_ACTION_SVG[action] || claudeActionIconHtml(fallbackIcon);
 	}
 	function createClaudeActionButton({ action, label, title, icon }) {
+		if (PORT_SKIN) return `<button type="button" data-cds="Button" data-size="xs" data-action="${action}" class="message-action-btn ${PORT_ICON_BTN_CLS}" aria-label="${title || label}" title="${title || label}"><span aria-hidden="true" class="absolute -z-[1] rounded-[inherit] transition-colors duration-fast bg-transparent group-hover/btn:bg-fill-ghost-hover inset-0 cds-btn-squish"></span><span class="inline-flex min-w-0 items-center gap-1">${messageActionIconHtml(action, icon)}</span></button>`;
 		return `<button class="message-action-btn" type="button" data-action="${action}" aria-label="${label}" title="${title || label}">${messageActionIconHtml(action, icon)}</button>`;
 	}
 	function buildUserMessageActionsBar(messageDiv, resolvedIndex) {
 		const actionsBar = document.createElement("div");
-		actionsBar.className = "message-actions";
+		actionsBar.className = "message-actions" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.bar : "");
+		if (PORT_SKIN) {
+			actionsBar.setAttribute("data-cds", "MessageActions");
+			actionsBar.setAttribute("data-size", "xs");
+		}
 		actionsBar.setAttribute("role", "group");
 		actionsBar.setAttribute("aria-label", "Message actions");
 		const inner = document.createElement("div");
-		inner.className = "message-actions-inner";
+		inner.className = "message-actions-inner" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.inner : "");
 		const tsSpan = document.createElement("span");
-		tsSpan.className = "message-action-ts";
+		tsSpan.className = "message-action-ts" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.ts : "");
 		tsSpan.textContent = formatMessageActionDate();
 		const btnGroup = document.createElement("div");
-		btnGroup.className = "message-actions-buttons";
+		btnGroup.className = "message-actions-buttons" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.group : "");
 		btnGroup.innerHTML = [
 			createClaudeActionButton({
 				action: "retry",
@@ -6791,7 +6872,9 @@
 		undoUserMessage(idx);
 	}
 	function wireAssistantMessageActions(messageDiv, messageActions, answerBody) {
-		messageActions.querySelector("[data-action=\"copy\"]")?.addEventListener("click", async () => {
+		if (!messageActions) return;
+		const pick = (name) => messageActions.querySelector(`[data-action="${name}"], [data-port-action="${name}"]`);
+		pick("copy")?.addEventListener("click", async () => {
 			const text = answerBody.textContent || "";
 			if (!text || text === "正在思考中…") {
 				showToast("没有可复制的内容");
@@ -6799,7 +6882,7 @@
 			}
 			showToast(await writeTextToClipboard(text) ? "已复制" : "复制失败");
 		});
-		messageActions.querySelector("[data-action=\"download-md\"]")?.addEventListener("click", () => {
+		pick("download-md")?.addEventListener("click", () => {
 			const md = messageDiv._parts?.answerStreamState?.text || answerBody.textContent || "";
 			if (!md.trim() || md === "正在思考中…") {
 				showToast("没有可下载的内容");
@@ -6807,9 +6890,139 @@
 			}
 			downloadTextFile(md, `cancri-answer-${Date.now()}.md`);
 		});
-		messageActions.querySelector("[data-action=\"retry\"]")?.addEventListener("click", () => {
+		pick("retry")?.addEventListener("click", () => {
 			retryAssistantFromMessage(messageDiv);
 		});
+	}
+	function portCloneTurn(kind) {
+		const id = kind === "user" ? "portTplUserTurn" : "portTplAssistantTurn";
+		const tpl = document.getElementById(id);
+		if (!tpl?.content?.firstElementChild) {
+			console.error("[claude-port] missing template", id);
+			return null;
+		}
+		return tpl.content.firstElementChild.cloneNode(true);
+	}
+	function portSetStreaming(messageDiv, on) {
+		messageDiv.classList.toggle("is-generating", on);
+		messageDiv.querySelector("[data-is-streaming]")?.setAttribute("data-is-streaming", on ? "true" : "false");
+	}
+	function wirePortUserActions(root, resolvedIndex) {
+		const act = (name) => root.querySelector(`[data-port-action="${name}"]`);
+		act("retry")?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			const idx = Number(root.dataset.messageIndex);
+			undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+			const originalText = root.dataset.userText || "";
+			if (originalText && homeInput) {
+				homeInput.value = originalText;
+				autoResizeComposerInput();
+				updateComposerSendButton();
+				homeInput.focus();
+			}
+		});
+		act("edit")?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			const originalText = root.dataset.userText || "";
+			if (!originalText) {
+				showToast("没有可编辑的内容");
+				return;
+			}
+			if (homeInput) {
+				homeInput.value = originalText;
+				autoResizeComposerInput();
+				updateComposerSendButton();
+				homeInput.focus();
+			}
+		});
+		act("copy")?.addEventListener("click", async (event) => {
+			event.stopPropagation();
+			const text = root.dataset.userText || "";
+			if (!text) {
+				showToast("没有可复制的内容");
+				return;
+			}
+			showToast(await writeTextToClipboard(text) ? "已复制" : "复制失败");
+		});
+	}
+	function createPortUserMessage(content, attachments = [], messageIndex = null) {
+		const root = portCloneTurn("user");
+		if (!root) return;
+		root.classList.add("message", "user");
+		const resolvedIndex = typeof messageIndex === "number" ? messageIndex : conversationHistory.length;
+		root.dataset.messageIndex = String(resolvedIndex);
+		const normalizedContent = Array.isArray(content) ? extractUserMessageParts(content) : null;
+		const messageAttachments = attachments.length ? attachments : normalizedContent?.attachments || [];
+		const text = normalizedContent ? normalizedContent.text : String(content || "").replace(/\r\n/g, "\n").trim();
+		root.dataset.userText = text.replace(/\r\n/g, "\n");
+		const sr = root.querySelector("[data-port-slot=\"user-sr-title\"]");
+		if (sr) sr.textContent = text ? `You said: ${text.slice(0, 80)}` : "You said:";
+		const textSlot = root.querySelector("[data-port-slot=\"user-text\"]");
+		if (textSlot) textSlot.textContent = text || (messageAttachments.length ? "已发送图片" : "");
+		const timeSlot = root.querySelector("[data-port-slot=\"user-time\"]");
+		if (timeSlot) timeSlot.textContent = formatMessageActionDate();
+		const attSlot = root.querySelector("[data-port-slot=\"user-attachments\"]");
+		if (attSlot) {
+			attSlot.innerHTML = "";
+			if (!messageAttachments.length) attSlot.setAttribute("hidden", "");
+			else {
+				attSlot.removeAttribute("hidden");
+				messageAttachments.forEach((attachment) => {
+					const chip = document.createElement("div");
+					chip.className = "min-w-0 h-[18px] flex flex-row items-center justify-center gap-0.5 px-1 border-0.5 border-strong shadow-sm rounded-[4px] bg-bg-000/70 backdrop-blur-sm font-medium";
+					chip.innerHTML = `<p class="uppercase truncate font-ui text-text-300 text-[11px] leading-[13px]">${escapeHtml(attachment.name || "file")}</p>`;
+					attSlot.appendChild(chip);
+				});
+			}
+		}
+		wirePortUserActions(root, resolvedIndex);
+		messageSink.appendChild(root);
+		const bubble = root.querySelector("[data-user-message-bubble]");
+		if (bubble && textSlot) setupUserMessageCollapse(bubble, textSlot);
+		scrollChatToBottom(false);
+		updateChatNav();
+	}
+	function createPortAssistantMessage(metadata = createModelMetadata(currentModel)) {
+		const root = portCloneTurn("assistant");
+		if (!root) return null;
+		const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+		root.id = messageId;
+		root.classList.add("message", "assistant", "is-generating");
+		portSetStreaming(root, true);
+		const modelMetadata = normalizeAssistantMetadata(metadata);
+		const answerBody = root.querySelector("[data-port-slot=\"asst-answer\"]");
+		if (!answerBody) {
+			console.error("[claude-port] assistant template missing asst-answer slot");
+			return null;
+		}
+		answerBody.innerHTML = "";
+		const timeSlot = root.querySelector("[data-port-slot=\"asst-time\"]");
+		if (timeSlot) timeSlot.textContent = formatMessageActionDate();
+		const messageActions = root.querySelector("[data-message-action-bar]") || root.querySelector("[aria-label=\"Message actions\"]");
+		let timelineContainer = root.querySelector("[data-port-slot=\"asst-thinking-pill\"]");
+		if (!timelineContainer) {
+			timelineContainer = document.createElement("div");
+			timelineContainer.className = "assistant-timeline";
+			timelineContainer.hidden = true;
+			answerBody.parentElement?.insertBefore(timelineContainer, answerBody);
+		}
+		wireAssistantMessageActions(root, messageActions || root, answerBody);
+		root._parts = {
+			timelineContainer,
+			answerBody,
+			messageActions,
+			modelMetadata,
+			timeline: [],
+			currentReasoningBlock: null,
+			committedReasoningLength: 0,
+			answerStreamState: {
+				text: "",
+				ready: false
+			}
+		};
+		messageSink.appendChild(root);
+		scrollChatToBottom(false);
+		return messageId;
 	}
 	function insertTextIntoEditable(target, text) {
 		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -7762,6 +7975,7 @@
 		if (streamState.ready && streamState.text === nextText && streamState.thinking === thinking) return;
 		blockElement.classList.toggle("is-streaming", Boolean(thinking));
 		blockElement.innerHTML = renderMarkdown(blockElement.classList.contains("think-body") ? normalizeThinkDisplayText(nextText) : nextText);
+		if (blockElement.classList.contains("answer-body")) portStampResponseBodyClasses(blockElement);
 		if (!thinking) renderPostMarkdownInElement(blockElement);
 		else if (!streamState._katexTimer) streamState._katexTimer = setTimeout(() => {
 			renderPostMarkdownInElement(blockElement);
@@ -8238,12 +8452,13 @@
 	}
 	function getComposerResizeMaxHeight() {
 		if (window.matchMedia("(max-width: 640px)").matches) return Math.min(176, Math.max(120, Math.floor(window.innerHeight * .28)));
-		return 220;
+		return 384;
 	}
 	function autoResizeComposerInput() {
 		if (!homeInput) return;
 		const composer = homeInput.closest("[data-workbench-composer], .composer");
-		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : 36;
+		const chatting = Boolean(homeView?.classList.contains("chatting"));
+		const minHeight = window.matchMedia("(max-width: 640px)").matches ? 44 : chatting ? 24 : 36;
 		const maxHeight = getComposerResizeMaxHeight();
 		homeInput.style.height = "0px";
 		const next = Math.max(minHeight, Math.min(homeInput.scrollHeight, maxHeight));
@@ -8360,7 +8575,10 @@
 				if (detail) {
 					const parsed = parseBackendErrorPayload(detail);
 					if (parsed.code === "captcha_required") {
-						if (await showCaptchaModal(parsed)) return await generateImageFromPrompt(value, imageModel, attachments);
+						if (await showCaptchaModal(parsed)) {
+							setImageGenerationBusy(false);
+							return await generateImageFromPrompt(value, imageModel, attachments);
+						}
 						throw new Error("需要完成安全验证才能继续。");
 					}
 					detail = parsed.code === "challenge_required" || parsed.code === "access_blocked" || parsed.code === "anonymous_not_allowed" ? formatSecurityGuardMessage(parsed) : friendlyMessageFromBackend(parsed, response.status);
@@ -8761,9 +8979,33 @@
 			setComposerBusy(false);
 		}
 	}
+	var PORT_MSG_CLS = {
+		userRow: "mb-1 mt-[var(--msg-gap,1.5rem)] group group/message-row flex flex-col items-end gap-1 font-sans",
+		userBubble: "group relative inline-flex gap-2 bg-bg-300 dark:[[data-darker-default]_&]:bg-bg-000 rounded-xl pl-2.5 py-[var(--msg-bubble-py,0.625rem)] break-words text-text-100 transition-all max-w-[75ch] flex-col !px-[var(--msg-bubble-px,1rem)] max-w-[85%]",
+		userText: "font-large !font-user-message py-0.5 grid grid-cols-1 gap-2 relative [&_ul]:!space-y-0 [&_ol]:!space-y-0 [&_ul]:pl-8 [&_ol]:pl-8",
+		assistant: "font-claude-response relative leading-[1.65rem] [&_pre>div]:bg-bg-000/50 [&_pre>div]:border-0.5 [&_pre>div]:border-border-400 [&_.ignore-pre-bg>div]:bg-transparent [&_.standard-markdown_:is(p,blockquote,h1,h2,h3,h4,h5,h6)]:pl-2 [&_.standard-markdown_:is(p,blockquote,ul,ol,h1,h2,h3,h4,h5,h6)]:pr-8 [&_.progressive-markdown_:is(p,blockquote,h1,h2,h3,h4,h5,h6)]:pl-2 [&_.progressive-markdown_:is(p,blockquote,ul,ol,h1,h2,h3,h4,h5,h6)]:pr-8",
+		markdown: "standard-markdown grid-cols-1 grid [&_>_*]:min-w-0 gap-3 [&_>_*:last-child]:mb-0 print:block print:[&_>_*_+_*]:mt-3"
+	};
+	function portCls(el, ...keys) {
+		if (!PORT_SKIN || !el) return el;
+		el.className += " " + keys.map((k) => PORT_MSG_CLS[k]).join(" ");
+		return el;
+	}
+	/** 官方助手段落带 font-claude-response-body；markdown 渲染后补上。 */
+	function portStampResponseBodyClasses(root) {
+		if (!PORT_SKIN || !root) return;
+		root.querySelectorAll("p, li").forEach((el) => {
+			el.classList.add("font-claude-response-body", "break-words", "whitespace-normal");
+		});
+	}
 	function createUserMessage(content, attachments = [], messageIndex = null) {
+		if (PORT_SKIN) {
+			createPortUserMessage(content, attachments, messageIndex);
+			return;
+		}
 		const messageDiv = document.createElement("div");
 		messageDiv.className = "message user";
+		portCls(messageDiv, "userRow");
 		const resolvedIndex = typeof messageIndex === "number" ? messageIndex : conversationHistory.length;
 		messageDiv.dataset.messageIndex = String(resolvedIndex);
 		const avatar = document.createElement("div");
@@ -8772,27 +9014,30 @@
 		const bubble = document.createElement("div");
 		bubble.className = "message-content md-content user-message-bubble";
 		bubble.setAttribute("data-user-message-bubble", "true");
+		portCls(bubble, "userBubble");
 		const normalizedContent = Array.isArray(content) ? extractUserMessageParts(content) : null;
 		const messageAttachments = attachments.length ? attachments : normalizedContent?.attachments || [];
 		const text = normalizedContent ? normalizedContent.text : String(content || "").replace(/\r\n/g, "\n").trim();
 		messageDiv.dataset.userText = text.replace(/\r\n/g, "\n");
-		const undoBtn = document.createElement("button");
-		undoBtn.type = "button";
-		undoBtn.className = "message-undo-btn";
-		undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
-		undoBtn.title = "撤回这条消息";
-		undoBtn.innerHTML = `
+		if (!PORT_SKIN) {
+			const undoBtn = document.createElement("button");
+			undoBtn.type = "button";
+			undoBtn.className = "message-undo-btn";
+			undoBtn.setAttribute("aria-label", "撤回这条消息并重新编辑");
+			undoBtn.title = "撤回这条消息";
+			undoBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <polyline points="9 14 4 9 9 4"></polyline>
         <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
       </svg>
     `;
-		undoBtn.addEventListener("click", (event) => {
-			event.stopPropagation();
-			const idx = Number(messageDiv.dataset.messageIndex);
-			undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
-		});
-		messageDiv.appendChild(undoBtn);
+			undoBtn.addEventListener("click", (event) => {
+				event.stopPropagation();
+				const idx = Number(messageDiv.dataset.messageIndex);
+				undoUserMessage(Number.isFinite(idx) ? idx : resolvedIndex);
+			});
+			messageDiv.appendChild(undoBtn);
+		}
 		if (messageAttachments.length) {
 			const attachmentGrid = document.createElement("div");
 			attachmentGrid.className = "user-attachments";
@@ -8834,14 +9079,17 @@
 		}
 		const textBlock = document.createElement("div");
 		textBlock.className = "user-message-text";
-		if (text) textBlock.innerHTML = renderStreamingFragment(text);
+		portCls(textBlock, "userText");
+		if (PORT_SKIN) textBlock.setAttribute("data-testid", "user-message");
+		if (text) if (PORT_SKIN) textBlock.innerHTML = `<p class="whitespace-pre-wrap break-words">` + renderStreamingFragment(text) + `</p>`;
+		else textBlock.innerHTML = renderStreamingFragment(text);
 		else textBlock.textContent = messageAttachments.length ? "已发送图片" : "";
 		bubble.appendChild(textBlock);
 		const actionsBar = buildUserMessageActionsBar(messageDiv, resolvedIndex);
 		messageDiv.appendChild(avatar);
 		messageDiv.appendChild(bubble);
 		messageDiv.appendChild(actionsBar);
-		chatMessages.appendChild(messageDiv);
+		messageSink.appendChild(messageDiv);
 		setupUserMessageCollapse(bubble, textBlock);
 		scrollChatToBottom(false);
 		updateChatNav();
@@ -9123,6 +9371,7 @@
 		thinkStreamState.wasThinking = Boolean(thinking);
 	}
 	function createAssistantMessage(metadata = createModelMetadata(currentModel)) {
+		if (PORT_SKIN) return createPortAssistantMessage(metadata);
 		const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 		const messageDiv = document.createElement("div");
 		messageDiv.className = "message assistant is-generating";
@@ -9133,6 +9382,7 @@
 		avatar.textContent = "A";
 		const bubble = document.createElement("div");
 		bubble.className = "message-content md-content assistant-message-bubble";
+		portCls(bubble, "assistant");
 		const generatingIndicator = document.createElement("div");
 		generatingIndicator.className = "generating-indicator";
 		generatingIndicator.setAttribute("aria-hidden", "true");
@@ -9154,13 +9404,18 @@
 		const timelineContainer = document.createElement("div");
 		timelineContainer.className = "assistant-timeline";
 		const answerBody = document.createElement("div");
-		answerBody.className = "answer-body md-content standard-markdown font-claude-response";
+		answerBody.className = PORT_SKIN ? "answer-body md-content" : "answer-body md-content standard-markdown font-claude-response";
+		portCls(answerBody, "markdown");
 		answerBody.innerHTML = "";
 		const messageActions = document.createElement("div");
-		messageActions.className = "message-actions";
+		messageActions.className = "message-actions" + (PORT_SKIN ? " " + PORT_ACTIONS_CLS.bar : "");
+		if (PORT_SKIN) {
+			messageActions.setAttribute("data-cds", "MessageActions");
+			messageActions.setAttribute("data-size", "xs");
+		}
 		messageActions.setAttribute("role", "group");
 		messageActions.setAttribute("aria-label", "Message actions");
-		messageActions.innerHTML = `<div class="message-actions-inner"><div class="message-actions-buttons">${buildAssistantMessageActionsHtml()}</div></div>`;
+		messageActions.innerHTML = `<div class="message-actions-inner${PORT_SKIN ? " " + PORT_ACTIONS_CLS.inner : ""}"><div class="message-actions-buttons${PORT_SKIN ? " " + PORT_ACTIONS_CLS.group : ""}">${buildAssistantMessageActionsHtml()}</div></div>`;
 		bubble.appendChild(modelLabel);
 		bubble.appendChild(generatingIndicator);
 		bubble.appendChild(timelineContainer);
@@ -9182,7 +9437,7 @@
 				ready: false
 			}
 		};
-		chatMessages.appendChild(messageDiv);
+		messageSink.appendChild(messageDiv);
 		scrollChatToBottom(false);
 		return messageId;
 	}
@@ -9197,7 +9452,8 @@
 		const hasReasoning = Boolean(fullReasoning.trim());
 		const hasAnswer = Boolean(answerText.trim());
 		messageDiv.classList.remove("is-error");
-		if (hasReasoning || hasAnswer || !thinking) messageDiv.classList.remove("is-generating");
+		if (hasReasoning || hasAnswer || !thinking) if (PORT_SKIN) portSetStreaming(messageDiv, false);
+		else messageDiv.classList.remove("is-generating");
 		answerBody.classList.remove("assistant-error-card");
 		if (messageActions) messageActions.hidden = false;
 		let newCommitted = parts.committedReasoningLength;
@@ -9230,18 +9486,22 @@
 			});
 			if (!thinking) parts.currentReasoningBlock = null;
 		}
-		if (hasAnswer) syncStreamingMarkdownBlock(answerBody, answerStreamState, answerText, {
-			thinking,
-			placeholder: "正在思考中…"
-		});
-		else if (thinking) {
+		if (hasAnswer) {
+			parts.rawAnswerText = answerText;
+			syncStreamingMarkdownBlock(answerBody, answerStreamState, stripAskUserForDisplay(answerText), {
+				thinking,
+				placeholder: "正在思考中…"
+			});
+		} else if (thinking) {
 			answerBody.innerHTML = "";
 			answerStreamState.text = "";
 			answerStreamState.ready = false;
+			parts.rawAnswerText = "";
 		} else {
 			answerBody.innerHTML = "";
 			answerStreamState.text = "";
 			answerStreamState.ready = false;
+			parts.rawAnswerText = "";
 		}
 		if (hasAnswer || hasReasoning) renderMathInMessage(messageId);
 		scrollChatToBottom();
@@ -9302,7 +9562,8 @@
 		const { timelineContainer, answerBody, messageActions } = messageDiv._parts;
 		if (Number.isFinite(retryUserIndex)) tagAssistantRetryUserIndex(messageId, retryUserIndex);
 		messageDiv.classList.add("is-error");
-		messageDiv.classList.remove("is-generating");
+		if (PORT_SKIN) portSetStreaming(messageDiv, false);
+		else messageDiv.classList.remove("is-generating");
 		if (timelineContainer) {
 			timelineContainer.hidden = true;
 			timelineContainer.innerHTML = "";
@@ -9358,7 +9619,7 @@
 				answer: ""
 			};
 			const parts = messageDiv._parts;
-			const answer = String(parts.answerStreamState?.text || "");
+			const answer = String(parts.rawAnswerText || parts.answerStreamState?.text || "");
 			const segments = [];
 			for (const ev of parts.timeline || []) {
 				if (!ev || ev.type !== "reasoning") continue;
@@ -9444,7 +9705,7 @@
 		conversationHistory.length = 0;
 		clearPendingAttachments();
 		updateContextMeter();
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		chatMessages.classList.remove("active");
 		homeView.classList.remove("chatting");
 		homeInput.value = "";
@@ -9676,7 +9937,7 @@
 			}
 		}
 		currentChatId = null;
-		chatMessages.innerHTML = "";
+		messageSink.innerHTML = "";
 		homeView.classList.add("chatting");
 		chatMessages.classList.add("active");
 		if (contextMeter) contextMeter.classList.remove("hidden");
@@ -10032,6 +10293,7 @@
 		const customInstructionsContent = buildCustomInstructionsSystemContent();
 		if (customInstructionsContent && activeModelId !== "cancriv1-0.1b") requestBody.cancri_custom_instructions = customInstructionsContent;
 		requestBody.web_search_enabled = Boolean(webSearchEnabled);
+		requestBody.cancri_ask_user = true;
 		const queueSessionId = queueSessionIdOverride || crypto.randomUUID();
 		requestBody.queue_session_id = queueSessionId;
 		if (enableTools && activeModelId !== "cancriv1-0.1b") {
@@ -10622,6 +10884,7 @@
 				scrollChatToBottom();
 			}
 			persistSessionNav();
+			syncAskUserFromHistory();
 		}
 		updateChatShareButtonVisibility();
 		clearPendingAttachments();
@@ -10721,6 +10984,183 @@
 			dispatchChatTitleUpdated(clean, gen.chatId);
 		} catch (error) {}
 	}
+	var ASK_USER_OPEN_TAG = "<ask_user>";
+	var ASK_USER_TAG_RE = /<ask_user>\s*([\s\S]*?)\s*<\/ask_user>/;
+	function parseAskUserPayload(text) {
+		if (typeof text !== "string" || !text.includes(ASK_USER_OPEN_TAG)) return null;
+		const match = text.match(ASK_USER_TAG_RE);
+		if (!match) return null;
+		try {
+			const data = JSON.parse(match[1]);
+			const question = String(data?.question || "").trim().slice(0, 200);
+			const options = Array.isArray(data?.options) ? data.options.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4) : [];
+			if (!question || options.length < 2) return null;
+			return {
+				question,
+				options: options.map((item) => item.slice(0, 60))
+			};
+		} catch (_) {
+			return null;
+		}
+	}
+	function stripAskUserForDisplay(text) {
+		const raw = String(text ?? "");
+		if (!raw) return raw;
+		let out = raw.replace(ASK_USER_TAG_RE, "");
+		const openIndex = out.indexOf(ASK_USER_OPEN_TAG);
+		if (openIndex >= 0) out = out.slice(0, openIndex);
+		out = out.replace(/<(?:ask_user|ask_use|ask_us|ask_u|ask_|ask|as|a)?$/, "");
+		return out.trimEnd();
+	}
+	var askUserActiveIndex = 0;
+	var askUserVisible = false;
+	function getAskUserDom() {
+		let card = document.getElementById("askUserBlock");
+		if (card) return {
+			card,
+			hint: document.getElementById("askUserHint")
+		};
+		const wrap = homeView?.querySelector(".composer-wrap");
+		const composerEl = wrap?.querySelector(".composer");
+		if (!wrap || !composerEl) return null;
+		card = document.createElement("div");
+		card.id = "askUserBlock";
+		card.className = "ask-user-card";
+		card.hidden = true;
+		card.innerHTML = "<div class=\"ask-user-head\"><span class=\"ask-user-question\" id=\"askUserQuestion\"></span><button class=\"ask-user-close\" id=\"askUserCloseBtn\" type=\"button\" aria-label=\"关闭提问\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M13.147 6.146a.5.5 0 0 1 .707.707L10.707 10l3.146 3.146a.5.5 0 0 1-.628.772l-.079-.065L10 10.707l-3.147 3.146a.5.5 0 0 1-.707-.707L9.293 10 6.146 6.853l-.064-.078a.5.5 0 0 1 .693-.693l.078.064L10 9.293z\"></path></svg></button></div><div class=\"ask-user-list\" id=\"askUserList\"></div>";
+		wrap.insertBefore(card, composerEl);
+		const hint = document.createElement("div");
+		hint.id = "askUserHint";
+		hint.className = "ask-user-hint";
+		hint.hidden = true;
+		hint.textContent = "↑↓ 选择 · Enter 发送 · 或直接在下方输入";
+		composerEl.insertAdjacentElement("afterend", hint);
+		card.querySelector("#askUserCloseBtn").addEventListener("click", () => hideAskUserBlock());
+		return {
+			card,
+			hint
+		};
+	}
+	function setAskUserActive(index) {
+		const card = document.getElementById("askUserBlock");
+		if (!card) return;
+		const rows = [...card.querySelectorAll(".ask-user-row")];
+		if (!rows.length) return;
+		askUserActiveIndex = (index % rows.length + rows.length) % rows.length;
+		rows.forEach((row, i) => row.classList.toggle("is-active", i === askUserActiveIndex));
+	}
+	function askUserAnswer(text) {
+		const answer = String(text || "").trim();
+		if (!answer) return;
+		hideAskUserBlock();
+		sendMessage(answer);
+	}
+	function showAskUserBlock(payload) {
+		const dom = getAskUserDom();
+		if (!dom || !payload) return;
+		const { card, hint } = dom;
+		card.querySelector("#askUserQuestion").textContent = payload.question;
+		const list = card.querySelector("#askUserList");
+		list.innerHTML = "";
+		payload.options.forEach((option, index) => {
+			if (index > 0) {
+				const sep = document.createElement("div");
+				sep.className = "ask-user-sep";
+				list.appendChild(sep);
+			}
+			const row = document.createElement("button");
+			row.type = "button";
+			row.className = "ask-user-row";
+			const num = document.createElement("span");
+			num.className = "ask-user-num";
+			num.textContent = String(index + 1);
+			const label = document.createElement("span");
+			label.className = "ask-user-label";
+			label.textContent = option;
+			const enter = document.createElement("span");
+			enter.className = "ask-user-enter";
+			enter.textContent = "⏎";
+			row.append(num, label, enter);
+			row.addEventListener("click", () => askUserAnswer(option));
+			row.addEventListener("mouseenter", () => setAskUserActive(index));
+			list.appendChild(row);
+		});
+		const freeSep = document.createElement("div");
+		freeSep.className = "ask-user-sep is-static";
+		list.appendChild(freeSep);
+		const free = document.createElement("div");
+		free.className = "ask-user-free";
+		free.innerHTML = "<span class=\"ask-user-num ask-user-pencil\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"></path></svg></span><input class=\"ask-user-input\" id=\"askUserFreeInput\" type=\"text\" placeholder=\"其他答案…\" autocomplete=\"off\" /><button class=\"ask-user-skip\" id=\"askUserSkipBtn\" type=\"button\">跳过</button>";
+		list.appendChild(free);
+		free.querySelector("#askUserSkipBtn").addEventListener("click", () => hideAskUserBlock());
+		const freeInput = free.querySelector("#askUserFreeInput");
+		freeInput.addEventListener("keydown", (event) => {
+			if (event.key === "Enter" && !event.isComposing && freeInput.value.trim()) {
+				event.preventDefault();
+				event.stopPropagation();
+				askUserAnswer(freeInput.value);
+			}
+		});
+		card.hidden = false;
+		if (hint) hint.hidden = false;
+		askUserVisible = true;
+		setAskUserActive(0);
+	}
+	function hideAskUserBlock() {
+		const card = document.getElementById("askUserBlock");
+		const hint = document.getElementById("askUserHint");
+		if (card) card.hidden = true;
+		if (hint) hint.hidden = true;
+		askUserVisible = false;
+	}
+	function syncAskUserFromHistory() {
+		if (!homeView?.classList.contains("chatting")) {
+			hideAskUserBlock();
+			return;
+		}
+		const last = conversationHistory[conversationHistory.length - 1];
+		const payload = last && last.role === "assistant" && typeof last.content === "string" ? parseAskUserPayload(last.content) : null;
+		if (payload) showAskUserBlock(payload);
+		else hideAskUserBlock();
+	}
+	document.addEventListener("keydown", (event) => {
+		if (!askUserVisible || state.modal) return;
+		if (event.isComposing) return;
+		const card = document.getElementById("askUserBlock");
+		if (!card || card.hidden) return;
+		const active = document.activeElement;
+		const inFreeInput = active && active.id === "askUserFreeInput";
+		const inComposer = active && active.id === "homeInput";
+		const composerEmpty = !homeInput || !homeInput.value.trim();
+		if (active && active !== document.body && !inFreeInput && !inComposer && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable)) return;
+		if (event.key === "Escape") {
+			hideAskUserBlock();
+			return;
+		}
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+			if (inFreeInput && active.value || inComposer && !composerEmpty) return;
+			event.preventDefault();
+			setAskUserActive(askUserActiveIndex + (event.key === "ArrowDown" ? 1 : -1));
+			return;
+		}
+		if (event.key === "Enter") {
+			if (inFreeInput) return;
+			if (inComposer && !composerEmpty) return;
+			const row = [...card.querySelectorAll(".ask-user-row")][askUserActiveIndex];
+			if (row) {
+				event.preventDefault();
+				askUserAnswer(row.querySelector(".ask-user-label")?.textContent || "");
+			}
+			return;
+		}
+		if (/^[1-4]$/.test(event.key) && (!active || active === document.body)) {
+			const row = [...card.querySelectorAll(".ask-user-row")][Number(event.key) - 1];
+			if (row) {
+				event.preventDefault();
+				askUserAnswer(row.querySelector(".ask-user-label")?.textContent || "");
+			}
+		}
+	});
 	async function sendMessage(content) {
 		const rateCheck = checkRateLimit();
 		if (!rateCheck.allowed) {
@@ -10745,6 +11185,7 @@
 			return;
 		}
 		stopVoiceRecognition();
+		hideAskUserBlock();
 		homeView.classList.add("chatting");
 		chatMessages.classList.add("active");
 		persistSessionNav();
@@ -11049,9 +11490,6 @@
 		state.modal = null;
 		updateScrimVisibility();
 	}
-	function isMobileViewport() {
-		return window.innerWidth <= 640;
-	}
 	/** 账户菜单底部抽屉断点（与 claude.css 侧栏 mobile drawer 一致） */
 	function isAccountSheetViewport() {
 		return window.innerWidth <= 768;
@@ -11062,17 +11500,20 @@
 		if (!sidebar) return document.body.classList.contains("sidebar-open");
 		return document.body.classList.contains("sidebar-open") || sidebar.classList.contains("is-mobile-open") || sidebar.dataset.open === "true";
 	}
+	var mobileDrawerCloseTimer = 0;
 	function closeMobileSidebarDrawer() {
 		if (!window.matchMedia("(max-width: 768px)").matches) return;
 		document.body.classList.remove("sidebar-open");
 		if (!sidebar) return;
-		sidebar.classList.add("collapsed");
 		sidebar.classList.remove("is-mobile-open");
 		sidebar.classList.add("is-mobile-closing");
 		sidebar.dataset.open = "false";
 		sidebar.dataset.collapsed = "true";
-		window.setTimeout(() => {
-			sidebar?.classList.remove("is-mobile-closing");
+		window.clearTimeout(mobileDrawerCloseTimer);
+		mobileDrawerCloseTimer = window.setTimeout(() => {
+			if (!sidebar) return;
+			sidebar.classList.remove("is-mobile-closing");
+			if (!(document.body.classList.contains("sidebar-open") || sidebar.classList.contains("is-mobile-open"))) sidebar.classList.add("collapsed");
 		}, 220);
 		["mobileMenuBtn", "sidebarToggle"].forEach((id) => {
 			const btn = document.getElementById(id);
@@ -11129,7 +11570,7 @@
 	function updateScrimVisibility() {
 		if (!scrim) return;
 		const accountSheetOpen = accountPopover && accountPopover.classList.contains("open") && isAccountSheetViewport();
-		const shouldShow = Boolean(state.modal) || accountSheetOpen || isMobileViewport() && sidebar && !sidebar.classList.contains("collapsed");
+		const shouldShow = Boolean(state.modal) || accountSheetOpen;
 		scrim.classList.toggle("show", shouldShow);
 		syncScrollToBottomAnchor();
 	}
@@ -11187,7 +11628,7 @@
 		settingTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.settingsPanel === panelId));
 		settingPanels.forEach((panel) => panel.classList.toggle("active", panel.id === panelId));
 	}
-	var SIDEBAR_RAIL_ANIM_MS = 240;
+	var SIDEBAR_RAIL_ANIM_MS = 300;
 	var sidebarRailAnimTimer = 0;
 	function beginSidebarRailAnimation(mode) {
 		if (!sidebar) return;
@@ -11560,7 +12001,6 @@
 		closePopover();
 		closeModal();
 		closeMobileSidebarDrawer();
-		if (isMobileViewport() && sidebar) sidebar.classList.add("collapsed");
 		updateScrimVisibility();
 	});
 	document.addEventListener("click", (event) => {
@@ -11568,7 +12008,7 @@
 		closePopover();
 		if (isMobileDrawerOpen()) {
 			if (![document.getElementById("mobileMenuBtn"), document.getElementById("sidebarToggle")].some((el) => el && el.contains(event.target))) closeMobileSidebarDrawer();
-		} else if (isMobileViewport() && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains("collapsed")) sidebar.classList.add("collapsed");
+		} else if (window.matchMedia("(max-width: 768px)").matches && sidebar && !sidebar.contains(event.target) && !sidebar.classList.contains("collapsed")) closeMobileSidebarDrawer();
 		if (!state.modal) updateScrimVisibility();
 	});
 	document.addEventListener("keydown", (e) => {
@@ -11577,7 +12017,7 @@
 			if (settingsView && settingsView.classList.contains("active")) return;
 			closePopover();
 			closeModal();
-			if (isMobileViewport() && sidebar) sidebar.classList.add("collapsed");
+			closeMobileSidebarDrawer();
 			updateScrimVisibility();
 		}
 	});
@@ -11618,7 +12058,7 @@
 	function initQueryFromUrl() {
 		const question = new URLSearchParams(window.location.search).get("q");
 		if (question) {
-			homeInput.value = decodeURIComponent(question);
+			homeInput.value = question;
 			homeInput.focus();
 			updateHomeHeroText();
 			setComposerBusy(false);
@@ -11718,13 +12158,6 @@
 					tag.textContent = tagText;
 					option.appendChild(tag);
 				});
-				if (!model.isFree && model.id !== currentModel && typeof model.priceLevel === "number") {
-					const heat = document.createElement("span");
-					heat.className = "model-item-heat";
-					heat.setAttribute("aria-hidden", "true");
-					heat.innerHTML = `<span class="model-item-heat-track"><span class="model-item-heat-dot" style="left:${barMarkerPct(model.priceLevel)}%"></span></span>`;
-					option.appendChild(heat);
-				}
 				option.classList.toggle("active", model.id === currentModel);
 				if (model.available === false) {
 					option.classList.add("disabled");
@@ -12119,7 +12552,7 @@
 	autoResizeComposerInput();
 	updateComposerSendButton();
 	updateAttachBtnVisibility();
-	if (isMobileViewport() && sidebar) sidebar.classList.add("collapsed");
+	if (window.matchMedia("(max-width: 768px)").matches && sidebar) sidebar.classList.add("collapsed");
 	updateScrimVisibility();
 	window.addEventListener("resize", updateScrimVisibility);
 	if (homeCenter && "ResizeObserver" in window) new ResizeObserver(() => {
@@ -12182,7 +12615,7 @@
 	var closeAnnouncementBtn = document.getElementById("closeAnnouncementBtn");
 	var dismissNoticeCheckbox = document.getElementById("dismissNoticeCheckbox");
 	var openAnnouncementBtn = document.getElementById("openAnnouncementBtn");
-	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_20260724_invite_v1";
+	var NOTICE_DISMISS_KEY = "cancri_notice_dismiss_0620_migration_v1";
 	function openAnnouncementModal() {
 		if (!announcementModal) return;
 		announcementModal.setAttribute("aria-hidden", "false");
@@ -12272,7 +12705,14 @@
 		importUserMemories,
 		renderMemoriesInSettings,
 		handleSelectedAttachmentFiles,
-		reserveFileUploadUsage
+		reserveFileUploadUsage,
+		askUser: {
+			show: showAskUserBlock,
+			hide: hideAskUserBlock,
+			parse: parseAskUserPayload,
+			strip: stripAskUserForDisplay,
+			sync: syncAskUserFromHistory
+		}
 	};
 	//#endregion
 })();

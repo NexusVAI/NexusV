@@ -6,7 +6,18 @@
     <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-models-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）　-->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>模型广场 · Cancri 开放平台</title>
-    <link rel="icon" type="image/svg+xml" href="../../Logo/NexusV_favicon.svg" />
+    <meta name="description" content="Cancri 模型广场：浏览当前可用的全部公开大语言模型，免费与付费两档，支持 OpenAI 与 Anthropic 协议。" />
+    <link rel="canonical" href="https://www.nexusvai.xyz/chat/api/api_models.html" />
+    <meta property="og:title" content="模型广场 · Cancri 开放平台">
+    <meta property="og:description" content="Cancri 模型广场：浏览当前可用的全部公开大语言模型，免费与付费两档，支持 OpenAI 与 Anthropic 协议。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.nexusvai.xyz/chat/api/api_models.html">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="模型广场 · Cancri 开放平台">
+    <meta name="twitter:description" content="Cancri 模型广场：浏览当前可用的全部公开大语言模型，免费与付费两档，支持 OpenAI 与 Anthropic 协议。">
+    <meta name="twitter:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
+    <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
     <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
     <link rel="preload" as="image" href="../../Logo/Cancri1.jpg" fetchpriority="high" />
     <link rel="preload" as="image" href="../../Logo/Cancri.png" />
@@ -16,7 +27,7 @@
     <link rel="dns-prefetch" href="https://chat.nexusvai.xyz" />
     <script src="./cancri_config.js?v=2026-06-04-cf"></script>
     <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
-    <script src="./api/api-platform.js?v=20260607-account-fix"></script>
+    <script src="./api/api-platform.js?v=20260809-newconsole"></script>
     <!-- Cancri 双主预logo 同步 -->
     <script src="./cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
     <style>
@@ -1057,6 +1068,19 @@
     </style>
   </head>
   <body>
+<link rel="stylesheet" type="text/css" href="../assets/p2m-loader.css" />
+<div id="p2m-loader" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
+    <g id="mark" fill="#111111" fill-rule="evenodd">
+      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </g>
+  </svg>
+</div>
+<script src="../assets/p2m-loader.js" defer></script>
+
     <header class="topbar">
       <div class="topbar__inner">
         <a class="brand" href="./api/" aria-label="Cancri 开放平台">
@@ -1073,7 +1097,7 @@
         <nav class="topnav" aria-label="开放平台导航">
           <a href="./api/">概览</a>
           <a href="./api_apply.html">联系我们</a>
-          <a href="./api_keys.html">Keys</a>
+          <a href="./keys.html">Keys</a>
           <a href="./api_models.html" class="is-active">模型</a>
           <a href="./api_docs.html">文档</a>
           <a href="./pricing.html">套餐</a>
@@ -1188,7 +1212,7 @@
         <span class="legend-title">档位说明</span>
         <span class="legend-item">
           <span class="tier tier-free">FREE</span>
-          所有用户免费使用，受免费档限速（10 RPM / 60 RPH / 1000 RPD，并参2 路）　
+          价格为 0 时可免余额调用；仍受账户限速档约束（默认 Tier0：并发 3 / 60 RPM / 200 万 TPM / 2000 万 TPD，详见速率限制文档）
         </span>
         <span class="legend-item">
           <span class="tier tier-welfare">福利</span>
@@ -1305,7 +1329,7 @@
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态+
          调用代码区，sessionStorage 自动填入用户最迁Key）　-->
     <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-    <script src="./api/api-models-app.js?v=20260710-gpt56"></script>
+    <script src="./api/api-models-app.js?v=20260809-ratelimit-tpm"></script>
     <!-- 2026-06-10：Claude Fable 5 上线推广弹窗 -->
     <script src="./fable5_launch_modal.js?v=2026-06-18-off"></script>
   </body>

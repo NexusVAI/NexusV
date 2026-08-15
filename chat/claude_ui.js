@@ -14,8 +14,11 @@
 
     var ONBOARDING_DISMISSED_KEY = 'cancri_getting_started_dismissed_v1';
     var ONBOARDING_COMPLETED_KEY = 'cancri_getting_started_completed_v1';
-    var CODE_PROMO_DISMISSED_KEY = 'cancri_code_promo_dismissed_v1';
-    var ONBOARDING_TASK_IDS = ['importMemory', 'community', 'cancriCode'];
+    // 2026-08-11：'cancriCode'（下载 Cancri-code）暂时从清单下掉，两个 HTML 里的按钮已一并移除。
+    // 必须同步删这里的 id —— 留着的话 count 永远到不了 length，卡片再也不会自动完成收起。
+    // 恢复时：把 id 加回来 + 复原 index.html / claude.html 的 .claude-onboarding-task 按钮即可，
+    // runOnboardingAction 的 'open-cancri-code' 分支与 openCancriCodeDownload() 都保留着没删。
+    var ONBOARDING_TASK_IDS = ['importMemory', 'community'];
     var COMMUNITY_URL = 'https://qm.qq.com/q/RNgltzNsSQ';
     var CANCRI_CODE_URL = 'https://pan.baidu.com/s/1f65FMHdo2TenrwG7gBWQhg';
     var SERVICE_STATUS_URL = 'https://nexusvai.github.io/ChatAI-status/status.html';
@@ -58,7 +61,6 @@
             bindAccountPlanSync,
             bindTierAuthEvents,
             bindGettingStartedChecklist,
-            bindCodePromoCard,
             bindExternalSidebarLinks,
             bindImportMemoryShortcut,
             bindImportMemoryDelegation,
@@ -270,10 +272,17 @@
             }
             document.body.classList.remove('sidebar-open');
             syncMobileSidebarState(sidebar, false);
-            if (sidebar) sidebar.classList.add('collapsed', 'is-mobile-closing');
+            // 2026-08-11：.collapsed 延迟到滑出结束再加。立刻加会命中桌面 rail 的
+            // 内容隐藏规则（label/最近列表 display:none 等），抽屉还在 180ms 滑出
+            // 途中内容就整块消失——用户看到的"关闭没有动画"。去掉 open class 后
+            // 基础 mobile 规则(.sidebar → translateX(-100%))已负责把抽屉滑出去。
+            if (sidebar) sidebar.classList.add('is-mobile-closing');
             closeAnimationTimer = setTimeout(function () {
                 const latest = sidebarEl();
-                if (latest) latest.classList.remove('is-mobile-closing');
+                if (latest) {
+                    latest.classList.add('collapsed');
+                    latest.classList.remove('is-mobile-closing');
+                }
                 closeAnimationTimer = null;
             }, 220);
         }
@@ -305,6 +314,12 @@
         // 桌面端不应继承 .collapsed（rail 模式），只保留用户手动切换。
         window.matchMedia('(min-width: 769px)').addEventListener('change', function (e) {
             if (e.matches) {
+                // 清掉 closeDrawer 的待定计时器，防止它在切回桌面后补一个
+                // .collapsed 把桌面侧栏折成 rail。
+                if (closeAnimationTimer) {
+                    clearTimeout(closeAnimationTimer);
+                    closeAnimationTimer = null;
+                }
                 document.body.classList.remove('sidebar-open');
                 const sidebar = sidebarEl();
                 if (sidebar) {
@@ -592,7 +607,9 @@
     //   - 订阅到期：缓存 5 分钟过期后下次刷新拉到 'free'，自动回到 free 显示。
     var TIER_CACHE_KEY = 'cancri_tier_cache_v1';
     var TIER_CACHE_TTL_MS = 5 * 60 * 1000;
+    var TIER_DEGRADED_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     var TIER_FETCH_MAX_ATTEMPTS = 3;
+    var tierRetryBlockedUntil = 0;
 
     function bindPlanPill() {
         const pill = document.getElementById('claudePlanPill');
@@ -644,14 +661,15 @@
         } catch (e) { return ''; }
     }
 
-    function readTierCache() {
+    function readTierCache(allowDegraded) {
         try {
             var raw = localStorage.getItem(TIER_CACHE_KEY);
             if (!raw) return null;
             var parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== 'object') return null;
             if (typeof parsed.cachedAt !== 'number') return null;
-            if (Date.now() - parsed.cachedAt > TIER_CACHE_TTL_MS) return null;
+            var maxAge = allowDegraded ? TIER_DEGRADED_CACHE_TTL_MS : TIER_CACHE_TTL_MS;
+            if (Date.now() - parsed.cachedAt > maxAge) return null;
             if (!parsed.subscription) return null;
             return parsed.subscription;
         } catch (e) { return null; }
@@ -676,6 +694,7 @@
         latestTierSubscription = sub || null;
         document.body.classList.remove('is-tier-loading');
         document.body.classList.remove('is-account-tier-loading');
+        document.body.classList.toggle('is-account-tier-degraded', !!(sub && sub.degraded));
         if (sub && sub.tier === 'paid') {
             document.body.classList.add('is-paid-tier');
             updateBillingCopy(sub);
@@ -689,15 +708,22 @@
 
     // 失败时调用：无缓存就维持 loading 态隐藏升级 UI（保守，避免 PAID 用户看 FREE）；
     // 有缓存就保持缓存结果。
-    function applyTierFallback() {
-        var cached = readTierCache();
+    function applyTierFallback(degraded) {
+        var cached = readTierCache(!!degraded);
         if (cached) {
-            applyTierState(cached, /* fromCache */ true);
+            var display = degraded
+                ? Object.assign({}, cached, { degraded: true, degraded_reason: 'hyperdrive_quota' })
+                : cached;
+            applyTierState(display, /* fromCache */ true);
         }
         // 无缓存：维持 is-tier-loading，billing copy 保持"加载中"。
     }
 
     async function applyTierUI() {
+        if (tierRetryBlockedUntil > Date.now()) {
+            applyTierFallback(true);
+            return;
+        }
         const token = getCancriAccessToken();
         if (!token) {
             // 2026-06-17 fix：首屏 token 可能还没从 Supabase 异步恢复。此时绝不能清缓存 /
@@ -727,6 +753,7 @@
         }
 
         var lastErr = null;
+        var degraded = false;
         for (var attempt = 0; attempt < TIER_FETCH_MAX_ATTEMPTS; attempt++) {
             try {
                 var resp = await fetch(SUPABASE_URL + '/functions/v1/chat-gateway', {
@@ -738,10 +765,21 @@
                     },
                     body: JSON.stringify({ endpoint: 'get_my_subscription', __auth_token: token }),
                 });
+                var data = resp ? await resp.json().catch(function () { return null; }) : null;
                 if (!resp || !resp.ok) {
                     lastErr = new Error('HTTP ' + (resp && resp.status));
+                    var code = data && data.code;
+                    if (code === 'dependency_quota_exhausted' || code === 'ban_check_unavailable') {
+                        var retryAfter = Number(resp.headers.get('Retry-After') || 0);
+                        var resetAt = data && typeof data.reset_at === 'string' ? Date.parse(data.reset_at) : NaN;
+                        var retryMs = Number.isFinite(resetAt)
+                            ? Math.max(1000, resetAt - Date.now())
+                            : (retryAfter > 0 ? retryAfter * 1000 : TIER_CACHE_TTL_MS);
+                        tierRetryBlockedUntil = Date.now() + retryMs;
+                        degraded = true;
+                        break;
+                    }
                 } else {
-                    var data = await resp.json().catch(function () { return null; });
                     var sub = data && data.subscription;
                     if (sub) {
                         // 2026-06-23 按量计费 wallet_v3：附加 billing_mode + wallet 到 sub
@@ -751,6 +789,7 @@
                         if (data.billing_mode_chat) sub.billing_mode_chat = data.billing_mode_chat;
                         if (data.plan_v4) sub.plan_v4 = data.plan_v4;
                         writeTierCache(sub);
+                        tierRetryBlockedUntil = 0;
                         applyTierState(sub, false);
                         return;
                     }
@@ -766,7 +805,7 @@
         }
         // 全部重试失败 → fail-soft（用缓存或维持 loading）
         try { console.warn('applyTierUI failed after retries:', lastErr); } catch (e) { /* ignore */ }
-        applyTierFallback();
+        applyTierFallback(degraded);
     }
 
     // 把 settings 面板里 billing 区的文案替换成对应 tier 的精确状态。
@@ -804,7 +843,7 @@
         if (sub.billing_mode_chat === 'plan_v4') {
             var p4 = getPlanV4(sub);
             if (p4) {
-                var lbl = planV4Label(p4);
+                var lbl = esc(planV4Label(p4));
                 copy.setAttribute('data-tier-state', 'paid');
                 copy.innerHTML = '您当前是<strong>Cancri ' + lbl + '</strong>'
                     + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">' + lbl.toUpperCase() + '</span>'
@@ -819,17 +858,12 @@
             }
             return;
         }
-        // 2026-06-23 按量计费 wallet_v3：显示¥余额取代旧订阅信息
+        // 2026-07-30：聊天设置不再显示 wallet 余额，统一展示套餐/订阅状态。
         if (sub.billing_mode === 'wallet_v3') {
-            var w = sub.wallet || {};
-            var balance = Number(w.balance_cny) || 0;
-            var debt = Number(w.debt_cny) || 0;
-            copy.setAttribute('data-tier-state', 'wallet');
-            copy.innerHTML = '<strong>按量计费</strong>'
-                + '<span class="claude-tier-chip is-paid" style="margin-left:8px;vertical-align:middle">¥钱包</span>'
-                + '。余额 <strong style="font-size:15px">¥' + balance.toFixed(2) + '</strong>'
-                + (debt > 0 ? '（欠款 ¥' + debt.toFixed(2) + '）' : '')
-                + '。<a href="./pricing.html">充值 →</a>';
+            copy.setAttribute('data-tier-state', 'free');
+            copy.innerHTML = '您当前<strong>未订阅套餐</strong>（按量计费）'
+                + '<span class="claude-tier-chip is-free" style="margin-left:8px;vertical-align:middle">FREE</span>'
+                + '。<a href="./pricing.html">订阅套餐 →</a>';
             return;
         }
         if (sub.tier === 'paid') {
@@ -864,23 +898,24 @@
     // 设置页「额度」页：当前档位 + 剩余套餐额度。
     function updateQuotaSection(sub) {
         var nameEl = document.getElementById('claudeQuotaPlanName');
-        var remainEl = document.getElementById('claudeQuotaRemaining');
+        var usedEl = document.getElementById('claudeQuotaRemaining');
         var metaEl = document.getElementById('claudeQuotaMeta');
         var barEl = document.getElementById('claudeQuotaBar');
         if (!nameEl) return;
         var p4 = getPlanV4(sub);
         if (p4) {
             var total = Number(p4.allowance_cny) || 0;
-            var remain = Math.max(0, Number(p4.remaining_cny) || 0);
+            var used = Number(p4.used_cny) || 0;
+            var remain = Math.max(0, total - used);
             nameEl.textContent = planV4Label(p4) + ' 套餐';
-            if (remainEl) remainEl.textContent = fmtPlanCny(remain);
-            if (metaEl) metaEl.textContent = '月度额度 ' + fmtPlanCny(total)
-                + '（已用 ' + fmtPlanCny(p4.used_cny) + '）'
+            if (usedEl) usedEl.textContent = fmtPlanCny(used);
+            if (metaEl) metaEl.textContent = '已用 ' + fmtPlanCny(used) + ' / 月度额度 ' + fmtPlanCny(total)
+                + ' · 剩余 ' + fmtPlanCny(remain)
                 + (p4.period_end ? ' · 本期至 ' + new Date(p4.period_end).toLocaleDateString('zh-CN') : '');
-            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, remain / total * 100)) : 0) + '%';
+            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, used / total * 100)) : 0) + '%';
         } else {
             nameEl.textContent = '未订阅套餐';
-            if (remainEl) remainEl.textContent = '¥0.00';
+            if (usedEl) usedEl.textContent = '¥0.00';
             if (metaEl) metaEl.textContent = '订阅套餐后，付费模型将从套餐月度额度扣费。';
             if (barEl) barEl.style.width = '0%';
         }
@@ -998,40 +1033,12 @@
         if (!card) return;
         try { localStorage.setItem(ONBOARDING_DISMISSED_KEY, '1'); } catch (e) {}
         card.classList.add('is-fading');
-        setTimeout(function () {
-            card.hidden = true;
-            maybeShowCodePromo();
-        }, 260);
-    }
-
-    function isCodePromoDismissed() {
-        try { return localStorage.getItem(CODE_PROMO_DISMISSED_KEY) === '1'; } catch (e) { return false; }
-    }
-
-    function dismissCodePromo(card) {
-        if (!card) return;
-        try { localStorage.setItem(CODE_PROMO_DISMISSED_KEY, '1'); } catch (e) {}
-        card.classList.add('is-fading');
         setTimeout(function () { card.hidden = true; }, 260);
     }
 
-    function isOnboardingVisible() {
-        var card = document.getElementById('claudeOnboardingCard');
-        if (!card || card.hidden || isOnboardingDismissed()) return false;
-        return true;
-    }
-
-    function maybeShowCodePromo() {
-        var promo = document.getElementById('claudeCodePromoCard');
-        if (!promo) return;
-        if (isOnboardingVisible() || isCodePromoDismissed()) {
-            promo.hidden = true;
-            return;
-        }
-        promo.hidden = false;
-        promo.classList.remove('is-fading');
-    }
-
+    // TODO(2026-08-11): 当前无调用方——onboarding 的「下载 Cancri-code」任务已暂时下架
+    // （见 ONBOARDING_TASK_IDS 注释）。刻意保留而非删除：这是那个任务恢复上架时的还原点，
+    // runOnboardingAction 里的 'open-cancri-code' 分支同理。若确定不再恢复，两处一起删。
     function openCancriCodeDownload() {
         window.open(CANCRI_CODE_URL, '_blank', 'noopener');
         showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
@@ -1047,7 +1054,9 @@
             if (task) task.classList.toggle('is-complete', isDone);
         });
         var progress = document.getElementById('claudeOnboardingProgress');
-        if (progress) progress.textContent = '3步中' + count + '步完成';
+        // 总步数跟着 ONBOARDING_TASK_IDS 走，别再写死数字：上下架任务时漏改一处
+        // 就会出现「3步中2步完成」然后卡片立刻自己收起的矛盾状态。
+        if (progress) progress.textContent = ONBOARDING_TASK_IDS.length + '步中' + count + '步完成';
         if (count >= ONBOARDING_TASK_IDS.length) dismissOnboarding(card);
     }
 
@@ -1369,13 +1378,9 @@
 
     function bindGettingStartedChecklist() {
         var card = document.getElementById('claudeOnboardingCard');
-        if (!card) {
-            maybeShowCodePromo();
-            return;
-        }
+        if (!card) return;
         if (isOnboardingDismissed()) {
             card.hidden = true;
-            maybeShowCodePromo();
             return;
         }
         renderOnboardingState(card, readOnboardingCompleted());
@@ -1398,27 +1403,6 @@
         });
     }
 
-    function bindCodePromoCard() {
-        var promo = document.getElementById('claudeCodePromoCard');
-        if (!promo) return;
-        var close = document.getElementById('claudeCodePromoCloseBtn');
-        if (close) {
-            close.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dismissCodePromo(promo);
-            });
-        }
-        var download = document.getElementById('claudeCodePromoDownloadBtn');
-        if (download) {
-            download.addEventListener('click', function (e) {
-                e.preventDefault();
-                openCancriCodeDownload();
-            });
-        }
-        maybeShowCodePromo();
-    }
-
     function bindExternalSidebarLinks() {
         var codeNav = document.getElementById('claudeCancriCodeNavBtn');
         if (codeNav) {
@@ -1432,7 +1416,10 @@
         }
         var accountDownload = document.getElementById('accountDownloadBtn');
         if (accountDownload) {
-            accountDownload.addEventListener('click', function () {
+            accountDownload.addEventListener('click', function (e) {
+                // 原内联 onclick="event.stopPropagation()" 被页面 CSP（script-src 无
+                // 'unsafe-inline'）拦截，点击下载会连带切换账户弹层，故在此阻断冒泡。
+                e.stopPropagation();
                 showToast('百度网盘提取码：' + CANCRI_CODE_PAN_CODE);
             });
         }
@@ -2505,6 +2492,9 @@
                     }
                     if (key === 'billing') {
                         loadClaudeBillingActivations();
+                    }
+                    if (key === 'usage') {
+                        loadClaudeUsagePanel();
                     }
                     if (key === 'invite') {
                         loadClaudeInviteSection();
@@ -4050,20 +4040,35 @@
             if (!rewardMicro && inv.grants && inv.grants.length) {
                 rewardMicro = inv.grants.reduce(function (a, g) { return a + Number(g.delta_micro || 0); }, 0);
             }
+            // 2026-08-15：活跃奖已从「¥1 钱包余额」改为「1 张重置卡」，
+            // celebrate_grants 的 delta_micro 现在恒为 0（见 cancri_invite_qualify_v2），
+            // 所以「总奖励合计 ¥」会永远显示 ¥0.00 —— 改成按已活跃人数换算重置卡张数。
+            // 首充返利仍走钱包，那部分金额仍然有意义，单独列出。
+            var qualified = Number(s.qualified || 0);
             sumEl.innerHTML =
                 '链接访问量 <strong>' + visits + '</strong> · ' +
                 '已邀 <strong>' + Number(s.total || 0) + '</strong> · ' +
-                '已活跃 <strong>' + Number(s.qualified || 0) + '</strong> · ' +
+                '已活跃 <strong>' + qualified + '</strong> · ' +
+                '获得重置卡 <strong>' + qualified + ' 张</strong> · ' +
                 '已返利人数 <strong>' + Number(s.rebated || 0) + '</strong> · ' +
-                '总奖励合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
+                '返利合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
 
             var rules = inv.rules;
             var rulesEl = document.getElementById('claudeInviteRules');
             if (rulesEl && rules) {
+                // 2026-08-15 同步真实规则（旧文案三处过时：奖励物、API 门槛、缺新号窗口）：
+                //   · 奖励 = 重置卡，不是钱
+                //   · require_api_approved 已在 celebrate_config 里显式关掉，不再要求申请 API
+                //   · 新增「绑定时账号年龄 < invitee_max_account_age_days(7) 天」的新号闸
+                var newDays = rules.invitee_max_account_age_days || 7;
                 rulesEl.textContent =
-                    '好友通过你的链接首次注册为新用户，申请 API 通过且累计 ' + (rules.activity_min_days || 3) +
-                    ' 天有正常 Chat/API 流量后，双方各得 ¥' + (rules.activity_reward_cny || 1) +
-                    '（自动入账）。好友首充返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
+                    '好友通过你的链接注册（需为 ' + newDays + ' 天内的新账号）、验证邮箱，并累计 ' +
+                    (rules.activity_min_days || 3) +
+                    ' 天有正常 Chat/API 流量后，双方各得 1 张重置卡（自动入账）。' +
+                    '重置卡可清零 Opus 5 免费额度与当日 Token 额度，不过期，最多持有 ' +
+                    (rules.activity_max_per_inviter || 50) + ' 张，在「结算 → 重置」使用。' +
+                    '同设备 / 同网段 / 重复设备指纹不计。' +
+                    '好友首充另返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
                     '% 给你（最多 ' + (rules.rebate_max_people || 5) +
                     ' 人，返利总额上限 ¥' + (rules.rebate_total_cap_cny || 100) + '）。';
             }
@@ -4081,9 +4086,14 @@
                             kind === 'activity_invitee' ? '活跃奖（被邀请）' :
                             kind === 'first_recharge_rebate' ? '首充返利' :
                             kind.indexOf('legacy') === 0 ? '历史 token 奖励' : kind || '其他';
+                        // 重置卡奖励的 delta_micro 是 0（奖励物不是钱），只判金额会让整列恒显示「—」。
+                        // ⛔ 判据只能用 payload.reward：历史 ¥1 奖励的 g.kind 同样是 activity_inviter
+                        // （payload 里是 cny:1、delta_micro=1000000），按 kind 判会把旧钱奖励标成重置卡。
+                        var isCard = !!(g.payload && g.payload.reward === 'reset_card');
                         var amt = Number(g.delta_micro || 0) > 0
                             ? ('¥' + microToCny(g.delta_micro))
-                            : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens') : '—');
+                            : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens')
+                                : (isCard ? '1 张重置卡' : '—'));
                         var t = g.granted_at ? String(g.granted_at).replace('T', ' ').slice(0, 19) : '—';
                         gh += '<tr><td>' + esc(label) + '</td><td>' + esc(amt) + '</td><td>' + esc(t) + '</td></tr>';
                     });
@@ -4142,6 +4152,7 @@
             if (uidEl) uidEl.title = user.id;
             setClaudeText('claudeAccountCreated', fmtDate(user.created_at));
             setClaudeText('claudeAccountLastSignin', fmtDate(user.last_sign_in_at));
+            if (claudeAccountTimer) clearInterval(claudeAccountTimer);
             claudeAccountTimer = setInterval(function () {
                 setClaudeText('claudeAccountOnline', fmtDuration(Date.now() - claudeAccountSessionStart));
             }, 1000);
@@ -4262,6 +4273,160 @@
             console.error('list_my_orders:', err);
             panel.innerHTML = '<p class="claude-billing-empty">加载失败，请稍后重试。</p>';
         });
+    }
+
+    // 2026-07-30：Settings 用量明细面板。调用新端点 get_my_chat_usage_detail，
+    // 展示每次调用的模型、时间、输入/输出 token、扣费、成功/失败。
+    function injectUsagePanelStyles() {
+        if (document.getElementById('claudeUsagePanelStyles')) return;
+        var style = document.createElement('style');
+        style.id = 'claudeUsagePanelStyles';
+        style.textContent = [
+            '.claude-usage-list { display:flex; flex-direction:column; gap:8px; }',
+            '.claude-usage-row { display:grid; grid-template-columns:minmax(120px,1.2fr) 80px 80px 90px 70px 1fr; gap:12px; align-items:center; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--panel); font-size:12.5px; }',
+            '@media (max-width:640px) { .claude-usage-row { grid-template-columns:1fr 1fr; gap:6px 12px; } .claude-usage-cell:not(.claude-usage-cell--model):not(.claude-usage-cell--time) { justify-content:flex-start; } }',
+            '.claude-usage-head { font-weight:600; color:var(--text-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; border:0; background:transparent; padding:0 12px 4px; }',
+            '.claude-usage-cell { display:flex; align-items:center; min-width:0; color:var(--text); overflow:hidden; }',
+            '.claude-usage-cell--model { font-family:ui-monospace,"SF Mono",Consolas,monospace; font-size:11.5px; }',
+            '.claude-usage-cell--time { color:var(--text-soft); }',
+            '.claude-usage-cell--tokens { font-variant-numeric:tabular-nums; }',
+            '.claude-usage-cell--cost { font-variant-numeric:tabular-nums; color:var(--accent); }',
+            '.claude-usage-cell--status .claude-usage-status-success { color:#5cb85c; }',
+            '.claude-usage-cell--status .claude-usage-status-failed { color:#c45252; }',
+            '.claude-usage-empty { color:var(--text-soft); padding:12px; }',
+            '.claude-usage-err { color:#c45252; font-size:12.5px; padding:12px; background:rgba(196,82,82,0.08); border:1px solid rgba(196,82,82,0.25); border-radius:8px; }'
+        ].join('\n');
+        document.head.appendChild(style);
+    }
+
+    function fmtTokens2(n) {
+        var v = Number(n) || 0;
+        if (v >= 10000) return (v / 1000).toFixed(1) + 'k';
+        return v.toLocaleString('en-US');
+    }
+
+    function fmtCreditsFromMicro(micro) {
+        var v = Number(micro) || 0;
+        var cny = v / 1e6;
+        if (cny === 0) return '—';
+        return '¥' + cny.toFixed(4);
+    }
+
+    function fmtUsageWhen(iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso);
+        var now = new Date();
+        var diff = now.getTime() - d.getTime();
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+        return d.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function loadClaudeUsagePanel() {
+        injectUsagePanelStyles();
+        var list = document.getElementById('claudeUsageList');
+        if (!list) return;
+        list.innerHTML = '<p class="claude-usage-empty">正在加载用量明细…</p>';
+        var token = typeof getCancriAccessToken === 'function' ? getCancriAccessToken() : '';
+        if (!token) {
+            list.innerHTML = '<p class="claude-usage-empty">请先登录后查看用量明细。</p>';
+            return;
+        }
+
+        // 同步套餐摘要（用已知 plan_v4）
+        var sub = latestTierSubscription || null;
+        renderUsagePlanSummary(sub);
+
+        fetch(window.__SUPABASE_URL__ + '/functions/v1/chat-gateway', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: window.__SUPABASE_ANON_KEY__,
+                Authorization: 'Bearer ' + token
+            },
+            body: JSON.stringify({ endpoint: 'get_my_chat_usage_detail', __auth_token: token, limit: 50 })
+        }).then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    list.innerHTML = '<p class="claude-usage-err">加载失败：' + esc((data && data.message) || '请稍后重试') + '</p>';
+                    return;
+                }
+                var calls = (data && data.calls) || [];
+                if (!calls.length) {
+                    list.innerHTML = '<p class="claude-usage-empty">暂无近期调用记录。</p>';
+                    return;
+                }
+                var html = renderUsageRows(calls);
+                list.innerHTML = html;
+            }).catch(function (err) {
+                console.error('get_my_chat_usage_detail:', err);
+                list.innerHTML = '<p class="claude-usage-err">加载失败，请稍后重试。</p>';
+            });
+    }
+
+    function renderUsagePlanSummary(sub) {
+        var summary = document.getElementById('claudeUsageSummary');
+        var nameEl = document.getElementById('claudeUsagePlanName');
+        var metaEl = document.getElementById('claudeUsagePlanMeta');
+        var barEl = document.getElementById('claudeUsagePlanBar');
+        if (!summary || !nameEl) return;
+        var p4 = getPlanV4(sub);
+        if (p4) {
+            var total = Number(p4.allowance_cny) || 0;
+            var used = Number(p4.used_cny) || 0;
+            var remaining = Math.max(0, total - used);
+            nameEl.textContent = (planV4Label(p4) || '套餐') + ' 用量';
+            if (metaEl) metaEl.textContent = '已用 ' + fmtPlanCny(used) + ' / 月度 ' + fmtPlanCny(total);
+            if (barEl) barEl.style.width = (total > 0 ? Math.max(0, Math.min(100, used / total * 100)) : 0) + '%';
+            summary.style.display = '';
+        } else if (sub && sub.billing_mode === 'wallet_v3') {
+            nameEl.textContent = '按量计费';
+            if (metaEl) metaEl.textContent = '用量按实际 token 结算';
+            if (barEl) barEl.style.width = '0%';
+            summary.style.display = '';
+        } else if (sub && sub.tier === 'paid') {
+            nameEl.textContent = (PLAN_LABEL_FOR_BILLING[sub.plan_code] || 'Pro') + ' 订阅';
+            if (metaEl) metaEl.textContent = '按量计费 / 订阅计费';
+            if (barEl) barEl.style.width = '0%';
+            summary.style.display = '';
+        } else {
+            nameEl.textContent = '免费计划';
+            if (metaEl) metaEl.textContent = '未订阅套餐';
+            if (barEl) barEl.style.width = '0%';
+            summary.style.display = '';
+        }
+    }
+
+    function renderUsageRows(calls) {
+        var header = '<div class="claude-usage-head claude-usage-row">' +
+            '<div class="claude-usage-cell claude-usage-cell--model">模型</div>' +
+            '<div class="claude-usage-cell">输入</div>' +
+            '<div class="claude-usage-cell">输出</div>' +
+            '<div class="claude-usage-cell">扣费</div>' +
+            '<div class="claude-usage-cell">状态</div>' +
+            '<div class="claude-usage-cell claude-usage-cell--time">时间</div>' +
+            '</div>';
+        var rows = calls.map(function (c) {
+            var isSuccess = !c.counted_as_failure && Number(c.status_code) > 0 && Number(c.status_code) < 400;
+            var statusHtml = isSuccess
+                ? '<span class="claude-usage-status-success">成功</span>'
+                : '<span class="claude-usage-status-failed">失败</span>';
+            var cost = Number(c.plan_charged_micro) > 0 ? c.plan_charged_micro : c.wallet_charged_micro;
+            var costText = fmtCreditsFromMicro(cost);
+            var model = esc(String(c.model_id || ''));
+            var time = fmtUsageWhen(c.created_at);
+            return '<div class="claude-usage-row" title="call ' + esc(String(c.call_id || '')) + '">' +
+                '<div class="claude-usage-cell claude-usage-cell--model">' + model + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--tokens">' + fmtTokens2(c.tokens_in) + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--tokens">' + fmtTokens2(c.tokens_out) + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--cost">' + esc(costText) + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--status">' + statusHtml + '</div>' +
+                '<div class="claude-usage-cell claude-usage-cell--time">' + time + '</div>' +
+                '</div>';
+        }).join('');
+        return header + rows;
     }
 
     function bindClaudePasswordPanel() {

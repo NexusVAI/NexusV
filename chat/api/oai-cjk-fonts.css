@@ -1,0 +1,55 @@
+/**
+ * OpenAI Sans (Latin) + cancri-code / Codex CJK stack for open-platform pages.
+ *
+ * CJK order = cancri-code/src/styles.css `--font-cjk` (2026-08-09):
+ *   Noto Sans SC first (what Codex desktop actually hits for Chinese).
+ *   Never put system-ui before CJK names — Windows would lock onto YaHei.
+ *
+ * OpenAI Sans files: cancri-code/tasks/_codex-dump/ → chat/assets/fonts/
+ * (Latin only ~50KB; Chinese always falls through --font-cjk.)
+ */
+@font-face {
+  font-family: "OpenAI Sans";
+  src: url("../assets/fonts/OpenAISans-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenAI Sans";
+  src: url("../assets/fonts/OpenAISans-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenAI Sans";
+  src: url("../assets/fonts/OpenAISans-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+}
+
+:root {
+  --font-cjk:
+    "Noto Sans SC", "Noto Sans CJK SC",
+    "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei UI", "Microsoft YaHei";
+
+  --font-sans-oai:
+    "OpenAI Sans",
+    "Segoe UI Variable Text", "Segoe UI",
+    var(--font-cjk),
+    system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Beat platform dumps that set --font-sans without CJK. */
+  --font-sans: var(--font-sans-oai) !important;
+  --font-main: var(--font-sans-oai) !important;
+  --default-font-family: var(--font-sans-oai) !important;
+}
+
+html,
+body {
+  font-family: var(--font-sans-oai) !important;
+}

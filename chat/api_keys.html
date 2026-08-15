@@ -6,7 +6,18 @@
         <!-- 2026-05-15 审查：抽离内联 script 到 ./api/api-keys-app.js，删 'unsafe-inline' script-src（style-src 沿用，待 Finding 2 整治 inline style 时一并处理）。 -->
         <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
         <title>控制台 · Cancri 开放平台</title>
-        <link rel="icon" type="image/svg+xml" href="../Logo/NexusV_favicon.svg" />
+    <meta name="description" content="Cancri 开放平台控制台：管理 API Key、查看用量、浏览模型与文档。" />
+    <link rel="canonical" href="https://www.nexusvai.xyz/chat/api_keys.html" />
+    <meta property="og:title" content="控制台 · Cancri 开放平台">
+    <meta property="og:description" content="Cancri 开放平台控制台：管理 API Key、查看用量、浏览模型与文档。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.nexusvai.xyz/chat/api_keys.html">
+    <meta property="og:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="控制台 · Cancri 开放平台">
+    <meta name="twitter:description" content="Cancri 开放平台控制台：管理 API Key、查看用量、浏览模型与文档。">
+    <meta name="twitter:image" content="https://www.nexusvai.xyz/Logo/Cancri1.jpg">
+        <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
         <link rel="apple-touch-icon" href="../Logo/Cancri1.jpg" />
         <link rel="preload" as="image" href="../Logo/Cancri1.jpg" fetchpriority="high" />
         <link rel="preload" as="image" href="../Logo/Cancri.png" />
@@ -426,6 +437,19 @@
         </style>
     </head>
     <body class="has-topbar" data-login-url="index.html">
+<link rel="stylesheet" type="text/css" href="assets/p2m-loader.css" />
+<div id="p2m-loader" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 -80 1184 1184" width="180" height="180" role="img" aria-label="N logo" overflow="visible" id="p2m-logo">
+    <g id="mark" fill="#111111" fill-rule="evenodd">
+      <path id="part-main" d="M760 252 L760 645 L372 330 L371 613 L262 722 L262 222 L422 222 L535 324 L695 460 L696 325 Z"/>
+      <path id="part-tr" d="M562 318 L562 222 L760 222 L672 313 L672 413 Z"/>
+      <path id="part-diag" d="M395 378 L758 671 L760 735 L641 735 L397 551 L394 548 Z"/>
+      <path id="part-bl" d="M395 578 L472 638 L472 735 L287 736 L395 627 Z"/>
+    </g>
+  </svg>
+</div>
+<script src="assets/p2m-loader.js" defer></script>
+
         <header class="topbar">
             <div class="topbar__inner">
                 <a class="brand" href="./api/" aria-label="Cancri 开放平台">

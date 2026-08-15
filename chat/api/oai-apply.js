@@ -155,7 +155,7 @@
 
   function bindUI() {
     var s = $("submit-btn"); if (s) s.addEventListener("click", submitTicket);
-    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "chat/api_keys.html"; });
+    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "./api/keys.html"; });
     var bc = $("back-to-chat-btn"); if (bc) bc.addEventListener("click", function () { location.href = "chat/index.html"; });
     if (window.OaiTrustedLogos) {
       var host = $("cs-trusted-logos");

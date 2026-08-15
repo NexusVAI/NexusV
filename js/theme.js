@@ -35,6 +35,13 @@ function setTheme(theme) {
 
     localStorage.setItem('theme', theme);
 
+    // Keep OAI open-platform pages (models/docs/console chrome) in sync.
+    // Those pages only support light|dark; warm/blue map to dark.
+    try {
+        var oai = (theme === 'light') ? 'light' : 'dark';
+        localStorage.setItem('cancri_oai_theme', oai);
+    } catch (e) {}
+
     // Sync Cusdis theme if available
     if (typeof window.updateCusdisTheme === 'function') {
         window.updateCusdisTheme();

@@ -1,0 +1,153 @@
+/* ============================================================================
+ * claude-port.css — 搬运层的接线补丁（唯一可手工编辑的样式文件）
+ *
+ * claude-real.css 是机器提取的 Claude 官方样式，会被重跑覆盖，禁止手改。
+ * 本文件只放「接线必需」的适配：把 Claude 原本用 contenteditable(ProseMirror)
+ * 承载的输入框换成原生 textarea 后，需要抹平两者的默认差异。
+ * 不在此文件做视觉再设计。
+ * ========================================================================== */
+
+/* 输入框：textarea 顶掉 ProseMirror 的默认外观差异，保持 Claude 观感 */
+textarea.cancri-composer-input {
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  min-height: 1.5rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  field-sizing: content; /* 随内容自增高，等价 ProseMirror 的行为 */
+}
+
+textarea.cancri-composer-input::placeholder {
+  color: hsl(var(--text-500));
+  opacity: 1;
+}
+
+/* 空对话时隐藏消息列表的滚动条占位，避免首屏出现空白轨道 */
+#messageList:empty {
+  min-height: 0;
+}
+
+/* 双骨架显隐：由 claude-port-layout.js 根据 #homeView.chatting 切换 html.port-chatting。
+ * 不在这里重画居中布局——首页主区是官方 DOM（#portHomePane）。 */
+html[data-skin="claude-port"]:not(.port-chatting) #chatColumn {
+  display: none !important;
+}
+html[data-skin="claude-port"].port-chatting #portHomePane {
+  display: none !important;
+}
+
+/* ── 消息节点接线 ───────────────────────────────────────────────────────────
+ * main.js 的消息 DOM 会额外贴上官方 class 串（见 src/main.js 的 PORT_MSG_CLS），
+ * 视觉由 claude-real.css 提供。这里只处理「官方结构里不存在的节点」：
+ * Claude 的消息没有头像列，旧 DOM 的头像必须收掉，否则会挤掉气泡的对齐。
+ */
+[data-skin="claude-port"] .message-avatar,
+[data-skin="claude-port"] .assistant-model-label {
+  display: none;
+}
+
+/* 消息之间的纵向间距：官方模板里由 React 组件各自带 margin，旧节点没有 */
+[data-skin="claude-port"] #messageList > .message {
+  margin-block: 0.75rem;
+}
+
+/* 图标字体：消息操作条用的是 Anthropicons 私有码位（\E056 等），设字体那条规则
+ * 原本在旧 claude.css 里。字体本体在 claude-real.css 的 @font-face，字族名与
+ * 官方一致（官方内联写的是 var(--font-anthropicons, Anthropicons-Variable)，
+ * 而这份快照里没有定义该变量，实际命中的就是 fallback 名）。
+ * 不补这条，按钮会显示成豆腐块。
+ */
+[data-skin="claude-port"] .claude-anthropicon {
+  font-family: Anthropicons-Variable;
+  font-feature-settings: "liga" 0;
+  font-optical-sizing: auto;
+  font-style: normal;
+  font-variation-settings: normal;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* 旧 DOM 里内联 SVG 没写死尺寸，靠旧 CSS 约束；这里没有那份 CSS，会被撑大。
+ * 只约束操作条 / 附件图标，勿波及官方 Anthropicon 字标。 */
+[data-skin="claude-port"] .message-actions svg,
+[data-skin="claude-port"] .user-attachment svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* 旧站撤回箭头依赖 cancri_chat.css 绝对定位；搬运页不加载那份 CSS，
+ * 且官方用户气泡旁无此 SVG。撤回走操作条 Edit。 */
+[data-skin="claude-port"] .message-undo-btn {
+  display: none !important;
+}
+
+/* 停止按钮：快照是「正在回复」状态导出的，按钮被静态留在了 composer 里。
+ * 官方只在流式生成时显示它，这里按 main.js 的 .is-generating 标记还原。 */
+[data-skin="claude-port"] button[aria-label="Stop response"] {
+  display: none;
+}
+[data-skin="claude-port"] #chatMessages:has(.message.is-generating)
+  button[aria-label="Stop response"] {
+  display: inline-flex;
+}
+
+/* Same-page transplant hosts. These rules only place isolated source fragments
+ * over the matching Cancri region; all component visuals stay source-owned. */
+[data-skin="claude-port"] [data-port-owner][hidden] {
+  display: none !important;
+}
+
+[data-skin="claude-port"] [data-port-owner] {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+[data-skin="claude-port"] [data-port-owner="page"],
+[data-skin="claude-port"] [data-port-owner="sidebar"],
+[data-skin="claude-port"] [data-port-owner="composer"] {
+  position: fixed;
+  overflow: hidden;
+}
+
+[data-skin="claude-port"] [data-port-owner="page"] {
+  z-index: 25;
+}
+
+[data-skin="claude-port"] [data-port-owner="sidebar"] {
+  z-index: 35;
+}
+
+[data-skin="claude-port"] [data-port-owner="composer"] {
+  z-index: 15;
+}
+
+[data-skin="claude-port"] [data-port-owner="transient"] {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+
+[data-skin="claude-port"] [data-port-owner="message"],
+[data-skin="claude-port"] [data-port-owner="prompt"] {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
