@@ -618,16 +618,62 @@
     });
   }
 
+  // 2026-08-15：左下角显示**完整邮箱**并支持点击复制。
+  //
+  // 为什么不把聊天页的设置面板搬过来：活面板是 #claudeSettingsView，由 claude_ui.js
+  // 的 openClaudeSettingsModal 驱动，依赖 window.setActiveView / window.CancriApp
+  // （主题、记忆、用量）。控制台各页根本不加载 claude_ui.js 与 CancriApp，
+  // 整块搬等于把聊天页一半依赖拖进来；且 OAI 控制台的 HIDE_NAV 本就含 "Settings"。
+  // 因此这里只做：完整邮箱 + 一键复制 + 跳转到聊天页设置（deep-link，复用既有 UI）。
+  var CHAT_SETTINGS_URL = "../index.html#settings";
+
   function updateUserChip(user) {
     var email = (user && user.email) || "";
     var name = email.split("@")[0] || "User";
     var initial = name.charAt(0).toUpperCase() || "U";
-    replaceAllText("Personal", name);
+    // 芯片主行改为完整邮箱（原来只显示 @ 前缀，用户想复制得自己拼）
+    replaceAllText("Personal", email || name);
     document.querySelectorAll("span, div").forEach(function (node) {
       if (node.childNodes.length === 1 && node.textContent === "P") {
         node.textContent = initial;
       }
     });
+    if (email) decorateUserChip(email);
+  }
+
+  /**
+   * 给左下角芯片挂「复制邮箱 / 打开设置」。
+   * 芯片是页面快照里的静态 DOM（button._1xLkN 在 div._8xLvG 内），没有框架事件，
+   * 直接委托到它的祖先容器即可；重复调用用 dataset 标记防止叠加多个 listener。
+   */
+  function decorateUserChip(email) {
+    var box = document.querySelector("._8xLvG");
+    if (!box || box.dataset.ccChipBound === "1") return;
+    box.dataset.ccChipBound = "1";
+    box.style.cursor = "pointer";
+    box.title = "点击复制邮箱；按住 Shift 点击打开设置";
+    box.addEventListener("click", function (ev) {
+      if (ev.shiftKey) {
+        window.location.href = CHAT_SETTINGS_URL;
+        return;
+      }
+      copyText(email);
+      flashChipHint(box, "已复制邮箱");
+    });
+  }
+
+  function flashChipHint(anchor, text) {
+    var tip = el("div");
+    tip.textContent = text;
+    tip.style.cssText =
+      "position:fixed;z-index:99999;padding:6px 10px;border-radius:8px;font-size:12px;" +
+      "background:var(--color-background-primary-solid,#0d0d0d);color:var(--color-text-primary-solid,#fff);" +
+      "pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.18)";
+    document.body.appendChild(tip);
+    var r = anchor.getBoundingClientRect();
+    tip.style.left = Math.round(r.left + 8) + "px";
+    tip.style.top = Math.round(r.top - 34) + "px";
+    setTimeout(function () { tip.remove(); }, 1400);
   }
 
   function findCreditCard() {

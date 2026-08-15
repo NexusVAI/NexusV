@@ -158,7 +158,9 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
       '<th class="px-4 py-2 text-right whitespace-nowrap">TPD</th>' +
       '</tr></thead><tbody>' +
       [
-        ['Tier 0', '¥0', '1', '20', '500,000', '1,500,000'],
+        // 2026-08-15 修漂移：原写 1/20/500,000/1,500,000 是 2026-08-10 放宽前的旧值。
+        // 权威源 = cf-gateway/src/rate-limiter.ts 的 TIER_LIMITS（DO 里真正兑现的那份）。
+        ['Tier 0', '¥0', '3', '60', '2,000,000', '20,000,000'],
         ['Tier 1', '≥ ¥10', '50', '200', '2,000,000', '不限'],
         ['Tier 2', '≥ ¥30', '100', '500', '3,000,000', '不限'],
         ['Tier 3', '≥ ¥80', '200', '5,000', '3,000,000', '不限'],

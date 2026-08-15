@@ -6189,10 +6189,10 @@
 				{
 					tier: 0,
 					cumulative_cny: 0,
-					concurrent: 1,
-					rpm: 20,
-					tpm: 5e5,
-					tpd: 15e5
+					concurrent: 3,
+					rpm: 60,
+					tpm: 2e6,
+					tpd: 2e7
 				},
 				{
 					tier: 1,

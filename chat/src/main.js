@@ -7437,7 +7437,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       {
         note: "账户限速按累计真实充值 Tier0–5：并发 / RPM / TPM / TPD（非旧版 RPH/RPD 请求桶）。门槛 ¥0 / ≥10 / ≥30 / ≥80 / ≥300 / ≥1000。",
         tiers: [
-          { tier: 0, cumulative_cny: 0, concurrent: 1, rpm: 20, tpm: 500000, tpd: 1500000 },
+          // 2026-08-15 修漂移：Tier0 曾写 1/20/500K/1.5M，那是 2026-08-10 放宽**之前**的值。
+          // 运行时权威是 cf-gateway/src/rate-limiter.ts 的 TIER_LIMITS（Durable Object 里
+          // 真正兑现的那份），实测为 3/60/2M/20M。其余 5 档本来就与权威一致。
+          { tier: 0, cumulative_cny: 0, concurrent: 3, rpm: 60, tpm: 2000000, tpd: 20000000 },
           { tier: 1, cumulative_cny: 10, concurrent: 50, rpm: 200, tpm: 2000000, tpd: null },
           { tier: 2, cumulative_cny: 30, concurrent: 100, rpm: 500, tpm: 3000000, tpd: null },
           { tier: 3, cumulative_cny: 80, concurrent: 200, rpm: 5000, tpm: 3000000, tpd: null },

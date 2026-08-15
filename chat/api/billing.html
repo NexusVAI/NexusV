@@ -136,7 +136,22 @@
 .zN58v .flex{display:flex}.zN58v .inline-flex{display:inline-flex}.zN58v .flex-col{flex-direction:column}.zN58v .flex-row{flex-direction:row}.zN58v .gap-1{gap:4px}.zN58v .gap-2{gap:8px}.zN58v .gap-4{gap:16px}.zN58v .items-center{align-items:center}.zN58v .shrink-0{flex-shrink:0}.zN58v .text-sm{font-size:13px}.zN58v .text-base{font-size:16px}
 .zN58v .billing-section h3{font-size:16px;font-weight:600;margin:0 0 16px}
 
-#bp-panel-plan[hidden],#bp-panel-api[hidden],#bp-panel-bills[hidden]{display:none}
+#bp-panel-plan[hidden],#bp-panel-api[hidden],#bp-panel-bills[hidden],#bp-panel-reset[hidden]{display:none}
+/* 重置页：卡片余额 + 当前限额 + 重置流水。复用 .bills-table 的表格样式，不另起一套。 */
+#reset-cards-box{border:1px solid var(--color-border,#e5e5e2);border-radius:12px;padding:16px 18px;background:var(--color-background-primary-soft,rgba(128,128,128,.06))}
+#reset-cards-box .rc-balance{font-size:32px;letter-spacing:var(--font-tracking-tight);line-height:40px}
+#reset-cards-box .rc-desc{margin-top:6px;font-size:13px;color:var(--color-text-secondary)}
+#reset-do-btn{border:none;cursor:pointer;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;margin-top:12px;background:var(--color-background-primary-solid,#0d0d0d);color:var(--color-text-primary-solid,#fff)}
+#reset-do-btn[disabled]{opacity:.55;cursor:not-allowed}
+#reset-msg{margin-top:10px;font-size:13px}
+#reset-msg[data-s="err"]{color:var(--red-600,#ba2623)}
+#reset-msg[data-s="ok"]{color:var(--green-600,#008635)}
+#reset-msg[data-s="warn"]{color:var(--yellow-700,#916f00)}
+.rc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:16px}
+.rc-cell{border:1px solid var(--color-border,#e5e5e2);border-radius:10px;padding:12px 14px}
+.rc-cell .rc-k{font-size:12.5px;color:var(--color-text-secondary)}
+.rc-cell .rc-v{font-size:18px;font-weight:600;margin-top:2px}
+.rc-cell .rc-sub{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
 #bills-table-wrap{overflow-x:auto}
 .bills-table{width:100%;border-collapse:collapse;font-size:14px}
 .bills-table td code{word-break:break-all}
@@ -162,7 +177,7 @@
 #convert-card .convert-msg[data-s="err"]{color:var(--red-600,#ba2623)}
 #convert-card .convert-msg[data-s="ok"]{color:var(--green-600,#008635)}
 </style>
-<div class="zN58v"><div class="qmuXe"><div class="MGXR7">结算</div><div class="JfaJ8"><div class="flex"><div role="group" dir="ltr" class="r2DuD NDzF0" data-block="false" data-tab-switcher aria-label="Navigation tabs" tabindex="0" style="outline:none"><div class="PXVXS" data-tab-switcher-thumb id="bp-tab-thumb" style="width:60px;transform:translateX(2px);transition:width var(--segmented-control-transition-duration) var(--cubic-enter),transform var(--segmented-control-transition-duration) var(--cubic-enter)"></div><button type="button" id="bp-tab-plan" data-state="on" role="radio" aria-checked="true" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">套餐</span><span class="k-Psc">套餐</span></button><button type="button" id="bp-tab-api" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">API 额度</span><span class="k-Psc">API 额度</span></button><button type="button" id="bp-tab-bills" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">账单记录</span><span class="k-Psc">账单记录</span></button></div></div></div></div><div class="oNUrP"><div class="qU2tu" style="--page-content-wrapper-max-width:900px">
+<div class="zN58v"><div class="qmuXe"><div class="MGXR7">结算</div><div class="JfaJ8"><div class="flex"><div role="group" dir="ltr" class="r2DuD NDzF0" data-block="false" data-tab-switcher aria-label="Navigation tabs" tabindex="0" style="outline:none"><div class="PXVXS" data-tab-switcher-thumb id="bp-tab-thumb" style="width:60px;transform:translateX(2px);transition:width var(--segmented-control-transition-duration) var(--cubic-enter),transform var(--segmented-control-transition-duration) var(--cubic-enter)"></div><button type="button" id="bp-tab-plan" data-state="on" role="radio" aria-checked="true" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">套餐</span><span class="k-Psc">套餐</span></button><button type="button" id="bp-tab-api" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">API 额度</span><span class="k-Psc">API 额度</span></button><button type="button" id="bp-tab-bills" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">账单记录</span><span class="k-Psc">账单记录</span></button><button type="button" id="bp-tab-reset" data-state="off" role="radio" aria-checked="false" class="nCgbF" tabindex="-1"><span class="RZnns" aria-hidden="true">重置</span><span class="k-Psc">重置</span></button></div></div></div></div><div class="oNUrP"><div class="qU2tu" style="--page-content-wrapper-max-width:900px">
 <div id="bp-panel-plan">
 <div class="billing-section billing-plan">
 <h3 id="plan-name">套餐</h3>
@@ -215,6 +230,23 @@
 <div id="bills-table-wrap"></div>
 </div>
 </div>
+<div id="bp-panel-reset" hidden>
+<div class="billing-section billing-plan">
+<h3>重置卡</h3>
+<div id="reset-cards-box">
+<div class="_8xsgM">可用重置卡</div>
+<div class="rc-balance" id="reset-balance">--</div>
+<div class="rc-desc" id="reset-balance-desc">加载中…</div>
+<button type="button" id="reset-do-btn" disabled>使用一张重置卡</button>
+<div id="reset-msg"></div>
+</div>
+<h3 style="margin-top:28px">当前生效的限制</h3>
+<div id="reset-limits-meta" style="font-size:13px;color:var(--color-text-secondary)">加载中…</div>
+<div class="rc-grid" id="reset-limits-grid"></div>
+<h3 style="margin-top:28px">重置记录</h3>
+<div id="reset-events-wrap"></div>
+</div>
+</div>
 </div></div></div>
 
 </div></div></div></span></div></div></div></div></main><div data-testid="compliance-management-wrapper"><span data-testid="cookie-consent-modal-header"></span></div></div><div class="layers-root"></div></div>
@@ -223,7 +255,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <script src="../cancri_config.js?v=20260625-console"></script>
 <script src="platform-auth.js?v=20260625-auth"></script>
-<script src="oai-console-data.js?v=20260811-console-ui5"></script>
-<script src="oai-billing.js?v=20260705-planfix"></script>
+<script src="oai-console-data.js?v=20260815-resetcard"></script>
+<script src="oai-billing.js?v=20260815-resetcard"></script>
 
 </body></html>

@@ -107,8 +107,12 @@
     thumb.style.width = btn.offsetWidth + "px";
     thumb.style.transform = "translateX(" + btn.offsetLeft + "px)";
   }
+  // 2026-08-15 加「重置」页。四处 tab 名单必须一起改（setTab / tabFromHash / initTabs），
+  // 漏一处的表现是：按钮能点但面板不切，或 hash 直达失效。
+  var TABS = ["plan", "api", "bills", "reset"];
+
   function setTab(tab) {
-    ["plan", "api", "bills"].forEach(function (t) {
+    TABS.forEach(function (t) {
       var on = t === tab;
       var btn = $("bp-tab-" + t);
       var panel = $("bp-panel-" + t);
@@ -120,15 +124,16 @@
     });
     moveThumb(tab);
     try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
+    // 重置页数据量小且会变（用完卡余额就变），每次进页拉一次，不做缓存
+    if (tab === "reset") loadReset();
   }
   function tabFromHash() {
-    if (location.hash === "#api") return "api";
-    if (location.hash === "#bills") return "bills";
-    return "plan";
+    var h = String(location.hash || "").replace(/^#/, "");
+    return TABS.indexOf(h) >= 0 ? h : "plan";
   }
   function initTabs() {
     setTab(tabFromHash());
-    ["plan", "api", "bills"].forEach(function (t) {
+    TABS.forEach(function (t) {
       var btn = $("bp-tab-" + t);
       if (btn) btn.addEventListener("click", function () { setTab(t); });
     });
@@ -312,8 +317,172 @@
     wrapEl.innerHTML = '<table class="bills-table"><thead><tr><th>日期</th><th>类型</th><th>规格</th><th>金额</th><th>工单状态</th><th>激活码</th><th>备注</th></tr></thead><tbody>' + rows + "</tbody></table>";
   }
 
+  // ── 重置卡 ─────────────────────────────────────────────────────────────
+  // 独立 slug /functions/v1/reset-card（不是 chat-gateway 的 endpoint），
+  // 所以不能复用 callGateway：那个函数把 endpoint 塞进 body 打 chat-gateway。
+  // 鉴权走标准 Authorization: Bearer，与后端 reset-card.ported.ts 的 bearer() 对齐。
+  async function callResetCard(action) {
+    var r = await getSupabase().auth.getSession();
+    var session = r && r.data ? r.data.session : null;
+    if (!session) throw new Error("not_logged_in");
+    var base = String(GW || "").replace(/\/functions\/v1\/chat-gateway.*$/, "");
+    var resp = await fetch(base + "/functions/v1/reset-card", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: window.__SUPABASE_ANON_KEY__,
+        authorization: "Bearer " + session.access_token,
+      },
+      body: JSON.stringify({ action: action }),
+    });
+    var data = await resp.json().catch(function () { return {}; });
+    if (!resp.ok) {
+      throw Object.assign(new Error(data.message || data.error || resp.statusText), { status: resp.status, body: data });
+    }
+    return data;
+  }
+
+  function fmtInt(n) {
+    var v = Number(n);
+    if (!Number.isFinite(v)) return "—";
+    return v.toLocaleString("en-US");
+  }
+  /** null/undefined 的 tpd 在后端语义是「不限」，不能显示成 0 或 —— */
+  function fmtLimit(n) {
+    return (n === null || n === undefined) ? "不限" : fmtInt(n);
+  }
+  function fmtWhen(s) {
+    if (!s) return "—";
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return "—";
+    var p = function (x) { return String(x).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  var RESET_RESULT_LABEL = {
+    ok: "已重置",
+    nothing_to_reset: "无需重置（未消耗）",
+    no_card: "无可用卡",
+  };
+
+  function renderReset(data) {
+    var cards = (data && data.cards) || {};
+    var opus5 = (data && data.opus5) || {};
+    var tier = (data && data.tier) || {};
+    var limits = (data && data.limits) || {};
+    var events = (data && data.events) || [];
+
+    var balance = Number(cards.balance || 0);
+    var balEl = $("reset-balance");
+    var descEl = $("reset-balance-desc");
+    var btn = $("reset-do-btn");
+    if (balEl) balEl.textContent = balance + " 张";
+    if (descEl) {
+      descEl.textContent = balance > 0
+        ? "一张卡可把 Opus 5 免费额度与今日 Token 额度同时清零。持有上限 " + (cards.cap || 50) + " 张，不过期。"
+        : "邀请好友并在其活跃后可获得重置卡（双方各得一张）。";
+    }
+    if (btn) btn.disabled = balance <= 0;
+
+    // 当前生效的限制。⚠️ 这些数字全部来自后端下发，前端不自己查表——
+    // 站内已有 3 处前端硬编码档位数值漂成旧值的先例，不再增加第 4 处。
+    var metaEl = $("reset-limits-meta");
+    if (metaEl) {
+      metaEl.textContent = "当前充值档 Tier " + (tier.level == null ? "—" : tier.level) +
+        "（累计充值 " + fmtCny(tier.cumulative_cny) + "）";
+    }
+    var grid = $("reset-limits-grid");
+    if (grid) {
+      var cells = [
+        { k: "并发上限", v: fmtLimit(limits.concurrency) },
+        { k: "RPM（每分钟请求）", v: fmtLimit(limits.rpm) },
+        { k: "TPM（每分钟 Token）", v: fmtLimit(limits.tpm) },
+        { k: "TPD（每日 Token）", v: fmtLimit(limits.tpd), sub: "自然日切换（UTC+8）归零" },
+        {
+          k: "Opus 5 免费额度",
+          v: fmtInt(opus5.used) + " 次已用",
+          // 后端明确回 window_kind=rolling_24h：这是从首次调用起算的滚动 24 小时，
+          // 不是「明天零点」。文案必须如实说，否则用户等到零点发现没恢复。
+          sub: opus5.window_kind === "rolling_24h"
+            ? "滚动 24 小时窗，" + fmtWhen(opus5.window_ends_at) + " 恢复"
+            : fmtWhen(opus5.window_ends_at) + " 恢复",
+        },
+        { k: "账号验证状态", v: opus5.verified ? "已验证" : "未验证", sub: opus5.verified ? "Opus 5 每日 100 次" : "已验证可提升 Opus 5 每日额度" },
+      ];
+      grid.innerHTML = cells.map(function (c) {
+        return '<div class="rc-cell"><div class="rc-k">' + esc(c.k) + '</div><div class="rc-v">' +
+          esc(c.v) + "</div>" + (c.sub ? '<div class="rc-sub">' + esc(c.sub) + "</div>" : "") + "</div>";
+      }).join("");
+    }
+
+    var evWrap = $("reset-events-wrap");
+    if (evWrap) {
+      if (!events.length) {
+        evWrap.innerHTML = '<div style="font-size:13px;color:var(--color-text-secondary)">暂无重置记录。</div>';
+      } else {
+        var rows = events.map(function (e) {
+          var res = String(e.result || "");
+          var label = RESET_RESULT_LABEL[res] || res;
+          var st = res === "ok" ? "activated" : (res === "nothing_to_reset" ? "pending" : "rejected");
+          return "<tr><td>" + esc(fmtWhen(e.acted_at)) +
+            '</td><td><span class="bills-status" data-s="' + esc(st) + '">' + esc(label) + "</span></td><td>" +
+            (e.opus5_count_before == null ? "—" : esc(fmtInt(e.opus5_count_before)) + " 次") + "</td><td>" +
+            (e.tpd_before == null ? "—" : esc(fmtInt(e.tpd_before)) + " token") + "</td><td>" +
+            esc(e.opus5_window_end_before ? fmtWhen(e.opus5_window_end_before) : "—") + "</td></tr>";
+        }).join("");
+        evWrap.innerHTML = '<table class="bills-table"><thead><tr><th>时间</th><th>结果</th>' +
+          "<th>重置前 Opus 5 已用</th><th>重置前今日 Token</th><th>重置前恢复时刻</th></tr></thead><tbody>" +
+          rows + "</tbody></table>";
+      }
+    }
+  }
+
+  var resetLoading = false;
+  async function loadReset() {
+    if (resetLoading) return;
+    resetLoading = true;
+    try {
+      var data = await callResetCard("status");
+      renderReset(data);
+    } catch (e) {
+      var descEl = $("reset-balance-desc");
+      if (descEl) descEl.textContent = "加载失败：" + (e && e.message ? e.message : "未知错误");
+      var metaEl = $("reset-limits-meta");
+      if (metaEl) metaEl.textContent = "限额信息加载失败，请刷新重试。";
+    } finally {
+      resetLoading = false;
+    }
+  }
+
+  function bindResetButton() {
+    var btn = $("reset-do-btn");
+    if (!btn) return;
+    btn.addEventListener("click", async function () {
+      var msg = $("reset-msg");
+      btn.disabled = true;
+      if (msg) { msg.removeAttribute("data-s"); msg.textContent = "正在重置…"; }
+      try {
+        var res = await callResetCard("consume");
+        if (msg) {
+          // ok=false 但 HTTP 200 的两种情况（no_card / nothing_to_reset）是业务结果，不是错误
+          msg.dataset.s = res && res.ok === true ? "ok" : "warn";
+          msg.textContent = (res && res.message) || (res && res.ok ? "已重置。" : "未执行重置。");
+        }
+      } catch (e) {
+        if (msg) {
+          msg.dataset.s = "err";
+          msg.textContent = "重置失败：" + (e && e.message ? e.message : "未知错误");
+        }
+      } finally {
+        // 无论成败都重拉一次：余额/已用量/流水都可能变了
+        await loadReset();
+      }
+    });
+  }
+
   async function init() {
     initTabs();
+    bindResetButton();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       getSupabase();
