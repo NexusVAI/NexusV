@@ -631,8 +631,13 @@
     var email = (user && user.email) || "";
     var name = email.split("@")[0] || "User";
     var initial = name.charAt(0).toUpperCase() || "U";
-    // 芯片主行改为完整邮箱（原来只显示 @ 前缀，用户想复制得自己拼）
+    // ⛔ 必须同时替换英文原文与已汉化的「个人」（2026-08-15 实测 bug）：
+    // boot 里 applyPageLocale() 先跑（:1488）把 "Personal" 换成 "个人"，
+    // updateUserChip 后跑（:1496）再找 "Personal" 就已经找不到了 → 芯片永远停在「个人」。
+    // oai-billing.js 里的调用顺序恰好相反（先 chip 后 locale），所以两个页面表现不同。
+    // 这里对两种文案都替换，让结果与调用顺序无关。
     replaceAllText("Personal", email || name);
+    replaceAllText("个人", email || name);
     document.querySelectorAll("span, div").forEach(function (node) {
       if (node.childNodes.length === 1 && node.textContent === "P") {
         node.textContent = initial;
@@ -651,15 +656,85 @@
     if (!box || box.dataset.ccChipBound === "1") return;
     box.dataset.ccChipBound = "1";
     box.style.cursor = "pointer";
-    box.title = "点击复制邮箱；按住 Shift 点击打开设置";
+    box.title = "账号菜单";
     box.addEventListener("click", function (ev) {
-      if (ev.shiftKey) {
-        window.location.href = CHAT_SETTINGS_URL;
+      ev.stopPropagation();
+      toggleChipMenu(box, email);
+    });
+  }
+
+  /**
+   * 左下角账号菜单。
+   * 为什么是自绘小菜单而不是把聊天页的设置面板搬过来：活面板是 #claudeSettingsView，
+   * 由 claude_ui.js 的 openClaudeSettingsModal 驱动，依赖 window.CancriApp
+   * （主题 / 记忆 / 用量）。控制台各页都不加载 claude_ui.js 与 CancriApp，
+   * 整块搬等于把聊天页一半依赖拖进来。因此这里只做入口，真正的设置仍是聊天页那一套。
+   */
+  var chipMenuEl = null;
+  function toggleChipMenu(anchor, email) {
+    if (chipMenuEl) { closeChipMenu(); return; }
+    var items = [
+      { label: "复制邮箱", sub: email, act: function () { copyText(email); flashChipHint(anchor, "已复制邮箱"); } },
+      { label: "账号设置", sub: "在聊天页打开", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=account"; } },
+      { label: "邀请奖励", sub: "邀请好友得重置卡", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=invite"; } },
+      { label: "重置卡", sub: "查看与使用", act: function () { window.location.href = "./billing.html#reset"; } },
+      { label: "退出登录", sub: "", act: function () { doSignOut(); } },
+    ];
+    var m = el("div");
+    m.setAttribute("data-cnc-chip-menu", "1");
+    m.style.cssText =
+      "position:fixed;z-index:99998;min-width:236px;padding:6px;border-radius:12px;" +
+      "background:var(--color-surface,#fff);color:var(--color-text,#0d0d0d);" +
+      "border:1px solid var(--color-border,#e5e5e2);box-shadow:0 12px 32px rgba(0,0,0,.18)";
+    items.forEach(function (it) {
+      var row = el("div");
+      row.style.cssText =
+        "padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;gap:2px";
+      var t = el("div"); t.textContent = it.label; t.style.cssText = "font-size:13px;font-weight:600";
+      row.appendChild(t);
+      if (it.sub) {
+        var s = el("div");
+        s.textContent = it.sub;
+        s.style.cssText =
+          "font-size:11.5px;color:var(--color-text-secondary,#6b6b6b);overflow:hidden;" +
+          "text-overflow:ellipsis;white-space:nowrap;max-width:210px";
+        row.appendChild(s);
+      }
+      row.addEventListener("mouseenter", function () {
+        row.style.background = "var(--color-background-primary-soft,rgba(128,128,128,.10))";
+      });
+      row.addEventListener("mouseleave", function () { row.style.background = "transparent"; });
+      row.addEventListener("click", function (ev) { ev.stopPropagation(); closeChipMenu(); it.act(); });
+      m.appendChild(row);
+    });
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    // 菜单向上弹（芯片在视口底部，向下会被裁）
+    m.style.left = Math.round(r.left) + "px";
+    m.style.top = Math.max(8, Math.round(r.top - m.offsetHeight - 8)) + "px";
+    chipMenuEl = m;
+    setTimeout(function () { document.addEventListener("click", closeChipMenu, { once: true }); }, 0);
+  }
+
+  function closeChipMenu() {
+    if (!chipMenuEl) return;
+    chipMenuEl.remove();
+    chipMenuEl = null;
+  }
+
+  // ⚠️ PlatformAuth 只导出 resolveLoginUrl / redirectToLogin / hide / showAuthError /
+  // getSupabase / getSession / isValidSession / requireSession（platform-auth.js:101-110），
+  // **没有 signOut**。所以走 supabase client 自己的 signOut，别去调不存在的方法。
+  function doSignOut() {
+    var done = function () { window.location.href = "../index.html"; };
+    try {
+      var sb = window.PlatformAuth && window.PlatformAuth.getSupabase && window.PlatformAuth.getSupabase();
+      if (sb && sb.auth && typeof sb.auth.signOut === "function") {
+        sb.auth.signOut().then(done, done);
         return;
       }
-      copyText(email);
-      flashChipHint(box, "已复制邮箱");
-    });
+    } catch (e) { /* 落到兜底：至少把人送回首页 */ }
+    done();
   }
 
   function flashChipHint(anchor, text) {
@@ -1590,6 +1665,12 @@
       revealL10n();
     }
   }
+
+  // 2026-08-15：把用户芯片实现导出成单一来源。
+  // oai-billing.js 原本自带一份 updateUserChip（只显示 @ 前缀、无复制），
+  // 与本文件这份并存 = 同一 UI 两套行为，结算页和其它控制台页表现不一致。
+  // billing.html 同时加载本文件与 oai-billing.js，故让后者直接复用这里的实现。
+  window.CancriConsoleChip = { update: updateUserChip };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);

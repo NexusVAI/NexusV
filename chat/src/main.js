@@ -7441,7 +7441,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
           // 运行时权威是 cf-gateway/src/rate-limiter.ts 的 TIER_LIMITS（Durable Object 里
           // 真正兑现的那份），实测为 3/60/2M/20M。其余 5 档本来就与权威一致。
           { tier: 0, cumulative_cny: 0, concurrent: 3, rpm: 60, tpm: 2000000, tpd: 20000000 },
-          { tier: 1, cumulative_cny: 10, concurrent: 50, rpm: 200, tpm: 2000000, tpd: null },
+          { tier: 1, cumulative_cny: 10, concurrent: 10, rpm: 120, tpm: 2000000, tpd: 100000000 },
           { tier: 2, cumulative_cny: 30, concurrent: 100, rpm: 500, tpm: 3000000, tpd: null },
           { tier: 3, cumulative_cny: 80, concurrent: 200, rpm: 5000, tpm: 3000000, tpd: null },
           { tier: 4, cumulative_cny: 300, concurrent: 400, rpm: 5000, tpm: 4000000, tpd: null },

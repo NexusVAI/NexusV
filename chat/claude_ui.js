@@ -4040,20 +4040,35 @@
             if (!rewardMicro && inv.grants && inv.grants.length) {
                 rewardMicro = inv.grants.reduce(function (a, g) { return a + Number(g.delta_micro || 0); }, 0);
             }
+            // 2026-08-15：活跃奖已从「¥1 钱包余额」改为「1 张重置卡」，
+            // celebrate_grants 的 delta_micro 现在恒为 0（见 cancri_invite_qualify_v2），
+            // 所以「总奖励合计 ¥」会永远显示 ¥0.00 —— 改成按已活跃人数换算重置卡张数。
+            // 首充返利仍走钱包，那部分金额仍然有意义，单独列出。
+            var qualified = Number(s.qualified || 0);
             sumEl.innerHTML =
                 '链接访问量 <strong>' + visits + '</strong> · ' +
                 '已邀 <strong>' + Number(s.total || 0) + '</strong> · ' +
-                '已活跃 <strong>' + Number(s.qualified || 0) + '</strong> · ' +
+                '已活跃 <strong>' + qualified + '</strong> · ' +
+                '获得重置卡 <strong>' + qualified + ' 张</strong> · ' +
                 '已返利人数 <strong>' + Number(s.rebated || 0) + '</strong> · ' +
-                '总奖励合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
+                '返利合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
 
             var rules = inv.rules;
             var rulesEl = document.getElementById('claudeInviteRules');
             if (rulesEl && rules) {
+                // 2026-08-15 同步真实规则（旧文案三处过时：奖励物、API 门槛、缺新号窗口）：
+                //   · 奖励 = 重置卡，不是钱
+                //   · require_api_approved 已在 celebrate_config 里显式关掉，不再要求申请 API
+                //   · 新增「绑定时账号年龄 < invitee_max_account_age_days(7) 天」的新号闸
+                var newDays = rules.invitee_max_account_age_days || 7;
                 rulesEl.textContent =
-                    '好友通过你的链接首次注册为新用户，申请 API 通过且累计 ' + (rules.activity_min_days || 3) +
-                    ' 天有正常 Chat/API 流量后，双方各得 ¥' + (rules.activity_reward_cny || 1) +
-                    '（自动入账）。好友首充返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
+                    '好友通过你的链接注册（需为 ' + newDays + ' 天内的新账号）、验证邮箱，并累计 ' +
+                    (rules.activity_min_days || 3) +
+                    ' 天有正常 Chat/API 流量后，双方各得 1 张重置卡（自动入账）。' +
+                    '重置卡可清零 Opus 5 免费额度与当日 Token 额度，不过期，最多持有 ' +
+                    (rules.activity_max_per_inviter || 50) + ' 张，在「结算 → 重置」使用。' +
+                    '同设备 / 同网段 / 重复设备指纹不计。' +
+                    '好友首充另返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
                     '% 给你（最多 ' + (rules.rebate_max_people || 5) +
                     ' 人，返利总额上限 ¥' + (rules.rebate_total_cap_cny || 100) + '）。';
             }

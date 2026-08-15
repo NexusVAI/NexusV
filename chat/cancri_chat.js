@@ -6197,10 +6197,10 @@
 				{
 					tier: 1,
 					cumulative_cny: 10,
-					concurrent: 50,
-					rpm: 200,
+					concurrent: 10,
+					rpm: 120,
 					tpm: 2e6,
-					tpd: null
+					tpd: 1e8
 				},
 				{
 					tier: 2,

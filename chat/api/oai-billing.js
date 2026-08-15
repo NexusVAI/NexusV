@@ -87,11 +87,21 @@
     ].forEach(function (p) { replaceAllText(p[0], p[1]); });
   }
 
+  // 2026-08-15：优先复用 oai-console-data.js 导出的单一实现
+  // （billing.html 同时加载了它）。本文件原有的那份只显示 @ 前缀、没有复制/设置入口，
+  // 与其它控制台页表现不一致 —— 那正是「同一 UI 两套实现」的漂移。
+  // 保留本地兜底：万一 oai-console-data.js 加载失败，芯片仍显示邮箱而不是英文 Personal。
   function updateUserChip(user) {
+    if (window.CancriConsoleChip && typeof window.CancriConsoleChip.update === "function") {
+      window.CancriConsoleChip.update(user);
+      return;
+    }
     var email = (user && user.email) || "";
     var name = email.split("@")[0] || "User";
     var initial = name.charAt(0).toUpperCase() || "U";
-    replaceAllText("Personal", name);
+    // 与 oai-console-data.js 同款：两种文案都替换，结果不依赖 applyPageLocale 的先后
+    replaceAllText("Personal", email || name);
+    replaceAllText("个人", email || name);
     document.querySelectorAll("span, div").forEach(function (node) {
       if (node.childNodes.length === 1 && node.textContent === "P") {
         node.textContent = initial;
