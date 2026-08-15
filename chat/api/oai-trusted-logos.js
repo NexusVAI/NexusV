@@ -2,43 +2,14 @@
 (function (global) {
   "use strict";
 
-  /** viewBox 宽高用于按真实比例计算 mask 容器尺寸
-   * 顺序：Anthropic | Grok | NexusVAI(中) | OpenAI | Gemini
-   * 布局靠 flex + 字标真实宽度均分缝隙（不再等宽 5 列）。
-   * 伙伴字标同 cap-height；Anthropic 全大写略矮以免光学上压过邻居。
-   * 自家 brand 只略高于伙伴，避免中心鼓包。 */
+  /** 顺序：Anthropic | Grok | NexusVAI(中) | OpenAI | Gemini
+   * 尺寸不按 viewBox 耦合：槽位等宽、mask 盒同高同宽，由 CSS 统一。 */
   var LOGO_ENTRIES = [
-    {
-      path: "chat/assets/partners/anthropic-text.svg",
-      vw: 182,
-      vh: 24,
-      markH: "clamp(0.92rem, 1.85vw, 1.18rem)",
-    },
-    {
-      path: "chat/assets/partners/grok-text.svg",
-      vw: 63,
-      vh: 24,
-      markH: "clamp(1.05rem, 2.05vw, 1.35rem)",
-    },
-    {
-      path: "chat/assets/nexusvai_logo_transparent.svg",
-      vw: 1774,
-      vh: 887,
-      brand: true,
-      markH: "clamp(1.55rem, 3.2vw, 2.05rem)",
-    },
-    {
-      path: "chat/assets/partners/openai-text.svg",
-      vw: 86,
-      vh: 24,
-      markH: "clamp(1.05rem, 2.05vw, 1.35rem)",
-    },
-    {
-      path: "chat/assets/partners/gemini-text.svg",
-      vw: 98,
-      vh: 24,
-      markH: "clamp(1.05rem, 2.05vw, 1.35rem)",
-    },
+    { path: "chat/assets/partners/anthropic-text.svg" },
+    { path: "chat/assets/partners/grok-text.svg" },
+    { path: "chat/assets/nexusvai_logo_transparent.svg" },
+    { path: "chat/assets/partners/openai-text.svg" },
+    { path: "chat/assets/partners/gemini-text.svg" },
   ];
 
   var DEFAULT_LOGOS = LOGO_ENTRIES.map(function (e) {
@@ -66,15 +37,12 @@
     for (var i = 0; i < LOGO_ENTRIES.length; i++) {
       if (LOGO_ENTRIES[i].path === path) return LOGO_ENTRIES[i];
     }
-    return { path: path, vw: 24, vh: 24, markH: "clamp(1.35rem, 2.8vw, 1.85rem)" };
+    return { path: path };
   }
 
-  function createMark(url, entry) {
-    var aspect = entry.vw / entry.vh;
+  function createMark(url) {
     var wrap = document.createElement("div");
-    wrap.className = "trusted-logos__inner trusted-logos__inner--sized" + (entry.brand ? " trusted-logos__inner--brand" : "");
-    wrap.style.setProperty("--mark-aspect", String(aspect));
-    wrap.style.setProperty("--mark-h", entry.markH || "clamp(1.35rem, 2.8vw, 1.85rem)");
+    wrap.className = "trusted-logos__inner trusted-logos__inner--sized";
     var mark = document.createElement("div");
     mark.className = "trusted-logos__mark";
     mark.style.webkitMaskImage = maskUrl(url);
@@ -89,7 +57,7 @@
     slot.className = "trusted-logos__slot";
     slot.dataset.col = String(colIndex);
     var url = resolveUrl(entry.path, assetBase);
-    slot.appendChild(createMark(url, entry));
+    slot.appendChild(createMark(url));
     return slot;
   }
 

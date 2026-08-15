@@ -77,7 +77,7 @@
     return !!(session && session.user && !session.user.is_anonymous);
   }
 
-  /** @returns {Promise<object|null>} session，或 null（已跳转 / 已展示错误） */
+  /** @returns {Promise<object|null>} session，或 null（已跳转登录页） */
   async function requireSession(opts) {
     opts = opts || {};
     try {

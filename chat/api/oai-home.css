@@ -187,21 +187,18 @@
   outline: none;
 }
 
-/* ── Trusted logos — shrink-wrap + equal edge gaps (not equal columns) ─ */
+/* ── Trusted logos — 5 equal 2:1 cells (NexusVAI 字标比例；禁止短 cap-height 把中间标缩没) ─ */
 .trusted-logos {
-  --trusted-gap-x: clamp(1.25rem, 3.2vw, 3.25rem);
-  --trusted-text-h: clamp(1.05rem, 2.05vw, 1.35rem);
-  --trusted-vai-size: clamp(1.7rem, 3.6vw, 2.25rem);
+  --trusted-gap-x: clamp(1rem, 2.4vw, 2.5rem);
   width: 100%;
   margin: clamp(16px, 4vh, 48px) 0 clamp(40px, 8vh, 96px);
   padding: 0 clamp(16px, 4vw, 48px);
   box-sizing: border-box;
 }
 .trusted-logos__grid {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  justify-content: space-between;
   width: 100%;
   max-width: 56rem;
   margin: 0 auto;
@@ -209,7 +206,7 @@
 }
 @media (max-width: 767px) {
   .trusted-logos__grid {
-    justify-content: space-evenly;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
   }
   .trusted-logos__slot:nth-child(n + 4) {
@@ -217,35 +214,20 @@
   }
 }
 .trusted-logos__slot {
-  display: flex;
-  flex: 0 1 auto;
-  width: auto;
+  display: block;
   min-width: 0;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--trusted-vai-size);
+  width: 100%;
+  aspect-ratio: 2 / 1;
   cursor: default;
 }
-.trusted-logos__inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-.trusted-logos__inner--sized {
-  height: var(--mark-h, var(--trusted-text-h));
-  width: min(100%, calc(var(--mark-h, var(--trusted-text-h)) * var(--mark-aspect, 1)));
-  max-width: 100%;
-  flex-shrink: 0;
-}
-.trusted-logos__inner--vai {
-  width: var(--trusted-vai-size);
-  height: var(--trusted-vai-size);
-  flex-shrink: 0;
-}
+.trusted-logos__inner,
+.trusted-logos__inner--sized,
+.trusted-logos__inner--brand,
+.trusted-logos__inner--vai,
 .trusted-logos__inner--wide {
-  max-width: 100%;
-  height: var(--trusted-text-h);
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 .trusted-logos__mark {
   width: 100%;
@@ -277,14 +259,10 @@
   padding: 0;
   max-width: 100%;
   --trusted-gap-x: clamp(8px, 1.5vw, 14px);
-  --trusted-vai-size: clamp(2.5rem, 6vw, 3.25rem);
 }
 .trusted-logos--apply .trusted-logos__grid {
   width: 100%;
   max-width: none;
-}
-.trusted-logos--apply .trusted-logos__inner--brand {
-  --mark-h: clamp(2rem, 4.8vw, 2.85rem) !important;
 }
 
 /* ── "由前沿模型驱动" SECTION ─────────────────────────────── */

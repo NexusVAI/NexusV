@@ -1538,7 +1538,7 @@
           (document.body && document.body.getAttribute("data-login-url")) ||
           "../index.html";
         if (window.PlatformAuth) PlatformAuth.redirectToLogin();
-        else win.location.replace(login);
+        else window.location.replace(login);
         return;
       }
       revealL10n();

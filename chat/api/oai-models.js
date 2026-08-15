@@ -36,7 +36,8 @@
     "gpt-5.6-sol-xhigh",
     "claude-opus-5",
     "gpt-5.6-sol",
-    "grok-4.5",
+    // 2026-08-15: 下掉付费 grok-4.5，换成新免费 grok-4.6-free。
+    "grok-4.6-free",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
@@ -45,13 +46,14 @@
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
     "c:claude-opus-5",
-    "c:gpt-5.6-sol",
-    "c:gpt-5.6-luna",
+    // 2026-08-15: c:gpt-5.6-sol / c:gpt-5.6-luna / c:grok-4.6 已下架
+    // （catalog visible=false），旧条目本会被 filter(Boolean) 自动摘掉、
+    // 但留着是死代码，顺手清掉；c:grok-4.6 换成新的 grok-4.6-free。
     "kimi-k3-high",
     "deepseek-v4-flash-0731",
     "nexusvai:minimax-m3-free",
     "glm-5.2-fp8",
-    "c:grok-4.6",
+    "grok-4.6-free",
     "mimo-v2.5-free",
   ];
 
@@ -304,6 +306,11 @@
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
     var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
+    // 2026-08-15: 专项小卡名字右侧加 Free 绿胶囊（仅 Free，不带 Promo，复用
+    // priceHtml 里同一个 CSS class，跟旗舰/全量大卡的胶囊视觉一致）。
+    var freeTag = isFreeTierModel(m)
+      ? ' <span class="cancri-price__tag cancri-price__tag--free">Free</span>'
+      : "";
     // 专项小卡：页内锚到下方完整目录大卡（#model-<id>），不进详情页
     return (
       '<a href="#model-' + escAttr(id) + '" class="flex h-full flex-col gap-4 text-emphasis hover:text-emphasis">' +
@@ -312,7 +319,7 @@
                'style="background-image:url(\'' + escAttr(art) + '\')"></div>' +
           '<div class="flex flex-col min-w-0">' +
             '<div class="flex items-center gap-2">' +
-              '<div class="font-semibold truncate">' + esc(name) + '</div>' +
+              '<div class="font-semibold truncate">' + esc(name) + '</div>' + freeTag +
             '</div>' +
             (desc ? '<div class="text-sm text-secondary truncate">' + esc(desc) + '</div>' : '') +
           '</div>' +
