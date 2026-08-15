@@ -2674,6 +2674,14 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   // ID；catalog 仍存在的 ID 绝对不要写在这里，否则会把老用户的有效选择重置掉。
   // 2026-05-23：阿里云百炼 8 个免费额度耗尽 / 已下线的模型 ID 加入迁移表，避免老
   // 用户 localStorage 选中这些 ID 后 chat 直接报 invalid_model。
+  //
+  // ⛔ 2026-08-15：上面这条规则曾被自己违反 3 次 —— qwen3.6-max-preview /
+  // claude-opus-4-5 / claude-opus-4-6 当时线上 model_public_catalog 里都是
+  // available=true（后两个还是 costTier=vip 的旗舰付费线），却被写在这里当来源。
+  // resolveInitialModelId 的迁移发生在 isModelEnabled 检查**之前**，所以迁移一律生效：
+  // 老用户选了 Opus 4.6，下次进站直接被换成默认免费模型，而且没有任何提示。
+  // 已移除这 3 条。加条目前先确认该 id 真的不在线上 catalog 里（一条 model_public_catalog
+  // 只读请求就能验），别凭「印象里下架了」写。
   const MODEL_SELECTION_MIGRATIONS = {
     // 2026-06-03: Grok 4.20 统一迁到 grok-4.20-0309-console
     "grok-4.20-0309": DEFAULT_MODEL_ID,
@@ -2681,7 +2689,6 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     "deepseek-v3.2-exp": DEFAULT_MODEL_ID,
     "qwen3.6-flash": DEFAULT_MODEL_ID,
     "qwen3.6-flash-2026-04-16": DEFAULT_MODEL_ID,
-    "qwen3.6-max-preview": DEFAULT_MODEL_ID,
     "qwen3.6-plus-2026-04-02": DEFAULT_MODEL_ID,
     "kimi-k2.5": DEFAULT_MODEL_ID,
     "glm-4.6": DEFAULT_MODEL_ID,
@@ -2705,8 +2712,6 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     "moonshotai-kimi-k2.6": DEFAULT_MODEL_ID,
     "gpt-5.5-b": DEFAULT_MODEL_ID,
     "gpt-5.5-c": DEFAULT_MODEL_ID,
-    "claude-opus-4-5": DEFAULT_MODEL_ID,
-    "claude-opus-4-6": DEFAULT_MODEL_ID,
     "claude-opus-4-6-thinking-medium": DEFAULT_MODEL_ID,
     "claude-opus-4-6-thinking": DEFAULT_MODEL_ID,
     "claude-sonnet-4-6-thinking": DEFAULT_MODEL_ID,
@@ -14678,7 +14683,9 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     free.querySelector("#askUserSkipBtn").addEventListener("click", () => hideAskUserBlock());
     const freeInput = free.querySelector("#askUserFreeInput");
     freeInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && freeInput.value.trim()) {
+      // isComposing：输入法组合中按 Enter 是"确认候选词"，不是提交
+      //（审计#5：与 composer 自身的防御对齐，否则中文用户选词即误发半截拼音）。
+      if (event.key === "Enter" && !event.isComposing && freeInput.value.trim()) {
         event.preventDefault();
         event.stopPropagation();
         askUserAnswer(freeInput.value);
@@ -14715,6 +14722,7 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
 
   document.addEventListener("keydown", (event) => {
     if (!askUserVisible || state.modal) return;
+    if (event.isComposing) return; // 输入法组合中的键一律不拦（审计#5 同源防御）
     const card = document.getElementById("askUserBlock");
     if (!card || card.hidden) return;
     const active = document.activeElement;
@@ -16025,10 +16033,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   scrim.addEventListener("click", () => {
     closePopover();
     closeModal();
+    // 2026-08-12 审计#10：不再直加 .collapsed——closeMobileSidebarDrawer 内部
+    // 延迟 220ms 落 .collapsed（滑出期间内容可见），这里同步直加会立刻命中
+    // rail 隐藏规则，把关闭动画打回"整块瞬消"。
     closeMobileSidebarDrawer();
-    if (isMobileViewport() && sidebar) {
-      sidebar.classList.add("collapsed");
-    }
     updateScrimVisibility();
   });
   
@@ -16044,12 +16052,14 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
         closeMobileSidebarDrawer();
       }
     } else if (
-      isMobileViewport() &&
+      window.matchMedia("(max-width: 768px)").matches &&
       sidebar &&
       !sidebar.contains(event.target) &&
       !sidebar.classList.contains("collapsed")
     ) {
-      sidebar.classList.add("collapsed");
+      // 2026-08-12 审计#10：状态修复兜底也统一走 close 函数（原直加 .collapsed
+      // 会跳过滑出动画）；断点从 ≤640 对齐到抽屉断点 ≤768。
+      closeMobileSidebarDrawer();
     }
     if (!state.modal) updateScrimVisibility();
   });
@@ -16060,9 +16070,11 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       if (settingsView && settingsView.classList.contains("active")) return;
       closePopover();
       closeModal();
-      if (isMobileViewport() && sidebar) {
-        sidebar.classList.add("collapsed");
-      }
+      // 2026-08-12 审计#3：原来只 add('collapsed') 不清 body.sidebar-open /
+      // is-mobile-open，Esc 后状态劈叉成 "is-mobile-open collapsed" 并存：
+      // 抽屉被 open 规则钉在屏内、蒙层常亮、汉堡钮被盖死（实测 Playwright
+      // 点击重试 57 次失败）。统一走 close 函数，顺带覆盖 641-768 区间。
+      closeMobileSidebarDrawer();
       updateScrimVisibility();
     }
   });
@@ -16856,7 +16868,10 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   updateComposerSendButton();
   // 初始化上传按钮显示状态
   updateAttachBtnVisibility();
-  if (isMobileViewport() && sidebar) {
+  // 2026-08-12 审计#2：初始收起断点必须与抽屉断点(≤768)一致。原用
+  // isMobileViewport()(≤640)，641-768 视口首屏抽屉全开且盖死汉堡钮
+  //（layout-sidebar.css `.sidebar:not(.collapsed)` 把它钉在 translateX(0)）。
+  if (window.matchMedia("(max-width: 768px)").matches && sidebar) {
     sidebar.classList.add("collapsed");
   }
   updateScrimVisibility();
