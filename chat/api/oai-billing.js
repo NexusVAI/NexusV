@@ -380,6 +380,7 @@
     var opus5 = (data && data.opus5) || {};
     var tier = (data && data.tier) || {};
     var limits = (data && data.limits) || {};
+    var o5lim = (data && data.opus5_limit) || {};
     var events = (data && data.events) || [];
 
     var balance = Number(cards.balance || 0);
@@ -407,7 +408,13 @@
         { k: "并发上限", v: fmtLimit(limits.concurrency) },
         { k: "RPM（每分钟请求）", v: fmtLimit(limits.rpm) },
         { k: "TPM（每分钟 Token）", v: fmtLimit(limits.tpm) },
-        { k: "TPD（每日 Token）", v: fmtLimit(limits.tpd), sub: "自然日切换（UTC+8）归零" },
+        // tier≥2 的 tpd 是 null（不限）。此时不能再挂「归零」的副标题 —— 同一格
+        // 上面写「不限」下面写「归零」自相矛盾，用户会以为额度会被清掉。
+        {
+          k: "TPD（每日 Token）",
+          v: fmtLimit(limits.tpd),
+          sub: limits.tpd == null ? "" : "自然日切换（UTC+8）归零",
+        },
         {
           k: "Opus 5 免费额度",
           v: fmtInt(opus5.used) + " 次已用",
@@ -417,7 +424,17 @@
             ? "滚动 24 小时窗，" + fmtWhen(opus5.window_ends_at) + " 恢复"
             : fmtWhen(opus5.window_ends_at) + " 恢复",
         },
-        { k: "账号验证状态", v: opus5.verified ? "已验证" : "未验证", sub: opus5.verified ? "Opus 5 每日 100 次" : "已验证可提升 Opus 5 每日额度" },
+        // 额度数字与「滚动窗」口径都取后端下发（reset-card 的 opus5_limit），
+        // 不再硬编码 —— 前端不在漂移检查覆盖内，写死必漂。
+        {
+          k: "账号验证状态",
+          v: opus5.verified ? "已验证" : "未验证",
+          sub: o5lim.current == null
+            ? (opus5.verified ? "" : "完成账号验证可提升 Opus 5 额度")
+            : (opus5.verified
+              ? "Opus 5 " + fmtInt(o5lim.current) + " 次 / 24 小时滚动窗"
+              : "Opus 5 " + fmtInt(o5lim.current) + " 次 / 24 小时滚动窗，验证后可提升到 " + fmtInt(o5lim.verified)),
+        },
       ];
       grid.innerHTML = cells.map(function (c) {
         return '<div class="rc-cell"><div class="rc-k">' + esc(c.k) + '</div><div class="rc-v">' +
@@ -447,10 +464,7 @@
     }
   }
 
-  var resetLoading = false;
-  async function loadReset() {
-    if (resetLoading) return;
-    resetLoading = true;
+  async function doLoadReset() {
     try {
       var data = await callResetCard("status");
       renderReset(data);
@@ -459,9 +473,18 @@
       if (descEl) descEl.textContent = "加载失败：" + (e && e.message ? e.message : "未知错误");
       var metaEl = $("reset-limits-meta");
       if (metaEl) metaEl.textContent = "限额信息加载失败，请刷新重试。";
-    } finally {
-      resetLoading = false;
     }
+  }
+
+  // ⛔ 不能用「在飞就直接 return」的布尔锁（2026-08-15 审查）：消卡后 finally 里的这次刷新
+  // 常常正好撞上切 tab 触发的那次 status 请求，被丢弃后页面就停在**消卡前**的余额上 ——
+  // 用户看到「已重置」却发现卡没少，会以为扣错了。而按钮的唯一解禁点也在 renderReset 里，
+  // 丢弃这次刷新等于按钮要等那次在飞请求返回旧数据才恢复。
+  // 改为串行排队：不丢任何一次，且最后入队的最后渲染，结果一定是最新的。
+  var resetChain = Promise.resolve();
+  function loadReset() {
+    resetChain = resetChain.then(doLoadReset, doLoadReset);
+    return resetChain;
   }
 
   function bindResetButton() {

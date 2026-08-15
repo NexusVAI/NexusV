@@ -4086,9 +4086,14 @@
                             kind === 'activity_invitee' ? '活跃奖（被邀请）' :
                             kind === 'first_recharge_rebate' ? '首充返利' :
                             kind.indexOf('legacy') === 0 ? '历史 token 奖励' : kind || '其他';
+                        // 重置卡奖励的 delta_micro 是 0（奖励物不是钱），只判金额会让整列恒显示「—」。
+                        // ⛔ 判据只能用 payload.reward：历史 ¥1 奖励的 g.kind 同样是 activity_inviter
+                        // （payload 里是 cny:1、delta_micro=1000000），按 kind 判会把旧钱奖励标成重置卡。
+                        var isCard = !!(g.payload && g.payload.reward === 'reset_card');
                         var amt = Number(g.delta_micro || 0) > 0
                             ? ('¥' + microToCny(g.delta_micro))
-                            : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens') : '—');
+                            : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens')
+                                : (isCard ? '1 张重置卡' : '—'));
                         var t = g.granted_at ? String(g.granted_at).replace('T', ' ').slice(0, 19) : '—';
                         gh += '<tr><td>' + esc(label) + '</td><td>' + esc(amt) + '</td><td>' + esc(t) + '</td></tr>';
                     });
