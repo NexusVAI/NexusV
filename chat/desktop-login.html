@@ -21,7 +21,7 @@
   <!-- 2026-06-20 安全加固：原旁CSP。含 unsafe-inline 兼容内联脚本；收素object-src/base-uri/connect-src（含本机回调 127.0.0.1）　-->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://chat.nexusvai.xyz https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz http://127.0.0.1:* http://localhost:* https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>登录 Cancri Code 桌面立</title>
+  <title>登录 Cancri Code 桌面端</title>
     <meta name="robots" content="noindex,nofollow">
   <meta name="referrer" content="no-referrer" />
   <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
@@ -497,6 +497,15 @@
       const valid = Boolean(cb && state && isValidCb(cb));
       const overlay = document.getElementById("authOverlay");
       const invalidMsg = document.getElementById("authInvalidMsg");
+
+      // 2026-08-16 修复：auth-platform-login.css 的
+      // `html.auth-platform-page #authOverlay:not(.visible)` 默认把整个遮罩
+      // 收起（height:0 + visibility:hidden + z-index:-1），要靠 JS 加上
+      // .visible 才会显示——这个动作原来只有 chat/src/main.js 的
+      // showAuthOverlay() 会做（该文件不加载 main.js，走自己这段独立脚本）。
+      // 之前这里从没加过这个 class，导致整页无论 valid/invalid 都是一片空白
+      // 背景色，看不到任何内容（真实用户反馈：桌面端登录页"一片黄"）。
+      if (overlay) overlay.classList.add("visible");
 
       const emailInput = document.getElementById("authEmailInput");
       const otpInput = document.getElementById("authPasswordInput");
