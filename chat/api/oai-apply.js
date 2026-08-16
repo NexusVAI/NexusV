@@ -155,7 +155,11 @@
 
   function bindUI() {
     var s = $("submit-btn"); if (s) s.addEventListener("click", submitTicket);
-    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "./api/keys.html"; });
+    // 2026-08-16 修复：本页 <base href="../"> 把相对路径基准挪到了站点根目录
+    // （/chat/api_apply.html + "../" = /），"./api/keys.html" 因此落到不存在的
+    // /api/keys.html（404）。同一行下面的 back-to-chat-btn 早就用 "chat/..."
+    // 前缀补偿了，这里之前漏加，工单反馈"前往控制台"按钮 404。
+    var mk = $("manage-keys-btn"); if (mk) mk.addEventListener("click", function () { location.href = "chat/api/keys.html"; });
     var bc = $("back-to-chat-btn"); if (bc) bc.addEventListener("click", function () { location.href = "chat/index.html"; });
     if (window.OaiTrustedLogos) {
       var host = $("cs-trusted-logos");
