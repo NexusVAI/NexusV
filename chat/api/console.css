@@ -1,5 +1,39 @@
 /* NexusVAI API 控制台 — 弹窗 / 钱包警报样式（oai-console-data.js 按需加载） */
 
+/* 2026-08-16 修复：本文件用到的 --bg-color/--text-color/--border-color/
+ * --secondary-text/--tertiary-text/--pill-bg/--bg-card/--accent-color/
+ * --font-main/--font-mono 从未被任何实际加载本文件的页面（keys.html /
+ * console.html 等 OpenAI 快照壳）定义过——那些页面只有自己的 --color-*
+ * 系列变量（scraped 自 OpenAI，命名完全不同）。CSS 里未定义的 var() 用在
+ * background 上会退化成 transparent，用在 color 上退化成继承值：工单原话
+ * "菜单是透明的，字不太清楚"——.cs-modal（创建密钥弹窗）和账号芯片菜单
+ * （oai-console-data.js toggleChipMenu）全部命中。
+ * 这里按 oai-console-data.js 自己的 data-theme 开关（"light" / 默认
+ * "dark"，见该文件顶部 IIFE 与 initThemeToggle）补一份自给自足的取值，
+ * 配色对齐同一控制台家族已在用的 api-platform.css 调色板，不依赖任何
+ * 外部文件（全仓库搜索确认没有第三个文件定义过这些变量名）。 */
+:root {
+  --bg-color: #0a0a0a;
+  --bg-card: #111111;
+  --text-color: #ededec;
+  --secondary-text: #a3a3a0;
+  --tertiary-text: #6f6f6c;
+  --border-color: #1f1f1f;
+  --pill-bg: rgba(255, 255, 255, 0.06);
+  --accent-color: #d97757;
+  --font-main: "OpenAI Sans", ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "SF Mono", Consolas, "Liberation Mono", ui-monospace, monospace;
+}
+:root[data-theme="light"] {
+  --bg-color: #fcfcfb;
+  --bg-card: #ffffff;
+  --text-color: rgba(20, 20, 20, 0.92);
+  --secondary-text: rgba(61, 61, 58, 0.72);
+  --tertiary-text: rgba(115, 114, 108, 0.55);
+  --border-color: rgba(31, 30, 28, 0.09);
+  --pill-bg: rgba(0, 0, 0, 0.04);
+}
+
 .cs-console {
   min-height: 100dvh;
   display: flex;
