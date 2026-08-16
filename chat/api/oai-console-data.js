@@ -21,6 +21,79 @@
     "Settings",
   ];
 
+  // ─── 2026-08-16：苹果式圆角（corner smoothing），移植自桌面端
+  // cancri-code/src/ui/squircle-path.ts 的同一套贝塞尔构造（不是 CSS
+  // superellipse()，两者曲线不同——原委见桌面端源文件头注释），smoothing
+  // 固定 0.6（iOS 标准档），与桌面端参数保持一致（"同款参数风格"）。
+  // 只搬纯函数 + 一个轻量 apply（这里的弹窗/菜单都是一次性创建、非流式
+  // 重渲染，不需要桌面端那一整套 ResizeObserver/MutationObserver 框架）。
+  var SQ_SMOOTHING = 0.6;
+  function sqToRad(deg) { return (deg * Math.PI) / 180; }
+  function sqR2(n) { return Math.round(n * 100) / 100; }
+  function sqCornerParams(radius, smoothing, budget) {
+    var r = Math.max(0, Math.min(radius, budget));
+    var s = Math.max(0, Math.min(1, smoothing));
+    var arcMeasure = 90 * (1 - s);
+    var arcSectionLength = Math.sin(sqToRad(arcMeasure / 2)) * r * Math.SQRT2;
+    var angleAlpha = (90 - arcMeasure) / 2;
+    var p3ToP4 = r * Math.tan(sqToRad(angleAlpha / 2));
+    var angleBeta = 45 * s;
+    var c = p3ToP4 * Math.cos(sqToRad(angleBeta));
+    var d = c * Math.tan(sqToRad(angleBeta));
+    var p = (1 + s) * r;
+    var b = (p - arcSectionLength - c - d) / 3;
+    var a = 2 * b;
+    if (p > budget) {
+      var k = budget / p;
+      return { p: budget, radius: r, arcSectionLength: arcSectionLength * k, a: a * k, b: b * k, c: c * k, d: d * k };
+    }
+    return { p: p, radius: r, arcSectionLength: arcSectionLength, a: a, b: b, c: c, d: d };
+  }
+  function squirclePathStr(width, height, radius, smoothing) {
+    var w = width, h = height;
+    if (w <= 0 || h <= 0) return "M 0,0 Z";
+    var budget = Math.min(w, h) / 2;
+    var k = sqCornerParams(radius, smoothing == null ? SQ_SMOOTHING : smoothing, budget);
+    var p = k.p, a = k.a, b = k.b, c = k.c, d = k.d, arc = k.arcSectionLength;
+    var rr = sqR2(k.radius);
+    var arcCmd = arc > 0.01 ? "a " + rr + " " + rr + " 0 0 1" : "";
+    return [
+      "M " + sqR2(w - p) + "," + sqR2(0),
+      "c " + sqR2(a) + ",0 " + sqR2(a + b) + ",0 " + sqR2(a + b + c) + "," + sqR2(d),
+      arc > 0.01 ? arcCmd + " " + sqR2(arc) + "," + sqR2(arc) : "",
+      "c " + sqR2(d) + "," + sqR2(c) + " " + sqR2(d) + "," + sqR2(b + c) + " " + sqR2(d) + "," + sqR2(a + b + c),
+      "L " + sqR2(w) + "," + sqR2(h - p),
+      "c 0," + sqR2(a) + " 0," + sqR2(a + b) + " " + sqR2(-d) + "," + sqR2(a + b + c),
+      arc > 0.01 ? arcCmd + " " + sqR2(-arc) + "," + sqR2(arc) : "",
+      "c " + sqR2(-c) + "," + sqR2(d) + " " + sqR2(-b - c) + "," + sqR2(d) + " " + sqR2(-a - b - c) + "," + sqR2(d),
+      "L " + sqR2(p) + "," + sqR2(h),
+      "c " + sqR2(-a) + ",0 " + sqR2(-a - b) + ",0 " + sqR2(-a - b - c) + "," + sqR2(-d),
+      arc > 0.01 ? arcCmd + " " + sqR2(-arc) + "," + sqR2(-arc) : "",
+      "c " + sqR2(-d) + "," + sqR2(-c) + " " + sqR2(-d) + "," + sqR2(-b - c) + " " + sqR2(-d) + "," + sqR2(-a - b - c),
+      "L " + sqR2(0) + "," + sqR2(p),
+      "c 0," + sqR2(-a) + " 0," + sqR2(-a - b) + " " + sqR2(d) + "," + sqR2(-a - b - c),
+      arc > 0.01 ? arcCmd + " " + sqR2(arc) + "," + sqR2(-arc) : "",
+      "c " + sqR2(c) + "," + sqR2(-d) + " " + sqR2(b + c) + "," + sqR2(-d) + " " + sqR2(a + b + c) + "," + sqR2(-d),
+      "Z",
+    ].filter(Boolean).join(" ");
+  }
+  // 挂到元素上：按实际渲染尺寸生成 path，阴影搬到 filter: drop-shadow（clip-path
+  // 会把 box-shadow 一起裁掉，这是桌面端 apple-corners.ts 记录过的铁律）。
+  function applySquircle(elm, radius, shadow) {
+    if (!elm) return;
+    requestAnimationFrame(function () {
+      var w = elm.offsetWidth, h = elm.offsetHeight;
+      if (w < 1 || h < 1) return;
+      var d = squirclePathStr(w, h, radius, SQ_SMOOTHING);
+      elm.style.clipPath = 'path("' + d + '")';
+      elm.style.borderRadius = "0";
+      if (shadow) {
+        elm.style.boxShadow = "none";
+        elm.style.filter = "drop-shadow(" + shadow + ")";
+      }
+    });
+  }
+
   function detectLang() {
     // 控制台产品文案以中文为准；localStorage.lang=en 仍可强制英文模态框。
     try {
@@ -458,7 +531,7 @@
     if (document.querySelector('link[href*="console.css"]')) return;
     var l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "console.css?v=20260625-console-modal";
+    l.href = "console.css?v=20260817-themevars";
     document.head.appendChild(l);
   }
 
@@ -712,6 +785,8 @@
     // 菜单向上弹（芯片在视口底部，向下会被裁）
     m.style.left = Math.round(r.left) + "px";
     m.style.top = Math.max(8, Math.round(r.top - m.offsetHeight - 8)) + "px";
+    // 圆角半径与阴影对齐上面 cssText 原有的 12px / 0 12px 32px rgba(0,0,0,.18)。
+    applySquircle(m, 12, "0 12px 32px rgba(0,0,0,.18)");
     chipMenuEl = m;
     setTimeout(function () { document.addEventListener("click", closeChipMenu, { once: true }); }, 0);
   }
@@ -1087,6 +1162,8 @@
     card.innerHTML = head + bodyHtml + inputHtml + foot;
     backdrop.appendChild(card);
     document.body.appendChild(backdrop);
+    // 圆角半径与阴影对齐 console.css .cs-modal 原有的 14px / 0 18px 60px rgba(0,0,0,.28)。
+    applySquircle(card, 14, "0 18px 60px rgba(0,0,0,0.28)");
     backdrop.addEventListener("click", function (e) {
       if (e.target === backdrop) closeCsModal();
     });
@@ -1210,7 +1287,12 @@
           "</span>" +
           '<button type="button" data-del-key="' +
           esc(id) +
-          '" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(127,127,127,.35);background:transparent;cursor:pointer">Revoke</button>' +
+          // 2026-08-16 修复：这颗按钮是运行时注入到冻结的 OpenAI 快照页里的，
+          // 没写 color，会继承快照自带的 --color-text（该值不跟随本站深色/浅色
+          // 切换，快照背景又始终是浅色）——本站切到深色模式时 root 的白色文字色
+          // 顺着继承链漏进来，浅色背景 + 白字 = 按钮看起来"空白"（工单实拍）。
+          // 显式钉死黑色文字，不再依赖继承链。
+          '" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(127,127,127,.35);background:transparent;color:#000;cursor:pointer">Revoke</button>' +
           "</div></div>"
         );
       })
