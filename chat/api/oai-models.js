@@ -46,6 +46,8 @@
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
     "c:claude-opus-5",
+    // 2026-08-16: qwen-3.8-max 限时免费线（至 08-20），钉到免费区首屏。
+    "qwen-3.8-max",
     // 2026-08-15: c:gpt-5.6-sol / c:gpt-5.6-luna / c:grok-4.6 已下架
     // （catalog visible=false），旧条目本会被 filter(Boolean) 自动摘掉、
     // 但留着是死代码，顺手清掉；c:grok-4.6 换成新的 grok-4.6-free。
@@ -56,6 +58,11 @@
     "grok-4.6-free",
     "mimo-v2.5-free",
   ];
+
+  // catalog 无 publicDescription 时的卡片兜底（与 kimi / deepseek 限时卡文案对齐）。
+  var DESC_FALLBACK = {
+    "qwen-3.8-max": "08-20结束免费期限",
+  };
 
   // card art pool: assets/oai.logo/1-6.png, assigned randomly per render
   // with a "no repeat among the last 3 picks" rule so nearby cards differ.
@@ -262,7 +269,7 @@
     opts = opts || {};
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
-    var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
+    var desc = m.publicDescription || DESC_FALLBACK[id] || (m.brand ? m.brand + " 模型" : "");
     var featured = FEATURED_RANK[id.toLowerCase()] != null;
     var badge = (featured && opts.flagshipBadge)
       ? ' <div class="_Badge_10t5o_1" data-color="success" data-size="md" data-pill data-variant="soft">旗舰</div>'
@@ -305,7 +312,7 @@
   function specializedCardHtml(m, art) {
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
-    var desc = m.publicDescription || (m.brand ? m.brand + " 模型" : "");
+    var desc = m.publicDescription || DESC_FALLBACK[id] || (m.brand ? m.brand + " 模型" : "");
     // 2026-08-15: 专项小卡名字右侧加 Free 绿胶囊（仅 Free，不带 Promo，复用
     // priceHtml 里同一个 CSS class，跟旗舰/全量大卡的胶囊视觉一致）。
     var freeTag = isFreeTierModel(m)
