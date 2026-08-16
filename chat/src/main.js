@@ -2124,19 +2124,13 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit
     ) return "token_window_week_exceeded";
     // 福利模型：跳过所有配额限制（不扣共享池、不限每日次数）。
-    // 2026-06-03: 移除 gpt-5.5-welfare / gemini-3.5-flash-welfare /
-    //            gemini-3.1-flash-lite-welfare / gpt-5.4-mini-welfare，退出福利档改为付费专属。
-    // 2026-06-18: 新增 deepseek-v4-pro-welfare（全档位免扣额度，含 FREE 用户）。
     //   注意 composer-2.5-fast 虽在后端 WELFARE_MODEL_IDS（免扣额度），
     //   但它对 FREE 用户硬挡（Pro+ 福利），不在全档位福利白名单里。
     // 限流在后端做（每用户并发 1 + 全局 100 RPM），前端无需预阻挡。
-    if (
-      modelId === "baichuan-m2-welfare" ||
-      modelId === "baichuan4-air-welfare" ||
-      modelId === "baichuan3-turbo-welfare" ||
-      modelId === "baichuan2-turbo-welfare" ||
-      modelId === "deepseek-v4-pro-welfare"
-    ) return null;
+    // 2026-08-15：原先此处把 FREE_WELFARE_MODEL_IDS 的 id 又手写了一遍成 || 链，
+    // 两份内容当时恰好相同但各自独立 —— 改一处漏一处就会出现「菜单说免费、
+    // 发送时被配额挡住」或反之。现在统一走上面那一份集合，别再展开成字面量。
+    if (isFreeWelfareModel(modelId)) return null;
     // 2026-05-19：FREE 用户买了加油包后，后端 cancri_consume_paid_quota_v2
     // 会在 free_pool / 当日 15 次耗尽时回退 user_topup_credits。前端预阻挡
     // 必须同步放行，否则 chat 页 UI 把所有模型横杠用户根本点不动 send。

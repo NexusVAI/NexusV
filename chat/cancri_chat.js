@@ -2229,7 +2229,7 @@
 		if (isFreeUserBlockedGateModel(modelId)) return "pro_only";
 		if (quotaState.tokenWindow5hUsed !== null && quotaState.tokenWindow5hLimit !== null && quotaState.tokenWindow5hUsed >= quotaState.tokenWindow5hLimit) return "token_window_5h_exceeded";
 		if (quotaState.tokenWindowWeekUsed !== null && quotaState.tokenWindowWeekLimit !== null && quotaState.tokenWindowWeekUsed >= quotaState.tokenWindowWeekLimit) return "token_window_week_exceeded";
-		if (modelId === "baichuan-m2-welfare" || modelId === "baichuan4-air-welfare" || modelId === "baichuan3-turbo-welfare" || modelId === "baichuan2-turbo-welfare" || modelId === "deepseek-v4-pro-welfare") return null;
+		if (isFreeWelfareModel(modelId)) return null;
 		const hasTopup = quotaState.topupBalance !== null && quotaState.topupBalance > 0;
 		if (!hasTopup && quotaState.freePoolRemaining !== null && quotaState.freePoolRemaining <= 0) return "pool_exhausted";
 		if (!isPaidGateModel(modelId)) return null;
