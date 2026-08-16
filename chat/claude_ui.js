@@ -4599,6 +4599,19 @@
             }
         }
     };
+
+    // 2026-08-16 修复：API 控制台侧边栏「邀请奖励」点击后落地
+    // index.html#settings&pane=invite（见 chat/api/oai-console-data.js
+    // CHAT_SETTINGS_URL），但此前全站没有任何代码读过这个 hash，用户只会
+    // 落在普通聊天首页——工单原话："跳转到了chat页面，但是没有自动打开
+    // 设置到邀请链接页面"。这里补上落地检查，命中就直接复用上面已验证
+    // 可用的 openClaudeSettingsInvite()（公告 CTA 用的就是它）。
+    // 放在 init() 之后（本文件顶部同步执行），此时 bindCustomNav 的
+    // nav 点击监听已经绑好，openClaudeSettingsInvite 内部的 .click() 才有效。
+    if (location.hash.indexOf('pane=invite') !== -1) {
+        window.openClaudeSettingsInvite();
+        history.replaceState(null, '', location.pathname + location.search);
+    }
 })();
 
 // ── T5：composer 图标按钮自定义 tooltip（hover 2s 后出现）──
