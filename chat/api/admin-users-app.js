@@ -78,7 +78,7 @@ async function init() {
     return;
   }
   $("main").style.display = "block";
-  await loadBans();
+  await Promise.all([loadBans(), loadPendingReview()]);
 }
 
 async function loadBans() {
@@ -339,6 +339,125 @@ async function doUnban(userId, btn) {
   await loadBans();
 }
 
+// ─── 2026-08-16: 搁置待人工队列（held / dead 的自动风控案例）───────────
+// 不复用 cancri_ban_review_resolve —— 那个 RPC 在 verdict=ban 分支实测过
+// "user_bans 没插入成功但队列仍标 banned" 的问题（见 admin_pending_review_ban
+// 后端注释），这里的"立即封禁"走的是跟上面 doBan 一样、已验证可靠的直接
+// upsert 路径，两条路径完全独立，不会互相踩坑。
+let PENDING_REVIEW = [];
+
+async function loadPendingReview() {
+  const session = await getSession();
+  const r = await callGW({ endpoint: "admin_list_pending_review" }, session);
+  if (r.status === 403) {
+    $("deny-gate").style.display = "block";
+    return;
+  }
+  if (!r.ok) {
+    showToast("加载待人工队列失败：HTTP " + r.status, "err");
+    return;
+  }
+  PENDING_REVIEW = Array.isArray(r.data?.cases) ? r.data.cases : [];
+  renderPendingReview();
+}
+
+const PENDING_STATUS_LABEL = { pending: "待处理", judging: "AI裁决中", held: "已搁置", dead: "多次重试无果" };
+const PENDING_TRIGGER_LABEL = { multi_ip: "多IP", datacenter_fanout: "机房IP扇出" };
+
+function formatPendingEvidence(c) {
+  const ev = c.evidence || {};
+  const trigger = PENDING_TRIGGER_LABEL[c.trigger_reason] || c.trigger_reason || "未知触发";
+  const parts = [`<b>${esc(trigger)}</b>`];
+  if (ev.window_hours != null) {
+    parts.push(`${esc(ev.window_hours)}h 内 ${esc(ev.distinct_networks ?? ev.distinct_prefixes ?? "?")} 个网络`);
+  }
+  if (Number(ev.datacenter_networks || 0) > 0) {
+    parts.push(`其中 ${esc(ev.datacenter_networks)} 个机房`);
+  }
+  if (ev.trigger_as_org) parts.push(`触发方：${esc(ev.trigger_as_org)}`);
+  let html = parts.join(" · ");
+  html += `<div class="when">充值 ¥${esc(Number(c.recharge_cny || 0).toFixed(2))} · 已重试 ${esc(c.attempts)} 次 · 首次命中 ${esc(shortTime(c.created_at))}</div>`;
+  const v = c.verdict;
+  if (v && typeof v === "object") {
+    if (v.manual) {
+      html += `<div class="verdict-line">此前人工${v.action === "ban" ? "封禁" : "取消"}记录</div>`;
+    } else if (v.verdict) {
+      html += `<div class="verdict-line">AI 裁决：${esc(v.verdict)}（置信度 ${esc(v.confidence)}）— ${esc(v.reason || "")}</div>`;
+    } else if (v.note === "ai_unavailable_hold_only") {
+      html += `<div class="verdict-line">AI 当时不可用，等待下一轮</div>`;
+    } else if (v.skipped === "exempt_paying_or_tenured") {
+      html += `<div class="verdict-line">付费/老账号豁免自动裁决，需人工看</div>`;
+    }
+  }
+  return html;
+}
+
+function renderPendingReview() {
+  const root = $("pendingReviewList");
+  if (!PENDING_REVIEW.length) {
+    root.innerHTML = '<div class="empty-bans">暂无搁置待人工的案例。</div>';
+    return;
+  }
+  root.innerHTML = PENDING_REVIEW.map((c) => {
+    const statusLabel = PENDING_STATUS_LABEL[c.status] || c.status;
+    return `<div class="pending-row">
+      <div>
+        <div>${esc(c.email || "(未知邮箱)")}</div>
+        <div class="uid">${esc(c.user_id)}</div>
+      </div>
+      <div class="evidence">${formatPendingEvidence(c)}</div>
+      <div><span class="pill status-${esc(c.status)}">${esc(statusLabel)}</span></div>
+      <div class="actions">
+        <button class="btn-ban" data-id="${esc(c.id)}" data-uid="${esc(c.user_id)}">立即封禁</button>
+        <button class="btn-unban" data-id="${esc(c.id)}">取消</button>
+      </div>
+    </div>`;
+  }).join("");
+  root.querySelectorAll("button.btn-ban").forEach((btn) => {
+    btn.addEventListener("click", () => doPendingBan(btn.dataset.id, btn.dataset.uid, btn));
+  });
+  root.querySelectorAll("button.btn-unban").forEach((btn) => {
+    btn.addEventListener("click", () => doPendingClear(btn.dataset.id, btn));
+  });
+}
+
+async function doPendingBan(queueId, userId, btn) {
+  if (!confirm("确认立即永久封禁这个账号？会吊销其全部 API key 并发送封禁邮件。")) return;
+  btn.disabled = true;
+  btn.textContent = "封禁中…";
+  const session = await getSession();
+  const r = await callGW(
+    { endpoint: "admin_pending_review_ban", queue_id: Number(queueId), user_id: userId },
+    session,
+  );
+  if (!r.ok) {
+    showToast("封禁失败：" + (r.data?.message || r.status), "err");
+    btn.disabled = false;
+    btn.textContent = "立即封禁";
+    return;
+  }
+  showToast("已封禁 " + userId.slice(0, 8) + "…", "ok");
+  await Promise.all([loadPendingReview(), loadBans()]);
+}
+
+async function doPendingClear(queueId, btn) {
+  btn.disabled = true;
+  btn.textContent = "处理中…";
+  const session = await getSession();
+  const r = await callGW(
+    { endpoint: "admin_pending_review_clear", queue_id: Number(queueId) },
+    session,
+  );
+  if (!r.ok) {
+    showToast("取消失败：" + (r.data?.message || r.status), "err");
+    btn.disabled = false;
+    btn.textContent = "取消";
+    return;
+  }
+  showToast("已取消（6 小时内不会因同一原因重新入队）", "ok");
+  await loadPendingReview();
+}
+
 $("searchInput").addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(doSearch, 250);
@@ -352,6 +471,7 @@ $("banSearch").addEventListener("input", () => {
 });
 $("banBtn").addEventListener("click", doBan);
 $("reload-btn").addEventListener("click", loadBans);
+$("pendingReviewReloadBtn").addEventListener("click", loadPendingReview);
 
 // ─── Wallet Control Panel Logic (2026-06-23 wallet_v3) ───
 let selectedQuotaUserId = "";

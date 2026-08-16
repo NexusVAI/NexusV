@@ -231,6 +231,61 @@
         color: var(--text-mute);
         font-size: 13px;
       }
+      .pending-row {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr 78px 180px;
+        gap: 12px;
+        align-items: center;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .pending-row:last-child {
+        border-bottom: none;
+      }
+      .pending-row .uid {
+        font-family: ui-monospace, "SF Mono", Consolas, monospace;
+        font-size: 11.5px;
+        color: var(--text-mute);
+      }
+      .pending-row .evidence {
+        font-size: 12px;
+        color: var(--text-mute);
+        line-height: 1.5;
+      }
+      .pending-row .evidence b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .pending-row .verdict-line {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        margin-top: 3px;
+      }
+      .pending-row .when {
+        font-size: 11px;
+        color: var(--text-faint);
+        margin-top: 3px;
+      }
+      .pending-row .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: stretch;
+      }
+      .pill.status-held {
+        background: rgba(250, 204, 21, 0.15);
+        color: #facc15;
+      }
+      .pill.status-dead {
+        background: rgba(154, 154, 154, 0.15);
+        color: var(--text-mute);
+      }
+      .pill.status-pending,
+      .pill.status-judging {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+      }
       @media (max-width: 720px) {
         .form-row {
           grid-template-columns: 1fr;
@@ -246,6 +301,17 @@
         }
         .ban-row .actions {
           justify-content: flex-start;
+        }
+        .pending-row {
+          grid-template-columns: 1fr 90px;
+          grid-template-rows: auto auto auto;
+        }
+        .pending-row .evidence,
+        .pending-row .actions {
+          grid-column: 1 / -1;
+        }
+        .pending-row .actions {
+          flex-direction: row;
         }
       }
     </style>
@@ -459,6 +525,18 @@
           </div>
         </div>
 
+        <!-- 2026-08-16：自动风控 hold/dead 的案例（AI 低置信度或付费/老账号豁免，
+             一直卡着没人工裁决），可以随时立即封禁或取消。 -->
+        <div class="panel" id="pendingReviewPanel" style="border-color: rgba(250, 204, 21, 0.35);">
+          <div class="panel-head" style="background: rgba(250, 204, 21, 0.06); border-bottom: 1px solid rgba(250, 204, 21, 0.15);">
+            搁置待人工队列
+            <span class="hint">自动风控命中但未裁决（held / dead），需要你手动决定</span>
+            <span class="spacer" style="flex: 1"></span>
+            <button class="reload-btn" id="pendingReviewReloadBtn">刷新</button>
+          </div>
+          <div id="pendingReviewList"></div>
+        </div>
+
         <div class="panel">
           <div class="panel-head">
             当前封禁
@@ -485,7 +563,7 @@
     <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
     <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
     <script src="./admin-nav.js?v=20260814-authgate"></script>
-    <script src="./admin-users-app.js?v=20260706-chatlog"></script>
+    <script src="./admin-users-app.js?v=20260816-pendingreview"></script>
   <script src="../assets/p2m-loader.js" defer></script>
 </body>
 </html>
