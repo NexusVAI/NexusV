@@ -187,47 +187,47 @@
   outline: none;
 }
 
-/* ── Trusted logos — 5 equal 2:1 cells (NexusVAI 字标比例；禁止短 cap-height 把中间标缩没) ─ */
+/* ── Trusted logos — 统一 cap-height，宽度各随字标 ────────────────
+ * 尺寸由字高反推盒子：盒高 = --trusted-cap × capScale，盒宽 = 盒高 × aspect。
+ * capScale / aspect 由 oai-trusted-logos.js 按实测 path 数据逐枚注入。
+ * 禁止改回「等宽格子 + mask-size:contain」：contain 只认 viewBox 外框，
+ * 各家 viewBox 长宽比差 3 倍，等宽格必然把字高压出 3 倍差（Grok 会巨大）。 */
 .trusted-logos {
   --trusted-gap-x: clamp(1rem, 2.4vw, 2.5rem);
+  --trusted-cap: clamp(0.95rem, 1.9vw, 1.25rem);
   width: 100%;
   margin: clamp(16px, 4vh, 48px) 0 clamp(40px, 8vh, 96px);
   padding: 0 clamp(16px, 4vw, 48px);
   box-sizing: border-box;
 }
 .trusted-logos__grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 56rem;
   margin: 0 auto;
-  gap: var(--trusted-gap-x);
+  gap: clamp(0.75rem, 2vh, 1.25rem) var(--trusted-gap-x);
 }
 @media (max-width: 767px) {
-  .trusted-logos__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-  }
-  .trusted-logos__slot:nth-child(n + 4) {
-    display: none;
+  .trusted-logos {
+    --trusted-gap-x: 1rem;
+    --trusted-cap: clamp(0.8rem, 3vw, 1rem);
   }
 }
 .trusted-logos__slot {
+  /* 宽度来自子项的 calc，不能用百分比（父宽 auto 时 100% 会退化成 0） */
+  flex: 0 0 auto;
   display: block;
-  min-width: 0;
-  width: 100%;
-  aspect-ratio: 2 / 1;
   cursor: default;
 }
-.trusted-logos__inner,
-.trusted-logos__inner--sized,
-.trusted-logos__inner--brand,
-.trusted-logos__inner--vai,
-.trusted-logos__inner--wide {
+.trusted-logos__inner--sized {
   display: block;
-  width: 100%;
-  height: 100%;
+  height: calc(var(--trusted-cap) * var(--mark-cap-scale, 1));
+  width: calc(var(--trusted-cap) * var(--mark-cap-scale, 1) * var(--mark-aspect, 1));
+  /* 各字标在自家 viewBox 里的基线位置不同，统一对到同一条基线上 */
+  transform: translateY(calc(var(--trusted-cap) * var(--mark-baseline-shift, 0)));
 }
 .trusted-logos__mark {
   width: 100%;
@@ -258,7 +258,9 @@
   margin: 0;
   padding: 0;
   max-width: 100%;
+  /* 左栏只有 4/12 宽，字高调小；装不下时靠 flex-wrap 换行，不压字高 */
   --trusted-gap-x: clamp(8px, 1.5vw, 14px);
+  --trusted-cap: clamp(0.62rem, 1.1vw, 0.8rem);
 }
 .trusted-logos--apply .trusted-logos__grid {
   width: 100%;
