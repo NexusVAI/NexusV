@@ -5336,6 +5336,44 @@
 	function hasSharedConversationHash() {
 		return new URLSearchParams(window.location.hash.slice(1)).has("share");
 	}
+	function getSettingsHashPane() {
+		return new URLSearchParams(window.location.hash.slice(1)).get("pane");
+	}
+	var settingsDeepLinkStarted = false;
+	var settingsDeepLinkHandled = false;
+	function isAuthOverlayVisible() {
+		const overlay = document.getElementById("authOverlay");
+		return Boolean(overlay && overlay.classList.contains("visible"));
+	}
+	async function waitForClaudeUIReady(timeoutMs = 1e4, intervalMs = 80) {
+		const start = Date.now();
+		while (Date.now() - start < timeoutMs) {
+			if (window.__cancriClaudeUIReady && typeof window.openClaudeSettingsPane === "function") return true;
+			await new Promise((resolve) => setTimeout(resolve, intervalMs));
+		}
+		return false;
+	}
+	async function handleSettingsDeepLink() {
+		const pane = getSettingsHashPane();
+		if (!pane || settingsDeepLinkStarted) return;
+		settingsDeepLinkStarted = true;
+		if (isAuthOverlayVisible()) {
+			settingsDeepLinkStarted = false;
+			return;
+		}
+		if (!await waitForClaudeUIReady()) {
+			settingsDeepLinkHandled = true;
+			window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+			return;
+		}
+		if (!getSettingsHashPane()) {
+			settingsDeepLinkHandled = true;
+			return;
+		}
+		window.openClaudeSettingsPane(pane);
+		window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+		settingsDeepLinkHandled = true;
+	}
 	function exitSharedConversationMode() {
 		if (!state.sharedConversation) return;
 		state.sharedConversation = false;
@@ -7155,6 +7193,12 @@
 	}
 	var sessionNavRestoreStarted = false;
 	async function initSessionNavRestore() {
+		if (getSettingsHashPane() && !settingsDeepLinkHandled) {
+			if (isAuthOverlayVisible()) return;
+			await handleSettingsDeepLink();
+			sessionNavRestoreStarted = true;
+			return;
+		}
 		if (sessionNavRestoreStarted) return;
 		sessionNavRestoreStarted = true;
 		if (initSharedConversationFromHash()) {

@@ -91,6 +91,8 @@
                 console.error('[claude_ui] init step failed:', e);
             }
         });
+        // 标记 claude_ui 初始化完成（含 bindSettingsNav），cancri_chat 深链据此等待。
+        window.__cancriClaudeUIReady = true;
     }
 
     // Cancri Code / 服务状态 SVG 悬停动画：写入 claude.css + 运行时注入，避免
@@ -4580,10 +4582,12 @@
         }
     }
 
-    // 公告/CTA 入口：一键打开「设置 → 邀请奖励」
-    window.openClaudeSettingsInvite = function () {
+    // 公告/CTA 入口：一键打开「设置 → 指定 pane」。
+    // cancri_chat.js 在深链等待 claude_ui init 完成后调用它。
+    window.openClaudeSettingsPane = function (pane) {
+        pane = pane || 'overview';
         openClaudeSettingsModal();
-        var btn = document.querySelector('.claude-snav-item[data-snav="invite"]');
+        var btn = document.querySelector('.claude-snav-item[data-snav="' + pane + '"]');
         if (btn) {
             btn.click();
         } else {
@@ -4594,10 +4598,15 @@
                     v.classList.toggle('active', v.id === 'claudeSettingsView');
                 });
                 if (document.body) document.body.dataset.view = 'claudeSettings';
-                var nav = document.querySelector('.claude-snav-item[data-snav="invite"]');
+                var nav = document.querySelector('.claude-snav-item[data-snav="' + pane + '"]');
                 if (nav) nav.click();
             }
         }
+    };
+
+    // 兼容旧入口：公告/CTA 仍调用 invite。
+    window.openClaudeSettingsInvite = function () {
+        openClaudeSettingsPane('invite');
     };
 })();
 

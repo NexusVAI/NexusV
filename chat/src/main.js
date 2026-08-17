@@ -6405,7 +6405,79 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   function hasSharedConversationHash() {
     return new URLSearchParams(window.location.hash.slice(1)).has("share");
   }
-  
+
+  // 2026-08-17：控制台侧栏「邀请奖励」跳过来的深链，形如
+  // index.html#settings&pane=invite（见 chat/api/oai-console-data.js 的
+  // CHAT_SETTINGS_URL）。hash 去掉 # 后是 "settings&pane=invite"，
+  // URLSearchParams 正好把 pane 解出来——与上面 #share= 用的是同一套解析。
+  // 2026-08-17 增强：支持任意 pane（account / invite / billing 等）。
+  function getSettingsHashPane() {
+    return new URLSearchParams(window.location.hash.slice(1)).get("pane");
+  }
+
+  let settingsDeepLinkStarted = false;
+  let settingsDeepLinkHandled = false;
+
+  function isAuthOverlayVisible() {
+    const overlay = document.getElementById("authOverlay");
+    return Boolean(overlay && overlay.classList.contains("visible"));
+  }
+
+  async function waitForClaudeUIReady(timeoutMs = 10000, intervalMs = 80) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (
+        window.__cancriClaudeUIReady &&
+        typeof window.openClaudeSettingsPane === "function"
+      ) {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+    return false;
+  }
+
+  // 等待 claude_ui.js 真正就绪后再打开对应设置 pane，避免 400ms 定时器
+  // 在 claude_ui 加载完成前就把 hash 清掉，导致只回到首页。
+  async function handleSettingsDeepLink() {
+    const pane = getSettingsHashPane();
+    if (!pane || settingsDeepLinkStarted) return;
+    settingsDeepLinkStarted = true;
+
+    if (isAuthOverlayVisible()) {
+      // 登录遮罩盖在最上面，此时打开设置会被盖住；
+      // hideAuthOverlay() 会再次触发 initSessionNavRestore()。
+      settingsDeepLinkStarted = false;
+      return;
+    }
+
+    const ready = await waitForClaudeUIReady();
+    if (!ready) {
+      // 超时：放弃深链，清掉 hash 避免死循环，让页面保持默认首页。
+      settingsDeepLinkHandled = true;
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+      return;
+    }
+
+    // 等的过程中 hash 可能被其他逻辑清掉，再检查一次。
+    if (!getSettingsHashPane()) {
+      settingsDeepLinkHandled = true;
+      return;
+    }
+
+    window.openClaudeSettingsPane(pane);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    settingsDeepLinkHandled = true;
+  }
+
   function exitSharedConversationMode() {
     if (!state.sharedConversation) return;
     state.sharedConversation = false;
@@ -8714,6 +8786,16 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   let sessionNavRestoreStarted = false;
   
   async function initSessionNavRestore() {
+    const pane = getSettingsHashPane();
+    if (pane && !settingsDeepLinkHandled) {
+      if (isAuthOverlayVisible()) {
+        // 登录遮罩尚未关闭，等 hideAuthOverlay() 再试。
+        return;
+      }
+      await handleSettingsDeepLink();
+      sessionNavRestoreStarted = true;
+      return;
+    }
     if (sessionNavRestoreStarted) return;
     sessionNavRestoreStarted = true;
     if (initSharedConversationFromHash()) {
