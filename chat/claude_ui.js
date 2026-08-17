@@ -4608,9 +4608,14 @@
     // 可用的 openClaudeSettingsInvite()（公告 CTA 用的就是它）。
     // 放在 init() 之后（本文件顶部同步执行），此时 bindCustomNav 的
     // nav 点击监听已经绑好，openClaudeSettingsInvite 内部的 .click() 才有效。
+    //
+    // ⚠️ 2026-08-17：这里**故意不清 hash**。cancri_chat.js 的
+    // initSessionNavRestore() 会在 400ms 后（或登录完成后）再检查一次同一个
+    // hash，命中才会跳过它那句无条件的 setActiveView("home")；提前清掉的话
+    // 它就检测不到，设置视图会在 400ms 后被打回首页（第一版修复就栽在这）。
+    // 清理动作统一由 main.js 那边在流程末尾做。
     if (location.hash.indexOf('pane=invite') !== -1) {
         window.openClaudeSettingsInvite();
-        history.replaceState(null, '', location.pathname + location.search);
     }
 })();
 
