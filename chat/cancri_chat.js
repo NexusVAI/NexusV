@@ -5336,6 +5336,9 @@
 	function hasSharedConversationHash() {
 		return new URLSearchParams(window.location.hash.slice(1)).has("share");
 	}
+	function hasSettingsInviteHash() {
+		return new URLSearchParams(window.location.hash.slice(1)).get("pane") === "invite";
+	}
 	function exitSharedConversationMode() {
 		if (!state.sharedConversation) return;
 		state.sharedConversation = false;
@@ -7159,6 +7162,11 @@
 		sessionNavRestoreStarted = true;
 		if (initSharedConversationFromHash()) {
 			persistSessionNav();
+			return;
+		}
+		if (hasSettingsInviteHash()) {
+			if (typeof window.openClaudeSettingsInvite === "function") window.openClaudeSettingsInvite();
+			window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
 			return;
 		}
 		if (!await restoreSessionNav()) setActiveView("home");
