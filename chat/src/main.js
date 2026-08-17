@@ -6405,6 +6405,16 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   function hasSharedConversationHash() {
     return new URLSearchParams(window.location.hash.slice(1)).has("share");
   }
+
+  // 2026-08-17：控制台侧栏「邀请奖励」跳过来的深链，形如
+  // index.html#settings&pane=invite（见 chat/api/oai-console-data.js 的
+  // CHAT_SETTINGS_URL）。hash 去掉 # 后是 "settings&pane=invite"，
+  // URLSearchParams 正好把 pane 解出来——与上面 #share= 用的是同一套解析。
+  function hasSettingsInviteHash() {
+    return (
+      new URLSearchParams(window.location.hash.slice(1)).get("pane") === "invite"
+    );
+  }
   
   function exitSharedConversationMode() {
     if (!state.sharedConversation) return;
@@ -8718,6 +8728,26 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     sessionNavRestoreStarted = true;
     if (initSharedConversationFromHash()) {
       persistSessionNav();
+      return;
+    }
+    // 2026-08-17 修复：邀请深链必须优先于会话恢复，约定同上面的 #share=。
+    // 本函数由 hideAuthOverlay() 与 16900 行附近的 setTimeout(…, 400) 触发，
+    // 两者都晚于 claude_ui.js（defer 同步执行）打开「设置 → 邀请奖励」的时机；
+    // 之前没有这个分支，下面的 setActiveView("home") 会在 400ms 后把已经打开的
+    // 设置视图无条件打回首页——工单实测现象就是"跳到了 chat 页但设置没打开"。
+    // 这里再兜底调一次 openClaudeSettingsInvite()（幂等，只是重设状态）：
+    // 未登录直达深链时，claude_ui.js 那次是在登录遮罩下跑的，登录完成后
+    // 从 hideAuthOverlay 这条路进来需要重新打开一次。
+    // hash 统一在这里清（claude_ui.js 不能提前清，否则这里就检测不到了）。
+    if (hasSettingsInviteHash()) {
+      if (typeof window.openClaudeSettingsInvite === "function") {
+        window.openClaudeSettingsInvite();
+      }
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
       return;
     }
     const restored = await restoreSessionNav();
