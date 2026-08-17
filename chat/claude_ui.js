@@ -91,6 +91,8 @@
                 console.error('[claude_ui] init step failed:', e);
             }
         });
+        // 标记 claude_ui 初始化完成（含 bindSettingsNav），cancri_chat 深链据此等待。
+        window.__cancriClaudeUIReady = true;
     }
 
     // Cancri Code / 服务状态 SVG 悬停动画：写入 claude.css + 运行时注入，避免
@@ -4580,10 +4582,12 @@
         }
     }
 
-    // 公告/CTA 入口：一键打开「设置 → 邀请奖励」
-    window.openClaudeSettingsInvite = function () {
+    // 公告/CTA 入口：一键打开「设置 → 指定 pane」。
+    // cancri_chat.js 在深链等待 claude_ui init 完成后调用它。
+    window.openClaudeSettingsPane = function (pane) {
+        pane = pane || 'overview';
         openClaudeSettingsModal();
-        var btn = document.querySelector('.claude-snav-item[data-snav="invite"]');
+        var btn = document.querySelector('.claude-snav-item[data-snav="' + pane + '"]');
         if (btn) {
             btn.click();
         } else {
@@ -4594,29 +4598,16 @@
                     v.classList.toggle('active', v.id === 'claudeSettingsView');
                 });
                 if (document.body) document.body.dataset.view = 'claudeSettings';
-                var nav = document.querySelector('.claude-snav-item[data-snav="invite"]');
+                var nav = document.querySelector('.claude-snav-item[data-snav="' + pane + '"]');
                 if (nav) nav.click();
             }
         }
     };
 
-    // 2026-08-16 修复：API 控制台侧边栏「邀请奖励」点击后落地
-    // index.html#settings&pane=invite（见 chat/api/oai-console-data.js
-    // CHAT_SETTINGS_URL），但此前全站没有任何代码读过这个 hash，用户只会
-    // 落在普通聊天首页——工单原话："跳转到了chat页面，但是没有自动打开
-    // 设置到邀请链接页面"。这里补上落地检查，命中就直接复用上面已验证
-    // 可用的 openClaudeSettingsInvite()（公告 CTA 用的就是它）。
-    // 放在 init() 之后（本文件顶部同步执行），此时 bindCustomNav 的
-    // nav 点击监听已经绑好，openClaudeSettingsInvite 内部的 .click() 才有效。
-    //
-    // ⚠️ 2026-08-17：这里**故意不清 hash**。cancri_chat.js 的
-    // initSessionNavRestore() 会在 400ms 后（或登录完成后）再检查一次同一个
-    // hash，命中才会跳过它那句无条件的 setActiveView("home")；提前清掉的话
-    // 它就检测不到，设置视图会在 400ms 后被打回首页（第一版修复就栽在这）。
-    // 清理动作统一由 main.js 那边在流程末尾做。
-    if (location.hash.indexOf('pane=invite') !== -1) {
-        window.openClaudeSettingsInvite();
-    }
+    // 兼容旧入口：公告/CTA 仍调用 invite。
+    window.openClaudeSettingsInvite = function () {
+        openClaudeSettingsPane('invite');
+    };
 })();
 
 // ── T5：composer 图标按钮自定义 tooltip（hover 2s 后出现）──

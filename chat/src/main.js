@@ -6410,12 +6410,74 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   // index.html#settings&pane=invite（见 chat/api/oai-console-data.js 的
   // CHAT_SETTINGS_URL）。hash 去掉 # 后是 "settings&pane=invite"，
   // URLSearchParams 正好把 pane 解出来——与上面 #share= 用的是同一套解析。
-  function hasSettingsInviteHash() {
-    return (
-      new URLSearchParams(window.location.hash.slice(1)).get("pane") === "invite"
-    );
+  // 2026-08-17 增强：支持任意 pane（account / invite / billing 等）。
+  function getSettingsHashPane() {
+    return new URLSearchParams(window.location.hash.slice(1)).get("pane");
   }
-  
+
+  let settingsDeepLinkStarted = false;
+  let settingsDeepLinkHandled = false;
+
+  function isAuthOverlayVisible() {
+    const overlay = document.getElementById("authOverlay");
+    return Boolean(overlay && overlay.classList.contains("visible"));
+  }
+
+  async function waitForClaudeUIReady(timeoutMs = 10000, intervalMs = 80) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (
+        window.__cancriClaudeUIReady &&
+        typeof window.openClaudeSettingsPane === "function"
+      ) {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+    return false;
+  }
+
+  // 等待 claude_ui.js 真正就绪后再打开对应设置 pane，避免 400ms 定时器
+  // 在 claude_ui 加载完成前就把 hash 清掉，导致只回到首页。
+  async function handleSettingsDeepLink() {
+    const pane = getSettingsHashPane();
+    if (!pane || settingsDeepLinkStarted) return;
+    settingsDeepLinkStarted = true;
+
+    if (isAuthOverlayVisible()) {
+      // 登录遮罩盖在最上面，此时打开设置会被盖住；
+      // hideAuthOverlay() 会再次触发 initSessionNavRestore()。
+      settingsDeepLinkStarted = false;
+      return;
+    }
+
+    const ready = await waitForClaudeUIReady();
+    if (!ready) {
+      // 超时：放弃深链，清掉 hash 避免死循环，让页面保持默认首页。
+      settingsDeepLinkHandled = true;
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+      return;
+    }
+
+    // 等的过程中 hash 可能被其他逻辑清掉，再检查一次。
+    if (!getSettingsHashPane()) {
+      settingsDeepLinkHandled = true;
+      return;
+    }
+
+    window.openClaudeSettingsPane(pane);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    settingsDeepLinkHandled = true;
+  }
+
   function exitSharedConversationMode() {
     if (!state.sharedConversation) return;
     state.sharedConversation = false;
@@ -8724,30 +8786,20 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
   let sessionNavRestoreStarted = false;
   
   async function initSessionNavRestore() {
+    const pane = getSettingsHashPane();
+    if (pane && !settingsDeepLinkHandled) {
+      if (isAuthOverlayVisible()) {
+        // 登录遮罩尚未关闭，等 hideAuthOverlay() 再试。
+        return;
+      }
+      await handleSettingsDeepLink();
+      sessionNavRestoreStarted = true;
+      return;
+    }
     if (sessionNavRestoreStarted) return;
     sessionNavRestoreStarted = true;
     if (initSharedConversationFromHash()) {
       persistSessionNav();
-      return;
-    }
-    // 2026-08-17 修复：邀请深链必须优先于会话恢复，约定同上面的 #share=。
-    // 本函数由 hideAuthOverlay() 与 16900 行附近的 setTimeout(…, 400) 触发，
-    // 两者都晚于 claude_ui.js（defer 同步执行）打开「设置 → 邀请奖励」的时机；
-    // 之前没有这个分支，下面的 setActiveView("home") 会在 400ms 后把已经打开的
-    // 设置视图无条件打回首页——工单实测现象就是"跳到了 chat 页但设置没打开"。
-    // 这里再兜底调一次 openClaudeSettingsInvite()（幂等，只是重设状态）：
-    // 未登录直达深链时，claude_ui.js 那次是在登录遮罩下跑的，登录完成后
-    // 从 hideAuthOverlay 这条路进来需要重新打开一次。
-    // hash 统一在这里清（claude_ui.js 不能提前清，否则这里就检测不到了）。
-    if (hasSettingsInviteHash()) {
-      if (typeof window.openClaudeSettingsInvite === "function") {
-        window.openClaudeSettingsInvite();
-      }
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${window.location.search}`,
-      );
       return;
     }
     const restored = await restoreSessionNav();
