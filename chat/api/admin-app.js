@@ -121,9 +121,11 @@ function renderOpus5Row(m) {
   const identity = m.email || m.name || "—";
   const subIdentity = m.name && m.email ? `<div class="user-id">${esc(m.name)}</div>` : "";
   const recharge = "¥" + (Number(m.cumulative_recharge_cny) || 0).toFixed(2);
+  // 2026-08-18: 口径从「每日」改成自然周 / 自然月。这两行是漏改重灾区 —— 上一轮只改了
+  // 下面的确认框和 admin.html 说明文字，胶囊还写着「100/日」，同一页出现两套口径。
   const statusPill = verified
-    ? '<span class="tier-pill paid">已验证 · 100/日</span>'
-    : '<span class="tier-pill free">未验证 · 10/日</span>';
+    ? '<span class="tier-pill paid">已验证 · 100/周</span>'
+    : '<span class="tier-pill free">未验证 · 10/月</span>';
   const actionLabel = verified ? "取消验证" : "标记已验证";
   const actionCls = verified ? "btn-reject" : "btn-approve";
   return `<tr data-uid="${esc(m.user_id)}">
