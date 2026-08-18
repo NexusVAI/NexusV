@@ -369,6 +369,22 @@
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
 
+  /**
+   * Opus 5 免费额度的周期文案。口径以后端下发的 period / window_kind 为准，
+   * 认不出来时退回中性说法，绝不猜「每周」或「每日」—— 猜错比不说更糟。
+   */
+  function o5period(opus5, o5lim) {
+    var p = String((o5lim && o5lim.period) || (opus5 && opus5.period) || "");
+    if (!p) {
+      var kind = String((opus5 && opus5.window_kind) || "");
+      if (kind === "calendar_week") p = "weekly";
+      else if (kind === "calendar_month") p = "monthly";
+    }
+    if (p === "weekly") return "每周一 00:00（北京时间）重置";
+    if (p === "monthly") return "每月 1 日 00:00（北京时间）重置";
+    return "到期后重置";
+  }
+
   var RESET_RESULT_LABEL = {
     ok: "已重置",
     nothing_to_reset: "无需重置（未消耗）",
@@ -415,25 +431,36 @@
           v: fmtLimit(limits.tpd),
           sub: limits.tpd == null ? "" : "自然日切换（UTC+8）归零",
         },
+        // 2026-08-18：Opus 5 免费额度口径从「N 次 / 24 小时滚动窗」改成
+        // 「已验证 100 次/自然周、未验证 10 次/自然月」，超出后不再拦截、改按 ¥0.099/次 计费。
+        // 额度数字、周期、恢复时刻、溢出单价**全部**取后端下发的 opus5 / opus5_limit，
+        // 前端一个都不硬编码 —— 前端不在 _check_drift.mjs 覆盖内，写死必漂。
         {
           k: "Opus 5 免费额度",
-          v: fmtInt(opus5.used) + " 次已用",
-          // 后端明确回 window_kind=rolling_24h：这是从首次调用起算的滚动 24 小时，
-          // 不是「明天零点」。文案必须如实说，否则用户等到零点发现没恢复。
-          sub: opus5.window_kind === "rolling_24h"
-            ? "滚动 24 小时窗，" + fmtWhen(opus5.window_ends_at) + " 恢复"
-            : fmtWhen(opus5.window_ends_at) + " 恢复",
+          v: o5lim.current == null
+            ? fmtInt(opus5.used) + " 次已用"
+            : fmtInt(opus5.used) + " / " + fmtInt(o5lim.current) + " 次已用",
+          // 恢复时刻用后端算好的日历边界（下个周一 / 下月 1 日 00:00 北京时间）。
+          // 绝不能显示计数器的 reset_at —— 那是 8/35 天的兜底寿命，比真实重置点晚，
+          // 显示出去用户会以为要多等好几天（同 2026-08-15「请明天再来」那次踩的坑）。
+          sub: o5period(opus5, o5lim) + "，" + fmtWhen(o5lim.resets_at || opus5.window_ends_at) + " 恢复",
         },
-        // 额度数字与「滚动窗」口径都取后端下发（reset-card 的 opus5_limit），
-        // 不再硬编码 —— 前端不在漂移检查覆盖内，写死必漂。
+        {
+          k: "超出免费额度后",
+          v: o5lim.overflow_price == null ? "按次计费" : "¥ " + o5lim.overflow_price + " / 次",
+          // 请求不再被拦截，这一点必须明说：老文案是「额度用完请稍后再试」，
+          // 不改的话用户会以为超额后仍然免费。
+          sub: "不再拦截请求。Web Chat 与 Cancri Code IDE 扣套餐额度，API 扣 API 额度。",
+        },
         {
           k: "账号验证状态",
           v: opus5.verified ? "已验证" : "未验证",
-          sub: o5lim.current == null
-            ? (opus5.verified ? "" : "完成账号验证可提升 Opus 5 额度")
+          sub: o5lim.verified_weekly == null
+            ? (opus5.verified ? "" : "完成账号验证可提升 Opus 5 免费额度")
             : (opus5.verified
-              ? "Opus 5 " + fmtInt(o5lim.current) + " 次 / 24 小时滚动窗"
-              : "Opus 5 " + fmtInt(o5lim.current) + " 次 / 24 小时滚动窗，验证后可提升到 " + fmtInt(o5lim.verified)),
+              ? "Opus 5 " + fmtInt(o5lim.verified_weekly) + " 次 / 周"
+              : "Opus 5 " + fmtInt(o5lim.unverified_monthly) + " 次 / 月，完成验证后提升到 "
+                + fmtInt(o5lim.verified_weekly) + " 次 / 周"),
         },
       ];
       grid.innerHTML = cells.map(function (c) {

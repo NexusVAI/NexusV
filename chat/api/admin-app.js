@@ -224,12 +224,14 @@ $("opus5SearchInput")?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") searchOpus5Candidates();
 });
 
-// 2026-08-14: 一键重置所有人的免费 Opus5 每日限额（未验证 10 次 / 已验证 100 次
-// 都清零），新的 24 小时窗口从点击这一刻重新起算。影响全站所有用户，二次确认。
+// 2026-08-14: 一键把所有人的免费 Opus5 已用次数清零。影响全站所有用户，二次确认。
+// 2026-08-18: 计数改为自然周（已验证 100 次）/ 自然月（未验证 10 次）。清零只影响
+// 当前周期的已用次数，不改变周期边界，所以后端不再回「下次重置时间」——两类用户的
+// 重置时刻本就不同，显示单一时间戳对谁都不对。
 async function resetOpus5DailyLimits() {
   if (
     !confirm(
-      "确认重置所有人的免费 Opus5（C）每日调用次数？\n\n所有账号（未验证 10 次/已验证 100 次）的今日计数都会清零，新的 24 小时窗口从现在重新开始计算。此操作影响全站所有用户，不可撤销。",
+      "确认清零所有人的免费 Opus5（C）已用次数？\n\n所有账号（已验证 100 次/周、未验证 10 次/月）当前周期的已用计数都会归零，周期重置时刻不变。此操作影响全站所有用户，不可撤销。",
     )
   )
     return;
@@ -252,9 +254,8 @@ async function resetOpus5DailyLimits() {
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok || !data.ok) throw new Error(data.error || "HTTP " + resp.status);
-    const resetTime = data.reset_at ? new Date(data.reset_at).toLocaleString("zh-CN") : "";
-    if (statusEl) statusEl.textContent = resetTime ? `已重置，下次自然重置时间：${resetTime}` : "已重置";
-    showToast("已重置所有人的 Opus5 每日限额", "ok");
+    if (statusEl) statusEl.textContent = "已清零（周期重置时刻不变）";
+    showToast("已清零所有人的 Opus5 免费额度已用次数", "ok");
   } catch (e) {
     if (statusEl) statusEl.textContent = "";
     showToast("重置失败：" + (e.message || e), "err");

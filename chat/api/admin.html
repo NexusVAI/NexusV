@@ -398,14 +398,18 @@
         </header>
 
         <!-- 2026-08-14: 免费 Opus5（c:claude-opus-5）验证用户面板——
-             人工搜索账号并打标，打标后每日调用上限从 10 次提升到 100 次，
-             仅影响这一个模型。搜索复用 admin_search_opus5_candidates（同时
-             返回注册时长 + 累计充值供管理员判断是否真人）。 -->
+             人工搜索账号并打标，仅影响这一个模型。搜索复用
+             admin_search_opus5_candidates（同时返回注册时长 + 累计充值供管理员
+             判断是否真人）。
+             2026-08-18: 额度口径改为「已验证 100 次/自然周、未验证 10 次/自然月」，
+             超额不再拒绝、改按 ¥0.099/次 计费（chat/IDE 扣套餐，API 扣账户额度）。 -->
         <div class="card" id="opus5VerifyCard">
           <h2>验证用户 · 免费 Opus5（C）</h2>
           <p style="font-size: 12.5px; color: var(--text-mute); margin-bottom: 12px; max-width: 720px">
-            按用户名 / user_id / 邮箱搜索账号，标记为「已验证」后该账号每日可调用免费 Opus5（c:claude-opus-5）
-            100 次（未验证 10 次/日）；单次请求上下文超 20 万 tokens 一律拒绝，与验证状态无关。仅影响这一个模型。
+            按用户名 / user_id / 邮箱搜索账号，标记为「已验证」后该账号免费 Opus5（c:claude-opus-5）额度从
+            10 次/自然月提升到 100 次/自然周。超出免费额度不再拒绝，按 ¥0.099/次 计费（Web Chat 与
+            Cancri Code IDE 扣套餐额度，公开 API 扣账户额度）；单次请求上下文超 20 万 tokens 一律拒绝，
+            与验证状态无关。仅影响这一个模型。
           </p>
           <div class="toolbar" style="margin-bottom: 12px">
             <input
@@ -417,12 +421,13 @@
             />
             <button class="reload-btn" id="opus5SearchBtn">搜索</button>
           </div>
-          <!-- 2026-08-14: 一键重置所有人的免费 Opus5 每日限额（未验证 10 次 / 已验证
-               100 次都清零），且新的 24 小时窗口从点击这一刻重新起算。影响全站所有
-               用户，需二次确认。 -->
+          <!-- 2026-08-14: 一键把所有人的免费 Opus5 已用次数清零。
+               2026-08-18: 计数已改为自然周 / 自然月，这个按钮直接删掉全部 Opus5 计数行，
+               下次调用会在当前周期内从 0 重新起算（不改变周期本身的重置时刻）。
+               影响全站所有用户，需二次确认。 -->
           <div class="toolbar" style="margin-bottom: 4px">
             <button class="btn-danger" id="opus5ResetAllBtn" type="button">
-              重置所有人的 Opus5 每日限额
+              重置所有人的 Opus5 免费额度
             </button>
             <span id="opus5ResetAllStatus" style="font-size: 12.5px; color: var(--text-mute); margin-left: 10px"></span>
           </div>
@@ -551,7 +556,7 @@
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
     <script src="./admin-nav.js?v=20260814-authgate"></script>
-    <script src="./admin-app.js?v=20260814-opus5verify"></script>
+    <script src="./admin-app.js?v=20260818-opus5-weekly"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   <script src="../assets/p2m-loader.js" defer></script>
 </body>
