@@ -121,11 +121,12 @@ function renderOpus5Row(m) {
   const identity = m.email || m.name || "—";
   const subIdentity = m.name && m.email ? `<div class="user-id">${esc(m.name)}</div>` : "";
   const recharge = "¥" + (Number(m.cumulative_recharge_cny) || 0).toFixed(2);
-  // 2026-08-18: 口径从「每日」改成自然周 / 自然月。这两行是漏改重灾区 —— 上一轮只改了
-  // 下面的确认框和 admin.html 说明文字，胶囊还写着「100/日」，同一页出现两套口径。
+  // 口径演进：每日 → 自然周/自然月 → **一次性发放**（2026-08-18 第二版）。
+  // 这两行是漏改重灾区 —— 前一轮只改了确认框和 admin.html 说明，胶囊还留着旧口径，
+  // 同一页出现两套说法。改额度口径时**先搜这个文件里所有数字**。
   const statusPill = verified
-    ? '<span class="tier-pill paid">已验证 · 100/周</span>'
-    : '<span class="tier-pill free">未验证 · 10/月</span>';
+    ? '<span class="tier-pill paid">已验证 · 一次性 50 次</span>'
+    : '<span class="tier-pill free">未验证 · 无免费额度</span>';
   const actionLabel = verified ? "取消验证" : "标记已验证";
   const actionCls = verified ? "btn-reject" : "btn-approve";
   return `<tr data-uid="${esc(m.user_id)}">
@@ -227,13 +228,18 @@ $("opus5SearchInput")?.addEventListener("keydown", (e) => {
 });
 
 // 2026-08-14: 一键把所有人的免费 Opus5 已用次数清零。影响全站所有用户，二次确认。
-// 2026-08-18: 计数改为自然周（已验证 100 次）/ 自然月（未验证 10 次）。清零只影响
-// 当前周期的已用次数，不改变周期边界，所以后端不再回「下次重置时间」——两类用户的
-// 重置时刻本就不同，显示单一时间戳对谁都不对。
+// 2026-08-18（第二版）: 额度改为**一次性发放**（已验证 50 次、未验证 0 次）。
+// ⚠️ 语义因此变重了：以前清零只是提前结束一个本来就会重置的周期；现在清零等于
+//    **给全站每个已验证用户重新发一份 50 次**。按上游 ¥0.075/次 计，94 个已验证用户
+//    全额用掉 = 4,700 次 ≈ ¥352，而运营月预算是 ¥30~50。确认框必须把钱说出来。
 async function resetOpus5DailyLimits() {
   if (
     !confirm(
-      "确认清零所有人的免费 Opus5（C）已用次数？\n\n所有账号（已验证 100 次/周、未验证 10 次/月）当前周期的已用计数都会归零，周期重置时刻不变。此操作影响全站所有用户，不可撤销。",
+      "确认清零所有人的免费 Opus5（C）已用次数？\n\n" +
+        "Opus5 免费额度现在是「一次性 50 次」，所以清零 = 给全站每个已验证账号" +
+        "重新发一份完整的 50 次免费额度（不是提前结束一个周期）。\n\n" +
+        "按上游成本 ¥0.075/次 估算，若被全部用掉约需 ¥352，远超月预算 ¥30~50。\n\n" +
+        "此操作影响全站所有用户，不可撤销。",
     )
   )
     return;

@@ -401,15 +401,21 @@
              人工搜索账号并打标，仅影响这一个模型。搜索复用
              admin_search_opus5_candidates（同时返回注册时长 + 累计充值供管理员
              判断是否真人）。
-             2026-08-18: 额度口径改为「已验证 100 次/自然周、未验证 10 次/自然月」，
-             超额不再拒绝、改按 ¥0.099/次 计费（chat/IDE 扣套餐，API 扣账户额度）。 -->
+             2026-08-18（第二版）: 额度口径改为「已验证一次性 50 次、未验证 0 次」，
+             用完不再重置；超额不拒绝、改按 ¥0.099/次 计费（chat/IDE 扣套餐，API 扣账户额度）。
+             改这段数字时**同时搜 admin-app.js**（胶囊与确认框各有一份文案）。 -->
         <div class="card" id="opus5VerifyCard">
           <h2>验证用户 · 免费 Opus5（C）</h2>
           <p style="font-size: 12.5px; color: var(--text-mute); margin-bottom: 12px; max-width: 720px">
-            按用户名 / user_id / 邮箱搜索账号，标记为「已验证」后该账号免费 Opus5（c:claude-opus-5）额度从
-            10 次/自然月提升到 100 次/自然周。超出免费额度不再拒绝，按 ¥0.099/次 计费（Web Chat 与
-            Cancri Code IDE 扣套餐额度，公开 API 扣账户额度）；单次请求上下文超 20 万 tokens 一律拒绝，
-            与验证状态无关。仅影响这一个模型。
+            按用户名 / user_id / 邮箱搜索账号，标记为「已验证」后该账号获得免费 Opus5（c:claude-opus-5）
+            <strong>一次性 50 次</strong>额度，用完不再重置；未验证账号<strong>不发放</strong>免费额度。
+            超出免费额度不拒绝，按 ¥0.099/次 计费（Web Chat 与 Cancri Code IDE 扣套餐额度，
+            公开 API 扣账户额度）；单次请求上下文超 20 万 tokens 一律拒绝，与验证状态无关。仅影响这一个模型。
+            <br /><br />
+            注意：给一个账号打「已验证」等于发放一次性 50 次，按上游成本 ¥0.075/次 约合 ¥3.75。
+            取消验证会让该账号<strong>立即</strong>失去免费额度（后续调用直接按 ¥0.099/次 计费），
+            但它的已用计数行会保留 —— 所以重新标记为已验证时，恢复的是<strong>剩余</strong>次数，
+            不会再发一份新的 50 次。
           </p>
           <div class="toolbar" style="margin-bottom: 12px">
             <input
@@ -556,7 +562,7 @@
     ></script>
     <script src="./admin-formatters.js?v=2026-05-19-permission-init"></script>
     <script src="./admin-nav.js?v=20260814-authgate"></script>
-    <script src="./admin-app.js?v=20260818-opus5-weekly2"></script>
+    <script src="./admin-app.js?v=20260818-opus5-onetime"></script>
     <!-- 2026-05-13 审查：原 inline <script>96-692 行）抽离admin-app.js-->
   <script src="../assets/p2m-loader.js" defer></script>
 </body>

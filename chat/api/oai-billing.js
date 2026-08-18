@@ -370,19 +370,22 @@
   }
 
   /**
-   * Opus 5 免费额度的周期文案。口径以后端下发的 period / window_kind 为准，
-   * 认不出来时退回中性说法，绝不猜「每周」或「每日」—— 猜错比不说更糟。
+   * Opus 5 免费额度的口径文案。
+   *
+   * 2026-08-18（第二版）：额度改成**一次性发放**，用完不再恢复。所以这里
+   * **绝不能**再出现任何「重置 / 恢复 / 倒计时」的说法 —— 那是上一版（周/月重置）
+   * 的语义，照抄过来就是给用户一个永远不会到的时间点。
+   *
+   * 口径以后端下发的 grant_kind（status RPC）/ period（网关补齐字段）为准，
+   * 认不出来时退回中性说法，绝不猜 —— 猜错比不说更糟。
    */
   function o5period(opus5, o5lim) {
-    var p = String((o5lim && o5lim.period) || (opus5 && opus5.period) || "");
-    if (!p) {
-      var kind = String((opus5 && opus5.window_kind) || "");
-      if (kind === "calendar_week") p = "weekly";
-      else if (kind === "calendar_month") p = "monthly";
+    var kind = String((opus5 && opus5.grant_kind) || "");
+    if (kind === "none") return "免费额度仅向已验证账号发放";
+    if (kind === "one_time" || String((o5lim && o5lim.period) || "") === "one_time") {
+      return "一次性发放，用完不再重置";
     }
-    if (p === "weekly") return "每周一 00:00（北京时间）重置";
-    if (p === "monthly") return "每月 1 日 00:00（北京时间）重置";
-    return "到期后重置";
+    return "一次性发放";
   }
 
   var RESET_RESULT_LABEL = {
@@ -405,8 +408,11 @@
     var btn = $("reset-do-btn");
     if (balEl) balEl.textContent = balance + " 张";
     if (descEl) {
+      // 2026-08-18（第二版）：Opus 5 额度改成一次性发放后，「清零」的含义变强了 ——
+      // 它等于**重新发一份完整的免费额度**，不再只是提前结束一个本来就会重置的周期。
       descEl.textContent = balance > 0
-        ? "一张卡可把 Opus 5 免费额度与今日 Token 额度同时清零。持有上限 " + (cards.cap || 50) + " 张，不过期。"
+        ? "一张卡可把 Opus 5 已用次数清零（等于重新获得一份完整免费额度），并同时清零今日 Token 额度。持有上限 "
+          + (cards.cap || 50) + " 张，不过期。"
         : "邀请好友并在其活跃后可获得重置卡（双方各得一张）。";
     }
     if (btn) btn.disabled = balance <= 0;
@@ -431,19 +437,22 @@
           v: fmtLimit(limits.tpd),
           sub: limits.tpd == null ? "" : "自然日切换（UTC+8）归零",
         },
-        // 2026-08-18：Opus 5 免费额度口径从原来的「N 次 / 滚动 24h 窗」改成
-        // 「已验证 100 次/自然周、未验证 10 次/自然月」，超出后不再拦截、改按 ¥0.099/次 计费。
-        // 额度数字、周期、恢复时刻、溢出单价**全部**取后端下发的 opus5 / opus5_limit，
-        // 前端一个都不硬编码 —— 前端不在 _check_drift.mjs 覆盖内，写死必漂。
+        // 2026-08-18（第二版）：Opus 5 免费额度口径历经三版 ——
+        //   「N 次 / 滚动 24h 窗」→「已验证 100 次/周、未验证 10 次/月」→
+        //   现行「**已验证一次性 50 次、未验证 0 次**」，超出后按 ¥0.099/次 计费。
+        // 额度数字与溢出单价**全部**取后端下发的 opus5 / opus5_limit，前端一个都不硬编码
+        // —— 前端不在 _check_drift.mjs 覆盖内，写死必漂。
+        //
+        // ⚠️ 这一格**不再显示任何恢复时刻**：一次性额度用完不会恢复，
+        //    显示时间点就是骗人。上一版那句 `+ fmtWhen(...) + " 恢复"` 已删，别加回来。
         {
           k: "Opus 5 免费额度",
-          v: o5lim.current == null
-            ? fmtInt(opus5.used) + " 次已用"
-            : fmtInt(opus5.used) + " / " + fmtInt(o5lim.current) + " 次已用",
-          // 恢复时刻用后端算好的日历边界（下个周一 / 下月 1 日 00:00 北京时间）。
-          // 绝不能显示计数器的 reset_at —— 那是 8/35 天的兜底寿命，比真实重置点晚，
-          // 显示出去用户会以为要多等好几天（同 2026-08-15「请明天再来」那次踩的坑）。
-          sub: o5period(opus5, o5lim) + "，" + fmtWhen(o5lim.resets_at || opus5.window_ends_at) + " 恢复",
+          v: o5lim.granted === false
+            ? "未发放"
+            : (o5lim.current == null
+              ? fmtInt(opus5.used) + " 次已用"
+              : fmtInt(opus5.used) + " / " + fmtInt(o5lim.current) + " 次已用"),
+          sub: o5period(opus5, o5lim),
         },
         {
           k: "超出免费额度后",
@@ -456,12 +465,14 @@
         {
           k: "账号验证状态",
           v: opus5.verified ? "已验证" : "未验证",
-          sub: o5lim.verified_weekly == null
-            ? (opus5.verified ? "" : "完成账号验证可提升 Opus 5 免费额度")
+          // 未验证是 0 次，不是「少一点」—— 文案必须说清「验证后才发放」，
+          // 而不是上一版那种「验证后提升到 N 次/周」的比较级说法。
+          sub: o5lim.grant_total == null
+            ? (opus5.verified ? "" : "完成账号验证后可获得 Opus 5 一次性免费额度")
             : (opus5.verified
-              ? "Opus 5 " + fmtInt(o5lim.verified_weekly) + " 次 / 周"
-              : "Opus 5 " + fmtInt(o5lim.unverified_monthly) + " 次 / 月，完成验证后提升到 "
-                + fmtInt(o5lim.verified_weekly) + " 次 / 周"),
+              ? "Opus 5 一次性 " + fmtInt(o5lim.grant_total) + " 次（已发放）"
+              : "未验证账号不发放 Opus 5 免费额度；完成验证可获得一次性 "
+                + fmtInt(o5lim.grant_total) + " 次"),
         },
       ];
       grid.innerHTML = cells.map(function (c) {
@@ -482,11 +493,14 @@
           return "<tr><td>" + esc(fmtWhen(e.acted_at)) +
             '</td><td><span class="bills-status" data-s="' + esc(st) + '">' + esc(label) + "</span></td><td>" +
             (e.opus5_count_before == null ? "—" : esc(fmtInt(e.opus5_count_before)) + " 次") + "</td><td>" +
-            (e.tpd_before == null ? "—" : esc(fmtInt(e.tpd_before)) + " token") + "</td><td>" +
-            esc(e.opus5_window_end_before ? fmtWhen(e.opus5_window_end_before) : "—") + "</td></tr>";
+            (e.tpd_before == null ? "—" : esc(fmtInt(e.tpd_before)) + " token") + "</td></tr>";
         }).join("");
+        // 2026-08-18（第二版）：删掉「重置前恢复时刻」这一列。
+        // event 表里 opus5_window_end_before 仍在写，但一次性额度的兜底寿命是 10 年，
+        // 渲染出来就是「2036 年」这种毫无意义还让人以为要等十年的时间点。
+        // 历史行（周/月重置时期）也一并不显示 —— 保留一列只为旧数据不值得。
         evWrap.innerHTML = '<table class="bills-table"><thead><tr><th>时间</th><th>结果</th>' +
-          "<th>重置前 Opus 5 已用</th><th>重置前今日 Token</th><th>重置前恢复时刻</th></tr></thead><tbody>" +
+          "<th>重置前 Opus 5 已用</th><th>重置前今日 Token</th></tr></thead><tbody>" +
           rows + "</tbody></table>";
       }
     }
