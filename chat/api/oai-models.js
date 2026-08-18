@@ -46,6 +46,8 @@
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
     "c:claude-opus-5",
+    // 2026-08-18: claude-opus-4.8-free 限时免费线（至 08-19），钉到免费区首屏。
+    "claude-opus-4.8-free",
     // 2026-08-16: qwen-3.8-max 限时免费线（至 08-20），钉到免费区首屏。
     "qwen-3.8-max",
     // 2026-08-17: deepseek-v4-pro-0813 限时免费线（至 08-20），钉到免费区首屏。
@@ -65,6 +67,7 @@
   var DESC_FALLBACK = {
     "qwen-3.8-max": "08-20结束免费期限",
     "deepseek-v4-pro-0813": "08-20结束免费期限",
+    "claude-opus-4.8-free": "08-19结束免费期限",
   };
 
   // card art pool: assets/oai.logo/1-6.png, assigned randomly per render
