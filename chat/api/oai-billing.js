@@ -117,9 +117,11 @@
     thumb.style.width = btn.offsetWidth + "px";
     thumb.style.transform = "translateX(" + btn.offsetLeft + "px)";
   }
-  // 2026-08-15 加「重置」页。四处 tab 名单必须一起改（setTab / tabFromHash / initTabs），
-  // 漏一处的表现是：按钮能点但面板不切，或 hash 直达失效。
-  var TABS = ["plan", "api", "bills", "reset"];
+  // tab 名单是 setTab / tabFromHash / initTabs 三处共用的唯一来源，
+  // 漏改的表现是：按钮能点但面板不切，或 hash 直达失效。
+  // 2026-08-18 晚移除 "reset"（重置卡系统下线）。旧书签 #reset 会被
+  // tabFromHash 的 indexOf 判定为未知 → 回落到 "plan"，不会白屏。
+  var TABS = ["plan", "api", "bills"];
 
   function setTab(tab) {
     TABS.forEach(function (t) {
@@ -134,8 +136,6 @@
     });
     moveThumb(tab);
     try { history.replaceState(null, "", "#" + tab); } catch (e) { /* ignore */ }
-    // 重置页数据量小且会变（用完卡余额就变），每次进页拉一次，不做缓存
-    if (tab === "reset") loadReset();
   }
   function tabFromHash() {
     var h = String(location.hash || "").replace(/^#/, "");
@@ -327,237 +327,17 @@
     wrapEl.innerHTML = '<table class="bills-table"><thead><tr><th>日期</th><th>类型</th><th>规格</th><th>金额</th><th>工单状态</th><th>激活码</th><th>备注</th></tr></thead><tbody>' + rows + "</tbody></table>";
   }
 
-  // ── 重置卡 ─────────────────────────────────────────────────────────────
-  // 独立 slug /functions/v1/reset-card（不是 chat-gateway 的 endpoint），
-  // 所以不能复用 callGateway：那个函数把 endpoint 塞进 body 打 chat-gateway。
-  // 鉴权走标准 Authorization: Bearer，与后端 reset-card.ported.ts 的 bearer() 对齐。
-  async function callResetCard(action) {
-    var r = await getSupabase().auth.getSession();
-    var session = r && r.data ? r.data.session : null;
-    if (!session) throw new Error("not_logged_in");
-    var base = String(GW || "").replace(/\/functions\/v1\/chat-gateway.*$/, "");
-    var resp = await fetch(base + "/functions/v1/reset-card", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: window.__SUPABASE_ANON_KEY__,
-        authorization: "Bearer " + session.access_token,
-      },
-      body: JSON.stringify({ action: action }),
-    });
-    var data = await resp.json().catch(function () { return {}; });
-    if (!resp.ok) {
-      throw Object.assign(new Error(data.message || data.error || resp.statusText), { status: resp.status, body: data });
-    }
-    return data;
-  }
-
-  function fmtInt(n) {
-    var v = Number(n);
-    if (!Number.isFinite(v)) return "—";
-    return v.toLocaleString("en-US");
-  }
-  /** null/undefined 的 tpd 在后端语义是「不限」，不能显示成 0 或 —— */
-  function fmtLimit(n) {
-    return (n === null || n === undefined) ? "不限" : fmtInt(n);
-  }
-  function fmtWhen(s) {
-    if (!s) return "—";
-    var d = new Date(s);
-    if (isNaN(d.getTime())) return "—";
-    var p = function (x) { return String(x).padStart(2, "0"); };
-    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
-  }
-
-  /**
-   * Opus 5 免费额度的口径文案。
-   *
-   * 2026-08-18（第二版）：额度改成**一次性发放**，用完不再恢复。所以这里
-   * **绝不能**再出现任何「重置 / 恢复 / 倒计时」的说法 —— 那是上一版（周/月重置）
-   * 的语义，照抄过来就是给用户一个永远不会到的时间点。
-   *
-   * 口径以后端下发的 grant_kind（status RPC）/ period（网关补齐字段）为准，
-   * 认不出来时退回中性说法，绝不猜 —— 猜错比不说更糟。
-   */
-  function o5period(opus5, o5lim) {
-    var kind = String((opus5 && opus5.grant_kind) || "");
-    if (kind === "none") return "免费额度仅向已验证账号发放";
-    if (kind === "one_time" || String((o5lim && o5lim.period) || "") === "one_time") {
-      return "一次性发放，用完不再重置";
-    }
-    return "一次性发放";
-  }
-
-  var RESET_RESULT_LABEL = {
-    ok: "已重置",
-    nothing_to_reset: "无需重置（未消耗）",
-    no_card: "无可用卡",
-  };
-
-  function renderReset(data) {
-    var cards = (data && data.cards) || {};
-    var opus5 = (data && data.opus5) || {};
-    var tier = (data && data.tier) || {};
-    var limits = (data && data.limits) || {};
-    var o5lim = (data && data.opus5_limit) || {};
-    var events = (data && data.events) || [];
-
-    var balance = Number(cards.balance || 0);
-    var balEl = $("reset-balance");
-    var descEl = $("reset-balance-desc");
-    var btn = $("reset-do-btn");
-    if (balEl) balEl.textContent = balance + " 张";
-    if (descEl) {
-      // 2026-08-18（第二版）：Opus 5 额度改成一次性发放后，「清零」的含义变强了 ——
-      // 它等于**重新发一份完整的免费额度**，不再只是提前结束一个本来就会重置的周期。
-      descEl.textContent = balance > 0
-        ? "一张卡可把 Opus 5 已用次数清零（等于重新获得一份完整免费额度），并同时清零今日 Token 额度。持有上限 "
-          + (cards.cap || 50) + " 张，不过期。"
-        : "邀请好友并在其活跃后可获得重置卡（双方各得一张）。";
-    }
-    if (btn) btn.disabled = balance <= 0;
-
-    // 当前生效的限制。⚠️ 这些数字全部来自后端下发，前端不自己查表——
-    // 站内已有 3 处前端硬编码档位数值漂成旧值的先例，不再增加第 4 处。
-    var metaEl = $("reset-limits-meta");
-    if (metaEl) {
-      metaEl.textContent = "当前充值档 Tier " + (tier.level == null ? "—" : tier.level) +
-        "（累计充值 " + fmtCny(tier.cumulative_cny) + "）";
-    }
-    var grid = $("reset-limits-grid");
-    if (grid) {
-      var cells = [
-        { k: "并发上限", v: fmtLimit(limits.concurrency) },
-        { k: "RPM（每分钟请求）", v: fmtLimit(limits.rpm) },
-        { k: "TPM（每分钟 Token）", v: fmtLimit(limits.tpm) },
-        // tier≥2 的 tpd 是 null（不限）。此时不能再挂「归零」的副标题 —— 同一格
-        // 上面写「不限」下面写「归零」自相矛盾，用户会以为额度会被清掉。
-        {
-          k: "TPD（每日 Token）",
-          v: fmtLimit(limits.tpd),
-          sub: limits.tpd == null ? "" : "自然日切换（UTC+8）归零",
-        },
-        // 2026-08-18（第二版）：Opus 5 免费额度口径历经三版 ——
-        //   「N 次 / 滚动 24h 窗」→「已验证 100 次/周、未验证 10 次/月」→
-        //   现行「**已验证一次性 50 次、未验证 0 次**」，超出后按 ¥0.099/次 计费。
-        // 额度数字与溢出单价**全部**取后端下发的 opus5 / opus5_limit，前端一个都不硬编码
-        // —— 前端不在 _check_drift.mjs 覆盖内，写死必漂。
-        //
-        // ⚠️ 这一格**不再显示任何恢复时刻**：一次性额度用完不会恢复，
-        //    显示时间点就是骗人。上一版那句 `+ fmtWhen(...) + " 恢复"` 已删，别加回来。
-        {
-          k: "Opus 5 免费额度",
-          v: o5lim.granted === false
-            ? "未发放"
-            : (o5lim.current == null
-              ? fmtInt(opus5.used) + " 次已用"
-              : fmtInt(opus5.used) + " / " + fmtInt(o5lim.current) + " 次已用"),
-          sub: o5period(opus5, o5lim),
-        },
-        {
-          k: "超出免费额度后",
-          v: o5lim.overflow_price == null ? "按次计费" : "¥ " + o5lim.overflow_price + " / 次",
-          // ⚠️ 别写成「不再拦截请求」。两条轨各有各的钱包，对应那一份不够时**仍会**返回
-          // 402（chat 轨没套餐就是最常见的情况）。写绝对话术会让用户以为超额后永远能用。
-          // 套餐额度只能用于 Web Chat / IDE，公开 API 只认账户余额，两者不通用。
-          sub: "Web Chat 与 Cancri Code IDE 扣套餐额度，公开 API 扣账户余额；对应额度不足时才会拦截。",
-        },
-        {
-          k: "账号验证状态",
-          v: opus5.verified ? "已验证" : "未验证",
-          // 未验证是 0 次，不是「少一点」—— 文案必须说清「验证后才发放」，
-          // 而不是上一版那种「验证后提升到 N 次/周」的比较级说法。
-          sub: o5lim.grant_total == null
-            ? (opus5.verified ? "" : "完成账号验证后可获得 Opus 5 一次性免费额度")
-            : (opus5.verified
-              ? "Opus 5 一次性 " + fmtInt(o5lim.grant_total) + " 次（已发放）"
-              : "未验证账号不发放 Opus 5 免费额度；完成验证可获得一次性 "
-                + fmtInt(o5lim.grant_total) + " 次"),
-        },
-      ];
-      grid.innerHTML = cells.map(function (c) {
-        return '<div class="rc-cell"><div class="rc-k">' + esc(c.k) + '</div><div class="rc-v">' +
-          esc(c.v) + "</div>" + (c.sub ? '<div class="rc-sub">' + esc(c.sub) + "</div>" : "") + "</div>";
-      }).join("");
-    }
-
-    var evWrap = $("reset-events-wrap");
-    if (evWrap) {
-      if (!events.length) {
-        evWrap.innerHTML = '<div style="font-size:13px;color:var(--color-text-secondary)">暂无重置记录。</div>';
-      } else {
-        var rows = events.map(function (e) {
-          var res = String(e.result || "");
-          var label = RESET_RESULT_LABEL[res] || res;
-          var st = res === "ok" ? "activated" : (res === "nothing_to_reset" ? "pending" : "rejected");
-          return "<tr><td>" + esc(fmtWhen(e.acted_at)) +
-            '</td><td><span class="bills-status" data-s="' + esc(st) + '">' + esc(label) + "</span></td><td>" +
-            (e.opus5_count_before == null ? "—" : esc(fmtInt(e.opus5_count_before)) + " 次") + "</td><td>" +
-            (e.tpd_before == null ? "—" : esc(fmtInt(e.tpd_before)) + " token") + "</td></tr>";
-        }).join("");
-        // 2026-08-18（第二版）：删掉「重置前恢复时刻」这一列。
-        // event 表里 opus5_window_end_before 仍在写，但一次性额度的兜底寿命是 10 年，
-        // 渲染出来就是「2036 年」这种毫无意义还让人以为要等十年的时间点。
-        // 历史行（周/月重置时期）也一并不显示 —— 保留一列只为旧数据不值得。
-        evWrap.innerHTML = '<table class="bills-table"><thead><tr><th>时间</th><th>结果</th>' +
-          "<th>重置前 Opus 5 已用</th><th>重置前今日 Token</th></tr></thead><tbody>" +
-          rows + "</tbody></table>";
-      }
-    }
-  }
-
-  async function doLoadReset() {
-    try {
-      var data = await callResetCard("status");
-      renderReset(data);
-    } catch (e) {
-      var descEl = $("reset-balance-desc");
-      if (descEl) descEl.textContent = "加载失败：" + (e && e.message ? e.message : "未知错误");
-      var metaEl = $("reset-limits-meta");
-      if (metaEl) metaEl.textContent = "限额信息加载失败，请刷新重试。";
-    }
-  }
-
-  // ⛔ 不能用「在飞就直接 return」的布尔锁（2026-08-15 审查）：消卡后 finally 里的这次刷新
-  // 常常正好撞上切 tab 触发的那次 status 请求，被丢弃后页面就停在**消卡前**的余额上 ——
-  // 用户看到「已重置」却发现卡没少，会以为扣错了。而按钮的唯一解禁点也在 renderReset 里，
-  // 丢弃这次刷新等于按钮要等那次在飞请求返回旧数据才恢复。
-  // 改为串行排队：不丢任何一次，且最后入队的最后渲染，结果一定是最新的。
-  var resetChain = Promise.resolve();
-  function loadReset() {
-    resetChain = resetChain.then(doLoadReset, doLoadReset);
-    return resetChain;
-  }
-
-  function bindResetButton() {
-    var btn = $("reset-do-btn");
-    if (!btn) return;
-    btn.addEventListener("click", async function () {
-      var msg = $("reset-msg");
-      btn.disabled = true;
-      if (msg) { msg.removeAttribute("data-s"); msg.textContent = "正在重置…"; }
-      try {
-        var res = await callResetCard("consume");
-        if (msg) {
-          // ok=false 但 HTTP 200 的两种情况（no_card / nothing_to_reset）是业务结果，不是错误
-          msg.dataset.s = res && res.ok === true ? "ok" : "warn";
-          msg.textContent = (res && res.message) || (res && res.ok ? "已重置。" : "未执行重置。");
-        }
-      } catch (e) {
-        if (msg) {
-          msg.dataset.s = "err";
-          msg.textContent = "重置失败：" + (e && e.message ? e.message : "未知错误");
-        }
-      } finally {
-        // 无论成败都重拉一次：余额/已用量/流水都可能变了
-        await loadReset();
-      }
-    });
-  }
+  // 2026-08-18 晚：重置卡整段已删除（原 callResetCard / o5period / renderReset /
+  // loadReset / bindResetButton 共约 228 行）。重置卡系统随 Opus5 免费期结束一并下线：
+  // 后端 slug /functions/v1/reset-card 与 4 个 RPC 均已移除，邀请奖励改为直接送 ¥1
+  // 赠送余额，未消费的存卡已按 ¥1/张 折成余额补偿。
+  // 若要恢复，别只加回这段 —— 还要同时恢复后端 slug、RPC，以及 billing.html 的 tab 与面板。
 
   async function init() {
     initTabs();
-    bindResetButton();
+    // 2026-08-18 晚：原先这里还有 bindResetButton()。删函数时留下调用 = 运行时
+    // `bindResetButton is not defined` 直接中断整个 init()，整页数据都不加载 ——
+    // 而 `node --check` 只验语法、抓不到未定义引用（实测差点漏掉）。
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
       getSupabase();

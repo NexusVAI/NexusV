@@ -749,8 +749,9 @@
     var items = [
       { label: "复制邮箱", sub: email, act: function () { copyText(email); flashChipHint(anchor, "已复制邮箱"); } },
       { label: "账号设置", sub: "在聊天页打开", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=account"; } },
-      { label: "邀请奖励", sub: "邀请好友得重置卡", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=invite"; } },
-      { label: "重置卡", sub: "查看与使用", act: function () { window.location.href = "./billing.html#reset"; } },
+      // 2026-08-18 晚：邀请奖励从「重置卡」改为「¥1 API 额度」；「重置卡」这一项
+      // 整条删除（重置卡系统下线，billing.html#reset 已不存在）。
+      { label: "邀请奖励", sub: "邀请好友得 ¥1 API 额度", act: function () { window.location.href = CHAT_SETTINGS_URL + "&pane=invite"; } },
       { label: "退出登录", sub: "", act: function () { doSignOut(); } },
     ];
     var m = el("div");

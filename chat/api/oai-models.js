@@ -45,7 +45,8 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    "c:claude-opus-5",
+    // 2026-08-18 晚：Opus5 免费期结束（改名 claude-opus-5-thinking、按次 ¥0.099），
+    // 从免费区移除 —— 它现在是付费模型，留在这里会让首页承诺一个不存在的免费额度。
     // 2026-08-18: claude-opus-4.8-free 限时免费线（至 08-19），钉到免费区首屏。
     "claude-opus-4.8-free",
     // 2026-08-16: qwen-3.8-max 限时免费线（至 08-20），钉到免费区首屏。
@@ -86,7 +87,8 @@
     // 2026-07-16: Claude Fable 5 专用卡面（Logo/fable5.png → assets/oai.logo/fable5.png）
     "claude-fable-5": "fable5.png",
     "claude-opus-5": "opus5.png",
-    "c:claude-opus-5": "opus5.png",
+    // 2026-08-18 晚：站内 id 从 c:claude-opus-5 改名（免费期结束）。卡面沿用同一张图。
+    "claude-opus-5-thinking": "opus5.png",
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
     "kimi-k3": "kimik3.jpg",
     "kimi-k3-high": "kimik3.jpg",

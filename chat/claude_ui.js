@@ -4042,33 +4042,34 @@
             if (!rewardMicro && inv.grants && inv.grants.length) {
                 rewardMicro = inv.grants.reduce(function (a, g) { return a + Number(g.delta_micro || 0); }, 0);
             }
-            // 2026-08-15：活跃奖已从「¥1 钱包余额」改为「1 张重置卡」，
-            // celebrate_grants 的 delta_micro 现在恒为 0（见 cancri_invite_qualify_v2），
-            // 所以「总奖励合计 ¥」会永远显示 ¥0.00 —— 改成按已活跃人数换算重置卡张数。
-            // 首充返利仍走钱包，那部分金额仍然有意义，单独列出。
+            // 奖励物变更史：¥1 钱包余额（→08-15）→ 1 张重置卡（08-15~08-18）→
+            // **¥1 赠送余额**（2026-08-18 晚起，重置卡系统下线）。
+            // celebrate_grants 的 delta_micro 在重置卡时期恒为 0，所以这里不能只靠它求和；
+            // 现在钱重新走 wallet_ledger 的 voucher_grant，而 celebrate_grants 仍记 0
+            //（那张表只作幂等与审计），因此活跃奖金额仍按「已活跃人数 × ¥1」换算。
+            // 首充返利走另一条路（真金额在 reward_micro_total 里），单独列出。
             var qualified = Number(s.qualified || 0);
             sumEl.innerHTML =
                 '链接访问量 <strong>' + visits + '</strong> · ' +
                 '已邀 <strong>' + Number(s.total || 0) + '</strong> · ' +
                 '已活跃 <strong>' + qualified + '</strong> · ' +
-                '获得重置卡 <strong>' + qualified + ' 张</strong> · ' +
+                '活跃奖 <strong>¥' + qualified + '</strong> · ' +
                 '已返利人数 <strong>' + Number(s.rebated || 0) + '</strong> · ' +
                 '返利合计 <strong>¥' + microToCny(rewardMicro) + '</strong>';
 
             var rules = inv.rules;
             var rulesEl = document.getElementById('claudeInviteRules');
             if (rulesEl && rules) {
-                // 2026-08-15 同步真实规则（旧文案三处过时：奖励物、API 门槛、缺新号窗口）：
-                //   · 奖励 = 重置卡，不是钱
+                // 规则文案必须跟着后端 celebrate_config 走（三处历史过时教训：奖励物、
+                // API 门槛、新号窗口）。2026-08-18 晚：奖励物从「重置卡」改为「¥1 API 额度」。
                 //   · require_api_approved 已在 celebrate_config 里显式关掉，不再要求申请 API
-                //   · 新增「绑定时账号年龄 < invitee_max_account_age_days(7) 天」的新号闸
+                //   · 新号闸：绑定时账号年龄 < invitee_max_account_age_days(7) 天
                 var newDays = rules.invitee_max_account_age_days || 7;
                 rulesEl.textContent =
                     '好友通过你的链接注册（需为 ' + newDays + ' 天内的新账号）、验证邮箱，并累计 ' +
                     (rules.activity_min_days || 3) +
-                    ' 天有正常 Chat/API 流量后，双方各得 1 张重置卡（自动入账）。' +
-                    '重置卡可清零 Opus 5 免费额度与当日 Token 额度，不过期，最多持有 ' +
-                    (rules.activity_max_per_inviter || 50) + ' 张，在「结算 → 重置」使用。' +
+                    ' 天有正常 Chat/API 流量后，双方各得 ¥1 API 额度（自动入账）。' +
+                    '该额度可用于公开 API 调用，不可提现，也不计入充值档位。' +
                     '同设备 / 同网段 / 重复设备指纹不计。' +
                     '好友首充另返利 ' + Math.round((Number(rules.rebate_rate || 0.2) * 100)) +
                     '% 给你（最多 ' + (rules.rebate_max_people || 5) +
@@ -4088,14 +4089,18 @@
                             kind === 'activity_invitee' ? '活跃奖（被邀请）' :
                             kind === 'first_recharge_rebate' ? '首充返利' :
                             kind.indexOf('legacy') === 0 ? '历史 token 奖励' : kind || '其他';
-                        // 重置卡奖励的 delta_micro 是 0（奖励物不是钱），只判金额会让整列恒显示「—」。
-                        // ⛔ 判据只能用 payload.reward：历史 ¥1 奖励的 g.kind 同样是 activity_inviter
-                        // （payload 里是 cny:1、delta_micro=1000000），按 kind 判会把旧钱奖励标成重置卡。
-                        var isCard = !!(g.payload && g.payload.reward === 'reset_card');
+                        // 三个时期的奖励物混在同一张表里，判据只能用 payload.reward ——
+                        // 历史 ¥1 奖励的 g.kind 同样是 activity_inviter（payload 里 cny:1、
+                        // delta_micro=1000000），按 kind 判会把旧钱奖励错标。
+                        //   · reward='reset_card'（08-15~08-18）：delta_micro 恒 0
+                        //   · reward='voucher_1cny'（08-18 晚起）：delta_micro 也是 0，
+                        //     真金额在 wallet_ledger 的 voucher_grant 行里，这张表只作幂等/审计
+                        var reward = g.payload && g.payload.reward;
                         var amt = Number(g.delta_micro || 0) > 0
                             ? ('¥' + microToCny(g.delta_micro))
                             : (g.delta_tokens ? (Number(g.delta_tokens).toLocaleString() + ' tokens')
-                                : (isCard ? '1 张重置卡' : '—'));
+                                : (reward === 'voucher_1cny' ? '¥1 API 额度'
+                                    : (reward === 'reset_card' ? '1 张重置卡（已下线）' : '—')));
                         var t = g.granted_at ? String(g.granted_at).replace('T', ' ').slice(0, 19) : '—';
                         gh += '<tr><td>' + esc(label) + '</td><td>' + esc(amt) + '</td><td>' + esc(t) + '</td></tr>';
                     });

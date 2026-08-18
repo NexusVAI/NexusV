@@ -208,7 +208,7 @@
         if (box) {
             // 仅显示前 8 位避免冗长
             var masked = String(inviterId || "").slice(0, 8) + "···";
-            box.textContent = "✓ 已捕获邀请关系（" + masked + "），新用户登录后自动绑定。被邀请人需为 7 天内的新账号、已验证邮箱，且活跃 3 天后，双方各得 1 张重置卡；好友首充可返利 20%。";
+            box.textContent = "✓ 已捕获邀请关系（" + masked + "），新用户登录后自动绑定。被邀请人需为 7 天内的新账号、已验证邮箱，且活跃 3 天后，双方各得 ¥1 API 额度；好友首充可返利 20%。";
             box.hidden = false;
         }
         if (details && !details.open) details.open = true;
