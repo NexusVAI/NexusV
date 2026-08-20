@@ -19,7 +19,7 @@
     })();
   </script>
   <!-- 2026-06-20 安全加固：原旁CSP。含 unsafe-inline 兼容内联脚本；收素object-src/base-uri/connect-src（含本机回调 127.0.0.1）　-->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://chat.nexusvai.xyz https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz http://127.0.0.1:* http://localhost:* https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://chat.nexusvai.xyz https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz http://127.0.0.1:* http://localhost:* https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>登录 Cancri Code 桌面端</title>
     <meta name="robots" content="noindex,nofollow">
@@ -53,127 +53,35 @@
   <link rel="stylesheet" href="./styles/01-claude-tokens.css" />
   <link rel="stylesheet" href="./styles/02-themes.css" />
   <link rel="stylesheet" href="./styles/cancri_motion.css?v=2026-06-25-auth-nav-captcha" />
-  <link rel="stylesheet" href="./styles/auth-platform-login.css?v=2026-06-25-auth-nav-captcha" />
-  <style>
+  <link rel="stylesheet" href="./styles/auth-platform-login.css?v=20260817-claude-login" />
+<style>
     html.auth-platform-page,
     html.auth-platform-page body {
       margin: 0 !important;
       padding: 0 !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
-      scrollbar-width: none !important;
-      -ms-overflow-style: none !important;
-      background: hsl(var(--bg-300)) !important;
     }
-    html.auth-platform-page::-webkit-scrollbar {
-      display: none !important;
-      width: 0 !important;
-      height: 0 !important;
-    }
-    /* 滚动交给 html；overlay 不再内部滚动，避免 Windows 经典滚动条占宽出右侧白条 */
-    #authOverlay {
+    #authOverlay.visible {
+      display: block !important;
       position: relative !important;
       inset: auto !important;
-      top: auto !important;
-      left: auto !important;
-      right: auto !important;
-      bottom: auto !important;
       width: 100% !important;
-      max-width: none !important;
-      min-height: 100dvh;
-      height: auto !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: stretch !important;
-      justify-content: flex-start !important;
-      overflow: visible !important;
-      padding: 0 !important;
-      gap: 0 !important;
-      margin: 0 !important;
-      grid-template: none !important;
-      grid-template-columns: none !important;
-      background: hsl(var(--bg-300)) !important;
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+      overflow: hidden !important;
+      background: #151515 !important;
     }
-    #authOverlay .auth-bg {
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      width: auto !important;
-      height: auto !important;
-      background: hsl(var(--bg-300)) !important;
-    }
-    #authOverlay .auth-topnav {
-      position: sticky !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: auto !important;
-      max-width: none !important;
-      z-index: 20 !important;
-    }
-    #authOverlay > .auth-topnav-spacer {
-      display: none !important;
-      height: 0 !important;
-      flex: 0 0 0 !important;
-    }
-    #authOverlay > .auth-page-shell,
-    #authOverlay .auth-login-panel,
-    #authOverlay .auth-partners,
-    #authOverlay .auth-site-footer {
-      width: 100% !important;
-      max-width: none !important;
-      box-sizing: border-box !important;
-    }
-    #authOverlay .auth-login-panel {
-      background: hsl(var(--bg-300)) !important;
-    }
-    .auth-page-shell {
-      flex: 1 0 auto;
+    #authLoginFrame {
+      display: block;
       width: 100%;
-      max-width: none;
-      min-height: calc(100dvh - var(--auth-nav-h, 4.5rem));
-      padding-bottom: 0;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
+      height: 100dvh;
+      border: 0;
+      background: #151515;
     }
-    .auth-partners,
-    .auth-site-footer {
-      --auth-band-bg: hsl(60 3% 8%);
-      position: relative;
-      z-index: 0;
-      width: 100% !important;
-      max-width: none !important;
-      align-self: stretch !important;
-      flex-shrink: 0;
-      box-sizing: border-box;
-      background: var(--auth-band-bg) !important;
+    .auth-overlay.is-invalid #authLoginFrame {
+      display: none;
     }
-    .auth-site-footer {
-      flex: 1 0 auto;
-      display: flex;
-      flex-direction: column;
-    }
-    html, body {
-      background: hsl(var(--bg-300));
-    }
-    .auth-desktop-note {
-      margin: 0 auto;
-      max-width: 420px;
-      font-size: 13px;
-      line-height: 1.5;
-      color: hsl(var(--text-300));
-    }
-    .auth-status-line {
-      min-height: 16px;
-      font-size: 12px;
-      line-height: 1.45;
-      text-align: center;
-      color: hsl(var(--text-300));
-    }
-    .auth-status-line.is-error { color: #e57361; }
-    .auth-status-line.is-ok { color: hsl(var(--text-200)); }
     .auth-invalid-panel {
       display: none;
       position: fixed;
@@ -181,64 +89,25 @@
       z-index: 20;
       place-items: center;
       padding: 24px;
-      background: hsl(var(--bg-100));
+      background: var(--cds-surface-1, #f5f4ed);
     }
     .auth-overlay.is-invalid .auth-invalid-panel { display: grid; }
-    .auth-overlay.is-invalid .auth-topnav,
-    .auth-overlay.is-invalid .auth-topnav-spacer,
-    .auth-overlay.is-invalid .auth-page-shell,
-    .auth-overlay.is-invalid .auth-stage,
-    .auth-overlay.is-invalid .auth-showcase,
-    .auth-overlay.is-invalid .auth-brand { display: none !important; }
+    .auth-overlay.is-invalid #authClaudeRoot { display: none !important; }
     .auth-invalid-card {
       width: min(100%, 420px);
       padding: 24px 22px;
       border-radius: 24px;
-      border: 1px solid hsl(var(--border-300) / 0.14);
-      background: hsl(var(--bg-100));
       text-align: center;
     }
     .auth-invalid-card h1 {
       margin: 0 0 10px;
       font-size: 18px;
       font-weight: 600;
-      color: hsl(var(--text-000));
     }
     .auth-invalid-card p {
       margin: 0;
       font-size: 13px;
       line-height: 1.55;
-      color: hsl(var(--text-300));
-    }
-    .auth-back-link {
-      margin-top: 4px;
-      align-self: center;
-    }
-    #authPasswordSection[hidden],
-    #authVerifyOtpBtn[hidden],
-    #authSendOtpBtn[hidden],
-    #authStepContinue[hidden],
-    #authStepEmail[hidden] {
-      display: none !important;
-    }
-    .auth-continue-email {
-      margin: 0 0 16px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: hsl(var(--bg-200) / 0.85);
-      border: 1px solid hsl(var(--border-300) / 0.14);
-      font-size: 15px;
-      font-weight: 600;
-      color: hsl(var(--text-000));
-      word-break: break-all;
-      text-align: center;
-    }
-    .auth-continue-hint {
-      margin: 0 0 10px;
-      font-size: 13px;
-      line-height: 1.45;
-      color: hsl(var(--text-300));
-      text-align: center;
     }
   </style>
 </head>
@@ -262,217 +131,18 @@
     已登归←POST session 到本最cb；未登录 ←邮箱 OTP（无 Turnstile / 无安全验证）
     UI 对齐 claude.html auth-overlay
   -->
-  <div class="auth-overlay" id="authOverlay">
-    <div class="auth-bg" aria-hidden="true"></div>
-
-    <header class="auth-topnav">
-      <div class="auth-topnav-inner">
-        <a href="https://www.nexusvai.xyz/" class="auth-topnav-brand cancri-nav-brand" aria-label="NexusVAI 首页">
-          <img
-            class="auth-brand-logo"
-            src="./assets/nexusvai_logo_transparent.svg"
-            alt="NexusVAI"
-            width="320"
-            height="64"
-            decoding="async"
-          />
-        </a>
-        <nav class="auth-topnav-links" aria-label="站点导航">
-          <a href="./api/index.html">开放平台</a>
-          <a href="./api/keys.html">API Keys</a>
-          <a href="./api/checkout.html">定价</a>
-          <a href="https://www.nexusvai.xyz/">博客</a>
-          <a href="https://www.nexusvai.xyz/article.html?id=cancriCode" target="_blank" rel="noopener">Cancri Code</a>
-        </nav>
-        <a class="auth-topnav-cta" href="https://www.nexusvai.xyz/" target="_blank" rel="noopener">访问官网</a>
-      </div>
-    </header>
-    <div class="auth-topnav-spacer" aria-hidden="true"></div>
-
-    <div class="auth-page-shell">
-      <section class="auth-login-panel">
-        <div class="auth-dot-grid" aria-hidden="true"></div>
-        <div class="auth-stage">
-      <div class="auth-hero">
-        <h1 class="auth-hero-title">思如闪电，<br />构建更快</h1>
-        <p class="auth-hero-subtitle">登录 Cancri Code 桌面端，凭证将自动回传至本机应用</p>
-      </div>
-
-      <div class="auth-card" id="authCard">
-        <!-- 2026-08-02：有浏览器缓存 session 时先确认邮箱，禁止静默回传旧账号 -->
-        <div class="auth-step" id="authStepContinue" hidden>
-          <div class="auth-email-divider"><span>确认账号</span></div>
-          <p class="auth-continue-hint">浏览器里当前登录的是下面这个账号。若要换号，请选「使用其他账号」。</p>
-          <p class="auth-continue-email" id="authContinueEmail"></p>
-          <button class="auth-btn auth-btn-primary" id="authContinueBtn" type="button">
-            以此账号登录桌面端
-          </button>
-          <button type="button" class="auth-mode-toggle auth-back-link" id="authSwitchAccountBtn">
-            使用其他账号
-          </button>
-          <div class="auth-status-line" id="authContinueStatus" aria-live="polite"></div>
-          <div class="auth-error" id="authContinueError"></div>
-        </div>
-
-        <div class="auth-step" id="authStepEmail">
-          <div class="auth-email-divider"><span>邮箱登录</span></div>
-
-          <label class="auth-field-label" for="authEmailInput">邮箱地址</label>
-          <input
-            type="email"
-            id="authEmailInput"
-            class="auth-input"
-            placeholder="请输入邮箱"
-            autocomplete="email"
-            required
-          />
-
-          <div class="auth-password-section" id="authPasswordSection" hidden>
-            <input
-              type="text"
-              id="authPasswordInput"
-              class="auth-input auth-otp-input"
-              placeholder="请输入验证码"
-              maxlength="8"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-            />
-          </div>
-
-          <button class="auth-btn auth-btn-primary" id="authSendOtpBtn" type="button">
-            发送验证码
-          </button>
-
-          <button class="auth-btn auth-btn-primary" id="authVerifyOtpBtn" type="button" hidden>
-            验证登录
-          </button>
-
-          <button type="button" class="auth-mode-toggle auth-back-link" id="authBackBtn" hidden>
-            返回修改邮箱
-          </button>
-
-          <div class="auth-status-line" id="authStatusLine" aria-live="polite"></div>
-          <div class="auth-error" id="authEmailError"></div>
-        </div>
-
-        <p class="auth-footer-line">
-          继续即表示同意
-          <a href="../terms.html" class="auth-footer-link" target="_blank" rel="noopener">服务条款</a>
-          与
-          <a href="../privacy.html" class="auth-footer-link" target="_blank" rel="noopener">隐私协议</a>。
-        </p>
-      </div>
-
-      <p class="auth-desktop-note">
-        网页端请访问 <a href="/chat/" class="auth-footer-link">nexusvai.xyz/chat</a>
-      </p>
-        </div>
-      </section>
-
-      <section class="auth-partners" aria-labelledby="authPartnersTitle">
-        <p id="authPartnersTitle" class="auth-partners-title">与 NexusVAI 共建智能应用</p>
-        <div class="auth-partners-grid" id="authPartnersGrid"></div>
-      </section>
-
-      <footer class="auth-site-footer">
-        <div class="auth-site-footer-inner">
-          <div class="auth-site-footer-brand-col">
-            <a href="https://www.nexusvai.xyz/" class="auth-site-footer-brand" aria-label="NexusVAI">
-              <img
-                class="auth-brand-logo auth-brand-logo--footer"
-                src="./assets/nexusvai_logo_transparent.svg"
-                alt="NexusVAI"
-                width="180"
-                height="36"
-                decoding="async"
-              />
-            </a>
-            <div class="auth-site-footer-meta">
-              <p class="auth-site-footer-copy">© <span data-year>2026</span> NexusVAI</p>
-              <ul class="auth-site-footer-socials">
-                <li>
-                  <a aria-label="GitHub" rel="noopener noreferrer" href="https://github.com/NexusVAI" target="_blank">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
-                    </svg>
-                  </a>
-                </li>
-                <li>
-                  <a aria-label="Hugging Face" rel="noopener noreferrer" href="https://huggingface.co/xingy555888" target="_blank">
-                    <img src="./huggingface-color.svg" alt="" width="20" height="20" loading="lazy" decoding="async" />
-                  </a>
-                </li>
-                <li>
-                  <a aria-label="Bilibili" rel="noopener noreferrer" href="https://space.bilibili.com/3691002594331274" target="_blank">
-                    <img src="./bilibili-color.svg" alt="" width="20" height="20" loading="lazy" decoding="async" />
-                  </a>
-                </li>
-                <li>
-                  <a aria-label="X (Twitter)" rel="noopener noreferrer" href="https://x.com/NexusVAI" target="_blank">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-                    </svg>
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div class="auth-site-footer-links">
-            <section>
-              <h3>产品</h3>
-              <ul>
-                <li><a href="https://www.nexusvai.xyz/article.html?id=tactfr627">TACTFR 6.0.0 Beta.2.7</a></li>
-                <li><a href="https://www.nexusvai.xyz/article.html?id=sentienceV52mens">SentienceV5.2 Mens</a></li>
-                <li><a href="https://www.nexusvai.xyz/article.html?id=nexusv5">NexusV V5</a></li>
-                <li><a href="https://www.nexusvai.xyz/article.html?id=cancriCode">Cancri Code</a></li>
-                <li><a href="https://www.nexusvai.xyz/article.html?id=chatai">NexusVAI</a></li>
-              </ul>
-            </section>
-            <section>
-              <h3>Models</h3>
-              <ul>
-                <li><a href="https://www.nexusvai.xyz/article.html?id=cancriV1_0_1b">CancriV1-0.1B</a></li>
-              </ul>
-            </section>
-            <section>
-              <h3>友情链接</h3>
-              <ul>
-                <li><a href="https://agnes-ai.com/" target="_blank" rel="noopener noreferrer">Agens</a></li>
-                <li><a href="https://www.wanjiadongli.com/" target="_blank" rel="noopener noreferrer">玩家动力</a></li>
-              </ul>
-            </section>
-          </div>
-        </div>
-      </footer>
-    </div>
-
-    <button class="auth-theme-toggle" id="authThemeToggle" type="button" aria-label="切换到深色模式" title="切换到深色模式">
-      <svg class="auth-theme-icon auth-theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="4"></circle>
-        <path d="M12 2v2"></path>
-        <path d="M12 20v2"></path>
-        <path d="m4.93 4.93 1.41 1.41"></path>
-        <path d="m17.66 17.66 1.41 1.41"></path>
-        <path d="M2 12h2"></path>
-        <path d="M20 12h2"></path>
-        <path d="m6.34 17.66-1.41 1.41"></path>
-        <path d="m19.07 4.93-1.41 1.41"></path>
-      </svg>
-      <svg class="auth-theme-icon auth-theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-      </svg>
-    </button>
-
-    <div class="auth-invalid-panel" id="authInvalidPanel">
+  <div class="auth-overlay visible" id="authOverlay">
+<iframe id="authLoginFrame" src="./claude-login-island.html?v=20260818-rebrand2" title="登录"></iframe>
+<div class="auth-invalid-panel" id="authInvalidPanel">
       <div class="auth-invalid-card">
         <h1>无法打开登录</h1>
         <p id="authInvalidMsg">无效的回调参数。请回到 Cancri Code 桌面端重新点击登录</p>
       </div>
     </div>
-  </div>
+</div>
 
   <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
-  <script defer src="./js/auth-login-chrome.js?v=2026-06-25-brand-logo-theme"></script>
+  <script defer src="./js/auth-login-chrome.js?v=20260820-unified-otp1"></script>
   <script>
     (function () {
       "use strict";
@@ -506,59 +176,58 @@
       // 之前这里从没加过这个 class，导致整页无论 valid/invalid 都是一片空白
       // 背景色，看不到任何内容（真实用户反馈：桌面端登录页"一片黄"）。
       if (overlay) overlay.classList.add("visible");
+      if (!valid) {
+        overlay.classList.add("is-invalid");
+        if (invalidMsg) invalidMsg.textContent = "无效的回调参数。请回到 Cancri Code 桌面端重新点击登录　";
+        return;
+      }
 
-      const emailInput = document.getElementById("authEmailInput");
-      const otpInput = document.getElementById("authPasswordInput");
-      const sendBtn = document.getElementById("authSendOtpBtn");
-      const verifyBtn = document.getElementById("authVerifyOtpBtn");
-      const backBtn = document.getElementById("authBackBtn");
-      const otpSection = document.getElementById("authPasswordSection");
-      const statusLine = document.getElementById("authStatusLine");
-      const errorEl = document.getElementById("authEmailError");
-      const authCard = document.getElementById("authCard");
+      function authDoc() {
+        var f = document.getElementById("authLoginFrame");
+        try {
+          if (f && f.contentDocument && f.contentDocument.getElementById("authEmailInput")) {
+            return f.contentDocument;
+          }
+        } catch (_e) {}
+        return document;
+      }
+      function authEl(id) {
+        return authDoc().getElementById(id);
+      }
+
+      var authBooted = false;
+      var authFlow = null;
+      function bootAuthForms() {
+      if (authBooted || !window.CancriAuthFlow?.create) return;
+      const emailInput = authEl("authEmailInput");
+      const sendBtn = authEl("authSendOtpBtn");
+      if (!emailInput || !sendBtn) return;
+      const statusLine = authEl("authStatusLine");
 
       function setStatus(text, kind) {
+        if (!statusLine) return;
         statusLine.textContent = text || "";
         statusLine.className = "auth-status-line" + (kind ? " is-" + kind : "");
       }
 
-      function setError(text) {
-        errorEl.textContent = text || "";
-      }
-
-      function showOtpStep() {
-        otpSection.hidden = false;
-        sendBtn.hidden = true;
-        verifyBtn.hidden = false;
-        backBtn.hidden = false;
-        otpInput.focus();
-      }
-
-      function showEmailStep() {
-        otpSection.hidden = true;
-        sendBtn.hidden = false;
-        verifyBtn.hidden = true;
-        backBtn.hidden = true;
-        otpInput.value = "";
-        setError("");
-      }
-
       function showDone(message) {
-        authCard.innerHTML =
-          '<div class="auth-step">' +
-          '<p class="auth-status-line is-ok" style="min-height:auto;padding:12px 0;font-size:14px;">' +
-          (message || "登录成功，正在返回桌面端 ") +
-          "</p></div>";
+        const continueStep = authEl("authStepContinue");
+        const emailStep = authEl("authStepEmail");
+        const otpStep = authEl("authStepOtp");
+        if (emailStep) emailStep.hidden = true;
+        if (otpStep) otpStep.hidden = true;
+        if (continueStep) continueStep.hidden = false;
+        const status = authEl("authContinueStatus");
+        if (status) status.textContent = message || "";
+        const btn = authEl("authContinueBtn");
+        if (btn) btn.hidden = true;
+        const sw = authEl("authSwitchAccountBtn");
+        if (sw) sw.hidden = true;
       }
 
       function failInvalid(message) {
         overlay.classList.add("is-invalid");
         if (invalidMsg) invalidMsg.textContent = message;
-      }
-
-      if (!valid) {
-        failInvalid("无效的回调参数。请回到 Cancri Code 桌面端重新点击登录　");
-        return;
       }
 
       const SUPABASE_URL = window.__SUPABASE_URL__ || "";
@@ -580,17 +249,19 @@
         },
       });
 
-      const stepContinue = document.getElementById("authStepContinue");
-      const stepEmail = document.getElementById("authStepEmail");
-      const continueEmailEl = document.getElementById("authContinueEmail");
-      const continueBtn = document.getElementById("authContinueBtn");
-      const switchAccountBtn = document.getElementById("authSwitchAccountBtn");
-      const continueStatus = document.getElementById("authContinueStatus");
-      const continueError = document.getElementById("authContinueError");
+      const stepContinue = authEl("authStepContinue");
+      const stepEmail = authEl("authStepEmail");
+      const continueEmailEl = authEl("authContinueEmail");
+      const continueBtn = authEl("authContinueBtn");
+      const switchAccountBtn = authEl("authSwitchAccountBtn");
+      const continueStatus = authEl("authContinueStatus");
+      const continueError = authEl("authContinueError");
       let cachedSession = null;
 
       async function sendSessionToDesktop(session) {
         const email = session.user ? session.user.email || "" : "";
+        const otpStep = authEl("authStepOtp");
+        const fromOtp = Boolean(otpStep && !otpStep.hidden);
         const body = {
           access_token: session.access_token,
           refresh_token: session.refresh_token,
@@ -602,31 +273,40 @@
         showDone(
           (email ? "已确认 " + email + "，" : "") + "正在返回桌面端…",
         );
-        const response = await fetch(cb, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (!response.ok) {
-          const text = await response.text().catch(function () {
-            return "";
+        let response;
+        try {
+          response = await fetch(cb, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
           });
-          throw new Error(text || "桌面端登录回调被拒绝　");
+          if (!response.ok) {
+            const text = await response.text().catch(function () {
+              return "";
+            });
+            throw new Error(text || "桌面端登录回调被拒绝　");
+          }
+        } catch (error) {
+          if (fromOtp) {
+            if (stepContinue) stepContinue.hidden = true;
+            authFlow.showOtpStep(email);
+          } else {
+            showContinueStep(session);
+          }
+          throw error;
         }
         setTimeout(function () {
           window.close();
         }, 800);
       }
 
-      function localizeAuthError(err, fallback) {
-        const msg = (err && (err.message || err.error_description || err.error)) || "";
-        const code = (err && (err.code || err.error)) || "";
-        if (code === "over_email_send_rate_limit") return "邮件发送过于频繁，请稍后再试　";
-        if (code === "otp_expired") return "验证码已过期，请重新获取　";
-        if (code === "invalid_credentials") return "验证码错误，请检查后重试　";
-        if (/timeout/i.test(msg)) return "请求超时，请检查网络　";
-        return fallback || msg || "未知错误";
-      }
+      authFlow = window.CancriAuthFlow.create({
+        getDocument: authDoc,
+        client: supabase,
+        onSession: sendSessionToDesktop,
+      });
+      if (!authFlow.bind()) return;
+      authBooted = true;
 
       function showContinueStep(session) {
         cachedSession = session;
@@ -635,8 +315,10 @@
         if (continueEmailEl) continueEmailEl.textContent = email;
         if (stepContinue) stepContinue.hidden = false;
         if (stepEmail) stepEmail.hidden = true;
-        emailInput.disabled = true;
-        sendBtn.disabled = true;
+        const otpStep = authEl("authStepOtp");
+        if (otpStep) otpStep.hidden = true;
+        if (emailInput) emailInput.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
         if (continueStatus) {
           continueStatus.textContent = "";
           continueStatus.className = "auth-status-line";
@@ -647,11 +329,10 @@
       function showEmailForm() {
         cachedSession = null;
         if (stepContinue) stepContinue.hidden = true;
-        if (stepEmail) stepEmail.hidden = false;
-        emailInput.disabled = false;
-        sendBtn.disabled = false;
+        if (emailInput) emailInput.disabled = false;
+        if (sendBtn) sendBtn.disabled = false;
+        authFlow.reset();
         setStatus("");
-        setError("");
       }
 
       emailInput.disabled = true;
@@ -696,7 +377,7 @@
             continueStatus.className = "auth-status-line";
           }
           if (continueError) {
-            continueError.textContent = localizeAuthError(
+            continueError.textContent = window.CancriAuthFlow.localizeError(
               err,
               "桌面端登录回调失败，请回到 Cancri Code 重新发起登录",
             );
@@ -719,78 +400,12 @@
           });
       });
 
-      async function sendOtp() {
-        const email = emailInput.value.trim();
-        if (!email || !email.includes("@")) {
-          setError("请输入有效邮箱　");
-          return;
-        }
-        sendBtn.disabled = true;
-        sendBtn.textContent = "发送中 ";
-        setError("");
-        setStatus("");
-        try {
-          const timeout = new Promise(function (_, rej) {
-            setTimeout(function () {
-              rej(new Error("发送超时，请检查网络后重试"));
-            }, 12000);
-          });
-          const { error } = await Promise.race([
-            supabase.auth.signInWithOtp({ email: email }),
-            timeout,
-          ]);
-          if (error) throw error;
-          setStatus("验证码已发到邮箱，请查收　", "ok");
-          showOtpStep();
-        } catch (err) {
-          setError(localizeAuthError(err, "发送失败，请重试　"));
-        } finally {
-          sendBtn.disabled = false;
-          sendBtn.textContent = "发送验证码";
-        }
       }
 
-      async function verifyOtp() {
-        const email = emailInput.value.trim();
-        const code = otpInput.value.trim();
-        if (!code || code.length < 6) {
-          setError("请输入完整的验证码　");
-          return;
-        }
-        verifyBtn.disabled = true;
-        verifyBtn.textContent = "验证中 ";
-        setError("");
-        try {
-          const { data, error } = await supabase.auth.verifyOtp({
-            email: email,
-            token: code,
-            type: "email",
-          });
-          if (error) throw error;
-          if (!data || !data.session || !data.session.access_token) {
-            throw new Error("请重试　");
-          }
-          await sendSessionToDesktop(data.session);
-        } catch (err) {
-          setError(localizeAuthError(err, "验证失败，请重试　"));
-        } finally {
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = "验证登录";
-        }
-      }
-
-      sendBtn.addEventListener("click", sendOtp);
-      verifyBtn.addEventListener("click", verifyOtp);
-      backBtn.addEventListener("click", function () {
-        showEmailStep();
-        setStatus("");
-      });
-      emailInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && !sendBtn.hidden) sendOtp();
-      });
-      otpInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && !verifyBtn.hidden) verifyOtp();
-      });
+      var frame = document.getElementById("authLoginFrame");
+      if (frame) frame.addEventListener("load", bootAuthForms);
+      window.addEventListener("cancri:auth-flow-ready", bootAuthForms, { once: true });
+      bootAuthForms();
     })();
   </script>
 </body>

@@ -3,6 +3,7 @@ import { openAiB64JsonToDataUrl } from "./utils/image.js";
 import { escapeHtml } from "./utils/html.js";
 import { MODEL_CATALOG_FALLBACK } from "./data/model-catalog-fallback.js";
 import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
+import loginIslandHtml from "../claude-login-island.html?raw";
   // TODO: 以下 context window / newUntil 数据为占位值，需根据实际上线时间/官方文档校准。
   const MODEL_CONTEXT_WINDOWS = {
     "gpt-5.5": 256000,
@@ -4510,58 +4511,46 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     return supabaseClient;
   }
   
-  let authLoginMode = "otp";
-  let authOtpSent = false;
-  
-  function applyAuthSecretInputMode(mode) {
-    const secretInput = document.getElementById("authPasswordInput");
-    if (!secretInput) return;
-    if (mode === "password") {
-      secretInput.type = "password";
-      secretInput.placeholder = "请输入密码";
-      secretInput.autocomplete = "current-password";
-      secretInput.removeAttribute("maxlength");
-      secretInput.removeAttribute("inputmode");
-    } else {
-      secretInput.type = "text";
-      secretInput.placeholder = "请输入验证码";
-      secretInput.autocomplete = "one-time-code";
-      secretInput.maxLength = 8;
-      secretInput.inputMode = "numeric";
+  let authFlowController = null;
+
+  function authDoc() {
+    const frame = document.getElementById("authLoginFrame");
+    try {
+      if (frame && frame.contentDocument && frame.contentDocument.getElementById("authEmailInput")) {
+        return frame.contentDocument;
+      }
+    } catch (_e) {}
+    return document;
+  }
+
+  function authEl(id) {
+    return authDoc().getElementById(id);
+  }
+
+  function syncAuthOverlayMode() {
+    const overlay = document.getElementById("authOverlay");
+    if (overlay) {
+      overlay.setAttribute("data-theme", "claude");
+      overlay.setAttribute("data-mode", "dark");
+    }
+    const doc = authDoc();
+    if (doc && doc.documentElement) {
+      doc.documentElement.setAttribute("data-theme", "claude");
+      doc.documentElement.setAttribute("data-mode", "dark");
+    }
+    if (doc && doc.querySelectorAll) {
+      doc.querySelectorAll(".cds-root").forEach((el) => {
+        el.setAttribute("data-mode", "dark");
+      });
     }
   }
-  
-  function resetAuthLoginForm() {
-    authLoginMode = "otp";
-    authOtpSent = false;
-    const sendOtpBtn = document.getElementById("authSendOtpBtn");
-    const verifyOtpBtn = document.getElementById("authVerifyOtpBtn");
-    const passwordLoginBtn = document.getElementById("authPasswordLoginBtn");
-    const loginModeToggle = document.getElementById("authLoginModeToggle");
-    const secretInput = document.getElementById("authPasswordInput");
-    const passwordSection = document.getElementById("authPasswordSection");
-    if (passwordSection) passwordSection.hidden = false;
-    if (secretInput) secretInput.value = "";
-    applyAuthSecretInputMode("otp");
-    if (sendOtpBtn) {
-      sendOtpBtn.hidden = false;
-      sendOtpBtn.style.display = "";
-      sendOtpBtn.disabled = false;
-      sendOtpBtn.textContent = "发送验证码";
-    }
-    if (verifyOtpBtn) verifyOtpBtn.hidden = true;
-    if (passwordLoginBtn) passwordLoginBtn.hidden = true;
-    if (loginModeToggle) loginModeToggle.textContent = "使用密码登录";
-  }
-  
+
   function showAuthOverlay() {
     const overlay = document.getElementById("authOverlay");
     if (overlay) overlay.classList.add("visible");
-    // 2026-05-31 fix(T9)：每次显示登录遮罩都把表单重置回「邮箱步骤」。否则上一轮发码留下的
-    // inline style（sendOtpBtn display:none + otpSection display:block）会残留，导致退出再登录时
-    // 卡片显示成半截 OTP 态——「Continue」按钮被藏、OTP 段提前展开、中间留大空隙、布局错乱。
-    resetAuthLoginForm();
-    const emailError = document.getElementById("authEmailError");
+    syncAuthOverlayMode();
+    if (authFlowController) authFlowController.reset();
+    const emailError = authEl("authEmailError");
     if (emailError) {
       emailError.textContent = "";
       emailError.style.color = "";
@@ -4712,112 +4701,6 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
     });
   }
   
-  // Supabase Auth 错误本地化。原则：绝不展示上游英文 message（避免出现
-  // "Error sending confirmation email" / "Email rate limit exceeded" 等
-  // 用户看不懂且暴露后端栈的英文文案）。判定方式：
-  //   1. message 含 CJK 字符 → 是我们自己抛的中文文案，直接放行；
-  //   2. 否则按 error.code / error.status 走中文模板表；
-  //   3. 任何无法识别的情况 fallback 到中文兜底文案。
-  // 这是 keyword-free 风格：不匹配上游英文词，只读结构化的 code/status。
-  function localizeAuthError(err, fallback = "操作失败，请稍后重试。") {
-    if (!err) return fallback;
-    const rawMessage = String(err.message || err.error_description || "").trim();
-    // 我们自己 throw 的中文 Error（如 sendEmailOtp 的 "发送超时..."）直接展示。
-    if (rawMessage && /[\u4e00-\u9fa5]/.test(rawMessage)) return rawMessage;
-    const code = String(err.code || err.error_code || "").trim();
-    const status = Number(err.status) || 0;
-    const codeMap = {
-      over_email_send_rate_limit: "邮件发送过于频繁，请几分钟后再试。",
-      over_request_rate_limit: "请求过于频繁，请稍后再试。",
-      email_address_invalid: "邮箱地址无效，请检查后重试。",
-      email_address_not_authorized: "该邮箱不在允许列表内。",
-      email_provider_disabled: "邮箱登录暂时关闭。",
-      captcha_failed: "人机验证未通过，请刷新页面后重试。",
-      otp_expired: "验证码已过期，请重新获取。",
-      otp_disabled: "验证码登录暂未开放。",
-      invalid_credentials: "邮箱或密码错误，请检查后重试。",
-      signup_disabled: "注册已暂停。",
-      user_banned: "该账号已被封禁。",
-      user_not_found: "账号不存在，请检查邮箱后重试。",
-      request_timeout: "请求超时，请稍后再试。",
-    };
-    if (code && codeMap[code]) return codeMap[code];
-    if (status === 429) return "请求过于频繁，请稍后再试。";
-    if (status === 422 || status === 400) return "请求参数有误，请检查后重试。";
-    if (status === 401 || status === 403) return "登录验证未通过，请稍后再试。";
-    if (status >= 500) return "邮件服务暂时不可用，请稍后再试。";
-    return fallback;
-  }
-  
-  async function sendEmailOtp(email, { shouldCreateUser = true } = {}) {
-    const client = getSupabaseClient();
-    // v2026-05-15 修复"发送中..."无限卡死：
-    // 1) 实际把 Turnstile captcha token 传给 Supabase（之前 getLoginCaptchaTokenBestEffort
-    //    定义了但从未调用，等于裸送，Supabase 项目启用 captcha 时直接挂起）。
-    // 2) 给整个调用包 12s timeout，避免 Supabase SDK 在网络抖动时无限等待。
-    // 登录页已用 NexusAuthCaptcha 画布验证码；勿再挂载 Turnstile 占位（70px 空槽）。
-    const captchaToken =
-      window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function"
-        ? ""
-        : await getLoginCaptchaTokenBestEffort(8000);
-    // shouldCreateUser=false：见调用处注释。auth.users 上的触发器
-    // enforce_numeric_qq_email_on_signup 禁止非「纯数字@qq.com」注册新号（会回 500）。
-    // false 时已存在老用户仍能收码登录（不插新行），不存在用户回干净的 otp_disabled(422)。
-    const opts = { email, options: { shouldCreateUser } };
-    if (captchaToken) opts.options.captchaToken = captchaToken;
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("发送超时，请检查网络后重试")), 12000);
-    });
-    const { error } = await Promise.race([
-      client.auth.signInWithOtp(opts),
-      timeoutPromise,
-    ]);
-    if (error) throw error;
-  }
-  
-  async function signInWithEmailPassword(email, password) {
-    const client = getSupabaseClient();
-    const captchaToken =
-      window.NexusAuthCaptcha && typeof window.NexusAuthCaptcha.validate === "function"
-        ? ""
-        : await getLoginCaptchaTokenBestEffort(8000);
-    const opts = { email, password };
-    if (captchaToken) opts.options = { captchaToken };
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("登录超时，请检查网络后重试")), 12000);
-    });
-    const { data, error } = await Promise.race([
-      client.auth.signInWithPassword(opts),
-      timeoutPromise,
-    ]);
-    if (error) throw error;
-    if (!data?.session?.access_token) {
-      throw new Error("登录失败，请重试。");
-    }
-    authSessionPromise = Promise.resolve(data.session);
-    updateAccountInfo(data.session.user);
-    hideAuthOverlay();
-    authInitialized = true;
-    return data.session;
-  }
-  
-  async function verifyEmailOtp(email, token) {
-    const client = getSupabaseClient();
-    const { data, error } = await client.auth.verifyOtp({
-      email,
-      token,
-      type: "email",
-    });
-    if (error) throw error;
-    if (!data?.session?.access_token) {
-      throw new Error("验证失败，请重试。");
-    }
-    authSessionPromise = Promise.resolve(data.session);
-    updateAccountInfo(data.session.user);
-    hideAuthOverlay();
-    authInitialized = true;
-    return data.session;
-  }
   
   async function handleLogout() {
     const client = getSupabaseClient();
@@ -4859,182 +4742,54 @@ import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
       }
     })();
   
-    const emailInput = document.getElementById("authEmailInput");
-    const sendOtpBtn = document.getElementById("authSendOtpBtn");
-    const verifyOtpBtn = document.getElementById("authVerifyOtpBtn");
-    const passwordInput = document.getElementById("authPasswordInput");
-    const passwordLoginBtn = document.getElementById("authPasswordLoginBtn");
-    const loginModeToggle = document.getElementById("authLoginModeToggle");
-    const passwordSection = document.getElementById("authPasswordSection");
-    const emailError = document.getElementById("authEmailError");
-  
-    if (sendOtpBtn) {
-      sendOtpBtn.addEventListener("click", async () => {
-        const email = (emailInput && emailInput.value || "").trim();
-        if (!email || !email.includes("@")) {
-          if (emailError) emailError.textContent = "请输入有效的邮箱地址";
-          return;
-        }
-        const emailLower = email.toLowerCase();
-        const allowed = /@qq\.com$/.test(emailLower) || /@foxmail\.com$/.test(emailLower);
-        if (!allowed) {
-          if (emailError) emailError.textContent = "仅支持 @qq.com 和 @foxmail.com 邮箱";
-          return;
-        }
-        // Inline captcha check — MUST pass; module missing also blocks.
-        if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-          if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
-          return;
-        }
-        if (!window.NexusAuthCaptcha.validate()) {
-          if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
-          if (emailError) emailError.style.color = "";
-          window.NexusAuthCaptcha.focusInput();
-          return;
-        }
-        // auth.users 触发器只允许「纯数字@qq.com」注册新号。非数字邮箱（foxmail / 带字母 QQ）
-        // 只放行已存在老用户登录：shouldCreateUser=false 时老用户照常收码，新用户回 otp_disabled(422)，
-        // catch 里给清晰提示，而不是让用户撞 500「Database error saving new user」。
-        const isNumericQQ = /^[0-9]+@qq\.com$/.test(emailLower);
-        sendOtpBtn.disabled = true;
-        sendOtpBtn.textContent = "发送中...";
-        if (emailError) emailError.textContent = "";
-        try {
-          await sendEmailOtp(email, { shouldCreateUser: isNumericQQ });
-          authOtpSent = true;
-          sendOtpBtn.hidden = true;
-          sendOtpBtn.style.display = "none";
-          if (verifyOtpBtn) verifyOtpBtn.hidden = false;
+    function bindAuthOverlayControls() {
+      if (authFlowController?.isBound()) return;
+      if (!window.CancriAuthFlow?.create) return;
+      const controller = window.CancriAuthFlow.create({
+        getDocument: authDoc,
+        getClient: getSupabaseClient,
+        getCaptchaToken: async () => {
+          if (window.NexusAuthCaptcha?.validate) {
+            if (!window.NexusAuthCaptcha.validate()) {
+              window.NexusAuthCaptcha.focusInput();
+              throw new Error("请先填写验证码");
+            }
+            return "";
+          }
+          return getLoginCaptchaTokenBestEffort(8000);
+        },
+        onOtpSent: () => {
           const turnstileSlot = document.getElementById("loginTurnstileContainer");
           if (turnstileSlot) turnstileSlot.remove();
           if (window.NexusLoginCaptcha?.suspend) {
             try { window.NexusLoginCaptcha.suspend(); } catch (_e) {}
           }
-          if (passwordInput) {
-            passwordInput.value = "";
-            passwordInput.focus();
-          }
-          if (emailError) emailError.textContent = "验证码已发送，请查收邮箱";
-          if (emailError) emailError.style.color = "#4ade80";
-        } catch (err) {
-          const code = String((err && (err.code || err.error_code)) || "");
-          if (!isNumericQQ && code === "otp_disabled") {
-            if (emailError) emailError.textContent = "新账号仅支持 QQ 号邮箱注册（纯数字，如 3573799137@qq.com）。若你已注册过，请检查邮箱是否输错。";
-          } else if (emailError) {
-            emailError.textContent = localizeAuthError(err, "发送失败，请重试。");
-          }
-          if (emailError) emailError.style.color = "";
-        } finally {
-          sendOtpBtn.disabled = false;
-          sendOtpBtn.textContent = "发送验证码";
-        }
+        },
+        onSession: (session) => {
+          authSessionPromise = Promise.resolve(session);
+          updateAccountInfo(session.user);
+          hideAuthOverlay();
+          authInitialized = true;
+        },
       });
+      if (controller.bind()) authFlowController = controller;
     }
-  
-    if (verifyOtpBtn) {
-      verifyOtpBtn.addEventListener("click", async () => {
-        const email = (emailInput && emailInput.value || "").trim();
-        const code = (passwordInput && passwordInput.value || "").trim();
-        if (!code || code.length < 6) {
-          if (emailError) emailError.textContent = "请输入完整的验证码";
-          if (emailError) emailError.style.color = "";
-          return;
-        }
-        verifyOtpBtn.disabled = true;
-        verifyOtpBtn.textContent = "验证中...";
-        if (emailError) emailError.textContent = "";
-        if (emailError) emailError.style.color = "";
-        try {
-          await verifyEmailOtp(email, code);
-        } catch (err) {
-          if (emailError) emailError.textContent = localizeAuthError(err, "验证失败，请重试。");
-        } finally {
-          verifyOtpBtn.disabled = false;
-          verifyOtpBtn.textContent = "验证登录";
-        }
-      });
-    }
-  
-    function setAuthLoginMode(mode) {
-      authLoginMode = mode === "password" ? "password" : "otp";
-      authOtpSent = false;
-      const isPassword = authLoginMode === "password";
-      if (passwordSection) passwordSection.hidden = false;
-      if (passwordInput) passwordInput.value = "";
-      applyAuthSecretInputMode(authLoginMode);
-      if (sendOtpBtn) {
-        sendOtpBtn.hidden = isPassword;
-        sendOtpBtn.style.display = isPassword ? "none" : "";
-        sendOtpBtn.disabled = false;
-        sendOtpBtn.textContent = "发送验证码";
-      }
-      if (verifyOtpBtn) verifyOtpBtn.hidden = true;
-      if (passwordLoginBtn) passwordLoginBtn.hidden = !isPassword;
-      if (loginModeToggle) {
-        loginModeToggle.textContent = isPassword ? "使用验证码登录" : "使用密码登录";
+
+    const frame = document.getElementById("authLoginFrame");
+    const syncAuthLoginExperience = () => {
+      window.CancriAuthChrome?.customizeLoginDocument(authDoc());
+      bindAuthOverlayControls();
+    };
+    if (frame) {
+      frame.addEventListener("load", syncAuthLoginExperience);
+      if (location.protocol === "file:" && frame.dataset.cancriSrcdoc !== "true") {
+        frame.dataset.cancriSrcdoc = "true";
+        frame.srcdoc = loginIslandHtml;
       }
     }
-  
-    if (loginModeToggle) {
-      loginModeToggle.addEventListener("click", () => {
-        setAuthLoginMode(authLoginMode === "password" ? "otp" : "password");
-      });
-    }
-  
-    if (passwordLoginBtn) {
-      passwordLoginBtn.addEventListener("click", async () => {
-        const email = (emailInput && emailInput.value || "").trim();
-        const password = (passwordInput && passwordInput.value || "").trim();
-        if (!email || !email.includes("@")) {
-          if (emailError) emailError.textContent = "请输入有效的邮箱地址";
-          return;
-        }
-        if (!password || password.length < 8) {
-          if (emailError) emailError.textContent = "请输入至少 8 位密码";
-          return;
-        }
-        if (!window.NexusAuthCaptcha || typeof window.NexusAuthCaptcha.validate !== "function") {
-          if (emailError) emailError.textContent = "验证码组件未加载，请刷新页面后重试。";
-          return;
-        }
-        if (!window.NexusAuthCaptcha.validate()) {
-          if (emailError) emailError.textContent = "请先填写左侧验证码（4位数字），填错可点刷新换一张";
-          window.NexusAuthCaptcha.focusInput();
-          return;
-        }
-        passwordLoginBtn.disabled = true;
-        passwordLoginBtn.textContent = "登录中…";
-        if (emailError) emailError.textContent = "";
-        try {
-          await signInWithEmailPassword(email, password);
-        } catch (err) {
-          if (emailError) emailError.textContent = localizeAuthError(err, "登录失败，请重试。");
-        } finally {
-          passwordLoginBtn.disabled = false;
-          passwordLoginBtn.textContent = "登录";
-        }
-      });
-    }
-  
-    if (passwordInput) {
-      passwordInput.addEventListener("keydown", (e) => {
-        if (e.key !== "Enter") return;
-        if (authLoginMode === "password" && passwordLoginBtn) passwordLoginBtn.click();
-        else if (authOtpSent && verifyOtpBtn) verifyOtpBtn.click();
-        else if (sendOtpBtn) sendOtpBtn.click();
-      });
-    }
-  
-    if (emailInput) {
-      emailInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          if (authLoginMode === "password" && passwordLoginBtn) passwordLoginBtn.click();
-          else if (authOtpSent && verifyOtpBtn) verifyOtpBtn.click();
-          else if (sendOtpBtn) sendOtpBtn.click();
-        }
-      });
-    }
-  
+    window.addEventListener("cancri:auth-flow-ready", syncAuthLoginExperience, { once: true });
+    syncAuthLoginExperience();
+
     // 监听 Supabase auth 状态变化
     const client = getSupabaseClient();
     client.auth.onAuthStateChange((event, session) => {
