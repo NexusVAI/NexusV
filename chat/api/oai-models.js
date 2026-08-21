@@ -607,11 +607,13 @@
       if (FEATURED_REP_RANK[rid] == null) FEATURED_REP_RANK[rid] = i;
     });
 
-    // 搜索索引：卡片只剩代表，但用户还会搜「xhigh」。组内成员照样进索引，
-    // 只是 id 换成代表 id，这样 oai-platform.js 拼出的 `#model-<id>` 锚点仍然存在。
+    // 搜索索引：卡片只剩代表，但用户还会搜「xhigh」，所以组内成员照样逐条进索引。
+    // `id` 保留成员**真实可调用**的 id —— API 用户搜模型就是为了拿这个 id，
+    // 换成代表 id 会让 XHigh / Max 那几行都显示成主线 id（看起来是重复项）。
+    // `anchorId` 才是页面上真实存在的锚点：折叠后只有代表卡带 `#model-<id>`。
     window.__CANCRI_MODELS__ = rawModels.map(function (m) {
       var mid = String(m.id || m.canonicalId || "");
-      return { id: repId(mid), displayName: m.displayName, brand: m.brand };
+      return { id: mid, anchorId: repId(mid), displayName: m.displayName, brand: m.brand };
     });
     if (typeof window.__cancriSearchRefresh === "function") window.__cancriSearchRefresh();
 

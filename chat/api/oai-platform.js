@@ -161,7 +161,10 @@
         return {
           name: m.displayName || m.id,
           sub: (m.brand ? m.brand + " · " : "") + m.id,
-          href: (document.body.getAttribute("data-cancri-base") || "") + "api_models.html#model-" + encodeURIComponent(m.id),
+          // 2026-08-20 模型分组：同组模型在广场折叠成一张代表卡，只有代表卡带
+          // `#model-<id>` 锚点。所以跳转必须用 anchorId（成员 → 代表），
+          // 而 sub 里仍显示 m.id（成员自己真实可调用的 id）。
+          href: (document.body.getAttribute("data-cancri-base") || "") + "api_models.html#model-" + encodeURIComponent(m.anchorId || m.id),
         };
       });
       var pool = items.concat(models);

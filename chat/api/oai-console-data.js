@@ -1249,7 +1249,9 @@
     return call("model_public_catalog", {})
       .then(function (d) {
         return selectableGroups((d && d.models) || []).map(function (g) {
-          return { value: g.id, label: g.label + "（" + g.count + " 个分组）" };
+          // g.count 是**组内线路条数**，不是分组数量。写「个分组」会让用户以为
+          // 选一项等于选 N 个分组（2026-08-21 审计 findings 3）。
+          return { value: g.id, label: g.label + "（" + g.count + " 条线路）" };
         });
       })
       .catch(function () { return []; });
