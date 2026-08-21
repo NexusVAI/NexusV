@@ -159,6 +159,64 @@
     return !!m && (m.gateCostTier === "free" || m.costTier === "free");
   }
 
+  /* ── 组内最便宜的那条线（2026-08-21）─────────────────────────────────────
+   * 卡片价格永远展示组内最低价，并标出是哪个分组，让用户在广场就看到「这张卡最低
+   * 能多便宜」。
+   *
+   * 选价规则（刻意不做跨单位数值比较）：
+   *   1) 有免费线 → 直接选它（免费无争议最便宜）
+   *   2) 否则在**按 token 计价**的成员里取 inputPricePerM 最小
+   *   3) 全组都没有 token 计价 → 在**按次计价**的成员里取 perCallPrice 最小
+   *   4) 都算不出来 → 退回代表成员
+   *
+   * ⛔ 别"优化"成把 ¥/百万token 和 ¥/次 放一起比大小：claude-opus-5 组里
+   *   Thinking 是 ¥0.099/次、标准是 ¥0.59/M，数值上 0.099 更小，但一次一万
+   *   token 的请求按 token 只要 ¥0.0059 —— 直接比数字会把更贵的那条标成最便宜。
+   * -------------------------------------------------------------------- */
+  function tokenPriceOf(m) {
+    var n = m && m.inputPricePerM != null ? Number(m.inputPricePerM) : NaN;
+    return isFinite(n) ? n : null;
+  }
+  function callPriceOf(m) {
+    var n = m && m.perCallPrice != null ? Number(m.perCallPrice) : NaN;
+    return isFinite(n) ? n : null;
+  }
+  function pickCheapestMember(members, fallback) {
+    var list = Array.isArray(members) ? members : [];
+    if (list.length < 2) return fallback;
+    var i, best = null, bestN = null;
+    for (i = 0; i < list.length; i++) {
+      if (isFreeTierModel(list[i])) return list[i];
+    }
+    for (i = 0; i < list.length; i++) {
+      var t = tokenPriceOf(list[i]);
+      if (t == null) continue;
+      if (bestN == null || t < bestN) { bestN = t; best = list[i]; }
+    }
+    if (best) return best;
+    for (i = 0; i < list.length; i++) {
+      var c = callPriceOf(list[i]);
+      if (c == null) continue;
+      if (bestN == null || c < bestN) { bestN = c; best = list[i]; }
+    }
+    return best || fallback;
+  }
+
+  /** 卡片价格行：折叠卡显示「<分组标签> <组内最低价>」，未折叠卡保持原样。 */
+  function cardPriceHtml(m) {
+    var gi = m && m.groupInfo;
+    if (!gi || !gi.members || gi.members.length < 2) return priceHtml(m);
+    var cheap = pickCheapestMember(gi.members, m);
+    var variant = "";
+    for (var i = 0; i < gi.variants.length; i++) {
+      if (gi.variants[i].id === (cheap.id || cheap.canonicalId)) { variant = gi.variants[i].variant; break; }
+    }
+    var tag = variant
+      ? '<span class="cancri-price__tag cancri-price__tag--group">' + esc(variant) + "</span>"
+      : "";
+    return tag + priceHtml(cheap);
+  }
+
   function priceHtml(m) {
     // backend may later supply a ready-to-show price string; prefer it.
     if (isFreeTierModel(m)) {
@@ -199,6 +257,48 @@
   function hourlyFor(id) {
     var row = healthById[String(id || "").toLowerCase()];
     return row && Array.isArray(row.hourly) ? row.hourly : null;
+  }
+
+  /* 折叠卡的状态条 = 组内**最好**的那条线（2026-08-21）。
+   * 理由：一张卡背后有多条线路，用户真正关心的是「这张卡还能不能用」——
+   * 只要组里有一条线健康，这张卡就是可用的。拿代表线的成绩当全组成绩，会因为
+   * 主线抽样少/偶发失败把一整张卡标红。
+   * 逐小时取优：有样本的优先于没样本的；都有样本时成功率高者优先，成功率相同取样本多者。
+   * 各成员的 hourly 来自同一个 model_health 查询窗口，所以按下标对齐。 */
+  function bestHourlyFor(ids) {
+    var lists = [];
+    for (var i = 0; i < ids.length; i++) {
+      var h = hourlyFor(ids[i]);
+      if (h) lists.push(h);
+    }
+    if (!lists.length) return null;
+    if (lists.length === 1) return lists[0];
+    var out = [];
+    for (var hr = 0; hr < 24; hr++) {
+      var best = null;
+      for (var j = 0; j < lists.length; j++) {
+        var cur = lists[j][hr];
+        if (!cur) continue;
+        if (!best) { best = cur; continue; }
+        var cT = Number(cur.total) || 0, bT = Number(best.total) || 0;
+        if (bT <= 0) { if (cT > 0) best = cur; continue; }
+        if (cT <= 0) continue;
+        var cR = typeof cur.success_rate === "number" ? cur.success_rate : null;
+        var bR = typeof best.success_rate === "number" ? best.success_rate : null;
+        if (cR == null) continue;
+        if (bR == null || cR > bR || (cR === bR && cT > bT)) best = cur;
+      }
+      out.push(best || { hour: "", total: 0, success_rate: null });
+    }
+    return out;
+  }
+
+  /** 卡片要看的 id 集合：折叠卡看全组成员，普通卡只看自己。 */
+  function uptimeIdsOf(card) {
+    var raw = card ? card.getAttribute("data-group-ids") : "";
+    if (raw) return raw.split(",").filter(Boolean);
+    var one = card ? card.getAttribute("data-model-id") : "";
+    return one ? [one] : [];
   }
 
   function hourTooltip(hourIso, total, rate) {
@@ -242,8 +342,7 @@
       for (; i < end; i++) {
         var el = nodes[i];
         var card = el.closest("[data-model-id]");
-        var id = card ? card.getAttribute("data-model-id") : "";
-        el.outerHTML = uptimeHtml(hourlyFor(id));
+        el.outerHTML = uptimeHtml(bestHourlyFor(uptimeIdsOf(card)));
       }
       if (i < nodes.length) requestAnimationFrame(chunk);
     }
@@ -253,9 +352,8 @@
   function paintUptimeSlot(slot) {
     if (!slot || slot.getAttribute("data-uptime-slot") == null) return;
     var card = slot.closest("[data-model-id]");
-    var id = card ? card.getAttribute("data-model-id") : "";
     slot.removeAttribute("data-uptime-slot");
-    slot.innerHTML = uptimeHtml(hourlyFor(id));
+    slot.innerHTML = uptimeHtml(bestHourlyFor(uptimeIdsOf(card)));
   }
 
   function observeUptimeSlots() {
@@ -312,8 +410,13 @@
     // only the full-grid cards carry the `model-<id>` anchor id, so the
     // flagship duplicates in #cancri-frontier don't create duplicate ids.
     var idAttr = opts.anchor ? ' id="model-' + escAttr(id) + '"' : "";
+    // 折叠卡带上全组成员 id，状态条据此取「组内最好」（见 bestHourlyFor）。
+    var gi = m.groupInfo;
+    var groupIdsAttr = (gi && gi.variants && gi.variants.length > 1)
+      ? ' data-group-ids="' + escAttr(gi.variants.map(function (v) { return v.id; }).join(",")) + '"'
+      : "";
     return (
-      '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '" role="link" tabindex="0" style="cursor:pointer">' +
+      '<div class="flex flex-col text-emphasis"' + idAttr + ' data-model-id="' + escAttr(id) + '"' + groupIdsAttr + ' role="link" tabindex="0" style="cursor:pointer">' +
         '<div class="w-full" style="height:230px">' +
           '<div class="cancri-thumb flex h-full w-full flex-1 flex-row items-center justify-center gap-4 rounded-lg" ' +
                'style="background-image:url(\'' + escAttr(opts.art || (ART_OVERRIDE[id] ? artBase() + ART_OVERRIDE[id] : artBase() + ART_POOL[0])) + '\')">' +
@@ -336,7 +439,7 @@
             '<div class="cancri-spec__row cancri-spec__row--uptime" data-uptime-slot></div>' +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">价格</span>' +
-              '<span class="cancri-spec__val cancri-price">' + priceHtml(m) + "</span>" +
+              '<span class="cancri-spec__val cancri-price">' + cardPriceHtml(m) + "</span>" +
             "</div>" +
           "</div>" +
         "</div>" +
@@ -528,6 +631,9 @@
           id: grp.id,
           label: grp.label,
           count: grp.members.length,
+          // 原始成员对象（引用，不拷贝）：卡片要拿它们算「组内最便宜的价格」
+          // 和「组内最好的线路状态」，只有 variants 里那几个字段不够。
+          members: grp.members,
           variants: grp.members.map(function (mem) {
             return {
               id: modelId(mem),
