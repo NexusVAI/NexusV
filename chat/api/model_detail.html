@@ -236,6 +236,149 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     });
   }
 
+  /* ── 分组块（2026-08-20）─────────────────────────────────────────────
+     位置：描述段（.docs-markdown-content）之下、左栏内那块空白 —— 右栏 4 条规格
+     天生比左栏高，那块空白本来就一直空着。
+     数据：catalog 里同 group.id 的成员，权威源是 Aiven model_catalog 的分组四列，
+           本页零硬编码；DB 没配分组 / 只有一个成员时整块不渲染。
+     样式：复用页面下方「快速对比」那套价格条 class，视觉一致。          */
+  var groupState = { members: [], currentId: '', mode: 'input' };
+
+  /* 分组原语：本页只需要「取某模型所在组的成员，按 rank 排好」。
+     ⚠⚠ 同语义在开放平台有 3 份逐字副本（按要求不新增共享文件）：
+         1) api/oai-models.js  2) 本文件  3) api/oai-console-data.js
+     改分桶键 / 排序规则时三处必须一起改，否则三个页面对「谁是代表」会给出不同答案。
+     返回 null = 未分组、或组里只有它自己 → 调用方不渲染分组块。 */
+  function groupMembersFor(models, targetId) {
+    var list = Array.isArray(models) ? models : [];
+    var want = String(targetId || '');
+    function gid(m) {
+      var g = m && m.group;
+      if (!g || typeof g !== 'object') return '';
+      return g.id == null ? '' : String(g.id).trim();
+    }
+    function mid(m) { return String((m && (m.id || m.canonicalId)) || ''); }
+    function rank(m) {
+      var g = m && m.group;
+      var n = g ? Number(g.rank) : NaN;
+      return isFinite(n) ? n : 0;
+    }
+    var target = null;
+    for (var i = 0; i < list.length; i++) {
+      if (mid(list[i]) === want) { target = list[i]; break; }
+    }
+    var key = gid(target);
+    if (!key) return null;
+    var members = list.filter(function (m) { return gid(m) === key; });
+    if (members.length < 2) return null;
+    members.sort(function (a, b) {
+      var d = rank(a) - rank(b);
+      if (d !== 0) return d;
+      return mid(a) < mid(b) ? -1 : mid(a) > mid(b) ? 1 : 0;
+    });
+    return members;
+  }
+
+  function groupVariantLabel(m) {
+    var g = m && m.group;
+    var v = g && g.variant ? String(g.variant).trim() : '';
+    return v || String(m.displayName || m.id || '');
+  }
+
+  function groupBlockHost() {
+    var md = document.querySelector('.docs-markdown-content');
+    if (!md) return null;
+    // 左栏容器：description 的父级（.flex.flex-2.flex-col）
+    return md.parentElement || null;
+  }
+
+  function renderGroupRows(grid) {
+    var rows = groupState.members.map(function (m) {
+      return { m: m, metric: priceMetric(m, groupState.mode) };
+    }).filter(function (r) { return !!r.metric; });
+    if (!rows.length) { grid.innerHTML = ''; return; }
+
+    var maxP = 0;
+    rows.forEach(function (r) {
+      if (r.metric.kind === 'token') maxP = Math.max(maxP, r.metric.n);
+    });
+    if (maxP <= 0) maxP = 1;
+
+    grid.innerHTML = rows.map(function (r) {
+      var id = String(r.m.id || '');
+      var isCurrent = id === groupState.currentId;
+      var w = r.metric.kind === 'call' ? 12 : Math.max(Math.round(r.metric.n / maxP * 100), 8);
+      var nameCls = isCurrent ? 'whitespace-nowrap text-emphasis' : 'whitespace-nowrap';
+      var priceCls = isCurrent ? 'min-w-[72px] text-right text-emphasis' : 'min-w-[72px] text-right';
+      var cursor = isCurrent ? '' : ' style="cursor:pointer"';
+      return '<div class="contents" data-grp-row="' + escAttr(id) + '"' + cursor + '>' +
+        '<div class="' + nameCls + '">' + esc(groupVariantLabel(r.m)) +
+          (isCurrent ? '<span class="ml-2 text-xs text-tertiary">当前</span>' : '') +
+          '<div class="font-mono text-xs text-tertiary">' + esc(id) + '</div>' +
+        '</div>' +
+        '<div class="relative flex w-full flex-row items-center gap-2">' +
+          '<div class="absolute right-0 left-0 h-2 w-full rounded-[1px] bg-primary-soft"></div>' +
+          '<div class="relative h-2 rounded-[1px] bg-gray-500" style="width:' + w + '%"></div>' +
+        '</div>' +
+        '<div class="' + priceCls + '">' + esc(r.metric.label) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderGroupBlock() {
+    if (groupState.members.length < 2) return;
+    var host = groupBlockHost();
+    if (!host) return;
+    var block = host.querySelector('[data-cancri-group-block]');
+    if (!block) {
+      block = document.createElement('div');
+      block.setAttribute('data-cancri-group-block', '1');
+      block.className = 'mt-6 flex flex-col gap-3';
+      block.innerHTML =
+        '<div class="flex flex-row flex-wrap items-center justify-between gap-2">' +
+          '<div class="text-emphasis">分组</div>' +
+          '<div class="flex flex-row items-center gap-2 text-sm" data-grp-tabs>' +
+            '<div class="cursor-pointer" data-grp-mode="input">输入</div>' +
+            '<div class="cursor-pointer text-tertiary" data-grp-mode="output">输出</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="text-sm leading-6 text-secondary">' +
+          '同一模型的多条线路合并在这张卡下。各分组能力相同、价格与配额不同，' +
+          '调用时把下面对应的 model ID 填进请求即可。' +
+        '</div>' +
+        '<div class="grid grid-cols-[max-content_1fr_max-content] gap-4 rounded-lg border border-solid border-default p-4 text-secondary" data-grp-grid></div>';
+      host.appendChild(block);
+
+      var tabs = block.querySelector('[data-grp-tabs]');
+      tabs.querySelectorAll('[data-grp-mode]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          groupState.mode = el.getAttribute('data-grp-mode') || 'input';
+          tabs.querySelectorAll('[data-grp-mode]').forEach(function (t) {
+            if (t.getAttribute('data-grp-mode') === groupState.mode) t.classList.remove('text-tertiary');
+            else t.classList.add('text-tertiary');
+          });
+          renderGroupRows(block.querySelector('[data-grp-grid]'));
+        });
+      });
+      // 行点击 → 切到该分组的详情页（当前行不跳）
+      block.addEventListener('click', function (e) {
+        var row = e.target.closest ? e.target.closest('[data-grp-row]') : null;
+        if (!row) return;
+        var id = row.getAttribute('data-grp-row');
+        if (!id || id === groupState.currentId) return;
+        location.href = 'model_detail.html?model=' + encodeURIComponent(id);
+      });
+    }
+    renderGroupRows(block.querySelector('[data-grp-grid]'));
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+  function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
+
   function afterRender(modelId) {
     fixDocsLinks();
     renderRateLimits();
@@ -243,6 +386,8 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
     removeBatchPriceUi();
     wireComparisonTabs();
     wireChatCta(modelId);
+    // 必须在 replaceText 之后：那个 TreeWalker 会全页替换文本，先注入会被它扫到。
+    renderGroupBlock();
   }
 
   function replaceText(map) {
@@ -432,7 +577,13 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
   function renderComparison() {
     var grid = null;
     document.querySelectorAll('div.grid').forEach(function (el) {
-      if (!grid && el.className.indexOf('grid-cols-[max-content_1fr_max-content]') !== -1) grid = el;
+      if (grid) return;
+      // ⛔ 2026-08-20：分组块（renderGroupBlock）刻意复用了同一套价格条 class，而它注入在
+      //    描述段左栏 —— **文档顺序上早于**下方的「快速对比」。不排除它的话，点一次
+      //    输入/输出 tab 就会把分组表整块改写成同行对比行（实测的 P1）。
+      if (el.hasAttribute('data-grp-grid')) return;
+      if (el.closest && el.closest('[data-cancri-group-block]')) return;
+      if (el.className.indexOf('grid-cols-[max-content_1fr_max-content]') !== -1) grid = el;
     });
     if (!grid) return;
     var current = compareCtx.current;
@@ -624,8 +775,16 @@ Learn more in our <a href="https://developers.openai.com/api/docs/guides/latest-
 
   // 一律先拉 catalog：对比同行价 +（若有）覆盖 MODELS 陈旧 $ 价
   fetchCatalog().then(function (data) {
-    var byId = indexCatalog((data && data.models) || []);
+    var list = (data && data.models) || [];
+    var byId = indexCatalog(list);
     compareCtx.byId = byId;
+    // 2026-08-20 分组：成员集合来自 catalog 的 group 字段（DB model_catalog 四列）。
+    // 没配分组 / 只一个成员 → 返回 null → 分组块不渲染，页面同旧版。
+    var grpMembers = groupMembersFor(list, q);
+    if (grpMembers) {
+      groupState.members = grpMembers;
+      groupState.currentId = q;
+    }
     var live = byId[q];
     if (MODELS[q]) {
       renderConfigured(mergeLivePrices(MODELS[q], live));

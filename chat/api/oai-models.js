@@ -41,6 +41,14 @@
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
+  // 2026-08-20 分组折叠：名单里钉的是**成员** id（claude-opus-4-8-xhigh / grok-4.5-xhigh），
+  // 折叠后卡片 id 变成代表 id（claude-opus-4-8 / grok-4.5），直接查 FEATURED_RANK 会 miss
+  // → 旗舰卡的「旗舰」绿标凭空消失。render() 拿到分组索引后往这里补代表 id。
+  var FEATURED_REP_RANK = {};
+  function isFeaturedId(id) {
+    var key = String(id || "").toLowerCase();
+    return FEATURED_RANK[key] != null || FEATURED_REP_RANK[key] != null;
+  }
 
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
@@ -273,12 +281,31 @@
     });
   }
 
+  // 分组行：折叠卡才有。列出组内各分组标签（标准 / XHigh 普惠 / Max …），
+  // 让用户在广场就看得出这张卡背后有几条线；具体各分组价格在详情页的分组表里。
+  function groupRowHtml(m) {
+    var gi = m && m.groupInfo;
+    if (!gi || !gi.variants || gi.variants.length < 2) return "";
+    var labels = gi.variants.map(function (v) { return v.variant; }).filter(Boolean);
+    var shown = labels.slice(0, 3);
+    var more = labels.length - shown.length;
+    var text = shown.join(" · ") + (more > 0 ? " +" + more : "");
+    return (
+      '<div class="cancri-spec__row">' +
+        '<span class="cancri-spec__key">分组</span>' +
+        '<span class="cancri-spec__val" title="' + escAttr(labels.join(" · ")) + '">' +
+          esc(text) +
+        "</span>" +
+      "</div>"
+    );
+  }
+
   function cardHtml(m, opts) {
     opts = opts || {};
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
     var desc = m.publicDescription || DESC_FALLBACK[id] || (m.brand ? m.brand + " 模型" : "");
-    var featured = FEATURED_RANK[id.toLowerCase()] != null;
+    var featured = isFeaturedId(id);
     var badge = (featured && opts.flagshipBadge)
       ? ' <div class="_Badge_10t5o_1" data-color="success" data-size="md" data-pill data-variant="soft">旗舰</div>'
       : "";
@@ -305,6 +332,7 @@
                 '<span class="cancri-id__text">' + esc(id) + "</span>" + COPY_SVG +
               "</button>" +
             "</div>" +
+            groupRowHtml(m) +
             '<div class="cancri-spec__row cancri-spec__row--uptime" data-uptime-slot></div>' +
             '<div class="cancri-spec__row">' +
               '<span class="cancri-spec__key">价格</span>' +
@@ -343,13 +371,15 @@
     );
   }
 
-  function renderSpecialized(models) {
+  function renderSpecialized(models, featuredRepSet) {
     var container = document.getElementById("cancri-specialized");
     if (!container) return;
 
     // exclude featured models (already shown in frontier section)
+    var featuredSet = featuredRepSet || {};
     var nonFeatured = models.filter(function (m) {
-      return FEATURED_RANK[(m.id || "").toLowerCase()] == null;
+      var mid = (m.id || "").toLowerCase();
+      return FEATURED_RANK[mid] == null && !featuredSet[mid];
     });
 
     // group by brand
@@ -391,6 +421,136 @@
     container.innerHTML = html || '<div class="text-sm text-secondary py-6">暂无专项模型</div>';
   }
 
+  /* ── 模型分组原语（2026-08-20）─────────────────────────────────────────────
+   * 分组本身**不在这里定义**。权威源是 Aiven `model_catalog` 的四列
+   * （group_id / group_label / variant_label / group_rank），由 chat-gateway 的
+   * `model_public_catalog` 随每个模型下发成：
+   *     m.group = { id: "gpt-5.6-sol", label: "", variant: "XHigh 普惠", rank: 1 }
+   * 没有 group 键 = 该模型不分组（独立成卡）。所以本段对「哪些模型算一组」零硬编码，
+   * 运维加模型 / 调分组 / 改组内标签只跑 SQL，前端不用动。
+   *
+   * ⚠⚠ 本段在开放平台**有 3 份逐字副本**（按要求不新增共享文件）：
+   *     1) api/oai-models.js         ← 本文件，广场折叠
+   *     2) api/model_detail.html     内联脚本，详情页分组价格表
+   *     3) api/oai-console-data.js   建 Key 弹窗的分组下拉 + Key 列表
+   *   改分桶键 / 排序 / 标题回退规则时**三处必须一起改**，否则三个页面对
+   *   「谁是代表、卡名叫什么」会给出不同答案。
+   * ------------------------------------------------------------------------ */
+  var MG = (function () {
+    function modelId(m) {
+      return String((m && (m.id || m.canonicalId)) || "");
+    }
+    function groupIdOf(m) {
+      var g = m && m.group;
+      if (!g || typeof g !== "object") return "";
+      return g.id == null ? "" : String(g.id).trim();
+    }
+    function rankOf(m) {
+      var g = m && m.group;
+      var n = g ? Number(g.rank) : NaN;
+      return isFinite(n) ? n : 0;
+    }
+    function variantOf(m) {
+      var g = m && m.group;
+      return g && g.variant != null ? String(g.variant).trim() : "";
+    }
+
+    /** 编索引：groups(按组内首个成员的出现位置排序) / byId / groupOfModel / repOfModel。 */
+    function indexModels(models) {
+      var list = Array.isArray(models) ? models : [];
+      var byId = {};
+      var order = [];
+      for (var i = 0; i < list.length; i++) {
+        var gid = groupIdOf(list[i]);
+        if (!gid) continue;
+        if (!byId[gid]) { byId[gid] = { id: gid, label: "", members: [], order: i }; order.push(gid); }
+        byId[gid].members.push(list[i]);
+      }
+      var groupOfModel = {};
+      var repOfModel = {};
+      var groups = [];
+      for (var k = 0; k < order.length; k++) {
+        var grp = byId[order[k]];
+        // rank 升序；同 rank 按 id 稳定排序，避免代表随渲染顺序漂移。
+        grp.members.sort(function (a, b) {
+          var d = rankOf(a) - rankOf(b);
+          if (d !== 0) return d;
+          return modelId(a) < modelId(b) ? -1 : modelId(a) > modelId(b) ? 1 : 0;
+        });
+        // 卡名：DB 显式写了 group_label 就用它（主线下架、只剩普惠线时需要）；
+        // 否则用代表成员的 displayName。
+        var explicit = "";
+        for (var j = 0; j < grp.members.length; j++) {
+          var g = grp.members[j].group;
+          var lbl = g && g.label != null ? String(g.label).trim() : "";
+          if (lbl) { explicit = lbl; break; }
+        }
+        var lead = grp.members[0];
+        grp.label = explicit || String((lead && (lead.displayName || lead.id)) || grp.id);
+        var repId = modelId(lead);
+        for (var n = 0; n < grp.members.length; n++) {
+          var mid = modelId(grp.members[n]);
+          if (!mid) continue;
+          groupOfModel[mid] = grp.id;
+          repOfModel[mid] = repId;
+        }
+        groups.push(grp);
+      }
+      return { groups: groups, byId: byId, groupOfModel: groupOfModel, repOfModel: repOfModel };
+    }
+
+    /**
+     * 广场用：同组折叠成一张卡。只有**成员 ≥ 2** 才折叠 —— 单成员组折叠没有意义，
+     * 还会因为 group_label 把卡名改掉反而误导。未分组模型原样透出。
+     * 代表卡 = 代表成员的浅拷贝 + groupInfo，所以调用方原有读法全部照旧可用。
+     */
+    function collapse(models) {
+      var list = Array.isArray(models) ? models : [];
+      var idx = indexModels(list);
+      var emitted = {};
+      var out = [];
+      for (var i = 0; i < list.length; i++) {
+        var m = list[i];
+        var gid = groupIdOf(m);
+        if (!gid) { out.push(m); continue; }
+        if (emitted[gid]) continue;
+        emitted[gid] = true;
+        var grp = idx.byId[gid];
+        if (!grp || grp.members.length < 2) { out.push(m); continue; }
+        var lead = grp.members[0];
+        var card = {};
+        for (var key in lead) {
+          if (Object.prototype.hasOwnProperty.call(lead, key)) card[key] = lead[key];
+        }
+        card.id = modelId(lead);
+        card.displayName = grp.label;
+        card.groupInfo = {
+          id: grp.id,
+          label: grp.label,
+          count: grp.members.length,
+          variants: grp.members.map(function (mem) {
+            return {
+              id: modelId(mem),
+              displayName: String((mem.displayName || mem.id) || ""),
+              variant: variantOf(mem) || String((mem.displayName || mem.id) || ""),
+              rank: rankOf(mem),
+            };
+          }),
+        };
+        out.push(card);
+      }
+      return out;
+    }
+
+    return {
+      indexModels: indexModels,
+      collapse: collapse,
+      groupIdOf: groupIdOf,
+      variantOf: variantOf,
+      modelId: modelId,
+    };
+  })();
+
   function dedupeFeaturedFirst(raw) {
     var byCanonical = {};
     var order = [];
@@ -427,9 +587,31 @@
     return list;
   }
 
-  function render(models) {
-    window.__CANCRI_MODELS__ = models.map(function (m) {
-      return { id: m.id, displayName: m.displayName, brand: m.brand };
+  // 2026-08-20 分组：`models` 是折叠后的卡片列表，`rawModels` 是未折叠的原始目录。
+  // 免费模型区**刻意不折叠** —— 那一区按 id 钉死了几条限时免费线（glm-5.2-fp8 /
+  // kimi-k3-high / nexusvai:minimax-m3-free / deepseek-v4-pro-0813），折叠后代表卡
+  // 会变成对应的付费主线，等于在首页承诺一个不存在的免费额度。
+  function render(models, rawModels) {
+    rawModels = Array.isArray(rawModels) ? rawModels : models;
+    var groupIdx = MG.indexModels(rawModels);
+    // 成员 id → 代表卡 id。广场上只有代表卡带 `#model-<id>` 锚点，所以按 id 找卡
+    // 的地方（旗舰名单 / 专项小卡锚点 / hash 定位 / 搜索）都要先过这张表。
+    function repId(id) {
+      var key = String(id || "");
+      return groupIdx.repOfModel[key] || key;
+    }
+    // 把旗舰名单里的成员 id 折算成代表 id 后补进 FEATURED_REP_RANK，
+    // 否则折叠卡查不到 rank，「旗舰」绿标会掉（见 FEATURED_REP_RANK 处注释）。
+    FEATURED_ORDER.forEach(function (id, i) {
+      var rid = repId(id).toLowerCase();
+      if (FEATURED_REP_RANK[rid] == null) FEATURED_REP_RANK[rid] = i;
+    });
+
+    // 搜索索引：卡片只剩代表，但用户还会搜「xhigh」。组内成员照样进索引，
+    // 只是 id 换成代表 id，这样 oai-platform.js 拼出的 `#model-<id>` 锚点仍然存在。
+    window.__CANCRI_MODELS__ = rawModels.map(function (m) {
+      var mid = String(m.id || m.canonicalId || "");
+      return { id: repId(mid), displayName: m.displayName, brand: m.brand };
     });
     if (typeof window.__cancriSearchRefresh === "function") window.__cancriSearchRefresh();
 
@@ -441,7 +623,17 @@
         var mid = String(m.id || m.canonicalId || "").toLowerCase();
         if (mid) byIdFrontier[mid] = m;
       });
-      var top = FEATURED_ORDER.map(function (id) { return byIdFrontier[id.toLowerCase()]; }).filter(Boolean);
+      // 名单里同时钉着主线和它的 XHigh 线（claude-opus-4-8-xhigh / gpt-5.6-sol-xhigh），
+      // 折叠后两者映到同一张卡 → 必须去重，否则旗舰区会出现重复卡。
+      var seenTop = {};
+      var top = FEATURED_ORDER.map(function (id) {
+        var rid = repId(id).toLowerCase();
+        if (seenTop[rid]) return null;
+        var hit = byIdFrontier[rid];
+        if (!hit) return null;
+        seenTop[rid] = true;
+        return hit;
+      }).filter(Boolean);
       var n = parseInt(frontier.getAttribute("data-cancri-limit") || "3", 10);
       if (n > 0) top = top.slice(0, n);
       // anchor ids only when there is no full grid on this page (e.g. landing),
@@ -457,8 +649,9 @@
 
     var free = document.getElementById("cancri-free");
     if (free) {
+      // 见上方注释：免费区查的是**未折叠**目录，拿到的就是那条免费线本身。
       var byId = {};
-      models.forEach(function (m) {
+      rawModels.forEach(function (m) {
         var mid = String(m.id || m.canonicalId || "").toLowerCase();
         if (mid) byId[mid] = m;
       });
@@ -480,16 +673,22 @@
       }).join("");
     }
 
-    renderSpecialized(models);
+    // 专项区要排掉旗舰卡。旗舰名单里写的是成员 id（含 -xhigh），折叠后代表 id 变了，
+    // 所以这里按「代表 id」判重，否则 Opus 4.8 会在旗舰区和专项区各出现一次。
+    var featuredRepSet = {};
+    FEATURED_ORDER.forEach(function (id) { featuredRepSet[repId(id).toLowerCase()] = true; });
+    renderSpecialized(models, featuredRepSet);
     bindSpecializedScroll();
     bindCardNav();
-    locateHashModel(models);
+    locateHashModel(models, repId);
 
+    // 「共 N 个可用模型」报的是**真实可调用的 model id 数**（未折叠），不是卡片数 ——
+    // 对 API 用户来说能发的 id 有多少才是有用信息。
     var counters = document.querySelectorAll("[data-cancri-count]");
-    counters.forEach(function (el) { el.textContent = String(models.length); });
+    counters.forEach(function (el) { el.textContent = String(rawModels.length); });
   }
 
-  function locateHashModel(models) {
+  function locateHashModel(models, repId) {
     var raw = String(window.location.hash || "");
     if (!raw) return;
 
@@ -509,6 +708,10 @@
     var requested = "";
     try { requested = decodeURIComponent(raw.slice(7)); } catch (_) { requested = raw.slice(7); }
     var target = document.getElementById("model-" + requested);
+    // 旧链接可能指向组内成员（如 #model-gpt-5.6-sol-xhigh），折叠后只有代表卡有锚点。
+    if (!target && typeof repId === "function") {
+      target = document.getElementById("model-" + repId(requested));
+    }
     if (!target && /glm-?5\.2/i.test(requested)) {
       var match = models.find(function (m) {
         var id = String(m.id || m.canonicalId || "");
@@ -757,14 +960,17 @@
         }
       }
       var raw = Array.isArray(data && data.models) ? data.models : [];
-      var models = dedupeFeaturedFirst(raw);
+      var rawModels = dedupeFeaturedFirst(raw);
+      // 2026-08-20 分组折叠。DB 还没配分组（或 cron 还没重发快照）时 catalog 不带
+      // group 字段 → collapse 原样返回 → 广场退回「一模型一卡」，不报错。
+      var models = MG.collapse(rawModels);
       if (loading) {
         loading.setAttribute("data-cancri-hidden", "");
         loading.removeAttribute("aria-busy");
       }
       var grid = document.getElementById("cancri-grid");
       if (grid) grid.removeAttribute("data-cancri-hidden");
-      render(models);
+      render(models, rawModels);
       ["cancri-frontier", "cancri-free", "cancri-specialized"].forEach(function (id) {
         var el = document.getElementById(id);
         if (el) el.removeAttribute("aria-busy");

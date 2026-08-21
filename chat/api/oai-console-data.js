@@ -191,6 +191,11 @@
       creating: "Creating…",
       createKeyTitle: "Create new secret key",
       keyNameLabel: "Key name (optional)",
+      keyGroupLabel: "Model group (optional)",
+      keyGroupAny: "All models (no restriction)",
+      keyGroupHint:
+        "Pick a group and this key may only call models in that group; other models return 403. Leave it on \u201CAll models\u201D to skip.",
+      keyGroupTag: "Group: ",
       keyCreatedTitle: "Secret key created",
       keyCreatedHint: "Copy now — you won't see it again.",
       copy: "Copy",
@@ -213,6 +218,11 @@
       creating: "创建中…",
       createKeyTitle: "创建新密钥",
       keyNameLabel: "密钥名称（可选）",
+      keyGroupLabel: "指定分组（可选）",
+      keyGroupAny: "全部模型（不限制）",
+      keyGroupHint:
+        "选定分组后，此密钥只能调用该分组内的模型，调其它模型返回 403。保持「全部模型」即跳过此限制。",
+      keyGroupTag: "分组：",
       keyCreatedTitle: "密钥已创建",
       keyCreatedHint: "请立即复制，关闭后将无法再次查看。",
       copy: "复制",
@@ -1150,6 +1160,22 @@
         esc(opts.input.value || "") +
         '" /></label>';
     }
+    // 2026-08-20：可选下拉（建 Key 的「指定分组」用）。onConfirm 只收 input 的值，
+    // 下拉值由回调自己从 card.querySelector('#cs-modal-select') 读，避免改所有调用点的签名。
+    if (opts.select) {
+      var optionsHtml = (opts.select.options || []).map(function (o) {
+        var selected = String(o.value) === String(opts.select.value == null ? "" : opts.select.value);
+        return '<option value="' + esc(o.value == null ? "" : o.value) + '"' +
+          (selected ? " selected" : "") + ">" + esc(o.label) + "</option>";
+      }).join("");
+      inputHtml +=
+        '<label class="cs-modal__field"><span>' +
+        esc(opts.select.label || "") +
+        '</span><select id="cs-modal-select">' + optionsHtml + "</select></label>" +
+        (opts.select.hint
+          ? '<p class="cs-modal__hint">' + esc(opts.select.hint) + "</p>"
+          : "");
+    }
     var foot =
       '<div class="cs-modal__foot">' +
       '<button type="button" class="csbtn csbtn--ghost" id="cs-modal-cancel">' +
@@ -1215,6 +1241,126 @@
     }, 0);
   }
 
+  // 2026-08-20：建 Key 的「指定分组」下拉选项。
+  // `model_public_catalog` 是公开端点（无需鉴权），复用 call() 只是图它已经拼好了网关地址；
+  // 多带的 __auth_token 那边会忽略。失败一律静默返回空数组 —— 分组只是可选项，
+  // 拉不到不能把「建 Key」这个主流程也堵死。
+  function loadGroupOptions() {
+    return call("model_public_catalog", {})
+      .then(function (d) {
+        return selectableGroups((d && d.models) || []).map(function (g) {
+          return { value: g.id, label: g.label + "（" + g.count + " 个分组）" };
+        });
+      })
+      .catch(function () { return []; });
+  }
+
+  /* 分组原语：本文件只需要「可选的分组列表」。
+     分组本身来自 DB model_catalog 四列，经 catalog 下发成 m.group={id,label,variant,rank}，
+     本文件零硬编码 —— 运维加模型/调分组只跑 SQL。
+     ⚠⚠ 同语义在开放平台有 3 份逐字副本（按要求不新增共享文件）：
+         1) api/oai-models.js  2) api/model_detail.html  3) 本文件
+     改分桶键 / 排序 / 标题回退规则时三处必须一起改。
+     只给**成员 ≥ 2** 的组：单成员组选它等于选一个模型，没有「分组」的意义，
+     只会把下拉撑长。 */
+  function selectableGroups(models) {
+    var list = Array.isArray(models) ? models : [];
+    function gid(m) {
+      var g = m && m.group;
+      if (!g || typeof g !== "object") return "";
+      return g.id == null ? "" : String(g.id).trim();
+    }
+    function mid(m) { return String((m && (m.id || m.canonicalId)) || ""); }
+    function rank(m) {
+      var g = m && m.group;
+      var n = g ? Number(g.rank) : NaN;
+      return isFinite(n) ? n : 0;
+    }
+    var byId = {};
+    var order = [];
+    list.forEach(function (m) {
+      var key = gid(m);
+      if (!key) return;
+      if (!byId[key]) { byId[key] = []; order.push(key); }
+      byId[key].push(m);
+    });
+    return order
+      .map(function (key) {
+        var members = byId[key];
+        members.sort(function (a, b) {
+          var d = rank(a) - rank(b);
+          if (d !== 0) return d;
+          return mid(a) < mid(b) ? -1 : mid(a) > mid(b) ? 1 : 0;
+        });
+        // 卡名/组名：DB 显式 group_label 优先，否则用代表成员的展示名。
+        var explicit = "";
+        for (var i = 0; i < members.length; i++) {
+          var g = members[i].group;
+          var lbl = g && g.label != null ? String(g.label).trim() : "";
+          if (lbl) { explicit = lbl; break; }
+        }
+        var lead = members[0];
+        return {
+          id: key,
+          label: explicit || String((lead && (lead.displayName || lead.id)) || key),
+          count: members.length,
+        };
+      })
+      .filter(function (g) { return g.count >= 2; })
+      .sort(function (a, b) { return a.label < b.label ? -1 : a.label > b.label ? 1 : 0; });
+  }
+
+  // 建 Key 弹窗（含 2026-08-20 新增的「指定分组」下拉）。
+  // 分组选项异步拉，先用「全部模型」占位 —— 用户在 catalog 回来之前点开弹窗，
+  // 也至少能建一把不限分组的 Key，而不是看到空下拉。
+  function wireCreateKeyModal() {
+    var groupOptions = [{ value: "", label: t("keyGroupAny") }];
+    loadGroupOptions().then(function (opts) {
+      groupOptions = groupOptions.concat(opts);
+    });
+    wireCreateKeyButton(function () {
+      showModal({
+        title: t("createKeyTitle"),
+        input: {
+          label: t("keyNameLabel"),
+          placeholder: "default",
+          value: "default",
+        },
+        select: {
+          label: t("keyGroupLabel"),
+          options: groupOptions,
+          value: "",
+          hint: t("keyGroupHint"),
+        },
+        confirmText: t("create"),
+        onConfirm: function (name, cardEl, okBtn) {
+          okBtn.disabled = true;
+          okBtn.textContent = t("creating");
+          var sel = cardEl.querySelector("#cs-modal-select");
+          var group = sel && sel.value ? sel.value : null;
+          call("api_generate_key", { name: name || "default", allowed_group: group })
+            .then(function (d) {
+              closeCsModal();
+              if (d && d.key) showNewKeyModal(d.key);
+              return call("api_my_keys", {});
+            })
+            .then(renderKeysList)
+            .catch(function (e) {
+              okBtn.disabled = false;
+              okBtn.textContent = t("create");
+              var errEl = cardEl.querySelector(".cs-modal__err");
+              if (!errEl) {
+                errEl = el("div", "cs-modal__err");
+                cardEl.querySelector(".cs-modal__foot").before(errEl);
+              }
+              errEl.textContent =
+                t("createFailed") + (e && e.message ? e.message : e);
+            });
+        },
+      });
+    });
+  }
+
   function wireCreateKeyButton(onCreate) {
     var needles = ["Create new secret key", "创建新密钥", "Create an API key"];
     document.querySelectorAll("button").forEach(function (btn) {
@@ -1275,13 +1421,20 @@
           ? new Date(k.created_at).toLocaleDateString("zh-CN")
           : "—";
         var id = k.id || k.key_id || "";
+        // 2026-08-20：建 Key 时选过分组的，列表里要看得见 —— 否则用户过几天忘了
+        // 这把 Key 有限制，只会看到莫名其妙的 403。
+        var group = k.allowed_group ? String(k.allowed_group) : "";
+        var groupTag = group
+          ? '<div style="margin-top:4px;font-size:12px;opacity:.75">' +
+            esc(t("keyGroupTag")) + esc(group) + "</div>"
+          : "";
         return (
           '<div class="api-key-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--color-border,#eee)">' +
           '<div><div style="font-weight:600">' +
           esc(name) +
           '</div><div style="font-family:monospace;font-size:13px;opacity:.75">' +
           esc(prefix) +
-          "</div></div>" +
+          "</div>" + groupTag + "</div>" +
           '<div style="display:flex;align-items:center;gap:12px">' +
           '<span style="font-size:13px;opacity:.7">' +
           esc(created) +
@@ -1692,41 +1845,12 @@
         });
       }
 
-      if (PAGE === "keys") {
-        wireCreateKeyButton(function () {
-          showModal({
-            title: t("createKeyTitle"),
-            input: {
-              label: t("keyNameLabel"),
-              placeholder: "default",
-              value: "default",
-            },
-            confirmText: t("create"),
-            onConfirm: function (name, cardEl, okBtn) {
-              okBtn.disabled = true;
-              okBtn.textContent = t("creating");
-              call("api_generate_key", { name: name || "default" })
-                .then(function (d) {
-                  closeCsModal();
-                  if (d && d.key) showNewKeyModal(d.key);
-                  return call("api_my_keys", {});
-                })
-                .then(renderKeysList)
-                .catch(function (e) {
-                  okBtn.disabled = false;
-                  okBtn.textContent = t("create");
-                  var errEl = cardEl.querySelector(".cs-modal__err");
-                  if (!errEl) {
-                    errEl = el("div", "cs-modal__err");
-                    cardEl.querySelector(".cs-modal__foot").before(errEl);
-                  }
-                  errEl.textContent =
-                    t("createFailed") + (e && e.message ? e.message : e);
-                });
-            },
-          });
-        });
-        renderKeysList(keysRes);
+      // 建 Key 弹窗：密钥页当然要，概览页的「1. Create an API key」上手清单按钮
+      // 在 2026-08-20 之前是**没接线的死按钮**（wireCreateKeyButton 只在 keys 页调），
+      // 用户按了没反应。这里一并接上；renderKeysList 在概览页找不到挂载点会自己 return。
+      if (PAGE === "keys" || PAGE === "overview") {
+        wireCreateKeyModal();
+        if (PAGE === "keys") renderKeysList(keysRes);
       }
       if (PAGE === "logs") renderLogsList(usage);
 
