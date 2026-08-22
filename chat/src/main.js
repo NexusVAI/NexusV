@@ -2397,6 +2397,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         walletDebt: quotaState.walletDebt,
         walletCumulativeRecharge: quotaState.walletCumulativeRecharge,
         walletTier: quotaState.walletTier,
+        // 2026-08-22 plan_v4：配额面板/横幅需要识别当前是否在套餐制
+        planV4Active: quotaState.planV4Active,
+        planV4Code: quotaState.planV4Code,
       };
     },
     refresh: function (force) {

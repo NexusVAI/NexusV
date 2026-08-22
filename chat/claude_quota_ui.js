@@ -413,29 +413,48 @@
   }
 
   // 档位 → 显示标签
-  var PLAN_LABEL = { pro: 'Pro', pro_plus: 'Pro+', pro_max: 'Pro Max' };
-  var PLAN_CHIP = { pro: 'PRO', pro_plus: 'PRO+', pro_max: 'PRO MAX' };
+  // 2026-08-22：plan_v4 套餐制新增 go/plus/pro
+  var PLAN_LABEL = { go: 'Go', plus: 'Plus', pro: 'Pro', pro_plus: 'Pro+', pro_max: 'Pro Max' };
+  var PLAN_CHIP = { go: 'GO', plus: 'PLUS', pro: 'PRO', pro_plus: 'PRO+', pro_max: 'PRO MAX' };
 
   // 渲染 PAID 用户视图（含 30 天用量明细）
   function renderPaidView(data, usage) {
     // v2 RPC 把 plan / quota / topup 都铺在 data 顶层；老 sub 对象兼容保留。
-    var planCode = data.plan_code || (data.subscription && data.subscription.plan_code) || 'pro';
-    var daysRemaining = Number(data.days_remaining || (data.subscription && data.subscription.days_remaining)) || 0;
-    var expiresAt = data.expires_at || (data.subscription && data.subscription.expires_at);
+    // 2026-08-22：plan_v4 套餐制优先读取 plan_v4 对象，避免用旧 subscription 过期数据。
+    var isPlanV4 = data.billing_mode === 'plan_v4' && data.plan_v4 && data.plan_v4.active === true;
+    var planCode = isPlanV4
+      ? (data.plan_v4.plan_code || 'plus')
+      : (data.plan_code || (data.subscription && data.subscription.plan_code) || 'pro');
+    var daysRemaining = isPlanV4
+      ? Math.max(0, Math.floor((Date.parse(data.plan_v4.period_end) - Date.now()) / 86400000))
+      : (Number(data.days_remaining || (data.subscription && data.subscription.days_remaining)) || 0);
+    var expiresAt = isPlanV4
+      ? data.plan_v4.period_end
+      : (data.expires_at || (data.subscription && data.subscription.expires_at));
     var expiresFmt = expiresAt ? fmtDate(expiresAt) : '—';
 
     // 2026-05-17 Phase A grandfather：方案 F 的「老用户福利」标志，仅在 Pro 档生效。
     // 后端在订阅未过期时返回 true；过期 → false → 豁免自动失效。
-    var isGrandfathered = Boolean(
+    var isGrandfathered = !isPlanV4 && Boolean(
       data.is_grandfathered || (data.subscription && data.subscription.is_grandfathered)
     );
     var showGrandfatherChip = isGrandfathered && planCode === 'pro';
 
-    var monthlyQuota = Number(data.monthly_quota) || 0;
-    var monthlyConsumed = Number(data.monthly_consumed) || 0;
-    var monthlyRemaining = Math.max(monthlyQuota - monthlyConsumed, 0);
-    var monthlyPercent = monthlyQuota > 0 ? Math.min(100, (monthlyConsumed / monthlyQuota) * 100) : 0;
-    var monthlyBarClass = monthlyPercent >= 95 ? 'is-exhausted' : monthlyPercent >= 80 ? 'is-warn' : '';
+    var monthlyQuota, monthlyConsumed, monthlyRemaining, monthlyPercent, monthlyBarClass;
+    if (isPlanV4) {
+      // plan_v4：按 ¥ 显示额度，后端已经把 allowance/used/remaining 以 cny 为单位返回。
+      monthlyQuota = Number(data.plan_v4.allowance_cny) || 0;
+      monthlyConsumed = Number(data.plan_v4.used_cny) || 0;
+      monthlyRemaining = Number(data.plan_v4.remaining_cny) || 0;
+      monthlyPercent = monthlyQuota > 0 ? Math.min(100, (monthlyConsumed / monthlyQuota) * 100) : 0;
+      monthlyBarClass = monthlyPercent >= 95 ? 'is-exhausted' : monthlyPercent >= 80 ? 'is-warn' : '';
+    } else {
+      monthlyQuota = Number(data.monthly_quota) || 0;
+      monthlyConsumed = Number(data.monthly_consumed) || 0;
+      monthlyRemaining = Math.max(monthlyQuota - monthlyConsumed, 0);
+      monthlyPercent = monthlyQuota > 0 ? Math.min(100, (monthlyConsumed / monthlyQuota) * 100) : 0;
+      monthlyBarClass = monthlyPercent >= 95 ? 'is-exhausted' : monthlyPercent >= 80 ? 'is-warn' : '';
+    }
 
     var topupBalance = Number(data.topup_balance) || 0;
     var topupTotalPurchased = Number(data.topup_total_purchased) || 0;
@@ -516,9 +535,14 @@
       ? '    <span class="claude-tier-chip is-grandfather" title="Phase A 老用户福利：可调 Claude Opus 系列，到期自然失效">老用户 · Opus 可调</span>'
       : '';
 
-    var subscriptionNote = showGrandfatherChip
-      ? 'PAID 订阅扣的是周期配额（积分 = 真实 token ÷ 1 万，再 × 模型权重折算），每 30 天订阅周期自动重置。<b>您是 Phase A 老用户</b>，在本订阅周期内可继续调用 Claude Opus 全系（权重照常生效），到期不延续。续费请前往 <a href="./pricing.html">套餐页</a>。'
-      : 'PAID 订阅扣的是周期配额（积分 = 真实 token ÷ 1 万，再 × 模型权重折算），每 30 天订阅周期自动重置。Pro+ 以上可调 Claude Opus 系列。续费请前往 <a href="./pricing.html">套餐页</a>。';
+    var subscriptionNote;
+    if (isPlanV4) {
+      subscriptionNote = '当前为 plan_v4 套餐制订阅。套餐内按模型独立定价扣减月度 ¥ 额度，额度耗尽后自动溢出到钱包按量计费。续费请前往 <a href="./pricing.html">套餐页</a>。';
+    } else if (showGrandfatherChip) {
+      subscriptionNote = 'PAID 订阅扣的是周期配额（积分 = 真实 token ÷ 1 万，再 × 模型权重折算），每 30 天订阅周期自动重置。<b>您是 Phase A 老用户</b>，在本订阅周期内可继续调用 Claude Opus 全系（权重照常生效），到期不延续。续费请前往 <a href="./pricing.html">套餐页</a>。';
+    } else {
+      subscriptionNote = 'PAID 订阅扣的是周期配额（积分 = 真实 token ÷ 1 万，再 × 模型权重折算），每 30 天订阅周期自动重置。Pro+ 以上可调 Claude Opus 系列。续费请前往 <a href="./pricing.html">套餐页</a>。';
+    }
 
     return [
       '<div class="claude-quota-card">',
@@ -541,10 +565,16 @@
       '  </div>',
       '  <div class="claude-quota-bar"><div class="claude-quota-bar-fill ' + monthlyBarClass + '" style="width:' + monthlyPercent.toFixed(2) + '%"></div></div>',
       '  <div class="claude-quota-stat">',
-      '    <span>已用 <b>' + CC.num(monthlyConsumed) + '</b> / ' + CC.num(monthlyQuota) + ' 积分</span>',
-      '    <span>剩余 ' + CC.num(monthlyRemaining) + ' 积分 · ' + monthlyPercent.toFixed(1) + '%</span>',
+      isPlanV4
+        ? '    <span>已用 <b>¥' + monthlyConsumed.toFixed(2) + '</b> / ¥' + monthlyQuota.toFixed(2) + '</span>'
+        : '    <span>已用 <b>' + CC.num(monthlyConsumed) + '</b> / ' + CC.num(monthlyQuota) + ' 积分</span>',
+      isPlanV4
+        ? '    <span>剩余 <b>¥' + monthlyRemaining.toFixed(2) + '</b> · ' + monthlyPercent.toFixed(1) + '%</span>'
+        : '    <span>剩余 ' + CC.num(monthlyRemaining) + ' 积分 · ' + monthlyPercent.toFixed(1) + '%</span>',
       '  </div>',
-      '  <p class="claude-quota-note">月度配额耗尽后会自动从加油包扣减；都为 0 时返回 <code>monthly_quota_exhausted</code>。</p>',
+      isPlanV4
+        ? '  <p class="claude-quota-note">月度套餐额度耗尽后会自动从钱包余额按量扣费；钱包不足时返回 <code>allowance_exhausted</code>。</p>'
+        : '  <p class="claude-quota-note">月度配额耗尽后会自动从加油包扣减；都为 0 时返回 <code>monthly_quota_exhausted</code>。</p>',
       '</div>',
 
       topupCard,
@@ -602,7 +632,9 @@
           panel.innerHTML = renderWalletView(data, {});
         });
       }
-      if (data.tier === 'paid') {
+      // 2026-08-22：plan_v4 套餐制走 renderPaidView，但 renderPaidView 内部会识别 isPlanV4 并按 ¥ 显示。
+      // 这里保持 data.tier === 'paid' 分支，因为后端已把 plan_v4 active 用户的 tier 覆盖为 'paid'。
+      if (data.billing_mode === 'plan_v4' || data.tier === 'paid') {
         return fetchMyUsage(false).then(function (usage) {
           panel.setAttribute('data-quota-state', 'ready');
           panel.innerHTML = renderPaidView(data, usage || {});

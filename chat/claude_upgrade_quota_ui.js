@@ -137,6 +137,24 @@
       return null;
     }
 
+    // 2026-08-22：plan_v4 套餐制下，月度剩余额度由后端 enforcePlanGate 实时判定；
+    // 前端不应根据旧 monthlyRemaining 预挡 banner。只要还有效套餐，就不显示"配额已用完"。
+    if (snap.billingMode === "plan_v4") {
+      if (snap.planV4Active === true && Number(snap.monthlyRemaining) > 0) {
+        return null;
+      }
+      if (snap.planV4Active === true && Number(snap.monthlyRemaining) <= 0) {
+        return {
+          kind: "paid_monthly",
+          tier: "paid",
+          planCode: snap.planCode,
+          daysRemaining: snap.daysRemaining,
+          expiresAt: snap.expiresAt,
+        };
+      }
+      // 无有效 plan_v4 套餐 → 退回钱包余额检查（优先）或 free 检查
+    }
+
     var topup = snap.topupBalance;
     var hasTopup = topup !== null && Number(topup) > 0;
 

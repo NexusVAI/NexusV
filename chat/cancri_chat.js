@@ -2385,7 +2385,9 @@
 				walletBalance: quotaState.walletBalance,
 				walletDebt: quotaState.walletDebt,
 				walletCumulativeRecharge: quotaState.walletCumulativeRecharge,
-				walletTier: quotaState.walletTier
+				walletTier: quotaState.walletTier,
+				planV4Active: quotaState.planV4Active,
+				planV4Code: quotaState.planV4Code
 			};
 		},
 		refresh: function(force) {
