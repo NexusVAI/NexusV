@@ -2581,7 +2581,6 @@
 		"claude-sonnet-4-5": DEFAULT_MODEL_ID,
 		"gemini-3-flash-alt": DEFAULT_MODEL_ID,
 		"glm-4.7-siliconflow": DEFAULT_MODEL_ID,
-		"qwen3.6-plus": DEFAULT_MODEL_ID,
 		"qwen3.6-plus-2026-04-02-dashscope": DEFAULT_MODEL_ID,
 		"qwen3.5-omni-plus": DEFAULT_MODEL_ID,
 		"wan2.7-t2v": DEFAULT_MODEL_ID,

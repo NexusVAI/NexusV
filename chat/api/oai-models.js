@@ -53,6 +53,9 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    // 2026-08-23: NexusVAI 免费线（无访问期）。
+    "nexusvai-free-glm-5.2",
+    "nexusvai-free-nemotron-3-ultra",
     // 2026-08-18 晚：Opus5 免费期结束（改名 claude-opus-5-thinking、按次 ¥0.099），
     // 从免费区移除 —— 它现在是付费模型，留在这里会让首页承诺一个不存在的免费额度。
     // 2026-08-18: claude-opus-4.8-free 限时免费线（至 08-19），钉到免费区首屏。

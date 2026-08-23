@@ -2729,7 +2729,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     "claude-sonnet-4-5": DEFAULT_MODEL_ID,
     "gemini-3-flash-alt": DEFAULT_MODEL_ID,
     "glm-4.7-siliconflow": DEFAULT_MODEL_ID,
-    "qwen3.6-plus": DEFAULT_MODEL_ID,
+    // 2026-08-23: qwen3.6-plus 已重新上架（qwqtao 免费桶），禁止再当迁移来源。
     "qwen3.6-plus-2026-04-02-dashscope": DEFAULT_MODEL_ID,
     "qwen3.5-omni-plus": DEFAULT_MODEL_ID,
     "wan2.7-t2v": DEFAULT_MODEL_ID,
