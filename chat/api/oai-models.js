@@ -53,8 +53,8 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    // 2026-08-23: NexusVAI 免费线（无访问期）。
-    "nexusvai-free-glm-5.2",
+    // 2026-08-25: glm-5.3-free 限时免费（至 08-28）。nexusvai-free-glm-5.2 已退役。
+    "glm-5.3-free",
     "nexusvai-free-nemotron-3-ultra",
     // 2026-08-18 晚：Opus5 免费期结束（改名 claude-opus-5-thinking、按次 ¥0.099），
     // 从免费区移除 —— 它现在是付费模型，留在这里会让首页承诺一个不存在的免费额度。
@@ -77,6 +77,7 @@
 
   // catalog 无 publicDescription 时的卡片兜底（与 kimi / deepseek 限时卡文案对齐）。
   var DESC_FALLBACK = {
+    "glm-5.3-free": "08-28结束免费期限",
     "qwen-3.8-max": "08-20结束免费期限",
     "deepseek-v4-pro-0813": "08-20结束免费期限",
     "claude-opus-4.8-free": "08-19结束免费期限",
