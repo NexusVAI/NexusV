@@ -311,6 +311,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   let rateLimitRefreshToken = 0;
   let independentModelPingTimer = null;
   let modelTelemetryLastRefreshedAt = 0;
+  // 上次真正跑完 bootstrapModelTelemetry 网络刷新的时刻（持久化到遥测缓存）。
+  // 用于挡住「5 分钟内反复刷新 / 在多个页面间来回切」造成的重复三连发。
+  let modelTelemetryBootstrapAt = 0;
+  const TELEMETRY_BOOTSTRAP_TTL_MS = 5 * 60 * 1000;
   
   // 模型状态：额度和速度
   const modelStatus = new Map(); // modelId -> { quotaRemaining, quotaLimit, speedMs, speedLevel, lastChecked, error }
@@ -938,7 +942,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const cancelBtn = card.querySelector("#queueCancelBtn");
   
       function cleanup(result) {
-        if (pollTimer) clearInterval(pollTimer);
+        if (pollTimer) clearTimeout(pollTimer);
         pollTimer = null;
         card.classList.add("queue-card-leaving");
         setTimeout(() => card.remove(), 180);
@@ -989,8 +993,25 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         } catch { /* ignore */ }
       }
   
+      // 2026-08-27：原为固定 3s setInterval —— 高峰排队时每个等待中的用户就是
+      // 1200 次/小时，是免费额度的放大器。改成 3s 起步、每轮 ×1.4、上限 15s：
+      // 队首用户（很快轮到）几乎察觉不到差别，长队用户的请求量降一个量级。
+      const QUEUE_POLL_MIN_MS = 3000;
+      const QUEUE_POLL_MAX_MS = 15000;
+      let queuePollDelay = QUEUE_POLL_MIN_MS;
+
+      async function pollQueueLoop() {
+        await pollQueue();
+        if (cancelled || !pollTimer) return;
+        queuePollDelay = Math.min(
+          QUEUE_POLL_MAX_MS,
+          Math.round(queuePollDelay * 1.4),
+        );
+        pollTimer = setTimeout(pollQueueLoop, queuePollDelay);
+      }
+
       pollQueue();
-      pollTimer = setInterval(pollQueue, 3000);
+      pollTimer = setTimeout(pollQueueLoop, queuePollDelay);
     });
   }
   
@@ -1516,6 +1537,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const snapshot = {
         version: MODEL_TELEMETRY_CACHE_VERSION,
         refreshedAt: modelTelemetryLastRefreshedAt || 0,
+        bootstrapAt: modelTelemetryBootstrapAt || 0,
         persistedAt: Date.now(),
         rateLimitInfo: { ...rateLimitInfo },
         modelStatus: Array.from(modelStatus.entries())
@@ -1785,13 +1807,27 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       updateModelDropdownIndicators();
     }
   
-    // 页面打开时刷新一次，后续主要跟随真实请求头更新
-    await Promise.allSettled([
-      refreshSharedQuota(),
-      refreshIndependentModelPing(),
-      refreshDisabledModelLines(),
-      fetchModelHealthStatus(),
-    ]);
+    // 2026-08-27：原本无条件三连发（ping / disabled_models / model_health）。
+    // 缓存里其实已经存了上次刷新时刻，只是从没拿来用 —— 用户刷新一次页面、或者
+    // 在 chat / account / pricing 之间切一次，就重打一遍。这里按 5 分钟新鲜度放行；
+    // 跳过也不会永久 stale：下面两个 setInterval 到点仍会自己拉，真实聊天请求的
+    // 响应头也会持续刷新 rateLimitInfo。
+    const telemetryFresh =
+      Number.isFinite(cache?.bootstrapAt) &&
+      cache.bootstrapAt > 0 &&
+      Date.now() - cache.bootstrapAt < TELEMETRY_BOOTSTRAP_TTL_MS;
+    if (telemetryFresh) {
+      modelTelemetryBootstrapAt = cache.bootstrapAt;
+    } else {
+      await Promise.allSettled([
+        refreshSharedQuota(),
+        refreshIndependentModelPing(),
+        refreshDisabledModelLines(),
+        fetchModelHealthStatus(),
+      ]);
+      modelTelemetryBootstrapAt = Date.now();
+      persistModelTelemetryCache();
+    }
     autoSwitchIfCurrentModelUnavailable();
     scheduleIndependentModelPingRefresh(INDEPENDENT_MODEL_PING_INTERVAL_MS);
     // 后台每 5 分钟同步一次禁用线路（chat-gateway 自身缓存 60s，所以这里
@@ -2778,10 +2814,46 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // （hunyuan-mt-7b 翻译工具：后端 visible:false 但前端翻译功能需要）；cf:/or:/hf:
   // 等一律以后端为准，后端隐藏即菜单消失，不再前端硬编码回灌。
   const LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
-  // 2026-06-24: 每次打开模型下拉都强制拉后端，避免前端缓存旧 catalog。
-  const MODEL_UI_CATALOG_TTL_MS = 0;
+  // 2026-08-27：原值为 0，使下面的新鲜度判断恒假 —— 缓存等于被关闭，而
+  // openModelDropdown 每次打开菜单都会调 initModelCatalogFromServer(false)，
+  // 用户挑模型时连点几次就连打几次网关。目录是全站共享的匿名数据，后端自身
+  // 也只有 60s 新鲜度，前端跟齐即可，不会更晚看到上下架。
+  const MODEL_UI_CATALOG_TTL_MS = 60 * 1000;
+  const MODEL_UI_CATALOG_CACHE_KEY = "cancri_model_ui_catalog_v1";
+  const MODEL_UI_CATALOG_CACHE_VERSION = 1;
   let modelUiCatalogFetchedAt = 0;
   let modelUiCatalogInflight = null;
+
+  // 内存 TTL 活不过刷新和切页，而 chat 站是多页的（index / account / pricing 各自
+  // 加载一遍脚本）。目录不含任何 user-specific 数据，落 localStorage 跨页共享。
+  function readModelUiCatalogCache() {
+    try {
+      const raw = localStorage.getItem(MODEL_UI_CATALOG_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.version !== MODEL_UI_CATALOG_CACHE_VERSION) return null;
+      if (!Number.isFinite(parsed.fetchedAt)) return null;
+      if (!Array.isArray(parsed.models) || parsed.models.length === 0) return null;
+      return parsed;
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  function persistModelUiCatalogCache(models) {
+    try {
+      localStorage.setItem(
+        MODEL_UI_CATALOG_CACHE_KEY,
+        JSON.stringify({
+          version: MODEL_UI_CATALOG_CACHE_VERSION,
+          fetchedAt: Date.now(),
+          models,
+        }),
+      );
+    } catch (_e) {
+      // 隐私模式 / 配额满：忽略，退化成纯内存缓存
+    }
+  }
   // 后端 catalog 首次加载完成前，模型菜单显示骨架屏（不展示任何硬编码项）。
   let modelCatalogLoaded = false;
 
@@ -2854,6 +2926,34 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return true;
   }
 
+  // merge 成功后统一的 UI 收尾，网络路径与缓存路径共用。
+  function applyCatalogToUi() {
+    if (!isModelEnabled(currentModel)) {
+      try {
+        setModel(getFallbackModelId(currentModel));
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    try {
+      if (typeof updateModelDropdownIndicators === "function") {
+        updateModelDropdownIndicators();
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      renderModelDropdownFromCatalog();
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      updateModelSelectorIcons();
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   function fetchModelUiCatalog(force) {
     if (
       !force &&
@@ -2861,6 +2961,22 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS
     ) {
       return Promise.resolve(true);
+    }
+    // 内存里没有（新标签页 / 刚刷新 / 从别的页面跳过来）时先看 localStorage。
+    // 命中就完全不发请求 —— 这是首屏省掉的那一个 Worker 请求。
+    if (!force && !modelUiCatalogFetchedAt) {
+      const cached = readModelUiCatalogCache();
+      if (
+        cached &&
+        Date.now() - cached.fetchedAt < MODEL_UI_CATALOG_TTL_MS &&
+        mergeServerUiCatalog(cached.models)
+      ) {
+        // mergeServerUiCatalog 会把 fetchedAt 设成 now，改回缓存写入时刻，
+        // 否则 TTL 会被一路续命、永远读不到后端的上下架。
+        modelUiCatalogFetchedAt = cached.fetchedAt;
+        applyCatalogToUi();
+        return Promise.resolve(true);
+      }
     }
     if (modelUiCatalogInflight) return modelUiCatalogInflight;
     const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
@@ -2895,30 +3011,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       .then((data) => {
         const ok = mergeServerUiCatalog(data && data.models);
         if (ok) {
-          if (!isModelEnabled(currentModel)) {
-            try {
-              setModel(getFallbackModelId(currentModel));
-            } catch (e) {
-              /* ignore */
-            }
-          }
-          try {
-            if (typeof updateModelDropdownIndicators === "function") {
-              updateModelDropdownIndicators();
-            }
-          } catch (e) {
-            /* ignore */
-          }
-          try {
-            renderModelDropdownFromCatalog();
-          } catch (e) {
-            /* ignore */
-          }
-          try {
-            updateModelSelectorIcons();
-          } catch (e) {
-            /* ignore */
-          }
+          persistModelUiCatalogCache(data.models);
+          applyCatalogToUi();
           // 2026-06-19 修复：删除对 syncComposerForModel 的调用 —— 该函数全仓无定义，
           // 一直被 catch 静默吞掉（空操作）。移除死调用，不改变运行时行为。
         }
@@ -4516,6 +4610,21 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   let authFlowController = null;
 
+  // 登录 iframe 懒加载：HTML 里只写 data-src，真正要展示登录页时才注入 src。
+  // file: 协议下父页与 iframe 不同源，contentDocument 取不到（authDoc 会退化成父文档、
+  // 表单定制全部失效），所以那条分支仍走 srcdoc 内联。
+  function ensureAuthLoginFrameLoaded() {
+    const frame = document.getElementById("authLoginFrame");
+    if (!frame || frame.dataset.cancriLoaded === "true") return;
+    frame.dataset.cancriLoaded = "true";
+    if (location.protocol === "file:") {
+      frame.srcdoc = loginIslandHtml;
+      return;
+    }
+    const src = frame.getAttribute("data-src");
+    if (src) frame.setAttribute("src", src);
+  }
+
   function authDoc() {
     const frame = document.getElementById("authLoginFrame");
     try {
@@ -4551,6 +4660,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function showAuthOverlay() {
     const overlay = document.getElementById("authOverlay");
     if (overlay) overlay.classList.add("visible");
+    ensureAuthLoginFrameLoaded();
     syncAuthOverlayMode();
     if (authFlowController) authFlowController.reset();
     const emailError = authEl("authEmailError");
@@ -4785,9 +4895,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     };
     if (frame) {
       frame.addEventListener("load", syncAuthLoginExperience);
-      if (location.protocol === "file:" && frame.dataset.cancriSrcdoc !== "true") {
-        frame.dataset.cancriSrcdoc = "true";
-        frame.srcdoc = loginIslandHtml;
+      // 同步预判：localStorage 里连 token 都没有 = 肯定要登录，立刻加载，
+      // 免得未登录用户白等一个 getSession 往返才开始下载登录页。
+      // 有 token 时交给上面的 getSession 分支：真登录了就永远不加载。
+      if (!getCancriAccessTokenForQuota() && !hasSharedConversationHash()) {
+        ensureAuthLoginFrameLoaded();
       }
     }
     window.addEventListener("cancri:auth-flow-ready", syncAuthLoginExperience, { once: true });
@@ -4957,7 +5069,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // key = 服务端 chat_history.id（拿到 id 前用临时 key），value = generation 对象。
   // 同一时刻只允许一个进行中的生成（沿用 state.isStreaming + hasActiveGeneration 守门）。
   const activeGenerations = new Map();
-  const INCREMENTAL_SAVE_INTERVAL_MS = 1500;
+  // 2026-08-27：原值 1500ms。每次 flush 都全量 PUT 整个 messages 数组，一次 60s
+  // 回答 = 40 次写库，而该轮对话本身只 1 次请求 —— 约 20:1 放大，是 Hyperdrive
+  // 日额度的头号消耗。页面隐藏 / 卸载仍会 flushActiveGenerationsBestEffort，
+  // 所以真正的「整页刷新丢失窗口」远小于这个间隔。
+  const INCREMENTAL_SAVE_INTERVAL_MS = 10000;
   const VISIBLE_RERENDER_INTERVAL_MS = 600;
   let notificationPermissionAsked = false;
   const CHAT_HISTORY_LIST_CACHE_KEY = "cancri_chat_history_list_cache_v1";
@@ -14135,6 +14251,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       startedAt: Date.now(),
       lastSavedAt: 0,
       localTitle: "",
+      _savedFingerprint: null,
       _saveTimer: null,
       _saving: false,
       _rerenderTimer: null,
@@ -14158,6 +14275,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
         if (data && data.id) {
           gen.chatId = data.id;
+          // 这批消息已随 create 落库，记下指纹，避免紧接着的首次 flush 重写一遍。
+          gen._savedFingerprint = fingerprintMessages(msgs);
           upsertCachedChatSummary(data);
           if (gen.visible && !currentChatId) {
             currentChatId = gen.chatId;
@@ -14186,13 +14305,37 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }, wait);
   }
 
+  // 内容指纹：只有消息真的变了才写库。序列化在 updateChatHistoryRow 里本来就要做，
+  // 这里多做一次的代价远低于一次无意义的跨洋 PUT。返回 null 表示无法指纹化，
+  // 调用方一律按「变了」处理（fail-open，宁可多写也不能丢内容）。
+  function fingerprintMessages(messages) {
+    let json;
+    try {
+      json = JSON.stringify(messages);
+    } catch (_e) {
+      return null;
+    }
+    let hash = 5381;
+    for (let i = 0; i < json.length; i++) {
+      hash = ((hash << 5) + hash + json.charCodeAt(i)) | 0;
+    }
+    return `${json.length}:${hash}`;
+  }
+
   async function flushGenSave(gen) {
     if (gen._saving) return;
     gen._saving = true;
     try {
       const chatId = await ensureGenChatRow(gen);
       if (chatId && gen.status === "streaming") {
-        await updateChatHistoryRow(chatId, genCurrentMessages(gen));
+        const messages = genCurrentMessages(gen);
+        const fingerprint = fingerprintMessages(messages);
+        // ensureGenChatRow 刚创建的行已经写过同一批消息；上游 chunk 只带了
+        // 工具状态之类不进 messages 的变化时也会得到相同指纹 —— 两种情况都跳过。
+        if (fingerprint === null || fingerprint !== gen._savedFingerprint) {
+          await updateChatHistoryRow(chatId, messages);
+          gen._savedFingerprint = fingerprint;
+        }
         gen.lastSavedAt = Date.now();
       }
     } catch (error) {

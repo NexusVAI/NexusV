@@ -1072,6 +1072,8 @@
 	var rateLimitRefreshToken = 0;
 	var independentModelPingTimer = null;
 	var modelTelemetryLastRefreshedAt = 0;
+	var modelTelemetryBootstrapAt = 0;
+	var TELEMETRY_BOOTSTRAP_TTL_MS = 300 * 1e3;
 	var modelStatus = /* @__PURE__ */ new Map();
 	function getModelSpeedLevel(speedMs) {
 		if (speedMs === null || speedMs === void 0) return "unknown";
@@ -1510,7 +1512,7 @@
 			const countEl = card.querySelector("#queueCount");
 			const cancelBtn = card.querySelector("#queueCancelBtn");
 			function cleanup(result) {
-				if (pollTimer) clearInterval(pollTimer);
+				if (pollTimer) clearTimeout(pollTimer);
 				pollTimer = null;
 				card.classList.add("queue-card-leaving");
 				setTimeout(() => card.remove(), 180);
@@ -1550,8 +1552,17 @@
 					if (pos === 0) cleanup(true);
 				} catch {}
 			}
+			const QUEUE_POLL_MIN_MS = 3e3;
+			const QUEUE_POLL_MAX_MS = 15e3;
+			let queuePollDelay = QUEUE_POLL_MIN_MS;
+			async function pollQueueLoop() {
+				await pollQueue();
+				if (cancelled || !pollTimer) return;
+				queuePollDelay = Math.min(QUEUE_POLL_MAX_MS, Math.round(queuePollDelay * 1.4));
+				pollTimer = setTimeout(pollQueueLoop, queuePollDelay);
+			}
 			pollQueue();
-			pollTimer = setInterval(pollQueue, 3e3);
+			pollTimer = setTimeout(pollQueueLoop, queuePollDelay);
 		});
 	}
 	function showCaptchaModal(payload) {
@@ -1877,6 +1888,7 @@
 			const snapshot = {
 				version: MODEL_TELEMETRY_CACHE_VERSION,
 				refreshedAt: modelTelemetryLastRefreshedAt || 0,
+				bootstrapAt: modelTelemetryBootstrapAt || 0,
 				persistedAt: Date.now(),
 				rateLimitInfo: { ...rateLimitInfo },
 				modelStatus: Array.from(modelStatus.entries()).filter(([modelId]) => Boolean(MODEL_IDS[modelId])).map(([modelId, status]) => [modelId, normalizeModelStatusSnapshot(status)])
@@ -2037,12 +2049,17 @@
 			updateRateLimitNote();
 			updateModelDropdownIndicators();
 		}
-		await Promise.allSettled([
-			refreshSharedQuota(),
-			refreshIndependentModelPing(),
-			refreshDisabledModelLines(),
-			fetchModelHealthStatus()
-		]);
+		if (Number.isFinite(cache?.bootstrapAt) && cache.bootstrapAt > 0 && Date.now() - cache.bootstrapAt < TELEMETRY_BOOTSTRAP_TTL_MS) modelTelemetryBootstrapAt = cache.bootstrapAt;
+		else {
+			await Promise.allSettled([
+				refreshSharedQuota(),
+				refreshIndependentModelPing(),
+				refreshDisabledModelLines(),
+				fetchModelHealthStatus()
+			]);
+			modelTelemetryBootstrapAt = Date.now();
+			persistModelTelemetryCache();
+		}
 		autoSwitchIfCurrentModelUnavailable();
 		scheduleIndependentModelPingRefresh(INDEPENDENT_MODEL_PING_INTERVAL_MS);
 		setInterval(() => {
@@ -2615,9 +2632,33 @@
 	].map((id, index) => [id, index]));
 	var MODEL_CATALOG = MODEL_CATALOG_FALLBACK.map((entry) => ({ ...entry }));
 	var LOCAL_ONLY_CATALOG_IDS = new Set(["hunyuan-mt-7b"]);
-	var MODEL_UI_CATALOG_TTL_MS = 0;
+	var MODEL_UI_CATALOG_TTL_MS = 60 * 1e3;
+	var MODEL_UI_CATALOG_CACHE_KEY = "cancri_model_ui_catalog_v1";
+	var MODEL_UI_CATALOG_CACHE_VERSION = 1;
 	var modelUiCatalogFetchedAt = 0;
 	var modelUiCatalogInflight = null;
+	function readModelUiCatalogCache() {
+		try {
+			const raw = localStorage.getItem(MODEL_UI_CATALOG_CACHE_KEY);
+			if (!raw) return null;
+			const parsed = JSON.parse(raw);
+			if (!parsed || parsed.version !== MODEL_UI_CATALOG_CACHE_VERSION) return null;
+			if (!Number.isFinite(parsed.fetchedAt)) return null;
+			if (!Array.isArray(parsed.models) || parsed.models.length === 0) return null;
+			return parsed;
+		} catch (_e) {
+			return null;
+		}
+	}
+	function persistModelUiCatalogCache(models) {
+		try {
+			localStorage.setItem(MODEL_UI_CATALOG_CACHE_KEY, JSON.stringify({
+				version: MODEL_UI_CATALOG_CACHE_VERSION,
+				fetchedAt: Date.now(),
+				models
+			}));
+		} catch (_e) {}
+	}
 	var modelCatalogLoaded = false;
 	function mapServerModelToCatalogEntry(serverModel, localOverlay) {
 		const local = localOverlay || {};
@@ -2673,8 +2714,30 @@
 		modelCatalogLoaded = true;
 		return true;
 	}
+	function applyCatalogToUi() {
+		if (!isModelEnabled(currentModel)) try {
+			setModel(getFallbackModelId(currentModel));
+		} catch (e) {}
+		try {
+			if (typeof updateModelDropdownIndicators === "function") updateModelDropdownIndicators();
+		} catch (e) {}
+		try {
+			renderModelDropdownFromCatalog();
+		} catch (e) {}
+		try {
+			updateModelSelectorIcons();
+		} catch (e) {}
+	}
 	function fetchModelUiCatalog(force) {
 		if (!force && modelUiCatalogFetchedAt && Date.now() - modelUiCatalogFetchedAt < MODEL_UI_CATALOG_TTL_MS) return Promise.resolve(true);
+		if (!force && !modelUiCatalogFetchedAt) {
+			const cached = readModelUiCatalogCache();
+			if (cached && Date.now() - cached.fetchedAt < MODEL_UI_CATALOG_TTL_MS && mergeServerUiCatalog(cached.models)) {
+				modelUiCatalogFetchedAt = cached.fetchedAt;
+				applyCatalogToUi();
+				return Promise.resolve(true);
+			}
+		}
 		if (modelUiCatalogInflight) return modelUiCatalogInflight;
 		const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
 		const anon = window.__SUPABASE_ANON_KEY__ || "";
@@ -2703,18 +2766,8 @@
 		}).then((data) => {
 			const ok = mergeServerUiCatalog(data && data.models);
 			if (ok) {
-				if (!isModelEnabled(currentModel)) try {
-					setModel(getFallbackModelId(currentModel));
-				} catch (e) {}
-				try {
-					if (typeof updateModelDropdownIndicators === "function") updateModelDropdownIndicators();
-				} catch (e) {}
-				try {
-					renderModelDropdownFromCatalog();
-				} catch (e) {}
-				try {
-					updateModelSelectorIcons();
-				} catch (e) {}
+				persistModelUiCatalogCache(data.models);
+				applyCatalogToUi();
 			}
 			return ok;
 		}).catch(() => {
@@ -3857,6 +3910,17 @@
 		return supabaseClient;
 	}
 	var authFlowController = null;
+	function ensureAuthLoginFrameLoaded() {
+		const frame = document.getElementById("authLoginFrame");
+		if (!frame || frame.dataset.cancriLoaded === "true") return;
+		frame.dataset.cancriLoaded = "true";
+		if (location.protocol === "file:") {
+			frame.srcdoc = claude_login_island_default;
+			return;
+		}
+		const src = frame.getAttribute("data-src");
+		if (src) frame.setAttribute("src", src);
+	}
 	function authDoc() {
 		const frame = document.getElementById("authLoginFrame");
 		try {
@@ -3885,6 +3949,7 @@
 	function showAuthOverlay() {
 		const overlay = document.getElementById("authOverlay");
 		if (overlay) overlay.classList.add("visible");
+		ensureAuthLoginFrameLoaded();
 		syncAuthOverlayMode();
 		if (authFlowController) authFlowController.reset();
 		const emailError = authEl("authEmailError");
@@ -4061,10 +4126,7 @@
 		};
 		if (frame) {
 			frame.addEventListener("load", syncAuthLoginExperience);
-			if (location.protocol === "file:" && frame.dataset.cancriSrcdoc !== "true") {
-				frame.dataset.cancriSrcdoc = "true";
-				frame.srcdoc = claude_login_island_default;
-			}
+			if (!getCancriAccessTokenForQuota() && !hasSharedConversationHash()) ensureAuthLoginFrameLoaded();
 		}
 		window.addEventListener("cancri:auth-flow-ready", syncAuthLoginExperience, { once: true });
 		syncAuthLoginExperience();
@@ -4205,7 +4267,7 @@
 	var chatHistoryList = [];
 	var chatHistoryListRenderSeq = 0;
 	var activeGenerations = /* @__PURE__ */ new Map();
-	var INCREMENTAL_SAVE_INTERVAL_MS = 1500;
+	var INCREMENTAL_SAVE_INTERVAL_MS = 1e4;
 	var VISIBLE_RERENDER_INTERVAL_MS = 600;
 	var notificationPermissionAsked = false;
 	var CHAT_HISTORY_LIST_CACHE_KEY = "cancri_chat_history_list_cache_v1";
@@ -10630,6 +10692,7 @@
 			startedAt: Date.now(),
 			lastSavedAt: 0,
 			localTitle: "",
+			_savedFingerprint: null,
 			_saveTimer: null,
 			_saving: false,
 			_rerenderTimer: null,
@@ -10650,6 +10713,7 @@
 				const data = await createChatHistoryRow(msgs, gen.modelId, gen.localTitle);
 				if (data && data.id) {
 					gen.chatId = data.id;
+					gen._savedFingerprint = fingerprintMessages(msgs);
 					upsertCachedChatSummary(data);
 					if (gen.visible && !currentChatId) {
 						currentChatId = gen.chatId;
@@ -10674,13 +10738,29 @@
 			flushGenSave(gen);
 		}, wait);
 	}
+	function fingerprintMessages(messages) {
+		let json;
+		try {
+			json = JSON.stringify(messages);
+		} catch (_e) {
+			return null;
+		}
+		let hash = 5381;
+		for (let i = 0; i < json.length; i++) hash = (hash << 5) + hash + json.charCodeAt(i) | 0;
+		return `${json.length}:${hash}`;
+	}
 	async function flushGenSave(gen) {
 		if (gen._saving) return;
 		gen._saving = true;
 		try {
 			const chatId = await ensureGenChatRow(gen);
 			if (chatId && gen.status === "streaming") {
-				await updateChatHistoryRow(chatId, genCurrentMessages(gen));
+				const messages = genCurrentMessages(gen);
+				const fingerprint = fingerprintMessages(messages);
+				if (fingerprint === null || fingerprint !== gen._savedFingerprint) {
+					await updateChatHistoryRow(chatId, messages);
+					gen._savedFingerprint = fingerprint;
+				}
 				gen.lastSavedAt = Date.now();
 			}
 		} catch (error) {} finally {

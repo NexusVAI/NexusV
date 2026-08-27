@@ -210,7 +210,10 @@
     box-shadow: 0 0 0 1px var(--text-color);
 }
 
-@media (max-width: 910px), (max-height: 860px) {
+/* 2026-08-27：原条件里还有 `(max-height: 860px)`，与宽度无关 —— 1366×768 这类
+   常见笔记本分辨率会被判成移动端。而 navbar.css 只在 max-width:910px 隐藏桌面
+   导航，于是宽屏低窗口下「桌面链接还在，汉堡也冒出来」。断点与 navbar.css 对齐。 */
+@media (max-width: 910px) {
     .mobile-menu-btn { display: flex; }
     .mobile-drawer { display: block; }
 }

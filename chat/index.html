@@ -228,7 +228,12 @@
 
         <!-- ── Login stage：官方 Claude 中文登录页直搬（OTP 接线保留原 id） ── -->
         <div class="auth-overlay visible" id="authOverlay">
-<iframe id="authLoginFrame" src="./claude-login-island.html?v=20260818-rebrand2" title="登录"></iframe>
+<!-- 2026-08-27：src 改为 data-src 由 showAuthOverlay 注入。原先静态 src 会在解析到
+             这一行时立刻下载 458KB 登录页 HTML + 617KB CSS + Anthropic 变量字体，而判定
+             「已登录、不需要登录页」的 initAuthOverlay 是异步的，等它 hideAuthOverlay 时
+             只是移除了 class —— 资源早已下完。老用户等于每次开页都为一个自己看不到的
+             页面付流量。 -->
+<iframe id="authLoginFrame" data-src="./claude-login-island.html?v=20260818-rebrand2" title="登录"></iframe>
 
 </div>
 

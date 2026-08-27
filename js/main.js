@@ -132,6 +132,12 @@ function bootstrapApp() {
 function refreshInjectedUi() {
     bindGlobalToggles();
 
+    // 2026-08-27：defer 脚本执行时 readyState 已是 interactive，bootstrapApp 会
+    // 立刻跑 initTheme —— 但那时 navbar / footer 还没注入（要等 DOMContentLoaded
+    // 才 injectComponents），主题图标绑不上，页脚就一直露着 HTML 里写死的月亮图标。
+    // 注入完成后补一次 initTheme（幂等：只是按已存的 theme 重新应用 class + 图标）。
+    if (window.initTheme) window.initTheme();
+
     if (window.initMegaMenu) window.initMegaMenu();
     if (window.initMobileMenu) window.initMobileMenu();
     if (window.initActiveNavItem) window.initActiveNavItem();

@@ -49,7 +49,8 @@ function setTheme(theme) {
 }
 
 function toggleTheme() {
-    const currentTheme = localStorage.getItem('theme') || 'light';
+    // 2026-08-27：fallback 改为 warm，与各页 <head> 内联脚本的默认保持一致。
+    const currentTheme = localStorage.getItem('theme') || 'warm';
     const themeOrder = ['light', 'dark', 'warm', 'blue'];
     const currentIndex = themeOrder.indexOf(currentTheme);
     const nextIndex = (currentIndex + 1) % themeOrder.length;
@@ -59,8 +60,10 @@ function toggleTheme() {
 
 function initTheme() {
     const savedTheme = localStorage.getItem('theme');
-    // Default to light (OpenAI-style) if no saved theme
-    const theme = savedTheme || 'light';
+    // 2026-08-27：原默认为 'light'，但各页 <head> 内联脚本先加的是 warm-theme，
+    // 于是首次访问会「warm 闪一下 → 被 setTheme('light') 改掉」，并且 setTheme
+    // 顺手把 light 写进 localStorage 永久固化。两处默认统一为 warm 后闪烁消失。
+    const theme = savedTheme || 'warm';
     setTheme(theme);
 }
 

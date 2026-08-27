@@ -648,10 +648,16 @@
         if (cached) {
             applyTierState(cached, /* fromCache */ true);
         }
-        // 然后异步拉新鲜数据
-        applyTierUI().catch(function () {
-            // fail-soft 已在 applyTierUI 内部处理；这里仅吞错避免冒泡
-        });
+        // 2026-08-27：缓存命中时不再无条件回源。readTierCache 本身已按
+        // TIER_CACHE_TTL_MS（5 分钟）判过新鲜度、过期直接返回 null，这里再打一次
+        // get_my_subscription 纯属重复 —— 每个登录用户每次开页都白费一个 Worker 请求。
+        // 档位变更不会被压住：登录事件（cancri:auth-changed）、打开账号面板、
+        // 登出（clearTierCache）三条路径仍然强制回源。
+        if (!cached) {
+            applyTierUI().catch(function () {
+                // fail-soft 已在 applyTierUI 内部处理；这里仅吞错避免冒泡
+            });
+        }
     }
 
     function getCancriAccessToken() {

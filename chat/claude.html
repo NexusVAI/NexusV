@@ -230,7 +230,8 @@
              .auth-hero / .auth-divider / .auth-footer-line，没有
              绑事件。 -->
         <div class="auth-overlay visible" id="authOverlay">
-<iframe id="authLoginFrame" src="./claude-login-island.html?v=20260818-rebrand2" title="登录"></iframe>
+<!-- 2026-08-27：src 改为 data-src，由 showAuthOverlay 注入。理由同 index.html。 -->
+<iframe id="authLoginFrame" data-src="./claude-login-island.html?v=20260818-rebrand2" title="登录"></iframe>
 
 </div>
 

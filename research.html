@@ -18,6 +18,28 @@
     <meta name="twitter:title" content="研究｜GTA5 模组技术生态与 GTA6 影响预测">
     <meta name="twitter:description" content="GTA5 模组技术生态与 GTA6 影响预测研究（发布时间：2025-02-06）。">
     <meta name="twitter:image" content="https://www.nexusvai.xyz/Logo/JJ1.webp">
+  <!-- 2026-08-27：本页此前只挂了 p2m-loader.css，而正文用的 .hero / .btn / .section /
+       .download-card / var(--text-main) 全部定义在站点 CSS 里 —— 页面实际是一张
+       没有样式、也没有导航的裸页。补齐与 about.html 同一套资源。 -->
+  <script>
+    (() => {
+        let theme = 'warm';
+        try { theme = localStorage.getItem('theme') || 'warm'; } catch (e) {}
+        if (theme === 'light') document.documentElement.classList.add('light-theme');
+        if (theme === 'warm') document.documentElement.classList.add('warm-theme');
+        if (theme === 'blue') document.documentElement.classList.add('blue-theme');
+    })();
+  </script>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/mobile-menu.css">
+  <link rel="stylesheet" href="css/footer.css">
+  <link rel="stylesheet" href="css/hero.css">
+  <link rel="stylesheet" href="css/article.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/display-fonts.css">
   <style>
     /* research.html 独立页面的少量补充样式（不依赖外部资源） */
     .paper-toolbar {
@@ -164,6 +186,16 @@ ScriptHookVDotNet 文档与社区资料；Nexus Mods、GTA5-Mods.com 等平台�
       </section>
     </section>
   </main>
+
+  <div data-page-footer></div>
+
+  <script src="js/components.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/theme.js" defer></script>
+  <script src="js/menu.js?v=2026-05-18-active-fix" defer></script>
+  <script src="js/search.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script>document.addEventListener('DOMContentLoaded',function(){injectComponents({});});</script>
 
   <script>
     (function () {

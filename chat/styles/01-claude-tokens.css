@@ -94,8 +94,13 @@ html[data-theme="light"] {
 }
 
 /* ---------- .darkTheme / dark theme ---------- */
+/* 2026-08-27：black 主题此前在本文件没有任何覆盖，整块 fallback 到上面 :root 的
+   浅色值 —— auth-platform-login.css 的 `background: hsl(var(--bg-300))` 于是在黑
+   主题下渲染成沙色，聊天壳外面渗出一圈浅底。black 先复用 dark 的全部 token，
+   背景阶梯在本块之后单独压到纯黑。 */
 .darkTheme,
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html[data-theme="black"] {
   --accent-brand: 15 63.1% 59.6%;
   --brand-000: 15 54.2% 51.2%;
   --brand-100: 15 63.1% 59.6%;
@@ -157,6 +162,18 @@ html[data-theme="dark"] {
   --pictogram-400: 60 2.7% 14.5%;
 }
 
+/* ---------- black theme：只压背景阶梯，其余继承上面的 dark ---------- */
+/* 值与 cancri_chat.css 的 html[data-theme="black"]（--bg #000 / --panel #0a0a0a /
+   --panel-2 #111 / --panel-3 #161616）对齐，避免两套体系在同一屏里深浅打架。 */
+html[data-theme="black"] {
+  --bg-000: 0 0% 8.6%;
+  --bg-100: 0 0% 6.7%;
+  --bg-200: 0 0% 3.9%;
+  --bg-300: 0 0% 0%;
+  --bg-400: 0 0% 0%;
+  --bg-500: 0 0% 0%;
+}
+
 /* ---------- 全局共用 brand 色（不随主题变） ---------- */
 :root {
   --white: 0 0% 100%;
@@ -187,7 +204,8 @@ html[data-theme="light"] {
 }
 
 .darkTheme,
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html[data-theme="black"] {
   --claude-foreground-color: white;
   --claude-background-color: #262624;
   --claude-secondary-color: #a6a39a;
@@ -199,4 +217,8 @@ html[data-theme="dark"] {
   --claude-text-400: #b8b5a9;
   --claude-text-500: #a6a39b;
   --claude-description-text: #ceccc5;
+}
+
+html[data-theme="black"] {
+  --claude-background-color: #000000;
 }

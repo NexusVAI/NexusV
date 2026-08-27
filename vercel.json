@@ -1,1 +1,12 @@
-{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{
+  "headers": [
+    {
+      "source": "/(.*)\\.(css|js|mjs|svg|png|jpg|jpeg|webp|woff|woff2|ttf|ico)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+    },
+    {
+      "source": "/(.*)\\.html",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
+  ]
+}
