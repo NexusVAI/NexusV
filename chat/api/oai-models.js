@@ -53,9 +53,17 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    // 2026-08-27: api.b.ai 五条限时免费线（至 08-31），钉到免费区首屏。
+    // 站内 id = 上游 id + "-free"（运营方指定的命名约定）。
+    // mimo-v2.5-free 是同名 id 从 tokenharbor 重挂到 api.b.ai，不是新增卡。
+    "glm-5.3-flash-free",
+    "hy3-free",
+    "qwen3.8-flash-free",
+    "deepseek-v4-flash-vision-exp-free",
+    "mimo-v2.5-free",
     // 2026-08-25: glm-5.3-free 限时免费（至 08-28）。nexusvai-free-glm-5.2 已退役。
-    "glm-5.3-free",
-    "nexusvai-free-nemotron-3-ultra",
+    // 2026-08-27: glm-5.3-free 与 nexusvai-free-nemotron-3-ultra 一并从免费区移除 ——
+    // 前者已变成转发到 glm-5.3-flash 的静默别名（无卡片），后者按运营方要求下架。
     // 2026-08-18 晚：Opus5 免费期结束（改名 claude-opus-5-thinking、按次 ¥0.099），
     // 从免费区移除 —— 它现在是付费模型，留在这里会让首页承诺一个不存在的免费额度。
     // 2026-08-18: claude-opus-4.8-free 限时免费线（至 08-19），钉到免费区首屏。
@@ -72,12 +80,16 @@
     "nexusvai:minimax-m3-free",
     "glm-5.2-fp8",
     "grok-4.6-free",
-    "mimo-v2.5-free",
   ];
 
   // catalog 无 publicDescription 时的卡片兜底（与 kimi / deepseek 限时卡文案对齐）。
   var DESC_FALLBACK = {
-    "glm-5.3-free": "08-28结束免费期限",
+    // 2026-08-27: api.b.ai 五条线免费期至 08-31。
+    "glm-5.3-flash-free": "08-31结束免费期限",
+    "hy3-free": "08-31结束免费期限",
+    "qwen3.8-flash-free": "08-31结束免费期限",
+    "deepseek-v4-flash-vision-exp-free": "08-31结束免费期限",
+    "mimo-v2.5-free": "08-31结束免费期限",
     "qwen-3.8-max": "08-20结束免费期限",
     "deepseek-v4-pro-0813": "08-20结束免费期限",
     "claude-opus-4.8-free": "08-19结束免费期限",
