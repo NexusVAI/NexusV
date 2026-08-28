@@ -29,18 +29,17 @@
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
 
   // flagship models pinned to the front (only ids that still exist in catalog).
-  // 2026-08-28: 旗舰区 = GLM-5.3 + 运营点名的 7 张 + 复活的 Qwen 3.8 Max。
+  // 2026-08-28: 旗舰区只放付费主线。qwen-3.8-max / grok-4.6-free 是限时免费卡，
+  // 只能钉在免费区，禁止再放进这张名单（否则会从免费区「掉」到下面的旗舰区）。
   // 禁止非名单补位（曾冒出 gemini-3.1-flash-lite）。
   var FEATURED_ORDER = [
     "glm-5.3",
     "gpt-5.6-sol",
     "claude-opus-5",
-    "grok-4.6-free",
     "minimax-m3",
     "deepseek-v4-pro",
     "gemini-3.7-flash",
     "kimi-k3",
-    "qwen-3.8-max",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
@@ -64,9 +63,12 @@
     "qwen3.8-flash-free",
     "deepseek-v4-flash-vision-exp-free",
     "mimo-v2.5-free",
-    // 2026-08-28: 复活 tokenrouter Qwen 3.8 Max（免费期延到 08-31），与旗舰区同时展示。
+    // 2026-08-28: 限时免费卡钉在免费区前排。不要放进 FEATURED_ORDER，
+    // 也不要排到 data-cancri-limit=12 之后，否则会从免费区消失、只剩底下旗舰区。
     "qwen-3.8-max",
-    // 2026-08-28: 免费区补 DeepSeek V4 Flash 主线（sensenova），不要跟已到期的 0731 搞混。
+    "grok-4.6-free",
+    // 2026-08-28: 免费区补 DeepSeek V4 Flash 主线（sensenova）。
+    // 0731 / 0813 都是付费快照，禁止再钉进免费区。
     "deepseek-v4-flash",
     // 2026-08-25: glm-5.3-free 限时免费（至 08-28）。nexusvai-free-glm-5.2 已退役。
     // 2026-08-27: glm-5.3-free 与 nexusvai-free-nemotron-3-ultra 一并从免费区移除 ——
@@ -75,18 +77,23 @@
     // 从免费区移除 —— 它现在是付费模型，留在这里会让首页承诺一个不存在的免费额度。
     // 2026-08-18: claude-opus-4.8-free 限时免费线（至 08-19），钉到免费区首屏。
     "claude-opus-4.8-free",
-    // 2026-08-16: qwen-3.8-max 已上移到免费区首屏（08-28 复活，至 08-31）。
-    // 2026-08-17: deepseek-v4-pro-0813 限时免费线（至 08-20），钉到免费区首屏。
-    "deepseek-v4-pro-0813",
     // 2026-08-15: c:gpt-5.6-sol / c:gpt-5.6-luna / c:grok-4.6 已下架
     // （catalog visible=false），旧条目本会被 filter(Boolean) 自动摘掉、
-    // 但留着是死代码，顺手清掉；c:grok-4.6 换成新的 grok-4.6-free。
+    // 但留着是死代码，顺手清掉。
     "kimi-k3-high",
-    "deepseek-v4-flash-0731",
     "nexusvai:minimax-m3-free",
     "glm-5.2-fp8",
-    "grok-4.6-free",
   ];
+  // 付费快照：即使名单被改回去，免费区渲染也直接丢掉。
+  var FREE_BLOCKLIST = {
+    "deepseek-v4-pro-0813": true,
+    "deepseek-v4-flash-0731": true,
+  };
+  // 这两张卡不要营销文案（含 catalog publicDescription / 品牌兜底）。
+  var HIDE_CARD_DESC = {
+    "kimi-k3": true,
+    "deepseek-v4-pro-0813": true,
+  };
 
   // catalog 无 publicDescription 时的卡片兜底（与 kimi / deepseek 限时卡文案对齐）。
   var DESC_FALLBACK = {
@@ -97,7 +104,6 @@
     "deepseek-v4-flash-vision-exp-free": "08-31结束免费期限",
     "mimo-v2.5-free": "08-31结束免费期限",
     "qwen-3.8-max": "08-31结束免费期限",
-    "deepseek-v4-pro-0813": "08-20结束免费期限",
     "claude-opus-4.8-free": "08-19结束免费期限",
   };
 
@@ -420,11 +426,17 @@
     );
   }
 
+  function cardDescription(m) {
+    var id = String((m && (m.id || m.canonicalId)) || "");
+    if (HIDE_CARD_DESC[id]) return "";
+    return m.publicDescription || DESC_FALLBACK[id] || (m.brand ? m.brand + " 模型" : "");
+  }
+
   function cardHtml(m, opts) {
     opts = opts || {};
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
-    var desc = m.publicDescription || DESC_FALLBACK[id] || (m.brand ? m.brand + " 模型" : "");
+    var desc = cardDescription(m);
     var featured = isFeaturedId(id);
     var badge = (featured && opts.flagshipBadge)
       ? ' <div class="_Badge_10t5o_1" data-color="success" data-size="md" data-pill data-variant="soft">旗舰</div>'
@@ -473,7 +485,7 @@
   function specializedCardHtml(m, art) {
     var id = m.id || m.canonicalId || "";
     var name = m.displayName || id;
-    var desc = m.publicDescription || DESC_FALLBACK[id] || (m.brand ? m.brand + " 模型" : "");
+    var desc = cardDescription(m);
     // 2026-08-15: 专项小卡名字右侧加 Free 绿胶囊（仅 Free，不带 Promo，复用
     // priceHtml 里同一个 CSS class，跟旗舰/全量大卡的胶囊视觉一致）。
     var freeTag = isFreeTierModel(m)
@@ -708,8 +720,8 @@
 
   // 2026-08-20 分组：`models` 是折叠后的卡片列表，`rawModels` 是未折叠的原始目录。
   // 免费模型区**刻意不折叠** —— 那一区按 id 钉死了几条限时免费线（glm-5.2-fp8 /
-  // kimi-k3-high / nexusvai:minimax-m3-free / deepseek-v4-pro-0813），折叠后代表卡
-  // 会变成对应的付费主线，等于在首页承诺一个不存在的免费额度。
+  // kimi-k3-high / nexusvai:minimax-m3-free），折叠后代表卡会变成对应的付费主线，
+  // 等于在首页承诺一个不存在的免费额度。0813 / 0731 是付费快照，不进这张名单。
   function render(models, rawModels) {
     rawModels = Array.isArray(rawModels) ? rawModels : models;
     var groupIdx = MG.indexModels(rawModels);
@@ -776,7 +788,11 @@
         var mid = String(m.id || m.canonicalId || "").toLowerCase();
         if (mid) byId[mid] = m;
       });
-      var freeList = FREE_ORDER.map(function (id) { return byId[id.toLowerCase()]; }).filter(Boolean);
+      var freeList = FREE_ORDER.map(function (id) { return byId[id.toLowerCase()]; }).filter(function (m) {
+        if (!m) return false;
+        var mid = String(m.id || m.canonicalId || "").toLowerCase();
+        return !FREE_BLOCKLIST[mid];
+      });
       var freeAnchor = !document.getElementById("cancri-grid");
       var pickFree = makeArtPicker();
       free.innerHTML = freeList.length
