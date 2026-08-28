@@ -20,11 +20,11 @@
     <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
     <link rel="apple-touch-icon" href="../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api/oai-platform.css?v=20260622-models" />
-    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260821-grouptag" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260828-model-search" />
     <link rel="stylesheet" href="./api/oai-cjk-fonts.css?v=20260810-cjk" />
     <!-- 主题在首帧前应用，避免闪烁（CSP 禁 inline，故在 head 同步加载） -->
     <script src="./api/oai-shell-nav.js?v=20260814-opus5limits"></script>
-    <script src="./api/oai-platform.js?v=20260821-groupanchor"></script>
+    <script src="./api/oai-platform.js?v=20260828-model-search"></script>
   </head>
 
   <body class="overflow-x-hidden" data-oai-page="models" data-cancri-base="" data-cancri-logobase="../Logo/" data-cancri-artbase="./assets/oai.logo/">
@@ -54,7 +54,15 @@
           <div class="relative mx-4 flex flex-col gap-8 px-4 pt-20 pb-10 sm:mx-8 md:mx-auto md:w-full md:max-w-6xl md:px-12 xl:px-4">
             <div class="flex flex-col gap-[60px]">
               <div class="flex flex-col gap-12">
-                <div><div><h1 class="_ModelsTitle_163e7_1">模型</h1></div></div>
+                <div class="cancri-models-title-row">
+                  <h1 class="_ModelsTitle_163e7_1">模型</h1>
+                  <button type="button" class="cancri-model-search-button" data-header-search-button data-search-scope="models" aria-label="搜索所有模型" aria-controls="header-search-overlay" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </button>
+                </div>
                 <div class="flex flex-col gap-4">
                   <h2 class="text-3xl font-semibold tracking-tight">选择模型</h2>
                   <p class="text-base text-emphasis">不确定从哪个开始，就从 <a href="#model-gpt-5.6-sol" class="_TextLink_ssta1_1" data-underline="always">GPT-5.6 Sol</a> 入手——若更看重其它场景，可继续浏览下方专项模型。</p>
@@ -138,6 +146,6 @@
     <!-- 站点配置（设置 __SUPABASE_URL__ / __SUPABASE_ANON_KEY__），须在 oai-models.js 之前 -->
     <script src="./cancri_config.js?v=2026-05-13e"></script>
     <!-- 分组折叠在 oai-models.js 内部完成；分组配置来自 DB model_catalog，见文件头注释 -->
-    <script src="./api/oai-models.js?v=20260828-flagship"></script>
+    <script src="./api/oai-models.js?v=20260828-model-search"></script>
   </body>
 </html>

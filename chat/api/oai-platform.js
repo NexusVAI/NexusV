@@ -125,39 +125,59 @@
     var results = document.getElementById("cancri-search-results");
     var openers = document.querySelectorAll("[data-header-search-button]");
     var dismissers = overlay.querySelectorAll("[data-header-search-dismiss]");
+    var activeOpener = null;
+    var defaultPlaceholder = input ? input.getAttribute("placeholder") : "";
 
-    function open() {
+    function open(opener) {
+      activeOpener = opener || null;
+      var scope = activeOpener && activeOpener.getAttribute("data-search-scope") === "models"
+        ? "models"
+        : "all";
+      overlay.setAttribute("data-search-scope", scope);
+      overlay.setAttribute("aria-label", scope === "models" ? "搜索所有模型" : "搜索 NexusV 开放平台");
       overlay.classList.remove("hidden");
       overlay.classList.add("flex");
       overlay.setAttribute("data-open", "true");
       overlay.setAttribute("aria-hidden", "false");
-      openers.forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
-      if (input) { input.value = ""; renderResults(""); setTimeout(function () { input.focus(); }, 20); }
+      document.body.classList.add("cancri-search-open");
+      openers.forEach(function (b) { b.setAttribute("aria-expanded", b === activeOpener ? "true" : "false"); });
+      if (input) {
+        input.value = "";
+        input.setAttribute("placeholder", scope === "models" ? "搜索模型名称、品牌或 Model ID" : defaultPlaceholder);
+        renderResults("");
+        setTimeout(function () { input.focus(); }, 20);
+      }
     }
-    function close() {
+    function close(restoreFocus) {
       overlay.classList.add("hidden");
       overlay.classList.remove("flex");
       overlay.setAttribute("data-open", "false");
       overlay.setAttribute("aria-hidden", "true");
+      overlay.removeAttribute("data-search-scope");
+      document.body.classList.remove("cancri-search-open");
       openers.forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+      if (restoreFocus !== false && activeOpener && typeof activeOpener.focus === "function") activeOpener.focus();
+      activeOpener = null;
     }
 
-    openers.forEach(function (b) { b.addEventListener("click", open); });
-    dismissers.forEach(function (d) { d.addEventListener("click", close); });
+    openers.forEach(function (b) { b.addEventListener("click", function () { open(b); }); });
+    dismissers.forEach(function (d) { d.addEventListener("click", function () { close(true); }); });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && overlay.getAttribute("data-open") === "true") close();
+      if (e.key === "Escape" && overlay.getAttribute("data-open") === "true") close(true);
       // Cmd/Ctrl-K to open
       if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
         e.preventDefault();
-        overlay.getAttribute("data-open") === "true" ? close() : open();
+        overlay.getAttribute("data-open") === "true" ? close(true) : open(null);
       }
     });
 
     function renderResults(q) {
       if (!results) return;
       q = (q || "").trim().toLowerCase();
+      var scope = overlay.getAttribute("data-search-scope") || "all";
       var items = navTargets();
-      var models = (window.__CANCRI_MODELS__ || []).map(function (m) {
+      var modelIndexReady = Array.isArray(window.__CANCRI_MODELS__);
+      var models = (modelIndexReady ? window.__CANCRI_MODELS__ : []).map(function (m) {
         return {
           name: m.displayName || m.id,
           sub: (m.brand ? m.brand + " · " : "") + m.id,
@@ -167,13 +187,17 @@
           href: (document.body.getAttribute("data-cancri-base") || "") + "api_models.html#model-" + encodeURIComponent(m.anchorId || m.id),
         };
       });
-      var pool = items.concat(models);
+      if (scope === "models" && !modelIndexReady) {
+        results.innerHTML = '<div class="px-4 py-6 text-sm text-secondary">模型目录正在加载…</div>';
+        return;
+      }
+      var pool = scope === "models" ? models : items.concat(models);
       var filtered = q
         ? pool.filter(function (it) {
             return (it.name + " " + it.sub).toLowerCase().indexOf(q) !== -1;
           })
-        : items;
-      filtered = filtered.slice(0, 40);
+        : (scope === "models" ? models : items);
+      if (scope !== "models") filtered = filtered.slice(0, 40);
       if (!filtered.length) {
         results.innerHTML = '<div class="px-4 py-6 text-sm text-secondary">没有匹配的结果</div>';
         return;
@@ -191,6 +215,9 @@
     }
 
     if (input) input.addEventListener("input", function () { renderResults(input.value); });
+    if (results) results.addEventListener("click", function (e) {
+      if (e.target && e.target.closest && e.target.closest("a")) close(false);
+    });
     window.__cancriSearchRefresh = function () {
       if (overlay.getAttribute("data-open") === "true" && input) renderResults(input.value);
     };

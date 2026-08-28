@@ -496,21 +496,14 @@
     );
   }
 
-  function renderSpecialized(models, featuredRepSet) {
+  function renderSpecialized(models) {
     var container = document.getElementById("cancri-specialized");
     if (!container) return;
-
-    // exclude featured models (already shown in frontier section)
-    var featuredSet = featuredRepSet || {};
-    var nonFeatured = models.filter(function (m) {
-      var mid = (m.id || "").toLowerCase();
-      return FEATURED_RANK[mid] == null && !featuredSet[mid];
-    });
 
     // group by brand
     var byBrand = {};
     var brandOrder = [];
-    nonFeatured.forEach(function (m) {
+    models.forEach(function (m) {
       var brand = m.brand || "其他";
       if (!byBrand[brand]) {
         byBrand[brand] = [];
@@ -520,13 +513,11 @@
     });
     brandOrder.sort();
 
-    var MAX_PER_BRAND = 6;
     var html = "";
     brandOrder.forEach(function (brand, i) {
       var list = byBrand[brand];
       var label = BRAND_LABELS[brand] || brand;
       var desc = label + " 系列模型";
-      var shown = list.slice(0, MAX_PER_BRAND);
 
       html += '<div class="cancri-spec-section flex scroll-mt-24 flex-col gap-4 py-4 md:flex-row md:items-start md:justify-between">';
       html += '<div class="flex min-w-[220px] max-w-[320px] flex-col gap-1 md:w-[320px] md:min-w-[320px] md:max-w-[320px] md:flex-none md:pr-6">';
@@ -535,7 +526,7 @@
       html += '</div>';
       html += '<div class="-mx-2 grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2">';
       var pickArt = makeArtPicker();
-      shown.forEach(function (m) { html += specializedCardHtml(m, pickArt(m.id || m.canonicalId || "")); });
+      list.forEach(function (m) { html += specializedCardHtml(m, pickArt(m.id || m.canonicalId || "")); });
       html += '</div>';
       html += '</div>';
       if (i < brandOrder.length - 1) {
@@ -803,11 +794,7 @@
       }).join("");
     }
 
-    // 专项区要排掉旗舰卡。旗舰名单里写的是成员 id（含 -xhigh），折叠后代表 id 变了，
-    // 所以这里按「代表 id」判重，否则 Opus 4.8 会在旗舰区和专项区各出现一次。
-    var featuredRepSet = {};
-    FEATURED_ORDER.forEach(function (id) { featuredRepSet[repId(id).toLowerCase()] = true; });
-    renderSpecialized(models, featuredRepSet);
+    renderSpecialized(models);
     bindSpecializedScroll();
     bindCardNav();
     locateHashModel(models, repId);

@@ -265,6 +265,112 @@ samp {
   border-radius: inherit;
 }
 
+/* ── model title search + full-screen model search ───────────────── */
+.cancri-models-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cancri-model-search-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--color-text-emphasis);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.cancri-model-search-button:hover,
+.cancri-model-search-button:focus-visible {
+  background: var(--color-background-primary-soft);
+  outline: none;
+}
+.cancri-model-search-button:active {
+  transform: scale(0.96);
+}
+.cancri-model-search-button svg {
+  width: 23px;
+  height: 23px;
+}
+body.cancri-search-open {
+  overflow: hidden;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] {
+  top: 4rem;
+  padding: 0;
+  align-items: stretch;
+  background: #fff;
+}
+:root[data-theme="dark"] body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] {
+  background: #000;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop {
+  background: inherit;
+  backdrop-filter: none;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop + div {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop + div > div:first-child,
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] #cancri-search-results {
+  width: min(calc(100% - 48px), 960px);
+  margin-right: auto;
+  margin-left: auto;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop + div > div:first-child {
+  flex: none;
+  padding: clamp(42px, 9vh, 84px) 0 18px;
+  border-bottom-color: var(--color-border-primary-surface);
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop + div > div:first-child > svg {
+  display: none;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] #cancri-search-input {
+  min-width: 0;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.2;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] #cancri-search-results {
+  flex: 1;
+  max-height: none;
+  padding: 0 0 40px;
+  overflow-y: auto;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] .cancri-search-result {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border-primary-surface);
+  border-radius: 0;
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] .cancri-search-result:first-child {
+  border-top: 1px solid var(--color-border-primary-surface);
+}
+body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] .cancri-search-result > span:first-child {
+  font-size: 20px;
+  font-weight: 600;
+}
+@media (max-width: 767px) {
+  body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop + div > div:first-child,
+  body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] #cancri-search-results {
+    width: min(calc(100% - 32px), 960px);
+  }
+  body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] > .cancri-overlay-backdrop + div > div:first-child {
+    padding-top: 32px;
+  }
+}
+
 /* search overlay backdrop (Tailwind didn't compile bg-black/35 + /70 in the
  * extracted stylesheet, so define the dim layer explicitly, theme-aware). */
 .cancri-overlay-backdrop {
