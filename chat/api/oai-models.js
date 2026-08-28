@@ -29,9 +29,18 @@
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
 
   // flagship models pinned to the front (only ids that still exist in catalog).
-  // 2026-08-28: 旗舰区只放 GLM-5.3（禁止非名单补位）。
+  // 2026-08-28: 旗舰区 = GLM-5.3 + 运营点名的 7 张 + 复活的 Qwen 3.8 Max。
+  // 禁止非名单补位（曾冒出 gemini-3.1-flash-lite）。
   var FEATURED_ORDER = [
     "glm-5.3",
+    "gpt-5.6-sol",
+    "claude-opus-5",
+    "grok-4.6-free",
+    "minimax-m3",
+    "deepseek-v4-pro",
+    "gemini-3.7-flash",
+    "kimi-k3",
+    "qwen-3.8-max",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
@@ -55,6 +64,10 @@
     "qwen3.8-flash-free",
     "deepseek-v4-flash-vision-exp-free",
     "mimo-v2.5-free",
+    // 2026-08-28: 复活 tokenrouter Qwen 3.8 Max（免费期延到 08-31），与旗舰区同时展示。
+    "qwen-3.8-max",
+    // 2026-08-28: 免费区补 DeepSeek V4 Flash 主线（sensenova），不要跟已到期的 0731 搞混。
+    "deepseek-v4-flash",
     // 2026-08-25: glm-5.3-free 限时免费（至 08-28）。nexusvai-free-glm-5.2 已退役。
     // 2026-08-27: glm-5.3-free 与 nexusvai-free-nemotron-3-ultra 一并从免费区移除 ——
     // 前者已变成转发到 glm-5.3-flash 的静默别名（无卡片），后者按运营方要求下架。
@@ -62,8 +75,7 @@
     // 从免费区移除 —— 它现在是付费模型，留在这里会让首页承诺一个不存在的免费额度。
     // 2026-08-18: claude-opus-4.8-free 限时免费线（至 08-19），钉到免费区首屏。
     "claude-opus-4.8-free",
-    // 2026-08-16: qwen-3.8-max 限时免费线（至 08-20），钉到免费区首屏。
-    "qwen-3.8-max",
+    // 2026-08-16: qwen-3.8-max 已上移到免费区首屏（08-28 复活，至 08-31）。
     // 2026-08-17: deepseek-v4-pro-0813 限时免费线（至 08-20），钉到免费区首屏。
     "deepseek-v4-pro-0813",
     // 2026-08-15: c:gpt-5.6-sol / c:gpt-5.6-luna / c:grok-4.6 已下架
@@ -84,7 +96,7 @@
     "qwen3.8-flash-free": "08-31结束免费期限",
     "deepseek-v4-flash-vision-exp-free": "08-31结束免费期限",
     "mimo-v2.5-free": "08-31结束免费期限",
-    "qwen-3.8-max": "08-20结束免费期限",
+    "qwen-3.8-max": "08-31结束免费期限",
     "deepseek-v4-pro-0813": "08-20结束免费期限",
     "claude-opus-4.8-free": "08-19结束免费期限",
   };
