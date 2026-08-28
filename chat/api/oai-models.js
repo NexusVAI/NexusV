@@ -29,15 +29,9 @@
   var COST_TIER_MULTIPLIER = { free: 0.5, cheap: 1, normal: 2, expensive: 5, vip: 15 };
 
   // flagship models pinned to the front (only ids that still exist in catalog).
-  // 2026-08-10: 旗舰区 = 主线三卡 + XHigh 普惠三卡（禁止非名单补位）
+  // 2026-08-28: 旗舰区只放 GLM-5.3（禁止非名单补位）。
   var FEATURED_ORDER = [
-    "claude-opus-4-8-xhigh",
-    "grok-4.5-xhigh",
-    "gpt-5.6-sol-xhigh",
-    "claude-opus-5",
-    "gpt-5.6-sol",
-    // 2026-08-15: 下掉付费 grok-4.5，换成新免费 grok-4.6-free。
-    "grok-4.6-free",
+    "glm-5.3",
   ];
   var FEATURED_RANK = {};
   FEATURED_ORDER.forEach(function (id, i) { FEATURED_RANK[id.toLowerCase()] = i; });
