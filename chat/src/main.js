@@ -4523,10 +4523,28 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     (window.__SUPABASE_URL__ || "").trim() ||
     `${window.location.origin}/api/supabase`;
   const SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
-  const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
+
+  // ── 首尔边缘中继（2026-08-29）───────────────────────────────────────
+  //
+  // 国内直连时 Cloudflare 把请求交给 **阿姆斯特丹** colo（实测 24/24 次），
+  // 握手要三个 RTT × 235ms。首尔放了一台 nginx 终结 TLS 再用长连接回 CF，
+  // 实测网关 TTFB 中位数 829ms → 477ms。
+  //
+  // ⛔ 刻意只给「网关调用」换 base，**auth 必须继续走 SUPABASE_URL**：
+  //    Turnstile 的机房判定、auth 的机房档 IP 配额、同网段上限，全部读
+  //    `request.cf.asn` / `cf-ipcountry` —— 那是 Cloudflare 对 TCP 连接来源
+  //    生成的，**无法用 header 转发**。让 /auth/v1/* 走中继，等于每个国内真人
+  //    都被判成机房出口、被强制人机验证，而他们恰恰加载不了
+  //    challenges.cloudflare.com（soft 模式存在的原因）→ 登录直接锁死。
+  //    详见 css/后端/supabase/tasks/2026-08-29_seoul-edge-node-design.md。
+  //
+  // 中继不可用时自动回落直连：window.__GATEWAY_URL__ 不配就等于旧行为。
+  const GATEWAY_BASE_URL =
+    (window.__GATEWAY_URL__ || "").trim() || SUPABASE_URL;
+  const EDGE_FUNCTION_URL = `${GATEWAY_BASE_URL}/functions/v1/chat-gateway`;
   // 2026-06-17：网页端对话「智能标题」生成端点（后端直连 DeepSeek deepseek-v4-flash）。
-  const GEN_TITLE_URL = `${SUPABASE_URL}/functions/v1/gen-title`;
-  const USER_MEMORY_URL = `${SUPABASE_URL}/functions/v1/user-memory`;
+  const GEN_TITLE_URL = `${GATEWAY_BASE_URL}/functions/v1/gen-title`;
+  const USER_MEMORY_URL = `${GATEWAY_BASE_URL}/functions/v1/user-memory`;
   const MEMORY_IMPORT_TEXT_LIMIT = 1000;
   const MANUAL_MEMORY_MAX_LENGTH = 20;
   const MEMORY_EDIT_MAX_LENGTH = 100;

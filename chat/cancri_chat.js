@@ -3864,9 +3864,10 @@
 	}
 	var SUPABASE_URL = (window.__SUPABASE_URL__ || "").trim() || `${window.location.origin}/api/supabase`;
 	var SUPABASE_ANON_KEY = (window.__SUPABASE_ANON_KEY__ || "").trim();
-	var EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chat-gateway`;
-	var GEN_TITLE_URL = `${SUPABASE_URL}/functions/v1/gen-title`;
-	var USER_MEMORY_URL = `${SUPABASE_URL}/functions/v1/user-memory`;
+	var GATEWAY_BASE_URL = (window.__GATEWAY_URL__ || "").trim() || SUPABASE_URL;
+	var EDGE_FUNCTION_URL = `${GATEWAY_BASE_URL}/functions/v1/chat-gateway`;
+	var GEN_TITLE_URL = `${GATEWAY_BASE_URL}/functions/v1/gen-title`;
+	var USER_MEMORY_URL = `${GATEWAY_BASE_URL}/functions/v1/user-memory`;
 	var MEMORY_IMPORT_TEXT_LIMIT = 1e3;
 	var MANUAL_MEMORY_MAX_LENGTH = 20;
 	var MEMORY_EDIT_MAX_LENGTH = 100;
