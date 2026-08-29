@@ -63,9 +63,13 @@
     "qwen3.8-flash-free",
     "deepseek-v4-flash-vision-exp-free",
     "mimo-v2.5-free",
+    // 2026-08-29: api.tokenrouter.com 限时免费线（至 09-05），上游 z-ai/glm-5.3-free。
+    // 与付费 glm-5.3 共用上游，但这是 ¥0/¥0 的独立卡，别和 glm-5.3 混为一张。
+    "glm-5.3-fp4-free",
     // 2026-08-28: 限时免费卡钉在免费区前排。不要放进 FEATURED_ORDER，
     // 也不要排到 data-cancri-limit=12 之后，否则会从免费区消失、只剩底下旗舰区。
-    "qwen-3.8-max",
+    // 2026-08-29: qwen-3.8-max 已硬下架（DB visible/enabled=false + allowlist 摘除），
+    // 免费区条目一并删除。⛔ 别补回来。
     "grok-4.6-free",
     // 2026-08-28: 免费区补 DeepSeek V4 Flash 主线（sensenova）。
     // 0731 / 0813 都是付费快照，禁止再钉进免费区。
@@ -103,7 +107,8 @@
     "qwen3.8-flash-free": "08-31结束免费期限",
     "deepseek-v4-flash-vision-exp-free": "08-31结束免费期限",
     "mimo-v2.5-free": "08-31结束免费期限",
-    "qwen-3.8-max": "08-31结束免费期限",
+    // 2026-08-29: qwen-3.8-max 已下架，文案条目随之删除。
+    "glm-5.3-fp4-free": "09-05结束免费期限",
     "claude-opus-4.8-free": "08-19结束免费期限",
   };
 
