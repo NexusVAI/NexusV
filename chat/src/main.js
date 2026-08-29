@@ -4,6 +4,105 @@ import { escapeHtml } from "./utils/html.js";
 import { MODEL_CATALOG_FALLBACK } from "./data/model-catalog-fallback.js";
 import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
 import loginIslandHtml from "../claude-login-island.html?raw";
+
+  // ── 首尔边缘中继：基地址解析 + 失败熔断回落（2026-08-29 审计补齐）─────────────
+  //
+  // window.__GATEWAY_URL__（cn.nexusvai.xyz）是**一台**单机 nginx 反代：没有
+  // anycast、没有多活、没有 DDoS 防护。上线时只做了「配置项不填就等于旧行为」的
+  // 人工回退，运行时**没有**任何回落 —— 中继一挂，全部网关调用点直接失败，
+  // 而止血要改 cancri_config.js + 等 CF/浏览器缓存（max-age=600），最坏近 20 分钟。
+  //
+  // 这里补两件事：
+  //   1. gatewayBaseUrl()：唯一的基地址解析入口，取代散落各处的
+  //      window.__SUPABASE_URL__，让「哪些调用走中继」只有一个答案。
+  //   2. gatewayFetch()：中继请求失败即打开熔断（sessionStorage，5 分钟），
+  //      之后的请求自动改打直连域名，不需要运营方在线。
+  //
+  // ⛔ 熔断**只**认「网络层拒绝」与「nginx 自己的 HTML 错误页」，不认 5xx 状态码本身：
+  //    我们的网关任何状态码都返 JSON（实测非流式长请求就是 504 + JSON），
+  //    把那些当成中继故障会触发重试 → 聊天请求重复计费。
+  //
+  // ⛔ 默认**不重试当前这一次**请求：chat 是计费请求，重试可能双扣。只有显式标了
+  //    idempotent 的只读调用（catalog / 配额 / 同意开关）才会立刻改打直连；
+  //    非幂等请求只负责「打开熔断 + 把错误抛给调用方」，下一次请求就已经走直连。
+  //
+  // ⛔ AbortError 不算中继故障：用户取消、fetchWithTimeout 超时都走这个错误名，
+  //    拿它开熔断会让「用户点了停止」把全站切成直连。
+  //
+  // 这些刻意用 function 声明而不是 const：本模块里存在早于 GATEWAY_BASE_URL
+  // 定义行就执行的调用方，函数声明会被提升，const 会撞 TDZ。
+  const RELAY_BREAKER_KEY = "cancri_relay_down_until";
+  const RELAY_BREAKER_MS = 5 * 60 * 1000;
+
+  function directBaseUrl() {
+    // 与下方 SUPABASE_URL 的语义逐字一致（含未配置时回落同源 /api/supabase），
+    // 否则熔断后重写出来的直连地址会和其余调用方指向不同的后端。
+    const configured = (window.__SUPABASE_URL__ || "").trim().replace(/\/+$/, "");
+    return configured || `${window.location.origin}/api/supabase`;
+  }
+
+  function relayBaseUrl() {
+    return (window.__GATEWAY_URL__ || "").trim().replace(/\/+$/, "");
+  }
+
+  function relayDown() {
+    try {
+      const until = Number(sessionStorage.getItem(RELAY_BREAKER_KEY) || 0);
+      return Number.isFinite(until) && Date.now() < until;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function markRelayDown(reason) {
+    try {
+      sessionStorage.setItem(
+        RELAY_BREAKER_KEY,
+        String(Date.now() + RELAY_BREAKER_MS),
+      );
+    } catch (_e) {
+      // 隐私模式下 sessionStorage 不可用：本次仍会回落，只是不跨请求记忆。
+    }
+    console.warn("[edge-relay] 已切回直连，原因:", reason);
+  }
+
+  /** 网关调用应该用哪个基地址：中继可用则中继，熔断打开或未配置则直连。 */
+  function gatewayBaseUrl() {
+    const relay = relayBaseUrl();
+    return relay && !relayDown() ? relay : directBaseUrl();
+  }
+
+  // nginx 反代自身故障（后端不可达 / 上游握手失败）返回的是 HTML 错误页；
+  // 我们的网关无论什么状态码都返 JSON。用 content-type 区分两者。
+  function looksLikeRelayOutage(resp) {
+    if (resp.status !== 502 && resp.status !== 503 && resp.status !== 504) {
+      return false;
+    }
+    return !(resp.headers.get("content-type") || "").includes("json");
+  }
+
+  async function gatewayFetch(url, options = {}, meta = {}) {
+    const relay = relayBaseUrl();
+    const target = String(url || "");
+    if (!relay || !target.startsWith(relay)) return fetch(target, options);
+    const direct = directBaseUrl() + target.slice(relay.length);
+    if (relayDown()) return fetch(direct, options);
+    let resp;
+    try {
+      resp = await fetch(target, options);
+    } catch (err) {
+      if (err && err.name === "AbortError") throw err;
+      markRelayDown(err && err.name ? err.name : "network_error");
+      if (meta.idempotent) return fetch(direct, options);
+      throw err;
+    }
+    if (looksLikeRelayOutage(resp)) {
+      markRelayDown(`relay_http_${resp.status}`);
+      if (meta.idempotent) return fetch(direct, options);
+    }
+    return resp;
+  }
+
   // TODO: 以下 context window / newUntil 数据为占位值，需根据实际上线时间/官方文档校准。
   const MODEL_CONTEXT_WINDOWS = {
     "gpt-5.5": 256000,
@@ -639,7 +738,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
               if (settled) return;
               try {
                 const session = await ensureAuthSession();
-                const resp = await fetch(EDGE_FUNCTION_URL, {
+                const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -847,7 +946,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             busy = false; submitBtn.disabled = false; submitBtn.textContent = "验证";
             return;
           }
-          const resp = await fetch(EDGE_FUNCTION_URL, {
+          const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -967,7 +1066,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         }
         try {
           const session = await ensureAuthSession();
-          const resp = await fetch(EDGE_FUNCTION_URL, {
+          const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1062,7 +1161,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       async function fetchChallenge() {
         try {
           const session = await ensureAuthSession();
-          const resp = await fetch(EDGE_FUNCTION_URL, {
+          const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1103,7 +1202,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         errorEl.textContent = "";
         try {
           const session = await ensureAuthSession();
-          const resp = await fetch(EDGE_FUNCTION_URL, {
+          const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1668,7 +1767,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   async function fetchModelHealthStatus() {
     try {
-      const resp = await fetch(EDGE_FUNCTION_URL, {
+      const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
         body: JSON.stringify({ endpoint: "model_health", window_days: 1 }),
@@ -2243,15 +2342,22 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       // 这条分支只影响未登录时打开 chat 看到的 dropdown 视觉态。
       return quotaState;
     }
-    quotaStateFetchInflight = fetch(SUPABASE_URL + "/functions/v1/chat-gateway", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: "Bearer " + token,
+    // 2026-08-29 审计：这里原本硬用 SUPABASE_URL（直连），使首屏的配额查询绕过了
+    // 首尔中继 —— 浏览器要为它单独跟欧洲 colo 完整握手一次（实测 3×225ms），
+    // 中继省下的握手在首屏一次都没省到。改走统一基地址；只读查询，标 idempotent。
+    quotaStateFetchInflight = gatewayFetch(
+      gatewayBaseUrl() + "/functions/v1/chat-gateway",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ endpoint: "get_quota_status", __auth_token: token }),
       },
-      body: JSON.stringify({ endpoint: "get_quota_status", __auth_token: token }),
-    })
+      { idempotent: true },
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data && data.ok) {
@@ -2979,7 +3085,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     }
     if (modelUiCatalogInflight) return modelUiCatalogInflight;
-    const url = (window.__SUPABASE_URL__ || "").replace(/\/+$/, "");
+    // 2026-08-29 审计：原本硬用 __SUPABASE_URL__（直连），使**模型菜单**这个首屏
+    // 关键调用绕过了首尔中继。改走统一基地址。
+    const url = gatewayBaseUrl();
     const anon = window.__SUPABASE_ANON_KEY__ || "";
     if (!url || !anon) return Promise.resolve(false);
     // 2026-06-24: 5 秒超时时渲染本地 fallback，避免网络抖动导致模型菜单一直骨架屏。
@@ -2993,7 +3101,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         }
       }
     }, 5000);
-    modelUiCatalogInflight = fetch(`${url}/functions/v1/chat-gateway`, {
+    modelUiCatalogInflight = gatewayFetch(`${url}/functions/v1/chat-gateway`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -3003,7 +3111,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       mode: "cors",
       credentials: "omit",
       cache: "no-store",
-    })
+    }, { idempotent: true })
       .then((r) => {
         if (!r.ok) throw new Error(`catalog fetch ${r.status}`);
         return r.json();
@@ -3870,9 +3978,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const { data } = await client.auth.getSession();
       const token = data?.session?.access_token;
       if (!token) return;
-      const baseUrl = (window.__SUPABASE_URL__ || "").trim();
+      // 2026-08-29 审计：原本硬用 __SUPABASE_URL__，绕过中继。改走统一基地址。
+      const baseUrl = gatewayBaseUrl();
       if (!baseUrl) return;
-      await fetch(`${baseUrl}/functions/v1/chat-gateway`, {
+      await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3884,7 +3993,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           action: "set",
           enabled,
         }),
-      });
+      }, { idempotent: true });
     } catch (e) {
       console.warn("[data_consent] sync failed:", e);
     }
@@ -3896,9 +4005,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const { data } = await client.auth.getSession();
       const token = data?.session?.access_token;
       if (!token) return true;
-      const baseUrl = (window.__SUPABASE_URL__ || "").trim();
+      // 2026-08-29 审计：原本硬用 __SUPABASE_URL__，绕过中继。改走统一基地址。
+      const baseUrl = gatewayBaseUrl();
       if (!baseUrl) return true;
-      const resp = await fetch(`${baseUrl}/functions/v1/chat-gateway`, {
+      const resp = await gatewayFetch(`${baseUrl}/functions/v1/chat-gateway`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3909,7 +4019,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           endpoint: "data_consent",
           action: "get",
         }),
-      });
+      }, { idempotent: true });
       const json = await resp.json().catch(() => ({}));
       return json.data_upload_enabled !== false;
     } catch (e) {
@@ -4538,9 +4648,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   //    challenges.cloudflare.com（soft 模式存在的原因）→ 登录直接锁死。
   //    详见 css/后端/supabase/tasks/2026-08-29_seoul-edge-node-design.md。
   //
-  // 中继不可用时自动回落直连：window.__GATEWAY_URL__ 不配就等于旧行为。
-  const GATEWAY_BASE_URL =
-    (window.__GATEWAY_URL__ || "").trim() || SUPABASE_URL;
+  // 2026-08-29 审计更正：这里原先的注释写「中继不可用时自动回落直连」，而实现只是
+  // 「__GATEWAY_URL__ 不配就等于旧行为」—— 那是**人工**回滚，不是运行时回落。
+  // 真正的运行时回落现在由文件顶部的 gatewayFetch() 熔断实现；本行只负责取初始基地址
+  // （熔断已打开时 gatewayBaseUrl() 直接返回直连域名）。
+  const GATEWAY_BASE_URL = gatewayBaseUrl();
   const EDGE_FUNCTION_URL = `${GATEWAY_BASE_URL}/functions/v1/chat-gateway`;
   // 2026-06-17：网页端对话「智能标题」生成端点（后端直连 DeepSeek deepseek-v4-flash）。
   const GEN_TITLE_URL = `${GATEWAY_BASE_URL}/functions/v1/gen-title`;
@@ -4965,7 +5077,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (_subscriptionBannerShown) return;
     try {
       const session = await ensureAuthSession();
-      const resp = await fetch(EDGE_FUNCTION_URL, {
+      const resp = await gatewayFetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -5021,7 +5133,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       body = {};
     }
     body.__auth_token = session.access_token;
-    return fetch(url, { ...options, body: JSON.stringify(body) });
+    // 走 gatewayFetch：中继故障时自动切直连（对非中继 URL 是透明直通）。
+    return gatewayFetch(url, { ...options, body: JSON.stringify(body) });
   }
   
   async function proxyFetchWithTimeout(url, options = {}, timeoutMs, label) {
@@ -6718,7 +6831,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
 
     try {
       const session = await ensureAuthSession();
-      const response = await fetch(USER_MEMORY_URL, {
+      const response = await gatewayFetch(USER_MEMORY_URL, {
         method: "POST",
         headers: userMemoryRequestHeaders(session),
         body: JSON.stringify({ action: "summarize_me" }),
@@ -6736,7 +6849,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const skipAutoSummarize = options.skipAutoSummarize === true;
     try {
       const session = await ensureAuthSession();
-      const response = await fetch(USER_MEMORY_URL, {
+      const response = await gatewayFetch(USER_MEMORY_URL, {
         method: "GET",
         headers: userMemoryRequestHeaders(session),
       });
@@ -6877,7 +6990,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     renderMemoriesInSettings();
     try {
       const session = await ensureAuthSession();
-      const response = await fetch(USER_MEMORY_URL, {
+      const response = await gatewayFetch(USER_MEMORY_URL, {
         method: "POST",
         headers: userMemoryRequestHeaders(session),
         body: JSON.stringify({ action: "set_memory_enabled", enabled: next }),
@@ -6902,7 +7015,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
     try {
       const session = await ensureAuthSession();
-      const response = await fetch(USER_MEMORY_URL, {
+      const response = await gatewayFetch(USER_MEMORY_URL, {
         method: "POST",
         headers: userMemoryRequestHeaders(session),
         body: JSON.stringify({ action: "save_memory", slot, content: cleaned }),
@@ -6925,7 +7038,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   async function deleteUserMemory(slot) {
     try {
       const session = await ensureAuthSession();
-      await fetch(USER_MEMORY_URL, {
+      await gatewayFetch(USER_MEMORY_URL, {
         method: "POST",
         headers: userMemoryRequestHeaders(session),
         body: JSON.stringify({ action: "delete_memory", slot }),
@@ -6945,7 +7058,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       throw new Error("导入内容太短，请粘贴更多历史文本。");
     }
     const session = await ensureAuthSession();
-    const response = await fetch(USER_MEMORY_URL, {
+    const response = await gatewayFetch(USER_MEMORY_URL, {
       method: "POST",
       headers: userMemoryRequestHeaders(session),
       body: JSON.stringify({
@@ -6982,7 +7095,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       throw new Error("请选择至少一条记忆。");
     }
     const session = await ensureAuthSession();
-    const response = await fetch(USER_MEMORY_URL, {
+    const response = await gatewayFetch(USER_MEMORY_URL, {
       method: "POST",
       headers: userMemoryRequestHeaders(session),
       body: JSON.stringify({
@@ -10805,7 +10918,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }, timeoutMs);
   
     try {
-      return await fetch(url, {
+      // 走 gatewayFetch：中继故障时自动切直连（对非中继 URL 是透明直通）。
+      // AbortError 在 gatewayFetch 内被原样抛出、不触发熔断，下面这段判定不受影响。
+      return await gatewayFetch(url, {
         ...options,
         signal: controller.signal,
       });
