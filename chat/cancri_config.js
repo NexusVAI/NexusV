@@ -15,8 +15,14 @@ window.__SUPABASE_ANON_KEY__ = 'neon-auth-via-cf-shim';
 //    走中继 = 国内真人全被判成机房出口并强制人机验证，而他们恰恰加载不了
 //    challenges.cloudflare.com → 登录锁死。
 //
-// 出问题的止血：把下面这行改成 undefined（或删掉），前端自动回落直连，
-// 不需要改任何 JS，也不需要重新 vite build。
+// 止血有两层，2026-08-29 审计后补齐：
+//   1. 运行时（自动、不需要人在线）：中继请求一旦网络层失败或返回 nginx 自己的
+//      HTML 错误页，chat/src/main.js 的 gatewayFetch() 立刻打开熔断（sessionStorage
+//      记 5 分钟），之后所有网关调用自动改打 __SUPABASE_URL__。
+//   2. 人工（永久关闭）：把下面这行改成 undefined 或删掉。
+//      ⚠️ 这条路径**不是即时的**：本文件 Cache-Control: max-age=600 且 CF 会缓存，
+//      所以改完要 purge CF + bump 引用它的 index.html / claude.html 里的 ?v=，
+//      否则最坏要等 CF 10 分钟 + 浏览器 10 分钟。优先依赖第 1 层。
 window.__GATEWAY_URL__ = 'https://cn.nexusvai.xyz';
 // 2026-06-20 满月故事墙活动已结束（只读存档）
 window.__CELEBRATE_WALL_CLOSED__ = true;
