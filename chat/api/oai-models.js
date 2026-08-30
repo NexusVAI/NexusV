@@ -55,7 +55,7 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
-    // 2026-08-27: api.b.ai 五条限时免费线（至 08-31），钉到免费区首屏。
+    // 2026-08-27: api.b.ai 五条限时免费线（原至 08-31，2026-08-30 延至 09-05），钉到免费区首屏。
     // 站内 id = 上游 id + "-free"（运营方指定的命名约定）。
     // mimo-v2.5-free 是同名 id 从 tokenharbor 重挂到 api.b.ai，不是新增卡。
     "glm-5.3-flash-free",
@@ -101,12 +101,16 @@
 
   // catalog 无 publicDescription 时的卡片兜底（与 kimi / deepseek 限时卡文案对齐）。
   var DESC_FALLBACK = {
-    // 2026-08-27: api.b.ai 五条线免费期至 08-31。
-    "glm-5.3-flash-free": "08-31结束免费期限",
-    "hy3-free": "08-31结束免费期限",
-    "qwen3.8-flash-free": "08-31结束免费期限",
-    "deepseek-v4-flash-vision-exp-free": "08-31结束免费期限",
-    "mimo-v2.5-free": "08-31结束免费期限",
+    // 2026-08-27: api.b.ai 五条线免费期原至 08-31。
+    // 2026-08-30: 运营方延期至 09-05。这里只是卡片文案，真正的到期闸门是
+    // cf-gateway/src/shared-catalog.ts 与 cf-modelscope-proxy/src/index.ts 两份
+    // MODEL_ACCESS_END_MS（必须同日）——改日期时三处一起改，否则卡片写着还没到期、
+    // 后端已经把模型摘掉了。
+    "glm-5.3-flash-free": "09-05结束免费期限",
+    "hy3-free": "09-05结束免费期限",
+    "qwen3.8-flash-free": "09-05结束免费期限",
+    "deepseek-v4-flash-vision-exp-free": "09-05结束免费期限",
+    "mimo-v2.5-free": "09-05结束免费期限",
     // 2026-08-29: qwen-3.8-max 已下架，文案条目随之删除。
     "glm-5.3-fp4-free": "09-05结束免费期限",
     "claude-opus-4.8-free": "08-19结束免费期限",
