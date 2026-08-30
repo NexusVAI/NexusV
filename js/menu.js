@@ -7,12 +7,16 @@ var menuConfig = {
             { href: 'article.html?id=sentienceV52mens', i18n: 'menu.research.deep_sentienceV52' },
             { href: 'article.html?id=cancriCode', i18n: 'menu.research.deep_cancriCode' },
             { href: 'article.html?id=cancriV1_0_1b', i18n: 'menu.research.deep_cancriV1' },
-            { href: 'article.html?id=tactfr627', i18n: 'menu.research.deep_tactfr60' },
+            { href: 'article.html?id=tactfr630', i18n: 'menu.research.deep_tactfr60' },
             { href: 'article.html?id=chatai', i18n: 'menu.research.deep_chatai' }
         ],
         latest: [
+            { href: 'article.html?id=tactfr630', i18n: 'menu.research.tactfr630' },
+            { href: 'article.html?id=tactfr629', i18n: 'menu.research.tactfr629' },
             { href: 'article.html?id=tactfr628', i18n: 'menu.research.tactfr628' },
             { href: 'article.html?id=tactfr627', i18n: 'menu.research.tactfr627' },
+            { href: 'article.html?id=tactfr626', i18n: 'menu.research.tactfr626' },
+            { href: 'article.html?id=tactfr625', i18n: 'menu.research.tactfr625' },
             { href: 'article.html?id=tactfr600', i18n: 'menu.research.tactfr60_beta2' },
             { href: 'article.html?id=sentienceV52mens', i18n: 'menu.research.sentienceV52' },
             { href: 'article.html?id=sentienceV4ob', i18n: 'menu.research.sentienceV4C' },

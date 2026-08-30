@@ -8,9 +8,8 @@
  * 保留原本的 Inter / 系统 sans-serif，避免长文阅读疲劳和中英文混排时的排版
  * 错位问题。
  *
- * Newsreader 不含中文字形，中文字符会按照 fallback 链回退到系统衬线
- * （Songti / 思源宋体 / Times）。这是预期行为：英文走衬线感更强、中文走系统
- * 字体保证清晰度。
+ * Newsreader 不含中文字形。中文回落到 Codex / Cancri Code 的 Noto Sans SC，
+ * 不再走宋体，避免标题和正文两套中文脸。
  * ========================================================================== */
 
 :root {
@@ -19,9 +18,7 @@
         'Newsreader',
         'Source Serif 4',
         'Source Serif Pro',
-        'Songti SC',
-        'PingFang SC',
-        'Noto Serif SC',
+        var(--font-cjk),
         Georgia,
         'Times New Roman',
         serif;

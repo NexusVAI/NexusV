@@ -770,6 +770,224 @@ const articleData = {
             ]
         }
     },
+    tactfr630: {
+        overlay: 'TACTFR Beta 3',
+        media: { type: 'image', src: 'Logo/Beta3tactfr.png', alt: 'TACTFR Beta 3' },
+        zh: {
+            title: 'TACTFR Beta 3:随宏大目标灵活扩展的Mod',
+            date: '2026年8月22日',
+            category: '产品',
+            readTime: '16 分钟阅读',
+            paragraphs: [
+                '一座城市不会为一次完美的逮捕停下来。警报会再响，公路还会把下一辆卡车送进夜色，而一名警员要在同一套制服里，从见习走到总警监。TACTFR 想做的从来不是“再加几个按键”，而是让洛圣都的夜晚长出记忆：案件会留下痕迹，班次会留下成绩，故事会换一种速度继续写。',
+                '今天我们发布 TACTFR 6.0.0 Beta.3。它站在 2.9 已经铺开的街面执法之上，第一次认真回答一个更大的问题：当目标变得宏大——审讯、证据、法庭、线人、卧底、整条案件树——这套模组还能否不崩、不卡、不把玩家锁死在旧键位里，继续往前长？',
+                '<strong>从 Beta.2 到 Beta.3：一条越来越像职业的路</strong>',
+                '回顾 6.0 这一年，版本号看起来碎，方向其实很清楚。',
+                'Beta.2 先立骨架。故事任务不再是一段写死的过场，银行劫案从接警、对峙、双嫌追捕到事后处理连成一条能演的叙事。逮捕被拆成七个能看见的阶段，镜头会跟着你靠近、上铐、搜身。终端第一次像指挥台，而不像一张临时菜单。',
+                '2.5 是预览，也是一次诚实的刹车。社区反复提到两件事：双目标押送上车不同步，逮捕动画会把人弹到别处。那一版没有扩边界，只把这两处焊住，好让后面的人敢继续加戏。',
+                '2.6 把勤务从“大案”拉回街面。邻里调解、弃置车辆、夜班加勤——不是为了炫技，是为了让一晚值班里出现不必拔枪也能结束的时刻。与此同时修掉一批菜单连开卡死、拦停不停车、下班后仍弹出接警的毛刺。',
+                '2.7 把“能玩一整局”当成标准。假投降、语音对峙、交付语义、双嫌上车、统一指挥台配色，第一次让玩家感觉自己不是在触发脚本，而是在带完一班。2.8 则回到结构：不再默认把人推进实验运行时，修好第四章卡死、铐着跑路、现金显示撒谎那些会毁掉信任的裂缝。',
+                '2.9 把职业感铺到键位上。警衔会涨，F3 能看见今晚你做了什么；车牌、酒测、搜身、罚单、探照灯、路障、封锁、急救——街面工具箱第一次齐了。一个人可以从见习警员走到总警监，不是靠通关动画，而是靠一次次执法留下来的分数。',
+                'Beta.3 不推翻这条路。它做的是把路修宽：让新的故事形态能插进来，让新的功能能先关着、等准备好再开，让第一次进入的人不会因为没有小键盘而当场放弃。',
+                '<strong>第四章：公路不再是银行的副本</strong>',
+                '前三章习惯待在一个地点里——银行门口、街巷、一栋房子的阴影。第四章把战场换成大洋公路。你要去接应一辆被劫的货运卡车，然后在速度里做选择：钉刺带拦路、高速 PIT 撞停，或者咬住不放、等支援围上来。',
+                '选择会改变现场的温度。逼停之后，你面对的不是一个按钮，而是持枪主犯、副犯、受伤的司机和陆续到达的支援。超时不再是一根死线：短则两分钟，长可到一刻钟，追缉、上铐、押送都算进同一场节奏里。这是 TACTFR 第一次承认——有些案子的尺度是公里，不是街区。',
+                '<strong>第一次打开时，城市会问你用什么手</strong>',
+                '默认菜单曾经绑在小键盘上。对台式机玩家这很自然，对笔记本和六十键键盘的人，开箱即废。Beta.3 在第一次加载时问一句：你有小键盘吗？有，就保持熟悉的布局；没有，一键换成方向键、回车和退格，并写进本地配置。也可以稍后再说，下次进游戏再问。向导自己坏了也不会卡死整局——这是我们对“宏大系统”的最低礼貌：先让人进得去。',
+                '<strong>灵活扩展，靠的不是把所有开关拨到开</strong>',
+                '6.0 的真正野心写在规划里，不写在这一版的下载说明里。审讯室与测谎、证据链、法庭回执、口供引出的案件树、现场勘查、通缉板、线人、卧底、人质谈判——那些才是“宏大目标”。它们太大了，不能靠把所有东西同时塞进默认体验来完成。',
+                '所以 Beta.3 把扩展写成一种纪律。双人案件、车队调度、派遣菜单、按人隔离的状态中枢，都可以单独打开或关上。故事章节挂在同一条主弧上，第四章是新的一页，不是另起一座城。街面功能各管各的键，值班统计只负责记账，警衔只负责记住你走过的路。新系统到来时，旧系统不必重写自己的名字。',
+                '这也是为什么我们愿意在版本名里写下 Beta。正式版要装下的不是更多清单，而是一种可以继续长的形状：你今晚只用罚单和酒测，明天可以打开双嫌与车队，后天终端里会出现下一章公路。目标可以很大，入口必须很小。',
+                '<strong>稳，是为了配得上接下来的野心</strong>',
+                '公路追缉会同时调动多人、多车、多阶段。2.9 的工具箱已经很满。若押送会互相踩、结案会把上一案的人带进下一案、投降标签认不出会让劫匪隐形、视野里的人会凭空消失——再宏大的规划也只是纸。',
+                'Beta.3 把这些当成同一件事来修。上铐演出不再对不该动的人动手；多名嫌疑人各自走各自的上车与押送，互不抢闸门；副目标上车有八秒兜底，不再因为座位判断刷屏或永远卡在“正在上车”。结案时强制清掉被点名的句柄。恐惧缓行补发跟随时，仍要掷那次逃跑的骰子，世界才不像被脚本牵着走。',
+                '巡逻下班会结束搜身姿态，911 接警不再被空格和退出键误触，普通菜单按退出也不会把整张游戏暂停菜单掀开。车队在战斗结束后会把落单的乘警召回来。第四章补上从对峙到拘捕的阶段链，合法押送途中不再被误判超时。本地推理的启动器也不再留下占着端口的孤儿进程。',
+                '这些句子读起来不像广告。它们是 Beta.3 对玩家的承诺：你可以追求更大的班次，系统会尽量不在半路上把你丢掉。',
+                '<strong>它仍然是测试版，这也很好</strong>',
+                '实验运行时与云端对话默认仍然关闭。想试的人可以自己打开，但我们不会再用“默认开启”替你做决定——2.8 已经付过那笔学费。编译警告还在，它们不影响今晚的巡逻，却提醒我们：正式版还有一段要走的路。',
+                '把 a.TACTFR.dll 放进游戏的 scripts 目录，配合脚本钩子即可。第一次进入会看到键位向导；终端里可以接取第四章。QQ 群 1061632354。',
+                'Beta.3 想说的其实只有一句：宏大目标不该把模组撑破，而应该被模组慢慢长出来。公路已经通了。后面的审讯室、证据袋和法庭回执，会沿着今晚修好的这条路到来。',
+                '—— TACTFR 开发团队'
+            ]
+        },
+        en: {
+            title: 'TACTFR Beta 3: A Mod That Grows With Grand Ambitions',
+            date: 'August 22, 2026',
+            category: 'Product',
+            readTime: '16 min read',
+            paragraphs: [
+                'A city does not stop for one clean arrest. Another alarm will sound, another truck will enter the dark on the highway, and an officer will wear the same uniform from trainee to commissioner. TACTFR was never meant to be “a few more hotkeys.” It wants Los Santos nights to keep a memory: cases leave traces, shifts leave a record, and the story can change speed without changing its soul.',
+                'Today we release TACTFR 6.0.0 Beta.3. It stands on the street toolkit that 2.9 already laid down, and for the first time it answers a larger question: when the ambitions grow — interrogation, evidence, court, informants, undercover work, a whole tree of cases — can this mod keep growing without collapsing, locking up, or leaving laptop players outside the door?',
+                '<strong>From Beta.2 to Beta.3: a career, not a checklist</strong>',
+                'The version numbers of 6.0 look fragmented. The direction is not.',
+                'Beta.2 built the skeleton. Story missions stopped being a single canned cutscene. The bank job became a chain you can play: dispatch, standoff, dual-suspect pursuit, aftermath. Arrests split into seven visible stages, and the camera followed you in. The terminal began to feel like a command desk instead of a temporary menu.',
+                '2.5 was a preview and an honest brake. The community kept naming two wounds: dual-target boarding falling out of sync, and arrest animations teleporting people across the pavement. That build did not widen the map. It welded those two points so later chapters could dare to add more.',
+                '2.6 pulled duty back onto the street. Neighborhood mediation, abandoned cars, extra night events — not spectacle, but hours that can end without drawing a weapon. It also sanded down freezes from opening menus too fast, pullovers that refused to stop, and callouts that still rang after you clocked out.',
+                '2.7 made “one full shift you can finish” the bar. Fake surrenders, voice confrontations, honest delivery outcomes, dual boarding, a single console palette — for the first time it felt like you were working a city, not triggering scripts. 2.8 returned to structure: it stopped shoving players into an experimental runtime by default, and closed the cracks that kill trust — chapter four deadlocks, cuffed suspects who still flee, a cash display that lied.',
+                '2.9 put the career onto the keyboard. Rank rises. F3 shows what you did tonight. Plates, breath tests, frisks, citations, searchlights, barriers, lockdowns, first aid — the street kit finally arrived together. You can walk from trainee to commissioner not through a victory reel, but through the score a night of work leaves behind.',
+                'Beta.3 does not overturn that road. It widens it: new story shapes can plug in, new systems can stay dark until they are ready, and a first-time player is not abandoned because they do not own a numpad.',
+                '<strong>Chapter four: the highway is not a copy of the bank</strong>',
+                'The first three chapters like to stay in one place — a bank door, an alley, the shadow of a house. Chapter four moves the field onto the Great Ocean Highway. You intercept a hijacked freight truck, then choose in motion: spike strips, a high-speed PIT, or hold the line and wait for a surround.',
+                'The choice changes the temperature of the scene. After the stop you are not pressing a single button. You meet an armed lead, a second offender, a wounded driver, and support rolling in. Time is no longer a dead line: two minutes at the short end, fifteen at the long, with pursuit, cuffing, and escort counted in the same rhythm. This is the first time TACTFR admits that some cases are measured in kilometers, not blocks.',
+                '<strong>The first time you load in, the city asks how your hands work</strong>',
+                'Menus once defaulted to the numpad. Natural for a desktop. Dead on arrival for a laptop or a sixty-percent keyboard. Beta.3 asks on first launch: do you have a numpad? If yes, keep the layout you already know. If not, switch in one step to arrows, Enter, and Backspace, and write it into local config. You can also say later, and it will ask again next session. If the wizard itself fails, the game still lets you through — the least courtesy a large system owes anyone: let them in first.',
+                '<strong>Flexible growth is not “turn every switch on”</strong>',
+                'The real ambition of 6.0 lives in the plan, not in this build’s download notes. Interrogation rooms and polygraphs, evidence chains, court receipts, case trees grown from confessions, scene work, a wanted board, informants, undercover jobs, hostage talks — those are the grand goals. They are too large to finish by stuffing every experiment into the default night.',
+                'So Beta.3 writes expansion as discipline. Dual-suspect cases, convoys, dispatch menus, and per-person state can each be opened or left closed. Story chapters hang on one main arc; chapter four is a new page, not a second city. Street tools keep their own keys. Shift stats only keep the books. Rank only remembers the road you walked. When a new system arrives, the old ones do not have to rename themselves.',
+                'That is why we are willing to keep Beta in the name. A finished 6.0 is not a longer list. It is a shape that can keep growing: tonight you only write tickets and run breath tests; tomorrow you can open dual suspects and a convoy; the day after, another highway chapter appears on the terminal. The goal can be vast. The door must stay small.',
+                '<strong>Stability is how you earn the next ambition</strong>',
+                'A highway chase moves many people, many cars, many phases at once. The 2.9 toolkit is already full. If escorts step on each other, if closing a case smuggles the last suspect into the next one, if a surrender tag makes robbers invisible, if people vanish in front of your eyes — then every grand plan is paper.',
+                'Beta.3 treats those as one job. Cuffing theater no longer touches the wrong body. Each suspect walks their own boarding and escort path. A secondary boarding gets an eight-second fallback, instead of looping forever on a bad seat read. Forced handles are cleared when a case ends. When fear quietly reissues a follow, the flee roll still happens, so the world does not feel pulled by a string.',
+                'Clocking out ends a frisk pose. 911 intake no longer eats Space and Escape by mistake. Leaving an ordinary menu no longer throws the whole pause screen. Convoys call stranded riders back when the fight is over. Chapter four finally connects standoff to arrest, and a lawful escort is no longer judged as a timeout. The local inference launcher no longer leaves an orphan process sitting on a port.',
+                'None of that reads like an advertisement. It is Beta.3’s promise: you can chase a larger shift, and the system will try not to drop you halfway.',
+                '<strong>It is still a beta, and that is the right word</strong>',
+                'The experimental runtime and cloud dialogue stay off by default. You can turn them on if you want to try, but we will not decide that for you — 2.8 already paid that tuition. Compiler warnings remain. They will not spoil tonight’s patrol. They do remind us that the finished version still has road left.',
+                'Place a.TACTFR.dll in the game’s scripts folder with the script hook. The first launch shows the keybind wizard. Chapter four is on the terminal. QQ group 1061632354.',
+                'Beta.3 is trying to say one thing: grand goals should not split a mod open. They should grow out of it. The highway is open. The interrogation room, the evidence bag, and the court receipt will come down the road we made safe tonight.',
+                '— TACTFR Development Team'
+            ]
+        }
+    },
+    tactfr629: {
+        overlay: 'TACTFR 6.0.0 Beta.2.9',
+        media: { type: 'image', src: 'Logo/TACTFR6.0.0.png', alt: 'TACTFR 6.0.0 Beta.2.9' },
+        zh: {
+            title: '介绍 TACTFR 6.0.0 Beta.2.9',
+            date: '2026年7月26日',
+            category: '产品',
+            readTime: '12 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们发布 TACTFR 6.0.0 Beta.2.9。2.8 把主链路从卡死和误报里捞出来之后，这一版把“当一名警察”从大案骨架补成可以过完一晚的街面职业：警衔会随执法上涨，F3 能看见今晚的值班账本，车牌、酒测、搜身、罚单、探照灯、路障、封锁和急救第一次作为一套工具一起交给你。',
+                '<strong>从值班到警衔：城市开始记住你</strong>',
+                '见习警员、正式警员、资深警员、警长、警督、总警监。晋升不再靠通关动画，而靠你留下的执法：交付、罚单、酒测、搜身、急救、车牌命中都会记入同一本跨班次的成绩。职级越高，同一份交付带来的回报越像样。F3 打开值班统计，今晚扫过多少车牌、开过几张单、救过几次人，都摊在眼前——不是排行榜，是交班时你会看一眼的东西。',
+                '<strong>街面工具箱</strong>',
+                '自动车牌识别。驾车按 J 扫描附近车辆。命中目标会在小地图上留下约三十秒的标记，够你决定是跟上还是呼叫支援。',
+                '呼气酒测。按 K 对附近的人做酒精检测，阳性可以直接接到罚单或逮捕，不必再把一次酒驾拆成两套互不相认的流程。',
+                '搜身检查。按 M 检查身上物品。枪械、棒球棍、微型冲锋枪一类武器会被收缴，也有机会摸到别的违禁品。这是 2.7 里“搜身只是逮捕收尾动作”之后，第一次让搜身本身成为街面手段。',
+                '罚单系统。按 N 处理轻微违法，不必每次都把人按在地上。每一次开单奖励一百五十美元——不是暴富，是让“口头警告与书面处罚”值得被选。',
+                '警车不再只是一辆载具。F6 打开探照灯，锁定后会跟着目标走；F9 放置或收回便携路障，把一个路口临时收成你的。现场需要更大的圈时，F11 拉起约四十米的封锁：普通路人进不来，闯进去的人会被驱散。F5 则留给重伤者，让你在开枪之后还有一次选择救人。',
+                '这些键位可以改。我们在 2.9 里在意的不是把键盘占满，而是让一晚值班里，轻罪、临检、控制现场、救人，各自有一条走得通的路。',
+                '<strong>其余修复</strong>',
+                '2.9 也收掉一批容易把整晚变成读档的卡死：菜单与案件清理、个别动画残留、嫌疑人句柄在结案后仍占着下一案的位置。它们不改玩法边界，只让 2.8 修好的主链路在更满的工具箱下仍然转得动。',
+                '将 a.TACTFR.dll 放入游戏 scripts 目录，配合脚本钩子使用。终端按 O 打开。QQ 群 1061632354。',
+                '2.9 是 6.0 第一次让“职业”两个字落到手指上。后面的 Beta.3 会沿着这条街，把公路和更长的故事接进来。',
+                '—— TACTFR 开发团队'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 6.0.0 Beta.2.9',
+            date: 'July 26, 2026',
+            category: 'Product',
+            readTime: '12 min read',
+            paragraphs: [
+                'Abstract: Today we release TACTFR 6.0.0 Beta.2.9. After 2.8 pulled the main path out of deadlocks and false reports, this build turns “being an officer” from a skeleton of big cases into a street career you can finish in one night: rank rises with the work you do, F3 shows tonight’s shift ledger, and plates, breath tests, frisks, citations, searchlights, barriers, lockdowns, and first aid arrive as one kit.',
+                '<strong>From a shift to a rank: the city starts to remember you</strong>',
+                'Trainee, officer, senior officer, sergeant, inspector, commissioner. Promotion is no longer a cutscene. It is the score a night leaves behind — deliveries, citations, breath tests, frisks, first aid, plate hits — written across shifts. Higher rank makes the same delivery pay more like a career. F3 opens the shift ledger: plates scanned, tickets written, lives pulled back. Not a leaderboard. The page you glance at before you clock out.',
+                '<strong>The street kit</strong>',
+                'Automatic plate recognition. Press J while driving to scan nearby cars. A hit marks the target on the minimap for about thirty seconds — long enough to decide whether to follow or call support.',
+                'Breath test. Press K on someone nearby. A positive result can move straight into a citation or an arrest, so a DUI is no longer two unrelated menus.',
+                'Frisk. Press M to check what they are carrying. Firearms, bats, and SMGs are seized; other contraband can turn up too. After 2.7, where a search was mostly the last beat of an arrest, frisking becomes a street tool of its own.',
+                'Citations. Press N for the small offenses that do not deserve the pavement. Each ticket pays one hundred fifty dollars — not a fortune, just enough that a written warning is worth choosing.',
+                'The cruiser is no longer only a car. F6 throws a searchlight that tracks once locked. F9 plants or recovers a portable barrier and turns a crossing into yours for a while. When the scene needs a wider ring, F11 raises about forty meters of lockdown: ordinary people stay out, and anyone who walks in is pushed back. F5 is for the badly hurt, so after the gun there is still a chance to save someone.',
+                'The binds can be changed. What 2.9 cares about is not filling the keyboard. It is giving one night of duty a walkable path for minor crime, a checkpoint, holding a scene, and helping the wounded.',
+                '<strong>The rest</strong>',
+                '2.9 also closes a set of freezes that could turn a whole night into a reload: menus and case cleanup, leftover animations, suspect handles that still occupied the next case after the last one ended. They do not widen the map. They keep the path 2.8 repaired turning under a fuller kit.',
+                'Place a.TACTFR.dll in the game’s scripts folder with the script hook. Press O for the terminal. QQ group 1061632354.',
+                '2.9 is the first time 6.0 puts the word career onto your fingers. Beta.3 will take this street and connect it to the highway and a longer story.',
+                '— TACTFR Development Team'
+            ]
+        }
+    },
+    tactfr626: {
+        overlay: 'TACTFR 6.0.0 Beta.2.6',
+        media: { type: 'image', src: 'Logo/TACTFR6.0.0.png', alt: 'TACTFR 6.0.0 Beta.2.6' },
+        zh: {
+            title: '介绍 TACTFR 6.0.0 Beta.2.6',
+            date: '2026年5月24日',
+            category: '产品',
+            readTime: '8 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们发布 TACTFR 6.0.0 Beta.2.6。2.5 刚把双目标上车和逮捕镜头从预览期的晃动里稳住，这一版不急着加更大的骨架，而是把值班拉回普通街面：邻里调解、弃置车辆、夜班加勤，以及一批会让整晚停住的小卡死。',
+                '<strong>为什么在 2.6 做“小案子”</strong>',
+                '6.0 的前几周，玩家记住的是银行、双嫌、七阶段逮捕。那些场面值得做，但它们不能填满每一个夜班。真实的勤务里，更多时间花在不必拔枪的事情上：两个人在便利店门口推搡，一辆车斜停在巷口已经三个小时，深夜电台里多出来的那一声“有人需要警察”。2.6 把这三种时刻做成可以结束的循环，好让 2.7 以后的职业系统有街面可以长上去。',
+                '<strong>邻里调解</strong>',
+                '接报或巡逻撞上街头推搡、店员与顾客的争吵时，不必立刻走完整条逮捕链。你可以喝止、分开两边、留下口头警告，也可以在场面升级后改逮捕。结束方式会写进当晚的印象：有人被劝走，有人被带走。城市因此多了一种“今晚没有开火，但你仍在值班”的收场。',
+                '<strong>弃置车辆</strong>',
+                '路边异常空车可以靠近检查。有的只是车主走远了，有的后备箱或座位上会留下不该出现的东西。这不是又一次追车，而是一次短的现场判断：记下、继续巡逻，或升级成需要支援的案件。它给 2.5 刚修好的靠近与上车逻辑一个更轻的用处——你先学会靠近一辆不会跑的车，再去押两名会挣扎的人。',
+                '<strong>夜班加勤</strong>',
+                '进入深夜后，街面会稍稍变密：更多行人求助、更多需要看一眼的停车、偶尔一次不值得拉响全城警报的喧哗。加勤不是新的主线，只是让夜班和白班摸起来不一样，免得每一晚都像同一段银行录像在重播。',
+                '<strong>若干修复</strong>',
+                '我们修了终端与菜单连开后焦点丢失、部分车辆被拦停却继续滑行、下班后仍弹出接警提示、以及个别案件结束后短时间内无法接下一条的问题。没有新的架构宣言，只是让 2.5 稳住的那两处，在更碎的街面事件里仍然站得住。',
+                '将 a.TACTFR.dll 放入游戏 scripts 目录即可。QQ 群 1061632354。',
+                '2.6 看起来不大。它的工作是给后面的 2.7、2.9 和 Beta.3 留出一种更日常的警察生活，好让宏大目标有街道可以落脚。',
+                '—— TACTFR 开发团队'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 6.0.0 Beta.2.6',
+            date: 'May 24, 2026',
+            category: 'Product',
+            readTime: '8 min read',
+            paragraphs: [
+                'Abstract: Today we release TACTFR 6.0.0 Beta.2.6. 2.5 had just steadied dual-target boarding and the arrest camera. This build does not rush a larger skeleton. It pulls the shift back onto ordinary streets: neighborhood mediation, abandoned cars, extra night work, and a handful of freezes that could stop a whole evening.',
+                '<strong>Why small cases in 2.6</strong>',
+                'In the first weeks of 6.0, players remembered the bank, two suspects, seven arrest stages. Those scenes were worth building. They cannot fill every night. Real duty spends more time on work that never draws a gun: two people shoving outside a store, a car that has sat crooked in an alley for three hours, one extra radio call after midnight that only needs an officer to look. 2.6 turns those three moments into loops you can finish, so the career systems that follow 2.7 have a street to grow on.',
+                '<strong>Neighborhood mediation</strong>',
+                'When a call or a patrol walks into a shove, or a clerk arguing with a customer, you no longer have to run the full arrest chain. You can break it up, leave a verbal warning, or escalate if the scene turns. How it ends writes into the night: some people walk away, some leave in cuffs. The city gains a way to close an hour without a shot fired, and still call it duty.',
+                '<strong>Abandoned vehicles</strong>',
+                'An empty car that looks wrong can be approached and checked. Sometimes the owner just walked off. Sometimes the trunk or the seats hold what should not be there. This is not another chase. It is a short judgment on the curb: note it and keep walking, or raise it into a case that needs support. It gives the approach and boarding work 2.5 just repaired a lighter job — learn to walk up to a car that will not run, before you escort two people who will.',
+                '<strong>Night extras</strong>',
+                'After dark the street thickens a little: more people asking for help, more parked cars worth a look, the occasional noise that does not deserve a city-wide alarm. It is not a new main story. It only makes the night feel different from the day, so every shift does not replay the same bank tape.',
+                '<strong>Fixes</strong>',
+                'We repaired focus loss after opening the terminal and menus too quickly, cars that kept rolling after a pullover, callouts that still appeared after you clocked out, and a short window after one case where the next would not start. No new architecture speech. Just the two points 2.5 welded, still standing when the street gets more fragmented.',
+                'Place a.TACTFR.dll in the game’s scripts folder. QQ group 1061632354.',
+                '2.6 looks small. Its job is to leave a more ordinary police life for 2.7, 2.9, and Beta.3, so the grand goals have a street to stand on.',
+                '— TACTFR Development Team'
+            ]
+        }
+    },
+    tactfr625: {
+        overlay: 'TACTFR 6.0.0 Beta.2.5',
+        media: { type: 'image', src: 'Logo/TACTFR6.0.0.png', alt: 'TACTFR 6.0.0 Beta.2.5' },
+        zh: {
+            title: '介绍 TACTFR 6.0.0 Beta.2.5 预览版',
+            date: '2026年5月10日',
+            category: '产品',
+            readTime: '8 分钟阅读',
+            paragraphs: [
+                '摘要：今天我们推出 TACTFR 6.0.0 Beta.2.5 预览版。这是 6.0 对社区反馈的一次专门停顿：不扩故事，不加新职业，只修两处已经开始毁掉“双人执法”信任的核心问题——双目标押送上车不同步，以及逮捕动画把人弹到别处。',
+                '<strong>为什么先做预览，而不是直接跳到 2.7</strong>',
+                'Beta.2 把银行、七阶段逮捕和双嫌疑人写进了 6.0 的骨架。骨架立住之后，玩家最先感到的不是“还缺一章剧情”，而是两个人无法一起坐进同一辆车，以及镜头一闪、角色已经站在十米外。若不先承认这两件事，后面所有更漂亮的对峙都只是演示。2.5 因此被标成预览：范围很小，目标很硬，专门留给愿意帮我们把主链路踩实的人。',
+                '<strong>双目标押送：上车状态重新对齐</strong>',
+                '两名嫌疑人被带向同一辆警车时，主目标和副目标曾经活在两套不完全通气的上车记录里。一个人已经坐下，另一个还在车外循环；或者车内已经有人，交互却仍去拽车里的人下车。2.5 把上车、已上车、跟随这几件事重新对齐，让“两个人、一辆车、一次押送”在预览里可以走完，而不是在车门边结束。',
+                '<strong>逮捕动画：少一次瞬移</strong>',
+                '七阶段逮捕依赖镜头和角色同时落到同一个安全点。预览期里，锚点稍偏、高低差稍大，实体就会被整段拉走——看起来像瞬移，玩起来像事故。2.5 收紧了落点的安全范围和单次拉回的距离，异常时宁可放弃这一下对齐，也不再把人从地面弹进墙里或弹到街心。风险还在，但它从“几乎每场都可能发生”降到了“我们敢让你继续玩下去”。',
+                '<strong>这一版没有承诺的东西</strong>',
+                '2.5 不包含新的街面工具，也不重画终端。语音对峙、交付语义、后备箱和拖车属于后面的 2.7；警衔与临检属于 2.9；公路与键位向导属于 Beta.3。预览版的工作就是把那两处社区点名的伤口先缝上。',
+                '将 a.TACTFR.dll 放入游戏 scripts 目录。QQ 群 1061632354。如果你在双人上车或逮捕镜头里仍看到异常，请把当时的人数、车型和大致位置发给我们——2.5 是为这些报告而存在的。',
+                '—— TACTFR 开发团队'
+            ]
+        },
+        en: {
+            title: 'Introducing TACTFR 6.0.0 Beta.2.5 Preview',
+            date: 'May 10, 2026',
+            category: 'Product',
+            readTime: '8 min read',
+            paragraphs: [
+                'Abstract: Today we ship TACTFR 6.0.0 Beta.2.5 Preview. It is a deliberate pause in 6.0 for community reports: no new story, no new career. Only two wounds that were already breaking trust in two-person policing — dual-target boarding falling out of sync, and arrest animations throwing people across the scene.',
+                '<strong>Why a preview, instead of jumping to 2.7</strong>',
+                'Beta.2 wrote the bank, the seven-stage arrest, and dual suspects into the 6.0 skeleton. Once that skeleton stood, players did not first ask for another chapter. They asked why two people could not sit in the same car, and why a camera cut left a character ten meters away. If we did not admit those two things, every prettier standoff after that would only be a demo. So 2.5 is marked Preview: a small scope, a hard target, for people willing to help us plant our feet on the main path.',
+                '<strong>Dual-target escort: boarding states line up again</strong>',
+                'When two suspects were walked to the same cruiser, the primary and the secondary once lived in boarding records that did not fully speak to each other. One was already seated while the other looped outside. Or someone was already inside, and the prompt still tried to pull them back out. 2.5 realigns boarding, boarded, and follow, so “two people, one car, one escort” can finish in the preview instead of dying at the door.',
+                '<strong>Arrest animation: fewer teleports</strong>',
+                'The seven-stage arrest needs the camera and the body to land on the same safe point. In the preview period, a slightly wrong anchor or a little too much height sent the whole entity down the street — it looked like a teleport, and it played like an accident. 2.5 tightens the safe radius and the distance of a single snap. When the point is bad, we would rather skip that snap than throw someone through a wall or into the middle of the road. The risk is still there. It is no longer “almost every scene.”',
+                '<strong>What this build does not promise</strong>',
+                '2.5 does not add a street kit, and it does not redraw the terminal. Voice confrontations, delivery semantics, the trunk, and the tow truck belong to 2.7. Rank and checkpoints belong to 2.9. The highway and the keybind wizard belong to Beta.3. The preview exists to close the two wounds the community named first.',
+                'Place a.TACTFR.dll in the game’s scripts folder. QQ group 1061632354. If you still see a fault in dual boarding or the arrest camera, send us the number of people, the car, and the rough place — 2.5 is here for those reports.',
+                '— TACTFR Development Team'
+            ]
+        }
+    },
     sentienceV4ob: {
         overlay: 'Sentience V4.1 Omni',
         media: { type: 'video', src: 'Logo/意识V4o.webm', poster: 'Logo/4.1Omni.png', fit: 'cover', alt: 'Sentience V4 Omni' },
@@ -2764,11 +2982,11 @@ function initIndexPage() {
     if (!heroCard && !scrollableList && !newsGrid && !featureStrip) return;
 
     function renderIndex(lang) {
-        // Scrollable List (tactfr628 first, then sentienceV52mens, blackboardPhase0)
+        // Scrollable List (cancriV1 / 黑板中继 first, then sentienceV52mens, blackboardPhase0)
         if (scrollableList) {
             scrollableList.innerHTML = '';
-            const listIds = ['tactfr628', 'sentienceV52mens', 'blackboardPhase0'];
-            const linkTargets = ['tactfr628', 'sentienceV52mens', 'blackboardPhase0'];
+            const listIds = ['cancriV1', 'sentienceV52mens', 'blackboardPhase0'];
+            const linkTargets = ['cancriV1', 'sentienceV52mens', 'blackboardPhase0'];
             
             listIds.forEach((id, index) => {
                  const item = articleData[id];
