@@ -310,7 +310,7 @@ function render() {
   $("row-count").textContent = `共 ${filtered.length} 条`;
   const tbody = $("rows");
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty">没有匹配的调用</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">没有匹配的调用</td></tr>`;
     return;
   }
   tbody.innerHTML = filtered.map(rowHtml).join("");
@@ -333,6 +333,59 @@ function render() {
       addFilter("tier", el.dataset.tier);
     });
   });
+}
+
+// 预扣占位行：网关在请求开始时先插一行 model_id='__pending__' 占位，结算时才改成真模型。
+// 直接把这个内部标记显示给管理员是没有意义的，按状态码翻译成人话：
+//   status 0  = 还在飞（正常，几秒后会被结算覆盖）
+//   status 410 = 网关从未结算，靠 cron 兜底退款（真正的收入泄漏信号）
+//   其它 4xx/5xx = 上游失败，占位行只改了状态码
+function modelCell(r) {
+  const m = r.model || r.model_id || "";
+  if (m !== "__pending__" && m !== "__stale_unsettled__") {
+    return esc(m || "—");
+  }
+  const sc = r.status_code || 0;
+  let label, title;
+  if (sc === 0) {
+    label = "进行中…";
+    title = "预扣占位行，请求尚未结算（通常几秒内完成）";
+  } else if (sc === 410) {
+    label = "未结算·已退款";
+    title = "网关从未结算这次调用，由 cron 兜底退款。占比若明显高于 1.4% 说明结算链路在恶化";
+  } else {
+    label = "失败·未记模型";
+    title = "上游失败，占位行只更新了状态码，没能回填真实模型名";
+  }
+  return `<span style="color:var(--text-faint);font-style:italic" title="${esc(title)}">${esc(label)}</span>`;
+}
+
+// 扣费：micro 人民币 → ¥。0 与「没有金额」要区分开——
+// 前者是「确实免费」，后者是「这条轨道不产生金额」，混在一起会让人以为漏计费。
+function chargeCell(r) {
+  const v = r.charged_micro;
+  if (v == null) return `<span style="color:var(--text-faint)">—</span>`;
+  const n = Number(v);
+  if (!n) return `<span style="color:var(--text-faint)">¥0</span>`;
+  const cny = n / 1e6;
+  const txt = cny < 0.01 ? "¥" + cny.toFixed(6).replace(/0+$/, "").replace(/\.$/, "") : "¥" + cny.toFixed(4);
+  const bucket = r.source_bucket ? ` · ${r.source_bucket}` : "";
+  return `<span title="${esc(String(n))} micro${esc(bucket)}">${esc(txt)}</span>`;
+}
+
+// 首字 / 延迟。两列合一个单元格：上行 TTFT，下行总耗时。
+// 这两列是 2026-08-30 才加的，之前的历史行恒为 NULL，显示「—」是预期而非故障。
+function latencyCell(r) {
+  const ms = (v) => (v == null ? null : Number(v));
+  const ttft = ms(r.ttft_ms);
+  const total = ms(r.latency_ms);
+  if (ttft == null && total == null) {
+    return `<span style="color:var(--text-faint)" title="该列 2026-08-30 上线，此前的历史调用没有记录">—</span>`;
+  }
+  const fmtMs = (n) => (n >= 1000 ? (n / 1000).toFixed(2) + "s" : n + "ms");
+  const top = ttft == null ? '<span style="color:var(--text-faint)">—</span>' : esc(fmtMs(ttft));
+  const bot = total == null ? "—" : fmtMs(total);
+  return `${top}<div class="in-out" title="总耗时">${esc(bot)}</div>`;
 }
 
 function tierCell(tier) {
@@ -366,11 +419,13 @@ function rowHtml(r) {
     <td class="email">${userCell}</td>
     <td>${tierCell(r.tier)}</td>
     <td class="ip">${ipCell}</td>
-    <td class="model">${srcBadge}${esc(r.model || r.model_id || "—")}</td>
+    <td class="model">${srcBadge}${modelCell(r)}</td>
     <td class="tokens">
       ${fmt((r.tokens_in || 0) + (r.tokens_out || 0))}
       <div class="in-out">↓${fmt(r.tokens_in)} ↑${fmt(r.tokens_out)}</div>
     </td>
+    <td class="tokens">${latencyCell(r)}</td>
+    <td class="tokens">${chargeCell(r)}</td>
     <td><span class="status-pill ${sClass}">${sc}</span></td>
     <td class="tokens" title="${esc(r.key_name || '')}">${keyCol}</td>
     <td class="created">${esc(fmtTime(r.created_at))}</td>

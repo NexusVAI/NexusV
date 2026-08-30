@@ -28,6 +28,50 @@ const esc = (s) => {
   return d.innerHTML;
 };
 
+// ── 调用明细的三个单元格渲染 ────────────────────────────────────────────
+// 与 admin-usage-app.js 里的同名逻辑保持一致；两个页面口径必须相同，
+// 否则同一次调用在「调用日志」和「用户详情」里会显示不同的钱和延迟。
+
+// 预扣占位行的 model_id 是内部标记，不是模型名，翻译成人话再给管理员看。
+function usageModelLabel(u) {
+  const m = u.model || u.model_id || "";
+  if (m !== "__pending__" && m !== "__stale_unsettled__") return esc(m || "—");
+  const sc = u.status_code || 0;
+  const label = sc === 0 ? "进行中…" : sc === 410 ? "未结算·已退款" : "失败·未记模型";
+  const title = sc === 0
+    ? "预扣占位行，请求尚未结算（通常几秒内完成）"
+    : sc === 410
+      ? "网关从未结算这次调用，由 cron 兜底退款"
+      : "上游失败，占位行没能回填真实模型名";
+  return `<span style="color:var(--text-faint);font-style:italic" title="${esc(title)}">${esc(label)}</span>`;
+}
+
+// 扣费：micro 人民币 → ¥。null（这条轨道不产生金额）与 0（确实免费）要区分。
+function usageCharge(u) {
+  const v = u.charged_micro;
+  if (v == null) return '<span style="color:var(--text-faint)">—</span>';
+  const n = Number(v);
+  if (!n) return '<span style="color:var(--text-faint)">¥0</span>';
+  const cny = n / 1e6;
+  const txt = cny < 0.01
+    ? "¥" + cny.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")
+    : "¥" + cny.toFixed(4);
+  return `<span title="${esc(String(n))} micro${u.source_bucket ? " · " + esc(u.source_bucket) : ""}">${esc(txt)}</span>`;
+}
+
+// 首字 / 延迟。上行 TTFT，下行总耗时。
+// 这两列 2026-08-30 才加，历史行恒为 NULL，显示「—」是预期而非故障。
+function usageLatency(u) {
+  const ttft = u.ttft_ms == null ? null : Number(u.ttft_ms);
+  const total = u.latency_ms == null ? null : Number(u.latency_ms);
+  if (ttft == null && total == null) {
+    return '<span style="color:var(--text-faint)" title="该列 2026-08-30 上线，此前的调用没有记录">—</span>';
+  }
+  const f = (n) => (n >= 1000 ? (n / 1000).toFixed(2) + "s" : n + "ms");
+  const top = ttft == null ? '<span style="color:var(--text-faint)">—</span>' : esc(f(ttft));
+  return `${top}<div style="font-size:10px;color:var(--text-faint);" title="总耗时">${total == null ? "—" : esc(f(total))}</div>`;
+}
+
 const fmtCreditsFromTokens = (tokens) =>
   window.AdminFormatters ? window.AdminFormatters.fmtCreditsFromTokens(tokens) : String(tokens);
 const creditsToTokens = (credits) =>
@@ -717,35 +761,49 @@ async function loadUserUsage(userId) {
 
   // detail rows
   const usage = Array.isArray(data.usage) ? data.usage : [];
+  const DETAIL_COLS = "1fr 90px 76px 84px 62px 128px";
+  const detailHeader =
+    `<div style="position:sticky;top:0;z-index:1;padding:6px 11px;border-bottom:1px solid var(--border);` +
+    `background:var(--bg-card);display:grid;grid-template-columns:${DETAIL_COLS};gap:8px;` +
+    `font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.4px;">` +
+    `<div>模型</div>` +
+    `<div style="text-align:right">Tokens</div>` +
+    `<div style="text-align:right" title="上行首字延迟（TTFT，仅流式）／下行总耗时">首字/延迟</div>` +
+    `<div style="text-align:right" title="本次调用实扣金额（钱包 + 套餐）">扣费</div>` +
+    `<div style="text-align:center">状态</div>` +
+    `<div style="text-align:right">时间</div>` +
+    `</div>`;
   if (usage.length === 0) {
     $("usage-detail").innerHTML = '<div style="color:var(--text-mute);padding:14px;text-align:center;">该窗口内无调用记录</div>';
   } else {
-    $("usage-detail").innerHTML = usage.map((u) => {
-      const sc = u.status_code || 0;
-      const scColor = sc >= 500 ? "var(--err)" : sc >= 400 ? "#f59e0b" : "var(--ok)";
-      const totalTok = (u.tokens_in || 0) + (u.tokens_out || 0);
-      const src = u.source || 'api';
-      const srcBadge = src === 'chat'
-        ? '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(34,197,94,.15);color:#22c55e;margin-right:4px;">Chat</span>'
-        : '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(96,165,250,.15);color:#60a5fa;margin-right:4px;">API</span>';
-      const subInfo = src === 'chat'
-        ? `cached: ${fmtN(u.tokens_cached || 0)} tok`
-        : `${esc(u.key_prefix || "—")} · ${esc(u.ip || "—")}`;
-      return `<div style="padding:7px 11px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 90px 70px 130px;gap:8px;align-items:center;font-size:11.5px;">
-        <div style="font-family:ui-monospace,monospace;">
-          <div style="color:var(--text);">${srcBadge}${esc(u.model || u.model_id || "—")}</div>
-          <div style="color:var(--text-faint);font-size:10.5px;">${subInfo}</div>
-        </div>
-        <div style="font-family:ui-monospace,monospace;text-align:right;">
-          ${fmtN(totalTok)}
-          <div style="font-size:10px;color:var(--text-faint);">↓${fmtN(u.tokens_in)} ↑${fmtN(u.tokens_out)}</div>
-        </div>
-        <div style="text-align:center;">
-          <span style="display:inline-block;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.08);color:${scColor};font-weight:600;font-size:10.5px;">${sc}</span>
-        </div>
-        <div style="color:var(--text-mute);font-size:10.5px;text-align:right;">${esc(fmtTime(u.created_at))}</div>
-      </div>`;
-    }).join("");
+      $("usage-detail").innerHTML = detailHeader + usage.map((u) => {
+        const sc = u.status_code || 0;
+        const scColor = sc >= 500 ? "var(--err)" : sc >= 400 ? "#f59e0b" : "var(--ok)";
+        const totalTok = (u.tokens_in || 0) + (u.tokens_out || 0);
+        const src = u.source || 'api';
+        const srcBadge = src === 'chat'
+          ? '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(34,197,94,.15);color:#22c55e;margin-right:4px;">Chat</span>'
+          : '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(96,165,250,.15);color:#60a5fa;margin-right:4px;">API</span>';
+        const subInfo = src === 'chat'
+          ? `web chat · cached ${fmtN(u.tokens_cached || 0)} tok`
+          : `${esc(u.key_prefix || "—")} · ${esc(u.ip || "—")}`;
+        return `<div style="padding:7px 11px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 90px 76px 84px 62px 128px;gap:8px;align-items:center;font-size:11.5px;">
+          <div style="font-family:ui-monospace,monospace;">
+            <div style="color:var(--text);">${srcBadge}${usageModelLabel(u)}</div>
+            <div style="color:var(--text-faint);font-size:10.5px;">${subInfo}</div>
+          </div>
+          <div style="font-family:ui-monospace,monospace;text-align:right;">
+            ${fmtN(totalTok)}
+            <div style="font-size:10px;color:var(--text-faint);">↓${fmtN(u.tokens_in)} ↑${fmtN(u.tokens_out)}</div>
+          </div>
+          <div style="font-family:ui-monospace,monospace;text-align:right;">${usageLatency(u)}</div>
+          <div style="font-family:ui-monospace,monospace;text-align:right;">${usageCharge(u)}</div>
+          <div style="text-align:center;">
+            <span style="display:inline-block;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.08);color:${scColor};font-weight:600;font-size:10.5px;">${sc}</span>
+          </div>
+          <div style="color:var(--text-mute);font-size:10.5px;text-align:right;">${esc(fmtTime(u.created_at))}</div>
+        </div>`;
+      }).join("");
   }
 
   if (data.aggregation_capped) {
