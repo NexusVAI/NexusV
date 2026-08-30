@@ -72,13 +72,50 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return relay && !relayDown() ? relay : directBaseUrl();
   }
 
-  // nginx 反代自身故障（后端不可达 / 上游握手失败）返回的是 HTML 错误页；
-  // 我们的网关无论什么状态码都返 JSON。用 content-type 区分两者。
+  // ── 2026-08-30 审计 SEC-008：中继故障判定 ─────────────────────────────────
+  //
+  // 改前的判据是「状态码 ∈ {502,503,504} **且** 响应体不是 JSON」。两个问题：
+  //   ① 状态码枚举漏了 **413**。中继的 client_max_body_size 曾是 3 MB，而网关
+  //      给公开 API 10 MB、媒体端点 8 MB —— 3–10 MB 的请求在原端点成功、在首尔
+  //      失败，失败形态是 nginx 的 HTML 413。413 不在这三个码里 → 不开熔断、
+  //      不切直连 → 该用户在本会话内**持续失败**，且错误信息误导。
+  //   ② 判据本身是在猜。现在中继已经把自己产生的错误统一成 JSON 体
+  //      （给 OpenAI/Anthropic SDK 用）并**显式**打上 `X-Cancri-Relay-Error: 1`，
+  //      所以直接读那个头即可，不必再从 content-type 反推。
+  //
+  // 保留 content-type 兜底：万一将来在中继之前多了一层代理（它产生的错误页
+  // 不会带我们的标记头），仍然要能识别。
+  //
+  // ⛔ 不要把 429 也算成中继故障。中继侧 limit_req/limit_conn 回的是 429 +
+  //    `X-Cancri-Relay-Limited`（刻意不带 -Error）：那是一次**故意的拒绝**，
+  //    把它当故障会让被限流的人立刻切直连，等于绕过那道限流。
   function looksLikeRelayOutage(resp) {
-    if (resp.status !== 502 && resp.status !== 503 && resp.status !== 504) {
-      return false;
-    }
+    if (resp.headers.get("x-cancri-relay-error") === "1") return true;
+    // 兜底：中继/中间层自己产生的**任何**错误页都不是 JSON，而我们的网关
+    // 无论什么状态码都返 JSON（实测非流式长请求就是 504 + JSON）。
+    if (resp.status < 400) return false;
     return !(resp.headers.get("content-type") || "").includes("json");
+  }
+
+  // ── 2026-08-30 审计 SEC-008：媒体端点必须直连，不经中继 ────────────────────
+  //
+  // `_seoul_v1.sh` 的注释里写明了这个前提 ——「the frontend must send
+  // image/video/media straight to chat.nexusvai.xyz, not through the relay」——
+  // 但那件事**从来没有被实现**：main.js 里所有网关调用（含 endpoint:"image"
+  // 及其压缩后的 base64 附件、以及 media-download 的多 MB 响应体）都经
+  // proxyFetch / fetchWithTimeout → gatewayFetch → 中继。
+  // 那台机器是 2C2G / 20-30Mbps 单机，媒体是唯一会真正吃满它上行的流量。
+  //
+  // 判定放在 gatewayFetch 这**唯一的基址解析入口**里，而不是逐个调用点改 URL：
+  // 逐点改的话，下一个新增的媒体调用点必然漏改（这正是本仓多次漂移的形状）。
+  const RELAY_EXCLUDED_ENDPOINT_RE = /"endpoint"\s*:\s*"(?:image|video|media-download)"/;
+
+  function bodyWantsDirectGateway(body) {
+    if (typeof body !== "string" || !body) return false;
+    // 只扫前 512 字符：这三个端点的请求体里 `endpoint` 恒为第一个键
+    // （proxyFetch 只在末尾追加 __auth_token），而 image 的 base64 附件可达数百 KB，
+    // 全串正则会白扫。
+    return RELAY_EXCLUDED_ENDPOINT_RE.test(body.slice(0, 512));
   }
 
   async function gatewayFetch(url, options = {}, meta = {}) {
@@ -87,6 +124,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (!relay || !target.startsWith(relay)) return fetch(target, options);
     const direct = directBaseUrl() + target.slice(relay.length);
     if (relayDown()) return fetch(direct, options);
+    // 媒体端点：兑现 _seoul_v1.sh 的设计前提，直接走直连域名。
+    if (meta.direct || bodyWantsDirectGateway(options.body)) {
+      return fetch(direct, options);
+    }
     let resp;
     try {
       resp = await fetch(target, options);
@@ -4492,7 +4533,18 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       return true;
     } catch (error) {
       console.warn("file_upload_usage failed:", error);
-      showToast("上传次数校验失败，请稍后重试。");
+      // 能抛到这里的只有两类，且都与「上传次数」无关：
+      //   1. gatewayFetch() —— fetch 被网络层拒绝，抛 TypeError。
+      //   2. ensureAuthSession() —— 未登录 / 会话刷新失败。
+      // 旧实现把两者都写成「上传次数校验失败」，于是 2026-08-29 那次事故里
+      // 用户看到的是配额文案，而真因是 index.html 的 CSP connect-src 没放行
+      // 中继域名 cn.nexusvai.xyz，`fetch(EDGE_FUNCTION_URL)` 恒定被浏览器
+      // 拦成 TypeError: Failed to fetch。文案指错方向直接拖长了定位时间。
+      showToast(
+        error instanceof TypeError
+          ? "网络连接失败，请重试。"
+          : "登录状态已失效，请刷新页面后重新登录。",
+      );
       return false;
     }
   }

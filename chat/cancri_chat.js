@@ -894,8 +894,14 @@
 		return relay && !relayDown() ? relay : directBaseUrl();
 	}
 	function looksLikeRelayOutage(resp) {
-		if (resp.status !== 502 && resp.status !== 503 && resp.status !== 504) return false;
+		if (resp.headers.get("x-cancri-relay-error") === "1") return true;
+		if (resp.status < 400) return false;
 		return !(resp.headers.get("content-type") || "").includes("json");
+	}
+	var RELAY_EXCLUDED_ENDPOINT_RE = /"endpoint"\s*:\s*"(?:image|video|media-download)"/;
+	function bodyWantsDirectGateway(body) {
+		if (typeof body !== "string" || !body) return false;
+		return RELAY_EXCLUDED_ENDPOINT_RE.test(body.slice(0, 512));
 	}
 	async function gatewayFetch(url, options = {}, meta = {}) {
 		const relay = relayBaseUrl();
@@ -903,6 +909,7 @@
 		if (!relay || !target.startsWith(relay)) return fetch(target, options);
 		const direct = directBaseUrl() + target.slice(relay.length);
 		if (relayDown()) return fetch(direct, options);
+		if (meta.direct || bodyWantsDirectGateway(options.body)) return fetch(direct, options);
 		let resp;
 		try {
 			resp = await fetch(target, options);
@@ -3800,7 +3807,7 @@
 			return true;
 		} catch (error) {
 			console.warn("file_upload_usage failed:", error);
-			showToast("上传次数校验失败，请稍后重试。");
+			showToast(error instanceof TypeError ? "网络连接失败，请重试。" : "登录状态已失效，请刷新页面后重新登录。");
 			return false;
 		}
 	}
