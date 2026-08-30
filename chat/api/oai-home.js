@@ -125,9 +125,9 @@
   }
 
   // ── Split 按钮：左半跳转，右半箭头开菜单 ────────────────────
-  // 胶囊按钮 r=40；只有下拉菜单同比缩小用 r=32。条目 R = 32 − padding，min-height > 2R。
+  // 胶囊按钮 r=40；只有下拉菜单同比缩小用 r=24。条目 R = 24 − padding，min-height > 2R。
   var CK_PILL_RADIUS = 40;
-  var CK_MENU_RADIUS = 32;
+  var CK_MENU_RADIUS = 24;
   var CK_SMOOTHING = 1;
   var ckInstance = null;
 

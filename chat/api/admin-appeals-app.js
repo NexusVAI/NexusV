@@ -98,7 +98,9 @@
       return;
     }
     $("loading").style.display = "none";
-    $("main").style.display = "";
+    // 必须是 "block" 而不是 ""：admin-nav.js 的鉴权黑幕靠 #main 的 inline
+    // display 判定是否解锁，置空会让它读到 "" 而永远不掀幕（=整页黑屏）。
+    $("main").style.display = "block";
     bindUi();
     await refresh();
   }

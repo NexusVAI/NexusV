@@ -7295,7 +7295,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   // 一样属于「常驻可用」工具（不受 webSearchEnabled 开关影响），让 AI 无需联网
   // 即可直接回答关于 Cancri 开放平台的问题（模型/套餐/API 端点/CLI 接入/配额/
   // 错误码/常见问答）。数据源是本文件下方的 PLATFORM_KNOWLEDGE_BASE 常量 + 现
-  // 有 MODEL_CATALOG —— 与 chat/api_docs.html、chat/pricing.html、chat/api_models.html
+  // 有 MODEL_CATALOG —— 与 chat/api_docs_detail.html、chat/pricing.html、chat/api_models.html
   // 等开放平台页面手工保持一致，**单一事实源由作者维护，AI 不发明字段**。
   const PLATFORM_TOOL_DEFINITIONS = [
     {
@@ -7347,11 +7347,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       name: "NexusV / Cancri 开放平台",
       base_url:
         "https://chat.nexusvai.xyz/functions/v1/api-gateway",
-      docs_url: "https://www.nexusvai.xyz/chat/api_docs.html",
+      // api_docs.html 只是一个 meta-refresh 跳板，且会把 query string 丢掉；
+      // 直接给 api_docs_detail.html + 锚点，否则用户点开永远落在 #intro。
+      docs_url: "https://www.nexusvai.xyz/chat/api_docs_detail.html",
       models_url: "https://www.nexusvai.xyz/chat/api_models.html",
       pricing_url: "https://www.nexusvai.xyz/chat/pricing.html",
-      apply_url: "https://www.nexusvai.xyz/chat/api_apply.html",
+      console_url: "https://www.nexusvai.xyz/chat/api/console.html",
       keys_url: "https://www.nexusvai.xyz/chat/api/keys.html",
+      contact_url: "https://www.nexusvai.xyz/chat/api_apply.html",
+      access_note:
+        "创建 API Key 不需要申请或审核，注册登录后直接在 Keys 管理页创建即可。api_apply.html 现在是「联系我们」工单页，不是申请入口。",
       key_format: "cancri_sk_xxx",
       protocols: [
         "OpenAI Chat Completions",
@@ -7592,9 +7597,29 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       },
       { http: 403, code: "account_suspended", when: "账号被管理员封禁" },
       {
+        http: 403,
+        code: "model_not_in_group",
+        when: "这把 Key 建的时候限定了模型分组，请求的模型不在该分组内",
+      },
+      {
         http: 404,
         code: "model_not_found",
         when: "model 字段在 catalog 中不存在或拼写错误",
+      },
+      {
+        http: 402,
+        code: "insufficient_balance",
+        when: "公开 API 按 ¥ 钱包扣费，余额不足以覆盖本次预扣",
+      },
+      {
+        http: 402,
+        code: "model_not_priced",
+        when: "该模型在定价表里没有价格，网关拒绝在无价情况下转发",
+      },
+      {
+        http: 400,
+        code: "context_too_long",
+        when: "按次计价模型（claude-opus-5-thinking）单次输入超过 200,000 tokens",
       },
       {
         http: 429,
@@ -13622,7 +13647,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             keyword,
             base_url: kb.meta.base_url,
             endpoints: items,
-            docs_url: kb.meta.docs_url + "?page=endpoints",
+            docs_url: kb.meta.docs_url + "#chat",
           },
           null,
           2,
@@ -13633,20 +13658,20 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           ? kb.cli.filter((c) => c.name.toLowerCase().includes(norm))
           : kb.cli;
         return JSON.stringify(
-          { keyword, clis: items, docs_url: kb.meta.docs_url + "?page=cli" },
+          { keyword, clis: items, docs_url: kb.meta.docs_url + "#cli-codex" },
           null,
           2,
         );
       }
       case "quota":
         return JSON.stringify(
-          { codes: kb.quota, docs_url: kb.meta.docs_url + "?page=rules" },
+          { codes: kb.quota, docs_url: kb.meta.docs_url + "#quota" },
           null,
           2,
         );
       case "ratelimit":
         return JSON.stringify(
-          { tiers: kb.ratelimit, docs_url: kb.meta.docs_url + "?page=rules" },
+          { tiers: kb.ratelimit, docs_url: kb.meta.docs_url + "#ratelimit" },
           null,
           2,
         );
@@ -13657,14 +13682,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             )
           : kb.errors;
         return JSON.stringify(
-          { keyword, codes: items, docs_url: kb.meta.docs_url + "?page=rules" },
+          { keyword, codes: items, docs_url: kb.meta.docs_url + "#errors" },
           null,
           2,
         );
       }
       case "sdk":
         return JSON.stringify(
-          { ...kb.sdk, docs_url: kb.meta.docs_url + "?page=rules" },
+          { ...kb.sdk, docs_url: kb.meta.docs_url + "#sdk" },
           null,
           2,
         );
@@ -13675,7 +13700,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
             )
           : kb.faq;
         return JSON.stringify(
-          { keyword, items, docs_url: kb.meta.docs_url + "?page=rules" },
+          { keyword, items, docs_url: kb.meta.docs_url + "#faq" },
           null,
           2,
         );
@@ -15929,7 +15954,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   }
     // [arena 死分支已删除] leaderboardSegmentButtons 接线
   document.getElementById("helpToastBtn").addEventListener("click", () => {
-    window.open("./api_docs.html", "_blank");
+    window.open("./api_docs_detail.html#intro", "_blank");
   });
   document.getElementById("nicknameEditBtn").addEventListener("click", () => {
     closePopover();

@@ -145,14 +145,14 @@
   top: calc(100% + 6px);
   right: 0;
   left: auto;
-  min-width: 12.75rem;
-  padding: 12px;
+  min-width: max(100%, 11rem);
+  padding: 8px;
   display: block;
   overflow: visible;
-  border-radius: 32px;
+  border-radius: 24px;
   border: 1px solid var(--border-light);
   background: var(--bg-color);
-  box-shadow: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   z-index: 6;
   text-align: left;
 }
@@ -165,17 +165,17 @@
 .api-btn-menu__clip {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
   width: 100%;
 }
 .api-btn-menu__panel a {
   display: flex;
   align-items: center;
-  min-height: 2.75rem;
-  padding: 10px 12px;
-  border-radius: 20px;
+  min-height: 2.25rem;
+  padding: 0 14px;
+  border-radius: 16px;
   color: var(--text-color);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.35;
   text-decoration: none;

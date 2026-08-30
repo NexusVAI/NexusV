@@ -100,15 +100,17 @@
     document.body.appendChild(overlay);
 
     function maybeUnlock() {
-      // 各页 init() 用 style.display = "block" 显示 #main 才代表鉴权通过；
-      // 初始 inline style="display: none" 与其它任何值都视为"尚未通过"。
-      if (main.style.display && main.style.display !== "none") {
+      // 判据是"#main 实际可见"，不是"inline display 恰好等于 block"。
+      // 2026-08-30 事故：admin-appeals-app.js 用 `style.display = ""`（清除
+      // inline 值）来显示 #main，旧判据读到空串就认定"尚未通过"，黑幕永不掀开
+      // ——申诉页整页黑屏。读计算样式对 ""/"block"/"flex"/CSS class 一视同仁。
+      if (window.getComputedStyle(main).display !== "none") {
         overlay.remove();
         observer.disconnect();
       }
     }
     var observer = new MutationObserver(maybeUnlock);
-    observer.observe(main, { attributes: true, attributeFilter: ["style"] });
+    observer.observe(main, { attributes: true, attributeFilter: ["style", "class"] });
     maybeUnlock(); // 防御：极少数页面可能在本脚本执行前就已同步显示过 #main
   }
 
