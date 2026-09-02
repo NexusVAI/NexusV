@@ -41,7 +41,10 @@
     "claude-fable-5-1",
     "minimax-m3",
     "deepseek-v4-pro",
-    "gemini-3.7-flash",
+    // 2026-09-02: gemini-3.7-flash 换成 gemini-3.8-flash-high（prorisehub 新线，
+    // 上游实测 1.98s vs 3.7 的 6.2s）。3.7 只是撤出旗舰区，**没有下架**，
+    // 仍在全量网格和 /v1/models 里，老调用方不受影响。
+    "gemini-3.8-flash-high",
     "kimi-k3",
   ];
   var FEATURED_RANK = {};
