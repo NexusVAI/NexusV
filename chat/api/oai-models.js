@@ -36,6 +36,9 @@
     "glm-5.3",
     "gpt-5.6-sol",
     "claude-opus-5",
+    // 2026-09-02: Claude Fable 5.1 上架，钉进旗舰区。它**不分组**（group_id 为空），
+    // 所以这里钉的就是它自己的卡 id，不会被折叠到 claude-fable-5 那张卡上。
+    "claude-fable-5-1",
     "minimax-m3",
     "deepseek-v4-pro",
     "gemini-3.7-flash",
@@ -131,6 +134,8 @@
     "gpt-5.6-luna-xhigh": "gpt56-luna.jpg",
     // 2026-07-16: Claude Fable 5 专用卡面（Logo/fable5.png → assets/oai.logo/fable5.png）
     "claude-fable-5": "fable5.png",
+    // 2026-09-02: Claude Fable 5.1 专用卡面（Logo/fable5-1.png → assets/oai.logo/fable5-1.png）
+    "claude-fable-5-1": "fable5-1.png",
     "claude-opus-5": "opus5.png",
     // 2026-08-18 晚：站内 id 从 c:claude-opus-5 改名（免费期结束）。卡面沿用同一张图。
     "claude-opus-5-thinking": "opus5.png",
