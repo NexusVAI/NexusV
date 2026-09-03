@@ -5222,7 +5222,7 @@
 		}));
 		const hint = document.createElement("p");
 		hint.className = "generated-image-hint";
-		hint.textContent = "请尽快下载";
+		hint.textContent = "图片仅保留 24 小时，请尽快下载";
 		wrap.appendChild(img);
 		wrap.appendChild(actions);
 		block.appendChild(wrap);

@@ -6402,9 +6402,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       ),
     );
   
+    // 2026-09-03：出图落我们自己的 R2，桶上挂了 expire-generated-images-1d 生命周期规则
+    // （R2 的过期粒度是天，实际删除会在命中后 24h 内发生，所以对用户只承诺 24 小时）。
+    // 过期后这里的 <img> 会 404 → 走上面的 onerror 显示「图片已过期」。
+    // 保留期是**存储成本**决定的，改桶上的规则就要同步改这句文案。
     const hint = document.createElement("p");
     hint.className = "generated-image-hint";
-    hint.textContent = "请尽快下载";
+    hint.textContent = "图片仅保留 24 小时，请尽快下载";
   
     wrap.appendChild(img);
     wrap.appendChild(actions);
