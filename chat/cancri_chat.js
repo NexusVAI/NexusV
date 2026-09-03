@@ -340,9 +340,8 @@
 			"vision": false,
 			"thinking": false,
 			"tools": false,
-			"costTier": "expensive",
+			"costTier": "normal",
 			"customMultiplier": 100,
-			"proPlusOnly": true,
 			"creditPerUse": 10
 		},
 		{
@@ -7441,12 +7440,24 @@
 			reader.readAsDataURL(blob);
 		});
 	}
+	var SELF_HOSTED_MEDIA_PATH = "/storage/v1/gen-media/";
+	function isSelfHostedMediaUrl(url) {
+		const trimmed = String(url || "").trim();
+		if (!trimmed) return false;
+		try {
+			const parsed = new URL(trimmed, window.location.origin);
+			return parsed.protocol === "https:" && parsed.pathname.startsWith(SELF_HOSTED_MEDIA_PATH);
+		} catch {
+			return false;
+		}
+	}
 	/** 临时 https 图链 → data URL，避免 Grok 等短链过期后历史回放失败。 */
 	async function ensurePersistentImageUrl(imageUrl) {
 		const trimmed = String(imageUrl || "").trim();
 		if (!trimmed) return "";
 		if (/^data:image\//i.test(trimmed)) return trimmed;
 		if (!/^https?:\/\//i.test(trimmed)) return trimmed;
+		if (isSelfHostedMediaUrl(trimmed)) return trimmed;
 		const response = await proxyFetch(EDGE_FUNCTION_URL, {
 			method: "POST",
 			headers: await proxyHeaders(),
@@ -7502,7 +7513,7 @@
 			return false;
 		}
 		try {
-			const response = await proxyFetch(EDGE_FUNCTION_URL, {
+			const response = isSelfHostedMediaUrl(trimmed) ? await fetch(trimmed, { credentials: "omit" }) : await proxyFetch(EDGE_FUNCTION_URL, {
 				method: "POST",
 				headers: await proxyHeaders(),
 				body: JSON.stringify({
@@ -7544,7 +7555,7 @@
 		const trimmed = String(url || "").trim();
 		if (/^data:(image|video)\//i.test(trimmed) || /^blob:/i.test(trimmed)) return trimmed;
 		if (!/^https?:\/\//i.test(trimmed)) throw new Error("invalid_media_url");
-		const response = await proxyFetch(EDGE_FUNCTION_URL, {
+		const response = isSelfHostedMediaUrl(trimmed) ? await fetch(trimmed, { credentials: "omit" }) : await proxyFetch(EDGE_FUNCTION_URL, {
 			method: "POST",
 			headers: await proxyHeaders(),
 			body: JSON.stringify({

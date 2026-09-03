@@ -9562,12 +9562,33 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     });
   }
 
+  // 2026-09-03：本站自托管的生图产物。网关把上游 CDN 直链的字节搬进我们自己的 R2
+  // （见 cf-gateway/src/gen-media.ts），对外只出这个路径。它同源、公开可读、无 TTL，
+  // 所以既不需要代理下载，也不需要转成 data URL 存档。
+  const SELF_HOSTED_MEDIA_PATH = "/storage/v1/gen-media/";
+
+  function isSelfHostedMediaUrl(url) {
+    const trimmed = String(url || "").trim();
+    if (!trimmed) return false;
+    try {
+      const parsed = new URL(trimmed, window.location.origin);
+      return (
+        parsed.protocol === "https:" && parsed.pathname.startsWith(SELF_HOSTED_MEDIA_PATH)
+      );
+    } catch {
+      return false;
+    }
+  }
+
   /** 临时 https 图链 → data URL，避免 Grok 等短链过期后历史回放失败。 */
   async function ensurePersistentImageUrl(imageUrl) {
     const trimmed = String(imageUrl || "").trim();
     if (!trimmed) return "";
     if (/^data:image\//i.test(trimmed)) return trimmed;
     if (!/^https?:\/\//i.test(trimmed)) return trimmed;
+    // 自托管产物本身就是永久地址，转 data URL 只会把约 1.9MB 的 base64 塞进
+    // chat_history.messages（该表已 89MB）。直接存 URL。
+    if (isSelfHostedMediaUrl(trimmed)) return trimmed;
     const response = await proxyFetch(EDGE_FUNCTION_URL, {
       method: "POST",
       headers: await proxyHeaders(),
@@ -9654,11 +9675,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       }
     }
     try {
-      const response = await proxyFetch(EDGE_FUNCTION_URL, {
-        method: "POST",
-        headers: await proxyHeaders(),
-        body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
-      });
+      // 自托管产物直接取。走 media-download 会被 isAllowedMediaHost 判成 403
+      // （那份白名单列的是上游 CDN，不含我们自己），而且让网关自己 fetch 自己
+      // 纯属多绕一跳 —— 对象是同源公开的，浏览器直接拿就行。
+      const response = isSelfHostedMediaUrl(trimmed)
+        ? await fetch(trimmed, { credentials: "omit" })
+        : await proxyFetch(EDGE_FUNCTION_URL, {
+            method: "POST",
+            headers: await proxyHeaders(),
+            body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
+          });
       if (!response.ok) {
         let errMsg = `HTTP ${response.status}`;
         try {
@@ -9714,11 +9740,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (!/^https?:\/\//i.test(trimmed)) {
       throw new Error("invalid_media_url");
     }
-    const response = await proxyFetch(EDGE_FUNCTION_URL, {
-      method: "POST",
-      headers: await proxyHeaders(),
-      body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
-    });
+    // 同 downloadViaMediaProxy：自托管产物同源公开，不经 media-download 白名单。
+    const response = isSelfHostedMediaUrl(trimmed)
+      ? await fetch(trimmed, { credentials: "omit" })
+      : await proxyFetch(EDGE_FUNCTION_URL, {
+          method: "POST",
+          headers: await proxyHeaders(),
+          body: JSON.stringify({ endpoint: "media-download", url: trimmed }),
+        });
     if (!response.ok) {
       throw new Error(`media_proxy_${response.status}`);
     }
@@ -11076,6 +11105,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
   
     try {
+      // ⚠️ gpt-image-2 不吃这里的 size / response_format：上游按
+      // `分组 × quality × size` 乘算单价而我们按次固定收费，所以 cf-modelscope-proxy
+      // 的 prorisehub 分支只取 prompt，其余参数一律用服务端常量重建。改这里对它无效，
+      // 要改档位得动 PRORISEHUB_IMAGE_FIXED_SIZE / _QUALITY 并同步改价。
+      // 其它图像线（doubao-seedream-4-5 / z-image-turbo 等）仍照常读这两个字段。
       const requestBody = {
         endpoint: "image",
         model: imageModel,

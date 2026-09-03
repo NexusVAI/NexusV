@@ -31,7 +31,7 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"grok-4.3","name":"Grok 4.3","brand":"xAI","kind":"chat","vision":true,"thinking":true,"tools":true,"costTier":"expensive","customMultiplier":2},
   {"id":"gpt-image-2-all","name":"GPT Image 2","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"expensive","customMultiplier":1500,"creditPerUse":150},
   {"id":"gpt-image-2-pro","name":"GPT Image 2 Pro","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"expensive","customMultiplier":3000,"proMaxOnly":true,"creditPerUse":300},
-  {"id":"gpt-image-2","name":"【特价】gpt-image-2","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"expensive","customMultiplier":100,"proPlusOnly":true,"creditPerUse":10},
+  {"id":"gpt-image-2","name":"【特价】gpt-image-2","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"normal","customMultiplier":100,"creditPerUse":10},
   {"id":"doubao-1.5-pro","name":"Doubao 1.5 Pro","brand":"Doubao","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal"},
   {"id":"doubao-seed-2.0-pro","name":"Doubao Seed 2.0 Pro","brand":"Doubao","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal"},
   {"id":"kimi-k2.7-code-highspeed","name":"Kimi K2.7 Code HighSpeed","brand":"Moonshot","kind":"chat","vision":true,"thinking":true,"tools":true,"costTier":"expensive","customMultiplier":5},
