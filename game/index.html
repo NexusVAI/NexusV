@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="color-scheme" content="dark" />
+    <title>ASK:FRONTLINE</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0e11'/%3E%3Cpath d='M6 26 16 6l10 20h-4l-6-12-6 12z' fill='%23e8b04b'/%3E%3C/svg%3E" />
+    <script type="module" crossorigin src="./assets/index-BBF5ZQbC.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/bvh-BzmiJE8Y.js">
+    <link rel="modulepreload" crossorigin href="./assets/three-fte8EOWx.js">
+    <link rel="modulepreload" crossorigin href="./assets/fx-CHWyTlYA.js">
+    <link rel="modulepreload" crossorigin href="./assets/pathtracer-DHZgX4Gw.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-JNPd4n_L.css">
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+
+    <!-- file:// protocol guard -->
+    <div id="file-guard" class="screen hidden">
+      <div class="panel">
+        <h1>需要通过本地服务器运行</h1>
+        <p>浏览器禁止网页直接从 <code>file://</code> 读取模型/贴图等资源。</p>
+        <p>请关闭本页面，双击项目目录中的 <strong>「启动游戏.bat」</strong>，它会自动开启本地服务器并打开游戏。</p>
+      </div>
+    </div>
+
+    <!-- loading -->
+    <div id="loading" class="screen">
+      <div class="brand">
+        <div class="brand-mark">ASK</div>
+        <div class="brand-sub">FRONTLINE <span>// 前线</span></div>
+      </div>
+      <div class="load-box">
+        <div class="load-bar"><div id="load-fill" class="load-fill"></div></div>
+        <div class="load-row">
+          <span id="load-label">初始化渲染器</span>
+          <span id="load-pct">0%</span>
+        </div>
+        <div id="load-tip" class="load-tip"></div>
+      </div>
+      <div id="load-warning" class="load-warning hidden"></div>
+    </div>
+
+    <!-- landscape-only guard for phones -->
+    <div id="rotate-hint">
+      <div class="rot-icon"></div>
+      <b>请横屏游玩</b>
+      <p>将设备旋转为横向以获得完整的操作布局</p>
+    </div>
+
+    <div id="ui-root"></div>
+  </body>
+</html>
