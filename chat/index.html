@@ -1911,6 +1911,14 @@
                                         </div>
                                     </div>
                                     <div class="claude-form-row">
+                                        <span class="claude-form-label">邮箱验证码</span>
+                                        <div class="claude-form-control">
+                                            <input class="claude-form-input" type="text" id="claudePasswordOtp" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="6 位数字" />
+                                            <button type="button" class="claude-secondary-btn" id="claudePasswordOtpBtn" style="margin-top:8px;">发送验证码</button>
+                                            <p class="claude-form-help" style="margin-top:8px;">首次设置密码需要验证码，确认是你本人在操作。</p>
+                                        </div>
+                                    </div>
+                                    <div class="claude-form-row">
                                         <div class="claude-form-control">
                                             <button type="button" class="claude-secondary-btn" id="claudePasswordSaveBtn">保存密码</button>
                                             <p class="claude-form-help" id="claudePasswordMsg" style="margin-top:8px;"></p>
@@ -2814,13 +2822,13 @@
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
         <script defer src="./model_launch_modal.js?v=20260809-f5lm2"></script>
         <script defer src="./glm52_fp8_launch_modal.js?v=20260814-ext0820"></script>
-        <script defer src="./cancri_chat.js?v=20260903-gen-media-24h"></script>
+        <script defer src="./cancri_chat.js?v=20260904-audit-final"></script>
         <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
         <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
         <script defer src="./celebrate_invite_capture.js?v=20260818-opus5-paid"></script>
-        <script defer src="./claude_ui.js?v=20260827-cache"></script>
+        <script defer src="./claude_ui.js?v=20260904-audit-final"></script>
         <!-- 2026-06-25：钱包余额预警 ribbon + 升级弹窗。此前漏挂载+部署白名单文件名写错，
              导致 window.CancriUpgradeQuotaUI 永远 undefined、聊天页低余额警报从不显示。 -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260822-planv4"></script>

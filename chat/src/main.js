@@ -549,6 +549,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     model_pro_plus_required: null,      // 调 vip 模型但 plan < pro_plus
     model_pro_max_required: null,       // 调 Pro Max 专属模型但 plan < pro_max
     model_pro_required: null,           // free 调 GPT-5.5 系列（freeUserBlocked）
+    // 2026-09-04 F-SUB-402-GENERIC：plan_v4（套餐制）的两个 402 一直不在白名单里，
+    // 于是 enforcePlanGate 精心写的中文（含档位价格与升级链接）被整段丢弃，
+    // 用户只看到「Cancri API 暂时无法完成这次请求」—— 一句既不说明原因、
+    // 也不给出下一步的话。chat 轨现在就是 plan_v4，这是**最常见**的一类 402。
+    // 用 null 采纳后端 message：这两条与上面几条一样，都是我们自己构造的字面量，
+    // 不含任何上游字节。
+    allowance_exhausted: null,          // 套餐额度用尽且钱包不足以溢出
+    plan_required: null,                // 未订阅套餐却调付费模型
     // Specialised paths (handled elsewhere — return "" so caller falls through)
     challenge_required: null, // formatSecurityGuardMessage path
     access_blocked: null,
@@ -586,6 +594,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     "model_pro_plus_required",
     "model_pro_max_required",
     "model_pro_required",
+    // F-SUB-402-GENERIC：套餐轨的两个 402 同样要立刻刷新配额面板。
+    "allowance_exhausted",
+    "plan_required",
   ]);
   const UPGRADE_MODAL_TRIGGER_CODES = new Set([
     "free_pool_exhausted",
@@ -593,11 +604,15 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     "monthly_quota_exhausted",
     "token_window_5h_exceeded",
     "token_window_week_exceeded",
+    // 这两条的正确去处就是升级/订阅弹窗 —— 后端 message 里也写着 upgrade_url。
+    "allowance_exhausted",
+    "plan_required",
   ]);
   const USER_QUOTA_ERROR_CODES = new Set([
     "free_pool_exhausted",
     "daily_paid_limit_reached",
     "monthly_quota_exhausted",
+    "allowance_exhausted",
   ]);
   const PROVIDER_QUOTA_ERROR_CODES = new Set([
     "model_quota_exceeded",

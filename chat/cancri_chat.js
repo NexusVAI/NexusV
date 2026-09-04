@@ -1184,6 +1184,8 @@
 		model_pro_plus_required: null,
 		model_pro_max_required: null,
 		model_pro_required: null,
+		allowance_exhausted: null,
+		plan_required: null,
 		challenge_required: null,
 		access_blocked: null,
 		anonymous_not_allowed: null,
@@ -1204,19 +1206,24 @@
 		"token_window_week_exceeded",
 		"model_pro_plus_required",
 		"model_pro_max_required",
-		"model_pro_required"
+		"model_pro_required",
+		"allowance_exhausted",
+		"plan_required"
 	]);
 	var UPGRADE_MODAL_TRIGGER_CODES = new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
 		"monthly_quota_exhausted",
 		"token_window_5h_exceeded",
-		"token_window_week_exceeded"
+		"token_window_week_exceeded",
+		"allowance_exhausted",
+		"plan_required"
 	]);
 	var USER_QUOTA_ERROR_CODES = new Set([
 		"free_pool_exhausted",
 		"daily_paid_limit_reached",
-		"monthly_quota_exhausted"
+		"monthly_quota_exhausted",
+		"allowance_exhausted"
 	]);
 	var PROVIDER_QUOTA_ERROR_CODES = new Set(["model_quota_exceeded", "model_free_hour_limit"]);
 	function friendlyMessageFromBackend(parsed, status) {

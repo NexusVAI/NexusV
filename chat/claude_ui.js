@@ -4445,6 +4445,44 @@
     function bindClaudePasswordPanel() {
         var saveBtn = document.getElementById('claudePasswordSaveBtn');
         if (!saveBtn) return;
+
+        // F-AUTH-OTP-PW-TAKEOVER（2026-09-04）：首次设密码要邮箱验证码。
+        // 后端 PUT /auth/v1/user 现在强制要求 nonce —— 偷到一张 15 分钟 access token
+        // 的人拿不到受害者邮箱里的码，也就无法把「短命令牌」变成「永久密码直登」。
+        // 发码复用登录那个端点（同一张 local_otp 表），不新开一条发信通路。
+        var otpBtn = document.getElementById('claudePasswordOtpBtn');
+        if (otpBtn) {
+            otpBtn.addEventListener('click', function () {
+                var msgEl = document.getElementById('claudePasswordMsg');
+                var email = '';
+                try {
+                    var raw = localStorage.getItem('cancri_supabase_auth');
+                    if (raw) email = String((JSON.parse(raw).user || {}).email || '');
+                } catch (e) { email = ''; }
+                if (!email) {
+                    if (msgEl) msgEl.textContent = '读取不到当前账号邮箱，请刷新页面重试。';
+                    return;
+                }
+                otpBtn.disabled = true;
+                if (msgEl) msgEl.textContent = '验证码发送中…';
+                fetch(String(window.__SUPABASE_URL__ || '') + '/auth/v1/otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', apikey: String(window.__SUPABASE_ANON_KEY__ || '') },
+                    body: JSON.stringify({ email: email }),
+                }).then(function (r) {
+                    if (msgEl) {
+                        msgEl.textContent = r.ok
+                            ? '验证码已发到 ' + email + '，10 分钟内有效。'
+                            : '验证码发送失败，请稍后重试。';
+                    }
+                }).catch(function () {
+                    if (msgEl) msgEl.textContent = '验证码发送失败，请稍后重试。';
+                }).finally(function () {
+                    otpBtn.disabled = false;
+                });
+            });
+        }
+
         saveBtn.addEventListener('click', function () {
             var msgEl = document.getElementById('claudePasswordMsg');
             var p1El = document.getElementById('claudePasswordNew');
@@ -4473,13 +4511,21 @@
                 if (msgEl) msgEl.textContent = '无法连接认证服务。';
                 return;
             }
+            var otpEl = document.getElementById('claudePasswordOtp');
+            var otp = otpEl ? String(otpEl.value || '').trim() : '';
+            if (!otp) {
+                if (msgEl) msgEl.textContent = '请先点「发送验证码」并填入收到的 6 位数字。';
+                return;
+            }
             saveBtn.disabled = true;
             if (msgEl) msgEl.textContent = '保存中…';
-            client.auth.updateUser({ password: p1 }).then(function (res) {
+            // `nonce` 是 supabase-js updateUser 的原生重新认证字段，会原样进请求体。
+            client.auth.updateUser({ password: p1, nonce: otp }).then(function (res) {
                 if (res.error) throw res.error;
                 try { localStorage.setItem('cancri_password_login_enabled', '1'); } catch (e) { /* ignore */ }
                 if (p1El) p1El.value = '';
                 if (p2El) p2El.value = '';
+                if (otpEl) otpEl.value = '';
                 if (msgEl) msgEl.textContent = '密码已保存。下次可在登录页使用「邮箱 + 密码」登录。';
             }).catch(function (err) {
                 if (msgEl) msgEl.textContent = '保存失败：' + (err && err.message ? err.message : '请稍后重试');
