@@ -39,10 +39,38 @@
   const AFDIAN_CREATOR_USER_ID = 'ba38e960115a11f197695254001e7c00';
   const AFDIAN_MIN_CNY = 5;
 
+  // ── 通道手续费（2026-09-05）─────────────────────────────────────────
+  // 爱发电抽赞助总额 6%（5% 服务费 + 1% 通道费），到手 94%。实测对账 391.00 → 367.54。
+  // ⛔ 这三个常量必须与 cf-gateway/src/chat-gateway.ported.ts 的
+  //    AFDIAN_FEE_RATE / AFDIAN_MIN_CNY / afdianGrossAmountCny 保持一致 ——
+  //    前端只负责「让用户先看到要付多少」，真正落库的应付金额由后端重算，
+  //    两边算法漂了就会出现「页面显示 10.64、跳过去要付 10.70」这种信任崩塌。
+  const AFDIAN_FEE_RATE = 0.06;
+  const MANUAL_TOPUP_QQ_GROUP_URL = 'https://qm.qq.com/q/I76LbbUJmE';
+
   function isAfdianAuto(selection) {
     return !!selection
       && selection.kind === 'recharge'
       && Number(selection.amount) >= AFDIAN_MIN_CNY;
+  }
+
+  // 净得 net 元所需的收款额。向上取整到分，与后端逐字相同。
+  function afdianGrossAmount(netCny) {
+    return Math.ceil((netCny / (1 - AFDIAN_FEE_RATE)) * 100) / 100;
+  }
+
+  // 收银台三行金额的唯一算法来源：小计 = 额度、手续费、今日应付合计 = 额度 + 手续费。
+  // state = 'none' 人工通道免手续费 / 'fee' 走爱发电要加价 / 'unknown' 还没填金额。
+  function computeCharge(selection) {
+    const net = Number(selection && selection.amount);
+    if (!Number.isFinite(net) || net <= 0) {
+      return { state: 'unknown', net: Number.NaN, fee: 0, gross: Number.NaN };
+    }
+    if (!isAfdianAuto(selection)) {
+      return { state: 'none', net: net, fee: 0, gross: net };
+    }
+    const gross = afdianGrossAmount(net);
+    return { state: 'fee', net: net, fee: Math.round((gross - net) * 100) / 100, gross: gross };
   }
 
   // custom_order_id 只发订单号前 8 位十六进制，**不发完整 UUID**：
@@ -194,6 +222,9 @@
         width:calc(var(--checkout-checkbox-height) * 0.85);
         height:calc(var(--checkout-checkbox-height) * 0.85);
       }
+      /* 「一对一充值」入口：占用原促销码输入框的位置 */
+      #nexusv-manual-topup-link{display:inline-block;padding:6px 0;font-size:13px;line-height:1.45;color:#0074d4;font-weight:500;text-decoration:none}
+      #nexusv-manual-topup-link:hover{text-decoration:underline}
       /* 必填项红色星号 */
       .nexusv-required-mark{color:#dc2626;font-weight:700;margin-left:2px}
       /* 提交按钮：必填通过后文字提亮 */
@@ -257,18 +288,57 @@
     return data;
   }
 
+  // 手续费行（原 Stripe 快照里的「税」行）。三种状态各自的文案见 computeCharge。
+  function renderFeeRow(charge) {
+    const node = el('nexusv-fee-amount');
+    if (!node) return;
+    const dim = 'Text Text-color--gray400 Text-fontSize--14 Text--tabularNumbers';
+    const solid = 'Text Text-color--gray900 Text-fontSize--14 Text--tabularNumbers';
+    if (charge.state === 'unknown') {
+      node.className = dim;
+      node.textContent = '输入价格以计算';
+    } else if (charge.state === 'none') {
+      node.className = dim;
+      node.textContent = '无需手续费';
+    } else {
+      node.className = solid;
+      node.textContent = formatCurrency(charge.fee);
+    }
+
+    const tip = el('nexusv-fee-tip');
+    if (tip) {
+      tip.title = charge.state === 'fee'
+        ? '爱发电按收款额抽取 6%（5% 平台服务费 + 1% 支付通道费）。该笔费用由平台收取，不计入你的 API 额度。'
+        : '微信 / 支付宝人工充值不经第三方平台，无通道手续费。';
+    }
+
+    // 「一对一充值」入口只在真的要收手续费时出现。人工通道和套餐本来就不收，
+    // 挂个「如要无手续费」的链接只会让人以为自己被多收了。
+    const link = el('nexusv-manual-topup-link');
+    if (link) {
+      link.href = MANUAL_TOPUP_QQ_GROUP_URL;
+      link.style.display = charge.state === 'fee' ? '' : 'none';
+    }
+  }
+
   function renderSummary(sel) {
     const meta = resolveSelectionText(sel);
+    const charge = computeCharge(sel);
+    // 小计 = 用户买到的额度；今日应付合计 = 额度 + 通道手续费。
+    // 顶部大字与行项目跟着「额度」走，与 Stripe 原版「税前价在上、含税总额在下」一致。
+    const netText = charge.state === 'unknown' ? '—' : formatCurrency(charge.net);
+    const grossText = charge.state === 'unknown' ? '—' : formatCurrency(charge.gross);
     document.title = 'NexusV AI Team.';
 
     setText('[data-testid="product-summary-name"]', meta.summaryName);
-    setText('[data-testid="product-summary-total-amount"] .CurrencyAmount', meta.amount);
+    setText('[data-testid="product-summary-total-amount"] .CurrencyAmount', netText);
     setText('[data-testid="product-summary-total-amount"] .ProductSummaryTotalAmount-billingInterval', meta.interval);
     setText('[data-testid="line-item-product-name"] .ExpandableText', meta.lineName);
     setText('[data-testid="line-item-billing-interval"]', meta.billing);
-    setText('[data-testid="line-item-total-amount"] .CurrencyAmount', meta.amount);
-    setText('[data-testid="order-details-footer-subtotal-amount"] .CurrencyAmount', meta.amount);
-    setText('#OrderDetails-TotalAmount', meta.amount);
+    setText('[data-testid="line-item-total-amount"] .CurrencyAmount', netText);
+    setText('[data-testid="order-details-footer-subtotal-amount"] .CurrencyAmount', netText);
+    setText('#OrderDetails-TotalAmount', grossText);
+    renderFeeRow(charge);
   }
 
   function renderEmail() {
@@ -376,18 +446,37 @@
   function syncEditableAmount() {
     const input = el('cardNumber');
     if (!input || !state.selection) return;
-    const amount = Number(input.value.trim());
-    if (Number.isFinite(amount) && amount > 0) {
-      const wasAuto = isAfdianAuto(state.selection);
-      state.selection.amount = amount;
-      renderSummary(state.selection);
-      updatePreviewMeta();
-      // 跨过 ¥5 分界时，付款面板与按钮文案要跟着换（自动到账 ↔ 收款码人工审核）。
-      if (wasAuto !== isAfdianAuto(state.selection)) {
-        updatePreview();
-        updateSubmitLabel();
-      }
+    const raw = input.value.trim();
+    const amount = raw === '' ? Number.NaN : Number(raw);
+    const wasAuto = isAfdianAuto(state.selection);
+    // 清空 / 填了非法值也要如实反映成 NaN，让手续费行退回「输入价格以计算」。
+    // 旧写法在无效输入时直接 return，摘要会一直停在上一次的金额，
+    // 用户会以为价格已经锁定，实际提交时后端按输入框重算，两边对不上。
+    state.selection.amount = Number.isFinite(amount) && amount > 0 ? amount : Number.NaN;
+    renderSummary(state.selection);
+    updatePreviewMeta();
+    // 跨过 ¥5 分界时，付款面板与按钮文案要跟着换（自动到账 ↔ 收款码人工审核）。
+    if (wasAuto !== isAfdianAuto(state.selection)) {
+      updatePreview();
+      updateSubmitLabel();
     }
+  }
+
+  // 付款面板抬头。走爱发电时必须同时报「到账额度」和「应付」两个数 ——
+  // 只报一个，用户跳过去看到爱发电预填的是另一个数就会怀疑被多收。
+  function previewMetaText() {
+    const sel = state.selection;
+    if (!sel) return '';
+    if (sel.kind !== 'recharge') {
+      const meta = resolveSelectionText(sel);
+      return `${meta.summaryName} · ${meta.amount}`;
+    }
+    const charge = computeCharge(sel);
+    if (charge.state === 'unknown') return '按量充值 · 请先填写金额';
+    if (charge.state === 'fee') {
+      return `到账额度 ${formatCurrency(charge.net)} · 应付 ${formatCurrency(charge.gross)}`;
+    }
+    return `按量充值 · ${formatCurrency(charge.net)}`;
   }
 
   function updatePreviewMeta() {
@@ -395,11 +484,7 @@
     const shell = el('nexusv-payment-preview');
     if (!shell) return;
     const metaNode = q('[data-testid="payment-preview-meta"]', shell);
-    if (metaNode) {
-      metaNode.textContent = state.selection.kind === 'recharge'
-        ? `按量充值 · ${formatCurrency(state.selection.amount)}`
-        : `${resolveSelectionText(state.selection).summaryName} · ${resolveSelectionText(state.selection).amount}`;
-    }
+    if (metaNode) metaNode.textContent = previewMetaText();
   }
 
   function updateContactFieldHints() {
@@ -534,11 +619,7 @@
     const picker = q('.nexusv-method-picker');
     const auto = isAfdianAuto(state.selection);
 
-    if (metaNode) {
-      metaNode.textContent = state.selection.kind === 'recharge'
-        ? `按量充值 · ${formatCurrency(state.selection.amount)}`
-        : `${resolveSelectionText(state.selection).summaryName} · ${resolveSelectionText(state.selection).amount}`;
-    }
+    if (metaNode) metaNode.textContent = previewMetaText();
 
     // 自动到账走爱发电托管收银台，本站不再展示收款码，也不需要选支付方式
     // （微信 / 支付宝在爱发电页面内选）。
@@ -549,7 +630,11 @@
       shell.classList.remove('is-loading', 'is-error');
       shell.classList.add('is-ready');
       if (footNode) {
-        footNode.textContent = '提交后跳转爱发电完成支付，支持微信 / 支付宝。付款成功即自动到账，无需等待人工审核。';
+        const charge = computeCharge(state.selection);
+        // 「金额请勿修改」不是客套话：爱发电的 custom_price 只是预填，用户能在
+        // 它的页面上改小，而后端按 total_amount >= amount_cny 判 underpaid，
+        // 改了就是付了钱却不到账、还得人工捞。
+        footNode.textContent = `应付 ${formatCurrency(charge.gross)} = 到账额度 ${formatCurrency(charge.net)} + 爱发电通道手续费 ${formatCurrency(charge.fee)}。提交后跳转爱发电完成支付，支持微信 / 支付宝，付款成功即自动到账。爱发电页面上的金额请勿修改，改动会导致充值失败。`;
       }
       return;
     }
