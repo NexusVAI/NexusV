@@ -33,28 +33,108 @@
     tokenIssuedAt: 0,
     rendering: false,
     apiLoading: null,
+    apiDoc: null,
     lastError: "",
   };
 
+  // ── 登录表单住在同源 iframe 里，本文件必须跨进去 ──────────────────────
+  //
+  // ⛔ 禁改区（2026-09-05）：以下所有 DOM 访问都必须经 authDoc() / authWin()，
+  // **不要**改回裸 `document.` / `window.`。
+  //
+  // chat/index.html 与 chat/claude.html 的登录界面是 #authLoginFrame 这个同源
+  // iframe（src = claude-login-island.html），#authCaptchaContainer /
+  // #authSendOtpBtn / #authStepEmail / #authEmailError 四个元素**全都在 iframe 的
+  // document 里**，父文档一个都查不到（2026-09-05 线上实测四个 getElementById
+  // 全返回 null）。改造前本文件全程用父文档 document：
+  //   · captchaHost() 恒为 null → ensureContainer() 走最后那条 fallback，把宿主
+  //     append 到**父文档 body 末尾**，而登录 overlay 是全屏盖在上面的 → widget
+  //     渲染成功却在视觉上被遮住，用户看到的就是「让我验证，但没有验证框」；
+  //   · setEmailError() 拿不到 #authEmailError，静默 return → bridge 的提示语根本
+  //     写不进表单，用户看到的始终是后端 403 那段原文。
+  //
+  // 判据与 chat/src/main.js 的 authDoc() 逐字一致（contentDocument 里能查到
+  // #authEmailInput 才算就绪），两边必须看同一个 realm。desktop-login.html 没有
+  // 这个 iframe、表单就在主文档，于是这两个函数自动退回 document / window，
+  // 那个页面的行为与改造前逐字相同。
+  var LOGIN_FRAME_ID = "authLoginFrame";
+  var AUTH_DOC_WAIT_MS = 8000;
+
+  function authDoc() {
+    var frame = document.getElementById(LOGIN_FRAME_ID);
+    try {
+      if (
+        frame &&
+        frame.contentDocument &&
+        frame.contentDocument.getElementById("authEmailInput")
+      ) {
+        return frame.contentDocument;
+      }
+    } catch { /* 跨源时读 contentDocument 会抛，退回主文档。 */ }
+    return document;
+  }
+
+  function authWin() {
+    return authDoc().defaultView || window;
+  }
+
+  // iframe 是懒加载的（main.js 的 ensureAuthLoginFrameLoaded 在展示登录浮层时才
+  // 注入 src），而 403 可能早于它就绪。等一小会儿再决定宿主，避免刚好在加载窗口里
+  // 退回父文档、又把 widget 挂到看不见的地方。
+  function waitForAuthDoc(timeoutMs) {
+    return new Promise(function (resolve) {
+      var start = Date.now();
+      (function tick() {
+        // 已就绪，或这个页面压根没有登录 iframe（desktop-login.html）→ 立刻定案，
+        // 不要让没有 iframe 的页面白等满超时。
+        if (authDoc() !== document) { resolve(); return; }
+        if (!document.getElementById(LOGIN_FRAME_ID)) { resolve(); return; }
+        if (Date.now() - start >= timeoutMs) { resolve(); return; }
+        setTimeout(tick, 100);
+      })();
+    });
+  }
+
+  // ⛔ 禁改区（2026-09-05）：**不要**把 #authCaptchaContainer 加回这里。
+  //
+  // 它在 claude-login-island.html 里不是表单的一部分，而是躺在一个 `<div hidden>`
+  // 的遗留存根堆里，同一个父块里还有 #authPasswordSection / #authPasswordLoginBtn /
+  // #authLoginModeToggle / #authBackBtn / #authStatusLine —— 那批元素只为了让
+  // main.js 的 authEl(id) 不返回 null 才留着，**父块本身 display:none**。
+  // 于是命中它就等于把 widget 挂进一个隐藏子树：无论怎么摘它自己的 hidden、
+  // 怎么设行内 display，getBoundingClientRect() 恒为 0×0（2026-09-05 实测）。
+  // 这正是「后端说去完成验证，页面上却什么都没有」的最后一层原因。
+  //
+  // 现在只认本文件自己建的 #loginTurnstileContainer，宿主位置由 ensureContainer()
+  // 按可见表单结构决定。
   function captchaHost() {
-    return (
-      document.getElementById("authCaptchaContainer") ||
-      document.getElementById("loginTurnstileContainer")
-    );
+    return authDoc().getElementById("loginTurnstileContainer");
   }
 
   function ensureContainer() {
+    var d = authDoc();
     var host = captchaHost();
     if (!host) {
-      host = document.createElement("div");
+      host = d.createElement("div");
       host.id = "loginTurnstileContainer";
-      var sendBtn = document.getElementById("authSendOtpBtn");
-      if (sendBtn && sendBtn.parentNode) {
+      // 首选落点：可见表单 #authEmailForm 内、错误文案 #authEmailError 之前，
+      // 也就是「发码按钮下方」——正好对上后端那句「请在页面上完成下方的 Cloudflare
+      // 验证」。该 form 是 flex-col gap-4，插进去自动有间距、自动撑满宽度。
+      // ⛔ 别改成 sendBtn.parentNode.insertBefore：发码按钮的直接父级是一个
+      // `inline-flex w-full` 的 <span>，把 block 宿主塞进去会挤坏按钮行。
+      var form = d.getElementById("authEmailForm");
+      var errorEl = d.getElementById("authEmailError");
+      var sendBtn = d.getElementById("authSendOtpBtn");
+      if (form && errorEl && errorEl.parentNode === form) {
+        form.insertBefore(host, errorEl);
+      } else if (form) {
+        form.appendChild(host);
+      } else if (sendBtn && sendBtn.parentNode) {
         sendBtn.parentNode.insertBefore(host, sendBtn);
       } else {
-        var step = document.getElementById("authStepEmail");
+        var step = d.getElementById("authStepEmail");
         if (step) step.appendChild(host);
-        else (document.body || document.documentElement).appendChild(host);
+        else (d.body || d.documentElement).appendChild(host);
       }
     }
     // ⛔ 禁改区（2026-09-05）：必须摘掉 hidden **属性**，光设行内 display 没用。
@@ -93,9 +173,10 @@
   }
 
   function setStatus(text, color) {
+    var d = authDoc();
     var el = state.statusEl;
-    if (!el || !document.body.contains(el)) {
-      el = document.getElementById("loginTurnstileStatus");
+    if (!el || !d.contains(el)) {
+      el = d.getElementById("loginTurnstileStatus");
       state.statusEl = el;
     }
     if (!el) return;
@@ -107,7 +188,7 @@
   function showStatusOnly(text, color) {
     var host = ensureContainer();
     host.innerHTML = "";
-    var status = document.createElement("div");
+    var status = authDoc().createElement("div");
     status.id = "loginTurnstileStatus";
     status.style.cssText =
       "font-size:12px;line-height:1.45;margin:0;text-align:left;display:block;";
@@ -118,7 +199,7 @@
   }
 
   function setEmailError(message) {
-    var errorEl = document.getElementById("authEmailError");
+    var errorEl = authDoc().getElementById("authEmailError");
     if (!errorEl) return;
     errorEl.textContent = message || "";
   }
@@ -133,15 +214,20 @@
     }
   }
 
+  function hasApi() {
+    var w = authWin();
+    return !!(w.turnstile && typeof w.turnstile.render === "function");
+  }
+
   function waitForApi(timeoutMs) {
     return new Promise(function (resolve, reject) {
-      if (window.turnstile && typeof window.turnstile.render === "function") {
+      if (hasApi()) {
         resolve();
         return;
       }
       var start = Date.now();
       (function tick() {
-        if (window.turnstile && typeof window.turnstile.render === "function") {
+        if (hasApi()) {
           resolve();
           return;
         }
@@ -154,17 +240,27 @@
     });
   }
 
+  // ⛔ SDK 必须注入到**宿主所在的那个 document**，不能复用父文档已加载的
+  // window.turnstile。2026-09-05 实测：拿父窗口的 turnstile 去 render 一个属于
+  // iframe document 的节点，直接抛
+  //   [Cloudflare Turnstile] Invalid type for parameter "container",
+  //   expected "string" or an implementation of "HTMLElement"
+  // —— 它内部是 instanceof HTMLElement，而跨 realm 的元素对父窗口的 HTMLElement
+  // 不成立。在 iframe 里注入同一个 api.js 后渲染即成功（实测拿到 837 字节 token）。
   function loadApi() {
-    if (window.turnstile && typeof window.turnstile.render === "function") {
-      return Promise.resolve();
-    }
-    if (state.apiLoading) return state.apiLoading;
+    if (hasApi()) return Promise.resolve();
+
+    var d = authDoc();
+    // 换过一次 iframe src 就等于换了 realm，上一个 realm 的 promise 与其中的
+    // turnstile 都不再可用，所以按 document 记账。
+    if (state.apiLoading && state.apiDoc === d) return state.apiLoading;
+    state.apiDoc = d;
 
     state.apiLoading = new Promise(function (resolve, reject) {
-      var script = document.querySelector('script[src^="' + TURNSTILE_API + '"]');
+      var script = d.querySelector('script[src^="' + TURNSTILE_API + '"]');
       var created = false;
       if (!script) {
-        script = document.createElement("script");
+        script = d.createElement("script");
         script.src = TURNSTILE_API;
         script.async = true;
         script.defer = true;
@@ -174,10 +270,11 @@
       script.addEventListener("error", function () {
         reject(new Error("turnstile_api_load_failed"));
       }, { once: true });
-      if (created) document.head.appendChild(script);
+      if (created) (d.head || d.documentElement).appendChild(script);
       waitForApi(API_WAIT_MS).then(resolve, reject);
     }).catch(function (err) {
       state.apiLoading = null;
+      state.apiDoc = null;
       throw err;
     });
     return state.apiLoading;
@@ -203,12 +300,13 @@
     state.pendingToken = "";
     state.tokenIssuedAt = 0;
     try {
+      var w = authWin();
       if (
         state.widgetId !== null &&
-        window.turnstile &&
-        typeof window.turnstile.reset === "function"
+        w.turnstile &&
+        typeof w.turnstile.reset === "function"
       ) {
-        window.turnstile.reset(state.widgetId);
+        w.turnstile.reset(state.widgetId);
       }
     } catch { /* A removed or expired widget has nothing left to reset. */ }
   }
@@ -220,16 +318,18 @@
       showStatusOnly(state.lastError, "#e11d48");
       return false;
     }
-    if (!window.turnstile || typeof window.turnstile.render !== "function") {
+    if (!hasApi()) {
       return false;
     }
     if (state.widgetId !== null || state.rendering) return true;
 
+    var d = authDoc();
+    var w = authWin();
     var host = ensureContainer();
     host.innerHTML = "";
     state.rendering = true;
 
-    var status = document.createElement("div");
+    var status = d.createElement("div");
     status.id = "loginTurnstileStatus";
     status.style.cssText =
       "font-size:12px;line-height:1.45;margin:0 0 8px;text-align:left;display:block;";
@@ -237,7 +337,7 @@
     host.appendChild(status);
     state.statusEl = status;
 
-    var mount = document.createElement("div");
+    var mount = d.createElement("div");
     mount.id = "loginTurnstileMount";
     mount.className = "cancri-turnstile-mount";
     mount.dataset.action = "turnstile-spin-v1";
@@ -247,7 +347,7 @@
     state.mountEl = mount;
 
     try {
-      state.widgetId = window.turnstile.render(mount, {
+      state.widgetId = w.turnstile.render(mount, {
         sitekey: SITE_KEY,
         action: "turnstile-spin-v1",
         appearance: "always",
@@ -292,9 +392,15 @@
 
   function requireChallenge() {
     state.challengeRequired = true;
-    ensureContainer();
-    setEmailError(REQUIRED_MESSAGE);
-    loadApi()
+    // 先等登录 iframe 就绪再决定宿主：403 可能早于 ensureAuthLoginFrameLoaded()
+    // 注入 src，此刻 authDoc() 还是父文档，直接建容器会挂到看不见的地方。
+    waitForAuthDoc(AUTH_DOC_WAIT_MS)
+      .then(function () {
+        installOtpGuard(authDoc());
+        ensureContainer();
+        setEmailError(REQUIRED_MESSAGE);
+        return loadApi();
+      })
       .then(function () {
         if (state.widgetId !== null) {
           resetWidget();
@@ -312,12 +418,13 @@
 
   function suspend() {
     try {
+      var w = authWin();
       if (
         state.widgetId !== null &&
-        window.turnstile &&
-        typeof window.turnstile.remove === "function"
+        w.turnstile &&
+        typeof w.turnstile.remove === "function"
       ) {
-        window.turnstile.remove(state.widgetId);
+        w.turnstile.remove(state.widgetId);
       }
     } catch { /* The host is cleared below even if the widget is already gone. */ }
     state.challengeRequired = false;
@@ -466,9 +573,19 @@
     focusChallenge();
   }
 
+  // 守卫必须注册在**按钮所在的那个 document** 上。#authSendOtpBtn 在登录 iframe
+  // 里，只挂父文档的话捕获阶段收不到那次点击（父文档在事件路径上只有 <iframe>
+  // 这一个节点）。iframe 懒加载，所以 requireChallenge() 在宿主定案后再补挂一次；
+  // 打个标记保证幂等，换了 realm 的新 document 会重新挂。
+  function installOtpGuard(d) {
+    if (!d || d.__cancriOtpGuardInstalled) return;
+    d.__cancriOtpGuardInstalled = true;
+    d.addEventListener("click", guardOtpClick, true);
+  }
+
   installCompatibilityApis();
   if (typeof document !== "undefined") {
-    document.addEventListener("click", guardOtpClick, true);
+    installOtpGuard(document);
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", function () {
         installCompatibilityApis();
