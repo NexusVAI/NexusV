@@ -33,6 +33,10 @@
   // 只能钉在免费区，禁止再放进这张名单（否则会从免费区「掉」到下面的旗舰区）。
   // 禁止非名单补位（曾冒出 gemini-3.1-flash-lite）。
   var FEATURED_ORDER = [
+    // 2026-09-05: GPT-6 Astra 上架，钉到旗舰区首位。普通分组与 Pro 分组同 group_id
+    // （DB model_catalog.group_id='gpt-6-astra'）折叠成一张卡，代表是 gpt-6-astra，
+    // 所以这里只钉代表 id —— 再钉 Pro 那条会被 seenTop 去重，属多余。
+    "gpt-6-astra",
     "glm-5.3",
     "gpt-5.6-sol",
     "claude-opus-5",
@@ -145,6 +149,10 @@
     // 2026-07-17: Kimi K3 专用卡面（Logo/kimik3.jpg → assets/oai.logo/kimik3.jpg）
     "kimi-k3": "kimik3.jpg",
     "kimi-k3-high": "kimik3.jpg",
+    // 2026-09-05: GPT-6 Astra 专用卡面（Logo/Astragpt-6.png → assets/oai.logo/gpt6-astra.png）。
+    // 两条线折叠成一张卡，代表是 gpt-6-astra；Pro 分组也登记一份，免得日后换代表后卡面掉回随机图。
+    "gpt-6-astra": "gpt6-astra.png",
+    "gpt-6-astra-pro": "gpt6-astra.png",
   };
 
   var HIDE_IDS = {
