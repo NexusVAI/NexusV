@@ -2782,8 +2782,15 @@
         <script defer src="./cancri_image_loader.js?v=img-loader-0531"></script>
         <script defer src="./cancri_chat_nav.js?v=chat-nav-0531"></script>
         <!-- 2026-07-18: 与主站一致，走 Turnstile bridge（修复 captcha 跳过 bug） -->
-        <script defer src="./cancri_turnstile_bridge.js?v=2026-08-13-probe-fix"></script>
-        <script defer src="./cancri_login_captcha.js?v=login-captcha-mount-fix-0512d"></script>
+        <!-- 2026-09-05: 删掉这里原本紧跟在后面的 cancri_login_captcha.js。它在 bridge
+             **之后**加载，而两者都定义 window.NexusLoginCaptcha —— 后者整块覆盖前者，
+             于是 main.js 的 getLoginCaptchaToken() 拿到的是旧实现（等它自己那个从未
+             渲染的 widget），而真正渲染 widget、真正持有 token 的是 bridge。两套
+             state 互不相识。线上实测 _state 的键就是 login_captcha 那一份。
+             本页只有它一处引用该文件（index.html 从来只加载 bridge），且 bridge 的
+             installCompatibilityApis() 已提供同名的 prerender/getToken/suspend，
+             删掉即回到与主站一致的单一实现。⛔ 别再加回来。 -->
+        <script defer src="./cancri_turnstile_bridge.js?v=20260905-hidden-attr-fix"></script>
         <script defer src="./cancri_logo_theme.js?v=2026-06-25-openai-text"></script>
         <script defer src="./js/auth-login-chrome.js?v=20260820-unified-otp1"></script>
         <!-- 官方登录页不挂画布验证码；发码走 Turnstile bridge（与 index.html 一致）。 -->

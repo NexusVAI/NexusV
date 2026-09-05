@@ -57,6 +57,17 @@
         else (document.body || document.documentElement).appendChild(host);
       }
     }
+    // ⛔ 禁改区（2026-09-05）：必须摘掉 hidden **属性**，光设行内 display 没用。
+    // #authCaptchaContainer 在 claude-login-island.html 里是 `<div hidden>`，而那个
+    // 文件自带内联 `[hidden]{display:none !important}` —— !important 的作者声明
+    // 在层叠里压过行内非 important 声明，所以下面那行 style.display="block" 会被
+    // 完全无效化。实测：带 hidden 属性时 computed display 恒为 none，摘掉才变 block。
+    //
+    // 症状极具误导性：widget **渲染成功**（turnstile.render 正常返回 widgetId、
+    // 甚至能拿到 token），后端 403 的文案也照常写进 #authEmailError（它没有 hidden），
+    // 于是用户看到的正是「提示要人机验证，但页面上没有验证框」。
+    // 只要 captchaHost() 还可能命中一个带 hidden 的宿主，这行就不能删。
+    host.removeAttribute("hidden");
     host.style.display = "block";
     host.style.margin = "10px 0 0";
     host.style.minHeight = "0";
@@ -70,6 +81,9 @@
   function collapseContainer() {
     var host = captchaHost();
     if (!host) return;
+    // 与 ensureContainer() 的 removeAttribute 成对：不需要挑战时把宿主还原成登录岛
+    // 里的初始形态（`<div hidden>`），别让一个空容器留在表单里占位。
+    host.setAttribute("hidden", "");
     host.style.display = "none";
     host.style.margin = "0";
     host.style.minHeight = "0";
