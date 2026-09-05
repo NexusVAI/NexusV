@@ -71,6 +71,8 @@
     "glm-5.3-flash-free",
     "hy3-free",
     "qwen3.8-flash-free",
+    // 2026-09-06: tokenflux.dev 限时免费 grok-4.5（至 09-10）。
+    "grok-4.5-free",
     "deepseek-v4-flash-vision-exp-free",
     "mimo-v2.5-free",
     // 2026-08-29: api.tokenrouter.com 限时免费线（至 09-05），上游 z-ai/glm-5.3-free。
@@ -116,9 +118,11 @@
     // cf-gateway/src/shared-catalog.ts 与 cf-modelscope-proxy/src/index.ts 两份
     // MODEL_ACCESS_END_MS（必须同日）——改日期时三处一起改，否则卡片写着还没到期、
     // 后端已经把模型摘掉了。
-    "glm-5.3-flash-free": "09-05结束免费期限",
-    "hy3-free": "09-05结束免费期限",
-    "qwen3.8-flash-free": "09-05结束免费期限",
+    // 2026-09-06: hy3 / glm-5.3-flash / qwen3.8-flash 延到 09-10；mimo / vision-exp 不延。
+    "glm-5.3-flash-free": "09-10结束免费期限",
+    "hy3-free": "09-10结束免费期限",
+    "qwen3.8-flash-free": "09-10结束免费期限",
+    "grok-4.5-free": "09-10结束免费期限",
     "deepseek-v4-flash-vision-exp-free": "09-05结束免费期限",
     "mimo-v2.5-free": "09-05结束免费期限",
     // 2026-08-29: qwen-3.8-max 已下架，文案条目随之删除。
