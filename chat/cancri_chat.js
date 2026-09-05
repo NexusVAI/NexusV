@@ -6007,19 +6007,19 @@
 				{
 					name: "加油包 ¥10",
 					price_cny: 10,
-					tokens: 3e7,
+					tokens: 15e6,
 					note: "永不过期，月度配额耗尽后自动接续扣减"
 				},
 				{
 					name: "加油包 ¥50",
 					price_cny: 50,
-					tokens: 18e7,
+					tokens: 9e7,
 					note: "永不过期"
 				},
 				{
 					name: "加油包 ¥200",
 					price_cny: 200,
-					tokens: 8e8,
+					tokens: 4e8,
 					note: "永不过期"
 				}
 			],

@@ -7417,18 +7417,28 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           note: "全模型 + 视频图像生成",
         },
       ],
+      // ⛔ 禁改区（2026-09-05 终审 FINAL-008）：这三个数字必须与后端权威价目
+      // `cf-gateway/src/order-catalog.ts` 的 `ORDER_CATALOG.topup` 逐一相等。
+      //
+      // 改前这里是 30M / 180M / 800M —— 恰好是真实发货量的 **2 倍**
+      // （权威值 topup_small=15M / topup_medium=90M / topup_large=400M）。
+      // 这段是站内 AI 助手回答"充值多少给多少 token"时读的知识库，也就是说
+      // 用户问到加油包时，助手会承诺 2 倍于实际到账的额度。下单履行走的是
+      // `ORDER_CATALOG`（`chat-gateway.ported.ts` 明确忽略前端传来的 amount），
+      // 所以不是资损，是**对用户的错误承诺**（客诉/退款争议面）。
+      // 由 `cf-gateway/_check_drift.mjs` 的「加油包配额镜像」检查机械看守。
       addons: [
         {
           name: "加油包 ¥10",
           price_cny: 10,
-          tokens: 30000000,
+          tokens: 15000000,
           note: "永不过期，月度配额耗尽后自动接续扣减",
         },
-        { name: "加油包 ¥50", price_cny: 50, tokens: 180000000, note: "永不过期" },
+        { name: "加油包 ¥50", price_cny: 50, tokens: 90000000, note: "永不过期" },
         {
           name: "加油包 ¥200",
           price_cny: 200,
-          tokens: 800000000,
+          tokens: 400000000,
           note: "永不过期",
         },
       ],
