@@ -80,19 +80,24 @@ html, html[data-theme="dark"] {
    --c-text-soft 从 0.62 提到 0.74、--c-text-dim 从 0.42 提到 0.55，
    sidebar nav / 副标题 / 历史条目在浅色 cream 底上不再像幽灵字。
    --c-line / --c-line-strong / --c-hover-strong 同步加深（暖底上太轻看不到边）。 */
+/* 2026-09-06 浅色重铺，对齐 Claude 真站 light（源：移植，直接搬/ 下的
+   ai提问块.html · 多样化.html · chat首页.html，--cds-gray-* 三份一致）。
+   旧值 #F8F8F6 / #eeece4 / #f4f3ed 饱和度 20~33%，屏幕上发黄；真站只有 10~14%。
+   hover / line 改成「中性黑 + alpha」，跟真站 --cds-alpha-1/2/3 一个做法：
+   好处是它叠在白卡片、浅底、深底上都自洽，不用再各写一套实色。 */
 html[data-theme="light"] {
-    --c-bg:        #F8F8F6;
-    --c-bg-side:   #F8F8F6;
-    --c-bg-elev:   #ffffff;
-    --c-bg-elev-2: #ffffff;
-    --c-bg-elev-3: #eeece4;
-    --c-text:        #141413;
-    --c-text-soft:   #3d3d3a;
-    --c-text-dim:    #73726c;
-    --c-line:        rgba(31, 30, 28, 0.15);
-    --c-line-strong: rgba(31, 30, 28, 0.30);
-    --c-hover:        #f4f3ed;
-    --c-hover-strong: #eeece4;
+    --c-bg:        #FCFCFB;   /* 主区背景 = gray-10 */
+    --c-bg-side:   #FBFBF9;   /* 侧栏，比主区低半档 */
+    --c-bg-elev:   #FFFFFF;   /* 输入框 / 卡片 = gray-0 */
+    --c-bg-elev-2: #FFFFFF;
+    --c-bg-elev-3: #F3F3F0;   /* 用户气泡 = gray-40（旧 #eeece4 发黄） */
+    --c-text:        #0B0B0B; /* gray-900 */
+    --c-text-soft:   #52514E; /* gray-600 */
+    --c-text-dim:    #898781; /* gray-400 */
+    --c-line:        rgba(11, 11, 11, 0.10);   /* = --cds-alpha-2 */
+    --c-line-strong: rgba(11, 11, 11, 0.20);   /* = --cds-alpha-3 */
+    --c-hover:        rgba(11, 11, 11, 0.05);  /* = --cds-alpha-1 */
+    --c-hover-strong: rgba(11, 11, 11, 0.10);  /* = --cds-alpha-2 */
     --c-accent:        var(--accent, hsl(15 54.2% 51.2%));
     --c-accent-hover:  var(--accent, hsl(15 54.2% 45.2%));
     --c-accent-soft:   color-mix(in srgb, var(--accent, hsl(15 54.2% 51.2%)) 12%, transparent);
@@ -122,7 +127,11 @@ html, html[data-theme="dark"], html[data-theme="light"], html[data-theme="black"
     --c-sidebar-w: 288px;
     --workbench-sidebar-width: 288px;
     --workbench-rail-width: 3.5rem;
-    --c-main-col: 48rem;
+    /* 2026-09-06：跟 --c-sidebar-w / --composer-max-w 同一个坑 —— 真站正文列是
+       max-w-3xl = --container-3xl = 48rem，但真站根字号 16px（768px），我们
+       15px（720px），照抄 48rem 会窄 48px。这就是「对话区左右宽度跟人家不一样」。
+       钉成 px。composer 那 752px 也是被这条卡着才顶不满的。 */
+    --c-main-col: 768px;
     --composer-max-w: 672px;   /* claude.ai composer max-w-2xl；用 px 避免根字号 15px 导致 rem 缩水 */
     --c-radius:    16px;
     --c-radius-sm: 10px;
@@ -2041,10 +2050,9 @@ html[data-theme="black"] .claude-suggest:hover {
 }
 html[data-theme="light"] .chat-messages .message.user-message .message-content,
 html[data-theme="light"] .chat-messages .message.user .message-content,
-html[data-theme="light"] .chat-messages .message[data-role="user"] .message-content {
-    /* bg-bg-300 light = hsl(48 25% 92.2%) ≈ #F0EAD9 暖砂色 */
-    background: hsl(48 25% 92.2%) !important;
-}
+/* 用户气泡不再在这里硬编码颜色：这条原本钉着 hsl(48 25% 92.2%)（≈#f0eee6 暖砂色），
+   跟 --bg-300 是两份会各自漂移的值。2026-09-06 --bg-300 已换成真站 gray-40 #f3f3f0，
+   下面 .message.user .message-content 读的就是它，这里不用再写第二遍。 */
 /* 2026-06-21 对齐 Claude 11:33:04 字体链：
    - 用户消息: --font-user-message = var(--font-sans-serif) = Anthropic Sans (sans)
    - 助手消息: --font-claude-response = var(--font-serif) = Anthropic Serif (serif)
@@ -2192,6 +2200,15 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     border-top: 0 !important;
     margin: 0 auto !important;
     width: 100% !important;
+    /* 2026-09-06 报障「提问卡周围也挡住后面的东西」的根因就在这里：
+       cancri_chat.css:5519 给这条底栏铺了 92% 不透明底 + 12px 毛玻璃，
+       于是整条横带都是实心的，卡片周围自然也挡。
+       真站（ai提问块.html）这一层 data-chat-input-container 只有
+       `sticky bottom-0 mx-auto w-full pt-6`，**没有任何背景**，
+       挡住正文的只有提问卡和输入框这两个圆角矩形本身。这里同步成透明。 */
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 /* Claude 实测：聊天态 composer 更宽（752px），首页保持 672px */
 #homeView.chatting .composer-wrap {
@@ -9181,13 +9198,21 @@ html[data-theme] {
    DOM 由 cancri_chat.js showAskUserBlock 动态挂到 .composer-wrap 里。 */
 .ask-user-card {
     margin: 0 8px 8px;
+    /* .composer-wrap 是 flex-column + align-items:center（cancri_chat.css:2463），
+       卡片不声明就按内容宽度收缩 —— 问题短的时候卡片比输入框窄一大截，
+       这就是「原版长点」的另一半原因。参考里它跟 composer 同宽（都是 mx-2 md:mx-0）。 */
+    align-self: stretch;
     border-radius: 16px;
     background: var(--c-bg-elev);
     padding-top: 12px;
     overflow: hidden;
+    /* 参考 shadow-[0_0.25rem_1.25rem_var(--cds-shadow-color),
+                 0_0_0_0.5px_color-mix(in_srgb,var(--cds-border-strong)_30%,transparent)]
+       --cds-shadow-color = gray-900 8%；border-strong = alpha-3(黑20%)，再取 30% ≈ 黑6%。
+       描边比 --c-line(黑10%) 更淡，卡片浮在正文上时边不抢眼。 */
     box-shadow:
-        0 0.25rem 1.25rem rgba(0, 0, 0, 0.08),
-        0 0 0 0.5px var(--c-line);
+        0 0.25rem 1.25rem rgba(11, 11, 11, 0.08),
+        0 0 0 0.5px rgba(11, 11, 11, 0.06);
     animation: ask-user-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 html[data-theme="dark"] .ask-user-card {
@@ -9259,6 +9284,9 @@ html[data-theme="dark"] .ask-user-card {
 .ask-user-row.is-active {
     background: var(--c-hover);
 }
+/* 序号方块 size-7(28) rounded-lg(8)；底色未选中 bg-alpha-1、选中 bg-alpha-2 ——
+   --c-hover / --c-hover-strong 现在就等于这两个 alpha，直接读即可。
+   字号参考是 text-sm(14)、常规字重；旧值 13px/500 是早期估的。 */
 .ask-user-num {
     flex: 0 0 28px;
     width: 28px;
@@ -9267,9 +9295,9 @@ html[data-theme="dark"] .ask-user-card {
     place-items: center;
     border-radius: 8px;
     background: var(--c-hover);
-    color: var(--c-text-soft);
-    font-size: 13px;
-    font-weight: 500;
+    color: var(--c-text-dim);
+    font-size: 14px;
+    font-weight: 400;
 }
 .ask-user-row.is-active .ask-user-num {
     background: var(--c-hover-strong);
@@ -9335,17 +9363,22 @@ html[data-theme="dark"] .ask-user-card {
 .ask-user-input::placeholder {
     color: var(--c-text-dim);
 }
+/* 参考的 Skip 是 data-size="sm" + px-md + bg-fill-secondary + shadow-field，
+   shadow-field = inset 0 0 0 1px var(--cds-border) , 0 1px 2px #0000000d
+   —— 内描边而不是外描边，另加一层极轻的落影。 */
 .ask-user-skip {
     flex: 0 0 auto;
     height: 28px;
-    padding: 0 10px;
+    padding: 0 12px;
     border: 0;
     border-radius: 7px;
     background: transparent;
-    box-shadow: 0 0 0 0.5px var(--c-line-strong);
+    box-shadow:
+        inset 0 0 0 1px var(--c-line),
+        0 1px 2px rgba(11, 11, 11, 0.05);
     color: var(--c-text);
     font-size: 14px;
-    font-weight: 550;
+    font-weight: 500;
     cursor: pointer;
     font-family: inherit;
 }
