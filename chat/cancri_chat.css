@@ -3501,9 +3501,12 @@ html[data-theme="light"] .claude-accent-dot {
     scrollbar-width: thin;
     scrollbar-color: var(--line-2) transparent;
     opacity: 1;
+    /* margin 也要过渡：聊天页的思考卡片用 margin 承担展开面板的上下留白
+       （claude.css §「助手思考块」），不带上它收起动画会跳一下。 */
     transition:
         max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
         opacity 0.22s ease,
+        margin 0.28s cubic-bezier(0.4, 0, 0.2, 1),
         padding 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

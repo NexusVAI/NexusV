@@ -2107,38 +2107,10 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .message-cont
     pointer-events: none !important;
 }
 
-.message.assistant .message-actions {
-    gap: 4px !important;
-    margin-top: 8px !important;
-}
-
-/* 2026-06-21 对齐 Claude 11:33:04 message action buttons：
-   h-control w-control = 32px, icon 20px, text-muted hover:text-primary,
-   timestamp text-text-500 text-xs mr-2。
-   源码：button class="h-control aspect-square w-control px-0 !text-muted hover:!text-primary"
-   icon style="font-size:20px" / timestamp class="text-text-500 text-xs mr-2" */
-.message-action-btn {
-    width: 32px !important;
-    height: 32px !important;
-    padding: 0 !important;
-    border-radius: 8px !important;
-    background: transparent !important;
-    color: var(--c-text-dim) !important;
-    transition: background 120ms ease, color 120ms ease !important;
-}
-.message-action-btn:hover {
-    background: var(--c-hover) !important;
-    color: var(--c-text) !important;
-}
-.message-action-btn svg {
-    width: 18px !important;
-    height: 18px !important;
-}
-.message-action-ts {
-    font-size: 12px !important;
-    color: var(--c-text-dim) !important;
-    margin-right: 8px !important;
-}
+/* 2026-09-06 消息操作条的尺寸/间距全部下移到本文件 §「助手消息操作条」一处
+   （搜 .message-action-btn 的最后一次声明）。原先这里有一份 32px 按钮 / 18px 图标 /
+   8px margin-top 的声明，被同文件后面那份 24px / 14px / 4px 逐条盖掉，属于纯死码，
+   已删除；唯一还活着的 transition 已并入下游那份。 */
 
 .chat-messages .message.assistant.is-error .assistant-error-title {
     color: #b91c1c !important;
@@ -2158,12 +2130,10 @@ html[data-theme="dark"] .chat-messages .message.assistant.is-error .assistant-er
     color: #fecaca !important;
 }
 
-/* 2026-06-21 对齐 Claude 11:33:04 thinking block：
-   摘要按钮: text-sm(14px) text-text-500 hover:text-text-300
-   摘要文本: truncate font-base(14px/430/1.4)
-   箭头: -rotate-90(折叠态朝右) transition-transform duration-200
-   源码：button class="group/status flex items-center gap-2 py-1 text-sm text-text-500 hover:text-text-300"
-   summary span class="truncate font-base" */
+/* 思考块的**共享**基线，消费方是 arena 对战卡（cancri_arena.js 自建 think-block）。
+   聊天页助手消息不看这里 —— 那边的真值在本文件 §「助手思考块」一整块（搜
+   `.message.assistant .think-block`），是从 移植，直接搬/对话块展示.html 1:1 移过来的。
+   改聊天页的思考块请只改那一处，不要在这里加值，否则又是两套数打架。 */
 .think-label {
     font-size: 14px !important;
     font-weight: 430 !important;
@@ -4715,19 +4685,17 @@ button.composer-tool-btn:hover {
     font-family: var(--c-font-serif) !important;
     font-weight: 100;
     /* 2026-05-16 PR ·prose 1:1：字号 16px→1rem、行高 1.62→1.75 对齐 Claude
-       真站 .prose root（源 main_window/index.html:1230-1231）。 */
+       真站 .prose root（源 main_window/index.html:1230-1231）。
+       ⚠ 这里的 1.75 对正文**已不生效**：.answer-body 实际带 standard-markdown +
+       font-claude-response 两个类，行高由本文件后面那两条 1.5 !important 决定
+       （= 参考 --cds-leading-prose）。留着只为不动 .message-content 上零散文本的
+       继承值，改正文行高请去搜 `.answer-body.standard-markdown` 那条。 */
     font-size: 1rem;
     line-height: 1.75;
 }
-.message.assistant .think-body,
-.message.assistant .think-body p,
-.message.assistant .think-body li {
-    font-family: var(--c-font-serif) !important;
-    font-size: 0.8125rem !important;
-    font-weight: 300 !important;
-    line-height: 1.65 !important;
-    color: var(--c-text-dim) !important;
-}
+/* 思考正文原先在这里被钉成 13px 衬线 300 字重。2026-09-06 按 Claude 真站改成
+   14px 无衬线（参考里思考摘要用 font-sans text-body，跟正文的衬线体是两套字），
+   新值在 §「助手思考块」一处，这里不再声明。 */
 /* code / pre / inline code 保持 monospace（不要 serif 化代码块） */
 .message.assistant .message-content code,
 .message.assistant .message-content pre,
@@ -5362,8 +5330,7 @@ html[data-chat-font="serif"] .message.assistant .message-content,
 html[data-chat-font="serif"] .message.assistant .message-content p,
 html[data-chat-font="serif"] .message.assistant .message-content li,
 html[data-chat-font="serif"] .message.assistant .message-content blockquote,
-html[data-chat-font="serif"] .message.assistant .answer-body,
-html[data-chat-font="serif"] .message.assistant .think-body {
+html[data-chat-font="serif"] .message.assistant .answer-body {
     font-family: var(--c-font-serif) !important;
 }
 
@@ -5372,8 +5339,7 @@ html[data-chat-font="sans"] .message.assistant .message-content,
 html[data-chat-font="sans"] .message.assistant .message-content p,
 html[data-chat-font="sans"] .message.assistant .message-content li,
 html[data-chat-font="sans"] .message.assistant .message-content blockquote,
-html[data-chat-font="sans"] .message.assistant .answer-body,
-html[data-chat-font="sans"] .message.assistant .think-body {
+html[data-chat-font="sans"] .message.assistant .answer-body {
     font-family: var(--c-font) !important;
 }
 
@@ -5382,8 +5348,9 @@ html[data-chat-font="mono"] .message.assistant .message-content,
 html[data-chat-font="mono"] .message.assistant .message-content p,
 html[data-chat-font="mono"] .message.assistant .message-content li,
 html[data-chat-font="mono"] .message.assistant .message-content blockquote,
-html[data-chat-font="mono"] .message.assistant .answer-body,
-html[data-chat-font="mono"] .message.assistant .think-body {
+/* 注意：这三条 data-chat-font 规则**故意**不含 .think-body。参考页里思考摘要
+   固定 font-sans，跟正文字体是两套；跟着"聊天字体"一起变会偏离参考。 */
+html[data-chat-font="mono"] .message.assistant .answer-body {
     font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo,
                  Consolas, "Liberation Mono", monospace !important;
 }
@@ -9403,9 +9370,15 @@ html[data-theme="dark"] .ask-user-card {
 .message.assistant .answer-body.standard-markdown {
     display: grid !important;
     grid-template-columns: 1fr;
+    /* arena 卡片走 gap（它不在 .message.assistant 下，§16 的 prose 外距碰不到它）。
+       聊天页在下面把 gap 归 0、改用每个块自己的上外距，跟参考的 .prose 模型一致。 */
     gap: 12px;
     font-family: var(--c-font-serif) !important;
-    font-size: 1rem !important;
+    /* ⚠ 这里必须写死 16px，不能写 1rem。cancri_chat.css 有一条
+       `html { font-size: 15px }`，全项目的 rem 基准是 15 不是 16，
+       之前这里的 1rem 其实只有 15px，跟注释里声称的"对齐真站 16px"不符。
+       16 / 24 = 参考 --cds-font-size-prose(1rem) / --cds-leading-prose(1.5rem)。 */
+    font-size: 16px !important;
     font-weight: 400 !important;
     line-height: 1.5 !important;
     color: hsl(var(--text-100)) !important;
@@ -9429,16 +9402,70 @@ html[data-theme="dark"] .ask-user-card {
     font-family: inherit;
     font-size: inherit;
     font-weight: 400;
-    line-height: 1.7;
+    /* line-height 故意不写：由上面 .answer-body.standard-markdown 的 1.5 统一供给
+       （= 参考 --cds-leading-prose 1.5rem / --cds-font-size-prose 1rem）。
+       2026-09-06 之前这里写着 1.7，把容器声明的 1.5 悄悄盖掉，正文比参考松一截。 */
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: normal;
     margin: 0;
 }
 
-.answer-body.standard-markdown > * + *,
-.standard-markdown.answer-body > * + * {
-    margin-top: 0;
+/* 段落 / 列表项 / 引用的字号行高一律继承上面容器（16px / 1.5）。必须显式写 inherit
+   才挡得住 §16 那条 `.message.assistant .message-content p { font-size:1rem; line-height:1.75 }`
+   —— 注意 `.message.assistant` 是**两个**类，那条权重 (0,3,1) 比不带 .message.assistant
+   的选择器高，所以这里必须把 .message.assistant 一起写上凑到 (0,4,1)，否则改了不生效。
+   标题不在名单里：参考 .prose 给 h1~h6 各自的 leading，那几条在 §16 里更具体。 */
+.answer-body.standard-markdown :is(p, li, blockquote),
+.standard-markdown.answer-body :is(p, li, blockquote),
+.message.assistant .answer-body.standard-markdown :is(p, li, blockquote) {
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* ── 助手正文的块间距：照搬 Claude .prose 的流式间距模型 ──────────────
+   参考（对话块展示.html）：
+     ._blocks_4za3l_47 是 grid 但**没有 gap**，块间距全部来自每个块自己的上外距；
+     @scope(.prose){ p { margin-block-start: var(--_prose-flow); margin-block-end: 0 } }
+     @scope(.prose){ :first-child { margin-block-start: 0 } }
+     --_prose-flow = .75em，容器字号 16px → 12px。
+
+   为什么要写到 `.message.assistant` + 两个类这么长：§16 那批从 Claude 主 bundle
+   移植过来的 prose 规则（.message.assistant .message-content 的 p / ul / ol / h1~h4）
+   自带 1.25em~2em 上下外距，权重 (0,3,1)。上面那条 `> * { margin: 0 }` 只有 (0,2,0)，
+   一条都没盖住 —— 段落之间实际是 gap 12 + 20 + 20 = 52px，标题前 64px，
+   这就是 2026-09-06 报的「正文上下间隙离谱」。别把前缀删短。
+
+   ⚠ 标题的倍率来自参考里定义的 --_prose-h1-space:3 / h2:2.5 / h3:2 / h4~h6:1.667，
+   但那份快照的对话正文里没有标题实例，消费这些变量的规则被裁掉了，抓不到成品值。
+   这里按「倍率 × 12px」取整，没有沿用 prose「em 相对标题自身字号」的算法
+   —— 那样 h1 会到 63px，在问答正文里过头。这几个标题数是推算的，不是抓取的。 */
+.message.assistant .answer-body.standard-markdown {
+    gap: 0;
+}
+
+.message.assistant .answer-body.standard-markdown > * {
+    margin-block: 12px 0;
+}
+
+.message.assistant .answer-body.standard-markdown > *:first-child {
+    margin-block-start: 0;
+}
+
+.message.assistant .answer-body.standard-markdown > h1 {
+    margin-block-start: 36px;
+}
+
+.message.assistant .answer-body.standard-markdown > h2 {
+    margin-block-start: 30px;
+}
+
+.message.assistant .answer-body.standard-markdown > h3 {
+    margin-block-start: 24px;
+}
+
+.message.assistant .answer-body.standard-markdown > :is(h4, h5, h6) {
+    margin-block-start: 20px;
 }
 
 .answer-body.standard-markdown ul,
@@ -9453,13 +9480,6 @@ html[data-theme="dark"] .ask-user-card {
 .answer-body.standard-markdown li + li,
 .standard-markdown.answer-body li + li {
     margin-top: 0.15em;
-}
-
-/* 思考块跟上面的正文对齐到同一条左边线。加在 .think-block 上而不是 header/body 各加一次，
-   是为了不去动 cancri_chat.css:3395/3492 以及本文件 9384/9395 那几条 padding 简写
-   （简写会把 padding-left 一起覆盖掉）。限定 .message.assistant，arena 卡片不受影响。 */
-.message.assistant .think-block {
-    padding-left: var(--c-response-gutter, 8px);
 }
 
 .answer-body.standard-markdown hr,
@@ -9500,28 +9520,52 @@ html[data-theme="dark"] .ask-user-card {
     font-family: var(--c-font-serif) !important;
 }
 
+/* 正文段落 / 列表 / 思考块 / 操作条共用的左侧留白 = 参考的 --msg-text-inset(0.25rem)。
+   改这一处即可整体平移，不要再在下游各写一个数。定义挂在 .message.assistant 上而不是
+   .message-content 上，因为操作条是 .message-content 的兄弟节点，挂在里层它读不到。 */
+.chat-messages .message.assistant {
+    --c-response-gutter: 4px;
+}
+
 .chat-messages .message.assistant .message-content {
-    /* 正文段落 / 列表 / 思考块共用的左侧留白，改这一处即可整体平移，
-       不要再在下游各写一个 8px（见上方 .answer-body.standard-markdown 注释）。 */
-    --c-response-gutter: 8px;
     max-width: 100% !important;
     box-shadow: none !important;
     border: 0 !important;
     border-radius: 0 !important;
     padding: 0 !important;
+    /* 思考块 → 正文的间隙唯一来源 = 参考 --cds-gap-sm(12px)。
+       别再去 .think-block 上加 margin-bottom 凑数（原先就是 gap 10 + margin 2 相加，
+       结果谁都改不动）。
+       ⚠ 待办：.assistant-model-label 还自带 margin-bottom:8px（§21），
+       所以「模型名 → 思考块」实际是 8+12=20px，仍是两个数相加。参考页没有模型名这一
+       行，等哪轮要动它时再收敛成一个数。 */
+    gap: 12px;
 }
 
+/* ── 助手消息操作条（复制 / 下载 / 重来）─────────────────────────────
+   参考（对话块展示.html，density=comfortable）：
+     正文容器  pb-[var(--msg-assistant-pb,0.75rem)]      → 12px
+     操作条    -mt-1                                     → -4px
+     净间隙 12 - 4 = 8px。我们的 .message-content padding 为 0，直接写 8px。
+     操作条    ml-[calc(var(--msg-text-inset) - 0.375rem)] → 4 - 6 = -2px
+     按钮      data-size=xs → h/w-control 24px，图标 16px（居中后左内缩 4px，
+               配上 -2px 外扩，图标视觉左边缘正好落在正文的 4px 上）
+   gap 原先写 2px，但 .message-actions 只有一个子节点 .message-actions-inner，
+   flex gap 根本不产生效果，已删。按钮之间的间距在 .message-actions-buttons。 */
 .message.user .message-actions,
 .message.assistant .message-actions {
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 2px !important;
-    margin-top: 4px !important;
+    margin-top: 8px !important;
     padding: 0 !important;
     opacity: 0 !important;
     transform: none !important;
     transition: opacity 150ms ease !important;
+}
+
+.message.assistant .message-actions {
+    margin-left: calc(var(--c-response-gutter, 4px) - 6px) !important;
 }
 
 .message.user {
@@ -9571,6 +9615,8 @@ html[data-theme="dark"] .ask-user-card {
     flex-shrink: 0;
 }
 
+/* 按钮 24px + 图标 16px = 参考 data-size=xs 的 --cds-h-control--xs / icon font-size。
+   本文件上游原有一份 32px / 18px 的声明，2026-09-06 已删（它一直被这里盖着）。 */
 .message-action-btn {
     width: 24px !important;
     height: 24px !important;
@@ -9579,6 +9625,7 @@ html[data-theme="dark"] .ask-user-card {
     border: 0 !important;
     background: transparent !important;
     color: hsl(var(--text-400)) !important;
+    transition: background 120ms ease, color 120ms ease !important;
 }
 
 .message-action-btn:hover {
@@ -9592,7 +9639,7 @@ html[data-theme="dark"] .ask-user-card {
     font-feature-settings: "liga" 0 !important;
     font-optical-sizing: auto !important;
     font-variation-settings: normal !important;
-    font-size: 14px !important;
+    font-size: 16px !important;
     font-weight: 433.3 !important;
     line-height: 1 !important;
     width: 1em !important;
@@ -9603,8 +9650,8 @@ html[data-theme="dark"] .ask-user-card {
 }
 
 .message-action-btn svg {
-    width: 14px !important;
-    height: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
 }
 
 .message-action-btn-translate {
@@ -9681,28 +9728,97 @@ html[data-theme="dark"] .ask-user-card {
     }
 }
 
-/* 思考正文：展开时可滚动；收起时必须完全折叠 */
+/* ───────────────────────────────────────────────────────────
+   §「助手思考块」— 1:1 移植 Claude 的 TurnStatus
+   源：移植，直接搬/对话块展示.html（html[data-density="comfortable"]，
+       token 展开后 --cds-pad-xs 6 / --cds-pad-sm 8 / --cds-pad-md 12 /
+       --cds-gap-sm 12 / --cds-h-control 32 / --cds-font-size-body 14 /
+       --cds-leading-body 20 / --cds-radius 8 / --msg-text-inset 4）
+
+   参考 DOM → 本项目 DOM 的对应关系：
+     div.ps-[--msg-text-inset].py-[--msg-pill-py].mb-sm   → .think-block
+     div[data-cds-row].py-[(32-1lh)/2]                    → .think-header
+     div[data-cds-row-panel] > div.pt-sm.pb-xs            → .think-body 的 margin
+     div.rounded-card.shadow-card-ring > div.px-md.py-sm  → .think-body 本体
+   数值：
+     左留白 4px（= --c-response-gutter）
+     摘要行 14px/20px，上下各 6px → 行高 32px
+     卡片   上 8px / 下 6px 外距，内距 12px×8px，圆角 12px（--cds-radius+4），
+            hairline 描边（参考 shadow-card-ring 的双环）
+     卡片下沿到正文 = 6(卡片下外距) + 6(.think-block 下内距) + 12(气泡 gap) = 24px
+
+   这里是聊天页思考块的**唯一**真值来源。上游 cancri_chat.css 的 .think-block /
+   .think-header / .think-body 只服务 arena 卡片，本文件前面那份 .think-label /
+   .think-body 也是给 arena 的基线 —— 都别拿来改聊天页。
+   ─────────────────────────────────────────────────────────── */
+.message.assistant .think-block {
+    /* margin-bottom 故意为 0：跟正文的间隙由 .message-content 的 gap:12px 提供，
+       不要在这里再加，否则两个数相加又变成"改一处不生效"。 */
+    margin: 0 !important;
+    padding: 6px 0 6px var(--c-response-gutter, 4px) !important;
+}
+
+.message.assistant .think-header {
+    display: inline-flex !important;
+    align-items: center !important;
+    /* 参考 gap-xs(8px) 配箭头按钮的 -ms-1(-4px)，净 4px */
+    gap: 4px !important;
+    padding: 6px 0 !important;
+}
+
+.message.assistant .think-label {
+    font-family: var(--c-font) !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    color: var(--c-text-dim) !important;
+}
+
+.message.assistant .think-caret {
+    width: 12px !important;
+    height: 20px !important;
+}
+
+.message.assistant .think-caret svg {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+/* 展开态：思考内容装在圆角描边卡片里（参考 rounded-card + shadow-card-ring）。
+   max-height/overflow 是本项目特有的保护 —— 参考页展示的是一行摘要，我们塞的是
+   完整原始推理，不设上限单条消息会长到失控，所以保留 260px 内滚。 */
+.message.assistant .think-block:not(.is-collapsed) .think-body {
+    margin: 8px 0 6px !important;
+    padding: 8px 12px !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 0 0 1px var(--c-line), 0 0 0 0.5px var(--c-line) !important;
+    font-family: var(--c-font) !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    color: var(--c-text-dim) !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-height: 260px;
+    overflow-y: auto !important;
+}
+
+/* 收起态：卡片连描边一起收干净 */
 .message.assistant .think-block.is-collapsed .think-body {
     max-height: 0 !important;
     opacity: 0 !important;
     overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
+    box-shadow: none !important;
     pointer-events: none !important;
-}
-
-.message.assistant .think-block:not(.is-collapsed) .think-body {
-    max-height: 260px;
-    white-space: normal !important;
-    word-break: break-word !important;
-    overflow-wrap: anywhere !important;
-    line-height: 1.65 !important;
-    padding: 0 0 8px !important;
-    overflow-y: auto !important;
 }
 
 .message.assistant .think-body p,
 .message.assistant .think-body li {
+    font-size: inherit !important;
+    line-height: inherit !important;
     margin: 0 0 0.45em !important;
 }
 
@@ -9737,21 +9853,20 @@ html[data-theme="dark"] .ask-user-card {
     max-width: 100% !important;
 }
 
+/* 跟上面 .answer-body.standard-markdown 那条是同一组值（两个类恒同时出现），
+   写死 16px 的理由同上：html 的 rem 基准是 15px。 */
 .message.assistant .answer-body.font-claude-response {
     font-family: var(--c-font-serif) !important;
-    font-size: 1rem !important;
+    font-size: 16px !important;
     line-height: 1.5 !important;
     color: hsl(var(--text-100)) !important;
 }
 
-.message.assistant .answer-body.font-claude-response p {
-    margin: 0 !important;
-    line-height: 1.7 !important;
-}
-
-.message.assistant .answer-body.font-claude-response p:last-child {
-    margin-bottom: 0 !important;
-}
+/* 段落的 margin / line-height 都不在这里写了：
+   - 上下外距归上面「助手正文的块间距」那一节（`> *` 的 margin-block: 12px 0）；
+   - 行高跟着容器的 1.5（= 参考 --cds-leading-prose）。
+   这里原来钉着 `margin: 0 !important` + `line-height: 1.7 !important`，权重 (0,4,1)
+   带 !important，是全项目 5 处行高声明里唯一生效的那个，也是块间距改不动的原因之一。 */
 
 
 /* =========================================================

@@ -6700,8 +6700,17 @@
 			return "";
 		}
 	}
+	// 把模型吐出来的推理文本折成「一句一行」：句末标点后的换行留着，其余换行并成空格。
+	//
+	// 第一条正则用前瞻 (?=…) 而不是捕获后面那个字符 —— 这是 2026-09-06 修的 bug。
+	// 原写法 /([^.!?。！？…])\n+([^\n\r])/ 会把换行后的字符一起消耗掉，正则引擎从匹配
+	// 末尾继续扫描，于是「每个 token 独占一行」的流式片段只能隔一个合并一个，一次
+	// replace 根本不收敛（实测 50 个换行只消掉 42 个，要跑 3 轮才干净）。表现就是流式
+	// 时思考块疯狂换行、退出重进（走完整文本、换行本来就少）却正常。
+	// 顺带把 \n\r 加进排除类：原来的 [^.!?。！？…] 能匹配换行符本身，会把段落之间的
+	// 空行吃成单换行，两段被并成一段。
 	function normalizeThinkDisplayText(text) {
-		return String(text || "").replace(/([^.!?。！？…])\n+([^\n\r])/g, "$1 $2").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1").replace(/([，。！？；：、])[ \t]+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
+		return String(text || "").replace(/([^.!?。！？…\n\r])\n+(?=[^\n\r])/g, "$1 ").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1").replace(/([，。！？；：、])[ \t]+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
 	}
 	var CLAUDE_ACTION_ICON = {
 		copy: "",
@@ -9297,7 +9306,10 @@
 		delete sanitized.provider;
 		return sanitized;
 	}
-	var THINK_HEADER_INNER_HTML = "<span class=\"think-caret\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"></path></svg></span><span class=\"think-label\">思考中</span>";
+	// 摘要文字在前、折叠箭头在后 —— 对齐 Claude TurnStatus 的 DOM 顺序
+	// （span[data-cds-row] 里先 label 再 button[data-cds-row-toggle]，
+	//  见 移植，直接搬/对话块展示.html）。arena 卡片自建 header，不受影响。
+	var THINK_HEADER_INNER_HTML = "<span class=\"think-label\">思考中</span><span class=\"think-caret\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"></path></svg></span>";
 	function createThinkHeaderElement(thinkBlock) {
 		const thinkHeader = document.createElement("div");
 		thinkHeader.className = "think-header";

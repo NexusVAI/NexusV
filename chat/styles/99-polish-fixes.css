@@ -393,9 +393,8 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
     white-space: pre-wrap;
 }
 
-.message-actions {
-    margin-top: 4px;
-}
+/* .message-actions 的 margin-top 一律看 claude.css §「助手消息操作条」，
+   这里原有的 4px 被那边的 !important 盖着，属于死码，已删。 */
 
 @media (max-width: 640px) {
     body[data-view="home"][data-arena-mode="single"],
@@ -991,13 +990,10 @@ html[data-theme="dark"] [data-workbench-composer]:focus-within {
 .answer-body > *:first-child {
     margin-top: 0 !important;
 }
-/* Tighten gap between think-block and answer-body */
-.think-block {
-    margin-bottom: 2px !important;
-}
-.think-body {
-    padding-bottom: 2px !important;
-}
+/* 原先这里用 !important 硬压 .think-block margin-bottom / .think-body padding-bottom，
+   想收紧思考块到正文的间隙。2026-09-06 该间隙已按 Claude 真站在
+   claude.css §「助手思考块」一处定死（气泡 gap 12px + 卡片外距），
+   这两条对聊天页早已被下游盖掉，留着只会误导，删。 */
 /* Prevent last think content child from leaving trailing space */
 .think-body > *:last-child {
     margin-bottom: 0 !important;
