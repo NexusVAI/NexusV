@@ -21,78 +21,13 @@
     "Settings",
   ];
 
-  // ─── 2026-08-16：苹果式圆角（corner smoothing），移植自桌面端
-  // cancri-code/src/ui/squircle-path.ts 的同一套贝塞尔构造（不是 CSS
-  // superellipse()，两者曲线不同——原委见桌面端源文件头注释），smoothing
-  // 固定 0.6（iOS 标准档），与桌面端参数保持一致（"同款参数风格"）。
-  // 只搬纯函数 + 一个轻量 apply（这里的弹窗/菜单都是一次性创建、非流式
-  // 重渲染，不需要桌面端那一整套 ResizeObserver/MutationObserver 框架）。
-  var SQ_SMOOTHING = 0.6;
-  function sqToRad(deg) { return (deg * Math.PI) / 180; }
-  function sqR2(n) { return Math.round(n * 100) / 100; }
-  function sqCornerParams(radius, smoothing, budget) {
-    var r = Math.max(0, Math.min(radius, budget));
-    var s = Math.max(0, Math.min(1, smoothing));
-    var arcMeasure = 90 * (1 - s);
-    var arcSectionLength = Math.sin(sqToRad(arcMeasure / 2)) * r * Math.SQRT2;
-    var angleAlpha = (90 - arcMeasure) / 2;
-    var p3ToP4 = r * Math.tan(sqToRad(angleAlpha / 2));
-    var angleBeta = 45 * s;
-    var c = p3ToP4 * Math.cos(sqToRad(angleBeta));
-    var d = c * Math.tan(sqToRad(angleBeta));
-    var p = (1 + s) * r;
-    var b = (p - arcSectionLength - c - d) / 3;
-    var a = 2 * b;
-    if (p > budget) {
-      var k = budget / p;
-      return { p: budget, radius: r, arcSectionLength: arcSectionLength * k, a: a * k, b: b * k, c: c * k, d: d * k };
-    }
-    return { p: p, radius: r, arcSectionLength: arcSectionLength, a: a, b: b, c: c, d: d };
-  }
-  function squirclePathStr(width, height, radius, smoothing) {
-    var w = width, h = height;
-    if (w <= 0 || h <= 0) return "M 0,0 Z";
-    var budget = Math.min(w, h) / 2;
-    var k = sqCornerParams(radius, smoothing == null ? SQ_SMOOTHING : smoothing, budget);
-    var p = k.p, a = k.a, b = k.b, c = k.c, d = k.d, arc = k.arcSectionLength;
-    var rr = sqR2(k.radius);
-    var arcCmd = arc > 0.01 ? "a " + rr + " " + rr + " 0 0 1" : "";
-    return [
-      "M " + sqR2(w - p) + "," + sqR2(0),
-      "c " + sqR2(a) + ",0 " + sqR2(a + b) + ",0 " + sqR2(a + b + c) + "," + sqR2(d),
-      arc > 0.01 ? arcCmd + " " + sqR2(arc) + "," + sqR2(arc) : "",
-      "c " + sqR2(d) + "," + sqR2(c) + " " + sqR2(d) + "," + sqR2(b + c) + " " + sqR2(d) + "," + sqR2(a + b + c),
-      "L " + sqR2(w) + "," + sqR2(h - p),
-      "c 0," + sqR2(a) + " 0," + sqR2(a + b) + " " + sqR2(-d) + "," + sqR2(a + b + c),
-      arc > 0.01 ? arcCmd + " " + sqR2(-arc) + "," + sqR2(arc) : "",
-      "c " + sqR2(-c) + "," + sqR2(d) + " " + sqR2(-b - c) + "," + sqR2(d) + " " + sqR2(-a - b - c) + "," + sqR2(d),
-      "L " + sqR2(p) + "," + sqR2(h),
-      "c " + sqR2(-a) + ",0 " + sqR2(-a - b) + ",0 " + sqR2(-a - b - c) + "," + sqR2(-d),
-      arc > 0.01 ? arcCmd + " " + sqR2(-arc) + "," + sqR2(-arc) : "",
-      "c " + sqR2(-d) + "," + sqR2(-c) + " " + sqR2(-d) + "," + sqR2(-b - c) + " " + sqR2(-d) + "," + sqR2(-a - b - c),
-      "L " + sqR2(0) + "," + sqR2(p),
-      "c 0," + sqR2(-a) + " 0," + sqR2(-a - b) + " " + sqR2(d) + "," + sqR2(-a - b - c),
-      arc > 0.01 ? arcCmd + " " + sqR2(arc) + "," + sqR2(-arc) : "",
-      "c " + sqR2(c) + "," + sqR2(-d) + " " + sqR2(b + c) + "," + sqR2(-d) + " " + sqR2(a + b + c) + "," + sqR2(-d),
-      "Z",
-    ].filter(Boolean).join(" ");
-  }
-  // 挂到元素上：按实际渲染尺寸生成 path，阴影搬到 filter: drop-shadow（clip-path
-  // 会把 box-shadow 一起裁掉，这是桌面端 apple-corners.ts 记录过的铁律）。
-  function applySquircle(elm, radius, shadow) {
-    if (!elm) return;
-    requestAnimationFrame(function () {
-      var w = elm.offsetWidth, h = elm.offsetHeight;
-      if (w < 1 || h < 1) return;
-      var d = squirclePathStr(w, h, radius, SQ_SMOOTHING);
-      elm.style.clipPath = 'path("' + d + '")';
-      elm.style.borderRadius = "0";
-      if (shadow) {
-        elm.style.boxShadow = "none";
-        elm.style.filter = "drop-shadow(" + shadow + ")";
-      }
-    });
-  }
+  // 2026-09-07：这里原本有一套从桌面端 cancri-code/src/ui/squircle-path.ts 搬来的
+  // 苹果式平滑圆角（clip-path + 贝塞尔，smoothing 0.6），给弹窗和账号菜单用。已删。
+  // 原因：半径只有 12–14px 时那条曲线几乎贴着直边走（实测 r=14 时前 15px 只下沉
+  // 1.5px），肉眼就是方角——工单原话「圆角去哪里了」；而且 clip-path 会把 1px 描边
+  // 的四个角一起裁掉，还得把 box-shadow 换成 drop-shadow 才不被裁。现在圆角一律由
+  // CSS border-radius 给（console.css 的 .cs-modal / .cs-select__menu 等）。
+  // ⛔ 想重新引入的话，半径要 ≥24px 才看得出「平滑」，别再按 12/14 挂。
 
   function detectLang() {
     // 控制台产品文案以中文为准；localStorage.lang=en 仍可强制英文模态框。
@@ -210,6 +145,34 @@
       model: "Model",
       status: "Status",
       authLoadFail: "Failed to load auth scripts. Check network and refresh.",
+      // 密钥页搜索 / 筛选（2026-09-07）
+      searchPlaceholder: "Search...",
+      searchAria: "Search API keys",
+      results: "{n} results",
+      resultsOf: "{n} of {total} results",
+      noMatch: "No keys match the current filters.",
+      callsN: "{n} calls",
+      clearFilter: "Clear filter",
+      fAny: "Any",
+      fReset: "Reset",
+      fDone: "Done",
+      fGroupTitle: "Model group",
+      fGroupAny: "All keys",
+      fGroupLimited: "Group-restricted only",
+      fGroupUnlimited: "Unrestricted only",
+      fAgeTitle: "Created",
+      fAgeBeforeOpt: "Older than N days",
+      fAgeAfterOpt: "Within the last N days",
+      fAgeBefore: "Older than {n} days",
+      fAgeAfter: "Created in last {n} days",
+      fDaysUnit: "days ago",
+      fCallsTitle: "Request count",
+      fCallsMostOpt: "Top N most used",
+      fCallsLeastOpt: "Top N least used",
+      fCallsMost: "Top {n} most used",
+      fCallsLeast: "Top {n} least used",
+      fKeysUnit: "keys",
+      rangeAll: "All",
     },
     zh: {
       cancel: "取消",
@@ -237,6 +200,34 @@
       model: "模型",
       status: "状态",
       authLoadFail: "依赖脚本加载失败，请检查网络后刷新。",
+      // 密钥页搜索 / 筛选（2026-09-07）
+      searchPlaceholder: "搜索名称或前缀…",
+      searchAria: "搜索 API 密钥",
+      results: "{n} 条结果",
+      resultsOf: "{n} / {total} 条结果",
+      noMatch: "没有符合当前筛选条件的密钥。",
+      callsN: "调用 {n} 次",
+      clearFilter: "清除该筛选",
+      fAny: "不限",
+      fReset: "重置",
+      fDone: "完成",
+      fGroupTitle: "分组限制",
+      fGroupAny: "全部密钥",
+      fGroupLimited: "仅限定分组的",
+      fGroupUnlimited: "仅不限定分组的",
+      fAgeTitle: "创建时间",
+      fAgeBeforeOpt: "早于 N 天前创建",
+      fAgeAfterOpt: "晚于 N 天前创建",
+      fAgeBefore: "早于 {n} 天前创建",
+      fAgeAfter: "晚于 {n} 天前创建",
+      fDaysUnit: "天前",
+      fCallsTitle: "调用次数",
+      fCallsMostOpt: "调用最多的前 N 把",
+      fCallsLeastOpt: "调用最少的前 N 把",
+      fCallsMost: "调用最多的前 {n} 把",
+      fCallsLeast: "调用最少的前 {n} 把",
+      fKeysUnit: "把密钥",
+      rangeAll: "全部",
     },
   };
 
@@ -541,7 +532,7 @@
     if (document.querySelector('link[href*="console.css"]')) return;
     var l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "console.css?v=20260817-themevars";
+    l.href = "console.css?v=20260907-keyfilters";
     document.head.appendChild(l);
   }
 
@@ -701,6 +692,44 @@
     });
   }
 
+  /**
+   * 「快速开始」标题右边那个「× 关闭」删掉。
+   * 它是快照里的静态 span[role=button]，没有 React 处理器，点了什么都不会发生 ——
+   * 留着就是个死控件。整个 .UXT3g 容器一起删（里面只有它）。
+   */
+  function stripQuickStartClose() {
+    if (PAGE !== "overview") return;
+    document.querySelectorAll("h2.oALpN").forEach(function (h) {
+      var txt = (h.textContent || "").trim();
+      if (txt !== "快速开始" && txt.indexOf("Get started") < 0) return;
+      var head = h.parentElement;
+      if (!head) return;
+      head.querySelectorAll(".UXT3g").forEach(function (n) {
+        n.remove();
+      });
+    });
+  }
+
+  /**
+   * 「用 Cancri Code 开始构建」暂时不可用：变淡 + 完全不可交互。
+   * 只加 pointer-events:none 挡不住键盘 —— <a href> 仍然能被 Tab 选中并回车打开，
+   * 所以这里把 href 一起摘掉；文字选中由 CSS 的 user-select:none 管。
+   */
+  function dimComingSoonCards() {
+    if (PAGE !== "overview") return;
+    document.querySelectorAll("a.fSPaI").forEach(function (a) {
+      if (!/Cancri Code|用 Codex 开始构建/.test(a.textContent || "")) return;
+      if (a.dataset.cncDisabled === "1") return;
+      a.dataset.cncDisabled = "1";
+      a.classList.add("cnc-card-disabled");
+      a.removeAttribute("href");
+      a.removeAttribute("target");
+      a.removeAttribute("rel");
+      a.setAttribute("aria-disabled", "true");
+      a.tabIndex = -1;
+    });
+  }
+
   // 2026-08-15：左下角显示**完整邮箱**并支持点击复制。
   //
   // 为什么不把聊天页的设置面板搬过来：活面板是 #claudeSettingsView，由 claude_ui.js
@@ -796,8 +825,6 @@
     // 菜单向上弹（芯片在视口底部，向下会被裁）
     m.style.left = Math.round(r.left) + "px";
     m.style.top = Math.max(8, Math.round(r.top - m.offsetHeight - 8)) + "px";
-    // 圆角半径与阴影对齐上面 cssText 原有的 12px / 0 12px 32px rgba(0,0,0,.18)。
-    applySquircle(m, 12, "0 12px 32px rgba(0,0,0,.18)");
     chipMenuEl = m;
     setTimeout(function () { document.addEventListener("click", closeChipMenu, { once: true }); }, 0);
   }
@@ -885,35 +912,63 @@
     }
   }
 
-  function aggregateDaily(rows) {
-    var dayCalls = {};
-    var dayTok = {};
-    var days = [];
-    for (var i = 29; i >= 0; i--) {
-      var d = new Date();
-      d.setHours(0, 0, 0, 0);
-      d.setDate(d.getDate() - i);
-      var key = d.toISOString().slice(0, 10);
-      days.push(key);
-      dayCalls[key] = 0;
-      dayTok[key] = 0;
+  // ─── 概览页时间档（2026-09-07） ──────────────────────────────────
+  //
+  // ⚠️ 没有 90d 这一档，而且**不许加回来**：后端 handleApiMyUsage 把窗口写死成
+  // `now() - 30 days`（api_usage 表里其实存着更久的数据，是端点自己钳的）。
+  // 挂一个只有 30 天数据的「90d」按钮等于骗人。真要 90 天得给那个端点加
+  // window_days 参数并重新部署 cf-gateway（见 模型运维总纲 §6 的部署门禁）。
+  // 「全部」= 端点返回的全部（也就是近 30 天），默认选它。
+  var USAGE_RANGES = [
+    { key: "all", buckets: 30, bucketMs: 86400000, all: true },
+    { key: "24h", buckets: 24, bucketMs: 3600000 },
+    { key: "7d", buckets: 7, bucketMs: 86400000 },
+    { key: "30d", buckets: 30, bucketMs: 86400000 },
+  ];
+
+  function rangeByKey(key) {
+    for (var i = 0; i < USAGE_RANGES.length; i++) {
+      if (USAGE_RANGES[i].key === key) return USAGE_RANGES[i];
+    }
+    return USAGE_RANGES[0];
+  }
+
+  /** 桶的左边界。小时档对齐到整点、天档对齐到本地零点（与旧实现同口径）。 */
+  function rangeBounds(def) {
+    var end = new Date();
+    if (def.bucketMs === 3600000) end.setMinutes(0, 0, 0);
+    else end.setHours(0, 0, 0, 0);
+    var endMs = end.getTime();
+    return { n: def.buckets, step: def.bucketMs, start: endMs - (def.buckets - 1) * def.bucketMs };
+  }
+
+  /** 统计卡的数字与迷你图必须同口径，所以两者共用同一个 start。 */
+  function rowsInRange(rows, def) {
+    if (def.all) return rows || [];
+    var b = rangeBounds(def);
+    return (rows || []).filter(function (r) {
+      var ts = new Date(r.created_at).getTime();
+      return isFinite(ts) && ts >= b.start;
+    });
+  }
+
+  function aggregateSeries(rows, def) {
+    var b = rangeBounds(def);
+    var calls = [];
+    var toks = [];
+    for (var i = 0; i < b.n; i++) {
+      calls.push(0);
+      toks.push(0);
     }
     (rows || []).forEach(function (r) {
-      var key = new Date(r.created_at).toISOString().slice(0, 10);
-      if (dayCalls[key] == null) return;
-      dayCalls[key] += 1;
-      dayTok[key] +=
-        (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0);
+      var ts = new Date(r.created_at).getTime();
+      if (!isFinite(ts)) return;
+      var idx = Math.floor((ts - b.start) / b.step);
+      if (idx < 0 || idx >= b.n) return;
+      calls[idx] += 1;
+      toks[idx] += (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0);
     });
-    return {
-      days: days,
-      calls: days.map(function (k) {
-        return dayCalls[k];
-      }),
-      tokens: days.map(function (k) {
-        return dayTok[k];
-      }),
-    };
+    return { calls: calls, tokens: toks };
   }
 
   function aggregate(rows) {
@@ -1101,11 +1156,13 @@
   }
 
   var __lastDaily = null;
+  var __usageRows = [];
+  var __rangeKey = "all";
+
   function drawCharts(rows) {
     if (PAGE !== "overview" && PAGE !== "usage") return;
-    var daily = aggregateDaily(rows);
-    __lastDaily = daily;
-    redrawCharts();
+    __usageRows = rows || [];
+    applyUsageRange();
     // 同上：只裁外层容器，别碰 .recharts-wrapper 和 svg
     document
       .querySelectorAll(".wfoF9, .recharts-responsive-container")
@@ -1113,6 +1170,22 @@
         el.style.overflow = "hidden";
         el.style.maxWidth = "100%";
       });
+  }
+
+  /** 把当前时间档套到统计卡数字 + 三张迷你图上。切档和窗口变化都走这里。 */
+  function applyUsageRange() {
+    var def = rangeByKey(__rangeKey);
+    var rows = rowsInRange(__usageRows, def);
+    __lastDaily = aggregateSeries(rows, def);
+    var agg = aggregate(rows);
+    setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
+    setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
+    // 只有概览页有这张统计卡；用量页同名的是卡片标题链接，写进去会把标题冲掉
+    if (PAGE === "overview") {
+      setValueNearLabels(LABELS.responses, nf(agg.totalRequests));
+    }
+    fillUsageCapabilityCard(agg);
+    redrawCharts();
   }
 
   function redrawCharts() {
@@ -1123,7 +1196,167 @@
     updateSparklineAuto(findChartHost(LABELS.responses), __lastDaily.calls);
   }
 
+  /**
+   * 概览页右上角的 24h / 7d / 30d 时间档。
+   * 快照里这四颗按钮是 Radix 的 SegmentedControl，没有 React 就完全不响应
+   * （工单：「点了没反应」）。这里自己接线，顺带把滑块 .V5HTp 按选中项挪位 ——
+   * 它靠 inline 的 width + translateX 定位，React 原本负责更新这两个值。
+   */
+  function wireUsageRangeControl() {
+    if (PAGE !== "overview") return;
+    var host = null;
+    document.querySelectorAll(".F5Sy7").forEach(function (h) {
+      if (!host && /24h/.test(h.textContent || "")) host = h;
+    });
+    if (!host || host.dataset.cncRangeWired === "1") return;
+    host.dataset.cncRangeWired = "1";
+
+    var btns = Array.prototype.slice.call(host.querySelectorAll("button.VewWL"));
+    // 顺序就是 dump 里的 24h / 7d / 30d / 90d，最后一颗整个摘掉（见 USAGE_RANGES 注释）
+    if (btns.length >= 4) btns.pop().remove();
+    var allBtn = btns[0].cloneNode(true);
+    var allSpan = allBtn.querySelector("span") || allBtn;
+    allSpan.textContent = t("rangeAll");
+    host.insertBefore(allBtn, btns[0]);
+    btns.unshift(allBtn);
+    var keys = ["all", "24h", "7d", "30d"];
+
+    var thumb = host.querySelector(".V5HTp");
+    function select(i) {
+      __rangeKey = keys[i] || "all";
+      btns.forEach(function (b, k) {
+        b.setAttribute("data-state", k === i ? "on" : "off");
+        b.setAttribute("aria-checked", k === i ? "true" : "false");
+        b.tabIndex = k === i ? 0 : -1;
+      });
+      if (thumb) {
+        thumb.style.width = btns[i].offsetWidth + "px";
+        thumb.style.transform = "translateX(" + btns[i].offsetLeft + "px)";
+      }
+      applyUsageRange();
+    }
+    btns.forEach(function (b, i) {
+      b.addEventListener(
+        "click",
+        function (e) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          select(i);
+        },
+        true
+      );
+    });
+    host.setAttribute("aria-label", "用量时间范围");
+    select(0);
+  }
+
+  var CS_CHEV_SVG =
+    '<svg class="cs-select__chev" width="12" height="12" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true">' +
+    '<path d="M.25 10.36a1 1 0 0 1 1.41-.1L5 13.17l3.34-2.91a1 1 0 1 1 1.32 1.5l-4 3.49a1 1 0 0 1-1.32 0l-4-3.49a1 1 0 0 1-.09-1.4Z"/></svg>';
+  var CS_TICK_SVG =
+    '<svg class="cs-select__tick" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<path fill-rule="evenodd" d="M18.06 5.67a1 1 0 0 1 .27 1.39l-7.5 11a1 1 0 0 1-1.54.15l-4.5-4.5a1 1 0 1 1 1.42-1.42l3.64 3.65 6.82-10a1 1 0 0 1 1.39-.27Z" clip-rule="evenodd"/></svg>';
+
+  /**
+   * 给 showModal 生成的自绘下拉接线。菜单挂在 <body> 上而不是留在 .cs-modal 里，
+   * 因为后者是 overflow-y:auto，菜单一超出卡片就被裁掉。
+   * 值写回同一个 #cs-modal-select（hidden input），调用方不受影响。
+   */
+  function wireCsSelect(card) {
+    var root = card.querySelector(".cs-select");
+    if (!root || root.dataset.cncWired === "1") return;
+    root.dataset.cncWired = "1";
+    var hidden = root.querySelector("#cs-modal-select");
+    var btn = root.querySelector(".cs-select__btn");
+    var menu = root.querySelector(".cs-select__menu");
+    var valueEl = root.querySelector(".cs-select__value");
+    var opts = Array.prototype.slice.call(menu.querySelectorAll(".cs-select__opt"));
+    if (!opts.length) return;
+    // 菜单移出卡片后仍要能被 closeCsModal 一起清掉
+    document.body.appendChild(menu);
+    var active = Math.max(0, opts.findIndex(function (o) { return o.dataset.selected === "1"; }));
+
+    function place() {
+      var r = btn.getBoundingClientRect();
+      menu.style.width = Math.round(r.width) + "px";
+      menu.style.left = Math.round(r.left) + "px";
+      var below = window.innerHeight - r.bottom - 8;
+      var h = menu.offsetHeight;
+      // 下方放不下就向上翻（弹窗在视口居中，长下拉常常撞底）
+      if (below < h && r.top > h + 8) menu.style.top = Math.round(r.top - h - 6) + "px";
+      else menu.style.top = Math.round(r.bottom + 6) + "px";
+    }
+    function markActive(i) {
+      active = (i + opts.length) % opts.length;
+      opts.forEach(function (o, k) {
+        if (k === active) o.dataset.active = "1";
+        else o.removeAttribute("data-active");
+      });
+      opts[active].scrollIntoView({ block: "nearest" });
+    }
+    function open() {
+      if (root.dataset.open === "1") return;
+      root.dataset.open = "1";
+      btn.setAttribute("aria-expanded", "true");
+      menu.hidden = false;
+      place();
+      markActive(active);
+      window.addEventListener("resize", place);
+      window.addEventListener("scroll", place, true);
+      setTimeout(function () { document.addEventListener("click", onDocClick, true); }, 0);
+    }
+    function close() {
+      if (root.dataset.open !== "1") return;
+      root.dataset.open = "0";
+      btn.setAttribute("aria-expanded", "false");
+      menu.hidden = true;
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+      document.removeEventListener("click", onDocClick, true);
+    }
+    function onDocClick(e) {
+      if (menu.contains(e.target) || root.contains(e.target)) return;
+      close();
+    }
+    function pick(opt) {
+      hidden.value = opt.dataset.value || "";
+      valueEl.textContent = (opt.querySelector("span") || opt).textContent;
+      opts.forEach(function (o) {
+        if (o === opt) { o.dataset.selected = "1"; o.setAttribute("aria-selected", "true"); }
+        else { o.removeAttribute("data-selected"); o.setAttribute("aria-selected", "false"); }
+      });
+      close();
+      btn.focus();
+    }
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (root.dataset.open === "1") close();
+      else open();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener("mouseenter", function () { markActive(i); });
+      o.addEventListener("click", function (e) { e.stopPropagation(); pick(o); });
+    });
+    btn.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (root.dataset.open !== "1") { open(); return; }
+        if (e.key === "ArrowDown") markActive(active + 1);
+        else if (e.key === "ArrowUp") markActive(active - 1);
+        else pick(opts[active]);
+      } else if (e.key === "Escape" && root.dataset.open === "1") {
+        // 只关下拉，别顺手把整个弹窗关掉
+        e.stopPropagation();
+        close();
+      }
+    });
+  }
+
   function closeCsModal() {
+    document.querySelectorAll(".cs-select__menu").forEach(function (m) {
+      m.remove();
+    });
     document.querySelectorAll(".cs-modal__backdrop").forEach(function (b) {
       b.remove();
     });
@@ -1162,16 +1395,41 @@
     }
     // 2026-08-20：可选下拉（建 Key 的「指定分组」用）。onConfirm 只收 input 的值，
     // 下拉值由回调自己从 card.querySelector('#cs-modal-select') 读，避免改所有调用点的签名。
+    //
+    // 2026-09-07：可见部分改成自绘（原生 <select> 的选项列表由操作系统画，深色态下
+    // 是一块浅色方框、圆角字体都对不上站内）。#cs-modal-select 退化成 hidden input
+    // 只承载值 —— 调用方照旧读 `.value`，签名不变。
     if (opts.select) {
-      var optionsHtml = (opts.select.options || []).map(function (o) {
-        var selected = String(o.value) === String(opts.select.value == null ? "" : opts.select.value);
-        return '<option value="' + esc(o.value == null ? "" : o.value) + '"' +
-          (selected ? " selected" : "") + ">" + esc(o.label) + "</option>";
-      }).join("");
+      var selValue = String(opts.select.value == null ? "" : opts.select.value);
+      var selOpts = opts.select.options || [];
+      var current = null;
+      for (var si = 0; si < selOpts.length; si++) {
+        if (String(selOpts[si].value == null ? "" : selOpts[si].value) === selValue) {
+          current = selOpts[si];
+          break;
+        }
+      }
+      var optsHtml = selOpts
+        .map(function (o) {
+          var v = o.value == null ? "" : String(o.value);
+          return (
+            '<div class="cs-select__opt" role="option" data-value="' + esc(v) + '"' +
+            (v === selValue ? ' data-selected="1" aria-selected="true"' : ' aria-selected="false"') +
+            "><span>" + esc(o.label) + "</span>" + CS_TICK_SVG + "</div>"
+          );
+        })
+        .join("");
       inputHtml +=
-        '<label class="cs-modal__field"><span>' +
+        '<div class="cs-modal__field"><span id="cs-modal-select-label">' +
         esc(opts.select.label || "") +
-        '</span><select id="cs-modal-select">' + optionsHtml + "</select></label>" +
+        '</span><div class="cs-select" data-open="0">' +
+        '<input type="hidden" id="cs-modal-select" value="' + esc(selValue) + '" />' +
+        '<button type="button" class="cs-select__btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="cs-modal-select-label">' +
+        '<span class="cs-select__value">' +
+        esc((current && current.label) || (selOpts[0] && selOpts[0].label) || "") +
+        "</span>" + CS_CHEV_SVG + "</button>" +
+        '<div class="cs-select__menu" role="listbox" hidden>' + optsHtml + "</div>" +
+        "</div></div>" +
         (opts.select.hint
           ? '<p class="cs-modal__hint">' + esc(opts.select.hint) + "</p>"
           : "");
@@ -1189,8 +1447,7 @@
     card.innerHTML = head + bodyHtml + inputHtml + foot;
     backdrop.appendChild(card);
     document.body.appendChild(backdrop);
-    // 圆角半径与阴影对齐 console.css .cs-modal 原有的 14px / 0 18px 60px rgba(0,0,0,.28)。
-    applySquircle(card, 14, "0 18px 60px rgba(0,0,0,0.28)");
+    if (opts.select) wireCsSelect(card);
     backdrop.addEventListener("click", function (e) {
       if (e.target === backdrop) closeCsModal();
     });
@@ -1389,12 +1646,95 @@
     });
   }
 
+  // ─── 密钥页：列表 + 搜索 + 筛选（2026-09-07） ─────────────────────
+  //
+  // 全部筛选维度都用 api_my_keys 已经下发的列，**零后端改动**：
+  //   分组限制 → allowed_group（NULL = 不限制，见 模型运维总纲 §2.2.6）
+  //   创建时间 → created_at
+  //   调用次数 → used_request_count（网关每次调用累加的计数器）
+  // 排序/过滤全在浏览器里做：该端点上限 50 把 Key，没有分页可言。
+  //
+  // ⚠️ 「有效」那个芯片不是筛选项：handleApiMyKeys 只 select is_active=true，
+  // 失效的 Key 前端根本拿不到，所以它的清除 × 是死控件，已在 wireKeyFilters 里藏掉。
+  var keysAll = [];
+  var keyFilter = {
+    q: "",
+    group: "any", // any | limited | unlimited
+    age: "off", // off | before | after
+    ageDays: 30,
+    calls: "off", // off | most | least
+    callsN: 3,
+  };
+
+  function keyCallCount(k) {
+    return Number(k && k.used_request_count) || 0;
+  }
+
+  function keyFilterActive() {
+    return (
+      !!keyFilter.q ||
+      keyFilter.group !== "any" ||
+      keyFilter.age !== "off" ||
+      keyFilter.calls !== "off"
+    );
+  }
+
+  function filteredKeys() {
+    var q = String(keyFilter.q || "").trim().toLowerCase();
+    var edge = Date.now() - Math.max(0, keyFilter.ageDays) * 86400000;
+    var list = keysAll.filter(function (k) {
+      if (q) {
+        var hay = [
+          k.name || k.label || "",
+          k.key_prefix || k.prefix || "",
+          k.allowed_group || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      if (keyFilter.group === "limited" && !k.allowed_group) return false;
+      if (keyFilter.group === "unlimited" && k.allowed_group) return false;
+      if (keyFilter.age !== "off") {
+        var ts = k.created_at ? new Date(k.created_at).getTime() : NaN;
+        if (!isFinite(ts)) return false;
+        if (keyFilter.age === "before" && ts > edge) return false;
+        if (keyFilter.age === "after" && ts < edge) return false;
+      }
+      return true;
+    });
+    if (keyFilter.calls !== "off") {
+      var desc = keyFilter.calls === "most";
+      list = list.slice().sort(function (a, b) {
+        var d = keyCallCount(b) - keyCallCount(a);
+        if (!desc) d = -d;
+        if (d !== 0) return d;
+        // 次数打平就按新到旧，避免每次重绘顺序乱跳
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+      list = list.slice(0, Math.max(1, Math.floor(keyFilter.callsN) || 1));
+    }
+    return list;
+  }
+
   function renderKeysList(data) {
+    if (data) keysAll = (data && data.keys) || [];
+    paintKeysList();
+  }
+
+  function paintKeysList() {
     var mount = document.querySelector(".api-key-page-content");
     if (!mount) return;
-    var keys = (data && data.keys) || [];
+    var keys = filteredKeys();
     var countEl = mount.querySelector(".api-keys-filter-result-count");
-    if (countEl) countEl.textContent = keys.length + " results";
+    if (countEl) {
+      countEl.textContent =
+        keys.length !== keysAll.length
+          ? t("resultsOf")
+              .replace("{n}", keys.length)
+              .replace("{total}", keysAll.length)
+          : t("results").replace("{n}", keys.length);
+    }
 
     var emptyBlock = mount.querySelector("._4d2eR");
     var list = document.getElementById("cnc-keys-list");
@@ -1406,15 +1746,23 @@
       else mount.appendChild(list);
     }
 
-    if (!keys.length) {
+    // 一把 Key 都没有 → 用快照自带的空态（带「创建新密钥」按钮）。
+    // 有 Key 但被筛没了 → 那张空态会误导成「你还没有密钥」，改用自己的提示。
+    if (!keysAll.length) {
       list.innerHTML = "";
       list.hidden = true;
       if (emptyBlock) emptyBlock.hidden = false;
+      renderKeyFilterChips();
+      return;
+    }
+    if (emptyBlock) emptyBlock.hidden = true;
+    list.hidden = false;
+    if (!keys.length) {
+      list.innerHTML = '<div class="cnc-keys-empty">' + esc(t("noMatch")) + "</div>";
+      renderKeyFilterChips();
       return;
     }
 
-    if (emptyBlock) emptyBlock.hidden = true;
-    list.hidden = false;
     list.innerHTML = keys
       .map(function (k) {
         var prefix = k.key_prefix || k.prefix || "cancri_sk_…";
@@ -1423,32 +1771,25 @@
           ? new Date(k.created_at).toLocaleDateString("zh-CN")
           : "—";
         var id = k.id || k.key_id || "";
+        var meta = [];
         // 2026-08-20：建 Key 时选过分组的，列表里要看得见 —— 否则用户过几天忘了
         // 这把 Key 有限制，只会看到莫名其妙的 403。
-        var group = k.allowed_group ? String(k.allowed_group) : "";
-        var groupTag = group
-          ? '<div style="margin-top:4px;font-size:12px;opacity:.75">' +
-            esc(t("keyGroupTag")) + esc(group) + "</div>"
-          : "";
+        if (k.allowed_group) {
+          meta.push(esc(t("keyGroupTag")) + esc(String(k.allowed_group)));
+        }
+        // 有「按调用次数筛前 N 把」这个筛选，就必须把次数摆出来，否则用户无从判断
+        meta.push(t("callsN").replace("{n}", nf(keyCallCount(k))));
         return (
-          '<div class="api-key-row" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--color-border,#eee)">' +
-          '<div><div style="font-weight:600">' +
-          esc(name) +
-          '</div><div style="font-family:monospace;font-size:13px;opacity:.75">' +
-          esc(prefix) +
-          "</div>" + groupTag + "</div>" +
-          '<div style="display:flex;align-items:center;gap:12px">' +
-          '<span style="font-size:13px;opacity:.7">' +
-          esc(created) +
-          "</span>" +
-          '<button type="button" data-del-key="' +
-          esc(id) +
-          // 2026-08-16 修复：这颗按钮是运行时注入到冻结的 OpenAI 快照页里的，
-          // 没写 color，会继承快照自带的 --color-text（该值不跟随本站深色/浅色
-          // 切换，快照背景又始终是浅色）——本站切到深色模式时 root 的白色文字色
-          // 顺着继承链漏进来，浅色背景 + 白字 = 按钮看起来"空白"（工单实拍）。
-          // 显式钉死黑色文字，不再依赖继承链。
-          '" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(127,127,127,.35);background:transparent;color:#000;cursor:pointer">Revoke</button>' +
+          '<div class="api-key-row">' +
+          '<div class="cnc-key-main">' +
+          '<div class="cnc-key-name">' + esc(name) + "</div>" +
+          '<div class="cnc-key-prefix">' + esc(prefix) + "</div>" +
+          '<div class="cnc-key-meta"><span>' + meta.join("</span><span>") + "</span></div>" +
+          "</div>" +
+          '<div class="cnc-key-side">' +
+          '<span class="cnc-key-date">' + esc(created) + "</span>" +
+          '<button type="button" class="cnc-key-revoke" data-del-key="' +
+          esc(id) + '">' + esc(t("revoke")) + "</button>" +
           "</div></div>"
         );
       })
@@ -1489,6 +1830,267 @@
         });
       });
     });
+    renderKeyFilterChips();
+  }
+
+  /** 已生效的筛选条件，挨着快照自带的「有效」芯片显示，每个都能单独 ×。 */
+  function renderKeyFilterChips() {
+    var host = document.querySelector(".api-keys-filter-chips");
+    if (!host) return;
+    var box = document.getElementById("cnc-key-chips");
+    if (!box) {
+      box = el("div");
+      box.id = "cnc-key-chips";
+      box.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap";
+      host.appendChild(box);
+    }
+    var chips = [];
+    if (keyFilter.group !== "any") {
+      chips.push({
+        k: "group",
+        label: keyFilter.group === "limited" ? t("fGroupLimited") : t("fGroupUnlimited"),
+      });
+    }
+    if (keyFilter.age !== "off") {
+      chips.push({
+        k: "age",
+        label: (keyFilter.age === "before" ? t("fAgeBefore") : t("fAgeAfter")).replace(
+          "{n}",
+          keyFilter.ageDays
+        ),
+      });
+    }
+    if (keyFilter.calls !== "off") {
+      chips.push({
+        k: "calls",
+        label: (keyFilter.calls === "most" ? t("fCallsMost") : t("fCallsLeast")).replace(
+          "{n}",
+          keyFilter.callsN
+        ),
+      });
+    }
+    box.innerHTML = chips
+      .map(function (c) {
+        return (
+          '<span class="cnc-chip">' + esc(c.label) +
+          '<button type="button" class="cnc-chip__x" data-clear-filter="' + c.k +
+          '" aria-label="' + esc(t("clearFilter")) + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+          '<path fill-rule="evenodd" d="M5.64 5.64a1 1 0 0 1 1.41 0L12 10.59l4.95-4.95a1 1 0 0 1 1.41 1.41L13.41 12l4.95 4.95a1 1 0 0 1-1.41 1.41L12 13.41l-4.95 4.95a1 1 0 0 1-1.41-1.41L10.59 12 5.64 7.05a1 1 0 0 1 0-1.41Z" clip-rule="evenodd"/></svg>' +
+          "</button></span>"
+        );
+      })
+      .join("");
+    box.querySelectorAll("[data-clear-filter]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var k = b.getAttribute("data-clear-filter");
+        if (k === "group") keyFilter.group = "any";
+        if (k === "age") keyFilter.age = "off";
+        if (k === "calls") keyFilter.calls = "off";
+        closeKeyFilterPop();
+        paintKeysList();
+      });
+    });
+  }
+
+  function wireKeyFilters() {
+    if (PAGE !== "keys") return;
+    var bar = document.querySelector(".api-keys-filter-bar");
+    if (!bar || bar.dataset.cncFilterWired === "1") return;
+    bar.dataset.cncFilterWired = "1";
+
+    // 搜索框。placeholder 是属性不是文本节点，applyPageLocale 的 replaceAllText
+    // 摸不到它 —— 这就是页面上一直挂着英文 "Search..." 的原因。
+    var wrap = bar.querySelector(".api-keys-global-search");
+    var input = wrap && wrap.querySelector("input");
+    if (input) {
+      input.placeholder = t("searchPlaceholder");
+      input.setAttribute("aria-label", t("searchAria"));
+      input.addEventListener("input", function () {
+        keyFilter.q = input.value || "";
+        paintKeysList();
+      });
+      input.addEventListener("focus", function () {
+        if (wrap) wrap.setAttribute("data-focused", "true");
+      });
+      input.addEventListener("blur", function () {
+        if (wrap) wrap.setAttribute("data-focused", "false");
+      });
+    }
+
+    // 「有效」芯片上那颗清除 × 是死的（后端只返回有效密钥），藏掉
+    bar.querySelectorAll(".api-keys-filter-chip button").forEach(function (b) {
+      if ((b.getAttribute("aria-label") || "").indexOf("Clear") >= 0) b.style.display = "none";
+    });
+
+    var addBtn = bar.querySelector(".api-keys-add-filter-button");
+    if (addBtn) {
+      addBtn.addEventListener(
+        "click",
+        function (e) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          if (keyFilterPopEl) closeKeyFilterPop();
+          else openKeyFilterPop(addBtn);
+        },
+        true
+      );
+    }
+  }
+
+  var keyFilterPopEl = null;
+
+  function closeKeyFilterPop() {
+    if (!keyFilterPopEl) return;
+    keyFilterPopEl.remove();
+    keyFilterPopEl = null;
+    document.removeEventListener("click", onKeyFilterDocClick, true);
+    document.removeEventListener("keydown", onKeyFilterEsc);
+  }
+
+  function onKeyFilterDocClick(e) {
+    if (keyFilterPopEl && !keyFilterPopEl.contains(e.target)) closeKeyFilterPop();
+  }
+
+  function onKeyFilterEsc(e) {
+    if (e.key === "Escape") closeKeyFilterPop();
+  }
+
+  /** 自绘筛选卡：三段单选 + 两个数字输入，改一下立刻重绘列表（不做「应用」按钮）。 */
+  function openKeyFilterPop(anchor) {
+    var pop = el("div", "cnc-filter-pop");
+    function sec(label, field, rows, numKey, numSuffix, numOffWhen) {
+      var html =
+        '<div class="cnc-filter-sec"><div class="cnc-filter-sec__label">' +
+        esc(label) + "</div>";
+      html += rows
+        .map(function (r) {
+          return (
+            '<div class="cnc-filter-opt" role="radio" tabindex="0" data-field="' + field +
+            '" data-val="' + r.v + '" data-on="' + (keyFilter[field] === r.v ? "1" : "0") +
+            '" aria-checked="' + (keyFilter[field] === r.v ? "true" : "false") + '">' +
+            '<span class="cnc-filter-opt__mark"></span><span>' + esc(r.label) + "</span></div>"
+          );
+        })
+        .join("");
+      if (numKey) {
+        html +=
+          '<div class="cnc-filter-num" data-num-for="' + field + '" data-off="' +
+          (numOffWhen() ? "1" : "0") + '">' +
+          '<input type="number" min="1" max="3650" step="1" data-num="' + numKey +
+          '" value="' + keyFilter[numKey] + '" /><span>' + esc(numSuffix) + "</span></div>";
+      }
+      return html + "</div>";
+    }
+
+    pop.innerHTML =
+      sec(
+        t("fGroupTitle"),
+        "group",
+        [
+          { v: "any", label: t("fGroupAny") },
+          { v: "limited", label: t("fGroupLimited") },
+          { v: "unlimited", label: t("fGroupUnlimited") },
+        ],
+        null
+      ) +
+      sec(
+        t("fAgeTitle"),
+        "age",
+        [
+          { v: "off", label: t("fAny") },
+          { v: "before", label: t("fAgeBeforeOpt") },
+          { v: "after", label: t("fAgeAfterOpt") },
+        ],
+        "ageDays",
+        t("fDaysUnit"),
+        function () {
+          return keyFilter.age === "off";
+        }
+      ) +
+      sec(
+        t("fCallsTitle"),
+        "calls",
+        [
+          { v: "off", label: t("fAny") },
+          { v: "most", label: t("fCallsMostOpt") },
+          { v: "least", label: t("fCallsLeastOpt") },
+        ],
+        "callsN",
+        t("fKeysUnit"),
+        function () {
+          return keyFilter.calls === "off";
+        }
+      ) +
+      '<div class="cnc-filter-pop__foot">' +
+      '<button type="button" class="csbtn csbtn--ghost csbtn--sm" data-filter-reset>' +
+      esc(t("fReset")) + "</button>" +
+      '<button type="button" class="csbtn csbtn--primary csbtn--sm" data-filter-done>' +
+      esc(t("fDone")) + "</button></div>";
+
+    document.body.appendChild(pop);
+    var r = anchor.getBoundingClientRect();
+    pop.style.left =
+      Math.round(Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8))) + "px";
+    pop.style.top =
+      Math.round(
+        Math.min(r.bottom + 8, Math.max(8, window.innerHeight - pop.offsetHeight - 8))
+      ) + "px";
+
+    function syncNumDisabled() {
+      pop.querySelectorAll("[data-num-for]").forEach(function (n) {
+        var f = n.getAttribute("data-num-for");
+        n.setAttribute("data-off", keyFilter[f] === "off" ? "1" : "0");
+      });
+    }
+    function choose(optEl) {
+      var f = optEl.getAttribute("data-field");
+      keyFilter[f] = optEl.getAttribute("data-val");
+      pop.querySelectorAll('[data-field="' + f + '"]').forEach(function (o) {
+        var on = o === optEl;
+        o.setAttribute("data-on", on ? "1" : "0");
+        o.setAttribute("aria-checked", on ? "true" : "false");
+      });
+      syncNumDisabled();
+      paintKeysList();
+    }
+    pop.querySelectorAll(".cnc-filter-opt").forEach(function (o) {
+      o.addEventListener("click", function () {
+        choose(o);
+      });
+      o.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          choose(o);
+        }
+      });
+    });
+    pop.querySelectorAll("input[data-num]").forEach(function (i) {
+      i.addEventListener("input", function () {
+        var k = i.getAttribute("data-num");
+        var n = Math.floor(Number(i.value));
+        if (!isFinite(n) || n < 1) return; // 输入框清空过程中别把列表清空
+        keyFilter[k] = Math.min(n, 3650);
+        paintKeysList();
+      });
+    });
+    pop.querySelector("[data-filter-reset]").addEventListener("click", function () {
+      keyFilter.group = "any";
+      keyFilter.age = "off";
+      keyFilter.calls = "off";
+      keyFilter.ageDays = 30;
+      keyFilter.callsN = 3;
+      closeKeyFilterPop();
+      paintKeysList();
+    });
+    pop.querySelector("[data-filter-done]").addEventListener("click", closeKeyFilterPop);
+
+    keyFilterPopEl = pop;
+    setTimeout(function () {
+      document.addEventListener("click", onKeyFilterDocClick, true);
+      document.addEventListener("keydown", onKeyFilterEsc);
+    }, 0);
   }
 
   function renderLogsList(rows) {
@@ -1800,6 +2402,8 @@
     stripDeadUsageBlocks();
     applyPageLocale();
     patchBuildWithCards();
+    stripQuickStartClose();
+    dimComingSoonCards();
     patchActionCtasEverywhere();
     try {
       if (!window.PlatformAuth) throw new Error("supabase_not_loaded");
@@ -1828,16 +2432,17 @@
       applyWallet(walletRes && walletRes.wallet);
 
       var usage = (usageRes && usageRes.usage) || [];
-      var agg = aggregate(usage);
-      setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
-      setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
-      // 只有概览页有这张统计卡；用量页同名的是卡片标题链接，写进去会把标题冲掉
-      if (PAGE === "overview") {
-        setValueNearLabels(LABELS.responses, nf(agg.totalRequests));
-      }
-      fillUsageCapabilityCard(agg);
       applySpendPlaceholder();
-      drawCharts(usage);
+      if (PAGE === "overview" || PAGE === "usage") {
+        // 统计卡数字与三张迷你图都由 applyUsageRange 按当前时间档统一填，
+        // drawCharts 内部会调它一次；wireUsageRangeControl 的 select(0) 再刷一遍。
+        drawCharts(usage);
+        wireUsageRangeControl();
+      } else {
+        var agg = aggregate(usage);
+        setValueNearLabels(LABELS.requests, nf(agg.totalRequests));
+        setValueNearLabels(LABELS.tokens, nf(agg.totalTokens));
+      }
       if (!window.__cncSparkResizeWired) {
         window.__cncSparkResizeWired = true;
         var resizeT = 0;
@@ -1852,12 +2457,17 @@
       // 用户按了没反应。这里一并接上；renderKeysList 在概览页找不到挂载点会自己 return。
       if (PAGE === "keys" || PAGE === "overview") {
         wireCreateKeyModal();
-        if (PAGE === "keys") renderKeysList(keysRes);
+        if (PAGE === "keys") {
+          renderKeysList(keysRes);
+          wireKeyFilters();
+        }
       }
       if (PAGE === "logs") renderLogsList(usage);
 
       applyPageLocale();
       patchBuildWithCards();
+      stripQuickStartClose();
+      dimComingSoonCards();
       patchActionCtasEverywhere();
       // locale may recreate English CTA leftovers — re-assert featured cards
       patchFeaturedModels();
