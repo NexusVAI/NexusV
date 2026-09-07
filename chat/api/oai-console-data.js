@@ -95,26 +95,28 @@
     } catch (e) {}
   })();
 
+  // 首页「推荐模型」四张卡。name/desc 纯展示；id 只喂给「在对话中打开」的
+  // ../index.html?models= 参数，目前聊天页还没有消费这个参数的代码，写错不会白屏。
   var FEATURED_MODELS = [
     {
-      id: "claude-opus-4-8",
-      name: "Claude Opus 4.8",
-      desc: "Anthropic 旗舰，适合复杂推理与长任务",
+      id: "gpt-6-astra",
+      name: "GPT-6 Astra",
+      desc: "OpenAI 新旗舰，编程与专业工作主力",
     },
     {
-      id: "gpt-5.6-sol",
-      name: "GPT-5.6 Sol",
-      desc: "OpenAI 编程与专业工作主力",
-    },
-    {
-      id: "grok-4.5",
-      name: "Grok 4.5",
-      desc: "xAI 高速多模态模型",
-    },
-    {
-      id: "gemini-3.6-flash",
-      name: "Gemini 3.6 Flash",
+      id: "gemini-3.8-flash",
+      name: "Gemini-3.8 Flash",
       desc: "Google 轻量快速，按次计费",
+    },
+    {
+      id: "claude-opus-5-thinking",
+      name: "Claude Opus-5",
+      desc: "Anthropic 旗舰，长上下文与复杂推理",
+    },
+    {
+      id: "grok-4.6",
+      name: "Grok-4.6",
+      desc: "xAI 高速多模态模型",
     },
   ];
 
@@ -173,6 +175,55 @@
       fCallsLeast: "Top {n} least used",
       fKeysUnit: "keys",
       rangeAll: "All",
+      // 日志页搜索 / 筛选 / 今日概览（2026-09-08）
+      logSearchPlaceholder: "Search by model...",
+      logSearchAria: "Search request logs",
+      logNoMatch: "No requests match the current filters.",
+      logTabResponses: "Responses",
+      logTabToday: "Today",
+      lIn: "In",
+      lOut: "Out",
+      lfRangeTitle: "Time range",
+      lfRangeToday: "Today",
+      lfRange24h: "Last 24 hours",
+      lfRange7d: "Last 7 days",
+      lfRange30d: "Last 30 days",
+      lfRangeDaysOpt: "Within the last N days",
+      lfRangeDays: "Within last {n} days",
+      lfStatusTitle: "Outcome",
+      lfStatusOk: "Successful only",
+      lfStatusErr: "Failed only",
+      lfModelTitle: "Model",
+      lfModelAny: "All models",
+      lfTokTitle: "Token usage",
+      lfTokMostOpt: "Top N heaviest",
+      lfTokLeastOpt: "Top N lightest",
+      lfTokMost: "Top {n} heaviest",
+      lfTokLeast: "Top {n} lightest",
+      lfRowsUnit: "requests",
+      lfSortTitle: "Sort by",
+      lfSortNew: "Newest first",
+      lfSortOld: "Oldest first",
+      lfSortTokDesc: "Most tokens first",
+      lfSortTokAsc: "Fewest tokens first",
+      tdRechargeTitle: "Today's top-ups",
+      tdRechargeNone: "No top-up orders today.",
+      tdPaid: "Paid",
+      tdCredited: "Credited",
+      tdOrders: "Orders",
+      tdWalletTitle: "Wallet",
+      tdBalance: "Current balance",
+      tdCumulative: "Lifetime top-ups",
+      tdCallsTitle: "Today's API calls",
+      tdCalls: "Requests",
+      tdTokens: "Tokens",
+      tdFailed: "Failed",
+      tdSpendNote:
+        "Per-request spend in ¥ is not available yet: the request log table stores no amount, and the wallet ledger is admin-only.",
+      tdOrderTime: "Time",
+      tdOrderMethod: "Method",
+      tdOrderStatus: "Status",
+      tdLoadFail: "Failed to load top-up records.",
     },
     zh: {
       cancel: "取消",
@@ -228,6 +279,55 @@
       fCallsLeast: "调用最少的前 {n} 把",
       fKeysUnit: "把密钥",
       rangeAll: "全部",
+      // 日志页搜索 / 筛选 / 今日概览（2026-09-08）
+      logSearchPlaceholder: "搜索模型名…",
+      logSearchAria: "搜索调用日志",
+      logNoMatch: "没有符合当前筛选条件的调用记录。",
+      logTabResponses: "响应",
+      logTabToday: "今日概览",
+      lIn: "输入",
+      lOut: "输出",
+      lfRangeTitle: "时间段",
+      lfRangeToday: "今天",
+      lfRange24h: "近 24 小时",
+      lfRange7d: "近 7 天",
+      lfRange30d: "近 30 天",
+      lfRangeDaysOpt: "自己填：近 N 天",
+      lfRangeDays: "近 {n} 天",
+      lfStatusTitle: "调用结果",
+      lfStatusOk: "只看成功",
+      lfStatusErr: "只看失败",
+      lfModelTitle: "模型",
+      lfModelAny: "全部模型",
+      lfTokTitle: "Token 用量",
+      lfTokMostOpt: "用量最多的前 N 条",
+      lfTokLeastOpt: "用量最少的前 N 条",
+      lfTokMost: "用量最多的前 {n} 条",
+      lfTokLeast: "用量最少的前 {n} 条",
+      lfRowsUnit: "条记录",
+      lfSortTitle: "排序",
+      lfSortNew: "时间：新 → 旧",
+      lfSortOld: "时间：旧 → 新",
+      lfSortTokDesc: "Token：多 → 少",
+      lfSortTokAsc: "Token：少 → 多",
+      tdRechargeTitle: "今日充值",
+      tdRechargeNone: "今天还没有充值订单。",
+      tdPaid: "实付",
+      tdCredited: "到账",
+      tdOrders: "订单数",
+      tdWalletTitle: "钱包",
+      tdBalance: "当前余额",
+      tdCumulative: "累计充值",
+      tdCallsTitle: "今日调用",
+      tdCalls: "调用次数",
+      tdTokens: "Token 合计",
+      tdFailed: "失败次数",
+      tdSpendNote:
+        "单次调用花了多少钱暂时显示不了：调用记录表里不存金额，钱包流水目前只有管理员能查。",
+      tdOrderTime: "时间",
+      tdOrderMethod: "方式",
+      tdOrderStatus: "状态",
+      tdLoadFail: "充值记录加载失败，请刷新重试。",
     },
   };
 
@@ -250,7 +350,7 @@
       ["Usage", "用量"],
       ["Logs", "日志"],
       ["Home", "首页"],
-      ["Billing", "结算"],
+      ["Billing", "账单"],
       ["Default project", "默认项目"],
       ["Organization", "个人版"],
       ["Create new secret key", "创建新密钥"],
@@ -296,12 +396,9 @@
       // 首页工具卡
       ["Search the web in real-time", "实时联网搜索"],
       ["Upload, manage, and attach skills", "上传、管理并挂载技能"],
-      // 日志页
+      // 日志页。Completions / Agent Traces / Conversations / ChatKit Threads
+      // 四个页签已在 wireLogTabs 里删掉（本站没有这些产品线），对应汉化条目一并移除。
       ["Responses", "响应"],
-      ["Completions", "补全"],
-      ["Agent Traces", "智能体追踪"],
-      ["Conversations", "会话"],
-      ["ChatKit Threads", "ChatKit 线程"],
       ["Your Responses will appear here", "这里会显示你的调用记录"],
       ["Use the Responses API to view your logs.", "调用 API 后即可在此查看日志。"],
       ["用 Codex 开始构建", "用Cancri Code 开始构建"],
@@ -315,7 +412,7 @@
       usage: "用量 · NexusVAI API",
       logs: "日志 · NexusVAI API",
       keys: "API 密钥 · NexusVAI API",
-      billing: "结算 · NexusVAI API",
+      billing: "账单 · NexusVAI API",
     };
     if (titles[PAGE]) document.title = titles[PAGE];
     localizePatterns();
@@ -532,7 +629,7 @@
     if (document.querySelector('link[href*="console.css"]')) return;
     var l = document.createElement("link");
     l.rel = "stylesheet";
-    l.href = "console.css?v=20260907-keyfilters";
+    l.href = "console.css?v=20260908-logsfilters";
     document.head.appendChild(l);
   }
 
@@ -1670,15 +1767,6 @@
     return Number(k && k.used_request_count) || 0;
   }
 
-  function keyFilterActive() {
-    return (
-      !!keyFilter.q ||
-      keyFilter.group !== "any" ||
-      keyFilter.age !== "off" ||
-      keyFilter.calls !== "off"
-    );
-  }
-
   function filteredKeys() {
     var q = String(keyFilter.q || "").trim().toLowerCase();
     var edge = Date.now() - Math.max(0, keyFilter.ageDays) * 86400000;
@@ -1833,15 +1921,16 @@
     renderKeyFilterChips();
   }
 
+  var KEY_FILTER_DEFAULTS = { group: "any", age: "off", calls: "off", ageDays: 30, callsN: 3 };
+
   /** 已生效的筛选条件，挨着快照自带的「有效」芯片显示，每个都能单独 ×。 */
   function renderKeyFilterChips() {
     var host = document.querySelector(".api-keys-filter-chips");
     if (!host) return;
     var box = document.getElementById("cnc-key-chips");
     if (!box) {
-      box = el("div");
+      box = el("div", "cnc-chip-row");
       box.id = "cnc-key-chips";
-      box.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap";
       host.appendChild(box);
     }
     var chips = [];
@@ -1869,28 +1958,9 @@
         ),
       });
     }
-    box.innerHTML = chips
-      .map(function (c) {
-        return (
-          '<span class="cnc-chip">' + esc(c.label) +
-          '<button type="button" class="cnc-chip__x" data-clear-filter="' + c.k +
-          '" aria-label="' + esc(t("clearFilter")) + '">' +
-          '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-          '<path fill-rule="evenodd" d="M5.64 5.64a1 1 0 0 1 1.41 0L12 10.59l4.95-4.95a1 1 0 0 1 1.41 1.41L13.41 12l4.95 4.95a1 1 0 0 1-1.41 1.41L12 13.41l-4.95 4.95a1 1 0 0 1-1.41-1.41L10.59 12 5.64 7.05a1 1 0 0 1 0-1.41Z" clip-rule="evenodd"/></svg>' +
-          "</button></span>"
-        );
-      })
-      .join("");
-    box.querySelectorAll("[data-clear-filter]").forEach(function (b) {
-      b.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var k = b.getAttribute("data-clear-filter");
-        if (k === "group") keyFilter.group = "any";
-        if (k === "age") keyFilter.age = "off";
-        if (k === "calls") keyFilter.calls = "off";
-        closeKeyFilterPop();
-        paintKeysList();
-      });
+    renderFilterChips(box, chips, function (k) {
+      keyFilter[k] = KEY_FILTER_DEFAULTS[k];
+      paintKeysList();
     });
   }
 
@@ -1931,98 +2001,122 @@
         function (e) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          if (keyFilterPopEl) closeKeyFilterPop();
-          else openKeyFilterPop(addBtn);
+          if (filterPopEl) {
+            closeFilterPop();
+            return;
+          }
+          openFilterPop(
+            addBtn,
+            keyFilter,
+            [
+              {
+                label: t("fGroupTitle"),
+                field: "group",
+                rows: [
+                  { v: "any", label: t("fGroupAny") },
+                  { v: "limited", label: t("fGroupLimited") },
+                  { v: "unlimited", label: t("fGroupUnlimited") },
+                ],
+              },
+              {
+                label: t("fAgeTitle"),
+                field: "age",
+                rows: [
+                  { v: "off", label: t("fAny") },
+                  { v: "before", label: t("fAgeBeforeOpt") },
+                  { v: "after", label: t("fAgeAfterOpt") },
+                ],
+                num: { key: "ageDays", suffix: t("fDaysUnit"), max: 3650 },
+              },
+              {
+                label: t("fCallsTitle"),
+                field: "calls",
+                rows: [
+                  { v: "off", label: t("fAny") },
+                  { v: "most", label: t("fCallsMostOpt") },
+                  { v: "least", label: t("fCallsLeastOpt") },
+                ],
+                num: { key: "callsN", suffix: t("fKeysUnit"), max: 50 },
+              },
+            ],
+            KEY_FILTER_DEFAULTS,
+            paintKeysList
+          );
         },
         true
       );
     }
   }
 
-  var keyFilterPopEl = null;
+  // ── 通用筛选卡（密钥页 + 日志页共用一份实现）─────────────────────────
+  // 只允许存在这一份。2026-09-08 加日志页筛选时，另一个选择是把密钥页那份
+  // 复制一遍改字段名 —— 那样每次调圆角/间距/键盘行为都要改两处，正是 §2.2.9
+  // 记的那种"同语义多副本"漂移。段落用 spec 描述，状态对象由调用方持有。
+  var filterPopEl = null;
 
-  function closeKeyFilterPop() {
-    if (!keyFilterPopEl) return;
-    keyFilterPopEl.remove();
-    keyFilterPopEl = null;
-    document.removeEventListener("click", onKeyFilterDocClick, true);
-    document.removeEventListener("keydown", onKeyFilterEsc);
+  function closeFilterPop() {
+    if (!filterPopEl) return;
+    filterPopEl.remove();
+    filterPopEl = null;
+    document.removeEventListener("click", onFilterDocClick, true);
+    document.removeEventListener("keydown", onFilterEsc);
   }
 
-  function onKeyFilterDocClick(e) {
-    if (keyFilterPopEl && !keyFilterPopEl.contains(e.target)) closeKeyFilterPop();
+  function onFilterDocClick(e) {
+    if (filterPopEl && !filterPopEl.contains(e.target)) closeFilterPop();
   }
 
-  function onKeyFilterEsc(e) {
-    if (e.key === "Escape") closeKeyFilterPop();
+  function onFilterEsc(e) {
+    if (e.key === "Escape") closeFilterPop();
   }
 
-  /** 自绘筛选卡：三段单选 + 两个数字输入，改一下立刻重绘列表（不做「应用」按钮）。 */
-  function openKeyFilterPop(anchor) {
+  /**
+   * @param anchor   定位基准元素（一般是「添加筛选」按钮）
+   * @param state    被直接改写的筛选状态对象
+   * @param sections [{ label, field, rows:[{v,label}], num?:{key,suffix,max,activeVal} }]
+   *                 数字输入默认在 state[field] === "off" 时置灰；给了 activeVal
+   *                 就改成"只有选中该项时才可用"（日志页的时间段没有 off 档）
+   * @param defaults 点「重置」后写回 state 的快照
+   * @param onChange 任何一项变化后调用，负责重绘列表与芯片
+   */
+  function openFilterPop(anchor, state, sections, defaults, onChange) {
     var pop = el("div", "cnc-filter-pop");
-    function sec(label, field, rows, numKey, numSuffix, numOffWhen) {
-      var html =
-        '<div class="cnc-filter-sec"><div class="cnc-filter-sec__label">' +
-        esc(label) + "</div>";
-      html += rows
-        .map(function (r) {
-          return (
-            '<div class="cnc-filter-opt" role="radio" tabindex="0" data-field="' + field +
-            '" data-val="' + r.v + '" data-on="' + (keyFilter[field] === r.v ? "1" : "0") +
-            '" aria-checked="' + (keyFilter[field] === r.v ? "true" : "false") + '">' +
-            '<span class="cnc-filter-opt__mark"></span><span>' + esc(r.label) + "</span></div>"
-          );
-        })
-        .join("");
-      if (numKey) {
-        html +=
-          '<div class="cnc-filter-num" data-num-for="' + field + '" data-off="' +
-          (numOffWhen() ? "1" : "0") + '">' +
-          '<input type="number" min="1" max="3650" step="1" data-num="' + numKey +
-          '" value="' + keyFilter[numKey] + '" /><span>' + esc(numSuffix) + "</span></div>";
-      }
-      return html + "</div>";
+
+    function numOff(field, activeVal) {
+      return activeVal != null && activeVal !== ""
+        ? String(state[field]) !== String(activeVal)
+        : state[field] === "off";
     }
 
     pop.innerHTML =
-      sec(
-        t("fGroupTitle"),
-        "group",
-        [
-          { v: "any", label: t("fGroupAny") },
-          { v: "limited", label: t("fGroupLimited") },
-          { v: "unlimited", label: t("fGroupUnlimited") },
-        ],
-        null
-      ) +
-      sec(
-        t("fAgeTitle"),
-        "age",
-        [
-          { v: "off", label: t("fAny") },
-          { v: "before", label: t("fAgeBeforeOpt") },
-          { v: "after", label: t("fAgeAfterOpt") },
-        ],
-        "ageDays",
-        t("fDaysUnit"),
-        function () {
-          return keyFilter.age === "off";
-        }
-      ) +
-      sec(
-        t("fCallsTitle"),
-        "calls",
-        [
-          { v: "off", label: t("fAny") },
-          { v: "most", label: t("fCallsMostOpt") },
-          { v: "least", label: t("fCallsLeastOpt") },
-        ],
-        "callsN",
-        t("fKeysUnit"),
-        function () {
-          return keyFilter.calls === "off";
-        }
-      ) +
+      sections
+        .map(function (s) {
+          var html =
+            '<div class="cnc-filter-sec"><div class="cnc-filter-sec__label">' +
+            esc(s.label) + "</div>";
+          html += s.rows
+            .map(function (r) {
+              var on = String(state[s.field]) === String(r.v);
+              return (
+                '<div class="cnc-filter-opt" role="radio" tabindex="0" data-field="' + esc(s.field) +
+                '" data-val="' + esc(r.v) + '" data-on="' + (on ? "1" : "0") +
+                '" aria-checked="' + (on ? "true" : "false") + '">' +
+                '<span class="cnc-filter-opt__mark"></span><span>' + esc(r.label) + "</span></div>"
+              );
+            })
+            .join("");
+          if (s.num) {
+            html +=
+              '<div class="cnc-filter-num" data-num-for="' + esc(s.field) +
+              '" data-active-val="' + esc(s.num.activeVal == null ? "" : s.num.activeVal) +
+              '" data-off="' + (numOff(s.field, s.num.activeVal) ? "1" : "0") + '">' +
+              '<input type="number" min="1" max="' + (s.num.max || 3650) +
+              '" step="1" data-num="' + esc(s.num.key) + '" data-max="' + (s.num.max || 3650) +
+              '" value="' + esc(state[s.num.key]) + '" /><span>' + esc(s.num.suffix) + "</span></div>";
+          }
+          return html + "</div>";
+        })
+        .join("") +
       '<div class="cnc-filter-pop__foot">' +
       '<button type="button" class="csbtn csbtn--ghost csbtn--sm" data-filter-reset>' +
       esc(t("fReset")) + "</button>" +
@@ -2040,20 +2134,22 @@
 
     function syncNumDisabled() {
       pop.querySelectorAll("[data-num-for]").forEach(function (n) {
-        var f = n.getAttribute("data-num-for");
-        n.setAttribute("data-off", keyFilter[f] === "off" ? "1" : "0");
+        n.setAttribute(
+          "data-off",
+          numOff(n.getAttribute("data-num-for"), n.getAttribute("data-active-val")) ? "1" : "0"
+        );
       });
     }
     function choose(optEl) {
       var f = optEl.getAttribute("data-field");
-      keyFilter[f] = optEl.getAttribute("data-val");
+      state[f] = optEl.getAttribute("data-val");
       pop.querySelectorAll('[data-field="' + f + '"]').forEach(function (o) {
         var on = o === optEl;
         o.setAttribute("data-on", on ? "1" : "0");
         o.setAttribute("aria-checked", on ? "true" : "false");
       });
       syncNumDisabled();
-      paintKeysList();
+      onChange();
     }
     pop.querySelectorAll(".cnc-filter-opt").forEach(function (o) {
       o.addEventListener("click", function () {
@@ -2071,84 +2167,567 @@
         var k = i.getAttribute("data-num");
         var n = Math.floor(Number(i.value));
         if (!isFinite(n) || n < 1) return; // 输入框清空过程中别把列表清空
-        keyFilter[k] = Math.min(n, 3650);
-        paintKeysList();
+        state[k] = Math.min(n, Number(i.getAttribute("data-max")) || 3650);
+        onChange();
       });
     });
     pop.querySelector("[data-filter-reset]").addEventListener("click", function () {
-      keyFilter.group = "any";
-      keyFilter.age = "off";
-      keyFilter.calls = "off";
-      keyFilter.ageDays = 30;
-      keyFilter.callsN = 3;
-      closeKeyFilterPop();
-      paintKeysList();
+      Object.keys(defaults).forEach(function (k) {
+        state[k] = defaults[k];
+      });
+      closeFilterPop();
+      onChange();
     });
-    pop.querySelector("[data-filter-done]").addEventListener("click", closeKeyFilterPop);
+    pop.querySelector("[data-filter-done]").addEventListener("click", closeFilterPop);
 
-    keyFilterPopEl = pop;
+    filterPopEl = pop;
     setTimeout(function () {
-      document.addEventListener("click", onKeyFilterDocClick, true);
-      document.addEventListener("keydown", onKeyFilterEsc);
+      document.addEventListener("click", onFilterDocClick, true);
+      document.addEventListener("keydown", onFilterEsc);
     }, 0);
   }
 
+  /** 已生效筛选的芯片条。chips=[{k,label}]，× 回调把对应项复位。 */
+  function renderFilterChips(box, chips, onClear) {
+    box.innerHTML = chips
+      .map(function (c) {
+        return (
+          '<span class="cnc-chip">' + esc(c.label) +
+          '<button type="button" class="cnc-chip__x" data-clear-filter="' + esc(c.k) +
+          '" aria-label="' + esc(t("clearFilter")) + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+          '<path fill-rule="evenodd" d="M5.64 5.64a1 1 0 0 1 1.41 0L12 10.59l4.95-4.95a1 1 0 0 1 1.41 1.41L13.41 12l4.95 4.95a1 1 0 0 1-1.41 1.41L12 13.41l-4.95 4.95a1 1 0 0 1-1.41-1.41L10.59 12 5.64 7.05a1 1 0 0 1 0-1.41Z" clip-rule="evenodd"/></svg>' +
+          "</button></span>"
+        );
+      })
+      .join("");
+    box.querySelectorAll("[data-clear-filter]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeFilterPop();
+        onClear(b.getAttribute("data-clear-filter"));
+      });
+    });
+  }
+
+  // ── 日志页 ────────────────────────────────────────────────────────────
+  // 筛选维度全部来自 api_my_usage 已下发的列（model / tokens_in / tokens_out /
+  // status_code / created_at），**零后端改动**。
+  //
+  // ⛔ 故意没做的两项，别再当 TODO 捡起来做假数据：
+  //   「按消费排序」—— api_usage 表根本没有金额列，真实扣费在 wallet_ledger，
+  //     而该表只有 admin_list_credit_ledger 能读。同 applySpendPlaceholder 的
+  //     铁律：金额宁可显示 —，不许用 token 数折算冒充。
+  //   「按延迟 / 首字排序」—— 延迟和 TTFT 任何表都没记过，网关也不写。
+  //   要做就得先给 api_usage 加列 + 改网关写入 + 按 模型运维总纲 §6 部署。
+  var LOG_FILTER_DEFAULTS = {
+    range: "all", // all | today | 24h | 7d | 30d | days
+    rangeDays: 14,
+    status: "any", // any | ok | err
+    model: "", // "" = 全部
+    tok: "off", // off | most | least
+    tokN: 20,
+    sort: "new", // new | old | tokdesc | tokasc
+  };
+  var logsAll = [];
+  var logFilter = Object.assign({ q: "" }, LOG_FILTER_DEFAULTS);
+  var LOG_ROW_CAP = 300;
+  // 与网关 handleSubmitPaymentOrder 的 method 白名单一一对应
+  var METHOD_LABEL = { wechat: "微信", alipay: "支付宝", unspecified: "未指定" };
+
+  function logTokens(r) {
+    return (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0);
+  }
+
+  function logIsOk(r) {
+    var c = Number(r.status_code);
+    return !isFinite(c) || (c >= 200 && c < 400);
+  }
+
+  /** 时间段下界（毫秒）。today 按本地零点算，小时档按滑动窗口。 */
+  function logRangeFloor() {
+    var f = logFilter.range;
+    if (f === "all") return -Infinity;
+    if (f === "today") {
+      var d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    }
+    var days = f === "24h" ? 1 : f === "7d" ? 7 : f === "30d" ? 30 : Math.max(1, logFilter.rangeDays);
+    return Date.now() - days * 86400000;
+  }
+
+  function filteredLogs() {
+    var q = String(logFilter.q || "").trim().toLowerCase();
+    var floor = logRangeFloor();
+    var list = logsAll.filter(function (r) {
+      if (q && String(r.model || "").toLowerCase().indexOf(q) < 0) return false;
+      if (floor !== -Infinity) {
+        var ts = new Date(r.created_at).getTime();
+        if (!isFinite(ts) || ts < floor) return false;
+      }
+      if (logFilter.status === "ok" && !logIsOk(r)) return false;
+      if (logFilter.status === "err" && logIsOk(r)) return false;
+      if (logFilter.model && String(r.model || "") !== logFilter.model) return false;
+      return true;
+    });
+    // Token 用量筛的是「取前 N 条」，所以必须先按 token 排完再截断，
+    // 之后才应用用户选的展示排序 —— 反过来会截出错的一批。
+    if (logFilter.tok !== "off") {
+      var most = logFilter.tok === "most";
+      list = list.slice().sort(function (a, b) {
+        var d = logTokens(b) - logTokens(a);
+        if (!most) d = -d;
+        return d !== 0 ? d : new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+      list = list.slice(0, Math.max(1, Math.floor(logFilter.tokN) || 1));
+    }
+    var s = logFilter.sort;
+    return list.slice().sort(function (a, b) {
+      if (s === "tokdesc") return logTokens(b) - logTokens(a);
+      if (s === "tokasc") return logTokens(a) - logTokens(b);
+      var d = new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      return s === "old" ? -d : d;
+    });
+  }
+
+  /** 只列用户真的调用过的模型，避免下拉里塞一堆他没用过的。 */
+  function logModelOptions() {
+    var seen = {};
+    logsAll.forEach(function (r) {
+      var m = String(r.model || "");
+      if (m) seen[m] = (seen[m] || 0) + 1;
+    });
+    return Object.keys(seen)
+      .sort(function (a, b) {
+        return seen[b] - seen[a] || a.localeCompare(b);
+      })
+      .map(function (m) {
+        return { v: m, label: m + "（" + nf(seen[m]) + "）" };
+      });
+  }
+
   function renderLogsList(rows) {
-    if (!rows || !rows.length) return;
+    if (rows) logsAll = rows.slice();
+    paintLogsList();
+  }
+
+  function paintLogsList() {
     var panel =
       document.querySelector(".Jp-M8 ._4d2eR") ||
       document.querySelector("._4d2eR[data-fill=static]");
     if (!panel) return;
 
+    var host = panel.parentElement;
+    var list = document.getElementById("cnc-logs-list");
+    var rows = filteredLogs();
+
+    var countEl = document.querySelector("._9Mz6K");
+    if (countEl) {
+      countEl.textContent =
+        rows.length !== logsAll.length
+          ? t("resultsOf").replace("{n}", rows.length).replace("{total}", logsAll.length)
+          : t("results").replace("{n}", rows.length);
+    }
+    renderLogFilterChips();
+
+    // 一条记录都没有 → 留着快照自带的空态（有插画和文档链接，比一行干字好看）。
+    // 有记录但被筛没了 → 那张空态会误导成「你还没调用过」，改用自己的提示。
+    if (!logsAll.length) {
+      panel.dataset.fill = "static";
+      panel.classList.remove("cnc-logs-panel");
+      if (host) host.classList.remove("cnc-logs-host");
+      Array.from(panel.children).forEach(function (ch) {
+        if (ch.id !== "cnc-logs-list") ch.style.display = "";
+      });
+      if (list) list.remove();
+      return;
+    }
+
+    // 快照给 .Jp-M8 套了 padding:96px 20px + flex 居中（为空状态插画准备的），
+    // 塞进一张表格后就变成表头上方一大片空白 —— 图二里那道空隙就是它。
+    if (host && host.classList.contains("Jp-M8")) host.classList.add("cnc-logs-host");
     panel.dataset.fill = "none";
-    panel.style.cssText =
-      "display:block;width:100%;height:auto;align-items:stretch;justify-content:flex-start";
+    panel.classList.add("cnc-logs-panel");
     Array.from(panel.children).forEach(function (ch) {
       if (ch.id !== "cnc-logs-list") ch.style.display = "none";
     });
-
-    var sorted = rows.slice().sort(function (a, b) {
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
-    var list = document.getElementById("cnc-logs-list");
     if (!list) {
-      list = document.createElement("div");
+      list = el("div");
       list.id = "cnc-logs-list";
-      list.style.cssText = "padding:16px;overflow:auto;width:100%";
       panel.appendChild(list);
     }
+
+    if (!rows.length) {
+      list.innerHTML = '<div class="cnc-keys-empty">' + esc(t("logNoMatch")) + "</div>";
+      return;
+    }
+
     list.innerHTML =
-      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-      "<thead><tr><th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">" +
-      esc(t("time")) +
-      "</th>" +
-      "<th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">" +
-      esc(t("model")) +
-      "</th>" +
-      "<th style=\"text-align:right;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">In</th>" +
-      "<th style=\"text-align:right;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">Out</th>" +
-      "<th style=\"text-align:left;padding:8px;border-bottom:1px solid rgba(127,127,127,.25)\">" +
-      esc(t("status")) +
-      "</th></tr></thead><tbody>" +
-      sorted
-        .slice(0, 200)
+      '<table class="cnc-log-table"><thead><tr>' +
+      "<th>" + esc(t("time")) + "</th>" +
+      "<th>" + esc(t("model")) + "</th>" +
+      '<th class="num">' + esc(t("lIn")) + "</th>" +
+      '<th class="num">' + esc(t("lOut")) + "</th>" +
+      "<th>" + esc(t("status")) + "</th>" +
+      "</tr></thead><tbody>" +
+      rows
+        .slice(0, LOG_ROW_CAP)
         .map(function (r) {
+          var ok = logIsOk(r);
           return (
-            "<tr><td style=\"padding:8px;border-bottom:1px solid rgba(127,127,127,.12)\">" +
-            esc(new Date(r.created_at).toLocaleString("zh-CN")) +
-            "</td><td style=\"padding:8px;border-bottom:1px solid rgba(127,127,127,.12)\">" +
-            esc(r.model || "—") +
-            '</td><td style="padding:8px;text-align:right;border-bottom:1px solid rgba(127,127,127,.12)">' +
-            nf(r.tokens_in) +
-            '</td><td style="padding:8px;text-align:right;border-bottom:1px solid rgba(127,127,127,.12)">' +
-            nf(r.tokens_out) +
-            "</td><td style=\"padding:8px;border-bottom:1px solid rgba(127,127,127,.12)\">" +
-            esc(r.status_code || 200) +
-            "</td></tr>"
+            "<tr><td>" + esc(new Date(r.created_at).toLocaleString("zh-CN")) + "</td>" +
+            "<td>" + esc(r.model || "—") + "</td>" +
+            '<td class="num">' + nf(r.tokens_in) + "</td>" +
+            '<td class="num">' + nf(r.tokens_out) + "</td>" +
+            '<td><span class="cnc-log-status" data-ok="' + (ok ? "1" : "0") + '">' +
+            esc(r.status_code == null ? 200 : r.status_code) + "</span></td></tr>"
           );
         })
         .join("") +
-      "</tbody></table>";
+      "</tbody></table>" +
+      (rows.length > LOG_ROW_CAP
+        ? '<div class="cnc-keys-empty">' +
+          esc(t("resultsOf").replace("{n}", LOG_ROW_CAP).replace("{total}", rows.length)) +
+          "</div>"
+        : "");
+  }
+
+  function renderLogFilterChips() {
+    var host = document.querySelector(".qydUl");
+    if (!host) return;
+    var box = document.getElementById("cnc-log-chips");
+    if (!box) {
+      box = el("div", "cnc-chip-row");
+      box.id = "cnc-log-chips";
+      host.appendChild(box);
+    }
+    var chips = [];
+    if (logFilter.range !== "all") {
+      chips.push({
+        k: "range",
+        label:
+          logFilter.range === "days"
+            ? t("lfRangeDays").replace("{n}", logFilter.rangeDays)
+            : t(
+                logFilter.range === "today"
+                  ? "lfRangeToday"
+                  : logFilter.range === "24h"
+                  ? "lfRange24h"
+                  : logFilter.range === "7d"
+                  ? "lfRange7d"
+                  : "lfRange30d"
+              ),
+      });
+    }
+    if (logFilter.status !== "any") {
+      chips.push({ k: "status", label: t(logFilter.status === "ok" ? "lfStatusOk" : "lfStatusErr") });
+    }
+    if (logFilter.model) chips.push({ k: "model", label: logFilter.model });
+    if (logFilter.tok !== "off") {
+      chips.push({
+        k: "tok",
+        label: (logFilter.tok === "most" ? t("lfTokMost") : t("lfTokLeast")).replace(
+          "{n}",
+          logFilter.tokN
+        ),
+      });
+    }
+    if (logFilter.sort !== "new") {
+      chips.push({
+        k: "sort",
+        label: t(
+          logFilter.sort === "old"
+            ? "lfSortOld"
+            : logFilter.sort === "tokdesc"
+            ? "lfSortTokDesc"
+            : "lfSortTokAsc"
+        ),
+      });
+    }
+    renderFilterChips(box, chips, function (k) {
+      logFilter[k] = LOG_FILTER_DEFAULTS[k];
+      paintLogsList();
+    });
+  }
+
+  function wireLogFilters() {
+    if (PAGE !== "logs") return;
+    var row = document.querySelector(".xCfRI");
+    if (!row || row.dataset.cncFilterWired === "1") return;
+    row.dataset.cncFilterWired = "1";
+
+    var wrap = row.querySelector(".Kepsx");
+    var input = row.querySelector('input[type="search"], input.EzGXF');
+    if (input) {
+      // placeholder 是属性，applyPageLocale 的 replaceAllText 只走文本节点，摸不到它
+      input.placeholder = t("logSearchPlaceholder");
+      input.setAttribute("aria-label", t("logSearchAria"));
+      input.addEventListener("input", function () {
+        logFilter.q = input.value || "";
+        paintLogsList();
+      });
+      input.addEventListener("focus", function () {
+        if (wrap) wrap.setAttribute("data-focused", "true");
+      });
+      input.addEventListener("blur", function () {
+        if (wrap) wrap.setAttribute("data-focused", "false");
+      });
+    }
+
+    var addBtn = row.querySelector(".qydUl button");
+    if (!addBtn) return;
+    addBtn.addEventListener(
+      "click",
+      function (e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (filterPopEl) {
+          closeFilterPop();
+          return;
+        }
+        var models = logModelOptions();
+        var sections = [
+          {
+            label: t("lfRangeTitle"),
+            field: "range",
+            rows: [
+              { v: "all", label: t("rangeAll") },
+              { v: "today", label: t("lfRangeToday") },
+              { v: "24h", label: t("lfRange24h") },
+              { v: "7d", label: t("lfRange7d") },
+              { v: "30d", label: t("lfRange30d") },
+              { v: "days", label: t("lfRangeDaysOpt") },
+            ],
+          },
+          {
+            label: t("lfStatusTitle"),
+            field: "status",
+            rows: [
+              { v: "any", label: t("fAny") },
+              { v: "ok", label: t("lfStatusOk") },
+              { v: "err", label: t("lfStatusErr") },
+            ],
+          },
+          {
+            label: t("lfTokTitle"),
+            field: "tok",
+            rows: [
+              { v: "off", label: t("fAny") },
+              { v: "most", label: t("lfTokMostOpt") },
+              { v: "least", label: t("lfTokLeastOpt") },
+            ],
+            num: { key: "tokN", suffix: t("lfRowsUnit"), max: LOG_ROW_CAP },
+          },
+          {
+            label: t("lfSortTitle"),
+            field: "sort",
+            rows: [
+              { v: "new", label: t("lfSortNew") },
+              { v: "old", label: t("lfSortOld") },
+              { v: "tokdesc", label: t("lfSortTokDesc") },
+              { v: "tokasc", label: t("lfSortTokAsc") },
+            ],
+          },
+        ];
+        // 一个模型都没调用过时这一段是空的，别放个空标题在那儿
+        if (models.length) {
+          sections.splice(2, 0, {
+            label: t("lfModelTitle"),
+            field: "model",
+            rows: [{ v: "", label: t("lfModelAny") }].concat(models),
+          });
+        }
+        // 上限 30 天：api_my_usage 把窗口写死成 now()-30d，填更大的数也拉不到更早的
+        // 记录，会让人以为"这段时间真没调用"。要放宽得先给该端点加窗口参数。
+        sections[0].num = { key: "rangeDays", suffix: t("fDaysUnit"), max: 30, activeVal: "days" };
+        openFilterPop(addBtn, logFilter, sections, LOG_FILTER_DEFAULTS, paintLogsList);
+      },
+      true
+    );
+  }
+
+  /**
+   * 日志页页签：快照带了 Responses / Agent Traces / Completions / Conversations /
+   * ChatKit Threads 五个，本站只有 Responses 这一条产品线，其余四个点开永远是空的。
+   * 删掉那四个，另起一个「今日概览」。
+   */
+  function wireLogTabs() {
+    if (PAGE !== "logs") return;
+    var host = document.querySelector('[data-tab-switcher][aria-label="Log source"]');
+    if (!host || host.dataset.cncTabsWired === "1") return;
+    host.dataset.cncTabsWired = "1";
+
+    var btns = Array.prototype.slice.call(host.querySelectorAll("button.nCgbF"));
+    if (!btns.length) return;
+    btns.slice(1).forEach(function (b) {
+      b.remove();
+    });
+    function setLabel(btn, text) {
+      btn.querySelectorAll("span").forEach(function (s) {
+        s.textContent = text;
+      });
+    }
+    setLabel(btns[0], t("logTabResponses"));
+    var todayBtn = btns[0].cloneNode(true);
+    setLabel(todayBtn, t("logTabToday"));
+    host.appendChild(todayBtn);
+    var tabs = [btns[0], todayBtn];
+
+    var respPanel = document.querySelector('[role="tabpanel"]');
+    if (!respPanel) return;
+    respPanel.setAttribute("aria-label", t("logTabResponses"));
+    var todayPanel = el("div", "cnc-today");
+    todayPanel.id = "cnc-today-panel";
+    todayPanel.setAttribute("role", "tabpanel");
+    todayPanel.setAttribute("aria-label", t("logTabToday"));
+    todayPanel.hidden = true;
+    respPanel.after(todayPanel);
+
+    var thumb = host.querySelector("[data-tab-switcher-thumb]");
+    function select(i) {
+      tabs.forEach(function (b, k) {
+        b.setAttribute("data-state", k === i ? "on" : "off");
+        b.setAttribute("aria-checked", k === i ? "true" : "false");
+      });
+      if (thumb) {
+        thumb.style.width = tabs[i].offsetWidth + "px";
+        thumb.style.transform = "translateX(" + tabs[i].offsetLeft + "px)";
+      }
+      respPanel.hidden = i !== 0;
+      todayPanel.hidden = i !== 1;
+      // 页签切回来时滑块宽度要按当前渲染尺寸重算，否则中文标签换行后会错位
+      if (i === 0) paintLogsList();
+    }
+    tabs.forEach(function (b, i) {
+      b.addEventListener(
+        "click",
+        function (e) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          select(i);
+        },
+        true
+      );
+    });
+    host.setAttribute("aria-label", "日志页签");
+    select(0);
+  }
+
+  /** 今天 00:00（本地）之后的行。充值和调用都按自然日算，跟用户说的"今天"一致。 */
+  function isToday(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return false;
+    var start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return d.getTime() >= start.getTime();
+  }
+
+  function microToCny(v) {
+    var n = Number(v);
+    return isFinite(n) ? n / 1000000 : 0;
+  }
+
+  /**
+   * 「今日概览」面板。
+   * ⛔ 这里没有「今日消耗 ¥」这一项，不是漏了：真实扣费流水在 wallet_ledger，
+   * 目前只有 admin_list_credit_ledger 能读，用户侧端点一个都不返回。用 token
+   * 数乘个价折算出来冒充金额是明确禁止的（同 applySpendPlaceholder）。
+   * 要显示金额得先加一个用户可读的钱包流水端点。
+   */
+  function renderTodayPanel(orders, wallet) {
+    var panel = document.getElementById("cnc-today-panel");
+    if (!panel) return;
+
+    var todayOrders = (orders || []).filter(function (o) {
+      return isToday(o.created_at);
+    });
+    var recharge = todayOrders.filter(function (o) {
+      return o.order_kind === "recharge" || o.order_kind === "topup";
+    });
+    var paid = recharge.reduce(function (s, o) {
+      return s + (Number(o.amount_cny) || 0);
+    }, 0);
+    var credited = recharge.reduce(function (s, o) {
+      return s + microToCny(o.wallet_credit_micro);
+    }, 0);
+
+    var todayRows = logsAll.filter(function (r) {
+      return isToday(r.created_at);
+    });
+    var tokens = todayRows.reduce(function (s, r) {
+      return s + logTokens(r);
+    }, 0);
+    var failed = todayRows.filter(function (r) {
+      return !logIsOk(r);
+    }).length;
+
+    function statCard(title, stats, extraHtml) {
+      return (
+        '<section class="cnc-today-card"><h4>' + esc(title) + "</h4>" +
+        '<div class="cnc-today-nums">' +
+        stats
+          .map(function (s) {
+            return (
+              '<div><span class="cnc-today-n">' + esc(s.v) +
+              '</span><span class="cnc-today-l">' + esc(s.l) + "</span></div>"
+            );
+          })
+          .join("") +
+        "</div>" + (extraHtml || "") + "</section>"
+      );
+    }
+
+    var ordersHtml = recharge.length
+      ? '<table class="cnc-log-table cnc-today-table"><thead><tr><th>' +
+        esc(t("tdOrderTime")) + "</th><th>" + esc(t("tdOrderMethod")) +
+        '</th><th class="num">' + esc(t("tdPaid")) + '</th><th class="num">' +
+        esc(t("tdCredited")) + "</th><th>" + esc(t("tdOrderStatus")) +
+        "</th></tr></thead><tbody>" +
+        recharge
+          .map(function (o) {
+            return (
+              "<tr><td>" +
+              esc(new Date(o.created_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })) +
+              "</td><td>" + esc(METHOD_LABEL[o.method] || o.method || "—") +
+              '</td><td class="num">' + esc(fmtMoney(o.amount_cny)) +
+              '</td><td class="num">' +
+              esc(o.wallet_credit_micro == null ? "—" : fmtMoney(microToCny(o.wallet_credit_micro))) +
+              "</td><td>" + esc(o.status_label || o.status || "—") + "</td></tr>"
+            );
+          })
+          .join("") +
+        "</tbody></table>"
+      : '<div class="cnc-today-empty">' + esc(t("tdRechargeNone")) + "</div>";
+
+    var bal = wallet && wallet.balance_cny != null ? wallet.balance_cny : null;
+    var cum = wallet && wallet.cumulative_recharge_cny != null ? wallet.cumulative_recharge_cny : null;
+
+    panel.innerHTML =
+      '<div class="cnc-today-grid">' +
+      statCard(
+        t("tdRechargeTitle"),
+        [
+          { v: fmtMoney(paid), l: t("tdPaid") },
+          { v: fmtMoney(credited), l: t("tdCredited") },
+          { v: nf(recharge.length), l: t("tdOrders") },
+        ],
+        ordersHtml
+      ) +
+      statCard(t("tdWalletTitle"), [
+        { v: bal == null ? "—" : fmtMoney(bal), l: t("tdBalance") },
+        { v: cum == null ? "—" : fmtMoney(cum), l: t("tdCumulative") },
+      ]) +
+      statCard(
+        t("tdCallsTitle"),
+        [
+          { v: nf(todayRows.length), l: t("tdCalls") },
+          { v: nf(tokens), l: t("tdTokens") },
+          { v: nf(failed), l: t("tdFailed") },
+        ],
+        '<p class="cnc-today-note">' + esc(t("tdSpendNote")) + "</p>"
+      ) +
+      "</div>";
   }
 
   function injectConsoleChromeCss() {
@@ -2424,10 +3003,18 @@
               return { keys: [] };
             })
           : Promise.resolve(null);
+      // 日志页的「今日概览」要今天的充值订单；其它页不拉，别白花一次请求
+      var ordersP =
+        PAGE === "logs"
+          ? call("list_my_orders", {}).catch(function () {
+              return null;
+            })
+          : Promise.resolve(null);
 
       var walletRes = await walletP;
       var usageRes = await usageP;
       var keysRes = await keysP;
+      var ordersRes = await ordersP;
 
       applyWallet(walletRes && walletRes.wallet);
 
@@ -2462,7 +3049,15 @@
           wireKeyFilters();
         }
       }
-      if (PAGE === "logs") renderLogsList(usage);
+      if (PAGE === "logs") {
+        wireLogTabs();
+        wireLogFilters();
+        renderLogsList(usage);
+        renderTodayPanel(
+          ordersRes && ordersRes.orders,
+          (ordersRes && ordersRes.wallet) || (walletRes && walletRes.wallet)
+        );
+      }
 
       applyPageLocale();
       patchBuildWithCards();

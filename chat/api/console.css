@@ -434,6 +434,7 @@
 .cnc-keys-empty { padding: 28px 16px; text-align: center; font-size: 14px; color: var(--tertiary-text); }
 
 /* ── 筛选芯片（搜索框右侧，跟快照自带的「有效」芯片同排） ─────────── */
+.cnc-chip-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .cnc-chip {
   display: inline-flex; align-items: center; gap: 4px; flex: none;
   height: 32px; padding: 0 4px 0 12px; border-radius: 999px;
@@ -454,6 +455,12 @@
   border: 1px solid var(--border-color); background: var(--bg-card);
   color: var(--text-color); font-family: var(--font-main); font-size: 13px;
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.26);
+  /* 日志页那张卡有 5 段（时间段/结果/模型/Token/排序），在 900px 高的窗口里
+     下半截会掉到视口外点不到。限高 + 内部滚动，别指望靠 top 钳制解决 ——
+     卡片比视口还高时钳制无解。 */
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .cnc-filter-sec + .cnc-filter-sec { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); }
 .cnc-filter-sec__label {
@@ -485,6 +492,74 @@
 .cnc-filter-pop__foot {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);
+}
+
+/* ── 日志页（2026-09-08）────────────────────────────────────────
+   .Jp-M8 是快照给「你还没有调用记录」那张插画准备的容器：flex 居中 +
+   padding:96px 20px。塞一张表格进去，96px 就变成表头上方一道空隙（工单图二
+   的红框）。这里只在 JS 确认接管了列表时加 .cnc-logs-host，空态仍走快照原样。
+   两个类名叠加（0,2,0）稳压快照自己那条 .Jp-M8 单类规则，不需要 !important。 */
+.Jp-M8.cnc-logs-host {
+  display: block;
+  padding: 0 20px 24px;
+}
+._4d2eR.cnc-logs-panel {
+  display: block;
+  width: 100%;
+  height: auto;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+#cnc-logs-list { width: 100%; overflow-x: auto; }
+
+.cnc-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: var(--font-main);
+  color: var(--text-color);
+}
+.cnc-log-table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--secondary-text);
+  border-bottom: 1px solid var(--border-color);
+}
+.cnc-log-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+}
+.cnc-log-table th.num,
+.cnc-log-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.cnc-log-table tbody tr:hover td { background: var(--pill-bg); }
+/* 状态码用色块而不是纯数字：一列 200/502 混排时肉眼扫不出哪行失败了 */
+.cnc-log-status {
+  display: inline-block; min-width: 38px; padding: 1px 7px;
+  border-radius: 999px; font-size: 12px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.cnc-log-status[data-ok="1"] { background: color-mix(in srgb, #30a46c 16%, transparent); color: #30a46c; }
+.cnc-log-status[data-ok="0"] { background: color-mix(in srgb, #e5484d 16%, transparent); color: #e5484d; }
+
+/* ── 日志页「今日概览」页签 ───────────────────────────────── */
+.cnc-today { padding: 20px 24px 32px; font-family: var(--font-main); color: var(--text-color); }
+.cnc-today-grid { display: flex; flex-direction: column; gap: 16px; max-width: 900px; }
+.cnc-today-card {
+  padding: 16px 18px; border-radius: 14px;
+  border: 1px solid var(--border-color); background: var(--bg-card);
+}
+.cnc-today-card h4 { margin: 0 0 12px; font-size: 14px; font-weight: 600; }
+.cnc-today-nums { display: flex; flex-wrap: wrap; gap: 12px 32px; }
+.cnc-today-nums > div { display: flex; flex-direction: column; gap: 2px; }
+.cnc-today-n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cnc-today-l { font-size: 12px; color: var(--secondary-text); }
+.cnc-today-table { margin-top: 14px; }
+.cnc-today-empty { margin-top: 12px; font-size: 13px; color: var(--tertiary-text); }
+.cnc-today-note {
+  margin: 12px 0 0; font-size: 12px; line-height: 1.6;
+  color: var(--tertiary-text);
 }
 
 /* ── 暂时禁用的卡片（控制台首页「用 Cancri Code 开始构建」） ─────────

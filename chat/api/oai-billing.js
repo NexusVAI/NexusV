@@ -81,7 +81,7 @@
       ["API Keys", "API 密钥"],
       ["Usage", "用量"],
       ["Logs", "日志"],
-      ["Billing", "结算"],
+      ["Billing", "账单"],
       ["Default project", "默认项目"],
       ["Organization", "个人版"],
     ].forEach(function (p) { replaceAllText(p[0], p[1]); });
@@ -120,8 +120,12 @@
   // tab 名单是 setTab / tabFromHash / initTabs 三处共用的唯一来源，
   // 漏改的表现是：按钮能点但面板不切，或 hash 直达失效。
   // 2026-08-18 晚移除 "reset"（重置卡系统下线）。旧书签 #reset 会被
-  // tabFromHash 的 indexOf 判定为未知 → 回落到 "plan"，不会白屏。
-  var TABS = ["plan", "api", "bills"];
+  // tabFromHash 的 indexOf 判定为未知 → 回落到 DEFAULT_TAB，不会白屏。
+  // 2026-09-08：顺序与默认页签都改成 API 额度优先 —— 这页的主要来客是查
+  // API 余额的开放平台用户，订阅套餐是次要入口。billing.html 里的按钮 DOM
+  // 顺序要跟这里一致，否则滑块位置和视觉顺序会对不上。
+  var TABS = ["api", "plan", "bills"];
+  var DEFAULT_TAB = "api";
 
   function setTab(tab) {
     TABS.forEach(function (t) {
@@ -139,7 +143,7 @@
   }
   function tabFromHash() {
     var h = String(location.hash || "").replace(/^#/, "");
-    return TABS.indexOf(h) >= 0 ? h : "plan";
+    return TABS.indexOf(h) >= 0 ? h : DEFAULT_TAB;
   }
   function initTabs() {
     setTab(tabFromHash());
