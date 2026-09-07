@@ -850,7 +850,8 @@ html.auth-platform-page #authOverlay.visible {
     visibility: visible !important;
     pointer-events: auto !important;
     z-index: 9999 !important;
-    background: hsl(var(--bg-300)) !important;
+    /* 官方登录页底色由 claude-login.css / 内层 bg-surface-1 负责，这里禁止再铺黄底。 */
+    background: transparent !important;
 }
 html.auth-platform-page #authOverlay:not(.visible) {
     height: 0 !important;

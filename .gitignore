@@ -30,3 +30,67 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# ── 2026-08-30 审计 SEC-013：后端源码与凭据文档必须显式屏蔽 ──────────────────
+#
+# 本仓库是 GitHub Pages 站点（CNAME: www.nexusvai.xyz），推上去的东西**公开可读**。
+# AGENTS.md §1 一直声称 cf-gateway / cf-modelscope-proxy「被 .gitignore 屏蔽」——
+# 2026-08-30 实测那道护栏**并不存在**：`git check-ignore -v
+# cf-gateway/src/chat-gateway.ported.ts` 返回 not-ignored。
+# 同时核查了全部分支的 `git log --all --diff-filter=A`：这两个目录与
+# css/**/supabase/docs 从未有任何文件被提交过，**尚未泄露**；
+# 但团队相信存在一道并不存在的护栏，一次 `git add -A` 就会公开：
+#   · chat-gateway.ported.ts / api-gateway.ported.ts（鉴权、计费、防透传全部逻辑）
+#   · cf-modelscope-proxy/src/index.ts（~100 个上游 provider 的路由与选 key 逻辑）
+#   · aiven-ops-runbook.md（生产 DB 口令、爱发电 API Token）
+#   · 模型运维总纲.md（R2 访问密钥、Turnstile secret key）
+#
+# ⛔ 不要为了「顺手提交一个后端文件」而删掉下面任何一行。要发布后端代码请另建私有仓库。
+cf-gateway/
+cf-modelscope-proxy/
+
+# 含生产凭证的运维文档（口令 / Token / 对象存储密钥）
+css/**/docs/*runbook*
+css/**/docs/模型运维总纲.md
+css/**/.env.aiven.local
+**/.dev.vars
+
+# ─── 2026-09-04 审计补漏：下面这些一直**既没被跟踪、也没被忽略** ───────────────
+# 上面那批规则挡住了「已知」的凭证文件，于是没人再去看working tree 里还剩什么。
+# 实测（git ls-files 返回 0 行 + git check-ignore 返回 not-ignored）：
+#   · _quarantine/ —— 历史隔离区。含 `wrangler secret put` 脚本、test_*.ps1、
+#     以及若干 provider 的**明文 API key**（sk-… 原样躺在 json 里），
+#     还有两份带 key 的旧后端大 bundle。
+#   · css/**/docs/对话.md —— 含生产 Neon `postgresql://` URI（**带口令**）。
+#   · 模型运维总纲.md 的 .bak-* 副本 —— 上面第 54 行是精确文件名匹配，`.bak-` 后缀漏网。
+# 与 §1 那次一样，风险不是「已泄露」而是「一次 git add -A 就发布到 GitHub Pages」。
+# 由 cf-gateway/src/secret-exposure-guard.test.ts 机械校验。
+_quarantine/
+css/**/docs/对话.md
+css/**/docs/模型运维总纲.md.bak-*
+
+# ─── 2026-09-04 第二轮（对抗复核补出来的，比第一轮更严重）────────────────────
+# 教训：上面 cf-gateway/ 与 cf-modelscope-proxy/ 两行只挡住了**那两个路径**，
+# 而后端源码在仓库里还有好几份**别名副本**，它们绕过了那道门：
+#   · _srcbackup_*/ —— 里面就是 chat-gateway.ported.ts 与 proxy-index.ts 全文
+#     （700KB + 524KB）。挡了正主没挡副本 = 门形同虚设。
+#   · backups/ 与 .backups/ —— 打包的 zip 里同样含 cf-gateway/src 全树
+#     （如 pre-invite-fix-*-cf-gateway.zip），外加封禁/额度回滚 SQL 与用户 IP 明细 CSV。
+# 凭证类：
+#   · 「不要提交到仓库，私钥不要删除」目录 —— GCP 服务账号私钥（BEGIN PRIVATE KEY）。
+#     目录名已经把结论写在脸上了，但它一直既没被跟踪也没被忽略。
+#   · model-ops-playbook.md —— 含明文口令 / PGPASSWORD。第 53 行的 `*runbook*`
+#     **匹配不到 playbook**，这是纯字面量规则的典型漏网。
+#   · cf-migration-handoff.md / celebrate-s3-setup.ps1 —— 含 `wrangler secret put` 行。
+#   · css/**/supabase/{backups,tasks}/ —— 迁移与回滚 SQL，带 avnadmin 连接串与业务数据。
+#   · 库/devin_auto/ —— 浏览器缓存，实测含生产 postgresql://user:password@ URI。
+_srcbackup_*/
+backups/
+.backups/
+css/**/docs/不要提交到仓库，私钥不要删除/
+css/**/docs/*playbook*
+css/**/docs/cf-migration-handoff.md*
+css/**/docs/celebrate-s3-setup.ps1
+css/**/supabase/backups/
+css/**/supabase/tasks/
+库/devin_auto/
