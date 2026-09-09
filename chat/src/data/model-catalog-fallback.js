@@ -1,7 +1,16 @@
 // 模块化拆分自 cancri_chat.js：模型目录本地兜底数据（纯数据，无副作用）。
 // ⚠️ 本文件由 tasks/_gen_model_catalog_fallback.mjs 从 live model_ui_catalog 自动生成（B4）。
-// 勿手改：改模型请改 Neon model_catalog（admin / SQL），重跑生成器刷新本兜底。
+// 勿手改：改模型请改 Aiven model_catalog（admin / SQL），重跑生成器刷新本兜底。
 // 服务端权威字段（costTier/customMultiplier/门控）来自 catalog；name/tools/creditPerUse/promo 等展示项保留旧值。
+//
+// 🔴 2026-09-09：**那个生成器已经不在仓库里了**（全工作区搜 `_gen_model_catalog_fallback`
+// 零命中），所以上面那句「重跑生成器」目前是做不到的，本文件只能手改。
+//
+// 而这里的 `name` **不是兜底、是覆盖**：`mapServerModelToCatalogEntry` 取的是
+// `local.name || serverModel.displayName || serverModel.id` —— 本文件有 name 的条目，
+// 服务端改了 display_name 也**不会**反映到菜单上。2026-09-09 改 gpt-image-2 显示名时
+// 就踩到：DB 与 catalog 都已是 `GPT-image-2`，菜单却仍会渲染成小写的 `gpt-image-2`。
+// ⇒ **改 model_catalog.display_name 之后，本文件同 id 的 name 必须一起改。**
 export const MODEL_CATALOG_FALLBACK = [
   {"id":"gemini-3.1-flash-lite-preview","name":"Gemini 3.1 Flash Lite","brand":"Google","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal","customMultiplier":3.5},
   {"id":"gemini-3.1-flash-lite-welfare","name":"Gemini 3.1 Flash Lite 0603","brand":"Google","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal","customMultiplier":3.5},
@@ -31,7 +40,7 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"grok-4.3","name":"Grok 4.3","brand":"xAI","kind":"chat","vision":true,"thinking":true,"tools":true,"costTier":"expensive","customMultiplier":2},
   {"id":"gpt-image-2-all","name":"GPT Image 2","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"expensive","customMultiplier":1500,"creditPerUse":150},
   {"id":"gpt-image-2-pro","name":"GPT Image 2 Pro","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"expensive","customMultiplier":3000,"proMaxOnly":true,"creditPerUse":300},
-  {"id":"gpt-image-2","name":"【特价】gpt-image-2","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"normal","customMultiplier":100,"creditPerUse":10},
+  {"id":"gpt-image-2","name":"GPT-image-2","brand":"OpenAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"normal","customMultiplier":100,"creditPerUse":10},
   {"id":"doubao-1.5-pro","name":"Doubao 1.5 Pro","brand":"Doubao","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal"},
   {"id":"doubao-seed-2.0-pro","name":"Doubao Seed 2.0 Pro","brand":"Doubao","kind":"chat","vision":true,"thinking":false,"tools":true,"costTier":"normal"},
   {"id":"kimi-k2.7-code-highspeed","name":"Kimi K2.7 Code HighSpeed","brand":"Moonshot","kind":"chat","vision":true,"thinking":true,"tools":true,"costTier":"expensive","customMultiplier":5},

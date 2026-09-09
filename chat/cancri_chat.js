@@ -334,7 +334,7 @@
 		},
 		{
 			"id": "gpt-image-2",
-			"name": "【特价】gpt-image-2",
+			"name": "GPT-image-2",
 			"brand": "OpenAI",
 			"kind": "image",
 			"vision": false,
