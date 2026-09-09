@@ -312,31 +312,70 @@
   }
 
   // ── 账单记录 ──
+  //
+  // 2026-09-09：卡密兑换与旧的 api_orders 并入同一张表。
+  // 卡密是无记名票据，没有"下单"这一步，所以它**不落 api_orders** —— 在这之前
+  // 用户兑完卡回到这一页，看到的是「暂无账单记录」，充进去的钱毫无痕迹。
   function renderBills(data) {
     var orders = (data && data.orders) || [];
+    var cards = (data && data.card_redemptions) || [];
     var metaEl = $("bills-meta");
     var wrapEl = $("bills-table-wrap");
     if (!wrapEl) return;
-    if (!orders.length) {
+
+    var items = [];
+    orders.forEach(function (o) {
+      items.push({
+        at: o.created_at,
+        date: fmtDate(o.created_at),
+        kind: o.order_kind_label || (o.order_kind === "topup" ? "充值" : "订阅"),
+        spec: o.spec_label || "—",
+        amountHtml: fmtCny(o.amount_cny),
+        status: o.status || "pending",
+        statusLabel: o.status_label || o.status || "pending",
+        note: o.admin_note ? esc(o.admin_note) : "—",
+      });
+    });
+    cards.forEach(function (c) {
+      var face = Number(c.face_cny);
+      // 到账额度与实付是两个数（实付含转嫁的通道费），两个都要显示：
+      // 只显示一个，用户对账时必然会怀疑被多收。
+      var paid = Number(c.paid_cny);
+      var amountHtml = fmtCny(face);
+      if (isFinite(paid) && isFinite(face) && paid > face) {
+        amountHtml += '<span style="color:var(--color-text-tertiary);font-size:12px"> （实付 ' + fmtCny(paid) + "）</span>";
+      }
+      items.push({
+        at: c.redeemed_at,
+        date: fmtDate(c.redeemed_at),
+        kind: c.kind === "plan" ? "卡密兑换 · 套餐" : "卡密兑换 · API 额度",
+        spec: c.display_name || c.sku || "—",
+        amountHtml: amountHtml,
+        status: c.refunded ? "rejected" : "activated",
+        statusLabel: c.refunded ? "已退款待处理" : "已到账",
+        note: c.trade_no ? "发卡单号 " + esc(c.trade_no) : "—",
+      });
+    });
+
+    if (!items.length) {
       if (metaEl) metaEl.textContent = "暂无账单记录。";
       wrapEl.innerHTML = "";
       return;
     }
-    if (metaEl) metaEl.textContent = "共 " + orders.length + " 条记录";
-    var rows = orders.map(function (o) {
-      var created = fmtDate(o.created_at);
-      var kind = o.order_kind_label || (o.order_kind === "topup" ? "充值" : "订阅");
-      var spec = o.spec_label || "—";
-      var status = o.status || "pending";
-      var statusLabel = o.status_label || status;
-      var code = o.activation_code ? "<code>" + esc(o.activation_code) + "</code>" : "—";
-      var note = o.admin_note ? esc(o.admin_note) : "—";
-      return "<tr><td>" + esc(created) + "</td><td>" + esc(kind) + "</td><td>" + esc(spec) +
-        "</td><td>" + fmtCny(o.amount_cny) +
-        '</td><td><span class="bills-status" data-s="' + esc(status) + '">' + esc(statusLabel) + "</span></td><td>" +
-        code + "</td><td>" + note + "</td></tr>";
+    items.sort(function (a, b) {
+      return new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime();
+    });
+    if (metaEl) {
+      metaEl.textContent = "共 " + items.length + " 条记录"
+        + (cards.length ? "（含 " + cards.length + " 笔卡密兑换）" : "");
+    }
+    var rows = items.map(function (it) {
+      return "<tr><td>" + esc(it.date) + "</td><td>" + esc(it.kind) + "</td><td>" + esc(it.spec) +
+        "</td><td>" + it.amountHtml +
+        '</td><td><span class="bills-status" data-s="' + esc(it.status) + '">' + esc(it.statusLabel) +
+        "</span></td><td>" + it.note + "</td></tr>";
     }).join("");
-    wrapEl.innerHTML = '<table class="bills-table"><thead><tr><th>日期</th><th>类型</th><th>规格</th><th>金额</th><th>工单状态</th><th>激活码</th><th>备注</th></tr></thead><tbody>' + rows + "</tbody></table>";
+    wrapEl.innerHTML = '<table class="bills-table"><thead><tr><th>日期</th><th>类型</th><th>规格</th><th>金额</th><th>状态</th><th>备注</th></tr></thead><tbody>' + rows + "</tbody></table>";
   }
 
   // 2026-08-18 晚：重置卡整段已删除（原 callResetCard / o5period / renderReset /

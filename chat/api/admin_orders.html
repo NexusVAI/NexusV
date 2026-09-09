@@ -8,207 +8,178 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';"
         />
-        <title>管理台 · 订单审核 · Cancri</title>
+        <title>管理台 · 卡密运营 · Cancri</title>
         <link rel="icon" type="image/svg+xml" href="../assets/nexusvai-N-logo-tight.svg" />
         <link rel="apple-touch-icon" href="../../Logo/Cancri1.jpg" />
         <link rel="stylesheet" href="./api-platform.css?v=2026-06-07-search-compact" />
         <link rel="stylesheet" href="./admin-console.css?v=20260706-sk" />
         <script src="./api-platform.js?v=20260607-account-fix"></script>
         <style>
-            /* 页面专有：状pill / 设备指纹 / 用户上下文（共用 order-row 样式api-platform.css*/
-            .status-pill {
-                display: inline-block;
-                padding: 2px 10px;
+            /* 2026-09-09 本页从「付费订单审核」改造为「卡密运营」。
+               收款切到 16688 发卡店后不再有人工审核环节，页面职责变成：
+               看库存 / 手动铸码上架 / 作废 / 看兑换流水 / 处理退款人工队列。
+               旧的 .status-pill / .dev-block / .ctx-pill 等审核期样式随之删除。 */
+
+            .card-panel {
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
                 border-radius: 12px;
-                font-size: 11px;
+                padding: 16px 18px;
+                margin-bottom: 18px;
+            }
+            .card-panel-title {
+                font-size: 13.5px;
                 font-weight: 600;
-                font-family: var(--font-mono);
-            }
-            .status-pill.submitted {
-                background: rgba(96, 165, 250, 0.18);
-                color: #60a5fa;
-            }
-            .status-pill.approved {
-                background: rgba(16, 185, 129, 0.15);
-                color: #10b981;
-            }
-            .status-pill.activated {
-                background: rgba(74, 222, 128, 0.18);
-                color: #4ade80;
-            }
-            .status-pill.rejected {
-                background: rgba(248, 113, 113, 0.18);
-                color: #f87171;
-            }
-            /* 2026-05-16：订单行下方设备指纹折叠*/
-            .dev-block {
-                grid-column: 1 / -1;
-                margin-top: 10px;
-                border-top: 1px dashed var(--border-mute);
-                padding-top: 10px;
-                font-size: 12px;
-                color: var(--text-mute);
-            }
-            .dev-block.dev-empty {
-                color: var(--text-faint);
-                font-style: italic;
-            }
-            .dev-summary {
-                cursor: pointer;
-                user-select: none;
+                margin-bottom: 4px;
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                font-weight: 500;
-                color: var(--text-soft);
-                list-style: none;
-            }
-            .dev-summary::-webkit-details-marker { display: none; }
-            .dev-summary::before {
-                content: ";
-                font-size: 9px;
-                transition: transform 0.15s ease;
-                color: var(--text-faint);
-            }
-            details[open] > .dev-summary::before { transform: rotate(90deg); }
-            .dev-flags {
-                display: inline-flex;
-                gap: 6px;
+                gap: 8px;
                 flex-wrap: wrap;
             }
-            .dev-flag {
-                display: inline-block;
-                padding: 1px 8px;
-                border-radius: 10px;
-                font-size: 10.5px;
-                font-weight: 600;
-            }
-            .dev-flag.warn {
-                background: rgba(245, 158, 11, 0.15);
-                color: #f59e0b;
-                border: 1px solid rgba(245, 158, 11, 0.35);
-            }
-            .dev-flag.danger {
-                background: rgba(248, 113, 113, 0.15);
-                color: #f87171;
-                border: 1px solid rgba(248, 113, 113, 0.45);
-            }
-            .dev-detail {
-                margin-top: 8px;
-                padding: 10px 12px;
-                background: rgba(0, 0, 0, 0.04);
-                border-radius: 8px;
-                display: grid;
-                gap: 4px;
-            }
-            .dev-row {
-                display: grid;
-                grid-template-columns: 130px 1fr;
-                gap: 12px;
-                font-size: 12px;
-                line-height: 1.55;
-            }
-            .dev-row .dev-k {
-                color: var(--text-faint);
-                font-weight: 500;
-            }
-            .dev-row .dev-v {
-                color: var(--text-soft);
-                word-break: break-all;
-            }
-            .dev-row .dev-v.ua {
-                font-family: var(--font-mono);
+            .card-panel-hint {
                 font-size: 11.5px;
                 color: var(--text-mute);
-            }
-            .dev-row code {
-                font-family: var(--font-mono);
-                font-size: 11.5px;
-                user-select: all;
-            }
-            /* 2026-05-16：用户上下文 pill 行（注册时长 / 历史订单 / 用量 / 封禁*/
-            .ctx-row {
-                grid-column: 1 / -1;
-                margin-top: 8px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-                font-size: 12px;
-                color: var(--text-mute);
-            }
-            .ctx-pill {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                padding: 3px 9px;
-                border-radius: 11px;
-                background: var(--hover, rgba(0,0,0,0.04));
-                border: 1px solid var(--line, rgba(0,0,0,0.08));
-                color: var(--text-soft);
-                line-height: 1.4;
-            }
-            .ctx-pill.ctx-warn {
-                background: rgba(245, 158, 11, 0.12);
-                border-color: rgba(245, 158, 11, 0.35);
-                color: #f59e0b;
-            }
-            .ctx-pill.ctx-danger {
-                background: rgba(248, 113, 113, 0.14);
-                border-color: rgba(248, 113, 113, 0.40);
-                color: #f87171;
-            }
-            .ctx-warn { color: #f59e0b; }
-            .ctx-danger { color: #f87171; }
-            #statusFilter.filter-group {
+                line-height: 1.6;
                 margin-bottom: 12px;
             }
-            #statusFilter .filter-btn.active {
-                background: var(--clay);
-                border-color: var(--clay);
-                color: #fffaf2;
+
+            /* 兑换总开关 */
+            .switch-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
             }
-            .ops-alert {
-                margin-bottom: 14px;
-                padding: 12px 14px;
-                border-radius: 12px;
+            .switch-state {
                 font-size: 12.5px;
-                line-height: 1.55;
+                font-weight: 600;
+                padding: 3px 10px;
+                border-radius: 999px;
             }
-            .ops-alert ul {
-                margin: 8px 0 0;
-                padding-left: 18px;
+            .switch-state[data-on="1"] {
+                color: var(--ok, #4ade80);
+                background: rgba(74, 222, 128, 0.1);
             }
-            .ops-alert--warn {
-                background: rgba(251, 191, 36, 0.1);
-                border: 1px solid rgba(251, 191, 36, 0.35);
+            .switch-state[data-on="0"] {
+                color: var(--danger, #f87171);
+                background: rgba(248, 113, 113, 0.1);
             }
-            .ops-alert--info {
-                background: rgba(96, 165, 250, 0.1);
-                border: 1px solid rgba(96, 165, 250, 0.35);
+
+            /* 表格 */
+            .card-tbl {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 12.5px;
             }
-            .ops-del-btn {
-                margin-left: 4px;
-                padding: 2px 8px;
-                border-radius: 6px;
-                border: 1px solid rgba(248, 113, 113, 0.4);
-                background: rgba(248, 113, 113, 0.12);
-                color: var(--err);
+            .card-tbl th,
+            .card-tbl td {
+                padding: 8px 10px;
+                text-align: left;
+                border-bottom: 1px solid var(--border);
+                white-space: nowrap;
+            }
+            .card-tbl th {
                 font-size: 11px;
-                cursor: pointer;
+                font-weight: 600;
+                color: var(--text-mute);
+                text-transform: none;
             }
-            /* 欠款订单红色边框高亮 */
-            .order-row.is-underpaid {
-                border-color: rgba(248, 113, 113, 0.6);
-                background: rgba(248, 113, 113, 0.04);
-                box-shadow: inset 3px 0 0 #f87171;
+            .card-tbl tbody tr:hover {
+                background: rgba(255, 255, 255, 0.02);
+            }
+            .card-tbl .num {
+                text-align: right;
+                font-variant-numeric: tabular-nums;
+            }
+            .card-tbl .sub {
+                font-size: 10.5px;
+                color: var(--text-faint);
+            }
+            .card-tbl tr.low-stock td {
+                background: rgba(248, 113, 113, 0.06);
+            }
+            .mint-cell {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .mint-cell input {
+                width: 66px;
+                padding: 4px 6px;
+                font-size: 11.5px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                text-align: right;
+            }
+            .badge-kind {
+                font-size: 10.5px;
+                padding: 2px 7px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.06);
+                color: var(--text-mute);
+            }
+            .badge-kind[data-k="plan"] {
+                background: rgba(129, 140, 248, 0.12);
+                color: #a5b4fc;
+            }
+            .stock-warn {
+                color: var(--danger, #f87171);
+                font-weight: 600;
+            }
+            .refund-row td {
+                background: rgba(248, 113, 113, 0.07);
+            }
+            .mono {
+                font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+                font-size: 11.5px;
+            }
+            .void-form {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .void-form input {
+                padding: 7px 10px;
+                font-size: 12px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                color: var(--text);
+            }
+            .void-form input.code {
+                flex: 1 1 420px;
+                min-width: 260px;
+                font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+            }
+            .void-form input.reason {
+                flex: 0 1 200px;
+            }
+            .legacy-toggle {
+                background: none;
+                border: none;
+                color: var(--text-mute);
+                font-size: 12px;
+                cursor: pointer;
+                text-decoration: underline;
+                padding: 0;
             }
         </style>
     </head>
     <body class="admin-console">
-        <div class="container">
+        <div class="container container--wide">
             <nav id="admin-nav" data-active="orders"></nav>
 
-            <div id="loading" class="loading"><div class="admin-skeleton"><div class="sk-block sk-title"></div><div class="sk-block sk-sub"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div><div class="sk-block sk-line"></div></div></div>
+            <div id="loading" class="loading">
+                <div class="admin-skeleton">
+                    <div class="sk-block sk-title"></div>
+                    <div class="sk-block sk-sub"></div>
+                    <div class="sk-block sk-table"></div>
+                    <div class="sk-block sk-line"></div>
+                </div>
+            </div>
 
             <div id="login-gate" class="gate" style="display: none">
                 <h2>需要登录</h2>
@@ -220,111 +191,194 @@
                 <h2>无权访问</h2>
                 <p>
                     这个页面仅站点管理员可见。如果你认为这是误判，请联系
-                    <code>站主</code></p>
+                    <code>站主</code>
+                </p>
                 <a class="btn-primary" href="../">返回聊天</a>
             </div>
 
             <div id="main" style="display: none">
                 <header>
-                    <h1>付费订单审核</h1>
+                    <h1>卡密运营</h1>
                     <p>
-                        按量计费模式：审核用户提交的充值订单，以每条订单的<strong>用户应付</strong>为准核对。审核通过后自动按实付金额打入用户¥钱包（1:1），即时生效，无激活码环节。                    </p>
+                        收款走 16688 发卡店：用户在店里买卡 → 回站内「账单 → 兑换码」粘贴 →
+                        由后端按卡号回查平台订单授权后自动到账。<strong>没有人工审核环节</strong>。
+                        库存由 5 分钟一轮的 cron 自动补货，下面的手动铸码只在需要临时加量时用。
+                    </p>
                 </header>
 
-                <div id="ops-alerts" style="display: none"></div>
-
                 <div class="stats" id="stats">
-                    <div class="stat-card pending">
-                        <div class="label">待审</div>
-                        <div class="value" id="stat-submitted"></div>
+                    <div class="stat-card">
+                        <div class="label">在售库存</div>
+                        <div class="value" id="stat-stock">—</div>
                     </div>
                     <div class="stat-card approved">
-                        <div class="label">已通过</div>
-                        <div class="value" id="stat-approved"></div>
+                        <div class="label">已兑换</div>
+                        <div class="value" id="stat-redeemed">—</div>
                     </div>
                     <div class="stat-card">
-                        <div class="label">已激活</div>
-                        <div class="value" id="stat-activated"></div>
+                        <div class="label">累计收款</div>
+                        <div class="value" id="stat-gross">—</div>
                     </div>
                     <div class="stat-card rejected">
-                        <div class="label">已驳回</div>
-                        <div class="value" id="stat-rejected"></div>
+                        <div class="label">退款待处理</div>
+                        <div class="value" id="stat-refund">—</div>
                     </div>
                 </div>
 
-                <div class="grant-panel" id="grantPanel">
-                    <div class="grant-panel-title">指定邮箱赠送激活码</div>
-                    <p class="grant-panel-hint">
-                        无需用户先提交订单。输入对方注册时使用的邮箱（必须已经登录过本站），选择档位 / 加油包后生成一次性激活码。激活码激活后自动作废，不可重复使用                   </p>
-                    <div class="grant-form">
-                        <input
-                            type="email"
-                            id="grantEmail"
-                            placeholder="对方邮箱（QQ / Foxmail）"
-                            autocomplete="off"
-                            maxlength="200"
-                        />
-                        <select id="grantSku" class="grant-form-select">
-                            <option value="recharge:custom">充值 · 按量钱包（¥1-¥2000，1:1 入钱包）</option>
-                            <option value="plan:pro">订阅 · Pro（¥9.9 / 30 天）</option>
-                            <option value="plan:pro_plus">订阅 · Pro+（¥29 / 30 天）</option>
-                            <option value="plan:pro_max">订阅 · Pro Max（¥99 / 30 天）</option>
-                            <option value="topup:topup_small">加油包 · 1,500 万 token（¥10）</option>
-                            <option value="topup:topup_medium">加油包 · 9,000 万 token（¥50）</option>
-                            <option value="topup:topup_large">加油包 · 4 亿 token（¥100）</option>
-                        </select>
-                        <input
-                            type="number"
-                            id="grantRechargeAmount"
-                            placeholder="充值金额 ¥（1-2000）"
-                            min="1"
-                            max="2000"
-                            step="0.01"
-                            autocomplete="off"
-                            style="display:none"
-                        />
-                        <textarea
-                            id="grantNote"
-                            placeholder="备注（可选）仅站主可见，比如 'abc 一个月'"
-                            maxlength="500"
-                        ></textarea>
-                        <button class="btn-grant" id="grantBtn" type="button">生成激活码</button>
+                <div class="card-panel">
+                    <div class="card-panel-title">
+                        兑换总开关
+                        <span class="switch-state" id="redeem-state" data-on="0">—</span>
                     </div>
-                    <div class="grant-result" id="grantResult"></div>
+                    <div class="card-panel-hint">
+                        止血用。关掉后用户提交卡密会收到「暂时关闭，稍后再试」的可重试提示，
+                        <strong>卡密不会失效、不会被判死</strong>。改动即时生效（兑换时现查这一行配置，无缓存）。
+                    </div>
+                    <div class="switch-row">
+                        <button class="btn-tiny approve" id="btn-redeem-on" type="button">开启兑换</button>
+                        <button class="btn-tiny reject" id="btn-redeem-off" type="button">关闭兑换</button>
+                        <button class="reload-btn" id="reload-btn" type="button" style="margin-left: auto">刷新</button>
+                    </div>
                 </div>
 
-                <div class="filter-group" id="statusFilter">
-                    <button class="filter-btn active" data-status="">全部</button>
-                    <button class="filter-btn" data-status="submitted">待审核</button>
-                    <button class="filter-btn" data-status="approved">已通过</button>
-                    <button class="filter-btn" data-status="activated">已激</button>
-                    <button class="filter-btn" data-status="rejected">已拒</button>
-                    <button class="reload-btn" id="reload-btn" style="margin-left: auto">
-                        刷新
-                    </button>
+                <div class="card-panel">
+                    <div class="card-panel-title">库存与卡种</div>
+                    <div class="card-panel-hint">
+                        「平台库存」来自 16688 的可售数量，是买家真正能买到的数；「本地可兑」是我们库里
+                        state=uploaded 的行数。两者正常应当相等，长期不等说明补货链路有问题。
+                        低于水位的行会标红，cron 会在下一轮自动补。
+                        <br />
+                        ⚠️ 手动铸码只能<strong>铸到平台货架上</strong>。没在平台成交过的卡永远兑不掉（授权要回查平台订单），
+                        所以这里<strong>无法</strong>铸一张码直接送人——送额度请到「用户管理」页用「钱包 ±¥」。
+                    </div>
+                    <div class="table-wrap" data-sensitive>
+                        <table class="card-tbl">
+                            <thead>
+                                <tr>
+                                    <th>卡种</th>
+                                    <th>类型</th>
+                                    <th class="num">面额</th>
+                                    <th class="num">售价</th>
+                                    <th class="num">平台库存</th>
+                                    <th class="num">本地可兑</th>
+                                    <th class="num">已兑</th>
+                                    <th class="num">已作废</th>
+                                    <th class="num">累计收款</th>
+                                    <th class="num">水位</th>
+                                    <th>手动铸码</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sku-rows">
+                                <tr><td colspan="11" class="empty">加载中</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-panel-hint" id="platform-note" style="margin-top: 10px; margin-bottom: 0"></div>
                 </div>
 
-                <div id="orders"></div>
+                <div class="card-panel">
+                    <div class="card-panel-title">作废卡密</div>
+                    <div class="card-panel-hint">
+                        粘贴卡密明文（库里只存 sha256，所以必须给明文，由后端哈希后比对；明文不会被记录）。
+                        只能作废<strong>未兑现</strong>的卡；已兑现的钱已经发出去了，作废不会把钱收回来，
+                        需要追回请走下面的退款队列。
+                    </div>
+                    <div class="void-form">
+                        <input
+                            type="text"
+                            class="code"
+                            id="void-code"
+                            placeholder="CANCRI-CARD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+                            autocomplete="off"
+                            spellcheck="false"
+                        />
+                        <input type="text" class="reason" id="void-reason" placeholder="原因（可选）" maxlength="200" autocomplete="off" />
+                        <button class="btn-tiny reject" id="void-btn" type="button">作废</button>
+                    </div>
+                </div>
 
-                <div id="empty-msg" class="empty" style="display: none">
-                    没有匹配的订单               </div>
+                <div class="card-panel" id="refund-panel" style="display: none">
+                    <div class="card-panel-title">退款人工队列</div>
+                    <div class="card-panel-hint">
+                        这些卡<strong>已经兑现</strong>（钱已进用户账户）但随后被平台退款。自动扣回会造成负余额、
+                        而且额度可能已经花掉了，所以只打标记交人工裁决：确认要追回就到「用户管理」页用
+                        「钱包 -¥」扣回对应金额。
+                    </div>
+                    <div class="table-wrap" data-sensitive>
+                        <table class="card-tbl">
+                            <thead>
+                                <tr>
+                                    <th>标记时间</th>
+                                    <th>卡种</th>
+                                    <th class="num">到账</th>
+                                    <th class="num">实付</th>
+                                    <th>用户</th>
+                                    <th>发卡单号</th>
+                                    <th>原因</th>
+                                </tr>
+                            </thead>
+                            <tbody id="refund-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="card-panel-title">最近兑换</div>
+                    <div class="card-panel-hint" id="recent-meta">加载中</div>
+                    <div class="table-wrap" data-sensitive>
+                        <table class="card-tbl">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>卡种</th>
+                                    <th class="num">到账</th>
+                                    <th class="num">实付</th>
+                                    <th>用户</th>
+                                    <th>发卡单号</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="card-panel-title">历史订单（爱发电 / 人工通道，已退休）</div>
+                    <div class="card-panel-hint">
+                        2026-09-09 起在线下单已关闸，这里只作审计留档。存量全部是 activated / rejected，
+                        没有待审订单。数据量大且要跨 9 张表做风控聚合，所以按需加载。
+                    </div>
+                    <button class="legacy-toggle" id="legacy-btn" type="button">加载历史订单</button>
+                    <div class="table-wrap" data-sensitive id="legacy-wrap" style="display: none; margin-top: 12px">
+                        <table class="card-tbl">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>类型</th>
+                                    <th class="num">金额</th>
+                                    <th>状态</th>
+                                    <th>邮箱</th>
+                                    <th>备注</th>
+                                </tr>
+                            </thead>
+                            <tbody id="legacy-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div id="toast" class="toast"></div>
         </div>
 
         <script src="../cancri_config.js"></script>
-        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详js/fingerprint.js 顶部注释-->
+        <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见 js/fingerprint.js 顶部注释 -->
         <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
-        <!-- 2026-05-13 审查：原 inline <script> 抽离admin-orders-app.js，并CSP 'unsafe-inline' script-src-->
-        <script src="../cancri_credits.js?v=2026-06-07-credits"></script>
-        <script src="./admin-formatters.js?v=2026-06-07-credits"></script>
         <script src="./admin-nav.js?v=20260830-unlock-fix"></script>
-        <script src="./admin-orders-app.js?v=20260705-undo2"></script>
-    <script src="../assets/p2m-loader.js" defer></script>
-</body>
+        <script src="./admin-orders-app.js?v=20260909-cards"></script>
+        <script src="../assets/p2m-loader.js" defer></script>
+    </body>
 </html>

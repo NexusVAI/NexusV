@@ -1,1027 +1,427 @@
-// admin_orders.html 的页面逻辑。2026-05-13 审查后从 inline <script> 抽出以便
-// admin_orders.html 的 CSP 删除 'unsafe-inline'。
+// admin-orders-app.js — 管理台「卡密运营」页
+//
+// 2026-09-09 本页从「付费订单审核」整体改造而来。收款切到 16688 发卡店后，
+// 到账链路是「平台成交 → 用户兑换 → 后端回查授权 → 自动入账」，中间**没有人工审核**，
+// 原来那套 approve/reject + 5 秒撤销 + 激活码赠送 + 9 张表的风控聚合全部下线。
+//
+// 现在的职责只有五件：看库存 / 手动铸码上架 / 作废未兑卡 / 看兑换流水 / 处理退款人工队列。
+//
+// ⛔ 本页**没有**「铸一张码直接送人」的功能，这是设计约束不是遗漏：
+//    卡密的授权判据是「平台上确实卖出过这张卡」（order/list?card_no= 回查），
+//    没走过平台成交的码永远兑不掉。要给用户送额度，用「用户管理」页的「钱包 ±¥」。
+(function () {
+    "use strict";
 
-const sb = window.supabase.createClient(
-    window.__SUPABASE_URL__,
-    window.__SUPABASE_ANON_KEY__,
-    {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: false,
-            storageKey: "cancri_supabase_auth",
+    var sb = window.supabase.createClient(
+        window.__SUPABASE_URL__,
+        window.__SUPABASE_ANON_KEY__,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: false,
+                // 与全站一致，管理员在 chat 页的登录态才在本页可见
+                storageKey: "cancri_supabase_auth",
+            },
         },
-    },
-);
-const GW =
-    window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
-
-let currentStatusFilter = "";
-let cachedOrders = [];
-// 2026-06-23：wallet_v3 按量计费模式下，订单批准即自动入钱包，无激活码 / 无订阅档。
-let BILLING_MODE = "quota_v2";
-const IS_WALLET_V3 = () => BILLING_MODE === "wallet_v3";
-
-// 套餐标价表（与 plan_catalog_v4 保持同步；pro_plus/pro_max 为历史档位），用于对账核查
-const PLAN_PRICE_CNY = { go: 9.9, plus: 19, pro: 99, pro_plus: 29, pro_max: 99 };
-// 2026-07-01 前的历史订单中 pro 档标价为 ¥9.9（旧档位体系），避免误报
-const LEGACY_PLAN_CUTOFF = Date.parse("2026-07-01T00:00:00Z");
-const LEGACY_PLAN_PRICE_CNY = { pro: 9.9, pro_plus: 29, pro_max: 99 };
-
-// 检测同一用户一小时内是否提交超过 2 张订单
-function getRecentOrderCount(userId) {
-    const oneHourAgo = Date.now() - 3600_000;
-    return cachedOrders.filter(
-        (o) => o.user_id === userId &&
-               o.status === "submitted" &&
-               new Date(o.created_at).getTime() > oneHourAgo,
-    ).length;
-}
-
-// 对账：付款金额是否低于所申请套餐的标价
-function getExpectedPrice(o) {
-    const planCode = o.plan_code || "";
-    const isLegacy = new Date(o.created_at).getTime() < LEGACY_PLAN_CUTOFF;
-    return (isLegacy ? LEGACY_PLAN_PRICE_CNY[planCode] : undefined) ?? PLAN_PRICE_CNY[planCode];
-}
-
-function isUnderpaid(o) {
-    const expectedPrice = getExpectedPrice(o);
-    if (expectedPrice == null) return false;
-    const paid = Number(o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny);
-    if (!Number.isFinite(paid)) return false;
-    return paid < expectedPrice;
-}
-
-function esc(s) {
-    const d = document.createElement("div");
-    d.textContent = String(s == null ? "" : s);
-    return d.innerHTML;
-}
-
-const { fmtTime, fmtArr, fmtScreen, fmtAgeDays, fmtTokens, fmtCreditsFromTokens, fmtIpGeo } = window.AdminFormatters;
-
-function fmtPayable(n) {
-    const v = Number(n);
-    if (!Number.isFinite(v)) return "—";
-    return v.toFixed(2).replace(/\.?0+$/, "");
-}
-
-// 对账核心：展示 server 下单时算出的「用户应付」，不是 catalog 标价。
-function renderPayableBlock(o) {
-    const payable = o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny;
-    const list = o.list_price_cny;
-    const kind = o.order_kind || "subscription";
-    let hint = "";
-    if (kind === "upgrade") {
-        hint = "升级补差价";
-    } else if (list != null && Number(list) !== Number(payable)) {
-        hint = "非标价";
-    }
-    const listNote =
-        list != null && Number(list) !== Number(payable)
-            ? '<span class="order-payable__list">标价 ¥' +
-              esc(fmtPayable(list)) +
-              " · 以用户应付为准</span>"
-            : "";
-    return (
-        '<div class="order-payable">' +
-        '<span class="order-payable__label">用户应付</span>' +
-        '<span class="order-payable__amount">¥' +
-        esc(fmtPayable(payable)) +
-        "</span>" +
-        (hint
-            ? '<span class="order-payable__hint">' + esc(hint) + "</span>"
-            : "") +
-        '<span class="order-payable__method">' +
-        esc(o.method || "—") +
-        "</span>" +
-        listNote +
-        "</div>"
     );
-}
+    var GW = window.__SUPABASE_URL__ + "/functions/v1/chat-gateway";
 
-// 用户上下文摘要：注册多久 / 历史订单 / 用量 / 是否封禁
-function renderUserContext(o) {
-    const m = o.user_meta;
-    const h = o.order_history;
-    const u = o.recent_usage;
-    const ban = o.ban;
-    const parts = [];
-    if (m) {
-        parts.push(
-            '<span class="ctx-pill" title="账号注册于 ' + esc(m.created_at || "?") + '">' +
-            "🕐 " + esc(fmtAgeDays(m.age_days)) +
-            "</span>"
-        );
+    function $(id) {
+        return document.getElementById(id);
     }
-    if (h && h.total > 1) {
-        // total > 1 说明本订单不是首单，标出来
-        const segs = [];
-        if (h.activated) segs.push(h.activated + " 已激活");
-        if (h.approved) segs.push(h.approved + " 已通过");
-        if (h.rejected) segs.push('<span class="ctx-warn">' + h.rejected + " 被拒</span>");
-        if (h.submitted) segs.push(h.submitted + " 待审");
-        parts.push(
-            '<span class="ctx-pill" title="此 user_id 共 ' + h.total + ' 张订单">📋 历史 ' + segs.join(" / ") +
-            "</span>"
-        );
+    function esc(s) {
+        var d = document.createElement("div");
+        d.textContent = String(s == null ? "" : s);
+        return d.innerHTML;
     }
-    if (u && u.call_count > 0) {
-        parts.push(
-            '<span class="ctx-pill" title="近 7 天 API 调用">⚡ 7d ' + u.call_count + " 次 · " +
-            esc(fmtTokens((u.tokens_in || 0) + (u.tokens_out || 0))) + " tok</span>"
-        );
+    function fmtCny(n) {
+        var v = Number(n);
+        return Number.isFinite(v) ? "¥" + v.toFixed(2) : "—";
     }
-    if (ban) {
-        const label = ban.active ? "当前已封禁" : "曾被封禁";
-        const cls = ban.active ? "ctx-danger" : "ctx-warn";
-        const reasonStr = ban.reason ? "：" + ban.reason : "";
-        parts.push(
-            '<span class="ctx-pill ' + cls + '" title="' + esc(ban.banned_at) + esc(reasonStr) + '">🚫 ' +
-            esc(label) + "</span>"
-        );
-    }
-    if (parts.length === 0) return "";
-    return '<div class="ctx-row">' + parts.join("") + "</div>";
-}
-
-// 设备指纹块：仅 device 非空时渲染，否则空字符串。
-// "宁可多" 原则：把所有有信号的字段都列出来，多账号判断主要看 suspect.distinct_users + WebRTC leak。
-function renderDeviceBlock(o) {
-    const dev = o.device;
-    const sus = o.suspect;
-    const ipReuse = o.ip_reuse;
-    const ipGeo = o.ip_geo;
-    const dupEmail = o.duplicate_email;
-    const dupQq = o.duplicate_qq;
-
-    // 即使没指纹，只要有重复邮箱/QQ 也要展示风险
-    const hasAnything = dev || sus || ipReuse || ipGeo || dupEmail || dupQq;
-    if (!hasAnything) {
-        return '<div class="dev-block dev-empty">设备指纹：暂无（用户从未登录访问过任何挂了 fingerprint.js 的页面）</div>';
+    function fmtTime(iso) {
+        if (!iso) return "—";
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso);
+        return d.toLocaleString("zh-CN", { hour12: false });
     }
 
-    const flags = [];
-    if (dev && dev.vpn_suspected) flags.push('<span class="dev-flag warn">VPN 嫌疑</span>');
-    if (dev && dev.webrtc_leak_detected) flags.push('<span class="dev-flag warn">WebRTC 漏 IP</span>');
-    if (ipGeo && ipGeo.proxy) flags.push('<span class="dev-flag warn">代理 IP</span>');
-    if (ipGeo && ipGeo.hosting) flags.push('<span class="dev-flag warn">机房 IP</span>');
-    if (sus && sus.distinct_users >= 2) {
-        flags.push('<span class="dev-flag danger">多账号嫌疑：同设备 ' + sus.distinct_users + ' 号</span>');
-    }
-    if (ipReuse && ipReuse.user_count >= 2) {
-        flags.push('<span class="dev-flag warn">同 IP ' + ipReuse.user_count + ' 个账号</span>');
-    }
-    if (dupEmail && dupEmail.count >= 2) {
-        flags.push('<span class="dev-flag danger">同邮箱 ' + dupEmail.count + ' 号</span>');
-    }
-    if (dupQq && dupQq.count >= 2) {
-        flags.push('<span class="dev-flag danger">同 QQ ' + dupQq.count + ' 号</span>');
-    }
-    const flagsHtml = flags.length ? '<div class="dev-flags">' + flags.join("") + "</div>" : "";
-
-    const otherUsers = (sus && Array.isArray(sus.user_ids))
-        ? sus.user_ids.filter((u) => u && u !== o.user_id)
-        : [];
-    const ipReuseUsers = (ipReuse && Array.isArray(ipReuse.user_ids))
-        ? ipReuse.user_ids.filter((u) => u && u !== o.user_id)
-        : [];
-    const dupEmailUsers = (dupEmail && Array.isArray(dupEmail.user_ids))
-        ? dupEmail.user_ids.filter((u) => u && u !== o.user_id)
-        : [];
-    const dupQqUsers = (dupQq && Array.isArray(dupQq.user_ids))
-        ? dupQq.user_ids.filter((u) => u && u !== o.user_id)
-        : [];
-
-    function userIdsHtml(label, ids) {
-        if (!ids || ids.length === 0) return "";
-        return '<div class="dev-row"><span class="dev-k">' + label + "</span><span class=\"dev-v\"><code>"
-            + ids.map((u) => esc(String(u))).join("</code> <code>") + "</code></span></div>";
-    }
-
-    const rows = [];
-    if (dev) {
-        const geoLabel = fmtIpGeo(ipGeo);
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">真实 IP</span><span class="dev-v"><code>'
-            + esc(dev.server_ip || "—") + "</code>"
-            + (geoLabel ? "<br>" + esc(geoLabel) : (dev.server_country ? " · " + esc(dev.server_country) : ""))
-            + "</span></div>"
-        );
-        const wrtPub = fmtArr(dev.webrtc_public_ips);
-        const wrtLoc = fmtArr(dev.webrtc_local_ips);
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">WebRTC 公网</span><span class="dev-v"><code>'
-            + esc(wrtPub) + "</code></span></div>"
-        );
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">WebRTC 内网</span><span class="dev-v"><code>'
-            + esc(wrtLoc) + "</code></span></div>"
-        );
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">时区 / 语言</span><span class="dev-v">'
-            + esc(dev.timezone || "—") + " · " + esc(fmtArr(dev.languages)) + "</span></div>"
-        );
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">浏览器 UA</span><span class="dev-v ua">'
-            + esc(dev.ua || "—") + "</span></div>"
-        );
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">平台 / 厂商</span><span class="dev-v">'
-            + esc(dev.platform || "—") + " · " + esc(dev.vendor || "—") + "</span></div>"
-        );
-        const hw = (dev.hardware_concurrency != null) ? (dev.hardware_concurrency + " 核") : "—";
-        const mem = (dev.device_memory != null) ? (dev.device_memory + " GB") : "—";
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">硬件</span><span class="dev-v">'
-            + esc(hw) + " · " + esc(mem) + " · " + esc(fmtScreen(dev.screen)) + "</span></div>"
-        );
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">visitor_id</span><span class="dev-v"><code>'
-            + esc(dev.visitor_id || "—") + "</code></span></div>"
-        );
-        rows.push(
-            '<div class="dev-row"><span class="dev-k">指纹时间窗</span><span class="dev-v">首次 '
-            + esc(fmtTime(dev.first_seen)) + " · 最近 " + esc(fmtTime(dev.last_seen))
-            + ' · <span style="color:var(--text-mute)">' + (dev.fingerprint_count || 0) + " 条记录</span></span></div>"
-        );
-    }
-
-    const otherIdsHtml =
-        userIdsHtml("同设备其他账号", otherUsers) +
-        userIdsHtml("同 IP 其他账号", ipReuseUsers) +
-        userIdsHtml("同邮箱其他账号", dupEmailUsers) +
-        userIdsHtml("同 QQ 其他账号", dupQqUsers);
-
-    return (
-        '<details class="dev-block"><summary class="dev-summary">'
-        + '<span>设备指纹 / 风险信号</span>'
-        + flagsHtml
-        + "</summary>"
-        + '<div class="dev-detail">' + rows.join("") + otherIdsHtml + "</div>"
-        + "</details>"
-    );
-}
-
-// tier badge：与 admin_users / pricing 页保持一致的视觉语言。
-// 2026-05-17 Phase A：tier 仍是 'free'/'paid'，但若 plan_code 已知则显示档位（PRO / PRO+ / PRO MAX）。
-// 2026-06-23：wallet_v3 下无订阅档 / 无 free·paid 之分（仅限速档），不再渲染该徽章。
-function renderTierPill(tier, planCode) {
-    if (IS_WALLET_V3()) return "";
-    if (tier === "paid") {
-        const label = planCode === "pro_max" ? "PRO MAX"
-                    : planCode === "pro_plus" ? "PRO+"
-                    : planCode === "pro" ? "PRO"
-                    : "PAID";
-        return '<span class="status-pill s-2xx" title="付费档 ' + esc(planCode || "") + '">' + esc(label) + '</span>';
-    }
-    return '<span class="status-pill" style="background:var(--hover);color:var(--text-soft);border:1px solid var(--line)" title="免费档">FREE</span>';
-}
-
-// 2026-05-17 Phase A：订单类型 / 规格徽章。订阅显示档位，加油包显示规格。
-// 2026-06-23：新增 recharge（按量充值）类型，显示"充值 ¥X"。
-// 2026-06-23：wallet_v3 下所有 kind 批准即入钱包，统一显示「充值 ¥X」（按用户应付）。
-function renderOrderKindCell(o) {
-    const kind = o.order_kind || "subscription";
-    if (IS_WALLET_V3() || kind === "recharge" || kind === "token_plan") {
-        const micro = Number(o.wallet_credit_micro || 0);
-        const cny = micro > 0 ? (micro / 1000000).toFixed(2) : (Number(o.amount_cny || 0)).toFixed(2);
-        return '<span class="status-pill" style="background:rgba(34,197,94,.18);color:#22c55e" title="按量充值 ¥' + esc(cny) + '">充值 ¥' + esc(cny) + '</span>';
-    }
-    if (kind === "topup") {
-        const sku = o.topup_sku || "";
-        const tokens = Number(o.topup_tokens || 0);
-        const creditsLabel = fmtCreditsFromTokens(tokens);
-        return '<span class="status-pill" style="background:rgba(168,85,247,.18);color:#a855f7" title="加油包 ' + esc(sku) + ' · ' + esc(creditsLabel) + '">加油包 ' + esc(creditsLabel) + '</span>';
-    }
-    const plan = o.plan_code || "pro";
-    const label = plan === "pro_max" ? "Pro Max"
-                : plan === "pro_plus" ? "Pro+"
-                : "Pro";
-    const color = plan === "pro_max" ? "#a855f7"
-                : plan === "pro_plus" ? "#818cf8"
-                : "#60a5fa";
-    const bg = plan === "pro_max" ? "rgba(168,85,247,.18)"
-             : plan === "pro_plus" ? "rgba(129,140,248,.18)"
-             : "rgba(96,165,250,.18)";
-    return '<span class="status-pill" style="background:' + bg + ';color:' + color + '" title="订阅 ' + esc(plan) + '">订阅 ' + esc(label) + '</span>';
-}
-
-async function getSession() {
-    const {
-        data: { session },
-    } = await sb.auth.getSession();
-    return session;
-}
-
-async function callGateway(endpoint, payload) {
-    const session = await getSession();
-    if (!session) throw new Error("not_logged_in");
-    const resp = await fetch(GW, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            apikey: window.__SUPABASE_ANON_KEY__,
-        },
-        body: JSON.stringify({ endpoint, ...(payload || {}), __auth_token: session.access_token }),
-    });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok)
-        throw Object.assign(new Error(data.error || resp.statusText), {
-            status: resp.status,
-            body: data,
+    // api-platform.css 的 .toast 用 opacity + .show，不是 display —— 直接设
+    // display:block 不会显示（历史踩过）。
+    function showToast(text, kind) {
+        var t = $("toast");
+        if (!t) return;
+        t.textContent = text;
+        t.className = "toast" + (kind ? " " + kind : "");
+        requestAnimationFrame(function () {
+            t.classList.add("show");
         });
-    return data;
-}
+        setTimeout(function () {
+            t.classList.remove("show");
+        }, 4000);
+    }
 
-function showToast(text, kind) {
-    // api-platform.css .toast uses opacity:0 + .show class pattern, not
-    // display:none. Setting inline display:block does nothing because the
-    // base rule keeps opacity:0. Mirror admin-users-app.js's correct impl.
-    const t = document.getElementById("toast");
-    if (!t) return;
-    t.textContent = text;
-    t.className = "toast" + (kind ? " " + kind : "");
-    requestAnimationFrame(() => t.classList.add("show"));
-    setTimeout(() => t.classList.remove("show"), 3500);
-}
+    async function getSession() {
+        var r = await sb.auth.getSession();
+        return r && r.data ? r.data.session : null;
+    }
 
-// 正在倒计时的待提交审批：order_id → interval 计时器。
-// 存在模块级 Map 而非按钮 DOM 上，避免 renderOrders() 重建 innerHTML
-// 后旧按钮被销毁、计时器却继续跑完静默提交且无法取消。
-// order_id → { timer, left, note }
-const UNDO_TIMERS = new Map();
-
-function cancelUndoTimer(id) {
-    const st = UNDO_TIMERS.get(id);
-    if (!st) return false;
-    clearInterval(st.timer);
-    UNDO_TIMERS.delete(id);
-    return true;
-}
-
-// 2026-08-12 修复：原实现在**每次**重渲染时无差别取消全部待提交审批。
-// 于是连续处理多笔时（正是清理重复订单的场景），前一笔成功后触发的列表刷新
-// 会把后面几笔还在倒计时的审批静默取消，管理员以为点过了、实际请求从未发出。
-// 数据佐证：卡在 submitted 的订单 reviewed_at / reviewed_by 全为 null。
-// 现在只取消「订单已从列表里消失」的（例如已被删除），其余继续跑。
-function pruneUndoTimers(validIds) {
-    let cancelled = 0;
-    UNDO_TIMERS.forEach((_st, id) => {
-        if (!validIds.has(id)) {
-            cancelUndoTimer(id);
-            cancelled += 1;
+    async function callGateway(endpoint, payload) {
+        var session = await getSession();
+        if (!session) throw new Error("not_logged_in");
+        var resp = await fetch(GW, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                apikey: window.__SUPABASE_ANON_KEY__,
+            },
+            body: JSON.stringify(
+                Object.assign({ endpoint: endpoint }, payload || {}, {
+                    __auth_token: session.access_token,
+                }),
+            ),
+        });
+        var data = await resp.json().catch(function () {
+            return {};
+        });
+        if (!resp.ok) {
+            throw Object.assign(new Error(data.message || data.error || resp.statusText), {
+                status: resp.status,
+                body: data,
+            });
         }
-    });
-    return cancelled;
-}
+        return data;
+    }
 
-// 重渲染会重建 innerHTML、换掉按钮对象。渲染后把仍在倒计时的按钮恢复成
-// 「撤销（Ns）」，否则按钮看起来弹回了「通过」，管理员会以为没点上。
-function restorePendingApprovals(container) {
-    UNDO_TIMERS.forEach((st, id) => {
-        const btn = container.querySelector(
-            '[data-action="approve"][data-id="' + id + '"]',
-        );
-        if (!btn) return;
-        if (!btn.dataset.origLabel) btn.dataset.origLabel = btn.textContent;
-        btn.classList.remove("approve");
-        btn.classList.add("undo");
-        btn.textContent = "撤销（" + st.left + "s）";
-    });
-}
-
-function renderOrders() {
-    // 只取消「订单已不在列表里」的倒计时（例如已被删除）；仍在列表里的继续跑，
-    // 渲染完由 restorePendingApprovals() 把按钮恢复成「撤销（Ns）」。
-    // 绝不因为一次无关刷新就把管理员已经点下去的审批吞掉。
-    const liveIds = new Set(cachedOrders.map((o) => o.id));
-    const cancelled = pruneUndoTimers(liveIds);
-    if (cancelled > 0) {
-        showToast(
-            "⚠️ " + cancelled + " 个待提交的通过已取消：订单已不在列表中",
-            "err",
+    function errText(err) {
+        return (
+            (err && err.body && (err.body.message || err.body.error)) ||
+            (err && err.message) ||
+            "操作失败"
         );
     }
-    const filtered = currentStatusFilter
-        ? cachedOrders.filter(
-              (o) => o.status === currentStatusFilter,
-          )
-        : cachedOrders;
-    const container = document.getElementById("orders");
-    const empty = document.getElementById("empty-msg");
-    if (filtered.length === 0) {
-        container.innerHTML = "";
-        empty.style.display = "block";
-        return;
+
+    var STATE = { skus: [], platform: null };
+
+    // ── 渲染 ────────────────────────────────────────────────────────────────
+
+    function renderTotals(t, redeemEnabled) {
+        t = t || {};
+        var s = $("stat-stock");
+        if (s) s.textContent = t.in_stock == null ? "—" : String(t.in_stock);
+        var r = $("stat-redeemed");
+        if (r) r.textContent = t.redeemed == null ? "—" : String(t.redeemed);
+        var g = $("stat-gross");
+        if (g) g.textContent = fmtCny(t.gross_cny);
+        var f = $("stat-refund");
+        if (f) f.textContent = t.refund_pending == null ? "—" : String(t.refund_pending);
+
+        var sw = $("redeem-state");
+        if (sw) {
+            sw.dataset.on = redeemEnabled ? "1" : "0";
+            sw.textContent = redeemEnabled ? "已开启" : "已关闭";
+        }
     }
-    empty.style.display = "none";
 
-    container.innerHTML = filtered
-        .map((o) => {
-            const created = new Date(o.created_at).toLocaleString(
-                "zh-CN",
-                { hour12: false },
-            );
-            const reviewed = o.reviewed_at
-                ? new Date(o.reviewed_at).toLocaleString("zh-CN", {
-                      hour12: false,
-                  })
-                : "—";
-            const activated = o.activated_at
-                ? new Date(o.activated_at).toLocaleString("zh-CN", {
-                      hour12: false,
-                  })
-                : "—";
-            const statusPill =
-                '<span class="status-pill ' +
-                esc(o.status) +
-                '">' +
-                esc(o.status) +
-                "</span>";
-            let actions = "";
-            const deleteBtn =
-                o.status !== "activated"
-                    ? '<button class="btn-tiny reject" data-action="delete" data-id="' +
-                      esc(o.id) +
-                      '" title="从后台删除此记录（已激活不可删）">删除记录</button>'
-                    : "";
-            if (o.status === "submitted") {
-                actions =
-                    '<div class="order-actions">' +
-                    '<input type="text" placeholder="备注（可选）" data-note="' +
-                    esc(o.id) +
-                    '" maxlength="500" />' +
-                    '<button class="btn-tiny approve" data-action="approve" data-id="' +
-                    esc(o.id) +
-                    '">' + (IS_WALLET_V3() ? "通过 · 入钱包" : "通过 + 生成激活码") + '</button>' +
-                    '<button class="btn-tiny reject" data-action="reject" data-id="' +
-                    esc(o.id) +
-                    '">拒绝</button>' +
-                    deleteBtn +
-                    "</div>";
-            } else if (o.activation_code) {
-                const codeBlock =
-                    '<div class="approved-code">激活码：<strong>' +
-                    esc(o.activation_code) +
-                    '</strong> <button class="btn-tiny approve" data-copy="' +
-                    esc(o.activation_code) +
-                    '">复制</button>' +
-                    (deleteBtn
-                        ? '<div class="order-actions" style="margin-top:8px;justify-content:flex-start">' +
-                          deleteBtn +
-                          "</div>"
-                        : "") +
-                    "</div>";
-                actions = codeBlock;
-            } else {
-                actions = deleteBtn
-                    ? '<div class="order-actions" style="justify-content:flex-start">' +
-                      deleteBtn +
-                      "</div>"
-                    : "—";
-            }
-
-            // 联系信息 + 用户备注突出展示（审单时需要直接看到，不用在 meta 里找）
-            const contactBlock =
-                '<div class="order-contact">' +
-                '<span class="oc-label">联系</span>' +
-                '<span class="oc-item">邮箱 <code>' + esc(o.email || "—") + "</code></span>" +
-                (o.qq
-                    ? '<span class="oc-item">QQ <code>' + esc(o.qq) + "</code></span>"
-                    : "") +
-                (o.wechat_id
-                    ? '<span class="oc-item">微信 <code>' + esc(o.wechat_id) + "</code></span>"
-                    : "") +
-                (o.user_note
-                    ? '<span class="oc-note"><strong>用户备注：</strong>' + esc(o.user_note) + "</span>"
-                    : "") +
-                "</div>";
-
-            // 风险标记：欠款 / 高频提交
-            const underpaid = isUnderpaid(o);
-            const recentCount = o.status === "submitted" ? getRecentOrderCount(o.user_id) : 0;
-            const riskFlags = [];
-            if (underpaid) {
-                const expected = getExpectedPrice(o) ?? "?";
-                const paid = Number(o.user_payable_cny != null ? o.user_payable_cny : o.amount_cny);
-                riskFlags.push(
-                    '<span class="dev-flag danger" style="font-size:12px;padding:3px 10px">⚠ 金额不符：付 ¥' +
-                    esc(fmtPayable(paid)) + '，' + esc(o.plan_code) + ' 套餐标价 ¥' + esc(String(expected)) + '</span>',
+    function renderSkus() {
+        var tbody = $("sku-rows");
+        if (!tbody) return;
+        if (!STATE.skus.length) {
+            tbody.innerHTML = '<tr><td colspan="11" class="empty">还没有卡种</td></tr>';
+            return;
+        }
+        var platform = STATE.platform;
+        tbody.innerHTML = STATE.skus
+            .map(function (s) {
+                var pStock = platform && s.goods_no ? platform[s.goods_no] : null;
+                var pText = platform == null ? "—" : pStock == null ? "无商品" : String(pStock);
+                var uploaded = Number(s.uploaded) || 0;
+                // 水位判定用平台库存（那才是买家能买到的数）；拿不到就退回本地数
+                var effective = pStock == null ? uploaded : pStock;
+                var low = effective < Number(s.min_stock);
+                var drift = platform != null && pStock != null && pStock !== uploaded;
+                return (
+                    '<tr class="' + (low ? "low-stock" : "") + '">' +
+                    "<td>" + esc(s.display_name || s.sku) +
+                    '<div class="sub">' + esc(s.sku) + (s.goods_no ? " · " + esc(s.goods_no) : " · 未建商品") + "</div></td>" +
+                    '<td><span class="badge-kind" data-k="' + esc(s.kind) + '">' +
+                    (s.kind === "plan" ? "套餐卡" : "充值卡") + "</span></td>" +
+                    '<td class="num">' + fmtCny(s.face_cny) + "</td>" +
+                    '<td class="num">' + fmtCny(s.list_price_cny) + "</td>" +
+                    '<td class="num' + (low ? " stock-warn" : "") + '">' + esc(pText) + "</td>" +
+                    '<td class="num">' + uploaded +
+                    (drift ? '<div class="sub stock-warn">与平台不一致</div>' : "") + "</td>" +
+                    '<td class="num">' + (Number(s.redeemed) || 0) + "</td>" +
+                    '<td class="num">' + (Number(s.voided) || 0) + "</td>" +
+                    '<td class="num">' + fmtCny(s.revenue_cny) + "</td>" +
+                    '<td class="num">' + esc(s.min_stock) + "</td>" +
+                    '<td><div class="mint-cell">' +
+                    '<input type="number" min="1" max="500" step="1" value="' +
+                    esc(s.restock_batch || 50) + '" data-mint-count="' + esc(s.sku) + '" />' +
+                    '<button class="btn-tiny approve" type="button" data-mint="' + esc(s.sku) +
+                    '" data-goods="' + esc(s.goods_no || "") + '"' + (s.goods_no ? "" : " disabled") +
+                    ">铸码</button></div></td>" +
+                    "</tr>"
                 );
-            }
-            if (recentCount > 2) {
-                riskFlags.push(
-                    '<span class="dev-flag danger" style="font-size:12px;padding:3px 10px">⚠ 1h 内提交 ' +
-                    recentCount + ' 张订单</span>',
-                );
-            }
-            const riskHtml = riskFlags.length
-                ? '<div class="dev-flags" style="margin:6px 0">' + riskFlags.join("") + '</div>'
+            })
+            .join("");
+
+        Array.prototype.forEach.call(tbody.querySelectorAll("button[data-mint]"), function (btn) {
+            btn.addEventListener("click", function () {
+                doMint(btn);
+            });
+        });
+
+        var note = $("platform-note");
+        if (note) {
+            note.innerHTML = platform == null
+                ? '<span class="stock-warn">平台库存暂时取不到（发卡平台没答复），上面「平台库存」一列为空。本地计数仍然准确。</span>'
                 : "";
+        }
+    }
 
-            return (
-                '<div class="order-row' +
-                (o.status === "submitted" ? " is-submitted" : "") +
-                (underpaid ? " is-underpaid" : "") +
-                '">' +
-                riskHtml +
-                renderPayableBlock(o) +
-                contactBlock +
-                '<div class="order-meta-block">' +
-                "<strong>" +
-                esc(o.email) +
-                "</strong>" +
-                '<span style="font-size:11px">' +
-                "user " +
-                "<code>" +
-                esc(
-                    String(o.user_id || "").slice(0, 8) +
-                        "…" +
-                        String(o.user_id || "").slice(-4),
-                ) +
-                "</code></span>" +
-                "</div>" +
-                '<div class="order-meta-block">' +
-                "<span>" +
-                statusPill +
-                " " +
-                renderTierPill(o.tier, o.plan_code) +
-                "</span>" +
-                "<span>" + renderOrderKindCell(o) + "</span>" +
-                "</div>" +
-                '<div class="order-meta-block">' +
-                "<span>提交 " +
-                esc(created) +
-                "</span>" +
-                "<span>审核 " +
-                esc(reviewed) +
-                "</span>" +
-                "<span>激活 " +
-                esc(activated) +
-                "</span>" +
-                (o.admin_note
-                    ? "<span>站主备注：" +
-                      esc(o.admin_note) +
-                      "</span>"
-                    : "") +
-                "</div>" +
-                actions +
-                renderUserContext(o) +
-                renderDeviceBlock(o) +
-                "</div>"
-            );
-        })
-        .join("");
+    function renderRecent(rows) {
+        var tbody = $("recent-rows");
+        var meta = $("recent-meta");
+        if (!tbody) return;
+        rows = rows || [];
+        if (meta) meta.textContent = rows.length ? "最近 " + rows.length + " 笔" : "还没有兑换记录";
+        tbody.innerHTML = rows.length
+            ? rows
+                  .map(function (c) {
+                      return (
+                          "<tr" + (c.refund_flagged_at ? ' class="refund-row"' : "") + ">" +
+                          "<td>" + esc(fmtTime(c.redeemed_at)) + "</td>" +
+                          "<td>" + esc(c.display_name || c.sku) + "</td>" +
+                          '<td class="num">' + fmtCny(c.face_cny) + "</td>" +
+                          '<td class="num">' + fmtCny(c.paid_cny) + "</td>" +
+                          "<td>" + esc(c.email || c.user_id || "—") + "</td>" +
+                          '<td class="mono">' + esc(c.trade_no || "—") + "</td>" +
+                          "</tr>"
+                      );
+                  })
+                  .join("")
+            : '<tr><td colspan="6" class="empty">暂无</td></tr>';
+    }
 
-    // Wire up action buttons
-    container
-        .querySelectorAll("[data-action]")
-        .forEach((btn) => {
-            btn.addEventListener("click", async () => {
-                const id = btn.getAttribute("data-id");
-                const action = btn.getAttribute("data-action");
-                const noteInput = container.querySelector(
-                    '[data-note="' + id + '"]',
+    function renderRefundQueue(rows) {
+        var panel = $("refund-panel");
+        var tbody = $("refund-rows");
+        if (!panel || !tbody) return;
+        rows = rows || [];
+        if (!rows.length) {
+            panel.style.display = "none";
+            tbody.innerHTML = "";
+            return;
+        }
+        panel.style.display = "";
+        tbody.innerHTML = rows
+            .map(function (c) {
+                return (
+                    "<tr>" +
+                    "<td>" + esc(fmtTime(c.refund_flagged_at)) + "</td>" +
+                    "<td>" + esc(c.sku) + "</td>" +
+                    '<td class="num">' + fmtCny(c.face_cny) + "</td>" +
+                    '<td class="num">' + fmtCny(c.paid_cny) + "</td>" +
+                    "<td>" + esc(c.email || c.user_id || "—") + "</td>" +
+                    '<td class="mono">' + esc(c.trade_no || "—") + "</td>" +
+                    "<td>" + esc(c.void_reason || "—") + "</td>" +
+                    "</tr>"
                 );
-                const note = noteInput
-                    ? noteInput.value.trim()
-                    : "";
-                if (action === "approve") {
-                    // 防手滑：点击后进入 5 秒倒计时，按钮变为「撤销」，
-                    // 再点一次即取消；倒计时结束才真正调后端。
-                    // ⚠️ 期间列表可能被重渲染（处理别的订单/切筛选/刷新），
-                    // 按钮对象会被替换，所以所有 UI 更新都按 id 重新查 DOM。
-                    const liveBtn = () =>
-                        document.querySelector(
-                            '[data-action="approve"][data-id="' + id + '"]',
-                        ) || btn;
-                    if (UNDO_TIMERS.has(id)) {
-                        cancelUndoTimer(id);
-                        const b = liveBtn();
-                        b.classList.remove("undo");
-                        b.classList.add("approve");
-                        b.textContent = b.dataset.origLabel || "通过";
-                        showToast("已撤销，未提交", "ok");
-                        return;
-                    }
-                    btn.dataset.origLabel = btn.textContent;
-                    btn.classList.remove("approve");
-                    btn.classList.add("undo");
-                    // 备注在点击当下取走：重渲染会重建输入框、清空内容。
-                    const state = { timer: null, left: 5, note: note };
-                    btn.textContent = "撤销（" + state.left + "s）";
-                    state.timer = setInterval(async () => {
-                        // 若 Map 里已不是本计时器，说明已被撤销/取消，直接停止。
-                        const cur = UNDO_TIMERS.get(id);
-                        if (!cur || cur.timer !== state.timer) {
-                            clearInterval(state.timer);
-                            return;
-                        }
-                        state.left -= 1;
-                        if (state.left > 0) {
-                            liveBtn().textContent = "撤销（" + state.left + "s）";
-                            return;
-                        }
-                        clearInterval(state.timer);
-                        UNDO_TIMERS.delete(id);
-                        const submitBtn = liveBtn();
-                        submitBtn.disabled = true;
-                        submitBtn.textContent = "提交中…";
-                        try {
-                            const r = await callGateway(
-                                "admin_approve_order",
-                                { order_id: id, admin_note: state.note },
-                            );
-                            // 2026-06-23：recharge 订单审核后 auto_credited=true，无激活码
-                            if (r.auto_credited) {
-                                showToast(
-                                    "✅ 通过 · 已自动充值入钱包 ¥" +
-                                        ((r.credited_micro || 0) / 1000000).toFixed(2),
-                                    "ok",
-                                );
-                            } else {
-                                showToast(
-                                    "✅ 通过 · 激活码：" +
-                                        (r.activation_code || ""),
-                                    "ok",
-                                );
-                            }
-                            // 先本地更新状态并重渲染（即时反馈），
-                            // 后台再静默拉一次全量对齐服务端。
-                            patchLocalOrder(id, {
-                                status: r.auto_credited ? "activated" : "approved",
-                                activation_code: r.activation_code || null,
-                                admin_note: state.note || null,
-                                reviewed_at: new Date().toISOString(),
-                                activated_at: r.auto_credited
-                                    ? new Date().toISOString()
-                                    : null,
-                            });
-                            loadOrders();
-                            loadOpsAlerts();
-                        } catch (err) {
-                            const m =
-                                (err.body &&
-                                    (err.body.message || err.body.error)) ||
-                                err.message ||
-                                "操作失败";
-                            showToast("❌ " + m, "err");
-                            const failBtn = liveBtn();
-                            failBtn.disabled = false;
-                            failBtn.classList.remove("undo");
-                            failBtn.classList.add("approve");
-                            failBtn.textContent =
-                                failBtn.dataset.origLabel || "通过";
-                        }
-                    }, 1000);
-                    UNDO_TIMERS.set(id, state);
-                    showToast("⏳ 5 秒后提交通过，点「撤销」可取消", "ok");
-                    return;
-                }
-                btn.disabled = true;
-                try {
-                    if (action === "reject") {
-                        if (
-                            !confirm(
-                                "确认拒绝？建议先在备注里写明原因（用户能看到）。",
-                            )
-                        ) {
-                            btn.disabled = false;
-                            return;
-                        }
-                        await callGateway("admin_reject_order", {
-                            order_id: id,
-                            admin_note: note || "未通过审核",
-                        });
-                        showToast("✅ 已拒绝", "ok");
-                        patchLocalOrder(id, {
-                            status: "rejected",
-                            admin_note: note || "未通过审核",
-                            reviewed_at: new Date().toISOString(),
-                        });
-                    } else if (action === "delete") {
-                        if (
-                            !confirm(
-                                "确认删除此订单记录？\n\n" +
-                                    "• 仅在你这边清除记录（如手滑重复提交）\n" +
-                                    "• 待审订单删除后仪表盘红点会同步减少\n" +
-                                    "• 已激活订单不可删除",
-                            )
-                        ) {
-                            btn.disabled = false;
-                            return;
-                        }
-                        await callGateway("admin_delete_order", { order_id: id });
-                        showToast("✅ 订单已删除", "ok");
-                        cachedOrders = cachedOrders.filter((o) => o.id !== id);
-                        updateStats();
-                        renderOrders();
-                        loadOpsAlerts();
-                        return;
-                    }
-                    // 本地已即时更新，后台静默对齐服务端（不 await，不阻塞 UI）
-                    loadOrders();
-                    loadOpsAlerts();
-                } catch (err) {
-                    const m =
-                        (err.body &&
-                            (err.body.message ||
-                                err.body.error)) ||
-                        err.message ||
-                        "操作失败";
-                    showToast("❌ " + m, "err");
-                    btn.disabled = false;
-                }
-            });
-        });
-
-    container.querySelectorAll("[data-copy]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            const code = btn.getAttribute("data-copy");
-            navigator.clipboard.writeText(code).then(() => {
-                const orig = btn.textContent;
-                btn.textContent = "已复制";
-                setTimeout(() => (btn.textContent = orig), 1500);
-            });
-        });
-    });
-
-    // 按钮是刚重建的，把仍在倒计时的审批恢复成「撤销（Ns）」。
-    restorePendingApprovals(container);
-}
-
-// 局部乐观更新：审批后立刻把结果反映到列表，不等全量 reload。
-function patchLocalOrder(id, patch) {
-    const o = cachedOrders.find((x) => x.id === id);
-    if (!o) return;
-    Object.assign(o, patch);
-    updateStats();
-    renderOrders();
-}
-
-function updateStats() {
-    const counts = {
-        submitted: 0,
-        approved: 0,
-        activated: 0,
-        rejected: 0,
-    };
-    cachedOrders.forEach((o) => {
-        if (counts[o.status] !== undefined) counts[o.status]++;
-    });
-    document.getElementById("stat-submitted").textContent =
-        counts.submitted;
-    document.getElementById("stat-approved").textContent =
-        counts.approved;
-    document.getElementById("stat-activated").textContent =
-        counts.activated;
-    document.getElementById("stat-rejected").textContent =
-        counts.rejected;
-}
-
-async function loadOrders() {
-    try {
-        const data = await callGateway("admin_list_orders", {});
-        cachedOrders = data.orders || [];
-        updateStats();
-        renderOrders();
-    } catch (err) {
-        showToast(
-            "❌ 加载失败：" +
-                ((err.body && err.body.message) || err.message),
-            "err",
-        );
-    }
-}
-
-document
-    .getElementById("statusFilter")
-    .addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-status]");
-        if (!btn) return;
-        currentStatusFilter = btn.getAttribute("data-status") || "";
-        document
-            .querySelectorAll(".filter-btn")
-            .forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        renderOrders();
-    });
-
-document
-    .getElementById("reload-btn")
-    .addEventListener("click", loadOrders);
-
-// Wire up the "邮箱赠码" panel. We attach the listener once on script load
-// (the panel is in static HTML) and reuse callGateway for transport so
-// auth + JSON encoding stay consistent with the rest of the page.
-function wireGrantPanel() {
-    const btn = document.getElementById("grantBtn");
-    const emailInput = document.getElementById("grantEmail");
-    const skuSelect = document.getElementById("grantSku");
-    const noteInput = document.getElementById("grantNote");
-    const resultBox = document.getElementById("grantResult");
-    const rechargeAmountInput = document.getElementById("grantRechargeAmount");
-    if (!btn || !emailInput || !noteInput || !resultBox) return;
-
-    // 2026-06-23：选择 recharge 时显示金额输入框，其余隐藏
-    if (skuSelect && rechargeAmountInput) {
-        skuSelect.addEventListener("change", () => {
-            const isRecharge = skuSelect.value.startsWith("recharge:");
-            rechargeAmountInput.style.display = isRecharge ? "" : "none";
-        });
+            })
+            .join("");
     }
 
-    btn.addEventListener("click", async () => {
-        const email = emailInput.value.trim().toLowerCase();
-        const note = noteInput.value.trim();
-        // Mirror the backend regex so the user gets immediate feedback
-        // instead of waiting for a 400 round-trip.
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showToast("❌ 请输入有效邮箱", "err");
-            emailInput.focus();
+    // ── 动作 ────────────────────────────────────────────────────────────────
+
+    async function loadOverview() {
+        try {
+            var r = await callGateway("admin_card_overview", {});
+            STATE.skus = r.skus || [];
+            STATE.platform = r.platform_stock || null;
+            renderTotals(r.totals, r.redeem_enabled === true);
+            renderSkus();
+            renderRecent(r.recent);
+            renderRefundQueue(r.refund_queue);
+            if (r.platform_error) {
+                showToast("⚠️ 平台库存取不到：" + r.platform_error, "err");
+            }
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+            var tbody = $("sku-rows");
+            if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="empty">加载失败，点右上角刷新重试</td></tr>';
+            throw err;
+        }
+    }
+
+    async function doMint(btn) {
+        var sku = btn.getAttribute("data-mint");
+        var goodsNo = btn.getAttribute("data-goods");
+        var input = document.querySelector('input[data-mint-count="' + sku + '"]');
+        var count = input ? Math.floor(Number(input.value)) : 0;
+        if (!Number.isFinite(count) || count < 1 || count > 500) {
+            showToast("❌ 数量需在 1 - 500 之间", "err");
+            return;
+        }
+        if (!window.confirm("确认为 " + sku + " 铸 " + count + " 张卡并上架到发卡店？")) return;
+        btn.disabled = true;
+        var label = btn.textContent;
+        btn.textContent = "铸码中…";
+        try {
+            var r = await callGateway("admin_card_mint", {
+                sku: sku,
+                goods_no: goodsNo,
+                count: count,
+            });
+            showToast((r.mismatch ? "⚠️ " : "✅ ") + (r.message || "已铸码"), r.mismatch ? "err" : "ok");
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+            btn.disabled = false;
+            btn.textContent = label;
+        }
+    }
+
+    async function doVoid() {
+        var codeEl = $("void-code");
+        var reasonEl = $("void-reason");
+        var btn = $("void-btn");
+        if (!codeEl || !btn) return;
+        var code = codeEl.value.trim();
+        if (!code) {
+            showToast("❌ 请粘贴卡密", "err");
+            codeEl.focus();
+            return;
+        }
+        if (!window.confirm("确认作废这张卡密？作废后它永远无法兑换。")) return;
+        btn.disabled = true;
+        try {
+            var r = await callGateway("admin_card_void", {
+                code: code,
+                reason: reasonEl ? reasonEl.value.trim() : "",
+            });
+            showToast("✅ " + (r.message || "已作废") + (r.sku ? "（" + r.sku + "）" : ""), "ok");
+            codeEl.value = "";
+            if (reasonEl) reasonEl.value = "";
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function setRedeemEnabled(enabled) {
+        if (!enabled && !window.confirm("确认关闭卡密兑换？用户会收到「暂时关闭，稍后再试」的提示（卡密不会失效）。")) return;
+        try {
+            var r = await callGateway("admin_card_set_redeem_enabled", { enabled: enabled });
+            showToast("✅ " + (r.message || "已更新"), "ok");
+            await loadOverview();
+        } catch (err) {
+            showToast("❌ " + errText(err), "err");
+        }
+    }
+
+    var legacyLoaded = false;
+    async function loadLegacyOrders() {
+        var btn = $("legacy-btn");
+        var wrap = $("legacy-wrap");
+        var tbody = $("legacy-rows");
+        if (!btn || !wrap || !tbody) return;
+        if (legacyLoaded) {
+            wrap.style.display = wrap.style.display === "none" ? "" : "none";
+            btn.textContent = wrap.style.display === "none" ? "加载历史订单" : "收起历史订单";
             return;
         }
         btn.disabled = true;
-        btn.textContent = "生成中…";
-        resultBox.classList.remove("show");
-        resultBox.innerHTML = "";
+        btn.textContent = "加载中…";
         try {
-            // 2026-05-17 Phase A：解析 grantSku 选择器
-            //   "plan:pro" / "plan:pro_plus" / "plan:pro_max"
-            //   "topup:topup_small" / "topup:topup_medium" / "topup:topup_large"
-            // 后端 admin_grant_activation_code 接受 plan_code 或 topup_sku，互斥。
-            // 2026-06-23：新增 recharge 选项。后端暂无 admin 直接给目标邮箱充值的 RPC，
-            // 提示管理员让用户自行提交充值订单后审核（admin_approve_order 自动入钱包）。
-            const skuRaw = (skuSelect && skuSelect.value) || "plan:pro";
-            const [kind, slug] = String(skuRaw).split(":");
-            if (kind === "recharge") {
-                // 2026-07-07 审计 C4d：此处无「管理员直充」后端 RPC。直充能力在
-                // 用户管理页（admin_users.html 的「钱包 ±¥」= admin_adjust_user_wallet，真实生效）。
-                // 这里不再假装能充值，明确引导到可用路径，避免死按钮误导。
-                showToast("ℹ️ 本页无直充功能。如需给指定用户加钱包余额，请到「用户管理」页用「钱包 ±¥」操作；或让用户自行提交充值订单后在此审核通过（自动入钱包）。", "info");
-                return;
-            }
-            const grantPayload = { email, admin_note: note };
-            if (kind === "topup") {
-                grantPayload.topup_sku = slug;
-            } else {
-                grantPayload.plan_code = slug || "pro";
-            }
-            const r = await callGateway("admin_grant_activation_code", grantPayload);
-            const code = r.activation_code || "";
-            // Show the code inline (user-select:all on the box) and try to
-            // auto-copy. Auto-copy can fail in some browsers if the click
-            // wasn't user-gesture-tied (it should be here, but we don't
-            // want a copy failure to block displaying the code).
-            resultBox.innerHTML =
-                "✅ 已为 <strong>" +
-                esc(r.email || email) +
-                "</strong> 生成激活码：<br/><strong>" +
-                esc(code) +
-                "</strong><br/><span style=\"font-size:11.5px;color:var(--text-mute);\">已自动复制到剪贴板，点击文本可重新选中。</span>";
-            resultBox.classList.add("show");
-            try {
-                await navigator.clipboard.writeText(code);
-                showToast("✅ 激活码已复制：" + code, "ok");
-            } catch {
-                showToast(
-                    "✅ 已生成（剪贴板权限被拒，请手动复制）",
-                    "ok",
-                );
-            }
-            // Reset the inputs so the admin can immediately grant another
-            // without manually clearing fields. Keep the result visible.
-            emailInput.value = "";
-            noteInput.value = "";
-            // Refresh the order list — the new row should now show up
-            // under "已通过 · 待激活" with admin-grant marker.
-            await loadOrders();
+            var r = await callGateway("admin_list_orders", {});
+            var orders = r.orders || [];
+            tbody.innerHTML = orders.length
+                ? orders
+                      .slice(0, 300)
+                      .map(function (o) {
+                          return (
+                              "<tr>" +
+                              "<td>" + esc(fmtTime(o.created_at)) + "</td>" +
+                              "<td>" + esc(o.order_kind || "—") + "</td>" +
+                              '<td class="num">' + fmtCny(o.amount_cny) + "</td>" +
+                              "<td>" + esc(o.status || "—") + "</td>" +
+                              "<td>" + esc(o.email || "—") + "</td>" +
+                              "<td>" + esc(o.admin_note || "—") + "</td>" +
+                              "</tr>"
+                          );
+                      })
+                      .join("")
+                : '<tr><td colspan="6" class="empty">没有历史订单</td></tr>';
+            wrap.style.display = "";
+            legacyLoaded = true;
+            btn.textContent = "收起历史订单";
         } catch (err) {
-            const m =
-                (err.body && (err.body.message || err.body.error)) ||
-                err.message ||
-                "生成失败";
-            showToast("❌ " + m, "err");
+            showToast("❌ " + errText(err), "err");
+            btn.textContent = "加载历史订单";
         } finally {
             btn.disabled = false;
-            btn.textContent = "生成激活码";
         }
-    });
+    }
 
-    // Submit on Enter inside the email input for fast workflow.
-    emailInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            btn.click();
-        }
-    });
-}
+    // ── 引导 ────────────────────────────────────────────────────────────────
+    //
+    // ⚠️ admin-nav.js 的黑幕只在 `#main` 的**计算样式**变为可见时才掀开，
+    //    所以这里必须真的把 #main 显示出来，否则整页永远黑屏（2026-08-30 申诉页事故）。
+    async function init() {
+        var loading = $("loading");
+        var loginGate = $("login-gate");
+        var denyGate = $("deny-gate");
+        var main = $("main");
 
-wireGrantPanel();
-
-async function loadOpsAlerts() {
-    const box = document.getElementById("ops-alerts");
-    if (!box) return;
-    try {
-        const data = await callGateway("admin_ops_alerts", {});
-        const dup = data.duplicate_submitted || [];
-        // 2026-06-23：wallet_v3 下订阅档已下线，后端不再返回 expiring_subscriptions；
-        // 兼容旧响应但不再渲染「到期订阅」告警。
-        if (dup.length === 0) {
-            box.style.display = "none";
-            box.innerHTML = "";
+        var u = await sb.auth.getUser();
+        var user = u && u.data ? u.data.user : null;
+        if (!user || user.is_anonymous) {
+            if (loading) loading.style.display = "none";
+            if (loginGate) loginGate.style.display = "block";
             return;
         }
-        box.style.display = "block";
-        let html = "";
-        if (dup.length > 0) {
-            html +=
-                '<div class="ops-alert ops-alert--warn"><strong>⚠️ 重复待审订单</strong> · ' +
-                dup.length +
-                " 个用户有多条 submitted（可能是手滑连点）<ul>";
-            dup.slice(0, 8).forEach(function (d) {
-                html +=
-                    "<li>" +
-                    esc(d.email || d.user_id) +
-                    " · " +
-                    d.count +
-                    " 条 · 保留 1 条删其余 → " +
-                    d.order_ids
-                        .slice(1)
-                        .map(function (oid) {
-                            return (
-                                '<button type="button" class="ops-del-btn" data-order-id="' +
-                                esc(oid) +
-                                '">删</button>'
-                            );
-                        })
-                        .join(" ") +
-                    "</li>";
-            });
-            html += "</ul></div>";
-        }
-        box.innerHTML = html;
-        box.querySelectorAll(".ops-del-btn").forEach(function (b) {
-            b.addEventListener("click", async function () {
-                const oid = b.getAttribute("data-order-id");
-                if (!oid || !confirm("删除重复订单 " + oid.slice(0, 8) + "… ？")) return;
-                b.disabled = true;
-                try {
-                    await callGateway("admin_delete_order", { order_id: oid });
-                    showToast("✅ 已删除重复订单", "ok");
-                    await loadOrders();
-                    await loadOpsAlerts();
-                } catch (err) {
-                    showToast(
-                        "❌ " +
-                            ((err.body && err.body.message) || err.message),
-                        "err",
-                    );
-                    b.disabled = false;
-                }
-            });
-        });
-    } catch (_e) {
-        box.style.display = "none";
-    }
-}
-
-async function init() {
-    const loading = document.getElementById("loading");
-    const loginGate = document.getElementById("login-gate");
-    const denyGate = document.getElementById("deny-gate");
-    const main = document.getElementById("main");
-
-    const {
-        data: { user },
-    } = await sb.auth.getUser();
-    if (!user || user.is_anonymous) {
-        loading.style.display = "none";
-        loginGate.style.display = "block";
-        return;
-    }
-    try {
-        const r = await callGateway("admin_check", {});
-        loading.style.display = "none";
-        if (!r.is_admin) {
-            denyGate.style.display = "block";
+        try {
+            // 非管理员时后端返回 403（刻意不回显 is_admin:false，防账号枚举），
+            // 所以 callGateway 会抛 —— catch 才是真正的拒绝路径。
+            var chk = await callGateway("admin_check", {});
+            if (loading) loading.style.display = "none";
+            if (!chk || chk.is_admin !== true) {
+                if (denyGate) denyGate.style.display = "block";
+                return;
+            }
+            if (main) main.style.display = "block";
+        } catch (err) {
+            if (loading) loading.style.display = "none";
+            if (denyGate) denyGate.style.display = "block";
             return;
         }
-        BILLING_MODE = r.billing_mode || "quota_v2";
-        // wallet_v3：激活码赠送面板已无意义（无订阅档可赠），隐藏。
-        if (IS_WALLET_V3()) {
-            const gp = document.getElementById("grantPanel");
-            if (gp) gp.style.display = "none";
-        }
-        main.style.display = "block";
-        await loadOrders();
-        await loadOpsAlerts();
-    } catch (err) {
-        loading.style.display = "none";
-        denyGate.style.display = "block";
-    }
-}
 
-init();
+        var onBtn = $("btn-redeem-on");
+        if (onBtn) onBtn.addEventListener("click", function () { setRedeemEnabled(true); });
+        var offBtn = $("btn-redeem-off");
+        if (offBtn) offBtn.addEventListener("click", function () { setRedeemEnabled(false); });
+        var reload = $("reload-btn");
+        if (reload) reload.addEventListener("click", function () { loadOverview().catch(function () {}); });
+        var voidBtn = $("void-btn");
+        if (voidBtn) voidBtn.addEventListener("click", doVoid);
+        var voidCode = $("void-code");
+        if (voidCode) {
+            voidCode.addEventListener("keydown", function (ev) {
+                if (ev.key === "Enter") { ev.preventDefault(); doVoid(); }
+            });
+        }
+        var legacyBtn = $("legacy-btn");
+        if (legacyBtn) legacyBtn.addEventListener("click", loadLegacyOrders);
+
+        await loadOverview().catch(function () {});
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
