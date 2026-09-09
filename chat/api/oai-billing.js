@@ -124,8 +124,16 @@
   // 2026-09-08：顺序与默认页签都改成 API 额度优先 —— 这页的主要来客是查
   // API 余额的开放平台用户，订阅套餐是次要入口。billing.html 里的按钮 DOM
   // 顺序要跟这里一致，否则滑块位置和视觉顺序会对不上。
-  var TABS = ["api", "plan", "bills"];
+  // 2026-09-09：新增 "redeem"（16688 发卡通道的卡密兑换）。它排在 bills 右边，
+  // billing.html 里的按钮 DOM 顺序必须与本数组一致，否则滑块位置会对不上。
+  var TABS = ["api", "plan", "bills", "redeem"];
   var DEFAULT_TAB = "api";
+
+  // 发卡店（收款通道，2026-09-09 起替代爱发电 + 自建 checkout）。
+  // ⚠️ 同一串还写在 billing.html 的几个 <a> 里（静态锚点，不依赖 JS 也能点），
+  //    以及 chat/assets/claude-upgrade/pricing-page.js（那边是按套餐深链到具体商品）。
+  //    换店铺时三处都要改。
+  var SHOP_URL = "https://www.16688.com.cn/shop/S570528";
 
   function setTab(tab) {
     TABS.forEach(function (t) {
@@ -212,7 +220,7 @@
     }).join("");
     card.innerHTML =
       '<div class="convert-title"><span class="convert-badge">限时</span>API 余额换购套餐<span style="font-weight:400;font-size:13px;color:var(--color-text-secondary)">· 剩余 ' + esc(countdown) + "</span></div>" +
-      '<div class="convert-desc">限时窗口内，钱包余额可等值换购订阅套餐：扣除对应套餐价，剩余余额继续用于 API 按量；余额不足可先<a href="./checkout.html?kind=recharge">充值</a>凑单。</div>' +
+      '<div class="convert-desc">限时窗口内，钱包余额可等值换购订阅套餐：扣除对应套餐价，剩余余额继续用于 API 按量；余额不足可先<a href="' + SHOP_URL + '" target="_blank" rel="noopener">买张充值卡</a>凑单。</div>' +
       '<div class="convert-plans">' + rows + "</div>" +
       '<div class="convert-msg" id="convert-msg"></div>';
     card.hidden = false;
@@ -337,8 +345,106 @@
   // 赠送余额，未消费的存卡已按 ¥1/张 折成余额补偿。
   // 若要恢复，别只加回这段 —— 还要同时恢复后端 slug、RPC，以及 billing.html 的 tab 与面板。
 
+  // ── 兑换卡密（16688 发卡通道）────────────────────────────────────────
+  //
+  // ⛔ 授权判决**全在后端**：网关先按卡号回查平台订单（确实卖出、未退款、金额够）
+  //    才入账。这里只做两件事：省掉一次显然格式错的往返，以及把后端给的文案显示出来。
+  //    别在这里加任何本地「看起来像有效卡就先给个成功提示」的乐观处理 ——
+  //    用户会以为到账了。
+  var REDEEM_PREFIX = "CANCRI-CARD";
+  var REDEEM_BODY_LEN = 32;
+
+  // 与后端 shop16688-redeem.ts 的 formatCardCode 同规则：剥掉一切非字母数字再重建。
+  // 这样「带横线」「不带横线」「小写」「中间有空格」都能兑。
+  function normalizeCardCode(raw) {
+    var bare = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    var prefix = REDEEM_PREFIX.replace(/-/g, "");
+    if (bare.indexOf(prefix) !== 0) return null;
+    var body = bare.slice(prefix.length);
+    if (body.length !== REDEEM_BODY_LEN) return null;
+    if (!/^[A-Z2-7]+$/.test(body)) return null;
+    var groups = [];
+    for (var i = 0; i < REDEEM_BODY_LEN; i += 8) groups.push(body.slice(i, i + 8));
+    return REDEEM_PREFIX + "-" + groups.join("-");
+  }
+
+  function setRedeemMsg(text, kind) {
+    var el = $("redeem-msg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.dataset.s = kind || "";
+  }
+
+  async function refreshAfterRedeem() {
+    try {
+      var results = await Promise.allSettled([
+        callGateway("plan_v4_status", {}),
+        callGateway("list_my_orders", {}),
+      ]);
+      if (results[0].status === "fulfilled") { renderPlan(results[0].value); applyConvertStatus(results[0].value); }
+      if (results[1].status === "fulfilled") {
+        renderWallet(results[1].value);
+        renderBills(results[1].value);
+        convertState.balance = results[1].value && results[1].value.wallet ? results[1].value.wallet.balance_cny : null;
+      }
+    } catch (e) { /* 刷新失败不影响兑换本身已经成功的事实 */ }
+  }
+
+  async function doRedeem() {
+    var input = $("redeem-input");
+    var btn = $("redeem-btn");
+    if (!input || !btn) return;
+    var code = normalizeCardCode(input.value);
+    if (!code) {
+      setRedeemMsg("卡密格式不对。正确格式形如 CANCRI-CARD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX。", "err");
+      return;
+    }
+    input.value = code;
+    btn.disabled = true;
+    input.disabled = true;
+    setRedeemMsg("正在核验卡密…", "warn");
+    try {
+      var res = await callGateway("redeem_card", { code: code });
+      if (res && res.already) {
+        setRedeemMsg("这张卡你已经兑换过了，额度早就到账了。", "ok");
+      } else if (res && res.kind === "plan") {
+        setRedeemMsg("套餐已开通，有效期 30 天。下方「套餐」页签可以看到最新状态。", "ok");
+      } else {
+        var face = Number(res && res.face_cny);
+        setRedeemMsg(
+          isFinite(face) && face > 0
+            ? "兑换成功，" + fmtCny(face) + " 已进入 API 额度余额。"
+            : "兑换成功，额度已到账。",
+          "ok",
+        );
+      }
+      input.value = "";
+      await refreshAfterRedeem();
+    } catch (e) {
+      var body = (e && e.body) || {};
+      // 后端已经给了面向用户的文案，这里原样显示 —— 别在前端再维护一份错误码映射，
+      // 两份迟早会漂（AGENTS.md §5.5.1 反复记录的形状）。
+      setRedeemMsg(body.message || (e && e.message) || "兑换失败，请稍后重试。", body.retryable ? "warn" : "err");
+    } finally {
+      btn.disabled = false;
+      input.disabled = false;
+    }
+  }
+
+  function bindRedeem() {
+    var btn = $("redeem-btn");
+    var input = $("redeem-input");
+    if (btn) btn.addEventListener("click", function () { doRedeem(); });
+    if (input) {
+      input.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") { ev.preventDefault(); doRedeem(); }
+      });
+    }
+  }
+
   async function init() {
     initTabs();
+    bindRedeem();
     // 2026-08-18 晚：原先这里还有 bindResetButton()。删函数时留下调用 = 运行时
     // `bindResetButton is not defined` 直接中断整个 init()，整页数据都不加载 ——
     // 而 `node --check` 只验语法、抓不到未定义引用（实测差点漏掉）。
