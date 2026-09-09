@@ -930,8 +930,8 @@
 		"gpt-5.4-mini-0603": 128e3,
 		"gpt-5.4-nano": 128e3,
 		"gpt-image-2-all": 0,
-		"gpt-image-2-pro": 0,
 		"gpt-image-2": 0,
+		"gpt-image-2-5-sunburst": 0,
 		"claude-opus-4-8": 2e5,
 		"claude-opus-4-8-special": 2e5,
 		"claude-opus-4-7-special": 2e5,
@@ -972,9 +972,12 @@
 		"Anthropic",
 		"Google"
 	];
-	function normalizeModelDisplayName(name) {
+	var HYPHENATED_DISPLAY_NAME_IDS = new Set(["gpt-image-2", "gpt-image-2-5-sunburst"]);
+	function normalizeModelDisplayName(name, modelId) {
 		if (!name) return "";
-		return String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
+		const cleaned = String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/\s+/g, " ").trim();
+		if (modelId && HYPHENATED_DISPLAY_NAME_IDS.has(modelId)) return cleaned;
+		return cleaned.replace(/-/g, " ").replace(/\s+/g, " ").trim();
 	}
 	function getModelContextWindow(modelId) {
 		return MODEL_CONTEXT_WINDOWS[modelId] || 0;
@@ -1105,6 +1108,7 @@
 	var CONTEXT_TOKEN_LIMIT = 128 * 1024;
 	var CONTEXT_COMPRESSION_TRIGGER = Math.floor(CONTEXT_TOKEN_LIMIT * .92);
 	var MAX_ATTACHMENT_COUNT = 4;
+	var MAX_IMAGE_REFERENCE_COUNT = 4;
 	var MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
 	var UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
 	var SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
@@ -2731,7 +2735,7 @@
 		const rawName = local.name || serverModel.displayName || serverModel.id;
 		return {
 			id: serverModel.id,
-			name: normalizeModelDisplayName(rawName),
+			name: normalizeModelDisplayName(rawName, serverModel.id),
 			brand: serverModel.brand || local.brand || "Other",
 			kind,
 			vision: local.vision ?? Boolean(serverModel.multimodal),
@@ -2944,7 +2948,7 @@
 			const meta = {
 				id: entry.id,
 				canonicalId: entry.id,
-				displayName: normalizeModelDisplayName(entry.name),
+				displayName: normalizeModelDisplayName(entry.name, entry.id),
 				brand: entry.brand,
 				lineLabel: entry.lineLabel || "",
 				tags,
@@ -3623,6 +3627,7 @@
 		if (isVideoEditModel(modelId)) return "image/*,video/*";
 		if (isReferenceVideoModel(modelId)) return "image/*";
 		if (isOmniVideoModel(modelId)) return "image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+		if (isImageOnlyModel(modelId)) return "image/*";
 		return "image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
 	}
 	function getAttachmentMime(attachment) {
@@ -6700,17 +6705,8 @@
 			return "";
 		}
 	}
-	// 把模型吐出来的推理文本折成「一句一行」：句末标点后的换行留着，其余换行并成空格。
-	//
-	// 第一条正则用前瞻 (?=…) 而不是捕获后面那个字符 —— 这是 2026-09-06 修的 bug。
-	// 原写法 /([^.!?。！？…])\n+([^\n\r])/ 会把换行后的字符一起消耗掉，正则引擎从匹配
-	// 末尾继续扫描，于是「每个 token 独占一行」的流式片段只能隔一个合并一个，一次
-	// replace 根本不收敛（实测 50 个换行只消掉 42 个，要跑 3 轮才干净）。表现就是流式
-	// 时思考块疯狂换行、退出重进（走完整文本、换行本来就少）却正常。
-	// 顺带把 \n\r 加进排除类：原来的 [^.!?。！？…] 能匹配换行符本身，会把段落之间的
-	// 空行吃成单换行，两段被并成一段。
 	function normalizeThinkDisplayText(text) {
-		return String(text || "").replace(/([^.!?。！？…\n\r])\n+(?=[^\n\r])/g, "$1 ").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1").replace(/([，。！？；：、])[ \t]+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
+		return String(text || "").replace(/([^.!?。！？…])\n+([^\n\r])/g, "$1 $2").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1").replace(/([\u4e00-\u9fff\u3040-\u30ff])\s+(?=[，。！？；：、""''（）])/g, "$1").replace(/([，。！？；：、])[ \t]+(?=[\u4e00-\u9fff\u3040-\u30ff])/g, "$1");
 	}
 	var CLAUDE_ACTION_ICON = {
 		copy: "",
@@ -8549,7 +8545,7 @@
 	async function generateImageFromPrompt(prompt, imageModel, attachments = []) {
 		const value = String(prompt || "").trim();
 		if (!value || state.isImageGenerating) return;
-		const isOpenAIImage = imageModel === "grok-imagine-image" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2-pro" || imageModel === "gpt-image-2" || imageModel === "doubao-seedream-4-5" || imageModel === "z-image-turbo";
+		const isOpenAIImage = imageModel === "grok-imagine-image" || imageModel === "gpt-image-2-all" || imageModel === "gpt-image-2" || imageModel === "gpt-image-2-5-sunburst" || imageModel === "doubao-seedream-4-5" || imageModel === "z-image-turbo";
 		const imageSize = "1024x1024";
 		const controller = new AbortController();
 		state.activeRequestController = controller;
@@ -8560,7 +8556,6 @@
 		const noI2iModels = new Set([
 			"grok-imagine-image",
 			"gpt-image-2-all",
-			"gpt-image-2-pro",
 			"gpt-image-2",
 			"doubao-seedream-4-5",
 			"z-image-turbo"
@@ -8570,6 +8565,8 @@
 			showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
 			return;
 		}
+		const referenceImages = imageAttachments.slice(0, MAX_IMAGE_REFERENCE_COUNT);
+		if (imageAttachments.length > MAX_IMAGE_REFERENCE_COUNT) showToast(`参考图最多 ${MAX_IMAGE_REFERENCE_COUNT} 张，已使用前 ${MAX_IMAGE_REFERENCE_COUNT} 张。`);
 		try {
 			const requestBody = {
 				endpoint: "image",
@@ -8579,9 +8576,9 @@
 				size: imageSize,
 				response_format: "b64_json"
 			};
-			if (imageAttachments.length) {
+			if (referenceImages.length) {
 				setImageGenerationBusy(true, "正在压缩上传图片...");
-				requestBody.image = (await Promise.all(imageAttachments.map((a) => shrinkImageForEdit(a.dataUrl || a.url, 896, .78)))).filter(Boolean);
+				requestBody.image = (await Promise.all(referenceImages.map((a) => shrinkImageForEdit(a.dataUrl || a.url, 896, .78)))).filter(Boolean);
 				setImageGenerationBusy(true, isOpenAIImage ? "正在生成图片..." : "正在提交图片生成任务...");
 			}
 			const response = await proxyFetch(EDGE_FUNCTION_URL, {
@@ -9306,10 +9303,7 @@
 		delete sanitized.provider;
 		return sanitized;
 	}
-	// 摘要文字在前、折叠箭头在后 —— 对齐 Claude TurnStatus 的 DOM 顺序
-	// （span[data-cds-row] 里先 label 再 button[data-cds-row-toggle]，
-	//  见 移植，直接搬/对话块展示.html）。arena 卡片自建 header，不受影响。
-	var THINK_HEADER_INNER_HTML = "<span class=\"think-label\">思考中</span><span class=\"think-caret\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"></path></svg></span>";
+	var THINK_HEADER_INNER_HTML = "<span class=\"think-caret\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"></path></svg></span><span class=\"think-label\">思考中</span>";
 	function createThinkHeaderElement(thinkBlock) {
 		const thinkHeader = document.createElement("div");
 		thinkHeader.className = "think-header";

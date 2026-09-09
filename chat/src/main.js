@@ -151,8 +151,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     "gpt-5.4-mini-0603": 128000,
     "gpt-5.4-nano": 128000,
     "gpt-image-2-all": 0,
-    "gpt-image-2-pro": 0,
     "gpt-image-2": 0,
+    "gpt-image-2-5-sunburst": 0,
     "claude-opus-4-8": 200000,
     "claude-opus-4-8-special": 200000,
     "claude-opus-4-7-special": 200000,
@@ -191,13 +191,22 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   const MODEL_PINNED_STORAGE_KEY = "cancri_model_pinned_v1";
   const MODEL_RECENT_STORAGE_KEY = "cancri_model_recent_v1";
   const BRAND_PRIORITY_ORDER = ["OpenAI", "Anthropic", "Google"];
-  function normalizeModelDisplayName(name) {
+  // 2026-09-09: 这几条线的品牌写法里连字符**是名字的一部分**（GPT-image-2.5 /
+  // GPT-image-2），不能被下面通用的「连字符→空格」规整吃掉，否则菜单会显示
+  // 「GPT image 2.5」。DB 的 display_name 仍是文本 SSOT，这里只对这几个 id
+  // 关掉那一条规则，不改别的模型。
+  const HYPHENATED_DISPLAY_NAME_IDS = new Set([
+    "gpt-image-2",
+    "gpt-image-2-5-sunburst",
+  ]);
+  function normalizeModelDisplayName(name, modelId) {
     if (!name) return "";
-    return String(name)
+    const cleaned = String(name)
       .replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "")
-      .replace(/-/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+    if (modelId && HYPHENATED_DISPLAY_NAME_IDS.has(modelId)) return cleaned;
+    return cleaned.replace(/-/g, " ").replace(/\s+/g, " ").trim();
   }
   function formatContextWindow(tokens) {
     if (!tokens || tokens <= 0) return "";
@@ -421,6 +430,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   const CONTEXT_TOKEN_LIMIT = 128 * 1024;
   const CONTEXT_COMPRESSION_TRIGGER = Math.floor(CONTEXT_TOKEN_LIMIT * 0.92);
   const MAX_ATTACHMENT_COUNT = 4;
+  // 2026-09-09: 生图线的参考图张数上限。与 composer 的 MAX_ATTACHMENT_COUNT 同值，
+  // 但语义不同（这条管的是"发给上游几张参考图"），所以单独一个常量。
+  // 权威上限在 cf-modelscope-proxy 的 PRORISEHUB_IMAGE25_MAX_REFERENCES，两者需一致。
+  const MAX_IMAGE_REFERENCE_COUNT = 4;
   const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
   const UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
   const SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
@@ -3029,7 +3042,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const rawName = local.name || serverModel.displayName || serverModel.id;
     return {
       id: serverModel.id,
-      name: normalizeModelDisplayName(rawName),
+      name: normalizeModelDisplayName(rawName, serverModel.id),
       brand: serverModel.brand || local.brand || "Other",
       kind,
       vision: local.vision ?? Boolean(serverModel.multimodal),
@@ -3311,7 +3324,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       const meta = {
         id: entry.id,
         canonicalId: entry.id,
-        displayName: normalizeModelDisplayName(entry.name),
+        displayName: normalizeModelDisplayName(entry.name, entry.id),
         brand: entry.brand,
         lineLabel: entry.lineLabel || "",
         tags,
@@ -4289,6 +4302,9 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (isVideoEditModel(modelId)) return "image/*,video/*";
     if (isReferenceVideoModel(modelId)) return "image/*";
     if (isOmniVideoModel(modelId)) return "image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+    // 2026-09-09: 生图线的附件只可能是参考图。文档类附件在 generateImageFromPrompt
+    // 里本来就被 isTextFile 过滤掉 —— 与其让用户选了再被静默忽略，不如不给选。
+    if (isImageOnlyModel(modelId)) return "image/*";
     return "image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
   }
   
@@ -11100,8 +11116,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     const isOpenAIImage =
       imageModel === "grok-imagine-image" ||
       imageModel === "gpt-image-2-all" ||
-      imageModel === "gpt-image-2-pro" ||
       imageModel === "gpt-image-2" ||
+      imageModel === "gpt-image-2-5-sunburst" ||
       imageModel === "doubao-seedream-4-5" ||
       imageModel === "z-image-turbo";
     // 图片工作台下线后没有尺寸选择器了，固定 1024x1024
@@ -11124,13 +11140,24 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       (a) => !a.isTextFile && (a.dataUrl || a.url),
     );
   
-    // 图生图（i2i）白名单。当前下拉里唯一的图像模型 grok-imagine-image-lite
-    // 仅支持纯文本→图，附了图也只能 t2i，需要拦截提示用户。
-    const noI2iModels = new Set(["grok-imagine-image", "gpt-image-2-all", "gpt-image-2-pro", "gpt-image-2", "doubao-seedream-4-5", "z-image-turbo"]);
+    // 图生图（i2i）黑名单：这些线只吃 prompt，附了图也只能 t2i，直接拦下提示用户，
+    // 免得用户以为参考图生效了。
+    // ⚠️ gpt-image-2-5-sunburst **不在**这里 —— 它是站内第一条支持参考图的
+    // gpt-image 线（2026-09-09 实测上游 /v1/images/edits 的 references_uploaded 如实回显，
+    // 且出图内容确实随参考图改变）。
+    const noI2iModels = new Set(["grok-imagine-image", "gpt-image-2-all", "gpt-image-2", "doubao-seedream-4-5", "z-image-turbo"]);
     if (imageAttachments.length > 0 && noI2iModels.has(imageModel)) {
       setImageGenerationBusy(false);
       showToast(`${getModelDisplayName(imageModel)} 暂不支持图生图，请删除附件后重试。`);
       return;
+    }
+
+    // 参考图张数上限。上游对 1/2/4 张的计费完全相同，所以这个上限管的是请求体
+    // 大小与生成耗时，不是钱。⚠️ 这里只是提示，真正的截断在 cf-modelscope-proxy
+    // 的 PRORISEHUB_IMAGE25_MAX_REFERENCES（前端的限制可被绕过）。
+    const referenceImages = imageAttachments.slice(0, MAX_IMAGE_REFERENCE_COUNT);
+    if (imageAttachments.length > MAX_IMAGE_REFERENCE_COUNT) {
+      showToast(`参考图最多 ${MAX_IMAGE_REFERENCE_COUNT} 张，已使用前 ${MAX_IMAGE_REFERENCE_COUNT} 张。`);
     }
   
     try {
@@ -11147,7 +11174,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         size: imageSize,
         response_format: "b64_json",
       };
-      if (imageAttachments.length) {
+      if (referenceImages.length) {
         // Shrink every attachment before it joins the JSON body. A typical
         // phone photo (4-5 MB base64) blows the Supabase Edge Function
         // compute budget once it's parsed + re-serialized through the
@@ -11163,7 +11190,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         // which was the root cause of "not having enough compute resources"
         // errors on multi-image i2i.
         const compressed = await Promise.all(
-          imageAttachments.map((a) =>
+          referenceImages.map((a) =>
             shrinkImageForEdit(a.dataUrl || a.url, 896, 0.78),
           ),
         );
