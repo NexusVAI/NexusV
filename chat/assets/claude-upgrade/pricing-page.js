@@ -33,6 +33,5 @@
         location.href = "api/billing.html";
       });
     }
-
   });
 })();
