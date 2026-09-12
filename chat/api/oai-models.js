@@ -65,6 +65,8 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    // 2026-09-12: nb.deepsb.com 限时免费 claude-sonnet-5（至 09-19）。
+    "claude-sonnet-5-free",
     // 2026-08-27: api.b.ai 五条限时免费线（原至 08-31，2026-08-30 延至 09-05），钉到免费区首屏。
     // 站内 id = 上游 id + "-free"（运营方指定的命名约定）。
     // mimo-v2.5-free 是同名 id 从 tokenharbor 重挂到 api.b.ai，不是新增卡。
@@ -123,6 +125,7 @@
     "hy3-free": "09-10结束免费期限",
     "qwen3.8-flash-free": "09-10结束免费期限",
     "grok-4.5-free": "09-10结束免费期限",
+    "claude-sonnet-5-free": "09-19结束免费期限",
     "deepseek-v4-flash-vision-exp-free": "09-05结束免费期限",
     "mimo-v2.5-free": "09-05结束免费期限",
     // 2026-08-29: qwen-3.8-max 已下架，文案条目随之删除。
