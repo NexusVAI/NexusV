@@ -199,6 +199,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   const HYPHENATED_DISPLAY_NAME_IDS = new Set([
     "gpt-image-2",
     "gpt-image-2-5-sunburst",
+    // 2026-09-14: aiping 四模型 —— 连字符是官方型号名的一部分（DeepSeek-OCR-2 等），
+    // 不让「连字符→空格」规整吃掉。
+    "deepseek-ocr-2",
+    "glm-4-9b-0414",
+    "deepseek-r1-distill-qwen-14b",
+    "qwen3.5-4b",
   ]);
   function normalizeModelDisplayName(name, modelId) {
     if (!name) return "";

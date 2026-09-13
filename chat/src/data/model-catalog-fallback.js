@@ -79,7 +79,7 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"or:openai/gpt-oss-120b","name":"GPT OSS 120B","brand":"OpenAI","kind":"chat","vision":false,"thinking":false,"tools":true,"costTier":"free"},
   {"id":"cancriv1-0.1b","name":"CancriV1-0.1B","brand":"Cancri","kind":"chat","vision":false,"thinking":false,"tools":false,"costTier":"free","lineLabel":"cancriv1_studio"},
   {"id":"deepseek-v3.2","name":"DeepSeek V3.2","brand":"DeepSeek","kind":"chat","vision":false,"thinking":false,"tools":true,"costTier":"normal","customMultiplier":2.5,"lineLabel":"jiuyoumao"},
-  {"id":"qwen3.5-4b","name":"Qwen3.5 4B","brand":"Qwen","kind":"chat","vision":false,"thinking":false,"tools":true,"costTier":"free"},
+  {"id":"qwen3.5-4b","name":"Qwen3.5-4B","brand":"Qwen","kind":"chat","vision":true,"thinking":true,"tools":true,"costTier":"free","lineLabel":"aiping"},
   {"id":"qwen3.5-9b","name":"Qwen3.5 9B","brand":"Qwen","kind":"chat","vision":false,"thinking":false,"tools":true,"costTier":"free"},
   {"id":"qwen3-8b-jiuyoumao","name":"Qwen 3.5 8B","brand":"Qwen","kind":"chat","vision":false,"thinking":false,"tools":true,"costTier":"free"},
   {"id":"doubao-seed-oss","name":"Doubao Seed OSS","brand":"Doubao","kind":"chat","vision":false,"thinking":false,"tools":true,"costTier":"free"},
@@ -87,5 +87,7 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"hunyuan-mt-7b","name":"Hunyuan MT 7B","brand":"Tencent","kind":"translate","vision":false,"thinking":false,"tools":false,"costTier":"free","freeLimitNote":"消息翻译"},
   {"id":"grok-imagine-image","name":"Grok Imagine Image","brand":"xAI","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"normal","lineLabel":"futureppo","customMultiplier":100,"creditPerUse":10},
   {"id":"grok-imagine-video","name":"Grok Imagine Video","brand":"xAI","kind":"video","vision":false,"thinking":false,"tools":false,"costTier":"normal","lineLabel":"futureppo","proMaxOnly":true,"customMultiplier":3000,"creditPerUse":300,"promoLimited":true,"promoTooltip":"2026/06/18-2026/07/18 Pro起步均可用"},
-  {"id":"z-image-turbo","name":"【订阅福利】造相-Z-Image-Turbo","brand":"Qwen","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"free"}
+  {"id":"z-image-turbo","name":"【订阅福利】造相-Z-Image-Turbo","brand":"Qwen","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"free"},
+  {"id":"glm-4-9b-0414","name":"GLM-4-9B-0414","brand":"Zhipu","kind":"chat","vision":false,"thinking":false,"tools":false,"costTier":"free","lineLabel":"aiping"},
+  {"id":"deepseek-r1-distill-qwen-14b","name":"DeepSeek-R1-Distill-Qwen-14B","brand":"DeepSeek","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"free","lineLabel":"aiping"}
 ];

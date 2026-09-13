@@ -759,13 +759,14 @@
 		},
 		{
 			"id": "qwen3.5-4b",
-			"name": "Qwen3.5 4B",
+			"name": "Qwen3.5-4B",
 			"brand": "Qwen",
 			"kind": "chat",
-			"vision": false,
-			"thinking": false,
+			"vision": true,
+			"thinking": true,
 			"tools": true,
-			"costTier": "free"
+			"costTier": "free",
+			"lineLabel": "aiping"
 		},
 		{
 			"id": "qwen3.5-9b",
@@ -856,6 +857,28 @@
 			"thinking": false,
 			"tools": false,
 			"costTier": "free"
+		},
+		{
+			"id": "glm-4-9b-0414",
+			"name": "GLM-4-9B-0414",
+			"brand": "Zhipu",
+			"kind": "chat",
+			"vision": false,
+			"thinking": false,
+			"tools": false,
+			"costTier": "free",
+			"lineLabel": "aiping"
+		},
+		{
+			"id": "deepseek-r1-distill-qwen-14b",
+			"name": "DeepSeek-R1-Distill-Qwen-14B",
+			"brand": "DeepSeek",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": false,
+			"costTier": "free",
+			"lineLabel": "aiping"
 		}
 	];
 	//#endregion
@@ -7847,7 +7870,14 @@
 		"Anthropic",
 		"Google"
 	];
-	var HYPHENATED_DISPLAY_NAME_IDS = new Set(["gpt-image-2", "gpt-image-2-5-sunburst"]);
+	var HYPHENATED_DISPLAY_NAME_IDS = new Set([
+		"gpt-image-2",
+		"gpt-image-2-5-sunburst",
+		"deepseek-ocr-2",
+		"glm-4-9b-0414",
+		"deepseek-r1-distill-qwen-14b",
+		"qwen3.5-4b"
+	]);
 	function normalizeModelDisplayName(name, modelId) {
 		if (!name) return "";
 		const cleaned = String(name).replace(/【福利】|【特价】|【订阅福利】|【限时】/g, "").replace(/\s+/g, " ").trim();
