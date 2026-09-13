@@ -8010,11 +8010,12 @@
 	var settingPanels = Array.from(document.querySelectorAll(".settings-panel"));
 	var conversationHistory = [];
 	var loadedChatModel = "";
-	var CONTEXT_TOKEN_LIMIT = 128 * 1024;
-	var CONTEXT_COMPRESSION_TRIGGER = Math.floor(CONTEXT_TOKEN_LIMIT * .92);
 	var MAX_ATTACHMENT_COUNT = 4;
 	var MAX_IMAGE_REFERENCE_COUNT = 4;
 	var MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
+	var TEXT_ATTACHMENT_RE = /\.(txt|md|json|csv)$/i;
+	var BINARY_ATTACHMENT_RE = /\.(pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
+	var MAX_TEXT_ATTACHMENT_CHARS = 1e6;
 	var UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
 	var SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
 	var MODEL_TELEMETRY_STORAGE_KEY = "cancri_model_telemetry";
@@ -10296,11 +10297,9 @@
 	function updateContextMeter() {
 		if (!contextMeter) return;
 		const usedTokens = estimateConversationTokens();
-		const ratio = Math.min(1, usedTokens / CONTEXT_TOKEN_LIMIT);
-		contextMeter.style.setProperty("--meter-angle", `${ratio * 360}deg`);
-		contextMeter.setAttribute("aria-label", `上下文额度 ${usedTokens} / ${CONTEXT_TOKEN_LIMIT} tokens`);
-		if (contextMeterValue) contextMeterValue.textContent = String(Math.round(ratio * 100));
-		if (contextMeterText) contextMeterText.textContent = `当前会话上下文约使用 ${formatTokenCount(usedTokens)} / ${formatTokenCount(CONTEXT_TOKEN_LIMIT)} tokens，剩余 ${formatTokenCount(Math.max(0, CONTEXT_TOKEN_LIMIT - usedTokens))}。超限前会自动压缩为摘要并切到新对话继续。`;
+		contextMeter.setAttribute("aria-label", `当前会话上下文约 ${usedTokens} tokens`);
+		if (contextMeterValue) contextMeterValue.textContent = formatTokenCount(usedTokens);
+		if (contextMeterText) contextMeterText.textContent = `当前会话上下文约使用 ${formatTokenCount(usedTokens)} tokens（估算）。上下文没有硬性上限，能否装下以所选模型实际支持为准。`;
 	}
 	function clearPendingAttachments() {
 		const attachmentService = window.NexusWorkbench?.fileAttachments;
@@ -10531,9 +10530,9 @@
 	function getAttachmentAcceptForModel(modelId = currentModel) {
 		if (isVideoEditModel(modelId)) return "image/*,video/*";
 		if (isReferenceVideoModel(modelId)) return "image/*";
-		if (isOmniVideoModel(modelId)) return "image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+		if (isOmniVideoModel(modelId)) return "image/*,video/*,.txt,.md,.json,.csv";
 		if (isImageOnlyModel(modelId)) return "image/*";
-		return "image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+		return "image/*,.txt,.md,.json,.csv";
 	}
 	function getAttachmentMime(attachment) {
 		return String(attachment?.mimeType || attachment?.mime || attachment?.type || "");
@@ -10579,9 +10578,9 @@
 		for (const file of fileList.slice(0, remainingSlots)) {
 			const isImage = file.type.startsWith("image/");
 			const isVideo = file.type.startsWith("video/");
-			const isTextFile = file.name.match(/\.(pdf|txt|doc|docx|md|json|csv)$/i);
+			const isTextFile = TEXT_ATTACHMENT_RE.test(file.name);
 			if (!isImage && !((isVideoEditModel(currentModel) || isOmniVideoModel(currentModel)) && isVideo) && !(isTextFile && !currentMeta.videoOnly)) {
-				showToast(`已忽略不支持的文件：${file.name}`);
+				showToast(BINARY_ATTACHMENT_RE.test(file.name) ? `暂不支持 ${file.name}：PDF/Word 等二进制文件会被读成乱码，请转成图片或 .txt / .md 后再传。` : `已忽略不支持的文件：${file.name}`);
 				continue;
 			}
 			if (file.size > MAX_ATTACHMENT_SIZE) {
@@ -10598,6 +10597,10 @@
 				textContent = await readFileAsText(file).catch(() => null);
 				if (!textContent) {
 					showToast(`无法读取文件内容：${file.name}`);
+					continue;
+				}
+				if (textContent.length > MAX_TEXT_ATTACHMENT_CHARS) {
+					showToast(`文件内容过大（约 ${Math.round(textContent.length / 1e4)} 万字符），已忽略：${file.name}。请拆分或压缩后再传。`);
 					continue;
 				}
 				previewUrl = null;
@@ -16713,15 +16716,6 @@
 		if (imageCount) summaryParts.push(`（含 ${imageCount} 张图片）`);
 		return summaryParts.join(" ").trim() || "（包含图片上下文）";
 	}
-	function findLastMultimodalAnchorIndex(history = conversationHistory) {
-		if (!Array.isArray(history) || !history.length) return -1;
-		for (let index = history.length - 1; index >= 0; index -= 1) {
-			const content = history[index]?.content;
-			if (!Array.isArray(content)) continue;
-			if (content.some((part) => part && (part.type === "image_url" || part.type === "input_file"))) return index;
-		}
-		return -1;
-	}
 	function describeContentForCompression(content) {
 		if (!Array.isArray(content)) return String(content || "").trim();
 		const textParts = content.filter((part) => part && part.type === "text" && typeof part.text === "string").map((part) => part.text.trim()).filter(Boolean);
@@ -16806,76 +16800,6 @@
 			content: normalizeHistoryContentForModel(userContent ?? query, modelId)
 		});
 		return messages;
-	}
-	function buildConversationCompressionTranscript(modelId = currentModel) {
-		return conversationHistory.map((message, index) => {
-			const role = String(message?.role || "assistant").toUpperCase();
-			const contentText = describeContentForCompression(message?.content);
-			const toolNames = Array.isArray(message?.tool_calls) ? message.tool_calls.map((call) => call?.function?.name || call?.name).filter(Boolean).join(", ") : "";
-			return `[${index + 1}] ${role}${toolNames ? ` [tools: ${toolNames}]` : ""}\n${contentText || "（空内容）"}`;
-		}).join("\n\n");
-	}
-	async function requestConversationCompression(modelId = currentModel) {
-		if (!conversationHistory.length) return false;
-		const transcript = buildConversationCompressionTranscript(modelId);
-		if (!transcript.trim()) return false;
-		const response = await proxyFetchWithTimeout(EDGE_FUNCTION_URL, {
-			method: "POST",
-			headers: await proxyHeaders(),
-			body: JSON.stringify({
-				endpoint: "chat",
-				model: MODEL_IDS[modelId] || MODEL_IDS[DEFAULT_MODEL_ID] || DEFAULT_MODEL_ID,
-				messages: [{
-					role: "user",
-					content: `请将以下历史对话压缩为可继续聊天的简明摘要。必须保留：目标、已确认事实、用户偏好、重要约束、未完成事项、待继续的问题。请用简洁中文输出，格式固定为：## 目标\n## 已确认信息\n## 未完成事项\n## 延续建议。不要编造。\n\n${transcript}`
-				}],
-				stream: false,
-				temperature: .2
-			})
-		}, CHAT_REQUEST_TIMEOUT_MS, "上下文压缩");
-		if (!response.ok) {
-			const errorText = await response.text().catch(() => "");
-			const parsed = errorText.trim() ? parseBackendErrorPayload(errorText) : {
-				message: "",
-				code: ""
-			};
-			const detail = parsed.code === "challenge_required" || parsed.code === "access_blocked" || parsed.code === "anonymous_not_allowed" ? formatSecurityGuardMessage(parsed) : friendlyMessageFromBackend(parsed, response.status);
-			throw new Error(detail);
-		}
-		const data = await response.json();
-		const summary = String(data?.choices?.[0]?.message?.content || "").trim();
-		if (!summary) throw new Error("上下文压缩未返回摘要");
-		const previousHistory = conversationHistory.slice();
-		conversationHistory = [{
-			role: "assistant",
-			content: `【历史摘要】\n以下是上一段对话的压缩摘要，请在后续回合继续沿用其中已确认的事实、目标、约束与待办。\n\n${summary}`
-		}];
-		if (isMultimodalModel(modelId)) {
-			const anchorIndex = findLastMultimodalAnchorIndex(previousHistory);
-			if (anchorIndex >= 0) {
-				const tailStart = Math.max(anchorIndex, previousHistory.length - 11);
-				const preservedMessages = previousHistory.slice(tailStart).map((message) => ({ ...message }));
-				if (anchorIndex < tailStart && previousHistory[anchorIndex]) preservedMessages.unshift({ ...previousHistory[anchorIndex] });
-				conversationHistory = [conversationHistory[0], ...preservedMessages];
-			}
-		}
-		currentChatId = null;
-		messageSink.innerHTML = "";
-		homeView.classList.add("chatting");
-		chatMessages.classList.add("active");
-		if (contextMeter) contextMeter.classList.remove("hidden");
-		renderMessages();
-		updateContextMeter();
-		persistSessionNav();
-		showToast("上下文已自动压缩，并作为新对话继续");
-		return true;
-	}
-	async function ensureContextBudget(nextUserContent = "", modelId = currentModel) {
-		if (estimateConversationTokens(conversationHistory) + estimateMessageTokens({
-			role: "user",
-			content: nextUserContent
-		}) <= CONTEXT_COMPRESSION_TRIGGER) return false;
-		return requestConversationCompression(modelId);
 	}
 	function parseToolArguments(rawArguments) {
 		const value = String(rawArguments || "").trim();
@@ -18190,15 +18114,6 @@
 			return;
 		}
 		setComposerBusy(true);
-		try {
-			await ensureContextBudget(userContent, turnModelId);
-		} catch (error) {
-			showToast(normalizeErrorMessage(error, "上下文压缩失败，请稍后再试。"));
-			state.sendLocked = false;
-			setComposerBusy(false);
-			if (webSearchEnabledForTurn) setWebSearchEnabled(false);
-			return;
-		}
 		const assistantMessageId = createAssistantMessage(turnModelMetadata);
 		tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);
 		const controller = new AbortController();

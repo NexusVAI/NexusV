@@ -2114,11 +2114,23 @@
             if (!api || typeof api.reserveFileUploadUsage !== 'function') return true;
             return await api.reserveFileUploadUsage(files.length);
         }
+        // 2026-09-13：与聊天附件同一根因 —— 二进制文档（PDF/Word/表格）不能当文本读，
+        // readAsText 会解出一整份乱码。这里虽然会把内容截到 32000 字符，但**读取本身**
+        // 就已经把几 MB 的二进制拉进内存、算力白烧。命中即整份跳过并提示。
+        const BINARY_SOURCE_RE = /\.(pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
         async function addProjectSources(projectId, files) {
             const projects = readProjects();
             const project = projects.find(function (p) { return p.id === projectId; });
             if (!project) return;
-            const fileList = Array.from(files || []).filter(Boolean);
+            const incoming = Array.from(files || []).filter(Boolean);
+            const rejected = incoming.filter(function (f) { return BINARY_SOURCE_RE.test(String(f.name || '')); });
+            const fileList = incoming.filter(function (f) { return !BINARY_SOURCE_RE.test(String(f.name || '')); });
+            if (rejected.length) {
+                const api = app();
+                if (api && typeof api.showToast === 'function') {
+                    api.showToast('已跳过 ' + rejected.length + ' 个二进制文件（PDF/Word 等会被读成乱码），请先转成 .txt / .md 或图片。');
+                }
+            }
             if (!fileList.length) return;
             const allowed = await reserveProjectSourceUsage(fileList);
             if (!allowed) return;
@@ -4426,7 +4438,9 @@
             var statusHtml = isSuccess
                 ? '<span class="claude-usage-status-success">成功</span>'
                 : '<span class="claude-usage-status-failed">失败</span>';
-            var cost = Number(c.plan_charged_micro) > 0 ? c.plan_charged_micro : c.wallet_charged_micro;
+            // 2026-09-13：一笔调用可能**同时**扣套餐额度 + 钱包溢出（额度刚好用尽那次）。
+            // 原实现「plan>0 就只显示 plan」会少报钱：实测 ¥3.1793 被显示成 ¥3.0020。
+            var cost = (Number(c.plan_charged_micro) || 0) + (Number(c.wallet_charged_micro) || 0);
             var costText = fmtCreditsFromMicro(cost);
             var model = esc(String(c.model_id || ''));
             var time = fmtUsageWhen(c.created_at);

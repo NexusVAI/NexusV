@@ -434,14 +434,21 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   let conversationHistory = [];
   let loadedChatModel = "";
-  const CONTEXT_TOKEN_LIMIT = 128 * 1024;
-  const CONTEXT_COMPRESSION_TRIGGER = Math.floor(CONTEXT_TOKEN_LIMIT * 0.92);
+  // 2026-09-13：删除 128K 上下文硬限制与「超限自动压缩成摘要」。
+  // 前端无法知道每个模型真正能塞多少上下文，拍一个 128K 再自动把对话换成摘要，
+  // 只会让用户莫名其妙地丢上下文。改为不设上限：装不下由模型/上游自己报错。
   const MAX_ATTACHMENT_COUNT = 4;
   // 2026-09-09: 生图线的参考图张数上限。与 composer 的 MAX_ATTACHMENT_COUNT 同值，
   // 但语义不同（这条管的是"发给上游几张参考图"），所以单独一个常量。
   // 权威上限在 cf-modelscope-proxy 的 PRORISEHUB_IMAGE25_MAX_REFERENCES，两者需一致。
   const MAX_IMAGE_REFERENCE_COUNT = 4;
   const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
+  // 2026-09-13：二进制文档不再当文本读；单份文本附件限长。这两个正则/常量必须与
+  // js/services/fileAttachments.js 里的同款保持一致 —— 那份是主路径，这份是
+  // workbench 服务未加载时的回落实现，两份都要改（否则一半用户仍踩乱码）。
+  const TEXT_ATTACHMENT_RE = /\.(txt|md|json|csv)$/i;
+  const BINARY_ATTACHMENT_RE = /\.(pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
+  const MAX_TEXT_ATTACHMENT_CHARS = 1_000_000;
   const UI_PREFS_STORAGE_KEY = "cancri_ui_prefs";
   const SESSION_NAV_STORAGE_KEY = "cancri_session_nav_v1";
   const MODEL_TELEMETRY_STORAGE_KEY = "cancri_model_telemetry";
@@ -3949,19 +3956,17 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   
   function updateContextMeter() {
     if (!contextMeter) return;
+    // 2026-09-13：不再有 128K 上限与百分比圆环，只显示估算 token 数。
     const usedTokens = estimateConversationTokens();
-    const ratio =
-      CONTEXT_TOKEN_LIMIT > 0 ? Math.min(1, usedTokens / CONTEXT_TOKEN_LIMIT) : 0;
-    contextMeter.style.setProperty("--meter-angle", `${ratio * 360}deg`);
     contextMeter.setAttribute(
       "aria-label",
-      `上下文额度 ${usedTokens} / ${CONTEXT_TOKEN_LIMIT} tokens`,
+      `当前会话上下文约 ${usedTokens} tokens`,
     );
     if (contextMeterValue) {
-      contextMeterValue.textContent = String(Math.round(ratio * 100));
+      contextMeterValue.textContent = formatTokenCount(usedTokens);
     }
     if (contextMeterText) {
-      contextMeterText.textContent = `当前会话上下文约使用 ${formatTokenCount(usedTokens)} / ${formatTokenCount(CONTEXT_TOKEN_LIMIT)} tokens，剩余 ${formatTokenCount(Math.max(0, CONTEXT_TOKEN_LIMIT - usedTokens))}。超限前会自动压缩为摘要并切到新对话继续。`;
+      contextMeterText.textContent = `当前会话上下文约使用 ${formatTokenCount(usedTokens)} tokens（估算）。上下文没有硬性上限，能否装下以所选模型实际支持为准。`;
     }
   }
   
@@ -4308,11 +4313,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   function getAttachmentAcceptForModel(modelId = currentModel) {
     if (isVideoEditModel(modelId)) return "image/*,video/*";
     if (isReferenceVideoModel(modelId)) return "image/*";
-    if (isOmniVideoModel(modelId)) return "image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+    // 2026-09-13：accept 里不再放 .pdf/.doc/.docx —— 它们会被 readAsText 读成乱码
+    // （见 filesToAttachments 的二进制拒收注释），在选择器里放出来只会诱导用户踩坑。
+    if (isOmniVideoModel(modelId)) return "image/*,video/*,.txt,.md,.json,.csv";
     // 2026-09-09: 生图线的附件只可能是参考图。文档类附件在 generateImageFromPrompt
     // 里本来就被 isTextFile 过滤掉 —— 与其让用户选了再被静默忽略，不如不给选。
     if (isImageOnlyModel(modelId)) return "image/*";
-    return "image/*,.pdf,.txt,.doc,.docx,.md,.json,.csv";
+    return "image/*,.txt,.md,.json,.csv";
   }
   
   function getAttachmentMime(attachment) {
@@ -4385,10 +4392,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     for (const file of fileList.slice(0, remainingSlots)) {
       const isImage = file.type.startsWith("image/");
       const isVideo = file.type.startsWith("video/");
-      const isTextFile = file.name.match(/\.(pdf|txt|doc|docx|md|json|csv)$/i);
+      const isTextFile = TEXT_ATTACHMENT_RE.test(file.name);
   
       if (!isImage && !((isVideoEditModel(currentModel) || isOmniVideoModel(currentModel)) && isVideo) && !(isTextFile && !currentMeta.videoOnly)) {
-        showToast(`已忽略不支持的文件：${file.name}`);
+        showToast(
+          BINARY_ATTACHMENT_RE.test(file.name)
+            ? `暂不支持 ${file.name}：PDF/Word 等二进制文件会被读成乱码，请转成图片或 .txt / .md 后再传。`
+            : `已忽略不支持的文件：${file.name}`,
+        );
         continue;
       }
   
@@ -4409,6 +4420,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         textContent = await readFileAsText(file).catch(() => null);
         if (!textContent) {
           showToast(`无法读取文件内容：${file.name}`);
+          continue;
+        }
+        if (textContent.length > MAX_TEXT_ATTACHMENT_CHARS) {
+          showToast(
+            `文件内容过大（约 ${Math.round(textContent.length / 10000)} 万字符），已忽略：${file.name}。请拆分或压缩后再传。`,
+          );
           continue;
         }
         // 对于文本文件，使用文件图标作为预览
@@ -13007,25 +13024,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return summaryParts.join(" ").trim() || "（包含图片上下文）";
   }
   
-  function findLastMultimodalAnchorIndex(history = conversationHistory) {
-    if (!Array.isArray(history) || !history.length) return -1;
-  
-    for (let index = history.length - 1; index >= 0; index -= 1) {
-      const content = history[index]?.content;
-      if (!Array.isArray(content)) continue;
-      if (
-        content.some(
-          (part) =>
-            part && (part.type === "image_url" || part.type === "input_file"),
-        )
-      ) {
-        return index;
-      }
-    }
-  
-    return -1;
-  }
-  
   function describeContentForCompression(content) {
     if (!Array.isArray(content)) return String(content || "").trim();
   
@@ -13168,123 +13166,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return messages;
   }
   
-  function buildConversationCompressionTranscript(modelId = currentModel) {
-    return conversationHistory
-      .map((message, index) => {
-        const role = String(message?.role || "assistant").toUpperCase();
-        const contentText = describeContentForCompression(message?.content);
-        const toolNames = Array.isArray(message?.tool_calls)
-          ? message.tool_calls
-              .map((call) => call?.function?.name || call?.name)
-              .filter(Boolean)
-              .join(", ")
-          : "";
-        return `[${index + 1}] ${role}${toolNames ? ` [tools: ${toolNames}]` : ""}\n${contentText || "（空内容）"}`;
-      })
-      .join("\n\n");
-  }
-  
-  async function requestConversationCompression(modelId = currentModel) {
-    if (!conversationHistory.length) return false;
-  
-    const transcript = buildConversationCompressionTranscript(modelId);
-    if (!transcript.trim()) return false;
-  
-    const response = await proxyFetchWithTimeout(
-      EDGE_FUNCTION_URL,
-      {
-        method: "POST",
-        headers: await proxyHeaders(),
-        body: JSON.stringify({
-          endpoint: "chat",
-          model:
-            MODEL_IDS[modelId] || MODEL_IDS[DEFAULT_MODEL_ID] || DEFAULT_MODEL_ID,
-          messages: [
-            {
-              role: "user",
-              content: `请将以下历史对话压缩为可继续聊天的简明摘要。必须保留：目标、已确认事实、用户偏好、重要约束、未完成事项、待继续的问题。请用简洁中文输出，格式固定为：## 目标\n## 已确认信息\n## 未完成事项\n## 延续建议。不要编造。\n\n${transcript}`,
-            },
-          ],
-          stream: false,
-          temperature: 0.2,
-        }),
-      },
-      CHAT_REQUEST_TIMEOUT_MS,
-      "上下文压缩",
-    );
-  
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      const parsed = errorText.trim() ? parseBackendErrorPayload(errorText) : { message: "", code: "" };
-      const detail = parsed.code === "challenge_required" ||
-        parsed.code === "access_blocked" ||
-        parsed.code === "anonymous_not_allowed"
-          ? formatSecurityGuardMessage(parsed)
-          : friendlyMessageFromBackend(parsed, response.status);
-      throw new Error(detail);
-    }
-  
-    const data = await response.json();
-    const summary = String(data?.choices?.[0]?.message?.content || "").trim();
-    if (!summary) {
-      throw new Error("上下文压缩未返回摘要");
-    }
-  
-    const previousHistory = conversationHistory.slice();
-  
-    conversationHistory = [
-      {
-        role: "assistant",
-        content: `【历史摘要】\n以下是上一段对话的压缩摘要，请在后续回合继续沿用其中已确认的事实、目标、约束与待办。\n\n${summary}`,
-      },
-    ];
-  
-    if (isMultimodalModel(modelId)) {
-      const anchorIndex = findLastMultimodalAnchorIndex(previousHistory);
-      if (anchorIndex >= 0) {
-        const preserveWindow = 12;
-        const tailStart = Math.max(
-          anchorIndex,
-          previousHistory.length - (preserveWindow - 1),
-        );
-        const preservedMessages = previousHistory
-          .slice(tailStart)
-          .map((message) => ({ ...message }));
-        if (anchorIndex < tailStart && previousHistory[anchorIndex]) {
-          preservedMessages.unshift({ ...previousHistory[anchorIndex] });
-        }
-        conversationHistory = [conversationHistory[0], ...preservedMessages];
-      }
-    }
-  
-    currentChatId = null;
-    messageSink.innerHTML = "";
-    homeView.classList.add("chatting");
-    chatMessages.classList.add("active");
-  
-    if (contextMeter) {
-      contextMeter.classList.remove("hidden");
-    }
-    renderMessages();
-    updateContextMeter();
-    persistSessionNav();
-    showToast("上下文已自动压缩，并作为新对话继续");
-    return true;
-  }
-  
-  async function ensureContextBudget(
-    nextUserContent = "",
-    modelId = currentModel,
-  ) {
-    const projectedTokens =
-      estimateConversationTokens(conversationHistory) +
-      estimateMessageTokens({ role: "user", content: nextUserContent });
-    if (projectedTokens <= CONTEXT_COMPRESSION_TRIGGER) {
-      return false;
-    }
-    return requestConversationCompression(modelId);
-  }
-  
+  // 2026-09-13：删除了「128K 上下文超限 → 自动压缩为摘要并开启新对话」那一套
+  //（ensureContextBudget / requestConversationCompression /
+  //  buildConversationCompressionTranscript）。原因：前端无法知道每个模型真实的
+  // 上下文窗口，硬编码 128K 只会在用户毫无准备时把对话换成摘要。现在不设上限，
+  // 装不下由上游报错（用户可见、可自己裁剪）。
   function parseToolArguments(rawArguments) {
     const value = String(rawArguments || "").trim();
     if (!value) return {};
@@ -15218,16 +15104,6 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
   
     setComposerBusy(true);
-  
-    try {
-      await ensureContextBudget(userContent, turnModelId);
-    } catch (error) {
-      showToast(normalizeErrorMessage(error, "上下文压缩失败，请稍后再试。"));
-      state.sendLocked = false;
-      setComposerBusy(false);
-      if (webSearchEnabledForTurn) setWebSearchEnabled(false);
-      return;
-    }
   
     const assistantMessageId = createAssistantMessage(turnModelMetadata);
     tagAssistantRetryUserIndex(assistantMessageId, turnUserIndex);

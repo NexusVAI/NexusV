@@ -882,16 +882,16 @@
                                 id="contextMeterPopover"
                             >
                                 <div class="context-meter-title">
-                                    上下文额度
+                                    上下文用量
                                 </div>
                                 <div
                                     class="context-meter-text"
                                     id="contextMeterText"
                                 >
-                                    当前会话上下文约使用 0 / 128K tokens。
+                                    当前会话上下文约使用 0 tokens（估算）。
                                 </div>
                                 <div class="context-meter-subtext">
-                                    悬停可查看详情，超限后会自动压缩为摘要并开启新对话继续。
+                                    悬停可查看详情。上下文没有硬性上限，能否装下以所选模型实际支持为准。
                                 </div>
                             </div>
                         </div>
@@ -1210,14 +1210,14 @@
                             <input
                                 type="file"
                                 id="attachmentInput"
-                                accept="image/*,video/*,.pdf,.txt,.doc,.docx,.md,.json,.csv"
+                                accept="image/*,video/*,.txt,.md,.json,.csv"
                                 multiple
                                 hidden
                             />
                             <input
                                 type="file"
                                 id="fileInput"
-                                accept=".txt,.md,.json,.csv,.pdf,.doc,.docx"
+                                accept=".txt,.md,.json,.csv"
                                 multiple
                                 hidden
                             />
@@ -2802,12 +2802,12 @@
         <script defer src="./hero_easter_egg.js?v=2026-06-03-home-polish"></script>
         <!-- 2026-07-18~20：埃德加德加限时创意卡（替换 hero 问候文案位） -->
         <script defer src="./adejia_promo_card.js?v=20260719-moon-day"></script>
-        <script defer src="./cancri_chat.js?v=20260913-ocr-aiping"></script>
-        <script type="module" src="./js/main.js?v=workbench-0506-happyhorse-video"></script>
+        <script defer src="./cancri_chat.js?v=20260913-attach-fix"></script>
+        <script type="module" src="./js/main.js?v=2026-09-13-binary-attach-fix"></script>
         <script defer src="./cancri_announcement.js?v=20260811-ann-expand"></script>
         <script defer src="./cancri_arena.js?v=arena-module-0504"></script>
         <!-- Claude 1:1 复刻交互层（5 pill 注入 prompt / 搜索弹窗 / 自定义打开设置 / 文物 toast 等） -->
-        <script defer src="./claude_ui.js?v=20260904-audit-final"></script>
+        <script defer src="./claude_ui.js?v=2026-09-13-usage-cost-sum"></script>
         <!-- 额度耗尽提醒条 / 升级弹窗（cancri_chat.js 通过 window.CancriUpgradeQuotaUI 调用；此前仅 index.html 引入） -->
         <script defer src="./claude_upgrade_quota_ui.js?v=20260822-planv4"></script>
     </body>
