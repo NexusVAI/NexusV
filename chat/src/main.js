@@ -3,6 +3,7 @@ import { openAiB64JsonToDataUrl } from "./utils/image.js";
 import { escapeHtml } from "./utils/html.js";
 import { MODEL_CATALOG_FALLBACK } from "./data/model-catalog-fallback.js";
 import { TOOL_DISPLAY_NAMES } from "./data/tool-display-names.js";
+import { mountHeroMascot } from "./grok-bot/hero-mascot.js";
 import loginIslandHtml from "../claude-login-island.html?raw";
 
   // ── 首尔边缘中继：基地址解析 + 失败熔断回落（2026-08-29 审计补齐）─────────────
@@ -15527,8 +15528,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     }
     const query = String(homeInput?.value || "").trim();
     if ((!query && !pendingAttachments.length) || state.isStreaming) return;
-  
-    await sendMessage(query);
+
+    // hero 云朵：提交期间切 orbit（原登录页「登录中」表情的对应动作）。
+    // 无论成败都复位；成功路径下 hero 随即被 .chatting 隐藏，
+    // hero-mascot 的 class 观察器也会在回到首页时兜底清 busy。
+    heroMascot?.setBusy(true);
+    try {
+      await sendMessage(query);
+    } finally {
+      heroMascot?.setBusy(false);
+    }
   }
   
   function openPopover(el) {
@@ -17181,6 +17190,11 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   setInterval(updateTokenExpiryNote, 1000);
   // 跨小时自动刷新问候语（用户长时间停在主页时，下午→晚上等应自动切换）
   setInterval(updateHomeHeroText, 60 * 1000);
+  // 首页 hero 吉祥物：cancri-code 同款蓝色云朵（完整表情调度/戳击/跟随指针）。
+  // 引擎异步加载；失败时 hero-icon 里的 <img> 静态 logo 继续兜底。
+  let heroMascot = mountHeroMascot(heroTitle?.querySelector(".hero-icon"), {
+    homeView,
+  });
   initChatShareButton();
   initAuthOverlay();
   setTimeout(() => {

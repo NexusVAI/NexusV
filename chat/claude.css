@@ -7999,6 +7999,18 @@ html[data-theme="light"] #claudeSettingsView.active {
        这里只在 light 主题下淡淡上一点 accent 色调，不破坏 logo 本色。 */
     filter: none;
 }
+/* 蓝色云朵吉祥物（src/grok-bot/hero-mascot.js 挂载，替换上方静态 img）。
+   引擎自带 transform 缩放与内部动画；转圈/celebrate 粒子会画出 box 外，
+   必须 overflow:visible。尺寸跟随 .hero-icon（含 mobile 26px 媒体查询）。 */
+.hero .hero-mascot {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
 .hero .hero-text {
     display: inline-block;
     /* 跟随真 Claude 的 max-w-2xl 视觉宽度限制，超长用户名不会撑开 hero。 */
