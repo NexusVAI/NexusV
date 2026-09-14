@@ -890,6 +890,17 @@
 			"tools": true,
 			"costTier": "free",
 			"lineLabel": "gemai.cc"
+		},
+		{
+			"id": "kimi-k3-fp8-block-free",
+			"name": "Kimi K3 FP8 Free",
+			"brand": "Moonshot",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free",
+			"lineLabel": "gemai.cc"
 		}
 	];
 	//#endregion
