@@ -65,6 +65,8 @@
   // 首页「我们提供的免费模型」= 限时免费线 + 刚上架的 c: 线（缺哪个补哪个）。
   // MiniMax 用免费渠道 id。到期后 catalog 会摘掉，这里 filter(Boolean) 自动少卡。
   var FREE_ORDER = [
+    // 2026-09-14: api.gemai.cc 限时免费 glm-5.3-fp8-free（至 09-18），上游 wire=[free]GLM-5.3。
+    "glm-5.3-fp8-free",
     // 2026-09-12: nb.deepsb.com 限时免费 claude-sonnet-5（至 09-19）。
     "claude-sonnet-5-free",
     // 2026-08-27: api.b.ai 五条限时免费线（原至 08-31，2026-08-30 延至 09-05），钉到免费区首屏。
@@ -121,6 +123,7 @@
     // MODEL_ACCESS_END_MS（必须同日）——改日期时三处一起改，否则卡片写着还没到期、
     // 后端已经把模型摘掉了。
     // 2026-09-06: hy3 / glm-5.3-flash / qwen3.8-flash 延到 09-10；mimo / vision-exp 不延。
+    "glm-5.3-fp8-free": "09-18结束免费期限",
     "glm-5.3-flash-free": "09-10结束免费期限",
     "hy3-free": "09-10结束免费期限",
     "qwen3.8-flash-free": "09-10结束免费期限",

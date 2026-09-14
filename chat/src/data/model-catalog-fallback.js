@@ -89,5 +89,6 @@ export const MODEL_CATALOG_FALLBACK = [
   {"id":"grok-imagine-video","name":"Grok Imagine Video","brand":"xAI","kind":"video","vision":false,"thinking":false,"tools":false,"costTier":"normal","lineLabel":"futureppo","proMaxOnly":true,"customMultiplier":3000,"creditPerUse":300,"promoLimited":true,"promoTooltip":"2026/06/18-2026/07/18 Pro起步均可用"},
   {"id":"z-image-turbo","name":"【订阅福利】造相-Z-Image-Turbo","brand":"Qwen","kind":"image","vision":false,"thinking":false,"tools":false,"costTier":"free"},
   {"id":"glm-4-9b-0414","name":"GLM-4-9B-0414","brand":"Zhipu","kind":"chat","vision":false,"thinking":false,"tools":false,"costTier":"free","lineLabel":"aiping"},
-  {"id":"deepseek-r1-distill-qwen-14b","name":"DeepSeek-R1-Distill-Qwen-14B","brand":"DeepSeek","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"free","lineLabel":"aiping"}
+  {"id":"deepseek-r1-distill-qwen-14b","name":"DeepSeek-R1-Distill-Qwen-14B","brand":"DeepSeek","kind":"chat","vision":false,"thinking":true,"tools":false,"costTier":"free","lineLabel":"aiping"},
+  {"id":"glm-5.3-fp8-free","name":"GLM 5.3 FP8 Free","brand":"Zhipu","kind":"chat","vision":false,"thinking":true,"tools":true,"costTier":"free","lineLabel":"gemai.cc"}
 ];

@@ -879,6 +879,17 @@
 			"tools": false,
 			"costTier": "free",
 			"lineLabel": "aiping"
+		},
+		{
+			"id": "glm-5.3-fp8-free",
+			"name": "GLM 5.3 FP8 Free",
+			"brand": "Zhipu",
+			"kind": "chat",
+			"vision": false,
+			"thinking": true,
+			"tools": true,
+			"costTier": "free",
+			"lineLabel": "gemai.cc"
 		}
 	];
 	//#endregion
