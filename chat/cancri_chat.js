@@ -7916,9 +7916,14 @@
 	function normalizeArenaMode(_mode) {
 		return "single";
 	}
-	var savedArenaMode = localStorage.getItem("cancri_arena_mode");
+	var savedArenaMode = null;
+	try {
+		savedArenaMode = localStorage.getItem("cancri_arena_mode");
+	} catch (_e) {}
 	var initialArenaMode = normalizeArenaMode(savedArenaMode);
-	if (savedArenaMode !== initialArenaMode) localStorage.setItem("cancri_arena_mode", initialArenaMode);
+	if (savedArenaMode !== initialArenaMode) try {
+		localStorage.setItem("cancri_arena_mode", initialArenaMode);
+	} catch (_e) {}
 	var state = {
 		theme: "light",
 		themeMode: "light",
@@ -8096,6 +8101,10 @@
 		image_request_invalid: "请求参数被模型拒绝，请稍后重试。",
 		image_generation_failed: "图片生成失败，未返回有效图像。",
 		video_generation_failed: "视频生成失败，请稍后重试。",
+		model_not_priced: "该模型尚未定价，暂不可用，请切换其他模型。",
+		insufficient_balance: "账户余额不足，请充值后再试。",
+		context_too_long: "本次对话上下文超出该模型单次上限，请新开对话或删掉部分历史后重试。",
+		invalid_reference_image: "参考图格式无法识别，请重新上传 PNG / JPEG 图片。",
 		invalid_model: "所选模型不可用，请重新选择。",
 		invalid_model_for_endpoint: "该模型不支持此操作。",
 		service_not_configured: "服务暂未配置，请稍后再试。",
@@ -8149,7 +8158,8 @@
 		"token_window_5h_exceeded",
 		"token_window_week_exceeded",
 		"allowance_exhausted",
-		"plan_required"
+		"plan_required",
+		"insufficient_balance"
 	]);
 	var USER_QUOTA_ERROR_CODES = new Set([
 		"free_pool_exhausted",
@@ -10585,7 +10595,7 @@
 		if (attachmentService?.filesToAttachments) return attachmentService.filesToAttachments(files, pendingAttachments, {
 			maxCount,
 			maxSize: MAX_ATTACHMENT_SIZE,
-			allowText: !currentMeta.videoOnly,
+			allowText: !currentMeta.videoOnly && !currentMeta.imageOnly,
 			allowVideo: isVideoEditModel(currentModel) || isOmniVideoModel(currentModel),
 			onWarning: showToast
 		});
@@ -15538,7 +15548,16 @@
 				const rawUrl = String(data?.data?.[0]?.url || "").trim();
 				let imageUrl = (data?.data?.[0]?.b64_json ? openAiB64JsonToDataUrl(data.data[0].b64_json) : "") || (/^data:image\//i.test(rawUrl) ? rawUrl : "") || rawUrl;
 				if (!imageUrl) throw new Error(KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
-				if (/^https?:\/\//i.test(imageUrl)) imageUrl = await ensurePersistentImageUrl(imageUrl);
+				if (/^https?:\/\//i.test(imageUrl)) {
+					const upstreamImageUrl = imageUrl;
+					try {
+						imageUrl = await ensurePersistentImageUrl(imageUrl);
+					} catch (persistError) {
+						console.warn("[image] 持久化失败，保留上游直链：", persistError);
+						imageUrl = upstreamImageUrl;
+						showToast("图片已生成，但未能转存到站内，该链接可能会过期，建议尽快保存。");
+					}
+				}
 				finalStatusText = "图片已生成。";
 				showToast("图片已生成。");
 				return imageUrl;
@@ -17251,7 +17270,7 @@
 			}
 			if (detail) applyBackendModelBlock(parsed, modelId);
 			let friendly = parsed.code === "challenge_required" || parsed.code === "access_blocked" || parsed.code === "anonymous_not_allowed" ? formatSecurityGuardMessage(parsed) : friendlyMessageFromBackend(parsed, response.status);
-			if (response.status === 400 && processedMessages.some((m) => Array.isArray(m.content))) friendly += " (可能是图片格式不支持或图片过大)";
+			if (response.status === 400 && !KNOWN_ERROR_CODE_MESSAGES[parsed.code] && processedMessages.some((m) => Array.isArray(m.content))) friendly += " (可能是图片格式不支持或图片过大)";
 			throw new Error(friendly);
 		}
 		if (!response.body) throw new Error("模型请求未返回可读取的数据流。");
@@ -17273,7 +17292,23 @@
 			}
 		};
 		armStreamIdle();
+		let streamErrorFrame = null;
 		function applyDelta(parsed) {
+			if (parsed && parsed.error && !streamErrorFrame) {
+				streamErrorFrame = parsed;
+				applyBackendModelBlock({
+					code: parsed.code || parsed.error.code,
+					retry_after_seconds: parsed.retry_after_seconds ?? parsed.error.retry_after_seconds
+				}, modelId);
+				const notice = parsed.message || parsed.error.message || "回复未完整生成就被中断，请重试或切换模型。";
+				finalAnswer += `${finalAnswer ? "\n\n" : ""}⚠️ ${notice}`;
+				updateAssistantMessage(assistantMessageId, {
+					reasoning: composeReasoningText(priorReasoning, reasoningText),
+					answer: finalAnswer,
+					thinking: false
+				});
+				return;
+			}
 			const delta = parsed?.choices?.[0]?.delta || {};
 			const reasoning = delta.reasoning_content || "";
 			const answer = delta.content || "";
@@ -17346,6 +17381,13 @@
 					try {
 						applyDelta(JSON.parse(payload));
 					} catch (parseError) {}
+					if (streamErrorFrame) break;
+				}
+				if (streamErrorFrame) {
+					try {
+						await reader.cancel();
+					} catch (_e) {}
+					break;
 				}
 				if (gen) {
 					gen.partialAnswer = finalAnswer;

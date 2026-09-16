@@ -27,11 +27,11 @@
     <link rel="preconnect" href="https://cn.nexusvai.xyz" crossorigin />
     <link rel="dns-prefetch" href="https://chat.nexusvai.xyz" />
     <link rel="dns-prefetch" href="https://cn.nexusvai.xyz" />
-    <script src="./cancri_config.js?v=2026-06-04-cf"></script>
-    <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
-    <script src="./api/api-platform.js?v=20260809-newconsole"></script>
+    <script src="../cancri_config.js?v=2026-06-04-cf"></script>
+    <link rel="stylesheet" href="./api-platform.css?v=2026-06-12-skeleton-light" />
+    <script src="./api-platform.js?v=20260809-newconsole"></script>
     <!-- Cancri 双主预logo 同步 -->
-    <script src="./cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
+    <script src="../cancri_logo_theme.js?v=2026-06-12-mono-icons" defer></script>
     <style>
       /* ─────────────────────────────────────────────────────────────────
          模型广场！026-05-17 重构！
@@ -1085,7 +1085,7 @@
 
     <header class="topbar">
       <div class="topbar__inner">
-        <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+        <a class="brand" href="./" aria-label="Cancri 开放平台">
           <img
             class="brand__logo cancri-logo"
             src="../../Logo/Cancri1.jpg"
@@ -1097,12 +1097,12 @@
           />
         </a>
         <nav class="topnav" aria-label="开放平台导航">
-          <a href="./api/">概览</a>
+          <a href="./">概览</a>
           <a href="./api_apply.html">联系我们</a>
           <a href="./keys.html">Keys</a>
           <a href="./api_models.html" class="is-active">模型</a>
           <a href="./api_docs.html">文档</a>
-          <a href="./pricing.html">套餐</a>
+          <a href="../pricing.html">套餐</a>
           <a href="./billing.html#bills">我的订单</a>
           <a href="./" class="topnav__back">←返回聊天</a>
         </nav>
@@ -1323,16 +1323,16 @@
     </footer>
 
     <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
-    <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
+    <script src="../../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
     <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见js/fingerprint.js 顶部注释　-->
-    <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+    <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
     <!-- 2026-05-17 重构：模型广场二档化（FREE/PAID！ 移除 9 条用户指定模型+
          Claude 风UI（Anthropic Sans/Serif、clay accent、PAID 卡左边一道描边）　
          2026-05-22：新增点击模型卡片右侧抽屉（定价 / 倍率 / 24h 状态+
          调用代码区，sessionStorage 自动填入用户最迁Key）　-->
-    <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-    <script src="./api/api-models-app.js?v=20260809-ratelimit-tpm"></script>
+    <script src="./platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+    <script src="./api-models-app.js?v=20260916-audit-fix"></script>
     <!-- 2026-06-10：Claude Fable 5 上线推广弹窗 -->
-    <script src="./fable5_launch_modal.js?v=2026-06-18-off"></script>
+    <script src="../fable5_launch_modal.js?v=2026-06-18-off"></script>
   </body>
 </html>

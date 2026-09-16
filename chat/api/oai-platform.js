@@ -104,8 +104,23 @@
   // ── search overlay ─────────────────────────────────────────────
   // Static nav targets; model results are injected from window.__CANCRI_MODELS__
   // (populated by oai-models.js once the catalog loads).
+  // 2026-09-16 审计 A11：站内"页面相对根"有**两个**属性名在表达同一件事 ——
+  // oai-shell-nav.js 读 data-oai-root，本文件读 data-cancri-base。
+  // chat/api/model_detail.html 只设了前者，于是本文件把 base 当成 ""：
+  // 搜索浮层里「概览 / API 密钥 / 用量 / 充值」四项拼成 /chat/api/api/*.html（全 404），
+  // 模型搜索结果则落到 /chat/api/api_models.html（chat/ 那份才是现行页）。
+  // 收敛成一个取值函数：优先 data-cancri-base，缺失时回落 data-oai-root。
+  // 新增页面只设其中一个即可；两个都设时以 data-cancri-base 为准。
+  function pageBase() {
+    var body = document.body;
+    if (!body) return "";
+    var base = body.getAttribute("data-cancri-base");
+    if (base === null) base = body.getAttribute("data-oai-root");
+    return base || "";
+  }
+
   function navTargets() {
-    var base = document.body.getAttribute("data-cancri-base") || "";
+    var base = pageBase();
     return [
       { name: "概览", sub: "开放平台首页", href: base + "api/index.html" },
       { name: "模型广场", sub: "全部可用模型", href: base + "api_models.html" },
@@ -184,7 +199,7 @@
           // 2026-08-20 模型分组：同组模型在广场折叠成一张代表卡，只有代表卡带
           // `#model-<id>` 锚点。所以跳转必须用 anchorId（成员 → 代表），
           // 而 sub 里仍显示 m.id（成员自己真实可调用的 id）。
-          href: (document.body.getAttribute("data-cancri-base") || "") + "api_models.html#model-" + encodeURIComponent(m.anchorId || m.id),
+          href: pageBase() + "api_models.html#model-" + encodeURIComponent(m.anchorId || m.id),
         };
       });
       if (scope === "models" && !modelIndexReady) {

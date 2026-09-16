@@ -22,11 +22,13 @@ let banSearchTimer = null;
 let activeBanSearch = "";
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => {
-  const d = document.createElement("div");
-  d.textContent = String(s == null ? "" : s);
-  return d.innerHTML;
-};
+// 2026-09-16 审计 A15（同类）：原实现走 textContent → innerHTML，只转义 & < >，
+// **不转义引号**，而本文件同样把值往 HTML 属性里塞（见 data-email= 等）。
+// 与 admin-usage-app.js / admin-stories-app.js 统一成同一套转义器（& < > " '）。
+const esc = (s) =>
+  String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 
 // ── 调用明细的三个单元格渲染 ────────────────────────────────────────────
 // 与 admin-usage-app.js 里的同名逻辑保持一致；两个页面口径必须相同，

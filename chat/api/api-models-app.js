@@ -37,7 +37,12 @@ const esc = (s) => {
 const FEATURED_MODEL_ORDER = [
     // 2026-07-21: 旗舰三卡 — XHigh
     "claude-opus-4-8-xhigh",
-    "grok-4.5-xhigh",
+    // 2026-09-16 审计 A30：移除 "grok-4.5-xhigh"。
+    // Aiven model_catalog 实测该行 visible=false / enabled=false ⇒ 它根本进不了
+    // model_public_catalog，钉在这里只会让旗舰区静默少一张卡（没有任何报错）。
+    // 这正是上面第 36 行自己写的规则「已下线模型勿写死」被违反的实例。
+    // ⚠️ 要补回第三张旗舰卡，先在 DB 翻 visible/enabled（见模型运维总纲 §2），
+    //    再把 id 写回这里 —— 顺序不能反。
     "gpt-5.6-sol-xhigh",
 ];
 const FEATURED_RANK = new Map(

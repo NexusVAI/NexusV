@@ -23,10 +23,10 @@
         <link rel="preload" as="image" href="../../Logo/Cancri.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="stylesheet" href="./api/api-platform.css?v=2026-06-12-skeleton-light" />
-        <script src="./api/api-platform.js?v=20260607-account-fix"></script>
+        <link rel="stylesheet" href="./api-platform.css?v=2026-06-12-skeleton-light" />
+        <script src="./api-platform.js?v=20260607-account-fix"></script>
         <!-- Cancri 双主题 logo 同步 -->
-        <script src="./cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
+        <script src="../cancri_logo_theme.js?v=2026-05-17-logo-theme" defer></script>
         <style>
             /* 页面专有：用量图表、文档卡 */
             .usage-summary {
@@ -313,7 +313,7 @@
     <body>
         <header class="topbar">
             <div class="topbar__inner">
-                <a class="brand" href="./api/" aria-label="Cancri 开放平台">
+                <a class="brand" href="./" aria-label="Cancri 开放平台">
                     <img
                         class="brand__logo cancri-logo"
                         src="../../Logo/Cancri1.jpg"
@@ -325,12 +325,12 @@
                     />
                 </a>
                 <nav class="topnav" aria-label="开放平台导航">
-                    <a href="./api/">概览</a>
+                    <a href="./">概览</a>
                     <a href="./api_apply.html">申请</a>
                     <a href="./api_keys.html" class="is-active">Keys</a>
                     <a href="./api_models.html">模型</a>
                     <a href="./api_docs.html">文档</a>
-                    <a href="./pricing.html">套餐</a>
+                    <a href="../pricing.html">套餐</a>
                     <a href="./billing.html#bills">我的订单</a>
                     <a href="./" class="topnav__back">←返回聊天</a>
                 </nav>
@@ -562,18 +562,18 @@
             </div>
         </footer>
 
-        <script src="./cancri_config.js"></script>
+        <script src="../cancri_config.js"></script>
         <!-- 客户端错误回传（2026-05-14 上线）：经用户同意后捕获 JS 异常用于诊断移动端 bug。-->
-        <script src="../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
+        <script src="../../js/telemetry.js?v=2026-06-08-trae-reprompt" defer></script>
         <!-- 设备 / 浏览器指纹（2026-05-16）：反多账号信号采集。详见js/fingerprint.js 顶部注释　-->
-        <script src="../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
+        <script src="../../js/fingerprint.js?v=2026-05-16-fp-init" defer></script>
         <script
             src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"
             crossorigin="anonymous"
         ></script>
         <!-- 2026-05-15 审查：原 inline <script> 抽离到 ./api/api-keys-app.js，并从 CSP 删 'unsafe-inline' script-src。 -->
-        <script src="./api/platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
-        <script src="./api/api-keys-app.js?v=20260804-no-approval"></script>
+        <script src="./platform-skeleton.js?v=2026-06-12-skeleton-light"></script>
+        <script src="./api-keys-app.js?v=20260804-no-approval"></script>
     <script src="../assets/p2m-loader.js" defer></script>
 </body>
 </html>

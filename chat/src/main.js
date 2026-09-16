@@ -264,10 +264,25 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     return "single";
   }
   
-  const savedArenaMode = localStorage.getItem("cancri_arena_mode");
+  // 2026-09-16 审计 A14：这三行原来是**裸的** localStorage 调用，且位于 IIFE 顶层。
+  // 浏览器设成「阻止所有 Cookie / 禁用站点数据」时（Chrome 下直接抛 SecurityError），
+  // 或配额写满时，异常从这里抛出 ⇒ 后面**全部**初始化代码一行都不执行 ⇒
+  // 整个聊天页变成一具死骨架（不是某个功能坏掉，是页面整体不可用）。
+  // 同文件其余同类调用普遍都在 try 里，这里属遗漏。读写各自独立保护：
+  // 读失败不该连带跳过写，写失败也只是"偏好记不住"，都不该影响页面启动。
+  let savedArenaMode = null;
+  try {
+    savedArenaMode = localStorage.getItem("cancri_arena_mode");
+  } catch (_e) {
+    // 站点数据不可用：按"没有保存过偏好"处理。
+  }
   const initialArenaMode = normalizeArenaMode(savedArenaMode);
   if (savedArenaMode !== initialArenaMode) {
-    localStorage.setItem("cancri_arena_mode", initialArenaMode);
+    try {
+      localStorage.setItem("cancri_arena_mode", initialArenaMode);
+    } catch (_e) {
+      // 写不进去就算了，normalizeArenaMode 每次都会把它归一成 single。
+    }
   }
   
   const state = {
@@ -549,6 +564,20 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     image_request_invalid: "请求参数被模型拒绝，请稍后重试。",
     image_generation_failed: "图片生成失败，未返回有效图像。",
     video_generation_failed: "视频生成失败，请稍后重试。",
+    // ── 2026-09-16 审计 A13 / A28：四个后端真实会返、前端却没映射的码 ──────────
+    // 没映射的后果不是"少一句话"，而是**指错方向**：friendlyMessageFromBackend
+    // 落到按 HTTP 状态生成的泛化模板（「暂时无法完成这次请求，请稍后重试或切换模型」），
+    // 用户按这句提示去重试/换模型，而真正该做的是充值、订阅、缩短上下文或换图片。
+    // 09-04 那轮只补了 allowance_exhausted / plan_required 两条。
+    //
+    // A13（402，chat-gateway enforceWalletGate）：
+    model_not_priced: "该模型尚未定价，暂不可用，请切换其他模型。",
+    insufficient_balance: "账户余额不足，请充值后再试。",
+    // A28（400）：
+    // context_too_long 来自 chat-gateway 的 Opus5 Thinking 上下文硬挡；
+    // invalid_reference_image 来自 proxy 的 sunburst 参考图解析（见 index.ts）。
+    context_too_long: "本次对话上下文超出该模型单次上限，请新开对话或删掉部分历史后重试。",
+    invalid_reference_image: "参考图格式无法识别，请重新上传 PNG / JPEG 图片。",
     // Routing / configuration errors
     invalid_model: "所选模型不可用，请重新选择。",
     invalid_model_for_endpoint: "该模型不支持此操作。",
@@ -634,6 +663,10 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     // 这两条的正确去处就是升级/订阅弹窗 —— 后端 message 里也写着 upgrade_url。
     "allowance_exhausted",
     "plan_required",
+    // 2026-09-16 审计 A13：insufficient_balance 同样带 upgrade_url，
+    // 是「拿不到充值入口」的那一条 —— 必须能弹出充值/升级面板，
+    // 否则用户只能自己去翻价格页。
+    "insufficient_balance",
   ]);
   const USER_QUOTA_ERROR_CODES = new Set([
     "free_pool_exhausted",
@@ -4367,7 +4400,14 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       return attachmentService.filesToAttachments(files, pendingAttachments, {
         maxCount,
         maxSize: MAX_ATTACHMENT_SIZE,
-        allowText: !currentMeta.videoOnly,
+        // 2026-09-16 审计 A29：allowText 原来只排除 videoOnly，与
+        // getAttachmentAcceptForModel 对不上 —— 那边对 imageOnly 模型返回的是
+        // 纯 "image/*"（2026-09-09 刻意不给选文档：生图线只可能用参考图）。
+        // accept 只约束**文件选择器**，拖拽 / 粘贴根本不过它，于是 .txt 能挂上来、
+        // 进 pendingAttachments、在气泡里显示成"已添加"，再被 generateImageFromPrompt
+        // 的 isTextFile 静默丢掉 —— 用户以为已经作为上下文送进去了。
+        // 两处判据必须一致：accept 不给选的类型，校验器也不能收。
+        allowText: !currentMeta.videoOnly && !currentMeta.imageOnly,
         allowVideo: isVideoEditModel(currentModel) || isOmniVideoModel(currentModel),
         onWarning: showToast,
       });
@@ -11286,7 +11326,27 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           throw new Error(KNOWN_ERROR_CODE_MESSAGES.image_generation_failed);
         }
         if (/^https?:\/\//i.test(imageUrl)) {
-          imageUrl = await ensurePersistentImageUrl(imageUrl);
+          // 2026-09-16 审计 A12：ensurePersistentImageUrl 里的两处 throw
+          // （media-download 非 2xx、blob.type 不是 image/*）原来会一路冒到外层
+          // catch，把**整轮**判成失败并落一张错误卡。可是 endpoint:"image" 在提交时
+          // 就已经按次结算了 —— 结果是「图已生成、钱已扣」，而用户看到"生成失败"，
+          // 图既不在气泡里也不在历史里，**无法找回**。
+          //
+          // 后端在同一件事上的取舍是明确写下来的（cf-gateway/src/gen-media.ts）：
+          // rehost 失败一律返回 null、不抛，保留上游直链 —— "图已经生成、钱已经花了，
+          // 为了藏域名把一次成功的出图变成报错是赔本买卖"。
+          // 前端这里把那个刻意的降级又升级回了失败，方向正好相反。
+          //
+          // 改成同款降级：转存不成就退回上游直链。代价是该链可能几小时后过期、
+          // 历史回放看不到图；但"现在能看到、能另存"严格优于"直接没了"。
+          const upstreamImageUrl = imageUrl;
+          try {
+            imageUrl = await ensurePersistentImageUrl(imageUrl);
+          } catch (persistError) {
+            console.warn("[image] 持久化失败，保留上游直链：", persistError);
+            imageUrl = upstreamImageUrl;
+            showToast("图片已生成，但未能转存到站内，该链接可能会过期，建议尽快保存。");
+          }
         }
         // 图片工作台已下线 —— 真实图片由调用方（sendImageGenerationMessage）
         // 渲染到聊天气泡里，这里只返回 URL。
@@ -13927,8 +13987,13 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           ? formatSecurityGuardMessage(parsed)
           : friendlyMessageFromBackend(parsed, response.status);
       // 多模态特定错误提示 — append-only hint, never replaces the template.
+      // 2026-09-16 审计 A28：这条猜测性提示只在**我们不知道 400 的真实成因**时才有用。
+      // 后端已经给出精确 code（如 context_too_long / invalid_reference_image）时再追加
+      // 「可能是图片格式不支持或图片过大」，等于在一句正确的话后面接一句错误的引导 ——
+      // 用户会去换图片，而真正该做的是缩短上下文。所以：已知 code 一律不追加。
       if (
         response.status === 400 &&
+        !KNOWN_ERROR_CODE_MESSAGES[parsed.code] &&
         processedMessages.some((m) => Array.isArray(m.content))
       ) {
         friendly += " (可能是图片格式不支持或图片过大)";
@@ -13968,7 +14033,44 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     };
     armStreamIdle();
   
+    // 2026-09-16 审计 A4：网关会在流里发**错误帧**，前端原来整个吞掉。
+    //
+    // 两个产帧点（cf-gateway/src/chat-gateway.ported.ts）：
+    //   · SANITIZED_LEAK_ERROR_FRAME —— 上游疑似泄漏/异常时替换掉原始文本；
+    //   · 「上游没走到终止帧就关流 = 静默截断，补一个明确错误帧再收尾」。
+    // 两者都带 `error.code = model_temporary_failure` + `retry_after_seconds`，
+    // 且挂在**所有** chat SSE 响应上。
+    //
+    // 原实现的 applyDelta 只读 `choices[0].delta`，整个文件也没有任何 `parsed.error`
+    // 处理，于是：半截答案 + 被丢掉的错误帧 ⇒ finalAnswer 非空 ⇒ 走正常落库路径，
+    // 用户看不到任何中断提示（而这次调用已经计费），同时网关注入的 30s 短锁
+    // 与自动切模型也永不触发。
+    //
+    // 处理方式与下方「重复输出检测」保持同一套形状：不丢已经收到的内容（钱已经花了），
+    // 而是追加一条明确的中断提示 + 触发 applyBackendModelBlock，然后收尾退出循环。
+    let streamErrorFrame = null;
+
     function applyDelta(parsed) {
+      if (parsed && parsed.error && !streamErrorFrame) {
+        streamErrorFrame = parsed;
+        const payload = {
+          code: parsed.code || parsed.error.code,
+          retry_after_seconds:
+            parsed.retry_after_seconds ?? parsed.error.retry_after_seconds,
+        };
+        applyBackendModelBlock(payload, modelId);
+        const notice =
+          parsed.message ||
+          parsed.error.message ||
+          "回复未完整生成就被中断，请重试或切换模型。";
+        finalAnswer += `${finalAnswer ? "\n\n" : ""}⚠️ ${notice}`;
+        updateAssistantMessage(assistantMessageId, {
+          reasoning: composeReasoningText(priorReasoning, reasoningText),
+          answer: finalAnswer,
+          thinking: false,
+        });
+        return;
+      }
       const delta = parsed?.choices?.[0]?.delta || {};
       const reasoning = delta.reasoning_content || "";
       const answer = delta.content || "";
@@ -14062,6 +14164,12 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           } catch (parseError) {
             // ignore malformed stream chunks
           }
+          // 审计 A4：收到网关的错误帧就不再继续读流（后面只会是 [DONE]）。
+          if (streamErrorFrame) break;
+        }
+        if (streamErrorFrame) {
+          try { await reader.cancel(); } catch (_e) {}
+          break;
         }
   
         // 2026-06-17：把本轮已累积内容同步给 generation 对象，触发增量保存 +

@@ -25,11 +25,19 @@ let activeSearch = "";
 const FILTERS = [];
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => {
-  const d = document.createElement("div");
-  d.textContent = String(s == null ? "" : s);
-  return d.innerHTML;
-};
+// 2026-09-16 审计 A15：原实现走 textContent → innerHTML，只会转义 & < >，
+// **不转义引号**。而本文件把值往 HTML **属性**里塞（如 `title="${esc(...)}"`），
+// 于是用户自填的 API Key 名（来源 chat-gateway 的 cleanHeader，只删 \r\n\t、
+// 不删引号）里带一个 `"` 就能闭合属性并注入新属性，管理员打开 admin_usage.html
+// 即触发。当前 admin_usage.html 的 CSP 没有 'unsafe-inline'，注入的 onmouseover=
+// 会被浏览器拒绝执行，所以不构成会话接管；但 style= 之类仍可用于遮挡页面 / 界面伪装。
+// 改成与 admin-stories-app.js 的 escHtml 同一套（转义 & < > " '），
+// 让"属性位置"和"文本位置"用同一个转义器就都安全。
+// ⛔ 别改回 textContent→innerHTML 那个写法：它对属性上下文是不完整的。
+const esc = (s) =>
+  String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 const fmt = (n) =>
   n == null ? "—" : Number(n).toLocaleString("en-US");
 const fmtTime = (iso) => {
