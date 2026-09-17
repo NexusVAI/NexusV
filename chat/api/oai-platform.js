@@ -99,7 +99,28 @@
     initSearchOverlay();
     initMobileDrawer();
     initCopyDelegation();
+    initPingDelegation();
   });
+
+  // ── Base URL 测速（模型页胶囊）─────────────────────────────────
+  // no-cors 只拿不透明响应，测的是浏览器到端点的往返耗时（含 TLS），不读内容
+  function initPingDelegation() {
+    document.addEventListener("click", function (e) {
+      var el = e.target.closest ? e.target.closest("[data-cancri-ping]") : null;
+      if (!el || el.getAttribute("data-busy") === "1") return;
+      el.setAttribute("data-busy", "1");
+      el.textContent = "测速中…";
+      var url = el.getAttribute("data-cancri-ping");
+      var t0 = performance.now();
+      fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now(), { mode: "no-cors", cache: "no-store" })
+        .then(function () { el.textContent = Math.round(performance.now() - t0) + " ms"; })
+        .catch(function () { el.textContent = "连接失败"; })
+        .then(function () {
+          el.removeAttribute("data-busy");
+          setTimeout(function () { if (el.getAttribute("data-busy") !== "1") el.textContent = "测速"; }, 4000);
+        });
+    });
+  }
 
   // ── search overlay ─────────────────────────────────────────────
   // Static nav targets; model results are injected from window.__CANCRI_MODELS__
@@ -150,9 +171,12 @@
         : "all";
       overlay.setAttribute("data-search-scope", scope);
       overlay.setAttribute("aria-label", scope === "models" ? "搜索所有模型" : "搜索 NexusV 开放平台");
+      clearTimeout(hideTimer);
       overlay.classList.remove("hidden");
       overlay.classList.add("flex");
       overlay.setAttribute("data-open", "true");
+      void overlay.offsetHeight;
+      overlay.setAttribute("data-anim", "in");
       overlay.setAttribute("aria-hidden", "false");
       document.body.classList.add("cancri-search-open");
       openers.forEach(function (b) { b.setAttribute("aria-expanded", b === activeOpener ? "true" : "false"); });
@@ -163,12 +187,18 @@
         setTimeout(function () { input.focus(); }, 20);
       }
     }
+    var hideTimer = null;
     function close(restoreFocus) {
-      overlay.classList.add("hidden");
-      overlay.classList.remove("flex");
+      overlay.removeAttribute("data-anim");
       overlay.setAttribute("data-open", "false");
       overlay.setAttribute("aria-hidden", "true");
-      overlay.removeAttribute("data-search-scope");
+      // 等上滑退场动画结束再真正隐藏（与 oai-cancri.css 的 260ms 过渡对齐）
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () {
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+        overlay.removeAttribute("data-search-scope");
+      }, 260);
       document.body.classList.remove("cancri-search-open");
       openers.forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
       if (restoreFocus !== false && activeOpener && typeof activeOpener.focus === "function") activeOpener.focus();
@@ -243,13 +273,32 @@
     var btn = document.getElementById("header-drawer-button");
     var drawer = document.getElementById("drawer");
     if (!btn || !drawer) return;
+    // 动画移植自主站 css/mobile-menu.css + js/menu.js：汉堡变叉、抽屉淡入下移、条目错峰浮现
+    var hideTimer = null;
     function toggle() {
       var open = drawer.getAttribute("data-open") === "true";
+      clearTimeout(hideTimer);
       drawer.setAttribute("data-open", open ? "false" : "true");
-      drawer.classList.toggle("hidden", open);
-      drawer.classList.toggle("flex", !open);
+      drawer.setAttribute("aria-hidden", open ? "true" : "false");
       btn.setAttribute("aria-expanded", open ? "false" : "true");
+      btn.classList.toggle("active", !open);
+      document.body.style.overflow = open ? "" : "hidden";
+      if (open) {
+        drawer.classList.remove("active");
+        hideTimer = setTimeout(function () {
+          drawer.classList.add("hidden");
+          drawer.classList.remove("flex");
+        }, 250);
+      } else {
+        drawer.classList.remove("hidden");
+        drawer.classList.add("flex");
+        void drawer.offsetHeight;
+        drawer.classList.add("active");
+      }
     }
+    window.addEventListener("resize", function () {
+      if (window.innerWidth >= 768 && drawer.getAttribute("data-open") === "true") toggle();
+    });
     btn.addEventListener("click", toggle);
     drawer.addEventListener("click", function (e) {
       if (e.target === drawer || e.target.hasAttribute("data-drawer-dismiss")) toggle();
