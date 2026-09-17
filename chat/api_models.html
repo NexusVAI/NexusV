@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- CSP 沿用旧模型广场：外联脚本（禁 inline JS），允许 inline style 与 data: 字体（OpenAI Sans 内嵌）。 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://chat.nexusvai.xyz https://cn.nexusvai.xyz; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self';" />
     <title>模型 · NexusV 开放平台</title>
     <meta name="description" content="NexusV 模型广场：选择 GPT、Claude、DeepSeek、Gemini 等 40+ 顶尖模型，支持 OpenAI 与 Anthropic 协议。" />
     <link rel="canonical" href="https://www.nexusvai.xyz/chat/api_models.html" />
@@ -20,11 +20,11 @@
     <link rel="icon" type="image/svg+xml" href="assets/nexusvai-N-logo-tight.svg" />
     <link rel="apple-touch-icon" href="../Logo/Cancri1.jpg" />
     <link rel="stylesheet" href="./api/oai-platform.css?v=20260622-models" />
-    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260828-model-search" />
+    <link rel="stylesheet" href="./api/oai-cancri.css?v=20260917-mobile-nav" />
     <link rel="stylesheet" href="./api/oai-cjk-fonts.css?v=20260810-cjk" />
     <!-- 主题在首帧前应用，避免闪烁（CSP 禁 inline，故在 head 同步加载） -->
-    <script src="./api/oai-shell-nav.js?v=20260814-opus5limits"></script>
-    <script src="./api/oai-platform.js?v=20260828-model-search"></script>
+    <script src="./api/oai-shell-nav.js?v=20260917-mobile-nav"></script>
+    <script src="./api/oai-platform.js?v=20260917-mobile-nav"></script>
   </head>
 
   <body class="overflow-x-hidden" data-oai-page="models" data-cancri-base="" data-cancri-logobase="../Logo/" data-cancri-artbase="./assets/oai.logo/">
@@ -67,6 +67,11 @@
                   <h2 class="text-3xl font-semibold tracking-tight">选择模型</h2>
                   <p class="text-base text-emphasis">不确定从哪个开始，就从 <a href="#model-gpt-5.6-sol" class="_TextLink_ssta1_1" data-underline="always">GPT-5.6 Sol</a> 入手——若更看重其它场景，可继续浏览下方专项模型。</p>
                   <p class="text-base text-emphasis">缓存价格全部统一一折。<a href="api_docs_detail.html#client-faq" class="_TextLink_ssta1_1" data-underline="always">了解为什么我的探测工具显示无缓存？</a></p>
+                  <div class="cancri-baseurl">
+                    <span class="cancri-baseurl__label">Base URL</span>
+                    <button type="button" class="cancri-baseurl__url" data-copy="https://cn.nexusvai.xyz/v1" title="点击复制"><span class="cancri-id__text">https://cn.nexusvai.xyz/v1</span></button>
+                    <button type="button" class="cancri-baseurl__ping" data-cancri-ping="https://cn.nexusvai.xyz/v1/models">测速</button>
+                  </div>
                 </div>
               </div>
 
@@ -135,7 +140,7 @@
                 <div class="pt-6">
                   <a href="./api_docs.html#privacy" class="_TextLink_ssta1_1" data-underline="always">数据使用说明</a>
                   <span class="mx-2">·</span>
-                  <a href="./api_docs.html#deprecations" class="_TextLink_ssta1_1" data-underline="always">已弃用模型</a>
+                  <a href="./api_docs_detail.html#intro" class="_TextLink_ssta1_1" data-underline="always">接入文档</a>
                 </div>
               </div>
             </div>
