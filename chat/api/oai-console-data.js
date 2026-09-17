@@ -2735,22 +2735,34 @@
     var s = document.createElement("style");
     s.id = "nexusv-console-chrome-css";
     s.textContent =
+      // 侧栏收起/展开：移植 cancri-code chrome-surface.css 的做法 ——
+      // 内容不重排、按右缘裁切（过渡期间加渐隐遮罩），文字 blur(5px)+淡出，520ms。
+      // 旧版直接 display:none 文字，且把 nav 项 justify-content:center，会让图标跳动。
       "@media (min-width:768px){" +
+      "main.sm8f7{--cnc-sb-dur:520ms;--cnc-sb-ease:cubic-bezier(.4,0,.2,1)}" +
+      "main.sm8f7 aside._1qzLV,main.sm8f7 .CO5li[data-sidebar-collapsible],main.sm8f7 ._3eq3b{width:260px;max-width:260px;transition:width var(--cnc-sb-dur) var(--cnc-sb-ease),max-width var(--cnc-sb-dur) var(--cnc-sb-ease)!important}" +
+      "main.sm8f7 .yaYrI{transition:left var(--cnc-sb-dur) var(--cnc-sb-ease)!important}" +
+      "main.sm8f7 .CNbrA{transition:padding var(--cnc-sb-dur) var(--cnc-sb-ease)!important}" +
+      "main.sm8f7 .HPtRB{overflow:hidden}" +
+      "main.sm8f7 ._3DFLd,main.sm8f7 #cnc-theme-toggle{max-width:240px;overflow:hidden;flex-shrink:0}" +
+      "main.sm8f7 .SjyEm,main.sm8f7 ._3DFLd,main.sm8f7 #cnc-theme-toggle,main.sm8f7 .rxdQY,main.sm8f7 .CtBQA{white-space:nowrap;opacity:1;filter:blur(0);" +
+      "transition:opacity var(--cnc-sb-dur) ease,filter var(--cnc-sb-dur) ease,max-width var(--cnc-sb-dur) var(--cnc-sb-ease),margin var(--cnc-sb-dur) var(--cnc-sb-ease),visibility 0s!important}" +
+      "main.sm8f7.cnc-sb-anim .CO5li[data-sidebar-collapsible]{-webkit-mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 0,#000 calc(100% - 28px),transparent)}" +
+      "main.sm8f7.cnc-sb-noanim *{transition:none!important}" +
       "main.sm8f7[data-sidebar=collapsed]{--side-nav-width:var(--side-nav-collapsed-width,56px)}" +
       "main.sm8f7[data-sidebar=collapsed] aside._1qzLV," +
       "main.sm8f7[data-sidebar=collapsed] .CO5li[data-sidebar-collapsible]," +
       "main.sm8f7[data-sidebar=collapsed] ._3eq3b{width:var(--side-nav-collapsed-width,56px)!important;max-width:var(--side-nav-collapsed-width,56px)!important;overflow:hidden!important}" +
       "main.sm8f7[data-sidebar=collapsed] .yaYrI{left:var(--side-nav-collapsed-width,56px)}" +
       "main.sm8f7[data-sidebar=collapsed] .SjyEm," +
-      "main.sm8f7[data-sidebar=collapsed] .rxdQY," +
-      "main.sm8f7[data-sidebar=collapsed] .a6re5," +
       "main.sm8f7[data-sidebar=collapsed] ._3DFLd," +
-      "main.sm8f7[data-sidebar=collapsed] .CtBQA," +
-      "main.sm8f7[data-sidebar=collapsed] .-ZU7U," +
-      "main.sm8f7[data-sidebar=collapsed] ._6UBrL," +
-      "main.sm8f7[data-sidebar=collapsed] #cnc-theme-toggle{display:none!important}" +
-      "main.sm8f7[data-sidebar=collapsed] ._4SoGl{margin:0}" +
-      "main.sm8f7[data-sidebar=collapsed] .HPtRB.O3ygq{justify-content:center;padding-left:0;padding-right:0}" +
+      "main.sm8f7[data-sidebar=collapsed] #cnc-theme-toggle," +
+      "main.sm8f7[data-sidebar=collapsed] .rxdQY," +
+      "main.sm8f7[data-sidebar=collapsed] .CtBQA{opacity:0;filter:blur(5px);pointer-events:none;visibility:hidden;" +
+      "transition:opacity var(--cnc-sb-dur) ease,filter var(--cnc-sb-dur) ease,max-width var(--cnc-sb-dur) var(--cnc-sb-ease),margin var(--cnc-sb-dur) var(--cnc-sb-ease),visibility 0s var(--cnc-sb-dur)!important}" +
+      // 收起后切换按钮与下方图标同列：rail 56px，图标中心 x=28 → 32px 按钮左缘 12px
+      "main.sm8f7[data-sidebar=collapsed] ._3DFLd,main.sm8f7[data-sidebar=collapsed] #cnc-theme-toggle{max-width:0;margin:0}" +
+      "main.sm8f7[data-sidebar=collapsed] .CNbrA{justify-content:flex-start;padding-left:12px;padding-right:0}" +
       "}" +
       ".cnc-theme-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin-left:4px;border:0;border-radius:8px;background:transparent;color:var(--color-text-secondary,inherit);cursor:pointer}" +
       ".cnc-theme-btn:hover{background:var(--color-background-primary-soft,rgba(127,127,127,.12));color:var(--color-text,inherit)}" +
@@ -2828,14 +2840,26 @@
     if (!main || !btn || btn.dataset.cncCollapseWired === "1") return;
     btn.dataset.cncCollapseWired = "1";
 
-    function setCollapsed(collapsed) {
+    var animTimer = 0;
+    function setCollapsed(collapsed, instant) {
+      clearTimeout(animTimer);
+      if (instant) {
+        main.classList.add("cnc-sb-noanim");
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { main.classList.remove("cnc-sb-noanim"); });
+        });
+      } else {
+        // 只在过渡期间挂右缘遮罩；静止的 56px rail 上挂着会把图标右半边淡掉
+        main.classList.add("cnc-sb-anim");
+        animTimer = setTimeout(function () { main.classList.remove("cnc-sb-anim"); }, 540);
+      }
       main.setAttribute("data-sidebar", collapsed ? "collapsed" : "expanded");
       btn.setAttribute("aria-label", collapsed ? "展开侧边栏" : "收起侧边栏");
       try {
         localStorage.setItem(SIDEBAR_KEY, collapsed ? "collapsed" : "expanded");
       } catch (e) {}
       // 侧栏宽度变了 → 概览 sparkline 按新宽度重算
-      window.setTimeout(redrawCharts, 80);
+      window.setTimeout(redrawCharts, instant ? 80 : 560);
     }
 
     var saved = null;
@@ -2843,7 +2867,7 @@
       saved = localStorage.getItem(SIDEBAR_KEY);
     } catch (e) {}
     if (saved === "collapsed" || saved === "expanded") {
-      setCollapsed(saved === "collapsed");
+      setCollapsed(saved === "collapsed", true);
     }
 
     btn.addEventListener(
