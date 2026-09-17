@@ -132,7 +132,7 @@ main .prose{width:100%;max-width:100%}
 <link rel="stylesheet" href="./api/oai-cancri.css?v=20260810-shell2" />
 <link rel="stylesheet" href="./api/oai-cjk-fonts.css?v=20260810-cjk" />
 <script src="./api/oai-shell-nav.js?v=20260814-opus5limits"></script>
-<script src="./api/oai-platform.js?v=20260916-audit-fix"></script>
+<script src="./api/oai-platform.js?v=20260810-theme-sync"></script>
 </head>
 <body data-oai-page="docs" class="bg-surface text-default overflow-x-hidden">
 <link rel="stylesheet" type="text/css" href="assets/p2m-loader.css" />
@@ -1369,6 +1369,18 @@ openai-api-key: cancri_sk_YOUR_KEY</pre>
 
           <section id="client-faq">
             <h2>客户端接入常见问题</h2>
+            <div class="faq-item" id="faq-cache">
+              <h4>Q: 为什么我的探测工具显示“无缓存”？你们是不是不支持缓存？</h4>
+              <p>
+                A: 支持。所有模型的缓存命中（cache read）统一按输入价格的 <b>1 折</b>计费，按实际命中的 token 逐请求结算。
+                <br>
+                探测工具显示“无缓存”，通常是以下原因：<br>
+                • <b>统计方式不同：</b>不少探测工具是按 NewAPI、Sub2API 等网关的返回格式或日志字段来判断缓存的。我们是自研网关，并非基于这些项目，字段位置或命名可能与工具预期不一致，工具读不到就会显示“无缓存”，并不代表缓存未生效。<br>
+                • <b>未达到命中条件：</b>缓存由上游模型提供方的 prompt cache 实现，需要请求前缀完全一致、长度达到上游最低要求，且有效期为分钟级（例如 Anthropic 默认约 5 分钟）。单次或前缀变化的探测请求本身就不会命中。
+                <br>
+                判断是否命中，请以接口返回的 <code>usage</code> 中的缓存 token 字段（如 <code>prompt_tokens_details.cached_tokens</code>）及控制台用量账单为准。
+              </p>
+            </div>
             <div class="faq-item">
               <h4>Q: 报错 503 Service Unavailable 并带代码 "api_paused" 是怎么回事？</h4>
               <p>
