@@ -9887,10 +9887,16 @@ import loginIslandHtml from "../claude-login-island.html?raw";
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    const btn = target.closest(".code-block-btn");
+    const btn = target.closest(".code-block-btn, .md-table-copy");
     if (!(btn instanceof HTMLElement)) return;
     event.preventDefault();
     event.stopPropagation();
+    if (btn.dataset.codeAction === "copy-table") {
+      writeTextToClipboard(btn.dataset.copy || "").then((ok) =>
+        showToast(ok ? "表格已复制" : "复制失败"),
+      );
+      return;
+    }
     const block = btn.closest(".code-block, .mermaid-block");
     const codeEl = block ? block.querySelector("pre code") : null;
     const code = codeEl ? codeEl.textContent || "" : "";
@@ -9968,15 +9974,52 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       .forEach((btn) => btn.classList.remove("is-active"));
   }
   
+  // ── Markdown 渲染：整体移植自 cancri-code 桌面端 src/chat/render/markdown.ts ──
+  // 与桌面端保持同一套块级语法 / 类名（md-h、md-inline-code、md-code、md-table-wrap …），
+  // 网页端独有的能力（KaTeX 自动渲染、Mermaid、图片、HTML 预览）在此基础上保留。
+  const MD_COPY_ICON = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.2" y="5.2" width="7.4" height="8.2" rx="1.3" stroke="currentColor" stroke-width="1.2"/><path d="M3.6 10.6H3.2A1.2 1.2 0 0 1 2 9.4V3.2A1.2 1.2 0 0 1 3.2 2h6.2A1.2 1.2 0 0 1 10.6 3.2v.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+  const MD_DOWNLOAD_ICON = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.15" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.8v5.1M5.55 8.15 8 10.6l2.45-2.45" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const MD_PREVIEW_ICON = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.6 8s2.3-4.6 6.4-4.6S14.4 8 14.4 8s-2.3 4.6-6.4 4.6S1.6 8 1.6 8Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.9" stroke="currentColor" stroke-width="1.2"/></svg>`;
+  // 占位符定界字符（NUL）：模型输出里不会出现，替换后原样还原
+  const MD_PH = String.fromCharCode(0);
+
+  const MD_LANG_LABEL = {
+    ts: "TypeScript", typescript: "TypeScript", tsx: "TSX", js: "JavaScript",
+    javascript: "JavaScript", jsx: "JSX", py: "Python", python: "Python",
+    rs: "Rust", rust: "Rust", go: "Go", json: "JSON", css: "CSS", html: "HTML",
+    md: "Markdown", markdown: "Markdown", bash: "Bash", sh: "Shell", shell: "Shell",
+    zsh: "Zsh", sql: "SQL", yaml: "YAML", yml: "YAML", toml: "TOML", c: "C",
+    cpp: "C++", cxx: "C++", cs: "C#", csharp: "C#", java: "Java", kt: "Kotlin",
+    kotlin: "Kotlin", swift: "Swift", php: "PHP", rb: "Ruby", ruby: "Ruby",
+    lua: "Lua", xml: "XML", vue: "Vue", svelte: "Svelte", text: "Text", txt: "Text",
+  };
+
+  function mdLangLabel(lang) {
+    const key = (lang || "text").toLowerCase();
+    if (MD_LANG_LABEL[key]) return MD_LANG_LABEL[key];
+    return key ? key.charAt(0).toUpperCase() + key.slice(1) : "Code";
+  }
+
+  function mdToMarkdownTable(headers, rows) {
+    const cell = (s) => String(s).replace(/\|/g, "\\|");
+    const line = (cells) => `| ${cells.map(cell).join(" | ")} |`;
+    const sep = `| ${headers.map(() => "---").join(" | ")} |`;
+    return [line(headers), sep, ...rows.map((row) => line(headers.map((_, i) => row[i] ?? "")))].join("\n");
+  }
+
   function renderInlineMarkdown(text) {
     const placeholders = [];
     const keep = (html) => {
-      const token = `\u0000md${placeholders.length}\u0000`;
+      const token = `${MD_PH}md${placeholders.length}${MD_PH}`;
       placeholders.push([token, html]);
       return token;
     };
-    // 先保护数学公式，避免被 escapeHtml 转义
-    let output = text
+    // 1. 内联代码最先挪走（反引号里的 $ / * / 链接语法都不参与后续解析）
+    let output = String(text || "")
+      .replace(/`([^`\n]+)`/g, (match, code) =>
+        keep(`<code class="md-inline-code">${escapeHtml(code)}</code>`),
+      )
+      // 2. 公式原样保留定界符交给 KaTeX auto-render；内联 $ 两侧不能紧贴 \w，避免误吃价格 $5
       .replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) =>
         keep(`$$${escapeHtml(formula.trim())}$$`),
       )
@@ -9986,11 +10029,8 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       .replace(/\\\(([\s\S]*?)\\\)/g, (match, formula) =>
         keep(`\\(${escapeHtml(formula)}\\)`),
       )
-      .replace(/\$\s*([^\$]+?)\s*\$/g, (match, formula) =>
-        keep(`$${escapeHtml(formula.trim())}$`),
-      )
-      .replace(/`([^`]+)`/g, (match, code) =>
-        keep(`<code>${escapeHtml(code)}</code>`),
+      .replace(/(^|[^\w$])\$(?=\S)([^\n$]*?\S)\$(?!\w)/g, (match, pre, formula) =>
+        pre + keep(`$${escapeHtml(formula)}$`),
       )
       .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, url) => {
         const href = safeUrl(url);
@@ -10011,19 +10051,19 @@ import loginIslandHtml from "../claude-login-island.html?raw";
           );
         },
       );
-    // 转义剩余的 HTML
+    // 3. 转义剩余 HTML 后做强调：**粗体** / ~~删除线~~ / *斜体*（避开 ** 和 * 紧贴空格）
     output = escapeHtml(output)
-      .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/__([^_\n]+)__/g, "<strong>$1</strong>")
-      .replace(/~~([^~\n]+)~~/g, "<del>$1</del>")
-      .replace(/(^|[^\*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
-      .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, "$1<em>$2</em>");
-    placeholders.forEach(([token, html]) => {
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/~~([^~]+)~~/g, "<del>$1</del>")
+      .replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, "$1<em>$2</em>");
+    // 倒序还原：外层占位（如链接文字）可能包着先登记的内层占位
+    for (let i = placeholders.length - 1; i >= 0; i -= 1) {
+      const [token, html] = placeholders[i];
       output = output.replaceAll(token, html);
-    });
+    }
     return output;
   }
-  
+
   function parseMarkdownTableRow(line) {
     const trimmed = String(line || "")
       .trim()
@@ -10049,7 +10089,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     cells.push(cell.trim());
     return cells;
   }
-  
+
   function isMarkdownTableSeparator(line) {
     const cells = parseMarkdownTableRow(line);
     return (
@@ -10057,7 +10097,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
       cells.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s+/g, "")))
     );
   }
-  
+
   function getMarkdownTableAlign(cell) {
     const value = cell.replace(/\s+/g, "");
     if (/^:-+:$/.test(value)) return "center";
@@ -10065,7 +10105,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (/^:-+$/.test(value)) return "left";
     return "";
   }
-  
+
   function renderMarkdownTable(headers, separator, rows) {
     const aligns = separator.map(getMarkdownTableAlign);
     const renderCell = (tag, value, index) => {
@@ -10083,234 +10123,397 @@ import loginIslandHtml from "../claude-login-island.html?raw";
         return `<tr>${cells}</tr>`;
       })
       .join("");
-    return `<div class="md-table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+    // 复制按钮只放 SVG、不放文字节点：消息级复制读的是 answer-body.textContent
+    const copyBtn = `<button type="button" class="md-fence-btn md-code-copy md-table-copy" data-code-action="copy-table" data-copy="${escapeHtml(mdToMarkdownTable(headers, rows))}" title="复制表格" aria-label="复制表格">${MD_COPY_ICON}</button>`;
+    return `<div class="md-table-wrap">${copyBtn}<div class="md-table-scroll"><table class="md-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
-  
-  function renderMarkdown(markdown) {
-    const lines = String(markdown || "")
-      .replace(/\r\n/g, "\n")
-      .split("\n");
-    const blocks = [];
-    let paragraph = [];
-    let listType = "";
-    let listItems = [];
-    let codeLines = [];
-    let inCode = false;
-    let codeLang = "";
-    let mathLines = [];
-    let inMath = false;
-  
-    function flushParagraph() {
-      if (!paragraph.length) return;
-      blocks.push(`<p>${paragraph.map(renderInlineMarkdown).join("<br>")}</p>`);
-      paragraph = [];
-    }
-  
-    function flushList() {
-      if (!listItems.length) return;
-      const hasTasks = listItems.some((item) => item.task);
-      const items = listItems
-        .map((item) => {
-          if (!item.task) return `<li>${renderInlineMarkdown(item.content)}</li>`;
-          const checked = item.checked ? " checked" : "";
-          return `<li class="task-list-item"><input type="checkbox" disabled${checked}>${renderInlineMarkdown(item.content)}</li>`;
-        })
-        .join("");
-      const className = hasTasks ? ' class="contains-task-list"' : "";
-      blocks.push(`<${listType}${className}>${items}</${listType}>`);
-      listType = "";
-      listItems = [];
-    }
-  
-    function flushCode() {
-      if (!codeLines.length) {
-        codeLang = "";
-        return;
-      }
-      const rawCode = codeLines.join("\n");
-      const code = escapeHtml(rawCode);
-      const langAttr = escapeHtml(codeLang || "");
-      const copyIcon =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-      const dlIcon =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-      const previewIcon =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
-      const langLower = (codeLang || "").toLowerCase();
-      const previewBtn =
-        langLower === "html" || langLower === "htm"
-          ? `<button type="button" class="code-block-btn" data-glass="button" data-code-action="preview" title="预览网页" aria-label="预览网页">${previewIcon}</button>`
-          : "";
-      const glassBtn = (action, title, label, icon) =>
-        `<button type="button" class="code-block-btn" data-glass="button" data-code-action="${action}" title="${title}" aria-label="${label}">${icon}</button>`;
-      const toolsHtml =
-        `<div class="code-block-tools">` +
-          `<span class="code-block-lang" data-lang="${langAttr}" aria-hidden="true"></span>` +
-          glassBtn("copy", "复制代码", "复制代码", copyIcon) +
-          glassBtn("download", "下载代码", "下载代码", dlIcon) +
+
+  function renderMarkdownCodeBlock(rawCode, lang) {
+    const code = escapeHtml(rawCode);
+    const langLower = (lang || "").toLowerCase();
+    const langAttr = escapeHtml(langLower);
+    const btn = (action, title, icon) =>
+      `<button type="button" class="code-block-btn md-fence-btn md-code-${action}" data-code-action="${action}" title="${title}" aria-label="${title}">${icon}</button>`;
+    const previewBtn =
+      langLower === "html" || langLower === "htm"
+        ? btn("preview", "预览网页", MD_PREVIEW_ICON)
+        : "";
+    // 语言名走 CSS ::before（data-lang），不进 textContent
+    const head =
+      `<div class="code-block-tools md-code-head">` +
+        `<span class="code-block-lang md-code-lang" data-lang="${escapeHtml(mdLangLabel(langLower))}" aria-hidden="true"></span>` +
+        `<div class="md-fence-actions">` +
           previewBtn +
-        `</div>`;
-      if (
-        (codeLang || "").toLowerCase() === "mermaid" &&
-        state.inlineMermaidEnabled
-      ) {
-        blocks.push(
-          `<div class="mermaid-block code-block" data-code-lang="mermaid" data-mermaid-pending="1">` +
-            toolsHtml +
-            `<p class="mermaid-error-hint" hidden></p>` +
-            `<pre class="mermaid-source"><code>${code}</code></pre>` +
-            `<div class="mermaid-diagram" aria-label="Mermaid 图表"></div>` +
-          `</div>`,
-        );
-      } else {
-        blocks.push(
-          `<div class="code-block" data-code-lang="${langAttr}">` +
-            toolsHtml +
-            `<pre><code>${code}</code></pre>` +
-          `</div>`,
-        );
+          btn("download", "下载", MD_DOWNLOAD_ICON) +
+          btn("copy", "复制", MD_COPY_ICON) +
+        `</div>` +
+      `</div>`;
+    if (langLower === "mermaid" && state.inlineMermaidEnabled) {
+      return (
+        `<div class="mermaid-block code-block md-code" data-code-lang="mermaid" data-mermaid-pending="1">` +
+          head +
+          `<p class="mermaid-error-hint" hidden></p>` +
+          `<pre class="mermaid-source"><code>${code}</code></pre>` +
+          `<div class="mermaid-diagram" aria-label="Mermaid 图表"></div>` +
+        `</div>`
+      );
+    }
+    return (
+      `<div class="code-block md-code" data-code-lang="${langAttr}">` +
+        head +
+        `<pre><code>${code}</code></pre>` +
+      `</div>`
+    );
+  }
+
+  function parseMarkdownListLine(line) {
+    const match = /^(\s*)([-*+]|\d+\.)\s+(.+)$/.exec(line);
+    if (!match) return null;
+    const indent = [...match[1]].reduce((sum, char) => sum + (char === "\t" ? 4 : 1), 0);
+    const ordered = /\d/.test(match[2][0]);
+    return {
+      indent,
+      type: ordered ? "ol" : "ul",
+      content: match[3],
+      ordinal: ordered ? Number.parseInt(match[2], 10) : undefined,
+    };
+  }
+
+  function markdownIndentWidth(line) {
+    const lead = /^\s*/.exec(line)?.[0] ?? "";
+    return [...lead].reduce((sum, char) => sum + (char === "\t" ? 4 : 1), 0);
+  }
+
+  function skipMarkdownBlankLines(lines, from) {
+    let i = from;
+    while (i < lines.length && !lines[i].trim()) i += 1;
+    return i;
+  }
+
+  function renderMarkdownList(lines, start, baseIndent) {
+    const first = parseMarkdownListLine(lines[start]);
+    if (!first) return { html: "", next: start };
+    const type = first.type;
+    const items = [];
+    let i = start;
+    let loose = false;
+
+    while (i < lines.length) {
+      // 条目之间的空行不终止列表（松散列表），否则 1. 2. 3. 会各自成为只有一项的 <ol>，全渲染成「1.」
+      if (!lines[i].trim()) {
+        const j = skipMarkdownBlankLines(lines, i);
+        const ahead = j < lines.length ? parseMarkdownListLine(lines[j]) : null;
+        const sameList = ahead
+          && ahead.indent >= baseIndent
+          && (ahead.indent > baseIndent || ahead.type === type);
+        if (!sameList) break;
+        loose = true;
+        i = j;
+        continue;
       }
-      codeLines = [];
-      codeLang = "";
+      const parsed = parseMarkdownListLine(lines[i]);
+      if (!parsed || parsed.indent < baseIndent) break;
+      if (parsed.indent > baseIndent) {
+        if (!items.length) break;
+        const nested = renderMarkdownList(lines, i, parsed.indent);
+        items[items.length - 1].nested += nested.html;
+        i = nested.next;
+        continue;
+      }
+      if (parsed.type !== type) break;
+
+      const task = type === "ul" ? /^\[([ xX])\]\s+(.+)$/.exec(parsed.content) : null;
+      const item = {
+        content: renderInlineMarkdown(task ? task[2] : parsed.content),
+        nested: "",
+        task: Boolean(task),
+        checked: Boolean(task && task[1].toLowerCase() === "x"),
+      };
+      items.push(item);
+      i += 1;
+
+      // 条目正文的续行：缩进的接续段落，被空行隔开的也算（此时多留一个 <br> 当段距）
+      let blankBefore = false;
+      while (i < lines.length) {
+        if (!lines[i].trim()) {
+          const j = skipMarkdownBlankLines(lines, i);
+          if (j >= lines.length || parseMarkdownListLine(lines[j]) || markdownIndentWidth(lines[j]) <= baseIndent) break;
+          blankBefore = true;
+          loose = true;
+          i = j;
+          continue;
+        }
+        if (parseMarkdownListLine(lines[i])) break;
+        if (markdownIndentWidth(lines[i]) <= baseIndent) break;
+        item.content += `${blankBefore ? "<br><br>" : "<br>"}${renderInlineMarkdown(lines[i].trim())}`;
+        blankBefore = false;
+        i += 1;
+      }
     }
-  
-    function flushMath() {
-      if (!mathLines.length) return;
-      blocks.push(`<p>\\[${escapeHtml(mathLines.join("\n"))}\\]</p>`);
-      mathLines = [];
-    }
-  
+
+    const classes = [
+      type === "ul" && items.some((item) => item.task) ? "contains-task-list" : "",
+      loose ? "md-list-loose" : "",
+    ].filter(Boolean);
+    const listClass = classes.length ? ` class="${classes.join(" ")}"` : "";
+    // 起始序号跟随原文：`3.` 开头的列表从 3 数起
+    const startAttr = type === "ol" && first.ordinal != null && first.ordinal !== 1
+      ? ` start="${first.ordinal}"`
+      : "";
+    const html = items.map((item) => {
+      const liClass = item.task ? ' class="task-list-item"' : "";
+      const checkbox = item.task ? `<input type="checkbox" disabled${item.checked ? " checked" : ""}> ` : "";
+      return `<li${liClass}>${checkbox}${item.content}${item.nested}</li>`;
+    }).join("");
+    return { html: `<${type}${startAttr}${listClass}>${html}</${type}>`, next: i };
+  }
+
+  function renderMarkdown(markdown) {
+    let src = String(markdown || "").replace(/\r\n/g, "\n");
+    if (!src) return "";
+    // 流式：未闭合的 ``` 临时补一个收尾围栏，避免中途整段被当普通文本解析
+    if ((src.match(/```/g) || []).length % 2 === 1) src += "\n```";
+
+    const ph = (kind, idx) => `${MD_PH}${kind}${idx}${MD_PH}`;
+    const phRe = (kind) => new RegExp(`${MD_PH}${kind}(\\d+)${MD_PH}`, "g");
+
+    // 1. 代码块先抽成占位（``` 内的 markdown / $ 不参与解析）
+    const codeBlocks = [];
+    src = src.replace(/```([^\n`]*)\n?([\s\S]*?)```/g, (match, info, code) => {
+      const lang = String(info || "").trim().split(/\s+/)[0].toLowerCase();
+      codeBlocks.push(renderMarkdownCodeBlock(code.replace(/\n$/, ""), lang));
+      return ph("CB", codeBlocks.length - 1);
+    });
+
+    // 1a. 块级公式 $$…$$ / \[…\] 抽成占位（可跨行、可被空行隔开）；内联 `code` 里的不算
+    const inlineCodeSpans = [];
+    src = src.replace(/`[^`\n]+`/g, (m) => {
+      inlineCodeSpans.push(m);
+      return ph("IC", inlineCodeSpans.length - 1);
+    });
+    const mathBlocks = [];
+    src = src
+      .replace(/\$\$([\s\S]+?)\$\$/g, (match, latex) => {
+        mathBlocks.push(`$$${escapeHtml(latex.trim())}$$`);
+        return ph("MB", mathBlocks.length - 1);
+      })
+      .replace(/\\\[([\s\S]+?)\\\]/g, (match, latex) => {
+        mathBlocks.push(`\\[${escapeHtml(latex.trim())}\\]`);
+        return ph("MB", mathBlocks.length - 1);
+      });
+    src = src.replace(phRe("IC"), (m, idx) => inlineCodeSpans[+idx] ?? "");
+
+    // 2. 行级语法
+    const lines = src.split("\n");
+    const blockPlaceholder = new RegExp(`^${MD_PH}(?:CB|MB)\\d+${MD_PH}$`);
+    const out = [];
+    let paraBuf = [];
+
+    const flushPara = () => {
+      if (paraBuf.length) {
+        out.push(`<p>${renderInlineMarkdown(paraBuf.join(" ").trim())}</p>`);
+        paraBuf = [];
+      }
+    };
+
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i];
-  
-      if (line.trim().startsWith("```")) {
-        if (inCode) {
-          flushCode();
-          inCode = false;
-        } else {
-          flushParagraph();
-          flushList();
-          flushMath();
-          inCode = true;
-          // 取 ``` 之后 info string 的第一段作为语言（```python / ```js foo=bar）
-          codeLang = line.trim().slice(3).trim().split(/\s+/)[0].toLowerCase();
-        }
+      // 已被替换的代码块 / 块级公式占位整行直接放进去（公式包一层块元素，保持块间距）
+      if (blockPlaceholder.test(line.trim())) {
+        flushPara();
+        const token = line.trim();
+        out.push(token.startsWith(`${MD_PH}MB`) ? `<div class="md-math-block">${token}</div>` : token);
         continue;
       }
-  
-      if (inCode) {
-        codeLines.push(line);
+      // 空行 = 段落分隔
+      if (/^\s*$/.test(line)) {
+        flushPara();
         continue;
       }
-  
-      // 处理 \[...\] 数学公式块
-      if (line.trim() === "\\[" && !inMath) {
-        flushParagraph();
-        flushList();
-        inMath = true;
-        continue;
-      }
-      if (line.trim() === "\\]" && inMath) {
-        flushMath();
-        inMath = false;
-        continue;
-      }
-      if (inMath) {
-        mathLines.push(line);
-        continue;
-      }
-  
-      if (!line.trim()) {
-        flushParagraph();
-        flushList();
-        continue;
-      }
-  
-      if (
-        i + 1 < lines.length &&
-        line.includes("|") &&
-        isMarkdownTableSeparator(lines[i + 1])
-      ) {
-        flushParagraph();
-        flushList();
+      if (line.includes("|") && i + 1 < lines.length && isMarkdownTableSeparator(lines[i + 1])) {
+        flushPara();
         const headers = parseMarkdownTableRow(line);
         const separator = parseMarkdownTableRow(lines[i + 1]);
-        const rows = [];
         i += 2;
-        while (i < lines.length && lines[i].trim() && lines[i].includes("|")) {
-          if (!isMarkdownTableSeparator(lines[i])) {
-            rows.push(parseMarkdownTableRow(lines[i]));
-          }
+        const rows = [];
+        while (i < lines.length && lines[i].includes("|") && lines[i].trim()) {
+          if (!isMarkdownTableSeparator(lines[i])) rows.push(parseMarkdownTableRow(lines[i]));
           i += 1;
         }
         i -= 1;
-        blocks.push(renderMarkdownTable(headers, separator, rows));
+        out.push(renderMarkdownTable(headers, separator, rows));
         continue;
       }
-  
-      if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
-        flushParagraph();
-        flushList();
-        blocks.push("<hr>");
+      if (/^\s{0,3}(?:(?:\*\s*){3,}|(?:-\s*){3,}|(?:_\s*){3,})$/.test(line)) {
+        flushPara();
+        out.push("<hr>");
         continue;
       }
-  
-      const heading = line.match(/^(#{1,6})\s+(.*)$/);
-      if (heading) {
-        flushParagraph();
-        flushList();
-        blocks.push(
-          `<h${heading[1].length}>${renderInlineMarkdown(heading[2])}</h${heading[1].length}>`,
-        );
+      // 标题
+      const h = /^(#{1,6})\s+(.+)/.exec(line);
+      if (h) {
+        flushPara();
+        const lvl = h[1].length;
+        out.push(`<h${lvl} class="md-h md-h-${lvl}">${renderInlineMarkdown(h[2])}</h${lvl}>`);
         continue;
       }
-  
-      const quote = line.match(/^>\s?(.*)$/);
-      if (quote) {
-        flushParagraph();
-        flushList();
-        blocks.push(`<blockquote>${renderInlineMarkdown(quote[1])}</blockquote>`);
+      const listLine = parseMarkdownListLine(line);
+      if (listLine) {
+        flushPara();
+        const list = renderMarkdownList(lines, i, listLine.indent);
+        out.push(list.html);
+        i = list.next - 1;
         continue;
       }
-  
-      const ordered = line.match(/^\d+\.\s+(.*)$/);
-      const unordered = line.match(/^[-*+]\s+(.*)$/);
-      if (ordered || unordered) {
-        flushParagraph();
-        const nextType = ordered ? "ol" : "ul";
-        if (!listType) listType = nextType;
-        if (listType !== nextType) flushList();
-        listType = nextType;
-        const rawItem = (ordered || unordered)[1];
-        const task = rawItem.match(/^\[([ xX])\]\s+(.*)$/);
-        listItems.push(
-          task
-            ? {
-                content: task[2],
-                task: true,
-                checked: task[1].toLowerCase() === "x",
-              }
-            : {
-                content: rawItem,
-                task: false,
-                checked: false,
-              },
-        );
+      // 引用：连续的 > 行合成一个 blockquote
+      if (/^\s*>\s?/.test(line)) {
+        flushPara();
+        const quoteLines = [];
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          quoteLines.push(lines[i].replace(/^\s*>\s?/, ""));
+          i += 1;
+        }
+        i -= 1;
+        out.push(`<blockquote><p>${quoteLines.map((quote) => renderInlineMarkdown(quote)).join("<br>")}</p></blockquote>`);
         continue;
       }
-  
-      flushList();
-      paragraph.push(line);
+      // 普通段落行
+      paraBuf.push(line);
     }
-  
-    flushParagraph();
-    flushList();
-    flushCode();
-    flushMath();
-  
-    return blocks.join("");
+    flushPara();
+
+    // 3. 还原公式 + 代码块
+    return out
+      .join("")
+      .replace(phRe("MB"), (m, idx) => mathBlocks[+idx] ?? "")
+      .replace(phRe("CB"), (m, idx) => codeBlocks[+idx] ?? "");
   }
-  
+
+  // Markdown 表横向溢出（移植自桌面端 ui/md-table-scroll.ts）：原生滚动条隐藏，
+  // 悬停出现可拖细轨，左右边缘 mask 渐隐。
+  const MD_TABLE_FADE_PX = 32;
+  const mdTableObserved = new Set();
+  let mdTableObserver = null;
+  let mdTableDragCleanup = null;
+
+  function mdTableFadeObserver() {
+    if (!mdTableObserver && typeof ResizeObserver !== "undefined") {
+      mdTableObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.target instanceof HTMLElement) syncMdTableScrollFade(entry.target);
+        }
+      });
+    }
+    return mdTableObserver;
+  }
+
+  function ensureMdTableRail(wrap) {
+    let rail = wrap.querySelector(":scope > .md-table-hscroll");
+    if (!rail) {
+      rail = document.createElement("div");
+      rail.className = "md-table-hscroll";
+      rail.innerHTML = `<div class="md-table-hscroll-thumb"></div>`;
+      wrap.appendChild(rail);
+    }
+    let thumb = rail.querySelector(".md-table-hscroll-thumb");
+    if (!thumb) {
+      thumb = document.createElement("div");
+      thumb.className = "md-table-hscroll-thumb";
+      rail.appendChild(thumb);
+    }
+    return { rail, thumb };
+  }
+
+  function layoutMdTableThumb(scroll, rail, thumb) {
+    const maxScroll = Math.max(0, scroll.scrollWidth - scroll.clientWidth);
+    const trackW = rail.clientWidth || scroll.clientWidth;
+    const thumbW = Math.max(24, Math.round((scroll.clientWidth / Math.max(1, scroll.scrollWidth)) * trackW));
+    const maxTravel = Math.max(0, trackW - thumbW);
+    const x = maxScroll > 0 ? (scroll.scrollLeft / maxScroll) * maxTravel : 0;
+    thumb.style.width = `${thumbW}px`;
+    thumb.style.transform = `translateX(${x}px)`;
+  }
+
+  function bindMdTableThumbDrag(scroll, rail, thumb) {
+    if (thumb.dataset.dragBound === "1") return;
+    thumb.dataset.dragBound = "1";
+    thumb.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      mdTableDragCleanup?.();
+      const startX = e.clientX;
+      const startScroll = scroll.scrollLeft;
+      const maxScroll = Math.max(0, scroll.scrollWidth - scroll.clientWidth);
+      const trackW = rail.clientWidth || scroll.clientWidth;
+      const maxTravel = Math.max(1, trackW - thumb.offsetWidth);
+      const onMove = (me) => {
+        scroll.scrollLeft = Math.max(
+          0,
+          Math.min(maxScroll, startScroll + ((me.clientX - startX) / maxTravel) * maxScroll),
+        );
+      };
+      const onUp = () => {
+        document.removeEventListener("pointermove", onMove, true);
+        document.removeEventListener("pointerup", onUp, true);
+        document.removeEventListener("pointercancel", onUp, true);
+        thumb.classList.remove("is-dragging");
+        if (mdTableDragCleanup === onUp) mdTableDragCleanup = null;
+      };
+      thumb.classList.add("is-dragging");
+      document.addEventListener("pointermove", onMove, true);
+      document.addEventListener("pointerup", onUp, true);
+      document.addEventListener("pointercancel", onUp, true);
+      mdTableDragCleanup = onUp;
+      try {
+        thumb.setPointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
+    });
+  }
+
+  function syncMdTableScrollFade(scroll) {
+    const wrap = scroll.closest(".md-table-wrap");
+    if (!(wrap instanceof HTMLElement)) return;
+    const maxScroll = Math.max(0, scroll.scrollWidth - scroll.clientWidth);
+    if (maxScroll <= 1) {
+      wrap.classList.remove("has-scroll-fade");
+      wrap.style.removeProperty("--md-table-fade-left");
+      wrap.style.removeProperty("--md-table-fade-right");
+      wrap.querySelector(":scope > .md-table-hscroll")?.classList.remove("is-visible");
+      return;
+    }
+    const { rail, thumb } = ensureMdTableRail(wrap);
+    wrap.style.setProperty("--md-table-fade-left", `${Math.min(MD_TABLE_FADE_PX, scroll.scrollLeft)}px`);
+    wrap.style.setProperty(
+      "--md-table-fade-right",
+      `${Math.min(MD_TABLE_FADE_PX, maxScroll - scroll.scrollLeft)}px`,
+    );
+    wrap.classList.add("has-scroll-fade");
+    layoutMdTableThumb(scroll, rail, thumb);
+    rail.classList.add("is-visible");
+    bindMdTableThumbDrag(scroll, rail, thumb);
+  }
+
+  function bindMdTableScrollFades(root) {
+    if (!root?.querySelectorAll) return;
+    const ro = mdTableFadeObserver();
+    // 先回收已脱离文档的表格：ResizeObserver 持强引用，流式重渲染会不断整片重建
+    for (const el of mdTableObserved) {
+      if (el.isConnected) continue;
+      mdTableObserved.delete(el);
+      ro?.unobserve(el);
+    }
+    for (const el of root.querySelectorAll(".md-table-scroll")) {
+      syncMdTableScrollFade(el);
+      if (mdTableObserved.has(el)) continue;
+      mdTableObserved.add(el);
+      ro?.observe(el);
+      el.addEventListener("scroll", () => syncMdTableScrollFade(el), { passive: true });
+    }
+  }
+
   function renderMathInElement(element) {
     if (typeof window === "undefined" || !element) return;
   
@@ -10408,6 +10611,7 @@ import loginIslandHtml from "../claude-login-island.html?raw";
     if (window.CancriMermaid?.renderMermaidInElement) {
       window.CancriMermaid.renderMermaidInElement(element);
     }
+    bindMdTableScrollFades(element);
   }
   
   function renderAnimatedMarkdown(markdown) {

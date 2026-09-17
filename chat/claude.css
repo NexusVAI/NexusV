@@ -10463,3 +10463,468 @@ html[data-theme="light"] .model-current svg {
         border-radius: 14px !important; /* 12×1.2 */
     }
 }
+
+/* ─────────────────────────────────────────────────────────── §MD 桌面端 Markdown 排版移植（2026-09-17）
+   1:1 搬运 cancri-code 桌面端（codex 主题）助手正文的最终生效值：
+   styles.css（.md-content / .md-code / .md-table 基础）→ devin-ui.css（.md-content.md-content.md-content 终态）
+   → editor-flat.css（14px / 1.65 / 350 字重、代码 12px/18px）。
+   作用域只含助手回复正文与竞技场回答；思考块、用户气泡不受影响。
+   选择器叠三次 .md-content + !important，压过 §16 prose 复刻与 standard-markdown 网格。
+   字重例外：桌面端随包带 Noto Sans SC 可变字体，350/500 在中文上成立；网页端中文回落雅黑/苹方，
+   雅黑只有 300/400/700，350 会落到 Light、500 会落回常规（**加粗**看不出来），故正文取 400、粗体/标题取 600。
+   ─────────────────────────────────────────────────────────── */
+:is(.message.assistant .answer-body, .duel-answer).md-content {
+    --md-port-danger: #e34948;
+    --md-port-code-bg: #282828;
+    --md-port-hover: rgb(255 255 255 / 0.04);
+    --md-port-tint: 255 255 255;
+    --md-port-mono: "Cascadia Code", "Cascadia Mono", "SF Mono", Menlo, Consolas,
+                    "Microsoft YaHei", "PingFang SC", "Sarasa Mono SC", monospace;
+}
+html[data-theme="light"] :is(.message.assistant .answer-body, .duel-answer).md-content,
+html[data-mode="light"] :is(.message.assistant .answer-body, .duel-answer).md-content {
+    --md-port-danger: #d03b3b;
+    --md-port-code-bg: #f3f4f4;
+    --md-port-hover: rgb(0 0 0 / 0.04);
+    --md-port-tint: 26 28 31;
+}
+html[data-theme="black"] :is(.message.assistant .answer-body, .duel-answer).md-content {
+    --md-port-code-bg: #161616;
+}
+
+/* 正文：块级流式排版（不再用 grid，恢复外边距折叠，与桌面端一致） */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content {
+    display: block !important;
+    gap: 0 !important;
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content :is(p, li, blockquote, td) {
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+    font-weight: 400 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content > * {
+    margin-top: 0 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content > :not(.md-code):not(.md-table-wrap) + :not(.md-code):not(.md-table-wrap) {
+    margin-top: 10px !important;
+}
+
+/* 段落 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content p {
+    margin: 0 !important;
+    padding: 0 32px 0 0 !important;
+    color: inherit !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+}
+
+/* 标题 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-h {
+    margin-right: 0 !important;
+    margin-bottom: -4px !important;
+    margin-left: 0 !important;
+    padding: 0 32px 0 0 !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-h-1 {
+    margin-top: 12px !important;
+    font-size: calc(14px * 1.375) !important;
+    line-height: 1.2 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-h-2 {
+    margin-top: 12px !important;
+    font-size: calc(14px * 1.125) !important;
+    line-height: 1.4667 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content :is(.md-h-3, .md-h-4, .md-h-5, .md-h-6) {
+    margin-top: 8px !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content :is(.md-h-4, .md-h-5, .md-h-6) {
+    color: color-mix(in srgb, currentColor 72%, transparent) !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-h :is(strong, code) {
+    font-size: inherit !important;
+}
+
+/* 列表 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content :is(ul, ol) {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 0 10px !important;
+    padding: 0 32px !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content ul {
+    list-style-type: disc;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content ol {
+    list-style-type: decimal;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content li {
+    margin: 0 !important;
+    padding: 0 0 0 8px !important;
+    color: inherit !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content li::marker {
+    color: inherit;
+    font-weight: inherit;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-list-loose {
+    gap: 12px;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content li > :is(ul, ol) {
+    margin: 4px 0 0 !important;
+    padding-right: 0 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .contains-task-list {
+    list-style: none;
+    padding-left: 8px !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .task-list-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-left: 0 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .task-list-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: currentColor;
+    flex: 0 0 auto;
+}
+
+/* 引用 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content blockquote {
+    margin: 0 32px 0 0 !important;
+    padding: 0 0 0 12px !important;
+    border: 0 !important;
+    border-left: 4px solid color-mix(in srgb, currentColor 10%, transparent) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: color-mix(in srgb, currentColor 65%, transparent) !important;
+    font-style: normal !important;
+    quotes: none;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content blockquote p {
+    padding: 0 !important;
+}
+
+/* 行内强调 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content :is(strong, b) {
+    color: inherit !important;
+    font-weight: 600 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content em {
+    color: inherit !important;
+    font-style: italic;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content del {
+    color: inherit !important;
+    text-decoration: line-through;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content a {
+    color: inherit !important;
+    font-weight: inherit !important;
+    border-bottom: 0 !important;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+    text-underline-offset: 2px;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content a:is(:hover, :focus-visible) {
+    text-decoration-color: currentColor;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-inline-code {
+    padding: 1px 4px !important;
+    border: 1px solid rgb(var(--md-port-tint) / 0.1) !important;
+    border-radius: 6.4px !important;
+    background: rgb(var(--md-port-tint) / 0.05) !important;
+    color: var(--md-port-danger) !important;
+    font-family: var(--md-port-mono) !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 18px !important;
+    white-space: pre-wrap !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content :is(a, .md-h) .md-inline-code {
+    color: inherit !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content hr {
+    height: 0 !important;
+    margin: 12px 6px 12px 0 !important;
+    padding: 0;
+    border: 0 !important;
+    border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent) !important;
+    background: transparent !important;
+}
+
+/* 代码块 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-code {
+    position: relative;
+    max-width: 100%;
+    margin: 10px 0 14px !important;
+    overflow: hidden;
+    border: none !important;
+    border-radius: 32px !important;
+    background: var(--md-port-code-bg) !important;
+    font-family: var(--md-port-mono) !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-code-head {
+    position: static !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 36px;
+    padding: 12px 24px 2px !important;
+    background: transparent !important;
+    border-bottom: none !important;
+    opacity: 1 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-code-lang::before {
+    content: attr(data-lang);
+    margin: 0;
+    font-family: var(--c-font, system-ui, sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: inherit;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-fence-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-fence-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-fence-btn:is(:hover, .is-active) {
+    background: var(--md-port-hover) !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-fence-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-code > pre {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: inherit !important;
+    overflow: visible;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-code > pre code {
+    display: block;
+    padding: 8px 24px 16px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 18px !important;
+    white-space: pre;
+    overflow-x: auto;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .mermaid-block.md-code > .mermaid-source {
+    display: none;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .mermaid-block.md-code.mermaid-error > .mermaid-source {
+    display: block;
+}
+
+/* 公式 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .katex {
+    color: inherit;
+    font-size: 1.02em;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .katex-display {
+    margin: 10px 0;
+    padding: 4px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .katex-display > .katex {
+    font-size: 1.08em;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-math-block {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* 表格：无边框、底部细分隔线、横向溢出渐隐 + 悬停细轨 */
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-wrap {
+    --md-table-gutter: 18px;
+    --md-table-rule: color-mix(in oklab, currentColor 16%, transparent);
+    --md-table-fade-w: 32px;
+    position: relative;
+    width: auto !important;
+    max-width: 100%;
+    margin: 8px 0 16px !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    scrollbar-width: none;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-scroll::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-hscroll {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    border-radius: 99px;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 140ms ease;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-wrap.has-scroll-fade {
+    padding-bottom: 10px;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-wrap.has-scroll-fade:is(:hover, :focus-within) .md-table-hscroll.is-visible,
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-hscroll:has(.md-table-hscroll-thumb.is-dragging) {
+    opacity: 1;
+    pointer-events: auto;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-hscroll-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    min-width: 24px;
+    border-radius: 99px;
+    background: color-mix(in oklab, currentColor 38%, transparent);
+    cursor: grab;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-hscroll-thumb.is-dragging {
+    cursor: grabbing;
+    background: color-mix(in oklab, currentColor 52%, transparent);
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-wrap.has-scroll-fade .md-table-scroll {
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        rgba(0, 0, 0, 0.35) calc(min(var(--md-table-fade-w), var(--md-table-fade-left, 0px)) * 0.375),
+        #000 min(var(--md-table-fade-w), var(--md-table-fade-left, 0px)),
+        #000 calc(100% - min(var(--md-table-fade-w), var(--md-table-fade-right, 0px))),
+        rgba(0, 0, 0, 0.35) calc(100% - min(var(--md-table-fade-w), var(--md-table-fade-right, 0px)) * 0.625),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        rgba(0, 0, 0, 0.35) calc(min(var(--md-table-fade-w), var(--md-table-fade-left, 0px)) * 0.375),
+        #000 min(var(--md-table-fade-w), var(--md-table-fade-left, 0px)),
+        #000 calc(100% - min(var(--md-table-fade-w), var(--md-table-fade-right, 0px))),
+        rgba(0, 0, 0, 0.35) calc(100% - min(var(--md-table-fade-w), var(--md-table-fade-right, 0px)) * 0.625),
+        transparent 100%
+    );
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-wrap.has-scroll-fade .md-table-scroll {
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table {
+    width: max-content !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    border-collapse: collapse;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table :is(th, td) {
+    padding: 10px var(--md-table-gutter) 10px 0 !important;
+    border: 0 !important;
+    text-align: left;
+    vertical-align: bottom !important;
+    white-space: nowrap;
+    color: inherit !important;
+    background-color: transparent !important;
+    background-image: linear-gradient(var(--md-table-rule), var(--md-table-rule)) !important;
+    background-repeat: no-repeat !important;
+    background-position: 0 100% !important;
+    background-size: calc(100% - var(--md-table-gutter)) 1px !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table :is(th, td):last-child {
+    padding-right: 36px !important;
+    background-size: calc(100% - 36px) 1px !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table thead th {
+    font-weight: 400 !important;
+}
+:is(.message.assistant .answer-body, .duel-answer).md-content.md-content.md-content .md-table-copy {
+    position: absolute !important;
+    top: 2px;
+    right: 0;
+    z-index: 2;
+}
+
+/* 作用域外（思考块 / 用户气泡等）复用同一份渲染产物时，表格复制按钮的最小兜底样式 */
+.md-content .md-table-wrap:has(> .md-table-copy) {
+    position: relative;
+}
+.md-content .md-table-copy {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+}
+.md-content .md-table-copy:hover {
+    opacity: 1;
+}
