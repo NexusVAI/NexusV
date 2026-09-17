@@ -181,8 +181,8 @@
       '<button type="button" data-header-search-button aria-label="搜索" aria-controls="header-search-overlay" aria-expanded="false" class="text-secondary hover:text-default transition-colors md:inline-flex xl:hidden">' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' +
       "</button>" +
-      '<button id="header-drawer-button" type="button" aria-label="菜单" aria-controls="drawer" aria-expanded="false" class="md:hidden relative right-1 text-secondary hover:text-default transition-colors">' +
-      '<svg width="18" height="10" viewBox="0 0 18 10" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"><path d="M0 1C0 0.447715 0.447715 0 1 0H17C17.5523 0 18 0.447715 18 1C18 1.55228 17.5523 2 17 2H1C0.447715 2 0 1.55228 0 1ZM0 9C0 8.44772 0.447715 8 1 8H11C11.5523 8 12 8.44772 12 9C12 9.55229 11.5523 10 11 10H1C0.447715 10 0 9.55229 0 9Z" fill="currentColor"></path></svg>' +
+      '<button id="header-drawer-button" type="button" aria-label="菜单" aria-controls="drawer" aria-expanded="false" class="cancri-burger md:hidden">' +
+      '<span></span><span></span><span></span>' +
       "</button>" +
       "</div></div></header>"
     );
