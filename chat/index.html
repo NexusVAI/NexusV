@@ -610,24 +610,29 @@
                     </div>
                 </div>
 
-                <div class="popover account-popover" id="accountPopover">
-                    <div class="popover-inner">
-                        <div class="popover-item" id="nicknameEditBtn">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe064;</span>
-                            <span>昵称</span>
-                            <span class="grow"></span>
-                            <span
-                                id="nicknameDisplay"
-                                style="font-size: 12px; color: var(--text-soft)"
-                            ></span>
+                <!-- 2026-09-17 重写为 Claude 官方 user-menu 1:1 结构（源：claude.ai 保存页
+                     [data-cds="Menu"] 的 DOM + 计算样式，comfortable 密度）：
+                     w=17rem/272 · rounded-card=12 · p=4（内层 scroll）· shadow=1px ring + popover
+                     header px-2.5=10 py-1=4 text-footnote=13/17 wght500 muted truncate
+                     item h-control=32（py 6 + leading 20）px-2.5=10 gap-xs=8 rounded=8 text-body=14/20
+                     icon size-icon=20（Anthropicons 20px / wght 433.3）· sep mx-2.5=10 my-1=4 h=1px
+                     保留全部原 id / data-claude-action 让 cancri_chat.js / claude_ui.js 绑定不动。 -->
+                <div class="popover account-popover claude-user-menu" id="accountPopover" role="menu" aria-orientation="vertical">
+                    <div class="claude-user-menu-scroll">
+                        <div class="claude-user-menu-header" role="presentation">
+                            <span id="nicknameDisplay">未设置</span>
+                        </div>
+                        <div class="claude-user-menu-item" id="nicknameEditBtn" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe064;</span>
+                            <span class="claude-user-menu-label">昵称</span>
                         </div>
                         <!-- 2026-05-15 fix(M3)：自定义 迁入 popover。复用 data-claude-action="open-settings"
                              让 claude_ui.js bindCustomNav 自动绑定。 -->
-                        <div class="popover-item" id="claudeCustomPopoverBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe0d6;</span>
-                            <span>自定义</span>
+                        <div class="claude-user-menu-item" id="claudeCustomPopoverBtn" data-view-target="claudeSettings" data-claude-action="open-settings" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe0d6;</span>
+                            <span class="claude-user-menu-label">自定义</span>
                         </div>
-                        <div class="popover-sep"></div>
+                        <div class="claude-user-menu-sep" role="separator" aria-orientation="horizontal"></div>
                         <!-- 2026-05-15 fix(M5)：群友反馈"自定义和设置重复，且个性化点了没反应"。
                              根因：
                                - #settingsBtn 和 #themeShortcutBtn 两个项都开同一个老 settingsModal，
@@ -638,46 +643,32 @@
                                - 给 #themeShortcutBtn (个性化) 加 data-claude-action="open-settings"
                                  让 claude_ui.js bindCustomNav 接管，open 新的 claudeSettingsView，
                                  不再走老 modal，scrim 也不会再出。 -->
-                        <div class="popover-item" id="themeShortcutBtn" data-view-target="claudeSettings" data-claude-action="open-settings">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe0ee;</span>
-                            <span>个性化</span>
+                        <div class="claude-user-menu-item" id="themeShortcutBtn" data-view-target="claudeSettings" data-claude-action="open-settings" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe0ee;</span>
+                            <span class="claude-user-menu-label">个性化</span>
                         </div>
-                        <div class="popover-sep"></div>
-                        <div class="popover-item" id="exportBtn">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe103;</span>
-                            <span>导出对话</span>
+                        <div class="claude-user-menu-sep" role="separator" aria-orientation="horizontal"></div>
+                        <div class="claude-user-menu-item" id="exportBtn" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe103;</span>
+                            <span class="claude-user-menu-label">导出对话</span>
                         </div>
-                        <div
-                            class="popover-item"
-                            id="clearBtn"
-                            style="color: #ef4444 !important;"
-                        >
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe101;</span>
-                            <span>清空对话</span>
+                        <div class="claude-user-menu-item" id="clearBtn" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe101;</span>
+                            <span class="claude-user-menu-label">清空对话</span>
                         </div>
-                        <div class="popover-item" id="upgradeBtn">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe106;</span>
-                            <span>加入社区</span>
+                        <div class="claude-user-menu-item" id="upgradeBtn" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe106;</span>
+                            <span class="claude-user-menu-label">加入社区</span>
                         </div>
-                        <div class="popover-sep"></div>
-                        <div class="popover-item" id="helpToastBtn">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe088;</span>
-                            <span>帮助</span>
-                            <span class="grow"></span>
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path d="m9 6 6 6-6 6"></path>
-                            </svg>
+                        <div class="claude-user-menu-sep" role="separator" aria-orientation="horizontal"></div>
+                        <div class="claude-user-menu-item" id="helpToastBtn" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe088;</span>
+                            <span class="claude-user-menu-label">帮助</span>
+                            <span class="claude-user-menu-chevron claude-anthropicon" aria-hidden="true">&#xe02a;</span>
                         </div>
-                        <div class="popover-item" id="logoutToastBtn">
-                            <span class="claude-anthropicon" style="font-size: 18px" aria-hidden="true">&#xe0a4;</span>
-                            <span>退出登录</span>
+                        <div class="claude-user-menu-item" id="logoutToastBtn" role="menuitem" tabindex="-1">
+                            <span class="claude-user-menu-icon claude-anthropicon" aria-hidden="true">&#xe0a4;</span>
+                            <span class="claude-user-menu-label">退出登录</span>
                         </div>
                     </div>
                 </div>
