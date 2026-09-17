@@ -539,3 +539,165 @@ body[data-oai-page="models"] #header-search-overlay[data-search-scope="models"] 
 }
 .cancri-skel-chip__text .cancri-skel-line--lg { width: 48%; height: 14px; }
 .cancri-skel-chip__text .cancri-skel-line--md { width: 72%; height: 10px; }
+
+/* ── 2026-09-17 搜索浮层：内容收进圆角内，不贴边 ─────────────────── */
+#header-search-overlay:not([data-search-scope="models"]) > .cancri-overlay-backdrop + div > div:first-child {
+  padding: 16px 28px;
+}
+#header-search-overlay:not([data-search-scope="models"]) #cancri-search-results {
+  padding: 8px 14px 20px;
+}
+#header-search-overlay:not([data-search-scope="models"]) .cancri-search-result {
+  padding: 10px 14px;
+}
+
+/* 进出场过渡（JS 在 open 时加 data-anim="in"，close 移除后 260ms 再隐藏） */
+#header-search-overlay > .cancri-overlay-backdrop {
+  opacity: 0;
+  transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#header-search-overlay > .cancri-overlay-backdrop + div {
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 0.26s cubic-bezier(0.16, 1, 0.3, 1), transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#header-search-overlay[data-anim="in"] > .cancri-overlay-backdrop,
+#header-search-overlay[data-anim="in"] > .cancri-overlay-backdrop + div {
+  opacity: 1;
+  transform: none;
+}
+
+/* 移动端：顶部贴满全屏宽、上方直角、下方圆角，从顶部下滑 / 上滑收起 */
+@media (max-width: 767px) {
+  #header-search-overlay:not([data-search-scope="models"]) {
+    padding: 0;
+    z-index: 70;
+  }
+  #header-search-overlay:not([data-search-scope="models"]) > .cancri-overlay-backdrop + div {
+    max-width: none;
+    border-width: 0 0 1px;
+    border-radius: 0 0 28px 28px;
+    transform: translateY(-100%);
+    opacity: 1;
+  }
+  #header-search-overlay:not([data-search-scope="models"]) > .cancri-overlay-backdrop + div > div:first-child {
+    padding: 14px 20px;
+  }
+  #header-search-overlay:not([data-search-scope="models"]) #cancri-search-results {
+    max-height: 70vh;
+    padding: 6px 6px 16px;
+  }
+  #header-search-overlay:not([data-search-scope="models"])[data-anim="in"] > .cancri-overlay-backdrop + div {
+    transform: translateY(0);
+  }
+}
+
+/* Base URL 胶囊（模型页，无阴影） */
+.cancri-baseurl {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 4px;
+  padding: 3px 3px 3px 12px;
+  border: 1px solid var(--color-border-primary-surface);
+  border-radius: 999px;
+  background: var(--color-background-primary-soft);
+  font-size: 13px;
+}
+.cancri-baseurl__label {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.cancri-baseurl__url,
+.cancri-baseurl__ping {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--color-text-emphasis);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+.cancri-baseurl__url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.cancri-baseurl__ping {
+  min-width: 56px;
+  background: var(--color-background-primary-solid, #000);
+  color: var(--color-text-inverse, #fff);
+  font-variant-numeric: tabular-nums;
+}
+.cancri-baseurl__url:hover {
+  background: var(--color-background-primary-soft-alpha, rgba(0, 0, 0, 0.06));
+}
+.cancri-baseurl__url.is-copied .cancri-id__text {
+  color: var(--color-text-secondary);
+}
+
+/* ── 移动端汉堡 + 抽屉（移植主站 css/mobile-menu.css） ─────────────── */
+.cancri-burger {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  margin-right: -6px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.cancri-burger span {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  margin: 0;
+  background: var(--color-text-emphasis);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+.cancri-burger.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.cancri-burger.active span:nth-child(2) { opacity: 0; }
+.cancri-burger.active span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+@media (min-width: 768px) {
+  .cancri-burger { display: none; }
+}
+
+#drawer {
+  top: 4rem;
+  padding-top: 0;
+  overflow-x: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-12px);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#drawer.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+#drawer [data-mobile-nav-panels] { overflow-x: hidden; }
+#drawer .cnc-sidebar--mobile > * > * {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+#drawer.active .cnc-sidebar--mobile > * > * { opacity: 1; transform: translateY(0); }
+#drawer.active .cnc-sidebar--mobile > * > *:nth-child(2) { transition-delay: 40ms; }
+#drawer.active .cnc-sidebar--mobile > * > *:nth-child(3) { transition-delay: 80ms; }
+#drawer.active .cnc-sidebar--mobile > * > *:nth-child(4) { transition-delay: 120ms; }
+#drawer.active .cnc-sidebar--mobile > * > *:nth-child(5) { transition-delay: 160ms; }
+#drawer.active .cnc-sidebar--mobile > * > *:nth-child(n+6) { transition-delay: 200ms; }
